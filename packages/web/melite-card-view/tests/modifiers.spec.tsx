@@ -215,7 +215,7 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
   // THE LEAF: the kind's fields render INSIDE the modal — the image
   // field constructs the square (the construction law holds inside
   // mod leaves), the select renders, never a bare text box
-  const square = await screen.findByRole('button', { name: 'Region Mask source' }, undefined, { timeout: 2000 })
+  const square = await screen.findByRole('button', { name: 'Region Mask source' }, { timeout: 2000 })
   expect(square).toBeTruthy()
   expect(screen.getByLabelText('Region Mode')).toBeTruthy()
   // save: the entry is the params object (no id, no strength)
@@ -357,7 +357,7 @@ test('declared face + NO hosted face: no canvas — the square holds (graceful b
   const values: SpecValues = { input_image: 'http://x/in.png' }
   await openPaintLeaf(values, { paintReference: 'input_image' })
   // the leaf opened with the three-source square and nothing else
-  await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
+  await screen.findByRole('button', { name: 'Paint payload source' }, { timeout: 2000 })
   expect(screen.queryByTestId('fake-paint-face')).toBeNull()
 })
 
@@ -381,6 +381,6 @@ test('undeclared kind + hosted face: no verb — the face is declared, never sni
   }))
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('Paint', undefined, { timeout: 2000 }))
-  await screen.findByRole('button', { name: 'Paint payload source' }, undefined, { timeout: 2000 })
+  await screen.findByRole('button', { name: 'Paint payload source' }, { timeout: 2000 })
   expect(screen.queryByTestId('fake-paint-face')).toBeNull()
 })

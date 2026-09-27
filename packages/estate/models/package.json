@@ -11,7 +11,8 @@
     "@deepseek-ai/dsh-host-webserver": "0.1.5-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/estate-provisioning": "workspace:*"
+    "@melite/estate-provisioning": "workspace:*",
+    "@melite/contracts": "workspace:*"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

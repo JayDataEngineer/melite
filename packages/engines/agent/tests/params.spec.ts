@@ -12,7 +12,10 @@ describe("the agent params contract (stroke 66 — anti-drift)", () => {
     // dict lives on the object-typed ref, not the envelope head).
     const env = JSON.parse(json) as { uid: number; refs: Record<string, { type: string; dict?: Record<string, { type: string }> }> };
     const root = env.refs[String(env.uid)]!;
-    const dict = root.dict as Record<string, number>;
+    // TS2352 why: the envelope types dict values as inline-type records,
+    // but schemastery's toJSON stores numeric ref ids here — the test reads
+    // the wire shape, so it goes through unknown.
+    const dict = root.dict as unknown as Record<string, number>;
     assert.deepEqual(Object.keys(dict).sort(), ["inputs", "max_turns", "mcps", "model", "skills", "task"]);
     // THE WIRE TYPES (the ref-resolution read — dict values are ref ids):
     assert.equal(env.refs[String(dict["task"])]!.type, "string");

@@ -26,6 +26,7 @@
  * llm-complete.ts, shared with everything else.
  */
 import type { LlmStreamSeam } from './llm-complete.ts'
+import { segmentConfined } from '@melite/contracts/mediaKinds'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
 import { agenticSweep } from './enhance-agent.ts'
 import {
@@ -455,7 +456,14 @@ export function apply(c: CtxView, config: Config = {}): void {
       await fs.mkdir(dir, { recursive: true })
       return dir
     }
-    const SEG = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/
+    // ONE SEGMENT GRAMMAR (li-aq.3): the contracts' own — this
+    // private charset was the same law re-spelled (RULE 10's find).
+    // The DOOR adds its one local truth on top: an upload filename
+    // is a SINGLE segment (no separators), which the media grammar
+    // rightly does not judge (a path of many legal segments is
+    // legal); here one name = one file.
+    const SEG = (name: string): boolean =>
+      !name.includes('/') && !name.includes('\\') && segmentConfined(name)
     c.effect(() => c.webServer.register({
       kind: 'exact',
       path: '/v1/uploads',
@@ -471,7 +479,7 @@ export function apply(c: CtxView, config: Config = {}): void {
           const filename = typeof body?.filename === 'string' ? body.filename : ''
           const data = typeof body?.data === 'string' ? body.data : ''
           if (filename === '' || data === '') return fail(400, 'uploads: filename + data are required')
-          if (!SEG.test(filename)) return fail(400, 'uploads: bad filename')
+          if (!SEG(filename)) return fail(400, 'uploads: bad filename')
           // THE WHITELIST (the door's own law): the image triad, plus
           // the mesh wire type's pair (2026-09-21, primitive ③) —
           // model/gltf-binary, or octet-stream ONLY when the filename
@@ -511,7 +519,7 @@ export function apply(c: CtxView, config: Config = {}): void {
         void (async () => {
           const url = new URL(req.url ?? '/', 'http://melite.invalid')
           const name = url.pathname.slice('/v1/assets/inputs/'.length)
-          if (!SEG.test(name)) return fail(400, 'bad input name')
+          if (!SEG(name)) return fail(400, 'bad input name')
           const dir = await inputDir()
           const path = await import('node:path')
           const fs = await import('node:fs/promises')

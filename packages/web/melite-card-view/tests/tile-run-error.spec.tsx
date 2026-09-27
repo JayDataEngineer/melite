@@ -32,6 +32,7 @@ const REFUSAL = "ComfyError: POST /prompt 400 — node_errors 'edit::CLIPLoader.
 const BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-s1',
+  sessionKey: 's1',
   rev: 7,
   stages: [
     {
@@ -39,7 +40,7 @@ const BENCH: CardsBenchValue = {
       card: 'image-gen',
       title: 'hero frame',
       engine: 'comfyui',
-      status: 'failed',
+      status: 'failed' as const,
       runStatus: 'failed',
       params: { prompt: 'a red cube' },
       result: { error: REFUSAL },
@@ -54,10 +55,10 @@ function stubWire(): void {
   mountEstateFakes({
     benchDoc: {
       draft_id: 'bench-s1', rev: 7,
-      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed', runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: REFUSAL } }],
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'failed' as const, runStatus: 'failed', params: { prompt: 'a red cube' }, result: { error: REFUSAL } }],
       log: [],
     },
-    runDocs: [{ run_id: 'run-1', status: 'failed', draft_id: 'bench-s1', error: REFUSAL, stages: [{ id: 's_0', status: 'error', url: '', error: REFUSAL }] }],
+    runDocs: [{ run_id: 'run-1', status: 'failed' as const, draft_id: 'bench-s1', error: REFUSAL, stages: [{ id: 's_0', status: 'error', url: '', error: REFUSAL }] }],
   })
   vi.stubGlobal('fetch', async (url: unknown): Promise<Response> => {
     const path = String(url)
@@ -101,7 +102,7 @@ test('the tile caption carries the sliced reason; the drill carries it whole', a
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
 
   // THE TILE FACE: the sliced refusal renders in the caption strip
@@ -130,7 +131,7 @@ test('a healthy row never renders an error face (absent ≡ clean)', async () =>
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         ...BENCH,
         stages: [{
@@ -164,11 +165,11 @@ test('a normalized bench stage error mounts the tab error and rescue', async () 
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         ...BENCH,
         stages: [{
-          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed', runStatus: 'failed',
+          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed' as const, runStatus: 'failed',
           params: { prompt: 'a red cube' }, result: { error },
         }],
       } as CardsBenchValue,
@@ -190,11 +191,11 @@ test('a normalized draft stage error mounts the draft error and rescue', async (
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
-        kind: 'draft', draftId: 'bench-s1', stageId: 's_0', intent: 'mask', rev: 7,
+        kind: 'draft' as const, draftId: 'bench-s1', stageId: 's_0', intent: 'mask', rev: 7,
         stages: [{
-          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed', runStatus: 'failed',
+          id: 's_0', card: 'mask', title: 'mask', engine: 'comfyui', status: 'failed' as const, runStatus: 'failed',
           params: { prompt: 'a red cube' }, result: { error },
         }],
       },
@@ -242,7 +243,7 @@ test('a refused start lands on the row — the open drill reads the why', async 
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         kind: 'bench', draftId: 'bench-s1', rev: 7, log: [],
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', status: 'idle', params: { prompt: 'a red cube' } }],

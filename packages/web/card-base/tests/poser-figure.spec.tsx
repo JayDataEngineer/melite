@@ -25,19 +25,25 @@ import {
 import type { PreviewOwnerProps } from '@melite/contracts'
 import type { FormSpecDoc, SpecValues } from '../src/spec.ts'
 
+/** The stub stage: the structural minimum the rig touches
+ *  (scene.add seats meshes, children lists them). The rest param is
+ *  never[] — an unknown[] rest is invariant under strictFunctionTypes,
+ *  so three's real Scene.add (an Object3D rest) would refuse the stub;
+ *  every real add shape flows into never[], and the stub ignores all. */
+type StubStage = { scene: { children: unknown[]; add: (...o: never[]) => void }; dispose: () => void }
 const mountState = vi.hoisted(() => ({
   // the DEFAULT stub must be a COMPLETE stage: .add rides (an
   // unexpected extra mount call — load-timing shifts under the full
   // gate — falls back here, and a scene without add kills the row).
-  spy: vi.fn((): { scene: { children: unknown[]; add: (...o: unknown[]) => void }; dispose: () => void } => ({
+  spy: vi.fn((..._ignored: never[]): StubStage => ({ // the stub ignores whatever the rig passes; the relay still forwards it for the call record
     scene: {
       children: [] as unknown[],
-      add: (...o: unknown[]): void => {},
+      add: (...o: never[]): void => {},
     },
     dispose: () => {},
   })),
 }))
-vi.mock('../src/stage3d.ts', () => ({ mountStage3D: (...a: unknown[]) => mountState.spy(...a) }))
+vi.mock('../src/stage3d.ts', () => ({ mountStage3D: (...a: never[]) => mountState.spy(...a) })) // the relay forwards whatever the rig passes — untyped by design; the stub (not the relay) carries the shape
 
 // THE SHARED MODULE (mocked — its own spec owns the real wire law):
 // tests drive resolves/rejects and read the query it received.
@@ -163,7 +169,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
 
   test('a landed doc builds the figure scene and disposes clean (the 3js preview is BACK)', async () => {
     const disposed = vi.fn()
-    mountState.spy.mockImplementationOnce((): { scene: unknown; dispose: () => void } => {
+    mountState.spy.mockImplementationOnce((): StubStage => { // the real Scene seats the stub — inference carries it, no widening
       const scene = new THREE.Scene()
       return { scene, dispose: disposed }
     })
@@ -229,7 +235,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
       camera,
       controls: { update: controlsUpdate },
       dispose: vi.fn(),
-    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    } as unknown as StubStage)) // the camera/controls ride the real Scene beside the stub — the cast seats the stub shape without restating it
     bindState.spy.mockResolvedValue(DOC)
     const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
     await waitFor(() => screen.getByTestId('stage-preview-figure'))
@@ -254,7 +260,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
       scene: new THREE.Scene(),
       camera,
       dispose: vi.fn(),
-    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    } as unknown as StubStage)) // the camera/controls ride the real Scene beside the stub — the cast seats the stub shape without restating it
     bindState.spy.mockResolvedValue(DOC)
     const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
     await waitFor(() => screen.getByTestId('stage-preview-figure'))
@@ -270,7 +276,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
       scene: new THREE.Scene(),
       camera,
       dispose: vi.fn(),
-    } as unknown as { scene: { children: unknown[] }; dispose: () => void }))
+    } as unknown as StubStage)) // the camera/controls ride the real Scene beside the stub — the cast seats the stub shape without restating it
     bindState.spy.mockResolvedValue(DOC)
     const { rerender } = render(h(PoserFigureStage, { identityModel: 'anny' }))
     await waitFor(() => screen.getByTestId('stage-preview-figure'))

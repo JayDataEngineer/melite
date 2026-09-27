@@ -19,6 +19,18 @@ const call: EstateCall = async (method, path, body) => {
   throw new Error(`unexpected path ${path}`)
 }
 
+// THE RUN CONTEXT (li-aq.3, the test-tier net): execute() takes the
+// harness's ToolRunContext as a REQUIRED second argument; the bodies
+// under test read nothing of it (no exec, no token, no deferral), so
+// one honest builder serves every site instead of a dozen `as never`.
+type RunCtx = Parameters<typeof tool.execute>[1];
+// the projection's second arm (the harness's JsonValue, derived from
+// the seam rather than imported — the spec exercises the undefined
+// fallback, so it casts the EMPTY value honestly at each site)
+type MetaArg = Parameters<NonNullable<typeof tool.output.presentationMeta>>[1];
+const runCtx = (extra: Record<string, unknown> = {}): RunCtx =>
+  ({ signal: AbortSignal.timeout(2000), ...extra }) as unknown as RunCtx;
+
 const tool = defineCardTool(call, {
   name: "music",
   flow: "music",
@@ -36,12 +48,12 @@ describe("the card-tool builder", () => {
   })
 
   it("presentCall previews the card's own driving field", () => {
-    const out = tool.presentCall?.({ model: "yue2", prompt: "warm indie pop with female vocals" }) as Record<string, unknown>
+    const out = tool.presentCall?.({ model: "yue2", prompt: "warm indie pop with female vocals" }) as unknown as Record<string, unknown>
     assert.equal(out.rawInput, "model=yue2 prompt=warm indie pop with female vocals")
   })
 
   it("presentCall previews the unstated default model", () => {
-    const out = tool.presentCall?.({ prompt: "p" }) as Record<string, unknown>
+    const out = tool.presentCall?.({ prompt: "p" }) as unknown as Record<string, unknown>
     assert.ok(String(out.rawInput).startsWith("model=music3 "))
   })
 
@@ -63,11 +75,13 @@ describe("the card-tool builder", () => {
     // (the defineTool wrapper validates args before the presenter runs —
     // invalid/undefined args → undefined, the same arm)
     const ARGS = { prompt: "p" }
-    const refused = tool.presentResult?.(ARGS, { meta: { model: "music3", error: "x" } })
+    const envelope = (meta: Record<string, unknown>): Parameters<NonNullable<typeof tool.presentResult>>[1] =>
+      ({ content: [], isError: false, meta }) as unknown as Parameters<NonNullable<typeof tool.presentResult>>[1]
+    const refused = tool.presentResult?.(ARGS, envelope({ model: "music3", error: "x" }))
     assert.deepEqual(refused, { card: "generic", title: "Music [music3] — REFUSED" })
-    const done = tool.presentResult?.(ARGS, { meta: { model: "music3", run_id: "r2" } })
+    const done = tool.presentResult?.(ARGS, envelope({ model: "music3", run_id: "r2" }))
     assert.deepEqual(done, { card: "generic", title: "Music [music3] → r2" })
-    assert.equal(tool.presentResult?.(ARGS, { content: {} }), undefined)
+    assert.equal(tool.presentResult?.(ARGS, { content: {} } as unknown as Parameters<NonNullable<typeof tool.presentResult>>[1]), undefined)
   })
 
   it("execute walks BOTH doors and returns the queued envelope", async () => {
@@ -75,7 +89,7 @@ describe("the card-tool builder", () => {
     // two-phase respond: drafts answers d1, start answers the run
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { run_id: "r5", status: "running" } }
-    const out = await tool.execute({ model: "yue2", prompt: "p", lyrics: "l" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ model: "yue2", prompt: "p", lyrics: "l" }, runCtx()) as Record<string, unknown>
     assert.deepEqual(out, { flow: "music", model: "yue2", draft_id: "d1", run_id: "r5", status: "running" })
     // DOOR ONE carries the model as the stage's service + the params stanza
     assert.deepEqual(draftBody, {
@@ -89,40 +103,40 @@ describe("the card-tool builder", () => {
   it("execute resolves the unstated model to the card's default", async () => {
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { run_id: "r6" } }
-    const out = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.equal(out.model, "music3")
     assert.equal(out.status, "queued")
   })
 
   it("refuses LOUD on a draftless draft POST", async () => {
     respond = () => ({ draftId: "" })
-    const out = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.deepEqual(out, { flow: "music", model: "music3", error: "gateway draft POST returned no draftId" })
   })
 
   it("the named refusal arm (the {error} body)", async () => {
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { error: "duration out of bounds" } }
-    const out = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.deepEqual(out, { flow: "music", model: "music3", error: "duration out of bounds" })
   })
 
   it("refuses on a runless start", async () => {
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { status: "queued" } }
-    const out = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.deepEqual(out, { flow: "music", model: "music3", error: "gateway start returned no run_id" })
   })
 
   it("GatewayError maps to the error arm (named → body → status)", async () => {
     respond = () => { throw new GatewayError(400, "raw body text", "named refusal") }
-    const out = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.equal(out.error, "named refusal")
     respond = () => { throw new GatewayError(500, "plain body", "") }
-    const out2 = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out2 = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.equal(out2.error, "plain body")
     respond = () => { throw new GatewayError(502, "", "") }
-    const out3 = await tool.execute({ prompt: "p" }, undefined) as Record<string, unknown>
+    const out3 = await tool.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
     assert.equal(out3.error, "estate 502")
   })
 
@@ -134,7 +148,7 @@ describe("the card-tool builder", () => {
       parameters: { prompt: { type: "string", required: true } } as never,
       defaultModel: "music3", previewField: "prompt",
     })
-    await assert.rejects(() => aborted.execute({ prompt: "p" }, { signal: AbortSignal.abort() }))
+    await assert.rejects(() => aborted.execute({ prompt: "p" }, runCtx({ signal: AbortSignal.abort() })))
   })
 
   it("declared JSON-array params normalize before both doors", async () => {
@@ -153,12 +167,12 @@ describe("the card-tool builder", () => {
     const out = await unwrapping.execute({
       calls: '[{"text":"a"}]',
       clips: '[{"src":"line.flac"}]',
-    }, undefined) as Record<string, unknown>
+    }, runCtx()) as Record<string, unknown>
     assert.equal(out.run_id, "r8")
-    assert.deepEqual(draftBody.stages?.[0]?.params?.calls, [{ text: "a" }])
-    assert.deepEqual(draftBody.stages?.[0]?.params?.clips, [{ src: "line.flac" }])
-    assert.deepEqual(startBody.calls, [{ text: "a" }])
-    assert.deepEqual(startBody.clips, [{ src: "line.flac" }])
+    assert.deepEqual((draftBody.stages as Array<{ params: Record<string, unknown> }> | undefined)?.[0]?.params?.["calls"], [{ text: "a" }])
+    assert.deepEqual((draftBody.stages as Array<{ params: Record<string, unknown> }> | undefined)?.[0]?.params?.["clips"], [{ src: "line.flac" }])
+    assert.deepEqual(startBody["calls"], [{ text: "a" }])
+    assert.deepEqual(startBody["clips"], [{ src: "line.flac" }])
   })
 
   it("declared JSON-array params leave native arrays and invalid JSON strings untouched", async () => {
@@ -172,14 +186,14 @@ describe("the card-tool builder", () => {
     })
     const nativeCalls = [{ text: "native" }]
     const nativeClips = [{ src: "native.flac" }]
-    await arrays.execute({ calls: nativeCalls, clips: nativeClips }, undefined)
+    await arrays.execute({ calls: nativeCalls, clips: nativeClips }, runCtx())
     assert.deepEqual(startBody.calls, nativeCalls)
     assert.deepEqual(startBody.clips, nativeClips)
 
     phase = 0
     const objectJson = '{"text":"not an array"}'
     const malformed = '[{"src":'
-    await arrays.execute({ calls: objectJson, clips: malformed }, undefined)
+    await arrays.execute({ calls: objectJson, clips: malformed }, runCtx())
     assert.equal(startBody.calls, objectJson)
     assert.equal(startBody.clips, malformed)
   })
@@ -212,7 +226,7 @@ describe("the card-tool builder", () => {
       parameters: { prompt: { type: "string", required: true } } as never,
       defaultModel: "default", previewValue: (args) => `shot=${String(args.prompt)}`,
     })
-    const out = custom.presentCall?.({ prompt: "hero" }) as Record<string, unknown>
+    const out = custom.presentCall?.({ prompt: "hero" }) as unknown as Record<string, unknown>
     assert.equal(out.rawInput, "model=default shot=hero")
   })
 
@@ -222,17 +236,17 @@ describe("the card-tool builder", () => {
       parameters: { other: { type: "string" } } as never,
       defaultModel: "default", previewField: "missing",
     })
-    const preview = fallback.presentCall?.({ other: "x" }) as Record<string, unknown>
+    const preview = fallback.presentCall?.({ other: "x" }) as unknown as Record<string, unknown>
     assert.equal(preview.rawInput, "model=default missing=")
-    const meta = tool.output.presentationMeta?.(undefined, undefined) as Record<string, unknown>
+    const meta = tool.output.presentationMeta?.(undefined, undefined as unknown as MetaArg) as Record<string, unknown>
     assert.deepEqual(meta, { flow: 'music', model: '?' })
     const fullMeta = tool.output.presentationMeta?.(undefined, {
       flow: 'music', model: 'music3', run_id: '', draft_id: 'd', status: 'queued', error: 'no',
     }) as Record<string, unknown>
     assert.deepEqual(fullMeta, { flow: 'music', model: 'music3', draft_id: 'd', status: 'queued', error: 'no' })
-    const rendered = tool.output.render?.(undefined, undefined) as Array<{ text?: string }>
+    const rendered = tool.output.render?.(undefined, undefined as unknown as MetaArg) as Array<{ text?: string }>
     assert.deepEqual(rendered, [{ type: 'text', text: 'music [?] → ? — poll with run_status' }])
-    const result = tool.presentResult?.({ prompt: 'p' }, { meta: {} }) as Record<string, unknown>
+    const result = tool.presentResult?.({ prompt: 'p' }, { meta: {} } as unknown as Parameters<NonNullable<typeof tool.presentResult>>[1]) as unknown as Record<string, unknown>
     assert.deepEqual(result, { card: 'generic', title: 'Music [?] → ?' })
   })
 
@@ -244,17 +258,17 @@ describe("the card-tool builder", () => {
       parameters: { calls: { type: 'json' }, clips: { type: 'json' } } as never,
       defaultModel: 'default', jsonArrayParams: ['calls', 'clips'],
     })
-    const out = await partial.execute({ calls: '[]' }, undefined) as Record<string, unknown>
+    const out = await partial.execute({ calls: '[]' }, runCtx()) as Record<string, unknown>
     assert.equal(out.run_id, 'r1')
   })
 
   it('non-string envelope members take the defensive refusal and success arms', async () => {
     respond = () => ({ draftId: 42 })
-    const noDraft = await tool.execute({ prompt: 'p' }, undefined) as Record<string, unknown>
+    const noDraft = await tool.execute({ prompt: 'p' }, runCtx()) as Record<string, unknown>
     assert.match(String(noDraft.error), /no draftId/)
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: 'd1' } : { error: 7, run_id: 'r1' } }
-    const started = await tool.execute({ prompt: 'p' }, undefined) as Record<string, unknown>
+    const started = await tool.execute({ prompt: 'p' }, runCtx()) as Record<string, unknown>
     assert.equal(started.run_id, 'r1')
     assert.equal(started.error, undefined)
   })

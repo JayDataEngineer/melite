@@ -284,6 +284,17 @@ describe("THE AUDIT-ADDED LAWS", () => {
       if (/RUN_SEGMENT\s*=\s*\/\^/.test(code)) {
         offenders.push(f + " — a private run-segment charset (the class that refused minted names)");
       }
+      // THE RE-SPELLING SIGNATURE (li-aq.3, the rules audit's M-4):
+      // the private copies the NAME-scan missed both spelled the
+      // grammar as the lookahead+charset combo — dots-only refused
+      // by negative lookahead over the filename charset. Ban the
+      // SHAPE (a new name sails past a name list; the signature
+      // cannot). A genuinely different law (wire names, run ids)
+      // carries neither the charset with dots NOR the dots-only
+      // lookahead.
+      if (/\(\?!\\\.{1,2}\$\)\[A-Za-z0-9\._-\]/.test(code)) {
+        offenders.push(f + " — the media segment grammar re-spelled as a private regex; import segmentConfined from @melite/contracts/mediaKinds");
+      }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
@@ -302,10 +313,14 @@ describe("THE AUDIT-ADDED LAWS", () => {
       if (decls.length > 0) {
         offenders.push(f + " — declares a bare StageRow (FlowStageRow or RunStageRow)");
       }
-      const view = [...code.matchAll(/(?:export\s+)?interface\s+BenchStageRow\b/g)];
+      // L13 (li-aq.3): the ban matched only the INTERFACE spelling —
+      // `type BenchStageRow = …` (the alias) sailed through, the
+      // same evasion class RULE 10's name-scan had. Both spellings
+      // die; only the storage row keeps the name.
+      const view = [...code.matchAll(/(?:export\s+)?(?:interface|type)\s+BenchStageRow\b/g)];
       const storage = f.endsWith("packages/estate/drafts/src/bench.ts");
       if (view.length > 0 && !storage) {
-        offenders.push(f + " — a BenchStageRow that is not the storage row (BenchStageView)");
+        offenders.push(f + " — a BenchStageRow that is not the storage row (BenchStageView; interface OR type alias — both spell the presentation row)");
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);

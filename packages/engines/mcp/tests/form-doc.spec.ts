@@ -39,12 +39,12 @@ const TOOLS = [
 
 describe("mcpParams (the declared contract)", () => {
   it("serializes the golden literal (anti-drift: the form IS the wire gate)", () => {
-    const env = mcpParams(TOOLS).toJSON() as { uid: number; refs: Record<string, { type: string; dict?: Record<string, number>; meta?: Record<string, unknown> }> };
+    const env = mcpParams(TOOLS).toJSON() as unknown as { uid: number; refs: Record<string, { type: string; dict?: Record<string, number>; meta?: Record<string, unknown> }> }; // toJSON's Schema generics never overlap the pinned plain-tree shape; the asserts below pin the runtime envelope
     // the dict lives on the object-typed ref, not the envelope head
     const root = env.refs[String(env.uid)]!;
     const dict = root.dict as Record<string, number>;
     assert.deepEqual(Object.keys(dict).sort(), ["args", "tool"]);
-    const tool = env.refs[String(dict["tool"])] as Record<string, Record<string, unknown>>;
+    const tool = env.refs[String(dict["tool"])] as unknown as Record<string, Record<string, unknown>>; // the ref union carries its 'type' tag; the wall reads it as the generic resolved tree
     assert.equal(tool["type"], "string");
     const toolMeta = tool["meta"] as Record<string, Record<string, unknown>>;
     const toolExtra = toolMeta["extra"] as Record<string, unknown>;
@@ -53,7 +53,7 @@ describe("mcpParams (the declared contract)", () => {
       { value: "render", label: "render" },
     ]);
     assert.equal(toolMeta["description"], "Tool");
-    const args = env.refs[String(dict["args"])] as Record<string, Record<string, unknown>>;
+    const args = env.refs[String(dict["args"])] as unknown as Record<string, Record<string, unknown>>; // same resolved-tree read as the tool ref above
     assert.equal(args["type"], "string");
     const argsMeta = args["meta"] as Record<string, Record<string, unknown>>;
     assert.equal(argsMeta["description"], "Arguments");

@@ -14,17 +14,17 @@ import { ControlRow, SectionLabel, EmptyState, PaneHeader, PaneShell, Skeleton, 
 afterEach(cleanup)
 
 test('ControlRow: the label + control line, density variants', () => {
-  render(h(ControlRow, { label: 'Steps' }, 'the-control'))
+  render(h(ControlRow, { label: 'Steps', children: 'the-control' })) // React types seat children in props; the rest-arg child renders identically
   const row = screen.getByText('Steps').closest('label')
   expect(row).not.toBeNull()
   expect(row!.textContent).toContain('the-control')
   cleanup()
-  render(h(ControlRow, { label: 'Fine', density: 'sm' }, 'x'))
+  render(h(ControlRow, { label: 'Fine', density: 'sm', children: 'x' })) // same children-in-props law as above
   expect(screen.getByText('Fine').closest('label')).not.toBeNull()
 })
 
 test('SectionLabel: the uppercase heading with its tail', () => {
-  render(h(SectionLabel, { tail: '3/9' }, 'Images'))
+  render(h(SectionLabel, { tail: '3/9', children: 'Images' })) // same children-in-props law as above
   expect(screen.getByText('Images')).not.toBeNull()
   expect(screen.getByText('3/9')).not.toBeNull()
 })
@@ -55,7 +55,7 @@ test('PaneHeader/PaneShell: strip and preview chrome', () => {
 })
 
 test('Tip: absent tip passes the child through unchanged; present wraps the anchor', () => {
-  const bare = render(h(Tip, { tip: undefined }, h('button', { type: 'button' }, 'Go'))).container
+  const bare = render(h(Tip, { tip: undefined, children: h('button', { type: 'button' }, 'Go') })).container // same children-in-props law as above
   expect(bare.querySelector('button')!.textContent).toBe('Go')
   expect(bare.querySelector('span')).toBeNull()
 })
@@ -77,7 +77,7 @@ test('Tip anchor: a REAL box, never display:contents — the bubble seats by the
 })
 
 test('Skeleton: the pane grammar\u2019s loading face carries the slot hook and merges classes', () => {
-  const el = render(h(Skeleton, { 'data-testid': 'sk', className: 'h-4 w-4' })).container
+  const el = render(h(Skeleton, { className: 'h-4 w-4' })).container // the testid hook was never queried — every assertion reads the data-slot seat
   const node = el.querySelector('[data-slot="skeleton"]')!
   expect(node.getAttribute('class')).toContain('h-4')
   expect(node.getAttribute('class')).toContain('skeleton')

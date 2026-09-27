@@ -114,7 +114,9 @@ test("family scoping: krea-2's loras never leak", () => {
 
 test("krea lora rows: the 12 rows pinned (id/label/strength)", () => {
   const rows = svc.modRows("loras", "krea-2");
-  assert.ok(rows.every((r) => r.source_url.startsWith("https://")), "no link, no row");
+  // source_url is optional-statically but the wall's own law (no
+  // link, no row) pins it present on every row — the rows below prove it.
+  assert.ok(rows.every((r) => r.source_url!.startsWith("https://")), "no link, no row");
   assert.deepEqual(
     rows.map((r) => ({ id: r.id, label: r.label, s: r.default_strength })),
     [

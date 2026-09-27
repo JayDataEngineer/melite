@@ -232,7 +232,7 @@ test('GRID: declared columns grid the group; prompts span; width floors at one',
   // THE SUBMENU LAW (stroke 89): the ungrouped contrast row seats
   // behind its own tab — switching renders its claim BARE (the
   // stacked-all-groups render is retired; the panel is exclusive).
-  fireEvent.click(document.querySelector('[data-form-group-tab="general"]'))
+  fireEvent.click(document.querySelector('[data-form-group-tab="general"]')!) // the general tab seated above (the click itself would throw on null)
   expect(screen.getAllByTestId('claimed').length).toBe(1)
   // THE GRID IS THE LAW (2026-09-21, the operator's catch): the
   // undeclared group grids 2 columns by DEFAULT — the form-card

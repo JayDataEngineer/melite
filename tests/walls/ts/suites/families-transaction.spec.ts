@@ -38,7 +38,9 @@ const GOOD_DECL = {
   engine: "comfyui",
   form: "form_generate",
   genre: "misc",
-  variants: [{ id: "base", route: "", cells: [] }],
+  // the variant row carries its label + group (the VariantRow seam:
+  // label/group always written — the probe authors a valid row).
+  variants: [{ id: "base", label: "Base", group: "Variant", route: "", cells: [] }],
 };
 
 describe("family registration is a revertible effect", () => {

@@ -14,6 +14,10 @@ import {
 
 type Fetch = typeof globalThis.fetch;
 
+// Suite lib is ES2023 without DOM, so the DOM ReadableStream result type is
+// unavailable; reader.read() resolves to the IteratorResult shape instead.
+type ReadableStreamReadResult<T> = IteratorResult<T>;
+
 function json(value: unknown, status = 200): Response {
   return new Response(JSON.stringify(value), {
     status,
@@ -42,11 +46,12 @@ function queueStatus(overrides: Record<string, unknown> = {}): Record<string, un
   };
 }
 
-async function rejectsCode(promise: Promise<unknown>, code: string): Promise<Error> {
+async function rejectsCode(promise: Promise<unknown>, code: string): Promise<ManagerClientError> {
   try {
     await promise;
   } catch (error) {
     assert.ok(error instanceof ManagerClientError);
+    if (!(error instanceof ManagerClientError)) throw error;
     assert.equal(error.code, code);
     return error;
   }
@@ -381,7 +386,7 @@ describe("ManagerClient queue status", () => {
     });
     await rejectsCode(sleeping.waitForQueue({ signal: sleepController.signal, timeoutMs: 50, pollIntervalMs: 1 }), "cancelled");
     vi.useFakeTimers();
-    let responseSignal: AbortSignal | undefined;
+    let responseSignal: AbortSignal | null | undefined;
     let rejectRead!: (error: unknown) => void;
     const pendingRead = new Promise<ReadableStreamReadResult<Uint8Array>>((_resolve, reject) => {
       rejectRead = reject;
@@ -586,8 +591,10 @@ describe("ManagerProvider validation and routing", () => {
     assert.equal((await subject.install({ ...baseRequest, version: "latest" }, signal)).installed, true);
     assert.equal(post.mock.calls.length, 2);
     assert.equal(waitForQueue.mock.calls.length, 1);
-    assert.equal((waitForQueue.mock.calls[0]?.[0] as { signal?: AbortSignal }).signal, signal);
-    assert.equal((getJson.mock.calls[0]?.[1] as { signal?: AbortSignal }).signal, signal);
+    const waitArgs = waitForQueue.mock.calls[0] as unknown as [{ signal?: AbortSignal }] | undefined; // intentionally partial: untyped vi.fn reports a zero-arg tuple; test inspects the runtime signal arg
+    const getArgs = getJson.mock.calls[0] as unknown as [string, { signal?: AbortSignal }] | undefined; // intentionally partial: untyped vi.fn reports a zero-arg tuple; test inspects the runtime signal arg
+    assert.equal(waitArgs?.[0]?.signal, signal);
+    assert.equal(getArgs?.[1]?.signal, signal);
   });
 
   test("rejects missing registry ids and blank registry URLs", async () => {
@@ -622,9 +629,11 @@ describe("ManagerProvider model catalog", () => {
     assert.equal((await subject.installModel({ ...model, savePath: "" })).installed, true);
     const signal = new AbortController().signal;
     assert.equal((await subject.installModel(model, signal)).installed, true);
-    assert.equal((post.mock.calls.at(-1)?.[2] as { signal?: AbortSignal }).signal, signal);
-    assert.equal((waitForQueue.mock.calls.at(-1)?.[0] as { signal?: AbortSignal }).signal, signal);
-    const payload = post.mock.calls[0]?.[1] as Record<string, unknown>;
+    const lastPostArgs = post.mock.calls.at(-1) as unknown as [string, unknown, { signal?: AbortSignal }] | undefined; // intentionally partial: untyped vi.fn reports a zero-arg tuple; test inspects the runtime signal arg
+    const lastWaitArgs = waitForQueue.mock.calls.at(-1) as unknown as [{ signal?: AbortSignal }] | undefined; // intentionally partial: untyped vi.fn reports a zero-arg tuple; test inspects the runtime signal arg
+    assert.equal(lastPostArgs?.[2]?.signal, signal);
+    assert.equal(lastWaitArgs?.[0]?.signal, signal);
+    const payload = (post.mock.calls[0] as unknown as [string, Record<string, unknown>] | undefined)?.[1]; // intentionally partial: untyped vi.fn reports a zero-arg tuple; test inspects the runtime payload
     assert.deepEqual(payload, { name: "one.bin", type: "checkpoint", base: "SD", save_path: "models/checkpoints", url: model.url, filename: model.filename, ui_id: model.id });
   });
 

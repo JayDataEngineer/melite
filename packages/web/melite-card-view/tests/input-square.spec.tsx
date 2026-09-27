@@ -6,7 +6,7 @@
  */
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, expect, test, vi, type Mock } from 'vitest'
 import { createElement, useRef } from 'react'
 
 import { InputSquare, isImageUrl, readAsDataUrl } from '../src/client/input-square.tsx'
@@ -120,7 +120,7 @@ function stubUpload(path: string): void {
     new Response(JSON.stringify({ path }), { status: 200, headers: { 'content-type': 'application/json' } }))
 }
 
-let hostEdit: ReturnType<typeof vi.fn>
+let hostEdit: Mock<(name: string, v: unknown) => void>
 /** The media library over the mounted media namespace (stroke 81:
  *  the square carries no transport — the host injects this loader,
  *  the same verb CardsTab injects into the form wire). */
@@ -135,8 +135,8 @@ function HostSquare(): ReturnType<typeof createElement> {
   const values: SpecValues = { input_image: 'mesh.png' }
   // ONE edit fn across renders (a fresh vi.fn() per render would
   // leave the assertion holding a stale reference)
-  const editRef = useRef<ReturnType<typeof vi.fn> | null>(null)
-  if (editRef.current === null) editRef.current = vi.fn()
+  const editRef = useRef<Mock<(name: string, v: unknown) => void> | null>(null)
+  if (editRef.current === null) editRef.current = vi.fn<(name: string, v: unknown) => void>()
   hostEdit = editRef.current
   const onEdit = editRef.current
   const wire = {
@@ -241,7 +241,9 @@ test('the provider: From file rides the hidden OS picker', async () => {
   await user.click(screen.getByRole('button', { name: /Input image source/ }))
   // spy EVERY file input (the square's bare arm renders one too);
   // the law: the menu's From file drives ONE of them
-  const inputs = Array.from(document.querySelectorAll('input[type=file]'))
+  // the file inputs ARE HTMLInputElements (the selector only matches
+  // input elements) — the honest downcast seats .click's own signature
+  const inputs = Array.from(document.querySelectorAll('input[type=file]')) as HTMLInputElement[]
   expect(inputs.length > 0).toBe(true)
   const spies = inputs.map((i) => vi.spyOn(i, 'click').mockImplementation(() => {}))
   const item = screen.getByText('From file').closest('[role="menuitem"], [role="option"], li')

@@ -141,7 +141,7 @@ test("THE NULL-UNSET ARM (commission 033's gap): a null param DELETES its key â€
     stage: "s_0", params: { voice_name: null, style: "warm" }, expect_rev: 0,
   });
   assert.equal(cut.rev, 1);
-  const row = getBench(drafts, "unset").stages[0]! as Record<string, unknown>;
+  const row = (getBench(drafts, "unset").stages as Array<Record<string, unknown>>)[0]!; // the test seeded an array of stage records; the served row types stages as JsonValue
   const params = row["params"] as Record<string, unknown>;
   assert.equal("voice_name" in params, false, "the null key is GONE, not a literal null");
   assert.equal(params["style"], "warm", "sibling keys in the same patch land");
@@ -151,7 +151,7 @@ test("THE NULL-UNSET ARM (commission 033's gap): a null param DELETES its key â€
   // UNDO resurrects: the inverse carries params_before, the deleted
   // key's old value rides it home.
   await undoBench(drafts, "unset", {});
-  const undone = (getBench(drafts, "unset").stages[0] as Record<string, unknown>)["params"] as Record<string, unknown>;
+  const undone = ((getBench(drafts, "unset").stages as Array<Record<string, unknown>>)[0]!["params"]) as Record<string, unknown>; // same seeded-array read as above
   assert.equal(undone["voice_name"], "ann", "undo restores the deleted key");
   assert.equal("style" in undone, false, "the same patch's addition reverts");
 });

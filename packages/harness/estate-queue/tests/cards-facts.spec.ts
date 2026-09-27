@@ -41,10 +41,13 @@ describe("deriveDecls (defs + facts -> rows)", () => {
     expect(r?.admits).toEqual(["image_*", "dup", "studio_w"]);
   });
   it("a wrapped card projects the schemaCarrier instead of schema", () => {
+    // Intentionally off-shape (schema: 7 + a function carrier):
+    // the carrier-projection arm owns this input, so convert via
+    // unknown — the literal has no overlap with Partial<CardDefinition>.
     const wrapped = def({
       schema: 7 as never,
       schemaCarrier: Object.assign(() => undefined, { dict: { ckpt: 1 } }),
-    } as Partial<CardDefinition> as never);
+    } as unknown as Partial<CardDefinition> as never);
     const rows = deriveDecls(new Map([["w", wrapped]]), facts());
     expect(rows["w"]?.schemaNames).toEqual(["ckpt"]);
   });

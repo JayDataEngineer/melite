@@ -34,6 +34,7 @@ import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 const BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-s1',
+  sessionKey: 's1',
   rev: 7,
   stages: [
     {
@@ -148,7 +149,7 @@ test('THE PER-KEY MEMORY (the audit B2): a later success on an UNRELATED key doe
 
 test('THE STALE-LIST FENCE (the audit A4): Run ALL on a failed refresh refuses — never composes from last-good state', async () => {
   const { calls } = stubWire()
-  mountTab({ status: 'failed', failure: { message: 'door down' } })
+  mountTab({ status: 'failed' as const, failure: { message: 'door down' } })
   const user = userEvent.setup()
   const btn = await screen.findByRole('button', { name: /Play/ }, { timeout: 4000 })
   await user.click(btn)

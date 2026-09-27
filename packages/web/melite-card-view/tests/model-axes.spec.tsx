@@ -419,9 +419,9 @@ test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing p
     user: state.user,
     onSet,
   }))
-  const model = screen.getByLabelText('Model')
+  const model = screen.getByLabelText('Model') as HTMLSelectElement
   expect(model.value).toBe('seedvr2_ema')
-  const variant = screen.getByLabelText('Variant')
+  const variant = screen.getByLabelText('Variant') as HTMLSelectElement
   expect(variant.value).toBe('3b')
   // NO SEAT: the card owns no recipe field — a Recipe select here
   // could only ever persist the compose-door's poison key
@@ -442,8 +442,8 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
     user: state.user,
     onSet,
   }))
-  expect(screen.getByLabelText('Variant').value).toBe('lightning')
-  expect(screen.getByLabelText('Quant').value).toBe('lightning4')
+  expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('lightning')
+  expect((screen.getByLabelText('Quant') as HTMLSelectElement).value).toBe('lightning4')
   expect(screen.queryByLabelText('Recipe')).toBeNull()
   // switch to Standard: the Quant axis re-seeds to int8 (the standard
   // chain) — and still no recipe key anywhere in the user layer

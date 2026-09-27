@@ -68,7 +68,7 @@ function mountRun(run: {
       actions: actions as never,
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "run", runId: run.runId, status: run.status, draftId: run.draftId, stages: run.stages, lastFrame: undefined },
     }),
   } as never));

@@ -22,7 +22,7 @@ import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { openDraftsDomain } from "../src/store.ts";
 import type { DraftsDomainSpec } from "../src/spec.js";
 
-export const sig = new AbortController().signal;
+export const sig: AbortSignal = new AbortController().signal; // explicit: the inferred type names @types/node's internal web-globals module, which declaration emit cannot name
 
 // TMP OWNERSHIP (stroke 13): every bootCtx tree is owned — the
 // disposer runs through onTestFinished so a leaked tree can never
@@ -40,14 +40,14 @@ export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDo
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
-  await ctx.plugin(Storage as never);
+  await ctx.plugin(Storage as never, undefined as never); // Storage takes no config; cordis Spread<GetPluginConfig> keeps the config arg positional
   await ctx.plugin(
     { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
-    { root: join(root, "storage") },
+    { root: join(root, "storage") } as never, // the plugin is cast to never so its Config schema cannot name the static type; the backend validates the shape at mount
   );
   await ctx.plugin(
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
-    { backend: "json" },
+    { backend: "json" } as never, // same never-plugin law as the json backend above
   );
   return { ctx, domain: await openDraftsDomain(ctx) };
 }

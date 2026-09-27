@@ -35,16 +35,23 @@ vi.mock("../src/comfyui-control.ts", () => ({
 
 import { Context } from "@deepseek-ai/cordis";
 import { SettingsProvider } from "@deepseek-ai/dsh-settings";
+import type { SettingsUpdateSource } from "@deepseek-ai/dsh-settings";
 
 /** In-memory settings provider (the cookbook's load/persist half):
  *  lets the host's settings section bind in a node fiber without a
  *  document on disk. */
 class MemorySettings extends SettingsProvider {
+  readonly writable = true;
   doc: Record<string, unknown> = {};
-  async load(): Promise<Record<string, unknown>> {
+  protected async load(): Promise<Record<string, unknown>> {
     return this.doc;
   }
-  async persist(): Promise<void> {}
+  protected async persist(): Promise<void> {}
+  /** Test driver for the protected push-external-changes seam
+   *  (subclasses may call publish; outsiders may not). */
+  push(doc: Record<string, unknown>, source: SettingsUpdateSource = "provider"): void {
+    this.publish(doc, source);
+  }
 }
 import {
   ComfyUIHostService,
@@ -55,8 +62,11 @@ import {
 
 const boot = async (config: Record<string, unknown> = { url: "http://pin:8188" }) => {
   const ctx = new Context();
-  await ctx.plugin(comfyuiHostProvider as never, config as never);
-  const host = ctx.get("comfyui") as ComfyUIHostService;
+  await ctx.plugin(comfyuiHostProvider, config);
+  // Same fiber owns the host provider, so 'comfyui' IS a
+  // ComfyUIHostService at runtime — the static type is the card
+  // plane's ComfyUIService augmentation, hence unknown-first.
+  const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
   return { ctx, host };
 };
 
@@ -119,7 +129,7 @@ describe("the supervised contract", () => {
     expect(host.baseUrl()).toBe("http://pin:8188");
     host.setSource(() => ({ url: "http://stale:8188" }));
     host.resetForTests();
-    expect(host.baseUrl()).toBe("http://pin:8188", "the ctor config governs again");
+    expect(host.baseUrl()).toBe("http://pin:8188");
   });
 });
 
@@ -202,16 +212,16 @@ describe("the supervisor lifecycle (down, recovery, transport-dead traffic)", ()
 describe("the settings section (the cookbook bind)", () => {
   it("a mounted settings provider takes over as the live source and onChange repoints", async () => {
     const ctx = new Context();
-    await ctx.plugin(MemorySettings as never);
-    await ctx.plugin(comfyuiHostProvider as never, { url: "http://pin:8188" } as never);
-    const host = ctx.get("comfyui") as ComfyUIHostService;
+    await ctx.plugin(MemorySettings);
+    await ctx.plugin(comfyuiHostProvider, { url: "http://pin:8188" });
+    const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
     // registration called setSource + onChange once with the entry
     // (same pin — the no-op arm); the section's scope now governs.
     expect(host.baseUrl()).toBe("http://pin:8188");
     // a section write through the provider's document repoints live
     const prov = ctx.get("settings") as unknown as MemorySettings;
     prov.doc = { comfyui: { url: "http://doc-written:8188" } };
-    prov.publish(prov.doc, "provider");
+    prov.push(prov.doc, "provider");
     host.repoint();
     expect(host.baseUrl()).toBe("http://doc-written:8188");
   });

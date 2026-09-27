@@ -31,7 +31,12 @@ import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/r
 import { skillIndex } from "../../../../packages/harness/melite-tools/src/tools/skill-index.ts";
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
 
-const GW = "http://127.0.0.1:9"; // never dialed — construction + presentCall only
+import type { EstateRequest } from "../../../../packages/harness/melite-tools/src/estate.ts";
+
+// the factories' seam drifted gateway-string → request-closure; this
+// wall never dials (construction + presentCall only), so the undialed
+// URL stands in for the closure — one cast here, not nine below.
+const GW = "http://127.0.0.1:9" as unknown as EstateRequest;
 const STUB_LLM = { complete: async () => ({ text: "stub" }) };
 
 const ALL: Array<[string, ToolDefinition]> = [

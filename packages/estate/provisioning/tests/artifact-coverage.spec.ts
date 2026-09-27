@@ -13,8 +13,10 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {
+import type {
   ArtifactInput,
+} from "../src/index.ts";
+import {
   ProvisioningError,
   VerifiedArtifactWriter,
   isValidSha256,
@@ -72,7 +74,7 @@ function trackedAsyncSource(options: {
   readonly reject?: unknown;
   readonly returnError?: unknown;
   readonly hasReturn?: boolean;
-}): { readonly source: ArtifactInput; readonly returned: () => number; readonly next: ReturnType<typeof vi.fn> } {
+}): { source: ArtifactInput; readonly returned: () => number; readonly next: ReturnType<typeof vi.fn> } {
   let returned = 0;
   let index = 0;
   const next = vi.fn(async (): Promise<IteratorResult<Uint8Array>> => {
@@ -80,7 +82,7 @@ function trackedAsyncSource(options: {
     const chunk = options.chunks?.[index++];
     return chunk === undefined ? { done: true, value: undefined } : { done: false, value: chunk };
   });
-  const iterator: Record<string, unknown> = { next };
+  const iterator: Record<PropertyKey, unknown> = { next };
   if (options.hasReturn !== false) {
     iterator.return = vi.fn(async (): Promise<IteratorResult<Uint8Array>> => {
       returned += 1;
@@ -89,10 +91,10 @@ function trackedAsyncSource(options: {
     });
   }
   iterator[Symbol.asyncIterator] = function (): AsyncIterableIterator<Uint8Array> {
-    return this as AsyncIterableIterator<Uint8Array>;
+    return this as unknown as AsyncIterableIterator<Uint8Array>; // intentionally partial mock: hand-built iterator only implements next/return for the writer seam
   };
   return {
-    source: { [Symbol.asyncIterator]: () => iterator as AsyncIterableIterator<Uint8Array> } as unknown as ArtifactInput,
+    source: { [Symbol.asyncIterator]: () => iterator as unknown as AsyncIterableIterator<Uint8Array> } as unknown as ArtifactInput, // intentionally partial mock: record-backed iterator stands in for a byte stream
     returned: () => returned,
     next,
   };

@@ -14,8 +14,24 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import { comfyManage } from '../src/tools/comfy-manage.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import type { JsonValue } from '../src/types.ts'
+import { fakeExec } from './fake-exec.ts'
+
+// The render's value is the tool's own ManageResult (a JsonValue); the
+// walls feed literals/rows that are JSON by construction.
+const asJson = (value: unknown): JsonValue => value as JsonValue
+
+// The foreign seat's undeclared failure code this wall simulates —
+// declared here (type-only, erased at runtime) so the RemoteError seam
+// accepts the shape a real seat would throw.
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'manage/broken': { readonly action?: string };
+  }
+}
 import { dispatchManage } from '../../estate-queue/src/managePlane.ts'
 import type { ManageCtx } from '../../estate-queue/src/managePlane.ts'
 
@@ -24,15 +40,17 @@ function mockRequest(handler: (method: string, path: string, body: unknown) => u
   request: EstateRequest;
 } {
   const seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }> = []
-  const request = (async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method: method as string, path: path as string, body, timeoutMs: timeoutMs as number })
-    return handler(method as string, path as string, body)
-  }) as unknown as EstateRequest
+  // Contextually typed by the EstateRequest seam — params inherit the
+  // transport signature, so no implicit-any and no casts ride.
+  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
+    seen.push({ method, path, body, timeoutMs })
+    return handler(method, path, body)
+  }
   return { seen, request }
 }
 
-function exec(): { signal: AbortSignal } {
-  return { signal: AbortSignal.timeout(5000) }
+function exec() {
+  return fakeExec(AbortSignal.timeout(5000))
 }
 
 function stubRequest(): EstateRequest {
@@ -75,7 +93,7 @@ describe('comfy_manage render — the action line', () => {
 
   test('renders nested status, rows, and provisioning actions for the agent', () => {
     const tool = comfyManage(stubRequest())
-    const text = (value: unknown): string => (tool.output.render({}, value) as Array<{ text?: string }>)
+    const text = (value: unknown): string => (tool.output.render({}, asJson(value)) as Array<{ text?: string }>)
       .map((part) => part.text ?? '').join('\n')
     const status = text({
       ok: true,
@@ -130,7 +148,7 @@ describe('comfy_manage execute — the exec-signal miswire', () => {
     const tool = comfyManage(request)
     const out = await tool.execute(
       { action: 'status' },
-      undefined as unknown as { signal: AbortSignal },
+      undefined as unknown as ToolRunContext,
     ) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.action, 'status')
@@ -146,7 +164,7 @@ describe('comfy_manage execute — the exec-signal miswire', () => {
     const tool = comfyManage(request)
     const out = await tool.execute(
       { action: 'status' },
-      {} as unknown as { signal: AbortSignal },
+      {} as unknown as ToolRunContext,
     ) as Record<string, unknown>
     assert.equal(out.ok, false)
     assert.equal(out.action, 'status')
@@ -225,7 +243,7 @@ describe('comfy_manage execute — the manage lane', () => {
         models: {} as ManageCtx['models'],
         provisioning: {
           reconcile: async () => [],
-        } as ManageCtx['provisioning'],
+        } as unknown as ManageCtx['provisioning'], // partial mock: this wall drives only reconcile
         timeout: () => () => {},
       }
       const request: EstateRequest = async (_method, _path, body, signal) => {
@@ -240,7 +258,7 @@ describe('comfy_manage execute — the manage lane', () => {
       assert.equal(data.manager.reachable, true)
       assert.match(data.manager.security, /unpinned|security_level/)
       assert.equal(out.next_action, 'status')
-      const rendered = (tool.output.render({}, out) as Array<{ text?: string }>).map((part) => part.text ?? '').join('\n')
+      const rendered = (tool.output.render({}, asJson(out)) as Array<{ text?: string }>).map((part) => part.text ?? '').join('\n')
       assert.match(rendered, /endpoint: reachable/)
       assert.match(rendered, /manager: reachable/)
     } finally {
@@ -306,7 +324,7 @@ describe('comfy_manage execute — refusals ARE the answer', () => {
   })
 
   test('manage/refused without details rethrows', async () => {
-    const refusal = new RemoteError('manage/refused', 'detail-less')
+    const refusal = new RemoteError('manage/refused', 'detail-less', undefined as never) // no details at runtime — the rethrow arm
     const { request } = mockRequest(() => { throw refusal })
     const tool = comfyManage(request)
     await assert.rejects(tool.execute({ action: 'free' }, exec()) as Promise<unknown>, /detail-less/)
@@ -327,7 +345,7 @@ describe('comfy_manage execute — refusals ARE the answer', () => {
 })
 
 describe('comfy_manage contract projection matrix', () => {
-  const text = (value: unknown): string => (comfyManage(stubRequest()).output.render({}, value) as Array<{ text?: string }>)
+  const text = (value: unknown): string => (comfyManage(stubRequest()).output.render({}, asJson(value)) as Array<{ text?: string }>)
     .map((part) => part.text ?? '')
     .join('\n')
 
@@ -448,7 +466,7 @@ describe('comfy_manage contract projection matrix', () => {
     assert.equal(out.ok, false)
 
     const refusal = mockRequest(() => {
-      throw new RemoteError('manage/refused', 'named', { action: 'install_extension', data: { state: 'partial' }, status: 'bad', code: 'custom' })
+      throw new RemoteError('manage/refused', 'named', { action: 'install_extension', data: { state: 'partial' }, status: 'bad' as unknown as number, code: 'custom' }) // intentionally mistyped status: the tool drops non-numbers (undefined below)
     })
     const value = await comfyManage(refusal.request).execute({ action: 'install_extension' }, exec()) as Record<string, unknown>
     assert.equal(value.code, 'custom')

@@ -17,6 +17,15 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { foldConnects, meliteFlow } from '../src/tools/melite-flow.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import type { ContentBlock } from '@deepseek-ai/dsh-llm'
+import type { JsonValue, TextBlock } from '../src/types.ts'
+import { fakeExec } from './fake-exec.ts'
+
+// The render's value/blocks are the tool's own result faces (JsonValue
+// in, text blocks out); the walls feed rows that are JSON by
+// construction and renders that answer text.
+const asJson = (value: unknown): JsonValue => value as JsonValue
+const asText = (block: ContentBlock | undefined): string => ((block!) as TextBlock).text
 
 // The recording fake IS the estate's far side (EstateRequest, the
 // transport contract): no global fetch, no HTTP, no port — the same
@@ -122,7 +131,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
   test('validate runs FIRST; draft + start follow; result carries no flow body', async () => {
     const seen = mockFetch([okBenchWith('d1'), okValidate, okDraftThenStart('d1', 'r1')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
     assert.equal(out.mode, 'adhoc')
     assert.equal(out.target, 'still-to-motion')
@@ -171,7 +180,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
       () => ({ status: 400, body: { error: refusal } }),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes(refusal), String(out.error) + ' lacks ' + refusal)   // verbatim compile text, valued
     assert.equal(seen.calls.some((c) => c.url.includes('/v1/flows/drafts')), false)
   })
@@ -182,7 +191,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
       connects: [{ from: 'initial.prompt', to: 'a.prompt' }],
-    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('initial wires ALWAYS need an explicit kind'), String(out.error) + ' lacks ' + 'initial wires ALWAYS need an explicit kind')
     assert.equal(seen.calls.length, 0)      // refused before any HTTP
   })
@@ -193,7 +202,7 @@ describe('melite_flow adhoc — the AI feedback loop', () => {
     const out = await tool.execute({
       stages: [{ id: 'a', engine: 'comfyui' }],
       connects: [{ from: 'ghost', to: 'a.x' }],
-    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('unknown stage'), String(out.error) + ' lacks ' + 'unknown stage')
     assert.ok(String(out.error).includes('"ghost"'), String(out.error) + ' lacks ' + '"ghost"')
   })
@@ -220,7 +229,7 @@ describe('melite_flow card — the live allowlist', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'new-model-1', prompt: 'hi' },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.error, undefined)
     assert.equal(out.mode, 'card')
@@ -284,7 +293,7 @@ describe('melite_flow card — the live allowlist', () => {
     const out = await tool.execute({
       card: 'image-edit', model: 'image-edit-21',
       params: { prompt: 'edit this' },
-    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
     assert.equal(out.run_id, 'r-w')
     assert.match(String(out.rode), /flow-arm/)
@@ -306,7 +315,7 @@ describe('melite_flow card — the live allowlist', () => {
       card: 'h3-timeline',
       model: 'h3',
       params: { calls: JSON.stringify(calls), audio_clips: JSON.stringify(clips), unlisted: '[1]' },
-    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r-json')
     const ensure = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
     const stage = (ensure.stages as Array<{ params: Record<string, unknown> }>)[0]!
@@ -341,7 +350,7 @@ describe('melite_flow card — the live allowlist', () => {
     const tool = meliteFlow(request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'not-a-card', prompt: 'hi' },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.ok(typeof out.error === 'string' && out.error !== '', 'expected a refusal')
     assert.ok(String(out.error).includes('no model unit for model: not-a-card'),
@@ -381,7 +390,7 @@ describe('melite_flow card — the live allowlist', () => {
       card: 'h3-timeline',
       model: 'h3',
       params: { calls: [{ text: 'a shot', start_frame: 0, end_frame: 56 }] },
-    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r-headless')
     await Promise.race([
       patched,
@@ -442,7 +451,7 @@ describe('melite_flow bench — THE ONE-BENCH LAW (§22)', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { card: 'image-gen', model: 'new-model-1', prompt: 'hi' },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.error, undefined)
     const get = seen.calls.find((c) => /^\/v1\/bench\/[^/?]+$/.test(c.url))
@@ -468,7 +477,7 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
   test('template: test:false default, flow explicitly named, draft minted', async () => {
     const seen = mockFetch([okBenchWith('draft-headless-1'), okDraftThenStart('draft-headless-1', 'r0')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, undefined)
     assert.equal(out.mode, 'flow')
     assert.equal(out.run_id, 'r0')
@@ -493,7 +502,7 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     const tool = meliteFlow(seen.request)
     await tool.execute(
       { flow: 'bar', params: { seed: 42, steps: 8 }, test: true },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     )
     const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
     assert.equal(posts.length, 1)
@@ -514,8 +523,8 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
       () => ({ status: 400, body: { error: 'queue full' } }),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
-    assert.ok(out.error.includes('queue full'), out.error + ' lacks ' + 'queue full')
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.ok(String(out.error).includes('queue full'), String(out.error) + ' lacks queue full')
     assert.equal(out.draft_id, undefined)
     const meta = tool.output.presentationMeta!({ flow: 'foo' }, out as never) as Record<string, unknown>
     assert.equal(meta.draft_id, undefined)
@@ -529,15 +538,15 @@ describe('melite_flow L4 — the test flag rides every mode', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { flow: 'no-such-flow' },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as { error?: string }
-    assert.ok(out.error.includes('unknown flow'), out.error + ' lacks ' + 'unknown flow')
+    assert.ok(String(out.error).includes('unknown flow'), String(out.error) + ' lacks unknown flow')
   })
 
   test('adhoc: test:true rides the flow_inline start', async () => {
     const seen = mockFetch([okBenchWith('d2'), okValidate, okDraftThenStart('d2', 'r2')])
     const tool = meliteFlow(seen.request)
-    await tool.execute({ ...FLOW, test: true }, { signal: AbortSignal.timeout(2000) })
+    await tool.execute({ ...FLOW, test: true }, fakeExec(AbortSignal.timeout(2000)))
     const posts = seen.calls.filter((s) => s.url.endsWith('/v1/flows/start'))
     assert.equal(posts.length, 1)
     const body = decodeJsonBody(posts[0].init)
@@ -566,7 +575,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   test('template success: value carries draft_id; render token parses to it', async () => {
     const seen = mockFetch([okBenchWith('draft-tile-1'), okDraftThenStart('draft-tile-1', 'r7')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'draft-tile-1')
     const parts = tool.output.render({ flow: 'foo' }, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
@@ -576,7 +585,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   test('adhoc success: render token parses to the minted draft', async () => {
     const seen = mockFetch([okBenchWith('draft-tile-2'), okValidate, okDraftThenStart('draft-tile-2', 'r8')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'draft-tile-2')
     const parts = tool.output.render({ ...FLOW }, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
@@ -609,7 +618,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     assert.equal(out.run_id, 'r_bench_1', 'the final stage\'s run id rides the top level')
     const text = (tool.output.render({ bench: true }, out as never) as Array<{ text?: string }>)
@@ -636,7 +645,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     assert.equal(out.run_id, '', 'no run minted — the id is blank, never guessed')
     assert.deepEqual(out.pass, [
@@ -673,7 +682,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   test('presentationMeta carries the handle — the native channel, pure', async () => {
     const seen = mockFetch([okBenchWith('draft-meta-7'), okDraftThenStart('draft-meta-7', 'r9')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     // the projector is the persisted payload (ToolResultNode.meta): the
     // client card view narrows it — never parses prose. Pure: same value
     // in, same payload out.
@@ -687,7 +696,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     })
     assert.deepEqual(tool.output.presentationMeta!({ flow: 'foo' }, out as never), meta)
     // refusals project the error with NO handle
-    const refused = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const refused = await tool.execute({}, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     const rmeta = tool.output.presentationMeta!({}, refused as never) as Record<string, unknown>
     assert.equal(rmeta.draft_id, undefined)
     assert.equal(typeof rmeta.error, 'string')
@@ -696,7 +705,7 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   test('refusals carry no token (nothing to hydrate — the legacy branch stays dark)', async () => {
     const { request } = mockFetch([])
     const tool = meliteFlow(request)
-    const out = await tool.execute({}, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({}, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(typeof out.error, 'string')
     const parts = tool.output.render({}, out as never) as Array<{ text?: string }>
     const text = parts.map((p) => p?.text ?? '').join('\n')
@@ -716,7 +725,7 @@ describe('melite_flow bench — the remote refusal voice', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'the bench is empty — construct stages first (melite_construct)')
     assert.equal(out.draft_id, undefined)
   })
@@ -734,7 +743,7 @@ describe('melite_flow bench — the remote refusal voice', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'still-to-motion' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'still-to-motion' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('bench moved'), String(out.error) + ' lacks the CAS message')
     assert.equal(out.draft_id, undefined)
   })
@@ -781,7 +790,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   test('two compositions refuse without touching the estate', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true, flow: 'x' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true, flow: 'x' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('exactly one composition'), String(out.error))
     assert.equal(seen.calls.length, 0)
   })
@@ -789,16 +798,16 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
   test('schema violations throw at the wrapper gate (presence contract)', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute(undefined as never, { signal: AbortSignal.timeout(2000) }), ToolArgsError)
-    await assert.rejects(tool.execute({ stages: 'x' } as never, { signal: AbortSignal.timeout(2000) }), ToolArgsError)
-    await assert.rejects(tool.execute({ params: [] } as never, { signal: AbortSignal.timeout(2000) }), ToolArgsError)
+    await assert.rejects(tool.execute(undefined as never, fakeExec(AbortSignal.timeout(2000))), ToolArgsError)
+    await assert.rejects(tool.execute({ stages: 'x' } as never, fakeExec(AbortSignal.timeout(2000))), ToolArgsError)
+    await assert.rejects(tool.execute({ params: [] } as never, fakeExec(AbortSignal.timeout(2000))), ToolArgsError)
     assert.equal(seen.calls.length, 0)
   })
 
   test('empty stages refuse (non-empty rows only)', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ stages: [] }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ stages: [] }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.ok(String(out.error).includes('non-empty array'), String(out.error))
     assert.equal(seen.calls.length, 0)
@@ -820,7 +829,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     // generic missing-params refusal instead of the pointed one.
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'tts', model: 'm', qvoice_save: [{ voice_name: 'x' }] } as never, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'tts', model: 'm', qvoice_save: [{ voice_name: 'x' }] } as never, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.ok(String(out.error).includes('qvoice_save'), 'the stray key is named')
     assert.ok(String(out.error).includes('INSIDE params'), 'the seat is stated')
     assert.equal(seen.calls.length, 0, 'nothing starts on a stray arg')
@@ -830,7 +839,7 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
 describe('melite_flow presentCall/render/meta — the faces', () => {
   test('presentCall names card | flow | adhoc | ? (junk renders generic)', () => {
     const tool = meliteFlow((async () => ({})) as EstateRequest)
-    const pc = (a: unknown) => tool.presentCall!(a as never)
+    const pc = (a: unknown) => tool.presentCall!(a as never)! // the faces never return undefined for these args
     assert.equal(pc({ card: 'img' }).title, 'Run img')
     assert.equal(pc({ card: '', flow: 'foo' }).title, 'Run foo')
     assert.equal(pc({ flow: 'foo' }).title, 'Run foo')
@@ -862,7 +871,7 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'c', model: 'm1' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'c', model: 'm1' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r9')
     assert.deepEqual(tool.output.presentationMeta!({ card: 'c', model: 'm1' }, out as never), {
       mode: 'card', target: 'c', model: 'm1', draft_id: 'd9', run_id: 'r9', status: 'queued',
@@ -909,7 +918,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true, test: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true, test: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.mode, 'bench')
     assert.equal(out.target, 'bench-main @ rev 3')
     assert.equal(out.draft_id, 'd_bench')
@@ -965,7 +974,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.stoppedAt, 's_0')
     assert.equal(out.error, 'stage s_0 (image-gen) ended failed')
@@ -973,11 +982,11 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     // THE RENDER LAW (transcript-016): a stopped-mid-flow refusal PRINTS
     // the run id — the maker must never glob output/ to find a run it
     // already paid for (ten wasted calls before this pin).
-    const rendered = tool.output!.render!({ bench: true } as never, out)
-    assert.match(String(rendered[0]!.text), /melite_flow REFUSED: stage s_0 \(image-gen\) ended failed — run rb9 \(poll with run_status\)/)
+    const rendered = tool.output!.render!({ bench: true } as never, asJson(out))
+    assert.match(asText(rendered[0]), /melite_flow REFUSED: stage s_0 \(image-gen\) ended failed — run rb9 \(poll with run_status\)/)
     // a PRE-RUN refusal (no run started) renders without the run clause
     const preRun = tool.output!.render!({ bench: true } as never, { mode: 'bench', target: 'x', status: 'stopped', error: 'stage s_0 names no card' })
-    assert.equal(String(preRun[0]!.text), 'melite_flow REFUSED: stage s_0 names no card')
+    assert.equal(asText(preRun[0]), 'melite_flow REFUSED: stage s_0 names no card')
     // ONE start total — s_1 never reached the queue
     assert.equal(seen.calls.filter((c) => c.url.endsWith('/v1/flows/start')).length, 1)
   })
@@ -997,7 +1006,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'bench-main')
     assert.equal(out.target, 'bench-main @ rev ?')
     assert.equal(out.status, 'done')
@@ -1012,7 +1021,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'bench')
     assert.equal(out.error, 'the bench is empty — construct stages first (melite_construct)')
   })
@@ -1026,7 +1035,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'queue full')
     assert.equal(out.draft_id, 'd_bench')
     assert.equal(out.target, 'bench-main @ rev 3')
@@ -1042,7 +1051,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.stoppedAt, 's_0')
     assert.equal(out.error, 'stage s_0 names no card — nothing to compose (melite_construct patch)')
@@ -1056,7 +1065,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.deepEqual(out, { error: 'lane down', mode: 'bench', target: 'bench-main' })
   })
 
@@ -1068,7 +1077,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'remote refused')
     assert.equal(out.mode, 'bench')
   })
@@ -1081,7 +1090,7 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute({ bench: true }, { signal: AbortSignal.timeout(2000) }), /gate down/)
+    await assert.rejects(tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(2000))), /gate down/)
   })
 })
 
@@ -1089,7 +1098,7 @@ describe('melite_flow card — compose inside', () => {
   test('a missing model refuses before any HTTP', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'card')
     assert.equal(out.target, 'img')
     assert.ok(String(out.error).includes('model is required'), String(out.error))
@@ -1099,7 +1108,7 @@ describe('melite_flow card — compose inside', () => {
   test('no prompt anywhere: the intent falls back to the card', async () => {
     const seen = mockFetch([ensureOk('d3'), benchAlive, startOk('r3')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r3')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
     assert.equal(ensureBody.intent, 'img')
@@ -1118,7 +1127,7 @@ describe('melite_flow card — compose inside', () => {
     const long = 'p'.repeat(100)
     const out = await tool.execute(
       { card: 'img', model: 'm', prompt: long, params: { seed: 1 } },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.run_id, 'r4')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
@@ -1133,7 +1142,7 @@ describe('melite_flow card — compose inside', () => {
     const tool = meliteFlow(seen.request)
     await tool.execute(
       { card: 'img', model: 'm', prompt: '', params: { prompt: 'p2' } },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     )
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     assert.equal(startBody.prompt, 'p2')
@@ -1148,7 +1157,7 @@ describe('melite_flow card — compose inside', () => {
       benchAlive,
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'card')
     assert.equal(out.target, 'img')
     assert.ok(String(out.error).includes('bench moved'), String(out.error))
@@ -1165,7 +1174,7 @@ describe('melite_flow card — compose inside', () => {
       ensureOk('d6'),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'wire-down')
   })
 
@@ -1178,7 +1187,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }), /socket hangup/)
+    await assert.rejects(tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))), /socket hangup/)
   })
 
   test('a messageless remote start refusal values the queue default', async () => {
@@ -1190,7 +1199,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'queue refused the start')
     assert.equal(out.mode, 'card')
   })
@@ -1204,7 +1213,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, '')
     assert.equal(out.status, 'queued')
     assert.equal(out.draft_id, 'd9')
@@ -1255,7 +1264,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    await tool.execute({ card: 'h3-timeline', model: 'h3' }, { signal: AbortSignal.timeout(2000) })
+    await tool.execute({ card: 'h3-timeline', model: 'h3' }, fakeExec(AbortSignal.timeout(2000)))
     await Promise.race([done, new Promise((_, reject) => setTimeout(() => reject(new Error('observer timeout')), 1000))])
     assert.equal(patch?.runStatus, 'done')
     assert.deepEqual(patch?.result, {
@@ -1284,7 +1293,7 @@ describe('melite_flow card — compose inside', () => {
     const seen = mockFetch([ensureOk('d_long'), benchAlive, startOk('r_long')])
     const tool = meliteFlow(seen.request)
     const card = 'c'.repeat(81)
-    const out = await tool.execute({ card, model: 'm' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ card, model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r_long')
     assert.equal(out.draft_id, 'd_long')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
@@ -1298,7 +1307,7 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
   test('a missing bench births (no expect_rev on the ensure)', async () => {
     const seen = mockFetch([ensureOk('d_birth'), benchNotFound(), startOk('r_birth')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r_birth')
     assert.equal(out.draft_id, 'd_birth')
     assert.equal(seen.calls.length, 3)
@@ -1309,7 +1318,7 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
   test('a rev-less bench row births (no expect_rev on the ensure)', async () => {
     const seen = mockFetch([ensureOk('d_rev'), benchRow({ session: 'main', stages: [] }), startOk('r_rev')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.draft_id, 'd_rev')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
     assert.equal('expect_rev' in ensureBody, false)
@@ -1324,7 +1333,7 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
       ensureOk('d10'),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'flow')
     assert.equal(out.error, 'gate down')
   })
@@ -1338,7 +1347,7 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
       ensureOk('d11'),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, '42')
   })
 
@@ -1351,7 +1360,7 @@ describe('melite_flow template — the birth arm + compose refusals', () => {
       benchAlive,
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ flow: 'foo' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ flow: 'foo' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'bench ensure returned no draft_id')
     assert.equal(out.draft_id, undefined)
   })
@@ -1361,14 +1370,14 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
   test('a transport validate failure propagates (never valued)', async () => {
     const seen = mockFetch([() => { throw new Error('validate down') }])
     const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }), /validate down/)
+    await assert.rejects(tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))), /validate down/)
     assert.equal(seen.calls.length, 1)
   })
 
   test('a messageless validate refusal values the compile default', async () => {
     const seen = mockFetch([() => { throw new RemoteError('runs/flow-compile', '', { loc: 'flow' }) }])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'flow does not compile')
     assert.equal(out.mode, 'adhoc')
   })
@@ -1383,7 +1392,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
       benchAlive,
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.ok(String(out.error).includes('bench moved'), String(out.error))
     assert.equal(seen.calls.some((c) => c.url.endsWith('/v1/flows/start')), false)
@@ -1395,7 +1404,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
     // the bench refusal test above).
     const seen = mockFetch([okBench, okValidate, () => ({ status: 200, body: { error: 'queue full' } })])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.equal(out.target, 'still-to-motion')
     assert.ok(String(out.error).includes('queue full'), String(out.error))
@@ -1412,7 +1421,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
       ensureOk('d_adhoc'),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ ...FLOW }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ ...FLOW }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.equal(out.error, 'wire-down')
   })
@@ -1422,7 +1431,7 @@ describe('melite_flow adhoc — validate + compose refusals', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute(
       { stages: [{ id: 'a', engine: 'comfyui' }] },
-      { signal: AbortSignal.timeout(2000) },
+      fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.mode, 'adhoc')
     assert.equal(out.target, 'adhoc')
@@ -1539,7 +1548,7 @@ describe('melite_flow bench — the queue lane law arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     // THE ROW'S OWN MODEL WINS — the params name it, the start rides it verbatim
@@ -1565,7 +1574,7 @@ describe('melite_flow bench — the queue lane law arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     // NO alias truth exists — the card id IS the model (honest pass-through)
@@ -1584,7 +1593,7 @@ describe('melite_flow bench — the queue lane law arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(6000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.stoppedAt, 's_2')
     assert.equal(out.error, 'stage s_2 names no card — nothing to compose (melite_construct patch)')
@@ -1602,7 +1611,7 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(3000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(3000))) as Record<string, unknown>
     assert.equal(out.error, 'the bench is empty — construct stages first (melite_construct)')
   })
 
@@ -1625,7 +1634,7 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     assert.equal(startBody.model, 'krea-2')
@@ -1652,7 +1661,7 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(10000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(10000))) as Record<string, unknown>
     // the hiccup cost one cadence sleep — the pass still completes
     assert.equal(out.status, 'done')
     assert.equal(polls, 2)
@@ -1675,7 +1684,7 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.error, 'stage s_0 (image-gen) ended unknown')
   })
@@ -1693,12 +1702,12 @@ describe('melite_flow adhoc — the card fold + compile-first gate (035 dead-rou
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ stages: [{ id: 's0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'x' } }] }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ stages: [{ id: 's0', engine: 'comfyui', card: 'image-gen', params: { prompt: 'x' } }] }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     // the START door's own honest voice — never the engine's
     // `node carries no inline workflow`
     assert.match(String(out['error']), /card= stages are unported/)
     const v = seen.calls.find((c) => c.url === '/v1/flows/validate')
-    const row = ((v!.init.body as { stages: Array<Record<string, unknown>> }).stages)[0]!
+    const row = ((v!.init!.body as { stages: Array<Record<string, unknown>> }).stages)[0]!
     assert.equal(row['card'], 'image-gen')
   })
 
@@ -1732,7 +1741,7 @@ describe('melite_flow bench — the status distill arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     // no stage row matched — the pass row carries no url key
     const row = (out.pass as Array<Record<string, unknown>>)[0]!
@@ -1763,7 +1772,7 @@ describe('melite_flow bench — the status distill arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const row = (out.pass as Array<Record<string, unknown>>)[0]!
     // paths ride AS SERVED (wire spelling — run_status owns the
@@ -1790,7 +1799,7 @@ describe('melite_flow bench — the status distill arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     assert.equal((out.pass as Array<Record<string, unknown>>)[0]!['url'], 'https://cdn.example/abs/clip.mp4')
   })
@@ -1814,7 +1823,7 @@ describe('melite_flow bench — the status distill arms', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.error, 'stage s_0 (image-gen) ended unknown')
   })
@@ -1840,7 +1849,7 @@ describe('melite_flow bench — the single-stage fallback arm', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ bench: true }, { signal: AbortSignal.timeout(8000) }) as Record<string, unknown>
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'done')
     const row = (out.pass as Array<Record<string, unknown>>)[0]!
     assert.equal(row['status'], 'done')

@@ -80,7 +80,7 @@ describe("ManageGatewayService", () => {
 
   it("ok envelopes return (status through the routed rail)", async () => {
     globalThis.fetch = (async (url: unknown) =>
-      url.toString().endsWith("/system_stats")
+      String(url).endsWith("/system_stats")
         ? new Response(JSON.stringify({ system: { comfyui_version: "9.9" }, devices: [] }))
         : new Response(JSON.stringify({ is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 }))) as typeof fetch;
     const { svc } = seat();

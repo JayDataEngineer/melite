@@ -12,7 +12,7 @@ import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { BenchView } from "../src/client/bench-view.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -69,7 +69,7 @@ function stubFetch(): void {
   });
 }
 
-function mountView(stages: BenchStageRow[], estate?: EstateOpts, kind?: "draft"): { rerender: (tick: number) => void } {
+function mountView(stages: BenchStageView[], estate?: EstateOpts, kind?: "draft"): { rerender: (tick: number) => void } {
   doors.specFields = null;
   doors.uploads = () => ({ name: "data/input/a.png" });
   stubFetch();
@@ -132,7 +132,7 @@ function cardDrag(sourceId: string): Record<string, unknown> {
   };
 }
 
-function three(): BenchStageRow[] {
+function three(): BenchStageView[] {
   return [
     { id: "s_0", card: "a-card", engine: "comfyui", params: {} },
     { id: "s_1", card: "b-card", engine: "comfyui", params: {} },

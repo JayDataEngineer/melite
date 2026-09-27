@@ -48,7 +48,7 @@ describe("prunedFor (the branch prune)", () => {
       buildStageRow(1, stage({ id: "b" })),
     ]);
     expect(prunedFor(f, {}).pruned).toEqual(["a"]);
-    expect(prunedFor(f, { flag: null }).pruned).toEqual(["a"], "null reads absent");
+    expect(prunedFor(f, { flag: null }).pruned).toEqual(["a"]);
     expect(prunedFor(f, { flag: 1 }).pruned).toEqual([]);
   });
   it("a pruned-everything flow refuses (a run with no stages never registers)", () => {

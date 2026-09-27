@@ -83,6 +83,9 @@ function makeHarness(
     promotion,
     frame,
     style,
+    // the harness exposes no promotion debug flag (the promotion's
+    // truth is the style/class seats) — the attach arm pins its absence
+    promoted_check: undefined,
     classHas: (c: string) => classSet.has(c),
     loadEvent: () => loads.forEach((fn) => fn()),
     fireMutation: () => mutations.forEach((cb) => cb()),

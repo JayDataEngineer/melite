@@ -19,21 +19,33 @@ import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { meliteConstruct, projectStages } from '../src/tools/melite-construct.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import { fakeExec } from './fake-exec.ts'
+
+// The foreign seat's undeclared failure code this wall simulates —
+// declared here (type-only, erased at runtime) so the RemoteError seam
+// accepts the shape a real seat would throw.
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'bench/broken': { readonly session?: string };
+  }
+}
 
 function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
   seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }>;
   request: EstateRequest;
 } {
   const seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }> = []
-  const request = (async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method: method as string, path: path as string, body, timeoutMs: timeoutMs as number })
-    return handler(method as string, path as string, body)
-  }) as unknown as EstateRequest
+  // Contextually typed by the EstateRequest seam — params inherit the
+  // transport signature, so no implicit-any and no casts ride.
+  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
+    seen.push({ method, path, body, timeoutMs })
+    return handler(method, path, body)
+  }
   return { seen, request }
 }
 
-function exec(): { signal: AbortSignal } {
-  return { signal: AbortSignal.timeout(5000) }
+function exec() {
+  return fakeExec(AbortSignal.timeout(5000))
 }
 
 function stubRequest(): EstateRequest {
@@ -76,7 +88,7 @@ describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow b
       throw new Error('unmocked ' + method + ' ' + path)
     })
     const tool = meliteConstruct(request)
-    const out = await tool.execute({ verb: 'read' }, { signal: AbortSignal.timeout(5000), agent: { id: 's_chat7' } }) as Record<string, unknown>
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal(out.bench, 's_chat7')
     assert.equal(out.ok, true)
     assert.ok(seen.some((r) => r.path === '/v1/bench/s_chat7'))
@@ -88,7 +100,7 @@ describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow b
       throw new Error('unmocked ' + method + ' ' + path)
     })
     const tool = meliteConstruct(request)
-    const out = await tool.execute({ verb: 'read', bench: 'main' }, { signal: AbortSignal.timeout(5000), agent: { id: 's_chat7' } }) as Record<string, unknown>
+    const out = await tool.execute({ verb: 'read', bench: 'main' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 's_chat7' } })) as Record<string, unknown>
     assert.equal(out.bench, 's_chat7')
   })
 
@@ -114,7 +126,7 @@ describe('melite_construct — THE PER-CONVERSATION BENCH (stroke 44: the flow b
       throw new Error('unmocked ' + method + ' ' + path)
     })
     const tool = meliteConstruct(request)
-    const out = await tool.execute({ verb: 'read' }, { signal: AbortSignal.timeout(5000), agent: { id: 'not a key/..' } }) as Record<string, unknown>
+    const out = await tool.execute({ verb: 'read' }, fakeExec(AbortSignal.timeout(5000), { agent: { id: 'not a key/..' } })) as Record<string, unknown>
     assert.equal(out.bench, 'main')
     assert.ok(seen.some((r) => r.path === '/v1/bench/main'))
   })
@@ -472,7 +484,7 @@ describe('melite_construct refusals — the CAS voice', () => {
 
   test('a remote without a rev carries none', async () => {
     const { request } = mockRequest(() => {
-      throw new RemoteError('bench/cas-conflict', 'bench moved')
+      throw new RemoteError('bench/cas-conflict', 'bench moved', undefined as never) // no details at runtime — the carry-none arm
     })
     const tool = meliteConstruct(request)
     const out = await tool.execute({ verb: 'patch', stage: 's1', expect_rev: 6 }, exec()) as Record<string, unknown>
@@ -538,7 +550,7 @@ describe('melite_construct refusals — the CAS voice', () => {
 
   test('a non-numeric rev carries none', async () => {
     const { request } = mockRequest(() => {
-      throw new RemoteError('bench/cas-conflict', 'bench moved', { current_rev: 'seven' })
+      throw new RemoteError('bench/cas-conflict', 'bench moved', { current_rev: 'seven' as unknown as number }) // intentionally mistyped rev: non-numeric carries none (undefined below)
     })
     const tool = meliteConstruct(request)
     const out = await tool.execute({ verb: 'patch', stage: 's1', expect_rev: 6 }, exec()) as Record<string, unknown>

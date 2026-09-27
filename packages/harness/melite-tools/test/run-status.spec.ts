@@ -12,9 +12,11 @@ import { describe, test, vi, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
+import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { runStatus } from '../src/tools/run-status.ts'
 import { withArgCoercion, coerceArgs } from '../src/tools/arg-coerce.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import { fakeExec } from './fake-exec.ts'
 
 afterEach(() => { vi.useRealTimers() })
 
@@ -29,17 +31,19 @@ function mockRequest(
   return { calls, request }
 }
 
-const exec = { signal: AbortSignal.timeout(2000) }
+const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('run_status presentCall — the streaming tile', () => {
   test('titles the run; junk renders generic (the re-attached presenter)', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
-    assert.equal(tool.presentCall!({ runId: 'r1' } as never).title, 'Run status: r1')
-    assert.equal(tool.presentCall!({ runId: 'r1' } as never).rawInput, 'r1')
-    assert.equal(tool.presentCall!({} as never).title, 'Run status: ?')
-    assert.equal(tool.presentCall!(null as never).title, 'Run status: ?')
-    assert.equal(tool.presentCall!('x' as never).title, 'Run status: ?')
-    assert.equal(tool.presentCall!({ runId: 'r1' } as never).card, 'generic')
+    // The tile always answers the generic card (pinned below) — narrow
+    // the ToolCallView union to read its rawInput.
+    assert.equal(tool.presentCall!({ runId: 'r1' } as never)!.title, 'Run status: r1')
+    assert.equal((tool.presentCall!({ runId: 'r1' } as never)! as GenericCallView).rawInput, 'r1')
+    assert.equal(tool.presentCall!({} as never)!.title, 'Run status: ?')
+    assert.equal(tool.presentCall!(null as never)!.title, 'Run status: ?')
+    assert.equal(tool.presentCall!('x' as never)!.title, 'Run status: ?')
+    assert.equal(tool.presentCall!({ runId: 'r1' } as never)!.card, 'generic')
   })
 })
 
@@ -159,7 +163,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
   test('wait_s=0 keeps the single-shot read (no wait keys, one fetch)', async () => {
     const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
     const tool = runStatus(seen.request)
-    const out = await tool.execute({ runId: 'r', wait_s: 0 }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ runId: 'r', wait_s: 0 }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(seen.calls.length, 1)
     assert.equal(out.wait_expired, undefined)
     assert.equal(out.waited_s, undefined)
@@ -175,7 +179,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
         : { run_id: 'r', status: 'completed', stages: [{ id: 's_0', status: 'completed' }], artifacts: [{ path: 'f.mp4' }] }
     })
     const tool = runStatus(seen.request)
-    const p = tool.execute({ runId: 'r', wait_s: 300 }, { signal: AbortSignal.timeout(5000) })
+    const p = tool.execute({ runId: 'r', wait_s: 300 }, fakeExec(AbortSignal.timeout(5000)))
     const raced = Promise.race([p, vi.advanceTimersByTimeAsync(5000).then(() => new Promise(() => {}))])
     const out = await raced as Record<string, unknown>
     assert.equal(seen.calls.length, 2)          // running → (5s sleep) → completed
@@ -188,7 +192,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     fakeClock()
     const seen = mockRequest(() => ({ run_id: 'r', status: 'running', stages: [] }))
     const tool = runStatus(seen.request)
-    const p = tool.execute({ runId: 'r', wait_s: 3 }, { signal: AbortSignal.timeout(5000) })
+    const p = tool.execute({ runId: 'r', wait_s: 3 }, fakeExec(AbortSignal.timeout(5000)))
     const out = await Promise.race([p, vi.advanceTimersByTimeAsync(10_000).then(() => new Promise(() => {}))]) as Record<string, unknown>
     assert.equal(out.status, 'running')        // the truth at expiry, not a guess
     assert.equal(out.wait_expired, true)
@@ -200,7 +204,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     const seen = mockRequest(() => ({ run_id: 'r', status: 'completed' }))
     // the registration-site wrap (index.ts) — the valve BEFORE the gate
     const tool = withArgCoercion(runStatus(seen.request))
-    const out = await tool.execute({ runId: 'r', wait_s: '0' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ runId: 'r', wait_s: '0' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.status, 'completed')
     assert.equal(seen.calls.length, 1)
   })
@@ -210,7 +214,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     const ac = new AbortController()
     const seen = mockRequest(() => ({ run_id: 'r', status: 'running' }))
     const tool = runStatus(seen.request)
-    const p = tool.execute({ runId: 'r', wait_s: 300 }, { signal: ac.signal })
+    const p = tool.execute({ runId: 'r', wait_s: 300 }, fakeExec(ac.signal))
     const guard = p.catch((e: unknown) => e)
     vi.advanceTimersByTimeAsync(1000).then(() => ac.abort(new Error('user cancelled')))
     const settled = await Promise.race([guard, vi.advanceTimersByTimeAsync(6000).then(() => new Promise(() => {}))])
@@ -224,7 +228,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     const ac = new AbortController()
     ac.abort()   // reason undefined — the sleep rejects with 'aborted'
     await assert.rejects(
-      tool.execute({ runId: 'r', wait_s: 30 }, { signal: ac.signal }),
+      tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(ac.signal)),
       /aborted/,
     )
     assert.equal(seen.calls.length, 1)
@@ -238,7 +242,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     // AbortSignal whose default reason is truthy) — the fallback
     // Error('aborted') is the rejection, never a silent hang
     const stub = { aborted: true, reason: undefined } as never
-    await assert.rejects(tool.execute({ runId: 'r', wait_s: 30 }, { signal: stub }), /aborted/)
+    await assert.rejects(tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(stub)), /aborted/) // stub signal: intentionally non-conforming (never), the ?? fallback arm
     assert.equal(seen.calls.length, 1)
   })
 
@@ -251,7 +255,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     // wait_s>0 forces the loop; the signal is dead on entry — the
     // sleep's pre-abort arm rejects without a second fetch.
     await assert.rejects(
-      tool.execute({ runId: 'r', wait_s: 30 }, { signal: ac.signal }),
+      tool.execute({ runId: 'r', wait_s: 30 }, fakeExec(ac.signal)),
       /late arrival/,
     )
     assert.equal(seen.calls.length, 1)   // the one pre-sleep fetch only
@@ -264,7 +268,7 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
       card: 'h3-timeline', run_age_s: 42,
     }))
     const tool = runStatus(seen.request)
-    const out = await tool.execute({ runId: 'r' }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    const out = await tool.execute({ runId: 'r' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.deepEqual(out.planned_stages, [{ id: 'h3-film', engine: 'comfyui' }])
     assert.equal(out.card, 'h3-timeline')
     assert.equal(out.run_age_s, 42)

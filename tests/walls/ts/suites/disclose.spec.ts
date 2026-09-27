@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from '@deepseek-ai/cordis';
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 import draftsPlugin from '@melite/estate-drafts';
 import Storage from '@deepseek-ai/dsh-storage';
@@ -23,8 +23,9 @@ import {
 import queuePlugin, {
   cardRegistryProvider,
   discloseProvider,
-  type DiscloseService,
+  type DiscloseDirectoryService,
 } from "../../../../packages/harness/estate-queue/src/index.ts";
+import type { EstateMethod } from "../../../../packages/harness/melite-tools/src/estate.ts";
 
 // HYGIENE (extended 2026-10-08 after the second critique): every
 // boot in this wall sets MELITE_STATE_ROOT and the skills test sets
@@ -57,19 +58,22 @@ afterEach(() => {
   }
 });
 
-async function boot(): Promise<{ ctx: Context; disclose: DiscloseService }> {
+async function boot(): Promise<{ ctx: Context; disclose: DiscloseDirectoryService; root: string }> {
   const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(queuePlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(cardRegistryProvider as never);
-  await ctx.plugin(discloseProvider as never);
-  const disclose = ctx.get("disclose", false) as DiscloseService | undefined;
+  // cross-copy plugin shapes ride the honest Plugin cast (never
+  // poisons the ctx.plugin overload into a required Config) —
+  // the same idiom at every boot below.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(queuePlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(cardRegistryProvider as unknown as Plugin);
+  await ctx.plugin(discloseProvider as unknown as Plugin);
+  const disclose = ctx.get("disclose", false) as DiscloseDirectoryService | undefined;
   assert.ok(disclose, "the disclose seat is live");
   return { ctx, disclose, root };
 }
@@ -115,7 +119,10 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
   const { makeEstateRequest } = await import(
     "../../../../packages/harness/melite-tools/src/estate.ts"
   );
-  const request = makeEstateRequest(ctx);
+  // makeEstateRequest's runtime truth is (method, path, body,
+  // signal) — EstateRequest's trailing timeoutMs never reaches the
+  // seats; narrow the callable instead of inventing a value.
+  const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   const res = (await request("GET", "/v1/discover?lookup=all", undefined, new AbortController().signal)) as {
     flows?: unknown[]; cards?: unknown[];
   };
@@ -124,7 +131,7 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
   // the seatless estate answers the LOUD no-remote voice (a context
   // with no disclose row — the lane grammar's own law).
   const bare = new Context();
-  const bareRequest = makeEstateRequest(bare);
+  const bareRequest = makeEstateRequest(bare) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   await assert.rejects(
     bareRequest("GET", "/v1/discover", undefined, new AbortController().signal),
     /no seat on this lane serves GET \/v1\/discover/,
@@ -135,16 +142,16 @@ test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)"
   const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(queuePlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(cardRegistryProvider as never);
-  await ctx.plugin(discloseProvider as never);
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(queuePlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(cardRegistryProvider as unknown as Plugin);
+  await ctx.plugin(discloseProvider as unknown as Plugin);
   const { manageProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
-  await ctx.plugin(manageProvider as never);
+  await ctx.plugin(manageProvider as unknown as Plugin);
   const sig = new AbortController().signal;
   // 1. the closed vocabulary: a typo is a 422 envelope, not a miss.
   const typo = await manageRefusal(ctx, { action: "nope" }, sig);
@@ -224,16 +231,18 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   // (The file-level afterEach is the ONE restore path now.)
   const emptyHome = tmp("disclose-empty-home-");
   process.env["DSH_HOME"] = emptyHome;
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(queuePlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(cardRegistryProvider as never);
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(queuePlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   const { skillProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
-  await ctx.plugin(skillProvider as never);
-  const skills = ctx.get("meliteSkills", false) as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
+  await ctx.plugin(skillProvider as unknown as Plugin);
+  // the seat's static shape is Record<string, unknown> — the wall
+  // pins the narrower wire rows it actually serves.
+  const skills = ctx.get("meliteSkills", false) as unknown as { index(): { count?: number; skills?: Array<{ id: string }> }; read(id: string, signal: AbortSignal): { id: string; content?: string } };
   assert.ok(skills, "the skills seat is live");
   // 1. THE INDEX (the no-dump law): the binding vocabulary only —
   //    families + cards + flow ids; NEVER skill rows (a skill id is
@@ -272,7 +281,7 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   );
   // 4. the lane grammar serves both lanes from the seat.
   const { makeEstateRequest } = await import("../../../../packages/harness/melite-tools/src/estate.ts");
-  const request = makeEstateRequest(ctx);
+  const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   const laneIdx = (await request("GET", "/v1/skills", undefined, sig)) as { count?: number };
   assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the seeded index");
   const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
@@ -286,15 +295,15 @@ test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", as
   const root = tmp("disclose-wall-");
   const ctx = new Context();
   process.env["MELITE_STATE_ROOT"] = root;
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(queuePlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(cardRegistryProvider as never);
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(queuePlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(cardRegistryProvider as unknown as Plugin);
   const { loadProvider } = await import("../../../../packages/harness/estate-queue/src/index.ts");
-  await ctx.plugin(loadProvider as never);
+  await ctx.plugin(loadProvider as unknown as Plugin);
   const load = ctx.get("load", false) as { load(t: string, n: string): { bundle?: Record<string, unknown> } };
   assert.ok(load, "the load seat is live");
   // 1. the parameter law: inference_type must be card|flow, name
@@ -319,7 +328,7 @@ test("the load seat — card + flow bundles, the door's voices (REBUILD-17)", as
   assert.throws(() => load.load("flow", "no-such-flow"), /unknown flow 'no-such-flow'/);
   // 5. the lane grammar serves the bundle.
   const { makeEstateRequest } = await import("../../../../packages/harness/melite-tools/src/estate.ts");
-  const request = makeEstateRequest(ctx);
+  const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   const sig = new AbortController().signal;
   const lane = (await request("GET", "/v1/load?inference_type=card&name=image-gen", undefined, sig)) as { bundle?: { name?: string } };
   assert.equal(lane.bundle?.name, "image-gen", "lane serves the bundle");

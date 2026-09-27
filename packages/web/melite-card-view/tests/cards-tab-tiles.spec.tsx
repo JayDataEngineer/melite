@@ -12,7 +12,7 @@ import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 const CARD_MIME = "application/x-melite-card";
 const ASSET_MIME = "application/tech-noir-asset";
@@ -59,21 +59,21 @@ function stubFetch(): void {
 
 // the rail reads the served doc (the drill reads the snapshot) —
 // faces ride the doc seats
-function mountTiles(docStages: BenchStageRow[]): void {
+function mountTiles(docStages: BenchStageView[]): void {
   stubFetch();
   fakes = mountEstateFakes({
     benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: docStages },
     draftStages: docStages as Array<Record<string, unknown>>,
     draftBenchRev: 1,
   });
-  const value: CardsBenchValue = { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: docStages };
+  const value: CardsBenchValue = { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: docStages };
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab", contentId: undefined,
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value }),
+    useResource: () => ({ status: "live" as const, value }),
   } as never));
 }
 
@@ -169,7 +169,7 @@ describe("the wiring marks — edges read at a glance", () => {
 
   test("an upstream without a card falls to its id (never blank)", async () => {
     mountTiles([
-      { id: "s_1", engine: "comfyui", params: {} } as BenchStageRow,
+      { id: "s_1", engine: "comfyui", params: {} } as BenchStageView,
       { id: "s_0", card: "upscaler", engine: "comfyui", params: {}, inputs: { source: { stage: "s_1" } } },
     ]);
     const el = await tileReady();

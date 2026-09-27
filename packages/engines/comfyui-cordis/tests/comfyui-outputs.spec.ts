@@ -229,7 +229,7 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
       { default: "seg" },
       ["/r/mask/mask_figure_1_00001_.png", "/r/mask/mask_combined_00001_.png"],
     );
-    expect(out).toEqual({ default: "/r/mask/mask_figure_1_00001_.png" }, "first unmatched artifact wins — the seg row exists now");
+    expect(out).toEqual({ default: "/r/mask/mask_figure_1_00001_.png" });
     // an image channel and a seg channel in one stage split by declaration order, claimed across
     const both = publishOutputChannels(
       { hero: "seg", preview: "image" },
@@ -428,6 +428,6 @@ describe("loudnessOf (§39's loudness receipt — the meter's reading rides the 
 describe("CHANNEL_EXTS table", () => {
   it("the five file kinds carry their extensions (seg = the mask channel, stroke-103 debt)", () => {
     expect(Object.keys(CHANNEL_EXTS).sort()).toEqual(["audio", "image", "mesh", "seg", "video"]);
-    expect(CHANNEL_EXTS.seg).toEqual([".png"], "masks are SaveImage PNGs");
+    expect(CHANNEL_EXTS.seg).toEqual([".png"]);
   });
 });

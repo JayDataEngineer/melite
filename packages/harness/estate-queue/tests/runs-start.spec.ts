@@ -51,6 +51,13 @@ const doc = (stages: unknown, over: Record<string, unknown> = {}): Record<string
   ...over,
 });
 
+// THE REFUSAL-READ IDIOM (the type law): compileFlowInline and
+// selectSubmitDoor return a refusal union whose payload is
+// Record<string, unknown> — no overlap with the narrowed
+// { payload: { error: string } } face these walls read. Every input
+// below is crafted to refuse (each assert pins the refusal voice),
+// so the refusal arm is read via unknown. Type-only: the runtime
+// object is untouched.
 describe("compileFlowInline", () => {
   it("THE SPELL GATE (2026-10-09): an UNWIRED $image1 refuses at the door, never at the merge", () => {
     // the operator's live case, verbatim: an edit stage carrying
@@ -94,37 +101,37 @@ describe("compileFlowInline", () => {
   });
   it("refuses structural faults with the door's voice", () => {
     assert.match(
-      (compileFlowInline(["x"]) as { payload: { error: string } }).payload.error,
+      (compileFlowInline(["x"]) as unknown as { payload: { error: string } }).payload.error,
       /must be an object|JSON object/,
     );
     assert.match(
-      (compileFlowInline(doc("nope")) as { payload: { error: string } }).payload.error,
+      (compileFlowInline(doc("nope")) as unknown as { payload: { error: string } }).payload.error,
       /stages/,
     );
-    const keys = compileFlowInline(doc([{ ...stage(), x: 1 }], { nope: 1 })) as {
+    const keys = compileFlowInline(doc([{ ...stage(), x: 1 }], { nope: 1 })) as unknown as {
       payload: { error: string };
     };
     assert.match(keys.payload.error, /unknown keys \["nope"\]/);
-    const missing = compileFlowInline({ stages: [] }) as { payload: { error: string } };
+    const missing = compileFlowInline({ stages: [] }) as unknown as { payload: { error: string } };
     assert.match(missing.payload.error, /at least id and stages/);
-    const notObj = compileFlowInline(doc(["s"])) as { payload: { error: string } };
+    const notObj = compileFlowInline(doc(["s"])) as unknown as { payload: { error: string } };
     assert.match(notObj.payload.error, /stage\[0\] must be an object/);
-    const extra = compileFlowInline(doc([{ ...stage(), x: 1 }])) as {
+    const extra = compileFlowInline(doc([{ ...stage(), x: 1 }])) as unknown as {
       payload: { error: string };
     };
     assert.match(extra.payload.error, /unknown field\(s\) \["x"\]/);
-    const noId = compileFlowInline(doc([{ engine: "comfyui" }])) as {
+    const noId = compileFlowInline(doc([{ engine: "comfyui" }])) as unknown as {
       payload: { error: string };
     };
     assert.match(noId.payload.error, /not a legal identifier/);
-    const noIdExtra = compileFlowInline(doc([{ engine: "comfyui", x: 1 }])) as {
+    const noIdExtra = compileFlowInline(doc([{ engine: "comfyui", x: 1 }])) as unknown as {
       payload: { error: string };
     };
     assert.match(noIdExtra.payload.error, /<no id>/);
   });
 
   it("gates the engine policy (named, grammar + registry, no skip, no card)", () => {
-    const unnamed = compileFlowInline(doc([{ id: "s" }])) as { payload: { error: string } };
+    const unnamed = compileFlowInline(doc([{ id: "s" }])) as unknown as { payload: { error: string } };
     assert.match(unnamed.payload.error, /no engine named/);
     const foreign = compileFlowInline(doc([stage({ engine: "unity" })])) as {
       status: number;
@@ -143,7 +150,7 @@ describe("compileFlowInline", () => {
     assert.equal(unregistered.payload.code, "preview_scope");
     assert.match(unregistered.payload.error, /registered engines only \(comfyui\)/);
     // Empty registry list: the "none registered" arm.
-    const noneReg = compileFlowInline(doc([stage({ engine: "mcp:unity" })]), []) as {
+    const noneReg = compileFlowInline(doc([stage({ engine: "mcp:unity" })]), []) as unknown as {
       payload: { error: string };
     };
     assert.match(noneReg.payload.error, /registered engines only \(none registered\)/);
@@ -155,7 +162,7 @@ describe("compileFlowInline", () => {
     ) as { stages: unknown[] };
     assert.equal(admitted.stages.length, 1);
     assert.match(
-      (compileFlowInline(doc([stage({ skip_when: { x: 1 } })])) as { payload: { error: string } }).payload.error,
+      (compileFlowInline(doc([stage({ skip_when: { x: 1 } })])) as unknown as { payload: { error: string } }).payload.error,
       /skip_when is unported/,
     );
     assert.equal(
@@ -163,7 +170,7 @@ describe("compileFlowInline", () => {
       1,
     );
     assert.match(
-      (compileFlowInline(doc([stage({ card: "c1" })])) as { payload: { error: string } }).payload.error,
+      (compileFlowInline(doc([stage({ card: "c1" })])) as unknown as { payload: { error: string } }).payload.error,
       /card= stages are unported/,
     );
     assert.equal(
@@ -221,10 +228,10 @@ describe("selectSubmitDoor", () => {
     assert.deepEqual(selectSubmitDoor({ flow: "f" }), { door: "flow" });
     assert.deepEqual(selectSubmitDoor({ model: "m" }), { door: "model" });
     assert.deepEqual(selectSubmitDoor({ flow_inline: {} }), { door: "flow_inline" });
-    const amb = selectSubmitDoor({ model: "m", flow: "f" }) as { payload: { error: string } };
+    const amb = selectSubmitDoor({ model: "m", flow: "f" }) as unknown as { payload: { error: string } };
     assert.match(amb.payload.error, /names \["flow","model"\]/);
     assert.match(
-      (selectSubmitDoor({}) as { payload: { error: string } }).payload.error,
+      (selectSubmitDoor({}) as unknown as { payload: { error: string } }).payload.error,
       /no flow selected/,
     );
   });
@@ -252,14 +259,17 @@ describe("envelope texts", () => {
 
 describe("registerCompiledRun", () => {
   const compiled = (stages: CompiledStage[]): { stages: CompiledStage[] } => ({ stages });
-  const one: CompiledStage = {
+  // The pre-engine wire shape, PINNED: the request echo below
+  // asserts this stage serializes verbatim (no engine key), so the
+  // fixture converts via unknown instead of stating an engine.
+  const one = {
     id: "s",
     params: { workflow: {} },
     outputs: { default: "image" },
     expected: {},
     outputNodes: {},
     inputNames: {},
-  };
+  } as unknown as CompiledStage;
   it("mints, routes the out root on the test flag, and writes the durable pair", () => {
     const root = tmp();
     const seen: string[] = [];

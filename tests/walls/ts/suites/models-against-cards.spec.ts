@@ -48,6 +48,7 @@ import {
   fieldDomains,
   validateRegistryAgainstCards,
   type CardDomains,
+  type FieldDomain,
 } from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
 
 const here = fileURLToPath(import.meta.url);
@@ -127,8 +128,11 @@ async function tableWith(
   domains: ReadonlyMap<string, { min?: number; max?: number; options?: readonly string[] }>,
 ): Promise<CardDomains> {
   const defs = await loadCardDefs();
-  const table: CardDomains = new Map();
-  for (const id of defs.keys()) table.set(id, new Map());
+  // CardDomains is the READ face (ReadonlyMap) — build the mutable
+  // table, then hand it over (Map IS a ReadonlyMap; same object,
+  // same reference for the poisoned arm below).
+  const table = new Map<string, ReadonlyMap<string, FieldDomain>>();
+  for (const id of defs.keys()) table.set(id, new Map<string, FieldDomain>());
   table.set(cardId, domains);
   return table;
 }
@@ -563,5 +567,50 @@ describe("the DECLARATION claims are declared AND consumed", () => {
       }
     }
     assert.deepEqual(mismatches, []);
+  });
+});
+
+// ── THE BOUNDS-SANITY WALL (li-aq.3, the rules audit's M-5): the
+// z tier cannot self-police a bound row (schemastery 3.18 carries
+// no refine), so the family-law wall judges what the schema cannot:
+// an EMPTY row ({}) is a typo that would silently REPLACE a live
+// family floor with dead air; a bound for a field the declaration
+// never surfaced is dead air nobody judges; an inverted row (min >
+// max) refuses everything. Every DECL, both layers, every row.
+describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, and ordered)", () => {
+  it("no empty row, no off-surface key, no inverted span — family and variants alike", () => {
+    const offenders: string[] = [];
+    for (const id of modelIds()) {
+      let decl: unknown;
+      try { decl = getModel(id); } catch { continue; }
+      if (decl === null || typeof decl !== "object") continue;
+      const d = decl as {
+        params?: string[];
+        bounds?: Record<string, { min?: number; max?: number }>;
+        variants?: { id: string; params?: string[]; bounds?: Record<string, { min?: number; max?: number }> }[];
+      };
+      const familySurface = new Set(d.params ?? []);
+      const judge = (layer: string, surface: ReadonlySet<string>, bounds: Record<string, { min?: number; max?: number }> | undefined): void => {
+        if (bounds === undefined) return;
+        for (const [field, row] of Object.entries(bounds)) {
+          if (!surface.has(field)) {
+            offenders.push(`${id}/${layer}: bounds name '${field}', which ${layer === "family" ? "the family surface" : `variant ${layer}'s surface`} does not declare — dead air no seat judges (drop the row or surface the field)`);
+          }
+          const stated = Object.values(row ?? {}).filter((v) => v !== undefined).length;
+          if (row === null || typeof row !== "object" || stated === 0) {
+            offenders.push(`${id}/${layer}: bounds['${field}'] is an EMPTY row — neither endpoint is a typo, not a law (state min, max, or both; an empty row silently replaces a live family floor)`);
+          }
+          if (typeof row?.min === "number" && typeof row?.max === "number" && row.min > row.max) {
+            offenders.push(`${id}/${layer}: bounds['${field}'] inverts its span (min ${row.min} > max ${row.max}) — the row refuses everything`);
+          }
+        }
+      };
+      judge("family", familySurface, d.bounds);
+      for (const v of d.variants ?? []) {
+        const variantSurface = new Set([...familySurface, ...(v.params ?? [])]);
+        judge(v.id, variantSurface, v.bounds);
+      }
+    }
+    assert.deepEqual(offenders, [], offenders.join("\n"));
   });
 });

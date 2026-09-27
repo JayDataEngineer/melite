@@ -48,7 +48,7 @@ function edgeNarrow(
 
 test('THE EDGE LAW: the picker offers only kind-matching outputs — a text-output row never serves an image edge', async () => {
   const user = userEvent.setup()
-  let hostEdit: ReturnType<typeof vi.fn> = vi.fn()
+  let hostEdit = vi.fn<(name: string, v: unknown) => void>()
   // the emission: input_image declares an IMAGE edge; input_text
   // declares a TEXT edge (both required — True emits)
   const spec = {
@@ -71,8 +71,8 @@ test('THE EDGE LAW: the picker offers only kind-matching outputs — a text-outp
   ]
   const candidatesFor = edgeNarrow(spec, edgeMeta, rows)
   function Host(): ReturnType<typeof createElement> {
-    const editRef = useRef<ReturnType<typeof vi.fn> | null>(null)
-    if (editRef.current === null) editRef.current = vi.fn()
+    const editRef = useRef<typeof hostEdit | null>(null)
+    if (editRef.current === null) editRef.current = vi.fn<(name: string, v: unknown) => void>()
     hostEdit = editRef.current
     const { square, wireMenu } = useSquareProvider(editRef.current, {
       candidates: rows.map(({ id, label, url }) => ({ id, label, url })),
@@ -147,7 +147,7 @@ test('THE EDGE LAW: a field with no declared edge falls to the full list (the pi
 
 test('THE LIST-SEAT LAW: the reference stack IS an input — its cells narrow by the owning edge and APPEND the pick (2026-09-26)', async () => {
   const user = userEvent.setup()
-  let hostEdit: ReturnType<typeof vi.fn> = vi.fn()
+  let hostEdit = vi.fn<(name: string, v: unknown) => void>()
   // the emission: image1 declares the IMAGE anchor edge;
   // reference_images declares the IMAGE_LIST edge (the reworked
   // image-edit signature — references are IN the input category)
@@ -167,8 +167,8 @@ test('THE LIST-SEAT LAW: the reference stack IS an input — its cells narrow by
   ]
   const candidatesFor = edgeNarrow(spec, edgeMeta, rows)
   function Host(): ReturnType<typeof createElement> {
-    const editRef = useRef<ReturnType<typeof vi.fn> | null>(null)
-    if (editRef.current === null) editRef.current = vi.fn()
+    const editRef = useRef<typeof hostEdit | null>(null)
+    if (editRef.current === null) editRef.current = vi.fn<(name: string, v: unknown) => void>()
     hostEdit = editRef.current
     const { square, wireMenu } = useSquareProvider(editRef.current, {
       candidates: rows.map(({ id, label, url }) => ({ id, label, url })),

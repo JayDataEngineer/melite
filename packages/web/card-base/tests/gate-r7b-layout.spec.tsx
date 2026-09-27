@@ -14,7 +14,7 @@ import { ControlRow, PaneHeader, SectionLabel } from '../src/layout.tsx'
 afterEach(cleanup)
 
 test('ControlRow: a passed hint rides beside the label (never dropped)', () => {
-  render(h(ControlRow, { label: 'Steps', hint: h('span', null, 'the-hint') }, 'the-control'))
+  render(h(ControlRow, { label: 'Steps', hint: h('span', null, 'the-hint'), children: 'the-control' })) // React types seat children in props; the rest-arg child renders identically
   const row = screen.getByText('Steps').closest('label')
   expect(row).not.toBeNull()
   expect(row!.textContent).toContain('the-hint')
@@ -25,7 +25,7 @@ test('SectionLabel: without a tail there is no tail seat (never an empty span)',
   const { container, rerender } = render(h(SectionLabel, null, 'Images'))
   expect(screen.getByText('Images')).not.toBeNull()
   expect(container.querySelectorAll('span').length).toBe(1)
-  rerender(h(SectionLabel, { tail: '3/9' }, 'Images'))
+  rerender(h(SectionLabel, { tail: '3/9', children: 'Images' })) // same children-in-props law as above
   expect(container.querySelectorAll('span').length).toBe(2)
   expect(screen.getByText('3/9')).not.toBeNull()
 })

@@ -35,9 +35,12 @@ type ObjectInfo = {
 };
 
 describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the engine runs", () => {
-  it("every served sampler/scheduler exists in the production /object_info", () => {
+  it("every served sampler/scheduler exists in the production /object_info", (ctx) => {
+    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
+    // (ctx.skip — the runner counts it skipped, never passed), so a
+    // clone without the cache cannot read green on this wall.
     if (!existsSync(DOC)) {
-      console.log("no production object_info snapshot on this clone — vocab engine-subset wall skipped (the lane run owns the live read)");
+      ctx.skip(true);
       return;
     }
     const doc = JSON.parse(readFileSync(DOC, "utf8")) as ObjectInfo;

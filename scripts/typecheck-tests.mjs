@@ -69,7 +69,19 @@ const runOne = (d) => {
   // packages). The package's own config keeps its emit contract;
   // this tier never emits.
   const flat = flattenConfig(d);
-  delete flat.compilerOptions.rootDir;
+  // A COMPILED package (it EMITS to lib) keeps rootDir: "." for its
+  // test tier. Its specs import its own package face (NodeNext
+  // forbids extensionless relative paths, and `.ts` specifiers are
+  // illegal beside a real emit), so resolving the package's own
+  // export map needs a project root — without it tsc answers
+  // TS2209 "the project root is ambiguous". A source-run package
+  // still loses rootDir, or the foreign sources its specs import
+  // TS6059.
+  if (flat.compilerOptions.noEmit === false || typeof flat.compilerOptions.outDir === "string") {
+    flat.compilerOptions.rootDir = ".";
+  } else {
+    delete flat.compilerOptions.rootDir;
+  }
   flat.compilerOptions.noEmit = true;
   flat.include = include;
   writeFileSync(cfg, JSON.stringify(flat));

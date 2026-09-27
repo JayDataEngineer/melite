@@ -59,35 +59,35 @@ describe("the address grammar — refusals are null, never throws", () => {
 
 describe("readBench — the door's wire is untyped at this seam", () => {
   test("a missing stages list reads as no stages (never a throw)", () => {
-    expect(readBench({}).stages).toEqual([]);
+    expect(readBench({}, 'main').stages).toEqual([]);
   });
   test("malformed rows filter out (the view never breaks on one bad row)", () => {
     const bench = readBench({
       draft_id: "d", rev: 1,
       stages: [null, 42, { title: "no id" }, { id: "s_0", card: "image-gen" }],
       log: [null, { rev: "x" }, { rev: 3 }],
-    });
+    }, 'main');
     expect(bench.stages).toEqual([{ id: "s_0", card: "image-gen" }]);
     expect(bench.log).toEqual([{ rev: 3 }]);
   });
   test("a missing log reads as no log", () => {
-    expect(readBench({}).log).toEqual([]);
+    expect(readBench({}, 'main').log).toEqual([]);
   });
   test("the zero defaults (no draft_id, no rev)", () => {
-    expect(readBench({})).toMatchObject({ draftId: "bench-main", rev: 0 });
+    expect(readBench({}, 'main')).toMatchObject({ draftId: "bench-main", rev: 0 });
   });
   test("CARD BIRTH: a single cardless stage re-attaches the draft intent", () => {
-    const bench = readBench({ intent: "h3-timeline", stages: [{ id: "s_0", params: {} }] });
+    const bench = readBench({ intent: "h3-timeline", stages: [{ id: "s_0", params: {} }] }, 'main');
     expect(bench.stages).toEqual([{ id: "s_0", params: {}, card: "h3-timeline" }]);
   });
   test("no birth law without an intent, with a card, or across stages", () => {
-    const noIntent = readBench({ stages: [{ id: "s_0" }] });
+    const noIntent = readBench({ stages: [{ id: "s_0" }] }, 'main');
     expect(noIntent.stages).toEqual([{ id: "s_0" }]);
-    const carded = readBench({ intent: "x", stages: [{ id: "s_0", card: "image-gen" }] });
+    const carded = readBench({ intent: "x", stages: [{ id: "s_0", card: "image-gen" }] }, 'main');
     expect(carded.stages).toEqual([{ id: "s_0", card: "image-gen" }]);
-    const blankCarded = readBench({ intent: "x", stages: [{ id: "s_0", card: "" }] });
+    const blankCarded = readBench({ intent: "x", stages: [{ id: "s_0", card: "" }] }, 'main');
     expect(blankCarded.stages).toEqual([{ id: "s_0", card: "x" }]);
-    const multi = readBench({ intent: "x", stages: [{ id: "s_0" }, { id: "s_1" }] });
+    const multi = readBench({ intent: "x", stages: [{ id: "s_0" }, { id: "s_1" }] }, 'main');
     expect(multi.stages).toEqual([{ id: "s_0" }, { id: "s_1" }]);
   });
   test("emptyBench is the fresh conversation's zero state (rev 0)", () => {

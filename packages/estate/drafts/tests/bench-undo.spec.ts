@@ -54,7 +54,7 @@ test("undo(patch) restores before-values and drops added keys", async () => {
   await patchBench(drafts, "s", { stage: "a", params: { steps: 9, extra: true }, expect_rev: 0 });
   await undoBench(drafts, "s", { n: 1 });
   const doc = getBench(drafts, "s");
-  const st = (doc.stages as Array<{ params: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  const st = (doc.stages as Array<{ id: string; params: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.params, { steps: 4 });
 });
 
@@ -110,12 +110,12 @@ test("undo(rewire) restores the before-binding, then removes an added one", asyn
   // Undo the rebind: the before-binding returns.
   await undoBench(drafts, "s", { n: 1 });
   let doc = getBench(drafts, "s");
-  let st = (doc.stages as Array<{ inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  let st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.inputs.image, { stage: "b", output: "default" });
   // Undo the bind itself: the input disappears.
   await undoBench(drafts, "s", { n: 1 });
   doc = getBench(drafts, "s");
-  st = (doc.stages as Array<{ inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.equal("image" in st.inputs, false);
 });
 
@@ -211,7 +211,7 @@ test("crafted rewire inverse with a before-binding restores it", async () => {
   });
   await undoBench(drafts, "craft4", { n: 1 });
   const doc = getBench(drafts, "craft4");
-  const st = (doc.stages as Array<{ inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.inputs.image, { stage: "z", output: "default" });
 });
 

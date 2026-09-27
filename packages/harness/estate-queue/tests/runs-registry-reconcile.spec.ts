@@ -52,7 +52,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};
       if (id === "boom") throw new Error("transport down");
-      throw new RemoteError("draft/not-found", "no doc", {});
+      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
     },
   };
   const cards: Record<string, (...args: never[]) => unknown> = {
@@ -212,7 +212,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
       get: async (id: string): Promise<unknown> => {
         if (id === "d1") return {};
-        throw new RemoteError("draft/not-found", "no doc", {});
+        throw new RemoteError("draft/not-found", "no doc", { draftId: id });
       },
     };
     const cards: Record<string, (...args: never[]) => unknown> = {
@@ -247,7 +247,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     const core = new QueueCore();
     (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
     (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
-      get: async (): Promise<unknown> => { throw new RemoteError("draft/not-found", "no doc", {}); },
+      get: async (id: string): Promise<unknown> => { throw new RemoteError("draft/not-found", "no doc", { draftId: id }); },
     };
     const cards: Record<string, (...args: never[]) => unknown> = {
       objectInfo: (): unknown => null,
@@ -255,8 +255,12 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     };
     (ctx as unknown as Record<string, unknown>)["cards"] = cards;
     let svc: RunsRuntimeService | null = null;
-    assert.doesNotThrow((): void => { svc = new RunsRuntimeService(ctx); });
-    await new Promise((r): void => setTimeout(r, 30));
+    try {
+      svc = new RunsRuntimeService(ctx);
+    } catch (e) {
+      assert.fail("construction threw: " + String(e));
+    }
+    await new Promise((r): void => { setTimeout(r, 30); });
     assert.ok(svc);
     assert.equal(svc.reconciled, true, "the once-guard tripped before the fault");
     assert.deepEqual(await svc.bootReconcile(), [], "the later call is a no-op");
@@ -379,7 +383,7 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     s.svc.reconciled = false;
     const revived = await s.svc.bootReconcile();
     assert.deepEqual(revived, [], "nothing revived — the corrupt request is not a claim");
-    await new Promise((r): void => setTimeout(r, 40));
+    await new Promise((r): void => { setTimeout(r, 40); });
     const side = JSON.parse(readFileSync(join(outRoot, "run-corruptreq", "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(side["status"], "failed");
     assert.match(String(side["error"]), /never executed/);

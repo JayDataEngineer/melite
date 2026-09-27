@@ -54,7 +54,7 @@ function bindMedia(items: Array<{ url: string; name: string }>): void {
       stop: dead('runs/stop'), validate: dead('runs/validate'),
     },
     media: { list: async () => ({ ok: true, value: { items } }) },
-  } as Parameters<typeof bindEstateRemote>[0])
+  } as unknown as Parameters<typeof bindEstateRemote>[0]) // the wall binds only the namespaces it touches; unused arms throw loud (the leaf's bind law)
 }
 
 test('STACKS: the head names the list ABOVE the row — the additive-bag grammar (#37)', () => {
@@ -91,7 +91,7 @@ test('STACKS: an empty stack seats its head + the add-cell (the next slot, waiti
 
 test('STACKS: a pick on the add-cell APPENDS (adding one opens the next slot)', async () => {
   bindMedia([{ url: 'https://host/a.png', name: 'a' }])
-  const { onSet } = form({ user: {}, wire: { loadMedia: fetchMediaLibrary } })
+  const { onSet } = form({ user: {}, wire: { candidates: [], loadMedia: fetchMediaLibrary } }) // no upstream stages in this wall — the rail is empty, the media lane is exercised
   fireEvent.click(screen.getByRole('button', { name: 'Add Refs source' }))
   fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
   const rows = await screen.findAllByTestId('source-pick-row')

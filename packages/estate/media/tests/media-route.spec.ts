@@ -14,6 +14,7 @@
 // arm). TMP OWNERSHIP: every tree is test-owned via mintRoot() +
 // onTestFinished disposal. No mocks, no `any` — casts only at the
 // cordis Service boundary.
+import type { Plugin } from "@deepseek-ai/cordis";
 import { describe, onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import {
@@ -43,7 +44,7 @@ import {
   CARD_BUILD_PREFIX,
   cardBuildStamps,
   repoRootOf,
-} from "../src/index.ts";
+} from "@melite/estate-media";
 import { stampLine, stampOf, unstamped } from "@melite/contracts/buildStamp";
 
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
@@ -155,7 +156,7 @@ async function mountWeb(
     // legacy single-root seat (the fallback arm stays covered).
     ctx.provide("queue", stateRoots === undefined ? { stateRoot } : { stateRoot, stateRoots });
   }
-  await ctx.plugin({ name: "t-probe", apply: mediaApply } as never);
+  await ctx.plugin({ name: "t-probe", apply: mediaApply } as unknown as Plugin);
   // THREE prefix rows (the alias law, operator 2026-10-10: no
   // breakage, ever): the live runs route, the LEGACY /v1/assets
   // spelling of the same handler — every stored bench, archive and
@@ -195,7 +196,7 @@ async function mountWeb(
 describe("the mount halves", () => {
   test("headless mount: no webServer seat keeps the list door, route unmounted", async () => {
     const ctx = new Context();
-    await ctx.plugin({ name: "t-probe", apply: mediaApply } as never);
+    await ctx.plugin({ name: "t-probe", apply: mediaApply } as unknown as Plugin);
     const remote = (
       ctx as unknown as { mediaRemote?: unknown }
     ).mediaRemote;

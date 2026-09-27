@@ -31,7 +31,7 @@ const imgSpec: FormSpecDoc = {
 function Host({ spec, user, onSet }: {
   spec: FormSpecDoc
   user: SpecValues
-  onSet: ReturnType<typeof vi.fn>
+  onSet: (name: string, v: unknown) => void
 }): ReturnType<typeof createElement> {
   return createElement(SpecForm, {
     spec,
@@ -45,7 +45,7 @@ test('THE SLOT ROW: one group\'s image squares sit side-by-side in ONE row conta
   const { container } = render(createElement(Host, {
     spec: imgSpec,
     user: {},
-    onSet: vi.fn(),
+    onSet: vi.fn<(name: string, v: unknown) => void>(),
   }))
   const rows = container.querySelectorAll('[class*="specSlotRow"]')
   expect(rows.length).toBe(1) // both squares share ONE row
@@ -77,7 +77,7 @@ const railSpec: FormSpecDoc = {
 test('THE INPUT RAIL: the declared signature renders ONE rail in signature order — image1 first, no second input group', () => {
   const { container } = render(createElement(SpecForm, {
     user: { reference_images: ['a.png'] },
-    onSet: vi.fn(),
+    onSet: vi.fn<(name: string, v: unknown) => void>(),
     spec: railSpec,
   }))
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
@@ -103,7 +103,7 @@ test('without a signature the singles stay grouped — but the declared stack st
   const { container } = render(createElement(Host, {
     spec: { ...railSpec, inputs: undefined },
     user: {},
-    onSet: vi.fn(),
+    onSet: vi.fn<(name: string, v: unknown) => void>(),
   }))
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
   expect(rail).toBeTruthy()
@@ -144,7 +144,7 @@ const modSlotSpec: FormSpecDoc = {
 test('THE MOD-MODAL LAW: a mod-owned slot NEVER seats in the rail — the card-owned squares only', () => {
   const { container } = render(createElement(SpecForm, {
     user: {},
-    onSet: vi.fn(),
+    onSet: vi.fn<(name: string, v: unknown) => void>(),
     spec: modSlotSpec,
   }))
   const rail = container.querySelector('[data-input-rail]') as HTMLElement
@@ -159,7 +159,7 @@ test('THE MOD-MODAL LAW: the mod renders its own input seat — the reference im
   const user = userEvent.setup()
   render(createElement(SpecForm, {
     user: {},
-    onSet: vi.fn(),
+    onSet: vi.fn<(name: string, v: unknown) => void>(),
     spec: modSlotSpec,
   }))
   await user.click(screen.getByRole('button', { name: 'Add modifier' }))

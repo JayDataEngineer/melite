@@ -273,7 +273,7 @@ describe("flowRows", () => {
     assert.ok(rows.length >= 11);
     const anny = rows.find((r) => r.row.id === "flow:anny-hmr");
     assert.ok(anny !== undefined);
-    assert.ok(anny.bodyPath.endsWith(join("flows", "anny-hmr", "SKILL.md")));
+    assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr", "SKILL.md")));
     assert.equal(anny.bodyText, null);
     const tts = rows.find((r) => r.row.id === "flow:audio-native-tts");
     assert.ok(tts !== undefined && tts.bodyText !== null && tts.bodyText.length > 0);
@@ -333,7 +333,7 @@ describe("buildSkillIndex + findSkill", () => {
     assert.ok(typeof idx.flows.count === "number");
     const card = findSkill(ROOT, "card:c1");
     assert.ok(card !== null && card.bodyText === null);
-    assert.ok(card.path.endsWith("AGENT.md"));
+    assert.ok(card.path !== null && card.path.endsWith("AGENT.md"));
     const model = findSkill(ROOT, "model:m1");
     assert.ok(model !== null);
     const flow = findSkill(ROOT, "flow:anny-hmr");

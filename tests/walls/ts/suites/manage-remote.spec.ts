@@ -18,7 +18,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from '@deepseek-ai/cordis';
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // The storage stack composed AT THE COMPOSITION SITE (the runs-remote
@@ -70,21 +70,23 @@ async function boot(): Promise<Booted> {
   process.env["MELITE_STATE_ROOT"] = stateRoot;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
-  await ctx.plugin(timerPlugin as never);
-  const fiber = ctx.plugin(queuePlugin as never, { repoRoot: root });
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root });
   await fiber;
-  await ctx.plugin(Storage as never);
+  await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin(
-    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
+    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
     { root: join(stateRoot, "storage") },
   );
   await ctx.plugin(
-    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
+    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(manageProvider as never);
-  await ctx.plugin(manageRemotePlugin as never);
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(manageProvider as unknown as Plugin);
+  await ctx.plugin(manageRemotePlugin as unknown as Plugin);
   const booted = (ctx as unknown as { manageRemote: ManageRemoteService });
   return { ctx, adapter: booted.manageRemote, fiber, root };
 }

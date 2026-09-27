@@ -20,7 +20,7 @@ import {
   apply as mediaApply,
   cardBuildStamps,
   repoRootOf,
-} from "../src/index.ts";
+} from "@melite/estate-media";
 
 type Handler = (req: { method?: string; url?: string }, res: {
   writeHead(status: number, headers: Record<string, string>): void;

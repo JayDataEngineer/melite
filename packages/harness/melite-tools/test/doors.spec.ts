@@ -281,7 +281,7 @@ describe('doors apply', () => {
         })
       },
     })
-    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never }) // the provides above satisfy the door's private CtxView at runtime; cordis's Plugin type can't see them
     try {
       await door
       await Promise.resolve()
@@ -347,7 +347,7 @@ describe('doors apply', () => {
         })
       },
     })
-    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never }) // the provides above satisfy the door's private CtxView at runtime; cordis's Plugin type can't see them
     try {
       await door
       await Promise.resolve()
@@ -422,7 +422,7 @@ describe('doors apply', () => {
         }
       },
     })
-    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply })
+    const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never }) // the provides above satisfy the door's private CtxView at runtime; cordis's Plugin type can't see them
     try {
       await door
       await Promise.resolve()
@@ -1213,6 +1213,7 @@ describe('/v1 prefix discovery arms', () => {
     const body = r.body as {
       inputs: Array<{ name: string; kind: string; required?: boolean }>
       outputs: Record<string, string>
+      schema: { refs: Record<string, { dict?: Record<string, unknown> }> } // the envelope serves edges AND schema together
     }
     // THE EDGE EMISSION (operator order, 2026-09-12; the required
     // join moved client-side with the envelope, 2026-09-14): a card
@@ -1225,7 +1226,7 @@ describe('/v1 prefix discovery arms', () => {
     assert.deepEqual(body.outputs, { default: 'image' }, 'outputs serve as declared (flowKinds)')
     // the required fact rides the envelope: upscale-tools declares
     // input_image required=True in its schema — the node says so
-    const dict = Object.values((body as { schema: { refs: Record<string, { dict?: Record<string, unknown> }> } }).schema.refs)
+    const dict = Object.values(body.schema.refs)
       .flatMap((n) => Object.entries(n.dict ?? {}))
       .find(([n]) => n === 'input_image')
     assert.ok(dict !== undefined, 'input_image rides the card envelope')
@@ -1714,7 +1715,7 @@ describe('the /v1 poser arms (estate verbs, never a proxy)', () => {
     await bootUpstream()
     const h = boot({})
     const arrReq = fakeReq({ method: 'POST', url: 'http://localhost/v1/poser/mesh', body: { identity_model: 'anny' } })
-    arrReq.headers['content-type'] = ['application/json', 'application/json']
+    arrReq.headers['content-type'] = ['application/json', 'application/json'] as unknown as string // the wire allows repeated headers; the fake's record types one string
     const arrRes = fakeRes()
     h.routes.find((x) => x.path === '/v1')?.handler(arrReq, arrRes.res)
     const arrOut = await arrRes.done

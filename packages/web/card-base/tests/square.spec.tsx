@@ -298,7 +298,7 @@ test('THE HIDDEN PICKER: a cancelled pick resets silent (never a voice on empty)
 })
 
 let voices = 0
-function UnmountingHost(): ReturnType<typeof h> {
+function UnmountingHost(): ReturnType<typeof h> | null { // the host renders nothing once the pick unmounts it
   const [on, setOn] = useState(true)
   if (!on) return null
   return h(InputSquare, { label: 'x', onFile: () => { voices += 1; setOn(false) } })

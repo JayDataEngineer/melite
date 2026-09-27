@@ -55,14 +55,14 @@ async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpe
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
-  await ctx.plugin(Storage as never);
+  await ctx.plugin(Storage as never, undefined as never); // Storage takes no config; cordis Spread<GetPluginConfig> keeps the config arg positional
   await ctx.plugin(
     { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
-    { root: join(root, "storage") },
+    { root: join(root, "storage") } as never, // the plugin is cast to never so its Config schema cannot name the static type; the backend validates the shape at mount
   );
   await ctx.plugin(
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
-    { backend: "json" },
+    { backend: "json" } as never, // same never-plugin law as the json backend above
   );
   return { ctx, domain: await openDraftsDomain(ctx) };
 }
@@ -1414,7 +1414,7 @@ test("a params patch carrying calls[].transition LANDS and persists (the seam to
   }, null, sig);
   assert.equal(answer.delivered, true);
   assert.deepEqual(answer.patched, ["params"]);
-  const row = await domain.table("docs").get("bench-seam") as { doc: { stages: Array<{ id: string; params: { calls: Array<{ transition?: string }> } }>; bench: { log: Array<{ summary: string }> } } };
+  const row = await domain.table("docs").get("bench-seam") as unknown as { doc: { stages: Array<{ id: string; params: { calls: Array<{ transition?: string }> } }>; bench: { log: Array<{ summary: string }> } } }; // the stored row is the full DraftRecord; the wall reads only the seam + receipt slice
   const calls = row.doc.stages.find((s) => s.id === "s_0")!.params.calls;
   assert.equal(calls[1]!.transition, "extend", "the landed doc carries the toggled seam");
   // THE INNER-KEY RECEIPT (2026-09-23): the seam night proved the
@@ -1548,7 +1548,7 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
     const row = await bench.ensure({
       session: "lane-r",
       stages: [{
-        id: "s_0", card: "tts", provenance: RESTORED_PROVENANCE,
+        id: "s_0", card: "tts", provenance: RESTORED_PROVENANCE as never, // the server's in-process restore stamp (unforgeable over the wire by design); the door types the body as JSON, so the test names the stamp never — the runtime row is untouched
         params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
       }],
     }, sig);
@@ -1597,7 +1597,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
       doc: {
         stages: [{ id: "s_0", card: "tts", params: { model: "qwen3-tts", variant: "customvoice", text: "hello" } }],
       },
-    });
+    } as never); // a stages-only fixture on the legacy row envelope (row-level 'rev' predates 'updated_at'); the door under test tolerates it — the fixture stays byte-identical
     const drafts = new DraftsRemoteService(ctx);
     const poison = await codeOf(drafts.patch("bench-main", "s_0", {
       params: { design_prompt: "a warm narrator" },
@@ -1605,7 +1605,7 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     assert.ok(poison.startsWith("bench/lane-refusal|"), "the GUI door refuses: " + poison);
     // the refused edit did NOT land (the domain's cached record is
     // mutated in place — the admission must precede the assignment)
-    const row = await domain.table("docs").get("bench-main") as { doc: { stages: Array<{ params: Record<string, unknown> }> } };
+    const row = await domain.table("docs").get("bench-main") as unknown as { doc: { stages: Array<{ params: Record<string, unknown> }> } }; // same partial-row read as the seam wall above
     assert.equal(row.doc.stages[0]!.params["design_prompt"], undefined, "the refused merge leaked nothing");
     // the cured edit lands
     const ok = await drafts.patch("bench-main", "s_0", {

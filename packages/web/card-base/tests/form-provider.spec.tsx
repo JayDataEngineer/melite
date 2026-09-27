@@ -338,7 +338,7 @@ test('FROM MEDIA: the picker closes without writing (never a stray pick)', async
 })
 
 function providerFileInput(): HTMLInputElement {
-  const all = [...document.querySelectorAll('input[type="file"]')] as HTMLInputElement[]
+  const all = Array.from(document.querySelectorAll('input[type="file"]')) as HTMLInputElement[] // same DOM-without-Iterable read as the axes wall
   const found = all.find((el) => (el.style as CSSStyleDeclaration).display === 'none')
   if (found === undefined) throw new Error('no provider file input')
   return found

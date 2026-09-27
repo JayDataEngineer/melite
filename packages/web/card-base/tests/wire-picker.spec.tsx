@@ -33,7 +33,7 @@ function openPicker(props: Partial<Parameters<typeof WirePickerModal>[0]> = {}) 
   }))
   // the Modal atom portals to document.body — hooks read document-wide
   const options = (): HTMLElement[] =>
-    [...document.querySelectorAll('[data-wire-option]')] as HTMLElement[]
+    Array.from(document.querySelectorAll('[data-wire-option]')) as HTMLElement[] // same DOM-without-Iterable read as the axes wall
   const wire = (hook: string): HTMLElement | null => document.querySelector(`[data-wire-${hook}]`)
   return { onPick, onUnwire, onClose, container: rendered.container, unmount: rendered.unmount, options, wire }
 }

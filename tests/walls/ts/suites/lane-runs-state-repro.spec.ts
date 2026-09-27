@@ -38,7 +38,7 @@ import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeF
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { Context } from "@deepseek-ai/cordis";
+import { Context, type Plugin } from "@deepseek-ai/cordis";
 import Storage from "@deepseek-ai/dsh-storage";
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -111,12 +111,14 @@ function copyRealTree(dst: string): void {
 async function bootBundle(root: string): Promise<Context> {
   const ctx = new Context();
   contexts.push(ctx);
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(estateBundle as never);
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(estateBundle as unknown as Plugin);
   return ctx;
 }
 
@@ -128,7 +130,7 @@ async function settleMissing(ctx: Context, names: readonly string[], ms: number)
   for (;;) {
     const missing = names.filter((n) => ctx.get(n, false) === undefined);
     if (missing.length === 0 || Date.now() > deadline) return missing;
-    await new Promise((r): void => setTimeout(r, 100));
+    await new Promise((r) => setTimeout(r, 100));
   }
 }
 
@@ -155,15 +157,15 @@ describe("the false-death hunt's four laws", () => {
     delete process.env["MELITE_STATE_ROOT"];
     const ctx = new Context();
     contexts.push(ctx);
-    await ctx.plugin(timerPlugin as never);
+    await ctx.plugin(timerPlugin as unknown as Plugin);
     expect(() => new QueueService(ctx, {})).toThrow(/unpinned/);
     // And through the bundle: the row's fiber dies buried — the seat
     // NEVER settles. This silence is the false-death lesson: an
     // unpinned boot looks identical to a dead seat from the door.
     const ctx2 = new Context();
     contexts.push(ctx2);
-    await ctx2.plugin(timerPlugin as never);
-    await ctx2.plugin(estateBundle as never);
+    await ctx2.plugin(timerPlugin as unknown as Plugin);
+    await ctx2.plugin(estateBundle as unknown as Plugin);
     // 2s, not 5: the burial is DETERMINISTIC (an unpinned boot never
     // seats queue — the constructor throws) so this poll cannot
     // flake green; it only waits out the proof window.

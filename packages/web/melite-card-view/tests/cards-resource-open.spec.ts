@@ -269,7 +269,7 @@ describe("the run view — hydrate, then poll to terminal", () => {
     const fakes = stubWire({
       runDocs: [
         { run_id: "run-1", status: "running", stages: [] },
-        { run_id: "run-1", status: "failed", error: "gpu gone", stages: [] },
+        { run_id: "run-1", status: "failed" as const, error: "gpu gone", stages: [] },
       ],
       // the blip lands mid-poll (the 2nd status call): the hydrate
       // ok'd, the blip is swallowed with the last ok value staying,

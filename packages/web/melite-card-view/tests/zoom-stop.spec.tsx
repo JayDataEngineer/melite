@@ -12,22 +12,23 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createElement as h } from "react";
 import { CardZoomOverlay } from "../src/client/zoom.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
-const STAGE: BenchStageRow = {
+const STAGE: BenchStageView = {
   id: "s_0", engine: "comfyui", card: "image-gen", title: "hero",
   params: { prompt: "a red cube" }, runStatus: "running",
 };
 const BENCH: CardsBenchValue = {
   kind: "bench", draftId: "bench-main", rev: 7, stages: [STAGE], log: [],
+  sessionKey: "main",
 };
 
-function mount(stage: BenchStageRow = STAGE): { stops: number; runs: number } {
+function mount(stage: BenchStageView = STAGE): { stops: number; runs: number } {
   let stops = 0;
   let runs = 0;
   const rec = {

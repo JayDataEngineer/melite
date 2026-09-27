@@ -12,8 +12,8 @@ import * as icons from '../src/icons.tsx'
 
 afterEach(cleanup)
 
-const GLYPHS: Array<[string, (props: icons.IconProps) => unknown]> = Object.entries(icons).filter(
-  (entry): entry is [string, (props: icons.IconProps) => unknown] =>
+const GLYPHS: Array<[string, (props: icons.IconProps) => ReturnType<typeof h>]> = Object.entries(icons).filter(
+  (entry): entry is [string, (props: icons.IconProps) => ReturnType<typeof h>] => // the glyphs return the same element h builds — unknown would erase the drawing contract
     typeof entry[1] === 'function' && /^[A-Z]/.test(entry[0]),
 )
 

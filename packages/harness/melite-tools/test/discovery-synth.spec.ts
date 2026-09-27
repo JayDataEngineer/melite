@@ -10,7 +10,10 @@ import assert from 'node:assert/strict'
 const mockState = vi.hoisted(() => ({
   decls: {} as Record<string, Record<string, unknown>>,
   defs: new Map() as Map<string, unknown>,
-  svc: null as null | Record<string, unknown>,
+  // The service fake always rides the svc() builder below (a full
+  // ComfyUIService cast from intentionally-partial fixtures) or null
+  // past reset() — never a bare record.
+  svc: null as null | ComfyUIService,
 }))
 
 vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
@@ -42,7 +45,7 @@ const sweepRetry = async <T>(run: () => Promise<T>): Promise<T> => {
       return await run()
     } catch (error) {
       if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
-      await new Promise((r): void => setTimeout(r, 200))
+      await new Promise((r): void => { setTimeout(r, 200) })
     }
   }
 }

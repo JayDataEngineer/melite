@@ -235,7 +235,7 @@ describe('readBench — the card-birth re-attach (the hour-6 form regression)', 
     const value = readBench({
       draft_id: 'bench-default', rev: 5, intent: 'h3-timeline',
       stages: [{ id: 's_0', engine: 'comfyui', params: {} }],
-    })
+    }, 'default')
     expect(value.stages[0]!.card).toBe('h3-timeline')
   })
 
@@ -246,7 +246,7 @@ describe('readBench — the card-birth re-attach (the hour-6 form regression)', 
         { id: 's_1', card: 'img-to-mesh', engine: 'comfyui', params: {} },
         { id: 's_2', card: 'image-gen', engine: 'comfyui', params: {} },
       ],
-    })
+    }, 'main')
     expect(value.stages.map((s) => s.card)).toEqual(['img-to-mesh', 'image-gen'])
   })
 
@@ -254,7 +254,7 @@ describe('readBench — the card-birth re-attach (the hour-6 form regression)', 
     const value = readBench({
       draft_id: 'bench-seed', rev: 1, intent: 'ignored-when-card-present',
       stages: [{ id: 's_0', card: 'h3-timeline', engine: 'comfyui', params: {} }],
-    })
+    }, 'seed')
     expect(value.stages[0]!.card).toBe('h3-timeline')
   })
 })
@@ -311,7 +311,7 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
     const fakes = stubBenchGet(benchDoc(7, ['hero frame']))
     try {
       const frames: unknown[] = []
-      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(50) })) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench', { signal: AbortSignal.timeout(50) }, undefined, undefined)) {
         frames.push(frame)
       }
       expect(frames.length).toBe(2) // then the tail ENDS — a broken mount never fakes a watch
@@ -329,7 +329,7 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
     const fakes = stubBenchThrow(new Error('gateway exploded'))
     try {
       const frames: unknown[] = []
-      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_x', { signal: AbortSignal.timeout(50) })) {
+      for await (const frame of openCardsResource('dsh-resource://cards/bench/s_x', { signal: AbortSignal.timeout(50) }, undefined, undefined)) {
         frames.push(frame)
         break
       }
@@ -342,7 +342,7 @@ describe('stroke 44 — a fresh conversation\'s bench (missing = empty, never fa
   test('the watcher baselines a missing bench at rev 0 — the FIRST agent card in a new conversation reveals', async () => {
     const bench = fakeRemote()
     const landed: string[] = []
-    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) }, undefined, bench.remote, bench.remote.bench)
+    const stop = watchBenchLands(() => 's_new', (key) => { landed.push(key) }, undefined, bench.remote, bench.remote.bench, undefined)
     await until(() => bench.isOpen('s_new'))
     bench.push('s_new', zeroDoc('s_new'))
     bench.push('s_new', agentDoc(1, ['first agent card']))
@@ -500,7 +500,7 @@ describe('the bench resource stream (live co-presence, the mux tail)', () => {
 // a missing weight from a dead wire.
 describe('observeRunOutcome — the failure carry', () => {
   const statusDoc = (error: string | undefined): Record<string, unknown> => ({
-    run_id: 'run-1', status: 'failed', draft_id: 'bench-main',
+    run_id: 'run-1', status: 'failed' as const, draft_id: 'bench-main',
     ...(error !== undefined ? { error } : {}),
     stages: [{ id: 's_0', status: 'error', url: '', error: "clip_name 'qwen_2.5_vl_7b_fp8_scaled.safetensors' not in [14 clips]" }],
   })
@@ -647,7 +647,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     // rows; history never yanks), then the agent's write (rev 13)
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench, undefined)
     await until(() => bench.isOpen('main'))
     bench.push('main', agentDoc(12, ['hero frame']))
     await tick()
@@ -662,7 +662,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
   test('a user-authored bump NEVER reveals — the human was the author', async () => {
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench, undefined)
     await until(() => bench.isOpen('main'))
     bench.push('main', userDoc(12, ['hero frame']))
     bench.push('main', userDoc(13, ['hero frame', 'user edit']))
@@ -676,7 +676,7 @@ describe('the bench spotlight (the one-flow reveal, stream edition)', () => {
     // reconnects — the agent's rev-14 write on the NEW generation fires
     const bench = fakeRemote()
     const lands: number[] = []
-    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench)
+    const stop = watchBenchLands(() => 'main', () => { lands.push(1) }, undefined, bench.remote, bench.remote.bench, undefined)
     await until(() => bench.isOpen('main'))
     bench.push('main', userDoc(12, ['hero frame']))
     await tick()

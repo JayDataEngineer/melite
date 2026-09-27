@@ -26,7 +26,7 @@ function mockRequest(handle: (method: string, path: string) => unknown): { reque
 describe('melite_skill_index — the static face', () => {
   test('the scan has one static face', () => {
     const tool = skillIndex((async () => ({})) as EstateRequest)
-    assert.deepEqual(tool.presentCall!(), { card: 'generic', title: 'Skill index', kind: 'search' })
+    assert.deepEqual(tool.presentCall!(undefined as never), { card: 'generic', title: 'Skill index', kind: 'search' }) // the face takes no args at runtime; the type demands one
   })
 })
 
@@ -45,7 +45,7 @@ describe('melite_skill_index execute — the binding vocabulary', () => {
     })
     const tool = skillIndex(seen.request)
     const out = await tool.execute({}, exec) as Record<string, unknown>
-    assert.equal(out.cards.length, 1)
+    assert.equal((out.cards as Array<unknown>).length, 1)
     assert.equal(JSON.stringify(out).includes('krea-2'), false, 'THE CARD ABSTRACTION: family rows never ride')
     assert.deepEqual(out.cards, payload.cards)
     assert.deepEqual(out.flows, payload.flows)

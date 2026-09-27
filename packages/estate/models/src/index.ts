@@ -33,6 +33,7 @@
 // fallback absorbing them).
 //
 // Erasable-syntax TS only: no enums, `import type` for types.
+import { segmentConfined } from "@melite/contracts/mediaKinds"
 import type { Context } from "@deepseek-ai/cordis";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
@@ -71,9 +72,11 @@ export const MODELS_PREFIX = "/v1/models";
  *  law: storage is configured, never guessed). */
 export const STORE_ROOT_ENV = "MELITE_MODELS_STORE_ROOT";
 
-/** One confined path segment: [A-Za-z0-9._-]+, no dots-only (the
- *  media door's grammar — the regex is the first lock). */
-const SEGMENT = /^(?!\.{1,2}$)[A-Za-z0-9._-]+$/;
+// ONE SEGMENT GRAMMAR (li-aq.3, the closure audit's RULE 10 find):
+// this private charset was the media door's law re-spelled — the
+// drift class segmentConfined exists to kill. The contracts' own
+// grammar (space/unicode/parens legal, dots-only and NUL refused)
+// is THE law; the regex is gone.
 
 /** A mapped failure — status + code + message ride the response. */
 export class ModelsDoorError extends Error {
@@ -97,7 +100,7 @@ export function parseTarget(
   const lite = parts[1];
   const name = parts[2];
   if (lite !== "provisions") return null;
-  if (!SEGMENT.test(family) || !SEGMENT.test(name)) return null;
+  if (!segmentConfined(family) || !segmentConfined(name)) return null;
   return { family, name };
 }
 
@@ -255,7 +258,7 @@ export function resolveDest(
 ): string {
   const segs = folder.split("/").filter((p) => p !== "");
   for (const seg of segs) {
-    if (!SEGMENT.test(seg))
+    if (!segmentConfined(seg))
       throw new ModelsDoorError(
         502,
         "models/bad-provision-folder",

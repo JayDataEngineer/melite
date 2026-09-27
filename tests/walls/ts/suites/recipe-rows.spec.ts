@@ -30,6 +30,9 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+// the variant rows ARE VariantRows (group + wire_defaults on the
+// seam) — the wall reads them as such, not as loose Records.
+import type { VariantRow } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
 
 /** The retired debt census (2026-09-18: all 17 exemptions
  *  resolved — ten families author truthful rows, seven were
@@ -129,8 +132,8 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       const caller = carried.get(id);
       if (caller === undefined) continue; // route-only: no card renders pills
       checked += 1;
-      const stamping = (f.variants ?? []).filter((v: Record<string, unknown>) =>
-        v["group"] === "Recipe" && Object.keys((v["wire_defaults"] ?? {}) as Record<string, unknown>).length > 0);
+      const stamping = (f.variants ?? []).filter((v: VariantRow) =>
+        v.group === "Recipe" && Object.keys(v.wire_defaults ?? {}).length > 0);
       assert.ok(stamping.length > 0,
         `${id}: declares the Recipe group, its card (${caller}) renders the dropdown, and NO row stamps — author truthful rows (the 2026-09-18 retirement left zero exemptions)`);
     }
@@ -143,8 +146,8 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     for (const [id, how] of Object.entries(RESOLVED)) {
       const f = getModel(id);
       const groups = (f.variant_groups ?? []).map((g: unknown) => typeof g === "string" ? g : (g as { id?: string }).id);
-      const stamping = (f.variants ?? []).filter((v: Record<string, unknown>) =>
-        v["group"] === "Recipe" && Object.keys((v["wire_defaults"] ?? {}) as Record<string, unknown>).length > 0);
+      const stamping = (f.variants ?? []).filter((v: VariantRow) =>
+        v.group === "Recipe" && Object.keys(v.wire_defaults ?? {}).length > 0);
       if (how === "scoped") {
         assert.ok(!groups.includes("Recipe"), `${id} re-declared the Recipe group — author truthful rows instead of re-promising`);
       } else {
@@ -162,16 +165,16 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       if (caller === undefined) continue;
       const scalars = declaredScalars(caller, id);
       if (scalars.size === 0) continue; // no live envelope (action cards)
-      for (const row of (f.variants ?? []) as Array<Record<string, unknown>>) {
-        const stamp = (row["wire_defaults"] ?? {}) as Record<string, unknown>;
+      for (const row of f.variants ?? []) {
+        const stamp = row.wire_defaults ?? {};
         for (const [k, v] of Object.entries(stamp)) {
-          assert.ok(scalars.has(k), `${id} recipe ${row["id"]}: stamps "${k}" — the card ${caller} declares no such param (a dead stamp)`);
+          assert.ok(scalars.has(k), `${id} recipe ${row.id}: stamps "${k}" — the card ${caller} declares no such param (a dead stamp)`);
           const spec = scalars.get(k)!;
           if (typeof v === "number") {
-            if (spec.min !== undefined) assert.ok(v >= spec.min, `${id} recipe ${row["id"]}: ${k}=${v} under the card's declared min ${spec.min}`);
-            if (spec.max !== undefined) assert.ok(v <= spec.max, `${id} recipe ${row["id"]}: ${k}=${v} over the card's declared max ${spec.max}`);
+            if (spec.min !== undefined) assert.ok(v >= spec.min, `${id} recipe ${row.id}: ${k}=${v} under the card's declared min ${spec.min}`);
+            if (spec.max !== undefined) assert.ok(v <= spec.max, `${id} recipe ${row.id}: ${k}=${v} over the card's declared max ${spec.max}`);
           } else if (typeof v === "string" && spec.enum !== undefined) {
-            assert.ok(spec.enum.includes(v), `${id} recipe ${row["id"]}: ${k}="${v}" is not in the card's declared vocabulary`);
+            assert.ok(spec.enum.includes(v), `${id} recipe ${row.id}: ${k}="${v}" is not in the card's declared vocabulary`);
           }
         }
       }

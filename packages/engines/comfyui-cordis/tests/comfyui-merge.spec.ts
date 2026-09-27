@@ -318,7 +318,7 @@ describe("planMerge's last two toll arms", () => {
     ], { x: 1 }, { b: { x: "__initial__.x" } });
     expect(plan.workflow["b::n"]).toBeTruthy();
     const l = plan.workflow["b::l"] as Record<string, unknown>;
-    expect(l["inputs"]).toEqual({ f: 1 }, "an unlinked $spell in a Load slot rides");
+    expect(l["inputs"]).toEqual({ f: 1 });
   });
   it("a single Save with NO outputs key tolls the ?? arm", () => {
     const r = row({

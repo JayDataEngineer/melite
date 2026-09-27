@@ -14,7 +14,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 
@@ -77,7 +77,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function mountBench(stages: BenchStageRow[], estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): void {
+function mountBench(stages: BenchStageView[], estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): void {
   formCtl.formSpec = "ok";
   stubDoors({
     benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: stages.map((s) => ({ ...s })) },
@@ -91,7 +91,7 @@ function mountBench(stages: BenchStageRow[], estateOpts: Parameters<typeof mount
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
   }));
 }
 

@@ -14,7 +14,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
-import { meliteView, sniffImageMediaType, imageRefFromValue, viewFilmArtifact, parseProbeSummary, sheetPlan } from '../src/tools/melite-view.ts'
+import type { GenericCallView } from '@deepseek-ai/dsh-tools'
+import { meliteView, sniffImageMediaType, imageRefFromValue, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
 import type { ViewedImageValue, FilmProc } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
@@ -134,8 +135,8 @@ describe('melite_view execute — the observe arm', () => {
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
     assert.equal(out.runId, 'run-abc123-hero')
     assert.equal(out.url, '/melite-media/runs/run-abc123-hero/gen_00002_.png')
-    assert.equal(out.image.attachmentId, 'att_1')
-    assert.equal(out.image.mediaType, 'image/png')
+    assert.equal(out.image!.attachmentId, 'att_1')
+    assert.equal(out.image!.mediaType, 'image/png')
     assert.equal(attachments.saved.length, 1)
     assert.equal(attachments.saved[0]!.name, 'gen_00002_.png')
     // THE RENDER (read_image's pairing): text names the artifact, the
@@ -257,15 +258,17 @@ describe('melite_view presentCall — the streaming tile', () => {
   test('echoes the args; junk renders generic', () => {
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)
+    // The tile always answers the generic card — narrow the
+    // ToolCallView union to read its rawInput.
     assert.deepEqual(
-      tool.presentCall!({ run_id: 'run-abc123-hero', artifact: 'gen_1' } as never).rawInput,
+      (tool.presentCall!({ run_id: 'run-abc123-hero', artifact: 'gen_1' } as never)! as GenericCallView).rawInput,
       { run_id: 'run-abc123-hero', artifact: 'gen_1' },
     )
     assert.deepEqual(
-      tool.presentCall!({} as never).rawInput,
+      (tool.presentCall!({} as never)! as GenericCallView).rawInput,
       { run_id: undefined, artifact: undefined },
     )
-    assert.equal(tool.presentCall!(null as never).title, 'View run artifact')
+    assert.equal(tool.presentCall!(null as never)!.title, 'View run artifact')
   })
 
   test('the tool is concurrency-safe (independent views may batch)', () => {
@@ -286,7 +289,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
       agent: { session: { requestHeader: () => undefined }, options: { provider: 'zai', model: 'glm-5v-turbo' } },
     }
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, optionsExec as never) as ViewedImageValue
-    assert.equal(out.image.attachmentId, 'att_1')
+    assert.equal(out.image!.attachmentId, 'att_1')
   })
 
   test('no route anywhere (agent absent) refuses — never a guess', async () => {
@@ -338,7 +341,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const { ctx, attachments } = fakeCtx()
     const tool = meliteView(ctx)
     const out = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'rescued.svg' }, visualExec as never) as ViewedImageValue
-    assert.equal(out.image.mediaType, 'image/png')
+    assert.equal(out.image!.mediaType, 'image/png')
     assert.equal(attachments.saved[0]!.mediaType, 'image/png')
   })
 
@@ -409,7 +412,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const { ctx } = fakeCtx({ rich: true })
     const tool = meliteView(ctx)
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
-    assert.deepEqual(out.image.originalDimensions, { width: 16, height: 16 })
+    assert.deepEqual(out.image!.originalDimensions, { width: 16, height: 16 })
     // and the render's re-branded ref carries it too
     const blocks = tool.output!.render!({} as never, out as never)
     const img = blocks[1] as { attachment: { originalDimensions?: { width: number } } }
@@ -420,7 +423,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const { ctx } = fakeCtx({ nameless: true })
     const tool = meliteView(ctx)
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, visualExec as never) as ViewedImageValue
-    assert.equal('name' in out.image, false)
+    assert.equal('name' in out.image!, false)
   })
 })
 
@@ -483,9 +486,9 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     assert.equal(out.film!.sheet_of, 4)
     // the viewed image IS the sheet (a real multi-KB PNG, not bytes
     // the test invented)
-    assert.equal(out.image.mediaType, 'image/png')
-    assert.equal(out.image.name, 'film-sheet.png')
-    assert.ok(out.image.bytes > 5000, 'expected a real contact sheet, got ' + String(out.image.bytes) + ' bytes')
+    assert.equal(out.image!.mediaType, 'image/png')
+    assert.equal(out.image!.name, 'film-sheet.png')
+    assert.ok(out.image!.bytes > 5000, 'expected a real contact sheet, got ' + String(out.image!.bytes) + ' bytes')
     assert.equal(attachments.saved.length, 1)
     // PROVENANCE (a view mints nothing): the run still holds exactly
     // the film — the sheet lived in tmpdir, never the runs tree
@@ -672,8 +675,8 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     assert.equal(out.film!.sheet_of, 4)
     assert.equal(out.film!.duration_s, 2)
     assert.equal(out.film!.size_bytes, 7670)
-    assert.equal('name' in out.image, false)
-    assert.deepEqual(out.image.originalDimensions, { width: 16, height: 16 })
+    assert.equal('name' in out.image!, false)
+    assert.deepEqual(out.image!.originalDimensions, { width: 16, height: 16 })
   })
 
   test('a width-without-height stream renders without geometry (never a half "160xundefined")', async () => {
@@ -770,8 +773,8 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     assert.deepEqual(out.audio!.streams, [{ codec: 'pcm_s16le', codec_type: 'audio', sample_rate: 8000, channels: 1 }])
     assert.equal(out.audio!.waveform_of, true)
     // the viewed image IS the waveform sheet (a real PNG)
-    assert.equal(out.image.mediaType, 'image/png')
-    assert.ok(out.image.name!.endsWith('-waveform.png'))
+    assert.equal(out.image!.mediaType, 'image/png')
+    assert.ok(out.image!.name!.endsWith('-waveform.png'))
     assert.equal(attachments.saved.length, 1)
     // PROVENANCE: a view mints nothing — the run still holds exactly the clip
     assert.deepEqual(readdirSync(join(root, 'output', 'run-a0d10-tone')), ['line.wav'])
@@ -990,7 +993,7 @@ describe('melite_view — the bytes-are-truth law (035 attempt-16 gap #5)', () =
     const { ctx, attachments } = fakeCtx()
     const tool = meliteView(ctx)
     const out = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'liar.png' }, visualExec as never) as ViewedImageValue
-    assert.equal(out.image.mediaType, 'image/jpeg')
+    assert.equal(out.image!.mediaType, 'image/jpeg')
     assert.equal(attachments.saved[0]!.mediaType, 'image/jpeg')
   })
 });

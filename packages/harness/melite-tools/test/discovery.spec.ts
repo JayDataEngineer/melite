@@ -47,7 +47,7 @@ const formSpecSweep = async (...args: Parameters<typeof formSpecArm>): Promise<R
       return await formSpecArm(...args)
     } catch (error) {
       if (attempt >= 4 || !/zz-cov-\d+/.test(String(error))) throw error
-      await new Promise((r): void => setTimeout(r, 200))
+      await new Promise((r): void => { setTimeout(r, 200) })
     }
   }
 }

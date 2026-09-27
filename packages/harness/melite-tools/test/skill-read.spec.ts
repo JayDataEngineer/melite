@@ -7,8 +7,10 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
+import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { skillRead } from '../src/tools/skill-read.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import { fakeExec } from './fake-exec.ts'
 
 function mockRequest(
   handler: (method: string, path: string, body: unknown) => unknown,
@@ -21,16 +23,18 @@ function mockRequest(
   return { calls, request }
 }
 
-const exec = { signal: AbortSignal.timeout(2000) }
+const exec = fakeExec(AbortSignal.timeout(2000))
 
 describe('melite_skill_read presentCall — the streaming tile', () => {
   test('names the skill; junk renders generic (the re-attached presenter)', () => {
     const tool = skillRead((async () => ({})) as EstateRequest)
-    assert.equal(tool.presentCall!({ id: 'run-recovery' } as never).title, 'Read skill run-recovery')
-    assert.equal(tool.presentCall!({ id: 'run-recovery' } as never).rawInput, 'run-recovery')
-    assert.equal(tool.presentCall!({} as never).title, 'Read skill ?')
-    assert.equal(tool.presentCall!(null as never).title, 'Read skill ?')
-    assert.equal(tool.presentCall!('x' as never).title, 'Read skill ?')
+    // The tile always answers the generic card — narrow the
+    // ToolCallView union to read its rawInput.
+    assert.equal(tool.presentCall!({ id: 'run-recovery' } as never)!.title, 'Read skill run-recovery')
+    assert.equal((tool.presentCall!({ id: 'run-recovery' } as never)! as GenericCallView).rawInput, 'run-recovery')
+    assert.equal(tool.presentCall!({} as never)!.title, 'Read skill ?')
+    assert.equal(tool.presentCall!(null as never)!.title, 'Read skill ?')
+    assert.equal(tool.presentCall!('x' as never)!.title, 'Read skill ?')
   })
 })
 

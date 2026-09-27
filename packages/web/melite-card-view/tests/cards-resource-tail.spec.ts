@@ -304,7 +304,7 @@ describe("the watcher's halt edges — degrade honest, stop idempotent", () => {
     const cap = captureConsoleError();
     try {
       const lands: string[] = [];
-      const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, undefined, undefined);
+      const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, undefined, undefined, undefined);
       stop();
       stop();
       await tick(3);
@@ -321,7 +321,7 @@ describe("the watcher's halt edges — degrade honest, stop idempotent", () => {
     const controller = new AbortController();
     controller.abort();
     const lands: string[] = [];
-    const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, controller.signal, bench.remote, bench.remote.bench);
+    const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, controller.signal, bench.remote, bench.remote.bench, undefined);
     await tick(3);
     expect(bench.isOpen("main")).toBe(false);
     expect(lands).toEqual([]);
@@ -351,7 +351,7 @@ describe("the watcher's end + failure arms", () => {
         disposed: () => { disposed++; },
       });
       const lands: string[] = [];
-      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never);
+      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never, undefined);
       await until(() => disposed === 1);
       expect(lands).toEqual([]);
       expect(cap.lines).toHaveLength(1);
@@ -364,7 +364,7 @@ describe("the watcher's end + failure arms", () => {
   test("a rev regression resyncs honestly (never a fire on old news)", async () => {
     const bench = fakeRemote();
     const lands: string[] = [];
-    const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, bench.remote, bench.remote.bench);
+    const stop = watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, bench.remote, bench.remote.bench, undefined);
     await until(() => bench.isOpen("main"));
     bench.push("main", benchDoc(12, "agent"));
     await tick(2);
@@ -473,7 +473,7 @@ describe("the watcher's supervisor voice — a never-opened channel names itself
         },
       } as unknown as ClientRemote;
       const lands: string[] = [];
-      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never);
+      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never, undefined);
       await until(() => disposed === 1);
       expect(lands).toEqual([]);
       expect(cap.lines).toHaveLength(1);

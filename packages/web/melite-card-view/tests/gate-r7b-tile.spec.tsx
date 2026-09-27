@@ -9,32 +9,35 @@
 // running stop's disabled arm (activeRunId null), the four tile
 // faces, and the card-drop no-op arms.
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi, type Mock } from "vitest";
 import { createElement as h } from "react";
 import { SortableTile } from "../src/client/sortable-tile.tsx";
 import { benchRow, type CardRowLineTabRow } from "../src/client/bench-row.ts";
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME } from "../src/client/dnd-payloads.ts";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
 });
 
-function stage(over: Record<string, unknown> = {}): BenchStageRow {
+function stage(over: Record<string, unknown> = {}): BenchStageView {
   return { id: "s_0", card: "image-gen", engine: "comfyui", params: {}, ...over };
 }
 
+// the spies stand in for SortableTile's own gesture verbs (the prop
+// signatures verbatim) — typed at the interface so every call below
+// checks against the tile's contract
 interface TileSpies {
-  onOpen: ReturnType<typeof vi.fn>;
-  onToggleSelect: ReturnType<typeof vi.fn>;
-  onAssetAttach: ReturnType<typeof vi.fn>;
-  onReorderStart: ReturnType<typeof vi.fn>;
-  onReorderOver: ReturnType<typeof vi.fn>;
-  onReorderDrop: ReturnType<typeof vi.fn>;
-  onRun: ReturnType<typeof vi.fn>;
-  onStop: ReturnType<typeof vi.fn>;
-  onRemove: ReturnType<typeof vi.fn>;
+  onOpen: Mock<(row: CardRowLineTabRow) => void>;
+  onToggleSelect: Mock<(id: string) => void>;
+  onAssetAttach: Mock<(target: string, source: string | File, kind: "image" | "audio") => void>;
+  onReorderStart: Mock<(id: string | null) => void>;
+  onReorderOver: Mock<(id: string) => void>;
+  onReorderDrop: Mock<(active: string, over: string) => void>;
+  onRun: Mock<(row: CardRowLineTabRow) => void>;
+  onStop: Mock<(row: CardRowLineTabRow) => void>;
+  onRemove: Mock<(row: CardRowLineTabRow) => void>;
 }
 
 function mountTile(row: CardRowLineTabRow, over: {

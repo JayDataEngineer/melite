@@ -14,7 +14,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -91,7 +91,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function mountBench(stages: BenchStageRow[], estate?: EstateOpts): void {
+function mountBench(stages: BenchStageView[], estate?: EstateOpts): void {
   // fetch-door config resets per mount (like the old stubFetch);
   // tests arm specFields/uploads AFTER the mount, before the gesture.
   doors.specFields = null;
@@ -110,11 +110,11 @@ function mountBench(stages: BenchStageRow[], estate?: EstateOpts): void {
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
   }));
 }
 
-function three(): BenchStageRow[] {
+function three(): BenchStageView[] {
   return [
     { id: "s_0", card: "a-card", engine: "comfyui", params: {} },
     { id: "s_1", card: "b-card", engine: "comfyui", params: {} },

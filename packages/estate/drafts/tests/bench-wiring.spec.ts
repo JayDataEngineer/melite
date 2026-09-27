@@ -199,7 +199,7 @@ describe("the wiring admission (phantom wires refuse at write time)", () => {
       stage: "b", params: { image1: "/tmp/x.png" }, expect_rev: 1,
     }));
     doc = getBench(drafts, "s");
-    b = doc.stages.find((x) => x.id === "b")!;
+    b = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "b")!; // the same seeded-row read as the binding check above
     const params = (b as unknown as { params: Record<string, unknown> }).params;
     assert.equal(params.image1, "$image", "spell unchanged");
   });

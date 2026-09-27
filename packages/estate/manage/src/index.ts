@@ -10,6 +10,7 @@
 // `@melite/estate-queue`'s ManageService (source-run), and the
 // adapter delegates to that seat (`ctx.manage`). The seat boundary
 // is STRUCTURAL (declared below): this package must not import the
+import type { ManageGatewayService } from "@melite/estate-queue";
 // queue package's sources into its build graph (they are
 // bundler-resolved source-run files; the wall pins the delegation
 // end-to-end instead).
@@ -35,19 +36,15 @@ interface ManageEnvelopeRow {
   readonly data?: unknown;
 }
 
-/** The manage seat's adapter-facing surface (structural — the
- *  implementation is ManageService in @melite/estate-queue; the
- *  wall pins the delegation byte-for-byte). */
-interface ManageSeat {
-  act(doc: unknown, signal: AbortSignal): Promise<ManageEnvelopeRow>;
-}
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
     manageRemote: ManageRemoteService;
-    /** The management seat (@melite/estate-queue's ManageService —
-     *  structural here, per the header). */
-    manage: ManageSeat;
+    /** The management seat — typed with the class that MOUNTS it
+     *  (li-aq.3: same TS2717 fix as the runs remote; a second,
+     *  weaker declaration of a mounted key is drift waiting to
+     *  ship). */
+    manage: ManageGatewayService;
   }
 }
 

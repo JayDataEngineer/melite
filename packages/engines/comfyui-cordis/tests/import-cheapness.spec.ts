@@ -12,7 +12,7 @@ import assert from "node:assert/strict";
 describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
   it("the package root resolves WITHOUT awaiting the models boot (a fresh module graph, a hard timeout)", async () => {
     const mod = await Promise.race([
-      import("../src/index.ts?li-m-fresh-import"),
+      import("../src/index.ts"),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error("IMPORT HANG: the package root still awaits the models boot (the li-m regression)")), 2_000),
       ),
@@ -21,7 +21,7 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
   });
 
   it("cascadeInit stays exported (the shared once-per-process boot promise)", async () => {
-    const mod = await import("../src/models/models.ts?li-m-cascade");
+    const mod = await import("../src/models/models.ts");
     assert.equal(typeof mod.cascadeInit.then, "function");
   });
 });

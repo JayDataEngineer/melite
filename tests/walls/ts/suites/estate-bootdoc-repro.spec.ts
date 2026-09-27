@@ -14,7 +14,7 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Context } from "@deepseek-ai/cordis";
+import { Context, type Plugin } from "@deepseek-ai/cordis";
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
 import draftsPlugin from "@melite/estate-drafts";
 import Storage from "@deepseek-ai/dsh-storage";
@@ -47,12 +47,14 @@ beforeAll(async () => {
   writeFileSync(join(docs, "bench-session-6d8ed483-16d3-4ec7-b08e-5c2ccbf09928.json"), saved);
   process.env["DSH_HOME"] = home;
   ctx = new Context();
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(estateBundle as never);
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(estateBundle as unknown as Plugin);
 }, 60_000);
 
 describe("the estate bundle boots with a live bench doc present", () => {
@@ -65,7 +67,7 @@ describe("the estate bundle boots with a live bench doc present", () => {
       if (Date.now() > deadline) {
         throw new Error("WEDGED — these seats never settled with a bench doc at boot: " + missing.join(", "));
       }
-      await new Promise((r): void => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
     }
     expect(true).toBe(true);
   }, 30_000);

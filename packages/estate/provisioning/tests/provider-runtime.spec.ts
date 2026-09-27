@@ -37,6 +37,19 @@ function json(value: unknown, status = 200): Response {
   });
 }
 
+// The suite lib (ES2023 without DOM) has no global HeadersInit, and fetch
+// headers arrive as a union (Headers | string[][] | record), so unwrap the
+// content-type structurally through each union member.
+function contentTypeOf(headers: unknown): string | undefined {
+  if (headers === undefined) return undefined;
+  if (headers instanceof Headers) return headers.get("content-type") ?? undefined;
+  if (Array.isArray(headers)) {
+    return headers.find(([name]) => name.toLowerCase() === "content-type")?.[1];
+  }
+  const record = headers as Record<string, string | undefined>;
+  return record["content-type"] ?? record["Content-Type"];
+}
+
 function operation(): ProvisionOperation {
   return {
     operationId: "op-persisted",
@@ -191,7 +204,7 @@ describe("ManagerPort provider", () => {
           calls.push({
             path: new URL(String(input)).pathname,
             body: init?.body,
-            contentType: init?.headers?.["content-type"] as string | undefined,
+            contentType: contentTypeOf(init?.headers),
           });
           return new Response(null, { status: 200 });
         },
@@ -214,7 +227,7 @@ describe("ManagerPort provider", () => {
         calls.push({
           path: new URL(String(input)).pathname,
           body: init?.body,
-          contentType: init?.headers?.["content-type"] as string | undefined,
+          contentType: contentTypeOf(init?.headers),
         });
         return new Response(null, { status: 200 });
       },
@@ -242,7 +255,7 @@ describe("ManagerPort provider", () => {
       const requestUrl = new URL(String(input));
       const path = requestUrl.pathname + requestUrl.search;
       const body = typeof init?.body === "string" ? init.body : undefined;
-      calls.push({ path, body, contentType: init?.headers?.["content-type"] as string | undefined });
+      calls.push({ path, body, contentType: contentTypeOf(init?.headers) });
       if (path === "/externalmodel/getlist?mode=cache") return json({ models: [catalogRow] });
       if (path === "/manager/queue/install_model") return new Response(null, { status: 200 });
       if (path === "/manager/queue/start") return new Response(null, { status: 200 });

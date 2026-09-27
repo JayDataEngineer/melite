@@ -31,7 +31,9 @@ describe("the timeline's three vocabularies have no silent third", () => {
     // the editor's own defaults table names the ones that matter
     const defaults = types.match(/DEFAULT_SEGMENT_PARAMS: SegmentParams = \{([\s\S]*?)\n\}/)?.[1] ?? "";
     const editorNames = [...defaults.matchAll(/([a-z][A-Za-z0-9_]*)\s*:/g)].map((m) => m[1]!);
-    const bridged = new Set(Object.values(LEGACY_KNOB_KEY));
+    // Object.values of the knob map carries the literal union — the
+    // wall only needs membership, so read it as a string set.
+    const bridged: ReadonlySet<string> = new Set<string>(Object.values(LEGACY_KNOB_KEY));
     const cardKeys = new Set<string>([...KNOB_ORDER, ...CALL_KNOB_KEYS]);
     // The card's TOP-LEVEL params (seed, width, height, …) are a
     // different plane from the per-call knobs: an editor segment key

@@ -12,7 +12,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -115,7 +115,7 @@ function stubFetch(): void {
   });
 }
 
-function mountBench(stages: BenchStageRow[]): void {
+function mountBench(stages: BenchStageView[]): void {
   stubFetch();
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -123,7 +123,7 @@ function mountBench(stages: BenchStageRow[]): void {
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
   }));
 }
 
@@ -190,7 +190,7 @@ describe("the enhance guards — every rejection renders its face", () => {
           ));
         });
       }
-      return (impl as typeof fetch)(url, init);
+      return (impl as typeof fetch)(url as string, init);
     });
     const user = userEvent.setup();
     const tile = document.querySelector('button[class*="tileInner"]') as HTMLElement;

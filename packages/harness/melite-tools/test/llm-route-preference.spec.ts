@@ -17,6 +17,7 @@ import {
   resolveHarnessRoutes,
   type LlmStreamSeam,
 } from '../src/llm-complete.ts'
+import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
 
 const JSON_REPLY = '{"positive":"P","negative":"N"}'
 
@@ -46,26 +47,22 @@ function fakeSeam(opts?: {
   return {
     seen,
     systems,
-    listProviders: () => providers.map((p) => ({ id: p.id })),
+    listProviders: () => providers.map((p) => ({ id: p.id, name: p.id })), // fakes carry no display names — the id doubles
     listModels: async (provider: string) =>
-      (providers.find((p) => p.id === provider)?.models ?? []).map((id) => ({ id })),
-    stream: (o: { provider: string; model: string; system?: string }) => {
+      (providers.find((p) => p.id === provider)?.models ?? []).map((id) => ({ provider, id, name: id })),
+    stream: (o: GenerateOptions) => {
       seen.push({ provider: o.provider, model: o.model })
       if (typeof o.system === 'string') systems.push(o.system)
       const key = o.provider + '/' + o.model
-      async function* gen(): AsyncGenerator<unknown> {
+      async function* gen(): AsyncGenerator<StreamChunk> {
         if (dead.has(key)) {
           yield { type: 'finish', reason: { kind: 'error', failure: { message: 'quota dead', code: 'AUTH' } } }
           return
         }
-        yield { type: 'text-delta', text: JSON_REPLY }
+        yield { type: 'text-delta', index: 0, text: JSON_REPLY }
         yield { type: 'finish', reason: { kind: 'stop' } }
       }
-      return gen() as AsyncIterable<
-        | { type: 'text-delta'; text: string }
-        | { type: 'finish'; kind: string; failure?: { message: string; code?: string } }
-        | { type: string; [k: string]: unknown }
-      >
+      return gen()
     },
   }
 }

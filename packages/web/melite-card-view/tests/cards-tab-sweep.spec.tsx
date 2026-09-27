@@ -15,7 +15,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -118,7 +118,7 @@ function stubFetch(): void {
   });
 }
 
-const STAGES: BenchStageRow[] = [
+const STAGES: BenchStageView[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
@@ -128,7 +128,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
+function estateOpts(stages: BenchStageView[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
   // ROW COPIES (the sweep2 receipt): the seam mutates its rows in
   // place — handing it the snapshot's own array aliases the render
   // snapshot, and the add's before/after diff then sees no fresh
@@ -145,7 +145,7 @@ function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<ty
   };
 }
 
-function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
+function mount(stages: BenchStageView[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
   fakes = mountEstateFakes(estateOpts(stages, estate));
   render(h(CardsTab, {
@@ -155,13 +155,13 @@ function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
       actions: { openResource: (address: string) => { doors.opened.push(address); } },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages },
     }),
   } as never));
 }
 
-function mountDraft(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
+function mountDraft(stages: BenchStageView[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
   slot.claim = true;
   slot.owner = null;
@@ -174,7 +174,7 @@ function mountDraft(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void
       actions: { openResource: (address: string) => { doors.opened.push(address); } },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "draft", draftId: "draft-1", stageId: "s_0", rev: 1, stages },
     }),
   } as never));
@@ -378,7 +378,7 @@ describe("the door-less preview — the consult degrades to the seat", () => {
     mount([{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" },
       result: { artifacts: { render: "/a.png" } },
-    } as BenchStageRow]);
+    } as BenchStageView]);
     await openZoom();
     // the preview seat renders (the click target survives the missing door)
     expect(await screen.findByTestId("stage-preview-seat", {}, { timeout: 5000 })).toBeTruthy();
@@ -427,7 +427,7 @@ describe("the preview seat — space opens, names caption", () => {
     mount([{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" },
       result: { artifacts: { [name]: "/renders/a.png" } },
-    } as BenchStageRow]);
+    } as BenchStageView]);
     await openZoom();
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 5000 });
   }
@@ -519,7 +519,7 @@ describe("the door-less restore — the note lands with nowhere to go", () => {
     // serves its honest draft row (the fixed draft_id rides along
     // untroubled — the restore reads the stages, never the id).
     fakes = mountEstateFakes(estateOpts(
-      [{ id: "s_9", card: "image-gen" } as BenchStageRow],
+      [{ id: "s_9", card: "image-gen" } as BenchStageView],
     ));
     // NOTE: an EMPTY actions object (the tab reads .openResource off
     // it — the door-less seat, nowhere to return to)
@@ -530,7 +530,7 @@ describe("the door-less restore — the note lands with nowhere to go", () => {
         actions: {},
       } }),
       useResource: () => ({
-        status: "live",
+        status: "live" as const,
         value: { kind: "run", runId: "r-1", status: "done", draftId: "d-1", stages: [], lastFrame: undefined },
       }),
     } as never));

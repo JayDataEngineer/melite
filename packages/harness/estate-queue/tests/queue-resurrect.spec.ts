@@ -252,7 +252,7 @@ describe("planResurrect", () => {
     // run-e: an empty run dir (no sidecar at all) -> the default
     // readSidecar catch tolls null -> skipped from both lists
     const plan = planResurrect(root, undefined, undefined, () => true);
-    expect(plan.order).toEqual(["run-b", "run-a"], "FIFO by created_at (10 before 30)");
+    expect(plan.order).toEqual(["run-b", "run-a"]);
     expect(plan.orphans).toEqual(["run-c", "run-d"]);
   });
 });

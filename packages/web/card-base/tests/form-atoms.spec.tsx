@@ -5,7 +5,7 @@
 // renders from its declaration; coercion happens once at patch.
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h } from 'react'
-import { afterEach, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, it, test, vi } from 'vitest'
 import type { SpecField } from '../src/spec.ts'
 
 import {

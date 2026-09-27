@@ -4,7 +4,8 @@ import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { ArtifactInput, ProvisioningError, writeVerifiedArtifact } from "../src/index.ts";
+import type { ArtifactInput } from "../src/index.ts";
+import { ProvisioningError, writeVerifiedArtifact } from "../src/index.ts";
 
 const fsMocks = vi.hoisted(() => ({
   lstat: vi.fn(),
@@ -84,7 +85,7 @@ async function rejectsCode(promise: Promise<unknown>, code: string): Promise<Pro
 function proxied(handle: Handle, overrides: Record<string, unknown>): Handle {
   return new Proxy(handle, {
     get(target, property): unknown {
-      if (property in overrides) return overrides[property];
+      if (typeof property === "string" && property in overrides) return overrides[property];
       const value = Reflect.get(target, property, target);
       return typeof value === "function" ? value.bind(target) : value;
     },

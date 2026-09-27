@@ -66,7 +66,7 @@ describe("the provider's draft arm", () => {
   test("yields one snapshot frame for a draft address", async () => {
     stubDraftStages()
     const frames: unknown[] = []
-    for await (const frame of openCardsResource("dsh-resource://cards/draft/draft-1/s_0", { signal: AbortSignal.timeout(4000) })) {
+    for await (const frame of openCardsResource("dsh-resource://cards/draft/draft-1/s_0", { signal: AbortSignal.timeout(4000) }, undefined, undefined)) {
       frames.push(frame)
       break // the snapshot law: exactly one frame on first read
     }
@@ -79,7 +79,7 @@ describe("the provider's draft arm", () => {
   test("a refused drafts/get is a failure frame, never a throw", async () => {
     wire({ refusals: [{ method: "drafts/get", message: "no such draft" }] })
     const frames: unknown[] = []
-    for await (const frame of openCardsResource("dsh-resource://cards/draft/nope/s_0", { signal: AbortSignal.timeout(4000) })) {
+    for await (const frame of openCardsResource("dsh-resource://cards/draft/nope/s_0", { signal: AbortSignal.timeout(4000) }, undefined, undefined)) {
       frames.push(frame)
       break
     }
@@ -109,9 +109,9 @@ function renderDraftTab(value: CardsDraftValue, renderSlot?: (owner: Record<stri
     useTabInfo: () => ({ tab: {
       kind: "sidebar.right.pane.tab",
       navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
-      actions: {},
+      actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value }),
+    useResource: () => ({ status: "live" as const, value }),
     renderSlot: renderSlot === undefined ? undefined : ((_key: string, owner: Record<string, unknown>) => renderSlot(owner)) as never,
   }))
 }

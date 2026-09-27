@@ -165,7 +165,7 @@ describe('melite_view — the mesh arm (3D in the media plane)', () => {
     assert.equal(out.runId, 'run-9a1b2c3d4e5f-aabbccdd')
     assert.match(out.url, /trellis2_native_00009\.glb$/)
     // the IMAGE the model sees is the poster, not a stand-in
-    assert.equal(out.image.mediaType, 'image/png')
+    assert.equal(out.image!.mediaType, 'image/png')
     assert.equal(saved.length, 1)
     assert.equal(saved[0]!.name, 'trellis2_native_00009_poster.png')
     // the structural verdict rides alongside

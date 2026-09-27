@@ -1,6 +1,6 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test } from 'vitest'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, type Plugin } from '@deepseek-ai/cordis'
 import composition from '../src/provisioning.ts'
 
 function contextWithCards(): Context {
@@ -16,7 +16,11 @@ describe('the provisioning declaration path', () => {
   test('resolves a served model route through its owning declaration', async () => {
     const ctx = contextWithCards()
     try {
-      composition.apply(ctx)
+      // Narrow the Plugin union to its real object arm: provisioning.ts
+      // exports the { name, inject, apply } shape, and .apply is not
+      // callable on the broad Function | Constructor | Object union.
+      const plugin: Plugin.Object = composition
+      plugin.apply(ctx, undefined)
       for (const id of ['h3-timeline', 'qwen-img-edit-21-int8', 'krea-2-raw']) {
         const plan = await ctx.provisioning.plan({ kind: 'model', owner: 'family', id })
         expect(plan.ref).toEqual({ kind: 'model', owner: 'family', id })

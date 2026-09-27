@@ -258,7 +258,7 @@ describe('estate lane error classes', () => {
         act: () => Promise.reject(new RemoteError(
           'manage/refused',
           'refused',
-          { action: 'logs', status: 'nope' },
+          { action: 'logs', status: 'nope' as unknown as number }, // intentionally mistyped: the seat broke its own envelope — the door must 500
         )),
       },
     })

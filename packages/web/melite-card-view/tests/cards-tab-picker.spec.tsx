@@ -14,7 +14,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -92,8 +92,8 @@ interface EstateOpts {
 function stages(
   mainParams: Record<string, unknown> = {},
   mainResolved: Record<string, unknown> = {},
-  extra: BenchStageRow[] = [],
-): BenchStageRow[] {
+  extra: BenchStageView[] = [],
+): BenchStageView[] {
   return [
     { id: "s_0", card: "image-gen", engine: "comfyui", params: mainParams, resolved: mainResolved },
     { id: "s_img", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/r/img.png" } },
@@ -109,7 +109,7 @@ function mountBench(
   mainParams: Record<string, unknown> = {},
   mainResolved: Record<string, unknown> = {},
   estate?: EstateOpts,
-  extra: BenchStageRow[] = [],
+  extra: BenchStageView[] = [],
   mode: SpecMode = "edge",
 ): void {
   specMode = mode;
@@ -128,7 +128,7 @@ function mountBench(
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: rows } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: rows } as CardsBenchValue }),
   }));
 }
 

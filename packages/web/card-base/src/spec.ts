@@ -888,9 +888,21 @@ export function fieldVisible(f: SpecField, values: SpecValues): boolean {
 // resolved lane (family base ∪ variant additions — laneSurfaceOf,
 // the same call the bench door resolves with) and the relation
 // words gate INLINE (judgeLaneRelations — the same judgment the
-// bench-write refusal rides). One declaration, two faces; the
-// card's hand-authored visible_when table retires for declaring
-// families.
+// bench-write refusal rides). One declaration, two faces.
+//
+// THE visible_when TRUTH (li-aq.3, the design audit's F6): for a
+// declaring family the lane surface and visible_when BOTH judge —
+// they AND (a field hidden by either is hidden; a lane whose
+// surface omits a field never shows it no matter what the table
+// says). Nothing "retires": the table stays live for non-declaring
+// families, and fails SAFE under the declaration.
+//
+// THE BASE-ABSENT SHAPE (F8, stated so nobody rediscovers it):
+// `laneSurfaceOf` derives the family BASE from the declaration's
+// params list — a family that declares variants but leaves the
+// family base EMPTY surfaces ONLY the variant additions (the base
+// is a statement, not a guess); the bench door resolves the same
+// way (one call), so the two faces cannot diverge.
 
 /** The resolved lane surface for the current variant, or null when
  *  the family declares none (the legacy truth — visibility falls

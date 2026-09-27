@@ -896,6 +896,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/estate-provisioning':
         specifier: workspace:*
         version: link:../provisioning

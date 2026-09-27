@@ -89,8 +89,11 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
 
   it("the net reaches the estate (discovery is dynamic, not a named list)", () => {
     // The five-package era is over: if this count ever reads ~5,
-    // discovery broke and the estate is half-unheard again.
-    expect(dirs.length).toBeGreaterThanOrEqual(30);
+    // discovery broke and the estate is half-unheard again. The bar
+    // ROSE (li-aq.3): 88 tsconfigs stand today — a count below 85
+    // means a package went dark (its tsconfig deleted to dodge the
+    // net is the move the tripwire exists to catch).
+    expect(dirs.length).toBeGreaterThanOrEqual(85);
     // The incident's package is in the net BY NAME (the engine ran
     // from source, so no build step ever saw it).
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);
@@ -116,7 +119,48 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
     // The playbook must DISCOVER packages, not name five. The old
     // COMPILED list is fine for ./lib building; a typecheck that
     // only visits those is the hole the ReferenceError walked
-    // through.
-    expect(script).toMatch(/TYPECHECK|find .*tsconfig\.json|compgen.*tsconfig/);
+    // through. THE SUBSTANCE (li-aq.3, the design audit's L6 — a
+    // vocabulary match is not a net): the loop must actually RUN
+    // tsc --noEmit per discovered tsconfig and REFUSE the ship on
+    // red (an exit-1 that never fires is a check that says ok).
+    expect(script).toMatch(/find .*tsconfig\.json.*-printf '%h\\n'/s);
+    expect(script).toMatch(/\$TSC.*--noEmit.*-p tsconfig\.json/s);
+    expect(script).toMatch(/TCFAIL=1/s);
+    expect(script).toMatch(/TCFAIL.*-ne 0[\s\S]*?exit 1/s);
   });
+
+  it("THE TEST TIER rides both gates (spec files are a plane — one implementation, two callers)", () => {
+    // li-aq.3, the rules audit's HIGH-2: package tsconfigs include
+    // src/** only, so SPEC files were typed by nothing — a spec
+    // importing a name a module never exported (TS2724, live in 22
+    // card-view files) was invisible to every wall. The judge lives
+    // in scripts/typecheck-tests.mjs (discovery + per-package
+    // synthesized config via tsc --showConfig + noEmit); the wall
+    // asserts the CALLER SUBSTANCE, and the tier's own green is the
+    // next test.
+    const script = readFileSync(join(REPO, "scripts", "typecheck-tests.mjs"), "utf8");
+    expect(script).toMatch(/--showConfig/);
+    expect(script).toMatch(/noEmit/);
+    expect(script).toMatch(/rootDir/); // the flatten's one deletion
+    const ship = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
+    expect(ship).toMatch(/typecheck-tests\.mjs[\s\S]*?exit 1/s);
+    const gate = readFileSync(import.meta.filename, "utf8");
+    expect(gate).toMatch(/typecheck-tests\.mjs/); // this wall runs it below
+  });
+
+  it("the test tier typechecks clean (the TS2724 class dies at the wall)", async () => {
+    try {
+      await run("node", [join(REPO, "scripts", "typecheck-tests.mjs")], {
+        cwd: REPO,
+        timeout: 600_000,
+        maxBuffer: 32 * 1024 * 1024,
+      });
+    } catch (e) {
+      const err = e as { stdout?: string; stderr?: string; message?: string };
+      const report = err.stdout ?? err.stderr ?? err.message ?? "unknown";
+      // only the failing lines matter for the wall's voice
+      throw new Error("the test tier is red (spec files must typecheck):\n" +
+        report.split("\n").filter((l) => l.startsWith("✗")).slice(0, 10).join("\n"));
+    }
+  }, 660_000);
 });

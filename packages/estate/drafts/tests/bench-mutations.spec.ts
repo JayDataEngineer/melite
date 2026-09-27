@@ -57,7 +57,7 @@ test("patch refuses run outcomes with the redirect voice — the drafts door own
   const doc = getBench(drafts, "s");
   assert.equal(doc.rev, 0);
   assert.deepEqual(doc.log, []);
-  const st = (doc.stages as Array<{ params: Record<string, unknown>; result?: unknown; runStatus?: unknown }>).find((x) => x.id === "a")!;
+  const st = (doc.stages as Array<{ id: string; params: Record<string, unknown>; result?: unknown; runStatus?: unknown }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.params, { steps: 4 });
   assert.equal(st.result, undefined);
   assert.equal(st.runStatus, undefined);
@@ -75,7 +75,7 @@ test("patch records before-values on params overwrite", async () => {
   });
   assert.deepEqual(overwritten.patched, ["steps"]);
   const doc = getBench(drafts, "s");
-  const st = (doc.stages as Array<{ params: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  const st = (doc.stages as Array<{ id: string; params: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.equal(st.params.steps, 8);
 });
 
@@ -227,7 +227,7 @@ test("rewire refuses missing input, unknown stages, non-record from; clear and r
   const cleared = await rewireBench(drafts, "s", { stage: "a", input: "image", expect_rev: 2 });
   assert.equal(cleared.rev, 3);
   const doc = getBench(drafts, "s");
-  const st = (doc.stages as Array<{ inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.equal("image" in st.inputs, false, "cleared");
 });
 
@@ -357,7 +357,7 @@ test("rewire on a stage with no inputs record births one", async () => {
   });
   assert.equal(wired.rev, 1);
   const doc = getBench(drafts, "bare");
-  const st = (doc.stages as Array<{ inputs: Record<string, unknown> }>).find((x) => x.id === "bare")!;
+  const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "bare")!;
   assert.deepEqual(st.inputs, { image: { initial: "image" } });
 });
 

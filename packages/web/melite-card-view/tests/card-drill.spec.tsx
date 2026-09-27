@@ -28,6 +28,7 @@ import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 const BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-s1',
+  sessionKey: 's1',
   rev: 7,
   stages: [
     {
@@ -148,7 +149,7 @@ test('the bench row is a card (Pill kind, bold title, engine Pill) and opens the
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   const tile = tileButton()
   // THE TILE FACE: kind face in the preview cell, caption strip below
@@ -175,7 +176,7 @@ test('Run in the drill patches the domain FIRST, then starts the run', async () 
         actions: { openResource: open },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await user.click(tileButton())
   // the drill's fields arrive after the morph settles
@@ -229,7 +230,7 @@ test('a patch refusal names itself and the run never fires', async () => {
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
@@ -263,6 +264,7 @@ test('clicking the preview seat opens the SHARED media drilldown (1:1)', async (
   // the tab's FIRST paint reads the resource fixture — the result rides THERE
   const benchLive: CardsBenchValue = {
     kind: 'bench', draftId: 'bench-s1', rev: 7,
+    sessionKey: 's1',
     stages: [{
       id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
       params: { prompt: 'a red cube', steps: 8, turbo: false },
@@ -293,7 +295,7 @@ test('clicking the preview seat opens the SHARED media drilldown (1:1)', async (
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: benchLive }),
+    useResource: () => ({ status: 'live' as const, value: benchLive }),
   } as Parameters<typeof CardsTab>[0]))
   // open the drill
   await user.click(await screen.findByText('hero frame', {}, { timeout: 4000 }))
@@ -355,9 +357,10 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         kind: 'bench', draftId: 'bench-s1', rev: 7,
+        sessionKey: 's1',
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', negative_prompt: '', steps: 8 } }],
         log: [],
@@ -438,9 +441,10 @@ test('the ✦ rail model dropdown picks the enhancer route and threads it', asyn
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         kind: 'bench', draftId: 'bench-llm', rev: 3,
+        sessionKey: 'llm',
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', steps: 8 } }],
         log: [],
@@ -512,9 +516,10 @@ test('the no-clobber law: an empty negative never wipes the card\'s own', async 
       },
     }),
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         kind: 'bench', draftId: 'bench-s1', rev: 7,
+        sessionKey: 's1',
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube', negative_prompt: 'user wrote this', steps: 8 } }],
         log: [],
@@ -558,9 +563,10 @@ test('the drill renders the SERVED resolved map under the user layer (the 1:1 la
     // schema default 8 nor any user key); the user layer holds only
     // the prompt, so the served base is what the Steps input shows
     useResource: () => ({
-      status: 'live',
+      status: 'live' as const,
       value: {
         kind: 'bench', draftId: 'bench-s1', rev: 7,
+        sessionKey: 's1',
         stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui',
           params: { prompt: 'a red cube' }, resolved: { steps: 52 } }],
         log: [],
@@ -629,7 +635,7 @@ test('picking a family in the Model select RE-SPECS LIVE: the anima matrix lands
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: LIVE }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
@@ -700,7 +706,7 @@ test('✦ every enhance rejection renders its message — empty prompt, no model
           actions: { openResource: noop },
         },
       }),
-      useResource: () => ({ status: 'live', value: bench }),
+      useResource: () => ({ status: 'live' as const, value: bench }),
     }))
     await userEv.click(tileButton())
     const wand = await screen.findByRole('button', { name: 'Agent Enhance' }, { timeout: 5000 })
@@ -738,7 +744,7 @@ test('a THROWN run start renders its reason in the open drill — never silent, 
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
@@ -771,7 +777,7 @@ test('the run-outcome write carries a numeric expect_rev (never revless)', async
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
@@ -805,7 +811,7 @@ test('a CAS-conflicted write re-reads the rev and re-applies once — the run st
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })

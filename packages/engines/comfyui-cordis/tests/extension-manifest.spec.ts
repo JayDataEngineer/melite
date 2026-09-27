@@ -20,7 +20,7 @@ const mask = defs.get("mask");
 assert.ok(mask, "the mask card is registered");
 const sam2 = (mask.mods ?? []).find((kind) => kind.kind === "sam2");
 assert.ok(sam2, "the mask card declares the sam2 arm");
-const requirements = [...sam2.requires ?? []];
+const requirements: string[] = [...sam2.requires ?? []];
 
 const pins = {
   "comfyui-impact-pack": {
@@ -68,7 +68,10 @@ const facts = JSON.parse(readFileSync(join(repoRoot, "packages/engines/comfyui-c
 describe("Impact extension declaration SSOT", () => {
   it("the mask SAM2 requirements equal the two immutable manifest rows", () => {
     assert.deepEqual(requirements, [...IMPACT_PACKS]);
-    const rows = manifest.filter((row) => requirements.includes(row.name));
+    // Set membership over plain strings (the manifest rows carry
+    // string names; requirements widens the literal union above).
+    const required = new Set<string>(requirements);
+    const rows = manifest.filter((row) => required.has(row.name));
     assert.deepEqual(rows.map((row) => row.name), requirements);
     assert.deepEqual(rows.map((row) => ({
       name: row.name,

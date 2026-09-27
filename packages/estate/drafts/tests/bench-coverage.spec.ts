@@ -336,7 +336,7 @@ test("restored model repair fills absent and empty variants but preserves a stat
 test("a non-null repair that still refuses preserves the original refusal", () => {
   const resolver = {
     resolveStageParams: (): null => null,
-    admitStageModel: (): { ok: false as const, error: string, offered: string[] } => ({
+    admitStageModel: (): { ok: false, error: string, offered: string[] } => ({ // a RETURN-TYPE literal: 'false' alone is the narrow type ('as const' is value syntax — tsc reads it as a second member)
       ok: false,
       error: "model 'poison' is not offered",
       offered: [],

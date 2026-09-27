@@ -11,7 +11,7 @@ import {
   managerPost,
   planeUnavailable,
 } from "../src/managerRail.ts";
-import type { ManageCtx } from "./managePlane.ts";
+import type { ManageCtx } from "../src/managePlane.ts";
 
 const realFetch = globalThis.fetch;
 afterEach(() => {
@@ -122,7 +122,7 @@ describe("managerGet", () => {
     const controller = new AbortController();
     let requestSignal: AbortSignal | undefined;
     globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
-      requestSignal = init?.signal;
+      requestSignal = init?.signal ?? undefined;
       return await new Promise<Response>((_resolve, reject) => {
         requestSignal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
       });

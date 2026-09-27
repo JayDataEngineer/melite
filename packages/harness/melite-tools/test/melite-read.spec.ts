@@ -11,6 +11,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { meliteRead, readRunText, listRunText, isTextName, assertRunId, TEXT_BYTE_CAP } from '../src/tools/melite-read.ts'
 import type { Context } from '@deepseek-ai/cordis'
+import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 
 let root = ''
 
@@ -157,12 +158,14 @@ describe('melite_read — the read arm', () => {
 
   test('presentCall names the run and rides the read kind', async () => {
     const tool = meliteRead(ctx())
-    const view = tool.presentCall!({ run_id: 'run-ab12cd-side', path: '_flow.json' })!
+    // The card always answers the generic view — narrow the
+    // ToolCallView union to read its kind/rawInput.
+    const view = tool.presentCall!({ run_id: 'run-ab12cd-side', path: '_flow.json' })! as GenericCallView
     assert.equal(view.kind, 'read')
     assert.equal(view.title, 'Read run file run-ab12cd-side')
     assert.deepEqual(view.rawInput, { run_id: 'run-ab12cd-side', path: '_flow.json' })
     // no path → the listing arm's own card
-    assert.deepEqual(tool.presentCall!({ run_id: 'run-ab12cd-side' })!.rawInput, { run_id: 'run-ab12cd-side' })
+    assert.deepEqual((tool.presentCall!({ run_id: 'run-ab12cd-side' })! as GenericCallView).rawInput, { run_id: 'run-ab12cd-side' })
     assert.equal(tool.presentCall!({})!.title, 'Read run file ?')
     // junk args render the generic card, never a throw
     assert.equal(tool.presentCall!(null)!.title, 'Read run file ?')

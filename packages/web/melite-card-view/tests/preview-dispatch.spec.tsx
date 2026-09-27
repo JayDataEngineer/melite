@@ -34,6 +34,7 @@ function tileButton(): HTMLElement {
 function stubWire(opts: { card: string; outputs: Record<string, string>; artifacts: Record<string, string> }): CardsBenchValue {
   const bench: CardsBenchValue = {
     kind: 'bench', draftId: 'bench-p', rev: 1,
+    sessionKey: 'p',
     stages: [{
       id: 's_0', card: opts.card, title: 'the stage', engine: 'comfyui',
       params: {}, runStatus: 'done',
@@ -83,7 +84,7 @@ test('an AUDIO card previews the shared audio player (declared kind drives the s
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: bench }),
+    useResource: () => ({ status: 'live' as const, value: bench }),
   }))
   // the tab boots (bench door answers), the tile opens the drill
   const tile = tileButton()
@@ -109,7 +110,7 @@ test('a MESH card previews the raw-three stage seat (declared kind)', async () =
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: bench }),
+    useResource: () => ({ status: 'live' as const, value: bench }),
   }))
   const tile = tileButton()
   expect(tile).toBeTruthy()

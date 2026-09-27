@@ -125,6 +125,23 @@ if [ "$DO_BUILD" -eq 1 ]; then
     exit 1
   fi
   ok "typecheck net green ($(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' | wc -l) tsconfigs seen)"
+  # THE TEST TIER (li-aq.3, the rules audit's HIGH-2): package
+  # tsconfigs include src/** only — the SPEC files (85 packages
+  # carry test dirs) were typed by nothing, and a spec importing a
+  # name a module never exported (TS2724, live in 22 card-view
+  # files) was invisible to every wall. One implementation, two
+  # callers: this script and the suite's typecheck gate both run
+  # scripts/typecheck-tests.mjs — the discovery, the synthesis, and
+  # the judge live there.
+  say "TYPECHECK the test tier (spec files are a plane; TS2724 is invisible to vitest)"
+  if (cd "$REPO" && node scripts/typecheck-tests.mjs >/tmp/ship-tctier.log 2>&1); then
+    ok "test tier green ($(grep -c '^✓' /tmp/ship-tctier.log) packages with test dirs)"
+  else
+    bad "the test tier is red — spec files typecheck against nothing:"
+    head -14 /tmp/ship-tctier.log | sed 's/^/        /'
+    exit 1
+  fi
+
   # The receipt that matters: the lane seat must be IN the built door.
   if grep -q "bench/lane-refusal" "$REPO/packages/estate/drafts/lib/remote.js" 2>/dev/null; then
     ok "the built door carries the lane seat (bench/lane-refusal present)"

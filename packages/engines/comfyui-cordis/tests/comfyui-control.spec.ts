@@ -52,7 +52,7 @@ describe("interrupt (delete-from-queue + interrupt, best-effort)", () => {
 
 describe("stopForRunDirInner (the stop core)", () => {
   it("a known runDir interrupts its recorded prompt", async () => {
-    const active = new Map([["run-1", { server: "http://e:8188", promptId: "p9" }]]);
+    const active = new Map([["run-1", { server: "http://e:8188", promptId: "p9", clientId: "c9" }]]);
     await stopForRunDirInner("run-1", active);
     expect(calls).toEqual(["delete", "interrupt"]);
   });

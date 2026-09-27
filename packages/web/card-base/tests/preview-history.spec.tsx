@@ -366,8 +366,8 @@ test('RUN-CYCLE PROOF: a picked history tile SURVIVES the mid-run url churn (sam
     runStatus: 'running',
   }
   const r2 = render(h(ImageStagePreview, midRun))
-  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev2/out.png',
-    'the pick survives the mid-run url churn — the hero stays on the picked generation, never silently jumps')
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src'),
+    'the pick survives the mid-run url churn — the hero stays on the picked generation, never silently jumps').toBe('/runs/prev2/out.png')
   cleanup()
   // the terminal patch: the run's urls land, same run id
   const terminal: PreviewOwnerProps = {
@@ -376,8 +376,8 @@ test('RUN-CYCLE PROOF: a picked history tile SURVIVES the mid-run url churn (sam
     runStatus: 'completed',
   }
   const r3 = render(h(ImageStagePreview, terminal))
-  expect((r3.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/prev2/out.png',
-    'the pick still holds after the run lands (same run identity — a view is not a one-way door)')
+  expect((r3.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src'),
+    'the pick still holds after the run lands (same run identity — a view is not a one-way door)').toBe('/runs/prev2/out.png')
   cleanup()
   // THE RETURN: the badge's control restores the current generation
   const r4 = render(h(ImageStagePreview, terminal))
@@ -405,8 +405,8 @@ test('RUN-CYCLE PROOF: a NEW run id resets the pick (the fresh cell law survives
     runId: 'run-2',
   }
   const r2 = render(h(ImageStagePreview, next))
-  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/runs/r2/out.png',
-    'a new run is a new view identity — the hero opens on its own generation')
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src'),
+    'a new run is a new view identity — the hero opens on its own generation').toBe('/runs/r2/out.png')
 })
 
 test('RUN-CYCLE PROOF (the regression needle): the cell key is the RUN ID, never the urls — a urls-only owner (no runId) still churns cells', () => {
@@ -422,8 +422,8 @@ test('RUN-CYCLE PROOF (the regression needle): the cell key is the RUN ID, never
   cleanup()
   const b: PreviewOwnerProps = { ...a, artifacts: [{ name: 'o', url: '/r/COMPLETELY-DIFFERENT.png' }] }
   const r2 = render(h(ImageStagePreview, b))
-  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src')).toBe('/r/h.png',
-    'same run id + different urls = SAME cell (the urls never key the pick)')
+  expect((r2.container.querySelector('[data-testid="stage-preview-image-hero"]') as HTMLImageElement).getAttribute('src'),
+    'same run id + different urls = SAME cell (the urls never key the pick)').toBe('/r/h.png')
 })
 
 test('THE LAYOUT-PRESERVING SWAP (the 2026-09-21 pull, frame-proven: the seat collapsed 310px for one frame at landing and the scroller clamped): the outgoing hero STAYS mounted until the incoming one LOADS — the seat never has zero height', async () => {
@@ -475,14 +475,14 @@ test('THE UNIQUE-SEAT KEY LAW (operator 2026-09-21 screen dump: ten history tile
   expect(stripBefore.length).toBe(3) // every generation keeps its seat — no clone collapse
   const node = stripBefore[1]
   // the progress tick: same props, fresh object identities
-  r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history.map((e) => e.slice()) }))
+  r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history!.map((e) => e.slice()) })) // the DUPES fixture declares history above — the rerender clones it with fresh identities
   const stripAfter = Array.from(r.container.querySelectorAll('[data-testid="stage-output-history"] button'))
   expect(stripAfter.length).toBe(3)
   expect(stripAfter[1]).toBe(node) // SAME DOM NODE — no remount, no reload, no layout shift
   // and the CLONE LAW: across many progress ticks the tile count NEVER grows
   // (the operator's screen showed ten clones of one url — duplicate keys
   // duplicate children in real browsers; the archive itself dedups by url set)
-  for (let k = 0; k < 10; k++) r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history.map((e) => e.slice()) }))
+  for (let k = 0; k < 10; k++) r.rerender(h(ImageStagePreview, { ...DUPES, history: DUPES.history!.map((e) => e.slice()) })) // same declared-history read as above
   expect(r.container.querySelectorAll('[data-testid="stage-output-history"] button').length).toBe(3)
 })
 

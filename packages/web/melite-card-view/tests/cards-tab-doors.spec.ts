@@ -134,7 +134,7 @@ describe("previewArtifactsFor — the junk filters and the fallback chain", () =
 describe("runBenchSequential — the pre-aborted pass returns empty", () => {
   test("an aborted signal before the first card runs nothing", async () => {
     stubWire();
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "image-gen", params: { prompt: "never" } }),
     ] };
     const res = await runBenchSequential(bench, { signal: AbortSignal.abort() });
@@ -147,7 +147,7 @@ describe("the audit's A1 — Run ALL rides the same gate (the gate lives in runC
   test("a stage whose write has not landed stops the pass with the refusal — no runs/start", async () => {
     stubWire({ patchFailures: [{ draftId: "bench-main", stageId: "s_1", delivered: false, reason: "stage not found" }] });
     await expect(patchStageParams("bench-main", "s_1", { prompt: "never" }, 5)).rejects.toThrow(/stage not found/);
-    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", rev: 5, log: [], stages: [
+    const bench: CardsBenchValue = { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 5, log: [], stages: [
       stage({ id: "s_1", card: "img-to-mesh", params: {} }),
     ] };
     const res = await runBenchSequential(bench, {});

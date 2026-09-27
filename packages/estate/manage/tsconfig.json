@@ -1,5 +1,9 @@
 {
   "compilerOptions": {
+    // li-aq.3: typing the seat with the class that MOUNTS it pulls
+    // the queue's sources (and the card-kit's) into this program; the
+    // source-run idiom every such package carries.
+    "allowImportingTsExtensions": true,
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",

@@ -22,6 +22,10 @@ import { unbindEstateRemote } from '@melite/card-base/estate-remote'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/CardsTab.tsx'
 
+// The tab's props (mirrors the cards-stage-view.spec pattern) — the
+// plain-door describe below mounts outside the drill describe's scope.
+type CardsTabProps_ = Parameters<typeof CardsTab>[0]
+
 afterEach(() => { cleanup(); unbindEstateRemote(); vi.unstubAllGlobals() })
 
 // THE ENVELOPE FIXTURE (the parameter audit): tests build the
@@ -89,6 +93,7 @@ describe('the construction law (add-a-card drill)', () => {
   const BENCH: CardsBenchValue = {
     kind: 'bench',
     draftId: 'bench-cl',
+    sessionKey: 'cl',
     rev: 3,
     stages: [
       { id: 's_0', card: 'image-gen', engine: 'comfyui', params: {}, result: { url: '/media/out.png' } },
@@ -135,7 +140,7 @@ describe('the construction law (add-a-card drill)', () => {
           actions: { openResource: () => {} },
         },
       }),
-      useResource: () => ({ status: 'live', value: BENCH }),
+      useResource: () => ({ status: 'live' as const, value: BENCH }),
     } as CardsTabProps_))
   }
 
@@ -147,13 +152,13 @@ describe('the construction law (add-a-card drill)', () => {
     // the catalog's card row — one click adds (the preadd form
     // screen is gone: no Add button, no back row, ever). By role:
     // the titled family pill echoes the label, so text is ambiguous.
-    const row = await screen.findByRole('button', { name: /Image Edit/ }, undefined, { timeout: 4000 })
+    const row = await screen.findByRole('button', { name: /Image Edit/ }, { timeout: 4000 })
     fireEvent.click(row)
     expect(screen.queryByText('Add card')).toBeNull()
     // the add lands and the drill opens on the fresh row — THE
     // SQUARE rides the drill's own form (the constructor built it
     // with zero caller wiring)
-    const square = await screen.findByRole('button', { name: 'Input image source' }, undefined, { timeout: 6000 })
+    const square = await screen.findByRole('button', { name: 'Input image source' }, { timeout: 6000 })
     expect(square).toBeTruthy()
     // never the degenerate bare text input
     expect(screen.queryByLabelText('Input image')).toBeNull()
@@ -184,12 +189,15 @@ describe('the construction law (DRY)', () => {
 //      REPEALED; the studio lives in the ZOOM, never the door. ──────
 describe('the construction law (the plain add door)', () => {
   it('a CLAIMED card picks STRAIGHT into its drill — no preadd screen, no studio hijack of the door', async () => {
-    const claimed = (owner: unknown, fallback: ReturnType<typeof createElement>): ReturnType<typeof createElement> => {
-      void owner
+    // the studio stub, typed as the slot it stands in for (it
+    // ignores the dispatch args and answers the hijack div verbatim).
+    const claimed: CardsTabProps_['renderSlot'] = (_key, _owner, _opts) => {
+      void _key; void _owner; void _opts
       return createElement('div', { 'data-testid': 'studio-hijack' }, 'THE STUDIO')
     }
     const BENCH: CardsBenchValue = {
       kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [],
+      sessionKey: 'plain',
     }
     mountEstateFakes({
       benchDoc: { kind: 'bench', draftId: 'bench-plain', rev: 1, stages: [], log: [] },
@@ -212,12 +220,12 @@ describe('the construction law (the plain add door)', () => {
           actions: { openResource: () => {} },
         },
       }),
-      useResource: () => ({ status: 'live', value: BENCH }),
+      useResource: () => ({ status: 'live' as const, value: BENCH }),
       renderSlot: claimed,
     } as CardsTabProps_))
     const addTile = await screen.findAllByText(/add a card/i, undefined, { timeout: 4000 })
     fireEvent.click(addTile[0])
-    const row = await screen.findByRole('button', { name: /Mask Studio/ }, undefined, { timeout: 4000 })
+    const row = await screen.findByRole('button', { name: /Mask Studio/ }, { timeout: 4000 })
     fireEvent.click(row)
     // the pick IS the add — no preadd screen between: no Add button,
     // no back row, only the busy face on the picked row…

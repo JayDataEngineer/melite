@@ -10,7 +10,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { resetStageWrites } from "../src/client/draft.ts";
@@ -135,11 +135,11 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const STAGES: BenchStageRow[] = [
+const STAGES: BenchStageView[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
-function mountBench(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageRow[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
+function mountBench(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageView[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
   stubDoors({
     draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
     ...estateOpts,
@@ -154,13 +154,13 @@ function mountBench(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, sta
       actions: { openResource: () => {} },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages },
     }),
   } as never));
 }
 
-function mountDraft(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageRow[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
+function mountDraft(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, stages: BenchStageView[] = STAGES, spec: { absentFamily?: boolean; packs?: boolean } = {}): void {
   stubDoors({
     draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
     ...estateOpts,
@@ -175,7 +175,7 @@ function mountDraft(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, sta
       actions: { openResource: () => {} },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "draft", draftId: "draft-1", stageId: "s_0", rev: 1, stages },
     }),
   } as never));
@@ -304,7 +304,7 @@ describe("the slot manage verbs — provision and pack ride the manage door", ()
   beforeEach(() => { slot.claim = false; });
   // the drill's generic detail (no studio claim): the offered-but-
   // absent faces render from the served declaration
-  const ABSENT: BenchStageRow[] = [
+  const ABSENT: BenchStageView[] = [
     { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn", model: "image-gen" } },
   ];
 

@@ -14,21 +14,24 @@ import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { meliteDiscover } from '../src/tools/melite-discover.ts'
 import type { EstateRequest } from '../src/estate.ts'
+import { fakeExec } from './fake-exec.ts'
 
 function mockRequest(handler: (method: string, path: string, body: unknown) => unknown): {
   seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }>;
   request: EstateRequest;
 } {
   const seen: Array<{ method: string; path: string; body: unknown; timeoutMs: number }> = []
-  const request = (async (method, path, body, _signal, timeoutMs) => {
-    seen.push({ method: method as string, path: path as string, body, timeoutMs: timeoutMs as number })
-    return handler(method as string, path as string, body)
-  }) as unknown as EstateRequest
+  // Contextually typed by the EstateRequest seam — params inherit the
+  // transport signature, so no implicit-any and no casts ride.
+  const request: EstateRequest = async (method, path, body, _signal, timeoutMs) => {
+    seen.push({ method, path, body, timeoutMs })
+    return handler(method, path, body)
+  }
   return { seen, request }
 }
 
-function exec(): { signal: AbortSignal } {
-  return { signal: AbortSignal.timeout(5000) }
+function exec() {
+  return fakeExec(AbortSignal.timeout(5000))
 }
 
 function stubRequest(): EstateRequest {
@@ -291,20 +294,20 @@ describe('melite_discover — the empty-AND hint (attempt-4 gap, verified)', () 
   test('a zero result with MULTI-tag query names the AND law', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
     const tool = meliteDiscover(seen.request)
-    const out = await tool.execute({ tags: 'image,video,audio' }, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    const out = await tool.execute({ tags: 'image,video,audio' }, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.match(String(out['hint']), /tags is an AND/)
   })
   test('a zero result with a SINGLE tag stays the gateway answer (no nag)', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
     const tool = meliteDiscover(seen.request)
-    const out = await tool.execute({ tags: 'video' }, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    const out = await tool.execute({ tags: 'video' }, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.equal(out['hint'], undefined)
   })
 
   test('a zero result without tags takes the ordinary empty answer', async () => {
     const seen = mockRequest(() => ({ flows: [], cards: [] }))
     const tool = meliteDiscover(seen.request)
-    const out = await tool.execute({}, { signal: AbortSignal.timeout(4000) }) as Record<string, unknown>
+    const out = await tool.execute({}, fakeExec(AbortSignal.timeout(4000))) as Record<string, unknown>
     assert.equal(out.hint, undefined)
   })
 

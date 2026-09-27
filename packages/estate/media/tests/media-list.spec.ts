@@ -6,7 +6,7 @@ import { mkdtemp, mkdir, writeFile, rm, utimes } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, beforeAll, describe, expect, test } from 'vitest'
-import { listMedia, listMediaAcross, MEDIA_PREFIX } from '../src/index.ts'
+import { listMedia, listMediaAcross, MEDIA_PREFIX } from '@melite/estate-media'
 
 let root = ''
 

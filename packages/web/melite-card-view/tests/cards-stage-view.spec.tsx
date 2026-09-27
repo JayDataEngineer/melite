@@ -25,6 +25,7 @@ import type { StageViewOwnerProps } from '../src/client/types.ts'
 const BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-sv',
+  sessionKey: 'sv',
   rev: 3,
   stages: [
     { id: 's_0', card: 'image-gen', engine: 'comfyui', params: { prompt: 'a red cube' } },
@@ -66,7 +67,7 @@ function mount(renderSlot?: CardsTabProps_['renderSlot']): void {
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
     ...(renderSlot === undefined ? {} : { renderSlot }),
   }))
 }

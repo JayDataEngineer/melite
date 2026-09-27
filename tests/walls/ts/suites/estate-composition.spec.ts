@@ -20,7 +20,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {describe, it, beforeAll} from "vitest";
 import assert from "node:assert/strict";
-import { Context } from '@deepseek-ai/cordis';
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 import draftsPlugin from '@melite/estate-drafts';
 import Storage from '@deepseek-ai/dsh-storage';
@@ -31,8 +31,8 @@ import {
   apply as domainApply, Config as DomainConfig, inject as domainInject, name as domainName,
 } from '@deepseek-ai/dsh-storage-domain';
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
-import type { DiscloseService } from "../../../../packages/harness/estate-queue/src/index.ts";
-import type { ManageService } from "../../../../packages/harness/estate-queue/src/manageRegistry.ts";
+import type { DiscloseDirectoryService } from "../../../../packages/harness/estate-queue/src/index.ts";
+import type { ManageGatewayService } from "../../../../packages/harness/estate-queue/src/manageRegistry.ts";
 
 let ctx: Context;
 
@@ -40,12 +40,14 @@ beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "estate-composition-wall-"));
   process.env["MELITE_STATE_ROOT"] = root;
   ctx = new Context();
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
   // THE BUNDLE — the whole engine tier in load order.
-  await ctx.plugin(estateBundle as never);
+  await ctx.plugin(estateBundle as unknown as Plugin);
 });
 
 function seat<T>(name: string): T {
@@ -67,7 +69,7 @@ async function settle(names: string[]): Promise<void> {
     if (Date.now() > deadline) {
       assert.fail(`the bundle never settled these seats: ${missing.join(", ")}`);
     }
-    await new Promise((r): void => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 50));
   }
 }
 
@@ -88,7 +90,7 @@ describe("the estate bundle composes", () => {
   }, 30000);
 
   it("the disclose plane answers through the bundle (cards + flows ride)", async () => {
-    const disclose = seat<DiscloseService>("disclose");
+    const disclose = seat<DiscloseDirectoryService>("disclose");
     const all = disclose.discover("all", "", "");
     assert.ok(Array.isArray(all.flows) && all.flows.length >= 11, "flows ride");
     assert.ok(Array.isArray(all.cards) && all.cards.length >= 1, "cards ride");
@@ -103,7 +105,7 @@ describe("the estate bundle composes", () => {
   }, 30000);
 
   it("the manage plane answers through the bundle (status, no engine dialed)", async () => {
-    const manage = seat<ManageService>("manage");
+    const manage = seat<ManageGatewayService>("manage");
     const sig = new AbortController().signal;
     const env = await manage.act({ action: "status", test: true }, sig);
     assert.equal(env.ok, true, "status answers test-flagged with no engine");

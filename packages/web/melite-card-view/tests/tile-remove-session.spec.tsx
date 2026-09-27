@@ -78,7 +78,7 @@ test('THE TILE TRASH ON A NON-MAIN BENCH ADDRESSES THAT BENCH (never main — th
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   const trash = await screen.findAllByTestId('tile-remove', undefined, { timeout: 4000 })
   expect(trash.length).toBe(2)

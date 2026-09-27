@@ -20,6 +20,7 @@
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
 import { Context } from '@deepseek-ai/cordis'
+import type { Plugin } from '@deepseek-ai/cordis'
 import { ModelsService } from '../src/models/service.ts'
 
 import { DECL as declAceStep, family as familyAceStep } from '../../../models/ace-step/src/index.ts'
@@ -119,7 +120,9 @@ describe('models registry HMR safety (every family)', () => {
 
       const ctx = new Context()
       const svc = new ModelsService(ctx)
-      const fiber = await ctx.plugin(family as never)
+      // The registry holds heterogeneous family plugins typed
+      // structurally above — the call recovers the Cordis seam.
+      const fiber = await ctx.plugin(family as unknown as Plugin)
       try {
         assert.ok(
           svc.registryIds().includes(decl.id),
@@ -132,7 +135,7 @@ describe('models registry HMR safety (every family)', () => {
         !svc.registryIds().includes(decl.id),
         `${id} fiber dispose must retract its family`,
       )
-      const fiber2 = await ctx.plugin(family as never)
+      const fiber2 = await ctx.plugin(family as unknown as Plugin)
       try {
         assert.ok(svc.registryIds().includes(decl.id), `${id} re-registers after dispose`)
       } finally {

@@ -13,6 +13,7 @@ import { bindEstateRemote, unbindEstateRemote } from '../src/estate-remote.ts'
 import { fetchMediaLibrary } from '../src/media-library.ts'
 
 import { ModifiersSection } from '../src/mods.tsx'
+import type * as mod from '../src/mods.tsx' // the face contracts seat type positions; the suite constructs (not imports) their values below
 
 afterEach(cleanup)
 
@@ -912,11 +913,11 @@ test('THE SEAM CONTRACTS LIVE IN @melite/contracts (stroke 79): the face props c
   // the owner props ride the shared contracts package beside their
   // siblings (PreviewOwnerProps, StageViewOwnerProps); card-base
   // re-exports for its component-level types and existing importers
-  const mod = await import('../src/mods.tsx')
+  // (the module rides the static type import above — no dynamic load needed)
   const a: mod.PaintCanvasFaceProps = { referenceUrl: 'r', value: 'p', onChange: () => {} }
   const b: mod.BboxCanvasFaceProps = { referenceUrl: 'r', value: null, onChange: () => {} }
-  const paint: mod.PaintFaceComponent = (props) => { void props; return null as never }
-  const box: mod.BboxFaceComponent = (props) => { void props; return null as never }
+  const paint: mod.PaintFaceComponent = (props: mod.PaintCanvasFaceProps) => { void props; return null as never }
+  const box: mod.BboxFaceComponent = (props: mod.BboxCanvasFaceProps) => { void props; return null as never }
   paint(a); box(b)
 })
 

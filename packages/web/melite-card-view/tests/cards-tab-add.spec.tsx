@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 
@@ -108,7 +108,7 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const STAGES: BenchStageRow[] = [];
+const STAGES: BenchStageView[] = [];
 
 function mount(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, prestage?: () => void): void {
   stubDoors(estateOpts);
@@ -120,7 +120,7 @@ function mount(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}, prestage
       actions: { openResource: () => {} },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: STAGES },
     }),
   } as never));

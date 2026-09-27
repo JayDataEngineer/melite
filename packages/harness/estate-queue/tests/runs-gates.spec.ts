@@ -35,6 +35,7 @@ describe("decodeStrictBody (the strict wire)", () => {
   });
   it("a non-JSON body refuses 400 with the parser's message", () => {
     const out = decodeStrictBody(new TextEncoder().encode("{nope"));
+    if (!("status" in out)) assert.fail("expected a refusal");
     assert.equal(out.status, 400);
     assert.match(JSON.stringify(out.payload), /bad JSON/);
   });
@@ -48,6 +49,7 @@ describe("parseStrictJson (decode + parse)", () => {
   });
   it("a refused body returns the door answer unchanged", () => {
     const out = parseStrictJson(new TextEncoder().encode("nope"));
+    if (!("status" in out)) assert.fail("expected a refusal");
     assert.equal(out.status, 400);
     assert.match(JSON.stringify(out.payload), /bad JSON/);
   });

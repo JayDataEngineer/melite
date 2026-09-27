@@ -25,6 +25,7 @@ import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 function bench(runStatus: string): CardsBenchValue {
   return {
     kind: 'bench', draftId: 'bench-p', rev: 1,
+    sessionKey: 'p',
     stages: [{
       id: 's_h3', card: 'h3-timeline', title: 'the stuck stage', engine: 'comfyui',
       params: {}, runStatus,

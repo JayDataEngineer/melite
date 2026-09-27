@@ -13,6 +13,7 @@ import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
+import type { EngineRunOutcome } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
@@ -52,7 +53,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};
       if (id === "boom") throw new Error("transport down");
-      throw new RemoteError("draft/not-found", "no doc", {});
+      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
     },
   };
   const cards: Record<string, (...args: never[]) => unknown> = {
@@ -303,7 +304,7 @@ describe("stroke-83 stopping stamp", () => {
     const gate = new Promise<void>((rel): void => { releaseStage = rel; });
     engines.register("comfyui", {
       executor: {
-        executeStages: async (): Promise<{ stages: unknown[]; engineRef: string }> => {
+        executeStages: async (): Promise<EngineRunOutcome> => {
           await gate;
           return { stages: [], engineRef: "p" };
         },
@@ -311,7 +312,7 @@ describe("stroke-83 stopping stamp", () => {
     });
     const ans = await s.svc.start(wfBody82(), sig());
     // wait until the run is live inside the executor
-    await new Promise((r): void => setTimeout(r, 60));
+    await new Promise((r): void => { setTimeout(r, 60); });
     const first = await s.svc.stop(ans.run_id, sig());
     assert.deepEqual(first, { run_id: ans.run_id, status: "stopping" });
     const row = s.core.runs.get(ans.run_id);
@@ -319,7 +320,10 @@ describe("stroke-83 stopping stamp", () => {
     // a re-press on an already-stopping row is idempotent
     const again = await s.svc.stop(ans.run_id, sig());
     assert.equal((again as { status: string }).status, "stopping");
-    releaseStage?.();
+    // The gate promise's resolver is written by the executor
+    // closure (invisible to CFA, which narrows the direct read to
+    // never) — read it through the declared union (type-only).
+    (releaseStage as (() => void) | null)?.();
     const settled = await settleWait(s, ans.run_id);
     assert.equal(settled.status, "stopped");
   });

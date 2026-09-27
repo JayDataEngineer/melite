@@ -5,7 +5,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { emitKnob, emitParamsSchema, emitParamsSpec } from "../src/params-emit.ts";
-import type { Schema } from "@deepseek-ai/schemastery";
+import type { Schema } from "../src/params-emit.ts";
 
 const shape = (s: Record<string, unknown>): Schema => s as unknown as Schema;
 const c = (v: unknown): Record<string, unknown> => ({ type: "const", value: v });

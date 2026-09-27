@@ -21,7 +21,7 @@ const stage = (over: Record<string, unknown> = {}): Record<string, unknown> => (
   id: "s1", engine: "comfyui", inputs: {}, outputs: { out: "image" }, expected: {},
   card: "", card_io: {}, skip_when: null, params: {}, description: "d", ...over,
 });
-const row = (i: number, st: Record<string, unknown>): FlowStageRow => buildStageRow(i, st);
+const row = (i: number, st: unknown): FlowStageRow => buildStageRow(i, st);
 
 describe("strictBody (the retired-knob voices)", () => {
   it("a clean body passes", () => {

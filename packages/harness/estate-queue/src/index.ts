@@ -11,6 +11,14 @@ import type { QueueConfig } from "./service.ts";
 import { RunsRuntimeService } from "./runsRegistry.ts";
 
 export { QueueService } from "./service.ts";
+// THE MOUNTED SEATS (li-aq.3, the walls-plane typecheck's find: the
+// remotes each re-declared `runs`/`manage` on Context with a
+// hand-rolled structural interface while this package declared the
+// same keys with the real classes — TS2717, a conflict no program
+// had ever composed before the walls plane typechecked. ONE owner
+// per key, typed with what actually mounts.)
+export { RunsRuntimeService } from "./runsRegistry.ts";
+export { ManageGatewayService } from "./manageRegistry.ts";
 export type { QueueConfig } from "./service.ts";
 export * from "./vocab.ts";
 export * from "./queue.ts";

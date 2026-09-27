@@ -13,7 +13,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -104,7 +104,7 @@ function stubFetch(): void {
   });
 }
 
-const STAGES: BenchStageRow[] = [
+const STAGES: BenchStageView[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
@@ -113,7 +113,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
+function mount(stages: BenchStageView[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
   // the rail reads the same rows the snapshot carries (the old
   // bench/get served the mount's rows; the old drafts/get served
@@ -132,7 +132,7 @@ function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
       actions: { openResource: () => {} },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages },
     }),
   } as never));

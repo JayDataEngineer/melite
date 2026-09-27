@@ -25,10 +25,11 @@ import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 
 let svc: CardRegistryService;
+let bootCtx: Context;
 
 beforeAll(async () => {
-  const ctx = new Context();
-  svc = new CardRegistryService(ctx);
+  bootCtx = new Context();
+  svc = new CardRegistryService(bootCtx);
   await svc.prime();
 });
 
@@ -349,7 +350,7 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       expect(row, `family ${fam} in facts`).toBeDefined();
       expect(row.params, `family ${fam} declares a base surface`).toBeDefined();
       for (const name of [
-        ...row.params,
+        ...(row.params ?? []),
         ...row.variants.flatMap((v) => [...(v.params ?? [])]),
       ]) union.add(name);
       for (const name of modFieldsOf("tts", fam)) union.add(name);
@@ -862,5 +863,45 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
       expect(verdict.error).toContain("double_reference");
       expect(verdict.error).toContain("fires nothing on this lane");
     }
+  });
+});
+
+// ── THE OVERLAP LAW (li-aq.3, the design audit's F7): the card
+// schema and the DECL bounds are two owners of value domains — the
+// card's authoring floor and the model's own truth. On overlap the
+// EFFECTIVE domain is the INTERSECTION, and whichever seat sees the
+// state first voices the refusal — the ORDER is path-shaped (the
+// single-card path judges the lane at admission before the schema
+// parse at compose; the flow gate parses schemas at construction),
+// but the LAW is order-free: NO path ever admits a state that
+// violates either.
+describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating state)", () => {
+  it("a state violating BOTH owners refuses (whichever voice finds it first)", async () => {
+    const verdict = await svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "x",
+      steps: 999,   // the card schema's own ceiling (1..50)
+      width: -50,   // the lane's own floor (256..1536)
+      height: 1024,
+    });
+    expect(verdict.ok, "the lane seat refuses the state outright").toBe(false);
+    expect(String(!verdict.ok ? verdict.error : undefined)).toContain("width");
+    // and the schema's own seat refuses the steps half
+    // THE SCHEMA'S HALF of the same state is pinned at the card's
+    // own compose gate (packages/image/image-edit/tests/card.spec.ts
+    // "THE SCHEMA GATE" — steps 999 refuses /steps|999|between|range/)
+    // — the two pins together are the law: no path admits a state
+    // either owner refuses, whichever voice arrives first.
+  });
+
+  it("a lane-legal state inside the schema's domain admits at both seats", async () => {
+    const verdict = await svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "x",
+      steps: 20,
+      width: 1328,
+      height: 1328,
+    });
+    expect(verdict.ok).toBe(true);
   });
 });

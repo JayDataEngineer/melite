@@ -12,7 +12,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { AddCardDoor } from "../src/client/add-card-door.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
@@ -76,18 +76,18 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function benchProp(stages: BenchStageRow[]): CardsBenchValue {
+function benchProp(stages: BenchStageView[]): CardsBenchValue {
   return { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages, sessionKey: "s1" };
 }
 
 function mountDoor(opts: {
   bench: CardsBenchValue;
   onAdded?: () => void;
-  onAddedRow?: (row: BenchStageRow) => void;
+  onAddedRow?: (row: BenchStageView) => void;
   onClose?: () => void;
 }): { onAdded: ReturnType<typeof vi.fn>; onAddedRow: ReturnType<typeof vi.fn> } {
   const onAdded = vi.fn(opts.onAdded ?? (() => {}));
-  const onAddedRow = vi.fn(opts.onAddedRow ?? ((_row: BenchStageRow) => {}));
+  const onAddedRow = vi.fn(opts.onAddedRow ?? ((_row: BenchStageView) => {}));
   render(h(AddCardDoor, {
     bench: opts.bench,
     sessionKey: "s1",

@@ -629,8 +629,9 @@ describe('loadRunOntoBench — the run record wins', () => {
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     const result = stages[0]?.['result'] as Record<string, unknown>
     expect(result['run_id']).toBe('rh3')
-    expect(result['url']).toBe(R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
-      'the hero is the concatenated film, not the first-listed window')
+    expect(result['url'], 'the hero is the concatenated film, not the first-listed window').toBe(
+      R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
+    )
     expect(result['artifacts']).toEqual({
       'run-rh3/h3-film/h3_t4_film_00021_.mp4': R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
       'run-rh3/h3-film/h3_t4_w2_00004_.mp4': R('run-rh3/h3-film/h3_t4_w2_00004_.mp4'),

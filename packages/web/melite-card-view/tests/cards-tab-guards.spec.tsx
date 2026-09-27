@@ -14,7 +14,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -58,8 +58,8 @@ function stubFetch(): void {
   });
 }
 
-const STAGES: BenchStageRow[] = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }];
-const BENCH: CardsBenchValue = { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: STAGES };
+const STAGES: BenchStageView[] = [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }];
+const BENCH: CardsBenchValue = { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages: STAGES };
 
 function tabInfo(address?: string): () => unknown {
   return () => ({ tab: {
@@ -69,7 +69,7 @@ function tabInfo(address?: string): () => unknown {
   } });
 }
 
-function benchDoc(stages: BenchStageRow[], draftId = "bench-p"): Record<string, unknown> {
+function benchDoc(stages: BenchStageView[], draftId = "bench-p"): Record<string, unknown> {
   // rows ride verbatim (readBench passes them through) — the rail
   // reads the same runStatus seat the snapshot carries.
   return { draft_id: draftId, rev: 1, log: [], stages };
@@ -86,8 +86,8 @@ interface MountOpts {
   useTabInfo?: unknown;
   useResource?: unknown;
   renderSlot?: unknown;
-  stages?: BenchStageRow[];
-  docStages?: BenchStageRow[];
+  stages?: BenchStageView[];
+  docStages?: BenchStageView[];
   draftId?: string;
   /** Prestaged estate answers — land BEFORE the render, so
    *  mount-time calls (the adoption effect) read them on call. */
@@ -113,7 +113,7 @@ function mount(opts: MountOpts = {}): void {
   if (opts.useTabInfo !== undefined) props["useTabInfo"] = opts.useTabInfo;
   else props["useTabInfo"] = tabInfo();
   if (opts.useResource !== undefined) props["useResource"] = opts.useResource;
-  else props["useResource"] = () => ({ status: "live", value: { ...BENCH, stages: snapStages } });
+  else props["useResource"] = () => ({ status: "live" as const, value: { ...BENCH, stages: snapStages } });
   if (opts.renderSlot !== undefined) props["renderSlot"] = opts.renderSlot;
   render(h(CardsTab, props as never));
 }
@@ -158,7 +158,7 @@ describe("the mount guards — hooks and snapshots", () => {
   });
 
   test("a failed snapshot voices the estate's own words", async () => {
-    mount({ useResource: () => ({ status: "failed", failure: new Error("door down") }) });
+    mount({ useResource: () => ({ status: "failed" as const, failure: new Error("door down") }) });
     expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
   });
 
@@ -175,7 +175,7 @@ describe("the mount guards — hooks and snapshots", () => {
   test("an empty draft id renders without adopting a run", async () => {
     // the snapshot carries the empty id (the estate doc is not the
     // adoption's source — the live snapshot is)
-    mount({ useResource: () => ({ status: "live", value: { ...BENCH, draftId: "" } }) });
+    mount({ useResource: () => ({ status: "live" as const, value: { ...BENCH, draftId: "" } }) });
     await waitFor(() => { expect(firstTile()).toBeTruthy(); });
     expect(calls().some((p) => p.method === "runs/list")).toBe(false);
   });
@@ -228,7 +228,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
         actions: {},
       } }),
-      useResource: () => ({ status: "live", value: {
+      useResource: () => ({ status: "live" as const, value: {
         kind: "draft", draftId: "draft-1", stageId: "s_0",
         intent: "the film", rev: 1,
         stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
@@ -262,7 +262,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_gone" },
         actions: {},
       } }),
-      useResource: () => ({ status: "live", value: {
+      useResource: () => ({ status: "live" as const, value: {
         kind: "draft", draftId: "draft-1", stageId: "s_gone",
         intent: "the film", rev: 1,
         stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
@@ -284,7 +284,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
         actions: {},
       } }),
-      useResource: () => ({ status: "live", value: {
+      useResource: () => ({ status: "live" as const, value: {
         kind: "draft", draftId: "draft-1", stageId: "s_0",
         intent: "the film", rev: 1,
         stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
@@ -323,7 +323,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
         actions: {},
       } }),
-      useResource: () => ({ status: "live", value: {
+      useResource: () => ({ status: "live" as const, value: {
         kind: "draft", draftId: "draft-1", stageId: "s_0",
         intent: "the film", rev: 1,
         stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
@@ -361,7 +361,7 @@ describe("the latest-run adoption — the estate's newest run arms Stop", () => 
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
         actions: {},
       } }),
-      useResource: () => ({ status: "live", value: {
+      useResource: () => ({ status: "live" as const, value: {
         kind: "draft", draftId: "draft-1", stageId: "s_0",
         intent: "the film", rev: 1,
         stages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],

@@ -55,7 +55,7 @@ const seat = (
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return d1Doc;
       if (id === "boom") throw new Error("transport down");
-      throw new RemoteError("draft/not-found", "no doc", {});
+      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
     },
   };
   const cards: Record<string, (...args: never[]) => unknown> = {
@@ -210,7 +210,7 @@ describe("validate", () => {
     const s = seat();
     await assert.rejects(s.svc.validate({}, dead()));
     const good = await s.svc.validate(inlineBody()["flow_inline"], sig());
-    assert.equal((good as { status?: unknown })["ok"] ?? true, true);
+    assert.equal((good as { status?: unknown; ok?: unknown })["ok"] ?? true, true);
     const bad = await remote(() => s.svc.validate({ nope: 1 }, sig()));
     assert.equal(bad.code, "runs/flow-compile");
   });
@@ -230,7 +230,7 @@ describe("validate", () => {
       inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "c", engine: "comfyui", params: {} }] } }),
       sig(),
     );
-    assert.equal((ok as { status?: unknown })["ok"] ?? true, true);
+    assert.equal((ok as { status?: unknown; ok?: unknown })["ok"] ?? true, true);
     const ghost = await remote(() =>
       s.svc.validate(
         inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "ghost", engine: "comfyui", params: { model: "m" } }] } }),
@@ -564,7 +564,7 @@ describe("status + stop", () => {
 
   it("status serves the row (log tail rides along on request)", async () => {
     const s = seat();
-    const id = live(s, { error: "bad", stages: [{ id: "s", status: "failed" }] });
+    const id = live(s, { error: "bad", stages: [{ id: "s", name: "s", index: 0, status: "failed", outputs: {}, expected: {} }] });
     const got = await s.svc.status(id, sig());
     assert.equal(got["queue_position"], 0);
     assert.equal(got["draft_id"], "d1");
@@ -877,7 +877,9 @@ describe("film admission warn (F-6b)", () => {
       }, sig());
       await settleWait(s, ans.run_id);
       // the run record's snapshot: declared numerics are numbers
-      const rec = s.core.runs.get(ans.run_id) as Record<string, unknown>;
+      // The registry row has no overlap with a plain record, so
+      // the snapshot face is read via unknown (type-only).
+      const rec = s.core.runs.get(ans.run_id) as unknown as Record<string, unknown>;
       const snap = rec["cardSnapshot"] as { params: Record<string, unknown> };
       assert.equal(snap.params["dur_frames"], 110);
       assert.strictEqual(typeof snap.params["dur_frames"], "number");
@@ -1024,6 +1026,10 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     };
     let seenRows: MergeRow[] | null = null;
     let seenNames: Record<string, Record<string, string>> | null = null;
+    // The worker's write is invisible to CFA (a direct read narrows
+    // to never), so the count rides a reader — declared-type reads
+    // inside a closure narrow honestly.
+    const seenRowCount = (): number => (seenRows === null ? 0 : seenRows.length);
     engine.onFlow = async (rows, _dir, inputNames): Promise<FlowResult> => {
       seenRows = rows;
       seenNames = inputNames;
@@ -1045,7 +1051,7 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     assert.equal(run.status, "completed", "the 2-stage curated doc drives the merged worker");
     assert.equal(run.stages.length, 2);
     assert.deepEqual(run.stages.map((st) => st.id), ["make", "polish"]);
-    assert.equal(seenRows !== null ? seenRows.length : 0, 2, "BOTH rows land in the one merged submit");
+    assert.equal(seenRowCount(), 2, "BOTH rows land in the one merged submit");
     assert.equal(
       seenNames !== null && seenNames["polish"] !== undefined ? seenNames["polish"]["image"] : "",
       "make.image",

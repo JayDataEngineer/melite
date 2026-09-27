@@ -51,10 +51,15 @@ class FakeWebServer extends Service {
 test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUILD-18)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const gallery: Plugin = (await import('@infer-media/dsh-gallery')).default ?? (await import('@infer-media/dsh-gallery'))
+  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  // the module carries no default export — its namespace IS the
+  // object plugin (name/inject/apply ride the namespace itself).
+  const gallery: Plugin = galleryMod.default ?? galleryMod
   const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
-  await ctx.plugin(gallery as never, { flowDir })
-  const server = ctx.get('webServer', true) as FakeWebServer
+  await ctx.plugin(gallery, { flowDir })
+  // the wall mounted a fake under the webServer seat name — the
+  // static get() type names the real seat, the runtime truth is the fake.
+  const server = ctx.get('webServer', true) as unknown as FakeWebServer
   const routes = new Map(server.captured.map((c) => [c.route.replace(/^infer-gallery: | route$/, ''), c]))
   const byPath = (p: string): Captured => server.captured.find((c) => c.route.includes(p))!
   assert.ok(byPath('/runs'), 'runs route registered')
@@ -118,7 +123,9 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
 test('cross-host posture: the pinned owning DSH serves every lane (config.gatewayUrl)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const galleryMod = await import('@infer-media/dsh-gallery')
+  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  // the module carries no default export — its namespace IS the
+  // object plugin (name/inject/apply ride the namespace itself).
   const gallery: Plugin = galleryMod.default ?? galleryMod
   // A local owning-DSH stand-in: fetch hits it verbatim.
   let hit = ''
@@ -130,8 +137,10 @@ test('cross-host posture: the pinned owning DSH serves every lane (config.gatewa
   await new Promise<void>((resolve) => standIn.listen(0, '127.0.0.1', resolve))
   const port = (standIn.address() as { port: number }).port
   const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
-  await ctx.plugin(gallery as never, { flowDir, gatewayUrl: `http://127.0.0.1:${port}` })
-  const server = ctx.get('webServer', true) as FakeWebServer
+  await ctx.plugin(gallery, { flowDir, gatewayUrl: `http://127.0.0.1:${port}` })
+  // the wall mounted a fake under the webServer seat name — the
+  // static get() type names the real seat, the runtime truth is the fake.
+  const server = ctx.get('webServer', true) as unknown as FakeWebServer
   const runsRoute = server.captured.find((c) => c.route.includes('/runs'))!
   const res = new FakeRes()
   await runsRoute.handler({ url: '/infer-gallery/runs' }, res as never)
@@ -148,13 +157,18 @@ test('cross-host posture: the pinned owning DSH serves every lane (config.gatewa
 test('the artifact grammar accepts subdir names and refuses traversal (the live-probe 400)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const gallery: Plugin = (await import('@infer-media/dsh-gallery')).default ?? (await import('@infer-media/dsh-gallery'))
+  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  // the module carries no default export — its namespace IS the
+  // object plugin (name/inject/apply ride the namespace itself).
+  const gallery: Plugin = galleryMod.default ?? galleryMod
   const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
   // a real artifact in a SUBDIR (the shape every generate run emits)
   mkdirSync(join(flowDir, 'run-abc123-word', 'generate'), { recursive: true })
   writeFileSync(join(flowDir, 'run-abc123-word', 'generate', 'img.png'), Buffer.from([1, 2, 3, 4]))
-  await ctx.plugin(gallery as never, { flowDir })
-  const server = ctx.get('webServer', true) as FakeWebServer
+  await ctx.plugin(gallery, { flowDir })
+  // the wall mounted a fake under the webServer seat name — the
+  // static get() type names the real seat, the runtime truth is the fake.
+  const server = ctx.get('webServer', true) as unknown as FakeWebServer
   const art = server.captured.find((c) => c.route.includes('/artifact'))!
   const t = async (qs: string): Promise<FakeRes> => {
     const r = new FakeRes()

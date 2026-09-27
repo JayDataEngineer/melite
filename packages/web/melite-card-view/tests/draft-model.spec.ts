@@ -82,7 +82,7 @@ describe("paramFields + editPatch — the form model", () => {
 
   test("editPatch: only changed keys, retyped-back-to-original is not an edit", () => {
     const fields = paramFields({ steps: 8, prompt: "a", turbo: false });
-    const edits = new Map([["steps", "9"], ["prompt", "a"], ["turbo", true]]);
+    const edits = new Map<string, string | boolean>([["steps", "9"], ["prompt", "a"], ["turbo", true]]);
     expect(editPatch(fields, edits)).toEqual({ steps: 9, turbo: true });
     expect(editPatch(fields, new Map([["steps", "8"]]))).toBe(null); // same value, no PATCH
   });

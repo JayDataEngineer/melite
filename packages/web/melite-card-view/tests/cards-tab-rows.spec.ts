@@ -12,7 +12,7 @@ function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
 }
 
 function bench(stages: BenchStageView[]): CardsBenchValue {
-  return { kind: "bench", draftId: "bench-main", rev: 1, log: [], stages };
+  return { kind: "bench", draftId: "bench-main", sessionKey: "main", rev: 1, log: [], stages };
 }
 
 describe("benchRow — the group face", () => {
@@ -48,7 +48,9 @@ describe("benchRow — the live carries", () => {
   });
 
   test("non-object params default empty (never a throw on the prompt read)", () => {
-    const row = benchRow(stage({ id: "s_0", params: ["junk"] }));
+    // the junk array is the test's point (malformed estate params) —
+    // the double cast marks the intentional malformation, bytes verbatim.
+    const row = benchRow(stage({ id: "s_0", params: ["junk"] as unknown as Record<string, unknown> }));
     expect(row.prompt).toBeNull();
   });
 });

@@ -18,7 +18,7 @@ import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { resetPickCellsForTests } from "@melite/card-base/preview";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -27,7 +27,7 @@ afterEach(() => {
 });
 
 type FormSpecMode = "ok" | "huge" | "reject-string" | "deferred";
-type FormsMode = "ok" | "deferred";
+type FormsMode = "ok" | "deferred" | "reject";
 
 interface Controller {
   formSpec: FormSpecMode;
@@ -103,11 +103,11 @@ function stubFetch(): void {
   });
 }
 
-function benchValue(stages: BenchStageRow[]): CardsBenchValue {
-  return { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages };
+function benchValue(stages: BenchStageView[]): CardsBenchValue {
+  return { kind: "bench", draftId: "bench-p", sessionKey: "p", rev: 1, log: [], stages };
 }
 
-function benchDoc(stages: BenchStageRow[]): Record<string, unknown> {
+function benchDoc(stages: BenchStageView[]): Record<string, unknown> {
   // rows ride verbatim (readBench passes them through) — the rail
   // reads the same seats the snapshot carries.
   return { draft_id: "bench-p", rev: 1, log: [], stages };
@@ -118,7 +118,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown, estate?: EstateOpts): void {
+function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"], estate?: EstateOpts): void {
   doors.formSpec = "ok";
   doors.formsTable = "ok";
   stubFetch();
@@ -135,13 +135,13 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: benchValue(stages) }),
+    useResource: () => ({ status: "live" as const, value: benchValue(stages) }),
     ...(renderSlot !== undefined ? { renderSlot } : {}),
   }));
   (globalThis as { __cardsTabView?: unknown }).__cardsTabView = view;
 }
   test("THE EMPTY-FACE FALLBACK: a stopped run with no landed outputs shows the HISTORY HEAD — the latest gen is never lost", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "same" }, runStatus: "stopped",
       // the stopped run never landed — the current face is empty
@@ -159,7 +159,7 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
   });
 
   test("a failed forms-table fetch never blocks the drill (null edge meta falls to the unfiltered picker)", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
       result: { run_id: "run-1", url: "/a.png", artifacts: { "a.png": "/a.png" } },
     } as never];
@@ -172,7 +172,7 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
   });
 
   test("THE REPORT CLAIM (ROADMAP 11e): a run's named verdicts render under the preview, one atom per report", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
       result: {
         run_id: "run-rig", url: "/a.png", artifacts: { "a.png": "/a.png" },
@@ -202,7 +202,7 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
   });
 
   test("no reports, no section — the outputs column stays the preview alone", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "x" }, runStatus: "done",
       result: { run_id: "run-1", url: "/a.png", artifacts: { "a.png": "/a.png" } },
     } as never];
@@ -286,7 +286,7 @@ function stubFetchDeferredOnly(): void {
         }));
       });
     }
-    return (impl as typeof fetch)(url, init);
+    return (impl as typeof fetch)(url as string, init);
   });
 }
 
@@ -390,7 +390,7 @@ describe("the webhook faces — the tap's fold renders live", () => {
 });
 
 describe("the group compound — members, ungroup, and its honesty", () => {
-  const group = (children: unknown[]): BenchStageRow => ({ id: "g_0", card: "group", engine: "comfyui", params: {}, children } as never);
+  const group = (children: unknown[]): BenchStageView => ({ id: "g_0", card: "group", engine: "comfyui", params: {}, children } as never);
 
   test("members list, junk filtered (never a throw on a bad child)", async () => {
     mountBench([group([
@@ -432,7 +432,7 @@ describe("the group compound — members, ungroup, and its honesty", () => {
 });
 
 describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
-  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
+  function mountClaimed(stages: BenchStageView[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
     mountBench(stages, ((slot: string, owner: Record<string, unknown>, opts: { fallback: unknown }) => {
       if (slot !== "cards.stage.view") return opts.fallback;
       // the claim WRAPS the generic body (the error faces still
@@ -529,9 +529,9 @@ describe("the draft view's drill — the noop surface stays silent", () => {
       useTabInfo: () => ({ tab: {
         kind: "sidebar.right.pane.tab", contentId: undefined,
         navigation: { address: "dsh-resource://cards/draft/draft-1/s_0" },
-        actions: {},
+        actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "live", value }),
+      useResource: () => ({ status: "live" as const, value }),
     }));
     expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
   });
@@ -669,7 +669,7 @@ describe("the sticky hero — the preview never jumps mid-run", () => {
     doors.formSpec = "ok";
     doors.formsTable = "ok";
     stubFetch();
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "same" },
       runStatus: "done",
@@ -686,7 +686,7 @@ describe("the sticky hero — the preview never jumps mid-run", () => {
         navigation: { address: "dsh-resource://cards/bench" },
         actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "live", value: benchValue(stages) }),
+      useResource: () => ({ status: "live" as const, value: benchValue(stages) }),
     }));
     await openFirstTile();
     const seatImg = (): string | null =>
@@ -705,7 +705,7 @@ describe("the sticky hero — the preview never jumps mid-run", () => {
         navigation: { address: "dsh-resource://cards/bench" },
         actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "live", value: benchValue(stages) }),
+      useResource: () => ({ status: "live" as const, value: benchValue(stages) }),
     }));
     // THE LAW: the hero HOLDS the previous generation mid-run —
     // never a blank seat, never a fall to an old archive. No
@@ -720,7 +720,7 @@ describe("the sticky hero — the preview never jumps mid-run", () => {
         navigation: { address: "dsh-resource://cards/bench" },
         actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "live", value: benchValue(stages) }),
+      useResource: () => ({ status: "live" as const, value: benchValue(stages) }),
     }));
     await waitFor(() => expect(seatImg()).toBe("/new.png"));
   });
@@ -802,7 +802,7 @@ describe("the history pick round-trip at the drill seam", () => {
 // heldValue ref is deleted).
 describe("the seat survives the refresh (the DSH failed-keeps-value contract)", () => {
   test("a 'failed' frame carries the last value — the drill stays mounted, scrolled, and clickable", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "same" }, runStatus: "running",
       result: { run_id: "run-2" },
@@ -839,7 +839,7 @@ describe("the seat survives the refresh (the DSH failed-keeps-value contract)", 
   });
 
   test("a fresh subscribe push (new object identities, same stage) never remounts the scroll container", async () => {
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "same" }, runStatus: "running",
       result: { run_id: "run-2" },
@@ -860,7 +860,7 @@ describe("the seat survives the refresh (the DSH failed-keeps-value contract)", 
     // No value beside the failure: the stream died before its
     // first yield. The face is the failure's own words (or the
     // fallback), never a body, never silence.
-    const stages: BenchStageRow[] = [{
+    const stages: BenchStageView[] = [{
       id: "s_0", card: "image-gen", engine: "comfyui",
       params: { prompt: "same" }, runStatus: "done",
       result: { run_id: "run-2", url: "/cur.png", artifacts: { img: "/cur.png" } },
@@ -874,7 +874,7 @@ describe("the seat survives the refresh (the DSH failed-keeps-value contract)", 
         navigation: { address: "dsh-resource://cards/bench" },
         actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "failed", value: undefined, failure: { message: "stream broke before first yield" } }),
+      useResource: () => ({ status: "failed" as const, value: undefined, failure: { message: "stream broke before first yield" } }),
     }));
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
     expect(document.body.textContent).toContain("stream broke before first yield");
@@ -885,13 +885,13 @@ describe("the seat survives the refresh (the DSH failed-keeps-value contract)", 
         navigation: { address: "dsh-resource://cards/bench" },
         actions: { openResource: () => {} },
       } }),
-      useResource: () => ({ status: "failed", value: undefined }),
+      useResource: () => ({ status: "failed" as const, value: undefined }),
     }));
     expect(document.body.textContent).toContain("cards resource failed");
     expect(document.querySelector('[data-testid="stage-preview-seat"]')).toBeNull();
   });
 
-function rerenderTab(stages: BenchStageRow[], status: "live" | "loading" | "failed", failure?: string): void {
+function rerenderTab(stages: BenchStageView[], status: "live" | "loading" | "failed", failure?: string): void {
   const view = (globalThis as { __cardsTabView?: { rerender: (el: unknown) => void } }).__cardsTabView;
   if (view === undefined) throw new Error("no held view — mountBench must expose it");
   view.rerender(h(CardsTab, {

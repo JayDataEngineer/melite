@@ -78,7 +78,7 @@ describe("the artifact rim (tolls and roots)", () => {
     expect(rows).toEqual([
       { location: "$.a.deep", ref: "/v1/assets/runs/run-1/x.png" },
       { location: "$.b[0]", ref: "/v1/assets/runs/run-1/y.png" },
-    ], "stack-DFS order rides, sorted here for the assert");
+    ]);
   });
   it("findDanglingRefs quotes the primary root lookup; a live file rides clean", () => {
     const outRoot = sweepOutputRoots()[0];

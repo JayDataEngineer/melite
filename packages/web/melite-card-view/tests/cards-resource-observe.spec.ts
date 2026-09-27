@@ -26,6 +26,7 @@ import {
   observeRunOutcome,
   reconcileBenchRuns,
 } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   unbindEstateRemote();
@@ -380,8 +381,11 @@ describe("observeRunOutcome — the terminal carry", () => {
 });
 
 describe("reconcileBenchRuns — the attribution half", () => {
-  const bench = (stages: Array<Record<string, unknown>>) => ({
-    kind: "bench" as const, draftId: "d_1", rev: 1, stages, log: [],
+  // The reconcile reads draftId + running rows only; stages ride as
+  // view rows (id plus the runStatus/result the tests pin) and the
+  // bench carries the main session key.
+  const bench = (stages: Array<BenchStageView>): CardsBenchValue => ({
+    kind: "bench" as const, draftId: "d_1", rev: 1, stages, log: [], sessionKey: "main",
   });
 
   test("idle rows and runless rows are skipped silently", async () => {

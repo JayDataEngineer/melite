@@ -22,6 +22,7 @@ import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 const BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-s1',
+  sessionKey: 's1',
   rev: 7,
   stages: [
     {
@@ -86,7 +87,7 @@ function mount(): void {
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
 }
 
@@ -106,7 +107,7 @@ test('the idle tile: play + trash chrome ride, no spinner, and the badge + green
         actions: { openResource: noop },
       },
     }),
-    useResource: () => ({ status: 'live', value: BENCH }),
+    useResource: () => ({ status: 'live' as const, value: BENCH }),
   }))
   await screen.findByRole('button', { name: 'Run stage' })
   expect(screen.getByRole('button', { name: 'Remove stage' })).toBeTruthy()

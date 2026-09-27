@@ -11,7 +11,7 @@ import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { StageDrill } from "../src/client/stage-drill.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -69,7 +69,7 @@ interface PreviewOwner {
 }
 
 function mountDrill(opts: {
-  stage: BenchStageRow;
+  stage: BenchStageView;
   running?: boolean;
   spec?: SpecMode;
   renderPreview?: (owner: PreviewOwner, fallback: unknown) => unknown;
@@ -102,7 +102,7 @@ function mountDrill(opts: {
   return owners;
 }
 
-function imageStage(params: Record<string, unknown>, result?: { url: string }): BenchStageRow {
+function imageStage(params: Record<string, unknown>, result?: { url: string }): BenchStageView {
   return {
     id: "s_0", card: "image-gen", engine: "comfyui", params,
     ...(result !== undefined ? { result } : {}),

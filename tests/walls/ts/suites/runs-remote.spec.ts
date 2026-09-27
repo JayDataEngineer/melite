@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { Context } from '@deepseek-ai/cordis';
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // The storage stack composed AT THE COMPOSITION SITE, mirroring DSH's
@@ -29,12 +29,16 @@ import queuePlugin, {
   cardRegistryProvider,
   runsRegistryPlugin,
 } from "../../../../packages/harness/estate-queue/src/index.ts";
+// RunsRuntimeService rides the index only as an un-exported import
+// (the runsRegistryPlugin closure news it up) — the type lives at
+// its defining file; type-only, erased at runtime.
+import type { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
 import { runsRemotePlugin } from '@melite/estate-runs';
-import type { RunsRemoteService } from '@melite/estate-runs';
+import type { RunStartDoc, RunsRemoteService } from '@melite/estate-runs';
 
 interface Booted {
   ctx: Context;
-  runs: import("../../../../packages/harness/estate-queue/src/index.ts").RunsRegistryService;
+  runs: RunsRuntimeService;
   adapter: RunsRemoteService;
   fiber: { dispose(): Promise<void> };
   root: string;
@@ -60,24 +64,26 @@ async function boot(withDraft = true): Promise<Booted> {
   process.env["MELITE_STATE_ROOT"] = stateRoot;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
-  await ctx.plugin(timerPlugin as never);
-  const fiber = ctx.plugin(queuePlugin as never, { repoRoot: root });
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  const fiber = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root });
   await fiber;
-  await ctx.plugin(Storage as never);
+  await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin(
-    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
+    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
     { root: join(stateRoot, "storage") },
   );
   await ctx.plugin(
-    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
+    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as never);
-  await ctx.plugin(cardRegistryProvider as never);
-  await ctx.plugin(runsRegistryPlugin as never);
-  await ctx.plugin(runsRemotePlugin as never);
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
+  await ctx.plugin(cardRegistryProvider as unknown as Plugin);
+  await ctx.plugin(runsRegistryPlugin as unknown as Plugin);
+  await ctx.plugin(runsRemotePlugin as unknown as Plugin);
   const runs = (ctx as unknown as {
-    runs: import("../../../../packages/harness/estate-queue/src/index.ts").RunsRegistryService;
+    runs: RunsRuntimeService;
     runsRemote: RunsRemoteService;
   });
   return { ctx, runs: runs.runs, adapter: runs.runsRemote, fiber, root: stateRoot };
@@ -93,8 +99,10 @@ function bootInsertRun(ctx: Context, row: unknown): void {
   core.order.push((row as { runId: string }).runId);
 }
 
-/** One inline flow body (single comfyui stage). */
-function inlineBody(draftId: string): Record<string, unknown> {
+/** One inline flow body (single comfyui stage) — pure JSON, so the
+ *  adapter's RunStartDoc face accepts it verbatim (the seat's own
+ *  start takes unknown and refuses bad envelopes at runtime). */
+function inlineBody(draftId: string): RunStartDoc {
   return {
     draft_id: draftId,
     test: true,
@@ -132,7 +140,7 @@ test("the refusal chain, byte-pinned and in py order", async () => {
   assert.equal(await code({ test: true, draft_id: "bad/id" }), "runs/draft-malformed");
   assert.equal(await code({ test: true, draft_id: "d_missing" }), "runs/draft-unknown");
   assert.match(await msg({ test: true, draft_id: "d_missing" }), /^unknown draft_id "d_missing"/);
-  const retired = { test: true, draft_id: "d_ok", flow_inline: inlineBody("d_ok")["flow_inline"], start_from: 2 } as Record<string, unknown>;
+  const retired: RunStartDoc = { test: true, draft_id: "d_ok", flow_inline: inlineBody("d_ok")["flow_inline"], start_from: 2 };
   assert.equal(await code(retired), "runs/invalid-request");
   // The ADAPTER delegates verbatim (the thin remote over the seat):
   // the same refusal through the Typert face.
@@ -199,7 +207,7 @@ test("a valid start queues, the pump settles FAILED loud (no engine seat), the p
   for (let i = 0; i < 100; i++) {
     status = await runs.status(receipt.run_id, sig);
     if (status["status"] !== "queued" && status["status"] !== "running") break;
-    await new Promise((r): void => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 20));
   }
   assert.equal(status["status"], "failed");
   assert.match(String(status["error"]), /no ComfyUIHostService for runsRemote worker/);
@@ -269,7 +277,7 @@ test("status/stop on unknown ids refuse with their codes; a stop receipt answers
   for (let i = 0; i < 100; i++) {
     final = await runs.status(receipt.run_id, sig);
     if (final["status"] !== "queued" && final["status"] !== "running") break;
-    await new Promise((r): void => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 20));
   }
   assert.equal(final["status"], "failed", "settled without an engine");
   const after = await runs.stop(receipt.run_id, sig);
@@ -306,7 +314,7 @@ test("the tools' runs lane grammar rides the seat end-to-end (the un-kill)", asy
       15000,
     )) as Record<string, unknown>;
     if (row["status"] !== "queued" && row["status"] !== "running") break;
-    await new Promise((r): void => setTimeout(r, 20));
+    await new Promise((r) => setTimeout(r, 20));
   }
   assert.equal(row["status"], "failed");
   assert.match(String(row["error"]), /no ComfyUIHostService for runsRemote worker/);

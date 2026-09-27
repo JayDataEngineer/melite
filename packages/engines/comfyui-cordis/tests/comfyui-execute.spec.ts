@@ -178,7 +178,7 @@ describe("waitTerminal (verdict order + the loop)", () => {
     mapVerdict = () => ({ kind: "completed" });
     const { PollingTimeoutError: PT } = await import("@stable-canvas/comfyui-client");
     const c = fakeClient({
-      waitForPrompt: async () => { throw new PT("t"); },
+      waitForPrompt: async () => { throw new PT(1); },
       getHistory: async () => ({ History: [] }),
     });
     await expect(waitTerminal(c, "p-1", Date.now() + 5000, () => false))
@@ -274,7 +274,7 @@ describe("hookProgress (the additive tap)", () => {
         + progressHooks["progress_text"].length,
     ).toBe(3);
     unhook?.();
-    expect(progressHooks["progress"].length).toBe(0, "all listeners detached");
+    expect(progressHooks["progress"].length).toBe(0);
     expect(progressHooks["executing"].length).toBe(0);
     expect(progressHooks["progress_text"].length).toBe(0);
     expect(seen.length).toBe(0);

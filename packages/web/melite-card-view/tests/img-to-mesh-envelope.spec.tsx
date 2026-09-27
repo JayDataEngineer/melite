@@ -11,7 +11,7 @@ import { cleanup } from '@testing-library/react'
 import { afterEach } from 'vitest'
 import { createElement, useEffect } from 'react'
 import { CardZoomOverlay, zoomWidthFor } from '../src/client/zoom.tsx'
-import type { BenchStageRow, CardsBenchValue } from '../src/client/cards-resource.ts'
+import type { BenchStageView, CardsBenchValue } from '../src/client/cards-resource.ts'
 import { fetchFormSpec, schemaEnvelope } from '../src/client/spec-form.tsx'
 
 const SPEC = {
@@ -39,7 +39,7 @@ function stubWire(): void {
 
 test('the envelope lift: the detail reports, the card law answers', async () => {
   stubWire()
-  const stage = { id: 's_h', card: 'img-to-mesh', engine: 'comfyui', params: {} } as BenchStageRow
+  const stage = { id: 's_h', card: 'img-to-mesh', engine: 'comfyui', params: {} } as BenchStageView
   const bench = { kind: 'bench', draftId: 'd', rev: 1, stages: [stage], log: [] } as unknown as CardsBenchValue
   const reported: string[] = []
   const Detail = (p: { onSurface?: (s: string) => void }): ReturnType<typeof createElement> => {
@@ -47,7 +47,7 @@ test('the envelope lift: the detail reports, the card law answers', async () => 
     return createElement('div', null, 'DETAIL')
   }
   render(createElement(CardZoomOverlay, {
-    stage, bench, running: false, onRun: () => {}, onClose: () => {}, onRemoved: () => {}, onRewired: () => {},
+    stage, bench, running: false, onRun: () => {}, onStop: () => {}, onClose: () => {}, onRemoved: () => {},
     onPatchParams: () => {}, renderStageView: (_o, fb) => fb,
     detail: Detail as never,
   }))

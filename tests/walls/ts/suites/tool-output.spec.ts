@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
-import { Context, Service } from "@deepseek-ai/cordis";
+import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
 import Storage from "@deepseek-ai/dsh-storage";
 import {
@@ -31,6 +31,7 @@ import {
   inject as toolsInject,
 } from "../../../../packages/harness/melite-tools/src/index.ts";
 import type { ToolDefinition } from "../../../../packages/harness/melite-tools/src/types.ts";
+import type { JsonValue } from "../../../../packages/harness/melite-tools/src/types.ts";
 
 /** The tools-service surface (the Consumer-owned shape — the same
  *  stub the executor specs ride; melite-tools only registers). */
@@ -74,7 +75,9 @@ async function drive(
     callId: "wall",
     toolCallId: "wall",
   } as never);
-  const content = def.output.render(args, envelope);
+  // execute's envelope is unknown-statically but always the
+  // canonical JSON envelope at runtime — render's JsonValue face.
+  const content = def.output.render(args, envelope as JsonValue);
   const lines = (content ?? [])
     .filter((b): b is { type: "text"; text: string } => b.type === "text")
     .map((b) => b.text);
@@ -86,10 +89,12 @@ beforeAll(async () => {
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_HEADLESS"] = "1";
   ctx = new Context();
-  await ctx.plugin(timerPlugin as never);
-  await ctx.plugin(Storage as never);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never, { backend: "json" });
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(timerPlugin as unknown as Plugin);
+  await ctx.plugin(Storage as unknown as Plugin);
+  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
   // THE CORE-SKILLS DECOY (agent-trace audit, 2026-09-13): DSH
   // core's dsh-skill registers a service ALSO named "skills" in every
   // dsh-base composition — the tools' seat probe once read that name
@@ -103,7 +108,7 @@ beforeAll(async () => {
     read(): never { throw new Error("decoy skills service touched — the estate seat is meliteSkills"); }
   }
   new SkillsDecoy(ctx);
-  await ctx.plugin(estateBundle as never);
+  await ctx.plugin(estateBundle as unknown as Plugin);
   // settle the seats the tools' transports resolve (the composition
   // wall's settle pattern — the bundle fans out un-awaited)
   const seats = ["queue", "draftsRemote", "benchRemote", "cardRegistry", "disclose", "manage", "meliteSkills", "load", "runs", "comfyui"];
@@ -112,11 +117,11 @@ beforeAll(async () => {
     const missing = seats.filter((n) => ctx.get(n, false) === undefined);
     if (missing.length === 0) break;
     if (Date.now() > deadline) assert.fail(`the bundle never settled: ${missing.join(", ")}`);
-    await new Promise((r): void => setTimeout(r, 50));
+    await new Promise((r) => setTimeout(r, 50));
   }
   tools = new ToolsCollector(ctx);
   await ctx.plugin(
-    { name: toolsName, inject: toolsInject, apply: toolsApply } as never,
+    { name: toolsName, inject: toolsInject, apply: toolsApply } as unknown as Plugin,
     // cardTools: true — THE MAKER FACE (operator law 2026-09-21):
     // this wall proves the card faces EXECUTE + RENDER over the live
     // composition, so it opts in; the agent lane default (BASE only)

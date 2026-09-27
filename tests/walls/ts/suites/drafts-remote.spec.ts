@@ -17,13 +17,16 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Context } from '@deepseek-ai/cordis';
+import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 // Storage composed AT THE COMPOSITION SITE — DSH's own rig shape
 // (session-projection-cache/tests/fixtures.spec.ts l.27-104): the
 // packages' pieces imported and the rows assembled inline. The
 // estate re-packages nothing.
 import draftsPlugin from '@melite/estate-drafts';
+// BenchDoc rides its defining file (the package index never
+// re-exports it) — type-only, erased at runtime.
+import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
 import Storage from '@deepseek-ai/dsh-storage';
 import {
   apply as jsonApply, Config as JsonConfig, inject as jsonInject, name as jsonName,
@@ -76,25 +79,29 @@ async function boot(extraLegacy: Record<string, string> = {}): Promise<Context> 
   process.env["MELITE_STORAGE_ROOT"] = "";
 
   const ctx = new Context();
-  await ctx.plugin(Storage as never);
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await ctx.plugin(Storage as unknown as Plugin);
   await ctx.plugin(
-    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
+    { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin,
     { root: join(stateRoot, "storage") },
   );
   await ctx.plugin(
-    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
+    { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin,
     { backend: "json" },
   );
-  await ctx.plugin(draftsPlugin as never);
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   return ctx as unknown as Context;
 }
 
 /** Capture a rejection as a RemoteError via the protocol's structural
- *  identifier (never instanceof — cross-copy law). */
-async function failureOf(p: Promise<unknown>): Promise<unknown> {
+ *  identifier (never instanceof — cross-copy law). The wall's domain
+ *  is RemoteError-object-or-null (fulfilled), so the return pins the
+ *  indexable rows the assertions read — byte-identical at runtime. */
+async function failureOf(p: Promise<unknown>): Promise<Record<string, unknown> | null> {
   return await p.then(
     (): null => null,
-    (error: unknown): unknown => remoteErrorOf(error) ?? error,
+    (error: unknown): Record<string, unknown> | null => (remoteErrorOf(error) ?? error) as Record<string, unknown> | null,
   );
 }
 
@@ -580,7 +587,7 @@ test("unbooted storage: every open-wrapping arm refuses draft/store-failed|bench
   // The drafts plugin with NO storage rows mounted: each arm's open
   // throws, and the wrap is the remote voice (never a bare stack).
   const ctx = new Context();
-  await ctx.plugin(draftsPlugin as never);
+  await ctx.plugin(draftsPlugin as unknown as Plugin);
   const draftCode = async (p: Promise<unknown>): Promise<string | undefined> =>
     await p.then(
       (): string | undefined => "NO-REFUSAL",
@@ -614,7 +621,7 @@ test("unbooted storage: every open-wrapping arm refuses draft/store-failed|bench
 test("bench/ensure bad-body: the admission refuses before any storage word", async () => {
   const ctx = await boot();
   const failure = await failureOf(
-    ctx.benchRemote.remoteExportEnsure("not-an-object" as unknown as Record<string, unknown>, sig),
+    ctx.benchRemote.remoteExportEnsure("not-an-object" as unknown as BenchDoc, sig),
   );
   assert.ok(failure !== null && typeof failure === "object");
   assert.equal((failure as { code: string }).code, "bench/bad-body");

@@ -13,7 +13,7 @@ import type { EngineExecutor, EngineRecord } from "../src/index.ts";
  * publication lands when the plugin's apply settles). */
 async function boot(): Promise<Context> {
   const ctx = new Context();
-  await ctx.plugin(enginesContract as never);
+  await ctx.plugin(enginesContract as never, undefined as never); // cordis Spread<GetPluginConfig> keeps the config arg positional; the object-plugin ignores it
   return ctx;
 }
 

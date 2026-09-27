@@ -52,7 +52,7 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return {};
       if (id === "boom") throw new Error("transport down");
-      throw new RemoteError("draft/not-found", "no doc", {});
+      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
     },
   };
   const cards: Record<string, (...args: never[]) => unknown> = {

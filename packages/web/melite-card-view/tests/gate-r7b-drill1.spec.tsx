@@ -13,7 +13,7 @@ import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import type { StageViewOwnerProps } from "../src/client/types.ts";
 
 afterEach(() => {
@@ -89,8 +89,8 @@ function stubFetch(): void {
 }
 
 function mountBench(
-  stages: BenchStageRow[],
-  renderSlot?: (...args: never[]) => unknown,
+  stages: BenchStageView[],
+  renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"],
   estate?: EstateOpts,
 ): void {
   stubFetch();
@@ -112,7 +112,7 @@ function mountBench(
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
     ...(renderSlot !== undefined ? { renderSlot } : {}),
   }));
 }
@@ -157,7 +157,7 @@ describe("the slot flush's foreign voice — a down wire still names the face", 
 });
 
 describe("the owners' foreign voices — remove and ungroup fall back loud", () => {
-  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
+  function mountClaimed(stages: BenchStageView[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
     mountBench(stages, ((slot: string, owner: Record<string, unknown>, opts: { fallback: unknown }) => {
       if (slot !== "cards.stage.view") return opts.fallback;
       return h("div", null,
@@ -167,10 +167,12 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     }) as never, estate);
   }
 
-  function claimWireOwner(stages: BenchStageRow[], estate?: EstateOpts): () => StageViewOwnerProps {
+  function claimWireOwner(stages: BenchStageView[], estate?: EstateOpts): () => StageViewOwnerProps {
     let latest: StageViewOwnerProps | undefined
     mountClaimed(stages, (owner) => {
-      latest = owner as StageViewOwnerProps
+      // the claim observes the wire owner's untyped test double — the
+      // slot hands a Record, the drill owns the full StageViewOwnerProps
+      latest = owner as unknown as StageViewOwnerProps
       return null
     }, estate)
     return () => {
@@ -179,7 +181,7 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     }
   }
 
-  async function openWireOwner(stages: BenchStageRow[], estate?: EstateOpts): Promise<StageViewOwnerProps> {
+  async function openWireOwner(stages: BenchStageView[], estate?: EstateOpts): Promise<StageViewOwnerProps> {
     const getOwner = claimWireOwner(stages, estate)
     await openFirstTile()
     return getOwner()

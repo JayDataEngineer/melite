@@ -102,7 +102,7 @@ test('MODEL: the zone names itself ONCE (never the head + the picker key saying 
   const { container } = axes({})
   const section = container.querySelector('[data-model-axes]')
   expect(section).not.toBeNull()
-  const hits = [...section!.querySelectorAll('h4, span')]
+  const hits = Array.from(section!.querySelectorAll('h4, span')) // the package lib is DOM without DOM.Iterable (src never spreads collections) — Array.from is the identical read
     .map((n) => n.textContent?.trim())
     .filter((t) => t === 'Model')
   expect(hits).toEqual(['Model'])
@@ -128,7 +128,7 @@ test('MODEL FACE: a family row with a DECL label paints the version (the operato
   } as unknown as FormSpecDoc
   axes({ spec })
   const select = screen.getByLabelText('Model') as HTMLSelectElement
-  const opt = [...select.options].find((o) => o.value === 'krea-2')
+  const opt = Array.from(select.options).find((o) => o.value === 'krea-2')
   expect(opt?.textContent).toBe('Krea 2 Turbo v9')
 })
 
@@ -139,7 +139,7 @@ test('MODEL FACE: an EMPTY label degrades to the id face (never a blank option)'
   } as unknown as FormSpecDoc
   axes({ spec })
   const select = screen.getByLabelText('Model') as HTMLSelectElement
-  const opt = [...select.options].find((o) => o.value === 'krea-2')
+  const opt = Array.from(select.options).find((o) => o.value === 'krea-2')
   expect(opt?.textContent).toBe('Krea 2')
 })
 
@@ -383,7 +383,7 @@ test('FORM SPEC: the id fetches once; the doc lands; empty ids never knock', asy
   const seen: string[] = []
   globalThis.fetch = (async (input: unknown) => {
     seen.push(String(input))
-    return formSpecFetch('txt2img')(input, {})
+    return formSpecFetch('txt2img')(input as string, {}) // the harness only issues string-URL fetches (seen asserts the /v1/form-spec url)
   }) as typeof fetch
   try {
     const r = render(h(SpecHarness, { id: 'krea-2' }))

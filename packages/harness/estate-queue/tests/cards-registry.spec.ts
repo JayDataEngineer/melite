@@ -17,6 +17,7 @@ vi.mock("../src/cardsCompose.ts", async (importOriginal) => {
 
 import { Context } from "@deepseek-ai/cordis";
 import { EnginesService } from "@melite/engine-contract";
+import type { ModelFactsRow } from "../src/cardsFacts.ts";
 import {
   CardRegistryService,
   cardRegistryProvider,
@@ -57,10 +58,10 @@ describe("the lazy reads", () => {
   it("modelFacts derives once and caches; cardDecls derives from defs+facts and caches", () => {
     const facts = svc.modelFacts();
     expect(Object.keys(facts).length).toBeGreaterThan(0);
-    expect(svc.modelFacts()).toBe(facts, "the facts cache returns the identical record");
+    expect(svc.modelFacts()).toBe(facts);
     const decls = svc.cardDecls();
     expect(Object.keys(decls).length).toBeGreaterThan(0);
-    expect(svc.cardDecls()).toBe(decls, "the decls cache returns the identical record");
+    expect(svc.cardDecls()).toBe(decls);
   });
   it("cardDecls with caller facts derives fresh, never the cache", () => {
     const cached = svc.cardDecls();
@@ -331,7 +332,7 @@ describe("overlayCardParams (the validate overlay, phase-1 voice)", () => {
   it("a catalog id that is not a family row does not enter the family-less arm", () => {
     const view = svc as unknown as {
       modelMids: () => Set<string>;
-      resolveCardFamily: (mid: string, facts?: unknown) => string;
+      resolveCardFamily: (mid: string, facts?: Record<string, ModelFactsRow>) => string;
     };
     const originalMids = svc.modelMids.bind(svc);
     const originalResolve = svc.resolveCardFamily.bind(svc);
@@ -500,7 +501,7 @@ describe("primeObjectInfo's unreachable-engine arm", () => {
 describe("the provider (fiber-owned prime)", () => {
   it("cardRegistryProvider primes a real service on the fiber", async () => {
     const c2 = new Context();
-    await c2.plugin(cardRegistryProvider as never);
+    await c2.plugin(cardRegistryProvider);
     const mounted = c2.get("cardRegistry") as CardRegistryService;
     expect(mounted.defsSync().size).toBeGreaterThan(0);
     await Promise.resolve();

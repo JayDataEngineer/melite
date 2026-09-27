@@ -34,6 +34,7 @@ import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 const RUNNING_BENCH: CardsBenchValue = {
   kind: 'bench',
   draftId: 'bench-chrome',
+  sessionKey: 'chrome',
   rev: 4,
   stages: [
     {
@@ -98,7 +99,7 @@ const mount = (): ReturnType<typeof render> =>
         actions: { openResource: () => {} },
       },
     }),
-    useResource: () => ({ status: 'live', value: RUNNING_BENCH }),
+    useResource: () => ({ status: 'live' as const, value: RUNNING_BENCH }),
   } as never))
 
 afterEach(() => {

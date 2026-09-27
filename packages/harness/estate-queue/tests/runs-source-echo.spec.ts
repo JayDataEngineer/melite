@@ -16,6 +16,7 @@ import {
 } from "../src/runsSourceEcho.ts";
 import { registerCompiledRun } from "../src/runsStart.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
+import type { EngineJson } from "@melite/comfyui-cordis";
 import type { RunRecord } from "../src/runsTypes.ts";
 
 let TMP = "";
@@ -38,7 +39,7 @@ const rooted = (runId: string, rel: string): string => {
   writeFileSync(join(root, "output", runId, rel), "bytes");
   return root;
 };
-const stageWith = (params: Record<string, unknown>): CompiledStage => ({
+const stageWith = (params: Record<string, EngineJson>): CompiledStage => ({
   id: "s",
   engine: "comfyui",
   params,
@@ -330,5 +331,21 @@ describe("registerCompiledRun (the source-echo gate)", () => {
       enqueue: () => 0,
     });
     assert.equal(run.sourceEcho, undefined);
+  });
+});
+
+// ── THE PER-SEGMENT LAW (li-aq.3, L10): the old `t.includes("..")`
+// substring ban refused a LEGAL name the engine mints
+// (`still..frame.png`) — traversal is a property of SEGMENTS.
+describe("the dot law is per-segment (a substring ban refuses legal minted names)", () => {
+  it("'..' INSIDE a segment is a legal name; a '..' SEGMENT is traversal", () => {
+    // a legal run-tail source: dots WITHIN a segment, never a
+    // dots-only segment (the head is the mint grammar)
+    const legal = parseSourceRef("run-aaaa1111-bb22cc33/still..frame.png");
+    assert.notEqual(legal, null, "'..' inside a segment is a name, not a traversal");
+    // the traversal shapes stay refused
+    assert.throws(() => parseSourceRef("../escape.png"), "a leading '..' segment is traversal");
+    assert.throws(() => parseSourceRef("run-aaaa1111-bb22cc33/../../escape.png"), "a mid-path '..' segment is traversal");
+    assert.throws(() => parseSourceRef("run-aaaa1111-bb22cc33/./here.png"), "a '.' segment is not a name");
   });
 });

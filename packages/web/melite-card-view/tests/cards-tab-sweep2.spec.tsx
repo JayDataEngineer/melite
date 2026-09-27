@@ -11,7 +11,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -63,7 +63,7 @@ function stubFetch(): void {
   });
 }
 
-const STAGES: BenchStageRow[] = [
+const STAGES: BenchStageView[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" } },
 ];
 
@@ -72,7 +72,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
+function estateOpts(stages: BenchStageView[], estate?: EstateOpts): Parameters<typeof mountEstateFakes>[0] {
   // ROW COPIES: the seam mutates its rows in place (add pushes,
   // remove splices, patch merges) — handing it the snapshot's own
   // array aliases the render snapshot, and the add's before/after
@@ -89,7 +89,7 @@ function estateOpts(stages: BenchStageRow[], estate?: EstateOpts): Parameters<ty
   };
 }
 
-function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
+function mount(stages: BenchStageView[] = STAGES, estate?: EstateOpts): void {
   stubFetch();
   fakes = mountEstateFakes(estateOpts(stages, estate));
   render(h(CardsTab, {
@@ -99,7 +99,7 @@ function mount(stages: BenchStageRow[] = STAGES, estate?: EstateOpts): void {
       actions: { openResource: () => {} },
     } }),
     useResource: () => ({
-      status: "live",
+      status: "live" as const,
       value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages },
     }),
   } as never));
@@ -187,7 +187,7 @@ describe("the preview seat keys — Enter opens like Space", () => {
     mount([{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" },
       result: { artifacts: { "my render": "/renders/a.png" } },
-    } as BenchStageRow]);
+    } as BenchStageView]);
     await openZoom();
     const seat = await screen.findByTestId("stage-preview-seat", {}, { timeout: 5000 });
     seat.focus();
@@ -199,7 +199,7 @@ describe("the preview seat keys — Enter opens like Space", () => {
     mount([{
       id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "a barn" },
       result: { artifacts: { "my render": "/renders/a.png" } },
-    } as BenchStageRow]);
+    } as BenchStageView]);
     await openZoom();
     const seat = await screen.findByTestId("stage-preview-seat", {}, { timeout: 5000 });
     seat.focus();
@@ -214,7 +214,7 @@ describe("the card-less drilldown — the head falls to the stage id", () => {
     mount([{
       id: "s_0", engine: "comfyui", params: { prompt: "a barn" },
       result: { artifacts: { output: "/renders/a.png" } },
-    } as BenchStageRow]);
+    } as BenchStageView]);
     await openZoom();
     await screen.findByTestId("stage-preview-seat", {}, { timeout: 5000 });
     fireEvent.click(screen.getByTestId("stage-preview-seat"));

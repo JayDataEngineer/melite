@@ -9,6 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
 import { enginesContract, type EnginesService } from "@melite/engine-contract";
+import type { ToolExecutionInput, ToolExecutionResult } from "@deepseek-ai/dsh-tools";
 import {
   agentLoopExecutor,
   agentEngine,
@@ -81,7 +82,7 @@ class FakeLlm implements AgentLlmSeam {
 class FakeTools implements AgentToolsSeam {
   executed: { name: string; arguments: Record<string, unknown> }[] = [];
   failNext = false;
-  schemas() {
+  schemas(): { name: string; description: string; parameters: Record<string, unknown> }[] {
     return [
       { name: "mcp__blender__render_shot", description: "render", parameters: { type: "object" } },
       { name: "mcp__blender__scene_info", description: "info", parameters: { type: "object" } },
@@ -89,24 +90,34 @@ class FakeTools implements AgentToolsSeam {
       { name: "web_search", description: "search", parameters: { type: "object" } },
     ];
   }
-  async execute(input: { name: string; arguments: Record<string, unknown>; callId: string; signal: AbortSignal }) {
-    this.executed.push({ name: input.name, arguments: input.arguments });
+  async execute(input: ToolExecutionInput): Promise<ToolExecutionResult> {
+    // The real seam types arguments as unknown (tools validate their own
+    // schema) — the fake narrows to an object the way a real tool body
+    // would before reading fields off it.
+    const raw: unknown = input.arguments;
+    const args: Record<string, unknown> =
+      typeof raw === "object" && raw !== null && !Array.isArray(raw)
+        ? (raw as Record<string, unknown>)
+        : {};
+    this.executed.push({ name: input.name, arguments: args });
     if (this.failNext) {
       this.failNext = false;
+      // ToolExecutionFailure carries value?: never — a failure never
+      // carries a successful value, so the key is omitted (null would
+      // claim a value where the seam forbids one).
       return {
         isError: true,
-        error: new Error("wire refused"),
+        error: { message: "wire refused" },
         content: [],
-        value: null,
-      } as Awaited<ReturnType<AgentToolsSeam["execute"]>>;
+      };
     }
-    const out = input.arguments["out"];
+    const out = args["out"];
     if (typeof out === "string") writeFileSync(out, "png");
     return {
       isError: false,
       content: [{ type: "text", text: `${input.name} ok` }],
       value: { ok: true },
-    } as Awaited<ReturnType<AgentToolsSeam["execute"]>>;
+    };
   }
 }
 
@@ -372,7 +383,7 @@ describe("the agent loop executor", () => {
     const llm = new (class extends FakeLlm {
       async prepareCall(config: { provider: string; model: string }) {
         return {
-          config: { ...config },
+          config: { ...config, defaultMaxTokens: 4096 },
           stream: async function* () {
             yield { type: "finish", reason: { kind: "error", failure: { message: "boom" } } };
           },
@@ -408,13 +419,18 @@ describe("the agent loop executor", () => {
     ]);
     const tools = new FakeTools();
     const realExecute = tools.execute.bind(tools);
-    tools.execute = async (input: { name: string; arguments: Record<string, unknown>; callId: string; signal: AbortSignal }) => {
-      const out = input.arguments["out"];
+    tools.execute = async (input: ToolExecutionInput): Promise<ToolExecutionResult> => {
+      const raw: unknown = input.arguments;
+      const args: Record<string, unknown> =
+        typeof raw === "object" && raw !== null && !Array.isArray(raw)
+          ? (raw as Record<string, unknown>)
+          : {};
+      const out = args["out"];
       if (typeof out === "string" && out.includes("scene.glb")) {
         const { mkdirSync } = await import("node:fs");
         mkdirSync(join(dir, "out", "v1"), { recursive: true });
         writeFileSync(out, "glb");
-        return { isError: false, content: [{ type: "text", text: "nested ok" }], value: {} } as Awaited<ReturnType<AgentToolsSeam["execute"]>>;
+        return { isError: false, content: [{ type: "text", text: "nested ok" }], value: {} };
       }
       return realExecute(input);
     };
@@ -434,10 +450,14 @@ describe("the agent loop executor", () => {
 
   it("the stream's other faces: block-end TEXT blocks, string finish reasons, and neither-block chunk kinds", async () => {
     const dir = tmp();
-    const llm = new (class extends FakeLlm {
+    // These bespoke streams yield adapter-varying faces (text blocks,
+    // image blocks, string reasons) outside FakeLlm's scripted turns, so
+    // the fake implements the seam directly — checked against the seam's
+    // loose chunk type, not FakeLlm's narrow inferred yields.
+    const llm = new (class implements AgentLlmSeam {
       async prepareCall(config: { provider: string; model: string }) {
         return {
-          config: { ...config },
+          config: { ...config, defaultMaxTokens: 4096 },
           stream: async function* () {
             // text as an assembled BLOCK (adapters vary — the craft law)
             yield { type: "block-end", block: { type: "text", text: "block text " } };
@@ -448,7 +468,7 @@ describe("the agent loop executor", () => {
           },
         };
       }
-    })([]);
+    })();
     const out = await agentLoopExecutor(llm, new FakeTools(), undefined, { provider: "fake", model: "brain" }).executeStages(
       [{ stageId: "a_0", outputs: {}, params: { task: "x" } }],
       dir,
@@ -480,17 +500,17 @@ describe("the agent loop executor", () => {
   it("more stream/argument faces: kindless object finishes, empty arguments, and JSON-non-object arguments", async () => {
     const dir = tmp();
     // a finish object with NO kind (recorded as object-stop, not thrown)
-    const kindless = new (class extends FakeLlm {
+    const kindless = new (class implements AgentLlmSeam {
       async prepareCall(config: { provider: string; model: string }) {
         return {
-          config: { ...config },
+          config: { ...config, defaultMaxTokens: 4096 },
           stream: async function* () {
             yield { type: "text-delta", text: "ok" };
             yield { type: "finish", reason: {} };
           },
         };
       }
-    })([]);
+    })();
     const out = await agentLoopExecutor(kindless, new FakeTools(), undefined, { provider: "fake", model: "brain" }).executeStages(
       [{ stageId: "a_0", outputs: {}, params: { task: "x" } }],
       dir,
@@ -500,17 +520,17 @@ describe("the agent loop executor", () => {
     assert.equal(out.stages[0]?.outputs.default, "ok");
     // a finish chunk with NO reason at all (the defensive arm —
     // neither string nor object): the turn still completes
-    const reasonless = new (class extends FakeLlm {
+    const reasonless = new (class implements AgentLlmSeam {
       async prepareCall(config: { provider: string; model: string }) {
         return {
-          config: { ...config },
+          config: { ...config, defaultMaxTokens: 4096 },
           stream: async function* () {
             yield { type: "text-delta", text: "fine" };
             yield { type: "finish" };
           },
         };
       }
-    })([]);
+    })();
     const out2 = await agentLoopExecutor(reasonless, new FakeTools(), undefined, { provider: "fake", model: "brain" }).executeStages(
       [{ stageId: "a_0", outputs: {}, params: { task: "x" } }],
       dir,
@@ -556,16 +576,18 @@ describe("the agent loop executor", () => {
       { error: { message: "e" } },
     ];
     for (const reason of cases) {
-      const llm = new (class extends FakeLlm {
+      // reason is unknown per error-shaped arm — the seam's finish chunk
+      // carries it untyped, so this fake implements the seam directly.
+      const llm = new (class implements AgentLlmSeam {
         async prepareCall(config: { provider: string; model: string }) {
           return {
-            config: { ...config },
+            config: { ...config, defaultMaxTokens: 4096 },
             stream: async function* () {
               yield { type: "finish", reason };
             },
           };
         }
-      })([]);
+      })();
       await assert.rejects(
         agentLoopExecutor(llm, new FakeTools(), undefined, { provider: "fake", model: "brain" }).executeStages(
           [{ stageId: "a_0", outputs: {}, params: { task: "x" } }],
@@ -712,7 +734,7 @@ describe("the keyless failure voice (MISSING_CREDENTIAL)", () => {
     const llm = new (class extends FakeLlm {
       async prepareCall(config: { provider: string; model: string }) {
         return {
-          config: { ...config },
+          config: { ...config, defaultMaxTokens: 4096 },
           stream: async function* () {
             yield {
               type: "finish",

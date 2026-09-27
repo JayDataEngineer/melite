@@ -286,6 +286,6 @@ describe("foldFrame — keep + null-prev arms", () => {
   });
   test("a run frame over null prev starts clean", () => {
     expect(foldFrame(null, "r1", { type: "run", status: "failed" }))
-      .toEqual({ run_id: "r1", status: "failed", stages: [] });
+      .toEqual({ run_id: "r1", status: "failed" as const, stages: [] });
   });
 });

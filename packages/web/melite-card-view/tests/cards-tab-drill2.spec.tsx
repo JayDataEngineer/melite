@@ -16,7 +16,7 @@ import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { resetStageWrites } from "../src/client/draft.ts";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -148,7 +148,7 @@ interface EstateOpts {
   throws?: EstateRefusal[];
 }
 
-function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => unknown, estate?: EstateOpts): void {
+function mountBench(stages: BenchStageView[], renderSlot?: Parameters<typeof CardsTab>[0]["renderSlot"], estate?: EstateOpts): void {
   stubFetch();
   fakes = mountEstateFakes({
     benchDoc: {
@@ -167,7 +167,7 @@ function mountBench(stages: BenchStageRow[], renderSlot?: (...args: never[]) => 
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live", value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as CardsBenchValue }),
     ...(renderSlot !== undefined ? { renderSlot } : {}),
   }));
 }
@@ -416,7 +416,7 @@ describe("the run's quiet arms — no edits, and the Error-voiced patch", () => 
 });
 
 describe("the throwing owners — remove and ungroup fall back loud", () => {
-  function mountClaimed(stages: BenchStageRow[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
+  function mountClaimed(stages: BenchStageView[], claim: (owner: Record<string, unknown>) => unknown, estate?: EstateOpts): void {
     mountBench(stages, ((slot: string, owner: Record<string, unknown>, opts: { fallback: unknown }) => {
       if (slot !== "cards.stage.view") return opts.fallback;
       return h("div", null,

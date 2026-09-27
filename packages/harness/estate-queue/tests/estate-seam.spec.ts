@@ -110,7 +110,7 @@ describe("resurrect adapters", () => {
       JSON.stringify({ status: "running", draft_id: "d1" }),
     );
     writeFileSync(join(out, "run-stale", "_request.json"), "{}");
-    const roots = { stateRoot: root };
+    const roots = { stateRoot: root, runsRoot: join(root, "output"), ledgerPath: join(root, "output", "_ledger.jsonl") };
     // the queued record is LIVE work (shielded); the stale running
     // claim sweeps.
     const swept = bootSweep(roots, ["run-old"]);

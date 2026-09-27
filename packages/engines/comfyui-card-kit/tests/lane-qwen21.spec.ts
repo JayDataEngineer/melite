@@ -106,7 +106,7 @@ describe("the 2.1 edit lane (imageEdit on a text_encode_node=TextEncodeQwenImage
     assert.equal((cache[0].inputs.model as string[])[0], unetId, "the cache wraps the SAME base unet");
     // the sampler rides the CACHED model, never the bare unet
     const sampler = byClass("KSampler")[0];
-    const cacheId = Object.keys(graphOf(g)).find((id) => graphOf(g))[0] && Object.keys(graphOf(g)).find((id) => graphOf(g)[id]?.class_type === "QwenImage21Cache");
+    const cacheId = Object.keys(graphOf(g)).find((id) => graphOf(g)[id]?.class_type === "QwenImage21Cache");
     assert.equal((sampler.inputs.model as string[])[0], cacheId);
     // the anchors ride the encoder's autogrow slots (image_1, image_2; NO image_3 when blank)
     const enc = byClass("TextEncodeQwenImage21")[0];

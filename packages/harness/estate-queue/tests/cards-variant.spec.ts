@@ -36,7 +36,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     expect(sel.resolverDefaults).toEqual({ ckpt: "base.safetensors", width: 1024 });
   });
   it("a Recipe-only family falls back to the Recipe variant itself", () => {
-    const only = row({ variants: [{ id: "recipe", group: "Recipe", cells: [{ quant: "fp8" }] }] });
+    const only = row({ variants: [{ id: "recipe", group: "Recipe", route: "", resolver_defaults: {}, cells: [{ quant: "fp8", route: "" }] }] });
     const sel = selectCardVariant("m", only, {}, "1");
     expect(sel.variantId).toBe("recipe");
   });
@@ -104,8 +104,8 @@ describe("selectCardVariant (the R1 wire contract)", () => {
   it("hidden variants and cells never enter the offered coordinate space", () => {
     const hidden = row({
       variants: [
-        { id: "legacy", group: "", hide_from_dropdown: true, route: "legacy-route", cells: [{ quant: "fp8" }] },
-        { id: "base", group: "", cells: [{ quant: "fp16" }, { quant: "bf16", hide_from_dropdown: true }, { quant: "fp8" }] },
+        { id: "legacy", group: "", hide_from_dropdown: true, route: "legacy-route", resolver_defaults: {}, cells: [{ quant: "fp8", route: "" }] },
+        { id: "base", group: "", route: "", resolver_defaults: {}, cells: [{ quant: "fp16", route: "" }, { quant: "bf16", route: "", hide_from_dropdown: true }, { quant: "fp8", route: "" }] },
       ],
     });
     expect(selectCardVariant("m", hidden, {}, "1").variantId).toBe("base");
@@ -116,7 +116,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     expect(() => selectCardVariant("legacy-route", hidden, {}, "1")).toThrow(/not offered/);
   });
   it("a family with only hidden variants refuses instead of selecting none", () => {
-    const allHidden = row({ variants: [{ id: "hidden", group: "", hide_from_dropdown: true, cells: [{ quant: "fp8" }] }] });
+    const allHidden = row({ variants: [{ id: "hidden", group: "", hide_from_dropdown: true, route: "", resolver_defaults: {}, cells: [{ quant: "fp8", route: "" }] }] });
     expect(() => selectCardVariant("m", allHidden, {}, "1")).toThrow(/has no offered variants/);
   });
 
@@ -124,8 +124,11 @@ describe("selectCardVariant (the R1 wire contract)", () => {
     expect(selectCardVariant("m", row(), { quant: "fp8" }, "1").quant).toBe("fp8");
   });
   it("absent keys toll their fallbacks (cells key off, quant-less first cell, defaults off)", () => {
-    const bare = row({ variants: [{ id: "bare" }, { id: "objcell", cells: [{}] }] });
-    // cells key ABSENT + explicit quant -> the empty-cells refusal
+    const bare = row({ variants: [
+      { id: "bare", group: "", route: "", resolver_defaults: {}, cells: [] },
+      { id: "objcell", group: "", route: "", resolver_defaults: {}, cells: [{ quant: "", route: "" }] },
+    ] });
+    // cells key ABSENT-or-empty + explicit quant -> the empty-cells refusal
     expect(() => selectCardVariant("m", bare, { variant: "bare", quant: "q" }, "1"))
       .toThrow(/declares no cells/);
     // a cell with NO quant key tolls the empty string
@@ -139,7 +142,7 @@ describe("selectCardVariant (the R1 wire contract)", () => {
       expect((e as Error).message).toMatch(/\(known: \)/);
     }
     // a defaults-less, resolver-less family stamps nothing
-    const bare2 = row({ defaults: undefined, variants: [{ id: "bare" }] });
+    const bare2 = row({ defaults: undefined, variants: [{ id: "bare", group: "", route: "", resolver_defaults: {}, cells: [] }] });
     const out = stampCardOverlay({}, bare2, decl(), selectCardVariant("m", bare2, {}, "1"));
     expect(Object.keys(out)).toEqual([]);
   });
@@ -175,7 +178,7 @@ describe("stampCardOverlay (the route-lens overlay)", () => {
   const sel = selectCardVariant("m", row(), {}, "1");
   it("absent keys receive family defaults + resolver defaults; present keys never restamp", () => {
     const out = stampCardOverlay({ width: 512 }, row(), decl(), sel);
-    expect(out["width"]).toBe(512, "the body's own value wins");
+    expect(out["width"]).toBe(512);
     expect(out["seed"]).toBe(42);
     expect(out["ckpt"]).toBe("base.safetensors");
   });
@@ -188,14 +191,14 @@ describe("stampCardOverlay (the route-lens overlay)", () => {
     const d = decl({ admits: ["image_*", "exact_admit"] });
     const out = stampCardOverlay({}, r, d, sel);
     expect("hidden_knob" in out).toBe(false);
-    expect(out["image_extra"]).toBe(2, "the trailing-* admit matches its prefix");
-    expect(out["exact_admit"]).toBe(3, "an exact admit matches itself");
+    expect(out["image_extra"]).toBe(2);
+    expect(out["exact_admit"]).toBe(3);
   });
   it("envelope keys never stamp", () => {
     const r = row({ defaults: { flow: "x", draft_id: "y", test: true, service: "z", yaml: "a", model: "b", flow_inline: "c" } });
     const out = stampCardOverlay({}, r, decl({ schemaNames: ["flow", "draft_id", "test", "service", "yaml", "model", "flow_inline"] }), sel);
     for (const k of ["flow", "draft_id", "test", "service", "yaml", "model", "flow_inline"]) {
-      expect(k in out).toBe(false, k + " is gateway envelope, never a stamp");
+      expect(k in out).toBe(false);
     }
   });
 });
@@ -221,7 +224,7 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
   const turboEnv = { steps: [4, 8], cfg: [1, 2] };
   const turboRow = row({
     variants: [
-      { id: "base", group: "", cells: [{ quant: "fp16" }], resolver_defaults: { ckpt: "base.safetensors" } },
+      { id: "base", group: "", route: "", cells: [{ quant: "fp16", route: "" }], resolver_defaults: { ckpt: "base.safetensors" } },
       {
         id: "turbo", route: "turbo-route", cells: [], resolver_defaults: { steps: 8, cfg: 1 },
         sampler_envelope: turboEnv,
@@ -251,7 +254,7 @@ describe("THE ROUTE ENVELOPE (compose-side guard)", () => {
 
   it("a stated steps/cfg INSIDE the envelope rides (agency preserved)", () => {
     const out = stampCardOverlay({ steps: 6 }, turboRow, decl({ schemaNames: ["steps", "cfg"] }), sel);
-    expect(out["steps"]).toBe(6, "the caller's in-envelope value wins");
+    expect(out["steps"]).toBe(6);
   });
 
   it("cfg walls on its own axis; absent statements never refuse", () => {

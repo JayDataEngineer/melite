@@ -246,7 +246,7 @@ test("probeRunGone: refused and absent from the list is gone", async () => {
 test("probeRunGone: refused but listed answers the list status, defaulting to completed", async () => {
   const listed = mountEstateFakes({
     refusals: [{ method: "runs/status", message: "no such run" }],
-    listRows: [{ run_id: "run-7", status: "failed", artifacts: [] }],
+    listRows: [{ run_id: "run-7", status: "failed" as const, artifacts: [] }],
   });
   try {
     expect(await probeRunGone("run-7")).toBe("failed");

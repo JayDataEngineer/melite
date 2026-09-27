@@ -231,7 +231,7 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
   })
 
   test('LAW 7 — THE GRAMMAR INTERPRETER ITSELF: = matches, | alternates, ≠ negates, null is the unset face, keys trim', () => {
-    const f = (rule: string): SpecField => ({ name: 'x', kind: 'text', group: '', required: false, visible_when: rule } as SpecField)
+    const f = (rule: string): SpecField => ({ name: 'x', kind: 'text', group: '', required: false, visible_when: rule }) as unknown as SpecField // partial fixture: LAW 7 drives only visible_when
     // = matches
     expect(fieldVisible(f('model=a'), { model: 'a' })).toBe(true)
     expect(fieldVisible(f('model=a'), { model: 'b' })).toBe(false)

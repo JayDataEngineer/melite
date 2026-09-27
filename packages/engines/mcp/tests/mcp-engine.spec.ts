@@ -94,7 +94,7 @@ describe("mcpExecutor (the wire law)", () => {
       {},
       opts,
     );
-    assert.equal(tools.calls[0]?.arguments.out, join(dir, "rel.png"), "the wire saw the ABSOLUTE run-dir path");
+    assert.equal((tools.calls[0]?.arguments as { out: string }).out, join(dir, "rel.png"), "the wire saw the ABSOLUTE run-dir path");
     assert.deepEqual(out.stages[0]?.artifacts, ["rel.png"], "the artifact collected");
     rmSync(dir, { recursive: true, force: true });
   });
@@ -181,6 +181,7 @@ describe("mcpExecutor (the wire law)", () => {
     tools.answer = () => ({
       isError: true as const,
       error: { message: "boom: the macro refused" },
+      content: [], // ToolExecutionFailure carries content (possibly empty) alongside the error
     });
     await assert.rejects(
       mcpExecutor(tools, "mcp:blender").executeStages(
@@ -255,7 +256,7 @@ describe("treeOf + the ticker's quiet arm (per-file 100 restoration)", () => {
       {},
       { shouldStop: () => false, report: () => {} },
     );
-    assert.equal(tools.calls[0]?.arguments["out"], absolute, "absolute out rides verbatim");
+    assert.equal((tools.calls[0]?.arguments as { out: string })["out"], absolute, "absolute out rides verbatim");
     rmSync(dir, { recursive: true, force: true });
   });
 

@@ -23,11 +23,14 @@ async function boot(
   executeFlow: NonNullable<unknown>,
 ): Promise<{ ctx: Context; seat: EnginesService; host: ComfyUIHostService }> {
   const ctx = new Context();
-  await ctx.plugin(enginesContract as never);
-  await ctx.plugin(comfyuiHostProvider as never, { url: "http://seat-stub:1" });
-  await ctx.plugin(comfyuiEngine as never);
+  await ctx.plugin(enginesContract);
+  await ctx.plugin(comfyuiHostProvider, { url: "http://seat-stub:1" });
+  await ctx.plugin(comfyuiEngine);
   const seat = ctx.get("engines") as EnginesService;
-  const host = ctx.get("comfyui") as ComfyUIHostService;
+  // The fiber boots the host provider, so the 'comfyui' key IS a
+  // ComfyUIHostService at runtime — but the static type is the
+  // card plane's ComfyUIService augmentation, hence unknown-first.
+  const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (host as any).executeFlow = executeFlow;
   return { ctx, seat, host };
@@ -71,7 +74,10 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
     );
     // ONE merged submit through the host, with the spliced graph.
     expect(flow).toHaveBeenCalledTimes(1);
-    const [rows, runDir, inputNames, initials, opts] = flow.mock.calls[0] as [
+    // The stub vi.fn declares no params, so its call tuple is [] —
+    // the unknown-first cast recovers the executeFlow seam shape
+    // (rows, runDir, inputNames, initials, opts).
+    const [rows, runDir, inputNames, initials, opts] = flow.mock.calls[0] as unknown as [
       Array<{ stageId: string; workflow: Record<string, unknown>; outputNodes: Record<string, unknown> }>,
       string,
       Record<string, Record<string, string>>,
@@ -131,7 +137,7 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
       {},
       { shouldStop: (): boolean => true, report: vi.fn() },
     );
-    seen = flow.mock.calls[0]?.[4] as { shouldStop?: () => boolean };
+    seen = (flow.mock.calls[0] as unknown as unknown[])[4] as unknown as { shouldStop?: () => boolean };
     expect(seen.shouldStop?.()).toBe(true);
     void ctx;
   });
@@ -165,7 +171,8 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
       { shouldStop: (): boolean => false, report },
     );
     expect(flow).toHaveBeenCalledTimes(1);
-    const [rows, runDir, gotNames, initials, opts] = flow.mock.calls[0] as [
+    // Same seam-shape recovery as above (the stub's call tuple is []).
+    const [rows, runDir, gotNames, initials, opts] = flow.mock.calls[0] as unknown as [
       Array<{ stageId: string; workflow: Record<string, unknown>; outputNodes: Record<string, unknown> }>,
       string,
       Record<string, Record<string, string>>,
@@ -193,13 +200,18 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
   it("a stage without output_nodes maps to an empty output map", async () => {
     const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }))
     const { seat } = await boot(flow)
-    const row = stageRow()
-    delete row.params["output_nodes"]
+    // EngineStageRow.params is Readonly — rebuild the row without
+    // output_nodes instead of deleting through the index signature.
+    const full = stageRow()
+    const { output_nodes: _dropped, ...params } = full.params
+    const row: EngineStageRow = { ...full, params }
     await seat.resolve("comfyui").executor.executeStages(
       [row], "/tmp/run-x", {}, { shouldStop: () => false, report: vi.fn() },
     )
-    const rows = (flow.mock.calls[0]?.[0] as Array<{ outputNodes: Record<string, unknown> }>)
-    expect(rows[0]?.outputNodes).toEqual({})
+    // calls[0] is the arg tuple; its [0] is the MergeRow array the
+    // adapter built (the stub's call tuple is [] — recover via unknown).
+    const rows = (flow.mock.calls[0] as unknown as Array<Array<{ outputNodes: Record<string, unknown> }>> | undefined)?.[0]
+    expect(rows?.[0]?.outputNodes).toEqual({})
   })
 
   it("host-rejects → executeStages rejects", async () => {

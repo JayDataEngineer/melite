@@ -46,7 +46,23 @@
  *    bench agrees after each).
  */
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/estate-remote'
+// The generated namespace row types (type-only — the fakes serve
+// intentionally-partial rows against them, cast at each verb below).
+import type {
+  BenchEnsureRow,
+  BenchGetRow,
+  BenchPatchRow,
+  BenchReorderRow,
+  BenchRewireRow,
+  BenchStageRow,
+  BenchUndoRow,
+  DraftGetRow,
+  DraftPatchRow,
+} from '@melite/estate-drafts/types'
+import type { RunRow } from '@melite/estate-runs'
+import type { MediaListRow } from '@melite/estate-media'
 
 export interface EstateCall {
   method: string
@@ -255,17 +271,28 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         const servedRev: unknown = opts.benchDoc !== undefined && typeof benchSource['rev'] !== 'number'
           ? benchSource['rev']
           : benchRevValue
-        return ok({ ...benchSource, rev: servedRev, stages: servedStages })
+        // THE PARTIAL-ROW LAW: the served doc is intentionally partial
+        // (malformed-doc fidelity above serves verbatim garbage, and
+        // the default bench carries no draft_id/session/intent) — the
+        // cast pins the served bytes against the wire row without
+        // sanitizing what the misbehavior walls must see.
+        return ok({ ...benchSource, rev: servedRev, stages: servedStages } as BenchGetRow)
       },
-      ensure: (doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ensure', '', doc, signal),
-      patch: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/patch', sessionKey, doc, signal),
-      rewire: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/rewire', sessionKey, doc, signal),
-      undo: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/undo', sessionKey, doc, signal),
-      'add-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/add-stage', sessionKey, doc, signal),
-      'remove-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/remove-stage', sessionKey, doc, signal),
-      reorder: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/reorder', sessionKey, doc, signal),
-      group: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/group', sessionKey, doc, signal),
-      ungroup: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ungroup', sessionKey, doc, signal),
+      // THE VERB-ROW CASTS (same law): each verb's answer is the
+      // scripted minimum the walls pin (ok flags, revs, fresh rows —
+      // never full wire rows), cast to its namespace row at the
+      // property so the bind satisfies the generated client types.
+      // Served bytes are unchanged: the client reads these answers
+      // as open records (addStageWire returns Record<string, unknown>).
+      ensure: (doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ensure', '', doc, signal) as unknown as Promise<RemoteResult<BenchEnsureRow>>,
+      patch: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/patch', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchPatchRow>>,
+      rewire: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/rewire', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchRewireRow>>,
+      undo: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/undo', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchUndoRow>>,
+      'add-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/add-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      'remove-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/remove-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      reorder: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/reorder', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchReorderRow>>,
+      group: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/group', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      ungroup: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ungroup', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       subscribe: () => { throw new Error('estate-harness: bench/subscribe not faked') },
     },
     drafts: {
@@ -286,11 +313,14 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         const servedBench: Record<string, unknown> = opts.draftBench !== undefined
           ? { bench: opts.draftBench }
           : opts.draftOmitBench === true ? {} : { bench: { rev: opts.draftBenchRev ?? 7, log: [] } }
+        // THE PARTIAL-ROW LAW (same law as bench/get): explicitly
+        // served garbage stages ride verbatim — the cast pins the
+        // served bytes against the wire row without sanitizing them.
         return ok({
           draft_id: 'bench-s1', rev: 7, intent: opts.draftIntent ?? '',
           ...servedBench,
           stages: servedStages,
-        })
+        } as DraftGetRow)
       },
       patch: async (draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal?: AbortSignal) => {
         void signal
@@ -299,9 +329,20 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         const patchRefused = takeRefusal('drafts/patch')
         if (patchRefused !== undefined) return patchRefused
         if (opts.patchFailures !== undefined && opts.patchFailures.length > 0) {
-          return ok(opts.patchFailures.shift()!)
+          // Scripted failure arms carry reason-only envelopes (never
+          // full rows) — the cast pins them against the wire row.
+          return ok(opts.patchFailures.shift()! as unknown as DraftPatchRow)
         }
         return ok({ draftId: 'bench-s1', stageId, delivered: true, patched: applyDraftPatch(stageId, patch) })
+      },
+      // THE INDEX DOOR (drafts/list rides the same namespace — the
+      // bind requires it; no wall scripts it, so it serves the empty
+      // index, recorded like every other call).
+      list: async (signal?: AbortSignal) => {
+        void signal
+        calls.push({ method: 'drafts/list', args: {} })
+        takeThrow('drafts/list')
+        return takeRefusal('drafts/list') ?? ok({ count: 0, drafts: [] })
       },
     },
     runs: {
@@ -309,7 +350,9 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         void signal
         calls.push({ method: 'runs/start', args: { doc } })
         takeThrow('runs/start')
-        if (startDocs.length > 0) return ok(startDocs.shift()!)
+        // Scripted start docs are test-authored verbatim rows — the
+        // cast pins them against the wire row (same partial-row law).
+        if (startDocs.length > 0) return ok(startDocs.shift()! as { run_id: string; status: string; queue_position: number })
         return takeRefusal('runs/start') ?? ok({ run_id: 'run-1', status: 'queued', queue_position: 0 })
       },
       status: async (runId: string, signal?: AbortSignal) => {
@@ -318,9 +361,11 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         takeThrow('runs/status')
         const refused = takeRefusal('runs/status')
         if (refused !== undefined) return refused
-        if (runDocs.length > 1) return ok(runDocs.shift()!)
-        if (runDocs.length === 1) return ok(runDocs[0]!)
-        return ok({ ...liveRun })
+        // Scripted run docs serve verbatim (the lingers-last law) —
+        // pinned against the wire row, bytes unchanged.
+        if (runDocs.length > 1) return ok(runDocs.shift()! as RunRow)
+        if (runDocs.length === 1) return ok(runDocs[0]! as RunRow)
+        return ok({ ...liveRun } as RunRow)
       },
       stop: async (runId: string, signal?: AbortSignal) => {
         void signal
@@ -337,7 +382,8 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         takeThrow('runs/list')
         const listRefused = takeRefusal('runs/list')
         if (listRefused !== undefined) return listRefused
-        return ok({ count: listRows.length, runs: listRows })
+        // Scripted list rows are test-authored verbatim rows (same law).
+        return ok({ count: listRows.length, runs: listRows as RunRow[] })
       },
       validate: async (doc: Record<string, unknown>, signal?: AbortSignal) => {
         void signal
@@ -354,7 +400,8 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         const mediaRefused = takeRefusal('media/list')
         if (mediaRefused !== undefined) return mediaRefused
         const items = opts.mediaItems ?? []
-        return ok({ count: items.length, items })
+        // Scripted media rows are test-authored verbatim rows (same law).
+        return ok({ count: items.length, items: items as unknown as MediaListRow[] })
       },
     },
   })

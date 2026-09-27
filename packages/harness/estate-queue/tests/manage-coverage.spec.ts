@@ -48,7 +48,7 @@ let root = "";
 const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status });
 const text = (value: string, status = 200): Response => new Response(value, { status });
 const extensionRef = (id: string): ResourceRef => ({ kind: "extension", id });
-const modelRef = (id: string, owner: "family" | "card" = "family", variant?: string, quant?: string): ResourceRef => ({
+const modelRef = (id: string, owner: "family" | "card" = "family", variant?: string, quant?: string): Extract<ResourceRef, { kind: "model" }> => ({
   kind: "model",
   owner,
   id,
@@ -421,7 +421,7 @@ describe("manage queue and child seats", () => {
 
     const logAbort = new AbortController();
     child.run = async (_file, _args, options) => await new Promise<ChildResult>((_resolve, reject) => {
-      options["signal"]?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      (options["signal"] as AbortSignal | undefined)?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
     });
     const pendingLogs = run({ action: "logs" }, { signal: logAbort.signal });
     logAbort.abort(new Error("journal-abort"));
@@ -454,7 +454,7 @@ describe("manage queue and child seats", () => {
 
     const systemAbort = new AbortController();
     child.run = async (_file, _args, options) => await new Promise<ChildResult>((_resolve, reject) => {
-      options["signal"]?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      (options["signal"] as AbortSignal | undefined)?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
     });
     const pendingStop = run({ action: "stop", force: true }, { signal: systemAbort.signal });
     systemAbort.abort("system-abort");
@@ -496,7 +496,7 @@ describe("manage status projections", () => {
           state: "restart_required",
           path: "/packs/correlated",
           sha256: "a",
-          integrity: "verified",
+          integrity: "declared-sha256",
           errorCode: "warning",
           detail: "present",
         }],
@@ -526,7 +526,7 @@ describe("manage status projections", () => {
             state: "restart_required",
             path: "/packs/correlated",
             sha256: "a",
-            integrity: "verified",
+            integrity: "declared-sha256",
             errorCode: "warning",
             detail: "present",
           }],
@@ -987,7 +987,7 @@ describe("manage provisioning and snapshot coverage", () => {
         outcome: "failed",
         path: "/packs/rich",
         sha256: "b",
-        integrity: "invalid",
+        integrity: "operator-unverified",
         errorCode: "manager/failed",
       }],
       detail: "rich failure",
@@ -1020,7 +1020,7 @@ describe("manage provisioning and snapshot coverage", () => {
     const first = {
       ...provisioning,
       plan: async (ref: ResourceRef) => {
-        if (ref.owner === "family") {
+        if (ref.kind === "model" && ref.owner === "family") {
           caller.abort(new Error("family abort"));
           return declaration;
         }
@@ -1057,7 +1057,7 @@ describe("manage provisioning and snapshot coverage", () => {
     const callerCard = {
       ...provisioning,
       plan: (ref: ResourceRef) => {
-        if (ref.owner === "family") return Promise.reject(new Error("family missing"));
+        if (ref.kind === "model" && ref.owner === "family") return Promise.reject(new Error("family missing"));
         secondCaller.abort(new Error("card caller"));
         return Promise.resolve(declaration);
       },
@@ -1069,7 +1069,7 @@ describe("manage provisioning and snapshot coverage", () => {
 
     const plainCard = {
       ...provisioning,
-      plan: (ref: ResourceRef) => ref.owner === "family"
+      plan: (ref: ResourceRef) => ref.kind === "model" && ref.owner === "family"
         ? Promise.reject(new Error("family missing"))
         : Promise.reject("card plain"),
     } as unknown as ProvisioningServiceDefinition;
@@ -1084,7 +1084,7 @@ describe("manage provisioning and snapshot coverage", () => {
     const second = {
       ...provisioning,
       plan: (ref: ResourceRef) => {
-        if (ref.owner === "family") return Promise.reject(new Error("family missing"));
+        if (ref.kind === "model" && ref.owner === "family") return Promise.reject(new Error("family missing"));
         return new Promise<ProvisionPlan>((_resolve, reject) => {
           queueMicrotask(() => timeoutCallback?.());
           queueMicrotask(() => reject(new Error("card abort")));

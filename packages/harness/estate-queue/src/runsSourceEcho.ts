@@ -73,7 +73,14 @@ function detectFace(t: string): { face: SourceFace; rest: string } | null {
     return { face: "run", rest: t.slice(lower.indexOf("/runs/") + "/runs/".length) };
   }
   if (t.startsWith("/")) return { face: "abs", rest: t };
-  if (!t.includes("/") || t.includes("..")) return null;
+  // ONE SEGMENT LAW (li-aq.3, the design audit's L10): the old
+  // `t.includes("..")` substring ban refused a LEGAL name the engine
+  // mints (`still..frame.png`) while judging the whole string —
+  // traversal is a property of SEGMENTS, not substrings. The
+  // contracts' own grammar (dots-only and NUL and empty refused,
+  // every other name legal) judges each segment.
+  if (!t.includes("/")) return null;
+  if (t.split("/").some((seg) => !segmentConfined(seg))) return null;
   const head: string = t.split("/", 1)[0] as string;
   let decodedHead: string;
   try {

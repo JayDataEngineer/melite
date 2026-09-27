@@ -3,9 +3,10 @@ import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Context } from '@deepseek-ai/cordis'
+import { Context, type Plugin } from '@deepseek-ai/cordis'
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer'
 import queuePlugin, { appendLedger } from '../../../../packages/harness/estate-queue/src/index.ts'
+import type { EstateMethod } from '../../../../packages/harness/melite-tools/src/estate.ts'
 
 /** THE LEDGER-TAIL WALL (REBUILD-19, the gateway kill): the dead
  *  GET /v1/ledger arm re-homes as the queue seat's own tail —
@@ -18,8 +19,10 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
   const root = mkdtempSync(join(tmpdir(), 'ledger-wall-'))
   const ctx = new Context()
   process.env['MELITE_STATE_ROOT'] = root
-  await ctx.plugin(timerPlugin as never)
-  const fiberP = ctx.plugin(queuePlugin as never, { repoRoot: root })
+  // cross-copy plugin shapes ride the honest Plugin cast: the
+  // static Config types are narrower than the wall's boot rows.
+  await ctx.plugin(timerPlugin as unknown as Plugin)
+  const fiberP = ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root })
   await fiberP
   const queue = ctx.get('queue', false) as {
     ledger(rawLimit: string, rawEvent: string): { entries: Array<{ ts?: number; event?: string }>; shown: number; matched: number }
@@ -73,7 +76,10 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
 
   // 6. the lane serves the tail over the ctx.get probe.
   const { makeEstateRequest } = await import('../../../../packages/harness/melite-tools/src/estate.ts')
-  const request = makeEstateRequest(ctx)
+  // the impl serves (method, path, body, signal) — EstateRequest's
+  // trailing timeoutMs never reaches the seats; narrow the callable
+  // to the runtime truth instead of inventing a value.
+  const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>
   const lane = (await request('GET', '/v1/ledger?limit=2&event=run.x', undefined, new AbortController().signal)) as { shown?: number; matched?: number }
   assert.equal(lane.shown, 2)
   assert.equal(lane.matched, 5)

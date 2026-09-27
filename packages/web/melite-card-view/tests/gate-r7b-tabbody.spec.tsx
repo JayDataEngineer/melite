@@ -12,7 +12,7 @@ import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow } from "../src/client/cards-resource.ts";
+import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {
   cleanup();
@@ -22,7 +22,7 @@ afterEach(() => {
 
 type EstateOpts = Parameters<typeof mountEstateFakes>[0];
 
-const STAGES: BenchStageRow[] = [
+const STAGES: BenchStageView[] = [
   { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
 ];
 const BENCH = { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: STAGES } as const;
@@ -87,7 +87,7 @@ function mount(estate?: EstateOpts): void {
   });
   render(h(CardsTab, {
     useTabInfo: tabInfo(),
-    useResource: () => ({ status: "live", value: { ...BENCH, stages: STAGES } }),
+    useResource: () => ({ status: "live" as const, value: { ...BENCH, stages: STAGES } }),
   } as never));
 }
 

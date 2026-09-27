@@ -44,7 +44,7 @@ const cheatCard = (schema: CardDefinition["schema"], carrier: unknown = cheatCar
   schemaCarrier: carrier as never,
   compose: (_p, _m, g) => { g.node("TestNode", { a: 1 }); },
   sidebar: { key: "gen", order: 1 },
-  flowKinds: { inputs: {}, outputs: { image: "image" } },
+  flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
   requiresModel: false,
 });
 

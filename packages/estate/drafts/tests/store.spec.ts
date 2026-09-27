@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { openDraftsDomain } from "../src/store.ts";
+import type { DraftsDomainSpec } from "../src/spec.js";
 
 // TMP OWNERSHIP (stroke 13): every minted tree is disposed with its
 // test — see tests/global-sweep.ts for the tree-wide net.
@@ -63,7 +64,7 @@ interface FakeFacility {
   domain: FakeDomain;
   opens: number;
   failFirstOpen: boolean;
-  open(): Promise<Domain>;
+  open(): Promise<Domain<DraftsDomainSpec>>;
 }
 
 function mountFacility(ctx: Context): FakeFacility {
@@ -71,12 +72,12 @@ function mountFacility(ctx: Context): FakeFacility {
     domain: new FakeDomain(),
     opens: 0,
     failFirstOpen: false,
-    open(): Promise<Domain> {
+    open(): Promise<Domain<DraftsDomainSpec>> {
       facility.opens += 1;
       if (facility.failFirstOpen && facility.opens === 1) {
         return Promise.reject(new Error("storage/junit-first-open-fails"));
       }
-      return Promise.resolve(facility.domain as unknown as Domain);
+      return Promise.resolve(facility.domain as unknown as Domain<DraftsDomainSpec>);
     },
   };
   ctx.provide("storageDomain", facility);

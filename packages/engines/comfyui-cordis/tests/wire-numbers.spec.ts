@@ -32,7 +32,7 @@ const numCard = (): CardDefinition => ({
   schemaCarrier: carrier as never,
   compose: (p, _m, g) => { g.node("TestNode", { width: p["width"] }); },
   sidebar: { key: "gen", order: 1 },
-  flowKinds: { inputs: {}, outputs: { image: "image" } },
+  flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
   requiresModel: false,
 });
 
@@ -96,7 +96,9 @@ describe("the compose door — the ARRAY arm of the coercion family (035 attempt
       id: "arr",
       skeleton: "gen",
       boarded: [],
-      schema: ((v: unknown) => carrier2(v)) as unknown as (v: unknown) => Record<string, unknown>,
+      // The door hands schema fns unknown; the carrier accepts its
+      // own input shape — narrow at the boundary, never loosen the door.
+      schema: ((v: unknown) => carrier2(v as Parameters<typeof carrier2>[0])) as unknown as (v: unknown) => Record<string, unknown>,
       schemaCarrier: carrier2 as never,
       // the compose-internal gate — the card.ts:1788 shape: the walk
       // is BARE (a plain Error escapes, never a ComposeRefusal)
@@ -105,7 +107,7 @@ describe("the compose door — the ARRAY arm of the coercion family (035 attempt
         g.node("TestNode", { refs: JSON.stringify(walked["ref_images"]) });
       },
       sidebar: { key: "gen", order: 1 },
-      flowKinds: { inputs: {}, outputs: { image: "image" } },
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
       requiresModel: false,
     });
     const svc = await boot();

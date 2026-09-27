@@ -9,7 +9,8 @@ import { join } from "node:path";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService, ComposeRefusal, cardWireName, resolveCardFlowOutputs } from "../src/service.ts";
-import type { CardDefinition, ModFields } from "../src/service.ts";
+import type { CardDefinition } from "../src/service.ts";
+import type { ModFields } from "../src/serviceMods.ts";
 import type { FactsFile, ModelFacts } from "@melite/comfyui-card-kit/facts";
 
 const boot = async (): Promise<ComfyUIService> => {
@@ -567,7 +568,23 @@ describe("formSpec (the wire row battery)", () => {
   it("the envelope rides the carrier's own toJSON, verbatim", async () => {
     const svc = await bootForm();
     const out = svc.formSchemas("card1", "fam1")!;
-    const env = out.schema as { uid: number; refs: Record<string, { type: string; dict: Record<string, Record<string, unknown>> }> };
+    const env = out.schema as {
+      uid: number;
+      refs: Record<string, {
+        type: string;
+        dict: Record<string, {
+          meta?: {
+            extra?: Record<string, unknown>;
+            min?: unknown;
+            max?: unknown;
+            step?: unknown;
+            default?: unknown;
+            description?: unknown;
+          };
+          list?: Array<{ value: unknown }>;
+        }>;
+      }>;
+    };
     assert.equal(env.uid, 0);
     const dict = env.refs["0"]!.dict;
     // the authored nodes ride as-authored — every node the client
@@ -717,7 +734,10 @@ describe("compose (the model-less path)", () => {
       requiresModel: false,
       flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
       boarded: [] as never,
-      recipes: { fast: { label: "F", description: "d", params: { prompt: "fast" }, loras: [{ name: "r.safetensors" }] } },
+      // NOTE: card-level `recipes` was retired (recipes are family
+      // macros now — service.ts) so the stale key is dropped; the
+      // remaining arms still pin finalize riding + unknown keys
+      // passing through the model-less path.
       finalize: (g) => ({ ...g, "final": { class_type: "F", inputs: {} } }) as never,
     }));
     const plain = svc.compose("card1", null, {}, "r1");
@@ -1197,7 +1217,7 @@ describe("requiresModel conflict (one declaration, no contradictions)", () => {
 // the ENGINE's voice. The wall names the card, the node, and the
 // wire, at compose, before the engine is ever called.
 describe("assertWiring (the built graph vs the /object_info doc)", () => {
-const oi = (inputs: Record<string, Record<string, unknown>>): Record<string, unknown> => ({
+const oi = (inputs: Record<string, unknown>): Record<string, unknown> => ({
     TestNode: { input: { required: inputs, optional: {} } },
   });
 

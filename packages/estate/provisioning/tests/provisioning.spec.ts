@@ -47,6 +47,7 @@ function root(): string {
 
 function managerWriting(store: string, onInstall?: (url: string) => void | Promise<void>): ManagerPort {
   return {
+    install: async (): Promise<{ installed: boolean }> => ({ installed: true }),
     installModel: async (request): Promise<{ installed: boolean; detail?: string }> => {
       await onInstall?.(request.url);
       if (request.url.endsWith("bad") || request.url.endsWith("fail")) return { installed: false, detail: "bad model" };
@@ -402,7 +403,9 @@ describe("provisioning service", () => {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
       manager: managerWriting(store),
-      onTransition: (transition): void => transitions.push(transition),
+      onTransition: (transition): void => {
+        transitions.push(transition);
+      },
     });
     assert.equal(ctx.provisioning.name, "provisioning");
     assert.equal(typeof ctx.provisioning.ensure, "function");
