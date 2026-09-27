@@ -51,7 +51,14 @@ beforeAll(() => {
   utimesSync(join(edge, 'rescued.svg'), new Date('2026-01-02T00:00:00Z'), new Date('2026-01-02T00:00:00Z'))
   utimesSync(join(edge, 'gifbytes.svg'), new Date('2026-01-03T00:00:00Z'), new Date('2026-01-03T00:00:00Z'))
   // the film run: the committed 2s fixture (h264 160x120 @10fps,
-  // 20 frames, 7670 bytes) — the real ffprobe/ffmpeg below prove
+  // THE CALLER-SIGNAL BOUNDS (2026-10-10, the wedge the operator
+// named): the real-binary arms' AbortSignal.timeout was 2000ms —
+// fine for a lone suite, fatal under the full fleet's load, where
+// real ffmpeg spawns stalled past 2s and fourteen arms bounced a
+// commit on a green tree (the SIGPIPE class again: a phantom red).
+// The bounds are load-sized (15s) now; the contract they test — a
+// caller-provided abort signal — is unchanged.
+// 20 frames, 7670 bytes) — the real ffprobe/ffmpeg below prove
   // the success path against the estate's own binaries
   const film = join(root, 'output', 'run-face001-wide')
   mkdirSync(film, { recursive: true })
@@ -119,7 +126,7 @@ function fakeCtx(opts?: { store?: false; seat?: false; visual?: boolean; byteCap
 
 /** The exec view: a visual routed session (the gate's happy path). */
 const visualExec = {
-  signal: AbortSignal.timeout(2000),
+  signal: AbortSignal.timeout(15_000),
   agent: {
     session: { requestHeader: () => ({ config: { provider: 'zai', model: 'glm-5v-turbo' } }) },
     options: {},
@@ -285,7 +292,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)
     const optionsExec = {
-      signal: AbortSignal.timeout(2000),
+      signal: AbortSignal.timeout(15_000),
       agent: { session: { requestHeader: () => undefined }, options: { provider: 'zai', model: 'glm-5v-turbo' } },
     }
     const out = await tool.execute({ run_id: 'run-abc123-hero' }, optionsExec as never) as ViewedImageValue
@@ -296,7 +303,7 @@ describe('melite_view edge refusals — every arm speaks its own reason', () => 
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)
     await assert.rejects(
-      tool.execute({ run_id: 'run-abc123-hero' }, { signal: AbortSignal.timeout(2000) } as never),
+      tool.execute({ run_id: 'run-abc123-hero' }, { signal: AbortSignal.timeout(15_000) } as never),
       /route could not be resolved/,
     )
   })
