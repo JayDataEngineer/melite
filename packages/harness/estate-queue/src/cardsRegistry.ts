@@ -540,27 +540,44 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string } {
+    const verdict = this.laneVerdict(card, params);
+    return verdict === null ? { ok: true } : { ok: false, error: verdict };
+  }
+
+  /** THE LANE VERDICT (li-o's judgment, ONE spelling, two seats):
+   *  the DECL's surface + relation words over the prepared state, or
+   *  null when the lane accepts it. The bench-write door refuses on
+   *  it at build time; the RUN seat (phase1Card) refuses on it too —
+   *  the declaration, not the card's hand-written belt, is what
+   *  teaches an archived row that slipped the write door. Everything
+   *  that is not the DECL's own words (unknown variant/quant, a
+   *  dangling ref, a familyless unit, a legacy family that declares
+   *  nothing) returns null and keeps the other door's voice. */
+  private laneVerdict(
+    card: string,
+    params: Record<string, unknown>,
+  ): string | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
-    if (def === undefined) return { ok: true }; // mcp/flow ids — not lane-admitted
+    if (def === undefined) return null; // mcp/flow ids — not lane-admitted
     const mid: unknown = params["model"];
-    if (typeof mid !== "string" || mid === "") return { ok: true }; // model-less row
+    if (typeof mid !== "string" || mid === "") return null; // model-less row
     let prep: PreparedCard;
     try {
       prep = prepareCardParams(this, params, mid, "admission");
     } catch {
       // selection/dangling failures keep the run door's voice —
       // this seat judges only the DECL's own words
-      return { ok: true };
+      return null;
     }
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
-    if (famRow === undefined) return { ok: true }; // familyless card unit — no lane
-    if (famRow.params === undefined) return { ok: true }; // legacy family: no surface declared
+    if (famRow === undefined) return null; // familyless card unit — no lane
+    if (famRow.params === undefined) return null; // legacy family: no surface declared
     let sel: VariantSelection;
     try {
       sel = selectCardVariant(mid, famRow, params, "admission");
     } catch {
-      return { ok: true }; // the run door's voice, same tolerance as above
+      return null; // the run door's voice, same tolerance as above
     }
     // THE ROUTE-LENS LAW (probe receipt, 2026-10-10): a
     // route-addressed row (model 'qwen3-tts-voicedesign-base')
@@ -591,12 +608,9 @@ export class CardRegistryService extends Service {
       ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
       ...judgeLaneRelations(relations, prep.params),
     ];
-    if (violations.length === 0) return { ok: true };
-    return {
-      ok: false,
-      error: "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
-        violations.map((v) => v.message).join("; "),
-    };
+    if (violations.length === 0) return null;
+    return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
+      violations.map((v) => v.message).join("; ");
   }
 
   /** THE SCHEMA-MASTER REPAIR (operator law 2026-09-24 — receipt:
@@ -806,6 +820,18 @@ export class CardRegistryService extends Service {
     // garbage bodies, and the compose-smoke /recipe/ wall held only
     // on boxes carrying the encoders.
     admissionRefusal(this, prep.card, prep.fam, liftStanza(prep.params), "1");
+    // THE LANE GATE RIDES THE RUN TOO (li-o, 2026-10-10): the
+    // bench-write door judges the DECL's surface + relation words
+    // when a state is BUILT, but a RESTORED row (the archive loads,
+    // Run teaches) and any writer that predates the door arrive here
+    // unjudged. The run seat is where the declaration gets its second
+    // voice — ONE spelling (laneVerdict), the same judgment the form
+    // renders and the write door refuses on, so no card needs a
+    // hand-written copy of the law to be safe at Run.
+    const laneRefusal = this.laneVerdict(prep.card, prep.params);
+    if (laneRefusal !== null) {
+      throw phaseRefusal("1", laneRefusal);
+    }
     // THE LANE PRESENCE GATE (one pattern, every family): before any
     // graph composes, the family's declared lane files must stand on
     // disk. Img Gen vs Img Edit was luck, not law — this is the law.

@@ -858,6 +858,30 @@ export async function cardToolsArm(): Promise<unknown[]> {
     // the card's own rows; leaf_face stays a UI concern and never
     // rides (the agent composes VALUES, never faces).
     const mods = emitModifierKinds(def.mods)
+    // THE LANE CONTRACT, AGENT PLANE (2026-10-10, the liar report's
+    // fix shape 2, closing the last asymmetry): the form reads the
+    // DECL's surface from the form-spec, the bench door refuses on
+    // it, and the AGENT used to get only the flat union schema —
+    // so the one consumer that writes WITHOUT a live form learned
+    // the law by hitting its refusal. Every declaring family on this
+    // card rides its own lane contract (keyed by family id, verbatim
+    // the same laneContractOf the form-spec serves); a card whose
+    // families declare nothing carries no `lanes` key at all, which
+    // is the legacy truth, not a silent empty.
+    const lanes: Record<string, unknown> = {};
+    for (const fam of fams) {
+      // FAMILY ATOMS ONLY (the route-lens law, same as the registry
+      // seat): a route address's derived view re-addresses the
+      // family's HEAD, so its variant table would publish the head's
+      // surface as if it were the route's own lane. The agent gets
+      // the family's contract and picks the variant itself.
+      let atom = fam;
+      try { atom = owningAtom(fam); } catch { atom = fam; }
+      if (atom in lanes) continue;
+      let fdecl: ModelDecl | null = null;
+      try { fdecl = getModel(atom); } catch { fdecl = null; }
+      if (fdecl !== null && fdecl.params !== undefined) lanes[atom] = laneContractOf(fdecl);
+    }
     out.push({
       name: id,
       version: 1,
@@ -868,6 +892,7 @@ export async function cardToolsArm(): Promise<unknown[]> {
       genre: ident.genre,
       families: fams,
       params_schema: schema,
+      ...(Object.keys(lanes).length > 0 ? { lanes } : {}),
       ...(mods.length > 0 ? { modifiers: mods } : {}),
       // F-7 (the stale-face drill): the serving process's tree
       // version rides every face — an agent compares it against

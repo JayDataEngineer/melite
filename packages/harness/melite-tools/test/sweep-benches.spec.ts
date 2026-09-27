@@ -1,19 +1,30 @@
-import { test } from 'vitest'
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import "../../../../tests/helpers/boot-models.ts";
+import { test, expect } from 'vitest'
+import { readFileSync, readdirSync, existsSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
+import { tmpdir } from 'node:os'
+import { Context } from '@deepseek-ai/cordis'
+import { CardRegistryService } from '@melite/estate-queue'
 // THE PERSISTED-STATE SWEEP (2026-10-10): the write doors guard
 // writes, getBench re-admits at serve — this sweep holds the LIVE
 // ESTATE's stored bench docs to the current laws at CI time, so a
 // criminal doc written by any older door is named here before any
-// human meets it at a run. Runs only where the host state exists
-// (the dev estate); absent state on a fresh clone is an honest
-// skip with the reason printed.
-test('sweep every persisted bench doc against the current admission laws', () => {
-  const dir = 'data/runtime/dsh-harness-home/storages/drafts/docs'
-  if (!existsSync(dir)) { console.log('no host bench state on this clone — sweep skipped'); return }
-  const files = readdirSync(dir).filter((f) => f.startsWith('bench-') && f.endsWith('.json'))
+// human meets it at a run. Absent host state on a fresh clone is an
+// honest skip with the reason printed (never a silent pass claim).
+//
+// IT IS A WALL, NOT A LOG (li-o's second stroke): the first cut
+// printed its crimes and passed either way — a sweep that cannot
+// fail is a comment. It judges the DECL's lane laws over every stored
+// stage through the same seat the run door rides, which is the arm
+// that catches the operator's incident-A state sitting in an
+// ARCHIVE: the write door exempts restored rows (the archive must
+// load), so this sweep is where an old poison is named instead of
+// discovered at Run.
+interface RegistryLike { admitStageRelations(card: string, params: Record<string, unknown>): { ok: true } | { ok: false; error: string } }
+
+function sweepDir(dir: string, registry: RegistryLike): string[] {
   const crimes: string[] = []
-  for (const f of files) {
+  for (const f of readdirSync(dir).filter((f) => f.startsWith('bench-') && f.endsWith('.json'))) {
     let doc: any
     try { doc = JSON.parse(readFileSync(join(dir, f), 'utf8')) } catch { crimes.push(f + ': unparseable'); continue }
     const stages = Array.isArray(doc.stages) ? doc.stages : []
@@ -30,12 +41,59 @@ test('sweep every persisted bench doc against the current admission laws', () =>
       }
       const params = (st?.params && typeof st.params === 'object') ? st.params : {}
       for (const [k, v] of Object.entries(params)) {
-        if (typeof v === 'string' && v.startsWith('$') && !(k in inputs) && !String(v).startsWith('$' + k)) {
-          // spell with no channel is the phantom-spell arm — flag only if the channel is absent
+        // THE PHANTOM-SPELL ARM: a $-spelled value with no channel
+        // to receive it never composes (the run door refuses it
+        // there); a doc that carries one is named here first.
+        if (typeof v === 'string' && v.startsWith('$') && !(k in inputs)) {
+          crimes.push(`${f} ${id}: PHANTOM-SPELL ${k}='${v}' (no input channel receives it)`)
         }
+      }
+      const card = typeof st?.card === 'string' ? st.card : ''
+      if (card !== '') {
+        const verdict = registry.admitStageRelations(card, params as Record<string, unknown>)
+        if (!verdict.ok) crimes.push(`${f} ${id}: LANE — ${verdict.error}`)
       }
     }
   }
+  return crimes
+}
+
+const bootRegistry = async (): Promise<CardRegistryService> => {
+  const ctx = new Context()
+  const registry = new CardRegistryService(ctx)
+  await registry.prime()
+  return registry
+}
+
+test('sweep every persisted bench doc against the current admission laws', async () => {
+  const dir = 'data/runtime/dsh-harness-home/storages/drafts/docs'
+  if (!existsSync(dir)) { console.log('no host bench state on this clone — sweep skipped'); return }
+  const files = readdirSync(dir).filter((f) => f.startsWith('bench-') && f.endsWith('.json'))
+  const crimes = sweepDir(dir, await bootRegistry())
   console.log(`swept ${files.length} bench docs — crimes: ${crimes.length}`)
   console.log(crimes.length ? crimes.join('\n') : 'clean')
+  expect(crimes, `persisted bench docs hold current-law crimes:\n${crimes.join('\n')}`).toEqual([])
+})
+
+test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
+  const dir = join(tmpdir(), 'melite-sweep-wall-' + String(process.pid))
+  mkdirSync(dir, { recursive: true })
+  try {
+    writeFileSync(join(dir, 'bench-poison.json'), JSON.stringify({
+      stages: [
+        // THE OPERATOR'S INCIDENT A, sitting in an archive: the
+        // write door exempts restored rows, so this is where it is
+        // caught before a human meets it at a run.
+        { id: 's_0', card: 'tts', params: { model: 'qwen3-tts', variant: 'customvoice', text: 'hi', design_prompt: 'a warm narrator' } },
+        { id: 's_1', card: 'tts', params: { text: 'hi', image1: '$image1' } },
+        { id: 's_2', card: 'tts', inputs: { image1: { stage: 'ghost' } }, params: { text: 'hi' } },
+      ],
+    }))
+    const crimes = sweepDir(dir, await bootRegistry())
+    expect(crimes.some((c) => c.includes('LANE') && c.includes('voice_name')), crimes.join('\n')).toBe(true)
+    expect(crimes.some((c) => c.includes('PHANTOM-SPELL')), crimes.join('\n')).toBe(true)
+    expect(crimes.some((c) => c.includes('PHANTOM-WIRE')), crimes.join('\n')).toBe(true)
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 })

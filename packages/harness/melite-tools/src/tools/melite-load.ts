@@ -101,6 +101,13 @@ export function meliteLoad(
               name?: unknown; model?: unknown; card?: unknown
               params_schema?: { properties?: Record<string, unknown>; required?: unknown }
               modifiers?: Array<{ kind?: unknown; category?: unknown; fields?: unknown[] }>
+              // THE LANE CONTRACT (2026-10-10): family atom → the
+              // family's declared base surface, its relation words,
+              // and its per-variant additions — served by
+              // /v1/card-tools (the agent's card manifest) and
+              // rendered as the lane line below. Absent for legacy
+              // families, which declare nothing.
+              lanes?: Record<string, unknown>
             } | null
             agents?: Array<{ path?: unknown; text?: unknown }>
             skills?: Array<Record<string, unknown>>
@@ -216,6 +223,39 @@ export function meliteLoad(
             const keyed = packSeats.filter((p) => p.param_key !== p.kind)
             if (keyed.length > 0) {
               out.push('mod param_keys: ' + keyed.map((p) => p.kind + ' → ' + p.param_key + ' (entries: {' + p.fields.join(', ') + '})').join('; '))
+            }
+          }
+          // THE LANE LINE (2026-10-10, the liar report's fix shape 2
+          // on the agent's READ surface): which fields a lane accepts
+          // is the DECL's declaration, and the bench door refuses
+          // anything outside it — the agent used to learn that only
+          // by hitting the refusal. One line per declaring family:
+          // the family base, the variant additions, and the relation
+          // words as the field pairs they bind. Absent for legacy
+          // families, which declare nothing.
+          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: { together?: Array<{ fields?: unknown[] }>; conflicts?: Array<{ a?: unknown; b?: unknown }>; either_or?: Array<{ groups?: unknown[][] }> }; variants?: Record<string, { params?: unknown[] }> }> | undefined
+          if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
+            for (const [fam, lane] of Object.entries(sigLanes)) {
+              const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
+              const adds = Object.entries(lane?.variants ?? {})
+                .map(([v, row]) => v + ' +' + (Array.isArray(row?.params) ? row.params.join(', ') : ''))
+                .filter((line) => !line.endsWith(' +'))
+              const words: string[] = []
+              for (const t of lane?.relations?.together ?? []) {
+                if (Array.isArray(t?.fields)) words.push('together(' + t.fields.join(' × ') + ')')
+              }
+              for (const c of lane?.relations?.conflicts ?? []) {
+                words.push('conflicts(' + String(c?.a) + ' × ' + String(c?.b) + ')')
+              }
+              for (const e of lane?.relations?.either_or ?? []) {
+                if (Array.isArray(e?.groups)) {
+                  words.push('either_or(' + e.groups.map((g) => '(' + g.join(' × ') + ')').join(' | ') + ')')
+                }
+              }
+              out.push('lane ' + fam + ': ' + (base.length > 0 ? 'base ' + base.join(', ') : 'no declared base')
+                + (adds.length > 0 ? '; variants: ' + adds.join('; ') : '')
+                + (words.length > 0 ? '; laws: ' + words.join(', ') : '')
+                + ' — a field outside this lane REFUSES at the bench door (add_stage/patch), named, with the cure')
             }
           }
           const model = str(sig.model)

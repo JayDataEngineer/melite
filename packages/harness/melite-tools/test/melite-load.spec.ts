@@ -312,3 +312,56 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   ) as Array<{ text?: string }>
   assert.ok(!(plain.map((p) => p?.text ?? '').join('\n').includes('mods:')), 'no mods line without kinds')
 })
+
+// THE LANE LINE RIDES THE LOAD BUNDLE (2026-10-10): the agent's read
+// surface states which fields each declared lane accepts and which
+// pairs the relation words bind — the same declaration the form
+// renders and the bench door refuses on, so the agent composes from
+// it instead of learning it from a refusal.
+describe('melite_load render — the lane line', () => {
+  const bundleWithLanes = {
+    kind: 'card',
+    name: 'tts',
+    signature: {
+      model: 'qwen3-tts-voicedesign',
+      params_schema: { properties: { text: {} }, required: [] },
+      lanes: {
+        'qwen3-tts': {
+          base: ['text', 'design_prompt', 'voice_name'],
+          relations: {
+            together: [{ fields: ['voice_name', 'design_prompt'] }],
+            conflicts: [{ a: 'voice_name', b: 'qvoice' }],
+            either_or: [{ groups: [['ref_audio', 'ref_text'], ['qvoice']] }],
+          },
+          variants: {
+            customvoice: { params: ['voice'] },
+            base: { params: ['ref_audio', 'ref_text'] },
+          },
+        },
+      },
+    },
+  }
+  const text = (bundle: unknown): string => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'tts', inference_type: 'card' },
+      { name: 'tts', inference_type: 'card', bundle } as never,
+    ) as Array<{ text?: string }>
+    return parts.map((p) => p?.text ?? '').join('\n')
+  }
+  test('the declared lane rides as one line with its base, its variants, and its laws', () => {
+    const t = text(bundleWithLanes)
+    assert.ok(t.includes('lane qwen3-tts'), t.slice(0, 400))
+    assert.ok(t.includes('base text, design_prompt, voice_name'), t.slice(0, 600))
+    assert.ok(t.includes('customvoice +voice'), t.slice(0, 600))
+    assert.ok(t.includes('base +ref_audio, ref_text'), t.slice(0, 600))
+    assert.ok(t.includes('together(voice_name × design_prompt)'), t.slice(0, 800))
+    assert.ok(t.includes('conflicts(voice_name × qvoice)'), t.slice(0, 800))
+    assert.ok(t.includes('either_or((ref_audio × ref_text) | (qvoice))'), t.slice(0, 900))
+    assert.ok(t.includes('REFUSES at the bench door'), t.slice(0, 900))
+  })
+  test('a legacy bundle states no lane line at all (absence is the legacy truth)', () => {
+    const t = text({ kind: 'card', name: 'image-gen', signature: { model: 'krea-2', params_schema: { properties: { prompt: {} }, required: [] } } })
+    assert.ok(!t.includes('lane '), t.slice(0, 300))
+  })
+})

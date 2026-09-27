@@ -340,3 +340,35 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     }).ok).toBe(false);
   });
 });
+
+describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => {
+  it("phase1Card refuses the incident A state the write door would have refused", async () => {
+    // The restored-archive path (and any writer that predates the
+    // door) reaches phase1Card unjudged: the bench door is exempt
+    // for restored rows because the archive must load. The RUN seat
+    // is where the declaration teaches — ONE spelling (laneVerdict),
+    // so the card needs no hand-written copy of the law.
+    await expect(
+      svc.phase1Card(
+        { ...INCIDENT_A },
+        "qwen3-tts",
+      ),
+    ).rejects.toThrow(/voice_name/);
+  });
+
+  it("the cured state composes phase 1 (the door and the run agree)", async () => {
+    const phase1 = await svc.phase1Card(
+      { ...INCIDENT_A, voice_name: "harbour_gravel" },
+      "qwen3-tts",
+    );
+    expect(phase1.fam).toBe("qwen3-tts");
+  });
+
+  it("a legacy family composes phase 1 untouched (the run gate judges only declared lanes)", async () => {
+    const phase1 = await svc.phase1Card(
+      { model: "z-image", prompt: "x" },
+      "z-image",
+    );
+    expect(phase1.fam).toBe("z-image");
+  });
+});

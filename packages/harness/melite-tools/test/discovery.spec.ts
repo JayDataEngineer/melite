@@ -9,7 +9,7 @@ import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, test } from 'vitest'
+import { describe, test, expect } from 'vitest'
 import assert from 'node:assert/strict'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
 
@@ -830,3 +830,38 @@ describe('live door arms', () => {
       assert.ok(mods.some((m) => m['kind'] === 'qvoice'), 'the load seat renders on ' + model + ': ' + JSON.stringify(mods.map((m) => m['kind'])))
     }
   })
+
+// THE AGENT PLANE GETS THE LANE TOO (2026-10-10, the liar report's
+// fix shape 2's last asymmetry): the form reads the DECL's surface,
+// the bench door refuses on it, and the agent used to get only the
+// flat union schema — so the one consumer that writes without a live
+// form had to learn the law by hitting the refusal. The card-tools
+// manifest now carries the SAME lane contract the form-spec serves.
+describe('the agent contract carries the lane contract', () => {
+  test('the tts manifest carries both declaring families, keyed by family id', async () => {
+    const tools = await cardToolsArm() as Array<Record<string, unknown>>
+    const tts = tools.find((t) => t['name'] === 'tts')
+    if (tts === undefined) throw new Error('the tts manifest serves')
+    const lanes = tts['lanes'] as Record<string, Record<string, unknown>> | undefined
+    expect(lanes, 'the tts card serves lanes to the agent').toBeDefined()
+    // both families board the card and both declare
+    expect(Object.keys(lanes ?? {}).sort()).toEqual(['qwen3-tts', 'qwen3-tts-voicedesign'])
+    const base = lanes!['qwen3-tts']!['base'] as string[]
+    expect(base).toContain('text')
+    expect(base).toContain('design_prompt')
+    // the export-pair law rides with the contract
+    const relations = lanes!['qwen3-tts']!['relations'] as { together?: Array<{ fields: string[] }> }
+    expect(relations?.together?.[0]?.fields).toEqual(['voice_name', 'design_prompt'])
+    // the base lane adds the clone pair; the customvoice lane the persona
+    const variants = lanes!['qwen3-tts']!['variants'] as Record<string, { params?: string[] }>
+    expect(variants['base']?.params).toEqual(['ref_audio', 'ref_text'])
+    expect(variants['customvoice']?.params).toEqual(['voice'])
+  })
+
+  test('a legacy card carries NO lanes key (an absent declaration is not an empty one)', async () => {
+    const tools = await cardToolsArm() as Array<Record<string, unknown>>
+    const legacy = tools.find((t) => t['name'] === 'image-gen')
+    if (legacy === undefined) throw new Error('the image-gen manifest serves')
+    expect(legacy['lanes'], 'a card whose families declare nothing says so by absence').toBeUndefined()
+  })
+})
