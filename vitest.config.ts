@@ -118,6 +118,16 @@ const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includ
 const TMP_SWEEP = path.join('tests', 'global-sweep.ts')
 
 export default defineConfig({
+  // THE BOOT BUDGET (2026-10-10): many suites here mount the real
+  // card/model registry — a boot, not a pure function — and the 5s
+  // default was sized for the latter. Under a full-suite run (568
+  // files compiling at once) those boots overrun it and the suite
+  // reported timeouts that vanish when the same file runs alone: a
+  // wall that fails only under load is worse than no wall, because it
+  // trains the reader to re-run instead of read. 30s is the honest
+  // budget for a boot; nothing here takes 30s to fail.
+  testTimeout: 30_000,
+  hookTimeout: 30_000,
   test: {
     projects: [
       {
