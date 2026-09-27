@@ -63,6 +63,21 @@ export const DECL: ModelDecl = {
         "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
         "synth_lane": "speak",
       },
+      // THE LANE SURFACE: the persona picker + the instruct-text
+      // style control ride this lane (the 1.7B CustomVoice
+      // checkpoint's own inputs, per upstream's capability matrix).
+      // THE RELATION WORDS: an export performs nothing — a stated
+      // delivery style on a save fires nothing at compose.
+      "params": ["voice", "style_instruction"],
+      "relations": {
+        "conflicts": [
+          {
+            "a": "voice_name",
+            "b": "style_instruction",
+            "cure": "an export performs nothing — drop the delivery style to save the designed voice, then style its performances afterwards",
+          },
+        ],
+      },
       "resolver_defaults": {
         "model": "qwen3-tts-voicedesign",
         "variant": "customvoice",
@@ -90,6 +105,10 @@ export const DECL: ModelDecl = {
         "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
         "synth_lane": "design",
       },
+      // THE LANE SURFACE: the design lane adds NOTHING to the
+      // family base — its own required pair (design_prompt +
+      // voice_name, the together word above) is already in it, and
+      // it carries no persona, no reference, no delivery style.
       "resolver_defaults": {
         "model": "qwen3-tts-voicedesign",
         "variant": "voicedesign",
@@ -129,6 +148,18 @@ export const DECL: ModelDecl = {
         "variant": "base",
         "voice": null,
       },
+      // THE LANE SURFACE: the clone reference pair rides this lane
+      // only. THE RELATION WORDS: the clone needs one COMPLETE
+      // source (the 0.6B mirror's law, verbatim).
+      "params": ["ref_audio", "ref_text"],
+      "relations": {
+        "either_or": [
+          {
+            "groups": [["ref_audio", "ref_text"], ["qvoice"]],
+            "cure": "the clone lane takes the 3-second reference + its transcript, or a Voice Embedding (the qvoice mod) — complete one of them",
+          },
+        ],
+      },
       "cells": [
         {
           "quant": "native",
@@ -150,6 +181,48 @@ export const DECL: ModelDecl = {
     }
   ],
   "has_inference": true,
+  // THE PARAMETER SURFACE (2026-10-10, the fix shape 1): the family
+  // base names what every 1.7B lane accepts — the prompt, the
+  // sampling knobs, and the persona-export pair (the qvoice_save
+  // mod fires the studio exporter from any lane). style_instruction
+  // is NOT in the base: only the CustomVoice lane's checkpoint
+  // honors the instruct input (upstream reserves instruction
+  // control for the large CustomVoice checkpoint — the lane's own
+  // surface declares it below).
+  "params": [
+    "text",
+    "temperature",
+    "top_p",
+    "top_k",
+    "speed",
+    "repetition_penalty",
+    "seed",
+    "design_prompt",
+    "voice_name"
+  ],
+  // THE RELATION WORDS (family-wide — same save law as the 0.6B
+  // mirror: the export pair rides together, and an export
+  // conflicts with every performing input).
+  "relations": {
+    "together": [
+      {
+        "fields": ["voice_name", "design_prompt"],
+        "cure": "the persona export needs both halves — name the voice (the save mod's Voice name) and describe it (Design description), or drop both",
+      },
+    ],
+    "conflicts": [
+      {
+        "a": "voice_name",
+        "b": "ref_audio",
+        "cure": "an export designs a new voice — it clones no reference; drop the reference pair or drop the export",
+      },
+      {
+        "a": "voice_name",
+        "b": "qvoice",
+        "cure": "an export creates a new voice — it performs no saved persona; drop the Voice Embedding or drop the export",
+      },
+    ],
+  },
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",

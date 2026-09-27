@@ -29,11 +29,30 @@ export interface FactsReads {
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
 
+/** THE RELATION WORDS, wire twin (the judged grammar lives at
+ * @melite/contracts/laneRelations — the zero-dep floor the bench
+ * door, the form, and the law suites share; this is the derived
+ * facts row's plain-JSON mirror of the DECL's declaration). */
+export interface LaneRelationsFacts {
+  requires?: Array<{ field: string; needs: string[]; cure?: string }>
+  conflicts?: Array<{ a: string; b: string; cure?: string }>
+  together?: Array<{ fields: string[]; cure?: string }>
+  either_or?: Array<{ groups: string[][]; cure?: string }>
+}
+
 export interface ModelFacts {
   id: string
   card: string
   defaults: Record<string, string | number | boolean | null>
   lane_inputs: LaneInputsFacts
+  /** THE BASE PARAMETER SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix
+   * shape): the params every lane of this family accepts. Present
+   * only where the DECL declares one (absent ≡ the card's union
+   * table authors the fields — the legacy truth, nothing binds). */
+  params?: string[]
+  /** The family-wide relation words (judged on every lane).
+   * Present only where declared. */
+  relations?: LaneRelationsFacts
   /** Compose splice SSOT rows (card field → NodeClass.idx.input). */
   card_knobs: CardKnobFacts[]
   /** Variant matrix rows + per-cell weight coordinates. */
@@ -91,6 +110,15 @@ export interface ModelVariantFacts {
   lane_inputs?: LaneInputsFacts
   sampler_envelope?: { steps?: [number, number]; cfg?: [number, number] } | null
   defaults: Record<string, unknown>
+  /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
+   *  the params this variant accepts IN ADDITION to the family
+   *  base. Present only where the DECL declares it (absent ≡
+   *  inherits the family surface verbatim — the cascade law,
+   *  add-never-subtract). */
+  params?: string[]
+  /** This lane's relation words (judged in addition to the family's
+   *  own). Present only where declared. */
+  relations?: LaneRelationsFacts
   cells: VariantCellFacts[]
 }
 
@@ -161,6 +189,13 @@ function addressOwners(reads: FactsReads): Map<string, string> {
   return map
 }
 
+/** Deep-clone a relation declaration into the derived row's own
+ *  data (the rows are frozen snapshots — never an alias into the
+ *  registry's live DECL objects). Plain-JSON shapes only. */
+function structuredCloneRelations(raw: unknown): LaneRelationsFacts {
+  return JSON.parse(JSON.stringify(raw)) as LaneRelationsFacts
+}
+
 function artifactBasename(cell: { artifact?: { source_url?: string; filename?: string } }): string {
   const a = cell.artifact
   if (a === undefined || a === null) return ''
@@ -213,6 +248,14 @@ function deriveRow(
         cfg?: [number, number];
       } | null),
       defaults: (v.wire_defaults ?? {}) as Record<string, unknown>,
+      // THE LANE SURFACE + RELATIONS (2026-10-10, the fix shape):
+      // carried VERBATIM from the DECL variant — present only where
+      // declared (the absent-equals-empty law; deriveRow never
+      // invents a surface).
+      ...(Array.isArray(v.params)
+        ? { params: [...(v.params as string[])] } : {}),
+      ...(v.relations !== undefined && v.relations !== null
+        ? { relations: structuredCloneRelations(v.relations) } : {}),
       cells: ((v.cells ?? []) as Array<Record<string, unknown>>).map((c) => ({
         quant: c.quant as string,
         label: c.label as string,
@@ -232,6 +275,12 @@ function deriveRow(
     variants,
     variant_groups: ((d.variant_groups ?? []) as VariantGroupFacts[]),
     outputs,
+  }
+  // THE BASE SURFACE + FAMILY RELATIONS (2026-10-10, the fix
+  // shape): verbatim, present-only-where-declared.
+  if (Array.isArray(d.params)) row.params = [...(d.params as string[])]
+  if (d.relations !== undefined && d.relations !== null) {
+    row.relations = structuredCloneRelations(d.relations)
   }
   const mods = d.mods as string[] | undefined
   if (mods !== undefined && mods.length > 0) row.mods = mods

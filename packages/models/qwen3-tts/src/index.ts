@@ -34,6 +34,51 @@ export const DECL: ModelDecl = {
     "variant": "customvoice"
   },
   "genre": "audio",
+  // THE LANE DECLARATION (2026-10-10, the YOU_ARE_A_LIAR fix
+  // shapes 1+2: the model is the author of what it accepts — no
+  // per-model field table in the card, no visible_when guard list).
+  // `params` is the parameter SURFACE every lane of this family
+  // accepts; each variant's `params` add to it (add-never-subtract);
+  // `relations` are the four words, judged at bench-write and in the
+  // form, in the field's own voice.
+  "params": [
+    "text",
+    "temperature",
+    "top_p",
+    "top_k",
+    "speed",
+    "repetition_penalty",
+    "seed",
+    "design_prompt",
+    "voice_name",
+  ],
+  "relations": {
+    // THE EXPORT PAIR (incident A, operator 2026-10-10): the studio
+    // exporter fires only when the persona description and the save
+    // mod's name BOTH ride — a design_prompt without voice_name is
+    // not an authoring state, it is the exact state the run refused
+    // after the form happily built it.
+    "together": [
+      {
+        "fields": ["voice_name", "design_prompt"],
+        "cure": "the persona export needs both halves — name the voice and describe it, or drop both",
+      },
+    ],
+    // an export performs nothing beside a clone: the exporter runs
+    // the DESIGN lane; a reference clone runs the Base table.
+    "conflicts": [
+      {
+        "a": "voice_name",
+        "b": "ref_audio",
+        "cure": "a reference clone performs the text — the exporter clones no reference (drop the export or drop the reference)",
+      },
+      {
+        "a": "voice_name",
+        "b": "qvoice",
+        "cure": "a saved persona performs the text — the exporter performs nothing beside it (drop the export or drop the .qvoice)",
+      },
+    ],
+  },
   // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
   // 2026-09-23): the load pack performs a saved persona on every
   // lane; the save pack fires the studio exporter from any lane
@@ -50,6 +95,9 @@ export const DECL: ModelDecl = {
       "description": "preset personas over the target timbre",
       "group": "Variant",
       "route": "qwen3-tts",
+      // the persona picker is THIS lane's own input (the 0.6B has no
+      // instruction control — the 1.7B CustomVoice adds style_instruction)
+      "params": ["voice"],
       "cells": [
         {
           "quant": "native",
@@ -64,6 +112,21 @@ export const DECL: ModelDecl = {
       "description": "voice clone from a 3-second reference — no persona, no instruction control",
       "group": "Variant",
       "route": "qwen3-tts-base",
+      // THE CLONE LANE'S OWN INPUTS (the 0.6B: reference in, the
+      // speaker's voice out — no persona, no instruction control)
+      "params": ["ref_audio", "ref_text"],
+      "relations": {
+        // ONE COMPLETE SOURCE: the reference PAIR (audio + its
+        // transcript) or a saved .qvoice persona. Armed only when a
+        // member is stated — a blank authoring lane is in progress,
+        // never a write refusal.
+        "either_or": [
+          {
+            "groups": [["ref_audio", "ref_text"], ["qvoice"]],
+            "cure": "state one complete source: the reference PAIR (audio + transcript) or a .qvoice persona",
+          },
+        ],
+      },
       // THE CLONE INTERCEPT (the fold: the dead family's lane truth
       // rides the variant — merged base ← variant at the derived
       // read, byte-identical graphs): the clone checkpoint address

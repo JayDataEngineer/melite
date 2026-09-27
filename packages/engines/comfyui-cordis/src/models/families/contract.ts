@@ -170,8 +170,105 @@ export interface VariantRow {
    *  model_path; merged base ← variant at the derived read). */
   lane_inputs?: Record<string, unknown>;
   wire_defaults?: Record<string, unknown> | null;
+  /** THE LANE SURFACE (fix shape 1): the params this variant
+   *  accepts IN ADDITION to the family base (the cascade law —
+   *  later layers add, never subtract). Absent = the variant adds
+   *  nothing (it inherits the family surface verbatim). A variant's
+   *  field set IS its declaration: the form hides what the lane
+   *  does not declare, and the bench door refuses a stated field
+   *  outside it. */
+  params?: string[];
+  /** This lane's relation words (judged in ADDITION to the family's
+   *  — both layers fire). Absent ≡ none. */
+  relations?: ParamRelationWords;
   cells: CellRow[];
 }
+
+// ── THE PARAMETER SURFACE + THE RELATION WORDS (2026-10-10, the
+// YOU_ARE_A_LIAR fix shape 1: "ModelDecl gains a per-variant
+// parameter surface and relation words — the model becomes the
+// author of what it accepts") ─────────────────────────────────────
+//
+// Before these members the DECL had NO organ for its parameter
+// surface: a model could declare variants, weights, and lanes, but
+// never WHAT IT ACCEPTS — the field truth lived only in each
+// card's hand-authored union table, sliced at render time by
+// visible_when equality strings, and nothing anywhere could say
+// "this field requires that one." The words live at
+// @melite/contracts/laneRelations (the zero-dep floor — the bench
+// door, the form, and the law suites all judge the SAME shape);
+// this grammar is the DECL author's spelling of it.
+
+/** One requires row: `field` fires only when every `needs` member
+ *  is stated (design_prompt requires voice_name). `cure` rides the
+ *  refusal — the sentence that names the cure. */
+export interface ParamRequiresRow {
+  field: string;
+  needs: string[];
+  cure?: string;
+}
+
+/** One conflicts row: the two fields cannot both be stated. */
+export interface ParamConflictsRow {
+  a: string;
+  b: string;
+  cure?: string;
+}
+
+/** One together row: the all-or-nothing group (voice_name +
+ *  design_prompt — the export needs the pair). */
+export interface ParamTogetherRow {
+  fields: string[];
+  cure?: string;
+}
+
+/** One either_or row: at least one FULL group must ride (the clone
+ *  lane: ref_audio + ref_text, or a .qvoice). Armed only when a
+ *  member is stated — a blank lane is authoring-in-progress. */
+export interface ParamEitherOrRow {
+  groups: string[][];
+  cure?: string;
+}
+
+/** The four relation words (the wire twin of LaneRelations — the
+ *  judged shape lives at the contracts floor, one spelling). */
+export interface ParamRelationWords {
+  requires?: ParamRequiresRow[];
+  conflicts?: ParamConflictsRow[];
+  together?: ParamTogetherRow[];
+  either_or?: ParamEitherOrRow[];
+}
+
+const FIELD_NAME_RE = /^[a-z0-9_]+$/;
+
+export const ParamRequiresRow: z<ParamRequiresRow> = z.object({
+  field: z.string().pattern(FIELD_NAME_RE),
+  needs: z.array(z.string().pattern(FIELD_NAME_RE)).min(1),
+  cure: z.string().default(""),
+});
+
+export const ParamConflictsRow: z<ParamConflictsRow> = z.object({
+  a: z.string().pattern(FIELD_NAME_RE),
+  b: z.string().pattern(FIELD_NAME_RE),
+  cure: z.string().default(""),
+});
+
+export const ParamTogetherRow: z<ParamTogetherRow> = z.object({
+  fields: z.array(z.string().pattern(FIELD_NAME_RE)).min(2),
+  cure: z.string().default(""),
+});
+
+export const ParamEitherOrRow: z<ParamEitherOrRow> = z.object({
+  groups: z.array(z.array(z.string().pattern(FIELD_NAME_RE)).min(1)).min(2),
+  cure: z.string().default(""),
+});
+
+export const ParamRelationWords: z<ParamRelationWords> = z.object({
+  requires: z.array(ParamRequiresRow),
+  conflicts: z.array(ParamConflictsRow),
+  together: z.array(ParamTogetherRow),
+  either_or: z.array(ParamEitherOrRow),
+});
 
 export const VariantRow: z<VariantRow> = z.object({
   id: z.string().pattern(SAFE_ID_RE),
@@ -190,6 +287,8 @@ export const VariantRow: z<VariantRow> = z.object({
   }),
   lane_inputs: z.dict(z.any()).default({}),
   wire_defaults: z.union([z.dict(z.any()), z.const(null)]),
+  params: z.array(z.string().pattern(FIELD_NAME_RE)),
+  relations: ParamRelationWords,
   cells: z.array(CellRow).default([]),
 });
 
@@ -199,6 +298,7 @@ export interface VariantGroupRow {
   tooltip?: string;
   default?: string;
 }
+
 
 export const VariantGroupRow: z<VariantGroupRow> = z.object({
   id: z.string(),
@@ -289,6 +389,16 @@ export const ModelDecl = z.object({
   canvas_default: z.boolean(),
   character_presets: z.array(z.dict(z.any())),
   lane_inputs: z.dict(z.any()).default({}),
+  /** The family's BASE parameter surface (fix shape 1): the params
+   *  EVERY lane of this family accepts. Absent = the family
+   *  declares no surface (the legacy truth: the card's union table
+   *  authors the fields, nothing binds the two). Declaring one
+   *  binds the card to it (the claim law: the card may claim
+   *  nothing the model did not declare). */
+  params: z.array(z.string().pattern(FIELD_NAME_RE)),
+  /** The family-wide relation words (judged on EVERY lane, in
+   *  addition to each variant's own). */
+  relations: ParamRelationWords,
   has_agent: z.boolean(),
   has_inference: z.boolean(),
   has_rubric: z.boolean(),
@@ -346,6 +456,15 @@ export interface ModelDecl {
   /** Per-family graph-variance rows (z-image's AuraFlow sampling
    *  shift, qwen-3 encoder — the lane's own input truth). */
   lane_inputs?: Record<string, unknown>;
+  /** THE BASE PARAMETER SURFACE (fix shape 1): the params every
+   *  lane of this family accepts. Absent = the family declares no
+   *  surface (the card's union table stays the field truth; the
+   *  claim law binds nothing). Declared, it is the author: the
+   *  form's lane filter and the bench door's surface judgment both
+   *  read it (family base ∪ variant additions). */
+  params?: string[];
+  /** The family-wide relation words (judged on every lane). */
+  relations?: ParamRelationWords;
   has_agent?: boolean;
   has_inference?: boolean;
   has_rubric?: boolean;

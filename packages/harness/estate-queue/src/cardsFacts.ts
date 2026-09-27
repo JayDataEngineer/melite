@@ -5,6 +5,7 @@
 import { join } from "node:path";
 import { loadCardDefs, loadFacts, resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-cordis";
+import type { LaneRelations } from "@melite/contracts/laneRelations";
 
 // ── frozen data paths (facts + pin snapshot) ───────────────────────
 // (Stroke 2a, DSH-AS-LANGUAGE LAW: the module-level caches that used
@@ -31,6 +32,13 @@ export interface VariantRow {
     steps?: readonly [number, number];
     cfg?: readonly [number, number];
   } | null;
+  /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
+   *  this variant's accepted params IN ADDITION to the family base.
+   *  Present only where the DECL declares it. */
+  readonly params?: readonly string[];
+  /** This lane's relation words (judged in addition to the family's
+   *  own). Present only where declared. */
+  readonly relations?: LaneRelations;
   readonly cells: VariantCellRow[];
 }
 
@@ -38,6 +46,15 @@ export interface ModelFactsRow {
   readonly card: string;
   readonly defaults: Record<string, unknown>;
   readonly variants: VariantRow[];
+  /** THE BASE PARAMETER SURFACE (2026-10-10, the fix shape): the
+   *  params every lane of this family accepts. Present only where
+   *  the DECL declares one — absent ≡ the card's union table
+   *  authors the fields (the legacy truth; the lane judge and the
+   *  claim law bind nothing). */
+  readonly params?: readonly string[];
+  /** The family-wide relation words (judged on every lane).
+   *  Present only where declared. */
+  readonly relations?: LaneRelations;
   /** The assembly-studio declaration (hand-owned model-facts.json
    *  carries it; the projection unions its writes into admits). */
   readonly studio?: { readonly writes?: readonly unknown[] };

@@ -1,6 +1,7 @@
 /** @melite/contracts — types + frozen vocabularies. NO render, NO fetch.
  *  The floor every other @melite package (and every plugin) stands on. */
 export * from "./extraKeys"
+export * from "./laneRelations"
 export * from "./FlowTypes"
 export * from "./benchResult"
 export * from "./browserStorage"

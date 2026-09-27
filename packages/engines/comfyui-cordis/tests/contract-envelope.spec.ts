@@ -134,7 +134,8 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
   })
 
   test('THE DECL LAYER: the family row owns width/height 1024 (the layered default — getModel reads the same DECL the serve layers)', async () => {
-    const { getModel } = await import('../src/models/models.ts')
+    const { getModel, cascadeInit } = await import('../src/models/models.ts')
+    await cascadeInit
     const decl = getModel('qwen-img-edit-21') as { defaults?: Record<string, unknown> }
     expect(decl.defaults?.['width']).toBe(1024)
     expect(decl.defaults?.['height']).toBe(1024)
