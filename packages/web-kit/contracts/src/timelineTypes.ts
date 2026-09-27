@@ -511,3 +511,46 @@ export const DEFAULT_LIPSYNC_FIELDS: Pick<TimelineSegment, 'lipSyncedVideoUrl' |
  lipSyncedVideoUrl: null,
  lipSyncPreferOriginal: false,
 }
+
+/**
+ * THE EDITOR-ONLY SEGMENT KEYS (2026-10-10, the census's C5).
+ *
+ * `SegmentParams` is a RICHER document than the card's params: it
+ * carries the segment's own geometry (`frames`, `fps`), the motion
+ * track, the guide/relay controls, the upscale and retake settings —
+ * most of which never ride a run at all. Until this list existed,
+ * "which editor keys reach the card" was answerable only by reading
+ * three modules, and a key in NEITHER the card's surface nor this
+ * list was silently lost on the way to a run.
+ *
+ * The law is not "every editor key is a card param" — it is "every
+ * editor key is CLASSIFIED": a card knob, a bridged legacy name, a
+ * top-level card field, or one of these editor-only keys. The
+ * timeline-vocabularies wall fails the moment a key is none of them.
+ */
+export const EDITOR_ONLY_SEGMENT_KEYS: ReadonlySet<string> = new Set([
+  // the segment's own geometry
+  "frames", "fps", "resizeMethod", "order",
+  // the motion track (its own lane in the editor; a run receives the
+  // composed motion, never these controls)
+  "motionVideoB64", "motionStrength", "motionTrimStart", "motionTrimEnd",
+  "motionOffset", "resampleMode", "scaleBy", "upscaleMethod", "useTiledEncode",
+  "tileSize", "tileOverlap", "imageAttentionStrength", "flfMode", "profile",
+  // the guide/relay/teacache/progressive controls — editor-side
+  // conditioning, composed into the run's plan rather than sent
+  "guideStrength", "guideCrf", "relayEpsilon", "teacacheEnabled",
+  "teacacheThreshold", "progressiveEnabled", "progressiveLevels",
+  "progressiveDelta", "progressiveMode",
+  // the retake slice and the mod bag
+  "retakePrompt", "retakeStartFrame", "retakeEndFrame", "loras",
+  // the model the segment was authored against (the card's model
+  // field is the run's truth)
+  "model",
+  // the editor's OWN spelling of two concepts the card names
+  // differently (`samplingSteps`→`steps`, `guideScale`→`sla_sparsity`).
+  // The studio authors the CARD's names in a call's knobs; these
+  // live in the editor's segment model and are never sent — so they
+  // are editor-only BY SPELLING, and the bridge that translates the
+  // retired snake_case spellings does not apply to them.
+  "samplingSteps", "guideScale", "motionAmplitude",
+]);
