@@ -1,3 +1,4 @@
+import { servableLeaf } from "@melite/contracts/mediaKinds"
 // runsSourceEcho.ts — THE SOURCE-ECHO LAW (operator 2026-09-23):
 // every generation run carries history pointing at the files that
 // created it, and a break in that chain refuses LOUD — never silent.
@@ -44,10 +45,6 @@ export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 
 /** The run-dir basename grammar (the mint law — media index.ts). */
 const RUN_ID = RUN_ID_RE;
-
-/** The servable-media law's one underscore exception (media
- *  index.ts relServable twin): run STATE files are not sources. */
-const UNDERSCORE_SERVABLE: ReadonlySet<string> = new Set(["_poster.jpg"]);
 
 /** One confined rel segment: not empty, not dot/dotdot
  *  (traversal), no NUL — the server's segmentOk twin. */
@@ -190,7 +187,7 @@ export function parseSourceRef(ref: string): ParsedSource {
   // run STATE files are not sources (the server 404s them) —
   // _poster.jpg excepted (a legit thumbnail source).
   const base: string = relParts[relParts.length - 1] as string;
-  if (base.startsWith("_") && !UNDERSCORE_SERVABLE.has(base)) {
+  if (base.startsWith("_") && !servableLeaf(base)) {
     throw new Error(
       "media source is a run-state file, not servable media: " +
         JSON.stringify(ref),

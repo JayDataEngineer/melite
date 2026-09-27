@@ -1,3 +1,4 @@
+import { servableLeaf } from "@melite/contracts/mediaKinds"
 // runsList.ts — the runs LIST surface (REBUILD-7, gateway kill):
 // the dead runs door's list arm (GET /v1/flows/runs, the
 // editor_runs.py restore port) re-homed verbatim into the queue
@@ -166,7 +167,7 @@ export function mediaCandidates(runDir: string): MediaCand[] {
   names.sort(byteLess);
   const subs: string[] = [];
   for (const name of names) {
-    if (name.startsWith("_")) continue;
+    if (!servableLeaf(name)) continue; // the estate's own servable law (the poster IS servable)
     const full: string = join(runDir, name);
     if (isDir(full)) subs.push(name);
     else cands.push({ rel: name, full });
@@ -181,7 +182,7 @@ export function mediaCandidates(runDir: string): MediaCand[] {
     }
     inner.sort(byteLess);
     for (const name of inner) {
-      if (name.startsWith("_")) continue;
+      if (!servableLeaf(name)) continue; // the estate's own servable law (the poster IS servable)
       const full: string = join(runDir, sub, name);
       if (isDir(full)) continue;
       cands.push({ rel: sub + "/" + name, full });
