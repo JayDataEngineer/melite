@@ -60,6 +60,29 @@ export interface LaneEitherOrRow {
   readonly cure?: string;
 }
 
+/** One at_most_one row: AT MOST one member of a slot family may be
+ *  stated (the design audit's Q2 — the sharpest gap in the
+ *  vocabulary: `either_or` says "one of these SOURCES, at least
+ *  one", so a six-field slot family read as "any one of six sources"
+ *  and let two ride together, which no card meant. The word is
+ *  additive and purely local: the judge is a set intersection). */
+export interface LaneAtMostOneRow {
+  readonly fields: readonly string[];
+  readonly cure?: string;
+}
+
+/** One required row: these fields must be STATED on this lane
+ *  (the design audit's Q2 — "prompt is required" was unutterable:
+ *  `requires` demands a SIBLING, and blank-always-admits is the
+ *  authoring-in-progress law. This word is the one exception to that
+ *  law, and only for the fields it names: a declaration that means
+ *  "required" says so here, and every other field keeps its
+ *  tolerance). */
+export interface LaneRequiredRow {
+  readonly fields: readonly string[];
+  readonly cure?: string;
+}
+
 /** The four relation words — the DECL's relation declaration (the
  *  wire shape; the ModelDecl grammar in comfyui-cordis authors
  *  exactly this). Absent ≡ none (the absent-equals-empty law). */
@@ -68,6 +91,8 @@ export interface LaneRelations {
   readonly conflicts?: readonly LaneConflictsRow[];
   readonly together?: readonly LaneTogetherRow[];
   readonly either_or?: readonly LaneEitherOrRow[];
+  readonly at_most_one?: readonly LaneAtMostOneRow[];
+  readonly required?: readonly LaneRequiredRow[];
 }
 
 /** One violation — the refusal in the field's voice: the field
@@ -178,6 +203,42 @@ export function judgeLaneRelations(
           (row.cure !== undefined && row.cure !== ''
             ? ' — ' + row.cure
             : ' — state one complete source, or drop the stated half'),
+      })
+    }
+    // AT MOST ONE (the design audit's Q2's sharpest gap): a slot
+    // family — six interchangeable fields where two riding together is
+    // a contradiction the card's own compose cannot express. The judge
+    // is a set intersection; a malformed row judges nothing, as above.
+    for (const row of rel.at_most_one ?? []) {
+      if (row === null || typeof row !== 'object') continue
+      const fields = Array.isArray(row.fields) ? row.fields.filter((f): f is string => typeof f === 'string') : []
+      if (fields.length < 2) continue
+      const present = fields.filter(stated)
+      if (present.length <= 1) continue
+      out.push({
+        field: present[1] as string,
+        message:
+          'this lane takes at most one of ' +
+          fields.map((f) => quote(f)).join(', ') +
+          ' — the state carries ' + present.length + ' (' + present.map((f) => quote(f)).join(', ') + ')' +
+          (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ' — one slot, one value'),
+      })
+    }
+    // REQUIRED (the design audit's Q2): the ONE exception to
+    // blank-always-admits. A declaration that means "required" says so
+    // here; every other field keeps the authoring-in-progress
+    // tolerance, which is why this is a word and not a flag.
+    for (const row of rel.required ?? []) {
+      if (row === null || typeof row !== 'object') continue
+      const fields = Array.isArray(row.fields) ? row.fields.filter((f): f is string => typeof f === 'string') : []
+      const missing = fields.filter((f) => !stated(f))
+      if (missing.length === 0) continue
+      out.push({
+        field: missing[0] as string,
+        message:
+          'this lane requires ' + fields.map((f) => quote(f)).join(' and ') +
+          ' — ' + missing.map((f) => quote(f)).join(', ') + ' is not stated' +
+          (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ' — state it, or use a lane that does not need it'),
       })
     }
   }

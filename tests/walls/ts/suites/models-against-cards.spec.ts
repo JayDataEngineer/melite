@@ -16,6 +16,22 @@ import "../../../helpers/boot-models.ts";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts';
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+
+/** Which non-grammar files NAME a token (the readers census — the
+ *  design audit's Q5: a declarer nobody reads is a claim nothing
+ *  keeps). */
+function execGrep(token: string, roots: string[], skip: readonly string[] = []): string[] {
+  try {
+    const out = execFileSync("grep", ["-rl", token, ...roots, "--include=*.ts", "--include=*.tsx"], {
+      encoding: "utf8",
+    });
+    return out.split("\n").filter((f) => f !== "" && !skip.some((s) => f.includes(s)));
+  } catch (e) {
+    const out = (e as { stdout?: string }).stdout ?? "";
+    return out.split("\n").filter((f) => f !== "" && !skip.some((s) => f.includes(s)));
+  }
+}
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
@@ -487,5 +503,55 @@ describe("curated vocabulary subsets derive from the engine SSOT", () => {
       src.includes("SAMPLER_OPTIONS.filter"),
       "the card's sampler vocabulary DERIVES from the SSOT (a retyped list is a second SSOT)",
     );
+  });
+});
+
+// ── THE DECLARATION MEMBERS THAT CLAIM SOMETHING (2026-10-10, the
+// design audit's Q5: `accepts` is declared and read only by the
+// catalog; `base_body` has one declarer and no reader; `canvas_default`
+// is read with `find`, so two declarers means first-match-wins with no
+// wall) ────────────────────────────────────────────────────────────
+describe("the DECLARATION claims are declared AND consumed", () => {
+  it("canvas_default has at most ONE declarer (the reader is a find)", async () => {
+    await loadCardDefs();
+    const declarers: string[] = [];
+    for (const fam of registryIds()) {
+      const decl = registryModel(fam) as { canvas_default?: boolean };
+      if (decl?.canvas_default === true) declarers.push(fam);
+    }
+    assert.ok(declarers.length <= 1,
+      "canvas_default is READ by a find (first match wins), so two declarers mean an undeclared preference: " +
+      declarers.join(", "));
+  });
+
+  it("base_body has a reader (a declarer nobody reads is a claim nothing keeps)", () => {
+    const readers = execGrep("base_body", ["packages/"], [
+      "models/families/contract.ts", // the grammar
+      ".spec.ts",
+      "schema.d.ts",
+    ]);
+    assert.ok(readers.length > 0,
+      "base_body is declared by a family but read by NOTHING outside the grammar — " +
+      "either a consumer is owed or the member should go (the design audit's Q5)");
+  });
+
+  it("every provision names a file its lane can look for (the fetch-hint name match)", async () => {
+    // the audit: lanePresenceMiss names the file it could not find; a
+    // provisions row whose name differs leaves the download hint
+    // silently dropped
+    await loadCardDefs();
+    const facts: Record<string, { provisions?: Array<{ name?: string }> }> = {};
+    for (const fam of registryIds()) {
+      facts[fam] = registryModel(fam) as { provisions?: Array<{ name?: string }> };
+    }
+    const mismatches: string[] = [];
+    for (const [addr, row] of Object.entries(facts)) {
+      for (const p of row.provisions ?? []) {
+        if (typeof p.name !== "string" || p.name === "") {
+          mismatches.push(addr + ": a provision names no file");
+        }
+      }
+    }
+    assert.deepEqual(mismatches, []);
   });
 });

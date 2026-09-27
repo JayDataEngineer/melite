@@ -214,13 +214,31 @@ export interface ParamEitherOrRow {
   cure?: string;
 }
 
-/** The four relation words (the wire twin of LaneRelations — the
- *  judged shape lives at the contracts floor, one spelling). */
+/** One at_most_one row: a slot family — at most one member stated. */
+export interface ParamAtMostOneRow {
+  fields: string[];
+  cure?: string;
+}
+
+/** One required row: these fields must be stated on the lane. */
+export interface ParamRequiredRow {
+  fields: string[];
+  cure?: string;
+}
+
+/** The relation words (the wire twin of LaneRelations — the judged
+ *  shape lives at the contracts floor, one spelling). `at_most_one`
+ *  and `required` landed with the design audit of 2026-10-10: the
+ *  vocabulary could not say "one of these six slots" or "this lane
+ *  needs a prompt", and the migration was about to harden that
+ *  surface into twenty-two families. */
 export interface ParamRelationWords {
   requires?: ParamRequiresRow[];
   conflicts?: ParamConflictsRow[];
   together?: ParamTogetherRow[];
   either_or?: ParamEitherOrRow[];
+  at_most_one?: ParamAtMostOneRow[];
+  required?: ParamRequiredRow[];
 }
 
 const FIELD_NAME_RE = /^[a-z0-9_]+$/;
@@ -247,11 +265,24 @@ export const ParamEitherOrRow: z<ParamEitherOrRow> = z.object({
   cure: z.string().default(""),
 });
 
+export const ParamAtMostOneRow: z<ParamAtMostOneRow> = z.object({
+  // a slot family needs at least two members to be a choice
+  fields: z.array(z.string().pattern(FIELD_NAME_RE)).min(2),
+  cure: z.string().default(""),
+});
+
+export const ParamRequiredRow: z<ParamRequiredRow> = z.object({
+  fields: z.array(z.string().pattern(FIELD_NAME_RE)).min(1),
+  cure: z.string().default(""),
+});
+
 export const ParamRelationWords: z<ParamRelationWords> = z.object({
   requires: z.array(ParamRequiresRow),
   conflicts: z.array(ParamConflictsRow),
   together: z.array(ParamTogetherRow),
   either_or: z.array(ParamEitherOrRow),
+  at_most_one: z.array(ParamAtMostOneRow).required(false),
+  required: z.array(ParamRequiredRow).required(false),
 });
 
 export const VariantRow: z<VariantRow> = z.object({

@@ -242,7 +242,16 @@ export function liftCardParams(body: Record<string, unknown>): Record<string, un
     // still carrying a `params` key. Two lifts of one shape is how
     // the bench and the compose disagreed about what a card sees.
     if (k === "params" && typeof v === "object" && v !== null && !Array.isArray(v)) {
-      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) params[ik] = iv;
+      // SIBLINGS WIN — the stanza fills what they leave out
+      // (2026-10-10, the work audit's R3: this unwrap wrote the stanza
+      // LAST, so `{text: "sibling", params: {text: "inner"}}` resolved
+      // by key ORDER — the inner text won on one lift and the sibling
+      // on the other. liftStanza is explicit that siblings override the
+      // stanza; the "ONE SPELLING" claim is only true once this
+      // matches it.)
+      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) {
+        if (!(ik in params)) params[ik] = iv;
+      }
       continue;
     }
     params[k] = v;

@@ -211,9 +211,22 @@ export function normalizeBenchStage(
   // naming the row's own card is the era's family-less compose
   // residue; today's admission refuses it as a board request. A
   // model naming a REAL family rides untouched.
+  //
+  // "UNTOUCHED" IS NOT VACUOUS (2026-10-10, the work audit's R5): the
+  // `anny` card BOARDS the `anny` family, so a row stating
+  // `model: 'anny'` was stripped — and the strip made the row
+  // model-LESS, which is why the undeclared-key gate (a seat that
+  // needs no family) had to be lifted out of the model-less tolerance.
+  // The strip now asks the only question that matters: does the model
+  // name a REAL family? If the card's own id is also a family, the
+  // model rides — the operator stated it, and the read-back shows it.
+  // (No card names a family equal to its own id other than anny today;
+  // the wall pins that list.)
   const rowCard = out["card"];
   if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
-    delete healed["model"];
+    if (!SELF_NAMED_FAMILIES.has(rowCard)) {
+      delete healed["model"];
+    }
   }
   out["params"] = healed;
   // THE OUTPUTS LAW IS THE CARD-PORTS LAW (2026-10-10, the audit's
@@ -291,3 +304,18 @@ export const RUN_ID_RE: RegExp = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 export function runIdOk(id: string): boolean {
   return RUN_ID_RE.test(id);
 }
+
+/**
+ * THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
+ * audit's R5). `anny` is the one: the card boards the `anny` family,
+ * and its compose declares `requiresModel: false` (its weights ride
+ * provisions, not a model choice). A row stating `model: 'anny'` is a
+ * real boarding, not the era's family-less compose residue — so the
+ * self-naming strip leaves it alone, the row is judged with its model
+ * present, and the read-back shows what the operator wrote.
+ *
+ * A new card whose id is also a family id must be ADDED here, and the
+ * self-naming-strip wall fails when a card's own id is a family in the
+ * facts file but is missing from this list.
+ */
+export const SELF_NAMED_FAMILIES: ReadonlySet<string> = new Set(["anny"]);

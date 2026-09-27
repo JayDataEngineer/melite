@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { SELF_NAMED_FAMILIES } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { assertSchemaAcceptsMinimalRows } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -198,5 +199,68 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+});
+
+// ── THE LAWS THE WORK AND DESIGN AUDITS ADDED (2026-10-10) ─────────
+// These back the fixes that came out of the two adversarial audits;
+// each is a rule the tree would otherwise be free to break again.
+describe("THE AUDIT-ADDED LAWS", () => {
+  it("RULE 4b · no card declares a real `params` KNOB (the stanza unwrap's safety)", () => {
+    // liftCardParams unwraps a `params` stanza (the run body's shape)
+    // and liftStanza merges it. If any card ever declares a field
+    // named `params`, the unwrap would dissolve it. No card does today
+    // — and this is what makes that true rather than assumed.
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      if (!/\/card\.ts$/.test(f)) continue;
+      const code = codeOf(read(f));
+      // a schema member named params: (not a description, not a
+      // hand-built object key in unrelated logic)
+      if (/^\s*params:\s*z\./m.test(code) || /["']params["']\s*:\s*(?:z\.|bag\()/m.test(code)) {
+        offenders.push(f + " — declares a `params` field; the stanza unwrap would dissolve it");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 4c · every self-named family is in the contract's list", () => {
+    // a card whose id is also a family id must appear in
+    // SELF_NAMED_FAMILIES, or the self-naming strip erases a real
+    // boarding and the row silently becomes model-less
+    const list = SELF_NAMED_FAMILIES;
+    const facts = read("packages/engines/comfyui-card-kit/src/facts.ts");
+    // the derivation carries each row's own card; the families are the
+    // roster keys — a card id that is ALSO a family key is the case
+    const cardIds = new Set([...facts.matchAll(/card:\s*["']([a-z0-9_-]+)["']/g)].map((m) => m[1]!));
+    const families = new Set([...facts.matchAll(/modelId:\s*["']([a-z0-9_-]+)["']/g)].map((m) => m[1]!));
+    const both = [...cardIds].filter((id) => families.has(id));
+    for (const id of both) {
+      expect(list.has(id), `card '${id}' is also a family id and must be in SELF_NAMED_FAMILIES`).toBe(true);
+    }
+  });
+
+  it("RULE 9b · the blank law is the CONTRACT'S (no seat hand-rolls one)", () => {
+    // the design audit's Q4: three seats spelled "blank" and disagreed
+    // about 0, false, {} and [] — one of which meant `top_k: 0` ("off")
+    // read as absent in one seat and present in another
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      if (f.includes("laneRelations.ts")) continue;
+      if (/const blank\s*=\s*\(v:\s*unknown\)|function blank\(/.test(code)
+        || /const isBlank\s*=\s*\(v:\s*unknown\)/.test(code)) {
+        offenders.push(f + " — a hand-rolled blank; import laneBlank from @melite/contracts/laneRelations");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 7b · the main declaration's schema is CHECKED against its interface", () => {
+    // the design audit's Q1: ModelDecl was the one row left
+    // un-annotated, with two walls existing only to police the pair
+    const contract = read("packages/engines/comfyui-cordis/src/models/families/contract.ts");
+    expect(contract).toContain("export const ModelDecl: z<ModelDecl>");
+    expect(contract).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
   });
 });
