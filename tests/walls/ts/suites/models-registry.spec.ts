@@ -52,15 +52,51 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
   });
 
   it("every served row carries its source (the catalog contract — the card plane serves forms)", (): void => {
+    // THE ALWAYS-TRUE DISJUNCTION DIED (the walls audit's row 3,
+    // 2026-10-10): the old arm read `file === "" || file === null
+    // || typeof file === "string"` — every possible value of a
+    // `?? ""` default passes that, and the if-guard skipped the
+    // source-less rows entirely: the arm had no refusing state. The
+    // contract, pinned for real: a row that DOWNLOADS (repo_id
+    // stated) names its file; a row that serves no source says so
+    // with NO source object at all — never a half row.
+    // (The emitter always serves a source object: `type` is its
+    // spine, and repo_id/filename ride only for the rows that
+    // DOWNLOAD — anima, the HF-provisioned family, declares a type
+    // with no repo. The old if-guard skipped exactly those rows and
+    // asserted a tautology on the rest.)
+    let downloads = 0;
+    let typed = 0;
     for (const row of Object.values(modelCatalog())) {
-      // THE ATOM DECLARES NO CALLERS: no form key rides the served
-      // row (the callers' boarded lists own the relation); every
-      // route that downloads carries repo (model) + filename (quant)
-      const file = row.source?.filename ?? "";
-      if ((row.source?.repo_id ?? "") !== "") {
-        assert.ok(file === "" || file === null || typeof file === "string", `${row.id} source malformed`);
+      const src = row.source as { type?: unknown; repo_id?: unknown; filename?: unknown } | undefined | null;
+      if (src === undefined || src === null) continue;
+      assert.equal(typeof src.type, "string",
+        `${row.id} serves a source object with no type — a row that names no origin`);
+      typed++;
+      if (typeof src.repo_id === "string" && src.repo_id !== "") {
+        if (typeof src.filename === "string" && src.filename !== "") {
+          downloads++;
+        }
+        // A REPO WITHOUT A FILE IS A PACK, not a half download: the
+        // emitter's wire carries type/repo_id/filename only, and
+        // anny's own vendored poser chain names its repo with no
+        // file (the pack is in the tree, not in a hub). What would
+        // be a half row is a repo that is neither — the emitter
+        // cannot produce that, and the counts below say so.
+      } else {
+        assert.equal(src.filename, undefined,
+          `${row.id} names a file without naming a repo — the file belongs to nobody`);
       }
     }
+    // the arm must SEE both halves or it iterates nothing. The
+    // counts are pinned to the truth, not a round floor: the FAMILY
+    // rows mostly name a repo (or a vendored pack) while the FILE
+    // downloads ride the variant CELLS' artifacts — two family rows
+    // carry repo+filename today. An emptied source column trips
+    // both.
+    assert.ok(typed > 30, `typed sources serve (${String(typed)} seen — the catalog emptied?)`);
+    assert.equal(downloads, 2,
+      `the repo+filename rows are pinned (${String(downloads)} today — a new family download is a deliberate edit)`);
   });
 
   it("the cascade merge: family defaults ← variant stamps (krea-2 raw)", (): void => {

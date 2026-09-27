@@ -342,6 +342,11 @@ export interface VariantRow {
   route: string
   hint?: string | null
   engine?: string | null
+  /** THE VARIANT'S SAMPLER DOMAIN (2026-10-10, the DECL audit's
+   *  row 3): the DECL's sampler_envelope — [min,max] for steps and
+   *  cfg, the domain the bench judges. Null when the variant
+   * declares none (the family's own domain rides). */
+  sampler_envelope?: { steps: number[]; cfg: number[] } | null
   quant?: string | null
   vram_peak_gb?: number | null
   owner?: string

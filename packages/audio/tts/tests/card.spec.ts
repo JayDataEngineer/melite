@@ -8,6 +8,8 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import { judgeLaneRelations } from "@melite/contracts/laneRelations";
+import { DECL as voicedesignDecl } from "@melite/models-qwen3-tts-voicedesign";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -499,32 +501,49 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
       /qvoice|VoiceDesign|persona/i,
     );
   });
-  it("THE EXACT-MISSING VOICE (029 self-critique #2): the refusal names ONLY the absent half — never the stated key", () => {
+  it("THE ONE JUDGE AT COMPOSE (the DECL audit's row 4, 2026-10-10): a half-stated export pair refuses in the DECL's voice — the SAME sentence the bench speaks", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
-    // design_prompt without voice_name never reaches the pairing
-    // check — the earlier wall owns it and already names the
-    // pairing exactly.
-    assert.throws(
-      () => def.compose(def.schema({
-        text: "the sample",
-        design_prompt: "a warm voice",
-      }), designModel, new GraphBuilder(), "r_noname"),
-      /without 'voice_name'/,
-    );
-    // voice_name without design_prompt reaches the pairing check —
-    // it names ONLY the absent description.
-    const noDesc = (): void => {
+    // The compose seat routes the family relation rows through
+    // judgeLaneRelations — the one implementation. The half-stated
+    // export pair (either half alone) is the together row's state,
+    // and the refusal is the row's cure text, byte-for-byte the
+    // voice the bench-write door speaks (the parity is the kill:
+    // the imperative copy could drift, and its blank law already
+    // had — the design audit's Q4).
+    const halfStated = (): void => {
       def.compose(def.schema({
         text: "the sample",
-        voice_name: "Cherry",
-      }), designModel, new GraphBuilder(), "r_nodesc");
+        design_prompt: "a warm voice",
+      }), designModel, new GraphBuilder(), "r_noname");
     };
-    assert.throws(noDesc, /'design_prompt' missing or empty/);
-    try {
-      noDesc();
-      assert.fail('must refuse');
-    } catch (e) {
-      assert.ok(!(e as Error).message.includes("'voice_name' missing"), 'the stated name is never named missing');
-    }
+    assert.throws(halfStated, /ride together on this lane/);
+    assert.throws(halfStated, /persona export needs both halves/);
+    // THE PARITY PIN: the bench-write door judges the identical
+    // body by calling THIS SAME judge (judgeLaneRelations — see
+    // cardsRegistry's relation seat) over the family's DECL rows.
+    // If compose ever hand-rolls the sentence again, the equality
+    // breaks: one law, one voice, two seats.
+    const decl = voicedesignDecl.relations;
+    assert.ok(decl !== undefined, 'the voicedesign family declares rows');
+    const benchViol = judgeLaneRelations([decl], {
+      text: "the sample",
+      design_prompt: "a warm voice",
+    });
+    assert.ok(benchViol.length > 0, 'the bench judge refuses the identical body');
+    let composeMsg = '';
+    try { halfStated(); assert.fail('must refuse'); } catch (e) { composeMsg = (e as Error).message; }
+    assert.equal(composeMsg, benchViol[0]!.message, 'compose and bench speak the identical sentence');
+  });
+
+  it("A NEITHER-STATED ROW COMPOSES THE SYNTH LANE (the preset-voice sample — the old gates never refused it either)", () => {
+    // the together row fires only when a member is STATED (the
+    // blank tolerance); a bare {text} row is a legal synth compose
+    // with the family's preset voice — pre-kill and post-kill
+    // alike. The pin holds the boundary: the kill refused NOTHING
+    // that used to compose.
+    const designModel = facts.models["qwen3-tts-voicedesign"]!;
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "the sample" }), designModel, g, "r_neither");
+    assert.ok(Object.keys(g.toJSON()).length > 0, 'the synth lane composes');
   });
 });

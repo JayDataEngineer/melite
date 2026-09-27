@@ -21,6 +21,7 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 // The bare specifier resolves inside packages/* (per-package
 // node_modules); from tests/ the pnpm store path is direct:
 import { Context, Service, symbols } from '@deepseek-ai/cordis';
@@ -172,9 +173,26 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
         new Probe(c);
       },
     });
-    // the shipped static resolves to the SAME symbol the service's
-    // cascade keys with — proof we ride the framework's class, not a copy
-    assert.equal(Service.resolveConfig, symbols.resolveConfig);
+    // NOT AN IDENTITY TAUTOLOGY (the walls audit's row 11,
+    // 2026-10-10): the old proof compared Service.resolveConfig with
+    // symbols.resolveConfig — the same class member through two
+    // import paths, a comparison that cannot fail and proves
+    // nothing about the code that runs. The teeth are behavioural:
+    // the framework's OWN resolver, invoked on a live service the
+    // way the models plane invokes it, must merge the two layers.
+    const probe = new Probe(ctx);
+    const merged = probe[symbols.resolveConfig]({ steps: 9 }, { steps: 52, cfg: 3.5 }) as
+      { steps?: unknown; cfg?: unknown };
+    assert.equal(merged.steps, 52, "the head layer wins (the cascade's own law)");
+    assert.equal(merged.cfg, 3.5, "the head's own keys ride");
+    // and the models service's cascade seat is not shadowed by a
+    // local reimplementation (the file must IMPORT the primitive)
+    const src = readFileSync(
+      new URL("../../../../packages/engines/comfyui-cordis/src/models/models.ts", import.meta.url),
+      "utf8",
+    );
+    assert.match(src, /resolveConfig|symbols/,
+      "the models plane rides the framework's resolver (a local reimplementation is the drift this arm stood for)");
     assert.notEqual(MODELS_SERVICE, "");
   });
 

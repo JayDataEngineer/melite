@@ -177,6 +177,17 @@ describe("the melite tool faces answer over the live composition", () => {
     const refused = typeof env["error"] === "string" ? env["error"] : undefined;
     assert.ok(runId !== undefined || refused !== undefined,
       `the envelope answers (run_id or a named refusal — got: ${JSON.stringify(envelope).slice(0, 300)}`);
+    // NEITHER ANSWER IS A VACUOUS WIN (the walls audit's row 5):
+    // `runId !== undefined || refused !== undefined` accepts an
+    // EMPTY error string as a refusal, and a run_id of "" as a run.
+    // Each half is pinned in its own shape: a refusal NAMES itself,
+    // a run_id is a non-empty id.
+    if (refused !== undefined) {
+      assert.ok(refused.trim().length > 0, `the refusal names itself (got: ${JSON.stringify(envelope).slice(0, 200)}`);
+    }
+    if (runId !== undefined) {
+      assert.ok(runId.trim().length > 0, `a run_id is a non-empty id (got: ${JSON.stringify(envelope).slice(0, 200)}`);
+    }
     assert.ok(lines.length >= 1 && lines.join("").length > 0,
       `render returns model-facing lines (got ${lines.length}: ${lines.join(" | ").slice(0, 200)}`);
     if (runId !== undefined) {
@@ -281,8 +292,18 @@ describe("the melite tool faces answer over the live composition", () => {
     assert.ok(typeof card === "string", "a card id came from discover");
     const { envelope, lines } = await drive("melite_load", { name: card, inference_type: "card" });
     const env = envelope as { bundle?: { digest?: string }; error?: string };
-    const refused = typeof env.error === "string";
-    if (refused) return; // a composition without the card docs refuses honestly — not this wall's law
+    // NO BARE RETURN ON REFUSAL (the walls audit's row 4,
+    // 2026-10-10): `if (refused) return` turned a REFUSAL into a
+    // silent pass — the arm proves nothing whenever the composition
+    // lacks the card docs, and the operator never learns which. A
+    // refusal must still ANSWER: a named, non-empty error in the
+    // envelope and in the rendered lines, or this wall fails.
+    if (typeof env.error === "string") {
+      assert.ok(env.error.trim().length > 0, "the refusal NAMES itself (empty error string)");
+      assert.ok(lines.join("\n").includes("REFUSED"),
+        `the refusal renders REFUSED (got: ${lines.join(" | ").slice(0, 200)}`);
+      return;
+    }
     const text = lines.join("\n");
     assert.ok(text.includes("params:") || text.includes("signature model:"),
       `the rendered lines carry the signature (got: ${text.slice(0, 200)}`);

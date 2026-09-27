@@ -60,13 +60,18 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     const got = [...(lora!.options as Array<{ value: string }>)]
       .map((o) => o.value).sort();
     assert.deepEqual(got, want, "lora option values == the family's modCatalog row ids");
-    // A declared default_strength rides the option defaults.
+    // A declared default_strength rides the option defaults — and
+    // the arm REQUIRES one to exist (the walls audit's row 14,
+    // 2026-10-10: the old shape pinned it only `if` a row carried
+    // a strength, so emptying every strength made the arm a silent
+    // pass; a wall inside a conditional is a wall with no door).
     const withStrength = cat.rows.find((r) => r.default_strength !== undefined);
-    if (withStrength !== undefined) {
-      const opt = (lora!.options as Array<{ value: string; defaults: { strength?: number } }>)
-        .find((o) => o.value === withStrength.id);
-      assert.equal(opt?.defaults.strength, withStrength.default_strength);
-    }
+    assert.ok(withStrength !== undefined,
+      "krea-2's lora rows declare a default_strength (the wall requires the law to be there)");
+    const opt = (lora!.options as Array<{ value: string; defaults: { strength?: number } }>)
+      .find((o) => o.value === withStrength.id);
+    assert.equal(opt?.defaults.strength, withStrength.default_strength,
+      "the option defaults carry the family's declared strength");
   });
 
   it("serves the live catalog section (models/families/cards/vocabulary)", async () => {

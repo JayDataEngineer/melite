@@ -177,6 +177,66 @@ describe('melite_load render — the loaded line', () => {
     )
   })
 
+  test('THE LANE LINE RENDERS THE ROW TYPES (required/at_most_one rows are {fields,any_of} objects; variant laws ride)', () => {
+    // 2026-10-10, the DECL audit's row 1: the render cast required
+    // and at_most_one to string[] — the DECL rows are {fields, cure?}
+    // OBJECTS, so every tts lane line said
+    // "required([object Object])" to the composing agent, and a
+    // variant that tightens the law (its own relations/bounds, which
+    // the serve carries) rendered nothing. The golden line below is
+    // the whole contract: the words in the row's true shape, the
+    // any_of one-of anchor named as one-of, and the variant's own
+    // laws in brackets on the variant itself.
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'tts', inference_type: 'card' },
+      {
+        name: 'tts', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'tts',
+          signature: {
+            lanes: {
+              'qwen3-tts': {
+                base: ['text', 'voice'],
+                relations: {
+                  together: [{ fields: ['voice_name', 'design_prompt'] }],
+                  conflicts: [{ a: 'voice_name', b: 'style_instruction' }],
+                  required: [
+                    { fields: ['text'], cure: 'the lane speaks words' },
+                    { fields: ['input_images', 'image1'], any_of: true, cure: 'the anchor' },
+                  ],
+                  at_most_one: [{ fields: ['voice', 'qvoice'] }],
+                },
+                bounds: { width: { min: 512, max: 1536 } },
+                variants: {
+                  customvoice: {
+                    params: ['ref_audio', 'ref_text'],
+                    relations: { required: [{ fields: ['ref_audio'] }] },
+                    bounds: { steps: { min: 4, max: 8 } },
+                  },
+                },
+              },
+            },
+          },
+        },
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    const lane = text.split('\n').find((l) => l.startsWith('lane qwen3-tts:')) ?? ''
+    assert.ok(lane.includes('base text, voice'), lane)
+    assert.ok(lane.includes('together(voice_name × design_prompt)'), lane)
+    assert.ok(lane.includes('conflicts(voice_name × style_instruction)'), lane)
+    assert.ok(lane.includes('required(text)'), 'the row object renders its fields: ' + lane)
+    assert.ok(lane.includes('required-one-of(input_images | image1)'), 'the any_of anchor renders as a one-of: ' + lane)
+    assert.ok(lane.includes('at_most_one(voice | qvoice)'), lane)
+    assert.ok(lane.includes('bounds(width 512…1536)'), lane)
+    assert.ok(
+      lane.includes('customvoice +ref_audio, ref_text [required(ref_audio), bounds(steps 4…8)]'),
+      'the variant\'s own relations and bounds ride on the variant line: ' + lane,
+    )
+    assert.ok(!lane.includes('[object Object]'), 'the string[] cast is dead: ' + lane)
+  })
+
   test('THE EDGE CELLS RIDE (label-less hints, junk required rows, ref-fallback skills, the 9-row clamp, stages, signature model)', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const skills = [{ id: 'a' }, { ref: 'r-only' }, { id: 'b' }, { id: 'c' }, { id: 'd' }, { id: 'e' }, { id: 'f' }, { id: 'g' }, { id: 'h' }]

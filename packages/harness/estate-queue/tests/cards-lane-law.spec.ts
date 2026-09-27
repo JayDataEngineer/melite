@@ -826,6 +826,93 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(famless.ok).toBe(true);
   });
 
+  it("a DESIGNED sibling disagreement empties the word — the intersection is never a union (image-edit, pinned 2026-10-10)", () => {
+    // qwen-img-edit-21 declares together: [width, height] (its lane
+    // carries the pair); qwen-img-edit-2511's surface carries NEITHER
+    // field (it edits at source resolution — the fields are not a
+    // slower path there, they are a lane the family does not have).
+    // The member-keyed intersection of the together rows is therefore
+    // EMPTY BY DESIGN, and a model-less image-edit row holding
+    // width-without-height ADMITS — as long as the AGREEING words
+    // (prompt, the anchor) are satisfied. A union would false-refuse
+    // the width state in a voice no boarded family speaks — the pin
+    // holds the intersection, not the louder law.
+    const base = { prompt: "make it warmer", image1: "x.png" };
+    const row = svc.admitStageRelations("image-edit", { ...base, width: 1024 });
+    expect(row.ok).toBe(true);
+    // The FAMILY row admits for a different, pinned reason: the
+    // family's declared defaults complete the pair at the stamp
+    // (width AND height default 1024), so `together` is SATISFIED,
+    // not skipped — the word and the defaults are one concert. If
+    // the defaults ever leave the DECL, this admit flips to the
+    // word's refusal; if the intersection ever becomes a union, the
+    // row above flips. Both directions are deliberate edits, and
+    // this pin makes them touch a test.
+    const fam = svc.admitStageRelations("image-edit", { ...base, model: "qwen-img-edit-21", width: 1024 });
+    expect(fam.ok).toBe(true);
+  });
+
+  it("the edit compose law is a DECL now — prompt-less and anchor-less drafts refuse at bench-write (the GAP-7 shape, killed)", () => {
+    // 2026-10-10, the DECL audit's row 2: compose has refused a
+    // prompt-less or anchor-less edit imperatively since the merge,
+    // while the bench admitted the same drafts — a state the form
+    // could build and the run refused. Both edit families now state
+    // the rows verbatim (member-wise agreement), so the MODEL-LESS
+    // draft meets them through the intersection, and a NAMED model
+    // meets its own family's words — the same voice compose speaks,
+    // before the run.
+    const bare = svc.admitStageRelations("image-edit", {});
+    expect(bare.ok).toBe(false);
+    if (!bare.ok) expect(bare.error).toMatch(/prompt/);
+    const anchorless = svc.admitStageRelations("image-edit", { prompt: "make it warmer" });
+    expect(anchorless.ok).toBe(false);
+    if (!anchorless.ok) expect(anchorless.error).toMatch(/input_images|image1|anchor/i);
+    // the legacy vocabulary is a legal anchor (the merge's own law)
+    const legacy = svc.admitStageRelations("image-edit", { prompt: "make it warmer", image1: "x.png" });
+    expect(legacy.ok).toBe(true);
+    // the named model meets its own family's words
+    const fam = svc.admitStageRelations("image-edit", { model: "qwen-img-edit-2511", prompt: "warm" });
+    expect(fam.ok).toBe(false);
+  });
+
+  it("tts siblings AGREE on the voice_name x style_instruction row — the model-less intersection holds it (the DECL audit's row 5)", () => {
+    // 2026-10-10: the 0.6B family stated the row at FAMILY level
+    // while voicedesign carried it only on its customvoice VARIANT —
+    // the member-keyed intersection emptied, so a model-less draft
+    // held voice_name+style_instruction while every boarded lane
+    // refused it (surface or variant word). The row now rides the
+    // FAMILY layer on both siblings, and the model-less draft meets
+    // it through the intersection — the same voice every lane
+    // speaks.
+    const held = svc.admitStageRelations("tts", {
+      voice_name: "warm_1",
+      style_instruction: "speak warmly",
+      text: "hello",
+    });
+    expect(held.ok).toBe(false);
+    if (!held.ok) expect(held.error).toMatch(/voice_name|style_instruction/);
+    // the export pair alone stays legal (the style is the conflict,
+    // not the export). voice_name is the voicedesign family's own
+    // surface (the tts card's shared knobs do not carry it), so the
+    // honest export row names its family — the together word's
+    // design_prompt half rides too, its own law, unrelated here.
+    const exportOnly = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      voice_name: "warm_1",
+      design_prompt: "a warm narrator",
+      text: "hello",
+    });
+    expect(exportOnly.ok).toBe(true);
+    // and each named family still refuses it in its own voice
+    const fam = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      voice_name: "warm_1",
+      style_instruction: "speak warmly",
+      text: "hello",
+    });
+    expect(fam.ok).toBe(false);
+  });
+
   it("the boot gate knows the word (a grammar word the gate omits refuses a LEGAL declaration)", () => {
     // the first cut of the new words booted REFUSED: the drift gate
     // enumerated the vocabulary separately and did not know `required`
@@ -845,6 +932,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
+      image1: "x.png",
       width: -50,
       height: 1024,
     });
@@ -861,6 +949,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
+      image1: "x.png",
       width: 4096,
       height: 4096,
     });
@@ -876,6 +965,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
+      image1: "x.png",
       width: 1328,
       height: 1328,
     });
@@ -893,6 +983,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
+      image1: "x.png",
       width: 1328,
     });
     expect(verdict.ok).toBe(true);
@@ -917,6 +1008,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-2511",
       prompt: "make it night",
+      image1: "x.png",
       use_stock_nodes: true,
     });
     expect(verdict.ok).toBe(true);
@@ -926,6 +1018,7 @@ describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)"
     const verdict = svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "make it night",
+      image1: "x.png",
       double_reference: true,
     });
     expect(verdict.ok).toBe(false);
@@ -950,6 +1043,7 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
     const verdict = await svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "x",
+      image1: "x.png",
       steps: 999,   // the card schema's own ceiling (1..50)
       width: -50,   // the lane's own floor (256..1536)
       height: 1024,
@@ -968,6 +1062,7 @@ describe("THE OVERLAP LAW (schema ∩ lane — no path admits a both-violating s
     const verdict = await svc.admitStageRelations("image-edit", {
       model: "qwen-img-edit-21",
       prompt: "x",
+      image1: "x.png",
       steps: 20,
       width: 1328,
       height: 1328,

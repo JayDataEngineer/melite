@@ -233,6 +233,20 @@ export const DECL: ModelDecl = {
         "b": "qvoice",
         "cure": "an export creates a new voice — it performs no saved persona; drop the Voice Embedding or drop the export",
       },
+      // THE SIBLING AGREEMENT (2026-10-10, the DECL audit's row 5):
+      // the 0.6B family states voice_name×style_instruction at
+      // FAMILY level; this family carried it only on the
+      // customvoice variant, so the member-keyed intersection EMPTIED
+      // and a model-less draft held the combination while every
+      // boarded lane refused it (the surface or the variant word).
+      // The row is true at this layer too — an export (voice_name)
+      // is never styled while it is designed — stated here so the
+      // siblings AGREE where the draft can read them.
+      {
+        "a": "voice_name",
+        "b": "style_instruction",
+        "cure": "an export creates the voice — it is styled on its performances, not while it is designed (drop the style, then style the voice when you perform it)",
+      },
     ],
   },
   "lane_inputs": {

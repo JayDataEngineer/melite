@@ -141,10 +141,38 @@ else
 fi
 
 # ---------------------------------------------------------------- build
+# THE CONTENT STAMP (2026-10-10, the lane audit's P0-3): a string
+# receipt (grep a marker in the built lib) passes on ANY lib built
+# since that string first existed — a --no-build ship went fully
+# green while this tree's fixes sat unshipped on the lane. The stamp
+# records the src hash each lib was BUILT FROM; every ship
+# (--no-build included) recomputes and compares, and a mismatch
+# refuses: the lane would run a stale build of this tree.
+stamp_src() { # $1 = package dir with a src/ tree
+  (cd "$REPO/$1" && find src \( -name '*.ts' -o -name '*.tsx' \) | sort | xargs sha256sum 2>/dev/null | sha256sum | cut -c1-16)
+}
+write_stamp() { # $1 = package dir
+  stamp_src "$1" > "$REPO/$1/lib/.src-stamp" 2>/dev/null || true
+}
+verify_stamps() {
+  local failed=0 p want have
+  for p in "${COMPILED[@]}" "${CLIENT_BUNDLES[@]}"; do
+    [ -d "$REPO/$p/lib" ] || continue
+    want="$(stamp_src "$p")"
+    have="$(cat "$REPO/$p/lib/.src-stamp" 2>/dev/null || echo none)"
+    if [ "$want" != "$have" ]; then
+      bad "$p — lib is STALE (built from src $have, this tree is src $want); the lane would run the old code — re-run WITHOUT --no-build"
+      failed=1
+    fi
+  done
+  if [ "$failed" -eq 0 ]; then ok "content stamps green (every lib matches the src it was built from)"; fi
+  return "$failed"
+}
 if [ "$DO_BUILD" -eq 1 ]; then
   say "BUILD the compiled-lib packages (a restart alone ships the OLD code)"
   for p in "${COMPILED[@]}"; do
     if (cd "$REPO/$p" && node "$TSC" -p tsconfig.json >/tmp/ship-build.log 2>&1); then
+      write_stamp "$p"
       ok "$p"
     else
       bad "$p — build failed (noEmitOnError: no lib was emitted):"
@@ -163,6 +191,7 @@ if [ "$DO_BUILD" -eq 1 ]; then
   for p in "${CLIENT_BUNDLES[@]}"; do
     if [ ! -d "$REPO/$p" ]; then continue; fi
     if (cd "$REPO/$p" && node node_modules/tsdown/dist/run.mjs -c tsdown.config.ts >/tmp/ship-client.log 2>&1); then
+      write_stamp "$p"
       ok "$p client bundle"
     else
       bad "$p client bundle — build failed:"
@@ -178,6 +207,10 @@ if [ "$DO_BUILD" -eq 1 ]; then
   fi
   ok "no client bundle carries a removed face"
 fi
+# THE STAMP VERIFICATION RIDES EVERY SHIP (--no-build keeps every
+# gate — this one included): a green ship must prove the lane runs
+# THIS tree, behavior-only fixes and all.
+verify_stamps || exit 1
 
 # -------------------------------------------------------------- restart
 if [ "$CHECK_ONLY" -eq 0 ]; then

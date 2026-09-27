@@ -317,6 +317,9 @@ describe('specBody primary envelope', () => {
       route: '',
       hint: null,
       engine: 'custom-engine',
+      // the envelope key rides always — null for absent (the DECL
+      // audit's row 3: the domain is served or the agent guesses)
+      sampler_envelope: null,
       quant: null,
       vram_peak_gb: null,
       owner: '',

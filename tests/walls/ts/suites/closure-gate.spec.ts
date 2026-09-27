@@ -36,6 +36,16 @@ function walk(dir: string, out: string[] = []): string[] {
 
 const SOURCES = SRC_ROOTS.flatMap((r) => walk(r));
 
+// SOURCES NON-EMPTINESS IS THE WALL'S OWN WALL (the walls audit's
+// row 2, 2026-10-10): every rule below iterates SOURCES — a renamed
+// root or a widened skip rule empties the list and every loop goes
+// vacuously green. The floor is pinned near the real count (615 at
+// the pin); a tree that shrinks by a third has lost roots, and a
+// wall that iterates nothing proves nothing.
+expect(SOURCES.length >= 400,
+  `SOURCES must walk the tree (got ${String(SOURCES.length)} files from ${SRC_ROOTS.join(", ")} — a renamed root or a widened skip rule emptied the gate)`).toBe(true);
+expect(SOURCES.some((f) => f.includes("/src/")), "the walk reaches src trees").toBe(true);
+
 const read = (f: string): string => readFileSync(f, "utf8");
 /** code lines only — a comment may NAME a token (the walls read the
  *  names), a string literal or a retyped const is the duplication. */

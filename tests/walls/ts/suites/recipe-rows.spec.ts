@@ -30,6 +30,8 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 import { modelIds, getModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { Context } from "@deepseek-ai/cordis";
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 // the variant rows ARE VariantRows (group + wire_defaults on the
 // seam) — the wall reads them as such, not as loose Records.
 import type { VariantRow } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
@@ -181,16 +183,52 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     }
   });
 
-  it("TEETH PROOF: the master refuses an out-of-bounds stamp and a dead key (mutation red-first)", async (): Promise<void> => {
+  it("TEETH PROOF: the REAL admission refuses an out-of-bounds stamp and a dead key (the constants are not the proof)", async (): Promise<void> => {
+    // 2026-10-10, the walls audit's row 6: this arm used to compare
+    // ITS OWN constants — `900 > duration.max` proves the wall can
+    // do arithmetic, never that the master refuses. The teeth are
+    // behavioural, through the real bench-write admission
+    // (admitStageRelations — the door a draft crosses):
+    //   - the lawful body ADMITS (a door that refuses everything
+    //     would make every refusal below vacuous),
+    //   - the out-of-domain value REFUSES, naming the domain,
+    //   - the undeclared key REFUSES, naming the surface.
+    // The lane is the edit-2.1 family: it DECLARES a surface and a
+    // bounds row, so LAW B and LAW C bind there by declaration.
     await loadCardDefs();
     const carried = cardCarriedFamilies();
     const caller = carried.get("music3");
     assert.ok(caller !== undefined, "music3 is card-carried");
     const scalars = declaredScalars(caller!, "music3");
-    const duration = scalars.get("duration")!;
-    assert.ok(duration.min === 5 && duration.max === 360, `the envelope carries the card's own bounds (got ${JSON.stringify(duration)})`);
-    // the bound the wall enforces — exactly the refusal LAW C makes
-    assert.ok(900 > (duration.max ?? Infinity), "a duration=900 stamp would be refused");
-    assert.ok(!scalars.has("not_a_param"), "a not_a_param stamp would be refused by LAW B");
+    const duration = scalars.get("duration");
+    assert.ok(duration !== undefined, "duration is a declared scalar");
+    const registry = new CardRegistryService(new Context());
+    await registry.prime();
+    const lawful = registry.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      image1: "x.png",
+      width: 1024,
+      height: 1024,
+    });
+    assert.ok(lawful.ok, "the lawful body admits (the refusals below are not vacuous)");
+    // LAW C's teeth: outside the DECL's own domain → refused, named
+    const over = registry.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      image1: "x.png",
+      width: -50,
+      height: 512,
+    });
+    assert.ok(!over.ok, "an out-of-domain stamp is refused");
+    assert.match(over.ok ? "" : String(over.error), /256–1536|outside this lane's range/);
+    // LAW B's teeth: a key the card never declared → refused, named
+    const dead = registry.admitStageRelations("image-gen", {
+      model: "krea-2",
+      prompt: "a harbour",
+      not_a_param: 1,
+    });
+    assert.ok(!dead.ok, "a dead key is refused");
+    assert.match(dead.ok ? "" : String(dead.error), /not_a_param|unknown param/);
   });
 });

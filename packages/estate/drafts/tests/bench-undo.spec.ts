@@ -199,7 +199,14 @@ test("crafted reorder without from parks at the tail; crafted patch/rewire on gh
 test("crafted rewire inverse with a before-binding restores it", async () => {
   const drafts = await boot();
   await seed(drafts, "craft4", {
-    stages: [{ id: "a", inputs: { image: { initial: "image" } } }],
+    // 'z' rides the bench: the restored wire must name a LIVE stage
+    // (2026-10-10, the write-seat audit's row 6) — undo-rewire walks
+    // the same wiring law the rewire door walks before the restore
+    // lands.
+    stages: [
+      { id: "a", params: { image: "$image" }, inputs: { image: { initial: "image" } } },
+      { id: "z" },
+    ],
     bench: {
       rev: 1,
       log: [
@@ -213,6 +220,33 @@ test("crafted rewire inverse with a before-binding restores it", async () => {
   const doc = getBench(drafts, "craft4");
   const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
   assert.deepEqual(st.inputs.image, { stage: "z", output: "default" });
+});
+
+test("an undo-rewire whose restored wire names a DEAD upstream refuses (the restore is a write)", async () => {
+  // 2026-10-10, the write-seat audit's row 6: the inverse records a
+  // wire cut earlier; the bench has since lost the upstream — the
+  // rewire door refuses to create this state, and so does the undo
+  // that would restore it. The refusal names the wire, and the row
+  // keeps its CURRENT inputs (the undo aborts whole).
+  const drafts = await boot();
+  await seed(drafts, "craft4b", {
+    stages: [{ id: "a", params: { image: "$image" }, inputs: { image: { initial: "image" } } }],
+    bench: {
+      rev: 1,
+      log: [
+        entry(1, "rewire", "agent", {
+          stage: "a", input: "image", before: { stage: "z", output: "default" },
+        }),
+      ],
+    },
+  });
+  await assert.rejects(
+    undoBench(drafts, "craft4b", { n: 1 }),
+    /no such stage on the bench/,
+  );
+  const doc = getBench(drafts, "craft4b");
+  const st = (doc.stages as Array<{ id: string; inputs: Record<string, unknown> }>).find((x) => x.id === "a")!;
+  assert.deepEqual(st.inputs.image, { initial: "image" });
 });
 
 test("crafted undo entry restores its snapshot (the coarse fallback on itself)", async () => {

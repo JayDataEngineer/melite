@@ -1,6 +1,6 @@
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { ensureBench, getBench, patchBench, addStageBench, undoBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, undoBench, groupBench, ungroupBench, removeStageBench } from "../src/bench.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { boot, codeOf, seed } from "./bench-helpers.ts";
 
@@ -181,4 +181,141 @@ test("undo's load fallback judges the snapshot before it lands", async () => {
   );
   const ids = (getBench(drafts, "snapback").stages as Array<{ id: string }>).map((x) => x.id);
   assert.deepEqual(ids, ["keep"], "a refused snapshot restore must leave the live stages untouched");
+});
+
+// ── the 2026-10-10 write-seat audit: the compound doors and the
+// strip. A compound row hides its children from every patch door,
+// so group/ungroup and their undos were the one place a pre-law row
+// could park or re-enter judged by nothing — and every write door
+// judged the RAW params while the doc stores the STRIPPED row, so a
+// self-naming model was refused by the door and composed by the run.
+
+test("group judges the rows it parks inside the compound (the compound is not a blind spot)", async () => {
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "g" });
+  await addStageBench(drafts, "g", { card: "tts", params: { text: "a" }, expect_rev: 0 });
+  await addStageBench(drafts, "g", { card: "tts", params: { text: "b", frobnicate: 1 }, expect_rev: 1 });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
+  };
+  await assert.rejects(
+    () => groupBench(drafts, "g", { stages: ["s_0", "s_1"], expect_rev: 2 }, admit),
+    /frobnicate/,
+  );
+  const ids = (getBench(drafts, "g").stages as Array<{ id: string }>).map((x) => x.id);
+  assert.deepEqual(ids, ["s_0", "s_1"], "a refused group leaves the rows flat");
+});
+
+test("ungroup judges the rows it spills back onto the bench", async () => {
+  const drafts = await boot();
+  await seed(drafts, "spill", {
+    stages: [{ id: "g_0", card: "group", children: [
+      { id: "a", card: "tts", params: { text: "a" } },
+      { id: "b", card: "tts", params: { text: "b", frobnicate: 1 } },
+    ] }],
+  });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
+  };
+  await assert.rejects(
+    () => ungroupBench(drafts, "spill", { stage: "g_0", expect_rev: 0 }, admit),
+    /frobnicate/,
+  );
+  const rows = getBench(drafts, "spill").stages as Array<{ id: string }>;
+  assert.deepEqual(rows.map((x) => x.id), ["g_0"], "a refused spill keeps the compound intact");
+});
+
+test("undo-of-group judges the children the inverse spills (the log is not a trusted caller)", async () => {
+  const drafts = await boot();
+  await seed(drafts, "uspill", {
+    stages: [{ id: "g_r0c2_0", card: "group", children: [
+      { id: "clean", card: "tts", params: { text: "a" } },
+    ] }],
+    bench: {
+      rev: 1,
+      log: [entry(1, "group", "agent", {
+        stage: "g_r0c2_0", index: 0,
+        children: [
+          { id: "clean", card: "tts", params: { text: "a" } },
+          { id: "poison", card: "tts", params: { text: "b", frobnicate: 1 } },
+        ],
+      })],
+    },
+  });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
+  };
+  await assert.rejects(
+    () => undoBench(drafts, "uspill", { n: 1 }, admit),
+    /frobnicate/,
+  );
+  const rows = getBench(drafts, "uspill").stages as Array<{ id: string }>;
+  assert.deepEqual(rows.map((x) => x.id), ["g_r0c2_0"], "a refused undo-of-group keeps the compound standing");
+});
+
+test("undo-of-ungroup judges the children before re-parking them in the compound", async () => {
+  const drafts = await boot();
+  await seed(drafts, "upark", {
+    stages: [{ id: "a", card: "tts", params: { text: "a" } }],
+    bench: {
+      rev: 1,
+      log: [entry(1, "ungroup", "agent", {
+        index: 0,
+        row: { id: "g_x", card: "group", children: [
+          { id: "a", card: "tts", params: { text: "a" } },
+          { id: "poison", card: "tts", params: { frobnicate: 1 } },
+        ] },
+      })],
+    },
+  });
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    if (params["frobnicate"] !== undefined) throw new Error("admission refuses frobnicate");
+  };
+  await assert.rejects(
+    () => undoBench(drafts, "upark", { n: 1 }, admit),
+    /frobnicate/,
+  );
+  const rows = getBench(drafts, "upark").stages as Array<{ id: string }>;
+  assert.deepEqual(rows.map((x) => x.id), ["a"], "a refused re-park leaves the flat bench untouched");
+});
+
+test("remove_stage re-judges the survivors' wiring (a removal may not orphan a wire)", async () => {
+  const drafts = await boot();
+  await seed(drafts, "orphan", {
+    stages: [
+      { id: "s_0", card: "tts", params: { text: "a" } },
+      { id: "s_1", card: "tts", params: { image: "$image", text: "b" }, inputs: { image: { stage: "s_0", output: "default" } } },
+    ],
+  });
+  await assert.rejects(
+    () => removeStageBench(drafts, "orphan", { stage: "s_0", expect_rev: 0 }),
+    /no such stage on the bench/,
+  );
+  const ids = (getBench(drafts, "orphan").stages as Array<{ id: string }>).map((x) => x.id);
+  assert.deepEqual(ids, ["s_0", "s_1"], "a refused removal leaves both rows standing");
+});
+
+test("the write doors judge the STRIPPED row — a self-naming model never meets the door's refusal", async () => {
+  // normalizeBenchStage strips params.model naming the row's own
+  // card at store, so the row the run composes is model-less; the
+  // door used to judge the raw view and refuse a key the doc never
+  // keeps (the parity law's other half: a write refusing what the
+  // run admits).
+  const drafts = await boot();
+  await ensureBench(drafts, { session: "strip" });
+  const seen: Array<Record<string, unknown>> = [];
+  const admit = (card: string, params: Record<string, unknown>): void => {
+    seen.push({ card, params });
+  };
+  await addStageBench(drafts, "strip", { card: "tts", params: { model: "tts", text: "hi" }, expect_rev: 0 }, admit);
+  assert.equal(seen.length, 1);
+  assert.equal((seen[0]!["params"] as Record<string, unknown>)["model"], undefined, "the judged view carries no self-naming model");
+  // a REAL foreign model still meets the door's refusal
+  const admit2 = (card: string, params: Record<string, unknown>): void => {
+    if (params["model"] === "gibberish-net") throw new Error("bench/bad-model");
+  };
+  await assert.rejects(
+    () => addStageBench(drafts, "strip", { card: "tts", params: { model: "gibberish-net" }, expect_rev: 1 }, admit2),
+    /bad-model/,
+  );
 });

@@ -362,9 +362,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3323,
+      "uid": 3325,
       "refs": {
-        "3242": {
+        "3244": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -380,7 +380,7 @@
             "description": "Image 1"
           }
         },
-        "3246": {
+        "3248": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -393,7 +393,7 @@
             }
           }
         },
-        "3253": {
+        "3255": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -410,7 +410,7 @@
             }
           }
         },
-        "3260": {
+        "3262": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -427,7 +427,7 @@
             }
           }
         },
-        "3267": {
+        "3269": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -444,7 +444,7 @@
             }
           }
         },
-        "3274": {
+        "3276": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -461,7 +461,7 @@
             }
           }
         },
-        "3281": {
+        "3283": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -478,17 +478,17 @@
             }
           }
         },
-        "3282": {
+        "3284": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3283": {
+        "3285": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3287": {
+        "3289": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,11 +506,11 @@
             }
           },
           "list": [
-            3282,
-            3283
+            3284,
+            3285
           ]
         },
-        "3294": {
+        "3296": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -527,7 +527,7 @@
             }
           }
         },
-        "3301": {
+        "3303": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -544,7 +544,7 @@
             }
           }
         },
-        "3308": {
+        "3310": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -561,7 +561,7 @@
             }
           }
         },
-        "3315": {
+        "3317": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -578,7 +578,7 @@
             }
           }
         },
-        "3322": {
+        "3324": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -595,41 +595,41 @@
             }
           }
         },
-        "3323": {
+        "3325": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3242,
-            "lanpaint_enabled": 3246,
-            "lanpaint_num_steps": 3253,
-            "lanpaint_step_size": 3260,
-            "lanpaint_lambda": 3267,
-            "lanpaint_beta": 3274,
-            "lanpaint_friction": 3281,
-            "lanpaint_prompt_mode": 3287,
-            "outpaint_top": 3294,
-            "outpaint_right": 3301,
-            "outpaint_bottom": 3308,
-            "outpaint_left": 3315,
-            "outpaint_overlap": 3322
+            "image1": 3244,
+            "lanpaint_enabled": 3248,
+            "lanpaint_num_steps": 3255,
+            "lanpaint_step_size": 3262,
+            "lanpaint_lambda": 3269,
+            "lanpaint_beta": 3276,
+            "lanpaint_friction": 3283,
+            "lanpaint_prompt_mode": 3289,
+            "outpaint_top": 3296,
+            "outpaint_right": 3303,
+            "outpaint_bottom": 3310,
+            "outpaint_left": 3317,
+            "outpaint_overlap": 3324
           }
         }
       }
     },
     "loras": {
-      "uid": 3172,
+      "uid": 3174,
       "refs": {
-        "3160": {
+        "3162": {
           "type": "string",
           "meta": {}
         },
-        "3161": {
+        "3163": {
           "type": "number",
           "meta": {}
         },
-        "3167": {
+        "3169": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -645,18 +645,18 @@
             }
           }
         },
-        "3168": {
+        "3170": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3160,
-            "strength": 3161,
-            "steps": 3167
+            "name": 3162,
+            "strength": 3163,
+            "steps": 3169
           }
         },
-        "3171": {
+        "3173": {
           "type": "array",
           "meta": {
             "default": [],
@@ -669,23 +669,23 @@
               "order": 0
             }
           },
-          "inner": 3168
+          "inner": 3170
         },
-        "3172": {
+        "3174": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3171
+            "loras": 3173
           }
         }
       }
     },
     "mask": {
-      "uid": 3392,
+      "uid": 3394,
       "refs": {
-        "3326": {
+        "3328": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -698,7 +698,7 @@
             }
           }
         },
-        "3330": {
+        "3332": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -714,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3331": {
+        "3333": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3332": {
+        "3334": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3333": {
+        "3335": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3337": {
+        "3339": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -754,32 +754,32 @@
             }
           },
           "list": [
-            3331,
-            3332,
-            3333
+            3333,
+            3334,
+            3335
           ]
-        },
-        "3338": {
-          "type": "const",
-          "meta": {},
-          "value": "off"
-        },
-        "3339": {
-          "type": "const",
-          "meta": {},
-          "value": "person"
         },
         "3340": {
           "type": "const",
           "meta": {},
-          "value": "face"
+          "value": "off"
         },
         "3341": {
           "type": "const",
           "meta": {},
+          "value": "person"
+        },
+        "3342": {
+          "type": "const",
+          "meta": {},
+          "value": "face"
+        },
+        "3343": {
+          "type": "const",
+          "meta": {},
           "value": "hand"
         },
-        "3345": {
+        "3347": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -800,13 +800,13 @@
             }
           },
           "list": [
-            3338,
-            3339,
             3340,
-            3341
+            3341,
+            3342,
+            3343
           ]
         },
-        "3352": {
+        "3354": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -824,7 +824,7 @@
             }
           }
         },
-        "3359": {
+        "3361": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -842,7 +842,7 @@
             }
           }
         },
-        "3366": {
+        "3368": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -860,7 +860,7 @@
             }
           }
         },
-        "3373": {
+        "3375": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -878,7 +878,7 @@
             }
           }
         },
-        "3377": {
+        "3379": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -893,7 +893,7 @@
             }
           }
         },
-        "3384": {
+        "3386": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -911,7 +911,7 @@
             }
           }
         },
-        "3391": {
+        "3393": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -929,23 +929,23 @@
             }
           }
         },
-        "3392": {
+        "3394": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3326,
-            "input_mask": 3330,
-            "mask_mode": 3337,
-            "mask_detector": 3345,
-            "mask_context_pad": 3352,
-            "mask_grow": 3359,
-            "mask_feather": 3366,
-            "mask_threshold": 3373,
-            "mask_invert": 3377,
-            "mask_detail_size": 3384,
-            "mask_denoise": 3391
+            "mask": 3328,
+            "input_mask": 3332,
+            "mask_mode": 3339,
+            "mask_detector": 3347,
+            "mask_context_pad": 3354,
+            "mask_grow": 3361,
+            "mask_feather": 3368,
+            "mask_threshold": 3375,
+            "mask_invert": 3379,
+            "mask_detail_size": 3386,
+            "mask_denoise": 3393
           }
         }
       }
@@ -956,283 +956,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2733,
+    "uid": 2735,
     "refs": {
-      "329": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "330": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "331": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "332": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "333": {
+      "335": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "334": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "335": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "336": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "337": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "338": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "339": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "340": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "341": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "342": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "343": {
+      "345": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "344": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "345": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "346": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "347": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "348": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "349": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "350": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "351": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "352": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "353": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "354": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "355": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "356": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "357": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "358": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "359": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "360": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "361": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "362": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "363": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "364": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "365": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "366": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "367": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "368": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "369": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "370": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "371": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "372": {
+      "374": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "373": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "375": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "376": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "377": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "378": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "379": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "380": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "381": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "382": {
+      "384": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "383": {
+      "385": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "2667": {
+      "2669": {
         "type": "string",
         "meta": {}
       },
-      "2671": {
+      "2673": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1248,9 +1248,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2667
+        "inner": 2669
       },
-      "2675": {
+      "2677": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1260,7 +1260,7 @@
           "description": "Input Image"
         }
       },
-      "2679": {
+      "2681": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1270,7 +1270,7 @@
           "description": "Image 2"
         }
       },
-      "2683": {
+      "2685": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1280,11 +1280,11 @@
           "description": "Image 3"
         }
       },
-      "2684": {
+      "2686": {
         "type": "string",
         "meta": {}
       },
-      "2687": {
+      "2689": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1293,9 +1293,9 @@
             "hidden": true
           }
         },
-        "inner": 2684
+        "inner": 2686
       },
-      "2691": {
+      "2693": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1305,7 +1305,7 @@
           "description": "Region Mask"
         }
       },
-      "2694": {
+      "2696": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1320,7 +1320,7 @@
           }
         }
       },
-      "2697": {
+      "2699": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1333,7 +1333,7 @@
           }
         }
       },
-      "2700": {
+      "2702": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1348,7 +1348,7 @@
           }
         }
       },
-      "2703": {
+      "2705": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1363,7 +1363,7 @@
           }
         }
       },
-      "2708": {
+      "2710": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1377,7 +1377,7 @@
           }
         }
       },
-      "2714": {
+      "2716": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1394,7 +1394,7 @@
           }
         }
       },
-      "2720": {
+      "2722": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1411,7 +1411,7 @@
           }
         }
       },
-      "2722": {
+      "2724": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1425,8 +1425,6 @@
           }
         },
         "list": [
-          329,
-          330,
           331,
           332,
           333,
@@ -1469,10 +1467,12 @@
           370,
           371,
           372,
-          373
+          373,
+          374,
+          375
         ]
       },
-      "2724": {
+      "2726": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1486,18 +1486,18 @@
           }
         },
         "list": [
-          375,
-          376,
           377,
           378,
           379,
           380,
           381,
           382,
-          383
+          383,
+          384,
+          385
         ]
       },
-      "2728": {
+      "2730": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1511,7 +1511,7 @@
           }
         }
       },
-      "2732": {
+      "2734": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1525,29 +1525,29 @@
           }
         }
       },
-      "2733": {
+      "2735": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2671,
-          "image1": 2675,
-          "image2": 2679,
-          "image3": 2683,
-          "reference_images": 2687,
-          "input_mask": 2691,
-          "prompt": 2694,
-          "negative_prompt": 2697,
-          "width": 2700,
-          "height": 2703,
-          "seed": 2708,
-          "steps": 2714,
-          "cfg": 2720,
-          "sampler": 2722,
-          "scheduler": 2724,
-          "use_stock_nodes": 2728,
-          "double_reference": 2732
+          "input_images": 2673,
+          "image1": 2677,
+          "image2": 2681,
+          "image3": 2685,
+          "reference_images": 2689,
+          "input_mask": 2693,
+          "prompt": 2696,
+          "negative_prompt": 2699,
+          "width": 2702,
+          "height": 2705,
+          "seed": 2710,
+          "steps": 2716,
+          "cfg": 2722,
+          "sampler": 2724,
+          "scheduler": 2726,
+          "use_stock_nodes": 2730,
+          "double_reference": 2734
         }
       }
     }
@@ -1566,6 +1566,7 @@
       "route": "qwen-img-edit-2511-lightning4",
       "hint": "4-step distilled lightx2v checkpoint — fast. Swaps BOTH the recipe (steps 4, cfg 1) AND the unet (the recipe↔weights law — never one without the other). Requires provisioning: the FP8 Lightning file is NOT on this box by default; without it the engine validation refuses LOUD (the honest face) — the standard weights are what ship.",
       "engine": "comfyui",
+      "sampler_envelope": null,
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1581,6 +1582,7 @@
       "route": "qwen-img-edit-2511",
       "hint": "20 steps, cfg 2.5 — the INT8 ConvRot merge (DEFAULT: the weights this box ships, the recipe the family defaults stamp).",
       "engine": "comfyui",
+      "sampler_envelope": null,
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1595,6 +1597,7 @@
       "route": "",
       "hint": "Double-reference ON — the card schema's own identity knob (encode the input twice for stronger identity preservation); this family's own default is false. Steps/CFG stay on the Variant routes (Lightning 4-step / Standard 20-step cfg 2.5) — never duplicated here. PLANE TRUTH (agent-debt F-4, 2026-09-22): the TS compose plane refuses double_reference=true LOUD — it builds the stock plain-edit graph only. Selecting this variant GUARANTEES a refusal; do not plan runs around it until the double-encode lane exists.",
       "engine": "comfyui",
+      "sampler_envelope": null,
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1610,6 +1613,7 @@
       "route": "",
       "hint": "Sampler euler + scheduler simple — this family's own DECL defaults, both members of the card's sampler/scheduler vocabularies.",
       "engine": "comfyui",
+      "sampler_envelope": null,
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1622,6 +1626,7 @@
       "route": "",
       "hint": "The family default — no extra stamps; a fresh card lands here.",
       "engine": "comfyui",
+      "sampler_envelope": null,
       "quant": null,
       "vram_peak_gb": null,
       "owner": ""
@@ -1645,6 +1650,27 @@
       "use_stock_nodes",
       "double_reference"
     ],
+    "relations": {
+      "required": [
+        {
+          "fields": [
+            "prompt"
+          ],
+          "cure": "an edit states WHAT to change — write the prompt (the instruction, not a description of the image)"
+        },
+        {
+          "fields": [
+            "input_images",
+            "image1",
+            "image2",
+            "image3",
+            "reference_images"
+          ],
+          "any_of": true,
+          "cure": "an edit needs the image being edited — the ordered input_images list, or a legacy image1/image2/image3/reference_images anchor"
+        }
+      ]
+    },
     "variants": {}
   },
   "packs": [],

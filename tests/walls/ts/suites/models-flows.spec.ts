@@ -119,12 +119,22 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
   });
 
   it("resolve() rides for every compose family (the R1 contract)", async (): Promise<void> => {
+    // THE JUDGED-COUNT FLOOR (the walls audit's row 7, 2026-10-10):
+    // the arm skipped action lanes and asserted the rest — with no
+    // floor on HOW MANY it judged, a facts file emptied of compose
+    // families (or an action set that swallowed every id) turned
+    // the arm into a silent pass. The count is pinned: the wall
+    // must have crossed real families.
     const actions = await actionCardLanes();
+    let judged = 0;
     for (const id of Object.keys(facts.models)) {
       if (actions.has(id)) continue;
+      judged++;
       const r = resolve(id);
       assert.ok(typeof r.route === "string", `${id}: resolve gave no route`);
     }
+    assert.ok(judged >= 20,
+      `the resolve() arm judged real families (${String(judged)} of ${String(Object.keys(facts.models).length)} rows — an emptied roster must not pass)`);
   });
 });
 

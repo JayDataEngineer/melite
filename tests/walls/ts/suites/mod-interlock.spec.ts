@@ -97,12 +97,20 @@ test("absorption: image-gen/krea-2 envelope pinned (declaration order)", () => {
 test("family scoping: krea-2's loras never leak", () => {
   // z-image boards loras too since the restoration — the leak test
   // covers families boarding NEITHER pack.
+  // THE SERVED-COUNT FLOOR (the walls audit's row 9, 2026-10-10):
+  // the arm `continue`d on a null serve — a family renamed off the
+  // card emptied the leak test into a silent pass. The count is
+  // pinned: the leak is only proved on families that SERVED.
+  let served = 0;
   for (const fam of ["flux-schnell", "sd-35-large"]) {
     const out = svc.formSchemas("image-gen", fam);
     if (out === null) continue;
+    served++;
     assert.ok(!("loras" in out.mods), `${fam} must not carry krea-2's loras contract`);
     assert.ok(!("controlnet" in out.mods), `${fam} must not carry z-image's controlnet contract`);
   }
+  assert.equal(served, 2,
+    `the leak arm proved itself on real serves (${String(served)} of 2 — a renamed family empties the leak test)`);
   // the boarded families DO see them (the scoping half)
   const krea = svc.formSchemas("image-gen", "krea-2")!;
   assert.ok("loras" in krea.mods, "krea-2's own family sees the loras contract");

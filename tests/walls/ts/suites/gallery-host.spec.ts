@@ -66,7 +66,16 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
   assert.ok(byPath('/drafts'), 'drafts route registered')
   assert.ok(byPath('/flow'), 'flow route registered')
   assert.ok(byPath('/artifact'), 'artifact route registered')
-  assert.ok(routes.size >= 0)
+  // NOT `routes.size >= 0` (the walls audit's row 12, 2026-10-10):
+  // every Map is at least zero — the arm could not fail. The law
+  // pinned instead: the gallery's route set is EXACTLY the set the
+  // server registered (nothing silently collapsed into a duplicate
+  // key), and it is non-trivial.
+  const registered = new Set(server.captured.map((c) => c.route.replace(/^infer-gallery: | route$/, '')))
+  assert.equal(routes.size, registered.size,
+    `the route map must not collapse a registered route (map ${routes.size} vs registered ${registered.size})`)
+  assert.ok(routes.size >= 4,
+    `the gallery serves its real routes (${String(routes.size)} seen — the registration emptied?)`)
 
   // 1. IN-TREE, estate absent: LOUD 502 naming the fix.
   const res1 = new FakeRes()

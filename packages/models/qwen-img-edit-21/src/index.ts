@@ -105,6 +105,29 @@ export const DECL: ModelDecl = {
         "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)",
       },
     ],
+    // THE COMPOSE LAW, STATED (2026-10-10, the DECL audit's row 2 —
+    // the GAP-7 shape one card over): compose has refused a
+    // prompt-less edit since the merge, imperatively, while the
+    // bench admitted the same draft — a state the form could build
+    // and the run refused. Stated as the required word (the tts
+    // precedent: the word the form already refused), the
+    // bench-write door refuses it first, in the field's voice.
+    // THE ANCHOR LAW, LEGACY-AWARE: the merge takes input_images
+    // verbatim, else the legacy keys — one anchor vocabulary
+    // suffices. any_of is the one-of anchor: refused only when NONE
+    // of the alternatives is stated (either_or keeps the blank
+    // tolerance by law, so it cannot say this).
+    "required": [
+      {
+        "fields": ["prompt"],
+        "cure": "an edit states WHAT to change — write the prompt (the instruction, not a description of the image)",
+      },
+      {
+        "fields": ["input_images", "image1", "image2", "image3", "reference_images"],
+        "any_of": true,
+        "cure": "an edit needs the image being edited — the ordered input_images list, or a legacy image1/image2/image3/reference_images anchor",
+      },
+    ],
   },
   // THE RANGE RULE MADE LAW (the width burn, 2026-10-10): whoever
   // owns the default owns the floor — this family owns the edit

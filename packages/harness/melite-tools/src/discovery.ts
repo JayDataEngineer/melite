@@ -140,6 +140,7 @@ function variantRow(
     route?: string
     hint?: string
     engine?: string
+    sampler_envelope?: { steps: number[]; cfg: number[] }
   },
   declEngine: string,
 ): Record<string, unknown> {
@@ -156,6 +157,13 @@ function variantRow(
     route: v.route ?? '',
     hint: v.hint ?? null,
     engine: v.engine ?? declEngine,
+    // THE VARIANT'S OWN SAMPLER DOMAIN (2026-10-10, the DECL
+    // audit's row 3): the DECL declares the envelope (turbo lives
+    // in [4,8] steps / [1,2] cfg) and the bench judges it — a face
+    // that drops it leaves the composing agent to guess the domain
+    // and learn the refusal by hitting it. Null for absent, the
+    // row's own law.
+    sampler_envelope: v.sampler_envelope ?? null,
     quant: null,
     vram_peak_gb: null,
     owner: '',
@@ -191,7 +199,8 @@ function laneContractOf(decl: ModelDecl): Record<string, unknown> {
           (v) =>
             v.params !== undefined ||
             v.relations !== undefined ||
-            v.bounds !== undefined,
+            v.bounds !== undefined ||
+            v.sampler_envelope !== undefined,
         )
         .map((v) => [
           v.id,
@@ -204,6 +213,12 @@ function laneContractOf(decl: ModelDecl): Record<string, unknown> {
             // the serve drops it is a form that builds what the
             // bench refuses, the exact failure shape 2 kills.
             ...(v.bounds !== undefined ? { bounds: v.bounds } : {}),
+            // THE VARIANT'S SAMPLER DOMAIN (the DECL audit's row 3,
+            // 2026-10-10): the same law as the bounds — the DECL
+            // declares it, the bench judges it, the serve carries
+            // it or the composing agent learns the domain by
+            // hitting the refusal.
+            ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
           },
         ]),
     ),

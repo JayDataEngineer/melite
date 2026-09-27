@@ -1,4 +1,4 @@
-import { laneBlank } from '@melite/contracts/laneRelations'
+import { laneBlank, judgeLaneRelations } from '@melite/contracts/laneRelations'
 // Tier 3 — the tts card (the tts_t1 renderer port).
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (ttsT1).
 import type { Context } from '@deepseek-ai/cordis'
@@ -190,6 +190,25 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!(doc.text as string)?.trim()) {
         throw new Error("required param 'text' missing or empty on the tts card (the words to speak)")
       }
+      // THE ONE JUDGE, FAMILY ROWS (2026-10-10, the DECL audit's
+      // row 4): the family-level relation words — the export pair
+      // (together), the export conflicts, the required text — are
+      // judged here by judgeLaneRelations, the SAME implementation
+      // the bench-write door runs, so the hand-rolled copies cannot
+      // drift again (the blank-law divergence, the design audit's
+      // Q4, was exactly this shape: three seats, three answers, one
+      // concept). What stays imperative below is what only this
+      // seat knows: the resolved lane's own facts
+      // (instruction_control), the stale param name, and the
+      // variant-scoped clone pair (the base variant's either_or —
+      // the variant the resolver picked, which the family row
+      // alone cannot name).
+      const laneViolations = model.relations !== undefined
+        ? judgeLaneRelations([model.relations], doc)
+        : []
+      if (laneViolations.length > 0) {
+        throw new Error(laneViolations[0]!.message)
+      }
       // PER-LANE ADMISSION (each variant takes only its own inputs,
       // refused loud, never silently skipped): the branch key is the
       // resolved lane_inputs DATA (synth_lane — the lane-branch law),
@@ -222,16 +241,23 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // no surface (the Design entry is FLAT).
       const saveIntent = lane === 'design' || !blank(doc.voice_name)
       if (saveIntent) {
-        // THE EXACT-MISSING VOICE (029's self-critique #2,
-        // 2026-09-24): naming BOTH keys when only one is blank sends
-        // the maker doubting the key it already stated — refuse with
-        // the actually-missing names only.
+        // THE JUDGE ALREADY SPOKE (the DECL audit's row 4): the
+        // export pair's HALF-stated states and the export conflicts
+        // (style with a voice_name) are family rows, judged above
+        // by the one implementation — their imperative copies died
+        // with the blank-law divergence (Q4's shape: three seats,
+        // three answers, one concept). What remains here is what
+        // NO family row can say, because it is the LANE's own law:
+        // THE EXACT-MISSING VOICE (029's self-critique #2): the
+        // together row fires only when a member is stated — a
+        // design compose with NEITHER half names nothing, so this
+        // seat refuses it naming the actually-missing keys; and the
+        // export's OFF-SURFACE inputs (a reference or a saved
+        // persona perform nothing on the design lane — surface
+        // facts, not relation rows).
         const missing = ['voice_name', 'design_prompt'].filter((k) => blank(doc[k]))
         if (missing.length > 0) {
           throw new Error("required Design param(s) " + missing.map((k) => "'" + k + "'").join(' + ') + " missing or empty on the tts card (the export needs the persona description + the Design mod's name — state both; the save fires from any lane)")
-        }
-        if (!blank(doc.style_instruction)) {
-          throw new Error("param 'style_instruction' fires nothing on a Design export (the persona description designs the speaker — drop the delivery style, or style the exported voice on the CustomVoice lane after the save)")
         }
         if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
           throw new Error("params 'ref_audio'/'ref_text' fire nothing on a Design export (the exporter designs from the description — no reference clones; drop them, or run the Base variant without voice_name)")
@@ -262,9 +288,9 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         if (!blank(doc.ref_audio) || !blank(doc.ref_text)) {
           throw new Error("params 'ref_audio'/'ref_text' fire nothing on the tts card outside the Base variant (reference audio only clones — switch to the Base variant or drop the reference)")
         }
-        if (!blank(doc.design_prompt)) {
-          throw new Error("param 'design_prompt' without 'voice_name' fires nothing on the tts card (the persona description exports a voice only with the Design mod's name — state voice_name too, or drop the description)")
-        }
+        // design_prompt without voice_name: the together family row
+        // judges it now (the one implementation, above) — the
+        // imperative copy died with the audit's row 4.
       }
       if (!blank(doc.style_instruction) && model.lane_inputs.instruction_control !== true) {
         throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (lane_inputs.instruction_control is not true — choose a lane with instruction control or drop the instruction)")

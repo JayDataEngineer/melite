@@ -233,38 +233,72 @@ export function meliteLoad(
           // the family base, the variant additions, and the relation
           // words as the field pairs they bind. Absent for legacy
           // families, which declare nothing.
-          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: { together?: Array<{ fields?: unknown[] }>; conflicts?: Array<{ a?: unknown; b?: unknown }>; either_or?: Array<{ groups?: unknown[][] }>; required?: string[]; at_most_one?: string[] }; variants?: Record<string, { params?: unknown[] }>; bounds?: Record<string, { min?: number; max?: number }> }> | undefined
+          // THE ROW TYPES ARE THE DECL'S (2026-10-10, the DECL
+          // audit's row 1): `required` and `at_most_one` rows are
+          // {fields, cure?} OBJECTS, not strings — the old
+          // string[] cast rendered "[object Object]" into the agent
+          // bundle for every tts lane — and VARIANT rows carry their
+          // own relations/bounds (the serve rides them; the render
+          // dropped them, so an agent composing from this bundle was
+          // never told a variant tightens the law).
+          type LaneRel = {
+            together?: Array<{ fields?: unknown[] }>
+            conflicts?: Array<{ a?: unknown; b?: unknown }>
+            either_or?: Array<{ groups?: unknown[][] }>
+            required?: Array<{ fields?: unknown[]; any_of?: boolean }>
+            at_most_one?: Array<{ fields?: unknown[] }>
+          }
+          type LaneBounds = Record<string, { min?: number; max?: number }>
+          const lawWords = (rel: LaneRel | undefined, bounds: LaneBounds | undefined): string[] => {
+            const words: string[] = []
+            for (const t of rel?.together ?? []) {
+              if (Array.isArray(t?.fields)) words.push('together(' + t.fields.join(' × ') + ')')
+            }
+            for (const c of rel?.conflicts ?? []) {
+              words.push('conflicts(' + String(c?.a) + ' × ' + String(c?.b) + ')')
+            }
+            for (const e of rel?.either_or ?? []) {
+              if (Array.isArray(e?.groups)) {
+                words.push('either_or(' + e.groups.map((g) => '(' + g.join(' × ') + ')').join(' | ') + ')')
+              }
+            }
+            for (const r of rel?.required ?? []) {
+              if (!Array.isArray(r?.fields) || r.fields.length === 0) continue
+              words.push(r.any_of === true
+                ? 'required-one-of(' + r.fields.join(' | ') + ')'
+                : 'required(' + r.fields.join(', ') + ')')
+            }
+            for (const m of rel?.at_most_one ?? []) {
+              if (Array.isArray(m?.fields) && m.fields.length > 0) {
+                words.push('at_most_one(' + m.fields.join(' | ') + ')')
+              }
+            }
+            if (bounds !== null && bounds !== undefined && typeof bounds === 'object') {
+              const spans = Object.entries(bounds)
+                .map(([k, bb]) => k + ' ' + String(bb?.min ?? '..') + '…' + String(bb?.max ?? '..'))
+              if (spans.length > 0) words.push('bounds(' + spans.join(', ') + ')')
+            }
+            return words
+          }
+          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds }>; bounds?: LaneBounds }> | undefined
           if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
             for (const [fam, lane] of Object.entries(sigLanes)) {
               const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
               const adds = Object.entries(lane?.variants ?? {})
-                .map(([v, row]) => v + ' +' + (Array.isArray(row?.params) ? row.params.join(', ') : ''))
-                .filter((line) => !line.endsWith(' +'))
-              const words: string[] = []
-              for (const t of lane?.relations?.together ?? []) {
-                if (Array.isArray(t?.fields)) words.push('together(' + t.fields.join(' × ') + ')')
-              }
-              for (const c of lane?.relations?.conflicts ?? []) {
-                words.push('conflicts(' + String(c?.a) + ' × ' + String(c?.b) + ')')
-              }
-              for (const e of lane?.relations?.either_or ?? []) {
-                if (Array.isArray(e?.groups)) {
-                  words.push('either_or(' + e.groups.map((g) => '(' + g.join(' × ') + ')').join(' | ') + ')')
-                }
-              }
+                .map(([v, row]) => {
+                  const params = Array.isArray(row?.params) ? row.params.join(', ') : ''
+                  const vlaws = lawWords(row?.relations, row?.bounds)
+                  let line = v + (params !== '' ? ' +' + params : '')
+                  if (vlaws.length > 0) line += ' [' + vlaws.join(', ') + ']'
+                  return line
+                })
+                .filter((line) => line !== '')
               // EVERY DECLARED WORD SPEAKS (the audit's GAP 2: the
               // line used to render three of six — `required` (the
               // tts text law) and the numeric bounds were silently
               // dropped, so an agent composing from this bundle was
               // never told text is required or width is bounded).
-              if (Array.isArray(lane?.relations?.required)) words.push('required(' + lane.relations.required.join(', ') + ')')
-              if (Array.isArray(lane?.relations?.at_most_one)) words.push('at_most_one(' + lane.relations.at_most_one.join(' | ') + ')')
-              const lawBounds = lane?.bounds
-              if (lawBounds !== null && lawBounds !== undefined && typeof lawBounds === 'object') {
-                const spans = Object.entries(lawBounds)
-                  .map(([k, bb]) => k + ' ' + String(bb?.min ?? '..') + '…' + String(bb?.max ?? '..'))
-                if (spans.length > 0) words.push('bounds(' + spans.join(', ') + ')')
-              }
+              const words = lawWords(lane?.relations, lane?.bounds)
               out.push('lane ' + fam + ': ' + (base.length > 0 ? 'base ' + base.join(', ') : 'no declared base')
                 + (adds.length > 0 ? '; variants: ' + adds.join('; ') : '')
                 + (words.length > 0 ? '; laws: ' + words.join(', ') : '')

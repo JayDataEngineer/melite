@@ -81,6 +81,30 @@ export const DECL: ModelDecl = {
     "loras",
     "mask"
   ],
+  // THE COMPOSE LAW, STATED (2026-10-10, the DECL audit's row 2):
+  // the sibling edit family carries these rows verbatim — the words
+  // must AGREE member-wise or the model-less draft intersection
+  // empties and the bench admits what compose refuses (the GAP-7
+  // shape, the tts incident's twin). `required: prompt` and the
+  // legacy-aware anchor law are the card's own compose gates, stated
+  // here so the bench-write door refuses them first, in the field's
+  // voice, on this family too (the 2511 lane edits at source
+  // resolution — no width/height pair HERE; that word stays the
+  // sibling's alone, a designed disagreement pinned in
+  // cards-lane-law).
+  "relations": {
+    "required": [
+      {
+        "fields": ["prompt"],
+        "cure": "an edit states WHAT to change — write the prompt (the instruction, not a description of the image)",
+      },
+      {
+        "fields": ["input_images", "image1", "image2", "image3", "reference_images"],
+        "any_of": true,
+        "cure": "an edit needs the image being edited — the ordered input_images list, or a legacy image1/image2/image3/reference_images anchor",
+      },
+    ],
+  },
   // THE PROVISION TRUTH (2026-09-13, the silent-failure cure): the
   // family declared lane_inputs files but NO downloadable rows — the
   // manage rail could not name where the text encoder lives, and the

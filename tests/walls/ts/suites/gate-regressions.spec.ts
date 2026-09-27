@@ -142,3 +142,32 @@ describe("THE DRIFT FLOOR (>= 85 let packages go dark)", () => {
     expect(gate).toContain(").toBe(88)");
   });
 });
+
+describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)", () => {
+  // THE WEDGE (the lane audit's P0-3, 2026-10-10): the ship's only
+  // content receipt greped a marker string inside the built lib —
+  // a string that predates the fixes of the day — so a --no-build
+  // ship passed every gate and probe while the lane kept running
+  // the old code (the assertWiringAtSubmit era). The receipt is a
+  // CONTENT STAMP now: src hashed at build time, re-verified on
+  // every ship, --no-build included.
+  const ship = read("scripts/ship-lane.sh");
+
+  it("writes the src stamp in BOTH build loops", () => {
+    expect(ship).toMatch(/write_stamp "\$p"\n\s+ok "\$p"/);
+    expect(ship).toMatch(/write_stamp "\$p"\n\s+ok "\$p client bundle"/);
+  });
+
+  it("verifies the stamps OUTSIDE the DO_BUILD guard (--no-build keeps the gate)", () => {
+    // the verify call must sit AFTER the build section's last line —
+    // outside the `if DO_BUILD` block, so --no-build runs it too
+    const buildEnd = ship.indexOf("no client bundle carries a removed face");
+    const verifyAt = ship.indexOf("verify_stamps || exit 1");
+    expect(buildEnd).toBeGreaterThan(-1);
+    expect(verifyAt).toBeGreaterThan(buildEnd);
+  });
+
+  it("a stamp mismatch REFUSES with the cure (re-run without --no-build)", () => {
+    expect(ship).toMatch(/is STALE .*re-run WITHOUT --no-build/);
+  });
+});

@@ -234,9 +234,15 @@ export interface ParamAtMostOneRow {
   cure?: string;
 }
 
-/** One required row: these fields must be stated on the lane. */
+/** One required row: these fields must be stated on the lane.
+ *  `any_of: true` makes the fields a ONE-OF anchor (the DECL
+ *  audit's row 2, 2026-10-10: the image-edit anchor is one list OR
+ *  any legacy key — a "required" the blank tolerance would gut and
+ *  either_or cannot say; refused only when NONE of the fields is
+ *  stated). */
 export interface ParamRequiredRow {
   fields: string[];
+  any_of?: boolean;
   cure?: string;
 }
 
@@ -287,6 +293,7 @@ export const ParamAtMostOneRow: z<ParamAtMostOneRow> = z.object({
 
 export const ParamRequiredRow: z<ParamRequiredRow> = z.object({
   fields: z.array(z.string().pattern(FIELD_NAME_RE)).min(1),
+  any_of: z.boolean().default(false),
   cure: z.string().default(""),
 });
 

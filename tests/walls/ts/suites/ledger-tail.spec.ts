@@ -70,9 +70,36 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
   assert.equal(t5.matched, 1)
   assert.equal((t5.entries[0] as { event?: string }).event, 'run.x1')
 
-  // 5. a missing journal reads empty (no throw).
-  const t6 = queue.ledger('50', '', )
-  assert.ok(Array.isArray(t6.entries))
+  // 5. THE MISSING-JOURNAL LAW, for real (the walls audit's row 13,
+  // 2026-10-10): the old arm queried the journal the earlier steps
+  // WROTE, so the missing path was never exercised — and the arm
+  // only asserted Array.isArray, which any answer satisfies. The
+  // door's own law is per FILE: with no ledger file on disk the
+  // tail is empty, and an event that matches nothing is empty too.
+  // Both are pinned: the matcher refuses to invent entries.
+  const t6 = queue.ledger('50', 'event-nobody-ever-wrote')
+  assert.ok(Array.isArray(t6.entries), 'the door answers an array')
+  assert.equal(t6.entries.length, 0, 'an unmatched event answers EMPTY (no phantom entries)')
+  assert.equal(t6.matched, 0, 'an unmatched event matches nothing')
+  // and the MISSING-FILE arm, through the REAL door over a root
+  // that never wrote a journal — a second queue seat, booted here
+  // (a wall re-implementing the reader would be its own oracle)
+  const emptyRoot = mkdtempSync(join(tmpdir(), 'ledger-empty-'))
+  const ctx2 = new Context()
+  const savedRoot = process.env['MELITE_STATE_ROOT']
+  process.env['MELITE_STATE_ROOT'] = emptyRoot
+  await ctx2.plugin(timerPlugin as unknown as Plugin)
+  await ctx2.plugin(queuePlugin as unknown as Plugin, { repoRoot: emptyRoot })
+  const queue2 = ctx2.get('queue', false) as {
+    ledger(rawLimit: string, rawEvent: string): { entries: Array<{ ts?: number; event?: string }>; shown: number; matched: number }
+  }
+  const missing = queue2.ledger('50', '')
+  assert.ok(missing !== undefined, 'the missing-journal seat answers (never throws)')
+  assert.deepEqual(missing.entries, [], 'a root with no ledger file answers EMPTY')
+  assert.equal(missing.matched, 0, 'a missing file matches nothing')
+  assert.equal(missing.shown, 0, 'a missing file shows nothing')
+  if (savedRoot === undefined) delete process.env['MELITE_STATE_ROOT']
+  else process.env['MELITE_STATE_ROOT'] = savedRoot
 
   // 6. the lane serves the tail over the ctx.get probe.
   const { makeEstateRequest } = await import('../../../../packages/harness/melite-tools/src/estate.ts')

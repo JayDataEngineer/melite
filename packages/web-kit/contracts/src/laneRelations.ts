@@ -80,6 +80,13 @@ export interface LaneAtMostOneRow {
  *  tolerance). */
 export interface LaneRequiredRow {
   readonly fields: readonly string[];
+  /** ONE-OF (2026-10-10, the DECL audit's row 2 — the vocabulary
+   *  could not say "at least one of these must be stated": the
+   *  image-edit anchor is ONE list OR any legacy key, and either_or
+   *  holds the blank tolerance by law). any_of: true turns the
+   *  fields into a one-of anchor: the refusal fires only when NONE
+   *  is stated, and the voice names the alternatives. */
+  readonly any_of?: boolean;
   readonly cure?: string;
 }
 
@@ -230,6 +237,20 @@ export function judgeLaneRelations(
     for (const row of rel.required ?? []) {
       if (row === null || typeof row !== 'object') continue
       const fields = Array.isArray(row.fields) ? row.fields.filter((f): f is string => typeof f === 'string') : []
+      // ANY_OF (the anchor law): the row is a one-of — satisfied by
+      // ANY member stated, refused only when NONE is. The fields are
+      // alternatives, not a list to complete.
+      if (row.any_of === true) {
+        if (fields.length === 0) continue
+        if (fields.some(stated)) continue
+        out.push({
+          field: fields[0] as string,
+          message:
+            'this lane requires one of ' + quote(fields) + ' — none is stated' +
+            (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ' — state one of them'),
+        })
+        continue
+      }
       const missing = fields.filter((f) => !stated(f))
       if (missing.length === 0) continue
       out.push({

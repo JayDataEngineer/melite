@@ -24,6 +24,7 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 // packages' pieces imported and the rows assembled inline. The
 // estate re-packages nothing.
 import draftsPlugin from '@melite/estate-drafts';
+import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
 // BenchDoc rides its defining file (the package index never
 // re-exports it) — type-only, erased at runtime.
 import type { BenchDoc } from "../../../../packages/estate/drafts/src/remote.ts";
@@ -296,6 +297,41 @@ test("bench/add-stage appends a normalized row; duplicate ids refuse", async () 
   );
   assert.ok(dup !== null && typeof dup === "object");
   assert.equal((dup as { code: string }).code, "bench/duplicate-stage");
+});
+
+test("THE ADMISSION SEAT IS LIVE (the walls audit's severest row, 2026-10-10): a real card registry rides the bench write door", async () => {
+  // Every bench arm above runs REGISTRY-LESS — the admission seat
+  // stands down (benchAdmissionOf finds no registry) and the wall
+  // proves storage mechanics only, never that the write door
+  // refuses what the run refuses. This arm boots the REAL registry
+  // (the same service the estate composes with) and pins the
+  // refusal voice: a model no family declares refuses at the write
+  // door, in the admission's own code.
+  const ctx = await boot();
+  const registry = new CardRegistryService(new Context());
+  await registry.prime();
+  ctx.provide("cardRegistry", registry);
+  await ctx.benchRemote.ensure({ session: "s1" }, sig);
+  const refused = await failureOf(
+    ctx.benchRemote.addStage(
+      "s1",
+      { card: "image-gen", params: { model: "frobnicate-net" } as never, expect_rev: 0 },
+      sig,
+    ),
+  );
+  assert.ok(refused !== null && typeof refused === "object", "the write refuses");
+  const code = (refused as { code: string }).code;
+  assert.ok(
+    code.startsWith("bench/") || /frobnicate|unknown|not.*boarded/i.test(JSON.stringify(refused)),
+    "the refusal names the model in an admission voice: " + code,
+  );
+  // and the honest row lands: a declared family admits
+  const okAdd = await ctx.benchRemote.addStage(
+    "s1",
+    { card: "image-gen", expect_rev: 0 },
+    sig,
+  );
+  assert.equal(okAdd.stage, "s_0");
 });
 
 test("bench/remove-stage splices; rewire binds inputs", async () => {

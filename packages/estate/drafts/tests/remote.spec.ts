@@ -1140,10 +1140,16 @@ describe("the bench verbs' rows over the remote", () => {
     const grouped = await svc.remoteExportGroup("fan", { stages: ["s_1", "s_0"], expect_rev: rev }, sig);
     rev = grouped.rev;
     rev = (await svc.remoteExportUngroup("fan", { stage: grouped.stage, expect_rev: rev }, sig)).rev;
+    // UNWIRE BEFORE REMOVE (2026-10-10, the write-seat audit's row
+    // 5): removing s_0 would orphan s_1's wire — a state the rewire
+    // door refuses to create — so the removal refuses it too. The
+    // honest order is the honest UI's order: clear the wire, then
+    // remove the stage. (One more verb rides the fanout count.)
+    rev = (await svc.rewire("fan", { stage: "s_1", input: "image", expect_rev: rev }, sig)).rev;
     rev = (await svc.removeStage("fan", { stage: "s_0", expect_rev: rev }, sig)).rev;
     const undone = await svc.undo("fan", {}, sig);
     assert.deepEqual(undone.undone, [rev]);
-    assert.deepEqual(heard, Array.from({ length: 11 }, () => "fan"));
+    assert.deepEqual(heard, Array.from({ length: 12 }, () => "fan"));
     off();
   });
 });
@@ -1612,5 +1618,43 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
       params: { design_prompt: "a warm narrator", voice_name: "warm_1" },
     }, null, sig);
     assert.equal(ok.delivered, true);
+  });
+
+  test("a params-only keystroke that orphans a wire refuses bench/dead-wire (the PAIR is judged, not the half)", async () => {
+    // 2026-10-10, the write-seat audit's row 3: the wiring gate ran
+    // only when the body carried `inputs`, so a params-only edit
+    // that dropped the "$image" spell left the wire bound to nothing
+    // — silently, while bench/patch refuses the identical body. The
+    // gate now judges the MERGED pair whenever either half changes.
+    const { ctx, domain } = await bootCtx();
+    await domain.table("docs").put("bench-pair", {
+      rev: 1,
+      doc: {
+        stages: [
+          { id: "s_0", card: "card-a", params: {} },
+          { id: "s_1", card: "card-b", params: { image: "$image" }, inputs: { image: { stage: "s_0", output: "image" } } },
+        ],
+      },
+    } as never);
+    const drafts = new DraftsRemoteService(ctx);
+    // the spell leaves; the wire stays — the exact orphan
+    const refused = await codeOf(drafts.patch("bench-pair", "s_1", {
+      params: { image: null },
+    }, null, sig));
+    assert.ok(refused.startsWith("bench/dead-wire|"), "the params-only orphan refuses: " + refused);
+    // nothing leaked: the spell is still there (the refused merge
+    // never landed)
+    const row = await domain.table("docs").get("bench-pair") as unknown as { doc: { stages: Array<{ params: Record<string, unknown> }> } };
+    assert.equal(row.doc.stages[1]!.params["image"], "$image");
+    // the honest cure lands: drop the wire FIRST (an inputs null),
+    // then the spell may leave
+    const unwired = await drafts.patch("bench-pair", "s_1", {
+      inputs: { image: null },
+    }, null, sig);
+    assert.equal(unwired.delivered, true);
+    const unwired2 = await drafts.patch("bench-pair", "s_1", {
+      params: { image: null },
+    }, null, sig);
+    assert.equal(unwired2.delivered, true);
   });
 });

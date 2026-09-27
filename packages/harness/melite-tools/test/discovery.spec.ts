@@ -388,6 +388,22 @@ describe('live door arms', () => {
     assert.deepEqual(dflt!.defaults, {})
   })
 
+  test('the variant row serves the DECL sampler_envelope (turbo lives in [4,8] steps / [1,2] cfg — the DECL audit row 3)', async () => {
+    // 2026-10-10: variantRow and laneContractOf both dropped the
+    // envelope — the bench judged a domain every face was silent
+    // about, so the composing agent learned [4,8] by refusal. The
+    // row carries it now (null for absent, the row's own law).
+    const spec = (await formSpecSweep('image-gen')) as Record<string, unknown>
+    const rows = spec['variants'] as Array<{ id: string; group: string; sampler_envelope?: { steps: number[]; cfg: number[] } | null }>
+    const turbo = rows.find((r) => r.id === 'turbo')
+    assert.ok(turbo, 'the turbo variant row serves')
+    assert.deepEqual(turbo!.sampler_envelope, { steps: [4, 8], cfg: [1, 2] })
+    // a variant that declares none serves null, never a missing key
+    const realism = rows.find((r) => r.id === 'realism')
+    assert.ok(realism, 'the realism row serves')
+    assert.equal(realism!.sampler_envelope, null)
+  })
+
   test('formSpecArm 404s unknown keys as null', async () => {
     assert.equal(await formSpecSweep('__no_such_key__'), null)
   })

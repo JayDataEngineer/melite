@@ -162,11 +162,25 @@ test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)"
   //    engine is live (this machine's real ComfyUI), "server not
   //    reachable" otherwise. The data carries the truth either way.
   const manage = ctx.get("manage", false) as { act(doc: unknown, signal: AbortSignal): Promise<{ ok: boolean; detail: string; data?: { endpoint?: { reachable?: boolean } } }> };
-  const st = await manage.act({ action: "status" }, sig);
+  // HERMETIC, ONE-DIRECTED (the walls audit's row 10, 2026-10-10):
+  // the old arm branched on the response's OWN reachable flag and
+  // then asserted the detail matched the branch — a door that lied
+  // in both fields passed its own oracle. The sandbox pins the
+  // endpoint config to {} (the same guard arm 4 uses), so the truth
+  // is FIXED before the call: not reachable, and the voice says so.
+  const hadStatusSandbox = process.env["INFERENCE_TEST_SANDBOX"];
+  process.env["INFERENCE_TEST_SANDBOX"] = "1";
+  let st: { ok: boolean; detail: string; data?: { endpoint?: { reachable?: boolean } } };
+  try {
+    st = await manage.act({ action: "status" }, sig);
+  } finally {
+    if (hadStatusSandbox === undefined) delete process.env["INFERENCE_TEST_SANDBOX"];
+    else process.env["INFERENCE_TEST_SANDBOX"] = hadStatusSandbox;
+  }
   assert.equal(st.ok, true);
-  const reachable = st.data?.endpoint?.reachable === true;
-  if (reachable) assert.match(st.detail, /server up/);
-  else assert.match(st.detail, /server not reachable/);
+  assert.notEqual(st.data?.endpoint?.reachable, true,
+    "the sandboxed status never claims a live engine (the oracle is fixed, not self-referential)");
+  assert.match(st.detail, /server not reachable/);
   // 4. the lifecycle guard, HERMETIC: INFERENCE_TEST_SANDBOX pins
   //    the endpoint config to {} (the leak gate) so the restart arm
   //    can never reach the live engine (provision≠managed → the BYO

@@ -160,14 +160,34 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   // emptiness is honest); booleans and sliders default in-schema.
   // Lose an owner, lose the build — the wolf walks through the
   // front door no more.
+  /** The named hand-built schema carriers — a card exempted from
+   *  the field census is listed here, so the exemption is an
+   *  argument, not a hole. EMPTY by the pin of 2026-10-10: the
+   *  h3 precedent card now carries a serialized dict like every
+   *  other card, so the census sees the WHOLE estate. The next
+   *  hand-built carrier must be named in this list to walk past the
+   *  wall — which is the point. */
+  const HAND_WRITTEN_CARRIERS: string[] = [];
+
   it("NO STARVING FIELD: every numeric params field has a default owner (schema or the owning family's DECL)", async (): Promise<void> => {
     const defs = await loadCardDefs();
     const starving: string[] = [];
+    const handWritten: string[] = [];
     for (const [cardId, def] of defs) {
       const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
         (def as { schema?: unknown }).schema;
       const dict = (carrier as { dict?: Record<string, { type?: string; meta?: { default?: unknown; extra?: { zone?: string; visible_when?: string } } }> | undefined })?.dict;
-      if (dict === undefined) continue; // hand-written carriers exempt (h3 precedent)
+      // THE EXEMPTION IS PINNED, NOT OPEN (the walls audit's row 15,
+      // 2026-10-10): a carrier without a `.dict` SKIPS the whole
+      // arm, and the exemption's own size was never counted — a
+      // card rewritten with a hand-built carrier walked out of the
+      // wall silently. The hand-written set is named here (h3's
+      // precedent): a NEW exemption is a deliberate edit that has
+      // to touch this list.
+      if (dict === undefined) {
+        handWritten.push(cardId);
+        continue;
+      }
       for (const [name, field] of Object.entries(dict)) {
         const meta = field?.meta;
         const zone = meta?.extra?.zone;
@@ -211,6 +231,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       }
     }
     assert.deepEqual(starving, [], "starving fields found:\n  " + starving.join("\n  "));
+    // the exemption list itself is a wall: hand-built carriers are
+    // named, never a growing hole
+    assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
+      `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
 
   // THE VARIANT-STAMP LAW (operator 2026-09-23, "base doesn't even
@@ -465,12 +489,14 @@ describe("requires is the union of requiresByFamily", () => {
   it("every real card's flat requires IS the union of its family map", async () => {
     await loadCardDefs();
     const svc = theService();
+    let compared = 0;
     for (const cardId of svc.cardIds()) {
       const def = svc.getCardDef(cardId) as {
         requires?: readonly string[]
         requiresByFamily?: Record<string, readonly string[]>
       };
       if (def.requiresByFamily === undefined) continue;
+      compared++;
       const union = [...new Set(Object.values(def.requiresByFamily).flat())].sort();
       const flat = [...(def.requires ?? [])].sort();
       assert.deepEqual(flat, union,
@@ -479,6 +505,15 @@ describe("requires is the union of requiresByFamily", () => {
         `they are maintained by hand and a mismatch either starves a flat consumer ` +
         `or over-claims a pack the family never declared`);
     }
+    // THE COMPARED FLOOR (the walls audit's row 8, 2026-10-10): the
+    // arm skipped every card without a requiresByFamily table — a
+    // rename that emptied the column made it a silent pass. The
+    // exact count is pinned (TWO cards carry the table today —
+    // the h3 lineage; the rest declare a flat list alone): a
+    // second card is a deliberate edit, and a rename that empties
+    // the column is a red wall.
+    assert.equal(compared, 2,
+      `the H4 union arm compared real cards (got ${String(compared)} — a second requiresByFamily table is a deliberate edit, an emptied column is a rename)`);
   });
 });
 
