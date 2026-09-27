@@ -103,6 +103,8 @@ import { CardArmError, phaseRefusal } from "./cardsArmError.ts";
 export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
+import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
+import { judgeLaneRelations, judgeLaneSurface, laneSurfaceOf } from "@melite/contracts/laneRelations";
 import { lanePackFolders, lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -514,6 +516,87 @@ export class CardRegistryService extends Service {
     // boarded = offered = admitted. Not-yet-downloaded weights are
     // the user's download prompt (provision_model), never a refusal
     return { ok: true };
+  }
+
+  /** THE LANE ADMISSION (2026-10-10, the YOU_ARE_A_LIAR fix shapes
+   *  1+3+5 — "bench-write enforces the DECL's relations: refusal in
+   *  the field's voice at the moment a state is built"). Resolves
+   *  the stage's (family × variant) lane through the SAME selection
+   *  the run composes with (prepareCardParams — one spelling), then
+   *  judges the DECL's declaration over the stamped body:
+   *  - the LANE SURFACE: a stated card field outside the variant's
+   *    declared surface fires nothing at compose — refused here, a
+   *    priori, named;
+   *  - the RELATION WORDS: requires / conflicts / together /
+   *    either_or (the judged grammar at @melite/contracts/
+   *    laneRelations — the same call the form gates inline with).
+   *  Families that declare no surface judge NOTHING (the legacy
+   *    truth: the card's union table authors the fields); a
+   *  selection error (unknown variant/quant, dangling refs) is NOT
+   *  this door's voice — the write passes and the run door refuses
+   *    with its own (the tolerance law, li-j: the write door never
+   *    grew the run door's other refusals). */
+  admitStageRelations(
+    card: string,
+    params: Record<string, unknown>,
+  ): { ok: true } | { ok: false; error: string } {
+    const def: CardDefinition | undefined = this.defsSync().get(card);
+    if (def === undefined) return { ok: true }; // mcp/flow ids — not lane-admitted
+    const mid: unknown = params["model"];
+    if (typeof mid !== "string" || mid === "") return { ok: true }; // model-less row
+    let prep: PreparedCard;
+    try {
+      prep = prepareCardParams(this, params, mid, "admission");
+    } catch {
+      // selection/dangling failures keep the run door's voice —
+      // this seat judges only the DECL's own words
+      return { ok: true };
+    }
+    const facts: Record<string, ModelFactsRow> = this.modelFacts();
+    const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
+    if (famRow === undefined) return { ok: true }; // familyless card unit — no lane
+    if (famRow.params === undefined) return { ok: true }; // legacy family: no surface declared
+    let sel: VariantSelection;
+    try {
+      sel = selectCardVariant(mid, famRow, params, "admission");
+    } catch {
+      return { ok: true }; // the run door's voice, same tolerance as above
+    }
+    // THE ROUTE-LENS LAW (probe receipt, 2026-10-10): a
+    // route-addressed row (model 'qwen3-tts-voicedesign-base')
+    // presents the family matrix with the HEAD re-addressed — its
+    // selection math picks the re-addressed customvoice row, but
+    // the LANE the run composes is the route's OWNING variant (the
+    // row's lane_inputs carry the owner's merged lane: synth_lane
+    // clone). A stated body variant still wins (R1); unstated, the
+    // route names its lane and the owner's surface is the truth.
+    let laneVariantId = sel.variantId;
+    if (mid !== prep.fam && (params["variant"] === undefined || params["variant"] === null || params["variant"] === "")) {
+      const ownerVariant = famRow.variants.find(
+        (v) => v.route === mid || (v.cells ?? []).some((c) => c.route === mid),
+      );
+      if (ownerVariant !== undefined) laneVariantId = ownerVariant.id;
+    }
+    const variantRow: VariantRow | undefined = famRow.variants.find(
+      (v) => v.id === laneVariantId,
+    );
+    const relations: LaneRelations[] = [];
+    if (famRow.relations !== undefined) relations.push(famRow.relations);
+    if (variantRow?.relations !== undefined) relations.push(variantRow.relations);
+    const surface: readonly string[] | null = laneSurfaceOf(
+      famRow.params,
+      variantRow?.params,
+    );
+    const violations: LaneViolation[] = [
+      ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
+      ...judgeLaneRelations(relations, prep.params),
+    ];
+    if (violations.length === 0) return { ok: true };
+    return {
+      ok: false,
+      error: "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
+        violations.map((v) => v.message).join("; "),
+    };
   }
 
   /** THE SCHEMA-MASTER REPAIR (operator law 2026-09-24 — receipt:

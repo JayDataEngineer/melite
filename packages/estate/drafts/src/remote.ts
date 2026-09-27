@@ -211,6 +211,17 @@ interface StageResolver {
     card: string,
     model: unknown,
   ): { ok: true } | { ok: false; error: string; offered: string[] };
+  /** THE LANE ADMISSION (2026-10-10, the YOU_ARE_A_LIAR fix shape
+   *  3): the registry judges the stage's declared lane — surface +
+   *  relation words — over the SAME prepared params the next run
+   *  composes, refusing at WRITE TIME in the field's voice with the
+   *  cure in the message. The form gates inline from the same
+   *  declaration (the judged grammar is shared:
+   *  @melite/contracts/laneRelations). */
+  admitStageRelations?(
+    card: string,
+    params: Record<string, unknown>,
+  ): { ok: true } | { ok: false; error: string };
   /** THE SCHEMA-MASTER REPAIR (2026-09-24): the registry's longest
    *  boarded-family dash-prefix repair for era model ids. Nullable —
    *  no match means no repair, the original refusal stands. */
@@ -292,6 +303,51 @@ export function admissionOf(ctx: Context): ((card: string, params: Record<string
         throw original;
       }
     }
+  };
+}
+
+/** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
+ *  shape 3): after the model admission passes, the registry judges
+ *  the DECL's own words — the lane surface + the relation words —
+ *  over the merged stage params, refusing at WRITE TIME in the
+ *  field's voice with the cure in the message (the operator's
+ *  incident A: CustomVoice + design_prompt without voice_name,
+ *  refused at bench-write, named, cured). RESTORED rows are exempt
+ *  (the same carve the model repair rides: the archive loads, the
+ *  Run refusal with the cure teaches — a fresh composer gets the a
+ *  priori voice). Returns undefined when the registry seat offers
+ *  no lane admission (registry-less lanes). Exported for the wall
+ *  (a pure factory over the resolver seat, the admissionOf
+ *  precedent). */
+export function laneAdmissionOf(
+  ctx: Context,
+): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+  const reg = resolverOf(ctx);
+  if (reg === null || reg.admitStageRelations === undefined) return undefined;
+  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
+    if (provenance === "restored") return; // the archive loads; Run teaches
+    const verdict = reg.admitStageRelations!(card, params);
+    if (!verdict.ok) {
+      throw new RemoteError("bench/lane-refusal", verdict.error, { card });
+    }
+  };
+}
+
+/** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
+ *  admission (board + repair law) THEN the lane admission (the
+ *  DECL's surface + relation words — fix shape 3). The pair is what
+ *  every params-bearing bench write walks (ensure/patch/add/load);
+ *  either refusing refuses the write in its own voice. */
+export function benchAdmissionOf(
+  ctx: Context,
+): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined {
+  const modelAdmit = admissionOf(ctx);
+  const laneAdmit = laneAdmissionOf(ctx);
+  if (modelAdmit === undefined) return laneAdmit ?? undefined;
+  if (laneAdmit === undefined) return modelAdmit;
+  return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
+    modelAdmit(card, params, provenance);
+    laneAdmit(card, params, provenance);
   };
 }
 
@@ -881,7 +937,7 @@ export class BenchRemoteService extends TypertRemoteService {
         { cause: error },
       );
     }
-    const row = await ensureBench(drafts, doc, admissionOf(this.ctx));
+    const row = await ensureBench(drafts, doc, benchAdmissionOf(this.ctx));
     // ensureBench gates doc.session as a valid key before this line —
     // the row's own session can never differ here (no dead fallback).
     notifyBenchChange(String(doc["session"]));
@@ -1009,7 +1065,7 @@ export class BenchRemoteService extends TypertRemoteService {
   ): Promise<BenchPatchRow> {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await patchBench(drafts, session, doc, admissionOf(this.ctx));
+    const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
     notifyBenchChange(session);
     return row;
   }
@@ -1021,7 +1077,7 @@ export class BenchRemoteService extends TypertRemoteService {
   ): Promise<BenchStageRow> {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await addStageBench(drafts, session, doc, admissionOf(this.ctx));
+    const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
     notifyBenchChange(session);
     return row;
   }

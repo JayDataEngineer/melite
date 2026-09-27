@@ -1402,3 +1402,122 @@ test("a params patch carrying calls[].transition LANDS and persists (the seam to
   assert.equal(row.doc.bench.log.at(-1)!.summary, "params:calls",
     "the bench log names the merged inner keys");
 });
+
+// ── THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
+// shape 3: "bench-write enforces the DECL's relations — refusal in
+// the field's voice at the moment a state is built"). The registry
+// judges the stage's declared lane (surface + relation words); this
+// is the DOOR's wiring law — the refusal shape, the composed
+// admission, and the restored-archive carve. The declaration's own
+// judgment walls live in estate-queue (cards-lane-law.spec.ts).
+describe("laneAdmissionOf (the DECL's words at the write door)", () => {
+  test("a lane refusal refuses add_stage with bench/lane-refusal — the row never lands", async () => {
+    const { ctx } = await bootCtx();
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } => ({ ok: true }),
+      admitStageRelations: (card: string, params: Record<string, unknown>):
+        { ok: true } | { ok: false; error: string } =>
+        params["design_prompt"] !== undefined && params["voice_name"] === undefined
+          ? {
+              ok: false,
+              error: "lane 'qwen3-tts/customvoice' refuses the state: fields 'voice_name' + 'design_prompt' ride together on this lane (state all or none) — the persona export needs both halves — name the voice and describe it, or drop both",
+            }
+          : { ok: true },
+    });
+    const bench = new BenchRemoteService(ctx);
+    await bench.ensure({ session: "lane-a" }, sig);
+    const err = await errOf(bench.addStage("lane-a", {
+      card: "tts",
+      params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
+      expect_rev: 0,
+    }, sig));
+    assert.equal(err.code, "bench/lane-refusal");
+    assert.match(err.message ?? "", /voice_name/);
+    assert.match(err.message ?? "", /design_prompt/);
+    assert.deepEqual(err.details, { card: "tts" });
+    assert.equal(((await bench.get("lane-a", sig)).stages as unknown[]).length, 0,
+      "the refused row never lands");
+    // the CURED state lands (the refused write never bumped the rev)
+    const row = await bench.addStage("lane-a", {
+      card: "tts",
+      params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator", voice_name: "warm_1" },
+      expect_rev: 0,
+    }, sig);
+    assert.equal(row.stage, "s_0");
+  });
+
+  test("the composed admission: model board first, lane words second — patch lands poison as refused as add", async () => {
+    const { ctx } = await bootCtx();
+    const seenModels: unknown[] = [];
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (card: string, model: unknown): { ok: true } => { seenModels.push(model); return { ok: true }; },
+      admitStageRelations: (card: string, params: Record<string, unknown>):
+        { ok: true } | { ok: false; error: string } =>
+        params["voice"] !== undefined && params["ref_audio"] !== undefined
+          ? { ok: false, error: "lane 'qwen3-tts/base' refuses the state: field 'voice' fires nothing on this lane — drop it or switch lane" }
+          : { ok: true },
+    });
+    const bench = new BenchRemoteService(ctx);
+    await bench.ensure({ session: "lane-p" }, sig);
+    await bench.addStage("lane-p", {
+      card: "tts", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" },
+      expect_rev: 0,
+    }, sig);
+    const refusal = await codeOf(bench.patch("lane-p", {
+      stage: "s_0", params: { voice: "vivian" }, expect_rev: 1,
+    }, sig));
+    assert.ok(refusal.startsWith("bench/lane-refusal|"),
+      "the patch refusal is the lane seat's voice: " + refusal);
+    assert.deepEqual(seenModels, ["qwen3-tts", "qwen3-tts"],
+      "the model admission ran on both writes (composed, in order)");
+  });
+
+  test("RESTORED rows are exempt — the archive loads, the Run refusal teaches", async () => {
+    const { ctx } = await bootCtx();
+    let judged = 0;
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } => ({ ok: true }),
+      admitStageRelations: (card: string, params: Record<string, unknown>):
+        { ok: true } | { ok: false; error: string } => {
+        judged += 1;
+        return params["design_prompt"] !== undefined
+          ? { ok: false, error: "lane refuses" }
+          : { ok: true };
+      },
+    });
+    const bench = new BenchRemoteService(ctx);
+    // a restored history load carrying the wound lands untouched
+    const row = await bench.ensure({
+      session: "lane-r",
+      stages: [{
+        id: "s_0", card: "tts", provenance: "restored",
+        params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
+      }],
+    }, sig);
+    assert.equal(row.created, true);
+    // a live composer naming the same state gets the a priori voice
+    const refusal = await codeOf(bench.addStage("lane-r", {
+      card: "tts", params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
+      expect_rev: 0,
+    }, sig));
+    assert.ok(refusal.startsWith("bench/lane-refusal|"),
+      "the live composer gets the a priori voice: " + refusal);
+  });
+
+  test("a registry without the lane seat admits as before (registry-less lanes never throw)", async () => {
+    const { ctx } = await bootCtx();
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } => ({ ok: true }),
+    });
+    const bench = new BenchRemoteService(ctx);
+    const row = await bench.addStage("lane-free", {
+      card: "tts", params: { model: "qwen3-tts", text: "hello", design_prompt: "wound" },
+      expect_rev: 0,
+    }, sig);
+    assert.equal(row.stage, "s_0");
+  });
+});
