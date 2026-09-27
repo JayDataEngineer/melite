@@ -42,7 +42,7 @@ export declare class RunsRemoteService extends TypertRemoteService {
     /** Endpoint `runs/stop` — the flag + interrupt (registry seat). */
     remoteExportStop(runId: string, signal: AbortSignal): Promise<RunRow>;
     /** Endpoint `runs/list` — the restore-port envelope (registry
-     *  seat; the raw limit string keeps py int() semantics). */
+     *  seat; the raw limit string keeps int() semantics). */
     remoteExportList(rawLimit: string, signal: AbortSignal): Promise<{
         count: number;
         runs: RunRow[];

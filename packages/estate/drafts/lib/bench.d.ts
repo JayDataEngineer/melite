@@ -17,6 +17,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly card: string;
             readonly offered: readonly string[];
         };
+        /** THE LANE REFUSAL (2026-10-10, the YOU_ARE_A_LIAR fix shape 3):
+         *  the DECL's own words — the lane's declared surface + relation
+         *  words — refused the state at write time, in the field's voice,
+         *  with the cure in the message. Declared here so typed clients
+         *  and codecs carry the shape (the door audit's MEDIUM-5: the
+         *  code shipped undeclared and the runtime only agreed by luck). */
+        "bench/lane-refusal": {
+            readonly card: string;
+        };
         /** The CAS law: expect_rev missing, or the bench moved under the
          *  caller — current_rev is the rev to re-read from. */
         "bench/cas-conflict": {
@@ -122,10 +131,6 @@ export interface BenchGetRow {
         readonly [key: string]: JsonValue;
     }[];
 }
-/** ensure — create the bench (birth: rev 0, empty log) or LOAD onto
- *  it (replace stages, snapshot inverse; a non-empty bench demands
- *  overwrite: true — the overwrite law). The only arm that may
- *  create; everything else refuses a missing bench. */
 export declare function ensureBench(drafts: Domain<DraftsDomainSpec>, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchEnsureRow>;
 /** get — one session's bench block as the served row. */
 export declare function getBench(drafts: Domain<DraftsDomainSpec>, session: string): BenchGetRow;
@@ -228,7 +233,7 @@ export interface BenchUndoRow {
  *  newest-first, append ONE undo entry carrying the pre-undo
  *  snapshot. Undo entries are NEVER candidates — a plain undo
  *  walks ACTIONS (targeting them would ping-pong). */
-export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchUndoRow>;
+export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchUndoRow>;
 type BenchChangeListener = (session: string) => void;
 /** Subscribe to bench writes; returns the unsubscribe. */
 export declare function onBenchChange(fn: BenchChangeListener): () => void;

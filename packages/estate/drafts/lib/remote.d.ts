@@ -128,8 +128,48 @@ export declare function sameResultOutputs(a: unknown, b: unknown): boolean;
  *  refusal with the board is the composer's teaching surface.
  *  Exported for the wall (a pure factory over the resolver seat). */
 export declare function admissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+/** The marker that says "this row is being restored BY US" — a
+ *  symbol, so a request body carrying the string "restored" buys
+ *  nothing (2026-10-10, the door audit's HIGH-2: the carve was
+ *  purchasable). Internal restore arms pass this; nothing over the
+ *  wire can. */
+export declare const RESTORED_PROVENANCE: unique symbol;
+/** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
+ *  shape 3): after the model admission passes, the registry judges
+ *  the DECL's own words — the lane surface + the relation words —
+ *  over the merged stage params, refusing at WRITE TIME in the
+ *  field's voice with the cure in the message (the operator's
+ *  incident A: CustomVoice + design_prompt without voice_name,
+ *  refused at bench-write, named, cured). RESTORED rows are exempt
+ *  (the same carve the model repair rides: the archive loads, the
+ *  Run refusal with the cure teaches — a fresh composer gets the a
+ *  priori voice). Returns undefined when the registry seat offers
+ *  no lane admission (registry-less lanes). Exported for the wall
+ *  (a pure factory over the resolver seat, the admissionOf
+ *  precedent). */
+export declare function laneAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
+/** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
+ *  admission (board + repair law) THEN the lane admission (the
+ *  DECL's surface + relation words — fix shape 3). The pair is what
+ *  every params-bearing bench write walks (ensure/patch/add/load);
+ *  either refusing refuses the write in its own voice. */
+export declare function benchAdmissionOf(ctx: Context): ((card: string, params: Record<string, unknown>, provenance: unknown) => void) | undefined;
 /** The drafts Remote owner: list/get over the storage domain. */
 export declare class DraftsRemoteService extends TypertRemoteService {
+    /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
+     *  audit's CRITICAL): the same composed admission the bench
+     *  doors walk, injected at construction from the resolver seat. A
+     *  bench doc is a drafts doc ("bench-<session>" satisfies
+     *  DRAFT_ID_RE), and the GUI's param editor rides THIS door — so
+     *  without the seat a keystroke could write a stage the agent's
+     *  bench/patch would refuse. Registry-less lanes get undefined
+     *  (the standing degrade, never a throw). */
+    /** Read LAZILY, never at construction (2026-10-10): the drafts row
+     *  can be constructed before the cards registry seats, and a
+     *  captured `undefined` would be a permanent silent degrade — the
+     *  exact class of hole this door was closed for. One resolver
+     *  lookup per write, and the seat is whatever is live then. */
+    private benchAdmit;
     constructor(ctx: Context);
     /** Endpoint `drafts/list` — the domain index, recency DESC. */
     remoteExportList(signal: AbortSignal): Promise<DraftListResult>;

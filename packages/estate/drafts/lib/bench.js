@@ -105,6 +105,51 @@ function refuseUnknown(body, allowed) {
  *  it (replace stages, snapshot inverse; a non-empty bench demands
  *  overwrite: true — the overwrite law). The only arm that may
  *  create; everything else refuses a missing bench. */
+/** THE INTENT-SYNC LAW (roadmap 2026-09-26 — BRIEF14 finding #3,
+ *  the stale `bench_snapshot.intent`): a bench born in card mode
+ *  carries the card id as its intent, and the studio consult keys
+ *  cardName off it — so an intent that names a card MUST name a
+ *  card the bench still holds. A wholesale load left the old card
+ *  id riding: a bench that ran tts and now holds an h3 stage still
+ *  said "tts", and every run's bench_snapshot inherited the lie.
+ *  The sync keys on ORPHANING, the only signal the domain owns:
+ *  a label that named a card the PREVIOUS composition held and the
+ *  NEXT composition dropped was true and just went stale — it
+ *  re-derives (the last card-carrying stage wins; a card-less
+ *  result keeps the label, inert with nothing to mislabel).
+ *  Everything else rides untouched: a STATED intent wins (the
+ *  caller owns the label), free prose never matched a held card id
+ *  so it never orphans, a pure add_stage grows the card set and
+ *  cannot orphan, and a label that was already wrong before the
+ *  change is not this law's to rewrite. */
+function syncIntent(doc, before, after) {
+    const cur = typeof doc["intent"] === "string" ? doc["intent"] : "";
+    if (cur === "" || cur === "bench")
+        return;
+    const prevCards = new Set();
+    for (const row of before) {
+        const c = row["card"];
+        if (typeof c === "string" && c !== "")
+            prevCards.add(c);
+    }
+    if (!prevCards.has(cur))
+        return;
+    const nextCards = new Set();
+    for (const row of after) {
+        const c = row["card"];
+        if (typeof c === "string" && c !== "")
+            nextCards.add(c);
+    }
+    if (nextCards.has(cur))
+        return;
+    for (let i = after.length - 1; i >= 0; i--) {
+        const c = after[i]["card"];
+        if (typeof c === "string" && c !== "") {
+            doc["intent"] = c;
+            return;
+        }
+    }
+}
 export async function ensureBench(drafts, body, admit) {
     refuseUnknown(body, ENSURE_KEYS);
     const session = body["session"];
@@ -217,6 +262,7 @@ export async function ensureBench(drafts, body, admit) {
     }
     admitWiringList(staged, session);
     doc["stages"] = staged;
+    syncIntent(doc, before, staged);
     if (typeof body["intent"] === "string")
         doc["intent"] = body["intent"];
     const entry = {
@@ -256,6 +302,45 @@ export function getBench(drafts, session) {
         });
     }
     const doc = rec.doc;
+    // THE SERVE-TIME CRIME GATE (2026-10-10, the operator's live
+    // report: a bench doc born BEFORE the bench/self-wire law
+    // persisted its crime and served silently until a run tripped a
+    // generic wall). Scoped NARROW, by design: the read path is
+    // deliberately tolerant of loose-but-harmless shapes (junk cells
+    // and dead wires are refused with precise voices at the run door
+    // and at the next write door; the patch-tolerance laws pin that
+    // they serve). The two crimes refused HERE are the ones that
+    // compose degenerately: a SELF-WIRE (a cycle — the run's generic
+    // no-FromStage voice hid it) and a wire to a DEAD STAGE (its
+    // source removed after the fact). Whatever wrote the doc — an
+    // older door, a hand edit — the store is held at read.
+    if (Array.isArray(doc["stages"])) {
+        for (const st of doc["stages"]) {
+            if (typeof st !== "object" || st === null)
+                continue;
+            const row = st;
+            const id = typeof row["id"] === "string" ? row["id"] : undefined;
+            const ins = row["inputs"];
+            if (typeof ins !== "object" || ins === null || Array.isArray(ins))
+                continue;
+            for (const [chan, ref] of Object.entries(ins)) {
+                const rr = ref;
+                if (typeof rr !== "object" || rr === null || typeof rr["stage"] !== "string")
+                    continue;
+                const up = rr["stage"];
+                if (id !== undefined && up === id) {
+                    throw new RemoteError("bench/self-wire", "input '" + chan + "' wires its own stage '" + id + "' — a cycle composes nothing. " +
+                        "This wire predates the bench door's self-wire law and persisted; clear it (rewire the input with no source, or wire a real prior stage).", { session, stage: id, input: chan });
+                }
+                // A wire to a stage NOT on the bench (its source removed
+                // later, or a crafted-log doc) stays the write doors' and
+                // the run door's voice — crafted-undo docs may hold one
+                // legitimately between mutations (bench-undo's inverse
+                // table); serve must not brick the bench a fix needs to
+                // open.
+            }
+        }
+    }
     const block = benchBlockOf(doc);
     return {
         draft_id: draftId,
@@ -439,6 +524,18 @@ const ADD_KEYS = ["id", "card", "engine", "params", "inputs", "outputs", "expect
  * clean, reads and compose never see the poison, Probe B reads a
  * true array. */
 const wireParams = (v) => (isRecord(v) ? unwrapItemArrays(v) : v);
+/** Admit one RESTORED stage state (the undo arms): the same seat,
+ *  no restored carve — an undo rewrites live-authored params, so it
+ *  is judged like any other write. A stage with no card row (an mcp
+ *  or flow id) is not this seat's business. */
+function admitRestored(admit, stage, params) {
+    if (admit === undefined)
+        return;
+    const card = stage["card"];
+    if (typeof card !== 'string' || card === '')
+        return;
+    admit(card, params, stage["provenance"]);
+}
 function admitStage(admit, card, params, provenance = undefined) {
     if (admit === undefined)
         return;
@@ -603,6 +700,8 @@ export async function addStageBench(drafts, session, body, admit) {
     admitWiring(row, row["params"], row["inputs"], [...stages.map((r) => String(r["id"] ?? "")), stageId], stageId, session);
     stages.push(row);
     loaded.doc["stages"] = stages;
+    // add_stage never syncs the intent (the orphaning law): a pure
+    // add grows the card set — a label true before stays true after.
     const newRev = await appendAndSave(drafts, loaded, {
         author,
         kind: "add_stage",
@@ -766,8 +865,10 @@ export async function removeStageBench(drafts, session, body) {
         throw new RemoteError("bench/stage-not-found", "stage not found: " + stageId, { session, stage: stageId });
     }
     const row = stages[idx];
+    const before = [...stages];
     stages.splice(idx, 1);
     loaded.doc["stages"] = stages;
+    syncIntent(loaded.doc, before, stages);
     const newRev = await appendAndSave(drafts, loaded, {
         author,
         kind: "remove_stage",
@@ -848,7 +949,7 @@ const UNDO_KEYS = ["n", "author", "expect_rev"];
  *  newest-first, append ONE undo entry carrying the pre-undo
  *  snapshot. Undo entries are NEVER candidates — a plain undo
  *  walks ACTIONS (targeting them would ping-pong). */
-export async function undoBench(drafts, session, body) {
+export async function undoBench(drafts, session, body, admit) {
     refuseUnknown(body, UNDO_KEYS);
     const loaded = await loadBench(drafts, session);
     if (body["expect_rev"] !== undefined) {
@@ -886,7 +987,7 @@ export async function undoBench(drafts, session, body) {
     }
     const stagesBefore = stagesOf(loaded.doc);
     for (const e of targets)
-        applyInverse(loaded.doc, e);
+        applyInverse(loaded.doc, e, admit);
     const undone = targets
         .map((e) => e.rev)
         .sort((a, b) => a - b);
@@ -908,7 +1009,7 @@ export async function undoBench(drafts, session, body) {
 /** Apply one entry's inverse payload to the doc (best-effort per
  *  entry; a stage an undo already removed is skipped loudly-free —
  *  the snapshot entries carry the coarse fallback). */
-function applyInverse(doc, e) {
+function applyInverse(doc, e, admit) {
     const inv = isRecord(e.inverse)
         ? e.inverse
         : {};
@@ -930,6 +1031,15 @@ function applyInverse(doc, e) {
             for (const k of added)
                 delete cur[k];
         }
+        // UNDO IS A WRITE (2026-10-10, the door audit's HIGH-3): the
+        // inverse restores params wholesale, so without this an undo was
+        // the laundering path — plant a poison through a door that is not
+        // judged, patch it clean, then undo back onto the poison. The
+        // restored state walks the same composed admission BEFORE it
+        // lands, and NO restored exemption applies: these were
+        // live-authored states, so re-judging is safe and a refusal is
+        // loud.
+        admitRestored(admit, st, cur);
         st["params"] = cur;
         return;
     }

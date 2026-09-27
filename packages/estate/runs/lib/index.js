@@ -75,7 +75,7 @@ let RunsRemoteService = (() => {
             return (await this.ctx.runs.stop(runId, signal));
         }
         /** Endpoint `runs/list` — the restore-port envelope (registry
-         *  seat; the raw limit string keeps py int() semantics). */
+         *  seat; the raw limit string keeps int() semantics). */
         async remoteExportList(rawLimit, signal) {
             return (await this.ctx.runs.list(rawLimit, signal));
         }

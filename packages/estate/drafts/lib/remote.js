@@ -140,7 +140,7 @@ export function admissionOf(ctx) {
             return;
         }
         catch (original) {
-            if (provenance !== "restored"
+            if (provenance !== RESTORED_PROVENANCE
                 || typeof params["model"] !== "string"
                 || params["model"] === ""
                 || reg.repairStageModel === undefined)
@@ -162,6 +162,66 @@ export function admissionOf(ctx) {
                 throw original;
             }
         }
+    };
+}
+/** The marker that says "this row is being restored BY US" — a
+ *  symbol, so a request body carrying the string "restored" buys
+ *  nothing (2026-10-10, the door audit's HIGH-2: the carve was
+ *  purchasable). Internal restore arms pass this; nothing over the
+ *  wire can. */
+export const RESTORED_PROVENANCE = Symbol("melite.restored-provenance");
+/** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
+ *  shape 3): after the model admission passes, the registry judges
+ *  the DECL's own words — the lane surface + the relation words —
+ *  over the merged stage params, refusing at WRITE TIME in the
+ *  field's voice with the cure in the message (the operator's
+ *  incident A: CustomVoice + design_prompt without voice_name,
+ *  refused at bench-write, named, cured). RESTORED rows are exempt
+ *  (the same carve the model repair rides: the archive loads, the
+ *  Run refusal with the cure teaches — a fresh composer gets the a
+ *  priori voice). Returns undefined when the registry seat offers
+ *  no lane admission (registry-less lanes). Exported for the wall
+ *  (a pure factory over the resolver seat, the admissionOf
+ *  precedent). */
+export function laneAdmissionOf(ctx) {
+    const reg = resolverOf(ctx);
+    if (reg === null || reg.admitStageRelations === undefined)
+        return undefined;
+    return (card, params, provenance) => {
+        // THE CARVE IS THE SERVER'S, NOT THE CLIENT'S (2026-10-10, the
+        // door audit's HIGH-2): `provenance` arrives in the request body,
+        // and melite_construct's load verb forwards it verbatim — so a
+        // caller could exempt any state by claiming "restored", and the
+        // one receipt for the carve in the suite WAS that bypass. The
+        // carve now rides a marker the SERVER sets, never a field a
+        // caller writes: a domain-internal restore (bench-load) passes
+        // the symbol below, and a client claim is just a string. The run
+        // seat re-judges the DECL anyway (li-s), so a pre-law archive
+        // still teaches at Run — the carve only spares a live composer
+        // the a priori voice, and it is no longer purchasable.
+        if (provenance === RESTORED_PROVENANCE)
+            return; // the archive loads; Run teaches
+        const verdict = reg.admitStageRelations(card, params);
+        if (!verdict.ok) {
+            throw new RemoteError("bench/lane-refusal", verdict.error, { card });
+        }
+    };
+}
+/** THE BENCH-WRITE ADMISSION, COMPOSED (2026-10-10): the model
+ *  admission (board + repair law) THEN the lane admission (the
+ *  DECL's surface + relation words — fix shape 3). The pair is what
+ *  every params-bearing bench write walks (ensure/patch/add/load);
+ *  either refusing refuses the write in its own voice. */
+export function benchAdmissionOf(ctx) {
+    const modelAdmit = admissionOf(ctx);
+    const laneAdmit = laneAdmissionOf(ctx);
+    if (modelAdmit === undefined)
+        return laneAdmit ?? undefined;
+    if (laneAdmit === undefined)
+        return modelAdmit;
+    return (card, params, provenance) => {
+        modelAdmit(card, params, provenance);
+        laneAdmit(card, params, provenance);
     };
 }
 /** Attach the served `resolved` map per stage (prepareCardParams'
@@ -246,6 +306,22 @@ let DraftsRemoteService = (() => {
             __esDecorate(this, null, _remoteExportGet_decorators, { kind: "method", name: "remoteExportGet", static: false, private: false, access: { has: obj => "remoteExportGet" in obj, get: obj => obj.remoteExportGet }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             if (_metadata) Object.defineProperty(this, Symbol.metadata, { enumerable: true, configurable: true, writable: true, value: _metadata });
+        }
+        /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
+         *  audit's CRITICAL): the same composed admission the bench
+         *  doors walk, injected at construction from the resolver seat. A
+         *  bench doc is a drafts doc ("bench-<session>" satisfies
+         *  DRAFT_ID_RE), and the GUI's param editor rides THIS door — so
+         *  without the seat a keystroke could write a stage the agent's
+         *  bench/patch would refuse. Registry-less lanes get undefined
+         *  (the standing degrade, never a throw). */
+        /** Read LAZILY, never at construction (2026-10-10): the drafts row
+         *  can be constructed before the cards registry seats, and a
+         *  captured `undefined` would be a permanent silent degrade — the
+         *  exact class of hole this door was closed for. One resolver
+         *  lookup per write, and the seat is whatever is live then. */
+        benchAdmit() {
+            return benchAdmissionOf(this.ctx);
         }
         constructor(ctx) {
             super(ctx, "draftsRemote", { namespace: "drafts" });
@@ -498,6 +574,23 @@ let DraftsRemoteService = (() => {
                     else
                         merged[k] = incoming[k];
                 }
+                // THE DRAFTS DOOR IS A BENCH DOOR (2026-10-10, the door
+                // audit's CRITICAL): bench docs live in THIS table (a
+                // "bench-<session>" id satisfies DRAFT_ID_RE), and the GUI's
+                // param editor rides exactly this call (card-view's
+                // patchStageParams) — so every keystroke edited a live stage
+                // with the model board AND the lane relations unjudged, while
+                // the agent's bench/patch refused the identical body. The
+                // merged view (never the patch arm alone — a per-key merge
+                // composes with what the row already carried) walks the same
+                // composed admission, BEFORE the assignment: the domain's
+                // cached record is mutated in place below, so a refusal after
+                // the assignment would leak the refused merge.
+                const stageCard = typeof stage["card"] === "string" ? stage["card"] : "";
+                const admit = this.benchAdmit();
+                if (stageCard !== "" && admit !== undefined) {
+                    admit(stageCard, merged, stage["provenance"]);
+                }
                 stage["params"] = merged;
             }
             for (const key of ["inputs", "inputOutputs"]) {
@@ -729,7 +822,7 @@ let BenchRemoteService = (() => {
             catch (error) {
                 throw new RemoteError("bench/store-failed", thrownMessage(error), {}, { cause: error });
             }
-            const row = await ensureBench(drafts, doc, admissionOf(this.ctx));
+            const row = await ensureBench(drafts, doc, benchAdmissionOf(this.ctx));
             // ensureBench gates doc.session as a valid key before this line —
             // the row's own session can never differ here (no dead fallback).
             notifyBenchChange(String(doc["session"]));
@@ -797,14 +890,14 @@ let BenchRemoteService = (() => {
         async patch(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await patchBench(drafts, session, doc, admissionOf(this.ctx));
+            const row = await patchBench(drafts, session, doc, benchAdmissionOf(this.ctx));
             notifyBenchChange(session);
             return row;
         }
         async addStage(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await addStageBench(drafts, session, doc, admissionOf(this.ctx));
+            const row = await addStageBench(drafts, session, doc, benchAdmissionOf(this.ctx));
             notifyBenchChange(session);
             return row;
         }
@@ -825,7 +918,7 @@ let BenchRemoteService = (() => {
         async undo(session, doc, signal) {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
-            const row = await undoBench(drafts, session, doc);
+            const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
             notifyBenchChange(session);
             return row;
         }
