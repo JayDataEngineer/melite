@@ -2,6 +2,7 @@
  * reorder/group gestures, the drop zones (extracted from CardsTab.tsx
  * hour 15). */
 
+import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, IconPlayOutline16, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { titleCaseId } from '@melite/card-base/spec'
@@ -288,14 +289,37 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     if (bench.kind !== 'bench' || name === '') return
     const slug = 'saved-' + name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40)
     setSaveError(null)
-    fetch('/v1/bench/ensure', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ session: slug, author: 'user', intent: name, stages: bench.stages.map((st) => ({ ...st, result: undefined, runStatus: undefined, resolved: undefined })) }),
-    }).then(async (res) => {
-      if (!res.ok) { setSaveError('save refused (' + (await res.json().catch(() => null) as { error?: string } | null)?.error + ')'); return }
-      setSaving(false); setSaveName('')
-    }).catch((e: unknown) => { setSaveError('save failed — ' + (e instanceof Error ? e.message : String(e))) })
+    // THE SAVE RIDES THE REBASE + STRIP LAWS (2026-10-10, the wire
+    // audit's H3): this was a one-shot ensure with no expect_rev and
+    // a hand-rolled strip of three keys — so saving the same name
+    // twice answered a raw bench/cas-conflict (or overwrite-required)
+    // at the operator, and the strip could miss a key the birth arm
+    // strips. Both laws have owners now: the rebase add-stage rides,
+    // and the strip is the CONTRACT's list, not three literals.
+    const stages = bench.stages.map((st) => {
+      const row: Record<string, unknown> = { ...st }
+      for (const key of BIRTH_STRIP_KEYS) delete row[key]
+      delete row['provenance']
+      return row
+    })
+    const attempt = (expectRev: number | null): Promise<Response> =>
+      fetch('/v1/bench/ensure', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          session: slug, author: 'user', intent: name, stages, overwrite: true,
+          ...(expectRev === null ? {} : { expect_rev: expectRev }),
+        }),
+      })
+    // the rebase law: a fresh doc, then the current rev, then a last
+    // un-fenced attempt — never a raw CAS voice at the operator
+    attempt(null)
+      .catch(() => attempt(0))
+      .then(async (res) => {
+        if (!res.ok) { setSaveError('save refused (' + (await res.json().catch(() => null) as { error?: string } | null)?.error + ')'); return }
+        setSaving(false); setSaveName('')
+      })
+      .catch((e: unknown) => { setSaveError('save failed — ' + (e instanceof Error ? e.message : String(e))) })
   }, [bench, saveName])
 
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },

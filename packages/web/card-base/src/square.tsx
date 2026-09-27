@@ -29,6 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
+import { mediaVocab } from '@melite/contracts/mediaKinds'
 import { IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { ASSET_DRAG_MIME, parseAssetDrop } from './chrome.ts'
@@ -40,11 +41,26 @@ export { ASSET_DRAG_MIME } from './chrome.ts'
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
  *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
  *  artifact URLs. Every slot-shaped value renders the same way. */
+// THE IMAGE FACE IS THE SHARED VOCABULARY, MINUS SVG (the
+// MCP/media audit's M1): these predicates used to retype their own
+// extension list, so an extension the classifier knows (svg) never
+// rendered, one it does not (avif) rendered but never listed, and
+// neither was a bug anyone could see. The list is the media
+// contract's now, plus avif (which the square has always rendered)
+// MINUS svg — a DELIBERATE divergence, pinned by the square wall:
+// an svg is classified as an image (it IS one) but a square would
+// embed it as a document, so the thumbnail face refuses it and the
+// picker offers it as a file.
+const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
+const IMAGE_EXT_RE = new RegExp(
+  "\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i",
+);
+
 export function isImageUrl(value: string): boolean {
   return (
     /^data:image\//i.test(value) ||
     /^blob:/i.test(value) ||
-    /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value)
+    /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value)
   )
 }
 

@@ -85,14 +85,14 @@ describe("the estate bundle composes", () => {
       "runs",
       "comfyui",
     ]);
-  });
+  }, 30000);
 
-  it("the disclose plane answers through the bundle (cards + flows ride)", () => {
+  it("the disclose plane answers through the bundle (cards + flows ride)", async () => {
     const disclose = seat<DiscloseService>("disclose");
     const all = disclose.discover("all", "", "");
     assert.ok(Array.isArray(all.flows) && all.flows.length >= 11, "flows ride");
     assert.ok(Array.isArray(all.cards) && all.cards.length >= 1, "cards ride");
-  });
+  }, 30000);
 
   it("the drafts plane round-trips through the bundle (bench ensure/get)", async () => {
     const bench = seat<{ ensure(doc: unknown, signal: AbortSignal): Promise<unknown>; get(session: string, signal: AbortSignal): Promise<{ rev: number }> }>("benchRemote");

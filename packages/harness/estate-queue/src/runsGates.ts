@@ -91,7 +91,13 @@ export const STAGE_PATCH_KEYS: readonly string[] = [
 ];
 
 /** editor_runs.draft_id_ok shape: 1..96 chars of [A-Za-z0-9_-]. */
-export const DRAFT_ID_RE: RegExp = /^[A-Za-z0-9_-]+$/;
+// THE DRAFT ID GRAMMAR MIRRORS ITS OWNER (the census's H13: this copy
+// had NO length cap, so a 200-char id passed this door and was
+// refused by the next with a different voice). The drafts package
+// owns the rule (DRAFT_ID_RE, 1..96); this is the same rule, and a
+// wall (draft-id-grammar.spec.ts) fails if the two ever differ — a
+// mirrored grammar with a pinned equality, not a second law.
+export const DRAFT_ID_RE: RegExp = /^[A-Za-z0-9_-]{1,96}$/;
 
 // ── strict-wire decode (route() 4335-4340) ───────────────────
 // json.loads(body.decode() or "{}"); failure → 400 bad_json. The
@@ -203,8 +209,8 @@ export function isDictField(v: unknown): v is Record<string, unknown> {
 // draft_id_ok: the ONE address is @melite/estate-drafts (spec.ts —
 // the SSOT re-home; the dead core's own copy is gone). Re-exported
 // for the gates' callers.
-export { draftIdOk } from "@melite/estate-drafts";
 import { draftIdOk } from "@melite/estate-drafts";
+export { draftIdOk };
 
 // ── shared key-set helper ───────────────────────────────────────
 // Three composite gates refuse sorted unknown-key lists (flow top,

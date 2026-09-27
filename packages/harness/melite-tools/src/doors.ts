@@ -83,17 +83,30 @@ export const DEFAULT_ENHANCE_PREFERENCE = 'muse-spark-1.3-contributor'
 export function seatedMcpServers(c: CtxView): string[] {
   const servers = new Set<string>()
   for (const t of c.tools.schemas()) {
-    const parts = t.name.split('__')
-    if (parts.length === 3 && parts[0] === 'mcp') servers.add(parts[1]!)
+    // STRIP THE PREFIX, TAKE THE REMAINDER (the MCP audit's H6): the
+    // split-by-count form dropped a server whose TOOL name contains
+    // "__" (four parts) from the census while the executor still
+    // composed it — so the picker omitted a tool the executor could
+    // run. The wire name is `mcp__<server>__<tool>`; everything
+    // after the first separator run is the tool.
+    if (!t.name.startsWith(MCP_WIRE_PREFIX)) continue
+    const rest = t.name.slice(MCP_WIRE_PREFIX.length)
+    const cut = rest.indexOf('__')
+    if (cut <= 0) continue
+    servers.add(rest.slice(0, cut))
   }
   return [...servers].sort()
 }
+
+/** The wire prefix of an mcp tool name (the executor composes the
+ *  same string — one spelling, here). */
+const MCP_WIRE_PREFIX = 'mcp__' 
 
 /** One server's tool rows (the LIVE census for its form's options:
  *  bare tool names — the executor composes mcp__<server>__<tool>
  *  on the wire). */
 export function mcpToolsOf(c: CtxView, server: string): McpToolRows {
-  const prefix = `mcp__${server}__`
+  const prefix = `${MCP_WIRE_PREFIX}${server}__`
   return c.tools.schemas()
     .filter((t) => t.name.startsWith(prefix))
     .map((t) => ({

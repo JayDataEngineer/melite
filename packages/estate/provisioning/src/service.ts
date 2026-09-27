@@ -7,6 +7,7 @@ import {
   type ArtifactWriterPort,
 } from "./artifact-writer.ts";
 import { ManagerProviderError } from "./manager-provider.ts";
+import { providerOk, unknownProviderRefusal } from "./contracts.ts";
 import {
   resourceKey,
   sameResourceRef,
@@ -651,6 +652,14 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     signal: AbortSignal,
   ): Promise<ProvisionItemResult> {
     if (item.kind === "model") return await this.acquireModel(ref, item, operationId, signal);
+    // THE PROVIDER ARM (the contract's vocabulary): `local` verifies
+    // in place. A token with no arm is REFUSED BY NAME — it used to
+    // fall through to the Manager, so a "git" item on a lane with no
+    // Manager refused "manager/unavailable" while a git provider sat
+    // right there (the audit's C4).
+    if (!providerOk(item.provider)) {
+      throw new ItemRefusal("blocked", "extension/unknown-provider", unknownProviderRefusal(item.provider));
+    }
     if (item.provider === "local") {
       if (this.inspector === undefined) {
         throw new ItemRefusal("blocked", "extension/inspect-unavailable", "local extension requires an engine inspector");

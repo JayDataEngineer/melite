@@ -27,6 +27,9 @@ import { RESTORE_STRIP_KEYS, stripKeys } from '@melite/contracts/benchStage'
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
  *  load writes the ACTIVE session's bench, never a stranger's). */
+// THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
+// draft-id-grammar wall fails if the three ever differ — a client must
+// never accept an id the server refuses)
 const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 function benchSessionOf(id: string | undefined): string {
@@ -321,10 +324,16 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
     if (typeof request === 'object' && request !== null && typeof (request as Record<string, unknown>)['model'] === 'string') {
       const params = { ...(request as Record<string, unknown>) }
       delete params['draft_id']; delete params['test']
-      const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
+      // THE INTENT IS A LABEL, NEVER A PAYLOAD (the wire audit's M5):
+      // this arm restores a request body with no card, so the birth
+      // law stamps `card = intent` — and the old code passed the
+      // PROMPT as the intent, so the restored tile was titled with
+      // prompt text and its Run composed `model = <the prompt>`. A
+      // cardless restore is honest and refuses; it is never dressed
+      // up as a card.
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
       const stages = [{ id: 's_0', engine: 'comfyui', params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]
-      await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
+      await loadStagesOntoBench(stages, 'restored run', deps)
       return
     }
     const flowDraft = typeof flow === 'object' && flow !== null

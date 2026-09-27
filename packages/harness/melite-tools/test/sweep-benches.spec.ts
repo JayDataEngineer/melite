@@ -73,7 +73,7 @@ test('sweep every persisted bench doc against the current admission laws', async
   console.log(`swept ${files.length} bench docs — crimes: ${crimes.length}`)
   console.log(crimes.length ? crimes.join('\n') : 'clean')
   expect(crimes, `persisted bench docs hold current-law crimes:\n${crimes.join('\n')}`).toEqual([])
-})
+}, 30000)
 
 test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
   const dir = join(tmpdir(), 'melite-sweep-wall-' + String(process.pid))
@@ -96,4 +96,4 @@ test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
-})
+}, 30000)

@@ -806,7 +806,14 @@ describe('loadRunOntoBench — the run record wins', () => {
       params: { model: 'image-gen', prompt: 'old prompt' },
       provenance: 'restored',
     })
-    expect(ensuredBody(calls).intent).toBe('old prompt')
+    // THE INTENT IS A LABEL, NEVER A PAYLOAD (the wire audit's M5):
+    // this arm restores a request body with no card, so the birth law
+    // stamps `card = intent` — passing the PROMPT titled the restored
+    // tile with prompt text and made its Run compose
+    // `model = <the prompt>`. A cardless restore is honest and
+    // refuses; it is never dressed up as a card.
+    expect(ensuredBody(calls).intent).toBe('restored run')
+    expect(ensuredBody(calls).intent).not.toBe('old prompt')
   })
 
   it('the flow draft link restores through the draft door', async () => {

@@ -190,6 +190,9 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // resource record = one session's stream — two conversations' cards
 // tabs never share state. 'main' remains the fallback for
 // unattributed seats (headless, legacy records).
+// THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
+// draft-id-grammar wall fails if the three ever differ — a client must
+// never accept an id the server refuses)
 export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 /** Sanitize one candidate id onto a legal bench session key ('main'

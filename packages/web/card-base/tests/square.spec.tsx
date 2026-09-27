@@ -28,7 +28,12 @@ test('THE THUMBNAIL RULE: data/blob/http(s)/root-relative images pass, everythin
     'https://host/a.bmp',
   ]) expect(isImageUrl(good)).toBe(true)
   for (const bad of [
-    '', 'notaurl', 'https://host/noext', 'https://host/a.svg',
+    '', 'notaurl', 'https://host/noext',
+    // svg is classified as an image but is DELIBERATELY not a
+    // thumbnail (a square would embed it as a document) — the one
+    // sanctioned divergence from the shared vocabulary, pinned here
+    // so nobody re-adds svg to the square by accident
+    'https://host/a.svg',
     'https://host/a.png.evil', 'data:application/pdf;base64,AAA',
     'https://host/a.png"', 'ftp://host/a.png',
   ]) expect(isImageUrl(bad)).toBe(false)

@@ -44,7 +44,10 @@ function loader(): GLTFLoader {
  *  drop-raycast position stays caller-computed). */
 export function meshAssetUrl(value: string): string {
   const match = /^data\/input\/([^?#]+)$/i.exec(value)
-  return match === null ? value : `/v1/assets/inputs/${match[1]}`
+  // THE SAME ENCODING AS EVERY OTHER PRODUCER (the MCP/media audit's
+  // M4): a mesh named "my scan.glb" produced a URL with a literal
+  // space — the run composes, the preview 404s.
+  return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? '')}`
 }
 
 export interface StageAsset {
