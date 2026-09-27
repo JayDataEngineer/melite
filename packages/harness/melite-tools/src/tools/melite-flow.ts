@@ -544,6 +544,38 @@ async function runSingle(
   } catch (e) {
     return { mode: 'card', target: card, error: e instanceof Error ? e.message : String(e) }
   }
+  // THE WIRED-BENCH CONTRACT (2026-10-10, the operator's a-priori
+  // order: "CONTRACTS SHOULD WORK A PRIORI"): a single-card body
+  // ({model, params}) composes ONE stage with inputNames: {} — every
+  // wire on the bench would be DISCARDED, and the run door refuses
+  // that loudly (the operator met the wall as "no FromStage links"
+  // nonsense). The tool holds the contract ITSELF now: after the
+  // ensure it reads the bench it just wrote; if ANY stage carries
+  // wiring, the start rides the FLOW arm (draft_id alone — the
+  // draft's stages compose with their wires as FromStage links,
+  // exactly the run door's own cure), never a single-card body. The
+  // wall can no longer be reached from this tool, whatever the
+  // bench holds.
+  let benchStages: Array<Record<string, unknown>> = []
+  try {
+    const row = await request('GET', `/v1/bench/${encodeURIComponent(a.bench)}`, undefined, signal, DRAFT_TIMEOUT_MS) as { stages?: unknown }
+    if (row !== null && typeof row === 'object' && Array.isArray(row['stages'])) {
+      benchStages = row['stages'].filter((st: unknown): st is Record<string, unknown> => typeof st === 'object' && st !== null)
+    }
+  } catch { /* the read is advisory: an unreachable bench falls to the single-card arm and the run door's own wall names it */ }
+  const wired = benchStages.filter((st) => {
+    const ins = st['inputs']
+    return typeof ins === 'object' && ins !== null && !Array.isArray(ins) && Object.keys(ins).length > 0
+  })
+  if (wired.length > 0) {
+    const started = await startRun(request, { test: wireBool(a.test), draft_id: draftId }, signal)
+    if (typeof started["error"] === "string") return { mode: 'card', target: card, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
+    const runId = started['run_id']
+    if (typeof runId === 'string' && runId !== '') {
+      void observeAndAttribute(request, draftId, 's_0', runId, new AbortController().signal).catch(String)
+    }
+    return { mode: 'card', target: card, model, draft_id: draftId, rode: 'flow-arm (bench carries wiring — the wires ride as stage inputs)', ...started }
+  }
   const started = await startRun(request, { ...normalizedBag, model, test: wireBool(a.test), draft_id: draftId }, signal)
   if (typeof started["error"] === "string") return { mode: 'card', target: card, ...started }
   const runId = started['run_id']

@@ -236,6 +236,67 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(startBody.draft_id, 'd9')
   })
 
+  // THE WIRED-BENCH CONTRACT (2026-10-10, the operator's a-priori
+  // order): a single-card body against a bench carrying wiring
+  // composes ONE stage with inputNames: {} — the wires would be
+  // discarded and the run door's wall reads as nonsense to the
+  // human ("no FromStage links"). The tool holds the contract
+  // ITSELF: it reads the bench it just ensured; ANY stage carrying
+  // wiring → the start rides the FLOW arm (draft_id alone, the
+  // wires ride as stage inputs), never a single-card body.
+  test('THE WIRED-BENCH CONTRACT: a bench carrying wiring rides the FLOW arm — never a single-card body', async () => {
+    const wiredBench = {
+      rev: 3,
+      stages: [
+        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
+        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
+          inputs: { input_images: { stage: 's_0', output: 'default' } } },
+      ],
+    }
+    // the wired GET handler FIRST (okBenchWith would answer the
+    // bench read with empty stages from further down the chain)
+    const seen = mockFetch([
+      // the post-ensure read (the one-bench law: no agent id →
+      // the main bench): the bench carries wiring
+      (u: string) => {
+        if (String(u).endsWith('/v1/bench/main')) {
+          return { status: 200, body: wiredBench }
+        }
+        return undefined
+      },
+      okBenchWith('d-w'),
+      // the ensure answers with the wired doc (the door's answer
+      // carries the bench's stages)
+      (_u: string, _body: unknown) => {
+        if (String(_u).endsWith('/v1/bench/ensure')) {
+          return { status: 200, body: { draftId: 'd-w', stages: wiredBench.stages } }
+        }
+        return undefined
+      },
+      // the start: the flow arm's answer
+      (_u: string) => {
+        if (String(_u).endsWith('/v1/flows/start')) {
+          return { status: 202, body: { run_id: 'r-w', status: 'queued' } }
+        }
+        return undefined
+      }])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21',
+      params: { prompt: 'edit this' },
+    }, { signal: AbortSignal.timeout(2000) }) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    assert.equal(out.run_id, 'r-w')
+    assert.match(String(out.rode), /flow-arm/)
+    // THE CONTRACT: the start body carries NO model, NO params — a
+    // single-card composition can never reach the door against a
+    // wired bench
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    assert.equal(startBody.model, undefined)
+    assert.equal(startBody.prompt, undefined)
+    assert.equal(startBody.draft_id, 'd-w')
+  })
+
   test('normalizes card JSON arrays before the bench and start doors', async () => {
     const seen = mockFetch([okBenchWith('d-json'), okDraftThenStart('d-json', 'r-json')])
     const tool = meliteFlow(seen.request)
