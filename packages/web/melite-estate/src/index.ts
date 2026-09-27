@@ -20,6 +20,10 @@ import type { Plugin } from "@deepseek-ai/cordis";
 
 import modelsProvider from "@melite/comfyui-cordis/catalog-registry";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
+// The wiring doc service: engine state the compose, run, and
+// adapter seats share. Mounted BEFORE the host and the engines
+// adapter so every submit reads the same census from first arm.
+import comfyuiWiring from "@melite/comfyui-cordis/comfyui-wiring";
 // The engine-generics seam (stroke 53): the 'engines' seat first
 // (one registry every engine provider registers into), then the
 // ComfyUI adapter (engine id 'comfyui' — merged-submit law inside;
@@ -302,6 +306,7 @@ const rows: readonly Plugin[] = [
     },
   } as unknown as Plugin,
   modelsProvider,
+  comfyuiWiring,
   comfyuiHost,
   comfyuiEngine,
   draftsPlugin,

@@ -116,7 +116,7 @@ export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVari
 export type { VariantSelection } from "./cardsVariant.ts";
 export { findCardDangling } from "./cardsDangling.ts";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
-import { liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { ComfyUIWiringService, deriveWiringDoc, liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
 import { admissionRefusal, composeOnce, liftStanza, prepareCardParams, type ComposeSeat } from "./cardsCompose.ts";
 /** The card-envelope keys (CARD_ENVELOPE_KEYS =
  *  DOOR_KEYS + draft/test/service): select the graph, never ride it. */
@@ -309,11 +309,32 @@ export class CardRegistryService extends Service {
   async primeObjectInfo(): Promise<boolean> {
     try {
       this.oi = await liveObjectInfo(resolveEngineBaseUrl());
+      this.armWiringFromDoc(this.oi);
       return true;
     } catch {
       this.oi = null;
+      this.armWiringFromDoc(null);
       return false;
     }
+  }
+
+  /** Arm the shared wiring doc from a landed /object_info body —
+   *  THE PRODUCTION ARMER (the second wiringWall reseat: the estate
+   *  bundle mounts this registry, not the card-plane service, so
+   *  THIS seat's prime is where the live lane's doc lands). ONE
+   *  derivation, shared with the card-plane service, so every walk
+   *  seat judges the same census. A composition that mounts no
+   *  wiring provider reads undefined and every wall stands down —
+   *  the documented law, never a guessed refusal. */
+  armWiringFromDoc(doc: Record<string, unknown> | null): void {
+    const wiring = this.ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
+    if (wiring === undefined) return;
+    if (doc === null) {
+      wiring.disarm();
+      return;
+    }
+    const { nodes, inputs } = deriveWiringDoc(doc);
+    wiring.arm(nodes, inputs);
   }
 
   /** resolve_model's existence half — the LIVE offer (the same

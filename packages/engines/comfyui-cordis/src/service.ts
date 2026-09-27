@@ -6,7 +6,7 @@
 import Schema from '@deepseek-ai/schemastery'
 import { validateDeclaredMods } from './mods-schema.ts'
 import { ComposeRefusal } from './errors.ts'
-import { assertWiringAgainst, setObjectInfoDoc } from './wiringWall.ts'
+import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc } from './wiringWall.ts'
 export { ComposeRefusal } from './errors.ts';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
@@ -727,37 +727,27 @@ export class ComfyUIService extends Service {
   }
 
   setObjectInfo(objectInfo: Record<string, any> | null): void {
-    if (!objectInfo) {
-      this.objectInfoNodes = null
-      this.objectInfoInputs = null
-      setObjectInfoDoc(null)
-      this.pinDefaults = {}
-      return
+    // THE WIRING DOC (2026-10-10, the YOU_ARE_A_LIAR fix shape 4):
+    // per node, its DECLARED input names (required ∪ optional — the
+    // doc's own truth), ONE derivation shared with the estate
+    // registry's prime so no seat judges a differently-shaped doc.
+    // A names-only snapshot (setObjectInfoNodes) keeps the node
+    // gate and skips the input gate — never a guessed refusal.
+    const derived = objectInfo ? deriveWiringDoc(objectInfo) : null
+    this.objectInfoNodes = derived?.nodes ?? null
+    this.objectInfoInputs = derived?.inputs ?? null
+    this.pinDefaults = objectInfo ? deriveDefaults(objectInfo) : {}
+    // THE DOC IS CONTEXT STATE (the second reseat): this class and
+    // the host share the seat name `comfyui` and cannot look each
+    // other up — the wiring service under its OWN name is how every
+    // seat (compose here, the run seat's fence, the adapter's
+    // post-splice walk) reads the same census. A composition that
+    // mounts no wiring provider stands the walls down (documented).
+    const wiring = this.ctx.get('comfyuiWiring') as ComfyUIWiringService | undefined
+    if (wiring !== undefined) {
+      if (derived === null) wiring.disarm()
+      else wiring.arm(derived.nodes, derived.inputs)
     }
-    this.objectInfoNodes = new Set(Object.keys(objectInfo))
-    // THE WIRING DOC (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
-    // "compose wiring validates against the /object_info doc the
-    // estate already holds"): per node, its DECLARED input names
-    // (required ∪ optional — the doc's own truth). Compose's final
-    // wall walks every built graph against this (assertWiring); a
-    // names-only snapshot (setObjectInfoNodes) keeps the node gate
-    // and skips the input gate — never a guessed refusal.
-    this.objectInfoInputs = new Map(
-      Object.entries(objectInfo).map(([name, def]) => [
-        name,
-        new Set([
-          ...Object.keys((def as any)?.input?.required ?? {}),
-          ...Object.keys((def as any)?.input?.optional ?? {}),
-        ]),
-      ]),
-    )
-    this.pinDefaults = deriveDefaults(objectInfo)
-    // THE WALL IS ARMED FOR EVERY SUBMIT SEAM (the bypass audit's
-    // HIGH-3): the host — a separate class that owns the merge and
-    // splice submits — walks the SAME doc from the module handle, so
-    // a graph that reaches the engine by a path other than a card
-    // compose is judged exactly like one that does not.
-    setObjectInfoDoc(this.objectInfoNodes, this.objectInfoInputs)
   }
 
   /** Legacy: node-name set only (gate arming without autofill). */

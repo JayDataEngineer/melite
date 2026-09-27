@@ -13,7 +13,9 @@ import type {
   EngineStageRow,
 } from "@melite/engine-contract";
 import comfyuiHostProvider from "../src/entries/comfyui-host.ts";
+import comfyuiWiring from "../src/entries/comfyui-wiring.ts";
 import comfyuiEngine from "../src/entries/comfyui-engine.ts";
+import { ComfyUIWiringService } from "../src/wiringWall.ts";
 import type { ComfyUIHostService, FlowResult } from "../src/comfyui.ts";
 
 /** Boot the real composition rows (contract + host + adapter) with
@@ -21,11 +23,15 @@ import type { ComfyUIHostService, FlowResult } from "../src/comfyui.ts";
  * engine boundary — no server, no HTTP). */
 async function boot(
   executeFlow: NonNullable<unknown>,
-): Promise<{ ctx: Context; seat: EnginesService; host: ComfyUIHostService }> {
+): Promise<{ ctx: Context; seat: EnginesService; host: ComfyUIHostService; wiring: ComfyUIWiringService }> {
   const ctx = new Context();
   await ctx.plugin(enginesContract);
+  // The estate bundle's row order: the wiring provider rides BEFORE
+  // the host and the adapter, exactly as melite-estate mounts it.
+  await ctx.plugin(comfyuiWiring);
   await ctx.plugin(comfyuiHostProvider, { url: "http://seat-stub:1" });
   await ctx.plugin(comfyuiEngine);
+  const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService;
   const seat = ctx.get("engines") as EnginesService;
   // The fiber boots the host provider, so the 'comfyui' key IS a
   // ComfyUIHostService at runtime — but the static type is the
@@ -33,7 +39,7 @@ async function boot(
   const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (host as any).executeFlow = executeFlow;
-  return { ctx, seat, host };
+  return { ctx, seat, host, wiring };
 }
 
 /** One legal stage row (a spliced workflow + output_nodes). */
@@ -229,5 +235,74 @@ describe("the comfyui adapter (engine id 'comfyui' on the seat)", () => {
       ),
     ).rejects.toThrow(/host down/);
     expect(flow).toHaveBeenCalledTimes(1);
+  });
+});
+
+// ── THE THIRD WALK SEAT (the audit's finding, 2026-10-10: the run
+// seat's fence was gated to the seat-less path and production
+// ALWAYS takes this adapter — the wall was dead on the lane). This
+// is the POST-SPLICE graph: exactly what the engine receives,
+// walked before the first wire moves. The proof boots the REAL
+// composition rows (contract + wiring + host + adapter) and arms
+// the wiring service exactly as the estate registry's prime does.
+describe("the adapter's post-splice wiring walk (production's submit path)", () => {
+  it("armed without the class: the walk refuses BEFORE executeFlow — the engine is never called", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }));
+    const { seat, wiring } = await boot(flow);
+    // the doc names a class the row does not carry
+    wiring.arm(new Set(["KSampler"]), new Map());
+    const record = seat.resolve("comfyui");
+    await expect(
+      record.executor.executeStages(
+        [stageRow()],
+        "/tmp/run-x",
+        {},
+        { shouldStop: (): boolean => false, report: vi.fn() },
+      ),
+    ).rejects.toThrow(/EmptyLatentImage/);
+    expect(flow).not.toHaveBeenCalled();
+  });
+
+  it("armed with the class: the walk stands down for truth and the submit proceeds", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({
+      stages: { s0: { outputs: { default: "run-x/a.png" }, artifacts: ["a.png"] } },
+      promptId: "prompt-1",
+    }));
+    const { seat, wiring } = await boot(flow);
+    wiring.arm(new Set(["EmptyLatentImage"]), new Map());
+    const record = seat.resolve("comfyui");
+    await record.executor.executeStages(
+      [stageRow()],
+      "/tmp/run-x",
+      {},
+      { shouldStop: (): boolean => false, report: vi.fn() },
+    );
+    expect(flow).toHaveBeenCalledTimes(1);
+  });
+
+  it("an undeclared INPUT on a declared class refuses with the input gate's voice", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }));
+    const { seat, wiring } = await boot(flow);
+    const declared = new Map<string, Set<string>>();
+    declared.set("EmptyLatentImage", new Set(["width", "height"]));
+    wiring.arm(new Set(["EmptyLatentImage"]), declared);
+    const row = stageRow();
+    // splice carries params.workflow verbatim — smuggle an input
+    // the node does not declare
+    const wf = row.params.workflow as Record<
+      string,
+      { class_type: string; inputs: Record<string, unknown> }
+    >;
+    wf["1"]!.inputs["no_such_knob"] = 1;
+    const record = seat.resolve("comfyui");
+    await expect(
+      record.executor.executeStages(
+        [row],
+        "/tmp/run-x",
+        {},
+        { shouldStop: (): boolean => false, report: vi.fn() },
+      ),
+    ).rejects.toThrow(/EmptyLatentImage\.no_such_knob/);
+    expect(flow).not.toHaveBeenCalled();
   });
 });

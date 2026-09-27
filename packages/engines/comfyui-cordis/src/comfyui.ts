@@ -112,7 +112,13 @@ export type {
   ExecuteResult,
 } from "./comfyui-execute.ts";
 export { executeFlow, planMerge } from "./comfyui-merge.ts";
-export { assertWiringNow, setObjectInfoDoc } from "./wiringWall.ts";
+export {
+  assertWiringAgainst,
+  comfyuiWiringProvider,
+  ComfyUIWiringService,
+  deriveWiringDoc,
+} from "./wiringWall.ts";
+export type { WiringDoc } from "./wiringWall.ts";
 export type { FlowResult, MergeRow, MergeStageResult } from "./comfyui-merge.ts";
 export {
   comfyuiHostProvider,

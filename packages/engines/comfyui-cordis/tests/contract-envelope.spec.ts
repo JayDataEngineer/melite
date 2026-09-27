@@ -152,16 +152,22 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
 
 // ── THE WIRING WALL RIDES EVERY SUBMIT SEAM (2026-10-10, the bypass
 // audit's HIGH-3) ─────────────────────────────────────────────────
-// 2026-10-10, THE OPERATOR'S LAW: ON SUBMIT IS A HACK. The first
-// reseat threaded the wall as an OPTIONAL callback through ONE
-// engine submit call (defaulted at the host, grepped-pin'd here) —
-// and its missing import crashed a live run, proving the shape: a
-// wall someone remembered to build at one door is not the schema
-// system. The wall's seats are the CARD-COMPOSE seat and the RUN
-// SEAT'S PRE-FLIGHT (runsExecute's wiring fence, on the built rows,
-// before any engine action — behaviourally pinned in the queue's
-// runs-hero spec: a bad class_type fails the run with the engine
-// NEVER CALLED). These pins hold the ABSENCE of the hack.
+// 2026-10-10, THE OPERATOR'S LAW: ON SUBMIT IS A HACK; later the
+// same day, THE AUDIT'S LAW: A WALL THAT IS DEAD IN PRODUCTION IS
+// NOT A WALL. The first reseat threaded the wall as an OPTIONAL
+// callback through ONE engine submit call — its missing import
+// crashed a live run. The second cut moved the walk to the run
+// seat but gated it on the seat-less branch, and the estate bundle
+// ALWAYS submits through the engines adapter: dead on the lane,
+// twice over (the doc was module state armed by a service the
+// bundle never mounts, so it was unarmed there too). The seats
+// now: the CARD-COMPOSE seat, the RUN SEAT'S UNGATED PRE-FLIGHT
+// (runsExecute's wiring fence, every path, the built rows), and
+// the ENGINES ADAPTER'S POST-SPLICE WALK (the graph the engine
+// actually receives — behaviourally pinned in comfyui-engine.spec:
+// a bad class_type refuses with the host's executeFlow NEVER
+// CALLED). These pins hold the ABSENCE of the hack AND the
+// PRESENCE of the production seat.
 describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
   test("the host's executeFlow carries no wall, no default injection, no import", () => {
     const src = readFileSync(new URL("../src/comfyui-host.ts", import.meta.url), "utf8");
@@ -176,30 +182,70 @@ describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
     expect(merge).not.toContain("assertWiring");
   });
 
-  test("the run seat owns the fence (the behavioural wall's home)", () => {
+  test("the run seat owns the fence — UNGATED from the seat branch (the audit's finding)", () => {
     const src = readFileSync(
       new URL("../../../harness/estate-queue/src/runsExecute.ts", import.meta.url),
       "utf8",
     );
-    expect(src).toContain("assertWiringNow(");
+    // the walk rides the wiring service, on EVERY path
+    expect(src).toContain('wiring.assert(');
+    // THE BUG WAS A GATE: the first cut walked only when the seat
+    // executor was null, and production always takes the seat path
+    expect(src).not.toContain("if (seatExecutor === null) {\n      for (let i = 0; i < rows.length;");
     // the fence predates the engine submit — the only executeFlow call
-    const fence = src.indexOf("assertWiringNow(");
+    const fence = src.indexOf('wiring.assert(');
     const submit = src.indexOf("engine.executeFlow(");
     expect(fence).toBeGreaterThan(-1);
     expect(submit).toBeGreaterThan(-1);
     expect(fence).toBeLessThan(submit);
   });
 
-  test("the wall is ONE judge with two callers (the service composes, the run seat fences)", () => {
+  test("the engines adapter walks the POST-SPLICE graph (production's submit seat)", () => {
+    const src = readFileSync(new URL("../src/entries/comfyui-engine.ts", import.meta.url), "utf8");
+    expect(src).toContain('wiring.assert(row.stageId, row.workflow)');
+    // the walk predates the host submit — the only executeFlow call
+    const walk = src.indexOf("wiring.assert(row.stageId");
+    const submit = src.indexOf("host.executeFlow(");
+    expect(walk).toBeGreaterThan(-1);
+    expect(submit).toBeGreaterThan(-1);
+    expect(walk).toBeLessThan(submit);
+    // resolved AT WALK TIME (a doc armed after mount still judges)
+    expect(src).toContain('ctx.get("comfyuiWiring")');
+  });
+
+  test("the wall is ONE judge: the wiring service owns the doc, three seats call it", () => {
     const wall = readFileSync(new URL("../src/wiringWall.ts", import.meta.url), "utf8");
     expect(wall).toContain("export function assertWiringAgainst");
-    expect(wall).toContain("export function assertWiringNow");
-    // the submit-time NAME is dead as code (the header keeps the
-    // history, as history)
+    expect(wall).toContain("export class ComfyUIWiringService");
+    expect(wall).toContain("export const comfyuiWiringProvider");
+    // the module-global doc and its armers are DEAD (the audit: they
+    // were never armed in production at all); the submit-time NAME is
+    // dead as code (the header keeps the history, as history)
+    expect(wall).not.toContain("let objectInfo");
+    expect(wall).not.toMatch(/export function setObjectInfoDoc/);
+    expect(wall).not.toMatch(/export function assertWiringNow/);
     expect(wall).not.toMatch(/export function assertWiringAtSubmit/);
-    // the service is a CALLER, not a second implementation
+    // the card service is a CALLER that ARMS the shared service, not a
+    // second implementation
     const svc = readFileSync(new URL("../src/service.ts", import.meta.url), "utf8");
-    expect(svc).toContain("assertWiringAgainst(this.objectInfoNodes");
+    expect(svc).toContain("deriveWiringDoc");
+    expect(svc).toContain('ctx.get(\'comfyuiWiring\')');
     expect(svc).not.toMatch(/private assertWiring\([\s\S]*?for \(const \[id, node\]/);
+    // the estate registry (production's doc owner) primes AND arms
+    const reg = readFileSync(
+      new URL("../../../harness/estate-queue/src/cardsRegistry.ts", import.meta.url),
+      "utf8",
+    );
+    expect(reg).toContain("armWiringFromDoc");
+    // the estate bundle mounts the provider before the host
+    const bundle = readFileSync(
+      new URL("../../../web/melite-estate/src/index.ts", import.meta.url),
+      "utf8",
+    );
+    const wiringRow = bundle.indexOf("comfyuiWiring,");
+    const hostRow = bundle.indexOf("comfyuiHost,");
+    expect(wiringRow).toBeGreaterThan(-1);
+    expect(hostRow).toBeGreaterThan(-1);
+    expect(wiringRow).toBeLessThan(hostRow);
   });
 });

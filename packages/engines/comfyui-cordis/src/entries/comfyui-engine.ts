@@ -13,6 +13,7 @@
 // provider (engine-comfyui) — the estate bundle's row order. The
 // registration is effect-owned: fiber unload removes the row.
 import type { Context, Plugin } from "@deepseek-ai/cordis";
+import { ComfyUIWiringService } from "../wiringWall.ts";
 import type {
   EngineExecutor,
   EngineRunOptions,
@@ -47,8 +48,12 @@ function toMergeRows(rows: readonly EngineStageRow[]): MergeRow[] {
   );
 }
 
-/** The executor: merged submit through the host service. */
-export function comfyuiExecutor(host: ComfyUIHostService): EngineExecutor {
+/** The executor: merged submit through the host service. The ctx
+ * rides in for ONE reason: the wiring walk below resolves the
+ * wiring service AT WALK TIME (a doc that lands after this plugin
+ * mounts still judges every later submit — resolve-at-apply would
+ * freeze the unarmed state of a late-armed lane). */
+export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineExecutor {
   return {
     async executeStages(
       rows: readonly EngineStageRow[],
@@ -61,6 +66,25 @@ export function comfyuiExecutor(host: ComfyUIHostService): EngineExecutor {
         (n: number, r: MergeRow): number => n + Object.keys(r.workflow).length,
         0,
       );
+      // THE THIRD WALK SEAT (the audit's finding: production ALWAYS
+      // submits through this adapter, and the run seat's fence —
+      // before this reseat — was the only one, gated to the
+      // seat-less path, so the lane never walked a graph). This is
+      // the POST-SPLICE graph: exactly the object the engine will
+      // receive, walked before the first wire moves. The run seat
+      // already judged the pre-splice rows in its own voice; this
+      // walk adds the final-graph judgment — splice, $spells and
+      // all — through the SAME judge (wiringWall), same doc. An
+      // unknown class or an undeclared input refuses HERE, in the
+      // estate's voice, never at the engine. The refusal rides the
+      // run seat's existing catch (the splice refusal's path):
+      // stages failed, run settled, nothing submitted.
+      const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
+      if (wiring !== undefined) {
+        for (const row of mergeRows) {
+          wiring.assert(row.stageId, row.workflow);
+        }
+      }
       options.report({
         activity:
           "merged submit (" + mergeRows.length + " stages, " + nodeCount + " nodes)",
@@ -101,7 +125,7 @@ export const comfyuiEngine: Plugin = {
   apply(ctx: Context): void {
     const seat = ctx.get("engines") as EnginesService;
     const host = needComfyUI(ctx, "engine-comfyui-adapter");
-    ctx.effect(() => seat.register("comfyui", { executor: comfyuiExecutor(host) }));
+    ctx.effect(() => seat.register("comfyui", { executor: comfyuiExecutor(ctx, host) }));
   },
 };
 

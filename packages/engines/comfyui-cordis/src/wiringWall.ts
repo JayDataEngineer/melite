@@ -1,5 +1,6 @@
 // wiringWall.ts — THE WIRING WALL, ONE OWNER (2026-10-10; reseated
-// 2026-10-10 by the operator's law: ON SUBMIT IS A HACK).
+// twice by the operator's law: ON SUBMIT IS A HACK, then A WALL
+// THAT IS DEAD IN PRODUCTION IS NOT A WALL).
 //
 // Every graph that reaches the engine is walked against the doc the
 // estate holds: an unknown class_type or an input the node does not
@@ -7,53 +8,119 @@
 // doc — instead of dying at the engine, in the engine's voice, far
 // from the declaration that authored it.
 //
-// THE TWO SEATS (the schema system, not a submit-time opt): the
-// card-compose seat walks at COMPOSE (service.assertWiring — a bad
-// card graph never reaches a run), and the RUN seat walks the BUILT
-// ROWS in its pre-flight (runsExecute's wiring fence, before any
-// engine action) — the seat every path (start, restore, queue
-// replay) already walks. The first shape threaded an opt through
-// ONE engine submit call; its default crashed a live run as
-// `ReferenceError: assertWiringAtSubmit is not defined`, and the
-// operator named the shape for what it was: a wall someone
-// remembered to build at one door is not the schema system. The
-// judge stayed; the opt is gone.
+// THE THREE WALK SEATS (the schema system, not a submit-time opt):
+//   1. the card-compose seat walks at COMPOSE (service.assertWiring
+//      — a bad card graph never reaches a run);
+//   2. the RUN seat walks the BUILT ROWS in its pre-flight
+//      (runsExecute's wiring fence, every path: start, restore,
+//      queue replay — no seat-branch gate);
+//   3. the ENGINES ADAPTER walks the POST-SPLICE graph (the seat
+//      the production estate actually submits through) before the
+//      host's executeFlow — the walk that judges the final graph,
+//      splice and all.
+// The first shape threaded an opt through ONE engine submit call;
+// its default crashed a live run as `ReferenceError:
+// assertWiringAtSubmit is not defined`, and the operator named the
+// shape for what it was: a wall someone remembered to build at one
+// door is not the schema system. The judge stayed; the opt is gone.
+//
+// THE ARMING LAW (the second reseat, same day — the audit's
+// finding): the doc handle was module state armed by the card-plane
+// service — a service the estate bundle never mounts — so on the
+// live lane the wall was UNARMED on every path and DEAD on the seat
+// path twice over. Engine state that two seats must share is not
+// module state: it is a CONTEXT SERVICE under its own name
+// (comfyuiWiring), provided by this package's entry, armed by
+// whoever lands /object_info (the card-plane service; the estate
+// registry's per-compose prime), read at walk time by every seat.
+// Both `comfyui` classes reach it by name — the very reason the
+// module global existed ("the two classes share the seat name, so
+// one cannot look the other up") is the thing the service name
+// dissolves. A composition that does not mount the provider reads
+// undefined and the wall stands down — the standing law, now
+// Cordis's own `undefined when not (yet) provided` semantics
+// instead of a hand-rolled null.
 
+import { Service, type Context, type Plugin } from '@deepseek-ai/cordis'
 import { ComposeRefusal } from './errors.ts'
 
+/** The engine's declared-node census, derived from /object_info:
+ *  node names and, per node, its DECLARED input names (required ∪
+ *  optional — the doc's own truth). */
+export interface WiringDoc {
+  readonly nodes: ReadonlySet<string>
+  readonly inputs: ReadonlyMap<string, ReadonlySet<string>> | undefined
+}
+
+/** Derive the census from a raw /object_info body — ONE derivation
+ *  shared by every doc-owner (the card-plane service and the
+ *  estate registry's prime) so no seat judges a differently-shaped
+ *  doc. A names-only snapshot keeps the node gate and skips the
+ *  input gate — never a guessed refusal. */
+export function deriveWiringDoc(
+  objectInfo: Record<string, unknown>,
+): { nodes: Set<string>; inputs: Map<string, Set<string>> } {
+  const inputs = new Map<string, Set<string>>()
+  for (const [name, def] of Object.entries(objectInfo)) {
+    inputs.set(
+      name,
+      new Set([
+        ...Object.keys((def as any)?.input?.required ?? {}),
+        ...Object.keys((def as any)?.input?.optional ?? {}),
+      ]),
+    )
+  }
+  return { nodes: new Set(Object.keys(objectInfo)), inputs }
+}
+
 /**
- * THE ENGINE'S DECLARED-NODE CENSUS (the doc handle).
+ * THE WIRING DOC SERVICE (seat name `comfyuiWiring`).
  *
- * The card-plane service arms it when /object_info lands; the HOST —
- * a separate class that owns the merge and splice submits — reads it at
- * submit. It lives HERE rather than on a service because it is engine
- * state, not service state: the two classes share the seat name
- * (`comfyui`), so one cannot look the other up, and a graph that reaches
- * the engine must be walkable by whoever submits it.
+ * The context-scoped home of the census: armed by whoever lands
+ * /object_info, read at walk time by the three seats. Provided by
+ * `comfyuiWiringProvider`; absent in a composition, `ctx.get`
+ * answers undefined and every wall stands down (documented,
+ * loud in the provider's absence, never a guessed refusal).
  */
-let objectInfo: { nodes: Set<string>; inputs: Map<string, Set<string>> | undefined } | null = null
+export class ComfyUIWiringService extends Service {
+  private doc: WiringDoc | null = null
 
-/** Arm the wall (the card-plane service, when the doc lands). */
-export function setObjectInfoDoc(
-  nodes: Set<string> | null,
-  inputs?: Map<string, Set<string>> | null,
-): void {
-  objectInfo = nodes === null ? null : { nodes, inputs: inputs ?? undefined }
+  constructor(ctx: Context) {
+    super(ctx, 'comfyuiWiring')
+  }
+
+  /** Arm the wall (a doc-owner, when /object_info lands). */
+  arm(nodes: ReadonlySet<string>, inputs?: ReadonlyMap<string, ReadonlySet<string>> | null): void {
+    this.doc = { nodes, inputs: inputs ?? undefined }
+  }
+
+  /** Disarm (a doc-owner whose fetch failed — unarmed, the wall
+   *  stands down; the null doc never judges). */
+  disarm(): void {
+    this.doc = null
+  }
+
+  /** Whether a doc is armed (census/tests — never a gate). */
+  armed(): boolean {
+    return this.doc !== null
+  }
+
+  /** Walk a graph against the armed doc — THE SEATS' FENCE CALL.
+   *  Unarmed, no doc, the wall stands down: the standing law. */
+  assert(cardId: string, graph: unknown): void {
+    if (this.doc === null) return
+    assertWiringAgainst(this.doc.nodes, this.doc.inputs, cardId, graph)
+  }
 }
 
-/** The doc as it stands (null = unarmed: the wall stands down). */
-export function objectInfoDoc(): { nodes: Set<string>; inputs: Map<string, Set<string>> | undefined } | null {
-  return objectInfo
-}
-
-/** Walk a graph against the armed doc — THE RUN SEAT'S FENCE CALL
- *  (runsExecute imports this from the package index; unarmed, no
- *  doc, the wall stands down — the standing law). This is not a
- *  submit-time opt: the run seat calls it on the BUILT ROWS before
- *  any engine action, the same fence as its splice refusal. */
-export function assertWiringNow(cardId: string, graph: unknown): void {
-  if (objectInfo === null) return
-  assertWiringAgainst(objectInfo.nodes, objectInfo.inputs, cardId, graph)
+/** The provider: mounts the wiring service. Mount BEFORE the host
+ *  and the engines adapter (the estate bundle's row order) so both
+ *  `comfyui` classes and the run seat read it from first submit. */
+export const comfyuiWiringProvider: Plugin = {
+  name: 'comfyui-wiring',
+  apply(ctx: Context): void {
+    new ComfyUIWiringService(ctx)
+  },
 }
 
 export function assertWiringAgainst(

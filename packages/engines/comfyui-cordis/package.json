@@ -11,6 +11,7 @@
     "./cli": "./src/cli.ts",
     "./comfyui-engine": "./src/entries/comfyui-engine.ts",
     "./comfyui-host": "./src/entries/comfyui-host.ts",
+    "./comfyui-wiring": "./src/entries/comfyui-wiring.ts",
     "./envelope-laws": "./src/envelope-laws.ts",
     "./graph": "./src/graph.ts",
     "./linked": "./src/linked.ts",

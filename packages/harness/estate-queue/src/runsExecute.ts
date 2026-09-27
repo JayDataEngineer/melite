@@ -4,7 +4,7 @@
 // the stop-gated terminal mapping. Explicit deps, no Service state.
 import type { Context } from "@deepseek-ai/cordis";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { assertWiringNow, executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { ComfyUIWiringService, executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type RunStageRow } from "./runsTypes.ts";
@@ -134,15 +134,24 @@ export type SettleFn = (run: RunRecord) => void;
     // declares, in the run's voice, before the first wire moves.
     // (The merge that follows namespaces ids and resolves $spells
     // into link VALUES — it adds no names, so the rows' name
-    // surface is the engine's.) The judge is the service's own
-    // public wall — ONE owner (wiringWall.ts), the same walk the
+    // surface is the engine's.) The judge is the wiring service's
+    // own wall — ONE owner (wiringWall.ts), the same walk the
     // card-compose seat has always had, now at the seat every path
-    // (start, restore, queue replay) already walks.
-    if (seatExecutor === null) {
+    // (start, restore, queue replay) already walks. NO SEAT-BRANCH
+    // GATE (the audit's finding: the first cut walked only when
+    // seatExecutor was null, and production ALWAYS takes the seat
+    // path — the wall was dead on the lane): the rows walk on BOTH
+    // paths here, and the engines adapter walks the post-splice
+    // graph again at its own submit — pre-splice voice from the run
+    // seat, final-graph judgment from the adapter, one judge.
+    // Unarmed (no wiring service in the composition): the wall
+    // stands down — the standing law.
+    const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
+    if (wiring !== undefined) {
       for (let i = 0; i < rows.length; i++) {
         const stage = run.stages[i];
         try {
-          assertWiringNow(String(stage["card"] ?? "flow"), rows[i]!.workflow);
+          wiring.assert(String(stage["card"] ?? "flow"), rows[i]!.workflow);
         } catch (exc: unknown) {
           const text: string = errText(exc);
           for (const st of run.stages) {
