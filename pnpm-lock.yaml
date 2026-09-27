@@ -250,6 +250,12 @@ importers:
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../../harness/estate-call
+      '@melite/models-music3':
+        specifier: workspace:*
+        version: link:../../models/music3
+      '@melite/models-yue2':
+        specifier: workspace:*
+        version: link:../../models/yue2
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -309,6 +315,12 @@ importers:
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../../harness/estate-call
+      '@melite/models-qwen3-tts':
+        specifier: workspace:*
+        version: link:../../models/qwen3-tts
+      '@melite/models-qwen3-tts-voicedesign':
+        specifier: workspace:*
+        version: link:../../models/qwen3-tts-voicedesign
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -2127,6 +2139,9 @@ importers:
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
+      '@melite/models-kimodo':
+        specifier: workspace:*
+        version: link:../../models/kimodo
       clsx:
         specifier: '*'
         version: 2.1.1
@@ -2212,6 +2227,9 @@ importers:
       '@melite/estate-call':
         specifier: workspace:*
         version: link:../../harness/estate-call
+      '@melite/models-h3':
+        specifier: workspace:*
+        version: link:../../models/h3
       clsx:
         specifier: '*'
         version: 2.1.1

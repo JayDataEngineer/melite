@@ -10333,6 +10333,57 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
+		}
+		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
 		/**
 		* @license
@@ -48100,7 +48151,7 @@ void main() {
 		*  drop-raycast position stays caller-computed). */
 		function meshAssetUrl(value) {
 			const match = /^data\/input\/([^?#]+)$/i.exec(value);
-			return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 		}
 		/** Normalize a loaded scene to a known viewing size — the
 		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
@@ -48549,8 +48600,10 @@ void main() {
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
+		const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
+		const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
 		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value);
 		}
 		/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
 		*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
@@ -50856,6 +50909,133 @@ void main() {
 			return await withRebase("ungroup", doc, sessionKey, signal);
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = "s_" + String(index);
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const card = out["card"];
+			if (typeof card === "string" && card !== "" && healed["model"] === card) delete healed["model"];
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : { default: "image" };
+			return out;
+		}
+		/** Normalize a bench's whole stage list — the writers' array arm.
+		*  Group rows (a row with `children`) ride as they are beyond the
+		*  derived fields: they carry no engine or params of their own. */
+		function normalizeBenchStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const out = [];
+			for (const [i, row] of stages.entries()) {
+				const normalized = normalizeBenchStage(row, i);
+				const children = normalized["children"];
+				if (Array.isArray(children)) {
+					delete normalized["engine"];
+					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
+				}
+				out.push(normalized);
+			}
+			return out;
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS;
+		var init_benchStage = __esmMin((() => {
+			CARD_PLANE_ENGINE = "comfyui";
+			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			BIRTH_STRIP_KEYS = [
+				"history",
+				"resultParams",
+				"runStatus",
+				"resolved"
+			];
+			RUN_MEMORY_STRIP_KEYS = [
+				"result",
+				"runStatus",
+				"resolved",
+				"history",
+				"resultParams"
+			];
+			RESTORE_STRIP_KEYS = [
+				"result",
+				"resultParams",
+				"runStatus",
+				"resolved",
+				"history"
+			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
+		}));
+		//#endregion
 		//#region ../../web-kit/formats/src/readFile.ts
 		/**
 		* readFile — THE one read path for every slot-shaped attach, ported
@@ -52896,7 +53076,7 @@ void main() {
 		function normalizeSegmentStatus(raw) {
 			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
 		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
 		var init_timelineTypes = __esmMin((() => {
 			SEGMENT_STATUSES = [
 				"empty",
@@ -52967,6 +53147,43 @@ void main() {
 				lipSyncedVideoUrl: null,
 				lipSyncPreferOriginal: false
 			};
+			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
+				"frames",
+				"fps",
+				"resizeMethod",
+				"order",
+				"motionVideoB64",
+				"motionStrength",
+				"motionTrimStart",
+				"motionTrimEnd",
+				"motionOffset",
+				"resampleMode",
+				"scaleBy",
+				"upscaleMethod",
+				"useTiledEncode",
+				"tileSize",
+				"tileOverlap",
+				"imageAttentionStrength",
+				"flfMode",
+				"profile",
+				"guideStrength",
+				"guideCrf",
+				"relayEpsilon",
+				"teacacheEnabled",
+				"teacacheThreshold",
+				"progressiveEnabled",
+				"progressiveLevels",
+				"progressiveDelta",
+				"progressiveMode",
+				"retakePrompt",
+				"retakeStartFrame",
+				"retakeEndFrame",
+				"loras",
+				"model",
+				"samplingSteps",
+				"guideScale",
+				"motionAmplitude"
+			]);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/vocab.ts
@@ -52988,139 +53205,13 @@ void main() {
 		//#region ../../web-kit/contracts/src/wire.ts
 		var init_wire = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
-		/** The run-media prefix a path addresses, or null when it addresses
-		*  none (the caller leaves such a value verbatim — this is a rewrite,
-		*  never a filter). */
-		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
-			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
-			return null;
-		}
-		/** THE ONE SPELLING: a run-media path in any spelling becomes the
-		*  live one. Everything else — a local file, an https URL, a $spell,
-		*  a run-relative name — rides verbatim. */
-		function canonicalRunMediaUrl(value) {
-			const prefix = runMediaPrefixOf(value);
-			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
-		}
-		/** Rewrite every legacy run-media path inside a value (deep,
-		*  value-preserving, total). */
-		function healRunMediaPaths(value) {
-			if (typeof value === "string") return canonicalRunMediaUrl(value);
-			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
-			if (value !== null && typeof value === "object") {
-				const out = {};
-				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
-				return out;
-			}
-			return value;
-		}
-		/** Strip a list of keys off a row (in place — the arm owns the row). */
-		function stripKeys(row, keys) {
-			for (const k of keys) delete row[k];
-		}
-		/** The engine a BENCH stage row declares — DERIVED when it does
-		*  not say, because the bench IS the card bench: every row in it
-		*  composes a card on the card plane, and a row that names another
-		*  engine says so out loud (the blender/mcp rows the bench carries
-		*  for previews). The run door's stricter rule — an mcp/flow stage
-		*  must NAME its engine — belongs to the flow document, which is a
-		*  different shape with its own gate; a bench row is not that.
-		*
-		*  This is the derivation that used to be written out by hand in
-		*  three writers (the bench normalizer, the add-card door, the run
-		*  door), which is how a GUI row and an agent row became different
-		*  documents. */
-		function stageEngineOf(row) {
-			const own = row["engine"];
-			if (typeof own === "string" && own !== "") return own;
-			return CARD_PLANE_ENGINE;
-		}
-		/** The one normalization every writer runs. Idempotent
-		*  (normalize(normalize(x)) === normalize(x)) and total (never
-		*  throws): a row in, a stage row out, with every derived field
-		*  derived, every run-memory field stripped, every run-media path
-		*  healed, and the era's self-naming model removed.
-		*
-		*  `index` is the row's position — the id fallback names it, so an
-		*  unaddressable row becomes addressable rather than vanishing.
-		*  Run memory is NOT stripped here: that is the birth/restore arms'
-		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
-		*  than guessing which arm is running.
-		*/
-		function normalizeBenchStage(row, index) {
-			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
-			if (typeof out["id"] !== "string") out["id"] = "s_" + String(index);
-			out["engine"] = stageEngineOf(out);
-			const ins = out["inputs"];
-			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
-			const params = out["params"];
-			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
-			const card = out["card"];
-			if (typeof card === "string" && card !== "" && healed["model"] === card) delete healed["model"];
-			out["params"] = healed;
-			const outputs = out["outputs"];
-			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : { default: "image" };
-			return out;
-		}
-		/** Normalize a bench's whole stage list — the writers' array arm.
-		*  Group rows (a row with `children`) ride as they are beyond the
-		*  derived fields: they carry no engine or params of their own. */
-		function normalizeBenchStages(stages) {
-			if (!Array.isArray(stages)) return [];
-			const out = [];
-			for (const [i, row] of stages.entries()) {
-				const normalized = normalizeBenchStage(row, i);
-				const children = normalized["children"];
-				if (Array.isArray(children)) {
-					delete normalized["engine"];
-					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
-				}
-				out.push(normalized);
-			}
-			return out;
-		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS;
-		var init_benchStage = __esmMin((() => {
-			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
-			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
-			BIRTH_STRIP_KEYS = [
-				"history",
-				"resultParams",
-				"runStatus",
-				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
-			];
-			RESTORE_STRIP_KEYS = [
-				"result",
-				"resultParams",
-				"runStatus",
-				"resolved",
-				"history"
-			];
-			LOAD_CARRY_KEYS = [
-				"result",
-				"runStatus",
-				"history",
-				"resultParams"
-			];
-		}));
-		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
 			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
 			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
 			EXTRA_KEYS: () => EXTRA_KEYS,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
@@ -59968,9 +60059,7 @@ void main() {
 		}
 		//#endregion
 		//#region src/client/bench-view.tsx
-		/** bench-view.tsx — the bench user plane: the grouped tiles, the
-		* reorder/group gestures, the drop zones (extracted from CardsTab.tsx
-		* hour 15). */
+		init_benchStage();
 		function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
 			const [live, setLive] = (0, react.useState)(bench);
 			(0, react.useEffect)(() => {
@@ -60200,21 +60289,25 @@ void main() {
 				if (bench.kind !== "bench" || name === "") return;
 				const slug = "saved-" + name.toLowerCase().replace(/[^a-z0-9_-]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
 				setSaveError(null);
-				fetch("/v1/bench/ensure", {
+				const stages = bench.stages.map((st) => {
+					const row = { ...st };
+					for (const key of BIRTH_STRIP_KEYS) delete row[key];
+					delete row["provenance"];
+					return row;
+				});
+				const attempt = (expectRev) => fetch("/v1/bench/ensure", {
 					method: "POST",
 					headers: { "content-type": "application/json" },
 					body: JSON.stringify({
 						session: slug,
 						author: "user",
 						intent: name,
-						stages: bench.stages.map((st) => ({
-							...st,
-							result: void 0,
-							runStatus: void 0,
-							resolved: void 0
-						}))
+						stages,
+						overwrite: true,
+						...expectRev === null ? {} : { expect_rev: expectRev }
 					})
-				}).then(async (res) => {
+				});
+				attempt(null).catch(() => attempt(0)).then(async (res) => {
 					if (!res.ok) {
 						setSaveError("save refused (" + (await res.json().catch(() => null))?.error + ")");
 						return;
@@ -60967,4 +61060,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="0715f96cd5ed09960a2c91f5b161b97e582807f9";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e3a62f9c98fb1313c7049125215ffd738d99c3da";

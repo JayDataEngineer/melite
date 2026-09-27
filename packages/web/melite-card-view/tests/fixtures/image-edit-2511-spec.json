@@ -362,9 +362,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3309,
+      "uid": 3284,
       "refs": {
-        "3228": {
+        "3203": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -380,7 +380,7 @@
             "description": "Image 1"
           }
         },
-        "3232": {
+        "3207": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -393,7 +393,7 @@
             }
           }
         },
-        "3239": {
+        "3214": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -410,7 +410,7 @@
             }
           }
         },
-        "3246": {
+        "3221": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -427,7 +427,7 @@
             }
           }
         },
-        "3253": {
+        "3228": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -444,7 +444,7 @@
             }
           }
         },
-        "3260": {
+        "3235": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -461,7 +461,7 @@
             }
           }
         },
-        "3267": {
+        "3242": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -478,17 +478,17 @@
             }
           }
         },
-        "3268": {
+        "3243": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3269": {
+        "3244": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3273": {
+        "3248": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,11 +506,11 @@
             }
           },
           "list": [
-            3268,
-            3269
+            3243,
+            3244
           ]
         },
-        "3280": {
+        "3255": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -527,7 +527,7 @@
             }
           }
         },
-        "3287": {
+        "3262": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -544,7 +544,7 @@
             }
           }
         },
-        "3294": {
+        "3269": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -561,7 +561,7 @@
             }
           }
         },
-        "3301": {
+        "3276": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -578,7 +578,7 @@
             }
           }
         },
-        "3308": {
+        "3283": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -595,41 +595,41 @@
             }
           }
         },
-        "3309": {
+        "3284": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3228,
-            "lanpaint_enabled": 3232,
-            "lanpaint_num_steps": 3239,
-            "lanpaint_step_size": 3246,
-            "lanpaint_lambda": 3253,
-            "lanpaint_beta": 3260,
-            "lanpaint_friction": 3267,
-            "lanpaint_prompt_mode": 3273,
-            "outpaint_top": 3280,
-            "outpaint_right": 3287,
-            "outpaint_bottom": 3294,
-            "outpaint_left": 3301,
-            "outpaint_overlap": 3308
+            "image1": 3203,
+            "lanpaint_enabled": 3207,
+            "lanpaint_num_steps": 3214,
+            "lanpaint_step_size": 3221,
+            "lanpaint_lambda": 3228,
+            "lanpaint_beta": 3235,
+            "lanpaint_friction": 3242,
+            "lanpaint_prompt_mode": 3248,
+            "outpaint_top": 3255,
+            "outpaint_right": 3262,
+            "outpaint_bottom": 3269,
+            "outpaint_left": 3276,
+            "outpaint_overlap": 3283
           }
         }
       }
     },
     "loras": {
-      "uid": 3158,
+      "uid": 3133,
       "refs": {
-        "3146": {
+        "3121": {
           "type": "string",
           "meta": {}
         },
-        "3147": {
+        "3122": {
           "type": "number",
           "meta": {}
         },
-        "3153": {
+        "3128": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -645,18 +645,18 @@
             }
           }
         },
-        "3154": {
+        "3129": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3146,
-            "strength": 3147,
-            "steps": 3153
+            "name": 3121,
+            "strength": 3122,
+            "steps": 3128
           }
         },
-        "3157": {
+        "3132": {
           "type": "array",
           "meta": {
             "default": [],
@@ -669,23 +669,23 @@
               "order": 0
             }
           },
-          "inner": 3154
+          "inner": 3129
         },
-        "3158": {
+        "3133": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3157
+            "loras": 3132
           }
         }
       }
     },
     "mask": {
-      "uid": 3378,
+      "uid": 3353,
       "refs": {
-        "3312": {
+        "3287": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -698,7 +698,7 @@
             }
           }
         },
-        "3316": {
+        "3291": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -714,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3317": {
+        "3292": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3318": {
+        "3293": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3319": {
+        "3294": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3323": {
+        "3298": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -754,32 +754,32 @@
             }
           },
           "list": [
-            3317,
-            3318,
-            3319
+            3292,
+            3293,
+            3294
           ]
         },
-        "3324": {
+        "3299": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3325": {
+        "3300": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3326": {
+        "3301": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3327": {
+        "3302": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3331": {
+        "3306": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -800,13 +800,13 @@
             }
           },
           "list": [
-            3324,
-            3325,
-            3326,
-            3327
+            3299,
+            3300,
+            3301,
+            3302
           ]
         },
-        "3338": {
+        "3313": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -824,7 +824,7 @@
             }
           }
         },
-        "3345": {
+        "3320": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -842,7 +842,7 @@
             }
           }
         },
-        "3352": {
+        "3327": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -860,7 +860,7 @@
             }
           }
         },
-        "3359": {
+        "3334": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -878,7 +878,7 @@
             }
           }
         },
-        "3363": {
+        "3338": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -893,7 +893,7 @@
             }
           }
         },
-        "3370": {
+        "3345": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -911,7 +911,7 @@
             }
           }
         },
-        "3377": {
+        "3352": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -929,23 +929,23 @@
             }
           }
         },
-        "3378": {
+        "3353": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3312,
-            "input_mask": 3316,
-            "mask_mode": 3323,
-            "mask_detector": 3331,
-            "mask_context_pad": 3338,
-            "mask_grow": 3345,
-            "mask_feather": 3352,
-            "mask_threshold": 3359,
-            "mask_invert": 3363,
-            "mask_detail_size": 3370,
-            "mask_denoise": 3377
+            "mask": 3287,
+            "input_mask": 3291,
+            "mask_mode": 3298,
+            "mask_detector": 3306,
+            "mask_context_pad": 3313,
+            "mask_grow": 3320,
+            "mask_feather": 3327,
+            "mask_threshold": 3334,
+            "mask_invert": 3338,
+            "mask_detail_size": 3345,
+            "mask_denoise": 3352
           }
         }
       }
@@ -956,283 +956,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2719,
+    "uid": 2694,
     "refs": {
-      "315": {
+      "290": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "316": {
+      "291": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "317": {
+      "292": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "318": {
+      "293": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "319": {
+      "294": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "320": {
+      "295": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "321": {
+      "296": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "322": {
+      "297": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "323": {
+      "298": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "324": {
+      "299": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "325": {
+      "300": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "326": {
+      "301": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "327": {
+      "302": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "328": {
+      "303": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "329": {
+      "304": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "330": {
+      "305": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "331": {
+      "306": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "332": {
+      "307": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "333": {
+      "308": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "334": {
+      "309": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "335": {
+      "310": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "336": {
+      "311": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "337": {
+      "312": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "338": {
+      "313": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "339": {
+      "314": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "340": {
+      "315": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "341": {
+      "316": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "342": {
+      "317": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "343": {
+      "318": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "344": {
+      "319": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "345": {
+      "320": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "346": {
+      "321": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "347": {
+      "322": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "348": {
+      "323": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "349": {
+      "324": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "350": {
+      "325": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "351": {
+      "326": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "352": {
+      "327": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "353": {
+      "328": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "354": {
+      "329": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "355": {
+      "330": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "356": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "357": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "358": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "359": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "361": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "362": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "363": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "364": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "365": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "366": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "367": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "368": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "369": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "2653": {
+      "2628": {
         "type": "string",
         "meta": {}
       },
-      "2657": {
+      "2632": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1248,9 +1248,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2653
+        "inner": 2628
       },
-      "2661": {
+      "2636": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1260,7 +1260,7 @@
           "description": "Input Image"
         }
       },
-      "2665": {
+      "2640": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1270,7 +1270,7 @@
           "description": "Image 2"
         }
       },
-      "2669": {
+      "2644": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1280,11 +1280,11 @@
           "description": "Image 3"
         }
       },
-      "2670": {
+      "2645": {
         "type": "string",
         "meta": {}
       },
-      "2673": {
+      "2648": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1293,9 +1293,9 @@
             "hidden": true
           }
         },
-        "inner": 2670
+        "inner": 2645
       },
-      "2677": {
+      "2652": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1305,7 +1305,7 @@
           "description": "Region Mask"
         }
       },
-      "2680": {
+      "2655": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1320,7 +1320,7 @@
           }
         }
       },
-      "2683": {
+      "2658": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1333,7 +1333,7 @@
           }
         }
       },
-      "2686": {
+      "2661": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1349,7 +1349,7 @@
           }
         }
       },
-      "2689": {
+      "2664": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1365,7 +1365,7 @@
           }
         }
       },
-      "2694": {
+      "2669": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1379,7 +1379,7 @@
           }
         }
       },
-      "2700": {
+      "2675": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1396,7 +1396,7 @@
           }
         }
       },
-      "2706": {
+      "2681": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1413,7 +1413,7 @@
           }
         }
       },
-      "2708": {
+      "2683": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1427,6 +1427,31 @@
           }
         },
         "list": [
+          290,
+          291,
+          292,
+          293,
+          294,
+          295,
+          296,
+          297,
+          298,
+          299,
+          300,
+          301,
+          302,
+          303,
+          304,
+          305,
+          306,
+          307,
+          308,
+          309,
+          310,
+          311,
+          312,
+          313,
+          314,
           315,
           316,
           317,
@@ -1446,35 +1471,10 @@
           331,
           332,
           333,
-          334,
-          335,
-          336,
-          337,
-          338,
-          339,
-          340,
-          341,
-          342,
-          343,
-          344,
-          345,
-          346,
-          347,
-          348,
-          349,
-          350,
-          351,
-          352,
-          353,
-          354,
-          355,
-          356,
-          357,
-          358,
-          359
+          334
         ]
       },
-      "2710": {
+      "2685": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1488,18 +1488,18 @@
           }
         },
         "list": [
-          361,
-          362,
-          363,
-          364,
-          365,
-          366,
-          367,
-          368,
-          369
+          336,
+          337,
+          338,
+          339,
+          340,
+          341,
+          342,
+          343,
+          344
         ]
       },
-      "2714": {
+      "2689": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1514,7 +1514,7 @@
           }
         }
       },
-      "2718": {
+      "2693": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1529,29 +1529,29 @@
           }
         }
       },
-      "2719": {
+      "2694": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2657,
-          "image1": 2661,
-          "image2": 2665,
-          "image3": 2669,
-          "reference_images": 2673,
-          "input_mask": 2677,
-          "prompt": 2680,
-          "negative_prompt": 2683,
-          "width": 2686,
-          "height": 2689,
-          "seed": 2694,
-          "steps": 2700,
-          "cfg": 2706,
-          "sampler": 2708,
-          "scheduler": 2710,
-          "use_stock_nodes": 2714,
-          "double_reference": 2718
+          "input_images": 2632,
+          "image1": 2636,
+          "image2": 2640,
+          "image3": 2644,
+          "reference_images": 2648,
+          "input_mask": 2652,
+          "prompt": 2655,
+          "negative_prompt": 2658,
+          "width": 2661,
+          "height": 2664,
+          "seed": 2669,
+          "steps": 2675,
+          "cfg": 2681,
+          "sampler": 2683,
+          "scheduler": 2685,
+          "use_stock_nodes": 2689,
+          "double_reference": 2693
         }
       }
     }

@@ -51,37 +51,14 @@ export const SourceRow: z<SourceRow> = z.object({  type: z.string().default(""),
   note: z.string().default(""),
 });
 
-export interface LoraRow {
-  id: string;
-  filename: string;
-  label: string;
-  category: string;
-  default_strength: number;
-  /** STEPS APPLIED (2026-09-18): the sampler step count the distill
-   * adapter is married to. `steps` is the DEFAULT count (the married
-   * count — dareties v4 = 4, Turbo = 8); `steps_min`/
-   * `steps_max` declare the adapter's VALID RANGE when it is not a
-   * fixed point (Turbo 4-to-8-step: min 4, max 8). A bare `steps`
-   * implies the fixed point min = max = steps. Carried VERBATIM
-   * through the contract into the served option defaults (the
-   * discovery seed); a SAMPLER fact, never a loader fact. */
-  steps?: number;
-  steps_min?: number;
-  steps_max?: number;
-  user_provided: boolean;
-}
-
-export const LoraRow: z<LoraRow> = z.object({
-  id: z.string(),
-  filename: z.string(),
-  label: z.string().default(""),
-  category: z.string().default(""),
-  default_strength: z.number().min(0).max(2).default(1.0),
-  steps: z.number().min(1).max(100).step(1),
-  steps_min: z.number().min(1).max(100).step(1),
-  steps_max: z.number().min(1).max(100).step(1),
-  user_provided: z.boolean().default(false),
-});
+// THE LORA GRAMMAR LIVES WITH ITS OWNERS (2026-10-10, the card
+// audit's M3): this row type had ZERO consumers and disagreed with
+// the live shape (it demanded `user_provided`, which no flavor row
+// authors, and lacked source_url/tooltip/preprocessor/
+// default_weight, which they all do). Two grammars for one row is
+// how a runtime shape drifts from its declaration — the live one is
+// `LoraRowDecl` (models/<family>/mods/loras.ts), the registration
+// port is `registerMod`'s contract. The stale twin is deleted.
 
 /** A matrix cell's downloadable body — the DOWNLOAD LINK. */
 export interface CellArtifact {

@@ -30,6 +30,12 @@ const DraftRecordSchema = z.object({
  *  submit gate and the drafts remote both test this one address
  *  (the queue re-exports it; gateway-core's copy is dead). */
 export const DRAFT_ID_RE = /^[A-Za-z0-9_-]{1,96}$/;
+/** The id's PATTERN and its bound, published so every gate that
+ *  admits a draft id enforces the SAME rule (the census's H13: the
+ *  queue's copy had no cap, so a long id passed one door and was
+ *  refused by the next with a different voice). */
+export const DRAFT_ID_PATTERN = DRAFT_ID_RE;
+export const DRAFT_ID_MAX_LEN = 96;
 /** draft_id_ok (the doors' hand-loop drop-in): the law, one voice. */
 export function draftIdOk(draftId) {
     return DRAFT_ID_RE.test(draftId);

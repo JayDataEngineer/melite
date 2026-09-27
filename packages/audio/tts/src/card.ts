@@ -2,6 +2,8 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute } from '@melite/models-qwen3-tts'
+import { DECL as qwen3TtsVoicedesignDecl } from '@melite/models-qwen3-tts-voicedesign'
 import { qvoiceUse, ttsDesignT1, ttsT1 } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -25,7 +27,7 @@ export const schema = z.object({
   // 0.6B-CustomVoice table row has NO instruction control — a
   // stated instruct on the small CustomVoice refuses at admission
   // below).
-  voice: vocabulary(["none", "ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").default("ryan").extra('extra', bag({ order: null, tooltip: "none = no preset — the loaded .qvoice owns the timbre (refuses loud if no voice rides). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
+  voice: vocabulary([...PRESET_SPEAKERS]).description("Preset Speaker").default("ryan").extra('extra', bag({ order: null, tooltip: "none = no preset — the loaded .qvoice owns the timbre (refuses loud if no voice rides). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
@@ -68,7 +70,10 @@ export const schema = z.object({
 // (operator 2026-09-23): boarded[0] is the default everywhere
 // (tool projection + UI preselect — one source) — the 1.7B
 // family leads; the 0.6B stays a pick.)
-export const BOARDED: string[] = ['qwen3-tts-voicedesign', 'qwen3-tts']
+// THE FAMILY IDS COME FROM THEIR DECLS (the card audit's M1: a
+// retyped id breaks the card at RUNTIME — not-boarded — with every wall
+// green; image-gen has been doing it this way all along)
+export const BOARDED: string[] = [qwen3TtsVoicedesignDecl.id, qwen3TtsDecl.id]
 
 // THE VARIANT ROUTE (agents can't pick matrix variants — the tool's
 // closed model enum additionally offers the Base variant's compose
@@ -77,7 +82,13 @@ export const BOARDED: string[] = ['qwen3-tts-voicedesign', 'qwen3-tts']
 // The design lane's own route joined 2026-09-24 (transcript-015 -
 // the head serves the family default CustomVoice; the design variant
 // re-keys only through its own address).
-export const VARIANT_ADDRESSES: string[] = ['qwen3-tts-base', 'qwen3-tts-voicedesign-design']
+// THE ROUTE ADDRESSES ARE THE DECLS' OWN VARIANT ROUTES (the card
+// audit's M5: this list restated two route strings by hand, so a
+// rename left the card boarding an address that resolves to nothing)
+export const VARIANT_ADDRESSES: string[] = [
+  variantRoute(qwen3TtsDecl, 'base'),
+  variantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
+].filter((r): r is string => r !== '')
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

@@ -40678,7 +40678,6 @@ void main() {
 					const params = { ...request };
 					delete params["draft_id"];
 					delete params["test"];
-					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					await loadStagesOntoBench([{
 						id: "s_0",
@@ -40686,7 +40685,7 @@ void main() {
 						params,
 						provenance: "restored",
 						...result !== void 0 ? { result } : {}
-					}], intentSrc.slice(0, 77), deps);
+					}], "restored run", deps);
 					return;
 				}
 				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
@@ -41845,4 +41844,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="cf8896318f7f9accb1d7e39514dda1e43a914509";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="2f41b513e27fe6d4a26e1e32ef8d8421806b363f";

@@ -20,6 +20,12 @@ export type DraftRecord = z.infer<typeof DraftRecordSchema>;
  *  submit gate and the drafts remote both test this one address
  *  (the queue re-exports it; gateway-core's copy is dead). */
 export declare const DRAFT_ID_RE: RegExp;
+/** The id's PATTERN and its bound, published so every gate that
+ *  admits a draft id enforces the SAME rule (the census's H13: the
+ *  queue's copy had no cap, so a long id passed one door and was
+ *  refused by the next with a different voice). */
+export declare const DRAFT_ID_PATTERN: RegExp;
+export declare const DRAFT_ID_MAX_LEN = 96;
 /** draft_id_ok (the doors' hand-loop drop-in): the law, one voice. */
 export declare function draftIdOk(draftId: string): boolean;
 /** The drafts domain (unit dir `drafts/`, version 1). */

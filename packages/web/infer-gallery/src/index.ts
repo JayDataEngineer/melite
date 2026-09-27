@@ -39,6 +39,8 @@
  * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { crossRootOrder } from '@melite/contracts/rootsManifest'
+import { servableLeaf } from '@melite/contracts/mediaKinds'
 import { contentTypeForArtifact } from '@melite/contracts/mediaKinds'
 import { parseRangeHeader } from '@melite/contracts/mediaRange'
 // Type-only: pulls the webServer service declaration onto Context.
@@ -87,6 +89,10 @@ const RUN_SEGMENT = /^[A-Za-z0-9._-]+$/
  *  a real name; `.`/`..` refuse here and realpath containment
  *  re-checks below. */
 function isRunRelative(target: string): boolean {
+  // the SHAPE half (well-formed, run-relative, no escape) — the
+  // SERVABLE half is the contract's predicate (servableRunRelative,
+  // the audit's H5), applied by the route AFTER its own named
+  // sidecar refusal, so both voices survive.
   const slash = target.indexOf('/')
   if (slash <= 0) return false
   if (!RUN_DIR.test(target.slice(0, slash))) return false
@@ -188,9 +194,13 @@ export function apply(ctx: Context, config: Config = {}): void {
     const roots = seat.stateRoots !== undefined && seat.stateRoots.length > 0
       ? [...seat.stateRoots]
       : [seat.stateRoot]
-    const trees: string[] = []
-    for (const tree of [flowDir, ...roots.map((r: string) => `${r}/output`)]) {
-      if (!trees.includes(tree)) trees.push(tree)
+    // THE SAME ORDER THE MEDIA LIST TAKES (crossRootOrder — the
+    // audit's H4): own tree first, then the manifest roots, deduped
+    const trees: string[] = crossRootOrder(
+      flowDir,
+      roots.map((r: string) => `${r}/output`),
+    )
+    for (const tree of []) {
     }
     return trees
   }
@@ -362,6 +372,14 @@ export function apply(ctx: Context, config: Config = {}): void {
       const target = url.searchParams.get('path') ?? ''
       if (!isRunRelative(target)) {
         fail(res, 400, 'forbidden_path', { message: 'artifact route only serves run-relative names (run-<id>/<file>)', path: target })
+        return
+      }
+      // THE SERVABLE HALF IS THE CONTRACT'S (the audit's H5: the
+      // estate's media route refused private records the gallery
+      // served; one predicate, two doors). The sidecar refusal below
+      // keeps its own NAME for the case it names.
+      if (!servableLeaf(target.split('/').pop() ?? '')) {
+        fail(res, 400, 'protected_sidecar', { message: 'run sidecars are not artifacts', path: target })
         return
       }
       // THE RANGE LAW (the audio-seek stroke, 2026-10-08): native

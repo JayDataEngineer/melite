@@ -4,6 +4,7 @@
 // Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { DECL as kimodoDecl } from '@melite/models-kimodo'
 import { motionLane, finalizeMotion } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
@@ -28,7 +29,8 @@ export const schema = z.object({
   preview_glb: z.string().role('path').description("Preview character GLB").extra('extra', bag({ order: 0, group: "output", tooltip: "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact.", wtype: 'file' })),
 })
 
-export const BOARDED: string[] = ['kimodo']
+// THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
+export const BOARDED: string[] = [kimodoDecl.id]
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

@@ -146,7 +146,10 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
 // (VAEEncode-of-source lane); its standard INT8 ConvRot weights
 // ride provision, its Lightning variant needs its own FP8 file.
 // 2.1's edit arm branches by lane_inputs.text_encode_node.
-export const BOARDED: string[] = [qwenImgEdit21Decl.id, 'qwen-img-edit-2511']
+// BOTH IDS COME FROM THEIR DECLS (the card audit's M1): the 2511 DECL
+// was imported and its id retyped as a literal, so a rename broke the card
+// at runtime (not-boarded) with every wall green.
+export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id]
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

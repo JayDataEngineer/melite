@@ -233,3 +233,33 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+/**
+ * A VARIANT'S OWN ROUTE ADDRESS (2026-10-10, the card audit's M5):
+ * a card that boards a route used to retype the address string, so
+ * a rename here left the card boarding an address that resolves to
+ * nothing — and the failure is at RUN, not at compile. The DECL owns
+ * its routes; this reads them. Returns '' when the variant declares
+ * no route (a recipe row, say), so a caller can filter honestly
+ * rather than board an empty address.
+ */
+export function variantRoute(decl: { variants?: ReadonlyArray<{ id: string; route?: string }> }, variantId: string): string {
+  const row = (decl.variants ?? []).find((v) => v.id === variantId)
+  return typeof row?.route === 'string' ? row.route : ''
+}
+
+/**
+ * THE PRESET SPEAKER SET (2026-10-10, the card audit's M2).
+ *
+ * The nine CustomVoice personas are a CURATED product surface: the
+ * vendored node takes a free `speaker_name` string and no local
+ * declaration owned the list, so the card retyped it and a person
+ * renaming a preset would find the form offering a name the card
+ * refuses. It is declared here, beside the family that ships them,
+ * and the card READS it (tts/card.ts) — one owner, one list.
+ */
+export const PRESET_SPEAKERS: readonly string[] = [
+  "none", // no preset — a loaded .qvoice owns the timbre
+  "ryan", "serena", "vivian", "aiden", "eric",
+  "dylan", "sohee", "ono_anna", "uncle_fu",
+];

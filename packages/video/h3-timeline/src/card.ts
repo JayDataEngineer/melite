@@ -29,6 +29,7 @@
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { DECL as h3Decl } from '@melite/models-h3'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -611,7 +612,10 @@ export const carrier = paramSchema
 // family is the CHECKPOINT id `h3` — never a lane name (anima
 // isn't anima-generate); the card id `h3-timeline` (the usecase
 // surface) keeps its own name.
-export const BOARDED: string[] = ['h3']
+// THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5) —
+// and with it the LANE'S FILES, which this card used to own as
+// constants of its own.
+export const BOARDED: string[] = [h3Decl.id]
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
 // agents pick no matrix variant — the tool's closed model enum

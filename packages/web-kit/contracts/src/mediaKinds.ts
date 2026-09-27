@@ -84,3 +84,19 @@ export function contentTypeForArtifact(name: string): string {
   const ext = dot < 0 ? "" : name.slice(dot + 1).toLowerCase();
   return MIME_BY_EXT[ext] ?? "application/octet-stream";
 }
+
+/**
+ * THE SERVABLE LEAF, ONCE (2026-10-10, the MCP/media audit's H5).
+ *
+ * Two doors answer run-relative artifact paths and they disagreed on
+ * the LEAF: the estate's media route refuses every underscore-
+ * prefixed name except the minted `_poster.jpg`, while the gallery's
+ * artifact route served any well-formed run-relative name — so a
+ * private record (`_flow.json`, `_request.json`) was refused by one
+ * door and served by the other. The SHAPE check is each door's own
+ * (they take different inputs); the LEAF rule is this one.
+ */
+export function servableLeaf(leaf: string): boolean {
+  if (!leaf.startsWith("_")) return true
+  return leaf === "_poster.jpg" // the one minted exception (the thumbnail law)
+}

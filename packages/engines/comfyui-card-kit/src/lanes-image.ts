@@ -14,6 +14,25 @@ import { IMPACT_DETECTORS } from './impact.ts'
 
 /** Pin autofills the image_t2i lane strips post-walk for
  *  (moved verbatim from the image-gen card). */
+
+// THE LANE SOLVER DEFAULTS, ONCE (the census's M8): five call sites
+// wrote `p.sampler || 'euler'` / `p.scheduler || 'simple'` inline,
+// so a cleared select (""), a missing key, and an explicit value all
+// took different paths per call site — and the t2i path in the SAME
+// file took none (it rides the schema+DECL cascade). The family
+// default belongs to the family; this is the lane's own answer when
+// the caller says nothing, named once.
+const LANE_SAMPLER_DEFAULT = 'euler';
+const LANE_SCHEDULER_DEFAULT = 'simple';
+
+/** The lane's solver, honouring an EXPLICIT choice (a cleared select
+ *  is not a choice: the lane's own default answers, exactly as the
+ *  DECL cascade answers elsewhere). */
+const laneSampler = (p: Record<string, unknown>): string =>
+  typeof p['sampler'] === 'string' && p['sampler'] !== '' ? p['sampler'] as string : LANE_SAMPLER_DEFAULT;
+const laneScheduler = (p: Record<string, unknown>): string =>
+  typeof p['scheduler'] === 'string' && p['scheduler'] !== '' ? p['scheduler'] as string : LANE_SCHEDULER_DEFAULT;
+
 export const IMAGE_GEN_STRIP: StripTable = {
   CLIPLoader: ['device'],
   KSampler: ['control_after_generate'],
@@ -346,7 +365,7 @@ function detailerSave(
     image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
     guide_size: (region.mask_detail_size ?? 512) as number, guide_size_for: true, max_size: 1024,
     seed: io.seed, steps: p.steps, cfg: p.cfg,
-    sampler_name: p.sampler || 'euler', scheduler: p.scheduler || 'simple',
+    sampler_name: laneSampler(p), scheduler: laneScheduler(p),
     positive: io.positive, negative: io.negative,
     denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
     noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
@@ -484,8 +503,8 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
       seed,
       steps: p.steps,
       cfg: p.cfg,
-      sampler_name: p.sampler || 'euler',
-      scheduler: p.scheduler || 'simple',
+      sampler_name: laneSampler(p),
+      scheduler: laneScheduler(p),
       denoise: 1.0,
       latent_image: latent21.out(),
       model: cached,
@@ -588,7 +607,7 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     const lpSampled = g.node('LanPaint_KSamplerAdvanced', {
       model: shifted, add_noise: 'enable', noise_seed: seed,
       steps: (p.lanpaint_num_steps ?? 20) as number, cfg: p.cfg,
-      sampler_name: p.sampler || 'euler', scheduler: p.scheduler || 'simple',
+      sampler_name: laneSampler(p), scheduler: laneScheduler(p),
       positive: pos.out(), negative: neg.out(), latent_image: lpLatent,
       start_at_step: 0, end_at_step: 10000, return_with_leftover_noise: 'disable',
       LanPaint_NumSteps: 5,
@@ -625,8 +644,8 @@ export function imageEdit(p: Record<string, unknown>, model: ModelFacts, g: Grap
     cfg: p.cfg,
     // the road's _step_doc coercions (doc.sampler or "euler"):
     // an unstated/empty row rides the lane default, never "".
-    sampler_name: p.sampler || 'euler',
-    scheduler: p.scheduler || 'simple',
+    sampler_name: laneSampler(p),
+    scheduler: laneScheduler(p),
     denoise: 1.0,
     latent_image: encoded,
     model: shifted,

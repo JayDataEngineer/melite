@@ -6,6 +6,8 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { musicT1, yue2T1 } from '@melite/comfyui-card-kit'
+import { DECL as music3Decl } from '@melite/models-music3'
+import { DECL as yue2Decl } from '@melite/models-yue2'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
@@ -21,7 +23,10 @@ export const schema = z.object({
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 0, group: "seed", width: 1 })),
 })
 
-export const BOARDED: string[] = ['music3', 'yue2']
+// THE FAMILY IDS COME FROM THEIR DECLS (the closure gate's RULE 5):
+// a retyped id breaks the card at RUNTIME — not-boarded — with every
+// wall green. image-gen has done it this way all along.
+export const BOARDED: string[] = [music3Decl.id, yue2Decl.id]
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

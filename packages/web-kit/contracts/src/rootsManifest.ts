@@ -32,3 +32,26 @@ export function rootsManifest(
 export function searchedVoice(roots: string[]): string {
   return "(searched " + roots.join(", ") + ")";
 }
+
+/**
+ * THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
+ *
+ * Two readers resolve a run id across the manifest's roots and each
+ * built its own list: the media list (own root first) and the gallery
+ * artifact route (its own flow tree, then the manifest roots). With
+ * a run id present in two trees they could disagree about which
+ * bytes answer — the list serving one file while the artifact route
+ * serves another for the SAME run id.
+ *
+ * This is the order both readers take: the caller's own tree first
+ * (its own writes win), then the manifest roots in their declared
+ * order, de-duplicated.
+ */
+export function crossRootOrder(ownTree: string | null, roots: readonly string[]): string[] {
+  const out: string[] = []
+  for (const tree of [ownTree ?? '', ...roots]) {
+    if (tree === '') continue
+    if (!out.includes(tree)) out.push(tree)
+  }
+  return out
+}

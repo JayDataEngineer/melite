@@ -1,5 +1,6 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { runMediaPrefixOf, canonicalRunMediaUrl } from "@melite/contracts/benchStage";
 export declare const name = "estate-media";
 /** NOTHING is injected: the estate bundle rides headless mounts too
  * (the queue/drafts seats are headless-safe; the web carrier is
@@ -10,6 +11,9 @@ export declare const name = "estate-media";
  * LOUD 502 naming the fix — no fallback absorbs it. */
 export declare const inject: readonly [];
 /** The route this plugin claims (one prefix, disjoint by law). */
+/** THE CONTRACT'S TWO NAMES (benchStage.ts) — the estate owns no
+ *  copy: the media route mounts both, the readers accept both, and
+ *  the bench heals stored paths to the live one. */
 export declare const MEDIA_PREFIX = "/melite-media/runs";
 /** THE LEGACY SPELLING, STILL SERVED (operator, 2026-10-10: "THERE
  *  IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). `/v1/assets/runs/`
@@ -25,14 +29,9 @@ export declare const MEDIA_PREFIX = "/melite-media/runs";
  *  never breaks, and no new path is written dead.
  */
 export declare const LEGACY_MEDIA_PREFIX = "/v1/assets/runs";
-/** The run-media prefix a path may address, or null when it is not a
- *  run-media path at all (the caller leaves such values verbatim). */
-export declare function mediaPrefixOf(pathname: string): string | null;
-/** THE ONE SPELLING LAW: rewrite a run-media path to the live
- *  prefix, whatever it says today. Every writer and every stored doc
- *  that passes through here heals itself; nothing rewrites a path
- *  that is not run media. */
-export declare function canonicalMediaUrl(value: string): string;
+declare const mediaPrefixOf: typeof runMediaPrefixOf;
+declare const canonicalMediaUrl: typeof canonicalRunMediaUrl;
+export { mediaPrefixOf, canonicalMediaUrl };
 /** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
  * the loader's /plugins URL is immutable-cached on the plugin LIST,
  * not the bytes — rebuilt card bundles never reach a browser that

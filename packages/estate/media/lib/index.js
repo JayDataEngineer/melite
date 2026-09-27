@@ -36,6 +36,7 @@ import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typer
 import { contentTypeForArtifact, mediaVocab } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { stampOf } from "@melite/contracts/buildStamp";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, } from "@melite/contracts/benchStage";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { dirname as dirnamePath, join as joinPath } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -55,7 +56,10 @@ export const name = "estate-media";
  * LOUD 502 naming the fix — no fallback absorbs it. */
 export const inject = [];
 /** The route this plugin claims (one prefix, disjoint by law). */
-export const MEDIA_PREFIX = "/melite-media/runs";
+/** THE CONTRACT'S TWO NAMES (benchStage.ts) — the estate owns no
+ *  copy: the media route mounts both, the readers accept both, and
+ *  the bench heals stored paths to the live one. */
+export const MEDIA_PREFIX = RUN_MEDIA_PREFIX;
 /** THE LEGACY SPELLING, STILL SERVED (operator, 2026-10-10: "THERE
  *  IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). `/v1/assets/runs/`
  *  died with the gateway app — but the benches, the archived
@@ -69,29 +73,13 @@ export const MEDIA_PREFIX = "/melite-media/runs";
  *  loud 404 — and the writers below emit the live one. A stored path
  *  never breaks, and no new path is written dead.
  */
-export const LEGACY_MEDIA_PREFIX = "/v1/assets/runs";
-/** The run-media prefix a path may address, or null when it is not a
- *  run-media path at all (the caller leaves such values verbatim). */
-export function mediaPrefixOf(pathname) {
-    if (pathname === MEDIA_PREFIX || pathname.startsWith(MEDIA_PREFIX + "/"))
-        return MEDIA_PREFIX;
-    if (pathname === LEGACY_MEDIA_PREFIX || pathname.startsWith(LEGACY_MEDIA_PREFIX + "/")) {
-        return LEGACY_MEDIA_PREFIX;
-    }
-    return null;
-}
-/** THE ONE SPELLING LAW: rewrite a run-media path to the live
- *  prefix, whatever it says today. Every writer and every stored doc
- *  that passes through here heals itself; nothing rewrites a path
- *  that is not run media. */
-export function canonicalMediaUrl(value) {
-    if (value === LEGACY_MEDIA_PREFIX)
-        return MEDIA_PREFIX;
-    if (value.startsWith(LEGACY_MEDIA_PREFIX + "/")) {
-        return MEDIA_PREFIX + value.slice(LEGACY_MEDIA_PREFIX.length);
-    }
-    return value;
-}
+export const LEGACY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
+// the estate CALLS the contract's matcher, and re-exports it under
+// this module's own historical names (so every existing importer
+// keeps its import address)
+const mediaPrefixOf = runMediaPrefixOf;
+const canonicalMediaUrl = canonicalRunMediaUrl;
+export { mediaPrefixOf, canonicalMediaUrl };
 /** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
  * the loader's /plugins URL is immutable-cached on the plugin LIST,
  * not the bytes — rebuilt card bundles never reach a browser that

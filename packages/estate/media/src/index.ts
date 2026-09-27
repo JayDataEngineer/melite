@@ -24,7 +24,7 @@
 // package BUILDS (tsc, the drafts recipe); the route stays plain.
 import type { Context } from "@deepseek-ai/cordis";
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, mediaVocab } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, mediaVocab, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { stampOf } from "@melite/contracts/buildStamp";
 import {
@@ -57,6 +57,9 @@ interface QueueSeat {
 /** The roots a media answer searches: the seat's manifest when it
  *  carries one, else the single own root (§23 — own root always
  *  leads; a run-id collision resolves first-root-wins). */
+// THE ROOT ORDER IS THE CONTRACT'S (see crossRootOrder): a run id
+// present in two trees must answer the same bytes whichever reader
+// asks, so both read ONE order.
 const seatRoots = (seat: QueueSeat): string[] =>
   seat.stateRoots !== undefined && seat.stateRoots.length > 0
     ? [...seat.stateRoots]
@@ -184,12 +187,13 @@ function segmentOk(decoded: string): boolean {
  *  (_flow.json, _request.json carry drafts and graphs — the run's
  *  private record, never gallery bytes). `_poster.jpg` is the ONE
  *  underscore exception (the runThumbnail mint law). */
-const UNDERSCORE_SERVABLE: ReadonlySet<string> = new Set(["_poster.jpg"]);
-
+// THE PREDICATE IS THE CONTRACT'S (servableRunRelative — the audit's
+// H5): this module used to refuse every underscore leaf but
+// `_poster.jpg` while the gallery's artifact route served any
+// run-relative name, so a private record was refused here and served
+// there. One rule, two doors.
 function relServable(relParts: readonly string[]): boolean {
-  const base = relParts[relParts.length - 1] as string;
-  if (!base.startsWith("_")) return true;
-  return UNDERSCORE_SERVABLE.has(base);
+  return servableLeaf(relParts[relParts.length - 1] ?? "");
 }
 
 /** The content-type for one served artifact: the LEAF's one

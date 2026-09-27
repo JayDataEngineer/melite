@@ -28,6 +28,7 @@
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
+    "@melite/models-h3": "workspace:*",
     "clsx": "*",
     "react": "^19.2.6"
   },
@@ -42,7 +43,7 @@
     "typescript": "~6.0.3"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web"

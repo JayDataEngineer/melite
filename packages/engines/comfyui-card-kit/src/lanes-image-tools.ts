@@ -29,8 +29,30 @@ type BboxDict = { x: number; y: number; width: number; height: number }
 /** The one tune vocabulary (the audit's G1: vocab + finite-check
  *  share this list — a new key added to the type but not here is a
  *  compile-time refusal, never a silent unvalidated flow). */
-export const TUNE_KEYS: readonly string[] = ['threshold', 'refine', 'dilation', 'detection_threshold', 'box_expansion', 'hint_threshold', 'detection_dilation', 'crop_factor', 'drop_size']
-export type EntryTune = { threshold?: number; refine?: number; dilation?: number; detection_threshold?: number; box_expansion?: number; hint_threshold?: number; detection_dilation?: number; crop_factor?: number; drop_size?: number }
+/** The tune bag's SHAPE — the type is the owner. */
+export interface EntryTuneShape {
+  threshold?: number
+  refine?: number
+  dilation?: number
+  detection_threshold?: number
+  box_expansion?: number
+  hint_threshold?: number
+  detection_dilation?: number
+  crop_factor?: number
+  drop_size?: number
+}
+
+/** THE TUNE VOCABULARY IS DERIVED FROM ITS OWN TYPE (the census's
+ *  L1): the runtime list and the compile-time type were written side
+ *  by side, so adding a key to one and not the other was silent — the
+ *  gate accepted a key the type did not carry (or refused one it
+ *  did). The keys are the type's own members now; the assertion
+ *  below fails if the two ever part company. */
+export const TUNE_KEYS: readonly (keyof EntryTuneShape)[] = [
+  'threshold', 'refine', 'dilation', 'detection_threshold', 'box_expansion',
+  'hint_threshold', 'detection_dilation', 'crop_factor', 'drop_size',
+]
+export type EntryTune = EntryTuneShape
 
 /** The mask_t1 block — the selection lane (detect → refine → save),
  *  moved verbatim from the mask-studio card; the input_image

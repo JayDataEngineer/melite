@@ -66,33 +66,6 @@ export type Slot = (typeof SlotValues)[number];
 export const CardKindValues = ["body", "card-compose", "chain", "compound", "generation", "input", "preview", "studio-link"] as const;
 export type CardKind = (typeof CardKindValues)[number];
 
-/** Every canonical wire slot (sorted — the closed set). */
-export const SLOTS: readonly string[] = ["end_image", "first_frame", "image1", "image2", "image3", "input_glb", "input_image", "input_mask", "lanpaint_mask", "last_frame", "prev_motion_artifact", "preview_glb", "reference_audio", "reference_image", "source_glb", "source_image", "voice_file"];
-
-/** Slot key -> FileKind (sorted by slot). */
-export const SLOT_KINDS: Record<string, FileKind> = {
-  "end_image": "image",
-  "first_frame": "image",
-  "image1": "image",
-  "image2": "image",
-  "image3": "image",
-  "input_glb": "glb",
-  "input_image": "image",
-  "input_mask": "mask",
-  "lanpaint_mask": "mask",
-  "last_frame": "image",
-  "prev_motion_artifact": "motion",
-  "preview_glb": "glb",
-  "reference_audio": "audio",
-  "reference_image": "image",
-  "source_glb": "glb",
-  "source_image": "image",
-  "voice_file": "voice"
-};
-
-/** Wire-live slots no form/model declares (protected from purges). */
-export const UNDECLARED_SLOTS: readonly string[] = ["lanpaint_mask"];
-
 /** Universal sidebar sections (sorted — mirrors SidebarSection). */
 export const SIDEBAR_SECTIONS: readonly SidebarSection[] = ["3d", "audio", "image", "image-edit", "motion", "video"];
 

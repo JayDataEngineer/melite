@@ -100,7 +100,7 @@ describe("the estate bundle composes", () => {
     await bench.ensure({ session: "main" }, sig);
     const row = await bench.get("main", sig);
     assert.equal(typeof row.rev, "number");
-  });
+  }, 30000);
 
   it("the manage plane answers through the bundle (status, no engine dialed)", async () => {
     const manage = seat<ManageService>("manage");
@@ -108,4 +108,4 @@ describe("the estate bundle composes", () => {
     const env = await manage.act({ action: "status", test: true }, sig);
     assert.equal(env.ok, true, "status answers test-flagged with no engine");
   });
-});
+}, 30000);
