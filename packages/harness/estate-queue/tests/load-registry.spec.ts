@@ -1,6 +1,7 @@
 // load-registry.spec.ts — the load seat: the parameter law
 // (card|flow only, name required), the card/flow bundles, and the
 // provider row.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";

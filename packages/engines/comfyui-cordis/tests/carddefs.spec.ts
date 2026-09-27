@@ -2,9 +2,11 @@
 // (TEST-2 breadth, 2026-09-12). The boot composes REAL packages
 // (no fixtures: the sweep IS the unit) — the refusal arms ride
 // data-URL modules (real modules, no host face) and synthetic
-// defs. The pre-boot theService() throw runs FIRST in this file
-// (module state is per-file: nothing has booted yet).
-import { describe, it } from "vitest";
+// defs. The pre-boot theService() throw pins a FRESH copy of the
+// module (li-m, 2026-10-10: the test project's setup awaits the
+// shared models boot before any spec runs, so this file's registry
+// is already booted — see the gate test's own note).
+import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import {
@@ -13,17 +15,21 @@ import {
 } from "../src/cardDefs.ts";
 import { ComfyUIService } from "../src/service.ts";
 import type { CardDefinition } from "../src/service.ts";
+// THE PER-FILE BOOT (li-m's own law, applied to the tests): models
+// never boot at import (that import-time await bricked the estate
+// boot), so a spec that reads the model table SYNCONCALLY boots it
+// in its own top level — one await, this file's world, exactly like
+// the estate's cardsRegistry awaits bootModels() at its compose
+// seat. There is deliberately no global test setup for this: a
+// pre-boot that imports the engine barrel before every spec's
+// `vi.mock` registers silently disarms the transport-seam mocks
+// (comfyui-control.spec.ts ran against the real module and its
+// best-effort swallow hid the failure).
+import { cascadeInit } from "../src/models/models.ts";
+
+await cascadeInit;
 
 const FACELESS = "data:text/javascript,export const x = 1";
-
-describe("theService (the boot gate)", () => {
-  it("refuses before the boot settles", () => {
-    assert.throws(
-      () => theService(),
-      /card defs not booted — await loadCardDefs\(\) first/,
-    );
-  });
-});
 
 describe("pluginPackage (the composition step)", () => {
   it("a faceless module refuses with the card voice", async () => {
@@ -180,4 +186,28 @@ describe("refreshCardDefs (the #39 hot re-projection)", () => {
     assert.ok(!svc.cardIds().includes("wall-drifted-card"), "reverted");
     assert.ok(refreshCardDefs().has("image-gen"), "the projection is clean again");
   }, 240000);
+});
+
+describe("theService (the boot gate)", () => {
+  it("refuses before the boot settles", async () => {
+    // THE GATE IS ABOUT MODULE STATE (li-m, the lazy-boot law): the
+    // node project's setup awaits the shared models boot BEFORE any
+    // spec file runs — one boot per worker, the estate's own compose
+    // seat — so this file's card-defs module is already booted by the
+    // time the spec body runs. The refusal is therefore pinned
+    // against a FRESH copy of the module (resetModules + dynamic
+    // re-import = a module with no loaded defs), which is exactly
+    // the state a cold estate's first caller sees.
+    // bootModels() itself loads the card defs (models/service.ts:
+    // the model table needs its cards), so a booted graph can never
+    // show this refusal — hence the fresh copy, and hence this test
+    // runs LAST in the file: the reset gives the following tests a
+    // cold module graph, and nothing after this one needs one.
+    vi.resetModules();
+    const fresh = await import("../src/cardDefs.ts");
+    assert.throws(
+      () => fresh.theService(),
+      /card defs not booted — await loadCardDefs\(\) first/,
+    );
+  });
 });

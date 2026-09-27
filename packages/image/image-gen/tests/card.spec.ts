@@ -1,6 +1,7 @@
 // @melite/image-image-gen — the card's compose gate arm the
 // composition spec does not own: the prompt admission + the happy
 // lane against the boarded default family.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

@@ -18,6 +18,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/models-cascade.spec.ts
 
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 // The bare specifier resolves inside packages/* (per-package

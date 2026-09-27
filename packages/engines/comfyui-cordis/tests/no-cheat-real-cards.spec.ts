@@ -22,7 +22,11 @@ import { ComfyUIService, ComposeRefusal } from "../src/service.ts";
 import type { CardDefinition } from "../src/service.ts";
 import { loadCardDefs } from "../src/cardDefs.ts";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
-import { getModel, registryIds, registryModel } from "../src/models/models.ts";
+import { getModel, registryIds, registryModel, cascadeInit } from "../src/models/models.ts";
+
+// li-m (the lazy-boot law): the import no longer boots models —
+// the spec awaits the shared boot before the first sync read.
+await cascadeInit;
 
 const here = dirname(fileURLToPath(import.meta.url));
 const factsDoc = loadFacts(

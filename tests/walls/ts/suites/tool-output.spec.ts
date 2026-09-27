@@ -9,6 +9,7 @@
 // HERE, not at the operator's screen.
 //
 // Run: npx vitest run tests/walls/ts/suites/tool-output.spec.ts
+import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

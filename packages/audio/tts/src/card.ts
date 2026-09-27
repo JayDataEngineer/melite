@@ -25,7 +25,7 @@ export const schema = z.object({
   // 0.6B-CustomVoice table row has NO instruction control — a
   // stated instruct on the small CustomVoice refuses at admission
   // below).
-  voice: vocabulary(["none", "ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").default("ryan").extra('extra', bag({ order: null, tooltip: "none = no preset — the loaded .qvoice owns the timbre (refuses loud if no voice rides). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select', visible_when: 'variant=customvoice' })),
+  voice: vocabulary(["none", "ryan", "serena", "vivian", "aiden", "eric", "dylan", "sohee", "ono_anna", "uncle_fu"]).description("Preset Speaker").default("ryan").extra('extra', bag({ order: null, tooltip: "none = no preset — the loaded .qvoice owns the timbre (refuses loud if no voice rides). Otherwise one of the 9 built-in CustomVoice speakers (Ryan, Vivian, …). The other lanes take no speaker: Base clones yours, VoiceDesign designs one", wtype: 'select' })),
   // THE TASK-NAMED LABEL LAW (operator 2026-09-23: "they are
   // SPECIFIC TASKS, not INSTRUCT"): every instruction-ish row is
   // labeled by the TASK it performs on its lane, never the upstream
@@ -33,14 +33,14 @@ export const schema = z.object({
   //   CustomVoice → Emotion & Delivery Style (HOW the preset reads)
   //   VoiceDesign → Voice Persona & Timbre (WHO is speaking —
   //                 designs a brand-new voice from the description)
-  style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). The 1.7B CustomVoice lane's capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign&variant=customvoice' })),
-  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea', visible_when: 'model=qwen3-tts-voicedesign|qwen3-tts-voicedesign-design|qwen3-tts|qwen3-tts-base' })),
+  style_instruction: z.string().description("Emotion & Delivery Style").extra('extra', bag({ order: null, placeholder: "e.g. Speak with immense excitement, laughing slightly", tooltip: "HOW the preset speaker delivers the text — emotion, tone, pacing (excited, whisper, cheerful). The 1.7B CustomVoice lane's capability; the 0.6B has no instruction control, Base clones instead, VoiceDesign designs the speaker itself", wtype: 'textarea' })),
+  design_prompt: z.string().description("Voice Persona & Timbre").extra('extra', bag({ order: null, placeholder: "e.g. A gritty, deep male radio host in his late 50s, unhurried pace, authoritative and warm", tooltip: "WHO speaks — describe the voice itself (age, gender, texture, pitch, cadence) and the exporter designs a brand-new speaker from the description. No reference audio needed; the exported .qvoice performs any script on every qwen3-tts lane. Pairs with the Design mod's name (voice_name) — the save fires from ANY lane", wtype: 'textarea' })),
   // THE CLONE INPUTS (the Base variant clones from a 3-second
   // reference): reference audio + its transcript, Base only.
   // OPTIONAL when a .qvoice rides instead (upstream's design-then-
   // clone flow: the designed voice IS the clone prompt).
-  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, tooltip: "3 seconds of the voice to clone (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'file', visible_when: 'variant=base' })),
-  ref_text: z.string().description("Reference Transcript").extra('extra', bag({ order: null, tooltip: "What the reference audio says (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'textarea', visible_when: 'variant=base' })),
+  ref_audio: z.string().role('path').description("Reference Audio").extra('extra', bag({ order: null, tooltip: "3 seconds of the voice to clone (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'file' })),
+  ref_text: z.string().description("Reference Transcript").extra('extra', bag({ order: null, tooltip: "What the reference audio says (the Base variant only; optional when a Voice Embedding performs instead)", wtype: 'textarea' })),
   // GENERATE KWARGS (the 1:1 capability surface — the engine node
   // serves temperature/top_p/top_k/speed/repetition_penalty; the
   // upstream README rides the same HF generate kwargs). Defaults
@@ -54,12 +54,12 @@ export const schema = z.object({
   // native node refuses temperature 0 — "must be positive when
   // sampling"); the schema declares the smallest positive tick of
   // its own step. The declaration follows the engine, never vice.
-  temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', bag({ order: null, visible_when: 'variant=customvoice|base' })),
-  top_p: z.number().description("Top P").min(0).max(1).step(0.01).default(0.9).extra('extra', bag({ order: null, visible_when: 'variant=customvoice|base' })),
-  top_k: z.number().description("Top K").min(0).max(1000).step(1).default(0).extra('extra', bag({ order: null, tooltip: "0 = off (the node's own default)", visible_when: 'variant=customvoice|base' })),
-  speed: z.number().description("Speed").min(0.5).max(2).step(0.1).default(1).extra('extra', bag({ order: null, visible_when: 'variant=customvoice|base' })),
-  repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', bag({ order: null, visible_when: 'variant=customvoice|base' })),
-  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null, visible_when: 'variant=customvoice|base' })),
+  temperature: z.number().description("Temperature").min(0.05).max(2).step(0.05).default(0.7).extra('extra', bag({ order: null })),
+  top_p: z.number().description("Top P").min(0).max(1).step(0.01).default(0.9).extra('extra', bag({ order: null })),
+  top_k: z.number().description("Top K").min(0).max(1000).step(1).default(0).extra('extra', bag({ order: null, tooltip: "0 = off (the node's own default)" })),
+  speed: z.number().description("Speed").min(0.5).max(2).step(0.1).default(1).extra('extra', bag({ order: null })),
+  repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', bag({ order: null })),
+  seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null })),
 })
 
 // THE BOARDED MODELS (the operator's table: SIZES are models —

@@ -25,6 +25,7 @@
 // the census only ever grows rows, never exemptions.
 //
 // Run: npx vitest run tests/walls/ts/suites/recipe-rows.spec.ts
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";

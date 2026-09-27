@@ -3,6 +3,7 @@
 // hidden, routeless, dup-quant, unoffered, or unboarded cells, so
 // the envelope's filter arms ride synthetic DECLs; live truth stays
 // in discovery.spec.ts).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 

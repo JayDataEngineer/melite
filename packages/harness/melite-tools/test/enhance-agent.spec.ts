@@ -3,6 +3,7 @@
 // enhanceOneField routing, and the in-process sweep (formSpecArm
 // live: unknown keys refuse, recipe-less models sweep ONE generic
 // 'prompt' field).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import {

@@ -4,6 +4,7 @@
 // stand-down, the re-armed gate with a fixture endpoint, present
 // files riding, missing files refusing with folders + provision
 // URL, and the non-string / empty lane rows skipping.
+import "../../../../tests/helpers/boot-models.ts";
 import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";

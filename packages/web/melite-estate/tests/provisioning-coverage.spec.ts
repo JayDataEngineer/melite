@@ -1,3 +1,4 @@
+import "../../../../tests/helpers/boot-models.ts";
 import { afterAll, afterEach, beforeEach, describe, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";

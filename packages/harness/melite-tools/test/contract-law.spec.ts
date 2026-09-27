@@ -14,6 +14,7 @@
 // The suite sits in the harness because only the harness may see
 // both tiers: the wire + tool face from comfyui-cordis (engine),
 // the render face from card-base (web) — the layer law holds.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test, beforeAll } from 'vitest'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
 import { emitParamsSchema } from '@melite/comfyui-cordis/params-emit'

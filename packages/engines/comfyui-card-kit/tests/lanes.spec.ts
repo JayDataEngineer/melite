@@ -5,6 +5,7 @@
 // dispatches, the input-prep row gates, the mesh admission throws,
 // the finalize strips). The lane IS the unit here — direct calls,
 // GraphBuilder truth.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

@@ -1,3 +1,4 @@
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

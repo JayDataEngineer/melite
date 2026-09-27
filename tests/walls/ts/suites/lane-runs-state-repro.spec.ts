@@ -33,6 +33,7 @@
 // the fibers do — the second critique caught the header claiming
 // disposal while the code dropped the array), every sandbox
 // removed in afterEach.
+import "../../../helpers/boot-models.ts";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";

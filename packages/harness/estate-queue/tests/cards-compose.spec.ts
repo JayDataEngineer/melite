@@ -6,6 +6,7 @@
 // EngineContext boot composes real graphs — its own seat); the
 // coordinate math (dangling sweep, selection, overlay, lift) is
 // REAL, same-package.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 const composeInFiber = vi.hoisted(() => vi.fn());

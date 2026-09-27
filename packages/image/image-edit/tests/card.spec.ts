@@ -5,6 +5,7 @@
 // plain-editing) plus the REVIVED LANPAINT ARM (2026-09-15 — a
 // stated region switches to LanPaint_KSamplerAdvanced; the arm's
 // exact wiring is pinned below).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

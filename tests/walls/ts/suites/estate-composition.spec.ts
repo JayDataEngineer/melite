@@ -14,6 +14,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/estate-composition.spec.ts
 // (or the whole gate: pnpm run test)
+import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

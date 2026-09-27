@@ -16,6 +16,7 @@
 //      (the door 404s, never an invented envelope).
 //
 // Run: npx vitest run tests/walls/ts/suites/discovery-doors.spec.ts
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {

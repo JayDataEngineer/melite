@@ -6,6 +6,7 @@
 // inputs stand down (dialogue/sfx pin ⇒ ref audios stripped that
 // window; the bed arm retired with the bed, 2026-09-22) — no
 // accidental overlap between the timeline lanes and the input boxes.
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

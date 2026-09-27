@@ -8,6 +8,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/models-registry.spec.ts
 
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import {

@@ -2,6 +2,7 @@
 // operator's design — Inputs bar + Mods bar, NOTHING else on the
 // card face; every knob a mask source owns rides its bag ENTRY;
 // the leaf popups carry the embedded canvases).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

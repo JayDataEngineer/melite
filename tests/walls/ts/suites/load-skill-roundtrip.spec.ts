@@ -11,6 +11,7 @@
 // 200 with a body.
 //
 // Run: npx vitest run tests/walls/ts/suites/load-skill-roundtrip.spec.ts
+import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -12,6 +12,7 @@
 // t4r anchor guard (throw + refs admit), and the interp fps
 // compensation. Every row asserts graph truth (node classes/inputs)
 // or refusal text — never expect(true).
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

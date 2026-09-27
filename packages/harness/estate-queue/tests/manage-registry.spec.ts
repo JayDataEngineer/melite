@@ -1,6 +1,7 @@
 // manage-registry.spec.ts — the manage seat: aborts refuse, refused
 // envelopes throw RemoteError (the lane's value-shape), ok envelopes
 // return, and the provider row mounts.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

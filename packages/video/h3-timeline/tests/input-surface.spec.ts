@@ -6,6 +6,7 @@
 // last_frame 2, refs 3..9). The bed is GONE (2026-09-22): the D-M-E
 // lanes own film audio.
 // Every arm below refuses loud or composes provably — never silent.
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

@@ -20,6 +20,7 @@
 // preview — is repo truth and welds whole.
 //
 // Refresh: DSH_SNAPSHOT=refresh npx vitest run test/spec-fixture-weld.spec.ts
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test } from 'vitest'
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'

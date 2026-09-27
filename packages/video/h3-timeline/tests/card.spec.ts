@@ -4,6 +4,7 @@
 // module-private renderers (renderH3Film/renderH3Window) the only
 // honest way they can be reached — through the registered card's
 // compose door, GraphBuilder truth, real family facts.
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

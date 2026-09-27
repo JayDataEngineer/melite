@@ -2,6 +2,7 @@
 // 2026-09-12). Admission stays on the card: the structured caption
 // is the music (what the song IS); the lane body rides the kit
 // against the REAL music3 facts row.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

@@ -18,6 +18,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/models-flows.spec.ts
 
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

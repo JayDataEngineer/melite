@@ -6,6 +6,7 @@
 // against its family's REAL facts row (facts.ts assembles from
 // model-facts.json + the registry — the same reads the compose door
 // rides, never a hand-built facts object).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

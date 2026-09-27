@@ -1,3 +1,4 @@
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, expect, test } from 'vitest'
 import { Context } from '@deepseek-ai/cordis'
 import composition from '../src/provisioning.ts'

@@ -1,6 +1,7 @@
 // @melite/audio-sfx — the card's compose gate (TEST-2 breadth,
 // 2026-09-12). Admission: describe the SOUND, not the scene; the
 // lane rides the kit against the REAL moss-sfx facts row.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";

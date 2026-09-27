@@ -12,6 +12,7 @@
 //      details.status 422, never a silent miss.
 // NO comfyui seat on purpose — the wall proves the plane's behavior
 // with the engine ABSENT (the honest degrade), mirroring runs-remote.
+import "../../../helpers/boot-models.ts";
 import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

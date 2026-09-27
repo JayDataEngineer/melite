@@ -2,6 +2,7 @@
 // 2026-09-12). Admission: the words to speak; the lane rides the
 // kit against the REAL qwen3-tts facts row (the model's default
 // persona fills an unstated voice).
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
@@ -177,8 +178,8 @@ describe("the tts compose gate", () => {
   });
 });
 
-describe("the lane-bespoke leaves (the model guard — the persona knobs render on the CustomVoice variant only; instruction control differs per variant, never one shared knob)", () => {
-  it("voice/style_instruction declare model+variant; the shared surface stays unguarded", () => {
+describe("the lane surface IS the visibility (2026-10-10, the YOU_ARE_A_LIAR fix shape 2: `visible_when: 'model=…'` dies — a variant's declared field set decides what renders)", () => {
+  it("no per-model field table: the card declares no visible_when guard on a lane-owned field", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string } } }> } };
     const json = carrier.toJSON();
@@ -189,34 +190,27 @@ describe("the lane-bespoke leaves (the model guard — the persona knobs render 
       if (refId === undefined) return undefined;
       return json.refs[refId]?.meta?.extra?.visible_when;
     };
-    // THE 1:1 VISIBILITY LAW (operator 2026-09-23): a flavor's
-    // inputs key on the VARIANT (the lane), never the family — the
-    // same flavor at either size takes the same inputs.
-    // CustomVoice instruction control = STYLE over the persona —
-    // upstream reserves it for the 1.7B CustomVoice (the 0.6B row
-    // has no instruction control; the Base variant clones: no
-    // persona, no instruction).
-    assert.equal(leaf("voice"), "variant=customvoice", "voice declares its variant (either size — the lane owns the input)");
-    assert.equal(leaf("style_instruction"), "model=qwen3-tts-voicedesign&variant=customvoice", "the Emotion & Delivery Style row declares the 1.7B CustomVoice lane (upstream's capability table)");
-    // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
-    // 2026-09-23, the full law): the persona description pairs with
-    // the Design mod's name (voice_name) to fire the studio exporter
-    // from ANY lane — the row shows on every address; the compose
-    // walls own the pairing (voice_name without design_prompt, or
-    // the reverse, refuses loud).
-    assert.equal(leaf("design_prompt"), "model=qwen3-tts-voicedesign|qwen3-tts-voicedesign-design|qwen3-tts|qwen3-tts-base", "the Voice Persona & Timbre row shows on every qwen3-tts address (the design route joined 2026-09-24) — the save fires from any lane; the lane's own prompt, never the pack's");
-    // the SHARED surface never hides
+    // THE SURFACE OWNS VISIBILITY (operator 2026-10-10): which fields
+    // render on a lane is the DECL's variant surface (voice on
+    // CustomVoice, style_instruction on the 1.7B CustomVoice,
+    // ref_audio/ref_text on Base), not a per-model guard table in the
+    // card. These leaves carry no guard — one spelling, the model
+    // family's own declaration decides the rest.
+    assert.equal(leaf("voice"), undefined, "the persona knob renders by the lane's declared surface, not a card-side guard");
+    assert.equal(leaf("style_instruction"), undefined, "the instruction row's lane (1.7B CustomVoice) is declared, not guarded");
+    assert.equal(leaf("ref_audio"), undefined, "the clone row's lane (Base) is declared, not guarded");
+    assert.equal(leaf("ref_text"), undefined, "the transcript row's lane (Base) is declared, not guarded");
+    // the design prompt + the shared sampling ride EVERY lane (family
+    // base surface) — still no guard, and now the form shows them
+    // because the DECL says so, not because a model list agreed.
+    assert.equal(leaf("design_prompt"), undefined, "the persona description pairs with the Design mod's name; the save fires from ANY lane — declared, not guarded");
     assert.equal(leaf("text"), undefined, "the words ride every lane");
-    // synth sampling renders on the synthesis lanes only (design
-    // sampling lives in the Design entry — the README stroke)
-    assert.equal(leaf("temperature"), "variant=customvoice|base", "temperature declares the synthesis lanes");
-    assert.equal(leaf("seed"), "variant=customvoice|base", "seed declares the synthesis lanes");
-    // THE GENERATE KWARGS (1:1 capabilities — the node serves them,
-    // the card declares them, absent rows ride the engine pin)
-    assert.equal(leaf("top_p"), "variant=customvoice|base");
-    assert.equal(leaf("speed"), "variant=customvoice|base");
-    assert.equal(leaf("repetition_penalty"), "variant=customvoice|base");
-    assert.equal(leaf("top_k"), "variant=customvoice|base");
+    assert.equal(leaf("temperature"), undefined, "sampling knobs are family base — every lane sees them");
+    assert.equal(leaf("seed"), undefined);
+    assert.equal(leaf("top_p"), undefined);
+    assert.equal(leaf("speed"), undefined);
+    assert.equal(leaf("repetition_penalty"), undefined);
+    assert.equal(leaf("top_k"), undefined);
   });
 });
 
@@ -317,11 +311,17 @@ describe("the three-lane surfaces (the README stroke 2026-09-21 — each model r
     if (refId === undefined) return undefined;
     return json.refs[refId]?.meta?.extra?.visible_when;
   };
-  it("the cloner declares its inputs on the Base variant only; synth sampling skips the design lane", () => {
-    assert.equal(leaf("ref_audio"), "variant=base", "reference audio is a Base-variant input (either size)");
-    assert.equal(leaf("ref_text"), "variant=base", "reference transcript is a Base-variant input (either size)");
-    assert.equal(leaf("temperature"), "variant=customvoice|base", "synth sampling never renders on design");
-    assert.equal(leaf("seed"), "variant=customvoice|base", "seed never renders on design");
+  it("the card carries NO per-lane guard table — the DECL's variant surfaces own which fields render (2026-10-10)", () => {
+    // the per-lane VISIBILITY now rides the declaration: ref_audio +
+    // ref_text on the Base variants, voice on CustomVoice,
+    // style_instruction on the 1.7B CustomVoice, sampling on the
+    // family base. Those surfaces are pinned where they are authored
+    // (the model DECLs + the lane-law wall). The card's ONE job is
+    // to carry the fields, unguarded.
+    assert.equal(leaf("ref_audio"), undefined, "the cloner rows render by the Base variant's declared surface, not a card guard");
+    assert.equal(leaf("ref_text"), undefined, "the transcript row likewise");
+    assert.equal(leaf("temperature"), undefined, "synth sampling is family base — it renders where the DECL declares it");
+    assert.equal(leaf("seed"), undefined);
     assert.equal(leaf("text"), undefined, "the words ride every lane (the design sample on VoiceDesign)");
   });
   it("the card offers BOTH SIZES + THE BASE ROUTE, LARGE-FIRST (boarded[0] is the default everywhere — the operator's large-model default; the base compose address rides the offer, qvoice across ALL qwen3-tts, operator 2026-09-23)", () => {

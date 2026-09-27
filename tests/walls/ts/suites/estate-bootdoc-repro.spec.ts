@@ -9,6 +9,7 @@
 // mounts, exactly like a lane restart after any composed session.
 //
 // It is a REPRO first: run it and read the failure's own voice.
+import "../../../helpers/boot-models.ts";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
