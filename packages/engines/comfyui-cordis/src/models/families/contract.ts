@@ -17,7 +17,10 @@
 //   contract: every served model routes and renders).
 // - cascade merge: family → variant → cell, LATER LAYERS WIN.
 
+// schemastery's default export is BOTH the z facade and the
+// Schema resolver (the same object — service.ts takes it as `Schema`)
 import z from "@deepseek-ai/schemastery";
+const Schema = z;
 
 /** Loud refusal before the wire (the QUEUE LANE LAW shape). */
 export class ModelError extends Error {
@@ -40,9 +43,12 @@ export interface SourceRow {
   filename?: string;
 }
 export const SourceRow: z<SourceRow> = z.object({  type: z.string().default(""),
-  repo_id: z.string(),
-  filename: z.string(),
-  note: z.string(),
+  // absent = untyped (the interface's own law, and every reader's
+  // ?? ""): the schema used to REQUIRE these three, so a DECL that
+  // omitted them was tsc-clean and refused at registration
+  repo_id: z.string().default(""),
+  filename: z.string().default(""),
+  note: z.string().default(""),
 });
 
 export interface LoraRow {
@@ -94,8 +100,8 @@ export const CellArtifact: z<CellArtifact> = z.object({
   sha256: z.string().pattern(SHA256_RE),
   dest_root: z.string().default("COMFYUI_ROOT"),
   dest_sub: z.string().default(""),
-  size_hint_gb: z.number(),
-  vram_peak_gb: z.number(),
+  size_hint_gb: z.number().required(false),
+  vram_peak_gb: z.number().required(false),
 });
 
 // ── the cascade rows (frozen instances, not subclasses) ─────────────
@@ -129,14 +135,14 @@ export interface CellRow {
 export const CellRow: z<CellRow> = z.object({
   quant: z.string().pattern(SAFE_ID_RE),
   label: z.string().default(""),
-  source: z.union([SourceRow, z.const(null)]),
+  source: z.union([SourceRow, z.const(null)]).default(null),
   description: z.string().default(""),
   route: z.string().default(""),
   engine: z.string().default(""),
-  vram_peak_gb: z.number().min(0),
+  vram_peak_gb: z.number().min(0).required(false),
   resolver_defaults: z.dict(z.any()).default({}),
   hide_from_dropdown: z.boolean().default(false),
-  artifact: z.union([CellArtifact, z.const(null)]),
+  artifact: z.union([CellArtifact, z.const(null)]).default(null),
 });
 
 export interface VariantRow {
@@ -279,16 +285,21 @@ export const VariantRow: z<VariantRow> = z.object({
   hide_from_dropdown: z.boolean().default(false),
   route: z.string().default(""),
   engine: z.string().default(""),
-  order: z.number(),
+  order: z.number().required(false),
   resolver_defaults: z.dict(z.any()).default({}),
+  // THE VARIANT'S OPTIONAL HALF (the interface's law, and the census's
+  // C3): each of these is absent-able in the interface, so each must
+  // be absent-able HERE — otherwise a hand-written variant that omits
+  // one is tsc-clean and refused at registration, and the lane
+  // surfaces the schema's filled `{}`/`[]` the interface forbids.
   sampler_envelope: z.object({
     steps: z.array(z.number()),
     cfg: z.array(z.number()),
-  }),
+  }).required(false),
   lane_inputs: z.dict(z.any()).default({}),
-  wire_defaults: z.union([z.dict(z.any()), z.const(null)]),
-  params: z.array(z.string().pattern(FIELD_NAME_RE)),
-  relations: ParamRelationWords,
+  wire_defaults: z.union([z.dict(z.any()), z.const(null)]).required(false),
+  params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
+  relations: ParamRelationWords.required(false),
   cells: z.array(CellRow).default([]),
 });
 
@@ -319,9 +330,52 @@ export const ProvisionRow: z<ProvisionRow> = z.object({
   name: z.string(),
   url: z.string(),
   folder: z.string(),
-  sha256: z.string().pattern(SHA256_RE),
-  size_bytes: z.number().min(0),
+  // the digest and the size are OPTIONAL in the interface (a
+  // provision may be pinned by URL alone) and absent-able here for
+  // the same reason (the census's C3)
+  sha256: z.string().pattern(SHA256_RE).required(false),
+  size_bytes: z.number().min(0).required(false),
 });
+
+/**
+ * THE SCHEMA/INTERFACE AGREEMENT (2026-10-10, the census's C3).
+ *
+ * Every row above was written TWICE: a hand-written TypeScript
+ * interface (what an author may write) and a schemastery schema
+ * (what registration accepts). They disagreed in both directions —
+ * keys the interface called optional were REQUIRED by the schema
+ * (so a hand-written DECL compiled and then refused at boot, with
+ * the schema's filled `{}`/`[]` where the interface forbids it), and
+ * keys the schema knew were absent from the interface entirely.
+ *
+ * The runtime half of the law is pinned here: a MINIMAL row per
+ * schema — every optional key omitted — must STRICT-RESOLVE. A key
+ * the interface documents as optional that the schema still demands
+ * fails this wall, and the fix is the schema, never the author.
+ */
+export function assertSchemaAcceptsMinimalRows(): void {
+  const minimal: Array<[string, unknown, unknown]> = [
+    ["SourceRow", SourceRow, {}],
+    ["CellArtifact", CellArtifact, { source_url: "https://x/y", size_bytes: 1, sha256: "a".repeat(64) }],
+    ["CellRow", CellRow, { quant: "q" }],
+    ["VariantRow", VariantRow, { id: "v" }],
+    ["VariantGroupRow", VariantGroupRow, { id: "g" }],
+    ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
+    ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
+    ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
+  ];
+  for (const [name, schema, row] of minimal) {
+    try {
+      Schema.resolve(row, schema as never, {}, true);
+    } catch (err: unknown) {
+      throw new Error(
+        "contract drift: " + name + " still REQUIRES a key its interface calls optional — " +
+        "a hand-written row omitting it compiles and is refused at registration (" +
+        (err instanceof Error ? err.message : String(err)) + ")",
+      );
+    }
+  }
+}
 
 /** ModelDecl, the SCHEMA (ledger row 16, 2026-09-10): the interface
  *  above had NO runtime twin — validateDecl hand-rolled four field
@@ -399,9 +453,11 @@ export const ModelDecl = z.object({
   /** The family-wide relation words (judged on EVERY lane, in
    *  addition to each variant's own). */
   relations: ParamRelationWords,
-  has_agent: z.boolean(),
-  has_inference: z.boolean(),
-  has_rubric: z.boolean(),
+  // the interface documents all three as optional (absent ≡ false
+  // to every reader), so the schema accepts their absence too
+  has_agent: z.boolean().required(false),
+  has_inference: z.boolean().required(false),
+  has_rubric: z.boolean().required(false),
 });
 
 /** The family declaration — the model.unit's data shape.
@@ -499,7 +555,9 @@ export const ModelRow: z<ModelRow> = z.object({
   source: SourceRow.default({ type: "" }),
   defaults: z.dict(z.any()).default({}),
   engine: z.string().default(""),
-  has_agent: z.boolean(),
-  has_inference: z.boolean(),
-  has_rubric: z.boolean(),
+  // the interface documents all three as optional (absent ≡ false
+  // to every reader), so the schema accepts their absence too
+  has_agent: z.boolean().required(false),
+  has_inference: z.boolean().required(false),
+  has_rubric: z.boolean().required(false),
 });

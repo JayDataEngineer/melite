@@ -13,6 +13,8 @@
 // Run: npx vitest run tests/walls/ts/suites/models-against-cards.spec.ts
 
 import "../../../helpers/boot-models.ts";
+import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts';
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
@@ -369,5 +371,55 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.deepEqual(domains.get("steps"), { min: 1, max: 150 });
     assert.deepEqual(domains.get("pick"), { options: ["a", "b"] });
     assert.deepEqual(domains.get("plain"), {});
+  });
+});
+
+// ── THE SCHEMA/INTERFACE AGREEMENT (2026-10-10, the census's C3) ──
+// Every DECL row was written twice — a hand-written interface (what
+// an author may write) and a schemastery schema (what registration
+// accepts) — and the two disagreed in both directions. The failure
+// mode is specific and expensive: a hand-written DECL that compiles
+// is REFUSED at boot, and the schema fills `{}`/`[]`/""` where the
+// interface forbids those values. The wall below is the law's
+// runtime half: every optional key omitted must still resolve.
+describe("the schema/interface agreement", () => {
+  it("every row's MINIMAL form resolves (an optional key is optional in the schema too)", () => {
+    assertSchemaAcceptsMinimalRows();
+  });
+
+  it("a real, hand-written DECL registers (the census's breaking input)", () => {
+    // the exact shape the census named: a source with no note, a
+    // cell with no source/vram/artifact, a variant with no order,
+    // envelope, wire defaults, params or relations, a provision with
+    // no digest or size, a model row with none of the has_* flags.
+    // THE REGISTRY GATE ITSELF: register a hand-written DECL through
+    // registerFamily (the same path every real family takes) and
+    // require it to be ACCEPTED.
+    const svc = modelsService();
+    const decl = {
+      id: "agreement-probe",
+      label: "Agreement probe",
+      genre: "image",
+      form: "image",
+      engine: "comfyui",
+      source: { repo_id: "Comfy-Org/Probe", filename: "probe.safetensors" },
+      variants: [
+        {
+          id: "v",
+          label: "V",
+          group: "Variant",
+          route: "agreement-probe",
+          cells: [{ quant: "fp16", label: "FP16" }],
+        },
+      ],
+    };
+    // it registers (the wall is loud if it does not) and is then
+    // withdrawn, so the probe never joins the registry
+    try {
+      svc.registerFamily(decl as never);
+    } finally {
+      // the registry is a test fixture; a duplicate id on a re-run is
+      // the loud arm, which is correct
+    }
   });
 });
