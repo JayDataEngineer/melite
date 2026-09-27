@@ -2,7 +2,7 @@
 // transfer_rig_t1 renderer port). THREE families behind one card
 // (requires_by_family in the python card): the arm branches on
 // model.id inside compose — the dispatch stays HERE (bespoke), the
-// arms ride src/kit.ts.
+// arms ride @melite/comfyui-card-kit.
 //
 // NUMBERING LAW : the renderers
 // renderers ride comfy-script, whose api_format() assigns

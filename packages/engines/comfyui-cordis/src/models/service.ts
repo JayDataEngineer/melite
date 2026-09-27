@@ -5,7 +5,7 @@
 // THE PORT LAW (AGENTS.md, THE CORDIS STDLIB): a ported retired system
 // is REGISTERED THROUGH SERVICES with boot-loud validation — never
 // a module const + free functions over it. The frozen registry
-// (registry.generated.ts) is DATA (catalog rows may be frozen);
+// (the retired registry.generated module) is DATA (catalog rows may be frozen);
 // the SYSTEM — registration, validation, resolution, the cascade —
 // lives here, on a Service, reached through ctx.models.
 //

@@ -8,8 +8,8 @@
 // t4_open / t4_chain), the motion-context chaining rail, and the SLA /
 // SR / interp leaves are the RENDERER vocabulary the compose body
 // still reads: those keys ride the compose door's explicit-params
-// overlay (service.ts params cascade: schema defaults, then model
-// defaults, then raw params — the img-to-mesh precedent), so every
+// overlay (prepareCardParams — the ONE resolver: schema defaults, then the
+// selected variant's stamps, then the caller's params), so every
 // read below normalizes with its old default and the served shape
 // stays byte-identical.
 //
@@ -24,7 +24,7 @@
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
 // inputs exactly like comfy-script does; the compose strips
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
-// src/kit.ts finalizeH3 (t4r, like the python's `if not is_t4r`,
+// @melite/comfyui-card-kit's finalizeH3 (t4r, like the python's `if not is_t4r`,
 // strips nothing; the i2v dead-branch node marks the t4r family in
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
@@ -59,7 +59,7 @@ import { bag } from '@melite/contracts/extraKeys'
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from './timelineContract.ts'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
-// would auto-fill at serialization — the strip set lives in src/kit.ts
+// would auto-fill at serialization — the strip set lives in the card kit (finalizeH3)
 // (H3_T4_STRIP; the t4r branch carries all of these explicitly, so it
 // never strips).
 

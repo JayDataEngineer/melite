@@ -1,6 +1,7 @@
 // models/contract.ts — THE MODEL REGISTRY CONTRACT (the family
 // declaration law; the cards DSL twin). This file +
-// registry.generated.ts + models.ts are the declaration plane.
+// models.ts are the declaration plane beside this file (the registry.generated
+// module is RETIRED — catalogEmission says so; nothing may cite it as live).
 // by the declarations themselves (every row validated at
 // construction — the dump carries the contract's own verdicts, not a
 // hand transcription).

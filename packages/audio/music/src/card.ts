@@ -1,5 +1,5 @@
 // Tier 3 — the music card (the music_t1 renderer port).
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (musicT1/yue2T1).
 // Instrumental = lyrics "" (MiniMax's own convention — baked, never
 // an absent ref). Stock-only: the MiniMax + YuE2 nodes ride upstream
 // core; no extension to declare (the retired card carried no requires).

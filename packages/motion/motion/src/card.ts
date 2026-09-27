@@ -1,7 +1,7 @@
 // Tier 3 — the motion card (the motion_t1 renderer port). Kimodo
 // checkpoint lane + optional RaySomaxBake preview skin (melite-poser
 // stopgap).
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (kimodoLane).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { DECL as kimodoDecl } from '@melite/models-kimodo'

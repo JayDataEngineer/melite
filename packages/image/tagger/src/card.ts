@@ -1,7 +1,7 @@
 // Tier 3 — the tagger card (the wd14_t1 / joytag_t1 / florence2_t1 /
 // joycaption_t1 renderer ports; the image prompt-inversion card).
 // Decl + admission + family dispatch — the four arms live in
-// src/kit.ts (TAGGER_ARMS); the lane is weightless, every wire value
+// @melite/comfyui-card-kit (TAGGER_ARMS); the lane is weightless, every wire value
 // comes from params.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'

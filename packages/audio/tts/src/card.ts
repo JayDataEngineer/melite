@@ -1,5 +1,5 @@
 // Tier 3 — the tts card (the tts_t1 renderer port).
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (ttsT1).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute } from '@melite/models-qwen3-tts'

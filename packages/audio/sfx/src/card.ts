@@ -1,5 +1,5 @@
 // Tier 3 — the sfx card (the sfx_t1 renderer port).
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (sfxT1).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { sfxT1 } from '@melite/comfyui-card-kit'

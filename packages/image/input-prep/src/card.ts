@@ -1,7 +1,7 @@
 // Tier 3 — the input-prep card (the input_prep renderer port).
 // The source lane: LoadImage -> [ImageCrop] -> [ImageScale] ->
 // SaveImage, or the audio restage LoadAudio -> SaveAudio.
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (inputPrepLane).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { inputPrepLane } from '@melite/comfyui-card-kit'

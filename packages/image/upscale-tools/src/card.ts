@@ -1,5 +1,5 @@
 // Tier 3 — the upscale-tools card (the seedvr2_t1 submittable arm).
-// Decl + admission + one kit recipe call — the lane body lives in src/kit.ts.
+// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (upscaleLane).
 import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'

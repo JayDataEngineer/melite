@@ -1032,7 +1032,7 @@ export class ComfyUIService extends Service {
       if (inputs === null || typeof inputs !== 'object') continue
       for (const key of Object.keys(inputs as Record<string, unknown>)) {
         if (declared.has(key)) continue
-        // A DOTTED WIDGET SUB-KEY IS A DECLARED INPUT (the 5,415-node
+        // A DOTTED WIDGET SUB-KEY IS A DECLARED INPUT (the shipped-graph
         // receipt, 2026-10-10): ComfyUI's /object_info declares a
         // widget by its top-level name and the graph addresses its
         // sub-widgets with a dotted suffix — 'values.a',

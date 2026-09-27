@@ -6,12 +6,15 @@ import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage"
 // run row). Refusals keep the door's byte-pinned prose as tagged
 // unions — the remote maps them to the protocol's ONE RemoteError.
 //
-// SCOPE (the preview-scope law rides on): this stroke serves
-// single-stage comfyui flow_inline runs. {model:} (the card arm)
-// and {flow:} (the registry lane) refuse LOUD with the door's
-// preview-scope posture — their remotes land in later strokes;
-// multi-stage / card= / skip_when / non-comfyui refuse at the
-// compile gates exactly as the door did.
+// SCOPE (2026-10-10, the records audit's S1 — this header described
+// a scope two strokes out of date and now contradicted its own body):
+// this module is the start arm's chain for EVERY run shape the runs
+// service registers — {model:} card runs, {flow:} registry runs,
+// {flow_inline:} inline runs, and MULTI-STAGE bench rows. The
+// refusals that remain are the ones listed at their own arms: the
+// compile gates (an unknown node, an undeclared input, a dead wire,
+// a self-wire) and the initial gate (a missing FromStage initial).
+
 import { mkdirSync } from "node:fs";
 import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
