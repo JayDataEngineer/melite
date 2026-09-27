@@ -40334,6 +40334,22 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** What a RESTORE strips before re-stamping the stage that actually
+		*  ran (the gallery's law — a bench never shows another run's
+		*  outputs). */
+		const RESTORE_STRIP_KEYS = [
+			"result",
+			"resultParams",
+			"runStatus",
+			"resolved",
+			"history"
+		];
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		//#endregion
 		//#region ../../web-kit/contracts/src/benchSnapshot.ts
 		function isRecord(v) {
 			return typeof v === "object" && v !== null && !Array.isArray(v);
@@ -40624,11 +40640,7 @@ void main() {
 						const ranCard = typeof snap === "object" && snap !== null ? snap["card"] : void 0;
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 						for (const st of bsStages) {
-							delete st["result"];
-							delete st["runStatus"];
-							delete st["resolved"];
-							delete st["history"];
-							delete st["resultParams"];
+							stripKeys(st, RESTORE_STRIP_KEYS);
 							const stParams = st["params"];
 							if (typeof st["card"] === "string" && typeof stParams === "object" && stParams !== null && stParams["model"] === st["card"]) delete stParams["model"];
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
@@ -41833,4 +41845,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="cdf44c3190075519b249300987e8aca21d9f8cb7";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="cf8896318f7f9accb1d7e39514dda1e43a914509";

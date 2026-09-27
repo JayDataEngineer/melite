@@ -50,6 +50,21 @@ COMPILED=(
   packages/vendor/typert-protocol
 )
 
+# THE CLIENT BUNDLES (operator, 2026-10-10: the STALE TAB
+# regression). The browser runs `lib/client.js` from these three
+# packages, served under a year-immutable URL — so a source edit in a
+# web package reaches the operator ONLY when its bundle is rebuilt.
+# The first cut of this playbook built the five server packages and
+# restarted, and the operator's tab still ran yesterday's deck: a
+# restart is not a deployment, and neither is a server-only build.
+# (No stale-tab banner may announce it any more — the bench is live;
+# these bundles are what make "live" mean current.)
+CLIENT_BUNDLES=(
+  packages/web/melite-card-view
+  packages/web/melite-card-deck
+  packages/web/infer-gallery
+)
+
 say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
 ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
 bad()  { printf '   \033[31mFAIL\033[0m %s\n' "$*"; }
@@ -84,6 +99,24 @@ if [ "$DO_BUILD" -eq 1 ]; then
     bad "the built door has NO lane seat — the source and the build disagree"
     exit 1
   fi
+  # the browser's half
+  for p in "${CLIENT_BUNDLES[@]}"; do
+    if [ ! -d "$REPO/$p" ]; then continue; fi
+    if (cd "$REPO/$p" && node node_modules/tsdown/dist/run.mjs -c tsdown.config.ts >/tmp/ship-client.log 2>&1); then
+      ok "$p client bundle"
+    else
+      bad "$p client bundle — build failed:"
+      head -12 /tmp/ship-client.log | sed 's/^/        /'
+      exit 1
+    fi
+  done
+  # the receipt the operator cares about: the bundle the browser
+  # fetches must not carry a face we deleted
+  if grep -q "STALE TAB" "$REPO/packages/web/melite-card-view/lib/client.js" 2>/dev/null; then
+    bad "the card-view bundle still carries the removed STALE TAB face — the browser would show it"
+    exit 1
+  fi
+  ok "no client bundle carries a removed face"
 fi
 
 # -------------------------------------------------------------- restart
