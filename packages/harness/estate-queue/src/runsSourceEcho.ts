@@ -29,14 +29,18 @@
 // because the walls pin both faces.
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { statSync } from "node:fs";
 import { join } from "node:path";
 
 /** The serving prefixes the estate owns (comfyui-upload's
  *  MEDIA/ASSET_ROUTE_PREFIX twins — detection is case-insensitive
  *  like the engine's; the sliced tail keeps its case). */
-export const MEDIA_RUNS_PREFIX = "/melite-media/runs/";
-export const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
+// THE CONTRACT'S TWO NAMES (benchStage.ts) with the trailing slash
+// these readers index by — derived, never retyped, so a change of
+// the live prefix or the legacy set reaches every reader at once.
+export const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
+export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 
 /** The run-dir basename grammar (the mint law — media index.ts). */
 const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;

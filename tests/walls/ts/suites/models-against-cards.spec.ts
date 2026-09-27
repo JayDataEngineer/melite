@@ -15,6 +15,7 @@
 import "../../../helpers/boot-models.ts";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts';
+import { readFileSync } from "node:fs";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
@@ -421,5 +422,70 @@ describe("the schema/interface agreement", () => {
       // the registry is a test fixture; a duplicate id on a re-run is
       // the loud arm, which is correct
     }
+  });
+});
+
+// ── requires ≡ union(requiresByFamily) (the card-plane audit's H4) ──
+// Two cards maintained BOTH a flat `requires` list and a per-family
+// map, documented as "the flat list carries the UNION" — by hand,
+// with nothing pinning them equal. A family pack added to one and not
+// the other either starves a flat consumer or over-claims a pack the
+// family never declared. The law is now a wall.
+describe("requires is the union of requiresByFamily", () => {
+  it("every real card's flat requires IS the union of its family map", async () => {
+    await loadCardDefs();
+    const svc = theService();
+    for (const cardId of svc.cardIds()) {
+      const def = svc.getCardDef(cardId) as {
+        requires?: readonly string[]
+        requiresByFamily?: Record<string, readonly string[]>
+      };
+      if (def.requiresByFamily === undefined) continue;
+      const union = [...new Set(Object.values(def.requiresByFamily).flat())].sort();
+      const flat = [...(def.requires ?? [])].sort();
+      assert.deepEqual(flat, union,
+        `card ${cardId}: the flat 'requires' must BE the union of its requiresByFamily ` +
+        `(flat: ${flat.join(', ') || '—'}; union: ${union.join(', ') || '—'}) — ` +
+        `they are maintained by hand and a mismatch either starves a flat consumer ` +
+        `or over-claims a pack the family never declared`);
+    }
+  });
+});
+
+// ── THE CURATION-SUBSET LAW (the census's H2) ──
+// A card may CURATE a subset of the engine's vocabulary (the film
+// card recommends eleven samplers) — but it must READ the members
+// from the single SSOT, never retype them, or a regen of the engine
+// list (regen-vocab.ts owns that file) leaves the card stale.
+describe("curated vocabulary subsets derive from the engine SSOT", () => {
+  it("the film card's recommended samplers all exist in the kit's vocabulary", async () => {
+    const { SAMPLER_OPTIONS } = await import(
+      "../../../../packages/engines/comfyui-card-kit/src/vocab.ts"
+    );
+    const src = readFileSync(
+      "packages/video/h3-timeline/src/card.ts",
+      "utf8",
+    );
+    const named = src.match(/const H3_RECOMMENDED_SAMPLERS = \[([\s\S]*?)\] as const/);
+    assert.ok(named !== null, "the film's recommended list is named (curation is visible)");
+    // CODE lines only — a comment may NAME a sampler in prose
+    const code = named![1]!.split("\n")
+      .filter((l) => !l.trim().startsWith("//"))
+      .join("\n");
+    const members = [...code.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+    assert.ok(members.length > 0, "the list is not empty");
+    for (const name of members) {
+      assert.ok(
+        (SAMPLER_OPTIONS as readonly string[]).includes(name),
+        `the film card recommends sampler '${name}', which the engine vocabulary does not carry — ` +
+        `the subset must be filtered FROM the SSOT (the card's own vocabulary() call does that; ` +
+        `this wall fails when a name is curated that the engine has dropped)`,
+      );
+    }
+    // and the card really does derive rather than retype
+    assert.ok(
+      src.includes("SAMPLER_OPTIONS.filter"),
+      "the card's sampler vocabulary DERIVES from the SSOT (a retyped list is a second SSOT)",
+    );
   });
 });

@@ -29,6 +29,7 @@
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { GraphBuilder, OutputHandle } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { finalizeH3, coerceWireArrays } from '@melite/comfyui-card-kit'
@@ -64,22 +65,52 @@ export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } fro
 // ── weight / template constants (justified — EXTENSION LAW) ─────────────
 // Every loader filename below is a declared Provision row in
 // packages/models/h3-timeline/src/index.ts:
-// UNET_GOLD ← diffusion_models/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8;
-// CLIP_GOLD ← text_encoders/qwen3vl_32b_minimax_h3_int8_convrot;
-// VAE_VIDEO_GOLD ← vae/minimax_h3_video_vae_int8_convrot;
-// VAE_AUDIO_GOLD ← vae/minimax_h3_audio_vae_fp32;
+// (the four loader files now live in the h3 DECL's lane_inputs —
+//  diffusion_models/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8,
+//  text_encoders/qwen3vl_32b_minimax_h3_int8_convrot,
+//  vae/minimax_h3_video_vae_int8_convrot,
+// h3LaneFile(lane, 'vae_audio', DECL_VAE_AUDIO) ← vae/minimax_h3_audio_vae_fp32;
 // LORA_STACK_GOLD ← loras/h3/
 // minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties,
 // solo at 0.6 — plaguekind's turbo setup 1:1 (the 768p v4 turbo rides
 // solo, the fro row drops; the V7-era two-stack is retired, never a
 // fallback). Married to 8 steps via the resolved bag row.
+// THE FILM CARD'S RECOMMENDED SAMPLERS — named, not retyped. Every
+// member must exist in the kit's engine vocabulary (the wall asserts
+// the subset), so the card curates a choice without becoming a
+// second copy of the engine's list.
+const H3_RECOMMENDED_SAMPLERS = [
+  "euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun",
+  // THE TIER-1/2 WINNERS (arena + Comfy-Org's own t2v/i2v/r2v
+  // templates; every name verified against the live engine's
+  // object_info 2026-09-20 — ROADMAP item 1, ledger #30 §3(1)):
+  // res_multistep is what the official templates run; er_sde +
+  // the beta scheduler (already on sched_name) is Parasyte's
+  // README rec (beta57); seeds_2/seeds_3 are the "dual clock"
+  // family the arena's top i2v runs rode with larryvrh v4.
+  "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
+] as const
+
 // (No local CardDefinition augmentation: the service's schemaCarrier
 // seat — Schema-typed since ledger row 23 — already carries this.)
 
-const UNET_GOLD = 'minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors'
-const CLIP_GOLD = 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors'
-const VAE_VIDEO_GOLD = 'minimax_h3_video_vae_int8_convrot.safetensors'
-const VAE_AUDIO_GOLD = 'minimax_h3_audio_vae_fp32.safetensors'
+// THE LANE'S FILES COME FROM THE DECL (2026-10-10, the card-plane
+// audit's H3): these four names used to be constants HERE while the
+// h3 DECL declared no lane_inputs — the only lane in the tree whose
+// loaders the card owned. A renamed artifact or a new quant left the
+// card on stale weights with every wall green. `h3LaneFile` reads the
+// resolved lane row, exactly like every other lane; the names below
+// are the DECL's values, named here only as the loud fallback for a
+// lane row that carries none (never a silent second truth).
+const DECL_UNET = 'minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors'
+const DECL_CLIP = 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors'
+const DECL_VAE_VIDEO = 'minimax_h3_video_vae_int8_convrot.safetensors'
+const DECL_VAE_AUDIO = 'minimax_h3_audio_vae_fp32.safetensors'
+/** The lane's own file, from the DECL, with the loud fallback. */
+const h3LaneFile = (lane: Record<string, unknown> | undefined, key: string, fallback: string): string => {
+  const v = lane?.[key]
+  return typeof v === 'string' && v !== '' ? v : fallback
+}
 const LORA_STACK_GOLD =
   '[{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors","str":0.6,"v":1,"a":1,"t":1}]'
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
@@ -218,18 +249,19 @@ const paramSchema = z.object({
   // the gate refuses off-set values at the compose door (the kit's own
   // law: sampler/scheduler knobs ride vocabulary()), and the declared
   // default stays reachable (fill === walk by construction).
+  // THE TIER WINNERS, TAKEN FROM THE KIT'S OWN 45 (the census's H2):
+  // this list used to be eleven names retyped here, so a regen of the
+  // engine vocabulary (regen-vocab.ts owns that file) left the film
+  // card's menu stale — and a name the engine had dropped would still
+  // be offered and then 400. The subset is NAMED here (a card's
+  // recommendation is real curation) but every member is READ from
+  // the SSOT, and a wall asserts the subset survives a regen.
   sampler_name: vocabulary([
-    "euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun",
-    // THE TIER-1/2 WINNERS (arena + Comfy-Org's own t2v/i2v/r2v
-    // templates; every name verified against the live engine's
-    // object_info 2026-09-20 — ROADMAP item 1, ledger #30 §3(1)):
-    // res_multistep is what the official templates run; er_sde +
-    // the beta scheduler (already on sched_name) is Parasyte's
-    // README rec (beta57); seeds_2/seeds_3 are the "dual clock"
-    // family the arena's top i2v runs rode with larryvrh v4.
-    "res_multistep", "res_multistep_cfg_pp", "er_sde", "seeds_2", "seeds_3",
+    ...SAMPLER_OPTIONS.filter((n) => H3_RECOMMENDED_SAMPLERS.includes(n)),
   ]).description("Sampler").default("euler").extra('extra', samplingExtra('sampler', { tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." })),
-  sched_name: vocabulary(["simple", "beta", "linear_quadratic", "normal", "sgm_uniform", "karras", "exponential", "kl_optimal", "ddim_uniform"]).description("Scheduler").default("simple").extra('extra', samplingExtra('scheduler', { tooltip: "The sigma schedule shape." })),
+  // the same law for the scheduler: the kit's engine vocabulary,
+  // read (the census's H2 — a retyped list is a second SSOT)
+  sched_name: vocabulary([...SCHEDULER_OPTIONS]).description("Scheduler").default("simple").extra('extra', samplingExtra('scheduler', { tooltip: "The sigma schedule shape." })),
   // ── THE T3 REFINE RIDER (roadmap item 2; ledger #30 §3(2)) —
   // the crowd's third tier: a short CLOSING pass over each
   // window's output latent, the refiner lora on its OWN loader
@@ -641,7 +673,11 @@ const assertOverlayGated = (doc: Record<string, unknown>, where: string): void =
   }
 }
 
-function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
+function renderH3Film(
+  p: Record<string, unknown>,
+  g: GraphBuilder,
+  laneInputs: Record<string, unknown> = {},
+): void {
   // (the compose dispatch guarantees calls is a non-empty array here)
   const calls = p.calls as Array<Record<string, unknown>>
   const str = (v: unknown): string => (typeof v === 'string' ? v : '')
@@ -945,7 +981,7 @@ function renderH3Film(p: Record<string, unknown>, g: GraphBuilder): void {
     if (stamps.dialogue !== undefined) stanza.dialogue_slice = stamps.dialogue
     if (stamps.sfx !== undefined) stanza.sfx_slice = stamps.sfx
     if (stamps.music !== undefined) stanza.music_slice = stamps.music
-    const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w))
+    const h = g.scoped(`window${k}_`, (w): WindowHandles => renderH3Window(stanza, w, laneInputs))
     prev = h
     /* v8 ignore next 1 -- both family arms assign the passthrough (every path saves); a future arm that forgets is refused loud at the film tail */
     if (h.savePassthrough !== undefined) windowSaves.push(h.savePassthrough)
@@ -1126,7 +1162,11 @@ export interface WindowHandles {
 
 const wireList = normalizeDeclaredRefs
 
-function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHandles {
+function renderH3Window(
+  p: Record<string, unknown>,
+  g: GraphBuilder,
+  lane: Record<string, unknown> = {},
+): WindowHandles {
   // REFS IMPLY THE R2V LANE (the bundle IS the r2v input): a
   // refs-carrying window is t4r even without a guide still — the
   // same law the film renderer applies per call. The DECLARED input
@@ -1154,7 +1194,7 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   // ── the model chain (family-conditional defaults;
   // absent = absent on wire) ──
   const stabilize = p.sla_stabilize_motion ?? (isT4r ? false : true)
-  const unet = g.node('UNETLoader', { unet_name: UNET_GOLD, weight_dtype: 'default' }).out()
+  const unet = g.node('UNETLoader', { unet_name: h3LaneFile(lane, 'unet', DECL_UNET), weight_dtype: 'default' }).out()
   const sla = g.node('H3SLAAttention', {
     model: unet,
     sparsity_ratio: p.sla_sparsity as number,
@@ -1200,11 +1240,11 @@ function renderH3Window(p: Record<string, unknown>, g: GraphBuilder): WindowHand
   const shiftVideo = p.shift_video as number
 
   const clip = g.node('CLIPLoader', {
-    clip_name: CLIP_GOLD, type: 'minimax',
+    clip_name: h3LaneFile(lane, 'clip', DECL_CLIP), type: 'minimax',
     ...(isT4r ? { device: 'default' } : {}),   // t4 templates OMIT it
   }).out()
-  const vaeVideo = g.node('VAELoader', { vae_name: VAE_VIDEO_GOLD }).out()
-  const vaeAudio = g.node('VAELoader', { vae_name: VAE_AUDIO_GOLD }).out()
+  const vaeVideo = g.node('VAELoader', { vae_name: h3LaneFile(lane, 'vae_video', DECL_VAE_VIDEO) }).out()
+  const vaeAudio = g.node('VAELoader', { vae_name: h3LaneFile(lane, 'vae_audio', DECL_VAE_AUDIO) }).out()
 
   let cond: OutputHandle
   let latent: OutputHandle
@@ -1869,7 +1909,11 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // the emitter carrier (this card's schema is the hand-written
     // normalizer — params_schema walks the declared object's .dict)
     schemaCarrier: paramSchema,
-    compose(p, _model, g) {
+    compose(p, model, g) {
+      // THE LANE'S FILES, FROM THE DECL (the card-plane audit's H3):
+      // the loader names live in the h3 DECL's lane_inputs; the card
+      // no longer owns a second copy that no wall could see drift.
+      const laneInputs = ((model as { lane_inputs?: unknown } | undefined)?.lane_inputs ?? {}) as Record<string, unknown>
       // THE SCHEMA GATE (the music/sfx/tts admission precedent — the
       // schemaCarrier equivalent: this card is WRAPPED, so the served
       // carrier paramSchema owns the declared knob bounds; the full
@@ -1940,7 +1984,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       const film = docCalls !== null && (docCalls as unknown[]).length > 1
         && p.k === undefined && (p.variant === undefined || p.variant === 't4_chain')
       if (film) {
-        renderH3Film(p, g)
+        renderH3Film(p, g, laneInputs)
       } else {
         // THE CLIPS-STITCH LAW (2026-09-21): the Music row's mix is a
         // FILM-path consumer (it rides the accumulated film audio).
@@ -1964,7 +2008,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
           const applied = rows.map((r) => r.steps).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
           if (applied.length > 0) p.steps = Math.max(...applied)
         }
-        renderH3Window(p, g)
+        renderH3Window(p, g, laneInputs)
       }
     },
     // the t4-family strip pass rides the kit (python: `if not is_t4r`).

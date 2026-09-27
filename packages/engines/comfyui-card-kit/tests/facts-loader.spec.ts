@@ -140,7 +140,11 @@ describe("loadFacts (the absent-arm slices)", () => {
     }));
     const facts = loadFacts(bare, reads);
     const row = facts.models["bare-model"]!;
-    assert.equal(row.card_knobs.length, 0, "knobs default empty");
+    // the card_knobs column is GONE (2026-10-10): 312 rows of
+    // frozen inject strings that nothing read — carried by the
+    // derivation, written by no composer, pinned by no wall, and
+    // silently desynced by any lane edit that renumbered a node.
+    assert.equal("card_knobs" in row, false, "no write-only facts column rides the row");
     assert.equal(row.outputs.length, 0, "outputs default empty");
     assert.equal(row.requires_by_family, undefined);
     assert.deepEqual(row.mods, undefined, "an EMPTY mods array stays off the row");

@@ -306,6 +306,19 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
+  // THE LANE'S OWN FILES (2026-10-10, the card-plane audit's H3):
+  // h3 was the ONE lane whose loader filenames lived in the card as
+  // constants while its DECL declared no lane_inputs — so a new
+  // quant or a renamed artifact left the card on stale weights with
+  // every wall green. The declaration owns them now, and the card
+  // reads them the way every other lane reads its own.
+  "lane_inputs": {
+    "unet": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+    "clip": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+    "vae_video": "minimax_h3_video_vae_int8_convrot.safetensors",
+    "vae_audio": "minimax_h3_audio_vae_fp32.safetensors",
+    "lora_folder": "loras/h3",
+  },
   "provisions": [
     {
       "name": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",

@@ -6,7 +6,7 @@
 // derived realization (paper §3.2.3) — the doubled spelling is dead.
 //
 // The slices file keeps ONLY what the registry cannot carry:
-// per-card outputs/requires_by_family, per-address card_knobs, the
+// per-card outputs/requires_by_family, the
 // row roster, extension_node_types, and the mask-studio whole row
 // (unoffered, no DECL — card-owned, stays frozen).
 
@@ -54,7 +54,6 @@ export interface ModelFacts {
    * Present only where declared. */
   relations?: LaneRelationsFacts
   /** Compose splice SSOT rows (card field → NodeClass.idx.input). */
-  card_knobs: CardKnobFacts[]
   /** Variant matrix rows + per-cell weight coordinates. */
   variants: ModelVariantFacts[]
   /** UI selector groups (Recipe group is grammar-owned). */
@@ -73,13 +72,6 @@ export interface ModelFacts {
    *  mutation fires only where the boarding names it. Absent = no
    *  mutations boarded. */
   mods?: string[]
-}
-
-/** One card-knob declaration (KnobRow card/inject/kind). */
-export interface CardKnobFacts {
-  card: string
-  inject: string
-  kind: 'n' | 's' | 'b'
 }
 
 /** One (variant × quant) matrix cell: tier, route, artifact
@@ -166,7 +158,7 @@ export interface FactsFile {
 interface FactsSlices {
   extension_node_types?: Record<string, string[]>
   cards?: Record<string, { outputs?: OutputFacts[]; requires_by_family?: Record<string, string[]> }>
-  rows?: Record<string, { card: string; card_knobs?: CardKnobFacts[]; frozen?: ModelFacts }>
+  rows?: Record<string, { card: string; frozen?: ModelFacts }>
 }
 
 /** address → ladder owner, built from the registry ladders (variant
@@ -211,7 +203,6 @@ function deriveRow(
   reads: FactsReads,
   address: string,
   card: string,
-  knobs: CardKnobFacts[],
   outputs: OutputFacts[],
   requires: Record<string, string[]> | undefined,
   owners: Map<string, string>,
@@ -271,7 +262,6 @@ function deriveRow(
     card,
     defaults: ((d.defaults ?? {}) as Record<string, string | number | boolean | null>),
     lane_inputs: ((d.lane_inputs ?? {}) as LaneInputsFacts),
-    card_knobs: knobs,
     variants,
     variant_groups: ((d.variant_groups ?? []) as VariantGroupFacts[]),
     outputs,
@@ -309,7 +299,6 @@ export function loadFacts(path: string, reads: FactsReads): FactsFile {
       reads,
       address,
       slice.card,
-      slice.card_knobs ?? [],
       cardSlice?.outputs ?? [],
       cardSlice?.requires_by_family,
       owners,
