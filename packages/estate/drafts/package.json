@@ -42,8 +42,9 @@
     "@deepseek-ai/dsh-storage-json": "0.1.5-rc.2",
     "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
     "@deepseek-ai/schemastery": "*",
-    "zod": "4.5.4",
-    "@melite/comfyui-card-kit": "workspace:*"
+    "@melite/comfyui-card-kit": "workspace:*",
+    "@melite/contracts": "workspace:*",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.2",

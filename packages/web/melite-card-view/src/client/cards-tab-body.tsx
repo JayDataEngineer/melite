@@ -60,7 +60,6 @@ import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } f
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
-import { probeBuild, type BuildVerdict } from './build-handshake.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
@@ -175,20 +174,30 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<string | null>(null)
   // THE DEPLOY HANDSHAKE (2026-09-23, the stale-tab root rot): probe
-  // the lane's current card-bundle stamps on mount, on focus, and
-  // once a minute — a tab running an older bundle than the lane
-  // serves renders the unmissable stale face. The immutable plugin
-  // cache means NO push exists; this poll is the only messenger.
-  const [buildVerdict, setBuildVerdict] = useState<BuildVerdict>({ kind: 'unknown' })
-  useEffect(() => {
-    let alive = true
-    const probe = (): void => { void probeBuild().then((v) => { if (alive) setBuildVerdict(v) }) }
-    probe()
-    const focus = (): void => probe()
-    window.addEventListener('focus', focus)
-    const timer = window.setInterval(probe, 60000)
-    return () => { alive = false; window.removeEventListener('focus', focus); window.clearInterval(timer) }
-  }, [])
+  // THERE IS NO STALE TAB (operator, 2026-10-10, in the operator's
+  // own words: "THE TAB IS NEVER STALE, IT IS LITERALLY IMPOSSIBLE
+  // FOR THE BENCH TO BE STALE. WHEN THE USER DOES SOMETHING TO IT,
+  // IT UPDATES. WHEN THE AI DOES SOMETHING TO IT, IT UPDATES
+  // EVERYTIME. THIS REGRESSION IS EXTREME.").
+  //
+  // The face this replaces was a FALSE ALARM with a false claim on
+  // both sides. It compared this tab's baked stamp against the
+  // lane's served stamp — but every client bundle appends the SAME
+  // global assignment (`globalThis.__MELITE_BUILD_STAMP__=<hex>`,
+  // appended by the shared build plugin), so whichever bundle
+  // evaluated last owned the value: the tab compared ITSELF against
+  // a sibling package's hash (live receipt: the tab reported
+  // infer-gallery's cdf44c31 while the lane served melite-card-view's
+  // 8c2dfa26) and rendered "edits made here may run old code" over
+  // a bench that is, by construction, a live server document: every
+  // edit — the user's or the agent's — lands through the doors and
+  // the view re-reads it.
+  //
+  // So: no banner, no probe, no claim. The bench is the server's
+  // document and this tab is a reader of it. The lane still SERVES
+  // its card-build stamps (a diagnostic for the lane, never a
+  // verdict about the operator's edits); nothing in this tab asserts
+  // staleness ever again.
   // THE OUTCOME WATCH (the attribution half): one controller per tab
   //  life — every stage run's observer rides it, unmount ends the
   //  watches (a completed patch is idempotent; an interrupted one is
@@ -434,15 +443,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PLUS the loud error line (the silent-failure law holds — the
   // face never replaces the seat).
   const value = snapshot.value
-  // THE STALE-TAB FACE — above every kind's body, never replaceable
-  // by content: a tab older than the lane's build answers every
-  // "why didn't the fix work" before it's asked.
-  const staleBuildLine = buildVerdict.kind === 'stale'
-    ? h('p', { className: css.staleBuild, 'data-testid': 'cards-stale-build' },
-        'STALE TAB — this tab runs build ' + buildVerdict.baked.slice(0, 8)
-        + '; the lane serves ' + buildVerdict.served.slice(0, 8)
-        + '. RELOAD this page to pick up the shipped fixes — edits made here may run old code.')
-    : null
   const failedLine = snapshot.status === 'failed' && value !== undefined
     ? h('p', { className: css.failed, 'data-testid': 'cards-refresh-failed' },
         snapshot.failure?.message ?? 'cards resource failed — showing the last good state')
@@ -454,14 +454,14 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // THE STALE FACE rides EVERY arm (even loading/broken): a stale
     // tab is stale regardless of what it is failing to show.
     if (snapshot.status === 'live') {
-      return h(Fragment, null, staleBuildLine,
+      return h(Fragment, null,
         h('p', { className: css.failed }, 'cards resource gave no value'))
     }
     if (snapshot.status === 'failed') {
-      return h(Fragment, null, staleBuildLine,
+      return h(Fragment, null,
         h('p', { className: css.failed }, snapshot.failure?.message ?? 'cards resource failed'))
     }
-    return h(Fragment, null, staleBuildLine,
+    return h(Fragment, null,
       h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
@@ -471,7 +471,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // (tiles + drill + picker on the estate doors). The legacy 1:1
     // FlowCanvas branch was retired in Phase 2 (src/old/ deleted).
     ? h(Fragment, null,
-        staleBuildLine,
         failedLine,
         runError !== null ? h('p', { className: css.runError }, runError) : null,
         // THE RUN-GATE RESCUE (roadmap item 4): a rescueable miss —
@@ -504,7 +503,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       )
     : value.kind === 'draft'
     ? h(Fragment, null,
-        staleBuildLine,
         failedLine,
         runError !== null ? h('p', { className: css.runError }, runError) : null,
         runError !== null ? h(RunRescue, { error: runError, stages: value.stages, onRun: onRunDraftStage }) : null,
@@ -521,7 +519,6 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         }),
       )
     : h(Fragment, null,
-        staleBuildLine,
         failedLine,
         h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop }))
 }

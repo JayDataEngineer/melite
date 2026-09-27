@@ -13,6 +13,7 @@
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
+import { BIRTH_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage'
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -188,21 +189,17 @@ function normalizeStages(
   return stagesIn
     .filter((s: unknown): boolean => isRecord(s))
     .map((s: unknown, idx: number): Record<string, unknown> => {
-      const src: Record<string, unknown> = s as Record<string, unknown>;
-      const row: Record<string, unknown> = {};
-      for (const k of Object.keys(src)) row[k] = src[k];
-      // Defaults fill AFTER the caller's data (a junk or missing id
-      // must not ship an unaddressable row; the schema's id law).
-      row["id"] = typeof src["id"] === "string" ? src["id"] : "s_" + idx;
-      if (typeof row["engine"] !== "string" || row["engine"] === "")
-        row["engine"] = "comfyui";
-      if (!isRecord(row["inputs"])) row["inputs"] = {};
+      // THE ONE NORMALIZATION (benchStage.ts — the contract): id
+      // fill, DERIVED engine, run-memory strip, run-media path heal,
+      // the self-naming model strip, inputs/params/outputs defaults.
+      // This function used to hand-roll all of it, which is how the
+      // GUI's row, the agent's row and a restored row became three
+      // different documents.
+      const row: Record<string, unknown> = normalizeBenchStage(s, idx);
       // the load arm's rows cross the same remote encoding — the
       // store-seat unwrap applies here too (wireParams law)
       row["params"] = wireParams(row["params"]);
-      if (!isRecord(row["params"])) row["params"] = {};
-      if (!isRecord(row["outputs"])) row["outputs"] = { default: "image" };
-      if (row["provenance"] !== "user") row["provenance"] = author;
+      row["provenance"] = author;
       return row;
     });
 }
@@ -333,12 +330,7 @@ export async function ensureBench(
     // ran card. The LOAD arm keeps the stage memory law whole
     // (same-id carry + fill-never-clobber).
     const born: Record<string, unknown>[] = normalizeStages(stagesIn, author);
-    for (const row of born) {
-      delete row["history"];
-      delete row["resultParams"];
-      delete row["runStatus"];
-      delete row["resolved"];
-    }
+    for (const row of born) stripKeys(row, BIRTH_STRIP_KEYS);
     admitWiringList(born, session);
     const doc: Record<string, unknown> = {
       draft_id: draftId,

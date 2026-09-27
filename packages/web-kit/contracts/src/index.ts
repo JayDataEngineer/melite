@@ -22,3 +22,5 @@ export * from "./timelineTypes"
 export * from "./vocab"
 export * from "./wire"
 export type { components } from "./schema"
+
+export * from "./benchStage.ts";

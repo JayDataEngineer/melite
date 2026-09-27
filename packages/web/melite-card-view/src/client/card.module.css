@@ -1851,13 +1851,6 @@
  * bundle is older than the lane's — unmissable, amber, sticky until
  * the reload. Never silent; never a false alarm. Token-only (the
  * color law: the token IS the value, no literal fallbacks). */
-.staleBuild {
-  color: var(--dsw-alias-state-attention-primary);
-  font-size: 11px;
-  overflow-wrap: anywhere;
-  padding: 4px 0;
-  border-top: 1px solid currentColor;
-}
 .enhanceNote {
   color: var(--dsw-alias-text-tertiary);
   font-size: 12px;

@@ -56,6 +56,42 @@ export const name = "estate-media";
 export const inject = [];
 /** The route this plugin claims (one prefix, disjoint by law). */
 export const MEDIA_PREFIX = "/melite-media/runs";
+/** THE LEGACY SPELLING, STILL SERVED (operator, 2026-10-10: "THERE
+ *  IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). `/v1/assets/runs/`
+ *  died with the gateway app — but the benches, the archived
+ *  snapshots and the run rows that were written before it died still
+ *  carry it, and a reloaded historical flow pointed every image and
+ *  audio input at a route that answered nothing: "it doesn't
+ *  preserve the paths for the inputs and image inputs, everything
+ *  breaks on reloading a historical flow". The paths WERE preserved;
+ *  they addressed a dead door. So the route ACCEPTS both spellings —
+ *  one route, two names, identical confinement and identical
+ *  loud 404 — and the writers below emit the live one. A stored path
+ *  never breaks, and no new path is written dead.
+ */
+export const LEGACY_MEDIA_PREFIX = "/v1/assets/runs";
+/** The run-media prefix a path may address, or null when it is not a
+ *  run-media path at all (the caller leaves such values verbatim). */
+export function mediaPrefixOf(pathname) {
+    if (pathname === MEDIA_PREFIX || pathname.startsWith(MEDIA_PREFIX + "/"))
+        return MEDIA_PREFIX;
+    if (pathname === LEGACY_MEDIA_PREFIX || pathname.startsWith(LEGACY_MEDIA_PREFIX + "/")) {
+        return LEGACY_MEDIA_PREFIX;
+    }
+    return null;
+}
+/** THE ONE SPELLING LAW: rewrite a run-media path to the live
+ *  prefix, whatever it says today. Every writer and every stored doc
+ *  that passes through here heals itself; nothing rewrites a path
+ *  that is not run media. */
+export function canonicalMediaUrl(value) {
+    if (value === LEGACY_MEDIA_PREFIX)
+        return MEDIA_PREFIX;
+    if (value.startsWith(LEGACY_MEDIA_PREFIX + "/")) {
+        return MEDIA_PREFIX + value.slice(LEGACY_MEDIA_PREFIX.length);
+    }
+    return value;
+}
 /** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
  * the loader's /plugins URL is immutable-cached on the plugin LIST,
  * not the bytes — rebuilt card bundles never reach a browser that
@@ -193,17 +229,27 @@ export function apply(ctx) {
         ctx.logger.info("estate-media: no webServer seat in this mount — the runs media route stays unmounted");
         return;
     }
-    ctx.effect(() => webServer.register({
-        kind: "prefix",
-        path: MEDIA_PREFIX,
-        handler: async (req, res) => {
+    // THE ALIAS MOUNTS TOO (the legacy law): the SAME handler under
+    // BOTH names — a prefix route takes one path string, so the alias
+    // is a second registration of one function, never a second
+    // implementation. Every stored bench, archive and run row keeps
+    // working, and nothing new is written dead.
+    const runMediaHandler = async (req, res) => {
+        {
             if (req.method !== "GET" && req.method !== "HEAD") {
                 res.writeHead(405, { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" });
                 res.end('{"error":"media/method-not-allowed"}');
                 return;
             }
             const url = new URL(req.url ?? "/", "http://melite-media.invalid");
-            const target = parseTarget(url.pathname.slice(MEDIA_PREFIX.length));
+            // BOTH SPELLINGS, ONE HANDLER (the alias law above)
+            const prefix = mediaPrefixOf(url.pathname);
+            if (prefix === null) {
+                res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
+                res.end(NOT_FOUND_BODY);
+                return;
+            }
+            const target = parseTarget(url.pathname.slice(prefix.length));
             if (target === null) {
                 res.writeHead(404, { "content-type": "application/json", "cache-control": "no-store" });
                 res.end(NOT_FOUND_BODY);
@@ -360,8 +406,15 @@ export function apply(ctx) {
                 "cache-control": "no-store",
             });
             res.end(bytes);
-        },
-    }), "estate-media: runs artifact route");
+        }
+    };
+    // ONE HANDLER, BOTH NAMES (the alias law). The registration is
+    // the only difference: a prefix route takes one path string, so the
+    // legacy spelling is a second mount of the SAME function — the
+    // confinement, the range arm, the loud 404 and the bytes are one
+    // implementation by construction, never two that can drift.
+    ctx.effect(() => webServer.register({ kind: "prefix", path: MEDIA_PREFIX, handler: runMediaHandler }, "estate-media: runs artifact route"));
+    ctx.effect(() => webServer.register({ kind: "prefix", path: LEGACY_MEDIA_PREFIX, handler: runMediaHandler }, "estate-media: runs artifact route (legacy /v1/assets spelling — served forever)"));
     // THE DEPLOY HANDSHAKE ROUTE: current disk stamps, no-store. The
     // repo root resolves from THIS file at boot (src or lib depth
     // agnostic — the walker finds the workspace manifest); a miss

@@ -36,6 +36,7 @@ import { Context } from "@deepseek-ai/cordis";
 import {
   apply as mediaApply,
   listMedia,
+  LEGACY_MEDIA_PREFIX,
   MEDIA_PREFIX,
   mediaUrl,
   MediaRemoteService,
@@ -155,14 +156,34 @@ async function mountWeb(
     ctx.provide("queue", stateRoots === undefined ? { stateRoot } : { stateRoot, stateRoots });
   }
   await ctx.plugin({ name: "t-probe", apply: mediaApply } as never);
-  assert.equal(rows.length, 2, "two prefix rows register (runs + the card-build handshake)");
+  // THREE prefix rows (the alias law, operator 2026-10-10: no
+  // breakage, ever): the live runs route, the LEGACY /v1/assets
+  // spelling of the same handler — every stored bench, archive and
+  // run row keeps resolving — and the card-build handshake.
+  assert.equal(rows.length, 3, "three prefix rows register (runs + its legacy alias + the card-build handshake)");
   const row = rows[0] as { kind: string; path: string; handler: Handler };
   assert.deepEqual(
     { kind: row.kind, path: row.path },
     { kind: "prefix", path: MEDIA_PREFIX },
   );
   assert.equal(typeof row.handler, "function");
-  const buildRow = rows[1] as { kind: string; path: string; handler: Handler };
+  // THE ALIAS IS THE SAME HANDLER (one implementation, two names —
+  // never two that drift)
+  const alias = rows[1] as { kind: string; path: string; handler: Handler };
+  assert.deepEqual({ kind: alias.kind, path: alias.path }, { kind: "prefix", path: LEGACY_MEDIA_PREFIX });
+  assert.equal(alias.handler, row.handler, "the legacy spelling serves the SAME function — one implementation");
+  // and the legacy spelling answers exactly as the live one does
+  for (const suffix of ["", "/run-1"]) {
+    const live = await drive(row.handler, "GET", MEDIA_PREFIX + suffix);
+    const legacy = await drive(alias.handler, "GET", LEGACY_MEDIA_PREFIX + suffix);
+    assert.equal(live.status, legacy.status, "both spellings answer identically for " + JSON.stringify(suffix));
+    assert.equal(
+      Buffer.from(live.body).toString("utf8"),
+      Buffer.from(legacy.body).toString("utf8"),
+      "byte-identical answers for " + JSON.stringify(suffix),
+    );
+  }
+  const buildRow = rows[2] as { kind: string; path: string; handler: Handler };
   assert.deepEqual(
     { kind: buildRow.kind, path: buildRow.path },
     { kind: "prefix", path: CARD_BUILD_PREFIX },
@@ -1235,7 +1256,7 @@ describe("the card-build handshake", () => {
 
   test("the route serves no-store stamps; non-GET refuses", async () => {
     const { rows } = await mountWeb(undefined);
-    const row = rows[1] as { handler: Handler };
+    const row = rows[2] as { handler: Handler };
     const get = await drive(row.handler, "GET", CARD_BUILD_PREFIX);
     assert.equal(get.status, 200);
     assert.equal(get.headers["cache-control"], "no-store", "never cached — disk truth every ask");

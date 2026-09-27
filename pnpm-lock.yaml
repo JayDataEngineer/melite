@@ -803,6 +803,9 @@ importers:
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       zod:
         specifier: 4.5.4
         version: 4.5.4

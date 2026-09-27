@@ -150,7 +150,10 @@ export function parseCardSnapshot(value: unknown): ContractParse<CardSnapshotCon
  * bench-session-2bd2a61f). The wand re-stamps the ran card's
  * preview from the run's own artifacts; archived memory belongs to
  * the bench that earned it. */
-const RUN_MEMORY_KEYS = ['result', 'runStatus', 'resolved', 'history', 'resultParams'] as const;
+// the strip's keys are the CONTRACT's (benchStage.ts) — one list, named
+// once, for the writer here and every arm that strips a row
+import { RESTORE_STRIP_KEYS, stripKeys } from './benchStage.ts';
+const RUN_MEMORY_KEYS = RESTORE_STRIP_KEYS;
 
 /** THE SAVE LAW — contract a bench's stage rows into what may be
  * persisted as `bench_snapshot`. Never throws: an unloadable row

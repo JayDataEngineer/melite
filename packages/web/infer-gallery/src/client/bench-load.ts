@@ -22,6 +22,7 @@
  */
 
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
+import { RESTORE_STRIP_KEYS, stripKeys } from '@melite/contracts/benchStage'
 
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
@@ -258,13 +259,14 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           ? (snap as Record<string, unknown>)['card'] : undefined
         const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
         for (const st of bsStages as Record<string, unknown>[]) {
-          // RUN MEMORY NEVER RIDES A RESTORE (the cross-bench history
-          // leak, 2026-09-23): the wand restores the WORKFLOW, never
-          // archived output memory — history/resultParams join the
-          // strip, or the next Run press archives another bench's
-          // results into this one's history tiles.
-          delete st['result']; delete st['runStatus']; delete st['resolved']
-          delete st['history']; delete st['resultParams']
+          // THE RESTORE'S OWN STRIP, BY THE CONTRACT'S NAMES
+          // (benchStage.ts): the wand restores the WORKFLOW, never
+          // another bench's output memory. The list used to be
+          // written out here by hand AND in the birth arm AND in the
+          // snapshot contract — three copies of one law, which is
+          // how the restore and the birth drifted apart. The contract
+          // names the keys; each arm decides which arm it is.
+          stripKeys(st, RESTORE_STRIP_KEYS)
           // THE SELF-NAMING MODEL STRIP (see the card arm's law below
           // — era stages ride the same strip before re-admission).
           const stParams = st['params']

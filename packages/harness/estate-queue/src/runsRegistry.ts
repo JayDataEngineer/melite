@@ -167,6 +167,81 @@ function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
  *  (Typert) delegate here; the door's registry/pump semantics ride
  *  this service verbatim. */
 // ROLE (cookbook adding-a-package role table): Runtime: its contract is dispatch/execution/cancellation (the cookbook role table; a Registry owns membership, which this is not). Key "runs" unchanged (wire-stable).
+/**
+ * THE BENCH'S WIRING, SPLIT BY KIND (the wired-bench law's read):
+ *   cross  — a stage takes an input from ANOTHER stage's output. This
+ *            is the normal, intended shape ("select the input from
+ *            the previous outputs") and the run MUST be a flow.
+ *   self   — a stage wires its OWN output into its own input. That is
+ *            a cycle: no composition of it exists, in any arm, so it
+ *            is named for what it is rather than run.
+ * Both are read from the bench doc as it stands — never from a
+ * caller's claim about it.
+ */
+/**
+ * THE ENGINE IS DERIVED, NOT AUTHORED (operator, 2026-10-10: "The
+ * bench media flow is always the same, no matter if the AI agent OR
+ * the human edits it. There is no distinction in the bench.").
+ *
+ * Three writers each invented a default for a stage's engine — the
+ * bench's normalizer, the add-card door, and the run door's pure
+ * default — so a hand-written stage and a GUI-written stage reached
+ * the compiler as DIFFERENT documents, and a stage missing the field
+ * died at a gate that had no business asking for it.
+ *
+ * One derivation, here, at the door that owns the engines seat: a
+ * stage that names a CARD and no engine is a card stage, and the card
+ * plane composes on the card engine (the same truth the card arm
+ * states in its own voice). A stage that names NO card and NO engine
+ * is still refused — an mcp/flow stage must say where it runs.
+ */
+const CARD_PLANE_ENGINE = "comfyui";
+
+/** The bench run's own line (never silent): how many stages the
+ *  merged run carries, and that the wires are inside them. */
+function curatedBenchLog(stageCount: number): void {
+  console.log(
+    "[runs] bench run admitted — " + String(stageCount) +
+    " composed stage(s) with their FromStage links riding as stage inputs",
+  );
+}
+
+function deriveStageEngines(stages: unknown[]): void {
+  for (const st of stages) {
+    if (typeof st !== "object" || st === null) continue;
+    const row = st as Record<string, unknown>;
+    if (typeof row["engine"] === "string" && row["engine"] !== "") continue;
+    if (typeof row["card"] === "string" && row["card"] !== "") {
+      row["engine"] = CARD_PLANE_ENGINE;
+    }
+  }
+}
+
+export function benchWiring(benchDoc: Record<string, unknown>): {
+  cross: string[];
+  self: string[];
+} {
+  const cross: string[] = [];
+  const self: string[] = [];
+  const stages = Array.isArray(benchDoc["stages"]) ? (benchDoc["stages"] as unknown[]) : [];
+  for (const st of stages) {
+    if (typeof st !== "object" || st === null) continue;
+    const row = st as Record<string, unknown>;
+    const id = typeof row["id"] === "string" ? row["id"] : "";
+    const ins = row["inputs"];
+    if (typeof ins !== "object" || ins === null || Array.isArray(ins)) continue;
+    for (const [name, ref] of Object.entries(ins as Record<string, unknown>)) {
+      const rr = ref as Record<string, unknown>;
+      if (rr === null || typeof rr !== "object" || typeof rr["stage"] !== "string") continue;
+      const label = name + " <- " + String(rr["stage"]) +
+        (typeof rr["output"] === "string" ? "." + String(rr["output"]) : "");
+      if (rr["stage"] === id) self.push(label);
+      else cross.push(label);
+    }
+  }
+  return { cross, self };
+}
+
 export class RunsRuntimeService extends Service {
   static inject = ["queue", "draftsRemote", "cardRegistry"];
 
@@ -376,6 +451,87 @@ export class RunsRuntimeService extends Service {
     return this.ctx.queue.core;
   }
 
+  /**
+   * COMPOSE THE WHOLE BENCH (the operator's law, 2026-10-10: "The
+   * bench media flow is always the same, no matter if the AI agent OR
+   * the human edits it. There is no distinction in the bench." and
+   * "there is ALWAYS FromStage links ... THERE IS NO FILTER, NO
+   * BREAKAGE FROM THIS. EVER.").
+   *
+   * One shape in, one run out. Every stage is composed through the
+   * SAME registry walk a single-card start uses (prepareCardParams →
+   * admission → the DECL's lane laws → compose), so an agent-authored
+   * stage and a GUI-authored stage are the same document to the
+   * compiler; the bench's `inputs` edges ride the compiled stage
+   * untouched, and a $spell is left IN the composed graph for the
+   * merged worker to resolve into the upstream stage's output.
+   *
+   * Returns the composed stage rows for the flow_inline wire.
+   */
+  private async composeBenchStages(
+    benchDoc: Record<string, unknown>,
+    runId: string,
+  ): Promise<Array<Record<string, unknown>>> {
+    const cards = this.ctx.cardRegistry;
+    const rows = Array.isArray(benchDoc["stages"]) ? (benchDoc["stages"] as unknown[]) : [];
+    const out: Array<Record<string, unknown>> = [];
+    for (const [i, st] of rows.entries()) {
+      if (typeof st !== "object" || st === null) continue;
+      const row = st as Record<string, unknown>;
+      const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
+      const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
+        ? { ...(row["params"] as Record<string, unknown>) }
+        : {};
+      const card = typeof row["card"] === "string" ? row["card"] : "";
+      // A STAGE WITH NO CARD (an mcp/flow row) composes nowhere here
+      // — the bench run is the CARD bench; a foreign stage is named
+      // rather than silently dropped (no silent behavior).
+      if (card === "") {
+        throw new RemoteError("runs/invalid-request",
+          "bench stage " + JSON.stringify(id) +
+          " names no card — the bench run composes card stages; an mcp/flow stage belongs in a flow, not the bench",
+          { loc: "stages" });
+      }
+      const mid = String(params["model"] ?? row["service"] ?? "");
+      let p1: Phase1Card;
+      let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
+      try {
+        p1 = await cards.phase1Card({ ...params, card }, mid);
+        composed = await cards.phase2Card(p1, runId);
+      } catch (e) {
+        if (e instanceof CardArmError) {
+          throw new RemoteError("runs/invalid-request",
+            "bench stage " + JSON.stringify(id) + ": " + cardRefusal(e).message,
+            { loc: "stages" });
+        }
+        throw e;
+      }
+      const stage: Record<string, unknown> = {
+        id,
+        engine: typeof row["engine"] === "string" && row["engine"] !== "" ? row["engine"] : CARD_PLANE_ENGINE,
+        params: {
+          workflow: composed.graph as unknown as EngineJson,
+          output_nodes: composed.outputNodes as unknown as EngineJson,
+        },
+        // THE WIRES RIDE (the whole point): the bench's own edges,
+        // verbatim, for the merged worker to link.
+        ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
+          ? { inputs: { ...(row["inputs"] as Record<string, unknown>) } }
+          : {}),
+        outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"]))
+          ? { ...(row["outputs"] as Record<string, unknown>) }
+          : composed.outputs,
+      };
+      out.push(stage);
+    }
+    if (out.length === 0) {
+      throw new RemoteError("runs/invalid-request",
+        "the bench carries no composable card stage — a wired bench runs its cards, and there are none",
+        { loc: "stages" });
+    }
+    return out;
+  }
+
   async start(
     doc: unknown,
     signal: AbortSignal,
@@ -422,11 +578,71 @@ export class RunsRuntimeService extends Service {
     let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);
-    const selected = selectSubmitDoor(body);
+    let selected = selectSubmitDoor(body);
     if ("payload" in selected) throw toRemoteError(selected);
     // Later strokes own these lanes; both refuse LOUD here (the
     // preview-scope posture — never a silent accept).
     const stateRoot: string = this.ctx.queue.stateRoot;
+
+    // ── THE WIRED-BENCH LAW (operator, 2026-10-10, in the operator's
+    // own words: "By design, there is no 'non bench flow'. There is
+    // ALWAYS FromStage links. THERE IS NO FILTER, NO BREAKAGE FROM
+    // THIS. EVER.") ────────────────────────────────────────────────
+    // A stage that takes its input from a PRIOR stage's output cannot
+    // be run alone: the card arm composes ONE stage with
+    // inputNames: {}, so every FromStage link would be discarded. The
+    // old answer was a refusal telling the caller to run the flow
+    // instead — which is the operator-facing bug this replaces: the
+    // GUI's per-stage Run, the agent's card start, and any API caller
+    // all hit that wall, and the bench's wires were the very thing
+    // the run was FOR.
+    //
+    // So the door does not refuse a wired bench. IT BECOMES THE
+    // BENCH RUN: the body is restaged onto the flow_inline wire with
+    // the bench's own stages, and the run proceeds with the wires
+    // riding as stage inputs. There is no third shape: a bench with
+    // wires is a flow, whatever the caller named.
+    let benchComposed = false;
+    if (selected.door === "model" && benchDoc !== undefined) {
+      const wired = benchWiring(benchDoc);
+      if (wired.cross.length > 0) {
+        // THE BENCH RUN, COMPOSED (the operator's law, and the gap
+        // behind it: there was no path that ran a WIRED bench. The
+        // GUI ran cards one at a time, each its own run, so a FromStage
+        // link had nowhere to ride — the wires were not refused, they
+        // were DISCARDED by the shape of the run. So this door
+        // composes EVERY card stage of the bench — through the SAME
+        // registry walk a single card start uses, laws and all — and
+        // submits ONE merged run whose stages carry their `inputs`
+        // edges for the worker to link. A $spell survives into the
+        // composed graph on purpose: the merge resolves it into the
+        // upstream stage's output (that is what a FromStage link IS).
+        const runIdSeed = reuse?.runId ?? newRunId();
+        const composed = await this.composeBenchStages(benchDoc, runIdSeed);
+        const rest: Record<string, unknown> = { ...body };
+        delete rest["model"];
+        delete rest["card"];
+        delete rest["params"];
+        body = {
+          ...rest,
+          flow_inline: {
+            id: "bench-" + String(checked.draftId).replace(/^bench-/, ""),
+            stages: composed,
+          },
+        };
+        selected = { door: "flow_inline" };
+        benchComposed = true;
+        // the run's own log line says what happened — a re-route is
+        // never silent (NO SILENT BEHAVIOR, the same order as the
+        // spell gate below)
+        console.log(
+          "[runs] the bench wires " + JSON.stringify(wired.cross) +
+          " — the single-card start became the bench run (" +
+          String(composed.length) + " stages composed, wires riding as stage inputs)",
+        );
+      }
+    }
+
     if (selected.door === "model") {
       // The card start arm (handleCardStart 1016-1136, second
       // move): phase-1 compose (run_id "") BEFORE registration — a
@@ -692,6 +908,13 @@ export class RunsRuntimeService extends Service {
       delete rest["flow"];
       body = { ...rest, flow_inline: inlineDoc };
     }
+    // ONE stage schema for the whole bench (the law above): every
+    // stage that reaches the compiler carries an engine, whether a
+    // human, the GUI, the agent or a hand-written flow authored it.
+    if (typeof body["flow_inline"] === "object" && body["flow_inline"] !== null) {
+      const stages = (body["flow_inline"] as Record<string, unknown>)["stages"];
+      if (Array.isArray(stages)) deriveStageEngines(stages);
+    }
     const inline: unknown = body["flow_inline"];
     // The engines seat when mounted (stroke 53): the door consults
     // the live registry ids. Absent (fixture/wall boots) the pure
@@ -722,6 +945,18 @@ export class RunsRuntimeService extends Service {
       // the value is proven a non-array object. No re-checking dance
       // (a typeof/Array.isArray arm here would be dead code).
       const inlineId: unknown = (inline as Record<string, unknown>)["id"];
+      // A BENCH-COMPOSED DOC IS NOT HAND-AUTHORED (operator, 2026-10-10).
+      // The line this gate holds is "a hand-written multi-stage graph is
+      // unported" — a doc WE composed from the bench, through the same
+      // registry walk a single card start uses, is the opposite case:
+      // its stages carry the registry's own graphs, its edges carry the
+      // bench's own wires, and the merged worker is multi-stage by
+      // construction. So the bench doc is admitted here on the same
+      // footing as a curated registry flow — named, never silent.
+      if (benchComposed) {
+        curatedBenchLog(compiled.stages.length);
+        // fall through to the registration the single-stage path uses
+      } else {
       const curated: boolean =
         typeof inlineId === "string" && getRegistryFlow(inlineId) !== undefined;
       if (!curated) {
@@ -734,6 +969,7 @@ export class RunsRuntimeService extends Service {
               "or drive {flow: '<name>'})",
           ),
         );
+      }
       }
     }
     const reg = registerCompiledRun({

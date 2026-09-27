@@ -11,6 +11,28 @@ export declare const name = "estate-media";
 export declare const inject: readonly [];
 /** The route this plugin claims (one prefix, disjoint by law). */
 export declare const MEDIA_PREFIX = "/melite-media/runs";
+/** THE LEGACY SPELLING, STILL SERVED (operator, 2026-10-10: "THERE
+ *  IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). `/v1/assets/runs/`
+ *  died with the gateway app — but the benches, the archived
+ *  snapshots and the run rows that were written before it died still
+ *  carry it, and a reloaded historical flow pointed every image and
+ *  audio input at a route that answered nothing: "it doesn't
+ *  preserve the paths for the inputs and image inputs, everything
+ *  breaks on reloading a historical flow". The paths WERE preserved;
+ *  they addressed a dead door. So the route ACCEPTS both spellings —
+ *  one route, two names, identical confinement and identical
+ *  loud 404 — and the writers below emit the live one. A stored path
+ *  never breaks, and no new path is written dead.
+ */
+export declare const LEGACY_MEDIA_PREFIX = "/v1/assets/runs";
+/** The run-media prefix a path may address, or null when it is not a
+ *  run-media path at all (the caller leaves such values verbatim). */
+export declare function mediaPrefixOf(pathname: string): string | null;
+/** THE ONE SPELLING LAW: rewrite a run-media path to the live
+ *  prefix, whatever it says today. Every writer and every stored doc
+ *  that passes through here heals itself; nothing rewrites a path
+ *  that is not run media. */
+export declare function canonicalMediaUrl(value: string): string;
 /** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
  * the loader's /plugins URL is immutable-cached on the plugin LIST,
  * not the bytes — rebuilt card bundles never reach a browser that

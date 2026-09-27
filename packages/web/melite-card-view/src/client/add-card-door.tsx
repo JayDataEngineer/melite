@@ -67,10 +67,16 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
   }
   const add = async (picked: CatalogCard, spec: FormSpecDoc): Promise<void> => {
     try {
+      // THE ENGINE IS NOT AUTHORED HERE (benchStage.ts — the bench
+      // stage contract): the door used to write `engine:
+      // spec.engine ?? 'comfyui'` into every row it added, which is
+      // the same default the bench door and the run door each wrote
+      // for themselves. The row now says what it is (the card) and
+      // the ONE contract derives the engine, on both sides of the
+      // wire.
       const doc: Record<string, unknown> = {
         card: picked.id,
         author: 'user',
-        engine: spec.engine ?? 'comfyui',
         expect_rev: bench.rev,
       }
       // THE AXIS SEED rides the add: a new card is born with its

@@ -17,6 +17,7 @@
 // rides this registry), no fallbacks, no hardcodes.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
@@ -450,13 +451,24 @@ function checkFileInitial(
     return "initial " + JSON.stringify(key) + " refuses traversal";
   }
   const cands: string[] = [];
-  const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
-  if (raw.startsWith(ASSET_RUNS_PREFIX)) {
-    const rel: string = raw.slice(ASSET_RUNS_PREFIX.length);
+  // BOTH run-media spellings (operator, 2026-10-10: no breakage,
+  // ever): the live /melite-media/runs/ and the legacy
+  // /v1/assets/runs/ that stored benches, archives and run rows
+  // still name. The media route serves both, so a chained input
+  // resolves whichever spelling it carries.
+  // the contract's two names (benchStage.ts) — the same pair the
+  // media route mounts and the bench heals
+  const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
+  const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
+  const runPrefix = raw.startsWith(MEDIA_RUNS_PREFIX)
+    ? MEDIA_RUNS_PREFIX
+    : raw.startsWith(ASSET_RUNS_PREFIX) ? ASSET_RUNS_PREFIX : "";
+  if (runPrefix !== "") {
+    const rel: string = raw.slice(runPrefix.length);
     if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
       return (
         "initial " + JSON.stringify(key) +
-        " is a malformed artifact URL (want /v1/assets/runs/<run_id>/<file>)"
+        " is a malformed artifact URL (want /melite-media/runs/<run_id>/<file>)"
       );
     }
     for (const root of [

@@ -11,9 +11,25 @@
 // uploader fetches and stages them.
 
 import { join, sep } from "node:path";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf } from "@melite/contracts/benchStage";
 
-/** The asset-URL mount served by GET /v1/assets/runs/*. */
-export const ASSET_RUNS_PREFIX = "/v1/assets/runs/";
+/** The asset-URL mount: the LIVE spelling, and the legacy one
+ *  that every stored bench, archive and run row still carries (it
+ *  died with the gateway app; the media route serves BOTH names
+ *  forever — operator, 2026-10-10: "THERE IS NO FILTER, NO BREAKAGE
+ *  FROM THIS. EVER."). A linked input may name either; both resolve
+ *  to the same confined file under the runs root. */
+export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
+export const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
+
+/** The run-media prefix a path names, or "" when it names none.
+ *  The prefixes are the CONTRACT's (benchStage.ts) — the same two
+ *  names the media route mounts and the bench heals, so a reader
+ *  here cannot fall behind the writer there. */
+export function runMediaPrefix(path: string): string {
+  const prefix = runMediaPrefixOf(path);
+  return prefix === null ? "" : prefix + "/";
+}
 
 /** The runs output root (assets.ts defaultAssetRoots semantics:
  *  MELITE_STATE_ROOT first, else the estate's data tree). */
@@ -28,9 +44,10 @@ export function runsRoot(): string {
  *  escapes the runs root refuses LOUD (never a smuggled read). */
 export function resolveLinkedInput(ref: string): string {
   const s: string = ref.trim();
-  if (!s.startsWith(ASSET_RUNS_PREFIX)) return s;
+  const prefix: string = runMediaPrefix(s);
+  if (prefix === "") return s;
   const root: string = runsRoot();
-  const abs: string = join(root, s.slice(ASSET_RUNS_PREFIX.length));
+  const abs: string = join(root, s.slice(prefix.length));
   if (abs !== root && !abs.startsWith(root + sep)) {
     throw new Error(
       `linked input '${s}' escapes the runs root — upstream outputs only, never hand-spelled paths`,

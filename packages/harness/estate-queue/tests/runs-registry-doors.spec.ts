@@ -157,6 +157,29 @@ const remote = async (fn: () => Promise<unknown>): Promise<RemoteError> => {
   throw new Error("never threw");
 };
 
+/** The model-door seat with a phase1/2 compose pair: the graph rides
+ *  verbatim (the wall sweeps it). Module-scope so the door walls and
+ *  the wired-bench law walls share ONE seat shape. */
+const modelDoorSeat = (
+  graph: Record<string, unknown>,
+  d1Doc: Record<string, unknown> = {},
+): Seat =>
+  seat(
+    {
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      overlayCardParams: async (): Promise<unknown> => ({}),
+      phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
+      phase2Card: async (): Promise<unknown> => ({
+        graph,
+        outputs: {},
+        outputNodes: {},
+      }),
+    },
+    d1Doc,
+  );
+
 describe("list", () => {
   it("ghost drafts ride the probe's false road (never a loud list)", async () => {
     const s = seat();
@@ -360,11 +383,21 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
-  it("THE BENCH-WIRE DISCARD GATE: a bench wiring inputs refuses the single-card run — named, never dropped", async () => {
+  // THE WIRED-BENCH LAW (operator, 2026-10-10, verbatim: "By design,
+  // there is no 'non bench flow'. There is ALWAYS FromStage links.
+  // THERE IS NO FILTER, NO BREAKAGE FROM THIS. EVER."). The old gate
+  // REFUSED a single-card start on a wired bench and told the caller
+  // to run the flow — which is the bug: the GUI's per-stage Run, the
+  // agent's card start and any API caller hit it, on the one shape
+  // the run exists for. The door now BECOMES the bench run: the body
+  // restages onto flow_inline with the bench's own stages, and the
+  // wires ride as stage inputs.
+  it("THE WIRED-BENCH LAW: a single-card start on a WIRED bench becomes the bench run — never a refusal, never a discarded wire", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
       {
         stages: [
+          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
           {
             id: "s_1",
             card: "image-edit",
@@ -374,16 +407,13 @@ describe("validate", () => {
         ],
       },
     );
-    const err = await remote(() =>
-      s.svc.start(
-        { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
-        sig(),
-      ),
-    );
-    assert.equal(err.code, "runs/invalid-request");
-    assert.match(err.message, /input_images <- s_0\.default/);
-    assert.match(err.message, /no FromStage links/);
-    assert.equal(s.core.runs.size, 0);
+    // the caller still names the card arm (that is the GUI's press)
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the wired bench RAN");
+    assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
   });
 
   // THE SELF-WIRE DISCRIMINATION (2026-10-10, the operator's live
@@ -1121,4 +1151,102 @@ describe("cross-roots manifest (§23)", () => {
     assert.equal(byId.get("run-mk1")?.["served_from"], maker);
     assert.equal(byId.get("run-both2")?.["served_from"], s.state);
   }));
+});
+
+// ── THE WIRED-BENCH LAW, EVERY ARM (operator, 2026-10-10, verbatim:
+// "By design, there is no 'non bench flow'. There is ALWAYS FromStage
+// links ... THERE IS NO FILTER, NO BREAKAGE FROM THIS. EVER.") The
+// door re-routes a wired bench into the bench run; these pin that the
+// run is REAL — every stage composed, every wire riding into the
+// merged doc — and that the same state is identical whoever authored
+// it (the GUI, the agent, a hand-written body: no distinction in the
+// bench).
+describe("the wired-bench law — the run is real, and authorship makes no difference", () => {
+  const wiredBench = {
+    stages: [
+      { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "a harbour" } },
+      {
+        id: "s_1",
+        card: "image-edit",
+        // the spell + the edge: how a FromStage link is stored
+        params: { model: "m1", input_images: ["$input_images"] },
+        inputs: { input_images: { stage: "s_0", output: "default" } },
+        outputs: { default: "image" },
+      },
+    ],
+  };
+
+  it("every stage composes and every wire rides into the merged run", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      wiredBench,
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the wired bench ran");
+    const row = s.core.runs.get(ans.run_id) as unknown as {
+      stages: Array<{ id: string; input_names?: Record<string, string> }>;
+      inputNames?: Record<string, Record<string, string>>;
+    };
+    assert.equal(row.stages.length, 2, "BOTH stages are in the one run — not two runs, not one stage");
+    // THE MERGE READS input_names (stage → {channel: "stage.output"}) —
+    // the compiled edge map, which is where a FromStage link becomes a
+    // link. Assert THAT, not the bench's storage shape: the bench row
+    // is the input, the run's input_names is the wire.
+    assert.deepEqual(
+      row.inputNames,
+      { s_0: {}, s_1: { input_images: "s_0.default" } },
+      "THE WIRE RIDES — the run's input map is what the merged worker links " +
+      "(s_0.default into the consuming stage), so the bench's edge is a real link, not a discarded row",
+    );
+  });
+
+  it("an UNWIRED bench still takes the single-card arm (the re-route is precise, not eager)", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the clean single-card run still registers");
+    const row = s.core.runs.get(ans.run_id) as unknown as { stages: unknown[] };
+    assert.equal(row.stages.length, 1, "one stage — the card arm, unchanged");
+  });
+
+  it("a SELF-wire is still named as the cycle it is (a cycle composes nothing, in any arm)", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [{
+          id: "s_1", card: "image-edit",
+          params: { model: "m1", input_images: ["$input_images"] },
+          inputs: { input_images: { stage: "s_1", output: "default" } },
+        }],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /SELF-WIRE/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("THE ENGINE IS DERIVED, NOT AUTHORED: a card stage with no engine composes (one schema for the whole bench)", async () => {
+    // the same stage a hand-authored body would send: a card, params,
+    // no engine. It must compose exactly like the GUI's row.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      { stages: [{ id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } }] },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "an engine-less card stage composes — the door derives the card plane's engine");
+  });
 });
