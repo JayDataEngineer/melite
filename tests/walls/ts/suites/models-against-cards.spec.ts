@@ -12,6 +12,7 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/models-against-cards.spec.ts
 
+import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
@@ -194,80 +195,50 @@ describe("models against cards (the cross-validation, resurrected)", () => {
   //   (b) every ROUTE of every boarded family resolves a stamped,
   //       declared variant — an unstamped route serves variant:''
   //       and the lock holds with no key.
-  it("a card declaring variant-scoped fields gets a stamped, declared variant on every route of every boarded family", async (): Promise<void> => {
-    const boardings = await allBoardings();
+  it("a family declaring a per-variant surface gets a stamped, declared variant on every route", async (): Promise<void> => {
+    // THE SUCCESSOR (li-r, 2026-10-10): the card-side `visible_when:
+    // variant=…` guard table is GONE — a variant's declared param
+    // surface IS its visibility. The law this wall carried is
+    // unchanged, its speaker moved: a family that declares a
+    // per-variant surface (ModelDecl variants[].params) needs every
+    // ROUTE to resolve a stamped, declared Variant row, or the form
+    // has no lane identity to filter by and the surface judge picks
+    // nothing. (The card-side arm check — "every guard arm names a
+    // declared variant" — died with the grammar; its successor is
+    // the claim law, which checks the OTHER direction: every
+    // declared surface field must be carriable by the card, both
+    // ways, in estate-queue's cards-lane-law.spec.ts.)
     const defs = await loadCardDefs();
-    let guardedCards = 0;
-    for (const [cardId, atoms] of boardings) {
-      const def = defs.get(cardId) as
-        | { schemaCarrier?: unknown; schema?: unknown }
-        | undefined;
-      const carrier = def?.schemaCarrier ?? def?.schema;
-      const dict = (carrier as
-        | { dict?: Record<string, { meta?: { extra?: { visible_when?: string } } } | undefined> }
-        | undefined)?.dict;
-      if (dict === undefined) continue;
-      const guards = Object.values(dict)
-        .map((f) => f?.meta?.extra?.visible_when ?? "")
-        .filter((g) => g.includes("variant="));
-      if (guards.length === 0) continue;
-      guardedCards += 1;
-      const arms = new Map<string, Set<string>>();
-      for (const g of guards) {
-        const conjuncts = g.split("&");
-        const modelGuard = conjuncts.find((c) => c.startsWith("model="));
-        // an arm is owed ONLY on families where the guard can pass:
-        // a model-conjoined guard owes its arms on the named family
-        // alone (the other families hide the row on the model arm
-        // before the variant arm is ever consulted)
-        const owed = new Set<string>();
-        for (const atom of atoms) {
-          if (modelGuard === undefined || modelGuard.slice("model=".length).split("|").includes(atom)) owed.add(atom);
-        }
-        for (const guard of conjuncts) {
-          if (!guard.startsWith("variant=")) continue;
-          for (const arm of guard.slice("variant=".length).split("|")) {
-            const set = arms.get(arm) ?? new Set<string>();
-            for (const o of owed) set.add(o);
-            arms.set(arm, set);
-          }
-        }
-      }
-      for (const [arm, owed] of arms) {
-        for (const atom of owed) {
-          // THE FOLD (qvoice across ALL qwen3-tts, 2026-09-23): a
-          // boarding may name a ROUTE ADDRESS (qwen3-tts-base) —
-          // resolve its owning atom before the registry read.
-          const variantIds = new Set(
-            registryModel(owningAtom(atom)).variants.filter((v) => v.group === "Variant").map((v) => v.id),
-          );
-          assert.ok(
-            variantIds.has(arm),
-            `card ${cardId} guards variant=${arm} but family ${owningAtom(atom)} declares no such Variant row (${[...variantIds].join(", ")}) — the arm hides its rows on every lane of this family`,
-          );
-        }
-      }
-      for (const atom of atoms) {
-        const atomId = owningAtom(atom);
-        const variantIds = new Set(
-          registryModel(atomId).variants.filter((v) => v.group === "Variant").map((v) => v.id),
+    let declaring = 0;
+    for (const atom of allDecls().map((d) => d.id)) {
+      const fam = registryModel(atom);
+      const withSurface = fam.variants.filter(
+        (v) => Array.isArray((v as { params?: unknown }).params) && (v as { params?: unknown[] }).params!.length > 0,
+      );
+      if (withSurface.length === 0) continue;
+      declaring += 1;
+      const variantIds = new Set(fam.variants.filter((v) => v.group === "Variant").map((v) => v.id));
+      for (const declared of withSurface) {
+        assert.ok(
+          variantIds.has(declared.id) || declared.group === "Recipe",
+          `family ${atom} declares a parameter surface on variant '${declared.id}', which is no declared Variant row (${[...variantIds].join(", ")}) — the form has no lane to render it on`,
         );
-        for (const id of modelIds()) {
-          const view = getModel(id);
-          if (owningAtom(view.id) !== atomId) continue;
-          const stamped = (view.defaults as Record<string, unknown>).variant;
-          assert.ok(
-            typeof stamped === "string" && stamped !== "",
-            `route ${id} (family ${atom}) resolves NO variant stamp — card ${cardId}'s variant-scoped rows (guards: ${guards.join(" ; ")}) render on no lane of this route`,
-          );
-          assert.ok(
-            variantIds.has(stamped),
-            `route ${id} stamps variant '${stamped}' but family ${atom} declares no such Variant row`,
-          );
-        }
+      }
+      for (const id of modelIds()) {
+        const view = getModel(id);
+        if (owningAtom(view.id) !== atom) continue;
+        const stamped = (view.defaults as Record<string, unknown>).variant;
+        assert.ok(
+          typeof stamped === "string" && stamped !== "",
+          `route ${id} (family ${atom}, which declares per-variant surfaces) resolves NO variant stamp — the form's lane surface cannot resolve on this route`,
+        );
+        assert.ok(
+          variantIds.has(stamped),
+          `route ${id} stamps variant '${stamped}' but family ${atom} declares no such Variant row`,
+        );
       }
     }
-    assert.ok(guardedCards >= 1, "the variant-guard grammar lost its only speaker — update this wall with the successor");
+    assert.ok(declaring >= 1, "the per-variant surface law lost its only speaker — update this wall with the successor");
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {

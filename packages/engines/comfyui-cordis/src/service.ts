@@ -442,6 +442,11 @@ export class ComfyUIService extends Service {
   private facts: FactsFile | null = null
   /** Live object_info node names — set before compose to arm the gate. */
   private objectInfoNodes: Set<string> | null = null
+  /** The wiring doc's DECLARED inputs per node (required ∪
+   *  optional) — compose's final wall (assertWiring) walks every
+   *  built graph against it. Null = names-only snapshot (the node
+   *  gate stands, the input gate waits — never a guessed refusal). */
+  private objectInfoInputs: Map<string, Set<string>> | null = null
   /** Models-tree presence reader — set before compose to arm the
    *  arm-weight gate (mirrors objectInfoNodes: null = fail-open). */
   private weightPresent: ((relativePath: string, name: string) => boolean) | null = null
@@ -723,16 +728,34 @@ export class ComfyUIService extends Service {
   setObjectInfo(objectInfo: Record<string, any> | null): void {
     if (!objectInfo) {
       this.objectInfoNodes = null
+      this.objectInfoInputs = null
       this.pinDefaults = {}
       return
     }
     this.objectInfoNodes = new Set(Object.keys(objectInfo))
+    // THE WIRING DOC (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
+    // "compose wiring validates against the /object_info doc the
+    // estate already holds"): per node, its DECLARED input names
+    // (required ∪ optional — the doc's own truth). Compose's final
+    // wall walks every built graph against this (assertWiring); a
+    // names-only snapshot (setObjectInfoNodes) keeps the node gate
+    // and skips the input gate — never a guessed refusal.
+    this.objectInfoInputs = new Map(
+      Object.entries(objectInfo).map(([name, def]) => [
+        name,
+        new Set([
+          ...Object.keys((def as any)?.input?.required ?? {}),
+          ...Object.keys((def as any)?.input?.optional ?? {}),
+        ]),
+      ]),
+    )
     this.pinDefaults = deriveDefaults(objectInfo)
   }
 
   /** Legacy: node-name set only (gate arming without autofill). */
   setObjectInfoNodes(nodes: Iterable<string> | null): void {
     this.objectInfoNodes = nodes ? new Set(nodes) : null
+    this.objectInfoInputs = null
   }
 
   /** THE WEIGHT PRESENCE READER (the silent-truncation law,
@@ -820,7 +843,9 @@ export class ComfyUIService extends Service {
       const g = new GraphBuilder(this.pinDefaults)
       def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
       const graph = g.toJSON()
-      return def.finalize ? def.finalize(graph) : graph
+      const finalized = def.finalize ? def.finalize(graph) : graph
+      this.assertWiring(cardId, finalized)
+      return finalized
     }
     if (modelId === null || modelId === '') {
       throw new ComposeRefusal('no-model', `card '${cardId}' requires a model id (the {model:} door) — see GET /v1/models`)
@@ -968,6 +993,49 @@ export class ComfyUIService extends Service {
     const g = new GraphBuilder(this.pinDefaults)
     def.compose(merged, model, g, runId)
     const graph = g.toJSON()
-    return def.finalize ? def.finalize(graph) : graph
+    const finalized = def.finalize ? def.finalize(graph) : graph
+    this.assertWiring(cardId, finalized)
+    return finalized
+  }
+
+  /** THE WIRING WALL (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
+   *  "compose wiring validates against the /object_info doc the
+   *  estate already holds" — before this the doc fed exactly three
+   *  reads (mod-pack node presence, pin autofill, refuse-if-empty)
+   *  and NEVER judged the graph a card had just built; a typo'd
+   *  class_type or input name sailed to the engine and died there,
+   *  in the engine's voice, far from the declaration that authored
+   *  it). Walks the built graph: every node's class_type must live
+   *  in the doc; every input name must be one the node DECLARES
+   *  (when the full doc is held — a names-only snapshot skips the
+   *  input gate). Unarmed (no doc) the wall stands down, the
+   *  existing law. Values are never judged here (types are the
+   *  schema's own wall); this is the NAME wall. */
+  private assertWiring(cardId: string, graph: unknown): void {
+    if (this.objectInfoNodes === null) return
+    if (graph === null || typeof graph !== 'object') return
+    for (const [id, node] of Object.entries(graph as Record<string, unknown>)) {
+      if (node === null || typeof node !== 'object') continue
+      const row = node as { class_type?: unknown; inputs?: unknown }
+      const ct = row.class_type
+      if (typeof ct !== 'string' || ct === '') {
+        throw new ComposeRefusal('unknown-node',
+          `card '${cardId}' built node '${id}' with no class_type — the graph is not addressable`)
+      }
+      if (!this.objectInfoNodes.has(ct)) {
+        throw new ComposeRefusal('unknown-node',
+          `card '${cardId}' wired node class '${ct}' (as '${id}') — no such class lives on the engine (/object_info names none); the card's compose is stale against the engine build`)
+      }
+      const declared = this.objectInfoInputs?.get(ct)
+      if (declared === undefined) continue // names-only doc: the input gate waits
+      const inputs = row.inputs
+      if (inputs === null || typeof inputs !== 'object') continue
+      for (const key of Object.keys(inputs as Record<string, unknown>)) {
+        if (!declared.has(key)) {
+          throw new ComposeRefusal('unknown-input',
+            `card '${cardId}' wired '${ct}.${key}' (as '${id}') — the node declares no such input (${[...declared].sort().join(', ')}); the card's compose is stale against the engine build`)
+        }
+      }
+    }
   }
 }

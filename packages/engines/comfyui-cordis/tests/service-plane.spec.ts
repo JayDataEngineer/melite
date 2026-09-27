@@ -611,11 +611,20 @@ describe("setObjectInfo (the gate arming)", () => {
     svc.setObjectInfo(null);
     svc.setObjectInfoNodes(["A", "B"]);
     svc.setObjectInfoNodes(null);
-    svc.setObjectInfo({});
     svc.registerCard(card());
     svc.setFacts(factsFor({ fam1: {} }));
     const graph = svc.compose("card1", "fam1", {}, "r1");
-    assert.equal(typeof graph, "object", "an empty snapshot never gates");
+    assert.equal(typeof graph, "object", "an unarmed doc never gates");
+    // THE WIRING WALL (2026-10-10): a staged doc now JUDGES the built
+    // graph — an empty snapshot names no nodes, so the card's TestNode
+    // refuses (the engine is honest about composing nothing)
+    svc.setObjectInfo({});
+    assert.throws(
+      () => svc.compose("card1", "fam1", {}, "r2"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node" && /TestNode/.test(e.message),
+    );
+    svc.setObjectInfo({ TestNode: { input: { required: { a: ["INT", { default: 1 }] }, optional: {} } } });
+    svc.compose("card1", "fam1", {}, "r3");
   });
 });
 
@@ -646,7 +655,7 @@ describe("compose (the model-less path)", () => {
       () => svc.compose("card1", "", {}, "r"),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-extension" && /pack-a/.test(e.message),
     );
-    svc.setObjectInfoNodes(["NodeA"]);
+    svc.setObjectInfoNodes(["NodeA", "TestNode"]);
     svc.compose("card1", null, {}, "r");
     svc.setFacts(factsFor({}, { "pack-a": [] }));
     svc.compose("card1", null, {}, "r2", );
@@ -719,7 +728,7 @@ describe("compose (the model-less path)", () => {
   it("a factless plane never gates (unmapped packs serve the empty map)", async () => {
     const svc = await boot();
     svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] as never, requires: ["unmapped-pack"] }));
-    svc.setObjectInfoNodes([]);
+    svc.setObjectInfoNodes(["TestNode"]);
     const graph = svc.compose("card1", null, {}, "r");
     assert.ok("TestNode.0" in graph, "no facts, no gate, just the graph");
   });
@@ -737,7 +746,7 @@ describe("compose (the model-less path)", () => {
       ],
     }));
     svc.setFacts(factsFor({}, { "pack-sam": ["SamNode"] }));
-    svc.setObjectInfoNodes(["Other"]);
+    svc.setObjectInfoNodes(["Other", "TestNode"]);
     assert.throws(
       () => svc.compose("card1", "", { sam2: [{ labels: "person" }] }, "r"),
       (e: unknown) => e instanceof ComposeRefusal && e.code === "missing-extension" && /requires 'pack-sam'/.test(e.message),
@@ -748,7 +757,7 @@ describe("compose (the model-less path)", () => {
     svc.compose("card1", "", { draw: [{ payload: "x" }] }, "r4");
     // an unmapped pack serves the empty map (never a block — the card-level law)
     svc.compose("card1", "", { ghost: [{ v: 1 }] }, "r5");
-    svc.setObjectInfoNodes(["SamNode"]);
+    svc.setObjectInfoNodes(["SamNode", "TestNode"]);
     svc.compose("card1", "", { sam2: [{ labels: "person" }] }, "r6");
   });
 
@@ -930,7 +939,7 @@ describe("compose (the model path)", () => {
     );
     svc.setObjectInfoNodes(["FlatNode"]);
     assert.throws(() => svc.compose("card1", "fam1", {}, "r"), /requires 'fam-pack'/);
-    svc.setObjectInfoNodes(["FamNode"]);
+    svc.setObjectInfoNodes(["FamNode", "TestNode"]);
     svc.compose("card1", "fam1", {}, "r");
   });
 
@@ -958,7 +967,7 @@ describe("compose (the model path)", () => {
     svc.registerCard(card({ requires: ["unmapped-pack"] }));
     const models = factsFor({ fam1: {} }).models;
     svc.setFacts({ models } as FactsFile);
-    svc.setObjectInfoNodes([]);
+    svc.setObjectInfoNodes(["TestNode"]);
     const graph = svc.compose("card1", "fam1", {}, "r");
     assert.ok("TestNode.0" in graph);
   });
@@ -1170,5 +1179,103 @@ describe("requiresModel conflict (one declaration, no contradictions)", () => {
     }));
     const g = svc.compose("card1", null, {}, "r");
     assert.ok("TestNode.0" in g);
+  });
+});
+
+// ── THE WIRING WALL (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
+// "compose wiring validates against the /object_info doc the estate
+// already holds"). Before this the doc fed mod-pack presence, pin
+// autofill, and refuse-if-empty — it NEVER judged the built graph;
+// a stale class_type or input name sailed to the engine and died in
+// the ENGINE's voice. The wall names the card, the node, and the
+// wire, at compose, before the engine is ever called.
+describe("assertWiring (the built graph vs the /object_info doc)", () => {
+  const oi = (inputs: Record<string, Record<string, unknown>>): Record<string, unknown> => ({
+    TestNode: { input: { required: inputs, optional: {} } },
+  });
+
+  it("a declared node with declared inputs composes", async () => {
+    const svc = await boot();
+    svc.registerCard(card({ requiresModel: false, flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false }, boarded: [] as never }));
+    svc.setObjectInfo(oi({ a: ["INT", { default: 1 }] }));
+    svc.compose("card1", null, {}, "r1");
+  });
+
+  it("an input the node does not declare refuses LOUD at compose (never at the engine)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      compose: (_p, _m, g, _r) => { g.node("TestNode", { a: 1, typo_wire: 2 }); },
+    }));
+    svc.setObjectInfo(oi({ a: ["INT", { default: 1 }] }));
+    assert.throws(
+      () => svc.compose("card1", null, {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-input"
+        && /card1/.test(e.message) && /TestNode\.typo_wire/.test(e.message)
+        && /the node declares no such input/.test(e.message),
+    );
+  });
+
+  it("a class_type the engine does not know refuses with the stale-compose voice", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      compose: (_p, _m, g, _r) => { g.node("GhostNode", { a: 1 }); },
+    }));
+    svc.setObjectInfo(oi({ a: ["INT", { default: 1 }] }));
+    assert.throws(
+      () => svc.compose("card1", null, {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node"
+        && /GhostNode/.test(e.message) && /no such class lives on the engine/.test(e.message),
+    );
+  });
+
+  it("a names-only snapshot keeps the node gate and skips the input gate (never a guessed refusal)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      compose: (_p, _m, g, _r) => { g.node("TestNode", { a: 1 }); },
+    }));
+    svc.setObjectInfoNodes(["TestNode"]);
+    svc.compose("card1", null, {}, "r1");
+    assert.throws(
+      () => {
+        svc.setObjectInfoNodes(["Other"]);
+        svc.compose("card1", null, {}, "r2");
+      },
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node",
+    );
+  });
+
+  it("an unarmed doc (null) stands the wall down — the existing law", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      requiresModel: false,
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: false },
+      boarded: [] as never,
+      compose: (_p, _m, g, _r) => { g.node("Anything", { any_wire: 1 }); },
+    }));
+    svc.setObjectInfo(null);
+    svc.compose("card1", null, {}, "r1");
+  });
+
+  it("the model-bearing arm walls the same way (the gate rides every compose)", async () => {
+    const svc = await boot();
+    svc.registerCard(card({
+      boarded: ["fam1"],
+      compose: (_p, _m, g, _r) => { g.node("TestNode", { a: 1, ghost: 0 }); },
+    }));
+    svc.setFacts(factsFor({ fam1: {} }));
+    svc.setObjectInfo(oi({ a: ["INT", { default: 1 }] }));
+    assert.throws(
+      () => svc.compose("card1", "fam1", {}, "r1"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-input" && /TestNode\.ghost/.test(e.message),
+    );
   });
 });
