@@ -28,7 +28,7 @@
  */
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, laneViolations, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -208,6 +208,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // param groups do below. Without this the 2.1-only Reference
     // Images stack rode 2511 too — two input rows at all times.
     .filter((f) => fieldVisible(f, { ...value, model: family ?? '' }))
+    // THE LANE CONTRACT (2026-10-10, fix shape 2): a declaring
+    // family's surface owns visibility — the rail never seats a
+    // field the resolved lane does not declare.
+    .filter((f) => fieldOnLane(spec, f.name, { ...value, model: family ?? '' }))
   const railNames = new Set(railFields.map((f) => f.name))
   // THE PROGRESSIVE STACKS (the operator's law, 2026-09-20: "a
   // generic 'input row for input squares'… adding one causes it to
@@ -224,9 +228,17 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   const stackFields = flatFields
     .filter((f) => f.type === 'image_list' && !modFieldByName.has(f.name))
     .filter((f) => fieldVisible(f, { ...value, model: family ?? '' }))
+    .filter((f) => fieldOnLane(spec, f.name, { ...value, model: family ?? '' }))
   const visible = (f: SpecField): boolean =>
     f.type !== 'image_list' && !railNames.has(f.name)
+    && fieldOnLane(spec, f.name, { ...value, model: family ?? '' })
   const groupFieldsAll = flatFields.filter(visible)
+  // THE INLINE GATE (fix shape 4): the lane's violations over the
+  // current state — the same judgment the bench-write refusal
+  // rides, rendered while the user types (the strip also names
+  // STATED fields the lane hides: a value carried over a variant
+  // switch the form no longer renders but the run would refuse).
+  const laneWarns = laneViolations(spec, flatFields, { ...value, model: family ?? '' })
   // THE MODEL GUARD (the grammar's own key — the base owns the
   // mechanism, the card owns the leaves): the serving family rides
   // the visibility values as `model`, so a field may declare
@@ -340,6 +352,11 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
     h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
+    laneWarns.length > 0
+      ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length) },
+          laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)),
+        )
+      : null,
     railFields.length > 0 || stackFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           // THE SECTION HEAD (#37, the Modifiers symmetry): the input

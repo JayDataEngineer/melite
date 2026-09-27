@@ -83,6 +83,23 @@
   color: var(--dsw-alias-label-secondary, #61666b);
   font-size: 11px;
 }
+/* THE LANE WARN STRIP (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
+ * "the form gates inline from the same declaration"): the lane's
+ * relation/surface violations over the CURRENT form state — the
+ * same judgment the bench-write refusal rides, rendered while the
+ * user types. Critical-tinted prose, one row per violation, the
+ * cure riding the message; never a modal, never a toast that
+ * leaves the field. */
+.laneWarn {
+  border-top: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  border-bottom: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  color: var(--dsw-alias-state-critical, #e5484d);
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 6px 0;
+  margin: 0;
+}
+.laneWarn p { margin: 0; }
 /* THE INFO GLYPH (hour 21, the operator's law: "the primitives
  * should expose an (i) icon so on hover you can see the description
  * to the right of the parameter label"): the declaration's help

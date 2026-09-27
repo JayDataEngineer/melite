@@ -107,6 +107,13 @@ export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unkno
 // declaration; before it, the form spelled visible_when while the
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf, type ExtraBag, type ExtraKey } from '@melite/contracts/extraKeys'
+import {
+  judgeLaneRelations,
+  judgeLaneSurface,
+  laneSurfaceOf,
+  type LaneRelations,
+  type LaneViolation,
+} from '@melite/contracts/laneRelations'
 
 /** One DERIVED form field (fieldsOfEnvelope's output — the client's
  *  presentation descriptor, never a wire row): every fact reads off
@@ -409,6 +416,21 @@ export interface FormSpecDoc {
    *  width law consumes it. */
   layout?: string | null
   size?: string | null
+  /** THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2:
+   *  the family's declared parameter surface + relation words,
+   *  served with the spec — "a variant's field set IS its
+   *  declaration"). Present only when the family declares a base
+   *  surface; the form resolves the lane (family base ∪ variant
+   *  additions, laneSurfaceOf) and judges the words
+   *  (judgeLaneRelations) — the SAME declaration the bench-write
+   *  door refuses with, one spelling (@melite/contracts/
+   *  laneRelations). Absent = the legacy truth (visible_when owns
+   *  visibility; nothing binds the card's union table). */
+  lanes?: {
+    base: readonly string[]
+    relations?: LaneRelations
+    variants?: Record<string, { params?: readonly string[]; relations?: LaneRelations }>
+  }
 }
 
 /** One catalog card (/v1/model-catalog's cards section). */
@@ -850,6 +872,85 @@ export function fieldVisible(f: SpecField, values: SpecValues): boolean {
     if (negate === hit) return false
   }
   return true
+}
+
+// ── THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2)
+// ─────────────────────────────────────────────────────────────────
+// "a variant's field set IS its declaration": when the spec serves
+// `lanes`, the DECLARED surface owns field visibility for the
+// resolved lane (family base ∪ variant additions — laneSurfaceOf,
+// the same call the bench door resolves with) and the relation
+// words gate INLINE (judgeLaneRelations — the same judgment the
+// bench-write refusal rides). One declaration, two faces; the
+// card's hand-authored visible_when table retires for declaring
+// families.
+
+/** The resolved lane surface for the current variant, or null when
+ *  the family declares none (the legacy truth — visibility falls
+ *  back to visible_when). `variantId` is the RESOLVED variant
+ *  value (values.variant); an unknown id inherits the family base
+ *  verbatim (a Quant-only or unset axis). */
+export function laneSurfaceFor(
+  spec: FormSpecDoc,
+  variantId: string | null,
+): readonly string[] | null {
+  const lanes = spec.lanes
+  if (lanes === undefined) return null
+  const extra = variantId === null ? undefined : lanes.variants?.[variantId]?.params
+  return laneSurfaceOf(lanes.base, extra)
+}
+
+/** The relation words that judge the resolved lane: the family's
+ *  own + the variant's own (both layers fire — the DECL cascade). */
+export function laneRelationsFor(
+  spec: FormSpecDoc,
+  variantId: string | null,
+): LaneRelations[] {
+  const lanes = spec.lanes
+  if (lanes === undefined) return []
+  const out: LaneRelations[] = []
+  if (lanes.relations !== undefined) out.push(lanes.relations)
+  const v = variantId === null ? undefined : lanes.variants?.[variantId]?.relations
+  if (v !== undefined) out.push(v)
+  return out
+}
+
+/** Field visibility UNDER the lane contract: a declared surface
+ *  hides every field it does not name (the declaration is the
+ *  author — the field set IS the variant); a family that declares
+ *  no surface keeps the visible_when grammar. */
+export function fieldOnLane(
+  spec: FormSpecDoc,
+  paramName: string,
+  values: SpecValues,
+): boolean {
+  const variantId = typeof values['variant'] === 'string' && values['variant'] !== ''
+    ? values['variant']
+    : null
+  const surface = laneSurfaceFor(spec, variantId)
+  if (surface === null) return true
+  return surface.includes(paramName)
+}
+
+/** THE INLINE GATE: the lane's relation + surface violations over
+ *  the form's current (layered) values — rendered under the named
+ *  field while the user types, refused by the bench door when the
+ *  state is saved. Empty = a state the run accepts. */
+export function laneViolations(
+  spec: FormSpecDoc,
+  fields: readonly SpecField[],
+  values: SpecValues,
+): LaneViolation[] {
+  const variantId = typeof values['variant'] === 'string' && values['variant'] !== ''
+    ? values['variant']
+    : null
+  const surface = laneSurfaceFor(spec, variantId)
+  if (surface === null) return []
+  const names = fields.map((f) => f.name)
+  return [
+    ...judgeLaneSurface(surface, names, values as Record<string, unknown>),
+    ...judgeLaneRelations(laneRelationsFor(spec, variantId), values as Record<string, unknown>),
+  ]
 }
 
 /** Group the visible fields (the spec's own group key, first-appearance

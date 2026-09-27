@@ -478,3 +478,62 @@ test('MODEL GUARD: a lane-bespoke rail slot hides on the sibling lane (never rel
   // hidden slots vanish — they never relocate into the param groups
   expect(screen.queryByText('Image 2')).toBeNull()
 })
+
+// ── THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape 2's
+// form half): a variant's declared field set IS its visibility, and
+// the relation words render as a named strip — both read from the
+// served `lanes` block, never from a card-side guard table.
+test('LANES: a field outside the selected lane surface does not render; a field on it does', () => {
+  // the base surface carries every defaulted field (the blank law
+  // reads a default as STATED); the lanes differ in the two slot rows
+  const spec = doc({
+    model: 'qwen3-tts',
+    lanes: {
+      base: ['prompt', 'steps', 'cfg', 'turbo', 'inherit', 'notes'],
+      variants: {
+        customvoice: { params: ['img'] },
+        base: { params: ['shots'] },
+      },
+    },
+  })
+  form({ spec, user: { model: 'qwen3-tts', variant: 'customvoice' } })
+  // the customvoice lane declares the reference image seat
+  expect(screen.queryByRole('button', { name: 'Image source' })).not.toBeNull()
+  expect(document.querySelector('[data-input-stack="shots"]')).toBeNull()
+  cleanup()
+  form({ spec, user: { model: 'qwen3-tts', variant: 'base' } })
+  // the base lane declares the multi-image stack instead
+  expect(screen.queryByRole('button', { name: 'Image source' })).toBeNull()
+  expect(document.querySelector('[data-input-stack="shots"]')).not.toBeNull()
+})
+
+test('LANES: a legacy doc (no lanes block) renders everything — the declare-to-judge degrade', () => {
+  form()
+  expect(screen.queryByLabelText('Prompt')).not.toBeNull()
+  expect(screen.queryByLabelText('Notes')).not.toBeNull()
+})
+
+test('LANES: a broken relation renders the named strip with the cure (the form gates from the DECL)', () => {
+  const spec = doc({
+    model: 'qwen3-tts',
+    lanes: {
+      base: ['prompt', 'steps', 'cfg', 'turbo', 'inherit', 'notes', 'img', 'shots'],
+      relations: {
+        together: [{
+          fields: ['prompt', 'notes'],
+          cure: 'the persona export needs both halves — name the voice and describe it, or drop both',
+        }],
+      },
+    },
+  })
+  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words' } })
+  const strip = document.querySelector('[data-lane-warn="1"]')
+  if (strip === null) throw new Error('the relation warning renders')
+  expect(strip.textContent ?? '').toContain('prompt')
+  expect(strip.textContent ?? '').toContain('notes')
+  expect(strip.textContent ?? '').toContain('name the voice and describe it, or drop both')
+  // the paired state carries no strip
+  cleanup()
+  form({ spec, user: { model: 'qwen3-tts', prompt: 'the words', notes: 'the persona' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+})

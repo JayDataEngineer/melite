@@ -173,6 +173,31 @@ function capQuant(quant: string): string {
  *  or the key is the card's default family. Routeless cells are
  *  unaddressable, never offered. Variant rows serve whole (all ten
  *  keys, always) regardless of route.) */
+/** THE LANE CONTRACT SERVE (2026-10-10, the fix shape 2+4): the
+ *  family's declared surface + relation words, verbatim, for the
+ *  form plane — the client resolves (family base ∪ variant
+ *  additions) with laneSurfaceOf and judges with
+ *  judgeLaneRelations, the same calls the bench-write door uses.
+ *  Served ONLY when the family declares a base surface (the
+ *  spread at the call site gates it). */
+function laneContractOf(decl: ModelDecl): Record<string, unknown> {
+  return {
+    base: [...(decl.params ?? [])],
+    ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
+    variants: Object.fromEntries(
+      (decl.variants ?? [])
+        .filter((v) => v.params !== undefined || v.relations !== undefined)
+        .map((v) => [
+          v.id,
+          {
+            ...(v.params !== undefined ? { params: [...v.params] } : {}),
+            ...(v.relations !== undefined ? { relations: v.relations } : {}),
+          },
+        ]),
+    ),
+  }
+}
+
 function specVariants(
   decl: ModelDecl,
   key: string,
@@ -660,6 +685,20 @@ export function specBody(
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
     variants: decl ? specVariants(decl, key, res.service, primary) : [],
+    // THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2
+    // + 4: "cards consume: zones, order, craft recipes, compose
+    // wiring — no per-model field tables" + "the form gates inline
+    // from the same declaration"). The family's declared parameter
+    // surface + relation words, served with the spec so the form
+    // hides what the lane does not declare and renders relation
+    // violations INLINE (the same judged grammar the bench-write
+    // door refuses with: @melite/contracts/laneRelations — one
+    // declaration, every face). Absent = the family declares no
+    // surface (the legacy truth: the card's union table owns
+    // visibility) — the form falls back to visible_when.
+    ...(decl !== null && decl.params !== undefined ? {
+      lanes: laneContractOf(decl),
+    } : {}),
     // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):
     // every family the card BOARDS, presence-marked against the live
     // catalog offer. A boarded-but-not-downloaded model SERVES —

@@ -3,6 +3,7 @@
 // formsTable/cardSections, which take their defs as an argument):
 // key resolution, the forms table law, section shapes, and the live
 // door arms.
+import "../../../../tests/helpers/boot-models.ts";
 import { agentFormDoc } from '@melite/engine-agent'
 import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
@@ -308,6 +309,11 @@ describe('live door arms', () => {
       'guide',
       'inputs',
       'label',
+      // THE LANES BLOCK (2026-10-10, the YOU_ARE_A_LIAR fix shape 2):
+      // the served doc carries the DECL's own parameter surface +
+      // relation words per lane — the form's one source for which
+      // fields render and which states the door refuses.
+      'lanes',
       'layout',
       'loader_info',
       'mod_schemas',
