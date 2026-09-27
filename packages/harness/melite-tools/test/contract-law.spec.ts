@@ -19,7 +19,8 @@ import { loadCardDefs, theService } from '@melite/comfyui-cordis'
 import { emitParamsSchema } from '@melite/comfyui-cordis/params-emit'
 import { formSpecArm } from '../src/discovery.ts'
 import { fieldsOf, fieldVisible, axisKey, type FormSpecDoc, type SpecField } from '@melite/card-base/spec'
-import type { ExtraBag } from '@melite/contracts/extraKeys'
+import { WTYPE_SET, MEDIA_SET, ROLE_SET, WTYPE_SEATS } from '@melite/contracts/extraKeys'
+import { assertEnvelopeLaws, EnvelopeLawRefusal } from '@melite/comfyui-cordis/envelope-laws'
 
 // ── the walk ──────────────────────────────────────────────────
 interface RefNode { meta?: Record<string, unknown>; dict?: Record<string, number>; list?: number[] }
@@ -41,6 +42,12 @@ let defsMap: Map<string, unknown> = new Map()
 const loadDefsMap = (): Map<string, unknown> => defsMap
 const extraRows: Array<{ where: string; field: string; key: string; value: unknown }> = []
 const guards: Array<{ where: string; field: string; rule: string; fields: string[] }> = []
+const wtypes = new Set<string>()
+const medias = new Set<string>()
+const roles = new Set<string>()
+const optionRows: Array<{ where: string; field: string; values: string[] }> = []
+const edgeKinds = new Set<string>()
+const edges: Array<{ where: string; name: string; kind: string; required: boolean; vocab: string[] }> = []
 
 const walkExtras = (where: string, env: Envelope | null, vocab: string[]): void => {
   if (env == null) return
@@ -50,10 +57,18 @@ const walkExtras = (where: string, env: Envelope | null, vocab: string[]): void 
     const { id, field } = queue.shift()!
     const node = env.refs[id]
     if (node === undefined) continue
+    const role = node.meta?.['role']
+    if (typeof role === 'string') roles.add(role)
     const extra = node.meta?.['extra']
     if (typeof extra === 'object' && extra !== null && !Array.isArray(extra)) {
       for (const [key, value] of Object.entries(extra as Record<string, unknown>)) {
         extraRows.push({ where, field: field || '·root', key, value })
+        if (key === 'wtype' && typeof value === 'string') wtypes.add(value)
+        if (key === 'media' && typeof value === 'string') medias.add(value)
+      }
+      const opts = (extra as Record<string, unknown>)['options']
+      if (Array.isArray(opts)) {
+        optionRows.push({ where, field: field || '·root', values: opts.map((o) => (typeof o === 'string' ? o : String((o as { value: unknown }).value))) })
       }
       const vw = (extra as Record<string, unknown>)['visible_when']
       if (typeof vw === 'string' && vw !== '') guards.push({ where, field: field || '·root', rule: vw, fields: [...new Set(vocab)] })
@@ -92,6 +107,10 @@ beforeAll(async () => {
       const axes = Object.keys(doc.features?.variant_groups ?? {}).map(axisKey)
       const vocab = [...rootKeys, ...axes, 'model']
       arms.push({ card, family, doc, carrier, boarded: boarded.length > 0 ? boarded : [card], fields, tool, vocab })
+      for (const edge of doc.inputs ?? []) {
+        edgeKinds.add(edge.kind)
+        edges.push({ where: card + ':' + family, name: edge.name, kind: edge.kind, required: edge.required === true, vocab })
+      }
       walkExtras(card + ':' + family, root, vocab)
       for (const [pack, env] of Object.entries(doc.mod_schemas ?? {})) {
         const e = env as unknown as Envelope
@@ -232,6 +251,73 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
     expect(fieldVisible(f('image1 != null'), { image1: '/tmp/x.png' })).toBe(true)
     // numbers compare as strings (the wire's face)
     expect(fieldVisible(f('steps=4'), { steps: 4 })).toBe(true)
+  })
+
+  test('LAW 8 — THE CLOSED FACE VOCABULARIES: wtype/media/role sets, complete and exclusive, with seats', () => {
+    expect([...wtypes].sort(), 'wtypes on the wire — every spelling is contract; a foreign one renders as a silent text input').toEqual([...WTYPE_SET].slice().sort())
+    expect([...medias].sort()).toEqual([...MEDIA_SET].slice().sort())
+    expect([...roles].sort()).toEqual(['path'])
+    // SEAT COVERAGE: every wtype has a declared rendering seat
+    expect(Object.keys(WTYPE_SEATS).sort()).toEqual([...WTYPE_SET].slice().sort())
+    // atom-routed members must ALL be exercised (a dead atom wtype
+    // means the renderer arm rots untested)
+    const atomRouted = Object.entries(WTYPE_SEATS).filter(([, seat]) => seat === 'atom').map(([w]) => w)
+    for (const w of atomRouted) expect(wtypes.has(w), `atom wtype '${w}' exercised on the wire`).toBe(true)
+  })
+
+  test('LAW 9 — INPUT EDGES: every signature edge binds a real field, kinds closed', () => {
+    expect(edges.length, 'the walk found input edges').toBeGreaterThan(20)
+    const bad: string[] = []
+    for (const e of edges) {
+      if (!e.vocab.includes(e.name)) bad.push(`${e.where}#edge:${e.name}: names no declared field`)
+      if (e.required && !e.vocab.includes(e.name)) bad.push(`${e.where}#edge:${e.name}: required but unbound`)
+    }
+    expect(bad, 'ghost input edges').toEqual([])
+    // the kind vocabulary, pinned closed from the wire — the
+    // rail's seats (image/video/audio lists are the typed stacks,
+    // seg is the mask modality, text stays params, data/mesh the
+    // 3d lanes). A new kind is a contract act.
+    expect([...edgeKinds].sort(), 'edge kinds (a new kind is a contract act)').toEqual(
+      ['audio', 'audio_list', 'data', 'image', 'image_list', 'mesh', 'seg', 'text', 'video_list']
+    )
+  })
+
+  test('LAW 10 — OPTIONS UNIQUENESS on the wire (a duplicate value is an ambiguous pick)', () => {
+    const bad: string[] = []
+    for (const row of optionRows) {
+      const seen = new Set<string>()
+      for (const v of row.values) {
+        if (seen.has(v)) bad.push(`${row.where}#${row.field}: duplicate option value '${v}'`)
+        seen.add(v)
+      }
+    }
+    expect(bad, 'duplicate option values').toEqual([])
+  })
+
+  test('LAW 11 — THE BOOT GATE FIRES: registration refuses foreign envelopes (plugins included)', async () => {
+    const { default: z } = await import('@deepseek-ai/schemastery')
+    // fresh construction per arm (a schemastery schema is a live
+    // function — never cloneable)
+    const def = (schema: unknown): never => ({
+      id: 'probe-card', identity: 'probe', boarded: [],
+      schema, compose: () => { throw new Error('never reaches compose') },
+    } as never)
+    const refuse = (msg: string, schema: unknown): void => {
+      expect(() => assertEnvelopeLaws(def(schema)), msg).toThrow(EnvelopeLawRefusal)
+    }
+    refuse('foreign wtype', z.object({ x: z.string().extra('extra', { wtype: 'image_lst' }) }))
+    refuse('ghost extra key', z.object({ x: z.string().extra('extra', { visable_when: 'a=b' }) }))
+    refuse('malformed guard', z.object({ y: z.string(), x: z.string().extra('extra', { visible_when: 'model' }) }))
+    refuse('ghost guard sibling', z.object({ x: z.string().extra('extra', { visible_when: 'ghost=1' }) }))
+    refuse('hidden AND required', z.object({ x: z.string().extra('extra', { hidden: true, required: true }) }))
+    refuse('duplicate options', z.object({ x: z.string().extra('extra', { wtype: 'select', options: [{ value: 'a', label: 'A' }, { value: 'a', label: 'B' }] }) }))
+    refuse('foreign zone', z.object({ x: z.string().extra('extra', { zone: 'rail' }) }))
+    refuse('foreign media', z.object({ x: z.array(z.string()).extra('extra', { wtype: 'image_list', media: 'strng' }) }))
+    // the LEGAL twin passes clean
+    expect(() => assertEnvelopeLaws(def(z.object({
+      model2: z.string(),
+      x: z.string().extra('extra', { wtype: 'image_list', visible_when: 'model2=a|b', max_stack: 4, media: 'video', zone: 'inputs' }),
+    }))), 'the legal twin registers').not.toThrow()
   })
 })
 

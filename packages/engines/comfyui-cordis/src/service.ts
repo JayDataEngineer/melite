@@ -23,6 +23,7 @@ import type { AbsorbedMod } from "./serviceMods.ts";
 import type { VerbRegistration } from "./serviceMods.ts";
 import type { FlavorRegistration } from "./serviceMods.ts";
 import type { PackContract } from "./serviceMods.ts";
+import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.ts";
 
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
 export class ComposeRefusal extends Error {
@@ -463,6 +464,11 @@ export class ComfyUIService extends Service {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
     }
     assertFlowContract(def)
+    // THE ENVELOPE LAW GATE (2026-10-10, the gap-3 closure): every
+    // card — built-in OR hot plugin — passes the same vocabulary,
+    // grammar, and coherence laws at the registration door; a
+    // foreign spelling refuses LOUD here, never serves silent.
+    assertEnvelopeLaws(def)
     // THE FAMILY-TAKEN GATE (ledger #40, the operator's outage: a
     // profile insert's sketch boarded krea-2 and the lane served
     // its 2-field envelope as image-gen). A DROP-IN THAT BOARDS A
@@ -519,6 +525,7 @@ export class ComfyUIService extends Service {
    *  one declaration per name means one shape per name). */
   registerPack(contract: PackContract): (() => void) {
     validateFields(`pack ${contract.pack}`, contract.fields)
+    assertPackEnvelopeLaws(contract.pack, contract.fields as { toJSON?: () => unknown })
     const prior = this.packs.get(contract.pack)
     if (prior !== undefined) {
       // .dict is present — validateFields above refuses dict-less

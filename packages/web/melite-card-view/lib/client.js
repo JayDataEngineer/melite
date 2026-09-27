@@ -9115,10 +9115,74 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region ../../web-kit/contracts/src/extraKeys.ts
 		/** THE TYPED WRITE — declarations pass their literal through this
-		*  so an unknown key fails BOTH walls: tsc at the literal, this
-		*  throw at runtime (spread arms). Never a silently dead write. */
+		*  so an unknown key or malformed value fails EVERY wall: tsc at
+		*  the literal, this throw at runtime (spread arms), the boot
+		*  validator on any served envelope, and the estate law suite on
+		*  the wire. Never a silently dead write. */
 		function bag(b) {
-			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error("extra bag carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			const where = "extra bag";
+			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			const str = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
+			};
+			const num = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
+			};
+			const bool = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
+			};
+			str("group");
+			str("visible_when");
+			str("tooltip");
+			str("placeholder");
+			str("optionsFrom");
+			str("wtype");
+			str("zone");
+			str("media");
+			bool("required");
+			bool("hidden");
+			bool("serveDefault");
+			num("width");
+			num("columns");
+			num("max_stack");
+			num("min");
+			num("max");
+			{
+				const v = b["order"];
+				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
+			}
+			{
+				const v = b["families"];
+				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
+			}
+			if (b.wtype !== void 0 && !WTYPE_SET.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
+			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
+			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
+			if (b.options !== void 0) {
+				const seen = /* @__PURE__ */ new Set();
+				for (const row of b.options) {
+					const value = typeof row === "string" ? row : row.value;
+					const label = typeof row === "string" ? row : row.label;
+					if (value === "") throw new Error(where + ".options carries an empty value");
+					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
+					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
+					seen.add(value);
+				}
+			}
+			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
+				const at = ne >= 0 ? ne : eq;
+				const key = g.slice(0, at).trim();
+				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
+				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
+				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
+			}
 			return b;
 		}
 		/** THE TYPED READ — one getter for every face. `extraOf(node)`
@@ -9128,7 +9192,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const raw = node?.meta?.["extra"];
 			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
 		}
-		var EXTRA_KEYS, EXTRA_KEY_SET;
+		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
 		var init_extraKeys = __esmMin((() => {
 			EXTRA_KEYS = [
 				"order",
@@ -9153,6 +9217,45 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"default"
 			];
 			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
+			WTYPE_SET = [
+				"number",
+				"select",
+				"slider",
+				"text",
+				"textarea",
+				"boolean",
+				"image",
+				"file",
+				"mesh",
+				"image_list",
+				"mask",
+				"loras",
+				"ip_adapters",
+				"controlnets"
+			];
+			WTYPE_SEATS = {
+				number: "atom",
+				select: "atom",
+				slider: "atom",
+				text: "atom",
+				textarea: "atom",
+				boolean: "atom",
+				image: "atom",
+				file: "atom",
+				mesh: "atom",
+				image_list: "rail",
+				mask: "mod-face",
+				loras: "mod-face",
+				ip_adapters: "mod-face",
+				controlnets: "mod-face"
+			};
+			MEDIA_SET = ["video", "audio"];
+			ZONE_SET = [
+				"inputs",
+				"params",
+				"mods"
+			];
+			ROLE_SET = ["path"];
 		}));
 		//#endregion
 		//#region ../card-base/src/spec.ts
@@ -52713,11 +52816,16 @@ void main() {
 			EXTRA_KEYS: () => EXTRA_KEYS,
 			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
+			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
 			Provenance: () => Provenance,
+			ROLE_SET: () => ROLE_SET,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			TRACK_COLORS: () => TRACK_COLORS,
+			WTYPE_SEATS: () => WTYPE_SEATS,
+			WTYPE_SET: () => WTYPE_SET,
+			ZONE_SET: () => ZONE_SET,
 			_cachedCount: () => _cachedCount,
 			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
@@ -60551,4 +60659,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3f5ecb8b846a7cfb5854e8c893460996e4dd84cb";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8c2dfa2634d8888b9883bfbde34e2322685679e5";

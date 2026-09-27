@@ -997,6 +997,9 @@ importers:
       '@deepseek-ai/dsh-util-values':
         specifier: 0.1.5-rc.2
         version: 0.1.5-rc.2(@deepseek-ai/cordis@4.0.2)
+      '@deepseek-ai/schemastery':
+        specifier: ^3.18.2
+        version: 3.18.2
       '@melite/audio-music':
         specifier: workspace:*
         version: link:../../audio/music
