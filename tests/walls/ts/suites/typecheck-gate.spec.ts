@@ -150,10 +150,19 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
 
   it("the test tier typechecks clean (the TS2724 class dies at the wall)", async () => {
     try {
+      // TC_POOL=3 (li-aq.3): the tier is the heaviest thing the suite
+      // runs, and at the script's default 8 parallel tsc processes it
+      // STARVED the fleet sharing the run — the dom tier's WebGL
+      // contexts failed to create and the real-binary media tests
+      // blew their timeouts (15 failures, every one of them passing in
+      // isolation). A wall that destabilises the suite is not a wall.
+      // Three lanes judge the same 85 packages; the ship runs the
+      // script at full width when nothing else is competing.
       await run("node", [join(REPO, "scripts", "typecheck-tests.mjs")], {
         cwd: REPO,
-        timeout: 600_000,
+        timeout: 900_000,
         maxBuffer: 32 * 1024 * 1024,
+        env: { ...process.env, TC_POOL: "3" },
       });
     } catch (e) {
       const err = e as { stdout?: string; stderr?: string; message?: string };
@@ -162,5 +171,5 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
       throw new Error("the test tier is red (spec files must typecheck):\n" +
         report.split("\n").filter((l) => l.startsWith("✗")).slice(0, 10).join("\n"));
     }
-  }, 660_000);
+  }, 960_000);
 });
