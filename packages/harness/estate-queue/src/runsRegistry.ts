@@ -126,12 +126,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
   }
 }
 
-declare module "@deepseek-ai/cordis" {
-  interface Context {
-    runs: RunsRuntimeService;
-  }
-}
-
+// THE `runs` KEY IS NOT DECLARED HERE (li-aq.3, the walls plane's
+// typecheck). The adapter package that CONSUMES the seat declares it
+// on Context — structurally, by its own header's rule: a compiled
+// package may not import these source-run sources into its emit
+// graph, so the contract travels with the caller, and the class that
+// mounts the seat satisfies it structurally. Declaring it here as
+// well (the rename left this twin behind, its comment still naming
+// the pre-rename class) is TS2717 the moment one program composes
+// both sides — which no program did until the walls did.
 /** The refusal codes this remote serves, folded to the
  *  protocol's vocabulary — a literal table, no dynamic key. */
 

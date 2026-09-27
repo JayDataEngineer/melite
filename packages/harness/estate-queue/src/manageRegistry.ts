@@ -92,8 +92,12 @@ export const manageProvider = {
   },
 };
 
-declare module "@deepseek-ai/cordis" {
-  interface Context {
-    manage: ManageGatewayService;
-  }
-}
+// THE `manage` KEY IS NOT DECLARED HERE (li-aq.3, the walls plane's
+// typecheck). The adapter package that CONSUMES the seat declares it
+// on Context — structurally, by its own header's rule: a compiled
+// package may not import these source-run sources into its emit
+// graph, so the contract travels with the caller, and the class that
+// mounts the seat satisfies it structurally. Declaring it here as
+// well (the rename left this twin behind, its comment still naming
+// the pre-rename class) is TS2717 the moment one program composes
+// both sides — which no program did until the walls did.
