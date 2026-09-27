@@ -39,7 +39,7 @@
  * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX , RUN_ID_RE} from "@melite/contracts/benchStage";
 
 /** The upstream's artifact prefix: the gateway route that has served
  *  run artifacts since the app's own mount — a LEGACY spelling the
@@ -81,7 +81,7 @@ const DRAFTS_LIMIT = 200
  *  LAW — build/ was the C era's cwd and is gone). */
 const DEFAULT_FLOW_DIR = '/home/user/Documents/programs/active/inference.cpp/data/runs/output'
 /** A run dir name: run-<hex>-<word> (the runs grammar). */
-const RUN_DIR = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/
+const RUN_DIR = RUN_ID_RE
 /** One path segment inside a run dir (traversal refuses at the
  *  grammar; realpath containment re-checks at the read). */
 const RUN_SEGMENT = /^[A-Za-z0-9._-]+$/

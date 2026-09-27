@@ -858,8 +858,19 @@ export class ComfyUIService extends Service {
     if (modelId === null || modelId === '') {
       throw new ComposeRefusal('no-model', `card '${cardId}' requires a model id (the {model:} door) — see GET /v1/models`)
     }
+    // THE BOARD ADMITS A ROUTE'S OWNING FAMILY (the behavioural
+    // re-check's BYPASS 2: a variant's own route is RESOLVED by its
+    // DECL, never offered as a model key — so `{model:
+    // qwen3-tts-voicedesign, variant: base}` composes the route
+    // 'qwen3-tts-voicedesign-base', which is not itself on the
+    // board, and the gate refused it in a voice the bench never
+    // spoke: the same state admitted here and refused there. A
+    // route whose family the card boards IS boarded.)
     if (!def.boarded.includes(modelId)) {
-      throw new ComposeRefusal('not-boarded', `model '${modelId}' is not boarded on the ${cardId} card (boarded: ${[...def.boarded].sort().join(', ')})`)
+      const owner = (this.facts?.owners as Record<string, string> | undefined)?.[modelId] ?? modelId
+      if (!def.boarded.includes(owner)) {
+        throw new ComposeRefusal('not-boarded', `model '${modelId}' is not boarded on the ${cardId} card (boarded: ${[...def.boarded].sort().join(', ')})`)
+      }
     }
     if (!this.facts) throw new ComposeRefusal('no-facts', 'model facts not loaded — the compose door requires --facts')
     const model = this.facts.models[modelId]

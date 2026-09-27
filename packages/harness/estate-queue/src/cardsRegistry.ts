@@ -568,7 +568,22 @@ export class CardRegistryService extends Service {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) return null; // mcp/flow ids — not lane-admitted
     const mid: unknown = params["model"];
-    if (typeof mid !== "string" || mid === "") return null; // model-less row
+    if (typeof mid !== "string" || mid === "") {
+      // THE UNDECLARED-KEY GATE HAS ITS OWN SEAT (the behavioural
+      // re-check's BYPASS 3: the contract's self-naming strip removes
+      // `model: 'anny'` at store, so a patched row became model-less
+      // and the model-less tolerance below stood the whole judgment
+      // down — `frobnicate` landed). A key no card declares needs no
+      // family and no lane: it is judged here, over the raw params
+      // minus the envelope, before any tolerance.
+      try {
+        admissionRefusal(this, card, "", liftCardParams(params), "admission");
+      } catch (e) {
+        if (e instanceof CardArmError) return e.message;
+        throw e;
+      }
+      return null; // the lane's own tolerance for a model-less row
+    }
     let prep: PreparedCard;
     try {
       prep = prepareCardParams(this, params, mid, "admission");
@@ -576,6 +591,15 @@ export class CardRegistryService extends Service {
       // selection/dangling failures keep the run door's voice —
       // this seat judges only the DECL's own words
       return null;
+    }
+    // THE UNDECLARED-KEY GATE, family side (a key no card declares
+    // needs no family — but with a family named, the same gate judges
+    // the LIFTED view the run seat composes).
+    try {
+      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission");
+    } catch (e) {
+      if (e instanceof CardArmError) return e.message;
+      throw e;
     }
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
@@ -844,6 +868,16 @@ export class CardRegistryService extends Service {
     mid: string,
   ): Promise<Phase1Card> {
     const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
+    // THE BOARD CHECK RIDES THE RUN SEAT TOO (the behavioural
+    // re-check's BYPASS 1: the bench refused an unoffered model
+    // address, but `validate` with the SAME address composed the
+    // family HEAD and answered ok — two seats, one law, opposite
+    // verdicts). The same exact-address check the write door runs,
+    // here at the door that composes.
+    const boardCheck = this.admitStageModel(prep.card, body["model"]);
+    if (!boardCheck.ok) {
+      throw new CardArmError(400, boardCheck.error, { code: boardCheck.code });
+    }
     // THE REFUSAL-ORDER LAW (2026-09-21, roadmap §10's e2e debt):
     // ADMISSION runs before the lane-presence gate — a body-shape
     // refusal is knowable without any weights (box-independent);

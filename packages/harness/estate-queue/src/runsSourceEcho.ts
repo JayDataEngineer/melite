@@ -29,7 +29,7 @@
 // because the walls pin both faces.
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX , RUN_ID_RE} from "@melite/contracts/benchStage";
 import { statSync } from "node:fs";
 import { join } from "node:path";
 
@@ -43,7 +43,7 @@ export const MEDIA_RUNS_PREFIX = RUN_MEDIA_PREFIX + "/";
 export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 
 /** The run-dir basename grammar (the mint law — media index.ts). */
-const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+const RUN_ID = RUN_ID_RE;
 
 /** The servable-media law's one underscore exception (media
  *  index.ts relServable twin): run STATE files are not sources. */

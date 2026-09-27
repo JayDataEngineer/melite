@@ -1,3 +1,4 @@
+import { RUN_ID_RE } from "@melite/contracts/benchStage"
 /**
  * melite_view — the estate's OBSERVE arm for images (the decide
  * loop's eye, 2026-09-14). One run's artifact, VIEWED: the tool
@@ -65,7 +66,7 @@ const firstRootWithRun = async (
 }
 
 /** The run-id grammar (estate/media's containment law, verbatim). */
-const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/
+const RUN_ID = RUN_ID_RE
 
 /** Extension → declared media type (read_image's map, copied). */
 const IMAGE_EXTENSIONS: Record<string, ImageMediaType> = {

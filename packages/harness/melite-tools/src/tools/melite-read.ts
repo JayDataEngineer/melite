@@ -1,3 +1,4 @@
+import { RUN_ID_RE } from "@melite/contracts/benchStage"
 /**
  * melite_read — the estate's TEXT observe arm for a run (2026-09-25).
  *
@@ -34,7 +35,7 @@ import { rootsManifest, searchedVoice } from '@melite/estate-queue'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 
 /** The run-id grammar (estate/media's containment law, verbatim). */
-const RUN_ID = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/
+const RUN_ID = RUN_ID_RE
 
 /** The text vocabulary this door answers. A run's own sidecars are
  *  json/jsonl/md/txt/yaml/log; anything else is media (melite_view),

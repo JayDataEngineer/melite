@@ -276,3 +276,18 @@ export const WIRE_STAGE_KEYS: readonly string[] = [
   "skip_when",
   "timeout_s",
 ];
+
+/**
+ * THE RUN ID GRAMMAR (2026-10-10, the bypass audit's MEDIUM-2: it was
+ * spelled in five modules — the media route, the source echo, the
+ * gallery, and two agent tools — with no pin, so a change to the mint
+ * would have some readers accept and some refuse, silently).
+ * A run id is `run-<hex>-<token>`; the media route's parse and every
+ * reader that keys a path by it use this one.
+ */
+export const RUN_ID_RE: RegExp = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+
+/** Is this a run id? */
+export function runIdOk(id: string): boolean {
+  return RUN_ID_RE.test(id);
+}

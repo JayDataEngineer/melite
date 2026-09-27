@@ -15,6 +15,7 @@
 // nothing the model did not declare — and the model may declare
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
+import { readFileSync } from "node:fs";
 import { parseSidecar } from "../src/queueSidecar.ts";
 import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
@@ -643,5 +644,52 @@ describe("THE SIDECAR'S READ CONTRACT", () => {
   it("a doc with NO stages is legal (a run that has not staged yet)", () => {
     expect(parseSidecar({ status: "queued" })).not.toBeNull();
     expect(parseSidecar({ stages: [] })).not.toBeNull();
+  });
+});
+
+// ── THE PARITY LAW, EXTENDED BY THE LIVE RE-CHECK (2026-10-10) ────
+// The re-check wrote poison through the deployed lane and found the
+// three fixes only HALF landed: the bench refused what the run seat
+// composed, and one strip made a model-less row skip the key gate.
+// Both are closed here, and both are walls now.
+describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
+  it("the run seat refuses an unoffered address exactly as the bench does", () => {
+    // BYPASS 1: `validate` with qwen3-tts-voicedesign-base composed
+    // the family HEAD and answered ok while the bench refused the
+    // same address. The board check now rides phase1.
+    const bench = svc.admitStageModel("tts", "qwen3-tts-voicedesign-base");
+    expect(bench.ok).toBe(false);
+    const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
+    const phase1 = src.slice(src.indexOf("async phase1Card("));
+    expect(phase1.slice(0, 2000)).toContain("admitStageModel");
+  });
+
+  it("a variant's OWN route composes (the board admits the route's family)", () => {
+    // BYPASS 2: `{model: qwen3-tts-voicedesign, variant: base}` was
+    // admitted at the bench and then refused by the engine's
+    // not-boarded gate, in a voice the bench never spoke. A route is
+    // resolved by its DECL, not offered as a model key, so the board
+    // admits the route's OWNING FAMILY.
+    expect(svc.admitStageModel("tts", "qwen3-tts-voicedesign").ok).toBe(true);
+    const base = prepareCardParams(svc, { variant: "base", text: "clone" }, "qwen3-tts-voicedesign", "t");
+    expect(base.modelId).toBe("qwen3-tts-voicedesign-base");
+    const engine = readFileSync(
+      new URL("../../../engines/comfyui-cordis/src/service.ts", import.meta.url),
+      "utf8",
+    );
+    expect(engine).toMatch(/boarded\.includes\(owner\)/);
+  });
+
+  it("the undeclared-key gate does NOT inherit the model-less tolerance", () => {
+    // BYPASS 3: the contract's self-naming strip removes
+    // `model: 'anny'` at store, so the row became model-less, the
+    // lane path stood down, and `patch {frobnicate}` landed. A key no
+    // card declares needs no family to judge.
+    const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
+    // the model-less arm has its OWN key-gate seat, before the
+    // tolerance returns — that is the whole fix
+    const arm = src.slice(src.indexOf('if (typeof mid !== "string" || mid === "") {'), src.indexOf("let prep: PreparedCard;"));
+    expect(arm, "the model-less arm judges keys before standing down").toContain("admissionRefusal");
+    expect(arm).toContain("return null; // the lane's own tolerance for a model-less row");
   });
 });
