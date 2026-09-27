@@ -735,3 +735,36 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
     expect(src).toContain("this.laneVerdict(prep.card, body)");
   });
 });
+
+// ── THE `required` WORD, USED (2026-10-10, the design audit's Q2) ──
+// The vocabulary could not say "this lane needs words", so the tts
+// card carried the law in imperative code the bench never saw. It is
+// a declaration now — and the first DECL to use a word that did not
+// exist before this commit.
+describe("THE REQUIRED WORD ON A REAL LANE", () => {
+  it("a tts state with no text refuses at bench-write, naming the field and the cure", () => {
+    const verdict = svc.admitStageRelations("tts", { model: "qwen3-tts", text: "" });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("text");
+      expect(verdict.error).toMatch(/requires|speak words/);
+    }
+  });
+
+  it("a tts state WITH text is unaffected (the word judges only what it names)", () => {
+    expect(svc.admitStageRelations("tts", { model: "qwen3-tts", text: "hello" }).ok).toBe(true);
+  });
+
+  it("the boot gate knows the word (a grammar word the gate omits refuses a LEGAL declaration)", () => {
+    // the first cut of the new words booted REFUSED: the drift gate
+    // enumerated the vocabulary separately and did not know `required`
+    const src = readFileSync(
+      new URL("../../../engines/comfyui-cordis/src/models/service.ts", import.meta.url),
+      "utf8",
+    );
+    const words = src.slice(src.indexOf("function relationRowSchemas"));
+    for (const word of ["requires", "conflicts", "together", "either_or", "at_most_one", "required"]) {
+      expect(words, "the boot gate must know the " + word + " word").toContain(word + ":");
+    }
+  });
+});

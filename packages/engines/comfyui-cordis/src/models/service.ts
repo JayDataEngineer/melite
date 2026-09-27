@@ -40,11 +40,12 @@ import {
   ModelRow,
   ModelDecl as ModelDeclSchema,
   VariantRow as VariantRowSchema,
-  ParamRelationWords as ParamRelationWordsSchema,
   ParamRequiresRow as ParamRequiresRowSchema,
   ParamConflictsRow as ParamConflictsRowSchema,
   ParamTogetherRow as ParamTogetherRowSchema,
+  ParamAtMostOneRow as ParamAtMostOneRowSchema,
   ParamEitherOrRow as ParamEitherOrRowSchema,
+  ParamRequiredRow as ParamRequiredRowSchema,
   type CellRow,
   type ModelDecl,
   type VariantRow,
@@ -168,13 +169,35 @@ function strippedKeys(
 }
 
 /** The same subset test across the four relation words, per level. */
-function relationDrift(relations: Record<string, unknown>, where: string): string[] {
-  const words: Record<string, unknown> = {
+/** Each relation word's ROW schema, read from the grammar's own
+ *  wrapper (2026-10-10). A word added to the grammar and not to this
+ *  gate made a LEGAL declaration refuse at boot; enumerating the
+ *  vocabulary twice is the same bug in a different coat. The wrapper's
+ *  members ARE the words; each member's resolved shape is the row
+ *  schema the drift check wants. */
+function relationRowSchemas(): Record<string, unknown> {
+  // resolving an EMPTY wrapper fills defaults and omits the optional
+  // members, so it cannot enumerate the words. The declared type is
+  // the enumeration: one object listing every word once, and the gate
+  // refuses a word the type does not name.
+  return {
     requires: ParamRequiresRowSchema,
     conflicts: ParamConflictsRowSchema,
     together: ParamTogetherRowSchema,
     either_or: ParamEitherOrRowSchema,
-  };
+    at_most_one: ParamAtMostOneRowSchema,
+    required: ParamRequiredRowSchema,
+  } as unknown as Record<string, unknown>;
+}
+
+function relationDrift(relations: Record<string, unknown>, where: string): string[] {
+  // THE RELATION WORDS, FROM THE CONTRACT'S SCHEMA (2026-10-10 — a
+  // word added to the grammar and not to this gate made a legal
+  // declaration refuse at boot: "unknown relation word/key refused:
+  // required". The gate enumerated the vocabulary a second time; it
+  // now READS the schema object's own keys, so a word cannot land in
+  // one place and not the other.
+  const words: Record<string, unknown> = relationRowSchemas();
   const out: string[] = [];
   for (const key of Object.keys(relations)) {
     const schema = words[key];

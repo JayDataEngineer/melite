@@ -55,6 +55,20 @@ export const DECL: ModelDecl = {
     "voice_name",
   ],
   "relations": {
+    // THE REQUIRED WORD, USED (2026-10-10, the design audit's Q2 — the
+    // vocabulary could not say "this lane needs words", so the card
+    // carried the law in imperative code the bench never saw). A tts
+    // lane with no text composes nothing: the node's text input IS the
+    // generation. Stated as a law it refuses at bench-write in the
+    // field's voice, on every seat — and the blank law's tolerance
+    // (a state still being typed is not a refusal) is exactly the case
+    // this row overrides, deliberately and by name.
+    "required": [
+      {
+        "fields": ["text"],
+        "cure": "every tts lane speaks words — state the text to synthesize",
+      },
+    ],
     // THE EXPORT PAIR (incident A, operator 2026-10-10): the studio
     // exporter fires only when the persona description and the save
     // mod's name BOTH ride — a design_prompt without voice_name is
