@@ -1,7 +1,12 @@
+import { LEGACY_RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { crossRootOrder } from "@melite/contracts/rootsManifest";
 import { contentTypeForArtifact, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 //#region src/index.ts
+/** The upstream's artifact prefix: the gateway route that has served
+*  run artifacts since the app's own mount — a LEGACY spelling the
+*  contract still owns (the media route serves both). */
+const GATEWAY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
 const name = "infer-gallery";
 /** Routes arrive with the webServer service. */
 const inject = ["webServer"];
@@ -283,7 +288,7 @@ function apply(ctx, config = {}) {
 			const rangeAsk = req.headers?.range;
 			try {
 				if (gatewayUrl !== "") {
-					const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, {
+					const response = await fetch(`${gatewayUrl}${GATEWAY_MEDIA_PREFIX}/${target}`, {
 						signal: AbortSignal.timeout(timeoutMs),
 						headers: rangeAsk !== void 0 ? { range: rangeAsk } : {}
 					});
@@ -313,7 +318,7 @@ function apply(ctx, config = {}) {
 						return;
 					}
 					if (!response.ok || response.body === null) {
-						fail(res, response.status, "gateway_error", { upstream: `${gatewayUrl}/v1/assets/runs/${target}` });
+						fail(res, response.status, "gateway_error", { upstream: `${gatewayUrl}${GATEWAY_MEDIA_PREFIX}/${target}` });
 						return;
 					}
 					const buffer = Buffer.from(await response.arrayBuffer());

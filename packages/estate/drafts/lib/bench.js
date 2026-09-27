@@ -609,7 +609,7 @@ function wireUpstreamOf(ref) {
  *  next run composes; inputs = the MERGED wiring; liveIds = the
  *  bench's stage ids after the write; selfId = the row's own id —
  *  self-wiring is a cycle, refused). Throws bench/* named. */
-function admitWiring(row, params, inputs, liveIds, selfId, session) {
+export function admitWiring(row, params, inputs, liveIds, selfId, session) {
     const spells = spellsOf(params);
     for (const [chan, ref] of Object.entries(inputs)) {
         const up = wireUpstreamOf(ref);
@@ -678,19 +678,21 @@ export async function addStageBench(drafts, session, body, admit) {
     if (stageRow(loaded.doc, stageId) !== null) {
         throw new RemoteError("bench/duplicate-stage", "stage id already on the bench: " + stageId, { session, stage: stageId });
     }
-    const row = {
+    // THE ROW IS THE CONTRACT'S (2026-10-10, the audit's Rule 1 — this
+    // arm hand-rolled the whole row, so a stage added here kept a dead
+    // `/v1/assets/runs` path unhealed, skipped the self-naming strip,
+    // and defaulted `outputs` by a SECOND law). One writer shapes a
+    // stage row: normalizeBenchStage. `expected` rides on top, exactly
+    // as it does on every other arm.
+    const row = normalizeBenchStage({
         id: stageId,
         card,
-        // The runner's engine id (flow_inline contract); comfyui is the
-        // only served engine today.
-        engine: typeof body["engine"] === "string" && body["engine"] !== ""
-            ? body["engine"]
-            : "comfyui",
-        params: isRecord(wireParams(body["params"])) ? wireParams(body["params"]) : {},
-        inputs: isRecord(body["inputs"]) ? body["inputs"] : {},
-        outputs: isRecord(body["outputs"]) ? body["outputs"] : { default: "image" },
-        provenance: author,
-    };
+        ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
+        ...(isRecord(wireParams(body["params"])) ? { params: wireParams(body["params"]) } : {}),
+        ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
+        ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
+    }, stageId);
+    row["provenance"] = author;
     if (isRecord(body["expected"]))
         row["expected"] = body["expected"];
     // THE WIRING ADMISSION (phantom-wire cure) — BEFORE the push: the

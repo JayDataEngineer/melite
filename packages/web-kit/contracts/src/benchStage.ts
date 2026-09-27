@@ -178,7 +178,13 @@ export function stageEngineOf(row: Record<string, unknown>): string {
  *  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
  *  than guessing which arm is running.
  */
-export function normalizeBenchStage(row: unknown, index: number): Record<string, unknown> {
+export function normalizeBenchStage(
+  row: unknown,
+  // the id a row with NO id of its own gets: a number mints the
+  // positional `s_<n>`, a STRING is the caller's own id (the drafts
+  // arm mints `s_<max+1>` itself and must not be re-minted)
+  index: number | string,
+): Record<string, unknown> {
   const out: Record<string, unknown> =
     row !== null && typeof row === "object" && !Array.isArray(row)
       ? { ...(row as Record<string, unknown>) }
@@ -189,7 +195,9 @@ export function normalizeBenchStage(row: unknown, index: number): Record<string,
   // it). Only a MISSING or non-string id is filled, so an
   // unaddressable row still becomes addressable.
   const id = out["id"];
-  if (typeof id !== "string") out["id"] = "s_" + String(index);
+  if (typeof id !== "string") {
+    out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+  }
   out["engine"] = stageEngineOf(out);
   const ins = out["inputs"];
   out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins)

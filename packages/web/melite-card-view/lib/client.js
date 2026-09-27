@@ -7026,7 +7026,149 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"zoomWebhook": "vYZV7a_zoomWebhook"
 		};
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const rowCard = out["card"];
+			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) delete healed["model"];
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
+			return out;
+		}
+		/** Normalize a bench's whole stage list — the writers' array arm.
+		*  Group rows (a row with `children`) ride as they are beyond the
+		*  derived fields: they carry no engine or params of their own. */
+		function normalizeBenchStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const out = [];
+			for (const [i, row] of stages.entries()) {
+				const normalized = normalizeBenchStage(row, i);
+				const children = normalized["children"];
+				if (Array.isArray(children)) {
+					delete normalized["engine"];
+					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
+				}
+				out.push(normalized);
+			}
+			return out;
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS;
+		var init_benchStage = __esmMin((() => {
+			CARD_PLANE_ENGINE = "comfyui";
+			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			BIRTH_STRIP_KEYS = [
+				"history",
+				"resultParams",
+				"runStatus",
+				"resolved"
+			];
+			RUN_MEMORY_STRIP_KEYS = [
+				"result",
+				"runStatus",
+				"resolved",
+				"history",
+				"resultParams"
+			];
+			RESTORE_STRIP_KEYS = [
+				"result",
+				"resultParams",
+				"runStatus",
+				"resolved",
+				"history"
+			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
+			WIRE_STAGE_KEYS = [
+				"card",
+				"card_io",
+				"description",
+				"engine",
+				"expected",
+				"id",
+				"inputs",
+				"outputs",
+				"params",
+				"retries",
+				"skip_when",
+				"timeout_s"
+			];
+		}));
+		//#endregion
 		//#region ../melite-run-wire/src/index.ts
+		init_benchStage();
 		/** The terminal statuses — the runs seat's own vocabulary (the settle
 		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
 		const TERMINAL_RUN_STATUSES = [
@@ -7044,7 +7186,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  carry a scheme or lead with / pass verbatim (never double-encoded). */
 		function toRunMediaUrl(runId, url) {
 			if (url === "") return "";
-			if (!/^(https?:\/\/|\/)/.test(url)) return "/melite-media/runs/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
+			if (!/^(https?:\/\/|\/)/.test(url)) return RUN_MEDIA_PREFIX + "/" + encodeURIComponent(runId) + "/" + url.split("/").map((seg) => encodeURIComponent(seg)).join("/");
 			return url;
 		}
 		/** Normalize a runs/status doc: stage rows distilled, bare run-
@@ -50909,133 +51051,6 @@ void main() {
 			return await withRebase("ungroup", doc, sessionKey, signal);
 		}
 		//#endregion
-		//#region ../../web-kit/contracts/src/benchStage.ts
-		/** The run-media prefix a path addresses, or null when it addresses
-		*  none (the caller leaves such a value verbatim — this is a rewrite,
-		*  never a filter). */
-		function runMediaPrefixOf(value) {
-			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
-			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
-			return null;
-		}
-		/** THE ONE SPELLING: a run-media path in any spelling becomes the
-		*  live one. Everything else — a local file, an https URL, a $spell,
-		*  a run-relative name — rides verbatim. */
-		function canonicalRunMediaUrl(value) {
-			const prefix = runMediaPrefixOf(value);
-			if (prefix === null || prefix === "/melite-media/runs") return value;
-			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
-		}
-		/** Rewrite every legacy run-media path inside a value (deep,
-		*  value-preserving, total). */
-		function healRunMediaPaths(value) {
-			if (typeof value === "string") return canonicalRunMediaUrl(value);
-			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
-			if (value !== null && typeof value === "object") {
-				const out = {};
-				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
-				return out;
-			}
-			return value;
-		}
-		/** Strip a list of keys off a row (in place — the arm owns the row). */
-		function stripKeys(row, keys) {
-			for (const k of keys) delete row[k];
-		}
-		/** The engine a BENCH stage row declares — DERIVED when it does
-		*  not say, because the bench IS the card bench: every row in it
-		*  composes a card on the card plane, and a row that names another
-		*  engine says so out loud (the blender/mcp rows the bench carries
-		*  for previews). The run door's stricter rule — an mcp/flow stage
-		*  must NAME its engine — belongs to the flow document, which is a
-		*  different shape with its own gate; a bench row is not that.
-		*
-		*  This is the derivation that used to be written out by hand in
-		*  three writers (the bench normalizer, the add-card door, the run
-		*  door), which is how a GUI row and an agent row became different
-		*  documents. */
-		function stageEngineOf(row) {
-			const own = row["engine"];
-			if (typeof own === "string" && own !== "") return own;
-			return CARD_PLANE_ENGINE;
-		}
-		/** The one normalization every writer runs. Idempotent
-		*  (normalize(normalize(x)) === normalize(x)) and total (never
-		*  throws): a row in, a stage row out, with every derived field
-		*  derived, every run-memory field stripped, every run-media path
-		*  healed, and the era's self-naming model removed.
-		*
-		*  `index` is the row's position — the id fallback names it, so an
-		*  unaddressable row becomes addressable rather than vanishing.
-		*  Run memory is NOT stripped here: that is the birth/restore arms'
-		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
-		*  than guessing which arm is running.
-		*/
-		function normalizeBenchStage(row, index) {
-			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
-			if (typeof out["id"] !== "string") out["id"] = "s_" + String(index);
-			out["engine"] = stageEngineOf(out);
-			const ins = out["inputs"];
-			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
-			const params = out["params"];
-			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
-			const card = out["card"];
-			if (typeof card === "string" && card !== "" && healed["model"] === card) delete healed["model"];
-			out["params"] = healed;
-			const outputs = out["outputs"];
-			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : { default: "image" };
-			return out;
-		}
-		/** Normalize a bench's whole stage list — the writers' array arm.
-		*  Group rows (a row with `children`) ride as they are beyond the
-		*  derived fields: they carry no engine or params of their own. */
-		function normalizeBenchStages(stages) {
-			if (!Array.isArray(stages)) return [];
-			const out = [];
-			for (const [i, row] of stages.entries()) {
-				const normalized = normalizeBenchStage(row, i);
-				const children = normalized["children"];
-				if (Array.isArray(children)) {
-					delete normalized["engine"];
-					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
-				}
-				out.push(normalized);
-			}
-			return out;
-		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS;
-		var init_benchStage = __esmMin((() => {
-			CARD_PLANE_ENGINE = "comfyui";
-			RUN_MEDIA_PREFIX = "/melite-media/runs";
-			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
-			BIRTH_STRIP_KEYS = [
-				"history",
-				"resultParams",
-				"runStatus",
-				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
-			];
-			RESTORE_STRIP_KEYS = [
-				"result",
-				"resultParams",
-				"runStatus",
-				"resolved",
-				"history"
-			];
-			LOAD_CARRY_KEYS = [
-				"result",
-				"runStatus",
-				"history",
-				"resultParams"
-			];
-		}));
-		//#endregion
 		//#region ../../web-kit/formats/src/readFile.ts
 		/**
 		* readFile — THE one read path for every slot-shaped attach, ported
@@ -53249,6 +53264,7 @@ void main() {
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			TRACK_COLORS: () => TRACK_COLORS,
+			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
 			WTYPE_SET: () => WTYPE_SET,
 			ZONE_SET: () => ZONE_SET,
@@ -61083,4 +61099,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="27b14051cfdc1bbd8d49c6bb35011a4ca3e703eb";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="23564a25d9b0a07c472c859bd1579b4fda1b7a65";

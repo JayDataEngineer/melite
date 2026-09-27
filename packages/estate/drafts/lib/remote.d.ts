@@ -134,6 +134,16 @@ export declare function admissionOf(ctx: Context): ((card: string, params: Recor
  *  purchasable). Internal restore arms pass this; nothing over the
  *  wire can. */
 export declare const RESTORED_PROVENANCE: unique symbol;
+/** THE WIRE SPELLING, MAPPED (2026-10-10, the bypass audit's
+ *  CRITICAL-1: the carve compared a SYMBOL that no wire can carry,
+ *  so it never fired — every restored row was judged anyway, and the
+ *  model-repair arm it also guards was dead. A caller cannot forge
+ *  the symbol; it can only say the word `restored`, which is a
+ *  REQUEST to restore, and this is the one place that turns the word
+ *  into the server's authority. Nothing else in the tree needs it:
+ *  the raw string is passed everywhere else and only these two
+ *  comparisons treat it as the marker. */
+export declare const RESTORED_WIRE_SPELLING = "restored";
 /** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
  *  shape 3): after the model admission passes, the registry judges
  *  the DECL's own words — the lane surface + the relation words —

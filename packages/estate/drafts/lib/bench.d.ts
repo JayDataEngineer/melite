@@ -175,6 +175,11 @@ export interface BenchStageRow {
  *  in the injected admission (remote.ts); the domain only carries
  *  the coordinate. */
 export type StageAdmission = (card: string, params: Record<string, unknown>, provenance: unknown) => void;
+/** The wiring admission over ONE row (params = the MERGED view the
+ *  next run composes; inputs = the MERGED wiring; liveIds = the
+ *  bench's stage ids after the write; selfId = the row's own id —
+ *  self-wiring is a cycle, refused). Throws bench/* named. */
+export declare function admitWiring(row: Record<string, unknown>, params: Record<string, unknown>, inputs: Record<string, unknown>, liveIds: readonly string[], selfId: string, session: string): void;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;

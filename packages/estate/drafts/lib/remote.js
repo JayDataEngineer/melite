@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
-import { benchBlockOf } from "./bench.js";
+import { admitWiring, benchBlockOf } from "./bench.js";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
@@ -141,6 +141,7 @@ export function admissionOf(ctx) {
         }
         catch (original) {
             if (provenance !== RESTORED_PROVENANCE
+                && provenance !== RESTORED_WIRE_SPELLING
                 || typeof params["model"] !== "string"
                 || params["model"] === ""
                 || reg.repairStageModel === undefined)
@@ -170,6 +171,20 @@ export function admissionOf(ctx) {
  *  purchasable). Internal restore arms pass this; nothing over the
  *  wire can. */
 export const RESTORED_PROVENANCE = Symbol("melite.restored-provenance");
+/** THE WIRE SPELLING, MAPPED (2026-10-10, the bypass audit's
+ *  CRITICAL-1: the carve compared a SYMBOL that no wire can carry,
+ *  so it never fired — every restored row was judged anyway, and the
+ *  model-repair arm it also guards was dead. A caller cannot forge
+ *  the symbol; it can only say the word `restored`, which is a
+ *  REQUEST to restore, and this is the one place that turns the word
+ *  into the server's authority. Nothing else in the tree needs it:
+ *  the raw string is passed everywhere else and only these two
+ *  comparisons treat it as the marker. */
+export const RESTORED_WIRE_SPELLING = "restored";
+/** The bench documents' id prefix (the bench family, not a flow export). */
+const BENCH_ID_PREFIX = "bench-";
+/** A plain record (the module's own shape guard). */
+const isObj = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
 /** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
  *  shape 3): after the model admission passes, the registry judges
  *  the DECL's own words — the lane surface + the relation words —
@@ -199,8 +214,9 @@ export function laneAdmissionOf(ctx) {
         // seat re-judges the DECL anyway (li-s), so a pre-law archive
         // still teaches at Run — the carve only spares a live composer
         // the a priori voice, and it is no longer purchasable.
-        if (provenance === RESTORED_PROVENANCE)
-            return; // the archive loads; Run teaches
+        if (provenance === RESTORED_PROVENANCE || provenance === RESTORED_WIRE_SPELLING) {
+            return; // the archive loads; the run teaches
+        }
         const verdict = reg.admitStageRelations(card, params);
         if (!verdict.ok) {
             throw new RemoteError("bench/lane-refusal", verdict.error, { card });
@@ -593,10 +609,43 @@ let DraftsRemoteService = (() => {
                 }
                 stage["params"] = merged;
             }
-            for (const key of ["inputs", "inputOutputs"]) {
-                if (key in patch)
-                    stage[key] = patch[key];
+            // THE WIRING ARM ADMITS TOO (2026-10-10, the bypass audit's
+            // CRITICAL-2: the params arm walked the composed admission and
+            // this one did not — so a keystroke through the GUI's param
+            // editor could write a phantom wire or a $spell that the agent's
+            // bench/patch refuses on the identical body. The wiring gate is
+            // the bench domain's own (one implementation): the MERGED edges,
+            // judged against the live set BEFORE the assignment (the cached
+            // record mutates in place below).
+            // ONLY A BENCH ROW HAS A LIVE SET to admit against (2026-10-10):
+            // this door also patches FLOW-export drafts, whose inputs wire
+            // stages of their own document — a different law, judged where
+            // that document is compiled. The wiring gate belongs to the bench.
+            const isBenchDoc = draftId.startsWith(BENCH_ID_PREFIX);
+            if ("inputs" in patch) {
+                const priorInputs = isObj(stage["inputs"]) ? stage["inputs"] : {};
+                const mergedInputs = { ...priorInputs };
+                if (isObj(patch["inputs"])) {
+                    for (const [chan, ref] of Object.entries(patch["inputs"])) {
+                        if (ref === null)
+                            delete mergedInputs[chan];
+                        else
+                            mergedInputs[chan] = ref;
+                    }
+                }
+                const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] : [])
+                    .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
+                    .filter((id) => id !== String(stage["id"] ?? ""));
+                if (isBenchDoc)
+                    admitWiring(stage, isObj(stage["params"]) ? stage["params"] : {}, mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
+                stage["inputs"] = mergedInputs;
             }
+            else if ("inputs" in patch) {
+                // a FLOW-export draft's inputs ride their own document's law
+                stage["inputs"] = patch["inputs"];
+            }
+            if ("inputOutputs" in patch)
+                stage["inputOutputs"] = patch["inputOutputs"];
             // THE BUMP (author patches only — the telemetry law above): the
             // rev advances and the log carries the entry; a telemetry write
             // persists the row WITHOUT touching the bench block (no bump, no

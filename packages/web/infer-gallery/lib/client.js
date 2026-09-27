@@ -40335,6 +40335,47 @@ void main() {
 		}
 		//#endregion
 		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The card plane's engine (the estate composes cards on ComfyUI by
+		*  construction — the card arm's own law). Derived, never authored:
+		*  a stage that names a CARD and no engine is a card stage. A stage
+		*  that names no card and no engine is an mcp/flow stage and must say
+		*  where it runs — never guessed. */
+		const CARD_PLANE_ENGINE = "comfyui";
+		/** The LIVE run-media spelling. */
+		const RUN_MEDIA_PREFIX = "/melite-media/runs";
+		/** The spelling that died with the gateway app. Still SERVED forever
+		*  (the media route mounts both names) and healed on every write
+		*  here — nothing new is ever written dead, and nothing stored ever
+		*  breaks. */
+		const LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
 		/** What a RESTORE strips before re-stamping the stage that actually
 		*  ran (the gallery's law — a bench never shows another run's
 		*  outputs). */
@@ -40348,6 +40389,50 @@ void main() {
 		/** Strip a list of keys off a row (in place — the arm owns the row). */
 		function stripKeys(row, keys) {
 			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const rowCard = out["card"];
+			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) delete healed["model"];
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
+			return out;
 		}
 		//#endregion
 		//#region ../../web-kit/contracts/src/benchSnapshot.ts
@@ -40663,14 +40748,16 @@ void main() {
 					if (params["model"] === card) delete params["model"];
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
-					await loadStagesOntoBench([{
-						id: "s_0",
-						engine: "comfyui",
-						card,
-						params,
-						provenance: "restored",
-						...result !== void 0 ? { result } : {}
-					}], intentSrc.slice(0, 77), deps);
+					const restoredCardRow = {
+						...normalizeBenchStage({
+							id: "s_0",
+							card,
+							params
+						}, 0),
+						provenance: "restored"
+					};
+					if (result !== void 0) restoredCardRow["result"] = result;
+					await loadStagesOntoBench([restoredCardRow], intentSrc.slice(0, 77), deps);
 					return;
 				}
 				const request = side["request"];
@@ -40679,13 +40766,15 @@ void main() {
 					delete params["draft_id"];
 					delete params["test"];
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
-					await loadStagesOntoBench([{
-						id: "s_0",
-						engine: "comfyui",
-						params,
-						provenance: "restored",
-						...result !== void 0 ? { result } : {}
-					}], "restored run", deps);
+					const restoredBareRow = {
+						...normalizeBenchStage({
+							id: "s_0",
+							params
+						}, 0),
+						provenance: "restored"
+					};
+					if (result !== void 0) restoredBareRow["result"] = result;
+					await loadStagesOntoBench([restoredBareRow], "restored run", deps);
 					return;
 				}
 				const flowDraft = typeof flow === "object" && flow !== null ? flow["draft_id"] : void 0;
@@ -41844,4 +41933,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="2f41b513e27fe6d4a26e1e32ef8d8421806b363f";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fe5d9f1d97695f2bf4a9818f1d721acaa429c9f5";
