@@ -218,9 +218,8 @@ export function judgeLaneRelations(
       out.push({
         field: present[1] as string,
         message:
-          'this lane takes at most one of ' +
-          fields.map((f) => quote(f)).join(', ') +
-          ' — the state carries ' + present.length + ' (' + present.map((f) => quote(f)).join(', ') + ')' +
+          'this lane takes at most one of ' + quote(fields) +
+          ' — the state carries ' + present.length + ' (' + quote(present) + ')' +
           (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ' — one slot, one value'),
       })
     }
@@ -236,8 +235,8 @@ export function judgeLaneRelations(
       out.push({
         field: missing[0] as string,
         message:
-          'this lane requires ' + fields.map((f) => quote(f)).join(' and ') +
-          ' — ' + missing.map((f) => quote(f)).join(', ') + ' is not stated' +
+          'this lane requires ' + quote(fields) +
+          ' — ' + quote(missing) + ' is not stated' +
           (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ' — state it, or use a lane that does not need it'),
       })
     }

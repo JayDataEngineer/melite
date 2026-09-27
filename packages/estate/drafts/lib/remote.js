@@ -621,8 +621,20 @@ let DraftsRemoteService = (() => {
             // this door also patches FLOW-export drafts, whose inputs wire
             // stages of their own document — a different law, judged where
             // that document is compiled. The wiring gate belongs to the bench.
+            // A FLOW-EXPORT DOC'S INPUTS ARE ITS OWN DOCUMENT'S LAW
+            // (2026-10-10, the work audit's R2): the merge + null-delete shape
+            // below is the BENCH's wire law (a bench row is patched in place,
+            // so `null` must remove an edge). A flow-export draft replaces its
+            // inputs wholesale, which is what this door did before the wiring
+            // gate was added and what a later cut silently changed. The gate
+            // itself is bench-only — a flow doc's stages wire within their own
+            // document, judged where that document is compiled.
             const isBenchDoc = draftId.startsWith(BENCH_ID_PREFIX);
-            if ("inputs" in patch) {
+            if (!isBenchDoc) {
+                if ("inputs" in patch)
+                    stage["inputs"] = patch["inputs"];
+            }
+            else if ("inputs" in patch) {
                 const priorInputs = isObj(stage["inputs"]) ? stage["inputs"] : {};
                 const mergedInputs = { ...priorInputs };
                 if (isObj(patch["inputs"])) {
@@ -636,13 +648,8 @@ let DraftsRemoteService = (() => {
                 const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] : [])
                     .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
                     .filter((id) => id !== String(stage["id"] ?? ""));
-                if (isBenchDoc)
-                    admitWiring(stage, isObj(stage["params"]) ? stage["params"] : {}, mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
+                admitWiring(stage, isObj(stage["params"]) ? stage["params"] : {}, mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
                 stage["inputs"] = mergedInputs;
-            }
-            else if ("inputs" in patch) {
-                // a FLOW-export draft's inputs ride their own document's law
-                stage["inputs"] = patch["inputs"];
             }
             if ("inputOutputs" in patch)
                 stage["inputOutputs"] = patch["inputOutputs"];

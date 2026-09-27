@@ -40428,12 +40428,28 @@ void main() {
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const rowCard = out["card"];
-			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) delete healed["model"];
+			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
+				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
+			}
 			out["params"] = healed;
 			const outputs = out["outputs"];
 			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
 			return out;
 		}
+		/**
+		* THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
+		* audit's R5). `anny` is the one: the card boards the `anny` family,
+		* and its compose declares `requiresModel: false` (its weights ride
+		* provisions, not a model choice). A row stating `model: 'anny'` is a
+		* real boarding, not the era's family-less compose residue — so the
+		* self-naming strip leaves it alone, the row is judged with its model
+		* present, and the read-back shows what the operator wrote.
+		*
+		* A new card whose id is also a family id must be ADDED here, and the
+		* self-naming-strip wall fails when a card's own id is a family in the
+		* facts file but is missing from this list.
+		*/
+		const SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny"]);
 		//#endregion
 		//#region ../../web-kit/contracts/src/benchSnapshot.ts
 		function isRecord(v) {
@@ -41933,4 +41949,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fe5d9f1d97695f2bf4a9818f1d721acaa429c9f5";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f71f5822a4182891b8d01be8ffb942a30c0e56e0";

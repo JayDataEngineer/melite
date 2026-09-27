@@ -7097,7 +7097,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const rowCard = out["card"];
-			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) delete healed["model"];
+			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
+				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
+			}
 			out["params"] = healed;
 			const outputs = out["outputs"];
 			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
@@ -7124,7 +7126,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -7170,6 +7172,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"timeout_s"
 			];
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny"]);
 		}));
 		//#endregion
 		//#region ../melite-run-wire/src/index.ts
@@ -9505,6 +9508,27 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					out.push({
 						field: everyMember.find(stated) ?? everyMember[0],
 						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
+					});
+				}
+				for (const row of rel.at_most_one ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (fields.length < 2) continue;
+					const present = fields.filter(stated);
+					if (present.length <= 1) continue;
+					out.push({
+						field: present[1],
+						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
+					});
+				}
+				for (const row of rel.required ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					const missing = fields.filter((f) => !stated(f));
+					if (missing.length === 0) continue;
+					out.push({
+						field: missing[0],
+						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
 					});
 				}
 			}
@@ -53269,6 +53293,7 @@ void main() {
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -61106,4 +61131,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="feeac1e8ac33b2b4e5884fea678897acebc861d3";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a783dccdca44ccb36239b51ac7b3a131c9d8f6ee";
