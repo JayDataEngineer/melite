@@ -849,8 +849,33 @@ export class CardRegistryService extends Service {
         code: "invalid_request",
       };
     }
+    // THE VALIDATE SEAT RIDES THE SAME PREPARED CARD (the final live
+    // verification, FIX A: this arm composed the raw FAMILY atom, so
+    // it missed BOTH run-seat fixes — an unoffered address answered
+    // ok:true here while the bench refused it, and a LAWFUL
+    // `variant: base` clone was refused here ("fires nothing outside
+    // the Base variant") while the bench admitted the same state. The
+    // seats disagreed in BOTH directions because this one door never
+    // shared the run seat's preparation: the board check, the lane
+    // judgment and the resolved route all live there.)
+    const mid: string = typeof (params as Record<string, unknown>)["model"] === "string"
+      ? (params as Record<string, unknown>)["model"] as string
+      : fam;
+    const boardCheck = this.admitStageModel(card, mid);
+    if (!boardCheck.ok) return { message: boardCheck.error, code: boardCheck.code };
+    let prep: PreparedCard;
     try {
-      await composeOnce(this, card, fam, params, "", "1");
+      prep = prepareCardParams(this, params, mid, "1");
+    } catch (e) {
+      if (e instanceof CardArmError) return { message: e.message, code: e.code };
+      throw e;
+    }
+    const laneRefusal = this.laneVerdict(card, params);
+    if (laneRefusal !== null) {
+      return { message: laneRefusal, code: "lane_refusal" };
+    }
+    try {
+      await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");
       return null;
     } catch (e) {
       if (e instanceof CardArmError) {

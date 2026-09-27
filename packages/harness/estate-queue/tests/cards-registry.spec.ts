@@ -384,8 +384,15 @@ describe("phase2Card output resolution", () => {
 
 describe("composeValidateCard (the validate refusal voice)", () => {
   it("a clean compose answers null", async () => {
-    composeOnce.mockResolvedValueOnce({ graph: true } as never);
-    expect(await svc.composeValidateCard("c", "f", {})).toBeNull();
+    // the arm PREPARES before it composes (the final live
+    // verification, FIX A: it used to compose the raw family atom,
+    // so it missed the board check and the resolved route — the
+    // validate seat and the bench disagreed in both directions).
+    // An unregistered card is now a refusal, not a clean answer.
+    composeOnce.mockResolvedValueOnce({ graph: true } as never); // the shared queue's slot
+    const ans = await svc.composeValidateCard("c", "f", {});
+    expect(ans).not.toBeNull();
+    expect(ans?.message).toMatch(/no registered card definition|no model unit|not offered/i);
   });
   // THE VALIDATE-START PARITY LAW (2026-10-10, the operator's
   // question: "HOW DID THE VALIDATE RETURN SUCCESS WHEN THE INPUT
@@ -407,17 +414,23 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     expect(composeOnce).not.toHaveBeenCalled();
   });
   it("a CardArmError refusal maps to message+code", async () => {
+    // the arm PREPARES first, so the compose is reached through a
+    // card whose family the fixture seats (upscale-tools, the card
+    // behind that flow)
+    vi.mocked(composeOnce).mockReset();
     composeOnce.mockRejectedValueOnce(
       new (await import("../src/cardsArmError.ts")).CardArmError(400, "the refusal", "card_compose"),
     );
-    expect(await svc.composeValidateCard("c", "f", {})).toEqual({
-      message: "the refusal",
-      code: "card_compose",
-    });
+    const ans = await svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" });
+    expect(ans?.message).toBe("the refusal");
+    expect(ans?.code).toBe("card_compose");
   });
   it("a non-card error rethrows (never swallowed)", async () => {
+    vi.mocked(composeOnce).mockReset();
     composeOnce.mockRejectedValueOnce(new Error("wire died"));
-    await expect(svc.composeValidateCard("c", "f", {})).rejects.toThrow(/wire died/);
+    await expect(
+      svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" }),
+    ).rejects.toThrow(/wire died/);
   });
 });
 
