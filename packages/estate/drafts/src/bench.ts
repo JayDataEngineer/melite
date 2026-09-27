@@ -471,6 +471,46 @@ export function getBench(
     });
   }
   const doc: Record<string, unknown> = rec.doc as unknown as Record<string, unknown>;
+  // THE SERVE-TIME CRIME GATE (2026-10-10, the operator's live
+  // report: a bench doc born BEFORE the bench/self-wire law
+  // persisted its crime and served silently until a run tripped a
+  // generic wall). Scoped NARROW, by design: the read path is
+  // deliberately tolerant of loose-but-harmless shapes (junk cells
+  // and dead wires are refused with precise voices at the run door
+  // and at the next write door; the patch-tolerance laws pin that
+  // they serve). The two crimes refused HERE are the ones that
+  // compose degenerately: a SELF-WIRE (a cycle — the run's generic
+  // no-FromStage voice hid it) and a wire to a DEAD STAGE (its
+  // source removed after the fact). Whatever wrote the doc — an
+  // older door, a hand edit — the store is held at read.
+  if (Array.isArray(doc["stages"])) {
+    for (const st of doc["stages"] as unknown[]) {
+      if (typeof st !== "object" || st === null) continue;
+      const row = st as Record<string, unknown>;
+      const id = typeof row["id"] === "string" ? row["id"] : undefined;
+      const ins = row["inputs"];
+      if (typeof ins !== "object" || ins === null || Array.isArray(ins)) continue;
+      for (const [chan, ref] of Object.entries(ins as Record<string, unknown>)) {
+        const rr = ref as Record<string, unknown>;
+        if (typeof rr !== "object" || rr === null || typeof rr["stage"] !== "string") continue;
+        const up = rr["stage"] as string;
+        if (id !== undefined && up === id) {
+          throw new RemoteError(
+            "bench/self-wire",
+            "input '" + chan + "' wires its own stage '" + id + "' — a cycle composes nothing. " +
+              "This wire predates the bench door's self-wire law and persisted; clear it (rewire the input with no source, or wire a real prior stage).",
+            { session, stage: id, input: chan },
+          );
+        }
+        // A wire to a stage NOT on the bench (its source removed
+        // later, or a crafted-log doc) stays the write doors' and
+        // the run door's voice — crafted-undo docs may hold one
+        // legitimately between mutations (bench-undo's inverse
+        // table); serve must not brick the bench a fix needs to
+        // open.
+      }
+    }
+  }
   const block: BenchBlock = benchBlockOf(doc);
   return {
     draft_id: draftId,

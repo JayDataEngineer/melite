@@ -1,7 +1,7 @@
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import { ensureBench, getBench, patchBench, addStageBench, rewireBench, removeStageBench } from "../src/bench.ts";
-import { boot, codeOf } from "./bench-helpers.ts";
+import { boot, codeOf, seed } from "./bench-helpers.ts";
 
 // ── the wiring admission (2026-09-15, the phantom-wire cure) ─────
 // The burn: an agent wired inputs:{image:{stage:"stage-1"}} on an
@@ -245,4 +245,35 @@ describe("the intent heuristic (a removed intent re-points, a kept one stands)",
     await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
     assert.equal(getBench(drafts, "s").intent, "bench");
   });
-});
+
+  // THE SERVE-TIME RE-ADMISSION (2026-10-10, the operator's live
+  // report: a doc born before the self-wire law served silently
+  // until a run tripped a generic wall). The write doors guard
+  // WRITES; the store is guarded at READ — a criminal doc refuses
+  // at serve, in its own name, whatever wrote it (an older door, a
+  // hand edit, a corrupted write).
+  test("a persisted self-wire refuses AT SERVE — named, before any run", async () => {
+    const drafts = await boot();
+    await seed(drafts, "old", {
+      stages: [
+        { id: "s_0", card: "image-edit", params: { prompt: "x" },
+          inputs: { input_images: { stage: "s_0", output: "default" } } },
+      ],
+    });
+    const refusal = await codeOf((async () => { getBench(drafts, "old") })());
+    assert.match(refusal, /bench\/self-wire/);
+  });
+
+  test("a phantom-wire (source stage gone) still SERVES — the write and run doors own that voice (crafted-undo docs hold one between mutations)", async () => {
+    const drafts = await boot();
+    await seed(drafts, "ghost", {
+      stages: [
+        { id: "s_1", card: "image-edit", params: { prompt: "x" },
+          inputs: { input_images: { stage: "s_9", output: "default" } } },
+      ],
+    });
+    // serve does NOT brick the bench a fix needs to open
+    const row = getBench(drafts, "ghost");
+    assert.equal(row.session, "ghost");
+  });
+})
