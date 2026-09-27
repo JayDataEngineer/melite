@@ -281,7 +281,7 @@ export function admissionOf(ctx: Context): ((card: string, params: Record<string
       return;
     } catch (original) {
       if (
-        provenance !== "restored"
+        provenance !== RESTORED_PROVENANCE
         || typeof params["model"] !== "string"
         || params["model"] === ""
         || reg.repairStageModel === undefined
@@ -306,6 +306,13 @@ export function admissionOf(ctx: Context): ((card: string, params: Record<string
   };
 }
 
+/** The marker that says "this row is being restored BY US" — a
+ *  symbol, so a request body carrying the string "restored" buys
+ *  nothing (2026-10-10, the door audit's HIGH-2: the carve was
+ *  purchasable). Internal restore arms pass this; nothing over the
+ *  wire can. */
+export const RESTORED_PROVENANCE: unique symbol = Symbol("melite.restored-provenance");
+
 /** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
  *  shape 3): after the model admission passes, the registry judges
  *  the DECL's own words — the lane surface + the relation words —
@@ -325,7 +332,18 @@ export function laneAdmissionOf(
   const reg = resolverOf(ctx);
   if (reg === null || reg.admitStageRelations === undefined) return undefined;
   return (card: string, params: Record<string, unknown>, provenance: unknown): void => {
-    if (provenance === "restored") return; // the archive loads; Run teaches
+    // THE CARVE IS THE SERVER'S, NOT THE CLIENT'S (2026-10-10, the
+    // door audit's HIGH-2): `provenance` arrives in the request body,
+    // and melite_construct's load verb forwards it verbatim — so a
+    // caller could exempt any state by claiming "restored", and the
+    // one receipt for the carve in the suite WAS that bypass. The
+    // carve now rides a marker the SERVER sets, never a field a
+    // caller writes: a domain-internal restore (bench-load) passes
+    // the symbol below, and a client claim is just a string. The run
+    // seat re-judges the DECL anyway (li-s), so a pre-law archive
+    // still teaches at Run — the carve only spares a live composer
+    // the a priori voice, and it is no longer purchasable.
+    if (provenance === RESTORED_PROVENANCE) return; // the archive loads; Run teaches
     const verdict = reg.admitStageRelations!(card, params);
     if (!verdict.ok) {
       throw new RemoteError("bench/lane-refusal", verdict.error, { card });
@@ -412,6 +430,25 @@ function docIndexFields(doc: unknown): { model: string; name: string } {
 
 /** The drafts Remote owner: list/get over the storage domain. */
 export class DraftsRemoteService extends TypertRemoteService {
+  /** THE BENCH ADMISSION THIS DOOR OWNS (2026-10-10, the door
+   *  audit's CRITICAL): the same composed admission the bench
+   *  doors walk, injected at construction from the resolver seat. A
+   *  bench doc is a drafts doc ("bench-<session>" satisfies
+   *  DRAFT_ID_RE), and the GUI's param editor rides THIS door — so
+   *  without the seat a keystroke could write a stage the agent's
+   *  bench/patch would refuse. Registry-less lanes get undefined
+   *  (the standing degrade, never a throw). */
+  /** Read LAZILY, never at construction (2026-10-10): the drafts row
+   *  can be constructed before the cards registry seats, and a
+   *  captured `undefined` would be a permanent silent degrade — the
+   *  exact class of hole this door was closed for. One resolver
+   *  lookup per write, and the seat is whatever is live then. */
+  private benchAdmit():
+    | ((card: string, params: Record<string, unknown>, provenance: unknown) => void)
+    | undefined {
+    return benchAdmissionOf(this.ctx);
+  }
+
   constructor(ctx: Context) {
     super(ctx, "draftsRemote", { namespace: "drafts" });
   }
@@ -719,6 +756,23 @@ export class DraftsRemoteService extends TypertRemoteService {
       for (const k of Object.keys(incoming)) {
         if (incoming[k] === null) delete merged[k];
         else merged[k] = incoming[k];
+      }
+      // THE DRAFTS DOOR IS A BENCH DOOR (2026-10-10, the door
+      // audit's CRITICAL): bench docs live in THIS table (a
+      // "bench-<session>" id satisfies DRAFT_ID_RE), and the GUI's
+      // param editor rides exactly this call (card-view's
+      // patchStageParams) — so every keystroke edited a live stage
+      // with the model board AND the lane relations unjudged, while
+      // the agent's bench/patch refused the identical body. The
+      // merged view (never the patch arm alone — a per-key merge
+      // composes with what the row already carried) walks the same
+      // composed admission, BEFORE the assignment: the domain's
+      // cached record is mutated in place below, so a refusal after
+      // the assignment would leak the refused merge.
+      const stageCard = typeof stage["card"] === "string" ? stage["card"] : ""
+      const admit = this.benchAdmit()
+      if (stageCard !== "" && admit !== undefined) {
+        admit(stageCard, merged, stage["provenance"])
       }
       stage["params"] = merged;
     }
@@ -1113,7 +1167,7 @@ export class BenchRemoteService extends TypertRemoteService {
   ): Promise<BenchUndoRow> {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
-    const row = await undoBench(drafts, session, doc);
+    const row = await undoBench(drafts, session, doc, benchAdmissionOf(this.ctx));
     notifyBenchChange(session);
     return row;
   }

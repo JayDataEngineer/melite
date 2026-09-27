@@ -572,28 +572,33 @@ export class CardRegistryService extends Service {
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
     if (famRow === undefined) return null; // familyless card unit — no lane
-    if (famRow.params === undefined) return null; // legacy family: no surface declared
+    // A FAMILY THAT DECLARES RELATIONS BUT NO SURFACE still gets its
+    // words judged (2026-10-10, the DECL audit's MEDIUM-7): the early
+    // return here used to skip relation collection entirely, so a
+    // surface-less family with a declared law bound NOTHING, silently.
+    // laneSurfaceOf(null, …) already returns null, and judgeLane-
+    // Surface(null, …) judges nothing — dropping the return costs
+    // legacy families exactly the nothing they had.
     let sel: VariantSelection;
     try {
       sel = selectCardVariant(mid, famRow, params, "admission");
     } catch {
       return null; // the run door's voice, same tolerance as above
     }
-    // THE ROUTE-LENS LAW (probe receipt, 2026-10-10): a
-    // route-addressed row (model 'qwen3-tts-voicedesign-base')
-    // presents the family matrix with the HEAD re-addressed — its
-    // selection math picks the re-addressed customvoice row, but
-    // the LANE the run composes is the route's OWNING variant (the
-    // row's lane_inputs carry the owner's merged lane: synth_lane
-    // clone). A stated body variant still wins (R1); unstated, the
-    // route names its lane and the owner's surface is the truth.
-    let laneVariantId = sel.variantId;
-    if (mid !== prep.fam && (params["variant"] === undefined || params["variant"] === null || params["variant"] === "")) {
-      const ownerVariant = famRow.variants.find(
-        (v) => v.route === mid || (v.cells ?? []).some((c) => c.route === mid),
-      );
-      if (ownerVariant !== undefined) laneVariantId = ownerVariant.id;
-    }
+    // THE LANE IS THE SELECTED VARIANT (probe receipt, corrected
+    // 2026-10-10 — the first cut got this backwards): a route
+    // address ('qwen3-tts-base') does NOT by itself name the clone
+    // lane. The run composes from the FAMILY row plus the selected
+    // variant's resolver_defaults, and a route's own lane_inputs
+    // reach the card only when those stamps carry the route address
+    // (variant:'base' → model:'qwen3-tts-base'). A bare route
+    // address with no body variant selects the family HEAD and
+    // composes the synth lane, where a stated ref_audio fires
+    // nothing. So the judged lane is exactly the selection, never
+    // the address: reading the address' facts row (which does carry
+    // synth_lane:'clone') admitted states the run then refused — a
+    // false admit, the worse half of the two errors.
+    const laneVariantId = sel.variantId;
     const variantRow: VariantRow | undefined = famRow.variants.find(
       (v) => v.id === laneVariantId,
     );
@@ -828,7 +833,16 @@ export class CardRegistryService extends Service {
     // voice — ONE spelling (laneVerdict), the same judgment the form
     // renders and the write door refuses on, so no card needs a
     // hand-written copy of the law to be safe at Run.
-    const laneRefusal = this.laneVerdict(prep.card, prep.params);
+    //
+    // THE BODY, NOT THE PREPARED PARAMS (the second probe, the same
+    // hour): `model` is a card-envelope key — liftCardParams consumes
+    // it — so judging prep.params here reads no model at all and
+    // judges NOTHING. The write door judges the body, so the run seat
+    // judges the body: laneVerdict runs its own prepareCardParams (one
+    // resolution, the same one composeOnce gets) and reaches the same
+    // verdict. (Confirmed by the door audit's receipt: judging
+    // prep.params made every state admit.)
+    const laneRefusal = this.laneVerdict(prep.card, body);
     if (laneRefusal !== null) {
       throw phaseRefusal("1", laneRefusal);
     }

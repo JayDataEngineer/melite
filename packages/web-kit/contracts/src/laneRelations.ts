@@ -84,8 +84,16 @@ export interface LaneViolation {
 export function laneBlank(v: unknown): boolean {
   if (v === undefined || v === null) return true;
   if (typeof v === 'string') return v.trim() === '';
-  if (Array.isArray(v)) return v.length === 0;
-  if (typeof v === 'object') return Object.keys(v as Record<string, unknown>).length === 0;
+  if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
+  if (typeof v === 'object') {
+    const proto: unknown = Object.getPrototypeOf(v);
+    // A NON-PLAIN OBJECT IS A VALUE, NOT A BAG (2026-10-10, the audit):
+    // a Date, a Map, a boxed Number — none of them is a statement
+    // about a field, and calling them blank let a Map through as
+    // "stated" while an empty {} read as unstated.
+    if (proto !== null && proto !== Object.prototype) return false;
+    return Object.values(v as Record<string, unknown>).every((entry) => laneBlank(entry));
+  }
   return false;
 }
 
@@ -107,9 +115,15 @@ export function judgeLaneRelations(
     Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name])
 
   for (const rel of relations) {
+    // A MALFORMED ROW JUDGES NOTHING (2026-10-10, the audit): the
+    // judge must REFUSE, never throw, on a declaration that lost a
+    // member in transit (the frozen facts path is unvalidated, and a
+    // throw here would surface as an estate crash, not a voice).
+    if (rel === null || typeof rel !== 'object') continue;
     for (const row of rel.requires ?? []) {
+      if (row === null || typeof row !== 'object' || typeof row.field !== 'string') continue
       if (!stated(row.field)) continue
-      const missing = row.needs.filter((n) => !stated(n))
+      const missing = (row.needs ?? []).filter((n) => !stated(n))
       if (missing.length === 0) continue
       out.push({
         field: row.field,
@@ -121,6 +135,8 @@ export function judgeLaneRelations(
       })
     }
     for (const row of rel.conflicts ?? []) {
+      if (row === null || typeof row !== 'object') continue
+      if (typeof row.a !== 'string' || typeof row.b !== 'string') continue
       if (!stated(row.a) || !stated(row.b)) continue
       out.push({
         field: row.a,
@@ -130,7 +146,9 @@ export function judgeLaneRelations(
       })
     }
     for (const row of rel.together ?? []) {
-      const members = row.fields
+      if (row === null || typeof row !== 'object') continue
+      const members = Array.isArray(row.fields) ? row.fields : []
+      if (members.length === 0) continue
       if (!members.some(stated)) continue
       const missing = members.filter((m) => !stated(m))
       if (missing.length === 0) continue
@@ -138,25 +156,40 @@ export function judgeLaneRelations(
         field: members.find(stated) ?? members[0],
         message:
           'fields ' + quote(members) + ' ride together on this lane (state all or none)' +
-          (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ''),
+          (row.cure !== undefined && row.cure !== ''
+            ? ' — ' + row.cure
+            : ' — state ' + quote(members) + ' together, or drop ' + quote(members)),
       })
     }
     for (const row of rel.either_or ?? []) {
-      const everyMember = row.groups.flat()
+      if (row === null || typeof row !== 'object') continue
+      const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : []
+      if (groups.length === 0) continue
+      const everyMember = groups.flat()
       if (!everyMember.some(stated)) continue // blank = in progress, never a write refusal
-      const complete = row.groups.filter((g) => g.every(stated))
+      const complete = groups.filter((g) => g.every(stated))
       if (complete.length > 0) continue
       out.push({
         field: everyMember.find(stated) ?? everyMember[0],
         message:
           'this lane takes one of ' +
-          row.groups.map((g) => '(' + quote(g) + ')').join(' or ') +
+          groups.map((g) => '(' + quote(g) + ')').join(' or ') +
           ' — the stated combination completes none of them' +
-          (row.cure !== undefined && row.cure !== '' ? ' — ' + row.cure : ''),
+          (row.cure !== undefined && row.cure !== ''
+            ? ' — ' + row.cure
+            : ' — state one complete source, or drop the stated half'),
       })
     }
   }
-  return out
+  // THE DUPLICATE-FOLD RULE (2026-10-10, the audit): a family and one
+  // of its variants may declare the SAME row; both layers fire and the
+  // state heard it twice. One law, one sentence.
+  const seen = new Set<string>()
+  return out.filter((v) => {
+    if (seen.has(v.message)) return false
+    seen.add(v.message)
+    return true
+  })
 }
 
 /** Judge the LANE SURFACE (the parameter-surface half of the same
@@ -169,11 +202,14 @@ export function judgeLaneRelations(
  *  declares none) judges nothing — legacy families keep the card's
  *  union table until they declare. */
 export function judgeLaneSurface(
-  surface: readonly string[] | null,
+  surface: readonly string[] | null | undefined,
   schemaFields: readonly string[],
   values: Record<string, unknown>,
 ): LaneViolation[] {
-  if (surface === null) return []
+  // undefined IS null here (2026-10-10, the audit): a served JSON
+  // block with no `lanes` hands undefined, and a crash at the message
+  // path would be an estate crash, never a refusal.
+  if (surface === null || surface === undefined) return []
   const declared = new Set(surface)
   const out: LaneViolation[] = []
   for (const name of schemaFields) {
@@ -199,6 +235,8 @@ export function laneSurfaceOf(
   variantParams: readonly string[] | null | undefined,
 ): readonly string[] | null {
   if (familyParams === undefined || familyParams === null) return null
-  if (variantParams === undefined || variantParams === null) return familyParams
+  // A COPY, NEVER AN ALIAS (2026-10-10, the audit): returning the
+  // caller's own array let a "pure" judge hold live state.
+  if (variantParams === undefined || variantParams === null) return [...familyParams]
   return [...new Set([...familyParams, ...variantParams])]
 }

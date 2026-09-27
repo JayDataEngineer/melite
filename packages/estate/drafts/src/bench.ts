@@ -34,6 +34,15 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly card: string;
       readonly offered: readonly string[];
     };
+    /** THE LANE REFUSAL (2026-10-10, the YOU_ARE_A_LIAR fix shape 3):
+     *  the DECL's own words — the lane's declared surface + relation
+     *  words — refused the state at write time, in the field's voice,
+     *  with the cure in the message. Declared here so typed clients
+     *  and codecs carry the shape (the door audit's MEDIUM-5: the
+     *  code shipped undeclared and the runtime only agreed by luck). */
+    "bench/lane-refusal": {
+      readonly card: string;
+    };
     /** The CAS law: expect_rev missing, or the bench moved under the
      *  caller — current_rev is the rev to re-read from. */
     "bench/cas-conflict": {
@@ -800,6 +809,21 @@ export type StageAdmission = (
  * true array. */
 const wireParams = (v: unknown): unknown => (isRecord(v) ? unwrapItemArrays(v) : v)
 
+/** Admit one RESTORED stage state (the undo arms): the same seat,
+ *  no restored carve — an undo rewrites live-authored params, so it
+ *  is judged like any other write. A stage with no card row (an mcp
+ *  or flow id) is not this seat's business. */
+function admitRestored(
+  admit: StageAdmission | undefined,
+  stage: Record<string, unknown>,
+  params: Record<string, unknown>,
+): void {
+  if (admit === undefined) return;
+  const card = stage["card"];
+  if (typeof card !== 'string' || card === '') return;
+  admit(card, params, stage["provenance"]);
+}
+
 function admitStage(
   admit: StageAdmission | undefined,
   card: unknown,
@@ -1373,6 +1397,7 @@ export async function undoBench(
   drafts: Domain<DraftsDomainSpec>,
   session: string,
   body: Record<string, unknown>,
+  admit?: StageAdmission,
 ): Promise<BenchUndoRow> {
   refuseUnknown(body, UNDO_KEYS);
   const loaded: LoadedBench = await loadBench(drafts, session);
@@ -1416,7 +1441,7 @@ export async function undoBench(
     );
   }
   const stagesBefore: Record<string, unknown>[] = stagesOf(loaded.doc);
-  for (const e of targets) applyInverse(loaded.doc, e);
+  for (const e of targets) applyInverse(loaded.doc, e, admit);
   const undone: number[] = targets
     .map((e: BenchEntry): number => e.rev)
     .sort((a: number, b: number): number => a - b);
@@ -1442,6 +1467,7 @@ export async function undoBench(
 function applyInverse(
   doc: Record<string, unknown>,
   e: BenchEntry,
+  admit?: StageAdmission,
 ): void {
   const inv: Record<string, unknown> = isRecord(e.inverse)
     ? e.inverse
@@ -1464,6 +1490,15 @@ function applyInverse(
     if (Array.isArray(added)) {
       for (const k of added) delete cur[k];
     }
+    // UNDO IS A WRITE (2026-10-10, the door audit's HIGH-3): the
+    // inverse restores params wholesale, so without this an undo was
+    // the laundering path — plant a poison through a door that is not
+    // judged, patch it clean, then undo back onto the poison. The
+    // restored state walks the same composed admission BEFORE it
+    // lands, and NO restored exemption applies: these were
+    // live-authored states, so re-judging is safe and a refusal is
+    // loud.
+    admitRestored(admit, st, cur);
     st["params"] = cur;
     return;
   }

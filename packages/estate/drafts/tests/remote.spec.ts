@@ -30,6 +30,7 @@ import { ensureBench, onBenchChange, notifyBenchChange } from "../src/bench.ts";
 import {
   BenchRemoteService,
   DraftsRemoteService,
+  RESTORED_PROVENANCE,
   STAGE_PATCH_KEYS,
   resultOutputUrls,
   sameResultOutputs,
@@ -1474,7 +1475,11 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
       "the model admission ran on both writes (composed, in order)");
   });
 
-  test("RESTORED rows are exempt — the archive loads, the Run refusal teaches", async () => {
+  test("a CLIENT-CLAIMED restored row is judged like any other (the carve is the server's)", async () => {
+    // The forge the audit found: `provenance: "restored"` arrives in
+    // the request body and used to exempt the state outright. It is
+    // now just a string; the carve rides a server symbol nothing over
+    // the wire can carry.
     const { ctx } = await bootCtx();
     let judged = 0;
     ctx.provide("cardRegistry", {
@@ -1484,27 +1489,45 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
         { ok: true } | { ok: false; error: string } => {
         judged += 1;
         return params["design_prompt"] !== undefined
-          ? { ok: false, error: "lane refuses" }
+          ? { ok: false, error: "lane refuses: the persona export needs both halves" }
           : { ok: true };
       },
     });
     const bench = new BenchRemoteService(ctx);
-    // a restored history load carrying the wound lands untouched
-    const row = await bench.ensure({
-      session: "lane-r",
+    // a caller claiming restored gets the a priori voice, not a pass
+    const claimed = await codeOf(bench.ensure({
+      session: "lane-forge",
       stages: [{
         id: "s_0", card: "tts", provenance: "restored",
         params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
       }],
+    }, sig));
+    assert.ok(claimed.startsWith("bench/lane-refusal|"), "a claimed restore is judged: " + claimed);
+    assert.equal(judged, 1, "the claimed row reached the judge");
+  });
+
+  test("a SERVER-ARMED restore is exempt (the archive loads; the Run seat teaches)", async () => {
+    const { ctx } = await bootCtx();
+    let judged = 0;
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } => ({ ok: true }),
+      admitStageRelations: (card: string, params: Record<string, unknown>):
+        { ok: true } | { ok: false; error: string } => {
+        judged += 1;
+        return { ok: true };
+      },
+    });
+    const bench = new BenchRemoteService(ctx);
+    const row = await bench.ensure({
+      session: "lane-r",
+      stages: [{
+        id: "s_0", card: "tts", provenance: RESTORED_PROVENANCE,
+        params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
+      }],
     }, sig);
     assert.equal(row.created, true);
-    // a live composer naming the same state gets the a priori voice
-    const refusal = await codeOf(bench.addStage("lane-r", {
-      card: "tts", params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
-      expect_rev: 0,
-    }, sig));
-    assert.ok(refusal.startsWith("bench/lane-refusal|"),
-      "the live composer gets the a priori voice: " + refusal);
+    assert.equal(judged, 0, "the server-armed restore never reached the lane judge");
   });
 
   test("a registry without the lane seat admits as before (registry-less lanes never throw)", async () => {
@@ -1519,5 +1542,49 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
       expect_rev: 0,
     }, sig);
     assert.equal(row.stage, "s_0");
+  });
+});
+
+// ── THE DRAFTS DOOR IS A BENCH DOOR (2026-10-10, the door audit's
+// CRITICAL): bench docs live in the drafts table ("bench-<session>"
+// satisfies DRAFT_ID_RE) and the GUI's param editor rides THIS door
+// (card-view's patchStageParams), so before the composed admission
+// reached it, every keystroke edited a live stage with the model
+// board and the lane relations unjudged — while the agent's
+// bench/patch refused the identical body.
+describe("drafts.patch admits the MERGED view (the GUI param editor's door)", () => {
+  test("a keystroke that completes the export pair's wound refuses; the cured edit lands", async () => {
+    const { ctx, domain } = await bootCtx();
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } => ({ ok: true }),
+      admitStageRelations: (card: string, params: Record<string, unknown>):
+        { ok: true } | { ok: false; error: string } =>
+        params["design_prompt"] !== undefined && params["voice_name"] === undefined
+          ? { ok: false, error: "lane 'qwen3-tts/customvoice' refuses the state: fields 'voice_name' + 'design_prompt' ride together on this lane — the persona export needs both halves" }
+          : { ok: true },
+    });
+    // seed a bench-shaped draft with one stage (the same table the
+    // bench verbs write)
+    await domain.table("docs").put("bench-main", {
+      rev: 1,
+      doc: {
+        stages: [{ id: "s_0", card: "tts", params: { model: "qwen3-tts", variant: "customvoice", text: "hello" } }],
+      },
+    });
+    const drafts = new DraftsRemoteService(ctx);
+    const poison = await codeOf(drafts.patch("bench-main", "s_0", {
+      params: { design_prompt: "a warm narrator" },
+    }, null, sig));
+    assert.ok(poison.startsWith("bench/lane-refusal|"), "the GUI door refuses: " + poison);
+    // the refused edit did NOT land (the domain's cached record is
+    // mutated in place — the admission must precede the assignment)
+    const row = await domain.table("docs").get("bench-main") as { doc: { stages: Array<{ params: Record<string, unknown> }> } };
+    assert.equal(row.doc.stages[0]!.params["design_prompt"], undefined, "the refused merge leaked nothing");
+    // the cured edit lands
+    const ok = await drafts.patch("bench-main", "s_0", {
+      params: { design_prompt: "a warm narrator", voice_name: "warm_1" },
+    }, null, sig);
+    assert.equal(ok.delivered, true);
   });
 });

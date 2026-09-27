@@ -39,6 +39,12 @@ import {
   ModelError,
   ModelRow,
   ModelDecl as ModelDeclSchema,
+  VariantRow as VariantRowSchema,
+  ParamRelationWords as ParamRelationWordsSchema,
+  ParamRequiresRow as ParamRequiresRowSchema,
+  ParamConflictsRow as ParamConflictsRowSchema,
+  ParamTogetherRow as ParamTogetherRowSchema,
+  ParamEitherOrRow as ParamEitherOrRowSchema,
   type CellRow,
   type ModelDecl,
   type VariantRow,
@@ -115,6 +121,74 @@ function validateDecl(decl: ModelDecl): void {
       `model row ${String(decl.id)}: unknown key(s) refused (extra: forbid — the law): ${stripped.sort().join(", ")}`,
     );
   }
+  // THE NESTED DRIFT LAW (2026-10-10, the DECL audit's HIGH-1): the
+  // strip check above is TOP-LEVEL only, and schemastery drops
+  // `strict` inside a nested property()/array resolve — so
+  // `{variants:[{id:'v', parmas:['voice']}]}` booted clean, with the
+  // typo MERGED and the lane's surface silently off by one field. A
+  // relation word misspelled the same way (`requiers`) bound nothing
+  // at all while its author believed a law held. Each nested level
+  // gets the same subset test the top level has always had, using
+  // the sub-schemas this module already exports.
+  for (const [i, v] of decl.variants.entries()) {
+    strippedKeys(v as unknown as Record<string, unknown>, VariantRowSchema, `${String(decl.id)}/variants[${String(i)}]`).forEach((k) => {
+      throw new ModelError(
+        `model row ${String(decl.id)} variant ${String(v.id)}: unknown key(s) refused (extra: forbid — the law): ${k}`,
+      );
+    });
+  }
+  if (decl.relations !== undefined) {
+    relationDrift(decl.relations as unknown as Record<string, unknown>, `${String(decl.id)}/relations`).forEach((k) => {
+      throw new ModelError(
+        `model row ${String(decl.id)} relations: unknown relation word/key refused (extra: forbid — the law): ${k}`,
+      );
+    });
+  }
+  if (decl.params !== undefined && !Array.isArray(decl.params)) {
+    throw new ModelError(`${String(decl.id)}: params must be an array of field names`);
+  }
+}
+
+/** The keys a nested object carries that its own schema strips (the
+ *  top-level drift test, one level down). A shape the schema refuses
+ *  outright throws above; this catches what it MERGES. */
+function strippedKeys(
+  row: Record<string, unknown>,
+  schema: unknown,
+  where: string,
+): string[] {
+  let resolved: Record<string, unknown>;
+  try {
+    resolved = (Schema.resolve(row, schema as never, {}, true) as [Record<string, unknown>, unknown])[0];
+  } catch (err: unknown) {
+    const detail = err instanceof Error ? err.message : String(err);
+    throw new ModelError(`${where}: schema refused — ${detail}`);
+  }
+  return Object.keys(row).filter((k) => !(k in resolved));
+}
+
+/** The same subset test across the four relation words, per level. */
+function relationDrift(relations: Record<string, unknown>, where: string): string[] {
+  const words: Record<string, unknown> = {
+    requires: ParamRequiresRowSchema,
+    conflicts: ParamConflictsRowSchema,
+    together: ParamTogetherRowSchema,
+    either_or: ParamEitherOrRowSchema,
+  };
+  const out: string[] = [];
+  for (const key of Object.keys(relations)) {
+    const schema = words[key];
+    if (schema === undefined) { out.push(key); continue }
+    const rows = relations[key];
+    if (!Array.isArray(rows)) continue;
+    rows.forEach((row, i) => {
+      if (row === null || typeof row !== 'object') return;
+      for (const k of strippedKeys(row as Record<string, unknown>, schema, `${where}/${key}[${String(i)}]`)) {
+        out.push(`${key}[${String(i)}].${k}`);
+      }
+    });
+  }
+  return out;
 }
 
 export class ModelsService extends Service {

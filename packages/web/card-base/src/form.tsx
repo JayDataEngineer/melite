@@ -238,7 +238,18 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
   // rides, rendered while the user types (the strip also names
   // STATED fields the lane hides: a value carried over a variant
   // switch the form no longer renders but the run would refuse).
-  const laneWarns = laneViolations(spec, flatFields, { ...value, model: family ?? '' })
+  // THE CARRIED LAYERS (2026-10-10): the gate judges what the state
+  // CARRIES (user over base, non-null only) — not the resolved map,
+  // whose materialized defaults read as stated and produced a
+  // perpetual uncurable strip on every lane that excludes a
+  // defaulted field. `model` rides the user layer for the variant
+  // read exactly as it rides `value` for display.
+  const laneWarns = laneViolations(
+    spec,
+    flatFields,
+    { ...user, model: family ?? '' },
+    base,
+  )
   // THE MODEL GUARD (the grammar's own key — the base owns the
   // mechanism, the card owns the leaves): the serving family rides
   // the visibility values as `model`, so a field may declare

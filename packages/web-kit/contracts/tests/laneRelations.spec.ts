@@ -155,3 +155,66 @@ describe("laneSurfaceOf (the cascade: family base ∪ variant additions, add-nev
     expect([...surface!].sort()).toEqual(["text", "voice"]);
   });
 });
+
+// ── THE AUDIT HARDENING (2026-10-10): a judge that CRASHES on a
+// declaration that lost a member in transit is an estate crash, not a
+// refusal. Every one of these is a shape the frozen facts path and a
+// hand-edited model-facts.json can actually produce.
+describe("the judge refuses, it never throws", () => {
+  it("a requires row without its needs names nothing (no throw)", () => {
+    const rel = { requires: [{ field: 'ref_audio' }] } as never
+    expect(judgeLaneRelations([rel], { ref_audio: '/a.flac' })).toEqual([])
+  })
+  it("a together row without fields, and an either_or without groups", () => {
+    expect(judgeLaneRelations([{ together: [{}] } as never], { a: 1 })).toEqual([])
+    expect(judgeLaneRelations([{ either_or: [{}] } as never], { a: 1 })).toEqual([])
+  })
+  it("a null layer inside the relations array is skipped, not dereferenced", () => {
+    expect(judgeLaneRelations([null as never], { a: 1 })).toEqual([])
+  })
+  it("judgeLaneSurface(undefined) judges nothing (a served doc with no lanes block)", () => {
+    expect(judgeLaneSurface(undefined, ['text'], { text: 'x', ghost: 1 })).toEqual([])
+  })
+})
+
+describe("the blank law, tightened (an all-blank bag is not a statement)", () => {
+  it("a bag of blanks is blank: [null], [''], [undefined], {a: undefined}", () => {
+    for (const v of [[null], [''], [undefined], { a: undefined }, { a: null, b: '' }]) {
+      expect(laneBlank(v), JSON.stringify(v)).toBe(true)
+    }
+  })
+  it("a bag with a real member is stated", () => {
+    expect(laneBlank([null, 'x'])).toBe(false)
+    expect(laneBlank({ a: null, b: 'x' })).toBe(false)
+    expect(laneBlank([{ qvoice: '' }]), 'a bag whose only member is empty is still empty').toBe(true)
+    expect(laneBlank([{ qvoice: '/v.qvoice' }])).toBe(false)
+  })
+  it("a non-plain object is a VALUE, not a bag (a Date is never a statement about a field)", () => {
+    expect(laneBlank(new Date())).toBe(false)
+    expect(laneBlank(new Map([['a', 1]]))).toBe(false)
+  })
+  it("the junk bag cannot satisfy an either_or arm", () => {
+    const rel = { either_or: [{ groups: [['qvoice']], cure: 'state a persona' }] } as never
+    expect(judgeLaneRelations([rel], { qvoice: [null] })).toEqual([])
+  })
+})
+
+describe("the cures and the fold", () => {
+  it("together and either_or carry a cure even when the row declares none", () => {
+    const together = judgeLaneRelations([{ together: [{ fields: ['a', 'b'] }] } as never], { a: 1 })
+    expect(together[0]!.message).toMatch(/state 'a' \+ 'b' together, or drop/)
+    const either = judgeLaneRelations([{ either_or: [{ groups: [['a', 'b'], ['c']] }] } as never], { a: 1 })
+    expect(either[0]!.message).toMatch(/state one complete source/)
+  })
+  it("a family and its variant declaring the SAME row speak once", () => {
+    const row = { together: [{ fields: ['a', 'b'], cure: 'both or none' }] } as never
+    expect(judgeLaneRelations([row, row], { a: 1 })).toHaveLength(1)
+  })
+  it("laneSurfaceOf returns a COPY (a 'pure' judge never holds live state)", () => {
+    const base = ['text']
+    const surface = laneSurfaceOf(base, undefined)
+    expect(surface).not.toBe(base)
+    surface?.push?.('mutated')
+    expect(base).toEqual(['text'])
+  })
+})

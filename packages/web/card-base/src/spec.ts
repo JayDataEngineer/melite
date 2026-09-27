@@ -933,24 +933,79 @@ export function fieldOnLane(
 }
 
 /** THE INLINE GATE: the lane's relation + surface violations over
- *  the form's current (layered) values — rendered under the named
- *  field while the user types, refused by the bench door when the
- *  state is saved. Empty = a state the run accepts. */
+ *  what the state CARRIES — rendered under the named field while the
+ *  user types, refused by the bench door when the state is saved.
+ *  Empty = a state the run accepts.
+ *
+ *  THE CARRIED LAYERS, NOT THE RESOLVED MAP (2026-10-10, the
+ *  form-plane audit's CRITICAL-1): the resolved `values` map
+ *  materializes schema defaults and model_defaults as own
+ *  properties, so a defaulted field reads as STATED whether the user
+ *  ever touched it. On a lane that excludes a defaulted field that
+ *  produced a perpetual, UNCURABLE warning: the row was hidden
+ *  (fieldOnLane) so the cure ("drop it") was unclickable, and
+ *  unsetting it re-materialized the default. The bench judges the
+ *  PREPARED body — the operator's own params plus the stamps that
+ *  survive the null-skip — so the form judges the same thing: the
+ *  user layer over the base layer, non-null keys only. A schema
+ *  default is a PREFILL the operator never sent, and a variant's
+ *  `voice: null` stamp is exactly how the bench says "no persona on
+ *  this lane". */
 export function laneViolations(
   spec: FormSpecDoc,
   fields: readonly SpecField[],
-  values: SpecValues,
+  user: SpecValues,
+  base?: SpecValues,
 ): LaneViolation[] {
-  const variantId = typeof values['variant'] === 'string' && values['variant'] !== ''
-    ? values['variant']
-    : null
+  // THE VARIANT, tri-state (2026-10-10, the audit's HIGH-3): the
+  // axes write `variant: ''` when a family switch clears the pick,
+  // and a pick can name a row this spec never served. Both are the
+  // RUN door's voice (selectCardVariant refuses an unknown variant;
+  // the run resolves the cleared one), so this gate stands down —
+  // judging the family base there flagged states the bench admits.
+  // An ABSENT variant key is different: the family default (the
+  // head) is what composes, and the family base is its surface.
+  const carried = (key: string): unknown =>
+    Object.prototype.hasOwnProperty.call(user, key) ? user[key] : (base ?? {})[key]
+  const rawVariant = carried('variant')
+  if (rawVariant !== undefined && rawVariant !== null) {
+    if (typeof rawVariant !== 'string' || rawVariant === '' || !laneVariantServed(spec, rawVariant)) return []
+  }
+  const variantId = typeof rawVariant === 'string' && rawVariant !== '' ? rawVariant : null
   const surface = laneSurfaceFor(spec, variantId)
-  if (surface === null) return []
+  // A FAMILY THAT DECLARES RELATIONS BUT NO SURFACE still gets its
+  // words judged (2026-10-10, the DECL audit's HIGH-2): the bench
+  // judges relations regardless of surface, so returning here would
+  // leave the form silently building what the door refuses — the
+  // exact failure this whole shape exists to kill. Latent today (no
+  // such DECL), fatal the day one lands.
+  const relations = laneRelationsFor(spec, variantId)
+  if (surface === null && relations.length === 0) return []
   const names = fields.map((f) => f.name)
+  const stated: Record<string, unknown> = {}
+  for (const src of [base ?? {}, user]) {
+    for (const [k, v] of Object.entries(src)) {
+      if (v === null || v === undefined) continue
+      stated[k] = v
+    }
+  }
   return [
-    ...judgeLaneSurface(surface, names, values as Record<string, unknown>),
-    ...judgeLaneRelations(laneRelationsFor(spec, variantId), values as Record<string, unknown>),
+    ...judgeLaneSurface(surface, names, stated),
+    ...judgeLaneRelations(relations, stated),
   ]
+}
+
+/** Does the served doc offer this variant id? The VARIANT rows are
+ *  the served truth — a recipe row and a surface-less variant
+ *  (voicedesign) legitimately carry no `lanes.variants` entry and
+ *  still inherit the family base, so the check reads spec.variants
+ *  ids, never the lanes map's keys. */
+function laneVariantServed(spec: FormSpecDoc, variantId: string): boolean {
+  const rows = Array.isArray(spec.variants) ? spec.variants : []
+  return rows.some((row) => {
+    const rec = row as { id?: unknown; key?: unknown }
+    return rec?.id === variantId || rec?.key === variantId
+  })
 }
 
 /** Group the visible fields (the spec's own group key, first-appearance

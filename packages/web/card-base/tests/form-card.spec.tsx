@@ -537,3 +537,88 @@ test('LANES: a broken relation renders the named strip with the cure (the form g
   form({ spec, user: { model: 'qwen3-tts', prompt: 'the words', notes: 'the persona' } })
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
 })
+
+// ── THE LANE GATE AGAINST THE SERVED DOC (2026-10-10, the
+// form-plane audit's CRITICAL-1 / HIGH-3: the hand fixtures above
+// could not fail on either — one put every defaulted field ON the
+// base surface, so the "a default reads as stated" mechanism had
+// nothing to bite). These run the REAL served tts doc.
+const ttsDoc = (over: Record<string, unknown> = {}): FormSpecDoc => ({
+  form: 'form_tts',
+  model: 'qwen3-tts',
+  schema: {
+    uid: 0,
+    refs: {
+      0: { type: 'object', dict: { text: 1, voice: 2, design_prompt: 3, voice_name: 4, ref_audio: 5, ref_text: 6 } },
+      1: { type: 'string', meta: { description: 'Text' } },
+      2: { type: 'string', meta: { description: 'Voice' } },
+      3: { type: 'string', meta: { description: 'Design Prompt', extra: { wtype: 'textarea' } } },
+      4: { type: 'string', meta: { description: 'Voice Name' } },
+      5: { type: 'string', meta: { description: 'Reference Audio', extra: { wtype: 'file' } } },
+      6: { type: 'string', meta: { description: 'Reference Transcript' } },
+    },
+  },
+  model_defaults: { variant: 'customvoice', voice: 'vivian' },
+  inputs: [],
+  packs: [],
+  variants: [
+    { id: 'customvoice', label: 'CustomVoice', group: 'Variant', defaults: {}, cells: [{ quant: 'native', label: 'Native', route: 'qwen3-tts' }] },
+    { id: 'base', label: 'Base', group: 'Variant', defaults: {}, cells: [{ quant: 'native', label: 'Native', route: 'qwen3-tts-base' }] },
+    { id: 'steady_read', label: 'Steady Read', group: 'Recipe', defaults: {}, cells: [] },
+  ],
+  lanes: {
+    base: ['text', 'temperature', 'design_prompt', 'voice_name'],
+    relations: {
+      together: [{ fields: ['voice_name', 'design_prompt'], cure: 'name the voice and describe it, or drop both' }],
+    },
+    variants: {
+      customvoice: { params: ['voice'] },
+      base: { params: ['ref_audio', 'ref_text'] },
+    },
+  },
+  ...over,
+} as unknown as FormSpecDoc)
+
+test('LANES: the base lane shows NO strip for a defaulted field it excludes (the uncurable-strip bug)', () => {
+  // `voice` is a model_default the base lane excludes. The resolved
+  // map carries it; the CARRIED layers do not, so the gate is quiet
+  // and the operator is not told to drop a value they never set.
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'base' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  // the persona row is hidden on this lane (the surface owns it)
+  expect(screen.queryByLabelText('Voice')).toBeNull()
+})
+
+test('LANES: the customvoice lane is quiet too, and a STATED off-surface value still warns', () => {
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+  cleanup()
+  // a leftover from a variant switch IS carried, so it warns with the cure
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
+  const strip = document.querySelector('[data-lane-warn="1"]')
+  if (strip === null) throw new Error('a carried off-surface value warns')
+  expect(strip.textContent ?? '').toContain('ref_audio')
+  expect(strip.textContent ?? '').toContain('fires nothing')
+})
+
+test('LANES: an unknown or cleared variant is the run door\'s voice, never this strip', () => {
+  for (const variant of ['not-a-variant', '']) {
+    form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant, ref_audio: '/a.flac' } })
+    expect(document.querySelector('[data-lane-warn]'), 'variant ' + JSON.stringify(variant)).toBeNull()
+    cleanup()
+  }
+  // a RECIPE variant is served and inherits the family base — judged
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'steady_read', ref_audio: '/a.flac' } })
+  expect(document.querySelector('[data-lane-warn="1"]')).not.toBeNull()
+})
+
+test('LANES: the export pair warns on the real doc, and clears when cured', () => {
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', text: 'x', design_prompt: 'a warm narrator' } })
+  const strip = document.querySelector('[data-lane-warn="1"]')
+  if (strip === null) throw new Error('the export pair warns')
+  expect(strip.textContent ?? '').toContain('voice_name')
+  expect(strip.textContent ?? '').toContain('name the voice and describe it, or drop both')
+  cleanup()
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', text: 'x', design_prompt: 'a warm narrator', voice_name: 'warm_1' } })
+  expect(document.querySelector('[data-lane-warn]')).toBeNull()
+})

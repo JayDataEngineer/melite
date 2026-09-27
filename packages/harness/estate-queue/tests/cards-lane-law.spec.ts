@@ -142,19 +142,58 @@ describe("THE CLONE EITHER_OR WALL (one COMPLETE source)", () => {
     })).toEqual({ ok: true });
   });
 
-  it("the 1.7B clone lane carries the same law (its own route)", () => {
+  it("a ROUTE address alone does not name the clone lane (the lane is the SELECTED variant)", () => {
+    // The correction that cost one wrong law: 'qwen3-tts-base' with
+    // NO body variant selects the family HEAD, so the run composes
+    // the synth lane and a stated reference fires nothing. The write
+    // door must say so at build time instead of admitting a state
+    // the run refuses.
     const verdict = svc.admitStageRelations("tts", {
-      model: "qwen3-tts-voicedesign-base",
+      model: "qwen3-tts-base",
+      text: "clone this",
+      ref_audio: "/assets/x.flac",
+      ref_text: "the transcript",
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("qwen3-tts/customvoice");
+      expect(verdict.error).toContain("ref_audio");
+    }
+    // the stated variant is what reaches the clone lane
+    expect(svc.admitStageRelations("tts", {
+      model: "qwen3-tts-base",
+      variant: "base",
+      text: "clone this",
+      ref_audio: "/assets/x.flac",
+      ref_text: "the transcript",
+    })).toEqual({ ok: true });
+  });
+
+  it("the 1.7B clone lane carries the same law (variant-stated, its own route)", () => {
+    // half the pair on the 1.7B clone lane: the either_or names both arms
+    const verdict = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      variant: "base",
       text: "clone this",
       ref_text: "the transcript",
     });
     expect(verdict.ok).toBe(false);
+    if (!verdict.ok) expect(verdict.error).toContain("qwen3-tts-voicedesign/base");
+    // the full pair composes the 1.7B Base checkpoint
+    expect(svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      variant: "base",
+      text: "clone this",
+      ref_audio: "/assets/x.flac",
+      ref_text: "the transcript",
+    })).toEqual({ ok: true });
+    // the route ADDRESS alone is not the lane (the corrected law)
     expect(svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign-base",
       text: "clone this",
       ref_audio: "/assets/x.flac",
       ref_text: "the transcript",
-    })).toEqual({ ok: true });
+    }).ok).toBe(false);
   });
 });
 
@@ -236,12 +275,14 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
   it("every DECLARING family's surface is carried by the card (no dead declaration)", () => {
     const facts = svc.modelFacts();
     const decls = svc.cardDecls();
+    let declaringOwners = 0;
     for (const [fam, row] of Object.entries(facts)) {
       if (row.params === undefined) continue; // legacy: declares nothing
       // route rows mirror their owner's declaration (the derived
       // lens); the claim law judges each OWNER once
       const owner = svc.resolveCardFamily(fam, facts);
       if (owner !== fam) continue;
+      declaringOwners += 1;
       const decl = decls[row.card];
       expect(decl, `family ${fam} names card ${row.card} — the def must exist`).toBeDefined();
       const carriable = new Set([
@@ -259,6 +300,10 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
         ).toBe(true);
       }
     }
+    // THE SELF-CHECK (the laws audit's MEDIUM-5e): with the feature
+    // removed this loop iterates zero times and passes. The law is
+    // only a law while something declares.
+    expect(declaringOwners, "at least one family declares a surface (else this wall is vacuous)").toBeGreaterThan(0);
   });
 
   it("the tts card claims nothing its declaring families did not declare (the full-claim bind)", () => {
@@ -266,8 +311,18 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
     const decls = svc.cardDecls();
     const ttsDecl = decls["tts"];
     expect(ttsDecl).toBeDefined();
-    // the card boards BOTH tts families; both declare — the full
-    // claim law binds the whole schema
+    // THE BOARDING IS ASSERTED, NOT ASSUMED (2026-10-10, the laws
+    // audit's MEDIUM-5b): the law below binds the WHOLE schema only
+    // while every family the card boards declares. Hardcoding the two
+    // families made a THIRD (legacy) boarding keep the test green
+    // while the comment became false — the exact "schema validation"
+    // claim the report names. So: derive the family atoms off the
+    // board, assert the set, and require each to declare.
+    const boardedAtoms = (ttsDecl as { boarded: readonly string[] }).boarded
+      .map((id) => (svc.resolveCardFamily(id, facts) === id ? id : svc.resolveCardFamily(id, facts)))
+    expect([...new Set(boardedAtoms)].sort(), "the card's board is the two declaring families").toEqual([
+      "qwen3-tts", "qwen3-tts-voicedesign",
+    ]);
     const union = new Set<string>();
     for (const fam of ["qwen3-tts", "qwen3-tts-voicedesign"]) {
       const row = facts[fam];
@@ -290,6 +345,7 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
   it("relation words name only carriable fields (no dead grammar)", () => {
     const facts = svc.modelFacts();
     const decls = svc.cardDecls();
+    let declaringOwners = 0;
     const namesIn = (rel: LaneRelations | undefined): string[] => {
       if (rel === undefined) return [];
       const out: string[] = [];
@@ -303,11 +359,21 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
       if (row.params === undefined) continue;
       const owner = svc.resolveCardFamily(fam, facts);
       if (owner !== fam) continue; // route lens mirrors the owner
+      declaringOwners += 1;
       const decl = decls[row.card];
-      const carriable = new Set([
-        ...decl.schemaNames,
+      // THE LANE-SURFACE ARM (the laws audit's MEDIUM-6): a relation
+      // name must be a field the lane CAN carry — its declared
+      // surface (family base ∪ the variant that declares it) or a
+      // mod-pack field, which ride by design and are not
+      // surface-judged. Merely being carriable is not enough: a
+      // relation blessing a name no lane declares is a law that
+      // contradicts the surfaces beside it.
+      const laneNames = new Set<string>([
+        ...(row.params ?? []),
         ...modFieldsOf(row.card, fam),
       ]);
+      for (const v of row.variants) for (const n of v.params ?? []) laneNames.add(n);
+      const carriable = new Set([...decl.schemaNames, ...modFieldsOf(row.card, fam)]);
       for (const name of [
         ...namesIn(row.relations),
         ...row.variants.flatMap((v) => namesIn(v.relations)),
@@ -316,8 +382,13 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
           carriable.has(name),
           `family ${fam} relates on '${name}' but nothing carries it`,
         ).toBe(true);
+        expect(
+          laneNames.has(name),
+          `family ${fam} relates on '${name}' but no lane surface declares it (the law contradicts its own surfaces)`,
+        ).toBe(true);
       }
     }
+    expect(declaringOwners, "at least one family declares (else this wall is vacuous)").toBeGreaterThan(0);
   });
 
   it("the tts surfaces judge the run's own states (spot: the design lane)", () => {
@@ -348,12 +419,17 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
     // for restored rows because the archive must load. The RUN seat
     // is where the declaration teaches — ONE spelling (laneVerdict),
     // so the card needs no hand-written copy of the law.
+    // THE LANE VOICE, not the card's hand-written one: the tts card
+    // has its own belt that refuses this state too, and an assertion
+    // on /voice_name/ alone cannot tell the two apart (the audit's
+    // receipt — the run seat's gate was dead and this test stayed
+    // green). The DECL's voice names the lane and the law.
     await expect(
       svc.phase1Card(
         { ...INCIDENT_A },
         "qwen3-tts",
       ),
-    ).rejects.toThrow(/voice_name/);
+    ).rejects.toThrow(/lane 'qwen3-tts\/customvoice' refuses the state/);
   });
 
   it("the cured state composes phase 1 (the door and the run agree)", async () => {
@@ -371,4 +447,53 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
     );
     expect(phase1.fam).toBe("z-image");
   });
+});
+
+describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", () => {
+  // The one wall that matters above all: a state the door admits and
+  // the run refuses is a broken promise in the one direction the
+  // operator meets first (the form looked fine, the run said no); a
+  // state the door refuses and the run composes is a locked door on a
+  // working lane. Both are the same bug class, so both are pinned
+  // from ONE table — the lane judge and the run seat, per state.
+  const CASES: Array<{ name: string; params: Record<string, unknown> }> = [
+    { name: "incident A (export half a pair)", params: { ...INCIDENT_A } },
+    { name: "incident A cured", params: { ...INCIDENT_A, voice_name: "warm_1" } },
+    { name: "0.6B customvoice synthesis", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", temperature: 0.7 } },
+    { name: "0.6B base clone (variant stated)", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
+    { name: "0.6B base clone half a pair", params: { model: "qwen3-tts", variant: "base", text: "x", ref_audio: "/a.flac" } },
+    { name: "base ADDRESS without a variant (synth lane, reference fires nothing)", params: { model: "qwen3-tts-base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
+    { name: "1.7B customvoice with instruction", params: { model: "qwen3-tts-voicedesign", variant: "customvoice", text: "x", voice: "vivian", style_instruction: "whispered" } },
+    { name: "1.7B base clone (variant stated)", params: { model: "qwen3-tts-voicedesign", variant: "base", text: "x", ref_audio: "/a.flac", ref_text: "t" } },
+    { name: "a recipe variant (inherits the family base)", params: { model: "qwen3-tts", variant: "steady_read", text: "x" } },
+    { name: "export beside a .qvoice", params: { model: "qwen3-tts", variant: "customvoice", text: "x", voice: "vivian", qvoice: "/v.qvoice", voice_name: "warm_1", design_prompt: "warm" } },
+    { name: "a legacy family is untouched", params: { model: "z-image", prompt: "x" } },
+  ];
+
+  for (const c of CASES) {
+    it(c.name + ": the door's verdict IS the run's verdict", async () => {
+      const door = svc.admitStageRelations("tts", c.params);
+      let runRefused: string | null = null;
+      try {
+        await svc.phase1Card(c.params, String(c.params["model"] ?? ""));
+      } catch (e) {
+        runRefused = (e as Error).message;
+      }
+      // The run seat judges the DECL first (li-s), so a lane law
+      // refusal is IDENTICAL in both places — that is the promise.
+      if (!door.ok) {
+        expect(runRefused, "the door refused; the run must refuse the same state").not.toBeNull();
+        expect(runRefused).toContain(door.error.split(" refuses the state: ")[1] ?? "IMPOSSIBLE");
+        return;
+      }
+      // The door admitted: the run may still refuse for a reason the
+      // DECL does not own (a missing reference, a lane file) — but
+      // it must NEVER refuse with THIS lane's surface/relation voice.
+      if (runRefused !== null) {
+        expect(runRefused, "the door admitted a state the run refused on lane grounds").not.toContain("declared surface is");
+        expect(runRefused).not.toContain("ride together on this lane");
+        expect(runRefused).not.toContain("refuses the state:");
+      }
+    });
+  }
 });

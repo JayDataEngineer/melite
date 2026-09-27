@@ -1031,11 +1031,42 @@ export class ComfyUIService extends Service {
       const inputs = row.inputs
       if (inputs === null || typeof inputs !== 'object') continue
       for (const key of Object.keys(inputs as Record<string, unknown>)) {
-        if (!declared.has(key)) {
-          throw new ComposeRefusal('unknown-input',
-            `card '${cardId}' wired '${ct}.${key}' (as '${id}') — the node declares no such input (${[...declared].sort().join(', ')}); the card's compose is stale against the engine build`)
-        }
+        if (declared.has(key)) continue
+        // A DOTTED WIDGET SUB-KEY IS A DECLARED INPUT (the 5,415-node
+        // receipt, 2026-10-10): ComfyUI's /object_info declares a
+        // widget by its top-level name and the graph addresses its
+        // sub-widgets with a dotted suffix — 'values.a',
+        // 'ref_images.ref_image_0', 'format.quality',
+        // 'sign_mode.qef'. None of those can ever appear in a doc,
+        // so the first cut of this wall refused every music, h3,
+        // miniMax and remesh graph the estate has actually shipped.
+        // The base segment IS the declaration; the suffix is the
+        // widget's own addressing.
+        if (declared.has(key.split('.')[0] ?? key)) continue
+        // WIDGET-SERIALIZATION KEYS: a small, receipt-named set of
+        // keys ComfyUI serializes but never declares (the same
+        // receipt). Each one is listed with the node that carries it;
+        // this is an allowlist with a reason per entry, never a
+        // blanket pass.
+        if (WIDGET_SERIALIZATION_KEYS.has(key)) continue
+        throw new ComposeRefusal('unknown-input',
+          `card '${cardId}' wired '${ct}.${key}' (as '${id}') — the node declares no such input (${[...declared].sort().join(', ')}); the card's compose is stale against the engine build`)
       }
     }
   }
 }
+
+/** The widget-serialization keys ComfyUI accepts on the wire but
+ *  never lists in `/object_info` — each with the node that proves it
+ *  (a landed run in data/runs/output carries the pair):
+ *   - `upload` — LoadImage (image lanes: the upload walk stages the
+ *     value; the server ignores the key)
+ *   - `model_options` — CLIPLoader (audio lanes; restates the default)
+ *   - `lora_ui` — LTX_lora_loader (the h3 refine arm; stripped on
+ *     some arms and shipped on others)
+ *  A name that is not here and not declared is still refused. */
+const WIDGET_SERIALIZATION_KEYS: ReadonlySet<string> = new Set([
+  'upload',
+  'model_options',
+  'lora_ui',
+])

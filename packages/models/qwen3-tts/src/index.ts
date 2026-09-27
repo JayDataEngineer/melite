@@ -27,10 +27,12 @@ export const DECL: ModelDecl = {
     "mode": "tts",
     "voice": "vivian",
     // THE VARIANT STAMP (the 1.7B mirror's own law): the family's
-    // resting variant rides the defaults so the customvoice route's
-    // model_defaults carries variant:'customvoice' — without it the
-    // 0.6B form's variant-scoped rows (the voice picker, sampling)
-    // hid on EVERY lane of this family.
+    // resting variant rides the defaults so every derived row's
+    // model_defaults names its lane. The guard-era consequence (the
+    // form's visible_when rows hiding) is GONE — visibility is the
+    // declared surface now — but the stamp itself is load-bearing
+    // twice over: it is the selection's default coordinate, and the
+    // lane judge reads the resolved variant to pick the surface.
     "variant": "customvoice"
   },
   "genre": "audio",
@@ -143,10 +145,11 @@ export const DECL: ModelDecl = {
       // unsets the inherited persona (the voicedesign meld).
       // THE VARIANT STAMP (operator 2026-09-23, "base doesn't even
       // have the audio input"): resolver_defaults MUST carry
-      // variant:'base' — the form's visible_when guards key on the
-      // RESOLVED variant value (model_defaults ← this overlay), and
-      // an unstamped route serves variant:'' — every variant-scoped
-      // row (ref_audio/ref_text/sampling) hid on this lane forever.
+      // variant:'base'. The guards that once keyed on the RESOLVED
+      // value are gone; the stamp is now the SELECTION's coordinate
+      // (an unstamped route picks the family head) and the lane
+      // surface's key — and `voice: null` is what keeps the persona
+      // default off a lane whose surface does not declare it.
       "resolver_defaults": {
         "model": "qwen3-tts-base",
         "variant": "base",

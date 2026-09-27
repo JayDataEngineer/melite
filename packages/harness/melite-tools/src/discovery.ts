@@ -696,7 +696,14 @@ export function specBody(
     // declaration, every face). Absent = the family declares no
     // surface (the legacy truth: the card's union table owns
     // visibility) — the form falls back to visible_when.
-    ...(decl !== null && decl.params !== undefined ? {
+    // A family with an EMPTY declared base serves no lanes block (the
+    // NIT from the audit): `params: []` is legal at the z, and
+    // serving it would tell the form that NO field renders — a
+    // silent black form, where absence honestly means "undeclared,
+    // fall back to the card's own visibility". The judge is
+    // unchanged: an empty surface still judges nothing here because
+    // no lanes block means no judgment.
+    ...(decl !== null && decl.params !== undefined && decl.params.length > 0 ? {
       lanes: laneContractOf(decl),
     } : {}),
     // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):

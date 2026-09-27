@@ -233,7 +233,7 @@ test("rewire tolerates a junk params cell when the channel deletes (no spell lef
 // door). Two walls: the provenance coordinate flows through the
 // domain's admission, and the remote's admission closure repairs
 // restores (never live rows) per the schema-master law.
-import { admissionOf } from "../src/remote.ts";
+import { admissionOf, RESTORED_PROVENANCE } from "../src/remote.ts";
 
 test("the admission carries the provenance coordinate (restored rows ride restore law, live adds pass undefined)", async () => {
   const drafts = await boot();
@@ -243,11 +243,11 @@ test("the admission carries the provenance coordinate (restored rows ride restor
   };
   await ensureBench(drafts, {
     session: "prov",
-    stages: [{ id: "a", card: "tts", provenance: "restored", params: {} }],
+    stages: [{ id: "a", card: "tts", provenance: RESTORED_PROVENANCE, params: {} }],
   }, admit);
   await addStageBench(drafts, "prov", { card: "sfx", expect_rev: 0 }, admit);
   assert.deepEqual(seen, [
-    { card: "tts", provenance: "restored" },
+    { card: "tts", provenance: RESTORED_PROVENANCE },
     { card: "sfx", provenance: undefined },
   ]);
 });
@@ -276,7 +276,7 @@ test("a RESTORED row with a poisoned model repairs in place and lands", () => {
   const admit = admissionOf(ctxWithResolver(RESOLVER) as never);
   assert.ok(admit !== undefined);
   const params: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
-  admit("tts", params, "restored");
+  admit("tts", params, RESTORED_PROVENANCE);
   assert.equal(params["model"], "qwen3-tts-voicedesign");
 });
 
@@ -325,9 +325,9 @@ test("restored model repair fills absent and empty variants but preserves a stat
   const absentParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design" };
   const emptyParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "" };
   const statedParams: Record<string, unknown> = { model: "qwen3-tts-voicedesign-design", variant: "base" };
-  absent("tts", absentParams, "restored");
-  empty("tts", emptyParams, "restored");
-  stated("tts", statedParams, "restored");
+  absent("tts", absentParams, RESTORED_PROVENANCE);
+  empty("tts", emptyParams, RESTORED_PROVENANCE);
+  stated("tts", statedParams, RESTORED_PROVENANCE);
   assert.equal(absentParams["variant"], "design");
   assert.equal(emptyParams["variant"], "design");
   assert.equal(statedParams["variant"], "base");
@@ -349,6 +349,6 @@ test("a non-null repair that still refuses preserves the original refusal", () =
   const admit = admissionOf(ctxWithResolver(resolver) as never);
   assert.ok(admit !== undefined);
   const params: Record<string, unknown> = { model: "poison" };
-  assert.throws(() => admit("tts", params, "restored"), /model 'poison' is not offered/);
+  assert.throws(() => admit("tts", params, RESTORED_PROVENANCE), /model 'poison' is not offered/);
   assert.equal(params["model"], "still-rejected");
 });

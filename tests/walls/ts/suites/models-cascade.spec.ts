@@ -61,6 +61,80 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     );
   });
 
+  // THE NESTED DRIFT LAW (2026-10-10, the DECL audit's HIGH-1): the
+  // top-level strip check cannot see inside — schemastery drops
+  // `strict` in a nested property()/array resolve, so a typo on a
+  // VARIANT or a misspelled relation word booted CLEAN, merged, and
+  // bound nothing while the author believed a law held. Each level
+  // carries the same extra: forbid the top level always had.
+  it("a typo on a VARIANT refuses (nested extra: forbid)", (): void => {
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerFamily({
+        ...svc.getModel("z-image"),
+        id: "typo-variant",
+        variants: [{ id: "v", label: "V", group: "Variant", cells: [], parmas: ["prompt"] }],
+      } as never),
+      /parmas|unknown key/,
+      "a variant-level typo refuses by name, not silently",
+    );
+  });
+
+  it("a misspelled relation word refuses (a law that binds nothing is worse than no law)", (): void => {
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerFamily({
+        ...svc.getModel("z-image"),
+        id: "typo-relation",
+        params: ["prompt"],
+        relations: { requiers: [{ field: "prompt", needs: ["steps"] }] },
+      } as never),
+      /requiers|unknown relation/,
+      "an unknown relation word refuses at the gate",
+    );
+  });
+
+  it("a typo INSIDE a relation row refuses too (the row's own keys, not just the word's)", (): void => {
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerFamily({
+        ...svc.getModel("z-image"),
+        id: "typo-relation-row",
+        params: ["prompt"],
+        // a VALID row plus one extra key: the drift arm owns it
+        relations: { requires: [{ field: "prompt", needs: ["steps"], neeedz: ["x"] }] },
+      } as never),
+      /neeedz|unknown relation/,
+      "the row's own keys are checked, not just the word's",
+    );
+  });
+
+  it("a relation row MISSING a required member refuses in the schema's own voice", (): void => {
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerFamily({
+        ...svc.getModel("z-image"),
+        id: "typo-relation-shape",
+        params: ["prompt"],
+        relations: { requires: [{ field: "prompt" }] },
+      } as never),
+      /needs/,
+      "a row without its needs is a shape refusal, named by the member",
+    );
+  });
+
+  it("the WELL-FORMED declaration still boots (the law above refuses typos, not authors)", (): void => {
+    const svc = modelsService();
+    // the shipped declarations are the receipt: every family's own
+    // params/relations pass the nested check (the whole registry
+    // booted above, and these two are the declaring families)
+    for (const id of ["qwen3-tts", "qwen3-tts-voicedesign"]) {
+      const decl = svc.getModel(id) as { params?: unknown; relations?: unknown; variants?: unknown[] };
+      assert.ok(decl.params !== undefined, id + " declares a surface");
+      assert.ok(decl.relations !== undefined, id + " declares its laws");
+    }
+  });
+
   it("resolveCascade = base → intercept → head, via symbols.resolveConfig", (): void => {
     const merged = resolveCascade(
       { steps: 8, cfg: 3.5, sampler: "euler" },
