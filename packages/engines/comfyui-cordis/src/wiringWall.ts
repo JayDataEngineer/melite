@@ -1,16 +1,23 @@
-// wiringWall.ts — THE WIRING WALL, ONE OWNER (2026-10-10, the
-// bypass audit's HIGH-3).
+// wiringWall.ts — THE WIRING WALL, ONE OWNER (2026-10-10; reseated
+// 2026-10-10 by the operator's law: ON SUBMIT IS A HACK).
 //
 // Every graph that reaches the engine is walked against the doc the
 // estate holds: an unknown class_type or an input the node does not
-// declare is refused HERE, in the compose door's voice, naming the
-// doc — instead of dying at submit in the engine's voice, far from the
-// declaration that authored it. The wall used to run only where a CARD
-// composed, so a flow merge (which rewrites node ids, namespaces
-// wires and resolves $spell AFTER any earlier judgment), a spliced
-// workflow, or a hand-authored registry graph reached the engine
-// unwalked. The service and the host both call this one function; the
-// graph each door produces is the graph each door walks.
+// declare is refused HERE, in the declaring door's voice, naming the
+// doc — instead of dying at the engine, in the engine's voice, far
+// from the declaration that authored it.
+//
+// THE TWO SEATS (the schema system, not a submit-time opt): the
+// card-compose seat walks at COMPOSE (service.assertWiring — a bad
+// card graph never reaches a run), and the RUN seat walks the BUILT
+// ROWS in its pre-flight (runsExecute's wiring fence, before any
+// engine action) — the seat every path (start, restore, queue
+// replay) already walks. The first shape threaded an opt through
+// ONE engine submit call; its default crashed a live run as
+// `ReferenceError: assertWiringAtSubmit is not defined`, and the
+// operator named the shape for what it was: a wall someone
+// remembered to build at one door is not the schema system. The
+// judge stayed; the opt is gone.
 
 import { ComposeRefusal } from './errors.ts'
 
@@ -39,15 +46,12 @@ export function objectInfoDoc(): { nodes: Set<string>; inputs: Map<string, Set<s
   return objectInfo
 }
 
-/** THE WIRING WALL, ONE OWNER (2026-10-10, the bypass audit's
- *  HIGH-3: it was private, so the only graphs it judged were the ones
- *  THIS module composes — a flow merge, a spliced workflow, or a
- *  hand-authored registry graph reached the engine with a renamed
- *  pack's class_type and died there, in the engine's voice, far from
- *  the doc that could have named it. Every graph leaves through a
- *  door, and every door walks this. */
-/** Walk a graph against the armed doc (the submit seams' call). */
-export function assertWiringAtSubmit(cardId: string, graph: unknown): void {
+/** Walk a graph against the armed doc — THE RUN SEAT'S FENCE CALL
+ *  (runsExecute imports this from the package index; unarmed, no
+ *  doc, the wall stands down — the standing law). This is not a
+ *  submit-time opt: the run seat calls it on the BUILT ROWS before
+ *  any engine action, the same fence as its splice refusal. */
+export function assertWiringNow(cardId: string, graph: unknown): void {
   if (objectInfo === null) return
   assertWiringAgainst(objectInfo.nodes, objectInfo.inputs, cardId, graph)
 }

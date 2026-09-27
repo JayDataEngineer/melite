@@ -18,15 +18,6 @@ import { fetchOutputs, loudnessOf, qvoiceFreshnessOf, mapHistoryEntry, normalize
 export interface ExecuteOpts {
   /** Seconds; the estate's own budget (default 2400). */
   readonly timeoutS?: number;
-  /** THE WIRING WALL AT THE SUBMIT SEAM (2026-10-10, the bypass
-   *  audit's HIGH-3). The wall used to run only where a CARD
-   *  composed — so a flow merge, a spliced workflow, or a
-   *  hand-authored registry graph reached the engine with a renamed
-   *  pack's class_type (or an undeclared input) and died THERE, in
-   *  the engine's voice, far from the doc that could name it. The
-   *  estate's assertWiring rides every submit now; absent = unarmed,
-   *  the standing law. */
-  readonly assertWiring?: (graph: unknown) => void;
   /** Polled every tick — a true verdict interrupts the prompt. */
   readonly shouldStop?: () => boolean;
   /** Progress fold — the client's ws events folded here (progress
@@ -276,7 +267,6 @@ export async function executeSingleInner(
   const client = sdkClient(server);
   const params: Record<string, EngineJson> = { ...nodeParams };
   const wf: Record<string, EngineJson> = spliceWorkflow(params);
-  opts.assertWiring?.(wf);
   const staged = await uploadReferenced(client, wf, { runsRoot: dirname(String(runDir)) });
   const timeoutS: number = normalizeTimeoutS(params["timeout_s"]);
   const deadline: number = Date.now() + timeoutS * 1000;

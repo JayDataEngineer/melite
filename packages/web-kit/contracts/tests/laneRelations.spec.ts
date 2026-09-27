@@ -217,7 +217,7 @@ describe("the cures and the fold", () => {
     const base = ['text']
     const surface = laneSurfaceOf(base, undefined)
     expect(surface).not.toBe(base)
-    surface?.push?.('mutated')
+    ;(surface as unknown as string[] | null | undefined)?.push?.('mutated')
     expect(base).toEqual(['text'])
   })
 })
@@ -267,5 +267,20 @@ describe('judgeLaneBounds (the RANGE RULE)', () => {
     assert.deepEqual(merged, { steps: { max: 12 }, width: { min: 256, max: 1536 } })
     assert.deepEqual(laneBoundsOf(null, { steps: { max: 12 } }), { steps: { max: 12 } })
     assert.equal(laneBoundsOf(null, null), null)
+  })
+
+  it('per-ENDPOINT merge: a variant tightening only the ceiling holds the family floor (F9)', () => {
+    // a whole-row replace would silently drop min:1 — the trap the
+    // design audit flagged; the merge holds every unstated endpoint
+    const merged = laneBoundsOf(
+      { steps: { min: 1, max: 50 } },
+      { steps: { max: 12 } },
+    )
+    assert.deepEqual(merged, { steps: { min: 1, max: 12 } })
+    // to REMOVE an endpoint, state the row whole (max only, no floor)
+    assert.deepEqual(
+      laneBoundsOf({ steps: { min: 1, max: 50 } }, { steps: { max: 12, min: 2 } }),
+      { steps: { min: 2, max: 12 } },
+    )
   })
 })

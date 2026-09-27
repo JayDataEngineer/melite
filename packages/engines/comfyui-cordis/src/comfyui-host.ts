@@ -13,7 +13,6 @@ import { stopForRunDirInner, unloadModelsInner } from "./comfyui-control.ts";
 import { executeSingleInner } from "./comfyui-execute.ts";
 import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.ts";
 import { executeFlowInner } from "./comfyui-merge.ts";
-import { assertWiringAtSubmit } from "./wiringWall.ts";
 import type { FlowResult, MergeRow } from "./comfyui-merge.ts";
 
 // ── the engine client as a Cordis Service (stroke 4b,
@@ -307,20 +306,21 @@ export class ComfyUIHostService extends Service {
     opts: ExecuteOpts = {},
   ): Promise<FlowResult> {
     const server: string = this.baseUrl();
-    // THE WIRING WALL RIDES EVERY SUBMIT (the bypass audit's HIGH-3):
-    // the service IS the host, so the merge and splice paths get the
-    // same doc-walk the card-compose path has always had — unless the
-    // caller brought its own.
-    const withWall: ExecuteOpts = opts.assertWiring === undefined
-      ? { ...opts, assertWiring: (graph: unknown) => assertWiringAtSubmit("flow", graph) }
-      : opts;
+    // NO WALL HERE (2026-10-10, the operator's law: ON SUBMIT IS A
+    // HACK). A check injected at one engine call is a wall someone
+    // remembered to build — the missing-import crash was this shape
+    // failing, not a missing import. The wiring law lives where
+    // every path already walks: the run seat's pre-flight
+    // (runsExecute) judges the built rows against the doc BEFORE
+    // any action; the card-compose seat judges at compose. This
+    // method only transports.
     return this.supervised(() =>
       executeFlowInner(
         rows,
         runDir,
         inputNames,
         initials,
-        withWall,
+        opts,
         server,
         this.prompts,
       )

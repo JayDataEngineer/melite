@@ -163,3 +163,76 @@ describe("runOne declared-card artifact ordering", () => {
     assert.equal(run.stages[0]?.url, "mask_combined_00001_.png");
   });
 });
+
+// ── THE WIRING FENCE (2026-10-10, the operator's law: ON SUBMIT IS
+// A HACK — the wall lives in the run seat's pre-flight, on the rows
+// it built, before ANY engine action; never an opt threaded through
+// one submit call). The behavioural proof: a graph naming a
+// class_type the engine's own /object_info does not declare fails
+// the run AT THE SEAT — the engine is never called.
+describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
+  it("an unknown class_type fails the run pre-submit, in the wall's voice, never reaching the engine", async () => {
+    const { setObjectInfoDoc } = await import("@melite/comfyui-cordis");
+    // arm the doc WITHOUT the run's class_type ("X")
+    setObjectInfoDoc(new Set(["KSampler"]), new Map());
+    try {
+      const ctx = new Context();
+      const engine = new FakeEngine(ctx);
+      let submitted = 0;
+      engine.onFlow = async () => {
+        submitted++;
+        return { stages: {}, promptId: "p" };
+      };
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(run.status, "failed", "the run fails at the fence");
+      assert.equal(submitted, 0, "the engine was NEVER called — the refusal predates any action");
+      assert.ok(
+        String(run.error).includes("X"),
+        "the refusal names the undeclared class_type: " + String(run.error),
+      );
+      assert.ok(
+        String(run.stages[0]?.error ?? "").includes("X"),
+        "the stage row carries the wall's voice",
+      );
+    } finally {
+      setObjectInfoDoc(null); // the module doc never leaks past the test
+    }
+  });
+
+  it("a declared class_type passes the fence and submits (the wall stands down for truth)", async () => {
+    const { setObjectInfoDoc } = await import("@melite/comfyui-cordis");
+    setObjectInfoDoc(new Set(["X"]), new Map());
+    try {
+      const ctx = new Context();
+      const engine = new FakeEngine(ctx);
+      let submitted = 0;
+      engine.onFlow = async () => {
+        submitted++;
+        return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+      };
+      const run = runWithCard("flow_inline");
+      await runOne(run, ctx, () => undefined);
+      assert.equal(submitted, 1, "the submit happened");
+      assert.equal(run.status, "completed");
+    } finally {
+      setObjectInfoDoc(null);
+    }
+  });
+
+  it("unarmed (no doc) the fence stands down — the standing law", async () => {
+    const { setObjectInfoDoc } = await import("@melite/comfyui-cordis");
+    setObjectInfoDoc(null);
+    const ctx = new Context();
+    const engine = new FakeEngine(ctx);
+    let submitted = 0;
+    engine.onFlow = async () => {
+      submitted++;
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const run = runWithCard("flow_inline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(submitted, 1, "no doc, no judgment — the submit proceeds");
+    assert.equal(run.status, "completed");
+  });
+});

@@ -187,12 +187,23 @@ function laneContractOf(decl: ModelDecl): Record<string, unknown> {
     ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
     variants: Object.fromEntries(
       (decl.variants ?? [])
-        .filter((v) => v.params !== undefined || v.relations !== undefined)
+        .filter(
+          (v) =>
+            v.params !== undefined ||
+            v.relations !== undefined ||
+            v.bounds !== undefined,
+        )
         .map((v) => [
           v.id,
           {
             ...(v.params !== undefined ? { params: [...v.params] } : {}),
             ...(v.relations !== undefined ? { relations: v.relations } : {}),
+            // VARIANT BOUNDS RIDE THE SERVE TOO (the design audit's
+            // HIGH, 2026-10-10): laneBoundsFor reads exactly this
+            // seat — a variant that tightens its own range while
+            // the serve drops it is a form that builds what the
+            // bench refuses, the exact failure shape 2 kills.
+            ...(v.bounds !== undefined ? { bounds: v.bounds } : {}),
           },
         ]),
     ),
@@ -888,7 +899,12 @@ export async function cardToolsArm(): Promise<unknown[]> {
       if (atom in lanes) continue;
       let fdecl: ModelDecl | null = null;
       try { fdecl = getModel(atom); } catch { fdecl = null; }
-      if (fdecl !== null && fdecl.params !== undefined) lanes[atom] = laneContractOf(fdecl);
+      // SAME LAW AS THE FORM FACE (the design audit's F5, 2026-10-10):
+      // `params: []` ≡ undeclared — both faces fall back to the
+      // legacy truth. Serving a strictly-empty base to the agent
+      // while the form falls back to the card's union table is two
+      // truths for one declaration.
+      if (fdecl !== null && (fdecl.params?.length ?? 0) > 0) lanes[atom] = laneContractOf(fdecl);
     }
     out.push({
       name: id,

@@ -4,7 +4,7 @@
 // the stop-gated terminal mapping. Explicit deps, no Service state.
 import type { Context } from "@deepseek-ai/cordis";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { assertWiringNow, executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type RunStageRow } from "./runsTypes.ts";
@@ -123,6 +123,41 @@ export type SettleFn = (run: RunRecord) => void;
       run.error = text;
       settle(run);
       return;
+    }
+    // THE WIRING FENCE (2026-10-10, the operator's law: ON SUBMIT
+    // IS A HACK — a check threaded as an option through ONE engine
+    // call is a wall someone remembered to build, not the schema
+    // system). The rows are BUILT here, in the run seat, before any
+    // engine action — so the doc-walk judges HERE, in the same
+    // fence as the splice refusal above: every stage's graph names
+    // only class_types and inputs the engine's own /object_info
+    // declares, in the run's voice, before the first wire moves.
+    // (The merge that follows namespaces ids and resolves $spells
+    // into link VALUES — it adds no names, so the rows' name
+    // surface is the engine's.) The judge is the service's own
+    // public wall — ONE owner (wiringWall.ts), the same walk the
+    // card-compose seat has always had, now at the seat every path
+    // (start, restore, queue replay) already walks.
+    if (seatExecutor === null) {
+      for (let i = 0; i < rows.length; i++) {
+        const stage = run.stages[i];
+        try {
+          assertWiringNow(String(stage["card"] ?? "flow"), rows[i]!.workflow);
+        } catch (exc: unknown) {
+          const text: string = errText(exc);
+          for (const st of run.stages) {
+            /* v8 ignore next */
+            if (st["status"] === "running") {
+              st["status"] = "failed";
+              st["error"] = text;
+            }
+          }
+          run.status = "failed";
+          run.error = text;
+          settle(run);
+          return;
+        }
+      }
     }
     try {
       // THE PROGRESS TAP FOLD (2026-09-13, the operator's "forward

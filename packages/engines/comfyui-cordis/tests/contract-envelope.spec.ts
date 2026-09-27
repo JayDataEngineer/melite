@@ -152,42 +152,52 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
 
 // ── THE WIRING WALL RIDES EVERY SUBMIT SEAM (2026-10-10, the bypass
 // audit's HIGH-3) ─────────────────────────────────────────────────
-// The wall used to run only where a CARD composed, so a flow merge
-// (which rewrites node ids, namespaces wires and resolves $spell AFTER
-// any earlier judgment), a spliced workflow, or a hand-authored
-// registry graph reached the engine with a renamed pack's class_type
-// and died there — in the engine's voice, far from the doc that could
-// have named it. The doc handle is module-level and both seats walk it.
-describe("THE SUBMIT SEAMS CARRY THE WALL", () => {
-  test("the host's executeFlow injects the wall unless a caller brings its own", () => {
+// 2026-10-10, THE OPERATOR'S LAW: ON SUBMIT IS A HACK. The first
+// reseat threaded the wall as an OPTIONAL callback through ONE
+// engine submit call (defaulted at the host, grepped-pin'd here) —
+// and its missing import crashed a live run, proving the shape: a
+// wall someone remembered to build at one door is not the schema
+// system. The wall's seats are the CARD-COMPOSE seat and the RUN
+// SEAT'S PRE-FLIGHT (runsExecute's wiring fence, on the built rows,
+// before any engine action — behaviourally pinned in the queue's
+// runs-hero spec: a bad class_type fails the run with the engine
+// NEVER CALLED). These pins hold the ABSENCE of the hack.
+describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
+  test("the host's executeFlow carries no wall, no default injection, no import", () => {
     const src = readFileSync(new URL("../src/comfyui-host.ts", import.meta.url), "utf8");
-    expect(src).toContain("assertWiringAtSubmit");
-    // the injection is DEFAULTED, never forced (a caller may walk a
-    // stricter wall of its own)
-    expect(src).toMatch(/opts\.assertWiring === undefined/);
+    expect(src).not.toContain("assertWiring");
+    expect(src).not.toContain("assertWiringAtSubmit");
   });
 
-  test("the splice path walks its graph before upload", () => {
+  test("ExecuteOpts threads no assertWiring callback (no submit seam judges)", () => {
     const src = readFileSync(new URL("../src/comfyui-execute.ts", import.meta.url), "utf8");
-    const walk = src.indexOf("opts.assertWiring?.(wf)");
-    const upload = src.indexOf("uploadReferenced(client, wf");
-    expect(walk).toBeGreaterThan(-1);
-    expect(walk).toBeLessThan(upload);
+    expect(src).not.toContain("assertWiring");
+    const merge = readFileSync(new URL("../src/comfyui-merge.ts", import.meta.url), "utf8");
+    expect(merge).not.toContain("assertWiring");
   });
 
-  test("the merge path walks the graph the merge actually submits", () => {
-    const src = readFileSync(new URL("../src/comfyui-merge.ts", import.meta.url), "utf8");
-    const walk = src.indexOf("opts.assertWiring?.(plan.workflow)");
-    const upload = src.indexOf("uploadReferenced(client, plan.workflow");
-    expect(walk).toBeGreaterThan(-1);
-    expect(walk).toBeLessThan(upload);
+  test("the run seat owns the fence (the behavioural wall's home)", () => {
+    const src = readFileSync(
+      new URL("../../../harness/estate-queue/src/runsExecute.ts", import.meta.url),
+      "utf8",
+    );
+    expect(src).toContain("assertWiringNow(");
+    // the fence predates the engine submit — the only executeFlow call
+    const fence = src.indexOf("assertWiringNow(");
+    const submit = src.indexOf("engine.executeFlow(");
+    expect(fence).toBeGreaterThan(-1);
+    expect(submit).toBeGreaterThan(-1);
+    expect(fence).toBeLessThan(submit);
   });
 
-  test("the wall is ONE function (the service and the host share it)", () => {
+  test("the wall is ONE judge with two callers (the service composes, the run seat fences)", () => {
     const wall = readFileSync(new URL("../src/wiringWall.ts", import.meta.url), "utf8");
     expect(wall).toContain("export function assertWiringAgainst");
-    expect(wall).toContain("export function assertWiringAtSubmit");
-    // and the service is a CALLER, not a second implementation
+    expect(wall).toContain("export function assertWiringNow");
+    // the submit-time NAME is dead as code (the header keeps the
+    // history, as history)
+    expect(wall).not.toMatch(/export function assertWiringAtSubmit/);
+    // the service is a CALLER, not a second implementation
     const svc = readFileSync(new URL("../src/service.ts", import.meta.url), "utf8");
     expect(svc).toContain("assertWiringAgainst(this.objectInfoNodes");
     expect(svc).not.toMatch(/private assertWiring\([\s\S]*?for \(const \[id, node\]/);

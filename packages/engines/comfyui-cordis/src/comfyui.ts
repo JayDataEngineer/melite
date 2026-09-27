@@ -112,6 +112,7 @@ export type {
   ExecuteResult,
 } from "./comfyui-execute.ts";
 export { executeFlow, planMerge } from "./comfyui-merge.ts";
+export { assertWiringNow, setObjectInfoDoc } from "./wiringWall.ts";
 export type { FlowResult, MergeRow, MergeStageResult } from "./comfyui-merge.ts";
 export {
   comfyuiHostProvider,

@@ -356,7 +356,6 @@ export async function executeFlowInner(
   // that reaches the engine, and it is the graph that must be walked
   // against the doc. `assertWiresResolve` checks that wires land; this
   // checks that the NAMES do.
-  opts.assertWiring?.(plan.workflow);
   const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });

@@ -172,10 +172,12 @@ export interface VariantRow {
   /** This lane's relation words (judged in ADDITION to the family's
    *  — both layers fire). Absent ≡ none. */
   relations?: ParamRelationWords;
-  /** This lane's numeric bounds, per-field REPLACING the family's
-   *  row for the fields it states (the lightning recipe's step
-   *  ceiling is not the standard's). Judged at bench-write with the
-   *  same voice as the words. Absent ≡ inherit the family's. */
+  /** This lane's numeric bounds: a stated field's row REPLACES the
+   *  family's for that field, per-ENDPOINT (a variant that tightens
+   * only the ceiling holds the family's floor; the lightning
+   * recipe's step ceiling is not the standard's). Judged at
+   * bench-write with the same voice as the words. Absent ≡ inherit
+   * the family's. */
   bounds?: LaneBoundsMap;
   cells: CellRow[];
 }

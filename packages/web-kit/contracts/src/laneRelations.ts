@@ -333,7 +333,18 @@ export function laneBoundsOf(
       : { ...variantBounds };
   }
   if (variantBounds === undefined || variantBounds === null) return { ...familyBounds }
-  return { ...familyBounds, ...variantBounds }
+  // PER-ENDPOINT MERGE (the design audit's F9, 2026-10-10): a
+  // variant row REPLACES the family row for the fields it states,
+  // but WITHIN a stated field each endpoint (min/max) the variant
+  // leaves out is HELD from the family's row — a variant that
+  // tightens only the ceiling never silently drops the family's
+  // floor. To remove an endpoint a variant states the field's row
+  // whole; to inherit a field entirely it states nothing for it.
+  const merged: Record<string, ParamBound> = { ...familyBounds }
+  for (const [name, row] of Object.entries(variantBounds)) {
+    merged[name] = { ...(familyBounds[name] ?? {}), ...row }
+  }
+  return merged
 }
 
 /** Judge the bounds over one stated state. PURE. Blank fields never
