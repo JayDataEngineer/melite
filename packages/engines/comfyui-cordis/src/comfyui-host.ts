@@ -306,13 +306,20 @@ export class ComfyUIHostService extends Service {
     opts: ExecuteOpts = {},
   ): Promise<FlowResult> {
     const server: string = this.baseUrl();
+    // THE WIRING WALL RIDES EVERY SUBMIT (the bypass audit's HIGH-3):
+    // the service IS the host, so the merge and splice paths get the
+    // same doc-walk the card-compose path has always had — unless the
+    // caller brought its own.
+    const withWall: ExecuteOpts = opts.assertWiring === undefined
+      ? { ...opts, assertWiring: (graph: unknown) => assertWiringAtSubmit("flow", graph) }
+      : opts;
     return this.supervised(() =>
       executeFlowInner(
         rows,
         runDir,
         inputNames,
         initials,
-        opts,
+        withWall,
         server,
         this.prompts,
       )

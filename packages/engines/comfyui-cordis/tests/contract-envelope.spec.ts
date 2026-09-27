@@ -13,6 +13,7 @@
 // The pins are RAW envelope walks (refs + meta.extra) — deliberately
 // NOT card-base's fieldsOf — so a failure names the WIRE fact that
 // died, not a derived symptom a walker change could mask.
+import { readFileSync } from "node:fs";
 import { describe, expect, test, beforeAll } from 'vitest'
 import { loadCardDefs, theService } from '../src/cardDefs.ts'
 import { emitParamsSchema } from '../src/params-emit.ts'
@@ -141,3 +142,47 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
     expect(decl.defaults?.['height']).toBe(1024)
   })
 })
+
+// ── THE WIRING WALL RIDES EVERY SUBMIT SEAM (2026-10-10, the bypass
+// audit's HIGH-3) ─────────────────────────────────────────────────
+// The wall used to run only where a CARD composed, so a flow merge
+// (which rewrites node ids, namespaces wires and resolves $spell AFTER
+// any earlier judgment), a spliced workflow, or a hand-authored
+// registry graph reached the engine with a renamed pack's class_type
+// and died there — in the engine's voice, far from the doc that could
+// have named it. The doc handle is module-level and both seats walk it.
+describe("THE SUBMIT SEAMS CARRY THE WALL", () => {
+  test("the host's executeFlow injects the wall unless a caller brings its own", () => {
+    const src = readFileSync(new URL("../src/comfyui-host.ts", import.meta.url), "utf8");
+    expect(src).toContain("assertWiringAtSubmit");
+    // the injection is DEFAULTED, never forced (a caller may walk a
+    // stricter wall of its own)
+    expect(src).toMatch(/opts\.assertWiring === undefined/);
+  });
+
+  test("the splice path walks its graph before upload", () => {
+    const src = readFileSync(new URL("../src/comfyui-execute.ts", import.meta.url), "utf8");
+    const walk = src.indexOf("opts.assertWiring?.(wf)");
+    const upload = src.indexOf("uploadReferenced(client, wf");
+    expect(walk).toBeGreaterThan(-1);
+    expect(walk).toBeLessThan(upload);
+  });
+
+  test("the merge path walks the graph the merge actually submits", () => {
+    const src = readFileSync(new URL("../src/comfyui-merge.ts", import.meta.url), "utf8");
+    const walk = src.indexOf("opts.assertWiring?.(plan.workflow)");
+    const upload = src.indexOf("uploadReferenced(client, plan.workflow");
+    expect(walk).toBeGreaterThan(-1);
+    expect(walk).toBeLessThan(upload);
+  });
+
+  test("the wall is ONE function (the service and the host share it)", () => {
+    const wall = readFileSync(new URL("../src/wiringWall.ts", import.meta.url), "utf8");
+    expect(wall).toContain("export function assertWiringAgainst");
+    expect(wall).toContain("export function assertWiringAtSubmit");
+    // and the service is a CALLER, not a second implementation
+    const svc = readFileSync(new URL("../src/service.ts", import.meta.url), "utf8");
+    expect(svc).toContain("assertWiringAgainst(this.objectInfoNodes");
+    expect(svc).not.toMatch(/private assertWiring\([\s\S]*?for \(const \[id, node\]/);
+  });
+});

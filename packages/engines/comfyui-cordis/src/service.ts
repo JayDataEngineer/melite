@@ -5,6 +5,9 @@
 // graph is emitted (never an assumed install).
 import Schema from '@deepseek-ai/schemastery'
 import { validateDeclaredMods } from './mods-schema.ts'
+import { ComposeRefusal } from './errors.ts'
+import { assertWiringAgainst, setObjectInfoDoc } from './wiringWall.ts'
+export { ComposeRefusal } from './errors.ts';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
@@ -26,13 +29,6 @@ import type { PackContract } from "./serviceMods.ts";
 import { assertEnvelopeLaws, assertPackEnvelopeLaws } from "./envelope-laws.ts";
 
 /** Loud refusal — the estate's rc=-3 door shape, never a silent default. */
-export class ComposeRefusal extends Error {
-  readonly code: string
-  constructor(code: string, message: string) {
-    super(message)
-    this.code = code
-  }
-}
 
 /** THE NO-CHEAT DOOR (2026-09-20, the operator's order: "you edit
  *  the shared library to always walk every single parameter no
@@ -441,12 +437,17 @@ export class ComfyUIService extends Service {
   private readonly verbs = new Map<string, VerbRegistration>()
   private facts: FactsFile | null = null
   /** Live object_info node names — set before compose to arm the gate. */
-  private objectInfoNodes: Set<string> | null = null
+  /** The engine's declared node census, published so ANY seat can walk a
+   *  graph against it (2026-10-10, the bypass audit's HIGH-3: the wall
+   *  used to be reachable only from this class, so the merge and splice
+   *  paths — which produce the graph that actually reaches the engine —
+   *  went unwalked). Null before the doc lands; the wall stands down. */
+  objectInfoNodes: Set<string> | null = null
   /** The wiring doc's DECLARED inputs per node (required ∪
    *  optional) — compose's final wall (assertWiring) walks every
    *  built graph against it. Null = names-only snapshot (the node
    *  gate stands, the input gate waits — never a guessed refusal). */
-  private objectInfoInputs: Map<string, Set<string>> | null = null
+  objectInfoInputs: Map<string, Set<string>> | null = null
   /** Models-tree presence reader — set before compose to arm the
    *  arm-weight gate (mirrors objectInfoNodes: null = fail-open). */
   private weightPresent: ((relativePath: string, name: string) => boolean) | null = null
@@ -729,6 +730,7 @@ export class ComfyUIService extends Service {
     if (!objectInfo) {
       this.objectInfoNodes = null
       this.objectInfoInputs = null
+      setObjectInfoDoc(null)
       this.pinDefaults = {}
       return
     }
@@ -750,6 +752,12 @@ export class ComfyUIService extends Service {
       ]),
     )
     this.pinDefaults = deriveDefaults(objectInfo)
+    // THE WALL IS ARMED FOR EVERY SUBMIT SEAM (the bypass audit's
+    // HIGH-3): the host — a separate class that owns the merge and
+    // splice submits — walks the SAME doc from the module handle, so
+    // a graph that reaches the engine by a path other than a card
+    // compose is judged exactly like one that does not.
+    setObjectInfoDoc(this.objectInfoNodes, this.objectInfoInputs)
   }
 
   /** Legacy: node-name set only (gate arming without autofill). */
@@ -1011,62 +1019,10 @@ export class ComfyUIService extends Service {
    *  input gate). Unarmed (no doc) the wall stands down, the
    *  existing law. Values are never judged here (types are the
    *  schema's own wall); this is the NAME wall. */
-  private assertWiring(cardId: string, graph: unknown): void {
-    if (this.objectInfoNodes === null) return
-    if (graph === null || typeof graph !== 'object') return
-    for (const [id, node] of Object.entries(graph as Record<string, unknown>)) {
-      if (node === null || typeof node !== 'object') continue
-      const row = node as { class_type?: unknown; inputs?: unknown }
-      const ct = row.class_type
-      if (typeof ct !== 'string' || ct === '') {
-        throw new ComposeRefusal('unknown-node',
-          `card '${cardId}' built node '${id}' with no class_type — the graph is not addressable`)
-      }
-      if (!this.objectInfoNodes.has(ct)) {
-        throw new ComposeRefusal('unknown-node',
-          `card '${cardId}' wired node class '${ct}' (as '${id}') — no such class lives on the engine (/object_info names none); the card's compose is stale against the engine build`)
-      }
-      const declared = this.objectInfoInputs?.get(ct)
-      if (declared === undefined) continue // names-only doc: the input gate waits
-      const inputs = row.inputs
-      if (inputs === null || typeof inputs !== 'object') continue
-      for (const key of Object.keys(inputs as Record<string, unknown>)) {
-        if (declared.has(key)) continue
-        // A DOTTED WIDGET SUB-KEY IS A DECLARED INPUT (the shipped-graph
-        // receipt, 2026-10-10): ComfyUI's /object_info declares a
-        // widget by its top-level name and the graph addresses its
-        // sub-widgets with a dotted suffix — 'values.a',
-        // 'ref_images.ref_image_0', 'format.quality',
-        // 'sign_mode.qef'. None of those can ever appear in a doc,
-        // so the first cut of this wall refused every music, h3,
-        // miniMax and remesh graph the estate has actually shipped.
-        // The base segment IS the declaration; the suffix is the
-        // widget's own addressing.
-        if (declared.has(key.split('.')[0] ?? key)) continue
-        // WIDGET-SERIALIZATION KEYS: a small, receipt-named set of
-        // keys ComfyUI serializes but never declares (the same
-        // receipt). Each one is listed with the node that carries it;
-        // this is an allowlist with a reason per entry, never a
-        // blanket pass.
-        if (WIDGET_SERIALIZATION_KEYS.has(key)) continue
-        throw new ComposeRefusal('unknown-input',
-          `card '${cardId}' wired '${ct}.${key}' (as '${id}') — the node declares no such input (${[...declared].sort().join(', ')}); the card's compose is stale against the engine build`)
-      }
-    }
+  /** The card-compose seat's wall (the one owner is wiringWall.ts —
+   *  the host calls the same function for the merge and splice
+   *  seams, so every graph reaching the engine is walked). */
+  assertWiring(cardId: string, graph: unknown): void {
+    assertWiringAgainst(this.objectInfoNodes, this.objectInfoInputs, cardId, graph)
   }
 }
-
-/** The widget-serialization keys ComfyUI accepts on the wire but
- *  never lists in `/object_info` — each with the node that proves it
- *  (a landed run in data/runs/output carries the pair):
- *   - `upload` — LoadImage (image lanes: the upload walk stages the
- *     value; the server ignores the key)
- *   - `model_options` — CLIPLoader (audio lanes; restates the default)
- *   - `lora_ui` — LTX_lora_loader (the h3 refine arm; stripped on
- *     some arms and shipped on others)
- *  A name that is not here and not declared is still refused. */
-const WIDGET_SERIALIZATION_KEYS: ReadonlySet<string> = new Set([
-  'upload',
-  'model_options',
-  'lora_ui',
-])

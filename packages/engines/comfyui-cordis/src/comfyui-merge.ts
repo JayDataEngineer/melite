@@ -350,6 +350,13 @@ export async function executeFlowInner(
 ): Promise<FlowResult> {
   const plan = planMerge(rows, { ...initials }, inputNames);
   const client = sdkClient(server);
+  // THE WIRING WALL AT THE MERGE SEAM (the bypass audit's HIGH-3):
+  // the merge rewrites node ids, namespaces wires and resolves
+  // `$spell`s AFTER any earlier judgment — so its OUTPUT is the graph
+  // that reaches the engine, and it is the graph that must be walked
+  // against the doc. `assertWiresResolve` checks that wires land; this
+  // checks that the NAMES do.
+  opts.assertWiring?.(plan.workflow);
   const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });
