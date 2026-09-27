@@ -52902,6 +52902,28 @@ void main() {
 		function searchedVoice(roots) {
 			return "(searched " + roots.join(", ") + ")";
 		}
+		/**
+		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
+		*
+		* Two readers resolve a run id across the manifest's roots and each
+		* built its own list: the media list (own root first) and the gallery
+		* artifact route (its own flow tree, then the manifest roots). With
+		* a run id present in two trees they could disagree about which
+		* bytes answer — the list serving one file while the artifact route
+		* serves another for the SAME run id.
+		*
+		* This is the order both readers take: the caller's own tree first
+		* (its own writes win), then the manifest roots in their declared
+		* order, de-duplicated.
+		*/
+		function crossRootOrder(ownTree, roots) {
+			const out = [];
+			for (const tree of [ownTree ?? "", ...roots]) {
+				if (tree === "") continue;
+				if (!out.includes(tree)) out.push(tree);
+			}
+			return out;
+		}
 		var init_rootsManifest = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/stagePreview.ts
@@ -53238,6 +53260,7 @@ void main() {
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
+			crossRootOrder: () => crossRootOrder,
 			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
 			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
@@ -61060,4 +61083,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e3a62f9c98fb1313c7049125215ffd738d99c3da";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="27b14051cfdc1bbd8d49c6bb35011a4ca3e703eb";

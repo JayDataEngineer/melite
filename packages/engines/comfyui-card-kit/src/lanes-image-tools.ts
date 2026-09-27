@@ -370,7 +370,10 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
     // once covered only 4 of 9 keys — the 5 newer knobs flowed
     // unvalidated to node inputs, an engine 400 instead of a loud
     // lane refusal). Every value in a tune is a finite number.
-    const unknown = Object.keys(t).filter((k) => !TUNE_KEYS.includes(k))
+    // the key set is the type's own members (TUNE_KEYS is derived),
+    // so the membership test narrows the runtime string
+    const known = new Set<string>(TUNE_KEYS as readonly string[])
+    const unknown = Object.keys(t).filter((k) => !known.has(k))
     if (unknown.length > 0) {
       throw new Error(`maskT1: an export tune carries unknown key(s) ${unknown.join(', ')} — the vocabulary is ${TUNE_KEYS.join('/')}`)
     }

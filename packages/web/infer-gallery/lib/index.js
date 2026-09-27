@@ -1,4 +1,5 @@
-import { contentTypeForArtifact } from "@melite/contracts/mediaKinds";
+import { crossRootOrder } from "@melite/contracts/rootsManifest";
+import { contentTypeForArtifact, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 //#region src/index.ts
 const name = "infer-gallery";
@@ -103,8 +104,8 @@ function apply(ctx, config = {}) {
 		const seat = ctx.get("queue", false);
 		if (seat === void 0) return [flowDir];
 		const roots = seat.stateRoots !== void 0 && seat.stateRoots.length > 0 ? [...seat.stateRoots] : [seat.stateRoot];
-		const trees = [];
-		for (const tree of [flowDir, ...roots.map((r) => `${r}/output`)]) if (!trees.includes(tree)) trees.push(tree);
+		const trees = crossRootOrder(flowDir, roots.map((r) => `${r}/output`));
+		for (const tree of []);
 		return trees;
 	};
 	/** The first tree holding the target wins (the grammar was already
@@ -268,6 +269,13 @@ function apply(ctx, config = {}) {
 			if (!isRunRelative(target)) {
 				fail(res, 400, "forbidden_path", {
 					message: "artifact route only serves run-relative names (run-<id>/<file>)",
+					path: target
+				});
+				return;
+			}
+			if (!servableLeaf(target.split("/").pop() ?? "")) {
+				fail(res, 400, "protected_sidecar", {
+					message: "run sidecars are not artifacts",
 					path: target
 				});
 				return;

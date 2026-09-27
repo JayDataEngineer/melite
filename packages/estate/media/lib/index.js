@@ -33,7 +33,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
     done = true;
 };
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, mediaVocab } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, mediaVocab, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { stampOf } from "@melite/contracts/buildStamp";
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX, runMediaPrefixOf, canonicalRunMediaUrl, } from "@melite/contracts/benchStage";
@@ -43,6 +43,9 @@ import { fileURLToPath } from "node:url";
 /** The roots a media answer searches: the seat's manifest when it
  *  carries one, else the single own root (§23 — own root always
  *  leads; a run-id collision resolves first-root-wins). */
+// THE ROOT ORDER IS THE CONTRACT'S (see crossRootOrder): a run id
+// present in two trees must answer the same bytes whichever reader
+// asks, so both read ONE order.
 const seatRoots = (seat) => seat.stateRoots !== undefined && seat.stateRoots.length > 0
     ? [...seat.stateRoots]
     : [seat.stateRoot];
@@ -164,12 +167,13 @@ function segmentOk(decoded) {
  *  (_flow.json, _request.json carry drafts and graphs — the run's
  *  private record, never gallery bytes). `_poster.jpg` is the ONE
  *  underscore exception (the runThumbnail mint law). */
-const UNDERSCORE_SERVABLE = new Set(["_poster.jpg"]);
+// THE PREDICATE IS THE CONTRACT'S (servableRunRelative — the audit's
+// H5): this module used to refuse every underscore leaf but
+// `_poster.jpg` while the gallery's artifact route served any
+// run-relative name, so a private record was refused here and served
+// there. One rule, two doors.
 function relServable(relParts) {
-    const base = relParts[relParts.length - 1];
-    if (!base.startsWith("_"))
-        return true;
-    return UNDERSCORE_SERVABLE.has(base);
+    return servableLeaf(relParts[relParts.length - 1] ?? "");
 }
 /** The content-type for one served artifact: the LEAF's one
  *  spelling (contentTypeForArtifact — the vocab leaf's MIME table,
