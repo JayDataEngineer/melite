@@ -8213,7 +8213,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							});
 							onTouched?.();
 						} catch {}
-						return terminal === "done" || terminal === "failed" || terminal === "stopped" ? terminal : null;
+						return terminal === "running" ? null : terminal;
 					}
 					await sleep(1500);
 					continue;
@@ -9572,6 +9572,39 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (variantParams === void 0 || variantParams === null) return [...familyParams];
 			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
 		}
+		function laneBoundsOf(familyBounds, variantBounds) {
+			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
+			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
+			const merged = { ...familyBounds };
+			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
+				...familyBounds[name] ?? {},
+				...row
+			};
+			return merged;
+		}
+		/** Judge the bounds over one stated state. PURE. Blank fields never
+		*  violate (the blank law: unstated is the family default's
+		*  business, not a refusal); non-numbers are the card schema's own
+		*  refusal, never re-voiced here; a stated number outside its row
+		*  refuses IN THE FIELD'S VOICE, cure included. */
+		function judgeLaneBounds(bounds, values) {
+			if (bounds === null) return [];
+			const out = [];
+			for (const [name, row] of Object.entries(bounds)) {
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				const v = values[name];
+				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
+				const floor = row.min;
+				const ceiling = row.max;
+				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
+				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
+				out.push({
+					field: name,
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+				});
+			}
+			return out;
+		}
 		var quote;
 		var init_laneRelations = __esmMin((() => {
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
@@ -9917,6 +9950,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (v !== void 0) out.push(v);
 			return out;
 		}
+		/** The numeric bounds that judge the resolved lane: family rows,
+		*  per-field replaced by the variant's own (the DECL cascade's
+		*  replace-law for numbers). */
+		function laneBoundsFor(spec, variantId) {
+			const lanes = spec.lanes;
+			if (lanes === void 0) return null;
+			return laneBoundsOf(lanes.bounds ?? null, variantId === null ? void 0 : lanes.variants?.[variantId]?.bounds ?? null);
+		}
 		/** Field visibility UNDER the lane contract: a declared surface
 		*  hides every field it does not name (the declaration is the
 		*  author — the field set IS the variant); a family that declares
@@ -9961,7 +10002,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (v === null || v === void 0) continue;
 				stated[k] = v;
 			}
-			return [...judgeLaneSurface(surface, names, stated), ...judgeLaneRelations(relations, stated)];
+			const bounds = laneBoundsFor(spec, variantId);
+			return [
+				...judgeLaneSurface(surface, names, stated),
+				...judgeLaneRelations(relations, stated),
+				...judgeLaneBounds(bounds, stated)
+			];
 		}
 		/** Does the served doc offer this variant id? The VARIANT rows are
 		*  the served truth — a recipe row and a surface-less variant
@@ -51615,10 +51661,20 @@ void main() {
 		/**
 		* The source-media types a family declares it ingests (FamilyEntry.accepts,
 		* a closed literal on the backend). Returns the declared list, or
-		* [] when the family declares none / is unknown → the canvas drop handler
-		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
-		* MIME itself — there simply is no input family to receive the drop). The
-		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
+		* [] when the family declares none / is unknown.
+		*
+		* THE READER TODAY, STATED HONESTLY (the accepts-consumer audit,
+		* 2026-10-10): this gate is SERVED (catalogEmission puts the DECL's
+		* accepts on the /v1/model-catalog families block) and READ here,
+		* but the promised last-mile consumer — a canvas drop handler
+		* spawning an input card only for accepted media types — does not
+		* exist in this checkout (the drop surface targets card slots via
+		* the shared ASSET_DRAG_MIME contract, never spawns). The DECL's
+		* truth is not a lie; the old comment's consumer was. The wiring
+		* is owed work on the ROADMAP (canvas drop-spawn), and this
+		* reader is the gate it will call — never a free-coded
+		* isImageFile prefix check. (authored 2026-08-09; corrected
+		* 2026-10-10)
 		*/
 		function familyAccepts(routeKey, cat = _cache$2 ?? {
 			families: {},
@@ -53315,11 +53371,13 @@ void main() {
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isProvenance: () => isProvenance,
+			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
 			kindForId: () => kindForId,
 			kindSpecOf: () => kindSpecOf,
 			laneBlank: () => laneBlank,
+			laneBoundsOf: () => laneBoundsOf,
 			laneSurfaceOf: () => laneSurfaceOf,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
@@ -61131,4 +61189,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a783dccdca44ccb36239b51ac7b3a131c9d8f6ee";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="aa6b8e211efa74b3b0f56204eda42d6a5a340706";

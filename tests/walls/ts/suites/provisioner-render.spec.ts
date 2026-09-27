@@ -36,12 +36,32 @@ const BIN: string = join(REPO, "packages", "harness", "provisioner", "bin", "inf
 // when pnpm is broken the tests skip instead of masking a render
 // regression as an install failure. The preflight proves the external,
 // never the product.
+/** pnpm where THIS machine keeps it. A bare `pnpm` is on no PATH
+ *  in the dev shell (the toolchain is mise-installed), and the
+ *  bare probe made this wall SKIP here — a real render check
+ *  silently out of the suite on the machine that owns the repo.
+ *  The probe proves the external tool, not the product; it must
+ *  look in the toolchain's own bin before declaring it broken. */
+function pnpmBin(): string {
+  // real paths first, the bare name only as the last resort (an
+  // earlier cut returned "pnpm" on the first pass and so never
+  // reached the toolchain — the skip stayed, silently)
+  const candidates = [
+    process.env["PNPM_BIN"],
+    join(process.env["HOME"] ?? "", ".local/share/mise/installs/node/24.21.0/bin/pnpm"),
+  ].filter((c): c is string => typeof c === "string" && c !== "");
+  for (const c of candidates) {
+    if (existsSync(c)) return c;
+  }
+  return "pnpm";
+}
+
 function pnpmHealthy(): boolean {
   try {
     const dir = mkdtempSync(join(tmpdir(), "pnpm-health-"));
     writeFileSync(join(dir, "package.json"), "{}");
     writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "."');
-    execFileSync("pnpm", ["install"], { cwd: dir, timeout: 90_000, stdio: "ignore" });
+    execFileSync(pnpmBin(), ["install"], { cwd: dir, timeout: 90_000, stdio: "ignore" });
     return true;
   } catch {
     return false;

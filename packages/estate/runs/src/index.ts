@@ -25,18 +25,41 @@ import {
   Remote,
   TypertRemoteService,
 } from "@deepseek-ai/dsh-typert-protocol";
-import type { RunsRuntimeService } from "@melite/estate-queue";
 
+
+/** The registry seat's adapter-facing surface (structural — the
+ *  implementation is RunsRegistryService in @melite/estate-queue;
+ *  the wall pins the delegation byte-for-byte). */
+interface RunsSeat {
+  start(
+    doc: unknown,
+    signal: AbortSignal,
+  ): Promise<{ run_id: string; status: string; queue_position: number }>;
+  status(
+    runId: string,
+    signal: AbortSignal,
+    includeLog?: boolean,
+  ): Promise<Record<string, unknown>>;
+  stop(
+    runId: string,
+    signal: AbortSignal,
+  ): Promise<Record<string, unknown>>;
+  list(
+    rawLimit: string,
+    signal: AbortSignal,
+  ): Promise<{ count: number; runs: Record<string, unknown>[] }>;
+  validate(
+    doc: unknown,
+    signal: AbortSignal,
+  ): Promise<Record<string, unknown>>;
+}
 
 declare module "@deepseek-ai/cordis" {
   interface Context {
     runsRemote: RunsRemoteService;
-    /** The live-run registry seat — typed with the class that
-     *  MOUNTS it (li-aq.3: the hand-rolled structural twin of this
-     *  key conflicted with the queue's own declaration — TS2717 —
-     *  and a weaker type for a live seat is a lie the compiler
-     *  could not see). */
-    runs: RunsRuntimeService;
+    /** The live-run registry seat (@melite/estate-queue's
+     *  RunsRegistryService — structural here, per the header). */
+    runs: RunsSeat;
   }
 }
 
