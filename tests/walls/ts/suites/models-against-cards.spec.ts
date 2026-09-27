@@ -340,16 +340,16 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // checkpoint must not mask the qwen3-tts refusal this test names)
     const admits = await allAdmits()
     assert.throws(
-      // admits rides here TOO — the arm isolates the ENGINE-TRUTH
-      // variable (wd14's admitted checkpoint must not mask the
-      // qwen3-tts refusal this test names)
-      () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served, new Map(), admits),
+      // ISOLATION ARM, BOTH GATES OPEN-PROOF (2026-10-10): empty
+      // truth AND empty admits — wd14's admitted 'checkpoint' (the
+      // tagger lane key) is the first thrower, proving ADMITS is
+      // what lets lane-consumed keys through the card-domain gate
+      // (the same law tts 'mode' now rides). Axis params skip the
+      // gate INSIDE the validator (the axisKey law — pinned estate-
+      // wide by the contract-law suite's LAW 5).
+      () => validateRegistryAgainstCards(allDecls(), cards, [], boarded, served, new Map(), new Map()),
       (err: unknown): boolean =>
-        // 2026-09-23 (the 1:1 matrix): the 1.7B family now carries
-        // defaults.mode 'tts' on its customvoice default lane — the
-        // same engine-truth law, a new first thrower (it iterates
-        // before the 0.6B).
-        err instanceof ModelError && String(err.message).includes("qwen3-tts-voicedesign: default 'mode'"),
+        err instanceof ModelError && String(err.message).includes("wd14: default 'checkpoint'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews(), await allAdmits());
     assert.ok(checked.length >= 24, `expected 24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);

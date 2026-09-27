@@ -1003,6 +1003,9 @@ importers:
       '@melite/audio-tts':
         specifier: workspace:*
         version: link:../../audio/tts
+      '@melite/card-base':
+        specifier: workspace:*
+        version: link:../../web/card-base
       '@melite/comfyui-card-kit':
         specifier: workspace:*
         version: link:../../engines/comfyui-card-kit

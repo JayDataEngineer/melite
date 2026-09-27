@@ -9451,10 +9451,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const rule = f.visible_when;
 			if (typeof rule !== "string" || rule === "") return true;
 			for (const guard of rule.split("&")) {
-				const eq = guard.indexOf("=");
-				if (eq < 0) continue;
-				const key = guard.slice(0, eq);
-				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				let key;
+				let wants;
+				let negate = false;
+				if (ne >= 0) {
+					key = g.slice(0, ne).trim();
+					wants = g.slice(ne + 2).split("|").map((w) => w.trim());
+					negate = true;
+				} else if (eq >= 0) {
+					key = g.slice(0, eq).trim();
+					wants = g.slice(eq + 1).split("|").map((w) => w.trim());
+				} else continue;
+				if (key === "") continue;
+				const val = String(values[key] ?? "");
+				const hit = wants.some((w) => w === "null" ? val === "" : w === val);
+				if (negate === hit) return false;
 			}
 			return true;
 		}
@@ -60537,4 +60551,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fb6698f8a8b97b3c5d1885c12bfee6df094b4b6a";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3f5ecb8b846a7cfb5854e8c893460996e4dd84cb";

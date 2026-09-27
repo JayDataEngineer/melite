@@ -136,9 +136,17 @@ export function validateRegistryAgainstCards(
       if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
       checked.push([mid, cardId]);
       const admitted = cardAdmits?.get(cardId);
+      // AXIS PARAMS skip the card-domain gate (the estate contract
+      // laws, 2026-10-10): a decl's variant_groups own durable
+      // draft seats — axisKey law: the group id lowercased
+      // ('Variant' → 'variant') — qwen3-tts's defaults.variant is
+      // the documented VARIANT STAMP, contract vocabulary, not a
+      // ghost field.
+      const axisKeys = new Set((decl.variant_groups ?? []).map((g) => g.id.toLowerCase()));
       for (const [key, val] of Object.entries(decl.defaults ?? {})) {
         if (truth.has(key)) continue;
         if (admitted !== undefined && admitted.includes(key)) continue;
+        if (axisKeys.has(key)) continue;
         const domain: FieldDomain | undefined = domains.get(key);
         if (domain === undefined) {
           throw new ModelError(

@@ -820,11 +820,34 @@ export function fieldVisible(f: SpecField, values: SpecValues): boolean {
   const rule = f.visible_when
   if (typeof rule !== 'string' || rule === '') return true
   for (const guard of rule.split('&')) {
-    const eq = guard.indexOf('=')
-    if (eq < 0) continue
-    const key = guard.slice(0, eq)
-    const wants = guard.slice(eq + 1).split('|')
-    if (!wants.includes(String(values[key] ?? ''))) return false
+    const g = guard.trim()
+    // THE GRAMMAR'S FULL LAW (deep pass 2026-10-10, pinned by the
+    // estate law suite's LAW 7): guards are `key=want|want` or
+    // `key!=want|want`; keys and wants TRIM; the literal `null` is
+    // the UNSET face (undefined/empty). Before this pass the
+    // interpreter honored `=` alone — every `!= null` guard on the
+    // wire parsed as key `image1 ` (trailing space) wanting
+    // `! null`, NEVER true: dead grammar the law suite caught.
+    const ne = g.indexOf('!=')
+    const eq = ne >= 0 ? -1 : g.indexOf('=')
+    let key: string
+    let wants: string[]
+    let negate = false
+    if (ne >= 0) {
+      key = g.slice(0, ne).trim()
+      wants = g.slice(ne + 2).split('|').map((w) => w.trim())
+      negate = true
+    } else if (eq >= 0) {
+      key = g.slice(0, eq).trim()
+      wants = g.slice(eq + 1).split('|').map((w) => w.trim())
+    } else {
+      continue
+    }
+    if (key === '') continue
+    const val = String(values[key] ?? '')
+    // `null` matches the unset face ('' | undefined | null)
+    const hit = wants.some((w) => (w === 'null' ? val === '' : w === val))
+    if (negate === hit) return false
   }
   return true
 }

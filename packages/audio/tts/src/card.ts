@@ -152,6 +152,11 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    // mode rides admits (the tagger-checkpoint precedent, caught by
+    // the estate contract laws 2026-10-10): the audio lane reads
+    // p.mode ('full' vs section modes) — a lane-consumed param the
+    // family defaults stamp, never rendered, no card knob.
+    admits: ['mode'],
     compose(p, model, g, runId) {
       // THE .QVOICE PATH HINT (022's self-critique #5, 2026-09-24):
       // the vocabulary refusal on `voice` lists the preset enum and
