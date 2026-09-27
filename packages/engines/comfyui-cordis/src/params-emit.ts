@@ -151,14 +151,12 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
   if (out.maximum === undefined && iex.max !== undefined) out.maximum = iex.max
 
   if (im.description) out.description = im.description
-  // THE ONE-VOCABULARY LAW (2026-10-10, the contract audit): every
-  // card declares `visible_when` (snake — the form walker's own
-  // spelling); this face read `visibleWhen` (camel), a key NO
-  // declaration writes — x-visible-when never fired for a single
-  // card. The declaration's spelling is the contract; the camel
-  // alias stays accepted (a future declaration may not be re-iled),
-  // but the snake key is the one that serves.
-  const vw = iex['visible_when'] !== undefined ? iex['visible_when'] : iex.visibleWhen
+  // ONE VOCABULARY (li-f): the snake spelling is the only one the
+  // contract carries — the camel alias is GONE. Every writer passes
+  // bag() (tsc refuses camel at the literal), the wire walk refuses
+  // camel on any served envelope, so a legible second spelling had
+  // no remaining writer and no reason to stay legible.
+  const vw = iex['visible_when']
   if (vw !== undefined) out['x-visible-when'] = vw
   if (iex.families !== undefined) out['x-families'] = iex.families
 

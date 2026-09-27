@@ -90,14 +90,23 @@ describe("emitKnob (the atom + overlay arms)", () => {
     assert.equal(out.maximum, 9);
   });
 
-  it("the display overlays ride (description, visible-when, families)", () => {
+  it("the display overlays ride (description, visible-when, families) — and camel is DEAD", () => {
     const out = emitKnob(shape({
       type: "string",
-      meta: { description: "the prompt", extra: { visibleWhen: { mode: "x" }, families: ["f"] } },
+      meta: { description: "the prompt", extra: { visible_when: { mode: "x" }, families: ["f"] } },
     }));
     assert.equal(out.description, "the prompt");
     assert.deepEqual(out["x-visible-when"], { mode: "x" });
     assert.deepEqual(out["x-families"], ["f"]);
+    // THE ONE-VOCABULARY LAW (li-f): the camel spelling no longer
+    // serves at all — no writer can produce it (bag() + tsc refuse
+    // it at the literal) and no reader may honor it. A foreign
+    // spelling is a silent no-op, exactly as if the key were absent.
+    const camel = emitKnob(shape({
+      type: "string",
+      meta: { extra: { visibleWhen: { mode: "x" } } as never },
+    }));
+    assert.equal(camel["x-visible-when"], undefined);
   });
 
   it("a bare knob serves its type alone", () => {
