@@ -15,6 +15,7 @@
 // nothing the model did not declare — and the model may declare
 // nothing the card cannot carry. The words live at
 // @melite/contracts/laneRelations; these walls pin the judgment.
+import { prepareCardParams } from "../src/cardsCompose.ts";
 import { describe, it, expect, beforeAll } from "vitest";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
@@ -230,13 +231,30 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
 });
 
 describe("THE TOLERANCE SEAMS (what this door does NOT own)", () => {
-  it("a family that declares no surface judges nothing (the legacy truth)", () => {
+  it("a family that declares no surface is judged by NO lane law (the legacy truth)", () => {
+    // the LANE seam: a legacy family declares no surface, so no
+    // surface/relation law speaks for it...
     const verdict = svc.admitStageRelations("image-gen", {
       model: "anny",
-      prompt: "x",
-      whatever_knob: "any",
     });
     expect(verdict).toEqual({ ok: true });
+  });
+
+  it("but an UNDECLARED key refuses HERE too (2026-10-10, the behavioural audit's BROKEN-B)", () => {
+    // ...while the UNDECLARED-KEY gate is universal and now runs on
+    // this seat: `frobnicate` used to be ADMITTED at the bench and
+    // refused only at the run door, so a write the door accepted
+    // produced a run the bench could not. The bench and the run speak
+    // ONE voice about a key no card declares.
+    const verdict = svc.admitStageRelations("image-gen", {
+      model: "anny",
+      whatever_knob: "any",
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("whatever_knob");
+      expect(verdict.error).toMatch(/unknown param|admission is the declared surface/);
+    }
   });
 
   it("an unknown variant passes THIS door — the run door owns that voice", () => {
@@ -382,9 +400,17 @@ describe("THE CLAIM LAW (the card claims nothing the model did not declare)", ()
           carriable.has(name),
           `family ${fam} relates on '${name}' but nothing carries it`,
         ).toBe(true);
+        // A relation may name a field the family's own surface does
+        // NOT carry — that is often its POINT: the 0.6B declares
+        // voice_name × style_instruction, and style_instruction is a
+        // 1.7B-only field, so the row refuses at the DOOR a state
+        // that would have died at compose ("fires nothing on this
+        // lane"). What it may not name is a field NOTHING carries —
+        // so the check is: the name is in some lane surface, or it is
+        // a field the CARD carries, or a mod field.
         expect(
-          laneNames.has(name),
-          `family ${fam} relates on '${name}' but no lane surface declares it (the law contradicts its own surfaces)`,
+          laneNames.has(name) || decl.schemaNames.includes(name) || modFieldsOf(row.card, fam).has(name),
+          `family ${fam} relates on '${name}', which no lane surface, card field, or mod pack carries — dead grammar`,
         ).toBe(true);
       }
     }
@@ -496,4 +522,90 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
       }
     });
   }
+});
+
+// ── THE PARITY LAW, PROVEN END TO END (2026-10-10, the behavioural
+// audit's BROKEN-A/B/C — three holes found by writing poison through
+// the LIVE lane, not by reading code) ──────────────────────────────
+//
+// A. AN ADDRESS THE CARD DOES NOT OFFER IS NOT OFFERED. The model
+//    admission folded any declared route onto its owning family, so
+//    `qwen3-tts-voicedesign-base` (a variant route the card's board
+//    does not name) was admitted — and then composed the family
+//    HEAD's lane: the stored id said base while the run spoke.
+describe("an unoffered address is refused (the board IS the offer)", () => {
+  it("a variant route the card does not board refuses, naming the offer", () => {
+    const verdict = svc.admitStageModel("tts", "qwen3-tts-voicedesign-base");
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("qwen3-tts-voicedesign-base");
+      expect(verdict.offered).toContain("qwen3-tts");
+      expect(verdict.offered).not.toContain("qwen3-tts-voicedesign-base");
+    }
+  });
+  it("an address the card DOES board still admits (the fix is precise)", () => {
+    for (const id of ["qwen3-tts", "qwen3-tts-base", "qwen3-tts-voicedesign-design"]) {
+      expect(svc.admitStageModel("tts", id).ok, id).toBe(true);
+    }
+  });
+});
+
+describe("THE RUN SEAT COMPOSES THE RESOLVED ADDRESS (BROKEN-C)", () => {
+  it("a base variant resolves to the CLONE route, not the family head", () => {
+    // the defect: the variant coordinate is CONSUMED at the lift
+    // (`model` is an envelope key), so composeOnce was handed the
+    // family ATOM and the engine composed the head lane's facts row —
+    // a bench-ADMITTED clone state then refused at Run with "fires
+    // nothing outside the Base variant". The prepared card now
+    // carries the address the engine must compose.
+    const base = prepareCardParams(
+      svc,
+      { variant: "base", text: "clone this", ref_audio: "/a.flac", ref_text: "t" },
+      "qwen3-tts",
+      "test",
+    );
+    expect(base.modelId, "the base variant re-points the engine at the clone route").toBe("qwen3-tts-base");
+    // a head-lane pick composes the head's own address
+    const head = prepareCardParams(svc, { variant: "customvoice", text: "speak" }, "qwen3-tts", "test");
+    expect(head.modelId).toBe("qwen3-tts");
+    // a route ADDRESS with no variant composes the HEAD (the VARIANT
+    // selects the lane, not the address — the documented direction:
+    // a bare route address judges the family head, which is why the
+    // card re-points by variant, not by address)
+    const addressed = prepareCardParams(svc, { text: "speak" }, "qwen3-tts-base", "test");
+    expect(addressed.modelId).toBe("qwen3-tts");
+  });
+});
+
+// ── THE EXPORT CONFLICTS ARE COMPLETE (the bypass audit's HIGH-4) ──
+// The 0.6B family declared `together(voice_name, design_prompt)` and
+// two conflicts but NOT the voice_name × style_instruction export
+// conflict its 1.7B SIBLING carries. So an export + delivery-style
+// state passed the judge and refused at compose: the form builds what
+// the run refuses — the exact failure the whole shape exists to kill.
+describe("an export is styled on its performances, not while it is designed", () => {
+  it("the 0.6B lane refuses voice_name + style_instruction (the 1.7B law, at last)", () => {
+    const verdict = svc.admitStageRelations("tts", {
+      model: "qwen3-tts",
+      variant: "customvoice",
+      text: "x",
+      voice_name: "warm_1",
+      design_prompt: "a warm narrator",
+      style_instruction: "whispered",
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("voice_name");
+      expect(verdict.error).toContain("style_instruction");
+      expect(verdict.error).toMatch(/styled on its performances|drop the style/);
+    }
+  });
+  it("a style on its own composes (the conflict is the EXPORT's, not the style's)", () => {
+    expect(svc.admitStageRelations("tts", {
+      model: "qwen3-tts",
+      variant: "customvoice",
+      text: "x",
+      voice: "vivian",
+    }).ok).toBe(true);
+  });
 });

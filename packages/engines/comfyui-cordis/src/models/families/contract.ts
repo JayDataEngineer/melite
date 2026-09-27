@@ -340,6 +340,14 @@ export function assertSchemaAcceptsMinimalRows(): void {
     ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
     ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
     ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
+    // THE MAIN DECLARATION (2026-10-10, the audit's Rule 7): ModelDecl
+    // was the one row the wall did NOT cover — and it demanded
+    // unoffered/form/source/studio/prompt_guide/timeout_floor/
+    // canvas_default/character_presets/params/relations while the
+    // interface called them optional, so a hand-written DECL that
+    // omitted the lane declaration was tsc-clean and refused at
+    // registration. The same bug class, at the top of the grammar.
+    ["ModelDecl", ModelDecl, { id: "d", genre: "image", label: "L", variants: [] }],
   ];
   for (const [name, schema, row] of minimal) {
     try {
@@ -395,10 +403,10 @@ export const ModelDecl = z.object({
   label: z.string(),
   description: z.string().default(""),
   engine: z.string().default(""),
-  unoffered: z.boolean(),
-  form: z.string(),
+  unoffered: z.boolean().required(false),
+  form: z.string().default(""),
   defaults: z.dict(z.any()).default({}),
-  source: z.union([SourceRow, z.const(null)]),
+  source: z.union([SourceRow, z.const(null)]).required(false),
   studio: z.union([z.object({
     tenant: z.string(),
     owns_params: z.boolean(),
@@ -406,19 +414,19 @@ export const ModelDecl = z.object({
     size: z.string(),
     layout: z.string(),
     kind: z.string(),
-  }), z.const(null)]),
+  }), z.const(null)]).required(false),
   // string = pack name; object = pack + the knob marriage (the
   // ModPackMarriage const above owns the shape and its law).
   mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
   variants: z.array(VariantRow),
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
-  prompt_guide: z.union([z.dict(z.any()), z.const(null)]),
+  prompt_guide: z.union([z.dict(z.any()), z.const(null)]).required(false),
   base_body: z.string().default(""),
   accepts: z.array(z.string()).default([]),
-  timeout_floor: z.number().min(0),
-  canvas_default: z.boolean(),
-  character_presets: z.array(z.dict(z.any())),
+  timeout_floor: z.number().min(0).required(false),
+  canvas_default: z.boolean().required(false),
+  character_presets: z.array(z.dict(z.any())).required(false),
   lane_inputs: z.dict(z.any()).default({}),
   /** The family's BASE parameter surface (fix shape 1): the params
    *  EVERY lane of this family accepts. Absent = the family
@@ -426,10 +434,10 @@ export const ModelDecl = z.object({
    *  authors the fields, nothing binds the two). Declaring one
    *  binds the card to it (the claim law: the card may claim
    *  nothing the model did not declare). */
-  params: z.array(z.string().pattern(FIELD_NAME_RE)),
+  params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
   /** The family-wide relation words (judged on EVERY lane, in
    *  addition to each variant's own). */
-  relations: ParamRelationWords,
+  relations: ParamRelationWords.required(false),
   // the interface documents all three as optional (absent ≡ false
   // to every reader), so the schema accepts their absence too
   has_agent: z.boolean().required(false),

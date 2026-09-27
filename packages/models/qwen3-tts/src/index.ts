@@ -76,6 +76,11 @@ export const DECL: ModelDecl = {
       },
       {
         "a": "voice_name",
+        "b": "style_instruction",
+        "cure": "an export creates the voice — it is styled on its performances, not while it is designed (drop the style, then style the voice when you perform it)",
+      },
+      {
+        "a": "voice_name",
         "b": "qvoice",
         "cure": "a saved persona performs the text — the exporter performs nothing beside it (drop the export or drop the .qvoice)",
       },

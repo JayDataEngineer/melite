@@ -39,6 +39,12 @@
  * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+
+/** The upstream's artifact prefix: the gateway route that has served
+ *  run artifacts since the app's own mount — a LEGACY spelling the
+ *  contract still owns (the media route serves both). */
+const GATEWAY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
 import { crossRootOrder } from '@melite/contracts/rootsManifest'
 import { servableLeaf } from '@melite/contracts/mediaKinds'
 import { contentTypeForArtifact } from '@melite/contracts/mediaKinds'
@@ -396,7 +402,7 @@ export function apply(ctx: Context, config: Config = {}): void {
           // Cross-host: the owning DSH's asset tree (the /v1/assets
           // prefix rides only in this posture — the in-tree rows are
           // run-relative by the REBUILD-6 divergence law).
-          const response = await fetch(`${gatewayUrl}/v1/assets/runs/${target}`, {
+          const response = await fetch(`${gatewayUrl}${GATEWAY_MEDIA_PREFIX}/${target}`, {
             signal: AbortSignal.timeout(timeoutMs),
             headers: rangeAsk !== undefined ? { range: rangeAsk } : {},
           })
@@ -433,7 +439,7 @@ export function apply(ctx: Context, config: Config = {}): void {
             return
           }
           if (!response.ok || response.body === null) {
-            fail(res, response.status, 'gateway_error', { upstream: `${gatewayUrl}/v1/assets/runs/${target}` })
+            fail(res, response.status, 'gateway_error', { upstream: `${gatewayUrl}${GATEWAY_MEDIA_PREFIX}/${target}` })
             return
           }
           const buffer = Buffer.from(await response.arrayBuffer())

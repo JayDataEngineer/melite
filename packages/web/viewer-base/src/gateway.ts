@@ -12,6 +12,8 @@
 // the host half proxies it, the client half fetches the proxy.
 
 /** The runs-door status body, named-explicitly (never the whole row). */
+import { LEGACY_RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage'
+
 export interface RunStatusBody {
   run_id: string
   status: string
@@ -41,7 +43,7 @@ export function runStatusPath(runId: string): string {
 /** The asset door URL for one run artifact (rel path from the status body). */
 export function assetUrl(gateway: string, runId: string, rel: string): string {
   const base = gateway.replace(/\/+$/, '')
-  return `${base}/v1/assets/runs/${encodeURIComponent(runId)}/${rel
+  return `${base}${LEGACY_RUN_MEDIA_PREFIX}/${encodeURIComponent(runId)}/${rel
     .split('/')
     .map(encodeURIComponent)
     .join('/')}`

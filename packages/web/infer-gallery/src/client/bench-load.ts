@@ -22,7 +22,7 @@
  */
 
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
-import { RESTORE_STRIP_KEYS, stripKeys } from '@melite/contracts/benchStage'
+import { RESTORE_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage'
 
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
@@ -316,7 +316,16 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       if (params['model'] === card) delete params['model']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
-      const stages = [{ id: 's_0', engine: 'comfyui', card, params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]
+      // THE STAGE ROW IS THE CONTRACT'S (the audit's Rule 1: this arm
+      // built the row by hand — a THIRD copy of the self-naming strip
+      // and its own engine/outputs laws). The contract shapes the row;
+      // the restore's provenance and preview ride on top.
+      const restoredCardRow: Record<string, unknown> = {
+        ...normalizeBenchStage({ id: 's_0', card, params }, 0),
+        provenance: 'restored',
+      }
+      if (result !== undefined) restoredCardRow['result'] = result
+      const stages = [restoredCardRow]
       await loadStagesOntoBench(stages, intentSrc.slice(0, 77), deps)
       return
     }
@@ -332,7 +341,16 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // cardless restore is honest and refuses; it is never dressed
       // up as a card.
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
-      const stages = [{ id: 's_0', engine: 'comfyui', params, provenance: 'restored', ...(result !== undefined ? { result } : {}) }]
+      // the same contract-shaped row; a cardless restore stays
+      // cardless (the birth law stamps card = intent, and an intent is
+      // a LABEL — naming the bench after the prompt titled the tile
+      // with prompt text and ran model = <the prompt>)
+      const restoredBareRow: Record<string, unknown> = {
+        ...normalizeBenchStage({ id: 's_0', params }, 0),
+        provenance: 'restored',
+      }
+      if (result !== undefined) restoredBareRow['result'] = result
+      const stages = [restoredBareRow]
       await loadStagesOntoBench(stages, 'restored run', deps)
       return
     }

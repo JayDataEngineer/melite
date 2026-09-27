@@ -18,6 +18,7 @@
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
+import { RUN_MEDIA_PREFIX, canonicalRunMediaUrl } from '@melite/contracts/benchStage'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
@@ -427,11 +428,18 @@ async function observeAndAttribute(
             typeof s === 'object' && s !== null) : []
       const st = stages.find((s) => s['id'] === stageId)
         ?? (stages.length === 1 ? stages[0] : undefined)
+      // THE MEDIA URL IS THE CONTRACT'S (2026-10-10, the records
+      // audit's H2 — a LIVE second copy: this re-wrote the prefix and
+      // passed a LEGACY `/v1/assets/runs` path through VERBATIM
+      // because it begins with a slash, so a stored pre-law path
+      // went to the browser dead. canonicalRunMediaUrl heals both
+      // spellings to the live one, and the prefix is the contract's.
       const toMediaUrl = (value: string): string => {
         if (value === '') return ''
-        if (/^([a-z][a-z0-9+.-]*:|\/)/i.test(value)) return value
-        const relative = value.startsWith(`${runId}/`) ? value.slice(runId.length + 1) : value
-        return `/melite-media/runs/${encodeURIComponent(runId)}/${relative.split('/').map(encodeURIComponent).join('/')}`
+        const healed = canonicalRunMediaUrl(value)
+        if (/^([a-z][a-z0-9+.-]*:|\/)/i.test(healed)) return healed
+        const relative = healed.startsWith(`${runId}/`) ? healed.slice(runId.length + 1) : healed
+        return `${RUN_MEDIA_PREFIX}/${encodeURIComponent(runId)}/${relative.split('/').map(encodeURIComponent).join('/')}`
       }
       const rawUrl = st !== undefined && typeof st['url'] === 'string' && st['url'] !== '' ? st['url'] as string : ''
       const url = toMediaUrl(rawUrl)

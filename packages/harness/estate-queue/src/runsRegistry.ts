@@ -9,6 +9,7 @@
 // delegating to this seat. Failures throw the protocol's ONE
 // RemoteError with the runs/* codes declared HERE (the producing
 // package, next to the throws).
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
@@ -798,7 +799,7 @@ export class RunsRuntimeService extends Service {
         id: skeleton,
         // The {model:} card door's engine (the compose plane is
         // ComfyUI's — the card arm rides it by construction).
-        engine: "comfyui",
+        engine: CARD_PLANE_ENGINE,
         params: {
           workflow: graph as unknown as EngineJson,
           output_nodes: composed.outputNodes as unknown as EngineJson,
@@ -926,7 +927,7 @@ export class RunsRuntimeService extends Service {
     const knownEngines: readonly string[] =
       enginesSeat !== undefined && typeof (enginesSeat as { ids?: unknown }).ids === "function"
         ? (enginesSeat as { ids(): string[] }).ids()
-        : ["comfyui"];
+        : [CARD_PLANE_ENGINE];
     const compiled:
       | { stages: CompiledStage[] }
       | QueueRefusal = compileFlowInline(inline, knownEngines);

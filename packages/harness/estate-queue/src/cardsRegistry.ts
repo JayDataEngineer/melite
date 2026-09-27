@@ -501,7 +501,15 @@ export class CardRegistryService extends Service {
     const mids: Set<string> = this.modelMids();
     const downloaded: string[] = boarded.filter((fam) => mids.has(fam));
     const fam: string = this.resolveCardFamily(model, this.modelFacts());
-    if (!boarded.includes(fam)) {
+    // THE ADDRESS MUST BE THE OFFER (2026-10-10, the behavioural
+    // audit's BROKEN-A: this folded ANY declared route onto its
+    // owning family, so `qwen3-tts-voicedesign-base` — a variant
+    // route the card does NOT offer — was admitted, and then
+    // composed the family HEAD's lane: the stored id named base while
+    // the run spoke. The card's board and the tool's offer are the
+    // SAME set (the tts card's own law); an address the board does
+    // not name is not offered, however valid a route it is.
+    if (!boarded.includes(model)) {
       return {
         ok: false,
         error:
@@ -613,9 +621,28 @@ export class CardRegistryService extends Service {
       ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
       ...judgeLaneRelations(relations, prep.params),
     ];
-    if (violations.length === 0) return null;
-    return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
-      violations.map((v) => v.message).join("; ");
+    if (violations.length > 0) {
+      return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
+        violations.map((v) => v.message).join("; ");
+    }
+    // THE UNDECLARED-KEY GATE RIDES HERE TOO (2026-10-10, the
+    // behavioural audit's BROKEN-B: `params: {model, text,
+    // frobnicate: 1}` was ADMITTED at the bench and refused only at
+    // the run door — so a write the door accepted became a run the
+    // bench could not produce. The bench and the run must speak the
+    // same voice about a key no card declares; admissionRefusal is
+    // that voice, and it now runs on BOTH seats (the lane voice
+    // first, because it is the more specific law).
+    try {
+      admissionRefusal(this, prep.card, prep.fam, prep.params, "admission");
+    } catch (e) {
+      // the gate speaks by THROWING on the run seat; this door's
+      // contract is a VERDICT, so the refusal is translated here
+      // rather than escaping as an unmapped error
+      if (e instanceof CardArmError) return e.message;
+      throw e;
+    }
+    return null;
   }
 
   /** THE SCHEMA-MASTER REPAIR (operator law 2026-09-24 — receipt:
@@ -867,7 +894,8 @@ export class CardRegistryService extends Service {
     if (Object.keys(pool).length > 0) {
       return { ...prep, spell: { skeleton: prep.skeleton, inputs: pool } };
     }
-    await composeOnce(this, prep.card, prep.fam, prep.params, "", "1");
+    // the RESOLVED address, not the family atom (BROKEN-C)
+    await composeOnce(this, prep.card, prep.modelId, prep.params, "", "1");
     return { ...prep, spell: null };
   }
 
@@ -880,7 +908,7 @@ export class CardRegistryService extends Service {
   async phase2Card(p1: Phase1Card, runId: string): Promise<ComposedCard> {
     const graph: Record<string, unknown> = await composeOnce(this, 
       p1.card,
-      p1.fam,
+      p1.modelId,
       p1.params,
       runId,
       "2",
@@ -968,6 +996,17 @@ export function needCardRegistry(
 export interface PreparedCard {
   readonly mid: string;
   readonly fam: string;
+  /** THE ADDRESS THE ENGINE COMPOSES (2026-10-10, the behavioural
+   *  audit's BROKEN-C — the sharpest find of the sweep). The variant
+   *  coordinate is CONSUMED at the lift (`model` is an envelope key,
+   *  so the base variant's re-point `model: 'qwen3-tts-base'` was
+   *  dropped), and composeOnce passed the FAMILY ATOM instead — so
+   *  the engine composed the head lane's facts row and a bench-
+   *  ADMITTED clone state (`variant: base` + the reference pair)
+   *  refused at Run with "fires nothing outside the Base variant".
+   *  Bench and run disagreed about a state both had accepted. The
+   *  resolved route rides here, and the compose takes it. */
+  readonly modelId: string;
   readonly card: string;
   readonly skeleton: string;
   readonly decl: CardDeclRow;

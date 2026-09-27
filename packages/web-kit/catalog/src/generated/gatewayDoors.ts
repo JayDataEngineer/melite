@@ -19,6 +19,8 @@ export type DoorTail = "" | `?${string}`
 
 
 /** Every door the estate serves to the browser, as fetchable URLs. */
+import type { LEGACY_RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+
 export type EstateDoorUrl =
   | `/v1/flows/start${DoorTail}`
   | `/v1/flows/validate${DoorTail}`
@@ -33,7 +35,8 @@ export type EstateDoorUrl =
   | `/v1/assets${DoorTail}`
   | `/v1/ledger${DoorTail}`
   | `/v1/metrics${DoorTail}`
-  | `/v1/assets/runs/${string}${DoorTail}`
+  // the artifact door's member is the CONTRACT's legacy spelling
+  | `${typeof LEGACY_RUN_MEDIA_PREFIX}/${string}${DoorTail}`
   | `/v1/assets/inputs/${string}${DoorTail}`
   | `/v1/uploads${DoorTail}`
   | `/v1/studios/${string}${DoorTail}`

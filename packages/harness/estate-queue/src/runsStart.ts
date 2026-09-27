@@ -1,3 +1,4 @@
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage"
 // runsStart.ts — the start arm's pure chain, re-homed VERBATIM from
 // the dead flowsRun door (REBUILD-6): the flow_inline structural
 // compile (frozen texts over the admission verdicts in
@@ -38,7 +39,7 @@ export type StartRefusal = QueueRefusal;
 /** One compiled stage (the rim the worker splices). */
 export interface CompiledStage {
   readonly id: string;
-  /** The stage's engine id (stroke 53): 'comfyui' or 'mcp:<server>'
+  /** The stage's engine id (stroke 53): the card plane's engine or 'mcp:<server>'
    *  — the door's engine gate admits exactly these; carried through
    *  to the run rows so the worker dispatches by it. */
   readonly engine: string;
@@ -54,14 +55,14 @@ export interface CompiledStage {
  *  default-fills below are value-domain, not type structure).
  *
  *  THE ENGINE GATE (stroke 53, the engine-generics seam): the
- *  engine id must be GRAMMATICAL ('comfyui' or 'mcp:<server>',
+ *  engine id must be GRAMMATICAL (the card plane's engine or 'mcp:<server>',
  *  engine-contract's engineIdOk) AND known to the caller. The
  *  caller passes the live registry ids (the 'engines' seat when
- *  mounted); the default ['comfyui'] keeps every seat-less boot
+ *  mounted); the default (CARD_PLANE_ENGINE) keeps every seat-less boot
  *  (fixtures, walls) on the pre-seam voice. */
 export function compileFlowInline(
   inline: unknown,
-  knownEngines: readonly string[] = ["comfyui"],
+  knownEngines: readonly string[] = [CARD_PLANE_ENGINE],
 ): { stages: CompiledStage[] } | StartRefusal {
   const top = checkFlowInlineTop(inline);
   if (top.kind === "not-object" || top.kind === "bad-stages") {
@@ -133,11 +134,11 @@ export function compileFlowInline(
         "invalid_request",
       );
     }
-    if (engine !== "comfyui") {
+    if (engine !== CARD_PLANE_ENGINE) {
       // Grammar first (drift in the id itself), then membership
       // (an id the gateway cannot serve). Both refuse with the
       // engine named — never a silent skip. The seat-less default
-      // (['comfyui']) keeps the pre-seam refusal for foreign ids.
+      // (the card plane's engine) keeps the pre-seam refusal for foreign ids.
       if (!engineIdOk(engine)) {
         return refusal(
           400,
@@ -145,7 +146,7 @@ export function compileFlowInline(
             JSON.stringify(sid) +
             " names engine " +
             JSON.stringify(engine) +
-            " — engine ids are 'comfyui' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
+            " — engine ids are '" + CARD_PLANE_ENGINE + "' or 'mcp:<server>' ([A-Za-z0-9_-]{1,32})",
           "invalid_request",
         );
       }

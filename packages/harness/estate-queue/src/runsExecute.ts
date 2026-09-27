@@ -3,6 +3,7 @@
 // path — the per-stage loop, per-stage harvest + result_outputs,
 // the stop-gated terminal mapping. Explicit deps, no Service state.
 import type { Context } from "@deepseek-ai/cordis";
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
@@ -271,5 +272,6 @@ export type SettleFn = (run: RunRecord) => void;
 export function runEngine(run: RunRecord): string {
     const first: StageRow | undefined = run.stages[0];
     const engine: unknown = first?.["engine"];
-    return typeof engine === "string" && engine !== "" ? engine : "comfyui";
+    // the card plane engine is the contract value (one owner per token)
+    return typeof engine === "string" && engine !== "" ? engine : CARD_PLANE_ENGINE;
   }

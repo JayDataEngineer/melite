@@ -468,7 +468,7 @@ function checkFileInitial(
     if (rel === "" || rel.endsWith("/") || !rel.includes("/")) {
       return (
         "initial " + JSON.stringify(key) +
-        " is a malformed artifact URL (want /melite-media/runs/<run_id>/<file>)"
+        " is a malformed artifact URL (want " + RUN_MEDIA_PREFIX + "/<run_id>/<file>)"
       );
     }
     for (const root of [

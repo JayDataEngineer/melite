@@ -1,6 +1,7 @@
 // comfyui-upload.ts — workflow finalization: splice + the submit-time upload walk (native 231-327).
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
 
+import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage';
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -218,8 +219,11 @@ export function isFile(path: string): boolean {
  *  run artifacts. /melite-media/runs is the browser media route;
  *  /v1/assets/runs is the compose door's artifact currency (the
  *  dangling-ref gate accepts exactly these two forms). */
-export const MEDIA_ROUTE_PREFIX = "/melite-media/runs/";
-export const ASSET_ROUTE_PREFIX = "/v1/assets/runs/";
+// BOTH PREFIXES ARE THE CONTRACT'S (benchStage.ts — with a trailing
+// slash for these readers' slicing); the spelling itself lives in one
+// place now.
+export const MEDIA_ROUTE_PREFIX = RUN_MEDIA_PREFIX + "/";
+export const ASSET_ROUTE_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 
 /** Walk the FINAL graph; stage every existing local-media path.
  *  Mirrors native._upload_referenced (274-327) incl. the

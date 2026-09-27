@@ -1,3 +1,5 @@
+import { RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage"
+
 /**
  * melite-run-wire — the run-status PURE laws + the catalog door
  * (stroke 81, the one-lane restructure).
@@ -93,7 +95,7 @@ export function isTerminalRun(status: string): boolean {
 export function toRunMediaUrl(runId: string, url: string): string {
   if (url === '') return ''
   if (!/^(https?:\/\/|\/)/.test(url)) {
-    return '/melite-media/runs/' + encodeURIComponent(runId) + '/'
+    return RUN_MEDIA_PREFIX + '/' + encodeURIComponent(runId) + '/'
       + url.split('/').map((seg) => encodeURIComponent(seg)).join('/')
   }
   return url
@@ -153,7 +155,7 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
 export function listArtifactMediaUrl(url: string): string | null {
   if (url === '') return null
   if (/^(https?:\/\/|\/)/.test(url)) return url
-  return '/melite-media/runs/'
+  return RUN_MEDIA_PREFIX + '/'
     + url.split('/').map((seg) => encodeURIComponent(seg)).join('/')
 }
 

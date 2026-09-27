@@ -234,6 +234,17 @@ export function liftCardParams(body: Record<string, unknown>): Record<string, un
   for (const [k, v] of Object.entries(body)) {
     if ((CARD_ENVELOPE_KEYS as readonly string[]).includes(k)) continue;
     if (k === "variant" || k === "quant") continue;
+    // THE STAZZA UNWRAP, ONE SPELLING (2026-10-10, the audit's
+    // BROKEN-B follow-on): the run body's `params` dict IS the stanza
+    // (liftStanza merges it over its siblings at compose), so the
+    // lane's view must unwrap it the same way — it did not, and a
+    // `{model, params:{…}}` body reached the undeclared-key gate
+    // still carrying a `params` key. Two lifts of one shape is how
+    // the bench and the compose disagreed about what a card sees.
+    if (k === "params" && typeof v === "object" && v !== null && !Array.isArray(v)) {
+      for (const [ik, iv] of Object.entries(v as Record<string, unknown>)) params[ik] = iv;
+      continue;
+    }
     params[k] = v;
   }
   return params;

@@ -287,6 +287,13 @@ export function prepareCardParams(
     return {
       mid,
       fam,
+      // THE RESOLVED ADDRESS (the BROKEN-C fix): the variant's own
+      // re-point when it declares one, else the address the caller
+      // named. The engine resolves ITS facts row from this, so a base
+      // route composes the CLONE lane rather than the head's — the
+      // difference between a lawful bench state that runs and one
+      // that refuses at the door.
+      modelId: sel.variantRoute !== "" ? sel.variantRoute : mid,
       card: famRow.card,
       skeleton: decl.skeleton !== "" ? decl.skeleton : /* v8 ignore next -- every real decl carries a skeleton (probe 2026-09-12) */ mid,
       decl,

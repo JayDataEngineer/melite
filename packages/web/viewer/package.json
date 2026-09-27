@@ -17,6 +17,7 @@
     }
   },
   "dependencies": {
+    "@melite/contracts": "workspace:*",
     "@melite/image-image-gen": "workspace:*",
     "@melite/viewer-base": "workspace:*"
   },

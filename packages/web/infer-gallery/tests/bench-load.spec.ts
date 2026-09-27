@@ -538,7 +538,15 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('r3', d)
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
-    expect(stages[0]).toEqual({ id: 's_0', engine: 'comfyui', card: 'image-gen', params: { seed: 3 }, provenance: 'restored' })
+    expect(stages[0]).toEqual({
+      // THE CONTRACT-SHAPED ROW (benchStage.ts — the restore rides it
+      // now, so this arm is not a second writer): a CARD stage's
+      // outputs stay ABSENT (the card-ports law — they are derived
+      // from the card's ports at compose; fabricating an image
+      // default here mis-kinded every video/tts/film stage).
+      id: 's_0', engine: 'comfyui', card: 'image-gen', params: { seed: 3 },
+      inputs: {}, outputs: {}, provenance: 'restored',
+    })
     expect(ensuredBody(calls).intent).toBe('restored run')
   })
 
@@ -746,9 +754,14 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(b.errors).toEqual([])
     const reqStages = ensuredBody(reqCalls.calls).stages as Array<Record<string, unknown>>
     expect(reqStages[0]).toEqual({
+      // the CONTRACT-shaped row: a card-LESS restore keeps the
+      // engine's own output default (only a CARD stage derives its
+      // channels from its ports — the card-ports law)
       id: 's_0',
       engine: 'comfyui',
       params: { model: 'image-gen' },
+      inputs: {},
+      outputs: { default: 'image' },
       provenance: 'restored',
     })
     expect(ensuredBody(reqCalls.calls).intent).toBe('restored run')
@@ -801,9 +814,14 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toEqual({
+      // the CONTRACT-shaped row, card-LESS: a cardless stage keeps the
+      // engine's own output default (the card-ports law's other side —
+      // only a CARD stage derives its channels from its ports)
       id: 's_0',
       engine: 'comfyui',
       params: { model: 'image-gen', prompt: 'old prompt' },
+      inputs: {},
+      outputs: { default: 'image' },
       provenance: 'restored',
     })
     // THE INTENT IS A LABEL, NEVER A PAYLOAD (the wire audit's M5):

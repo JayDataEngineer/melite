@@ -58,25 +58,16 @@ import z from "@deepseek-ai/schemastery";
 // ./vocab.ts — re-exported here for the gates' callers.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
+import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 
 /** flow_inline top-level keys (the served shape). */
 export const INLINE_TOP_KEYS: readonly string[] = ["description", "id", "stages"];
 
-/** flow_inline stage keys (extra=forbid at the door). */
-export const STAGE_KEYS: readonly string[] = [
-  "card",
-  "card_io",
-  "description",
-  "engine",
-  "expected",
-  "id",
-  "inputs",
-  "outputs",
-  "params",
-  "retries",
-  "skip_when",
-  "timeout_s",
-];
+/** flow_inline stage keys (extra=forbid at the door) — the
+ *  CONTRACT'S list now (benchStage.ts WIRE_STAGE_KEYS): the agent's
+ *  bench projection needs the same rule to build a wire row, and two
+ *  copies of a door's key list is how a reader and a writer drift. */
+export const STAGE_KEYS: readonly string[] = WIRE_STAGE_KEYS;
 
 /** Stage/flow identifier shape. */
 export const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;

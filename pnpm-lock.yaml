@@ -2753,6 +2753,10 @@ importers:
         version: 5.9.3
 
   packages/web/melite-run-wire:
+    dependencies:
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -2766,6 +2770,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.2
         version: 4.0.2(@deepseek-ai/cordis-plugin-loader@1.0.3)
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/image-image-gen':
         specifier: workspace:*
         version: link:../../image/image-gen
@@ -2791,6 +2798,9 @@ importers:
 
   packages/web/viewer-base:
     dependencies:
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       react:
         specifier: ^18.2.0
         version: 18.3.1

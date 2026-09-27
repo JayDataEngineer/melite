@@ -203,15 +203,23 @@ export function normalizeBenchStage(row: unknown, index: number): Record<string,
   // naming the row's own card is the era's family-less compose
   // residue; today's admission refuses it as a board request. A
   // model naming a REAL family rides untouched.
-  const card = out["card"];
-  if (typeof card === "string" && card !== "" && healed["model"] === card) {
+  const rowCard = out["card"];
+  if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
     delete healed["model"];
   }
   out["params"] = healed;
+  // THE OUTPUTS LAW IS THE CARD-PORTS LAW (2026-10-10, the audit's
+  // Rule 1: two writers, two laws — and the agent's projection was
+  // the right one). A stage that names a CARD derives its output
+  // channels from that card's own ports at compose: fabricating an
+  // image default here mis-kinded every video/tts/film stage on the
+  // wire (a film read as an image producer). Absent on a card stage
+  // stays ABSENT (compose fills from the ports). The engine's
+  // DEFAULT_OUTPUT shape is for CARD-LESS stages only.
   const outputs = out["outputs"];
   out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs)
     ? { ...(outputs as Record<string, unknown>) }
-    : { default: "image" };
+    : (typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" });
   return out;
 }
 
@@ -237,3 +245,26 @@ export function normalizeBenchStages(stages: unknown): Array<Record<string, unkn
   }
   return out;
 }
+
+/**
+ * THE WIRE STAGE KEYS (2026-10-10, the audit's Rule 1 — the second
+ * writer). A flow_inline stage carries exactly these keys and the door
+ * forbids the rest (extra=forbid); the list lived in the flow gate and
+ * the agent's bench projection each wanted it, so a reader and a
+ * writer of the same wire shape could drift. It is the contract's
+ * now, and both import it.
+ */
+export const WIRE_STAGE_KEYS: readonly string[] = [
+  "card",
+  "card_io",
+  "description",
+  "engine",
+  "expected",
+  "id",
+  "inputs",
+  "outputs",
+  "params",
+  "retries",
+  "skip_when",
+  "timeout_s",
+];

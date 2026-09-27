@@ -39,7 +39,11 @@ const read = (f: string): string => readFileSync(f, "utf8");
 /** code lines only — a comment may NAME a token (the walls read the
  *  names), a string literal or a retyped const is the duplication. */
 const codeOf = (src: string): string =>
-  src.split("\n")
+  src
+    // block comments first (a comment may NAME a token — the rule is
+    // about CODE), then the line-comment and doc-asterisk lines
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .split("\n")
     .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
     .join("\n");
 
@@ -63,10 +67,44 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     for (const f of SOURCES) {
       if (f.includes("benchStage.ts")) continue;
       const code = codeOf(read(f));
-      // the two literals, in a real string or template (not a comment,
-      // not the contract's own declaration, not a derived suffix)
-      if (/["'`]\/v1\/assets\/runs["'`]/.test(code) || /["'`]\/melite-media\/runs["'`]/.test(code)) {
-        offenders.push(f + " — a run-media prefix literal outside the contract (derive it)");
+      // ANY mention of either spelling in CODE — the records audit
+      // caught a template literal the old quote-adjacent regex could
+      // not see (`/melite-media/runs/${...}`), and a legacy path
+      // passed through verbatim because it begins with a slash.
+      // A DEFINITION builds a path (a short literal or a template);
+      // PROSE merely names one inside a sentence (a tool description,
+      // a tooltip telling an operator the URL shape). The old scan
+      // could not tell them apart and flagged both.
+      for (const line of code.split("\n")) {
+        if (!line.includes("/v1/assets/runs") && !line.includes("/melite-media/runs")) continue;
+        const isProse = line.length > 200 || /description:|tooltip:/.test(line);
+        if (isProse) continue;
+        offenders.push(f + " — a run-media prefix is DEFINED outside the contract (import it)");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 2b · a STAGE-ROW writer takes its engine from the contract", () => {
+    // the audit's Rule-2 finding: "comfyui" was written at five
+    // stage-row writers with no pin. Scope: the WRITERS of a bench
+    // stage row (a card's own `inject` declaration is a different
+    // class — it is that card's seat row, like its BOARDED list, and
+    // is out of this rule's reach by design).
+    const WRITERS = [
+      "estate/drafts/src/bench.ts",
+      "melite-tools/src/tools/melite-construct.ts",
+      "infer-gallery/src/client/bench-load.ts",
+      "estate-queue/src/runsRegistry.ts",
+      "estate-queue/src/runsStart.ts",
+      "estate-queue/src/runsExecute.ts",
+    ];
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      if (!WRITERS.some((w) => f.includes(w))) continue;
+      const code = codeOf(read(f));
+      if (/["']comfyui["']/.test(code)) {
+        offenders.push(f + " — a stage-row writer spells the engine; take stageEngineOf/CARD_PLANE_ENGINE");
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);

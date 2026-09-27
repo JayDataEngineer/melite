@@ -1,3 +1,4 @@
+import { WIRE_STAGE_KEYS, normalizeBenchStages } from "@melite/contracts/benchStage"
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
 // (the bench rework, 2026-09-10; docs/plans/bench-rework-2026-09-10.md
 // §4). melite_flow executes; melite_construct AUTHORS — verbs over
@@ -290,40 +291,47 @@ function firstArtifactPath(artifacts: unknown[]): string {
  *  on correctly-wired card stages; engine defaults comfyui). */
 export function projectStages(stages: unknown): Record<string, unknown>[] {
   if (!Array.isArray(stages)) return []
-  return stages
+  // THE CONTRACT SHAPES EVERY ROW (2026-10-10, the audit's Rule 1 —
+  // this was a second writer, so the same bench read as a different
+  // document depending on which door projected it; and the audit's
+  // Rule 3, which forbade it from DEMANDING the engine the contract
+  // derives). The contract carries the card-ports law, the media-path
+  // heal, the self-naming strip and the engine derivation — the
+  // projection only preserves the view's identity and the fields the
+  // compile needs (`expected`).
+  const source = stages
     .filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null && !Array.isArray(s))
-    .map((s) => {
-      const row: Record<string, unknown> = {
-        id: String(s['id'] ?? ''),
-        engine: typeof s['engine'] === 'string' && s['engine'] !== '' ? s['engine'] : 'comfyui',
-        params: typeof s['params'] === 'object' && s['params'] !== null && !Array.isArray(s['params'])
-          ? s['params'] : {},
-        inputs: typeof s['inputs'] === 'object' && s['inputs'] !== null && !Array.isArray(s['inputs'])
-          ? s['inputs'] : {},
-        // THE CARD-PORTS LAW (roadmap OWED 2026-09-26): a stage
-        // carrying a card DERIVES its output channels from the
-        // card's own ports at compile — fabricating the image
-        // default here mis-kinded every video/tts card stage (a
-        // film read as an image producer on the wire). Absent
-        // outputs on a card stage stay ABSENT (the drops-absent
-        // law, add_stage's own); the default fills only card-less
-        // stages (the engine DEFAULT_OUTPUT shape).
-        outputs: typeof s['outputs'] === 'object' && s['outputs'] !== null && !Array.isArray(s['outputs'])
-          ? s['outputs']
-          : (typeof s['card'] === 'string' && s['card'] !== '' ? {} : { default: 'image' }),
+  return normalizeBenchStages(source).map((row, i) => {
+    const from = source[i] as Record<string, unknown> | undefined
+    if (from !== undefined) {
+      // the view's id is the SOURCE's id, stringified (an absent id
+      // reports as ''), never the contract's birth mint — the view
+      // reports what the bench holds, it does not mint
+      row['id'] = String(from['id'] ?? '')
+      // the caller's own id rides (the projection is a VIEW, not a
+      // mint): a row with NO id stays id-less rather than gaining the
+      // contract's birth mint — the view reports what the bench holds
+      if (typeof from['id'] === 'string' && from['id'] !== '') row['id'] = from['id']
+      // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
+      // gate's own list): the bench's bookkeeping (title, result,
+      // runStatus, provenance) is not a wire field and never compiled
+      for (const key of Object.keys(row)) {
+        if (key === 'expected' || WIRE_STAGE_KEYS.includes(key)) continue
+        delete row[key]
       }
-      // card RIDES (see the docstring): the kinds pass derives
-      // wired-input kinds from the card's flowKinds — without it
-      // every wired card stage reads "untyped".
-      if (typeof s['card'] === 'string' && s['card'] !== '') {
-        row['card'] = s['card']
+      // `expected` is a compile-only field and must be a record: the
+      // contract carries whatever the source held, so a junk value
+      // ('nope', an array) is DROPPED here rather than compiled
+      if (typeof from['expected'] === 'object' && from['expected'] !== null && !Array.isArray(from['expected'])) {
+        row['expected'] = from['expected']
+      } else {
+        delete row['expected']
       }
-      if (typeof s['expected'] === 'object' && s['expected'] !== null && !Array.isArray(s['expected'])) {
-        row['expected'] = s['expected']
-      }
-      return row
-    })
+    }
+    return row
+  })
 }
+
 
 export function meliteConstruct(
   request: EstateRequest,

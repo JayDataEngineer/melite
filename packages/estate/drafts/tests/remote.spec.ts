@@ -510,14 +510,34 @@ describe("drafts/patch: missing doc/stage is delivered:false + reason", () => {
 // ── drafts/patch write arms (merge law, history, CAS join) ─────────
 
 describe("drafts/patch writes: per-key merge, inputs arms, history edges", () => {
-  test("inputs + inputOutputs land verbatim; the answer lists patched sorted", async () => {
+  test("inputs + inputOutputs land; a SELF-wire refuses (the wiring arm admits, 2026-10-10)", async () => {
+    // This door used to write the inputs arm with NO admission while
+    // the params arm walked it — so a keystroke through the GUI's
+    // param editor could persist a self-wire (a cycle) that the
+    // agent's bench/patch refuses on the identical body. The arms
+    // now agree: a real edge lands, a cycle is named.
     const { ctx, domain } = await bootCtx();
-    await ensureBench(domain, { session: "io", stages: [{ id: "s_0" }] });
+    // s_0 declares the SPELL its wire feeds (the wiring law: an edge
+    // bound by no $spell in params is a dead wire), so the cross-stage
+    // edge below is a lawful one
+    await ensureBench(domain, { session: "io", stages: [
+      { id: "s_0", params: { image: "$image" } },
+      { id: "s_1" },
+    ] });
     const svc = new DraftsRemoteService(ctx);
+    const cycle = await codeOf(svc.patch(
+      "bench-io",
+      "s_0",
+      { inputs: { image: { stage: "s_0", output: "image" } } },
+      null,
+      sig,
+    ));
+    // (the spell rides already, so this refusal is the CYCLE arm alone)
+    assert.ok(cycle.startsWith("bench/self-wire|"), "a self-wire names the cycle: " + cycle);
     const answer = await svc.patch(
       "bench-io",
       "s_0",
-      { inputs: { image: { stage: "s_0", output: "image" } }, inputOutputs: { image: ["/a.png"] } },
+      { inputs: { image: { stage: "s_1", output: "image" } }, inputOutputs: { image: ["/a.png"] } },
       null,
       sig,
     );
@@ -530,7 +550,8 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     });
     const doc = await svc.get("bench-io", sig);
     const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
-    assert.deepEqual(stage["inputs"], { image: { stage: "s_0", output: "image" } });
+    // the CROSS-STAGE edge landed (the self-wire above refused)
+    assert.deepEqual(stage["inputs"], { image: { stage: "s_1", output: "image" } });
     assert.deepEqual(stage["inputOutputs"], { image: ["/a.png"] });
   });
 
@@ -1475,7 +1496,7 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
       "the model admission ran on both writes (composed, in order)");
   });
 
-  test("a CLIENT-CLAIMED restored row is judged like any other (the carve is the server's)", async () => {
+  test("a RESTORE REQUEST is honored on the wire (the bypass audit's CRITICAL-1: the carve was dead)", async () => {
     // The forge the audit found: `provenance: "restored"` arrives in
     // the request body and used to exempt the state outright. It is
     // now just a string; the carve rides a server symbol nothing over
@@ -1494,16 +1515,21 @@ describe("laneAdmissionOf (the DECL's words at the write door)", () => {
       },
     });
     const bench = new BenchRemoteService(ctx);
-    // a caller claiming restored gets the a priori voice, not a pass
-    const claimed = await codeOf(bench.ensure({
+    // THE CARVE FIRES ON THE WIRE (2026-10-10: the two comparisons
+    // tested for a SYMBOL no request can carry, so the carve never
+    // fired — a restored row was judged like a live one and the
+    // model-REPAIR arm it also guards was dead). A restore is a
+    // REQUEST; the run seat re-judges the state anyway (li-s), which
+    // is what bounds the request's power.
+    const requested = await bench.ensure({
       session: "lane-forge",
       stages: [{
         id: "s_0", card: "tts", provenance: "restored",
         params: { model: "qwen3-tts", text: "hello", design_prompt: "a warm narrator" },
       }],
-    }, sig));
-    assert.ok(claimed.startsWith("bench/lane-refusal|"), "a claimed restore is judged: " + claimed);
-    assert.equal(judged, 1, "the claimed row reached the judge");
+    }, sig);
+    assert.equal(requested.created, true, "a restore request loads the archive row");
+    assert.equal(judged, 0, "the restore did not reach the lane judge (the archive loads; the run teaches)");
   });
 
   test("a SERVER-ARMED restore is exempt (the archive loads; the Run seat teaches)", async () => {

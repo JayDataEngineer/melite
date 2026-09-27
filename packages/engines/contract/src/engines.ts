@@ -27,8 +27,16 @@ const MCP_SERVER_NAME = /^[A-Za-z0-9_-]{1,32}$/;
  * the module header). Exported for the door's pre-flight: the runs
  * door refuses ungrammatical ids with its own voice BEFORE the
  * registry is consulted. */
+/** THE BARE ENGINE IDS (the owner's names): every site that names
+ *  an engine takes it from here — a card's inject row, a stage's
+ *  engine field, a gate's default. One owner per token (the closure
+ *  gate's rule 2b). */
+export const COMFYUI_ENGINE_ID = "comfyui";
+export const CRAFT_ENGINE_ID = "craft";
+export const AGENT_ENGINE_ID = "agent";
+
 export function engineIdOk(id: string): boolean {
-  return id === "comfyui" || id === "craft" || id === "agent" || (id.startsWith("mcp:") && MCP_SERVER_NAME.test(id.slice(4)));
+  return id === COMFYUI_ENGINE_ID || id === CRAFT_ENGINE_ID || id === AGENT_ENGINE_ID || (id.startsWith("mcp:") && MCP_SERVER_NAME.test(id.slice(4)));
 }
 
 export class EnginesService extends Service {

@@ -362,9 +362,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3284,
+      "uid": 3294,
       "refs": {
-        "3203": {
+        "3213": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -380,7 +380,7 @@
             "description": "Image 1"
           }
         },
-        "3207": {
+        "3217": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -393,7 +393,7 @@
             }
           }
         },
-        "3214": {
+        "3224": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -410,7 +410,7 @@
             }
           }
         },
-        "3221": {
+        "3231": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -427,7 +427,7 @@
             }
           }
         },
-        "3228": {
+        "3238": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -444,7 +444,7 @@
             }
           }
         },
-        "3235": {
+        "3245": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -461,7 +461,7 @@
             }
           }
         },
-        "3242": {
+        "3252": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -478,17 +478,17 @@
             }
           }
         },
-        "3243": {
+        "3253": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3244": {
+        "3254": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3248": {
+        "3258": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,11 +506,11 @@
             }
           },
           "list": [
-            3243,
-            3244
+            3253,
+            3254
           ]
         },
-        "3255": {
+        "3265": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -527,7 +527,7 @@
             }
           }
         },
-        "3262": {
+        "3272": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -544,7 +544,7 @@
             }
           }
         },
-        "3269": {
+        "3279": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -561,7 +561,7 @@
             }
           }
         },
-        "3276": {
+        "3286": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -578,7 +578,7 @@
             }
           }
         },
-        "3283": {
+        "3293": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -595,41 +595,41 @@
             }
           }
         },
-        "3284": {
+        "3294": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3203,
-            "lanpaint_enabled": 3207,
-            "lanpaint_num_steps": 3214,
-            "lanpaint_step_size": 3221,
-            "lanpaint_lambda": 3228,
-            "lanpaint_beta": 3235,
-            "lanpaint_friction": 3242,
-            "lanpaint_prompt_mode": 3248,
-            "outpaint_top": 3255,
-            "outpaint_right": 3262,
-            "outpaint_bottom": 3269,
-            "outpaint_left": 3276,
-            "outpaint_overlap": 3283
+            "image1": 3213,
+            "lanpaint_enabled": 3217,
+            "lanpaint_num_steps": 3224,
+            "lanpaint_step_size": 3231,
+            "lanpaint_lambda": 3238,
+            "lanpaint_beta": 3245,
+            "lanpaint_friction": 3252,
+            "lanpaint_prompt_mode": 3258,
+            "outpaint_top": 3265,
+            "outpaint_right": 3272,
+            "outpaint_bottom": 3279,
+            "outpaint_left": 3286,
+            "outpaint_overlap": 3293
           }
         }
       }
     },
     "loras": {
-      "uid": 3133,
+      "uid": 3143,
       "refs": {
-        "3121": {
+        "3131": {
           "type": "string",
           "meta": {}
         },
-        "3122": {
+        "3132": {
           "type": "number",
           "meta": {}
         },
-        "3128": {
+        "3138": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -645,18 +645,18 @@
             }
           }
         },
-        "3129": {
+        "3139": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3121,
-            "strength": 3122,
-            "steps": 3128
+            "name": 3131,
+            "strength": 3132,
+            "steps": 3138
           }
         },
-        "3132": {
+        "3142": {
           "type": "array",
           "meta": {
             "default": [],
@@ -669,23 +669,23 @@
               "order": 0
             }
           },
-          "inner": 3129
+          "inner": 3139
         },
-        "3133": {
+        "3143": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3132
+            "loras": 3142
           }
         }
       }
     },
     "mask": {
-      "uid": 3353,
+      "uid": 3363,
       "refs": {
-        "3287": {
+        "3297": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -698,7 +698,7 @@
             }
           }
         },
-        "3291": {
+        "3301": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -714,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3292": {
+        "3302": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3293": {
+        "3303": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3294": {
+        "3304": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3298": {
+        "3308": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -754,32 +754,32 @@
             }
           },
           "list": [
-            3292,
-            3293,
-            3294
+            3302,
+            3303,
+            3304
           ]
         },
-        "3299": {
+        "3309": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3300": {
+        "3310": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3301": {
+        "3311": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3302": {
+        "3312": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3306": {
+        "3316": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -800,13 +800,13 @@
             }
           },
           "list": [
-            3299,
-            3300,
-            3301,
-            3302
+            3309,
+            3310,
+            3311,
+            3312
           ]
         },
-        "3313": {
+        "3323": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -824,7 +824,7 @@
             }
           }
         },
-        "3320": {
+        "3330": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -842,7 +842,7 @@
             }
           }
         },
-        "3327": {
+        "3337": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -860,7 +860,7 @@
             }
           }
         },
-        "3334": {
+        "3344": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -878,7 +878,7 @@
             }
           }
         },
-        "3338": {
+        "3348": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -893,7 +893,7 @@
             }
           }
         },
-        "3345": {
+        "3355": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -911,7 +911,7 @@
             }
           }
         },
-        "3352": {
+        "3362": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -929,23 +929,23 @@
             }
           }
         },
-        "3353": {
+        "3363": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3287,
-            "input_mask": 3291,
-            "mask_mode": 3298,
-            "mask_detector": 3306,
-            "mask_context_pad": 3313,
-            "mask_grow": 3320,
-            "mask_feather": 3327,
-            "mask_threshold": 3334,
-            "mask_invert": 3338,
-            "mask_detail_size": 3345,
-            "mask_denoise": 3352
+            "mask": 3297,
+            "input_mask": 3301,
+            "mask_mode": 3308,
+            "mask_detector": 3316,
+            "mask_context_pad": 3323,
+            "mask_grow": 3330,
+            "mask_feather": 3337,
+            "mask_threshold": 3344,
+            "mask_invert": 3348,
+            "mask_detail_size": 3355,
+            "mask_denoise": 3362
           }
         }
       }
@@ -956,283 +956,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2694,
+    "uid": 2704,
     "refs": {
-      "290": {
+      "300": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "291": {
+      "301": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "292": {
+      "302": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "293": {
+      "303": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "294": {
+      "304": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "295": {
+      "305": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "296": {
+      "306": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "297": {
+      "307": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "298": {
+      "308": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "299": {
+      "309": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "300": {
+      "310": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "301": {
+      "311": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "302": {
+      "312": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "303": {
+      "313": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "304": {
+      "314": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "305": {
+      "315": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "306": {
+      "316": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "307": {
+      "317": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "308": {
+      "318": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "309": {
+      "319": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "310": {
+      "320": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "311": {
+      "321": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "312": {
+      "322": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "313": {
+      "323": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "314": {
+      "324": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "315": {
+      "325": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "316": {
+      "326": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "317": {
+      "327": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "318": {
+      "328": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "319": {
+      "329": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "320": {
+      "330": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "321": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "322": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "323": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "324": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "325": {
+      "335": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "326": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "327": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "328": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "329": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "330": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "331": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "332": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "333": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "334": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "336": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "337": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "338": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "339": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "340": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "341": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "342": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "343": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "344": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "2628": {
+      "2638": {
         "type": "string",
         "meta": {}
       },
-      "2632": {
+      "2642": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1248,9 +1248,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2628
+        "inner": 2638
       },
-      "2636": {
+      "2646": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1260,7 +1260,7 @@
           "description": "Input Image"
         }
       },
-      "2640": {
+      "2650": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1270,7 +1270,7 @@
           "description": "Image 2"
         }
       },
-      "2644": {
+      "2654": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1280,11 +1280,11 @@
           "description": "Image 3"
         }
       },
-      "2645": {
+      "2655": {
         "type": "string",
         "meta": {}
       },
-      "2648": {
+      "2658": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1293,9 +1293,9 @@
             "hidden": true
           }
         },
-        "inner": 2645
+        "inner": 2655
       },
-      "2652": {
+      "2662": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1305,7 +1305,7 @@
           "description": "Region Mask"
         }
       },
-      "2655": {
+      "2665": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1320,7 +1320,7 @@
           }
         }
       },
-      "2658": {
+      "2668": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1333,7 +1333,7 @@
           }
         }
       },
-      "2661": {
+      "2671": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1349,7 +1349,7 @@
           }
         }
       },
-      "2664": {
+      "2674": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1365,7 +1365,7 @@
           }
         }
       },
-      "2669": {
+      "2679": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1379,7 +1379,7 @@
           }
         }
       },
-      "2675": {
+      "2685": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1396,7 +1396,7 @@
           }
         }
       },
-      "2681": {
+      "2691": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1413,7 +1413,7 @@
           }
         }
       },
-      "2683": {
+      "2693": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1427,16 +1427,6 @@
           }
         },
         "list": [
-          290,
-          291,
-          292,
-          293,
-          294,
-          295,
-          296,
-          297,
-          298,
-          299,
           300,
           301,
           302,
@@ -1471,10 +1461,20 @@
           331,
           332,
           333,
-          334
+          334,
+          335,
+          336,
+          337,
+          338,
+          339,
+          340,
+          341,
+          342,
+          343,
+          344
         ]
       },
-      "2685": {
+      "2695": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1488,18 +1488,18 @@
           }
         },
         "list": [
-          336,
-          337,
-          338,
-          339,
-          340,
-          341,
-          342,
-          343,
-          344
+          346,
+          347,
+          348,
+          349,
+          350,
+          351,
+          352,
+          353,
+          354
         ]
       },
-      "2689": {
+      "2699": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1514,7 +1514,7 @@
           }
         }
       },
-      "2693": {
+      "2703": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1529,29 +1529,29 @@
           }
         }
       },
-      "2694": {
+      "2704": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2632,
-          "image1": 2636,
-          "image2": 2640,
-          "image3": 2644,
-          "reference_images": 2648,
-          "input_mask": 2652,
-          "prompt": 2655,
-          "negative_prompt": 2658,
-          "width": 2661,
-          "height": 2664,
-          "seed": 2669,
-          "steps": 2675,
-          "cfg": 2681,
-          "sampler": 2683,
-          "scheduler": 2685,
-          "use_stock_nodes": 2689,
-          "double_reference": 2693
+          "input_images": 2642,
+          "image1": 2646,
+          "image2": 2650,
+          "image3": 2654,
+          "reference_images": 2658,
+          "input_mask": 2662,
+          "prompt": 2665,
+          "negative_prompt": 2668,
+          "width": 2671,
+          "height": 2674,
+          "seed": 2679,
+          "steps": 2685,
+          "cfg": 2691,
+          "sampler": 2693,
+          "scheduler": 2695,
+          "use_stock_nodes": 2699,
+          "double_reference": 2703
         }
       }
     }

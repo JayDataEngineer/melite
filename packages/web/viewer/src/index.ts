@@ -14,6 +14,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import type {} from '@deepseek-ai/dsh-host-webserver'
 import Schema from '@deepseek-ai/schemastery'
+import { LEGACY_RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { ASSET_ROUTE_PREFIX, RUN_ROUTE_PREFIX } from '@melite/viewer-base/wire'
 
 export const name = '@melite/viewer'
@@ -85,7 +86,7 @@ export function apply(ctx: Context, config: Config): void {
         res.end(JSON.stringify({ error: 'missing_asset_path' }))
         return
       }
-      await proxyDoor(ctx, `/v1/assets/runs/${rest}`, false,
+      await proxyDoor(ctx, `${LEGACY_RUN_MEDIA_PREFIX}/${rest}`, false,
         (status, headers, body) => { res.writeHead(status, headers); res.end(body) })
     },
   }) as () => void, '@melite/viewer: asset proxy route')
