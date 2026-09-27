@@ -316,7 +316,10 @@ export async function modelValidateArm(
     // IN-PROCESS COMPOSE: the SAME registry compose pipeline the
     // start arm rides composes for validate (one plane, both arms).
     const refused: { message: string; code: string } | null =
-      await svc.composeValidateCard(overlaid.card, overlaid.fam, params);
+      // the body's OWN model address rides: the params are overlaid (the
+      // model key is consumed), so the arm must not lose the address the
+      // board check and the variant selection both judge
+      await svc.composeValidateCard(overlaid.card, overlaid.fam, params, mid, body);
     if (refused !== null) {
       return {
         status: 400,

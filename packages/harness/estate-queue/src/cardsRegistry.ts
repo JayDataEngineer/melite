@@ -816,6 +816,19 @@ export class CardRegistryService extends Service {
     card: string,
     fam: string,
     params: Record<string, unknown>,
+    // the body's OWN model address, when the caller still holds it: the
+    // `params` this arm receives has been through the overlay, so
+    // `model` is already consumed — deriving it from there fell back
+    // to the FAMILY and both run-seat fixes were skipped (the live
+    // verification caught exactly that: an unoffered address still
+    // answered ok, and a lawful `variant: base` clone still refused).
+    mid?: string,
+    // the RAW body, when the caller has already overlaid: `variant`
+    // is consumed by the overlay (it is a selection coordinate, never
+    // a param), so the prepare must see the body to select the lane —
+    // preparing from the overlay's product silently composed the head
+    // and refused a lawful `variant: base` clone.
+    rawBody?: Record<string, unknown>,
   ): Promise<{ message: string; code: string } | null> {
     // THE VALIDATE-START PARITY LAW (2026-10-10, the operator's
     // question: "HOW DID THE VALIDATE RETURN SUCCESS WHEN THE INPUT
@@ -858,14 +871,15 @@ export class CardRegistryService extends Service {
     // seats disagreed in BOTH directions because this one door never
     // shared the run seat's preparation: the board check, the lane
     // judgment and the resolved route all live there.)
-    const mid: string = typeof (params as Record<string, unknown>)["model"] === "string"
-      ? (params as Record<string, unknown>)["model"] as string
-      : fam;
-    const boardCheck = this.admitStageModel(card, mid);
-    if (!boardCheck.ok) return { message: boardCheck.error, code: boardCheck.code };
+    const address: string = mid ??
+      (typeof (params as Record<string, unknown>)["model"] === "string"
+        ? (params as Record<string, unknown>)["model"] as string
+        : fam);
+    const boardCheck = this.admitStageModel(card, address);
+    if (!boardCheck.ok) return { message: boardCheck.error, code: "invalid_request" };
     let prep: PreparedCard;
     try {
-      prep = prepareCardParams(this, params, mid, "1");
+      prep = prepareCardParams(this, rawBody ?? params, address, "1");
     } catch (e) {
       if (e instanceof CardArmError) return { message: e.message, code: e.code };
       throw e;
