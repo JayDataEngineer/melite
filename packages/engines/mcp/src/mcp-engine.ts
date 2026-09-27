@@ -107,13 +107,37 @@ export const mcpExecutor = (
             `stage ${JSON.stringify(row.stageId)}: mcp params need a non-empty 'tool' name`,
           );
         }
-        if (args !== undefined && !plainObject(args)) {
+        // THE ARGS SPELLING BRIDGE (2026-10-10, the boundary audit's
+        // C1): the card's form declares `args` as a JSON TEXT field
+        // (a textarea is the only way a human authors an argument
+        // bag), so every form-composed row arrives as a STRING —
+        // and this reader demanded an object, refusing every mcp call
+        // the form had ever made. One parse site, here, loud on
+        // malformed: the object writer and the string writer now
+        // compose the same call.
+        const wire: unknown = typeof args === "string"
+          ? (() => {
+              const text = args.trim();
+              if (text === "") return {};
+              try {
+                const parsed: unknown = JSON.parse(text);
+                if (!plainObject(parsed)) throw new Error("not a JSON object");
+                return parsed;
+              } catch {
+                throw new Error(
+                  `stage ${JSON.stringify(row.stageId)}: mcp 'args' is not valid JSON — ` +
+                  `the Arguments field carries a JSON object ({"limit": 8}); refusing rather than guessing`,
+                );
+              }
+            })()
+          : args;
+        if (wire !== undefined && !plainObject(wire)) {
           throw new Error(
-            `stage ${JSON.stringify(row.stageId)}: mcp 'args' must be a JSON object`,
+            `stage ${JSON.stringify(row.stageId)}: mcp 'args' must be a JSON object (or the JSON text of one)`,
           );
         }
-        assertContained(args?.["out"], runDir);
-        const wireArgs: Record<string, unknown> = { ...(args ?? {}) };
+        assertContained((wire as Record<string, unknown> | undefined)?.["out"], runDir);
+        const wireArgs: Record<string, unknown> = { ...((wire as Record<string, unknown> | undefined) ?? {}) };
         const out = wireArgs["out"];
         // A RELATIVE out resolves against the run dir BEFORE the wire
         // call — tools that abspath against their own cwd (the blender

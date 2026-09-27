@@ -131,6 +131,18 @@ export const RESTORE_STRIP_KEYS: readonly string[] = [
   "history",
 ];
 
+/** What a LOAD onto the same stage ids CARRIES FORWARD (the load
+ *  arm's complement to the birth strip): the memory THIS bench
+ *  earned for that stage — its result, its live status, its history
+ *  tiles, its result params. A genuinely new stage id starts clean.
+ *  Named here so the two arms cannot be edited apart. */
+export const LOAD_CARRY_KEYS: readonly string[] = [
+  "result",
+  "runStatus",
+  "history",
+  "resultParams",
+];
+
 /** Strip a list of keys off a row (in place — the arm owns the row). */
 export function stripKeys(row: Record<string, unknown>, keys: readonly string[]): void {
   for (const k of keys) delete row[k];
@@ -181,7 +193,7 @@ export function normalizeBenchStage(row: unknown, index: number): Record<string,
   out["engine"] = stageEngineOf(out);
   const ins = out["inputs"];
   out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins)
-    ? { ...(ins as Record<string, unknown>) }
+    ? healRunMediaPaths({ ...(ins as Record<string, unknown>) }) as Record<string, unknown>
     : {};
   const params = out["params"];
   const healed = healRunMediaPaths(

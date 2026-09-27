@@ -70,8 +70,20 @@ export interface RunStatusRow {
 
 /** The terminal statuses — the runs seat's own vocabulary (the settle
  *  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
+export const TERMINAL_RUN_STATUSES: readonly string[] = [
+  'completed',
+  'failed',
+  'stopped',
+  // 'error' is the run-record's own failure stamp (the queue writes
+  // it on a registration that could not start). The run card
+  // already treated it as terminal; this reader did not, so a
+  // run in that state was polled FOREVER (the boundary audit's H1).
+  // One vocabulary, both readers.
+  'error',
+];
+
 export function isTerminalRun(status: string): boolean {
-  return status === 'completed' || status === 'failed' || status === 'stopped'
+  return TERMINAL_RUN_STATUSES.includes(status)
 }
 
 /** The ONE media-url rewrite (readRunStatus + the file-era list

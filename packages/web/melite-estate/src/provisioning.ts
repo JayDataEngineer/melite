@@ -105,13 +105,40 @@ function familyPlan(
     };
   }
   const coordinates = routeCoordinates(ref, decl);
-  const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
+  /** The download filename a source URL names: its PATHNAME's last
+ *  segment, percent-decoded. Never the query, never the fragment,
+ *  never "" (a URL ending in "/" names no file — the caller's
+ *  destination check refuses it by name). */
+function artifactFileName(sourceUrl: string): string {
+  let pathname = sourceUrl;
+  try {
+    pathname = new URL(sourceUrl).pathname;
+  } catch {
+    // not an absolute URL — take everything before ? and #
+    pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
+  }
+  const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
+  try {
+    return decodeURIComponent(last);
+  } catch {
+    return last;
+  }
+}
+
+const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
   const artifact = resolved.cell?.artifact;
   if (artifact === undefined || artifact === null) {
     throw new Error(`model "${ref.id}" declares no downloadable provisions`);
   }
   const row: ProvisionRow = {
-    name: artifact.source_url.split("/").pop() as string,
+    // THE FILENAME IS THE PATHNAME'S BASENAME (the boundary audit's
+    // C5): `split("/").pop()` kept a query string and a fragment
+    // ("f.safetensors?download=1"), so the manager downloaded under a
+    // clean name while this row inspected a name with the query
+    // glued on, and the post-download check reported model-not-landed
+    // for a model that was on disk. A trailing-slash URL yielded ""
+    // and refused later as an invalid destination.
+    name: artifactFileName(artifact.source_url),
     url: artifact.source_url,
     folder: artifact.dest_sub,
     sha256: artifact.sha256,

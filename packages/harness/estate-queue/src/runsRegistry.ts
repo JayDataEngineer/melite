@@ -13,6 +13,7 @@ import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { stageEngineOf } from "@melite/contracts/benchStage";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import {
   executeFlow,
@@ -195,8 +196,6 @@ function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
  * states in its own voice). A stage that names NO card and NO engine
  * is still refused — an mcp/flow stage must say where it runs.
  */
-const CARD_PLANE_ENGINE = "comfyui";
-
 /** The bench run's own line (never silent): how many stages the
  *  merged run carries, and that the wires are inside them. */
 function curatedBenchLog(stageCount: number): void {
@@ -206,14 +205,18 @@ function curatedBenchLog(stageCount: number): void {
   );
 }
 
-function deriveStageEngines(stages: unknown[]): void {
+/** The card plane's engine is the CONTRACT's (benchStage.ts) — the
+ *  bench is the card bench, and that is where it is stated. This arm
+ *  applies it to a flow document's card= rows only: an mcp/flow
+ *  stage that names no engine still refuses below, and that demand
+ *  is intentional (a flow is hand-authored and must say where it
+ *  runs; a bench row never has to). */
+function deriveFlowCardEngines(stages: unknown[]): void {
   for (const st of stages) {
-    if (typeof st !== "object" || st === null) continue;
+    if (st === null || typeof st !== "object") continue;
     const row = st as Record<string, unknown>;
-    if (typeof row["engine"] === "string" && row["engine"] !== "") continue;
-    if (typeof row["card"] === "string" && row["card"] !== "") {
-      row["engine"] = CARD_PLANE_ENGINE;
-    }
+    if (typeof row["card"] !== "string" || row["card"] === "") continue;
+    row["engine"] = stageEngineOf(row);
   }
 }
 
@@ -508,7 +511,7 @@ export class RunsRuntimeService extends Service {
       }
       const stage: Record<string, unknown> = {
         id,
-        engine: typeof row["engine"] === "string" && row["engine"] !== "" ? row["engine"] : CARD_PLANE_ENGINE,
+        engine: stageEngineOf(row),
         params: {
           workflow: composed.graph as unknown as EngineJson,
           output_nodes: composed.outputNodes as unknown as EngineJson,
@@ -913,7 +916,7 @@ export class RunsRuntimeService extends Service {
     // human, the GUI, the agent or a hand-written flow authored it.
     if (typeof body["flow_inline"] === "object" && body["flow_inline"] !== null) {
       const stages = (body["flow_inline"] as Record<string, unknown>)["stages"];
-      if (Array.isArray(stages)) deriveStageEngines(stages);
+      if (Array.isArray(stages)) deriveFlowCardEngines(stages);
     }
     const inline: unknown = body["flow_inline"];
     // The engines seat when mounted (stroke 53): the door consults

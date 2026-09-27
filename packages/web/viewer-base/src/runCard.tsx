@@ -20,6 +20,7 @@
  * asset proxy (never an attachment loader — tool.call.images is the
  * DSH attachment plugin's; our bytes are gateway assets).
  */
+import { TERMINAL_RUN_STATUSES } from '@melite-plugin/melite-run-wire'
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
@@ -47,7 +48,9 @@ interface RowModel {
   headline: string | null
 }
 
-const TERMINAL = new Set(['completed', 'failed', 'stopped', 'error'])
+// the shared terminal vocabulary (melite-run-wire) — the one place
+// a status means "stop asking"
+const TERMINAL = new Set(TERMINAL_RUN_STATUSES)
 
 /** Derive the row model from the durable slice alone (replay-safe). */
 export function runCardModel(props: ToolCallViewProps): RowModel {
