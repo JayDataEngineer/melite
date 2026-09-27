@@ -16,12 +16,12 @@ import {
 import { terminalOutcomeOf } from "../src/client/cards-resource.ts";
 import { benchResultDefects } from "@melite/contracts";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
 import { patchStageParams, resetStageWrites } from "../src/client/draft.ts";
 
-function stage(over: Partial<BenchStageRow> & { id: string }): BenchStageRow {
+function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
 }
 

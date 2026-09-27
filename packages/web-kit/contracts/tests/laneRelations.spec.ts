@@ -6,10 +6,13 @@
 // field outside a lane's declaration fires nothing), and the
 // cascade (family base ∪ variant additions, add-never-subtract).
 import { describe, it, expect } from "vitest";
+import assert from "node:assert/strict";
 import {
   laneBlank,
+  judgeLaneBounds,
   judgeLaneRelations,
   judgeLaneSurface,
+  laneBoundsOf,
   laneSurfaceOf,
 } from "../src/laneRelations.ts";
 import type { LaneRelations } from "../src/laneRelations.ts";
@@ -216,5 +219,53 @@ describe("the cures and the fold", () => {
     expect(surface).not.toBe(base)
     surface?.push?.('mutated')
     expect(base).toEqual(['text'])
+  })
+})
+
+// ── THE RANGE RULE (the 2.1 width burn, 2026-10-10): the model's
+// own numeric domains, judged with the same voice as the words.
+describe('judgeLaneBounds (the RANGE RULE)', () => {
+  const bounds = {
+    width: { min: 256, max: 1536 },
+    steps: { max: 50 },
+    cfg: { min: 0.1 },
+  } as const
+
+  it('a stated number below its floor refuses, naming the row and the field', () => {
+    const v = judgeLaneBounds(bounds, { width: -50 })
+    assert.equal(v.length, 1)
+    assert.ok(v[0]!.message.includes("'width'"))
+    assert.ok(v[0]!.message.includes('-50'))
+    assert.ok(v[0]!.message.includes('256'))
+  })
+
+  it('a stated number above its ceiling refuses (a max-only row names its span)', () => {
+    const v = judgeLaneBounds(bounds, { steps: 999 })
+    assert.equal(v.length, 1)
+    assert.ok(v[0]!.message.includes('at most 50'))
+  })
+
+  it('a min-only row refuses under (a floor-only span)', () => {
+    const v = judgeLaneBounds(bounds, { cfg: 0 })
+    assert.equal(v.length, 1)
+    assert.ok(v[0]!.message.includes('at least 0.1'))
+  })
+
+  it('in-range values, blanks, non-numbers and unbounded fields never fire', () => {
+    assert.equal(judgeLaneBounds(bounds, { width: 1328, steps: 20, cfg: 1 }).length, 0)
+    assert.equal(judgeLaneBounds(bounds, { width: undefined, steps: null }).length, 0)
+    assert.equal(judgeLaneBounds(bounds, { width: '1024' }).length, 0) // the schema's own refusal
+    assert.equal(judgeLaneBounds(bounds, { seed: -9999 }).length, 0) // no row, no law
+    assert.equal(judgeLaneBounds(null, { width: -50 }).length, 0) // no declaration, no judgment
+  })
+
+  it('laneBoundsOf: the variant REPLACES the family row per-field, keeps the rest', () => {
+    const merged = laneBoundsOf(
+      { steps: { max: 50 }, width: { min: 256, max: 1536 } },
+      { steps: { max: 12 } },
+    )
+    assert.deepEqual(merged, { steps: { max: 12 }, width: { min: 256, max: 1536 } })
+    assert.deepEqual(laneBoundsOf(null, { steps: { max: 12 } }), { steps: { max: 12 } })
+    assert.equal(laneBoundsOf(null, null), null)
   })
 })

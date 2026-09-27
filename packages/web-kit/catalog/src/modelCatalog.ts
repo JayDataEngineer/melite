@@ -383,10 +383,20 @@ export function familyGenre(
 /**
  * The source-media types a family declares it ingests (FamilyEntry.accepts,
  * a closed literal on the backend). Returns the declared list, or
- * [] when the family declares none / is unknown → the canvas drop handler
- * treats [] as "not a drop target" (no card spawned, no hard-fail on the
- * MIME itself — there simply is no input family to receive the drop). The
- * gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
+ * [] when the family declares none / is unknown.
+ *
+ * THE READER TODAY, STATED HONESTLY (the accepts-consumer audit,
+ * 2026-10-10): this gate is SERVED (catalogEmission puts the DECL's
+ * accepts on the /v1/model-catalog families block) and READ here,
+ * but the promised last-mile consumer — a canvas drop handler
+ * spawning an input card only for accepted media types — does not
+ * exist in this checkout (the drop surface targets card slots via
+ * the shared ASSET_DRAG_MIME contract, never spawns). The DECL's
+ * truth is not a lie; the old comment's consumer was. The wiring
+ * is owed work on the ROADMAP (canvas drop-spawn), and this
+ * reader is the gate it will call — never a free-coded
+ * isImageFile prefix check. (authored 2026-08-09; corrected
+ * 2026-10-10)
  */
 export function familyAccepts(
  routeKey: string,

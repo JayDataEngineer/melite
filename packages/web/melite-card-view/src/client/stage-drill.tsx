@@ -20,7 +20,7 @@ import { StudioShell } from '@melite/card-base/shell'
 import { fetchMediaLibrary, uploadInputFile } from './cards-resource.ts'
 import { paramsDiffKeys, previewArtifactsFor, previewReportsFor, primaryKindFor } from './preview-kinds.ts'
 import { removeStageWire, ungroupStageWire } from './add-stage.ts'
-import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow } from './cards-resource.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/preview'
 import { CardZoomOverlay } from './zoom.tsx'
@@ -68,7 +68,7 @@ export function ScrollLockedDetail(props: { children?: ReactNode, testid?: strin
 }
 
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
-  stage: BenchStageRow
+  stage: BenchStageView
   bench: CardsBenchValue
   running: boolean
   onRun: () => void
@@ -467,8 +467,8 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // (no params, no Run — compounds organize; chain-running rides the
   // multi-stage estate debt, surfaced not hidden).
   if (stage.card === 'group') {
-    const members: BenchStageRow[] = Array.isArray(stage.children)
-      ? stage.children.filter((c): c is BenchStageRow =>
+    const members: BenchStageView[] = Array.isArray(stage.children)
+      ? stage.children.filter((c): c is BenchStageView =>
           typeof c === 'object' && c !== null && typeof Reflect.get(c, 'id') === 'string') : []
     const ungroup = async (): Promise<void> => {
       setError(null)

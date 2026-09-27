@@ -91,13 +91,17 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
     expect(nodeOf('image1').meta?.['role']).toBe('path')
   })
 
-  test('prompt is required (extra.required — the declaration\'s spelling); width/height carry the visibility grammar + the resolution layout', () => {
+  test('prompt is required (extra.required — the declaration\'s spelling); width/height carry NO model guard (the DECL surface owns visibility) + the resolution layout', () => {
     const p = nodeOf('prompt')
     expect(extraOf(p)['required']).toBe(true)
     expect(extraOf(p)['wtype']).toBe('textarea')
     for (const nm of ['width', 'height']) {
       const n = nodeOf(nm)
-      expect(extraOf(n)['visible_when'], nm).toBe('model=qwen-img-edit-21')
+      // THE GUARD IS DEAD (li-aq, fix shape 2): family scoping rides
+      // the DECL params surface (served as the lanes block), never a
+      // card-authored visible_when — a guard here would be a second
+      // declaration drifting beside the first.
+      expect(extraOf(n)['visible_when'], nm).toBeUndefined()
       expect(extraOf(n)['group'], nm).toBe('resolution')
       expect(extraOf(n)['columns'], nm).toBe(3)
       expect(typeof extraOf(n)['tooltip'], nm).toBe('string')
@@ -122,7 +126,7 @@ describe('THE CONTRACT: the real image-edit envelope (every declared fact rides)
 })
 
 describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards write)', () => {
-  test('THE HEALED VISIBILITY GRAMMAR: width/height emit x-visible-when from visible_when (the camel read never fired once before 2026-10-10)', () => {
+  test('THE DEAD GUARD: width/height emit NO x-visible-when (the DECL surface owns family scoping — li-aq)', () => {
     const emitted = emitParamsSchema(
       carrier as never,
       ['qwen-img-edit-21', 'qwen-img-edit-2511'],
@@ -130,7 +134,10 @@ describe('THE EMIT PARITY (the tool face reads the same vocabulary the cards wri
     for (const nm of ['width', 'height']) {
       const knob = emitted.properties[nm]
       expect(knob, nm).toBeDefined()
-      expect(knob['x-visible-when'], nm).toBe('model=qwen-img-edit-21')
+      // the camel read itself stays healed (a card that DOES declare a
+      // guard emits it — the read is the emit's vocabulary); the
+      // image-edit card simply declares none anymore
+      expect(knob['x-visible-when'], nm).toBeUndefined()
     }
   })
 

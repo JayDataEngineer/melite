@@ -26,7 +26,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "",
     "repo_id": "nvidia/soma-x",
-    "filename": null,
     "note": ""
   },
   "studio": {

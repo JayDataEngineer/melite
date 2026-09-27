@@ -300,3 +300,74 @@ export function laneSurfaceOf(
   if (variantParams === undefined || variantParams === null) return [...familyParams]
   return [...new Set([...familyParams, ...variantParams])]
 }
+
+/** One bounds row: the model's own floor/ceiling for ONE numeric
+ *  param. At least one endpoint must be stated (a bound that names
+ *  neither is a typo, not a law). THE RANGE RULE (the 2.1 width
+ *  burn, 2026-10-10): whoever owns the default owns the floor —
+ *  the card's schema may bound what the CARD author knows, but the
+ *  resolution a LANE accepts is the MODEL's truth, and it lived
+ *  nowhere (width -50 admitted at every door; the engine produced
+ *  garbage). Declared on the DECL, judged at bench-write with the
+ *  same voice as the relation words. */
+export interface ParamBound {
+  readonly min?: number;
+  readonly max?: number;
+}
+
+/** Bounds for the lane: family-level rows, per-field REPLACED by
+ *  the variant's own when the variant states one (a lane may
+ *  tighten its own ceiling — the lightning recipe's step budget is
+ *  not the standard's; two independent rows would contradict, so
+ *  the nearer layer wins, the surface cascade's add-law does not
+ *  apply to numbers). */
+export type LaneBounds = Readonly<Record<string, ParamBound>>;
+
+export function laneBoundsOf(
+  familyBounds: LaneBounds | null | undefined,
+  variantBounds: LaneBounds | null | undefined,
+): LaneBounds | null {
+  if (familyBounds === undefined || familyBounds === null) {
+    return variantBounds === undefined || variantBounds === null
+      ? null
+      : { ...variantBounds };
+  }
+  if (variantBounds === undefined || variantBounds === null) return { ...familyBounds }
+  return { ...familyBounds, ...variantBounds }
+}
+
+/** Judge the bounds over one stated state. PURE. Blank fields never
+ *  violate (the blank law: unstated is the family default's
+ *  business, not a refusal); non-numbers are the card schema's own
+ *  refusal, never re-voiced here; a stated number outside its row
+ *  refuses IN THE FIELD'S VOICE, cure included. */
+export function judgeLaneBounds(
+  bounds: LaneBounds | null,
+  values: Record<string, unknown>,
+): LaneViolation[] {
+  if (bounds === null) return []
+  const out: LaneViolation[] = []
+  for (const [name, row] of Object.entries(bounds)) {
+    if (!Object.prototype.hasOwnProperty.call(values, name)) continue
+    const v = values[name]
+    if (laneBlank(v) || typeof v !== 'number' || !Number.isFinite(v)) continue
+    const floor = row.min;
+    const ceiling = row.max;
+    const under = floor !== undefined && v < floor;
+    const over = ceiling !== undefined && v > ceiling;
+    if (!under && !over) continue
+    const span =
+      floor !== undefined && ceiling !== undefined
+        ? floor + '–' + ceiling
+        : floor !== undefined
+          ? 'at least ' + floor
+          : 'at most ' + ceiling
+    out.push({
+      field: name,
+      message:
+        "'" + name + "': " + v + " is outside this lane's range (" + span + ') — ' +
+        'the model owns the floor and the ceiling (the declaration, not the form)',
+    })
+  }
+  return out
+}

@@ -9,7 +9,7 @@ import type {
   Flow,
   FlowsValidateAnswer,
   GraphNode,
-  StageRow,
+  FlowStageRow,
   StageSkip,
 } from "./runsValidateShared.ts";
 import { edgeRef } from "./runsValidateInline.ts";
@@ -20,7 +20,7 @@ import { batchRows, sweepWorkflows } from "./runsValidateSweeps.ts";
 export function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: CardRegistryLike | null): { flow: Flow; pruned: string[] } {
   if (!flow.stages.some((st) => st.skipWhen !== null)) return { flow, pruned: [] };
   const pruned: Map<string, StageSkip> = new Map();
-  const kept: StageRow[] = [];
+  const kept: FlowStageRow[] = [];
   for (const st of flow.stages) {
     const cond: StageSkip | null = st.skipWhen;
     if (cond === null) {
@@ -41,7 +41,7 @@ export function prunedFor(flow: Flow, body: Record<string, unknown>, cards?: Car
         ") — a run with no stages never registers",
     );
   }
-  const merged: StageRow[] = [];
+  const merged: FlowStageRow[] = [];
   for (const st of kept) {
     const hitsPruned: boolean = st.inputs.some(
       (i) => i.edge.kind === "stage" && pruned.has(i.edge.stage),

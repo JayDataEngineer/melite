@@ -24,7 +24,7 @@
 // package BUILDS (tsc, the drafts recipe); the route stays plain.
 import type { Context } from "@deepseek-ai/cordis";
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import { contentTypeForArtifact, mediaVocab, servableLeaf } from "@melite/contracts/mediaKinds";
+import { contentTypeForArtifact, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
 import { stampOf } from "@melite/contracts/buildStamp";
 import {
@@ -162,28 +162,13 @@ export function repoRootOf(start: string): string | null {
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
 const RUN_ID = RUN_ID_RE;
 
-/** One confined relative segment AFTER percent-decoding: the engines
- *  mint raw names (`out 1.png`, unicode, parens) and mediaUrl
- *  percent-encodes them — the grammar must accept what both halves
- *  produce (the mint→serve round-trip law, stroke 82). The lock is:
- *  not empty, not `.`/`..` (traversal), no NUL; every other byte is
- *  a legal filename the realpath containment below re-checks. */
-function segmentOk(decoded: string): boolean {
-  /* v8 ignore next -- defense-in-depth dot/empty fence, unreachable
-   * via the HTTP handler by construction (2026-09-16): "" never
-   * arrives (parseTarget filters empties before decode — only ""
-   * decodes to ""); "." / ".." never arrive (WHATWG URL
-   * dot-normalizes every single/double-dot spelling — literal,
-   * %2e/%2E, .%2e, %2e., %2e%2e in any case — to a short path
-   * before the segment loop runs; probed: all such forms refuse via
-   * the parts.length<2 arm, never here — see the single/double-dot
-   * walls). The fence stays for non-URL callers; the NUL arm below
-   * carries the behavioral wall. */
-  if (decoded === "" || decoded === "." || decoded === "..") return false;
-  if (decoded.includes("\0")) return false;
-  return true;
-}
-
+/** One confined relative segment AFTER percent-decoding: THE
+ * CONTRACT'S GRAMMAR (segmentConfined — the audit's ×3): the engines
+ * mint raw names (`out 1.png`, unicode, parens) and mediaUrl
+ * percent-encodes them — the grammar must accept what both halves
+ * produce (the mint→serve round-trip law, stroke 82). One predicate
+ * shared with the queue's source-echo and the gallery's artifact
+ * route; realpath containment below re-checks the read. */
 /** The servable-media law: run STATE lives beside the artifacts
  *  (_flow.json, _request.json carry drafts and graphs — the run's
  *  private record, never gallery bytes). `_poster.jpg` is the ONE
@@ -222,7 +207,7 @@ function parseTarget(sub: string): { runId: string; rel: string } | null {
     } catch {
       return null;
     }
-    if (!segmentOk(decoded)) return null;
+    if (!segmentConfined(decoded)) return null;
     relParts.push(decoded);
   }
   if (!relServable(relParts)) return null;

@@ -159,6 +159,18 @@ describe("mcpExecutor (the wire law)", () => {
       ),
       /non-empty 'tool'/,
     );
+    // THE WIRE-NAME GRAMMAR (the census's C1): the regex was declared
+    // with a comment and never used — prose tool names were minted
+    // verbatim and died at the host. Refused HERE, in the row's voice.
+    await assert.rejects(
+      mcpExecutor(tools, "mcp:blender").executeStages(
+        [{ stageId: "w", outputs: {}, params: { tool: "scene info, please", args: {} } }],
+        dir,
+        {},
+        opts,
+      ),
+      /is not a wire name/,
+    );
     assert.equal(tools.calls.length, 0);
     rmSync(dir, { recursive: true, force: true });
   });

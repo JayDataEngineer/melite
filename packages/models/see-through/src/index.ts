@@ -26,7 +26,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "",
     "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",
-    "filename": null,
     "note": ""
   },
   "genre": "other",

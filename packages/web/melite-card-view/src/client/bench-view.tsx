@@ -15,7 +15,7 @@ import { fetchBench, uploadInputFile, benchSessionKey } from './cards-resource.t
 import { addStageWire, groupStagesWire, reorderStageWire } from './add-stage.ts'
 import { CardZoomOverlay } from './zoom.tsx'
 import type { StageViewOwnerProps } from './types.ts'
-import type { BenchStageRow, CardsBenchValue } from './cards-resource.ts'
+import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop } from './dnd-payloads.ts'
 import { benchRow, groupStagesByCard, rowRunning, type CardRowLineTabRow } from './bench-row.ts'
 import { SortableTile } from './sortable-tile.tsx'
@@ -27,13 +27,13 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   sessionKey: string
   bench: CardsBenchValue
   onRun: () => void
-  onRunStage: (stage: BenchStageRow) => void
+  onRunStage: (stage: BenchStageView) => void
   /** the tile chrome's stop + remove verbs (the chat-input law). */
-  onStopStage: (stage: BenchStageRow) => void
-  onRemoveStage: (stage: BenchStageRow) => void
+  onStopStage: (stage: BenchStageView) => void
+  onRemoveStage: (stage: BenchStageView) => void
   stageRuns: Record<string, string>
   running: boolean
-  onPatchParams: (stage: BenchStageRow, patch: Record<string, unknown>) => void
+  onPatchParams: (stage: BenchStageView, patch: Record<string, unknown>) => void
   renderStageView: (owner: StageViewOwnerProps, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   renderPreview?: (owner: { kind: 'video' | 'image' | 'audio' | 'mesh', artifacts: Array<{ name: string, url: string }>, runStatus: string, stageId: string, history?: Array<Array<{ name: string, url: string }>> }, fallback: ReturnType<typeof h>) => ReturnType<typeof h>
   runId?: string | null
@@ -65,10 +65,10 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       setEntered((prev) => { const next = new Set(prev); for (const id of fresh) next.add(id); return next })
     }
   }, [live.stages])
-  const [open, setOpen] = useState<BenchStageRow | null>(null)
+  const [open, setOpen] = useState<BenchStageView | null>(null)
   const [adding, setAdding] = useState(false)
   const [reloadError, setReloadError] = useState<string | null>(null)
-  const onOpen = useCallback((stage: BenchStageRow): void => setOpen(stage), [])
+  const onOpen = useCallback((stage: BenchStageView): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
   const onAddCard = useCallback((): void => setAdding(true), [])
   // keepOpen: the wire path — the drill STAYS OPEN and its stage row
@@ -407,7 +407,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       // row's zoom (the drilldown; for a studio card the studio IS
       // its drilldown face — the real-card law) opens the moment
       // the door lands it.
-      onAddedRow: (row: BenchStageRow) => { setAdding(false); setOpen(row) },
+      onAddedRow: (row: BenchStageView) => { setAdding(false); setOpen(row) },
     }) : null,
   )
 }

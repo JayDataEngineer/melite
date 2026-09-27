@@ -246,6 +246,10 @@ export function prepareCardParams(
           // hit the not-boarded gate instead.
           fam: "",
           card: mid,
+          // the familyless compose lanes on modelId==='' (the
+          // engine's requiresModel===false arm) — the field the
+          // li-ak fix added to every OTHER constructor.
+          modelId: "",
           skeleton: decl.skeleton !== "" ? decl.skeleton : mid,
           decl,
           params: liftCardParams(body),

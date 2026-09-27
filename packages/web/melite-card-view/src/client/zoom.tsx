@@ -20,7 +20,7 @@ import { createPortal } from 'react-dom'
 import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import css from './card.module.css'
-import { BenchStageRow, CardsBenchValue } from './cards-resource.ts'
+import { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import type { StageViewOwnerProps } from './types.ts'
 
 /** How long the skeleton holds the box before the real detail swaps in. */
@@ -55,7 +55,7 @@ export function zoomSizeFor(surfaceSize: string | null): Record<string, string> 
  * spec-form params + Run row + outputs), rendered only once the
  * settle has passed. */
 export interface ZoomDetailProps {
-  stage: BenchStageRow
+  stage: BenchStageView
   bench: CardsBenchValue
   /** THE START-ERROR SEAM (stroke 25): a run-start rejection (wire
    *  down, refused compose, stale bench) renders in the webhook bar

@@ -33,6 +33,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*"
   }
 }

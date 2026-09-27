@@ -29,7 +29,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "",
     "repo_id": "ilintar/trellis2-gguf",
-    "filename": null,
     "note": ""
   },
   "genre": "3d",

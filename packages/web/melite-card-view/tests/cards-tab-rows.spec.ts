@@ -5,13 +5,13 @@
 // fetch, no DOM.
 import { describe, expect, test } from "vitest";
 import { benchRow } from "../src/client/CardsTab.tsx";
-import type { BenchStageRow, CardsBenchValue } from "../src/client/cards-resource.ts";
+import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
-function stage(over: Partial<BenchStageRow> & { id: string }): BenchStageRow {
+function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };
 }
 
-function bench(stages: BenchStageRow[]): CardsBenchValue {
+function bench(stages: BenchStageView[]): CardsBenchValue {
   return { kind: "bench", draftId: "bench-main", rev: 1, log: [], stages };
 }
 
@@ -20,7 +20,7 @@ describe("benchRow — the group face", () => {
     const row = benchRow(stage({
       id: "g_0", card: "group",
       children: [stage({ id: "s_0", card: "a" }), stage({ id: "s_1", card: "b" })],
-    }) as BenchStageRow);
+    }) as BenchStageView);
     expect(row.kind).toBe("group");
     expect(row.title).toBe("Group (2)");
   });

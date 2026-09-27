@@ -33,7 +33,7 @@ import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
-import type { RunRecord, StageRow } from "./runsTypes.ts";
+import type { RunRecord, RunStageRow } from "./runsTypes.ts";
 
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */
@@ -414,7 +414,7 @@ export function registerCompiledRun(args: {
   const dir: string = join(outRootFor(stateRoot, testFlag), runId);
   mkdirSync(dir, { recursive: true });
   // THE MULTI-STAGE ROW (2026-09-25, the curated-lane lift): every
-  // compiled stage rides the run row — one GraphRow + one StageRow +
+  // compiled stage rides the run row — one GraphRow + one RunStageRow +
   // one params/outputNodes slot each, input_names carrying the
   // cross-stage wiring the merged walk consumes. The single-stage
   // shape is the N=1 case of this SAME loop (byte-identical row for

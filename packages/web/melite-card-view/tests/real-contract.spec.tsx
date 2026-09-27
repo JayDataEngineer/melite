@@ -48,10 +48,22 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     const prompt = byName.get('prompt')
     expect(prompt!.type).toBe('textarea')
     expect(prompt!.required).toBe(true)
-    // width/height ride the resolution group with the visibility grammar
+    // width/height ride the resolution group; THE GUARD IS DEAD
+    // (fix shape 2): the family scoping rides the DECL params
+    // surface (spec.lanes), never a card-authored visible_when —
+    // a guard here would be a second declaration drifting beside
+    // the first.
     const width = byName.get('width')
-    expect(width!.visible_when).toBe('model=qwen-img-edit-21')
+    expect(width!.visible_when).toBeUndefined()
     expect(width!.group).toBe('resolution')
+    // the DECL surfaces serve: 2.1 owns the resolution pair,
+    // 2511's surface excludes it (source-resolution lane).
+    expect(REAL21.lanes?.base).toContain('width')
+    expect(REAL21.lanes?.base).toContain('height')
+    expect(REAL21.lanes?.bounds?.width).toEqual({ min: 256, max: 1536 })
+    // the 2511 doc is the sibling fixture (seated above)
+    expect(REAL2511.lanes?.base?.includes('width')).toBe(false)
+    expect(REAL2511.lanes?.base?.includes('use_stock_nodes')).toBe(true)
   })
 
   test('SpecForm renders the real contract: the input stack seats; width/height follow the model grammar', async () => {

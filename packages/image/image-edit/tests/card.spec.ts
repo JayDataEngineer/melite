@@ -531,8 +531,8 @@ describe("the image-edit compose gate", () => {
   });
 });
 
-describe("the lane-bespoke leaves (the model guard — the naming law's visibility half)", () => {
-  it("THE LEAVES DECLARE THEIR FAMILY: width/height ride the 2.1 lane, use_stock_nodes/double_reference ride 2511 — never visible on the sibling; references are ONE unguarded stack", () => {
+describe("the lane-bespoke leaves (the DECL surface — fix shape 2's successor)", () => {
+  it("THE LEAVES RIDE THEIR DECL SURFACE: width/height are 2.1's params, use_stock_nodes/double_reference are 2511's — the card carries NO model guard; references are ONE unguarded stack", () => {
     // the carrier dance (same as formSchemas: schemaCarrier ?? schema)
     const carrier = (def.schemaCarrier ?? def.schema) as unknown as { toJSON(): { refs: Record<number, { type?: string; dict?: Record<string, number>; meta?: { extra?: { visible_when?: string; max_stack?: number; hidden?: boolean; zone?: string } } }> } };
     const json = carrier.toJSON();
@@ -543,12 +543,24 @@ describe("the lane-bespoke leaves (the model guard — the naming law's visibili
       if (refId === undefined) return undefined;
       return json.refs[refId]?.meta?.extra?.visible_when;
     };
-    // the 2.1-only resolution knobs
-    assert.equal(leaf("width"), "model=qwen-img-edit-21", "width declares its family");
-    assert.equal(leaf("height"), "model=qwen-img-edit-21", "height declares its family");
-    // the 2511-only tuning knobs
-    assert.equal(leaf("use_stock_nodes"), "model=qwen-img-edit-2511", "use_stock_nodes declares its family");
-    assert.equal(leaf("double_reference"), "model=qwen-img-edit-2511", "double_reference declares its family");
+    // THE GUARDS ARE DEAD (fix shape 2 — "visible_when: 'model=…'
+    // dies"): the family scoping now lives in the DECL params
+    // surfaces, judged at bench-write and rendered from the
+    // declaration. The card carrying NO guard is the law; a guard
+    // here would be a second declaration drifting beside the first.
+    for (const name of ["width", "height", "use_stock_nodes", "double_reference"]) {
+      assert.equal(leaf(name), undefined, `${name} carries no model guard — its family is its DECL params surface`);
+    }
+    // the DECL surfaces themselves (the one truth): 2.1 owns the
+    // resolution pair (and rides them together); 2511 owns the
+    // edit-tuning pair and refuses a stated size by ABSENCE.
+    const decl21 = facts.models["qwen-img-edit-21"]!;
+    const decl2511 = facts.models["qwen-img-edit-2511"]!;
+    const surf = (m: { params?: string[] }): ReadonlySet<string> => new Set(m.params ?? []);
+    assert.ok(surf(decl21).has("width") && surf(decl21).has("height"), "2.1's surface owns the resolution pair");
+    assert.ok(!surf(decl2511).has("width") && !surf(decl2511).has("height"), "2511's surface excludes a stated size (source-resolution lane)");
+    assert.ok(surf(decl2511).has("use_stock_nodes") && surf(decl2511).has("double_reference"), "2511's surface owns the edit-tuning pair");
+    assert.ok(!surf(decl21).has("use_stock_nodes") && !surf(decl21).has("double_reference"), "2.1's surface excludes the 2511 tuning pair");
     // the SHARED surface never hides (no guard on the plain knobs)
     assert.equal(leaf("prompt"), undefined, "the shared surface never carries a model guard");
     assert.equal(leaf("image1"), undefined, "the anchor is every edit lane's surface");

@@ -71,7 +71,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
 
 /** One bench stage as the door serves it (presentation extras ride —
  *  this is the USER-facing view; the runner projection strips them). */
-export interface BenchStageRow {
+export interface BenchStageView {
   id: string
   engine?: string
   card?: string
@@ -114,7 +114,7 @@ export interface CardsBenchValue {
   kind: 'bench'
   draftId: string
   rev: number
-  stages: BenchStageRow[]
+  stages: BenchStageView[]
   log: BenchLogHead[]
   /** THE SESSION KEY (stroke 80 — the misaddressed-delete fix): the
    *  bench's own conversation key, carried ON the value so every
@@ -161,7 +161,7 @@ export interface CardsDraftValue {
   draftId: string
   stageId: string
   intent: string
-  stages: BenchStageRow[]
+  stages: BenchStageView[]
   /** the draft doc's bench revision (0 when the doc carries no bench
    *  block) — the CAS fence's expect handle for param writes. */
   rev: number
@@ -274,9 +274,9 @@ function failure(address: string, message: string): RemoteResult<never> {
  *  user-authored multi-stage bench carries `card` per row and never
  *  takes this arm. */
 export function deriveCardForRow(
-  stages: BenchStageRow[],
+  stages: BenchStageView[],
   intent: string,
-): BenchStageRow[] {
+): BenchStageView[] {
   if (intent === '' || stages.length !== 1) return stages
   const only = stages[0]!
   if (only['card'] !== undefined && only['card'] !== '') return stages
@@ -302,8 +302,8 @@ export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'st
 
 export function readBench(doc: Record<string, unknown>, sessionKey: string): CardsBenchValue {
   let stages = Array.isArray(doc['stages'])
-    ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
-        typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
+    ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>
+        typeof s === 'object' && s !== null && typeof (s as BenchStageView)['id'] === 'string')
     : []
   // CARD BIRTH LAW, bench side (2026-09-13, the hour-6 form
   // regression): a chat-born bench's stages arrive from the estate's
@@ -591,7 +591,10 @@ async function observeRunOutcomeRun(
           await patchStageOutcome(draftId, stageId, { runStatus: terminal, result: { run_id: runId } })
           onTouched?.()
         } catch { /* bookkeeping */ }
-        return terminal === 'done' || terminal === 'failed' || terminal === 'stopped' ? terminal : null
+        // tileStatusFromVerdict's vocabulary is running|done|stopped
+        // (a 'failed' verdict folds to 'stopped' by its own law) —
+        // 'running' is the one non-terminal, and it polls on.
+        return terminal === 'running' ? null : terminal
       }
       await sleep(1500) // transport — the next poll may recover
       continue
@@ -805,12 +808,12 @@ export async function freshStageRow(
   draftId: string,
   stageId: string,
   signal?: AbortSignal,
-): Promise<BenchStageRow | null> {
+): Promise<BenchStageView | null> {
   try {
     const doc = await unwrapRemote(estateRemote().drafts.get(draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
     const stages = Array.isArray(doc['stages'])
-      ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
-          typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
+      ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>
+          typeof s === 'object' && s !== null && typeof (s as BenchStageView)['id'] === 'string')
       : []
     // THE SAME BIRTH LAW (the audit's C1): this row is what the Run
     // press reads — it must carry the identity the tile rendered,
@@ -824,8 +827,8 @@ export async function freshStageRow(
 
 export function readDraft(draftId: string, stageId: string, doc: Record<string, unknown>): CardsDraftValue {
   const stages = Array.isArray(doc['stages'])
-    ? (doc['stages'] as unknown[]).filter((s): s is BenchStageRow =>
-        typeof s === 'object' && s !== null && typeof (s as BenchStageRow)['id'] === 'string')
+    ? (doc['stages'] as unknown[]).filter((s): s is BenchStageView =>
+        typeof s === 'object' && s !== null && typeof (s as BenchStageView)['id'] === 'string')
     : []
   const bench = doc['bench']
   const rev = typeof bench === 'object' && bench !== null

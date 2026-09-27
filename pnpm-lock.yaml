@@ -2801,6 +2801,9 @@ importers:
 
   packages/web/viewer-base:
     dependencies:
+      '@melite-plugin/melite-run-wire':
+        specifier: workspace:*
+        version: link:../melite-run-wire
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts

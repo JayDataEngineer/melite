@@ -104,7 +104,7 @@ export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { judgeLaneRelations, judgeLaneSurface, laneSurfaceOf } from "@melite/contracts/laneRelations";
+import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf } from "@melite/contracts/laneRelations";
 import { lanePackFolders, lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -641,9 +641,20 @@ export class CardRegistryService extends Service {
       famRow.params,
       variantRow?.params,
     );
+    // THE RANGE RULE (the 2.1 width burn, 2026-10-10): the model's
+    // own numeric domains ride the DECL beside the words — family
+    // rows, per-field REPLACED by the variant's (a lane may tighten
+    // its own ceiling). width -50 admitted at every door while the
+    // engine produced garbage; the floor and the ceiling are the
+    // declaration's, judged in the same voice as the words.
+    const bounds = laneBoundsOf(
+      famRow.bounds ?? null,
+      variantRow?.bounds ?? null,
+    );
     const violations: LaneViolation[] = [
       ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
       ...judgeLaneRelations(relations, prep.params),
+      ...judgeLaneBounds(bounds, prep.params),
     ];
     if (violations.length > 0) {
       return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
@@ -923,7 +934,12 @@ export class CardRegistryService extends Service {
     // here at the door that composes.
     const boardCheck = this.admitStageModel(prep.card, body["model"]);
     if (!boardCheck.ok) {
-      throw new CardArmError(400, boardCheck.error, { code: boardCheck.code });
+      // the constructor takes the code as its THIRD param (the
+      // object-literal spelling passed `{code: undefined}` as the
+      // code — the runs door then answered "unmapped refusal code
+      // undefined"); same code the write door stamps for a board
+      // refusal.
+      throw new CardArmError(400, boardCheck.error, "invalid_request");
     }
     // THE REFUSAL-ORDER LAW (2026-09-21, roadmap §10's e2e debt):
     // ADMISSION runs before the lane-presence gate — a body-shape

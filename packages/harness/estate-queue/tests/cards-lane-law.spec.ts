@@ -768,3 +768,99 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     }
   });
 });
+
+describe("THE RANGE RULE WALL (the 2.1 width burn — the model owns the floor)", () => {
+  it("a stated width below the declared floor refuses AT WRITE TIME, in the field's voice", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      width: -50,
+      height: 1024,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("'width'");
+      expect(verdict.error).toContain("-50");
+      expect(verdict.error).toContain("256");
+      expect(verdict.error).toContain("outside this lane's range");
+    }
+  });
+
+  it("a stated width above the declared ceiling refuses the same way (1536, not 4096)", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      width: 4096,
+      height: 4096,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("'width'");
+      expect(verdict.error).toContain("4096");
+      expect(verdict.error).toContain("1536");
+    }
+  });
+
+  it("the in-range pair admits (the burn was NOT a law against stating resolution)", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      width: 1328,
+      height: 1328,
+    });
+    expect(verdict.ok).toBe(true);
+  });
+
+  it("a lone axis COMPLETES from the family default at the lifted bench seat (the together word guards the raw form state)", () => {
+    // The bench judges the LIFTED state (resolve → overlay → lift):
+    // width stated, height absent → the DECL's own height:1024
+    // default rides, the pair completes, the admission is honest.
+    // The together word still binds the FORM's inline gate, which
+    // sees the raw authored state pre-overlay (card-base spec.ts,
+    // judgeLaneRelations on unlifted values) — one declaration,
+    // two true seats.
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      width: 1328,
+    });
+    expect(verdict.ok).toBe(true);
+  });
+
+  it("a stated size on 2511 refuses on the SURFACE (source-resolution lane owns no size)", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-2511",
+      prompt: "make it night",
+      width: 1024,
+      height: 1024,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      // the surface voice: the field fires nothing on this lane
+      expect(verdict.error).toContain("fires nothing on this lane");
+      expect(verdict.error).toContain("width");
+    }
+  });
+
+  it("2511's own tuning pair admits (the tuning knobs are ITS surface)", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-2511",
+      prompt: "make it night",
+      use_stock_nodes: true,
+    });
+    expect(verdict.ok).toBe(true);
+  });
+
+  it("the 2511 tuning pair on the 2.1 family refuses on the SURFACE (the sibling owns it)", () => {
+    const verdict = svc.admitStageRelations("image-edit", {
+      model: "qwen-img-edit-21",
+      prompt: "make it night",
+      double_reference: true,
+    });
+    expect(verdict.ok).toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("double_reference");
+      expect(verdict.error).toContain("fires nothing on this lane");
+    }
+  });
+});

@@ -3,7 +3,7 @@
  * (extracted from CardsTab.tsx hour 15). */
 
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
-import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 
 /** Bench row run-status → the installed StateDot union (FlowCards'
  *  CardRowLine law: done|warning|ongoing|error — a stage that never
@@ -19,8 +19,8 @@ const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null>
 /** THE CATEGORIES: bench stages grouped by card (first-appearance
  *  order — the agent's construction order survives; stages with no
  *  card gather under 'uncategorized', never dropped). */
-export function groupStagesByCard(stages: BenchStageRow[]): Array<{ card: string; rows: BenchStageRow[] }> {
-  const groups: Array<{ card: string; rows: BenchStageRow[] }> = []
+export function groupStagesByCard(stages: BenchStageView[]): Array<{ card: string; rows: BenchStageView[] }> {
+  const groups: Array<{ card: string; rows: BenchStageView[] }> = []
   for (const s of stages) {
     const card = typeof s.card === 'string' && s.card !== '' ? s.card : 'uncategorized'
     const known = groups.find((g) => g.card === card)
@@ -61,11 +61,11 @@ export interface CardRowLineTabRow {
   videoUrl: string | null
   upstream: string | null
   sourceAttached: boolean
-  stage: BenchStageRow
+  stage: BenchStageView
 }
 
 /** exported for the door-contract specs (the tile-face law). */
-export function benchRow(stage: BenchStageRow, bench?: CardsBenchValue): CardRowLineTabRow {
+export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRowLineTabRow {
   const isGroup = stage.card === 'group'
   const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0
   const title = isGroup

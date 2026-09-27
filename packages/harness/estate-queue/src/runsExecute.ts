@@ -7,7 +7,7 @@ import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
-import { errText, runRel, type RunRecord, type StageRow } from "./runsTypes.ts";
+import { errText, runRel, type RunRecord, type RunStageRow } from "./runsTypes.ts";
 import { engineFilmName } from "./filmLead.ts";
 import { join } from "node:path";
 import { needComfyUI as _ncu } from "@melite/comfyui-cordis";
@@ -270,7 +270,7 @@ export type SettleFn = (run: RunRecord) => void;
   }
 
 export function runEngine(run: RunRecord): string {
-    const first: StageRow | undefined = run.stages[0];
+    const first: RunStageRow | undefined = run.stages[0];
     const engine: unknown = first?.["engine"];
     // the card plane engine is the contract value (one owner per token)
     return typeof engine === "string" && engine !== "" ? engine : CARD_PLANE_ENGINE;

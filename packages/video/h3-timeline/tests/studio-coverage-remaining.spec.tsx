@@ -143,7 +143,11 @@ async function openMedia(lane: string): Promise<void> {
 async function openFile(lane: string): Promise<HTMLInputElement> {
   fireEvent.click(document.querySelector(`[data-audio-upload="${lane}"]`)!)
   fireEvent.click(await screen.findByRole("menuitem", { name: "From file" }))
-  return document.querySelector('input[type="file"]')!
+  // querySelector answers Element; the caller wants the input's
+  // files API — assert the concrete node, never cast past it
+  const node = document.querySelector('input[type="file"]')
+  assert.ok(node instanceof HTMLInputElement, "file input rendered")
+  return node
 }
 
 function rowWith(text: string): HTMLElement {

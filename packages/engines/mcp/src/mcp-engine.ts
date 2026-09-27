@@ -114,6 +114,19 @@ export const mcpExecutor = (
             `stage ${JSON.stringify(row.stageId)}: mcp params need a non-empty 'tool' name`,
           );
         }
+        // THE WIRE-NAME GRAMMAR, ENFORCED WHERE IT WAS DECLARED
+        // (the census's C1 — the regex above existed with this
+        // comment and ZERO uses; a tool name carrying spaces or
+        // punctuation was minted verbatim into
+        // `mcp__<server>__<tool>` and died at the host, in the
+        // host's voice, far from the row that authored it). An
+        // ADDRESS is [A-Za-z0-9_-]{1,64}, never prose.
+        if (!MCP_TOOL_NAME_RE.test(tool)) {
+          throw new Error(
+            `stage ${JSON.stringify(row.stageId)}: mcp 'tool' ${JSON.stringify(tool)} is not a wire name ` +
+              `([A-Za-z0-9_-], at most 64) — the tool name is an address the server owns, never prose`,
+          );
+        }
         // THE ARGS SPELLING BRIDGE (2026-10-10, the boundary audit's
         // C1): the card's form declares `args` as a JSON TEXT field
         // (a textarea is the only way a human authors an argument

@@ -39,6 +39,10 @@ export interface VariantRow {
   /** This lane's relation words (judged in addition to the family's
    *  own). Present only where declared. */
   readonly relations?: LaneRelations;
+  /** This lane's numeric bounds (per-field REPLACING the family's
+   *  row for the fields it states — the RANGE RULE). Present only
+   *  where declared. */
+  readonly bounds?: Readonly<Record<string, { min?: number; max?: number }>>;
   readonly cells: VariantCellRow[];
 }
 
@@ -55,6 +59,9 @@ export interface ModelFactsRow {
   /** The family-wide relation words (judged on every lane).
    *  Present only where declared. */
   readonly relations?: LaneRelations;
+  /** The family-wide numeric bounds (per-field replaced by a
+   *  variant's own row). Present only where declared. */
+  readonly bounds?: Readonly<Record<string, { min?: number; max?: number }>>;
   /** The assembly-studio declaration (hand-owned model-facts.json
    *  carries it; the projection unions its writes into admits). */
   readonly studio?: { readonly writes?: readonly unknown[] };

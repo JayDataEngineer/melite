@@ -56,7 +56,7 @@ import type { CatalogCard, FormSpecDoc, ModifierKind, SpecValues } from './spec-
 import { paramFields, patchStageOutcome, patchStageParams } from './draft.ts'
 import css from './card.module.css'
 import { runCardStage, runBenchSequential } from './stage-run.ts'
-import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { startCardRun, stopRun } from '@melite/card-base/runs-policy'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
@@ -285,7 +285,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // stage alone, its params patched into the bench BEFORE the run
   // reads it (the drill does the patch, this does the start), then
   // startCardRun over the run-wire package.
-  const onRunStage = useCallback((stage: BenchStageRow): void => {
+  const onRunStage = useCallback((stage: BenchStageView): void => {
     // THE NO-SILENT-REJECT LAW (stroke 25's law, applied to the run
     // start): a stale/unhydrated bench is a REJECTION WITH A FACE,
     // never a quiet return — the operator pressed Run and got
@@ -334,7 +334,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // stop rides the run-wire's cancel door for the row's live run;
   // remove rides the bench's CAS door (the drill's own verb, lifted
   // to the tile — the trash replaces the drill-only affordance).
-  const onStopStage = useCallback((stage: BenchStageRow): void => {
+  const onStopStage = useCallback((stage: BenchStageView): void => {
     const rid = stageRuns[stage.id]
     if (rid === undefined) return
     void stopRun(rid).catch((e: unknown) => {
@@ -342,7 +342,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     })
   }, [stageRuns])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
-  const onRemoveStage = useCallback((stage: BenchStageRow): void => {
+  const onRemoveStage = useCallback((stage: BenchStageView): void => {
     if (snapshot?.value?.kind !== 'bench') return
     void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
       .then(() => { touchBench() })
@@ -353,7 +353,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // PARAMS PATCH for surface views (the slot's onPatch currency):
   // the same drafts/patch door the drill's own editor rides.
   /* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
-  const onPatchParamsStage = useCallback((stage: BenchStageRow, patch: Record<string, unknown>): void => {
+  const onPatchParamsStage = useCallback((stage: BenchStageView, patch: Record<string, unknown>): void => {
     if (snapshot?.value?.kind !== 'bench' && snapshot?.value?.kind !== 'draft') return
     // THE CAS FENCE RIDES EVERY AUTHOR (the parameter audit): the
     // surface-params patch joins the bench revision law — a bench

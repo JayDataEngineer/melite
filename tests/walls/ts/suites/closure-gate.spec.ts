@@ -142,6 +142,9 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       // the lane declaration itself (the DECL surface + its laws) —
       // carried by the row and read by the registry seat
       "params", "relations",
+      // the RANGE RULE's numeric domains — read by the registry seat
+      // (judgeLaneBounds) and served by the spec door (laneContractOf)
+      "bounds",
     ]);
     for (const key of new Set(carried)) {
       expect(owned.has(key), `the facts row carries '${key}', which no reader owns — a write-only column`).toBe(true);
@@ -262,5 +265,49 @@ describe("THE AUDIT-ADDED LAWS", () => {
     const contract = read("packages/engines/comfyui-cordis/src/models/families/contract.ts");
     expect(contract).toContain("export const ModelDecl: z<ModelDecl>");
     expect(contract).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
+  });
+
+  it("RULE 10 · the segment grammar is the CONTRACT'S (no door owns a private copy)", () => {
+    // the bypass audit's "artifact-URL parsing ×3": three doors
+    // judged a legal segment with three private predicates, and the
+    // gallery's charset had already drifted to REFUSE names the
+    // engine mints (a space, unicode, parens) that the media route
+    // served. One predicate; a private re-spelling reopens the
+    // disagreement.
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      if (f.includes("mediaKinds.ts")) continue;
+      const code = codeOf(read(f));
+      if (/function segmentOk\(|const segmentOk\s*=/.test(code)) {
+        offenders.push(f + " — a private segment grammar; import segmentConfined from @melite/contracts/mediaKinds");
+      }
+      if (/RUN_SEGMENT\s*=\s*\/\^/.test(code)) {
+        offenders.push(f + " — a private run-segment charset (the class that refused minted names)");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 11 · every stage-row concept carries its QUALIFIED name (no bare StageRow)", () => {
+    // the bypass audit's C4: two same-named StageRow interfaces (a
+    // flow-doc stage and a run-record stage) plus a presentation
+    // BenchStageRow beside the storage one — an import of the wrong
+    // one typechecked silently. The bare names are BANNED; each
+    // concept spells FlowStageRow / RunStageRow / BenchStageRow
+    // (storage) / BenchStageView (presentation).
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      const decls = [...code.matchAll(/(?:export\s+)?(?:interface|type)\s+StageRow\b/g)];
+      if (decls.length > 0) {
+        offenders.push(f + " — declares a bare StageRow (FlowStageRow or RunStageRow)");
+      }
+      const view = [...code.matchAll(/(?:export\s+)?interface\s+BenchStageRow\b/g)];
+      const storage = f.endsWith("packages/estate/drafts/src/bench.ts");
+      if (view.length > 0 && !storage) {
+        offenders.push(f + " — a BenchStageRow that is not the storage row (BenchStageView)");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
   });
 });

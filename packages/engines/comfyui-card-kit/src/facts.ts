@@ -53,6 +53,10 @@ export interface ModelFacts {
   /** The family-wide relation words (judged on every lane).
    * Present only where declared. */
   relations?: LaneRelationsFacts
+  /** The family-wide numeric bounds (per-field replaced by a
+   * variant's own row — the RANGE RULE: whoever owns the default
+   * owns the floor). Present only where declared. */
+  bounds?: Record<string, { min?: number; max?: number }>
   /** Compose splice SSOT rows (card field → NodeClass.idx.input). */
   /** Variant matrix rows + per-cell weight coordinates. */
   variants: ModelVariantFacts[]
@@ -111,6 +115,9 @@ export interface ModelVariantFacts {
   /** This lane's relation words (judged in addition to the family's
    *  own). Present only where declared. */
   relations?: LaneRelationsFacts
+  /** This lane's numeric bounds (per-field REPLACING the family's
+   *  row for the fields it states). Present only where declared. */
+  bounds?: Record<string, { min?: number; max?: number }>
   cells: VariantCellFacts[]
 }
 
@@ -247,6 +254,8 @@ function deriveRow(
         ? { params: [...(v.params as string[])] } : {}),
       ...(v.relations !== undefined && v.relations !== null
         ? { relations: structuredCloneRelations(v.relations) } : {}),
+      ...(v.bounds !== undefined && v.bounds !== null
+        ? { bounds: JSON.parse(JSON.stringify(v.bounds)) as Record<string, { min?: number; max?: number }> } : {}),
       cells: ((v.cells ?? []) as Array<Record<string, unknown>>).map((c) => ({
         quant: c.quant as string,
         label: c.label as string,
@@ -271,6 +280,11 @@ function deriveRow(
   if (Array.isArray(d.params)) row.params = [...(d.params as string[])]
   if (d.relations !== undefined && d.relations !== null) {
     row.relations = structuredCloneRelations(d.relations)
+  }
+  // THE BASE BOUNDS (the RANGE RULE's carry): per-field numeric
+  // domains, verbatim, present-only-where-declared.
+  if (d.bounds !== undefined && d.bounds !== null) {
+    row.bounds = JSON.parse(JSON.stringify(d.bounds)) as Record<string, { min?: number; max?: number }>
   }
   const mods = d.mods as string[] | undefined
   if (mods !== undefined && mods.length > 0) row.mods = mods

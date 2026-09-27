@@ -6,7 +6,7 @@ import { Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchCardCatalog, fetchFormSpec, seedUser, type CatalogCard, type FormSpecDoc } from './spec-form.tsx'
 import { titleCaseId } from '@melite/card-base/spec'
 import css from './card.module.css'
-import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { fetchBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
 
@@ -24,7 +24,7 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
    *  law, InlinePipelineCards.handlePick: "Auto-open the new card —
    *  the user types the prompt immediately, in the zoom drilldown,
    *  not a mystery tile"). */
-  onAddedRow?: (row: BenchStageRow) => void
+  onAddedRow?: (row: BenchStageView) => void
   onClose: () => void
 }): ReturnType<typeof h> {
   // THE PLAIN DOOR (the operator's hour-24 order: "a random screen

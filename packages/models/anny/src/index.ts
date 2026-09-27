@@ -37,7 +37,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "",
     "repo_id": "melite-poser-nodes",
-    "filename": null,
     "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) — the ray-era poser chain, stopgap arc 2026-09-04"
   },
   "studio": null,

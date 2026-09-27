@@ -186,10 +186,20 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         // default for it — a family that boards without declaring
         // starves its own users (the law the first cut missed:
         // image-gen.width is fine on krea-2 and empty on any
-        // family that boards without a resolution)
+        // family that boards without a resolution).
+        // THE SURFACE SUCCESSOR (2026-10-10, fix shape 2): the
+        // visible_when guard is dead — a family that declares a
+        // params SURFACE which EXCLUDES the field never renders it,
+        // so it cannot starve there (2511 edits at source
+        // resolution; width/height are not its params at all).
+        // Absent surface = the legacy truth: the card's union
+        // table serves the field on every lane, and every family
+        // must own its default.
         for (const fam of def.boarded) {
           const decl = registryModel(fam);
           if (decl === undefined) continue; // unknown families refuse elsewhere
+          const surface = decl.params as string[] | undefined;
+          if (Array.isArray(surface) && !surface.includes(name)) continue; // not that family's param
           if ((decl.defaults as Record<string, unknown> | undefined)?.[name] === undefined) {
             starving.push(`${cardId}.${name}: unscoped but family '${fam}' declares no default — that family's form starves`);
           }

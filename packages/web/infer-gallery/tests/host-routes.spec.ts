@@ -304,11 +304,22 @@ describe('GET /infer-gallery/artifact', () => {
 
   it('refuses non-run-relative names with a 400', async () => {
     const ctx = mount({ flowDir })
-    for (const target of ['', 'noseparator', 'run-xyz/bad.png', `${RUN}/`, `${RUN}/../flow`, `${RUN}/./a.png`, `${RUN}/a|b.png`]) {
+    for (const target of ['', 'noseparator', 'run-xyz/bad.png', `${RUN}/`, `${RUN}/../flow`, `${RUN}/./a.png`]) {
       const saw = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(target)}`)
       expect(saw.status).toBe(400)
       expect((json(saw) as { error: string }).error).toBe('forbidden_path')
     }
+    // THE UNIFIED SEGMENT GRAMMAR (the audit's ×3): `a|b.png` is a
+    // legal FILENAME byte-wise (the estate media door serves it; the
+    // engine can mint pipes, spaces, unicode, parens) — the old
+    // private `[A-Za-z0-9._-]+` charset refused it here while the
+    // media route served it, so the doors disagreed on the same
+    // artifact. It is well-formed and simply absent: 404, not 400.
+    const absent = await hit(ctx, '/infer-gallery/artifact', `/infer-gallery/artifact?path=${encodeURIComponent(`${RUN}/a|b.png`)}`)
+    // well-formed and ABSENT: the route's unreadable-artifact answer
+    // (502 artifact_unreadable), never a grammar 400
+    expect(absent.status).toBe(502)
+    expect((json(absent) as { error: string }).error).toBe('artifact_unreadable')
     // a param-less request refuses the same way.
     const bare = await hit(ctx, '/infer-gallery/artifact', '/infer-gallery/artifact')
     expect(bare.status).toBe(400)

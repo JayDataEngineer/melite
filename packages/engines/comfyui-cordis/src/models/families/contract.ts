@@ -42,14 +42,21 @@ export interface SourceRow {
   type?: string;
   repo_id?: string;
   filename?: string;
+  /** The free-form provenance note (schema-declared; the interface
+   *  owes it a slot or the pair drifts). */
+  note?: string;
 }
-export const SourceRow: z<SourceRow> = z.object({  type: z.string().default(""),
+export const SourceRow: z<SourceRow> = z.object({  type: z.string().required(false),
   // absent = untyped (the interface's own law, and every reader's
   // ?? ""): the schema used to REQUIRE these three, so a DECL that
-  // omitted them was tsc-clean and refused at registration
-  repo_id: z.string().default(""),
-  filename: z.string().default(""),
-  note: z.string().default(""),
+  // omitted them was tsc-clean and refused at registration.
+  // `.required(false)`, not `.default("")`: a defaulted string's
+  // INPUT admits null (schemastery: null means take-the-default),
+  // which the z<SourceRow> marriage then rejects at ModelDecl's
+  // union — optionality is the law, "" is the readers' business.
+  repo_id: z.string().required(false),
+  filename: z.string().required(false),
+  note: z.string().required(false),
 });
 
 // THE LORA GRAMMAR LIVES WITH ITS OWNERS (2026-10-10, the card
@@ -165,6 +172,11 @@ export interface VariantRow {
   /** This lane's relation words (judged in ADDITION to the family's
    *  — both layers fire). Absent ≡ none. */
   relations?: ParamRelationWords;
+  /** This lane's numeric bounds, per-field REPLACING the family's
+   *  row for the fields it states (the lightning recipe's step
+   *  ceiling is not the standard's). Judged at bench-write with the
+   *  same voice as the words. Absent ≡ inherit the family's. */
+  bounds?: LaneBoundsMap;
   cells: CellRow[];
 }
 
@@ -285,6 +297,24 @@ export const ParamRelationWords: z<ParamRelationWords> = z.object({
   required: z.array(ParamRequiredRow).required(false),
 });
 
+/** One bounds row (the RANGE RULE — whoever owns the default owns
+ * the floor): the model's own numeric domain for ONE param. At
+ * least one endpoint stated (neither = a typo, not a law). */
+export interface ParamBoundRow {
+  min?: number;
+  max?: number;
+}
+
+/** Per-field bounds for a lane: field name → its row. Variant rows
+ * REPLACE the family's per-field (a lane may tighten its own
+ * ceiling; two independent numeric rows would contradict). */
+export type LaneBoundsMap = Record<string, ParamBoundRow>;
+
+export const ParamBoundRow: z<ParamBoundRow> = z.object({
+  min: z.number().required(false),
+  max: z.number().required(false),
+});
+
 export const VariantRow: z<VariantRow> = z.object({
   id: z.string().pattern(SAFE_ID_RE),
   label: z.string().default(""),
@@ -309,6 +339,7 @@ export const VariantRow: z<VariantRow> = z.object({
   wire_defaults: z.union([z.dict(z.any()), z.const(null)]).required(false),
   params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
   relations: ParamRelationWords.required(false),
+  bounds: z.dict(ParamBoundRow).required(false),
   cells: z.array(CellRow).default([]),
 });
 
@@ -424,6 +455,27 @@ export const ModPackMarriage: z<ModPackMarriage> = z.object({
   marries: z.dict(z.const('max')),
 })
 
+// The studio claim as ONE named row (the marriage comment promised
+// this const by name; it did not exist — both the schema and the
+// interface spelled the union inline, and the interface's copy had
+// already drifted `readonly` wishes the runtime never had).
+export interface StudioRow {
+  tenant: string;
+  owns_params?: boolean;
+  writes?: string[];
+  size?: string;
+  layout?: string;
+  kind?: string;
+}
+export const StudioRow: z<StudioRow> = z.object({
+  tenant: z.string(),
+  owns_params: z.boolean().required(false),
+  writes: z.array(z.string()).required(false),
+  size: z.string().required(false),
+  layout: z.string().required(false),
+  kind: z.string().required(false),
+});
+
 // THE MAIN DECLARATION'S TYPE IS ITS SCHEMA'S (2026-10-10, the
 // design audit's Q1 — the first-ranked change). This row was the one
 // the file left UN-ANNOTATED, with a comment confessing that the
@@ -447,14 +499,7 @@ export const ModelDecl: z<ModelDecl> = z.object({
   form: z.string().default(""),
   defaults: z.dict(z.any()).default({}),
   source: z.union([SourceRow, z.const(null)]).required(false),
-  studio: z.union([z.object({
-    tenant: z.string(),
-    owns_params: z.boolean(),
-    writes: z.array(z.string()),
-    size: z.string(),
-    layout: z.string(),
-    kind: z.string(),
-  }), z.const(null)]).required(false),
+  studio: z.union([StudioRow, z.const(null)]).required(false),
   // string = pack name; object = pack + the knob marriage (the
   // ModPackMarriage const above owns the shape and its law).
   mods: z.array(z.union([z.string(), ModPackMarriage])).default([]),
@@ -477,6 +522,7 @@ export const ModelDecl: z<ModelDecl> = z.object({
   /** The family-wide relation words (judged on EVERY lane, in
    *  addition to each variant's own). */
   relations: ParamRelationWords.required(false),
+  bounds: z.dict(ParamBoundRow).required(false),
   // the interface documents all three as optional (absent ≡ false
   // to every reader), so the schema accepts their absence too
   has_agent: z.boolean().required(false),
@@ -511,15 +557,12 @@ export interface ModelDecl {
    *  a served diff — only the frontend validator caught it). */
   form?: string;
   defaults?: Record<string, unknown>;
-  source?: { type?: string; repo_id?: string; filename?: string | null; note?: string } | null;
-  studio?: {
-    tenant: string;
-    owns_params?: boolean;
-    writes?: readonly string[];
-    size?: string;
-    layout?: string;
-    kind?: string;
-  } | null;
+  // The ROW type by name (never an inline copy — the interface's own
+  // inline spelling had drifted to `filename?: string | null` while
+  // SourceRow says `filename?: string`; the marriage caught it the
+  // first time tsc ever ran over this file).
+  source?: SourceRow | null;
+  studio?: StudioRow | null;
   /** Absent = boards nothing (the z-image shape). String = pack
    *  name; object = pack + the knob marriage declaration (the
    *  zod grammar above owns the shape). */
@@ -544,6 +587,10 @@ export interface ModelDecl {
   params?: string[];
   /** The family-wide relation words (judged on every lane). */
   relations?: ParamRelationWords;
+  /** The family-wide numeric bounds (per-field replaced by a
+   *  variant's own row when it states one — the RANGE RULE:
+   *  whoever owns the default owns the floor). */
+  bounds?: LaneBoundsMap;
   has_agent?: boolean;
   has_inference?: boolean;
   has_rubric?: boolean;

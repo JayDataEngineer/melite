@@ -64,6 +64,62 @@ export const DECL: ModelDecl = {
     "list": []
   },
   "genre": "image",
+  // THE LANE SURFACE (fix shapes 1+2 — the model is the author of
+  // what it accepts; the card's visible_when guard list dies). The
+  // base params EVERY lane of this family accepts: the visible
+  // surface (input_images, prompt, negative_prompt, the sampling
+  // block) plus the card's VALIDATION-ONLY aliases (image1/2/3,
+  // reference_images, input_mask — hidden carriers, but a wire key
+  // the lane admits, so the surface owns them) and THIS lane's
+  // target resolution pair — the 2.1 edit lane samples an
+  // EmptyLatentImage at stated size, so width/height are 2.1's.
+  // use_stock_nodes/double_reference are 2511's edit-tuning pair
+  // and are NOT here: with a declared surface the bench-write door
+  // refuses them on this family in the field's voice.
+  "params": [
+    "input_images",
+    "image1",
+    "image2",
+    "image3",
+    "reference_images",
+    "input_mask",
+    "prompt",
+    "negative_prompt",
+    "width",
+    "height",
+    "seed",
+    "steps",
+    "cfg",
+    "sampler",
+    "scheduler",
+  ],
+  // THE RESOLUTION PAIR RIDES TOGETHER: an EmptyLatentImage takes a
+  // width AND a height — a lone axis is half a size (the card's old
+  // tooltip said "target resolution"; the law says both or neither,
+  // never one). Judged at bench-write and rendered inline in the
+  // form, in the field's voice.
+  "relations": {
+    "together": [
+      {
+        "fields": ["width", "height"],
+        "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)",
+      },
+    ],
+  },
+  // THE RANGE RULE MADE LAW (the width burn, 2026-10-10): whoever
+  // owns the default owns the floor — this family owns the edit
+  // resolution (1024s declared above), and until now the domain
+  // lived NOWHERE: the card schema states no min/max for the pair,
+  // so width -50 admitted at every door and the engine produced
+  // garbage. Declared here, judged at bench-write in the same
+  // voice as the relation words (the declaration, not the form).
+  // 256–1536: the practical domain of the 2.1 checkpoint (the
+  // official edit templates sample 1024/1328; a 4-megapixel edit
+  // is outside the trained envelope).
+  "bounds": {
+    "width": { "min": 256, "max": 1536 },
+    "height": { "min": 256, "max": 1536 },
+  },
   // THE MASK BOARDING (2026-09-22, the operator's lane call: "2511
   // is the legacy model… 2.1 is the new Qwen edit model"): the mask
   // pack's region contract absorbs onto THIS lane — crop_stitch (the

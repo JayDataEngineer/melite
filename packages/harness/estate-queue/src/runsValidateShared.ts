@@ -114,7 +114,7 @@ export interface StageSkip {
 }
 
 // ── stage rows ──────────────────────────────────────────────────
-export interface StageRow {
+export interface FlowStageRow {
   id: string;
   engine: string;
   description: string;
@@ -130,7 +130,7 @@ export interface StageRow {
 export interface Flow {
   id: string;
   description: string;
-  stages: StageRow[];
+  stages: FlowStageRow[];
 }
 
 // ── to_graph door view (— card-less subset) ─────────

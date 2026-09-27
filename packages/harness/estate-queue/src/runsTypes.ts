@@ -30,7 +30,7 @@ export type RunStatus =
   | "stopping";
 
 /** One stage row — key order mirrors submit's literal. */
-export interface StageRow {
+export interface RunStageRow {
   id: string;
   name: string;
   index: number;
@@ -52,7 +52,7 @@ export interface StageRow {
 export interface RunRecord {
   runId: string;
   status: RunStatus;
-  stages: StageRow[];
+  stages: RunStageRow[];
   skippedStages: string[];
   artifacts: string[];
   error: string;

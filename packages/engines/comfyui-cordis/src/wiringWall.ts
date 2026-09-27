@@ -53,8 +53,8 @@ export function assertWiringAtSubmit(cardId: string, graph: unknown): void {
 }
 
 export function assertWiringAgainst(
-  nodes: ReadonlyMap<string, unknown> | null,
-  declaredInputs: ReadonlyMap<string, ReadonlySet<string>> | undefined,
+  nodes: ReadonlySet<string> | null,
+  declaredInputs: ReadonlyMap<string, ReadonlySet<string>> | null | undefined,
   cardId: string,
   graph: unknown,
 ): void {

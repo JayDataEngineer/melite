@@ -849,7 +849,7 @@ export class ComfyUIService extends Service {
         }
       }
       const g = new GraphBuilder(this.pinDefaults)
-      def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
+      def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
       const graph = g.toJSON()
       const finalized = def.finalize ? def.finalize(graph) : graph
       this.assertWiring(cardId, finalized)

@@ -6,7 +6,7 @@
 import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun } from '@melite/card-base/runs-policy'
-import type { CardsBenchValue, BenchStageRow } from './cards-resource.ts'
+import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
 
@@ -34,7 +34,7 @@ const MCP_CARD = 'mcp'
  *  Exported for the tab seam's door-contract spec. */
 export async function runCardStage(
   draftId: string,
-  row: BenchStageRow,
+  row: BenchStageView,
 ): Promise<{ runId: string } | { refused: string }> {
   // THE NO-WIRE REFUSAL FIRST (the door contract): a row naming no
   // card refuses before any wire fires.

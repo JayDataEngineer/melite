@@ -60,7 +60,7 @@ import {
   unknownDraftRefusal,
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
-import type { StageRow } from "./runsTypes.ts";
+import type { RunStageRow } from "./runsTypes.ts";
 import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
 import { inlineArm } from "./runsValidate.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
@@ -514,8 +514,13 @@ export class RunsRuntimeService extends Service {
         composed = await cards.phase2Card(p1, runId);
       } catch (e) {
         if (e instanceof CardArmError) {
+          // QueueRefusal carries {status, payload} — the message
+          // lives at payload.error (`.message` was undefined at
+          // runtime; tsc had never run over this file).
+          const refusal = cardRefusal(e);
+          const p = refusal.payload as { error: string; code: string };
           throw new RemoteError("runs/invalid-request",
-            "bench stage " + JSON.stringify(id) + ": " + cardRefusal(e).message,
+            "bench stage " + JSON.stringify(id) + ": " + p.error,
             { loc: "stages" });
         }
         throw e;

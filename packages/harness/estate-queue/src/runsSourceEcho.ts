@@ -1,4 +1,4 @@
-import { servableLeaf } from "@melite/contracts/mediaKinds"
+import { segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds"
 // runsSourceEcho.ts — THE SOURCE-ECHO LAW (operator 2026-09-23):
 // every generation run carries history pointing at the files that
 // created it, and a break in that chain refuses LOUD — never silent.
@@ -45,16 +45,6 @@ export const ASSET_RUNS_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
 
 /** The run-dir basename grammar (the mint law — media index.ts). */
 const RUN_ID = RUN_ID_RE;
-
-/** One confined rel segment: not empty, not dot/dotdot
- *  (traversal), no NUL — the server's segmentOk twin. */
-function segmentOk(seg: string): boolean {
-  if (seg === "" || seg === "." || seg === "..") {
-    return false;
-  }
-  if (seg.includes("\0")) return false;
-  return true;
-}
 
 export type SourceFace = "run" | "abs";
 
@@ -176,7 +166,7 @@ export function parseSourceRef(ref: string): ParsedSource {
         "malformed media source (bad percent-escape): " + JSON.stringify(ref),
       );
     }
-    if (!segmentOk(decoded)) {
+    if (!segmentConfined(decoded)) {
       throw new Error(
         "media source refuses traversal: " + JSON.stringify(ref),
       );

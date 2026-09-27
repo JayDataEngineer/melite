@@ -13,6 +13,7 @@ import { stopForRunDirInner, unloadModelsInner } from "./comfyui-control.ts";
 import { executeSingleInner } from "./comfyui-execute.ts";
 import type { ExecuteOpts, ExecuteResult } from "./comfyui-execute.ts";
 import { executeFlowInner } from "./comfyui-merge.ts";
+import { assertWiringAtSubmit } from "./wiringWall.ts";
 import type { FlowResult, MergeRow } from "./comfyui-merge.ts";
 
 // ── the engine client as a Cordis Service (stroke 4b,

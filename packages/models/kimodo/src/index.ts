@@ -29,7 +29,6 @@ export const DECL: ModelDecl = {
   "source": {
     "type": "",
     "repo_id": "nvidia/Kimodo-SOMA-RP-v1.1",
-    "filename": null,
     "note": ""
   },
   "studio": {

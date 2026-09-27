@@ -9,7 +9,7 @@ import { useCallback } from 'react'
 import { titleCaseId } from '@melite/card-base/spec'
 import { mediaUrl } from './draft.ts'
 import { benchSessionKey, restoreRunToBench } from './cards-resource.ts'
-import type { CardsDraftValue, CardsRunValue, BenchStageRow, CardsBenchValue } from './cards-resource.ts'
+import type { CardsDraftValue, CardsRunValue, BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
 

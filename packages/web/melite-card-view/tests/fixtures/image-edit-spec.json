@@ -68,9 +68,9 @@
   "loader_info": null,
   "mod_schemas": {
     "mask": {
-      "uid": 3376,
+      "uid": 3392,
       "refs": {
-        "3310": {
+        "3326": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -83,7 +83,7 @@
             }
           }
         },
-        "3314": {
+        "3330": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -99,22 +99,22 @@
             "description": "Region Mask"
           }
         },
-        "3315": {
+        "3331": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3316": {
+        "3332": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3317": {
+        "3333": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3321": {
+        "3337": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -139,32 +139,32 @@
             }
           },
           "list": [
-            3315,
-            3316,
-            3317
+            3331,
+            3332,
+            3333
           ]
         },
-        "3322": {
+        "3338": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3323": {
+        "3339": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3324": {
+        "3340": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3325": {
+        "3341": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3329": {
+        "3345": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -185,13 +185,13 @@
             }
           },
           "list": [
-            3322,
-            3323,
-            3324,
-            3325
+            3338,
+            3339,
+            3340,
+            3341
           ]
         },
-        "3336": {
+        "3352": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -209,7 +209,7 @@
             }
           }
         },
-        "3343": {
+        "3359": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -227,7 +227,7 @@
             }
           }
         },
-        "3350": {
+        "3366": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -245,7 +245,7 @@
             }
           }
         },
-        "3357": {
+        "3373": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -263,7 +263,7 @@
             }
           }
         },
-        "3361": {
+        "3377": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -278,7 +278,7 @@
             }
           }
         },
-        "3368": {
+        "3384": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -296,7 +296,7 @@
             }
           }
         },
-        "3375": {
+        "3391": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -314,23 +314,23 @@
             }
           }
         },
-        "3376": {
+        "3392": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3310,
-            "input_mask": 3314,
-            "mask_mode": 3321,
-            "mask_detector": 3329,
-            "mask_context_pad": 3336,
-            "mask_grow": 3343,
-            "mask_feather": 3350,
-            "mask_threshold": 3357,
-            "mask_invert": 3361,
-            "mask_detail_size": 3368,
-            "mask_denoise": 3375
+            "mask": 3326,
+            "input_mask": 3330,
+            "mask_mode": 3337,
+            "mask_detector": 3345,
+            "mask_context_pad": 3352,
+            "mask_grow": 3359,
+            "mask_feather": 3366,
+            "mask_threshold": 3373,
+            "mask_invert": 3377,
+            "mask_detail_size": 3384,
+            "mask_denoise": 3391
           }
         }
       }
@@ -341,283 +341,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2717,
+    "uid": 2733,
     "refs": {
-      "313": {
+      "329": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "314": {
+      "330": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "315": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "316": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "317": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "318": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "319": {
+      "335": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "320": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "321": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "322": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "323": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "324": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "325": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "326": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "327": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "328": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "329": {
+      "345": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "330": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "331": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "332": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "333": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "334": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "335": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "336": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "337": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "338": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "339": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "340": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "341": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "342": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "343": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "344": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "345": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "346": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "347": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "348": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "349": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "350": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "351": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "352": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "353": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "354": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "355": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "356": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "357": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "359": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "360": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "361": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "362": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "363": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "364": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "365": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "366": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "367": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "2651": {
+      "2667": {
         "type": "string",
         "meta": {}
       },
-      "2655": {
+      "2671": {
         "type": "array",
         "meta": {
           "default": [],
@@ -633,9 +633,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2651
+        "inner": 2667
       },
-      "2659": {
+      "2675": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -645,7 +645,7 @@
           "description": "Input Image"
         }
       },
-      "2663": {
+      "2679": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -655,7 +655,7 @@
           "description": "Image 2"
         }
       },
-      "2667": {
+      "2683": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -665,11 +665,11 @@
           "description": "Image 3"
         }
       },
-      "2668": {
+      "2684": {
         "type": "string",
         "meta": {}
       },
-      "2671": {
+      "2687": {
         "type": "array",
         "meta": {
           "default": [],
@@ -678,9 +678,9 @@
             "hidden": true
           }
         },
-        "inner": 2668
+        "inner": 2684
       },
-      "2675": {
+      "2691": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -690,7 +690,7 @@
           "description": "Region Mask"
         }
       },
-      "2678": {
+      "2694": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -705,7 +705,7 @@
           }
         }
       },
-      "2681": {
+      "2697": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -718,7 +718,7 @@
           }
         }
       },
-      "2684": {
+      "2700": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -729,12 +729,11 @@
             "width": 1,
             "zone": "params",
             "wtype": "number",
-            "visible_when": "model=qwen-img-edit-21",
-            "tooltip": "Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value)."
+            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
           }
         }
       },
-      "2687": {
+      "2703": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -745,12 +744,11 @@
             "width": 1,
             "zone": "params",
             "wtype": "number",
-            "visible_when": "model=qwen-img-edit-21",
-            "tooltip": "Target resolution — the Qwen Image 2.1 lane edits at target size (hidden on 2511, which edits at source resolution and refuses a stated value)."
+            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
           }
         }
       },
-      "2692": {
+      "2708": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -764,7 +762,7 @@
           }
         }
       },
-      "2698": {
+      "2714": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -781,7 +779,7 @@
           }
         }
       },
-      "2704": {
+      "2720": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -798,7 +796,7 @@
           }
         }
       },
-      "2706": {
+      "2722": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -812,22 +810,6 @@
           }
         },
         "list": [
-          313,
-          314,
-          315,
-          316,
-          317,
-          318,
-          319,
-          320,
-          321,
-          322,
-          323,
-          324,
-          325,
-          326,
-          327,
-          328,
           329,
           330,
           331,
@@ -856,10 +838,26 @@
           354,
           355,
           356,
-          357
+          357,
+          358,
+          359,
+          360,
+          361,
+          362,
+          363,
+          364,
+          365,
+          366,
+          367,
+          368,
+          369,
+          370,
+          371,
+          372,
+          373
         ]
       },
-      "2708": {
+      "2724": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -873,18 +871,18 @@
           }
         },
         "list": [
-          359,
-          360,
-          361,
-          362,
-          363,
-          364,
-          365,
-          366,
-          367
+          375,
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383
         ]
       },
-      "2712": {
+      "2728": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -893,13 +891,12 @@
             "order": 1,
             "group": "edit_tuning",
             "width": 1,
-            "visible_when": "model=qwen-img-edit-2511",
             "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
             "zone": "params"
           }
         }
       },
-      "2716": {
+      "2732": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -908,35 +905,34 @@
             "order": 2,
             "group": "edit_tuning",
             "width": 1,
-            "visible_when": "model=qwen-img-edit-2511",
             "tooltip": "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)",
             "zone": "params"
           }
         }
       },
-      "2717": {
+      "2733": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2655,
-          "image1": 2659,
-          "image2": 2663,
-          "image3": 2667,
-          "reference_images": 2671,
-          "input_mask": 2675,
-          "prompt": 2678,
-          "negative_prompt": 2681,
-          "width": 2684,
-          "height": 2687,
-          "seed": 2692,
-          "steps": 2698,
-          "cfg": 2704,
-          "sampler": 2706,
-          "scheduler": 2708,
-          "use_stock_nodes": 2712,
-          "double_reference": 2716
+          "input_images": 2671,
+          "image1": 2675,
+          "image2": 2679,
+          "image3": 2683,
+          "reference_images": 2687,
+          "input_mask": 2691,
+          "prompt": 2694,
+          "negative_prompt": 2697,
+          "width": 2700,
+          "height": 2703,
+          "seed": 2708,
+          "steps": 2714,
+          "cfg": 2720,
+          "sampler": 2722,
+          "scheduler": 2724,
+          "use_stock_nodes": 2728,
+          "double_reference": 2732
         }
       }
     }
@@ -1034,6 +1030,47 @@
       "owner": ""
     }
   ],
+  "lanes": {
+    "base": [
+      "input_images",
+      "image1",
+      "image2",
+      "image3",
+      "reference_images",
+      "input_mask",
+      "prompt",
+      "negative_prompt",
+      "width",
+      "height",
+      "seed",
+      "steps",
+      "cfg",
+      "sampler",
+      "scheduler"
+    ],
+    "relations": {
+      "together": [
+        {
+          "fields": [
+            "width",
+            "height"
+          ],
+          "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)"
+        }
+      ]
+    },
+    "bounds": {
+      "width": {
+        "min": 256,
+        "max": 1536
+      },
+      "height": {
+        "min": 256,
+        "max": 1536
+      }
+    },
+    "variants": {}
+  },
   "packs": [],
   "families": [
     {

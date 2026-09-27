@@ -92,6 +92,39 @@ if [ "$DO_BUILD" -eq 1 ]; then
       exit 1
     fi
   done
+  # THE TYPECHECK NET (2026-10-10, the live ReferenceError): the
+  # lane died mid-run on `assertWiringAtSubmit is not defined` — a
+  # call whose import never landed, in a package that runs from
+  # SOURCE, so no build step ever saw it. The five COMPILED packages
+  # above are the ./lib doors; every OTHER package with a tsconfig
+  # gets a --noEmit pass here, DISCOVERED dynamically (a named list
+  # is exactly the list that rots — the five-package era is how
+  # thirty-five packages went unheard, and the first sweep found
+  # four more broken ones). Same net as the suite's typecheck gate;
+  # a ship refuses to leave port with a red one.
+  say "TYPECHECK every source-run package (the ReferenceError class)"
+  TCFAIL=0
+  while IFS= read -r tsdir; do
+    case "$tsdir" in */packages/*) ;; *) continue ;; esac
+    # the COMPILED five just built (a full emit subsumes noEmit)
+    skip=0
+    for c in "${COMPILED[@]}"; do
+      [ "$REPO/$c" = "$tsdir" ] && skip=1
+    done
+    [ "$skip" -eq 1 ] && continue
+    if (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-tc.log 2>&1); then
+      :
+    else
+      bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — typecheck failed:"
+      head -8 /tmp/ship-tc.log | sed 's/^/        /'
+      TCFAIL=1
+    fi
+  done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
+  if [ "$TCFAIL" -ne 0 ]; then
+    bad "the typecheck net is red — a missing import is invisible to every behavioural door"
+    exit 1
+  fi
+  ok "typecheck net green ($(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' | wc -l) tsconfigs seen)"
   # The receipt that matters: the lane seat must be IN the built door.
   if grep -q "bench/lane-refusal" "$REPO/packages/estate/drafts/lib/remote.js" 2>/dev/null; then
     ok "the built door carries the lane seat (bench/lane-refusal present)"

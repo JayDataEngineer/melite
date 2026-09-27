@@ -100,3 +100,32 @@ export function servableLeaf(leaf: string): boolean {
   if (!leaf.startsWith("_")) return true
   return leaf === "_poster.jpg" // the one minted exception (the thumbnail law)
 }
+
+/**
+ * ONE CONFINED SEGMENT GRAMMAR, ONCE (2026-10-10, the audit's
+ * "artifact-URL parsing ×3").
+ *
+ * Three doors judged "what is one legal segment of a run-relative
+ * artifact path" with three private predicates, and they had already
+ * disagreed: the estate's media route and the queue's source-echo
+ * each carried an identical private `segmentOk` (not empty, not
+ * `.`/`..`, no NUL — any other byte legal, because the engines MINT
+ * raw names: `out 1.png`, unicode, parens), while the gallery's
+ * artifact route judged a `[A-Za-z0-9._-]+` CHARSET — so an artifact
+ * the engine minted with a space in its name SERVED on the media
+ * route and answered 400 on the gallery's. One grammar, mint→serve
+ * round-trip law intact; each door keeps its own SPLIT policy (the
+ * URL-path door filters empty segments before WHATWG normalization
+ * consumes them; the query-param door does not) — the BYTES of a
+ * legal segment are this function and nothing else.
+ */
+export function segmentConfined(decoded: string): boolean {
+  // defense-in-depth dot/empty fence: the HTTP doors never deliver
+  // these spellings to the segment loop (WHATWG URL normalizes every
+  // single/double-dot spelling; parseTarget filters empties) — the
+  // fence stays for every non-URL caller, and the NUL arm below is
+  // the behavioral wall.
+  if (decoded === "" || decoded === "." || decoded === "..") return false
+  if (decoded.includes("\0")) return false
+  return true
+}

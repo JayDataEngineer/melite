@@ -14,14 +14,14 @@ import {
   serveSubject,
 } from "../src/runsValidateServe.ts";
 import { buildStageRow } from "../src/runsValidateStages.ts";
-import type { StageRow } from "../src/runsValidateStages.ts";
+import type { FlowStageRow } from "../src/runsValidateStages.ts";
 import type { Flow } from "../src/runsValidateShared.ts";
 
 const stage = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   id: "s1", engine: "comfyui", inputs: {}, outputs: { out: "image" }, expected: {},
   card: "", card_io: {}, skip_when: null, params: {}, description: "d", ...over,
 });
-const flowOf = (rows: StageRow[]): Flow => ({ id: "f1", description: "x", stages: rows });
+const flowOf = (rows: FlowStageRow[]): Flow => ({ id: "f1", description: "x", stages: rows });
 
 describe("prunedFor (the branch prune)", () => {
   it("a branchless flow rides untouched", () => {

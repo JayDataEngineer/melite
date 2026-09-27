@@ -184,6 +184,7 @@ function laneContractOf(decl: ModelDecl): Record<string, unknown> {
   return {
     base: [...(decl.params ?? [])],
     ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
+    ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
     variants: Object.fromEntries(
       (decl.variants ?? [])
         .filter((v) => v.params !== undefined || v.relations !== undefined)

@@ -17,9 +17,14 @@ import type {
   CardRegistryLike,
   Edge,
   Flow,
-  StageRow,
+  FlowStageRow,
   StageSkip,
 } from "./runsValidateShared.ts";
+// The flow-doc stage row rides this module's exports too (the specs'
+// historic import path) — re-exported by NAME so the two stage-row
+// concepts (FlowStageRow here, RunStageRow in runsTypes) stay
+// distinct at every import site.
+export type { FlowStageRow };
 import { edgeRef, inlineEdge, inlineKind, inlineSkip } from "./runsValidateInline.ts";
 import { coerceRecord, minLengthRefusal } from "./runsValidateRefusals.ts";
 
@@ -53,7 +58,7 @@ export function strictBody(body: Record<string, unknown>): void {
 // object gate, then the per-name pulls inside the try whose
 // FlowErrors pass through bare and every other exception wraps as
 // "stage[i] refuses:".
-export function buildStageRow(i: number, st: unknown): StageRow {
+export function buildStageRow(i: number, st: unknown): FlowStageRow {
   const where: string = "stage[" + i + "]";
   const isRow: boolean = typeof st === "object" && st !== null && !Array.isArray(st);
   // unknown keys = the stage object's own keys minus the legal set.
@@ -171,7 +176,7 @@ export function buildStageRow(i: number, st: unknown): StageRow {
 // (own loop FIRST), then earlier-stage edges. Plain FlowErrors
 // flow_from_body digs them out of the ValidationError wrapper, so
 // the door prints them bare.
-export function wiresResolve(flowId: string, stages: StageRow[]): void {
+export function wiresResolve(flowId: string, stages: FlowStageRow[]): void {
   if (!FLOW_ID_RE.test(flowId)) {
     throw new FlowError("flow id " + JSON.stringify(flowId) + " is not a legal identifier");
   }
@@ -219,7 +224,7 @@ export function wiresResolve(flowId: string, stages: StageRow[]): void {
 // card stages without it throw LOUD.)
 export function cardGate(
   flowId: string,
-  st: StageRow,
+  st: FlowStageRow,
   cards?: CardRegistryLike | null,
 ): void {
   const defs: Map<string, CardDefinition> = needCardRegistry(cards, "cardGate").defsSync();
@@ -316,7 +321,7 @@ export function coerceSnapshotBody(
 // the ENGINE_TABLE at validate_engines = full).
 export function kindsOk(
   flowId: string,
-  stages: StageRow[],
+  stages: FlowStageRow[],
   engineDefaults: Record<string, string | null>,
   cards?: CardRegistryLike | null,
 ): void {
@@ -542,7 +547,7 @@ export function flowFromBody(body: unknown, cards?: CardRegistryLike | null): Fl
   if (!Array.isArray(stagesIn) || stagesIn.length === 0) {
     throw new FlowError("flow stages must be a non-empty list");
   }
-  const rows: StageRow[] = [];
+  const rows: FlowStageRow[] = [];
   for (let i = 0; i < stagesIn.length; i++) {
     rows.push(buildStageRow(i, stagesIn[i]));
   }

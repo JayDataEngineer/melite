@@ -46,7 +46,7 @@ import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX , RUN_ID_RE} from "@melite/co
  *  contract still owns (the media route serves both). */
 const GATEWAY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
 import { crossRootOrder } from '@melite/contracts/rootsManifest'
-import { servableLeaf } from '@melite/contracts/mediaKinds'
+import { segmentConfined, servableLeaf } from '@melite/contracts/mediaKinds'
 import { contentTypeForArtifact } from '@melite/contracts/mediaKinds'
 import { parseRangeHeader } from '@melite/contracts/mediaRange'
 // Type-only: pulls the webServer service declaration onto Context.
@@ -82,21 +82,20 @@ const DRAFTS_LIMIT = 200
 const DEFAULT_FLOW_DIR = '/home/user/Documents/programs/active/inference.cpp/data/runs/output'
 /** A run dir name: run-<hex>-<word> (the runs grammar). */
 const RUN_DIR = RUN_ID_RE
-/** One path segment inside a run dir (traversal refuses at the
- *  grammar; realpath containment re-checks at the read). */
-const RUN_SEGMENT = /^[A-Za-z0-9._-]+$/
 
 /** A run-relative artifact name: run-<hex>-<word>/<file...> — the
  *  confinement the artifact route enforces. The file part is one or
- *  more segments: real artifacts live in subdirs (generate/...,
- *  input_prep/...) and the runs-list rewrite emits exactly this
- *  shape — the single-segment grammar refusing its own output was
- *  the 400 the live probe caught (2026-09-11). Each segment must be
- *  a real name; `.`/`..` refuse here and realpath containment
- *  re-checks below. */
+ *  more segments (real artifacts live in subdirs — generate/...,
+ *  input_prep/...). THE SEGMENT GRAMMAR IS THE CONTRACT'S
+ *  (segmentConfined — the audit's ×3): this route's old private
+ *  `[A-Za-z0-9._-]+` charset REFUSED names the engine mints (`out
+ *  1.png`, unicode, parens served on the estate media route and
+ *  answered 400 here — the doors disagreed on the same artifact).
+ *  `.`/`..` refuse at the grammar; realpath containment re-checks
+ *  at the read. */
 function isRunRelative(target: string): boolean {
   // the SHAPE half (well-formed, run-relative, no escape) — the
-  // SERVABLE half is the contract's predicate (servableRunRelative,
+  // SERVABLE half is the contract's predicate (servableLeaf,
   // the audit's H5), applied by the route AFTER its own named
   // sidecar refusal, so both voices survive.
   const slash = target.indexOf('/')
@@ -104,9 +103,7 @@ function isRunRelative(target: string): boolean {
   if (!RUN_DIR.test(target.slice(0, slash))) return false
   const rest = target.slice(slash + 1)
   if (rest.length === 0) return false
-  return rest.split('/').every(
-    (seg) => RUN_SEGMENT.test(seg) && seg !== '.' && seg !== '..',
-  )
+  return rest.split('/').every(segmentConfined)
 }
 
 /** Sidecar/shadow guard for the MUTATING doors (delete + rename):
@@ -124,8 +121,13 @@ function isProtectedSidecar(target: string): boolean {
  *  sidecars (see above); the length cap keeps ext4 happy. */
 function isBareFileName(name: string): boolean {
   if (name.length === 0 || name.length > 128) return false
-  if (name === '.' || name === '..') return false
-  if (!RUN_SEGMENT.test(name)) return false
+  // ONE segment, never a path — the door joins this onto the
+  // source's own directory, so a slash is a directory move, not a
+  // rename. (The old charset refused slashes implicitly; the shared
+  // grammar judges BYTES of a segment, so the door states its own
+  // shape policy here.)
+  if (name.includes('/')) return false
+  if (!segmentConfined(name)) return false // the shared grammar (no `.`/`..`/NUL)
   if (name.startsWith('_')) return false
   return true
 }

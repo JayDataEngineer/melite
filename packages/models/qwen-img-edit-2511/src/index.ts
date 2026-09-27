@@ -50,6 +50,32 @@ export const DECL: ModelDecl = {
     "list": []
   },
   "genre": "image",
+  // THE LANE SURFACE (fix shapes 1+2): the dedicated edit
+  // checkpoint lane edits at SOURCE resolution — the VAEEncode of
+  // the input IS the latent, so a stated width/height is not a
+  // slower path, it is a lane the family does not have. They are
+  // NOT on this surface (the card's visible_when guard that hid
+  // them is dead; with a declared surface the bench-write door now
+  // REFUSES them on this family in the field's voice — the same
+  // judgment the tooltip used to describe). The edit-tuning pair
+  // (use_stock_nodes, double_reference) is THIS lane's.
+  "params": [
+    "input_images",
+    "image1",
+    "image2",
+    "image3",
+    "reference_images",
+    "input_mask",
+    "prompt",
+    "negative_prompt",
+    "seed",
+    "steps",
+    "cfg",
+    "sampler",
+    "scheduler",
+    "use_stock_nodes",
+    "double_reference",
+  ],
   "mods": [
     "lanpaint",
     "loras",

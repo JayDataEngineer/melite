@@ -258,7 +258,11 @@ const paramSchema = z.object({
   // recommendation is real curation) but every member is READ from
   // the SSOT, and a wall asserts the subset survives a regen.
   sampler_name: vocabulary([
-    ...SAMPLER_OPTIONS.filter((n) => H3_RECOMMENDED_SAMPLERS.includes(n)),
+    // the membership test widens the tuple's read view (a readonly
+    // literal tuple's includes() demands the literal union — the
+    // filter's n is string; the WALL, not the tuple's type, keeps
+    // every member honest against the SSOT)
+    ...SAMPLER_OPTIONS.filter((n) => (H3_RECOMMENDED_SAMPLERS as readonly string[]).includes(n)),
   ]).description("Sampler").default("euler").extra('extra', samplingExtra('sampler', { tooltip: "The KSampler solver. euler family pairs with turbo adapters; res_multistep is the official-template solver; er_sde+beta is the Parasyte rec; seeds_2/3 are the dual-clock family." })),
   // the same law for the scheduler: the kit's engine vocabulary,
   // read (the census's H2 — a retyped list is a second SSOT)

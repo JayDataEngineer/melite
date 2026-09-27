@@ -15,13 +15,13 @@ import {
   flowFromBody,
 } from "../src/runsValidateStages.ts";
 import { FlowError } from "../src/runsValidateShared.ts";
-import type { StageRow } from "../src/runsValidateStages.ts";
+import type { FlowStageRow } from "../src/runsValidateStages.ts";
 
 const stage = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   id: "s1", engine: "comfyui", inputs: {}, outputs: { out: "image" }, expected: {},
   card: "", card_io: {}, skip_when: null, params: {}, description: "d", ...over,
 });
-const row = (i: number, st: Record<string, unknown>): StageRow => buildStageRow(i, st);
+const row = (i: number, st: Record<string, unknown>): FlowStageRow => buildStageRow(i, st);
 
 describe("strictBody (the retired-knob voices)", () => {
   it("a clean body passes", () => {
@@ -101,7 +101,7 @@ describe("buildStageRow (the field gates)", () => {
 });
 
 describe("wiresResolve (the lattice laws)", () => {
-  const s = (id: string, wire: string | null): StageRow =>
+  const s = (id: string, wire: string | null): FlowStageRow =>
     row(1, stage({ id, engine: "comfyui", inputs: wire === null ? {} : { img: { stage: wire.split(".")[0] as string, output: wire.split(".")[1] ?? "" } }, expected: wire === null ? {} : { img: "image" } }));
   it("a legal id with earlier-stage wires passes", () => {
     expect(() => wiresResolve("f1", [s("a", null), s("b", "a.out")])).not.toThrow();
@@ -137,7 +137,7 @@ describe("cardGate (the model+registration+schema verdicts)", () => {
       ...over,
     })),
   });
-  const cstage = (card: string, params: Record<string, unknown> = { model: "fam" }): StageRow =>
+  const cstage = (card: string, params: Record<string, unknown> = { model: "fam" }): FlowStageRow =>
     row(0, stage({ id: "s1", card, params, outputs: { out: "image" } }));
   it("a model card with params.model passes the gate", () => {
     expect(() => cardGate("f1", cstage("model-card"), fakeCards() as never)).not.toThrow();
@@ -162,7 +162,7 @@ describe("kindsOk (the kind-matching passes)", () => {
   const cards = {
     defsSync: () => new Map([["pure-tool", { requiresModel: false, schema: (): void => undefined }]]),
   };
-  const kstage = (id: string, over: Record<string, unknown> = {}): StageRow =>
+  const kstage = (id: string, over: Record<string, unknown> = {}): FlowStageRow =>
     row(0, stage({ id, ...over }));
   it("THE NAMING LAW's lattice half: a legacyAliases edge derives its kind — old graphs keep validating, no face offers the alias", () => {
     // the operator's catch (2026-10-09): the numbered image2/image3
@@ -219,7 +219,7 @@ describe("kindsOk (the kind-matching passes)", () => {
         },
       }]]),
     };
-    const filmInputs = (over: Record<string, { stage: string; output: string }>): StageRow =>
+    const filmInputs = (over: Record<string, { stage: string; output: string }>): FlowStageRow =>
       kstage("film", { card: "film-card", inputs: over });
     const img = kstage("img", { outputs: { default: "image" } });
     const vid = kstage("vid", { outputs: { default: "video" } });
@@ -316,7 +316,7 @@ describe("the toll arms (falsy maps, nullish scalars, initial-edge skips)", () =
       ["string-thrower", { requiresModel: false, schema: (): void => { throw "flat string refusal"; } }],
     ]),
   };
-  const ks = (id: string, over: Record<string, unknown> = {}): StageRow =>
+  const ks = (id: string, over: Record<string, unknown> = {}): FlowStageRow =>
     row(0, stage({ id, ...over }));
   it("falsy inputs/outputs/expected/card_io/params maps ride {}", () => {
     const r = ks("a", { inputs: null, outputs: null, expected: null, card_io: null, params: null });

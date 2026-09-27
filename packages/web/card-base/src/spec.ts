@@ -108,9 +108,12 @@ export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unkno
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf, type ExtraBag, type ExtraKey } from '@melite/contracts/extraKeys'
 import {
+  judgeLaneBounds,
   judgeLaneRelations,
   judgeLaneSurface,
+  laneBoundsOf,
   laneSurfaceOf,
+  type LaneBounds,
   type LaneRelations,
   type LaneViolation,
 } from '@melite/contracts/laneRelations'
@@ -429,7 +432,11 @@ export interface FormSpecDoc {
   lanes?: {
     base: readonly string[]
     relations?: LaneRelations
-    variants?: Record<string, { params?: readonly string[]; relations?: LaneRelations }>
+    /** The model's own numeric domains (the RANGE RULE — served so
+     *  the form renders the floor/ceiling inline, the same
+     *  declaration the bench door refuses with). */
+    bounds?: Readonly<Record<string, { min?: number; max?: number }>>
+    variants?: Record<string, { params?: readonly string[]; relations?: LaneRelations; bounds?: Readonly<Record<string, { min?: number; max?: number }>> }>
   }
 }
 
@@ -915,6 +922,21 @@ export function laneRelationsFor(
   return out
 }
 
+/** The numeric bounds that judge the resolved lane: family rows,
+ *  per-field replaced by the variant's own (the DECL cascade's
+ *  replace-law for numbers). */
+export function laneBoundsFor(
+  spec: FormSpecDoc,
+  variantId: string | null,
+): LaneBounds | null {
+  const lanes = spec.lanes
+  if (lanes === undefined) return null
+  return laneBoundsOf(
+    lanes.bounds ?? null,
+    variantId === null ? undefined : lanes.variants?.[variantId]?.bounds ?? null,
+  )
+}
+
 /** Field visibility UNDER the lane contract: a declared surface
  *  hides every field it does not name (the declaration is the
  *  author — the field set IS the variant); a family that declares
@@ -989,9 +1011,17 @@ export function laneViolations(
       stated[k] = v
     }
   }
+  // THE RANGE RULE'S FORM FACE (2026-10-10): the model's numeric
+  // domains judge here too — the same declaration, the same voice,
+  // the cure rendered under the field while the user types instead
+  // of at the save. (The bounds see the STATED map, not the raw
+  // user layer: a stated field over its ceiling is a refusal at
+  // every seat; a defaulted field inside its row never fires.)
+  const bounds = laneBoundsFor(spec, variantId)
   return [
     ...judgeLaneSurface(surface, names, stated),
     ...judgeLaneRelations(relations, stated),
+    ...judgeLaneBounds(bounds, stated),
   ]
 }
 
