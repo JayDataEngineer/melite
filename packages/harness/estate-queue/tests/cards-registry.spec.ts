@@ -389,7 +389,16 @@ describe("composeValidateCard (the validate refusal voice)", () => {
     // so it missed the board check and the resolved route — the
     // validate seat and the bench disagreed in both directions).
     // An unregistered card is now a refusal, not a clean answer.
-    composeOnce.mockResolvedValueOnce({ graph: true } as never); // the shared queue's slot
+    // THE HAPPY PATH IS STILL WALLED (the work audit's P1: the
+    // li-ak fix replaced this positive case with a refusal case, so
+    // nothing pinned a LAWFUL validate answering null through the
+    // prepared path — the fix's own success was unwalled). A lawful
+    // state composes and answers null.
+    vi.mocked(composeOnce).mockReset();
+    composeOnce.mockResolvedValueOnce({ graph: true } as never);
+    expect(await svc.composeValidateCard("upscale-tools", "seedvr2_ema", { input_image: "a.png" })).toBeNull();
+    // and an unregistered card still refuses, by name
+    composeOnce.mockResolvedValueOnce({ graph: true } as never);
     const ans = await svc.composeValidateCard("c", "f", {});
     expect(ans).not.toBeNull();
     expect(ans?.message).toMatch(/no registered card definition|no model unit|not offered/i);

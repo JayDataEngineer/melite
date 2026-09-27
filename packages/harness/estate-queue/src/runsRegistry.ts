@@ -416,16 +416,16 @@ export class RunsRuntimeService extends Service {
     const dir = join(outRootFor(stateRoot, false), runId);
     let pre: Record<string, unknown> = {};
     try {
-      // THE SIDECAR'S READ CONTRACT (parseSidecar — the bypass
-      // audit's HIGH-5). This reader DERIVES from the row (it keys
-      // stages by id and routes by the pipeline), so a doc that does
-      // not answer the shape is refused here rather than cast forward;
-      // the ECHO readers (status, list) deliberately stay verbatim —
-      // showing the operator what is stored is their own law.
-      const parsed = parseSidecar(JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")));
-      // the row is kept VERBATIM once it answers the shape (a settle
-      // carries the old sidecar's own faces forward)
-      pre = parsed === null ? {} : parsed.request;
+      // VERBATIM, DELIBERATELY (the work audit's P2, second pass): an
+      // earlier cut ran this through parseSidecar and gated the row on
+      // it — which zeroed the identity of a sidecar whose STAGES are
+      // junk. Carrying that identity forward is this settle's whole
+      // job: a refused replay settles LOUD in place showing the
+      // operator the run's own faces (created_at, pipeline, stage
+      // rows), and a gate here made those read "undefined". The readers
+      // that KEY a row by id (the boot sweep, the resurrect plan) are
+      // where the parse belongs.
+      pre = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
     } catch {
       /* v8 ignore next 3 -- TOCTOU-only (the agent-engine law):
        * the record was readable+queued at plan time or it never
@@ -532,7 +532,18 @@ export class RunsRuntimeService extends Service {
         ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
           ? { inputs: { ...(row["inputs"] as Record<string, unknown>) } }
           : {}),
-        outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"]))
+        // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
+        // (the work audit's R1 — a regression the card-ports law
+        // introduced here): a card stage's stored outputs are `{}` by
+        // design (the channels derive from the card's own ports at
+        // compose), and this line kept that `{}` verbatim — so the
+        // merged worker published ZERO channels and every $spell
+        // consumer downstream got nothing where the old fabricated
+        // `{default: 'image'}` at least published one. An EMPTY
+        // channel map means "unfilled": the compose's own ports
+        // answer, exactly as the single-card path already does.
+        outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
+          && Object.keys(row["outputs"] as Record<string, unknown>).length > 0)
           ? { ...(row["outputs"] as Record<string, unknown>) }
           : composed.outputs,
       };

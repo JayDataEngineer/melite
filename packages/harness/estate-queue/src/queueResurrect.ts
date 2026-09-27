@@ -1,3 +1,4 @@
+import { parseSidecar } from "./queueSidecar.ts"
 // queueResurrect.ts — resurrection planning + strict JSON reads
 // (boot tolerance for on-disk records; lenient arms deleted
 // 2026-09-18 — JSON arrays/objects ride, nothing is re-interpreted).
@@ -130,11 +131,16 @@ export function durableRecordUsable(
 ): boolean {
   let doc: unknown = null;
   try {
-    doc = JSON.parse(sidecarText);
+    // THE SIDECAR'S READ CONTRACT (parseSidecar): this reader decides
+    // whether a run may be RESURRECTED from its sidecar, so a doc
+    // whose stages are not addressable rows must answer false — the
+    // resurrect law's own precondition, not a downstream find().
+    // the parse JUDGES the shape and returns the row VERBATIM
+    doc = parseSidecar(JSON.parse(sidecarText))?.request ?? null;
   } catch {
     return false;
   }
-  if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
+  if (doc === null) {
     return false;
   }
   const rec = doc as Record<string, unknown>;

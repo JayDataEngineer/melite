@@ -693,3 +693,45 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
     expect(arm).toContain("return null; // the lane's own tolerance for a model-less row");
   });
 });
+
+// ── THE LANE LAWS RUN AT EVERY SEAT (the work audit's CRITICAL) ────
+// A THIRD half-landed fix, and the exact one phase1's own comment
+// warns about: the validate arm judged the OVERLAID params, where
+// `model` is an envelope key — so the model-less tolerance stood the
+// whole judgment down and the surface/relation laws never ran at
+// validate. An export conflict answered ok:true there while the bench
+// and the start door both refused it.
+describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
+  it("the export conflict refuses THROUGH composeValidateCard (not only at the bench)", async () => {
+    // the same state the bench refuses (an export styled while it is
+    // designed), sent to the door that composes
+    const refused = await svc.composeValidateCard(
+      "tts",
+      "qwen3-tts",
+      { model: "qwen3-tts", variant: "customvoice", text: "x", voice_name: "warm_1", design_prompt: "warm", style_instruction: "whispered" },
+      "qwen3-tts",
+      { model: "qwen3-tts", variant: "customvoice", text: "x", voice_name: "warm_1", design_prompt: "warm", style_instruction: "whispered" },
+    );
+    expect(refused).not.toBeNull();
+    expect(refused?.message).toMatch(/style|conflict|export/i);
+  });
+
+  it("a lawful state answers null through the same door (the happy path stays walled)", async () => {
+    expect(
+      await svc.composeValidateCard(
+        "tts",
+        "qwen3-tts",
+        { model: "qwen3-tts", text: "speak" },
+        "qwen3-tts",
+        { model: "qwen3-tts", text: "speak" },
+      ),
+    ).toBeNull();
+  });
+
+  it("the seat judges the BODY, never the overlay (the rule in source)", () => {
+    const src = readFileSync(new URL("../src/cardsRegistry.ts", import.meta.url), "utf8");
+    // the arm's lane call takes the raw body, exactly as phase1's does
+    expect(src).toContain("this.laneVerdict(card, rawBody ?? params)");
+    expect(src).toContain("this.laneVerdict(prep.card, body)");
+  });
+});

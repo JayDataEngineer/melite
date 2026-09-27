@@ -884,7 +884,15 @@ export class CardRegistryService extends Service {
       if (e instanceof CardArmError) return { message: e.message, code: e.code };
       throw e;
     }
-    const laneRefusal = this.laneVerdict(card, params);
+    // THE LANE JUDGES THE BODY, NEVER THE OVERLAY (the work audit's
+    // CRITICAL — a THIRD half-landed fix, and the exact one phase1's
+    // own comment warns about: `model` is an envelope key, so the
+    // overlaid params carry no address, laneVerdict's model-less arm
+    // stands down, and the lane surface + relation laws NEVER RAN at
+    // validate — an export conflict answered ok:true here while the
+    // bench and the start door both refused it). The run seat already
+    // judges `body`; the seats now judge the same thing.
+    const laneRefusal = this.laneVerdict(card, rawBody ?? params);
     if (laneRefusal !== null) {
       return { message: laneRefusal, code: "lane_refusal" };
     }
