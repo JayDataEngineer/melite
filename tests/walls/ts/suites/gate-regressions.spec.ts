@@ -408,3 +408,55 @@ describe("THE BOOT BUDGET REACHES EVERY PROJECT (the hook's 5s bounces, 2026-09-
     expect(src).toMatch(/does NOT inherit the root's testTimeout/);
   });
 });
+
+describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-09-28)", () => {
+  // The run id had THREE (the registry composing, the registry
+  // registering, the start chain's own mint) and every composed
+  // graph's `${runId}/gen` forward reference then named a run that
+  // was never created — the operator's live refusal. The bench stage
+  // id had TWO (the row handed to admission, the row stored), which
+  // is the same seam with the judge and the store able to disagree
+  // about which row they are looking at.
+  //
+  // The walls that existed could not see this: they pin SHAPES, and
+  // two correctly-typed producers of the same value are shape-legal.
+  // The law is about IDENTITY — the value must have exactly one
+  // producer, and where a type can express that (a required
+  // argument), the type does, so a second producer does not compile.
+  it("the run id has exactly one producer, and no fallback mint anywhere", () => {
+    const registry = read("packages/harness/estate-queue/src/runsRegistry.ts");
+    const start = read("packages/harness/estate-queue/src/runsStart.ts");
+    // ONE mint function, in ONE module
+    const core = read("packages/harness/estate-queue/src/queueCore.ts");
+    expect((core.match(/export function newRunId\(/g) ?? []).length, "one newRunId, one home").toBe(1);
+    // ONE call site in the registry (the start chain takes it as an
+    // argument; a `?? newRunId()` there is a second producer)
+    expect((registry.match(/newRunId\(\)/g) ?? []).length,
+      "the registry mints the run id exactly once").toBe(1);
+    // a CALL is a second producer; the import and the comment that
+    // names the retired fallback are not
+    const startCalls = (start.replace(/\/\*[\s\S]*?\*\//g, " ").split("\n")
+      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*")))
+      .filter((l) => /newRunId\(/.test(l) && !/^import /.test(l.trim()) && !/import \{/.test(l)).length;
+    expect(startCalls, "the start chain CALLS no mint of its own — the id is the caller's")
+      .toBe(0);
+    // and the type says so: the door is required, its runId required
+    expect(start).toMatch(/const runId: string = door\.runId;/);
+    expect(start).toMatch(/\n  door: \{\n    runId: string;/);
+  });
+
+  it("the bench stage id has ONE producer (the admitted row and the stored row cannot differ)", () => {
+    const bench = read("packages/estate/drafts/src/bench.ts");
+    // the law lives in one exported mint, and the max+1 arithmetic
+    // exists exactly once in the file
+    expect((bench.match(/Math\.max\((?:acc|max), Number\(m\[1\]\)\)/g) ?? []).length,
+      "the max+1 mint arithmetic is written once (two copies is two producers)").toBe(1);
+    expect(bench, "the one mint is exported for the wall and for every door")
+      .toMatch(/export function mintStageId\(/);
+    // both the admitted row and the stored row take it
+    const uses = (bench.match(/mintStageId\(/g) ?? []).length;
+    expect(uses, "both call sites take the one mint (the definition plus both doors)")
+      .toBe(3);
+    expect(bench).not.toMatch(/"s_" \+\s*\n\s*String\(/);
+  });
+});

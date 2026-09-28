@@ -158,6 +158,11 @@ export default defineConfig({
           alias: { ...resolutionFacade() },
         },
         test: {
+          // the boot budget, INSIDE the project's own test block — a
+          // project root that also carries a `test:` field is read from
+          // THAT field, so a root-level copy is decoration
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
           name: 'node',
           globalSetup: [TMP_SWEEP],
           environment: 'node',
@@ -276,6 +281,11 @@ export default defineConfig({
           },
         },
         test: {
+          // the boot budget, INSIDE the project's own test block — a
+          // project root that also carries a `test:` field is read from
+          // THAT field, so a root-level copy is decoration
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
           name: 'dom',
           globalSetup: [TMP_SWEEP],
           environment: 'happy-dom',
@@ -352,6 +362,11 @@ export default defineConfig({
           },
         },
         test: {
+          // the boot budget, INSIDE the project's own test block — a
+          // project root that also carries a `test:` field is read from
+          // THAT field, so a root-level copy is decoration
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
           name: 'dom18',
           globalSetup: [TMP_SWEEP],
           environment: 'jsdom',
@@ -380,6 +395,11 @@ export default defineConfig({
           },
         },
         test: {
+          // the boot budget, INSIDE the project's own test block — a
+          // project root that also carries a `test:` field is read from
+          // THAT field, so a root-level copy is decoration
+          testTimeout: BOOT_BUDGET.testTimeout,
+          hookTimeout: BOOT_BUDGET.hookTimeout,
           name: 'deck',
           globalSetup: [TMP_SWEEP],
           environment: 'jsdom',
