@@ -124,6 +124,21 @@ export interface BenchBlock {
     log: BenchEntry[];
 }
 export declare function benchBlockOf(doc: Record<string, unknown>): BenchBlock;
+/** THE STAGE-ID MINT, ONE PRODUCER (the identity law, 2026-09-28).
+ *
+ *  A stage with no id of its own is minted `s_<max+1>` over the LIVE
+ *  rows. That law was written TWICE in this file — once for the row
+ *  handed to admission, once for the row stored — and two producers
+ *  of one value is the seam that just cost the operator a run (see
+ *  the run id's law in runsRegistry/runsStart: the id is an INPUT to
+ *  the write, not a label on it). If the two ever disagreed, the door
+ *  would judge one row and the bench would store another — the
+ *  "the judge sees the STORED row" law with a different id under it.
+ *
+ *  The collision-safe form is the law: MAX numeric suffix + 1 over the
+ *  rows as they stand, never the count (a bench that lost stages
+ *  re-mints a live id with the count — the 2026-09-12 fix). */
+export declare function mintStageId(rows: readonly Record<string, unknown>[], body: Record<string, unknown>): string;
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
 export declare function normalizeStages(stagesIn: unknown, author: Author): Record<string, unknown>[];

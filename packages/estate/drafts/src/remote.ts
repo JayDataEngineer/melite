@@ -14,7 +14,7 @@ import {
 } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { admitWiring, benchBlockOf, strippedForAdmission, type BenchBlock } from "./bench.js";
-import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
+import { STAGE_PATCH_KEYS, type StagePatchKey, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
@@ -321,7 +321,9 @@ export const RESTORED_PROVENANCE: unique symbol = Symbol("melite.restored-proven
  *  into the server's authority. Nothing else in the tree needs it:
  *  the raw string is passed everywhere else and only these two
  *  comparisons treat it as the marker. */
-export const RESTORED_WIRE_SPELLING = "restored";
+/** THE CONTRACT'S SPELLING (the identity law, 2026-09-28) — the
+ *  door and its callers read ONE coordinate, not two. */
+export const RESTORED_WIRE_SPELLING = RESTORED_PROVENANCE_SPELLING;
 
 /** The bench documents' id prefix (the bench family, not a flow export). */
 const BENCH_ID_PREFIX = "bench-";

@@ -65,6 +65,15 @@ describe("the bench session grammar has one rule", () => {
       ["cards tab", "../../../../packages/web/melite-card-view/src/client/cards-resource.ts"],
       ["gallery", "../../../../packages/web/infer-gallery/src/client/bench-load.ts"],
     ];
+    // THE MIRRORS ARE GONE (the identity law, 2026-09-28). This arm
+    // compared each client's PATTERN to the server's — a mirror is a
+    // second producer, and a mirror the wall names is a mirror the
+    // wall has to be told about: the agent tool's two inline copies
+    // were outside this list entirely, and tightening one of them
+    // left every suite green. The contract floor owns the grammar
+    // now, so the law is stronger and simpler: the clients hold NO
+    // pattern, they import the owner's, and the agent tool reads the
+    // same one.
     for (const [name, path] of mirrors) {
       const src = readFileSync(new URL(`${path}`, import.meta.url), "utf8");
       const code = src
@@ -72,11 +81,26 @@ describe("the bench session grammar has one rule", () => {
         .split("\n")
         .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
         .join("\n");
-      const m = code.match(/BENCH_SESSION_RE\s*=\s*\/(\^\[A-Za-z0-9_-\]\{1,64\}\$)\//);
-      expect(m, `${name}: BENCH_SESSION_RE is code, not a comment — and the spelling has not moved`).not.toBeNull();
-      expect(m?.[1], `${name}'s mirror must equal the server's, character for character`)
-        .toBe(SERVER_SESSION.source);
+      expect(code, `${name}: the client spells NO grammar of its own — it imports the contract's`)
+        .not.toMatch(/BENCH_SESSION_RE\s*=\s*\//);
+      expect(code, `${name}: the client reads the contract's SESSION_RE (one owner, imported)`)
+        .toMatch(/SESSION_RE as BENCH_SESSION_RE/);
     }
+    // and the agent tool — the copy this arm never named — reads it
+    // too (it is node, so it imports the same contract module)
+    const tool = readFileSync(
+      new URL("../../../../packages/harness/melite-tools/src/tools/melite-construct.ts", import.meta.url),
+      "utf8",
+    );
+    const toolCode = tool
+      .replace(/\/\*[\s\S]*?\*\//g, " ")
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
+      .join("\n");
+    expect(toolCode, "the agent tool spells NO session grammar of its own")
+      .not.toMatch(/\[A-Za-z0-9_-\]\{1,64\}/);
+    expect(toolCode, "the agent tool reads the contract's SESSION_RE")
+      .toMatch(/SESSION_RE\.test\(/);
   });
 
   it("the session rule itself behaves — absolute bounds, not self-comparison", () => {

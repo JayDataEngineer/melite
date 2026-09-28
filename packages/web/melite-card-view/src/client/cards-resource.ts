@@ -193,7 +193,13 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
 // draft-id-grammar wall fails if the three ever differ — a client must
 // never accept an id the server refuses)
-export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
+// THE CONTRACT'S GRAMMAR (the identity law, 2026-09-28): the bench
+// key is an ADDRESS and has one grammar. This copy was a MIRROR of
+// the server's — a mirror is a second producer the moment the server
+// moves, and the wall that compared the copies could only name the
+// ones it knew. The client imports the contract's.
+import { SESSION_RE as BENCH_SESSION_RE } from '../../../../web-kit/contracts/src/benchStage.ts'
+export { BENCH_SESSION_RE }
 
 /** Sanitize one candidate id onto a legal bench session key ('main'
  *  for anything the bench would refuse — the estate's own SESSION_RE). */

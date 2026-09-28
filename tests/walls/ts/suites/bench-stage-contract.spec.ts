@@ -1,5 +1,6 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect } from "vitest";
+import assert from "node:assert/strict";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import {
@@ -12,8 +13,7 @@ import {
   healRunMediaPaths,
   normalizeBenchStage,
   stageEngineOf,
-  stripKeys,
-} from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+  stripKeys, STALE_TAB_VOCABULARY } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 
 // THE BENCH STAGE CONTRACT (operator, 2026-10-10: "The bench media
 // flow is always the same, no matter if the AI agent OR the human
@@ -124,7 +124,7 @@ describe("the stale-tab regression (it may not come back)", () => {
       "packages/web/card-base/src",
       "packages/web/infer-gallery/src",
     ];
-    const banned = [/STALE TAB/i, /stale tab/i, /cards-stale-build/, /staleBuild/, /buildVerdict/];
+    const banned = STALE_TAB_VOCABULARY;
     const offenders: string[] = [];
     // THE WALK IS COUNTED (the walls audit's M3, 2026-10-10): a
     // renamed root made the walk read nothing and the arm passed
@@ -191,5 +191,36 @@ describe("the stale-tab regression (it may not come back)", () => {
     }
     expect(read, `the walk read the client trees (${String(read)} files — a renamed root empties the arm)`).toBeGreaterThan(20);
     expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+});
+
+// ── THE LAWS THE AUDIT FOUND DECORATIVE (2026-09-28) ───────────────
+// An independent audit mutated each of these and found the suite
+// stayed green: the laws were pinned by MEMBERSHIP (the set is
+// right) while their BEHAVIOUR was unasserted. Each arm below drives
+// the behaviour directly.
+describe("the self-naming exemption BEHAVES (anny's stated model rides)", () => {
+  it("a card that names its OWN family keeps the model key (the exemption is not a list)", () => {
+    // SELF_NAMED_FAMILIES membership was pinned; the BEHAVIOUR was
+    // not: an unconditional strip (which would eat anny's stated
+    // model) left every suite green, because no test said what the
+    // exemption is FOR. The client copies in bench-load.ts stripped
+    // unconditionally and had already diverged from the contract.
+    const kept = normalizeBenchStage({ card: "anny", params: { model: "anny" } }, 0) as {
+      params?: Record<string, unknown>;
+    };
+    assert.equal(kept.params?.["model"], "anny",
+      "anny states its own family and the row KEEPS the model — the exemption is what makes that possible");
+    // and a NON-self-naming card still strips (the law's other half)
+    const stripped = normalizeBenchStage({ card: "image-gen", params: { model: "image-gen", prompt: "x" } }, 0) as {
+      params?: Record<string, unknown>;
+    };
+    assert.equal(stripped.params?.["model"], undefined,
+      "a model naming the CARD ITSELF is the family-less compose voice, not a board request — stripped");
+    // and a real family on a card row rides untouched
+    const rides = normalizeBenchStage({ card: "image-gen", params: { model: "z-image" } }, 0) as {
+      params?: Record<string, unknown>;
+    };
+    assert.equal(rides.params?.["model"], "z-image", "a model naming a REAL family rides untouched");
   });
 });

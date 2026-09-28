@@ -65,6 +65,29 @@ function seedStateOf(row) {
         return `${row["id"]} seed random`;
     return `${row["id"]} seed absent`;
 }
+/** THE STAGE-ID MINT, ONE PRODUCER (the identity law, 2026-09-28).
+ *
+ *  A stage with no id of its own is minted `s_<max+1>` over the LIVE
+ *  rows. That law was written TWICE in this file — once for the row
+ *  handed to admission, once for the row stored — and two producers
+ *  of one value is the seam that just cost the operator a run (see
+ *  the run id's law in runsRegistry/runsStart: the id is an INPUT to
+ *  the write, not a label on it). If the two ever disagreed, the door
+ *  would judge one row and the bench would store another — the
+ *  "the judge sees the STORED row" law with a different id under it.
+ *
+ *  The collision-safe form is the law: MAX numeric suffix + 1 over the
+ *  rows as they stand, never the count (a bench that lost stages
+ *  re-mints a live id with the count — the 2026-09-12 fix). */
+export function mintStageId(rows, body) {
+    if (typeof body["id"] === "string" && body["id"] !== "")
+        return body["id"];
+    const max = rows.reduce((acc, row) => {
+        const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
+        return m === null ? acc : Math.max(acc, Number(m[1]));
+    }, -1);
+    return "s_" + String(max + 1);
+}
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
 export function normalizeStages(stagesIn, author) {
@@ -765,13 +788,10 @@ export async function addStageBench(drafts, session, body, admit) {
     if (typeof cardForRow !== "string" || cardForRow === "") {
         throw new RemoteError("bench/bad-body", "card is required", {});
     }
-    const stageIdForAdmit = typeof body["id"] === "string" && body["id"] !== ""
-        ? body["id"]
-        : "s_" +
-            String(stagesOf(loadedForAdmit.doc).reduce((max, row) => {
-                const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
-                return m === null ? max : Math.max(max, Number(m[1]));
-            }, -1) + 1);
+    // THE ONE MINT (see mintStageId): the row handed to admission and
+    // the row stored below are the same row, under the same id, because
+    // there is one producer of the value.
+    const stageIdForAdmit = mintStageId(stagesOf(loadedForAdmit.doc), body);
     const admitted = normalizeBenchStage({
         id: stageIdForAdmit,
         card: cardForRow,
@@ -795,13 +815,7 @@ export async function addStageBench(drafts, session, body, admit) {
     // removed — [s_0..s_9] minus nine leaves s_1, and the count says
     // s_1 again. The mint takes MAX numeric suffix + 1 over the live
     // rows, so a fresh id is fresh against the bench AS IT STANDS.
-    const stageId = typeof body["id"] === "string" && body["id"] !== ""
-        ? body["id"]
-        : "s_" +
-            String(stages.reduce((max, row) => {
-                const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
-                return m === null ? max : Math.max(max, Number(m[1]));
-            }, -1) + 1);
+    const stageId = mintStageId(stages, body);
     if (stageRow(loaded.doc, stageId) !== null) {
         throw new RemoteError("bench/duplicate-stage", "stage id already on the bench: " + stageId, { session, stage: stageId });
     }

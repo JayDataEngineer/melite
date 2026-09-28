@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { SELF_NAMED_FAMILIES } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+import { SELF_NAMED_FAMILIES, STALE_TAB_VOCABULARY } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
 import { assertSchemaAcceptsMinimalRows } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
@@ -316,6 +316,96 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     expect(code).toContain("laneSampler(p)");
   });
 
+  it("RULE 6d · the restored-provenance spelling is the CONTRACT'S (a coordinate has one writer)", () => {
+    // "restored" is the coordinate the model-repair law reads. It was
+    // a bare literal in five places — the drafts reader, the snapshot
+    // restore, and three client restore arms — while the estate's own
+    // door carried a NAMED spelling beside them. A coordinate with
+    // two sources is a coordinate that can disagree with itself: a
+    // rename on one side silently stops exempting the rows the other
+    // side still writes, and the repair law stops repairing. The
+    // contract floor owns the spelling; the bare literal is banned
+    // everywhere else, so a sixth writer cannot appear.
+    const CONTRACT = "web-kit/contracts/src/benchStage.ts";
+    const offenders: string[] = [];
+    let owners = 0;
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      const isDeclaration = /export const RESTORED_PROVENANCE_SPELLING = "restored"/.test(code);
+      const literal = isDeclaration
+        || /provenance['"]?\]?\s*[:=]\s*['"]restored['"]|['"]restored['"]\s*===|!==\s*['"]restored['"]/.test(code);
+      if (!literal) continue;
+      if (f.includes(CONTRACT)) { owners += 1; continue }
+      offenders.push(f + " — the restored coordinate is the contract's RESTORED_PROVENANCE_SPELLING");
+    }
+    expect(owners, "the contract floor declares the restored spelling once").toBe(1);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 6e · a card knob may never collide with an envelope key (the silent eat)", async () => {
+    const { CARD_ENVELOPE_KEYS } = await import("../../../../packages/harness/estate-queue/src/cardsRegistry.ts");
+    // The envelope fix (li-ar) filters the row's own coordinates out
+    // of a card's knob bag BY NAME. Zero collisions exist today, and
+    // a card that declared a knob called `description` (or `id`, or
+    // `outputs`) would have that knob silently eaten at EVERY
+    // compose — the compose would succeed with a missing required
+    // input and the graph would fail downstream, or the run would
+    // refuse for a key the author cannot see. Only `params` was
+    // walled (RULE 4b); the other eleven coordinates had no wall at
+    // all, so the first card to declare one would be a silent eat.
+    //
+    // The law: no card, family, or resolver row may declare a knob
+    // whose name is an envelope key. The set is DERIVED from the
+    // envelope itself, so a new coordinate is covered the day it
+    // lands.
+    const COORDINATES = new Set(CARD_ENVELOPE_KEYS);
+    const offenders: string[] = [];
+    // the card planes: every card's declared schema
+    for (const f of SOURCES.filter((p) => /\/card\.ts$/.test(p))) {
+      const code = codeOf(read(f));
+      for (const m of code.matchAll(/^\s{2,}([a-z_][a-z0-9_]*)\??:\s*z\./gm)) {
+        const name = m[1]!;
+        if (COORDINATES.has(name)) offenders.push(f + " declares the knob '" + name + "' — that name is an ENVELOPE coordinate and would be eaten at compose");
+      }
+      for (const m of code.matchAll(/\["']([a-z_][a-z0-9_]*)["']:\s*z\./g)) {
+        const name = m[1]!;
+        if (COORDINATES.has(name)) offenders.push(f + " declares the knob '" + name + "' (quoted key) — an envelope coordinate, eaten at compose");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 6c · the session grammar is the CONTRACT'S (no fourth mirror)", () => {
+    // The bench key is an ADDRESS — it names a stored document — and
+    // an address has one grammar. It was spelled in five places: the
+    // drafts owner, two inline copies in melite-construct, and two
+    // browser mirrors. The grammar wall compared the copies it knew
+    // by name, so a copy outside that set (or a tightening of any ONE
+    // of them) passed the whole suite: a copy the wall does not name
+    // is a copy the wall does not hold. The contract floor owns it
+    // now; this bans the literal everywhere else, so a fifth copy
+    // cannot appear without a wall red.
+    const CONTRACT = "web-kit/contracts/src/benchStage.ts";
+    const owners: string[] = [];
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      // the MCP tool-address grammar is a DIFFERENT address (a tool
+      // name, not a bench key) and keeps its own copy — named here so
+      // the ban is honest about what it does and does not cover.
+      if (f.includes("engines/mcp/src/mcp-engine.ts")) continue;
+      const inContract = f.includes(CONTRACT);
+      const literal = /\^\[A-Za-z0-9_-\]\{1,64\}\$|\[A-Za-z0-9_-\]\{1,64\}\$\//.test(code)
+        || /BENCH_SESSION_RE\s*=\s*\//.test(code)
+        || /SESSION_RE\s*:\s*RegExp\s*=\s*\//.test(code);
+      if (!literal) continue;
+      if (inContract) { owners.push(f); continue }
+      offenders.push(f + " — the bench-key grammar is the contract's SESSION_RE; import it");
+    }
+    expect(owners, "the contract floor declares the grammar once").toHaveLength(1);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
   it("RULE 6b · the stage-patch key list is spelled ONCE (B-M9's second copy)", () => {
     // The old door's fixed key set lived in TWO production modules —
     // the drafts admission and the runs gate — with the same members
@@ -364,7 +454,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // vocabulary is now the TWIN'S, spelled once here as the shared
     // list both walls carry (and the bench-stage twin asserts its
     // own copy against the same shapes).
-    const STALE = [/STALE TAB/i, /stale tab/i, /cards-stale-build/, /staleBuild/, /buildVerdict/];
+    const STALE = STALE_TAB_VOCABULARY;
     for (const f of SOURCES.filter((p) => p.includes("/web/") && /client/.test(p))) {
       const code = codeOf(read(f));
       for (const re of STALE) {

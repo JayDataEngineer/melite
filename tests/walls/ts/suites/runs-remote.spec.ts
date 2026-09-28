@@ -1024,3 +1024,48 @@ test("every coordinate the bench run injects is an ENVELOPE key (the same law, w
   assert.deepEqual(liftedStanza, { prompt: "a red boat", steps: 30 },
     "the params stanza still unwraps into the card's knobs (the container is not a knob, and filtering it would drop the whole body)");
 });
+
+test("a bench-composed run carries its OWN snapshot (restore never falls back to the living bench)", { timeout: 60_000 }, async () => {
+  // The adversarial verification found the staleness the snapshot law
+  // exists to kill: the card arm stamped cardSnapshot + benchSnapshot,
+  // and the bench-run door passed NEITHER — so Run ALL registered a
+  // run whose "restore the workflow that made this" re-read the
+  // mutable bench draft, which has moved on by then.
+  const { runs, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  const bench = {
+    draft_id: "d_ok",
+    status: "draft",
+    createdAt: 1700000000000,
+    completedAt: null,
+    intent: "snapshot law",
+    stages: [
+      { id: "s_0", card: "image-gen", params: { model: "krea-2", prompt: "a red boat" } },
+      { id: "s_1", card: "image-gen", params: { model: "krea-2", prompt: "closer" }, inputs: { image1: { stage: "s_0", output: "default" } } },
+    ],
+  };
+  const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+  writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
+  let runId: string | null = null;
+  try {
+    runId = (await runs.start({ model: "krea-2", test: true, draft_id: "d_ok" }, sig)).run_id;
+  } catch {
+    // the rig has no engine: the sourceless refusal is the honest
+    // verdict and it happens AFTER registration, so the run dir and
+    // its snapshot are already on disk either way
+  }
+  const runsRoot = join(root, "test-output");
+  const dirs = existsSync(runsRoot) ? readdirSync(runsRoot).filter((d) => d.startsWith("run-")) : [];
+  const dir = runId ?? dirs[0];
+  assert.ok(dir !== undefined, "the bench run registered (a run dir exists)");
+  const flowPath = join(runsRoot, dir as string, "_flow.json");
+  assert.ok(existsSync(flowPath), "the bench run wrote its sidecar");
+  const flow = JSON.parse(readFileSync(flowPath, "utf8")) as {
+    bench_snapshot?: { stages?: unknown[] };
+    stages?: Array<{ id?: string }>;
+  };
+  assert.ok(Array.isArray(flow.bench_snapshot?.stages) && flow.bench_snapshot!.stages!.length === 2,
+    `the run carries the bench it was composed from (saw ${String(flow.bench_snapshot?.stages?.length ?? "none")} stages) — ` +
+    "a bench run with no snapshot restores from the LIVING bench, which is the staleness the law forbids");
+  await fiber.dispose();
+});

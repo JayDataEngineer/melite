@@ -1,4 +1,4 @@
-import { WIRE_STAGE_KEYS, normalizeBenchStages } from "@melite/contracts/benchStage"
+import { SESSION_RE, WIRE_STAGE_KEYS, normalizeBenchStages } from "@melite/contracts/benchStage"
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
 // (the bench rework, 2026-09-10; docs/plans/bench-rework-2026-09-10.md
 // §4). melite_flow executes; melite_construct AUTHORS — verbs over
@@ -53,7 +53,7 @@ export const DEFAULT_BENCH = 'main'
 // unreachable, not merely discouraged.
 export function benchKeyOfExec(exec: { agent?: { id?: unknown } }): string {
   const id = exec.agent?.id
-  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : DEFAULT_BENCH
+  return typeof id === 'string' && SESSION_RE.test(id) ? id : DEFAULT_BENCH
 }
 
 type ConstructResult = {
@@ -67,7 +67,7 @@ type ConstructResult = {
 
 function benchKeyOf(a: Record<string, unknown>): string {
   const k = a['bench']
-  return typeof k === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH
+  return typeof k === 'string' && SESSION_RE.test(k) ? k : DEFAULT_BENCH
 }
 
 /** Refusal formatting shared by every verb (the remote's RemoteError

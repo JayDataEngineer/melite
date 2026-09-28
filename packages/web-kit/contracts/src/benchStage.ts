@@ -314,6 +314,58 @@ export const WIRE_STAGE_KEYS: readonly string[] = [
  * A run id is `run-<hex>-<token>`; the media route's parse and every
  * reader that keys a path by it use this one.
  */
+/** THE SESSION GRAMMAR — the bench key (the identity law, 2026-09-28).
+ *
+ *  This grammar was spelled in FOUR places: the drafts owner, two
+ *  inline copies in melite-construct (the agent's bench key), and
+ *  the browser's own. The grammar wall pinned the server and two
+ *  clients, so tightening ONE copy left the whole suite green — a
+ *  copy the wall does not name is a copy the wall does not hold.
+ *
+ *  The contract floor owns it now, and both sides import it: the
+ *  drafts package re-exports it for its own callers, the agent tool
+ *  reads it, and the wall bans the inline spelling everywhere else.
+ *  A bench key is an ADDRESS (it names a stored document), and an
+ *  address has one grammar. */
+/** THE RESTORED-PROVENANCE SPELLING (the identity law, 2026-09-28).
+ *
+ *  "restored" is the coordinate the model-repair law reads: a row
+ *  that came off an archive is exempt from the live admission, and a
+ *  live composer's typo of it is refused. It was WRITTEN as a bare
+ *  literal in five places (the drafts reader, the snapshot restore,
+ *  and three client restore arms) while the estate's door already
+ *  carried a named spelling — a door and its callers reading the same
+ *  coordinate from two sources. The contract floor owns it now, and
+ *  the door re-exports it, so every reader and every writer agree by
+ *  construction. */
+export const RESTORED_PROVENANCE_SPELLING = "restored";
+
+/** THE STALE-TAB VOCABULARY (the identity law, 2026-09-28).
+ *
+ *  "The tab is never stale" is the operator's law, and TWO walls
+ *  policed it with two hand-copied five-regex lists. Dropping
+ *  /buildVerdict/ from one list left every suite green: a wall's
+ *  vocabulary is part of the LAW, and a law copied into two places
+ *  is a law that will disagree with itself the first time it grows
+ *  (the same failure that made a new relation word illegal at boot).
+ *
+ *  The contract floor owns the vocabulary; both walls import it, so
+ *  a new spelling is added in exactly one place and both walls judge
+ *  it. */
+export const STALE_TAB_VOCABULARY: readonly RegExp[] = [
+  /STALE TAB/i,
+  /stale tab/i,
+  /cards-stale-build/,
+  /staleBuild/,
+  /buildVerdict/,
+];
+
+export const SESSION_RE: RegExp = /^[A-Za-z0-9_-]{1,64}$/;
+
+/** The bench DRAFT id: the session key under the bench- prefix (the
+ *  stored document's own name, minted from the key by one door). */
+export const BENCH_DRAFT_RE: RegExp = /^bench-([A-Za-z0-9_-]{1,64})$/;
+
 export const RUN_ID_RE: RegExp = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 
 /** Is this a run id? */

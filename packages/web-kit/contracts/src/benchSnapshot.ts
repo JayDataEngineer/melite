@@ -152,6 +152,7 @@ export function parseCardSnapshot(value: unknown): ContractParse<CardSnapshotCon
  * the bench that earned it. */
 // the strip's keys are the CONTRACT's (benchStage.ts) — one list, named
 // once, for the writer here and every arm that strips a row
+import { RESTORED_PROVENANCE_SPELLING } from './benchStage.ts'
 import { RESTORE_STRIP_KEYS, stripKeys } from './benchStage.ts';
 const RUN_MEMORY_KEYS = RESTORE_STRIP_KEYS;
 
@@ -187,7 +188,7 @@ export function saveBenchSnapshotStages(stages: unknown): {
       delete cleaned['model'];
       src['params'] = cleaned;
     }
-    src['provenance'] = 'restored';
+    src['provenance'] = RESTORED_PROVENANCE_SPELLING;
     out.push(src as BenchSnapshotRow);
   }
   return { stages: out, warnings };

@@ -1,6 +1,7 @@
 // runsValidateShared.ts — shared kernel split from runsValidate.ts (pure move,
 // zero logic changes): closed vocabularies, flow-domain types, FlowError,
 // and the card-registry face.
+import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 
 /** The door's answer (status folds away at the remote seam; the
@@ -56,21 +57,14 @@ export const SKIP_VOCAB: readonly string[] = ["present", "absent"];
 
 // _INLINE_TOP_KEYS sorted (dead/allowed messages).
 export const INLINE_TOP_SORTED: readonly string[] = ["description", "id", "stages"];
-// sorted(STAGE_KEYS) — the extras message lists them.
-export const STAGE_KEYS_SORTED: readonly string[] = [
-  "card",
-  "card_io",
-  "description",
-  "engine",
-  "expected",
-  "id",
-  "inputs",
-  "outputs",
-  "params",
-  "retries",
-  "skip_when",
-  "timeout_s",
-];
+// sorted(WIRE_STAGE_KEYS) — DERIVED, not retyped (the identity law,
+// 2026-09-28). This was a hand-sorted copy of the contract's list:
+// equal today, and a silent start-vs-validate disagreement the moment
+// either side moved (the B-M9 class — a vocabulary declared once and
+// enumerated twice will disagree with itself the first time it
+// grows). The sort is the only transformation; the members are the
+// contract's.
+export const STAGE_KEYS_SORTED: readonly string[] = [...WIRE_STAGE_KEYS].sort();
 
 // ── strict-body vocab ───────────────────
 // Owned by the admission gate (src/core/params.ts — the SSOT shared

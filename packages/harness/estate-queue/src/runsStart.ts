@@ -491,11 +491,21 @@ export function registerCompiledRun(args: {
   // bench draft and serve whatever it holds NOW. The card arm knows
   // the exact card + body here; they ride the sidecar verbatim. The
   // wand reconstructs from THIS, never from the living bench.
+  // THE SNAPSHOT IS NOT THE CARD ARM'S PRIVILEGE (the adversarial
+  // verification, 2026-09-28). The whole block was gated on
+  // `cardId !== undefined`, which a BENCH-COMPOSED run never sets —
+  // so Run ALL registered a run with no snapshot at all, and the
+  // wand's "restore the workflow that made this" fell back to the
+  // LIVE bench draft, which is exactly the staleness this law was
+  // built to kill. The card identity and the bench identity are
+  // separate facts and each rides when it exists.
   if (door !== undefined && door.cardId !== undefined) {
     run.cardSnapshot = {
       card: door.cardId,
       params: door.requestBody,
     };
+  }
+  if (door !== undefined && door.benchDoc !== undefined) {
     const benchStages = Array.isArray(door.benchDoc?.["stages"])
       ? door.benchDoc?.["stages"]
       : undefined;

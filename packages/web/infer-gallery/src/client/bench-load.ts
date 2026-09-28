@@ -22,7 +22,7 @@
  */
 
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
-import { RESTORE_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage'
+import { RESTORE_STRIP_KEYS, RESTORED_PROVENANCE_SPELLING, SELF_NAMED_FAMILIES, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage'
 
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
@@ -30,7 +30,13 @@ import { RESTORE_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/cont
 // THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
 // draft-id-grammar wall fails if the three ever differ — a client must
 // never accept an id the server refuses)
-export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
+// THE CONTRACT'S GRAMMAR (the identity law, 2026-09-28): the bench
+// key is an ADDRESS and has one grammar. This copy was a MIRROR of
+// the server's — a mirror is a second producer the moment the server
+// moves, and the wall that compared the copies could only name the
+// ones it knew. The client imports the contract's.
+import { SESSION_RE as BENCH_SESSION_RE } from '../../../../web-kit/contracts/src/benchStage.ts'
+export { BENCH_SESSION_RE }
 
 function benchSessionOf(id: string | undefined): string {
   return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
@@ -272,14 +278,23 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           stripKeys(st, RESTORE_STRIP_KEYS)
           // THE SELF-NAMING MODEL STRIP (see the card arm's law below
           // — era stages ride the same strip before re-admission).
+          // THE SELF-NAMING STRIP IS THE CONTRACT'S (the identity
+          // law, 2026-09-28). This was a hand copy that stripped
+          // UNCONDITIONALLY — so on a restore it ate `anny`'s stated
+          // model, which the contract's SELF_NAMED_FAMILIES exempts
+          // (anny really does board the anny family). A restore and a
+          // fresh compose were therefore not the same law. The
+          // contract's own strip runs here; the client holds no copy.
+          const stCard = st['card']
           const stParams = st['params']
-          if (typeof st['card'] === 'string'
+          if (typeof stCard === 'string' && stCard !== ''
             && typeof stParams === 'object' && stParams !== null
-            && (stParams as Record<string, unknown>)['model'] === st['card']) {
+            && (stParams as Record<string, unknown>)['model'] === stCard
+            && !SELF_NAMED_FAMILIES.has(stCard)) {
             delete (stParams as Record<string, unknown>)['model']
           }
           if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
-          st['provenance'] = 'restored'
+          st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }
         const bsIntent = bs.intent !== '' ? bs.intent : 'restored run'
         await loadStagesOntoBench(bsStages, bsIntent.slice(0, 77), deps)
@@ -313,7 +328,10 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // today's wire never writes it there either; the only anny
       // stage carrying model:'anny' is this same era residue, and
       // the strip is correct on it too.
-      if (params['model'] === card) delete params['model']
+      // …and here the same law, the same exemption (this copy
+      // stripped unconditionally too — the divergence the audits
+      // named, in the arm that restores a RAN stage).
+      if (params['model'] === card && !SELF_NAMED_FAMILIES.has(card)) delete params['model']
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
       // THE STAGE ROW IS THE CONTRACT'S (the audit's Rule 1: this arm
@@ -322,7 +340,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // the restore's provenance and preview ride on top.
       const restoredCardRow: Record<string, unknown> = {
         ...normalizeBenchStage({ id: 's_0', card, params }, 0),
-        provenance: 'restored',
+        provenance: RESTORED_PROVENANCE_SPELLING,
       }
       if (result !== undefined) restoredCardRow['result'] = result
       const stages = [restoredCardRow]
@@ -347,7 +365,7 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // with prompt text and ran model = <the prompt>)
       const restoredBareRow: Record<string, unknown> = {
         ...normalizeBenchStage({ id: 's_0', params }, 0),
-        provenance: 'restored',
+        provenance: RESTORED_PROVENANCE_SPELLING,
       }
       if (result !== undefined) restoredBareRow['result'] = result
       const stages = [restoredBareRow]

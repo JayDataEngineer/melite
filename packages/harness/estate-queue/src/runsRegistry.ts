@@ -1057,7 +1057,21 @@ export class RunsRuntimeService extends Service {
       // The id rides ALWAYS. The replay arm (stroke 83) keeps its
       // meaning: the SAME id, rewritten in place, the pump picking
       // the rehydrated row up on the boot kick.
-      door: { runId, pipeline: pipelineOf(body), requestBody: body },
+      // THE SNAPSHOT RIDES THE BENCH RUN TOO (the adversarial
+      // verification, 2026-09-28): the card arm stamped a
+      // cardSnapshot + benchSnapshot, and this door passed neither —
+      // so a Run ALL registered a run whose "restore the workflow
+      // that made this" reconstructed from the LIVE bench draft,
+      // which is the exact staleness the snapshot law was built to
+      // kill (the bench has moved on by the time anyone restores).
+      // A bench-composed run knows its own doc (read at submit) and
+      // its own stage list; both ride the door verbatim.
+      door: {
+        runId,
+        pipeline: pipelineOf(body),
+        requestBody: body,
+        ...(benchDoc === undefined ? {} : { benchDoc }),
+      },
     });
     // THE SOURCE-ECHO REFUSAL (same law on the inline door).
     if ("payload" in reg) throw toRemoteError(reg);

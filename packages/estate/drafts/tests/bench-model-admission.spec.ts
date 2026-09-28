@@ -295,6 +295,48 @@ test("remove_stage re-judges the survivors' wiring (a removal may not orphan a w
   assert.deepEqual(ids, ["s_0", "s_1"], "a refused removal leaves both rows standing");
 });
 
+test("the STORED row is the JUDGED row — read back off disk, on every write door (the audit, 2026-09-28)", async () => {
+  // The arm above proved the JUDGED half (what the door saw). It
+  // never read the bench back, so the STORE half was unpinned: the
+  // audit stored the RAW merge on the patch door and 50/50 stayed
+  // green, and stored the raw pendingParams in the drafts door with
+  // 103/103 green. Worse, the birth arm turned out to JUDGE THE RAW
+  // BODY and store the normalized rows — two different objects in
+  // play, which is this law broken in the one direction that hides
+  // itself (the comment above the birth arm claimed "shaped first,
+  // then judged" and it was false there).
+  //
+  // The law, driven: after each write, the row ON DISK carries
+  // exactly what the door judged.
+  const drafts = await boot();
+  const seen: Array<Record<string, unknown>> = [];
+  const admit = (card: string, params: Record<string, unknown>): void => { seen.push({ card, params }); };
+  // 1. BIRTH (the arm that was judging the raw body)
+  await ensureBench(drafts, { session: "stored", stages: [{ id: "s_0", card: "tts", params: { model: "tts", text: "hi" } }] }, admit);
+  const born = (getBench(drafts, "stored").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(((born["params"] as Record<string, unknown>)["model"]), undefined,
+    "BIRTH stores the stripped row — the same object the door judged");
+  assert.equal(seen.length, 1, "the birth arm judged its stored row (one judgment, one write)");
+  // 2. ADD
+  await addStageBench(drafts, "stored", { card: "tts", params: { model: "tts", text: "again" }, expect_rev: 0 }, admit);
+  const added = (getBench(drafts, "stored").stages as Array<Record<string, unknown>>)[1]!;
+  assert.equal(((added["params"] as Record<string, unknown>)["model"]), undefined,
+    "ADD stores the stripped row — the same object the door judged");
+  // 3. PATCH — and the patch CARRIES a self-naming model, or the store
+  //    half is unobservable: a patch that only edits `text` merges onto
+  //    an already-stripped row, so storing the raw merge looks
+  //    identical to storing the stripped one. (The audit's mutation
+  //    was invisible for exactly this reason.)
+  await patchBench(drafts, "stored", { stage: "s_0", params: { model: "tts", text: "patched" }, expect_rev: 1 }, admit);
+  const patched = (getBench(drafts, "stored").stages as Array<Record<string, unknown>>)[0]!;
+  assert.equal(((patched["params"] as Record<string, unknown>)["model"]), undefined,
+    "PATCH stores the STRIPPED merge — a self-naming model never reaches disk (the run composes what the bench holds)");
+  assert.equal(((patched["params"] as Record<string, unknown>)["text"]), "patched",
+    "…and the patch's own key landed");
+  assert.equal(seen[seen.length - 1]!["params"] && (seen[seen.length - 1]!["params"] as Record<string, unknown>)["model"], undefined,
+    "the door judged the stripped merge — the judged and stored rows are one object");
+});
+
 test("the write doors judge the STRIPPED row — a self-naming model never meets the door's refusal", async () => {
   // normalizeBenchStage strips params.model naming the row's own
   // card at store, so the row the run composes is model-less; the
@@ -441,5 +483,90 @@ describe("THE WIRING HALVES (the bench audit's gaps 6 + 7)", () => {
     // and a bystander removal of a stage nothing wires to still lands
     const ok = await codeOf(removeStageBench(drafts, "hidden", { stage: "s_2", expect_rev: 0 }));
     assert.ok(String(ok).length > 0);
+  });
+});
+
+// ── THE GROUP IS JUDGED BY ITS MEMBERS (the audit, 2026-09-28) ─────
+// groupBench writes a row whose card is the LITERAL "group" — a
+// card no model board knows — and whose members ride in `children`.
+// The compound is judged by its MEMBERS, each through the same door
+// it crossed at pick time. The audit deleted BOTH member-dispatch
+// branches and the whole drafts suite stayed green (213/213): the
+// gap-9 test's fake admission accepted ANY card name, including the
+// literal "group", so member-vs-whole-row was indistinguishable.
+// These arms use an admission that REFUSES the literal.
+describe("a compound is judged by its MEMBERS, never as a row of its own", () => {
+  const memberJudge = (seen: Array<{ card: string; params: Record<string, unknown> }>) =>
+    (card: string, params: Record<string, unknown>): void => {
+      // the model board has no card named "group" — a whole-row
+      // judgment is exactly this refusal
+      if (card === "group") throw new Error("no registered card definition: group (the compound must be judged by its members)");
+      seen.push({ card, params: { ...params } });
+    };
+
+  test("the GROUP restore judges each member (and never asks the board about \"group\")", async () => {
+    const drafts = await boot();
+    const seen: Array<{ card: string; params: Record<string, unknown> }> = [];
+    const admit = memberJudge(seen);
+    await ensureBench(drafts, { session: "grp-restore" });
+    await addStageBench(drafts, "grp-restore", { card: "tts", params: { text: "a" }, expect_rev: 0 }, admit);
+    await addStageBench(drafts, "grp-restore", { card: "sfx", params: { text: "b" }, expect_rev: 1 }, admit);
+    seen.length = 0;
+    const grouped = await groupBench(drafts, "grp-restore", { stages: ["s_0", "s_1"], expect_rev: 2 }, admit);
+    assert.ok(grouped !== undefined, "the group write lands — its members are what the door judges");
+    assert.deepEqual(seen.map((r) => r.card).sort(), ["sfx", "tts"],
+      "each MEMBER crossed the door, and the literal 'group' never did");
+  });
+
+  test("LOADING a bench that already holds a group row judges its MEMBERS (the load path, not the group write)", async () => {
+    // The arm above drives groupBench's OWN dispatch (the group
+    // write). The bench's LOAD path — ensureBench reading a stored
+    // doc that already carries a compound — walks a DIFFERENT
+    // member-dispatch (admitStages), and the audit found BOTH were
+    // unpinned. This arm is the load half: a doc seeded with a group
+    // row, read back through the door that must judge members.
+    const drafts = await boot();
+    await seed(drafts, "grp-load", {
+      draft_id: "bench-grp-load",
+      intent: "restored compound",
+      stages: [
+        { id: "g_0", card: "group", children: [
+          { id: "s_0", card: "tts", params: { text: "a" } },
+          { id: "s_1", card: "sfx", params: { text: "b" } },
+        ] },
+      ],
+      status: "ready",
+      createdAt: 0,
+      completedAt: null,
+      bench: { rev: 1, log: [] },
+    });
+    const seen: Array<{ card: string; params: Record<string, unknown> }> = [];
+    const admit = memberJudge(seen);
+    // a patch on the stored compound forces the load path to judge it
+    await patchBench(drafts, "grp-load", { stage: "g_0", params: { note: "kept" }, expect_rev: 1 }, admit);
+    assert.ok(seen.length >= 2,
+      `the load judged the compound's MEMBERS (saw ${String(seen.length)} judgments) — ` +
+      "the literal 'group' is not a card and must never be asked about");
+    assert.ok(!seen.some((r) => r.card === "group"),
+      "the literal 'group' never reached the board on the load path either");
+  });
+
+  test("an UNDO that reinserts a group row judges its members (an undo bricked on the bench's own state)", async () => {
+    const drafts = await boot();
+    const seen: Array<{ card: string; params: Record<string, unknown> }> = [];
+    const admit = memberJudge(seen);
+    await ensureBench(drafts, { session: "grp-undo" });
+    await addStageBench(drafts, "grp-undo", { card: "tts", params: { text: "a" }, expect_rev: 0 }, admit);
+    await addStageBench(drafts, "grp-undo", { card: "sfx", params: { text: "b" }, expect_rev: 1 }, admit);
+    await groupBench(drafts, "grp-undo", { stages: ["s_0", "s_1"], expect_rev: 2 }, admit);
+    seen.length = 0;
+    // undo the grouping: the group row comes back and must be judged
+    // by its members, or the bench refuses its own prior state
+    await undoBench(drafts, "grp-undo", { n: 1 }, admit);
+    assert.ok(seen.length >= 2,
+      `the undo's group row was judged by its members (saw ${String(seen.length)} judgments) — ` +
+      "a whole-row judgment asks the board about the literal 'group' and bricks the undo");
+    assert.ok(!seen.some((r) => r.card === "group"),
+      "the literal 'group' never reached the board");
   });
 });

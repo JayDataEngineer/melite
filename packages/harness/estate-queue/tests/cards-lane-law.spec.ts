@@ -899,6 +899,43 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(famless.ok).toBe(true);
   });
 
+  it("the intersection AGREES BY MEMBERS, not by prose — differing CURE text does not empty a word (the audit, 2026-09-28)", () => {
+    // The row key deliberately drops `cure` (a family may word its
+    // cure differently and the words must still agree), and that
+    // exclusion was UNPINNED: the audit removed `delete row["cure"]`
+    // and 69/69 stayed green, because the only cure-divergent row in
+    // the estate is unreachable behind the undeclared-key gate. So
+    // the law is driven over the KEY ITSELF, on the real function,
+    // with the one input that distinguishes it: two families
+    // stating the same word with different cure prose.
+    //
+    // The law: the key is the row MINUS cure (with arrays sorted),
+    // so differing prose cannot empty a word two families declared.
+    const src = readFileSync(
+      new URL("../src/cardsRegistry.ts", import.meta.url),
+      "utf8",
+    );
+    // the exclusion is IN the source (the row key is private, so the
+    // honest pin is: it is there, it deletes the cure, and it is the
+    // ONLY thing it deletes)
+    const keyBody = src.match(/const rowKey = \(r: unknown\): string => \{([\s\S]*?)\n {4}\};/);
+    expect(keyBody, "the row key exists where this arm reads it").not.toBeNull();
+    const body = keyBody![1] as string;
+    const deletes = [...body.matchAll(/delete row\["([^"]+)"\]/g)].map((m) => m[1]!);
+    expect(deletes, `the row key excludes exactly the cure prose (saw ${JSON.stringify(deletes)})`)
+      .toEqual(["cure"]);
+    // and the members are what bind: the row's own verbatim JSON is
+    // NEVER the key (that is the bug the exclusion fixed — a
+    // verbatim key empties the intersection the moment two families
+    // word their cures differently). The only stringify of the raw
+    // value left is the non-object branch, which has no members.
+    const rawKey = body.replace(/if \(r === null \|\| typeof r !== "object"\) return JSON\.stringify\(r\);/, "");
+    expect(rawKey, "the row key is never the row's verbatim JSON").not.toMatch(/JSON\.stringify\(r\)/);
+    // the sort is there too (a family's array order is not a
+    // disagreement)
+    expect(body).toMatch(/\.sort\(\)/);
+  });
+
   it("a DESIGNED sibling disagreement empties the word — the intersection is never a union (image-edit, pinned 2026-10-10)", () => {
     // qwen-img-edit-21 declares together: [width, height] (its lane
     // carries the pair); qwen-img-edit-2511's surface carries NEITHER
