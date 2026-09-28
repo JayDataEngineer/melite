@@ -360,5 +360,54 @@ describe("THE MULTI-TARGET UNDO IS ATOMIC (the bench audit's gap 2)", () => {
     assert.equal(JSON.stringify(after.stages), beforeJson,
       "the bench is byte-identical after the refused undo — the first target did NOT land");
   });
-});
 
+describe("THE UNDOED BENCH IS WIRE-JUDGED WHOLE (the bench audit's gaps 4 + 5)", () => {
+  test("undo-patch refuses a restore that strands a spell the wire still feeds (the dead wire forward patch refuses)", async () => {
+    // 2026-10-10: the patch inverse judged models only, so restoring
+    // params that predate the "$image" spell while the wire stayed
+    // landed the dead wire through the repair door.
+    const drafts = await boot();
+    await seed(drafts, "stray", {
+      stages: [
+        { id: "s_0", card: "card-a", params: { image: "$image" }, inputs: { image: { stage: "s_1", output: "image" } } },
+        { id: "s_1", card: "card-b", params: {} },
+      ],
+      bench: {
+        rev: 1,
+        // the patch's inverse restores params from BEFORE the spell
+        // existed; the wire (not part of the patch) stays
+        log: [entry(1, "patch", "agent", { stage: "s_0", params_before: {}, params_added: ["image"] })],
+      },
+    });
+    const refused = await codeOf(undoBench(drafts, "stray", { n: 1, expect_rev: 1 }));
+    assert.match(String(refused), /dead-wire|bound by no/,
+      "the undo refuses the stranded spell: " + String(refused));
+    const after = getBench(drafts, "stray").stages as Array<{ params: Record<string, unknown> }>;
+    assert.equal(after[0]!.params["image"], "$image", "the refused undo left the row as it was");
+  });
+
+  test("undo-remove refuses to reinsert a row wired to a stage that is gone (a phantom the forward doors both refuse)", async () => {
+    // 2026-10-10: the remove inverse reinserted the row after judging
+    // its model only — so a reinsert that wired a missing stage
+    // landed the phantom the add/rewire/remove doors all refuse.
+    const drafts = await boot();
+    await seed(drafts, "phantom", {
+      stages: [{ id: "keep", card: "card-a", params: {} }],
+      bench: {
+        rev: 1,
+        log: [
+          entry(1, "remove_stage", "agent", {
+            stage: "gone",
+            row: { id: "gone", card: "card-b", params: { image: "$image" }, inputs: { image: { stage: "ghost", output: "image" } } },
+          }),
+        ],
+      },
+    });
+    const refused = await codeOf(undoBench(drafts, "phantom", { n: 1, expect_rev: 1 }));
+    assert.match(String(refused), /wire-stage-not-found|no such stage/,
+      "the undo refuses the phantom: " + String(refused));
+    assert.equal((getBench(drafts, "phantom").stages as unknown[]).length, 1,
+      "nothing reinserted");
+  });
+});
+});

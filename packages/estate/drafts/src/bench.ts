@@ -87,6 +87,13 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
       readonly input: string;
       readonly live: readonly string[];
     };
+    /** A WIRED MEMBER CANNOT BE GROUPED (2026-10-10, the bench
+     *  audit's gap 6): the run's wiring walk reads the flat stage
+     *  list, so a member's wire dies the moment it is parked. */
+    "bench/grouped-row-wired": {
+      readonly session: string;
+      readonly stage: string;
+    };
     /** A wiring channel no param spells ($channel) — the wiring
      *  feeds nothing and the run would silently ignore it. */
     "bench/dead-wire": {
@@ -1049,6 +1056,13 @@ function admitWiringList(stages: Array<Record<string, unknown>>, session: string
     .map((r: Record<string, unknown>): string => String(r["id"] ?? ""));
   for (const r of stages) {
     if (!isRecord(r)) continue;
+    // THE COMPOUND'S OWN WIRES ARE JUDGED (the bench audit's gap 7,
+    // 2026-10-10): a compound row's inputs are {} by shape, so this
+    // walk passed over it vacuously — a wire hidden INSIDE a group
+    // survived a remove of the stage it pointed at, and ungroup then
+    // spilled the phantom onto the flat bench with nothing left to
+    // catch it. The walk descends: the compound is judged, and so is
+    // every child, against the same live set.
     admitWiring(
       r,
       isRecord(r["params"]) ? (r["params"] as Record<string, unknown>) : {},
@@ -1057,6 +1071,19 @@ function admitWiringList(stages: Array<Record<string, unknown>>, session: string
       String(r["id"] ?? ""),
       session,
     );
+    if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
+      for (const child of r["children"] as unknown[]) {
+        if (!isRecord(child)) continue;
+        admitWiring(
+          child,
+          isRecord(child["params"]) ? (child["params"] as Record<string, unknown>) : {},
+          isRecord(child["inputs"]) ? (child["inputs"] as Record<string, unknown>) : {},
+          liveIds,
+          String(child["id"] ?? ""),
+          session,
+        );
+      }
+    }
   }
 }
 
@@ -1314,6 +1341,43 @@ export async function groupBench(
       ? (row["params"] as Record<string, unknown>)
       : {});
   }
+  // A WIRED ROW CANNOT BE GROUPED (the bench audit's gap 6, 2026-10-10
+  // — the direction the first cut of this gate still missed): the
+  // run's wiring walk (benchWiring in the runs registry) reads the
+  // FLAT stage list only, so a member's wire dies the moment the
+  // member leaves it — whether it pointed at another member or at a
+  // bystander. Parking it is a silent run-time starvation, so the
+  // door refuses and names the cure (ungroup first, or drop the wire).
+  for (const row of picked) {
+    const ins = row["inputs"];
+    if (isRecord(ins) && Object.keys(ins).length > 0) {
+      throw new RemoteError(
+        "bench/grouped-row-wired",
+        "stage " + String(row["id"]) + " carries a wire (" + Object.keys(ins).join(", ") +
+          ") — grouping hides it from the run, which wires only the flat bench; ungroup it first, or drop the wire",
+        { session, stage: String(row["id"]) },
+      );
+    }
+  }
+  // THE SURVIVORS RE-JUDGED, AND THE WIRES TOO (the bench audit's
+  // gap 6, 2026-10-10): a group moves rows OFF the flat bench, so a
+  // wire another member carried now points at a stage that is no
+  // longer addressable — a state remove_stage refuses and rewire
+  // refuses to create. Grouping admitted it silently, because this
+  // arm only judged the picked rows' models. The post-move bench is
+  // judged as a whole, on a copy, before the splice lands (the
+  // survivor law remove established, now applied to the other door
+  // that moves rows).
+  const afterGroup: Record<string, unknown>[] = stages.filter(
+    (r: Record<string, unknown>): boolean => !picked.includes(r),
+  );
+  const compoundProbe: Record<string, unknown> = {
+    id: "g_probe",
+    card: GROUP_CARD,
+    children: picked,
+  };
+  afterGroup.splice(Math.min(firstIndex, afterGroup.length), 0, compoundProbe);
+  admitWiringList(afterGroup, session);
   for (const row of picked) {
     // picked rows ARE stages members (built from the walk above) —
     // splice by identity, no guard.
@@ -1387,6 +1451,16 @@ export async function ungroupBench(
       ? (row["params"] as Record<string, unknown>)
       : {});
   }
+  // THE SPILLED BENCH IS JUDGED AS A WHOLE (the bench audit's gap 6,
+  // 2026-10-10): a child that carried a wire to a stage the
+  // compound hid — or a wire to a member that the group removed from
+  // the flat bench — comes back as a PHANTOM, a state add, rewire and
+  // remove all refuse. Judged on a copy, before the splice.
+  const afterSpill: Record<string, unknown>[] = stages.filter(
+    (r: Record<string, unknown>): boolean => r !== compound,
+  );
+  afterSpill.splice(Math.min(idx, afterSpill.length), 0, ...rows);
+  admitWiringList(afterSpill, session);
   stages.splice(idx, 1);
   stages.splice(Math.min(idx, stages.length), 0, ...rows);
   loaded.doc["stages"] = stages;
@@ -1624,6 +1698,15 @@ export async function undoBench(
   // whole or not at all).
   const undoDoc = structuredClone(loaded.doc);
   for (const e of targets) applyInverse(undoDoc, e, admit, session);
+  // THE UNDOED BENCH IS WIRE-JUDGED WHOLE (the bench audit's gaps 4
+  // + 5, 2026-10-10): every restore arm above judged MODELS only, so
+  // the wiring half of a write was undo's blind spot: an undo-patch
+  // restored params that stranded a spell the wire still fed (a dead
+  // wire the forward patch refuses), and undo-remove/group/ungroup/
+  // snapshot reinserted rows that wired a stage no longer on the
+  // bench. One walk over the RESULT covers every arm at once — the
+  // survivor law remove established, applied to the repair door.
+  admitWiringList(stagesOf(undoDoc), session);
   loaded.doc = undoDoc;
   const undone: number[] = targets
     .map((e: BenchEntry): number => e.rev)

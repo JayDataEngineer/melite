@@ -1129,17 +1129,23 @@ describe("the bench verbs' rows over the remote", () => {
     rev = (await svc.addStage("fan", { card: "card-b", expect_rev: rev }, sig)).rev;
     rev = (await svc.patch("fan", { stage: "s_0", params: { steps: 4 }, expect_rev: rev }, sig)).rev;
     rev = (await svc.patch("fan", { stage: "s_1", params: { image1: "$image" }, expect_rev: rev }, sig)).rev;
-    rev = (await svc.rewire(
-      "fan",
-      { stage: "s_1", input: "image", from: { stage: "s_0", output: "image" }, expect_rev: rev },
-      sig,
-    )).rev;
     const moved = await svc.remoteExportReorder("fan", { stage: "s_1", to: 0, expect_rev: rev }, sig);
     assert.deepEqual([moved.from, moved.to], [1, 0]);
     rev = moved.rev;
     const grouped = await svc.remoteExportGroup("fan", { stages: ["s_1", "s_0"], expect_rev: rev }, sig);
     rev = grouped.rev;
     rev = (await svc.remoteExportUngroup("fan", { stage: grouped.stage, expect_rev: rev }, sig)).rev;
+    // THE WIRE LANDS AFTER THE SPILL (2026-10-10, the bench audit's
+    // gap 6): the run's wiring walk reads the FLAT stages only, so a
+    // wire naming a grouped child feeds nothing — group and ungroup
+    // now judge the whole bench they leave behind and refuse the
+    // phantom. The fan-out bench therefore wires after the spill,
+    // which is the order the law allows (same verbs, same count).
+    rev = (await svc.rewire(
+      "fan",
+      { stage: "s_1", input: "image", from: { stage: "s_0", output: "image" }, expect_rev: rev },
+      sig,
+    )).rev;
     // UNWIRE BEFORE REMOVE (2026-10-10, the write-seat audit's row
     // 5): removing s_0 would orphan s_1's wire — a state the rewire
     // door refuses to create — so the removal refuses it too. The

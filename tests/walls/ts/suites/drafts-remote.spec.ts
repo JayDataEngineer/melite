@@ -581,26 +581,38 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
     sig,
   );
   assert.equal(reordered.rev, 4);
+  // THE WIRE COMES OFF BEFORE THE GROUP (2026-10-10, the bench
+  // audit's gap 6): the run's wiring walk reads the flat stage list,
+  // so a member's wire dies when it is parked — group now refuses a
+  // wired member instead of hiding the wire. The honest order: clear
+  // the wire, group, ungroup, then re-wire (one more verb rides the
+  // delegation count).
+  const unwired = await ctx.benchRemote.remoteExportRewire(
+    "s1",
+    { stage: "b", input: "image", expect_rev: 4 },
+    sig,
+  );
+  assert.equal(unwired.rev, 5);
   const grouped = await ctx.benchRemote.remoteExportGroup(
     "s1",
-    { stages: ["a", "b"], expect_rev: 4 },
+    { stages: ["a", "b"], expect_rev: 5 },
     sig,
   );
-  assert.equal(grouped.rev, 5);
+  assert.equal(grouped.rev, 6);
   const ungrouped = await ctx.benchRemote.remoteExportUngroup(
     "s1",
-    { stage: grouped.stage, expect_rev: 5 },
+    { stage: grouped.stage, expect_rev: 6 },
     sig,
   );
-  assert.equal(ungrouped.rev, 6);
+  assert.equal(ungrouped.rev, 7);
   const removed = await ctx.benchRemote.remoteExportRemoveStage(
     "s1",
-    { stage: "c", expect_rev: 6 },
+    { stage: "c", expect_rev: 7 },
     sig,
   );
-  assert.equal(removed.rev, 7);
+  assert.equal(removed.rev, 8);
   const undone = await ctx.benchRemote.remoteExportUndo("s1", { n: 1 }, sig);
-  assert.deepEqual(undone.undone, [7]);
+  assert.deepEqual(undone.undone, [8]);
   // drafts/patch through the wire: per-key params merge on the bench
   // draft's stage (already carrying {x: 1} from the bench patch).
   const dpatched = await ctx.draftsRemote.remoteExportPatch(

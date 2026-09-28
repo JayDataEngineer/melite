@@ -1,6 +1,6 @@
 import { test, describe } from "vitest";
 import assert from "node:assert/strict";
-import { ensureBench, getBench, patchBench, addStageBench, undoBench, groupBench, ungroupBench, removeStageBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, undoBench, groupBench, ungroupBench, removeStageBench, rewireBench } from "../src/bench.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { boot, codeOf, seed } from "./bench-helpers.ts";
 
@@ -355,6 +355,7 @@ describe("the RESTORE arm judges the stored (stripped) row", () => {
         "no restored row was judged in the unstripped view");
     }
   });
+});
 
 describe("the compound row is judged by its members (the bench audit's gap 9)", () => {
   test("a grouped bench loads back: the read-back is unloadable no more", async () => {
@@ -383,4 +384,62 @@ describe("the compound row is judged by its members (the bench audit's gap 9)", 
       "the grouped bench loads back (was: no registered card definition) — " + String(reloaded));
   });
 });
+
+describe("THE WIRING HALVES (the bench audit's gaps 6 + 7)", () => {
+  test("group refuses a WIRED member (the run wires only the flat bench — parking a wire starves it)", async () => {
+    // 2026-10-10: group judged the picked rows' models only, so a
+    // member carrying a wire was parked where the run cannot see it
+    // (benchWiring reads the flat stages), and the bench held a wire
+    // that fed nothing.
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "wire-grp" });
+    await addStageBench(drafts, "wire-grp", { card: "card-a", expect_rev: 0 });
+    await addStageBench(drafts, "wire-grp", { card: "card-b", expect_rev: 1 });
+    await patchBench(drafts, "wire-grp", { stage: "s_1", params: { image: "$image" }, expect_rev: 2 });
+    await rewireBench(drafts, "wire-grp", {
+      stage: "s_1", input: "image", from: { stage: "s_0", output: "image" }, expect_rev: 3,
+    });
+    await addStageBench(drafts, "wire-grp", { card: "card-c", expect_rev: 4 });
+    const refused = await codeOf(groupBench(drafts, "wire-grp", { stages: ["s_1", "s_2"], expect_rev: 5 }));
+    assert.match(String(refused), /grouped-row-wired/,
+      "group refuses the wired member: " + String(refused));
+    // the honest order lands: clear the wire, group, ungroup, re-wire
+    await rewireBench(drafts, "wire-grp", { stage: "s_1", input: "image", expect_rev: 5 });
+    const grouped = await groupBench(drafts, "wire-grp", { stages: ["s_1", "s_2"], expect_rev: 6 });
+    const spilled = await ungroupBench(drafts, "wire-grp", { stage: grouped.stage, expect_rev: 7 });
+    assert.ok(spilled.rev >= 8, "the honest sequence lands");
+  });
+
+  test("remove judges the wires hidden INSIDE a compound (a phantom cannot ride out of a group)", async () => {
+    // 2026-10-10: a compound row's own inputs are {} by shape, so
+    // remove's survivor walk passed over it — a wire parked inside a
+    // group (by the doors' own past, or by a doc written before the
+    // group law) survived the removal of the stage it pointed at, and
+    // ungroup then spilled the phantom onto the flat bench. The doc
+    // here is seeded in that shape: the walk must descend.
+    const drafts = await boot();
+    await seed(drafts, "hidden", {
+      stages: [
+        { id: "s_0", card: "card-a", params: {} },
+        {
+          id: "g_r0c2_1",
+          card: "group",
+          children: [
+            { id: "s_1", card: "card-b", params: { image: "$image" }, inputs: { image: { stage: "s_0", output: "image" } } },
+            { id: "s_2", card: "card-c", params: {} },
+          ],
+        },
+      ],
+    });
+    // removing s_0 strands the compound's hidden wire — the walk
+    // descends, so the removal refuses and the bench is unchanged
+    const refused = await codeOf(removeStageBench(drafts, "hidden", { stage: "s_0", expect_rev: 0 }));
+    assert.match(String(refused), /wire-stage-not-found|no such stage/,
+      "remove judges the hidden wire: " + String(refused));
+    assert.equal((getBench(drafts, "hidden").stages as unknown[]).length, 2,
+      "the refused removal changed nothing");
+    // and a bystander removal of a stage nothing wires to still lands
+    const ok = await codeOf(removeStageBench(drafts, "hidden", { stage: "s_2", expect_rev: 0 }));
+    assert.ok(String(ok).length > 0);
+  });
 });
