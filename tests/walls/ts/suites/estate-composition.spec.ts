@@ -33,6 +33,8 @@ import {
 import estateBundle from "../../../../packages/web/melite-estate/src/index.ts";
 import type { DiscloseDirectoryService } from "../../../../packages/harness/estate-queue/src/index.ts";
 import type { ManageGatewayService } from "../../../../packages/harness/estate-queue/src/manageRegistry.ts";
+import { registryFlowNames } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 let ctx: Context;
 
@@ -89,19 +91,39 @@ describe("the estate bundle composes", () => {
     ]);
   }, 30000);
 
-  it("the disclose plane answers through the bundle (cards + flows ride)", async () => {
+  it("the disclose plane answers through the bundle (cards + flows ride — EXACT, derived)", async () => {
+    // B-C5 (the wall audit): `>= 11` while the registry held 13, and
+    // `cards.length >= 1`, were floors over an SSOT that already
+    // existed — registryFlowNames() and the card registry. Exact
+    // two-way equality now: the bundle's disclose plane serves
+    // EXACTLY the registered flows and cards, and the counts derive
+    // from the owning declarations, never from this file.
     const disclose = seat<DiscloseDirectoryService>("disclose");
     const all = disclose.discover("all", "", "");
-    assert.ok(Array.isArray(all.flows) && all.flows.length >= 11, "flows ride");
-    assert.ok(Array.isArray(all.cards) && all.cards.length >= 1, "cards ride");
+    assert.ok(Array.isArray(all.flows), "flows ride");
+    const servedFlows = (all.flows as Array<{ name?: string }>).map((f) => f.name ?? String(f)).sort();
+    const wantFlows = registryFlowNames();
+    assert.ok(wantFlows.length > 0, "census floor: the flow registry declares flows (the import rotted)");
+    assert.deepEqual(servedFlows, wantFlows,
+      "the disclose plane serves exactly the flow registry's names");
+    assert.ok(Array.isArray(all.cards), "cards ride");
+    const servedCards = (all.cards as Array<{ name?: string; id?: string }>).map((c) => c.name ?? c.id ?? String(c)).sort();
+    const wantCards = theService().cardIds();
+    assert.ok(wantCards.length > 0, "census floor: the card registry declares cards (the import rotted)");
+    assert.deepEqual(servedCards, wantCards,
+      "the disclose plane serves exactly the card registry's ids");
   }, 30000);
 
-  it("the drafts plane round-trips through the bundle (bench ensure/get)", async () => {
-    const bench = seat<{ ensure(doc: unknown, signal: AbortSignal): Promise<unknown>; get(session: string, signal: AbortSignal): Promise<{ rev: number }> }>("benchRemote");
+  it("the drafts plane round-trips through the bundle (bench ensure/get — the birth row, exactly)", async () => {
+    // B-C5: `typeof rev === "number"` accepted any rev on what is a
+    // FRESH bundle (mkdtemp) — the birth row's law is exact: rev 0
+    // (no writes happened), and the row exists after ensure.
+    const bench = seat<{ ensure(doc: unknown, signal: AbortSignal): Promise<unknown>; get(session: string, signal: AbortSignal): Promise<{ rev: number; created?: string }> }>("benchRemote");
     const sig = new AbortController().signal;
     await bench.ensure({ session: "main" }, sig);
     const row = await bench.get("main", sig);
-    assert.equal(typeof row.rev, "number");
+    assert.notEqual(row, undefined, "the bench row exists after ensure");
+    assert.equal(row.rev, 0, "a fresh bundle's birth bench carries rev 0 (ensure wrote nothing)");
   }, 30000);
 
   it("the manage plane answers through the bundle (status, no engine dialed)", async () => {

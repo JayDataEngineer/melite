@@ -30,7 +30,7 @@ import { RESTORE_STRIP_KEYS, normalizeBenchStage, stripKeys } from '@melite/cont
 // THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
 // draft-id-grammar wall fails if the three ever differ — a client must
 // never accept an id the server refuses)
-const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
+export const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/
 
 function benchSessionOf(id: string | undefined): string {
   return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'

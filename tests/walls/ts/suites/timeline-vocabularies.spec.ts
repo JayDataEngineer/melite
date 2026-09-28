@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { EDITOR_ONLY_SEGMENT_KEYS } from "../../../../packages/web-kit/contracts/src/timelineTypes.ts";
 import { CALL_KEYS, CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../../../packages/video/h3-timeline/src/timelineContract.ts";
+import { hydrateCalls, serializeCalls } from "../../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts";
 
 // THE TIMELINE'S THREE OWNERS, PINNED (the census's C5). The
 // editor's SegmentParams (web-kit/contracts/timelineTypes.ts), the
@@ -40,6 +41,11 @@ describe("the timeline's three vocabularies have no silent third", () => {
     // "operator order:" and are not defaults rows)
     const defaults = types.match(/DEFAULT_SEGMENT_PARAMS: SegmentParams = \{([\s\S]*?)\n\}/)?.[1] ?? "";
     const editorNames = [...defaults.matchAll(/^ +([a-z][A-Za-z0-9_]*)\s*:/gm)].map((m) => m[1]!);
+    // F-C1 (the wall audit): the defaults census needs its own floor —
+    // a rename of DEFAULT_SEGMENT_PARAMS rots the regex to editorNames
+    // = [] and the membership loop below then asserts NOTHING (zero
+    // green while the law is broken).
+    expect(editorNames.length, "the DEFAULT_SEGMENT_PARAMS census found no rows — the regex rotted").toBeGreaterThan(0);
     // THE ESCAPE HATCH IS PINNED TOO (the wall audit's M11): a key in
     // EDITOR_ONLY_SEGMENT_KEYS that SegmentParams does not declare
     // would excuse a typo forever — accepted by the classifier, never
@@ -102,12 +108,32 @@ describe("the timeline's three vocabularies have no silent third", () => {
   });
 
   it("the studio drops an unknown knob LOUDLY (never silently)", () => {
-    const src = readFileSync(
-      new URL("../../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts", import.meta.url),
-      "utf8",
-    );
-    expect(src).toMatch(/dropping unknown call knob/);
-    // and the drop is guarded by the SAME vocabulary the card uses
-    expect(src).toContain("CALL_KNOB_KEYS.has(k)");
+    // F-C2 (the wall audit): this arm was substring-matched once —
+    // both regexes survived in comments while the drop broke. The
+    // pin is BEHAVIOURAL now: feed a foreign knob through the real
+    // hydration, spy the warn, and assert the knob never reaches the
+    // serialized doc while a declared knob rides through.
+    const warned: string[] = [];
+    const origWarn = console.warn;
+    console.warn = (...a: unknown[]) => { warned.push(a.join(" ")); };
+    let hydrated: ReturnType<typeof hydrateCalls>;
+    try {
+      hydrated = hydrateCalls({
+        calls: [
+          {
+            start_frame: 0, end_frame: 45,
+            text: "a shot",
+            knobs: { steps: 8, bogus_knob_zz: 5 },
+          },
+        ],
+      });
+    } finally {
+      console.warn = origWarn;
+    }
+    expect(warned.some((w) => w.includes('dropping unknown call knob "bogus_knob_zz"')), `the foreign knob warns: ${JSON.stringify(warned)}`).toBe(true);
+    const wire = serializeCalls(hydrated);
+    const knobs = (wire[0] as unknown as { knobs?: Record<string, unknown> }).knobs ?? {};
+    expect(knobs["bogus_knob_zz"], "the foreign knob never reaches the wire").toBeUndefined();
+    expect(knobs["steps"], "the declared knob rides through").toBe(8);
   });
 });

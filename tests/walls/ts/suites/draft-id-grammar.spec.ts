@@ -2,6 +2,16 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { DRAFT_ID_RE as OWNER } from "../../../../packages/estate/drafts/src/spec.ts";
 import { DRAFT_ID_RE as MIRROR } from "../../../../packages/harness/estate-queue/src/runsGates.ts";
+// THE SESSION RULE ITSELF (the wall audit's B-C1/B-C2, 2026-09-28):
+// the session describe's behavioural half used to drive OWNER/MIRROR
+// — the DRAFT regexes — while naming itself the session wall: the
+// session rule was unexported, so the wall sampled a neighbour and
+// proved nothing. The owner exports SESSION_RE now; the wall drives
+// the real rule. The two CLIENT mirrors are pinned by SOURCE TEXT
+// (they are browser modules — importing the cards tab here drags the
+// gateway client, which wants window — so their equality arm reads
+// the code, comments stripped, and compares the extracted source).
+import { SESSION_RE as SERVER_SESSION } from "../../../../packages/estate/drafts/src/bench.ts";
 
 // THE MIRRORED-GRAMMAR LAW (2026-10-10, the census's H13): a draft
 // id is admitted by two doors with two grammars — the drafts
@@ -45,38 +55,55 @@ describe("the draft-id grammar has one rule", () => {
 // rule in three places, so it is pinned.
 describe("the bench session grammar has one rule", () => {
   it("the server's and both clients' patterns are character-for-character equal", () => {
-    const server = readFileSync(
-      new URL("../../../../packages/estate/drafts/src/bench.ts", import.meta.url),
-      "utf8",
-    );
-    const clientA = readFileSync(
-      new URL("../../../../packages/web/melite-card-view/src/client/cards-resource.ts", import.meta.url),
-      "utf8",
-    );
-    const clientB = readFileSync(
-      new URL("../../../../packages/web/infer-gallery/src/client/bench-load.ts", import.meta.url),
-      "utf8",
-    );
-    // CODE ONLY, AND THE PATHS EXIST (the walls audit's M6,
-    // 2026-10-10): the three reads matched file TEXT, so a pattern
-    // living in a COMMENT kept this arm green, and a path typo made
-    // the read throw on a file that no longer carries the grammar.
-    // Comments are stripped before the match, and the behavioural
-    // half below drives the owner's own regex.
-    const pattern = /=\s*\/\^\[A-Za-z0-9_-\]\{1,64\}\$\//
-    for (const [name, src] of [["server", server], ["cards tab", clientA], ["gallery", clientB]] as const) {
+    // THE MIRRORS ARE PINNED BY SOURCE TEXT: both clients are
+    // browser modules (importing the cards tab here drags the
+    // gateway client, which wants window), so the wall reads their
+    // CODE — comments stripped, the pattern must be code, not a
+    // comment (the walls audit's M6) — and compares the extracted
+    // regex source to the imported owner's, character for character.
+    const mirrors: Array<[string, string]> = [
+      ["cards tab", "../../../../packages/web/melite-card-view/src/client/cards-resource.ts"],
+      ["gallery", "../../../../packages/web/infer-gallery/src/client/bench-load.ts"],
+    ];
+    for (const [name, path] of mirrors) {
+      const src = readFileSync(new URL(`${path}`, import.meta.url), "utf8");
       const code = src
         .replace(/\/\*[\s\S]*?\*\//g, " ")
         .split("\n")
         .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
         .join("\n");
-      expect(code, `the ${name}'s SESSION_RE is code, not a comment`).toMatch(pattern);
+      const m = code.match(/BENCH_SESSION_RE\s*=\s*\/(\^\[A-Za-z0-9_-\]\{1,64\}\$)\//);
+      expect(m, `${name}: BENCH_SESSION_RE is code, not a comment — and the spelling has not moved`).not.toBeNull();
+      expect(m?.[1], `${name}'s mirror must equal the server's, character for character`)
+        .toBe(SERVER_SESSION.source);
     }
-    // AND THE OWNER'S REGEX BEHAVES (the second half of the law: a
-    // grammar that accepts what the door refuses is the mirror bug)
-    expect(OWNER.test("session_1")).toBe(true);
-    expect(OWNER.test("bad/id")).toBe(false);
-    expect(MIRROR.test("session_1")).toBe(true);
-    expect(MIRROR.test("bad/id")).toBe(false);
+  });
+
+  it("the session rule itself behaves — absolute bounds, not self-comparison", () => {
+    // B-C2 (the wall audit): "expects OWNER.test(x).toBe(true)" over
+    // a regex the wall ALSO drives as the draft grammar was a
+    // self-licking pin — these bounds are ABSOLUTE, spelled from the
+    // documented law (same charset family as draft ids, 1..64, so
+    // "bench-" + session always clears the 96-char draft ceiling).
+    const re = SERVER_SESSION;
+    expect(re.test("a"), "admits a 1-char session").toBe(true);
+    expect(re.test("session_1"), "admits the ordinary shape").toBe(true);
+    expect(re.test("MAIN-2026_x"), "admits the full charset").toBe(true);
+    expect(re.test("x".repeat(64)), "admits exactly 64").toBe(true);
+    // refusals — the absolute floor
+    expect(re.test(""), "refuses empty").toBe(false);
+    expect(re.test(" "), "refuses whitespace").toBe(false);
+    expect(re.test("x".repeat(65)), "refuses 65 (the cap is 64)").toBe(false);
+    expect(re.test("x".repeat(200)), "refuses runaway length").toBe(false);
+    expect(re.test("bad/id"), "refuses path separators").toBe(false);
+    expect(re.test("bad id"), "refuses spaces").toBe(false);
+    expect(re.test("bad.id"), "refuses dots").toBe(false);
+    expect(re.test("café"), "refuses non-ASCII").toBe(false);
+    expect(re.test("ses-sión-🎬"), "refuses emoji").toBe(false);
+    // AND THE CEILING IS THE DOCUMENTED ONE: 64 keeps "bench-" + session
+    // under the draft grammar's 96 — the invariant the cap exists for,
+    // pinned against both real rules, both imported.
+    expect(OWNER.test("bench-" + "x".repeat(64)),
+      "a max-length session still clears the 96-char draft ceiling").toBe(true);
   });
 });

@@ -153,44 +153,96 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // like `conflicts` is not a column)
     const rowType = factsSrc.match(/export interface (?:ModelFactsRow|ModelFacts)\s*\{([\s\S]*?)\n\}/)?.[1] ?? "";
     const carried = [...rowType.matchAll(/^\s{2}([a-z_]+)\??:/gm)].map((m) => m[1]!);
+    // A-C2 (the wall audit): the census needs a FLOOR — an interface
+    // rename rots the regex to carried=[] and the loop asserts
+    // nothing. And the check must run BOTH ways: the `owned` hand
+    // list once padded 14 registry-DECL names (family/genre/form/
+    // label/…) the facts ROW never carried — dead weight that made
+    // the one-way check pass vacuously. owned is EXACTLY the
+    // ModelFacts reader census now; equality is set-equality.
+    expect(carried.length, "the ModelFacts row census found no members — the regex rotted (interface renamed?)").toBeGreaterThan(10);
+    const carriedSet = new Set(carried);
     const owned = new Set<string>([
-      "id", "card", "family", "genre", "form", "label", "description", "source",
-      "defaults", "engine", "outputs", "requires_by_family", "variants",
-      "variant_groups", "lane_inputs", "mods", "unavailable", "unoffered",
-      "has_agent", "has_inference", "has_rubric", "studio", "timeout_floor",
-      "requires", "accepts", "requires_by_family", "overlay",
+      // the identity + derivation columns
+      "id", "card", "defaults", "lane_inputs",
       // the lane declaration itself (the DECL surface + its laws) —
       // carried by the row and read by the registry seat
       "params", "relations",
       // the RANGE RULE's numeric domains — read by the registry seat
       // (judgeLaneBounds) and served by the spec door (laneContractOf)
       "bounds",
+      // the variant matrix + its UI groups + the delivery contract
+      "variants", "variant_groups", "outputs",
+      // optional declarations, present only where the owner declares
+      "accepts", "studio", "requires_by_family", "mods",
     ]);
-    for (const key of new Set(carried)) {
+    for (const key of carriedSet) {
       expect(owned.has(key), `the facts row carries '${key}', which no reader owns — a write-only column`).toBe(true);
     }
+    // the reverse equality: the row carries EXACTLY what readers own
+    // (owned ⊆ carried — a reader whose column was cut/renamed is a
+    // silent break on the read side)
+    expect([...owned].filter((k) => !carriedSet.has(k)),
+      "owned readers whose column the row no longer carries (renamed/cut)").toEqual([]);
+    expect(carried.length, "carried names a column twice — the census double-counts").toEqual(carriedSet.size);
   });
 
-  it("RULE 5 · no hand-typed list a declaration owns: cards board DECL ids", () => {
+  it("RULE 5 · no hand-typed list a declaration owns: cards board DECL ids", async () => {
     // image-gen's pattern is the law: BOARDED comes from the DECLs.
     // Any card that retypes a family id has the drift bug.
+    //
+    // A-C3 (the wall audit): only `const BOARDED` arrays were judged —
+    // every inline `boarded: [...]` literal rode exempt. BOTH
+    // spellings are judged now, per member:
+    //   1. a DECL `.id` reference passes (the derivation itself);
+    //   2. a string literal passes ONLY when the registry declares the
+    //      id live AND the file does not hold the DECL key (a card
+    //      that imports a DECL and still spells its id as a literal is
+    //      the exact retyping this rule exists to kill);
+    //   3. a card.ts carrying NEITHER spelling fails (the shape
+    //      changed — the census rotted).
+    await import("../../../helpers/boot-models.ts");
+    const { modelIds } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
+    const live = new Set(modelIds());
+    expect(live.size, "the registry census found no families — it did not boot").toBeGreaterThan(0);
     const offenders: string[] = [];
+    let judged = 0;
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
+      // the contracts package's card.ts is the WIRE TYPE module, not
+      // an engine card — it boards nothing by design
+      if (f === "packages/web-kit/contracts/src/card.ts") continue;
       const code = codeOf(read(f));
-      const m = code.match(/(?:export )?const BOARDED[^=]*=\s*\[([^\]]*)\]/);
-      if (m === null) continue;
-      const members = [...m[1]!.matchAll(/["']([a-z0-9-]+)["']/g)].map((x) => x[1]!);
-      // PER MEMBER, NOT PER ARRAY (the walls audit's M5: the old
-      // `/Decl\.id/` test ran against the WHOLE array text, so
-      // `[SomeDecl.id, "retyped-literal"]` passed — one honest member
-      // excused any number beside it). Each member is judged on its
-      // own: a member that is NOT a DECL's .id is the retyping.
-      for (const id of members) {
-        if (new RegExp(`\\b${id}\\.id\\b`).test(m[1]!)) continue;
-        offenders.push(`${f} — BOARDED retypes '${id}'; every member should be a DECL's .id`);
+      const arrays = [...code.matchAll(/(?:const BOARDED[^=]*=\s*|boarded:\s*)(\[[^\]]*\])/g)].map((m) => m[1]!);
+      if (arrays.length === 0) {
+        offenders.push(`${f} — neither a const BOARDED array nor an inline boarded: literal — the card shape changed`);
+        continue;
+      }
+      judged += 1;
+      // the file's own DECL keys (the derivations it holds): a file
+      // that imports a DECL and still spells a boarded id as a
+      // LITERAL is the exact retyping this rule kills — the DECL
+      // renames and the literal silently diverges.
+      const hasDeclKeys = /\b[A-Za-z0-9]+Decl\b/.test(code);
+      for (const arr of arrays) {
+        const members = [...arr.matchAll(/["']([a-z0-9-_]+)["']/g)].map((x) => x[1]!);
+        // PER MEMBER, NOT PER ARRAY (the walls audit's M5: the old
+        // `/Decl\.id/` test ran against the WHOLE array text, so
+        // `[SomeDecl.id, "retyped-literal"]` passed — one honest member
+        // excused any number beside it).
+        for (const id of members) {
+          if (new RegExp(`\\b${id}\\.id\\b`).test(arr)) continue; // the derivation rides beside
+          if (hasDeclKeys) {
+            offenders.push(`${f} — boards '${id}' as a literal while holding DECL keys — board the DECL's .id`);
+            continue;
+          }
+          if (!live.has(id)) {
+            offenders.push(`${f} — boards '${id}', which the registry does not declare (dead or typo'd id)`);
+          }
+        }
       }
     }
+    expect(judged, "no card.ts was judged — the census rotted").toBeGreaterThan(10);
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
@@ -256,20 +308,37 @@ describe("THE AUDIT-ADDED LAWS", () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
-  it("RULE 4c · every self-named family is in the contract's list", () => {
-    // a card whose id is also a family id must appear in
-    // SELF_NAMED_FAMILIES, or the self-naming strip erases a real
-    // boarding and the row silently becomes model-less
-    const list = SELF_NAMED_FAMILIES;
-    const facts = read("packages/engines/comfyui-card-kit/src/facts.ts");
-    // the derivation carries each row's own card; the families are the
-    // roster keys — a card id that is ALSO a family key is the case
-    const cardIds = new Set([...facts.matchAll(/card:\s*["']([a-z0-9_-]+)["']/g)].map((m) => m[1]!));
-    const families = new Set([...facts.matchAll(/modelId:\s*["']([a-z0-9_-]+)["']/g)].map((m) => m[1]!));
+  it("RULE 4c · every self-named family is in the contract's list", async () => {
+    // A-C1 (the wall audit): this rule once regexed facts.ts for
+    // `card: "…"` literals — a shape facts.ts does not carry — so
+    // BOTH censuses were [] and the loop asserted NOTHING (zero
+    // green). The derivation is LIVE now: the booted registry's own
+    // card ids and model ids, each with a floor, and the equality
+    // runs BOTH ways (a list entry that names no real card∩family is
+    // its own rot).
+    await import("../../../helpers/boot-models.ts");
+    const { loadCardDefs, theService } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+    const { modelIds } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
+    await loadCardDefs();
+    const cardIds = new Set(theService().cardIds());
+    const families = new Set(modelIds());
+    expect(cardIds.size, "the card census found no cards — the registry did not boot").toBeGreaterThan(0);
+    expect(families.size, "the family census found no families — the registry did not boot").toBeGreaterThan(0);
     const both = [...cardIds].filter((id) => families.has(id));
+    expect(both.length, "the card∩family set is empty — SELF_NAMED_FAMILIES names nothing real").toBeGreaterThan(0);
     for (const id of both) {
-      expect(list.has(id), `card '${id}' is also a family id and must be in SELF_NAMED_FAMILIES`).toBe(true);
+      expect(SELF_NAMED_FAMILIES.has(id), `card '${id}' is also a family id and must be in SELF_NAMED_FAMILIES`).toBe(true);
     }
+    // the reverse: every list entry IS a real card∩family id
+    for (const id of SELF_NAMED_FAMILIES) {
+      expect(
+        cardIds.has(id) && families.has(id),
+        `SELF_NAMED_FAMILIES names '${id}', which is not both a card id and a family id — the list rotted`,
+      ).toBe(true);
+    }
+    // set-equality, stated once, mechanically (no drift between the
+    // two loops above and the truth)
+    expect([...SELF_NAMED_FAMILIES].sort(), "SELF_NAMED_FAMILIES is exactly the card∩family set").toEqual([...both].sort());
   });
 
   it("RULE 9b · the blank law is the CONTRACT'S (no seat hand-rolls one)", () => {

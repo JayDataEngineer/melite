@@ -114,8 +114,13 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 }
 
 /** Session key gate: same charset family as draft ids, capped so
- * "bench-" + session always clears the 96-char draft ceiling. */
-const SESSION_RE: RegExp = /^[A-Za-z0-9_-]{1,64}$/;
+ * "bench-" + session always clears the 96-char draft ceiling.
+ * EXPORTED (the wall audit's B-C1, 2026-09-28): the draft-id-grammar
+ * wall drove the DRAFT regexes where it meant to drive this one —
+ * the rule was unreadable from the outside, so the wall sampled a
+ * neighbour. The export is the single derivation the clients' mirrors
+ * and the wall both pin against. */
+export const SESSION_RE: RegExp = /^[A-Za-z0-9_-]{1,64}$/;
 
 function benchIdOf(session: string): string {
   return "bench-" + session;

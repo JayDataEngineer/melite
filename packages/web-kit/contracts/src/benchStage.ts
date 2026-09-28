@@ -307,15 +307,24 @@ export function runIdOk(id: string): boolean {
 
 /**
  * THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
- * audit's R5). `anny` is the one: the card boards the `anny` family,
- * and its compose declares `requiresModel: false` (its weights ride
- * provisions, not a model choice). A row stating `model: 'anny'` is a
- * real boarding, not the era's family-less compose residue — so the
- * self-naming strip leaves it alone, the row is judged with its model
- * present, and the read-back shows what the operator wrote.
+ * audit's R5). `anny` is the original: the card boards the `anny`
+ * family, and its compose declares `requiresModel: false` (its
+ * weights ride provisions, not a model choice). A row stating
+ * `model: 'anny'` is a real boarding, not the era's family-less
+ * compose residue — so the self-naming strip leaves it alone, the row
+ * is judged with its model present, and the read-back shows what the
+ * operator wrote.
+ *
+ * `h3-timeline` joined 2026-09-28 (the closure gate's A-C1 fix): the
+ * film card's id collides with its own DEFAULT LANE id, and the
+ * h3_timeline tool writes `model: "h3-timeline"` on every explicit
+ * call — the strip was silently eating the operator's lane choice
+ * from both the judged view and the stored row (the one-spelling
+ * law: what the operator wrote is what is judged and read back).
  *
  * A new card whose id is also a family id must be ADDED here, and the
- * self-naming-strip wall fails when a card's own id is a family in the
- * facts file but is missing from this list.
+ * self-naming-strip wall (closure-gate RULE 4c, live-registry derived
+ * with floors and two-way equality) fails when a card's own id is a
+ * family but is missing from this list.
  */
-export const SELF_NAMED_FAMILIES: ReadonlySet<string> = new Set(["anny"]);
+export const SELF_NAMED_FAMILIES: ReadonlySet<string> = new Set(["anny", "h3-timeline"]);

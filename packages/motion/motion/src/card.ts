@@ -57,7 +57,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     id: 'motion',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'motion',
-    boarded: ['kimodo'],
+    // (A-C3, 2026-09-28: the literal was the drift class — a DECL
+    // rename silently diverged from the hand list. The spread is
+    // the derivation; closure-gate RULE 5 pins it.)
+    boarded: [...BOARDED],
     tags: ['motion', 'animate', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen

@@ -26,7 +26,16 @@ import {
   modelCatalogArm,
   resolveSpecKey,
 } from "../../../../packages/harness/melite-tools/src/discovery.ts";
-import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
+// THE ORACLE IS THE DECLARATION, NOT THE DOOR'S OWN SINGLETON (the
+// wall audit's B-C3, 2026-09-28): `want` used to come from
+// `theService().modCatalog(...)` — the same service the door serves
+// from — so a corrupt catalog made both sides wrong TOGETHER and the
+// equality stayed green. The family's own row declarations (the
+// source files) are the oracle now: the door is judged against what
+// the family DECLARED, through the service that composes it.
+import { KREA_ROWS } from "../../../../packages/models/krea-2/mods/loras.ts";
+import { ZIMAGE_CONTROLNET_ROWS } from "../../../../packages/models/z-image/mods/controlnet.ts";
 
 describe("the discovery door arms (live /v1 derivation)", () => {
   it("serves the krea-2 envelope with the family-owned lora options (LORA LAW)", async () => {
@@ -49,29 +58,35 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.equal((spec as { model: string }).model, "krea-2");
     assert.equal((spec as { engine: string }).engine, "comfyui");
     // THE LORA LAW: features.modifiers carries the lora pack whose
-    // options are EXACTLY modCatalog('loras','krea-2') — the family
-    // rows in packages/models/krea-2/mods/loras.ts, composed here.
+    // options are EXACTLY the family's DECLARED rows (B-C3: the
+    // oracle is KREA_ROWS — packages/models/krea-2/mods/loras.ts —
+    // not the service's own catalog, which would agree with the door
+    // even when both are wrong together).
     const modifiers = ((spec as { features: { modifiers: Record<string, unknown>[] } })
       .features.modifiers);
     const lora = modifiers.find((m) => m.kind === "lora");
     assert.notEqual(lora, undefined, "the lora modifier pack rides the spec");
-    const cat = theService().modCatalog("loras", "krea-2");
-    const want = cat.rows.map((r) => r.id).sort();
+    assert.ok(KREA_ROWS.length > 0, "krea-2 declares lora rows (census floor — the import rotted)");
+    const want = KREA_ROWS.map((r) => r.id).sort();
     const got = [...(lora!.options as Array<{ value: string }>)]
       .map((o) => o.value).sort();
-    assert.deepEqual(got, want, "lora option values == the family's modCatalog row ids");
-    // A declared default_strength rides the option defaults — and
-    // the arm REQUIRES one to exist (the walls audit's row 14,
-    // 2026-10-10: the old shape pinned it only `if` a row carried
-    // a strength, so emptying every strength made the arm a silent
-    // pass; a wall inside a conditional is a wall with no door).
-    const withStrength = cat.rows.find((r) => r.default_strength !== undefined);
-    assert.ok(withStrength !== undefined,
+    assert.deepEqual(got, want, "lora option values == the family's DECLARED row ids (KREA_ROWS)");
+    // EVERY declared default_strength rides its option — ALL rows,
+    // not one exemplar (B-C4: the plural law was pinned on a single
+    // .find() row, so eleven rows could silently drop their strength
+    // while the wall stayed green). And the arm REQUIRES at least one
+    // strength to exist (the walls audit's row 14, 2026-10-10: a
+    // wall inside a conditional is a wall with no door).
+    assert.ok(KREA_ROWS.some((r) => r.default_strength !== undefined),
       "krea-2's lora rows declare a default_strength (the wall requires the law to be there)");
-    const opt = (lora!.options as Array<{ value: string; defaults: { strength?: number } }>)
-      .find((o) => o.value === withStrength.id);
-    assert.equal(opt?.defaults.strength, withStrength.default_strength,
-      "the option defaults carry the family's declared strength");
+    for (const row of KREA_ROWS) {
+      const opt = (lora!.options as Array<{ value: string; defaults: { strength?: number } }>)
+        .find((o) => o.value === row.id)!;
+      assert.notEqual(opt, undefined, `${row.id} has an option (the declared rows all ride)`);
+      if (row.default_strength === undefined) continue;
+      assert.equal(opt?.defaults.strength, row.default_strength,
+        `${row.id}: the option defaults carry the family's declared strength`);
+    }
   });
 
   it("serves the live catalog section (models/families/cards/vocabulary)", async () => {
@@ -103,16 +118,21 @@ describe("the discovery door arms (live /v1 derivation)", () => {
     assert.equal(cn!.entry, "hybrid");
     assert.equal(cn!.option_key, "type");
     assert.equal(cn!.max_stack, 5);
-    const cat = theService().modCatalog("controlnet", "z-image");
-    const want = cat.rows.map((r) => r.id).sort();
+    // B-C3: the oracle is the DECLARATION (ZIMAGE_CONTROLNET_ROWS —
+    // packages/models/z-image/mods/controlnet.ts), not the service's
+    // own catalog; and the count derives from it too (the old `7`
+    // was a hand number beside the derivation).
+    assert.ok(ZIMAGE_CONTROLNET_ROWS.length > 0, "z-image declares controlnet rows (census floor — the import rotted)");
+    const want = ZIMAGE_CONTROLNET_ROWS.map((r) => r.id).sort();
     const options = cn!.options as Array<{
       value: string; label: string; tooltip: string; defaults: { strength?: number };
       model: string; preprocessor?: string;
     }>;
-    assert.deepEqual(options.map((o) => o.value).sort(), want, "option values == the union type ids");
-    assert.equal(options.length, 7);
-    for (const row of cat.rows) {
+    assert.deepEqual(options.map((o) => o.value).sort(), want, "option values == the DECLARED union rows (ZIMAGE_CONTROLNET_ROWS)");
+    assert.equal(options.length, ZIMAGE_CONTROLNET_ROWS.length, "option count == the declared rows");
+    for (const row of ZIMAGE_CONTROLNET_ROWS) {
       const opt = options.find((o) => o.value === row.id)!;
+      assert.notEqual(opt, undefined, `${row.id} has an option (the declared rows all ride)`);
       assert.equal(opt.model, row.filename, `${row.id} stamps the union file`);
       assert.equal(opt.preprocessor, row.preprocessor, `${row.id} stamps the upstream-map note`);
       assert.equal(opt.defaults.strength, row.default_strength, `${row.id} seeds its declared strength`);
