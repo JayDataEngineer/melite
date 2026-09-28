@@ -235,6 +235,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
         return resolved.replace(/^dsh-resource:\/\/cards\//, '')
       },
       guide: [{
+        id: 'cards-tab-guide',
         order: 50,
         title: (): string => 'Media Flow',
         description: (): string => 'The media flow — the shared bench and its runs.',

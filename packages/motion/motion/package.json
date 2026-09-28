@@ -16,11 +16,11 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-client-ui-renderer": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-tools": "0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
     "@melite/card-base": "workspace:*",
@@ -32,21 +32,21 @@
     "@melite/formats": "workspace:*",
     "@melite/models-kimodo": "workspace:*",
     "clsx": "*",
-    "react": "^18.3.1",
-    "react-dom": "^18.3.1",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "three": "*"
   },
   "devDependencies": {
+    "@testing-library/dom": "*",
     "@types/node": "^22.20.0",
-    "@types/react": "~18.3.1",
-    "@types/react-dom": "~18.3.1",
+    "@types/react": "~19.3.0",
+    "@types/react-dom": "~19.3.0",
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
-    "typescript": "~6.0.3",
-    "@testing-library/dom": "*"
+    "typescript": "~6.0.3"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web"
@@ -55,5 +55,8 @@
       "patch": "./cordis.patch.yml"
     }
   },
-  "sideEffects": true
+  "sideEffects": true,
+  "peerDependencies": {
+    "@deepseek-ai/dsh": ">=0.1.7-rc.2 <0.2.0"
+  }
 }

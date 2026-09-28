@@ -10,8 +10,8 @@
     "./mods/verbs": "./mods/verbs.ts"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*"
   },

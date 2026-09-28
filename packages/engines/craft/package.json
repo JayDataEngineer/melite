@@ -11,9 +11,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@melite/engine-contract": "workspace:*",
-    "@deepseek-ai/schemastery": "^3.18.2"
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/schemastery": "^3.18.4",
+    "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

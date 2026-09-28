@@ -48,7 +48,7 @@ export interface MotionRailProps {
   exportOpen: boolean
   setExportOpen: React.Dispatch<React.SetStateAction<boolean>>
   bgImage: string | null
-  bgInputRef: React.RefObject<HTMLInputElement>
+  bgInputRef: React.RefObject<HTMLInputElement | null>
   handleBgFile: (file: File | null) => void
   setBg: (url: string | null) => void
   bodySrc: string

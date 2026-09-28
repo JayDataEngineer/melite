@@ -97,15 +97,15 @@ describe("S4a — the real DSH client set is the estate's dependency", () => {
       `no live surface depends on the retired DSH client modules (got ${users.join(", ") || "none"} — a re-introduction must be argued in REAL_SET)`);
   });
 
-  it("every UI-bearing package declares the atoms at the 0.1.5-rc lockstep", () => {
+  it("every UI-bearing package declares the atoms at the 0.1.7-rc lockstep", () => {
     for (const host of ATOM_HOSTS) {
       const pkg = JSON.parse(readFileSync(join(host, "package.json"), "utf8"));
       const v = pkg.dependencies?.[ATOMS];
       assert.ok(
-        typeof v === "string" && (v.startsWith("0.1.5-rc.") || v.startsWith("^0.1.5-rc.")),
+        typeof v === "string" && (v.startsWith("0.1.7-rc.") || v.startsWith("^0.1.7-rc.")),
         // NO "*" — a star resolves to the dead 0.0.1-rc.1 line (proven
         // 2026-09-12: mask + timeline rode it until pinned). Lockstep only.
-        `${host} must depend on the atoms at the 0.1.5-rc lockstep line (got ${String(v)})`,
+        `${host} must depend on the atoms at the 0.1.7-rc lockstep line (got ${String(v)})`,
       );
       assert.ok(
         !pkg.dependencies?.["@deepseek-ai/dsh-client-runtime"],

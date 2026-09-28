@@ -39,7 +39,7 @@
  */
 import { createElement as h, useState } from 'react'
 import type { ReactElement } from 'react'
-import { Button, IconPlusOutline16, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconPlusOutlineRegular, Input, Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { SpecAtom } from './form.tsx'
 import { useSquareProvider } from './form.tsx'
@@ -463,7 +463,7 @@ export function ModifiersSection(props: ModifiersSectionProps): ReturnType<typeo
             onClick: (e: MouseEvent) => {
               setPickAt({ rect: (e.currentTarget as HTMLButtonElement).getBoundingClientRect() })
             },
-          }, h(IconPlusOutline16, { className: css.squareGlyph }))
+          }, h(IconPlusOutlineRegular, { className: css.squareGlyph }))
         : null,
     ),
     // THE KIND PICKER — the DSH Menu (every declared kind is

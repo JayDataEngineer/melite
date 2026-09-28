@@ -352,25 +352,20 @@ export class ComfyUIHostService extends Service {
  *  `cordis:` builtin). */
 export const comfyuiHostProvider: Plugin = {
   name: "engine-comfyui",
+  // THE 0.1.7 SETTINGS LAW (the pin bump, 2026-10-11): dsh-settings
+  // 0.1.7's SettingsForms derives every settings form from the
+  // ACTIVE plugin's own Config schema — the old `installSection`
+  // seam (a provider-side section install with setSource/onChange
+  // callbacks) died with it. Declaring Config here IS the
+  // registration: a profile-patch write to this entry re-applies
+  // the plugin (the loader's live config reload), and the fresh
+  // service at the new pin IS the repoint — no in-process section,
+  // no setSource plumbing. The service keeps setSource/repoint for
+  // in-process seats (the spec's repoint arms).
+  Config,
   apply(ctx: Context, config?: unknown): void {
     const entry: ComfyUIHostConfig = parseComfyUIHostConfig(config);
-    const svc: ComfyUIHostService = new ComfyUIHostService(ctx, entry);
-    // The DSH settings cookbook (adding-a-settings-card): the entry
-    // config layers under the user document as namespace 'comfyui';
-    // writes re-resolve the pin live via repoint (no restart). The
-    // inject defers until the settings provider exists and never
-    // fires without one — providerless compositions behave exactly
-    // as before (ctor entry governs).
-    ctx.inject(["settings"], (settingsCtx): void => {
-      settingsCtx.settings.installSection(ctx, "comfyui", Config, entry, {
-        setSource: (current: () => ComfyUIHostConfig): void => {
-          svc.setSource(current);
-        },
-        onChange: (): void => {
-          svc.repoint();
-        },
-      });
-    });
+    new ComfyUIHostService(ctx, entry);
   },
 };
 

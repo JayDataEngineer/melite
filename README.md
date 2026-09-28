@@ -60,7 +60,7 @@ configuration precedence.
 Boot the studio:
 
 ```sh
-dsh web --profile inference --port 3088
+dsh --profile inference --port 3088
 ```
 
 The port is a deployment choice. The test lane conventionally uses `3088`; do

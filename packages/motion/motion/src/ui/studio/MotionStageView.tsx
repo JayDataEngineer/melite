@@ -23,7 +23,7 @@ import s from "./component.module.css"
 import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog"
 
 export interface MotionStageViewProps {
-  stageBoxRef: React.RefObject<HTMLDivElement>
+  stageBoxRef: React.RefObject<HTMLDivElement | null>
   bgDragOver: boolean
   setBgDragOver: React.Dispatch<React.SetStateAction<boolean>>
   handleStageDrop: (e: React.DragEvent) => void

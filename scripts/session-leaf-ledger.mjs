@@ -39,22 +39,32 @@ const hits = existsSync(sessionsHome) ? readdirSafe(sessionsHome).filter((d) => 
 // the bare repo's dir is the shortest hit (no profile suffix)
 if (hits.length > 0) sessionsRoot = join(sessionsHome, hits.sort((a, b) => a.length - b.length)[0])
 
+// THE SESSION LOG GENERATIONS (the 0.1.7 bump, 2026-10-11): a
+// 0.1.5 host writes session.v3.jsonl.zstd; a 0.1.7 host writes
+// session.v4.jsonl.zstd (SESSION_FORMAT_VERSION = 4 — the
+// dsh-session-format filename law). The ledger reads BOTH, never
+// one: a v4-only lane silently reported "no session logs" and a
+// mixed root keyed every v4 result to '' (failures zero).
+const LOG_NAMES = ['session.v4.jsonl.zstd', 'session.v3.jsonl.zstd']
+const logIn = (dir) => LOG_NAMES.map((n) => join(dir, n)).find((p) => existsSync(p)) ?? ''
+
 const arg = (i) => process.argv[i + 2] ?? ''
 let target = arg(0)
 if (target === '' || target === '-') {
-  // newest session dir carrying a log
+  // newest session dir carrying a log (either generation)
   let best = null
   for (const d of existsSync(sessionsRoot) ? readdirSafe(sessionsRoot) : []) {
-    const log = join(sessionsRoot, d, 'session.v3.jsonl.zstd')
-    if (existsSync(log)) {
+    const log = logIn(join(sessionsRoot, d))
+    if (log !== '') {
       const m = statMtime(log)
       if (best === null || m > best.m) best = { log, m }
     }
   }
   if (best === null) { console.error('no session logs under ' + sessionsRoot); process.exit(1) }
   target = best.log
-} else if (!target.endsWith('.zstd') && existsSync(join(target, 'session.v3.jsonl.zstd'))) {
-  target = join(target, 'session.v3.jsonl.zstd')
+} else if (!target.endsWith('.zstd')) {
+  const log = logIn(target)
+  if (log !== '') target = log
 }
 if (!existsSync(target)) { console.error('log not found: ' + target); process.exit(1) }
 
@@ -75,8 +85,24 @@ for (const line of raw.split('\n')) {
   if (r?.['type'] === 'tool/call' && d && typeof d['name'] === 'string') {
     calls.set(d['callId'] ?? String(r['seq']), { seq: r['seq'] ?? 0, name: d['name'], args: d['arguments'] })
   } else if (r?.['type'] === 'tool/result' && d) {
-    const err = typeof d['isError'] === 'boolean' && d['isError'] ? String(d['content'] ?? '').slice(0, 120) : null
-    results.set(d['callId'] ?? '', err)
+    // V3 rides callId/isError at the data root; V4 nests the tool
+    // role under data.message (callId at message.source.callId —
+    // session invariant.ts:140, isError at message.isError). Read
+    // BOTH spellings; a v4 result on the v3 arm keyed '' and every
+    // failure reported as zero.
+    const msg = d['message']
+    const callId = typeof d['callId'] === 'string'
+      ? d['callId']
+      : (msg && typeof msg === 'object' && msg['source'] && typeof msg['source']['callId'] === 'string'
+          ? msg['source']['callId']
+          : '')
+    const isError = typeof d['isError'] === 'boolean'
+      ? d['isError']
+      : (msg && typeof msg === 'object' && msg['isError'] === true)
+    const content = msg && typeof msg === 'object' && typeof msg['content'] === 'string' && typeof d['content'] !== 'string'
+      ? msg['content']
+      : d['content']
+    results.set(callId, isError ? String(content ?? '').slice(0, 120) : null)
   }
 }
 

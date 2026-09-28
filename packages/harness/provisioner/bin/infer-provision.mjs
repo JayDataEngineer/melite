@@ -196,17 +196,20 @@ switch (cmd) {
       installDeps(renderProfile(name))
     }
     log('boot with:')
-    log('  dsh web --profile inference          # the studio GUI')
+    log('  dsh --profile inference              # the studio GUI')
     log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
     log('  dsh --profile estate                 # the SDK job server (estate row)')
-    log('  dsh web --profile melite-test        # the TEST lane (one process, no :33081)')
+    log('  dsh --profile melite-test            # the TEST lane (one process, no :33081)')
     break
   }
   case 'profile': {
     installDeps(renderProfile(PROFILE))
-    log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'inference' ? ' (or: dsh web --profile inference)' : ' "<task>"'))
+    log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'inference' ? '' : ' "<task>"'))
     break
   }
-  case 'preset': installPreset(); break
-  default: die('unknown command ' + JSON.stringify(cmd) + ' — use all | profile <name> | preset')
+  // the `preset` arm died with installPreset (undefined since the
+  // inference-studio retirement, ledger row 34) and 0.1.7 no longer
+  // reads ~/.dsh/.agent-presets — refuse LOUD instead of a
+  // ReferenceError
+  default: die('unknown command ' + JSON.stringify(cmd) + ' — use all | profile <name>')
 }

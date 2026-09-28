@@ -14,9 +14,9 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-tools": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-tools": "0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
@@ -29,5 +29,5 @@
     "typescript": "^5.9.3"
   },
   "name": "@melite/image-image-edit",
-  "description": "the image-edit card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the image-edit card (the image lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
 }

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the mask card (the image lane) \u2014 MASK as a simple form card with MODs as ways to get different kinds of masks (docs/design/mods-contracts.md)",
+  "description": "the mask card (the image lane) — MASK as a simple form card with MODs as ways to get different kinds of masks (docs/design/mods-contracts.md)",
   "main": "./src/card.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -14,8 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*"

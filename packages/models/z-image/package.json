@@ -11,7 +11,7 @@
     "./mods/ip_adapter": "./mods/ip_adapter.ts"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
+    "@deepseek-ai/cordis": "^4.0.4",
     "@melite/comfyui-cordis": "workspace:*"
   },
   "devDependencies": {

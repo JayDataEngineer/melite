@@ -211,10 +211,11 @@ async function mount(options: {
     if (name === "queue" && options.queue !== undefined) return { core: { snapshot: () => ({ active: options.queue?.active ?? "", queued_ids: options.queue?.queued_ids ?? [] }) } };
     return original(name, optional);
   }) as typeof ctx.get;
-  Object.defineProperty(ctx, "timeout", {
-    configurable: true,
-    value: async (fn: () => unknown): Promise<void> => { await fn(); },
-  });
+  // THE BACKOFF SEAM (li-bg): production moved off the dropped
+  // ctx.timeout onto SEAMS.readinessBackoff — the rig overrides the
+  // live holder so the retry arms stay instant, never 60s real.
+  const { SEAMS } = await import("../src/provisioning.ts");
+  SEAMS.readinessBackoff = async (): Promise<void> => {};
   const plugin: Plugin.Object = options.plugin ?? composition;
   plugin.apply(ctx, undefined);
   return { ctx, root, state, endpoint };

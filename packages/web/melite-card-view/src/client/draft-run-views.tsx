@@ -2,7 +2,7 @@
  * status view (extracted from CardsTab.tsx hour 15). */
 
 import { createElement as h, useEffect, useState } from 'react'
-import { Button, IconStopFill16, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconStopFillRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StageViewOwnerProps } from './types.ts'
 import css from './card.module.css'
 import { useCallback } from 'react'

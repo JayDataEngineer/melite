@@ -47,6 +47,25 @@ function stringValue(value: unknown): string {
   return typeof value === "string" ? value.trim() : "";
 }
 
+/** The readiness retry backoff (500ms, raced against the caller's
+ *  abort signal). cordis 4.0.4 dropped `ctx.timeout`, whose fiber-
+ *  scoped timer this replaces. Rides the exported SEAMS holder so
+ *  the coverage rig overrides the sleep by name (ESM export
+ *  bindings are frozen — an internal call can never be stubbed
+ *  through the namespace; a property on a live object can). */
+export const SEAMS: { readinessBackoff(signal?: AbortSignal): Promise<void> } = {
+  readinessBackoff(signal?: AbortSignal): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      const t = setTimeout(resolve, 500);
+      signal?.addEventListener(
+        "abort",
+        () => { clearTimeout(t); reject(new Error("readiness wait cancelled")); },
+        { once: true },
+      );
+    });
+  },
+};
+
 function endpointUrl(): string {
   return stringValue(loadEndpointConfig()["url"]);
 }
@@ -376,7 +395,7 @@ function lifecyclePort(ctx: Context): {
           await client.getJson("/system_stats", { signal });
           return;
         } catch {
-          await ctx.timeout(() => undefined, 500);
+          await SEAMS.readinessBackoff(signal);
         }
       }
       throw new Error("ComfyUI did not become ready after restart");

@@ -4,10 +4,10 @@
   "type": "module",
   "main": "./src/index.ts",
   "dependencies": {
+    "@melite/card-base": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "react": "^19.2.6",
-    "@melite/card-base": "workspace:*"
+    "react": "^19.3.0"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -38,9 +38,9 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "typescript": "~6.0.3",
     "@types/node": "^22.20.0",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.2"
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "typescript": "~6.0.3"
   }
 }

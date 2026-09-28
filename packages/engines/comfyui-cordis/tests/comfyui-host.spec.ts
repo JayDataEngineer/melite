@@ -34,28 +34,10 @@ vi.mock("../src/comfyui-control.ts", () => ({
 }));
 
 import { Context } from "@deepseek-ai/cordis";
-import { SettingsProvider } from "@deepseek-ai/dsh-settings";
-import type { SettingsUpdateSource } from "@deepseek-ai/dsh-settings";
-
-/** In-memory settings provider (the cookbook's load/persist half):
- *  lets the host's settings section bind in a node fiber without a
- *  document on disk. */
-class MemorySettings extends SettingsProvider {
-  readonly writable = true;
-  doc: Record<string, unknown> = {};
-  protected async load(): Promise<Record<string, unknown>> {
-    return this.doc;
-  }
-  protected async persist(): Promise<void> {}
-  /** Test driver for the protected push-external-changes seam
-   *  (subclasses may call publish; outsiders may not). */
-  push(doc: Record<string, unknown>, source: SettingsUpdateSource = "provider"): void {
-    this.publish(doc, source);
-  }
-}
 import {
   ComfyUIHostService,
   comfyuiHostProvider,
+  Config,
   needComfyUI,
   parseComfyUIHostConfig,
 } from "../src/comfyui-host.ts";
@@ -209,21 +191,29 @@ describe("the supervisor lifecycle (down, recovery, transport-dead traffic)", ()
   });
 });
 
-describe("the settings section (the cookbook bind)", () => {
-  it("a mounted settings provider takes over as the live source and onChange repoints", async () => {
+describe("the settings seat (the 0.1.7 law: Config IS the registration)", () => {
+  it("the provider declares its Config schema — SettingsForms derives the form from it", () => {
+    // dsh-settings 0.1.7 SettingsForms describes ACTIVE plugin
+    // configs; the plugin's own Config field is the whole seat. The
+    // old installSection seam (and MemorySettings fake over the
+    // deleted SettingsProvider) died with the bump.
+    const provider = comfyuiHostProvider as unknown as { Config?: unknown };
+    expect(provider.Config).toBe(Config);
+  });
+  it("a config write re-applies the plugin — the fresh service at the new pin IS the repoint", async () => {
+    // the loader's live config reload (a profile-patch write)
+    // disposes the old fiber and applies the entry again: the
+    // service rebuilds at the new pin, never mutates in place
     const ctx = new Context();
-    await ctx.plugin(MemorySettings);
     await ctx.plugin(comfyuiHostProvider, { url: "http://pin:8188" });
-    const host = ctx.get("comfyui") as unknown as ComfyUIHostService;
-    // registration called setSource + onChange once with the entry
-    // (same pin — the no-op arm); the section's scope now governs.
-    expect(host.baseUrl()).toBe("http://pin:8188");
-    // a section write through the provider's document repoints live
-    const prov = ctx.get("settings") as unknown as MemorySettings;
-    prov.doc = { comfyui: { url: "http://doc-written:8188" } };
-    prov.push(prov.doc, "provider");
-    host.repoint();
-    expect(host.baseUrl()).toBe("http://doc-written:8188");
+    const first = ctx.get("comfyui") as unknown as ComfyUIHostService;
+    expect(first.baseUrl()).toBe("http://pin:8188");
+    await ctx.fiber.dispose();
+    const ctx2 = new Context();
+    await ctx2.plugin(comfyuiHostProvider, { url: "http://doc-written:8188" });
+    const second = ctx2.get("comfyui") as unknown as ComfyUIHostService;
+    expect(second.baseUrl()).toBe("http://doc-written:8188");
+    await ctx2.fiber.dispose();
   });
 });
 

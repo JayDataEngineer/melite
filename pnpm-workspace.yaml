@@ -53,3 +53,13 @@ allowBuilds:
 ## action_cards/@melite/cards, six UI genre pkgs). Installed truth
 ## is single-react-19 for the whole editor graph (hoisted zustand
 ## default included); the 226-file editor suite is green.
+## THE SCHEMAMASTERY ONE-VERSION LAW (the 0.1.7 pin bump, 2026-10-11):
+## several 0.1.7 dsh packages nest schemastery 3.18.4 while the
+## workspace resolved 3.18.2 — a split that fractures Schema type
+## identity across package boundaries (the Volatile-conditional
+## SchemaOutput in 3.18.4's dts leaks into consumer programs through
+## dsh re-exports and reds every annotated house Schema literal).
+## ONE version for the whole graph: 3.18.4, the floor the 0.1.7 dsh
+## packages themselves resolved to.
+overrides:
+  "@deepseek-ai/schemastery": "3.18.4"

@@ -55,6 +55,7 @@ interface TabCtx {
       kind: string
       title(): string
       guide?: Array<{
+        id: string
         order: number
         title(): string
         description?(): string
@@ -93,6 +94,7 @@ export function apply(ctx: ClientContext): void {
       kind: 'media',
       title: (): string => 'Media',
       guide: [{
+        id: 'media-tab-guide',
         order: 51,
         title: (): string => 'Media',
         description: (): string => 'Every run\'s artifacts — the archive, with the lightbox, chips, search and the cards wand.',

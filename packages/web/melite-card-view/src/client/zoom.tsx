@@ -17,7 +17,7 @@
  */
 import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
-import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import css from './card.module.css'
 import { BenchStageView, CardsBenchValue } from './cards-resource.ts'
@@ -270,13 +270,13 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Stop run', 'data-testid': 'drill-stop',
                 onClick: () => { props.onStop() },
-              }, h(IconStopFill16, { size: 16 }), h('span', null, 'Stop'))
+              }, h(IconStopFillRegular, { size: 16 }), h('span', null, 'Stop'))
               : h('button', {
                 key: 'run',
                 className: css.drillRunBtn, type: 'button',
                 'aria-label': 'Run stage', 'data-testid': 'drill-run',
                 onClick: () => { (boundRef.current ?? props.onRun)() },
-              }, h(IconPlayOutline16, { size: 16 }), h('span', null, 'Run')),
+              }, h(IconPlayOutlineRegular, { size: 16 }), h('span', null, 'Run')),
             // THE CLOSE PILL (the operator's law: the ✕ rides the
             // SAME ghost-pill grammar as ✦ Enhance and Run — glyph +
             // word, one button row, no orphan icon seat).
@@ -303,7 +303,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
           ? h('div', { key: 'status', className: css.zoomWebhook, role: 'status', 'data-testid': 'zoom-status' },
             live
               ? h('span', { className: css.drillProgress, 'data-testid': 'drill-progress' },
-                h(IconLoadingOutline16, { size: 14 }),
+                h(IconLoadingOutlineRegular, { size: 14 }),
                 h('span', null, [
                   act !== '' ? act : 'running',
                   pct !== null ? ' · ' + String(pct) + '%' : '',

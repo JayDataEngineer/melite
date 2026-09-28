@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "REBUILD-1 (2026-09-10): the drafts domain as a DSH-native Typert Remote owner. Draft list/get over the host's storageDomain facility \u2014 no routes, no lanes, no second process. Follows references/deepseek-harness/docs/cookbook/adding-a-remote-api.md.",
+  "description": "REBUILD-1 (2026-09-10): the drafts domain as a DSH-native Typert Remote owner. Draft list/get over the host's storageDomain facility — no routes, no lanes, no second process. Follows references/deepseek-harness/docs/cookbook/adding-a-remote-api.md.",
   "main": "./lib/index.js",
   "files": [
     "lib/typert.host.js",
@@ -36,18 +36,18 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-storage": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-storage-domain": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-storage-json": "0.1.5-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-storage": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-storage-domain": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-storage-json": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-typert-protocol": "0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "zod": "4.5.4"
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-typert-generator": "0.1.5-rc.2",
+    "@deepseek-ai/dsh-typert-generator": "0.1.7-rc.2",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3"
   },

@@ -34,7 +34,7 @@
  * see index.ts) keep this package off sibling runtime imports.
  */
 import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTrashOutline16, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
 import { terminalStageErrorOf } from './run-rescue.ts'

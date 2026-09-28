@@ -13,7 +13,7 @@
  *  renderer can declare (motion's timeline, h3's call-card strip) —
  *  rides beside this renderer as an extra pane, never a fork. */
 import { createElement as h, useEffect, useRef, useState } from 'react'
-import { DisclosureRow, IconArchiveOutline20 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { DisclosureRow, IconArchiveOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { StageViewOwnerProps } from '@melite/contracts'
 import { SpecFieldRow } from './rows.tsx'
 import {
@@ -168,7 +168,7 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
           const isOpen = open[g] === true
           return h(DisclosureRow, {
             key: g,
-            icon: h(IconArchiveOutline20),
+            icon: h(IconArchiveOutlineRegular),
             title,
             open: isOpen,
             expandable: true,

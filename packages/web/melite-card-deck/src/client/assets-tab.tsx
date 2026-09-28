@@ -1400,6 +1400,7 @@ interface TabCtx {
       kind: string
       title(): string
       guide?: Array<{
+        id: string
         order: number
         title(): string
         description?(): string
@@ -1419,6 +1420,10 @@ function register(ctx: TabCtx, id: string, kind: string, title: string, guideOrd
     kind,
     title: () => title,
     guide: [{
+      // SidebarRightGuideEntry.id is required (0.1.7): stable
+      // identity within the provider; register() throws on dups and
+      // a single undefined passed that check silently
+      id: `${id}-guide`,
       order: guideOrder,
       title: () => title,
       description: () => guideDescription,

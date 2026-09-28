@@ -11,8 +11,8 @@
   "dependencies": {
     "@melite/contracts": "workspace:*",
     "lucide-react": "*",
-    "react": "*",
-    "react-dom": "*",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
     "wavesurfer.js": "*"
   }
 }

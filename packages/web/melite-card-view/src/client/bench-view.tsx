@@ -4,10 +4,10 @@
 
 import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Button, IconPlayOutline16, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Button, IconPlayOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { titleCaseId } from '@melite/card-base/spec'
 import css from './card.module.css'
-import { Input, IconLoadingOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
 import { patchStageParams } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
@@ -341,7 +341,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               disabled: running || live.stages.length === 0,
               title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
               onClick: onRun,
-            }, running ? h(IconLoadingOutline16, { size: 14 }) : h(IconPlayOutline16, { size: 14 }), ' Play'),
+            }, running ? h(IconLoadingOutlineRegular, { size: 14 }) : h(IconPlayOutlineRegular, { size: 14 }), ' Play'),
             saving
               ? h('span', { className: css.groupBar },
                   h(Input, { value: saveName, placeholder: 'flow name', onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),

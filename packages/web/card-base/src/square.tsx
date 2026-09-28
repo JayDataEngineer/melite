@@ -30,7 +30,7 @@
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
 import { mediaVocab } from '@melite/contracts/mediaKinds'
-import { IconPlusOutline16 } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { ASSET_DRAG_MIME, parseAssetDrop } from './chrome.ts'
 import { Upload } from './icons.tsx'
@@ -185,7 +185,7 @@ export function InputSquare(props: InputSquareProps): ReturnType<typeof h> {
           ? h('div', { className: css.squareMesh },
               h(GlbStagePreview, { assets: [{ id: 'square-mesh', url: mesh }], label: 'square-mesh' }))
           : props.emptyIcon === undefined
-            ? h(IconPlusOutline16, { className: css.squareGlyph })
+            ? h(IconPlusOutlineRegular, { className: css.squareGlyph })
             : h('span', { className: css.squareEmptyIcon }, props.emptyIcon),
       props.actions !== undefined && props.actions !== null && props.actions !== false && !disabled
         ? h('span', {

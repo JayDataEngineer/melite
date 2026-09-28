@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The comfyui engine's Cordis compose plane + models registry (merged 2026-09-08: the models plane folds in \u2014 one package, two services ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face \u2014 deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
+  "description": "The comfyui engine's Cordis compose plane + models registry (merged 2026-09-08: the models plane folds in — one package, two services ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face — deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -29,9 +29,9 @@
     "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.2",
-    "@deepseek-ai/dsh-settings": "0.1.5-rc.2",
-    "@deepseek-ai/schemastery": "*",
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-settings": "0.1.7-rc.2",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite-plugin/3d": "workspace:*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",
@@ -65,6 +65,7 @@
     "@melite/models-florence2": "workspace:*",
     "@melite/models-flux-fill-dev": "workspace:*",
     "@melite/models-gem_soma": "workspace:*",
+    "@melite/models-h3": "workspace:*",
     "@melite/models-input": "workspace:*",
     "@melite/models-joycaption": "workspace:*",
     "@melite/models-joytag": "workspace:*",
@@ -77,7 +78,6 @@
     "@melite/models-moss": "workspace:*",
     "@melite/models-moss-sfx": "workspace:*",
     "@melite/models-music3": "workspace:*",
-    "@melite/models-yue2": "workspace:*",
     "@melite/models-pixal3d": "workspace:*",
     "@melite/models-pixel_upscale": "workspace:*",
     "@melite/models-qwen-img-21": "workspace:*",
@@ -93,16 +93,16 @@
     "@melite/models-step1x_texture": "workspace:*",
     "@melite/models-stretchy-rig": "workspace:*",
     "@melite/models-transfer_rig": "workspace:*",
-    "@melite/models-trellis_native": "workspace:*",
     "@melite/models-trellis2-native": "workspace:*",
+    "@melite/models-trellis_native": "workspace:*",
     "@melite/models-wd14": "workspace:*",
+    "@melite/models-yue2": "workspace:*",
     "@melite/models-z-image": "workspace:*",
     "@melite/motion-motion": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
     "@stable-canvas/comfyui-client": "^1.5.9",
     "lucide-react": "*",
-    "react": "*",
-    "@melite/models-h3": "workspace:*"
+    "react": "^19.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

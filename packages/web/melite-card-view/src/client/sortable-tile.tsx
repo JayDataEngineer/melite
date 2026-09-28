@@ -3,7 +3,7 @@
  * hour 15). */
 
 import { createElement as h } from 'react'
-import { IconLoadingOutline16, IconPlayOutline16, IconStopFill16, IconTrashOutline16, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
+import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { titleCaseId } from '@melite/card-base/spec'
 import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
@@ -161,7 +161,7 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
           // (the operator's law — loading outlives the hover).
           rowRunning(row)
             ? h('span', { className: css.tileSpin, 'data-testid': 'tile-spin', role: 'status', 'aria-label': 'running' },
-                h(IconLoadingOutline16, { size: 14 }),
+                h(IconLoadingOutlineRegular, { size: 14 }),
                 // THE PROGRESS FACE (2026-09-13): the tap's percent
                 // rides beside the spinner — the operator's "forward
                 // the comfyui progress webhooks like before".
@@ -177,19 +177,19 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
             className: css.tileIconBtn + ' ' + css.tileTrash,
             type: 'button', 'aria-label': 'Remove stage', 'data-testid': 'tile-remove',
             onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRemove(row) },
-          }, h(IconTrashOutline16, { size: 14 })),
+          }, h(IconTrashOutlineRegular, { size: 14 })),
           grouping ? null : (rowRunning(row)
             ? h('button', {
                 className: css.tileIconBtn + ' ' + css.tileRunBtn,
                 type: 'button', 'aria-label': 'Stop run', 'data-testid': 'tile-stop',
                 disabled: activeRunId === null,
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onStop(row) },
-              }, h(IconStopFill16, { size: 14 }))
+              }, h(IconStopFillRegular, { size: 14 }))
             : h('button', {
                 className: css.tileIconBtn + ' ' + css.tileRunBtn,
                 type: 'button', 'aria-label': 'Run stage', 'data-testid': 'tile-run',
                 onClick: (e: React.MouseEvent) => { e.stopPropagation(); onRun(row) },
-              }, h(IconPlayOutline16, { size: 14 }))),
+              }, h(IconPlayOutlineRegular, { size: 14 }))),
         ),
         h('span', { className: css.tileCaption },
           h('span', { className: css.tileTitle }, row.title,

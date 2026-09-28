@@ -56,7 +56,9 @@ const TERMINAL = new Set(TERMINAL_RUN_STATUSES)
 export function runCardModel(props: ToolCallViewProps): RowModel {
   const { block } = props
   const settled = 'kind' in block
-  const argsRaw = (settled ? block.call?.argsRaw : block.argsRaw) ?? ''
+  // 0.1.7's PreparingToolCall carries no argsRaw (a head alone); only
+  // the dispatched StartedToolCall does — narrow by the field itself.
+  const argsRaw = (settled ? block.call?.argsRaw : 'argsRaw' in block ? block.argsRaw : undefined) ?? ''
   let prompt: string | null = null
   try {
     const parsed = JSON.parse(argsRaw) as Record<string, unknown>
