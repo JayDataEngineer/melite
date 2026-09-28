@@ -1,4 +1,5 @@
 import { parseSidecar } from "./queueSidecar.ts"
+import { mediaKindOf } from "./mediaKinds.ts"
 // runsRegistry.ts — the live-run registry as a HOST Cordis service
 // (REBUILD-6, gateway kill). Owns the rich run map + the serial
 // pump over the queue seat's QueueCore (one machine — the door's
@@ -140,7 +141,7 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 
 
 
-function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
+export function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
   const stages = Array.isArray(row['stages']) ? row['stages'] : []
   const artifacts = Array.isArray(row['artifacts'])
     ? row['artifacts'].filter((value): value is string => typeof value === 'string' && value !== '')
@@ -154,8 +155,15 @@ function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown> {
     const at = value.lastIndexOf(marker)
     return at >= 0 ? value.slice(at + marker.length) : value.replace(/^\/+/, '')
   }
+  // ONE VOCABULARY (the li-ay stroke): this private regex was the
+  // hero's ONLY media law — it carried avif|m4v|avi the contract's
+  // vocab did not, and DROPPED svg|bmp the vocab did carry, so a
+  // disk row whose lone artifact was an .svg got no hero and no
+  // gallery while an .avif was hero'd but unclassifiable. The
+  // classifier is the contract's mediaKindOf now, shared with the
+  // run list and the gallery client — the seats cannot disagree.
   const names = [...new Set(artifacts.map(relative))]
-    .filter((name) => /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mkv|avi|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(name))
+    .filter((name) => mediaKindOf(name) !== undefined)
   if (names.length === 0) return row
   const hero = engineFilmName(names) ?? names[0]!
   const current = stage as Record<string, unknown>

@@ -7097,9 +7097,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const rowCard = out["card"];
-			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
-				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
-			}
+			stripSelfNamedModel(rowCard, healed);
 			out["params"] = healed;
 			const outputs = out["outputs"];
 			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
@@ -7125,6 +7123,72 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Is this a run id? */
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
+		}
+		/** Sanitize one candidate id onto a legal bench session key —
+		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
+		* routing decision (the li-ay stroke, 2026-10-11): the decision
+		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+		* gallery client (bench-load.benchSessionOf), the cards tab
+		* (cards-resource.benchSessionKey), and TWICE inline in the agent
+		* tool — and the walls pinned each copy's grammar import while a
+		* gutted routing body ('main' for everything) stayed green behind
+		* the codec arms. The grammar moved to this floor for exactly this
+		* reason; the DECISION over it moves beside it, and every seat
+		* imports the same function. An address has one grammar and one
+		* sanitize — not four. */
+		function benchSessionOf(id) {
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** The run-relative tail of an absolute artifact path, or undefined
+		* when the path carries no run directory — e.g.
+		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+		* (the li-ay stroke): the restore stamp's private tailOf accepted
+		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+		* run-<hex>-<base62> and never look like that), so a path a run
+		* directory could not own still minted a served artifact address.
+		* One grammar for minting and one for taking the tail: the LAST
+		* run-shaped segment wins (the estate nests nothing under a run
+		* today; the last-wins order is the old behavior, kept). */
+		function runTailOf(path) {
+			const segments = path.split("/");
+			let found;
+			for (let i = 0; i < segments.length - 1; i++) {
+				if (segments[i + 1] === "") continue;
+				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+			}
+			return found;
+		}
+		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
+		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
+		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
+		*  to re-implement it, and both copies drifted from the contract:
+		*
+		*  - one copy guarded `card !== ""` and the other did not, so a row
+		*    with `card: ""` and `params: {model: ""}` kept its model under
+		*    the contract and lost it under the client;
+		*  - one copy compared the RAW `params.model` and the other the
+		*    HEALED one;
+		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
+		*    so it skipped the run-media path heal and the engine derivation
+		*    the single-card arm got.
+		*
+		*  All three were invisible: making both copies strip unconditionally
+		*  — the exact historical anny/h3-timeline defect — left
+		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
+		*  those walls pin the CONTRACT and the SET, and never drove the two
+		*  client use-sites.
+		*
+		*  One spelling now: every site asks this, which takes the row's card
+		*  and the params bag and strips in place. It is the contract's law,
+		*  stated once, with the `card !== ""` guard included. */
+		function stripSelfNamedModel(card, params) {
+			if (typeof card !== "string" || card === "") return;
+			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
+			const bag = params;
+			if (bag["model"] !== card) return;
+			if (SELF_NAMED_FAMILIES.has(card)) return;
+			delete bag["model"];
 		}
 		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
@@ -7922,20 +7986,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
-		/** Sanitize one candidate id onto a legal bench session key ('main'
-		*  for anything the bench would refuse — the estate's own SESSION_RE). */
-		function benchSessionKey(id) {
-			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
-		}
 		/** The bench address for one session key. */
 		function benchAddressOf(sessionKey) {
-			return CARDS_BENCH_ADDRESS + "/" + benchSessionKey(sessionKey);
+			return CARDS_BENCH_ADDRESS + "/" + benchSessionOf(sessionKey);
 		}
 		/** The session key a bench address carries (the bare legacy address
 		*  and every non-bench address resolve to 'main'). */
 		function benchSessionOfAddress(address) {
 			if (!address.startsWith("dsh-resource://cards/bench/")) return "main";
-			return benchSessionKey(address.slice(27));
+			return benchSessionOf(address.slice(27));
 		}
 		/** The draft-stage address — the conversation card's studio target
 		*  (the old embed's law; both segments encode, either may carry the
@@ -8014,7 +8073,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				rev: typeof doc["rev"] === "number" ? doc["rev"] : 0,
 				stages,
 				log,
-				sessionKey: benchSessionKey(sessionKey)
+				sessionKey: benchSessionOf(sessionKey)
 			};
 		}
 		/** A missing bench is a FRESH conversation's honest zero state, not a
@@ -8023,7 +8082,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  birth (rev 1) lands as a FRESH frame and the spotlight reveals
 		*  the very first card. */
 		function emptyBench(sessionKey) {
-			const key = benchSessionKey(sessionKey);
+			const key = benchSessionOf(sessionKey);
 			return readBench({
 				draft_id: "bench-" + key,
 				rev: 0,
@@ -8038,7 +8097,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  after its own edits (the provider's bench stream is a single
 		*  snapshot; same-address navigation does not re-run it). */
 		async function fetchBench(sessionKey, signal) {
-			const key = benchSessionKey(sessionKey);
+			const key = benchSessionOf(sessionKey);
 			try {
 				return readBench(await unwrapRemote(estateRemote().bench.get(key, signal), "bench/get"), key);
 			} catch (e) {
@@ -8102,13 +8161,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return halt;
 			}
 			const lastRevs = /* @__PURE__ */ new Map();
-			let activeKey = benchSessionKey(getSession());
+			let activeKey = benchSessionOf(getSession());
 			let wakeRekey;
 			let rekeyLatch = new Promise((resolve) => {
 				wakeRekey = () => resolve("rekey");
 			});
 			const offSubscribe = subscribeSession?.(() => {
-				if (benchSessionKey(getSession()) !== activeKey && !stopped) wakeRekey?.();
+				if (benchSessionOf(getSession()) !== activeKey && !stopped) wakeRekey?.();
 			});
 			const openStream = (key) => remote.$stream({
 				name: "cards bench spotlight",
@@ -8126,7 +8185,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							rekeyLatch = new Promise((resolve) => {
 								wakeRekey = () => resolve("rekey");
 							});
-							const wanted = benchSessionKey(getSession());
+							const wanted = benchSessionOf(getSession());
 							if (wanted !== activeKey) {
 								activeKey = wanted;
 								stream.dispose();
@@ -8425,7 +8484,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  keeps whatever landed before it, and the report says so. */
 		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
-			const key = benchSessionKey(sessionKey);
+			const key = benchSessionOf(sessionKey);
 			let draft;
 			try {
 				draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), "drafts/get");
@@ -10647,7 +10706,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"webp",
 					"gif",
 					"svg",
-					"bmp"
+					"bmp",
+					"avif"
 				],
 				audio: [
 					"wav",
@@ -10661,7 +10721,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"mp4",
 					"webm",
 					"mkv",
-					"mov"
+					"mov",
+					"m4v",
+					"avi"
 				],
 				model: ["glb", "gltf"],
 				galleryImage: [
@@ -10685,6 +10747,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				galleryModel: ["glb", "gltf"],
 				maxListedImages: 3
 			};
+		}
+		const KIND_BY_EXT = (() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
@@ -53477,6 +53558,7 @@ void main() {
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
 			benchResultDefects: () => benchResultDefects,
+			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
@@ -53518,9 +53600,11 @@ void main() {
 			rootsManifest: () => rootsManifest,
 			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
+			runTailOf: () => runTailOf,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			stripKeys: () => stripKeys,
+			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams
@@ -56880,14 +56964,19 @@ void main() {
 		*  shared previews as the DEFAULTS. Every card's rendered output
 		*  previews through this — image cards get the shared image preview,
 		*  video cards the shared video one; a studio's own stage view is
-		*  its specialization (the claim-over-default law). */
+		*  its specialization (the claim-over-default law).
+		*
+		*  ONE CLASSIFIER (the li-ay stroke, 2026-10-11): this private
+		*  three-regex sniff was the FIFTH media vocabulary on the estate —
+		*  it carried avif but dropped svg/bmp (an .svg artifact got NO
+		*  preview) and missed mkv/avi/aac entirely. The contract's
+		*  mediaKindOf classifies now; this seat keeps only its own two
+		*  concerns — the query string a served url may carry, and the UI's
+		*  'mesh' spelling for the vocab's 'model' kind. */
 		function previewKindFor(url) {
-			const u = url.toLowerCase();
-			if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return "video";
-			if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return "image";
-			if (/\.(mp3|wav|ogg|flac|m4a|aac)(\?|$)/.test(u)) return "audio";
-			if (/\.(glb|gltf)(\?|$)/.test(u)) return "mesh";
-			return null;
+			const kind = mediaKindOf(url.split("?")[0]);
+			if (kind === void 0) return null;
+			return kind === "model" ? "mesh" : kind;
 		}
 		/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
 		*  primary output — the served form-spec's `outputs.default` — is
@@ -60729,7 +60818,7 @@ void main() {
 				rev: -1,
 				stages: value.stages,
 				log: [],
-				sessionKey: benchSessionKey(void 0)
+				sessionKey: benchSessionOf(void 0)
 			};
 			return (0, react.createElement)(StageDrill, {
 				stage,
@@ -60890,7 +60979,7 @@ void main() {
 			};
 			const info = typeof props.useTabInfo === "function" ? props.useTabInfo() : void 0;
 			const rawAddress = info?.tab.navigation.address ?? info?.tab.contentId ?? "dsh-resource://cards/bench";
-			const benchKey = benchSessionKey(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
+			const benchKey = benchSessionOf(props.sessionId ?? benchSessionOfAddress(resolveCardsAddress(rawAddress)));
 			const benchAddress = benchAddressOf(benchKey);
 			const resolved = resolveCardsAddress(rawAddress);
 			const parsed = parseCardsAddress(resolved);
@@ -61299,9 +61388,9 @@ void main() {
 				const activeBenchSession = () => {
 					try {
 						const sid = (ctx.uiSession?.adapter?.current?.getSnapshot?.())?.props?.["sessionId"];
-						return benchSessionKey(typeof sid === "string" ? sid : void 0);
+						return benchSessionOf(typeof sid === "string" ? sid : void 0);
 					} catch {
-						return benchSessionKey(void 0);
+						return benchSessionOf(void 0);
 					}
 				};
 				const subscribeBenchSession = (fn) => {
@@ -61333,4 +61422,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="165d48a08da36fbeeca31c32e74f7aec13214d00";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f17f66b664e0e23a3f6c0fff61d9047057ec5e49";

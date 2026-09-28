@@ -59,48 +59,42 @@ describe("the bench session grammar has one rule", () => {
     // browser modules (importing the cards tab here drags the
     // gateway client, which wants window), so the wall reads their
     // CODE — comments stripped, the pattern must be code, not a
-    // comment (the walls audit's M6) — and compares the extracted
-    // regex source to the imported owner's, character for character.
-    const mirrors: Array<[string, string]> = [
+    // comment (the walls audit's M6).
+    // THE DECISION JOINED THE GRAMMAR (the li-ay stroke, 2026-10-11):
+    // the clients used to import SESSION_RE and each spell the
+    // sanitize body (`test ? id : 'main'`) over it — the gallery's
+    // copy, the cards tab's copy, and TWO inline copies in the agent
+    // tool. The grammar arms alone never held the ROUTING: gutting
+    // any body to return 'main' forever kept every grammar arm green
+    // (only the codec specs caught it). The contract owns the
+    // decision now (benchSessionOf, beside SESSION_RE): every seat
+    // imports it, no seat spells a grammar OR a sanitize, and this
+    // arm bans both spellings in code.
+    const seats: Array<[string, string]> = [
       ["cards tab", "../../../../packages/web/melite-card-view/src/client/cards-resource.ts"],
       ["gallery", "../../../../packages/web/infer-gallery/src/client/bench-load.ts"],
+      ["agent tool", "../../../../packages/harness/melite-tools/src/tools/melite-construct.ts"],
     ];
-    // THE MIRRORS ARE GONE (the identity law, 2026-09-28). This arm
-    // compared each client's PATTERN to the server's — a mirror is a
-    // second producer, and a mirror the wall names is a mirror the
-    // wall has to be told about: the agent tool's two inline copies
-    // were outside this list entirely, and tightening one of them
-    // left every suite green. The contract floor owns the grammar
-    // now, so the law is stronger and simpler: the clients hold NO
-    // pattern, they import the owner's, and the agent tool reads the
-    // same one.
-    for (const [name, path] of mirrors) {
+    for (const [name, path] of seats) {
       const src = readFileSync(new URL(`${path}`, import.meta.url), "utf8");
       const code = src
         .replace(/\/\*[\s\S]*?\*\//g, " ")
         .split("\n")
         .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
         .join("\n");
-      expect(code, `${name}: the client spells NO grammar of its own — it imports the contract's`)
+      expect(code, `${name}: the seat spells NO grammar of its own — it imports the contract's`)
         .not.toMatch(/BENCH_SESSION_RE\s*=\s*\//);
-      expect(code, `${name}: the client reads the contract's SESSION_RE (one owner, imported)`)
-        .toMatch(/SESSION_RE as BENCH_SESSION_RE/);
+      expect(code, `${name}: the seat spells NO sanitize body over the grammar — the decision is the contract's`)
+        .not.toMatch(/SESSION_RE\.test/);
+      // and not over a PRIVATE grammar either: the ternary ending in
+      // the default key is the sanitize body's shape, whatever regex
+      // guards it (the mutation that named no SESSION_RE still
+      // rebuilt a second producer in place)
+      expect(code, `${name}: no private ternary-to-'main' body — the decision is the contract's`)
+        .not.toMatch(/\?[^:?]+:\s*['"`]main['"`]/);
+      expect(code, `${name}: the seat reads the contract's benchSessionOf (one producer)`)
+        .toMatch(/benchSessionOf/);
     }
-    // and the agent tool — the copy this arm never named — reads it
-    // too (it is node, so it imports the same contract module)
-    const tool = readFileSync(
-      new URL("../../../../packages/harness/melite-tools/src/tools/melite-construct.ts", import.meta.url),
-      "utf8",
-    );
-    const toolCode = tool
-      .replace(/\/\*[\s\S]*?\*\//g, " ")
-      .split("\n")
-      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
-      .join("\n");
-    expect(toolCode, "the agent tool spells NO session grammar of its own")
-      .not.toMatch(/\[A-Za-z0-9_-\]\{1,64\}/);
-    expect(toolCode, "the agent tool reads the contract's SESSION_RE")
-      .toMatch(/SESSION_RE\.test\(/);
   });
 
   it("the session rule itself behaves — absolute bounds, not self-comparison", () => {

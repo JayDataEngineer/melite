@@ -87,19 +87,61 @@ function seedStateOf(row) {
 export function mintStageId(rows, body) {
     if (typeof body["id"] === "string" && body["id"] !== "")
         return body["id"];
-    const max = rows.reduce((acc, row) => {
+    return nextStageId(highestStageSuffix(rows), takenStageIds(rows));
+}
+/** THE HIGHEST `s_<n>` ON THE BENCH, or -1 when there is none (the
+ *  ONE arithmetic; both id producers take it).
+ *
+ *  It was written twice — once in the write door's mint and once in
+ *  the load path's dedupe — and the identity wall caught the second
+ *  copy on its first run, which is the wall doing precisely its job.
+ *  A formula that decides what a stage is called belongs in one
+ *  place; the two callers differ only in what they do with the
+ *  answer. */
+function highestStageSuffix(rows) {
+    let max = -1;
+    for (const row of rows) {
         const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
-        return m === null ? acc : Math.max(acc, Number(m[1]));
-    }, -1);
-    return "s_" + String(max + 1);
+        if (m !== null && Number(m[1]) > max)
+            max = Number(m[1]);
+    }
+    return max;
+}
+/** The next free `s_<n>` at or above `max + 1`, skipping any id the
+ *  caller already holds. The writer's mint and the loader's repair
+ *  both ask this, so "the next id" means one thing in this file. */
+function nextStageId(max, taken) {
+    let n = max;
+    let fresh;
+    do {
+        n += 1;
+        fresh = "s_" + String(n);
+    } while (taken.has(fresh));
+    return fresh;
+}
+/** The ids already spoken for on the bench — the writer's own id plus
+ *  every stage's. A mint that skips these cannot collide with a row
+ *  the caller has not seen yet. */
+function takenStageIds(rows, extra = "") {
+    const taken = new Set();
+    if (extra !== "")
+        taken.add(extra);
+    for (const row of rows) {
+        const id = row["id"];
+        if (typeof id === "string")
+            taken.add(id);
+    }
+    return taken;
 }
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
 export function normalizeStages(stagesIn, author) {
     if (!Array.isArray(stagesIn))
         return [];
-    return stagesIn
-        .filter((s) => isRecord(s))
+    const kept = stagesIn.filter((s) => isRecord(s));
+    // which rows arrived with their OWN id (the dedupe's pass-1 set)
+    const arrivedWithId = kept.map((s) => typeof s["id"] === "string");
+    const normalized = kept
         .map((s, idx) => {
         // THE ONE NORMALIZATION (benchStage.ts — the contract): id
         // fill, DERIVED engine, run-memory strip, run-media path heal,
@@ -134,6 +176,63 @@ export function normalizeStages(stagesIn, author) {
         }
         return row;
     });
+    // THE SECOND PASS (the identity audit's A3). The map above is
+    // left exactly as it was; the uniqueness law is a separate step so
+    // the contract's positional fill stays the contract's.
+    return dedupeStageIds(normalized, arrivedWithId);
+}
+/** A LOAD MUST NOT LAND TWO ROWS UNDER ONE ID (the identity audit's
+ *  A3, 2026-10-11 — a real duplicate, not a theoretical one).
+ *
+ *  `normalizeBenchStage` fills an id-LESS row from its POSITION, so
+ *  loading `[{id:"s_1"}, {…no id…}]` mints `s_1` for the second row:
+ *  the load path persists `["s_1","s_1"]`. Only `add_stage` carries
+ *  the `bench/duplicate-stage` gate, so nothing caught it. Two rows
+ *  under one id is not cosmetic — `stageRow()` finds the first, a
+ *  rewire writes the first, and the second row's wiring becomes a
+ *  wire naming a stage the bench answers with someone else's body.
+ *
+ *  TWO PASSES, AND THE ORDER IS THE LAW. First every id a row
+ *  ARRIVED WITH is reserved — an explicit id is the author's, and
+ *  only a FILLED id may ever be moved. Then each row whose filled id
+ *  is already taken is re-minted to the next free `s_<n>`, using the
+ *  same max+1 discipline `mintStageId` uses. Reserving first is what
+ *  makes this safe in both directions: a filled row cannot steal an
+ *  id that sits AHEAD of it in the list, and a named row can never be
+ *  the one that moves. */
+function dedupeStageIds(rows, arrivedWithId) {
+    // PASS 1 — the author's ids, reserved before anything is moved. An
+    // explicit id is never the one that gives way.
+    const named = [];
+    for (const [i, row] of rows.entries()) {
+        if (arrivedWithId[i] === true && typeof row["id"] === "string")
+            named.push(row);
+    }
+    const taken = takenStageIds(named);
+    // PASS 2 — only a FILLED id may be moved, and only when it is
+    // already spoken for. The next free id comes from the same
+    // arithmetic the write door mints with (highestStageSuffix), so a
+    // load and an add cannot disagree about what "next" means.
+    let max = highestStageSuffix(named);
+    for (const [i, row] of rows.entries()) {
+        const id = row["id"];
+        if (arrivedWithId[i] === true)
+            continue;
+        if (typeof id !== "string")
+            continue;
+        if (!taken.has(id)) {
+            taken.add(id);
+            continue;
+        }
+        let fresh;
+        do {
+            max += 1;
+            fresh = "s_" + String(max);
+        } while (taken.has(fresh));
+        row["id"] = fresh;
+        taken.add(fresh);
+    }
+    return rows;
 }
 const ENSURE_KEYS = ["session", "stages", "intent", "author", "expect_rev", "overwrite"];
 function refuseUnknown(body, allowed) {
@@ -370,11 +469,20 @@ export function getBench(drafts, session) {
     // deliberately tolerant of loose-but-harmless shapes (junk cells
     // and dead wires are refused with precise voices at the run door
     // and at the next write door; the patch-tolerance laws pin that
-    // they serve). The two crimes refused HERE are the ones that
-    // compose degenerately: a SELF-WIRE (a cycle — the run's generic
-    // no-FromStage voice hid it) and a wire to a DEAD STAGE (its
-    // source removed after the fact). Whatever wrote the doc — an
-    // older door, a hand edit — the store is held at read.
+    // they serve). ONE crime is refused HERE, and it is the one that
+    // composes degenerately with no other voice: a SELF-WIRE, which is
+    // a cycle, and which the run's generic no-FromStage message hid.
+    //
+    // (2026-10-11, the wire audit: the comment above used to claim
+    // this gate also refused a wire to a DEAD STAGE. It never did, and
+    // the code below says why it must not — crafted-undo docs may hold
+    // one legitimately between mutations, and serve must not brick the
+    // bench a fix needs to open. The law was correct and the comment
+    // was the thing that drifted; a reader auditing against the prose
+    // would have gone looking for a check that does not exist.)
+    //
+    // Whatever wrote the doc — an older door, a hand edit — the store
+    // is held at read for that one crime.
     if (Array.isArray(doc["stages"])) {
         for (const st of doc["stages"]) {
             if (typeof st !== "object" || st === null)
@@ -824,10 +932,35 @@ export async function addStageBench(drafts, session, body, admit) {
     if (typeof cardForRow !== "string" || cardForRow === "") {
         throw new RemoteError("bench/bad-body", "card is required", {});
     }
-    // THE ONE MINT (see mintStageId): the row handed to admission and
-    // the row stored below are the same row, under the same id, because
-    // there is one producer of the value.
+    // THE ONE MINT, AND NOW IT IS ONE CALL (the identity audit's
+    // finding C, 2026-10-11). This comment used to claim "there is one
+    // producer of the value" directly above a function that called the
+    // producer TWICE — once for the row handed to admission, once for
+    // the row stored below. They agree today only because both read the
+    // same unmutated doc; any future edit between them, or a change to
+    // one formula, reopens the judged-vs-stored split this comment
+    // claimed to have closed. The value is bound ONCE and both doors
+    // read it, so the sentence is now true rather than aspirational.
+    //
+    // (See mintStageId for why the formula is max+1 and not the count.)
     const stageIdForAdmit = mintStageId(stagesOf(loadedForAdmit.doc), body);
+    // A MALFORMED `inputs` CONTAINER REFUSES (the audit's fail-open).
+    // `isRecord(...) ? ... : {}` treats a non-record `inputs` exactly
+    // like an absent one: the caller is told the stage was added, no
+    // wire is stored, and the loss surfaces much later as a missing
+    // required param at run time. A bad BINDING already refuses
+    // (bench/bad-wire) and rewire's non-record `from` already refuses
+    // (bench/bad-body) — the container was the one shape that failed
+    // open. The READ path stays tolerant on purpose (a doc already on
+    // disk is not the caller's mistake, and the serve/run doors judge
+    // it there); this is the door where the caller can still be told.
+    const rawInputs = body["inputs"];
+    if (rawInputs !== undefined && !isRecord(rawInputs)) {
+        throw new RemoteError("bench/bad-body", "stage " + JSON.stringify(stageIdForAdmit) +
+            ": inputs must be an object of channel → {stage, output} | {initial} (got " +
+            typeof rawInputs +
+            "); a wire that cannot be read is refused here, not dropped", {});
+    }
     const admitted = normalizeBenchStage({
         id: stageIdForAdmit,
         card: cardForRow,
@@ -851,7 +984,9 @@ export async function addStageBench(drafts, session, body, admit) {
     // removed — [s_0..s_9] minus nine leaves s_1, and the count says
     // s_1 again. The mint takes MAX numeric suffix + 1 over the live
     // rows, so a fresh id is fresh against the bench AS IT STANDS.
-    const stageId = mintStageId(stages, body);
+    // THE STORED ROW'S ID IS THE ADMITTED ROW'S ID (the one mint,
+    // above): read the bound value, never call the producer again.
+    const stageId = stageIdForAdmit;
     if (stageRow(loaded.doc, stageId) !== null) {
         throw new RemoteError("bench/duplicate-stage", "stage id already on the bench: " + stageId, { session, stage: stageId });
     }

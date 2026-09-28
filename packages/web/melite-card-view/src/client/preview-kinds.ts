@@ -3,6 +3,7 @@
  * hour 15). */
 
 import type { FormSpecDoc } from './spec-form.tsx'
+import { mediaKindOf } from '../../../../web-kit/contracts/src/mediaKinds.ts'
 
 /** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
  *  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
@@ -10,14 +11,19 @@ import type { FormSpecDoc } from './spec-form.tsx'
  *  shared previews as the DEFAULTS. Every card's rendered output
  *  previews through this — image cards get the shared image preview,
  *  video cards the shared video one; a studio's own stage view is
- *  its specialization (the claim-over-default law). */
+ *  its specialization (the claim-over-default law).
+ *
+ *  ONE CLASSIFIER (the li-ay stroke, 2026-10-11): this private
+ *  three-regex sniff was the FIFTH media vocabulary on the estate —
+ *  it carried avif but dropped svg/bmp (an .svg artifact got NO
+ *  preview) and missed mkv/avi/aac entirely. The contract's
+ *  mediaKindOf classifies now; this seat keeps only its own two
+ *  concerns — the query string a served url may carry, and the UI's
+ *  'mesh' spelling for the vocab's 'model' kind. */
 export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh' | null {
-  const u = url.toLowerCase()
-  if (/\.(mp4|webm|mov|m4v)(\?|$)/.test(u)) return 'video'
-  if (/\.(png|jpe?g|webp|gif|avif)(\?|$)/.test(u)) return 'image'
-  if (/\.(mp3|wav|ogg|flac|m4a|aac)(\?|$)/.test(u)) return 'audio'
-  if (/\.(glb|gltf)(\?|$)/.test(u)) return 'mesh'
-  return null
+  const kind = mediaKindOf(url.split("?")[0] as string)
+  if (kind === undefined) return null
+  return kind === 'model' ? 'mesh' : kind
 }
 
 /** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED

@@ -1441,9 +1441,7 @@ window.__ModuleLoader__.load({
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const rowCard = out["card"];
-			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
-				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
-			}
+			stripSelfNamedModel(rowCard, healed);
 			out["params"] = healed;
 			const outputs = out["outputs"];
 			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
@@ -1469,6 +1467,37 @@ window.__ModuleLoader__.load({
 		/** Is this a run id? */
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
+		}
+		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
+		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
+		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
+		*  to re-implement it, and both copies drifted from the contract:
+		*
+		*  - one copy guarded `card !== ""` and the other did not, so a row
+		*    with `card: ""` and `params: {model: ""}` kept its model under
+		*    the contract and lost it under the client;
+		*  - one copy compared the RAW `params.model` and the other the
+		*    HEALED one;
+		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
+		*    so it skipped the run-media path heal and the engine derivation
+		*    the single-card arm got.
+		*
+		*  All three were invisible: making both copies strip unconditionally
+		*  — the exact historical anny/h3-timeline defect — left
+		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
+		*  those walls pin the CONTRACT and the SET, and never drove the two
+		*  client use-sites.
+		*
+		*  One spelling now: every site asks this, which takes the row's card
+		*  and the params bag and strips in place. It is the contract's law,
+		*  stated once, with the `card !== ""` guard included. */
+		function stripSelfNamedModel(card, params) {
+			if (typeof card !== "string" || card === "") return;
+			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
+			const bag = params;
+			if (bag["model"] !== card) return;
+			if (SELF_NAMED_FAMILIES.has(card)) return;
+			delete bag["model"];
 		}
 		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
@@ -1612,6 +1641,7 @@ window.__ModuleLoader__.load({
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			stripKeys: () => stripKeys,
+			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams
@@ -52882,4 +52912,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="b244b57f3f4f13f73705c77637cdd761cddfcfcf";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="78630ebe142271a0e874252f801adedb1062fd13";

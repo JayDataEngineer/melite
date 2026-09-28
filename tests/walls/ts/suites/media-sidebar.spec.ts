@@ -9,21 +9,26 @@ import { fileURLToPath } from 'node:url'
  *  @infer-media/dsh-gallery — this wall pins the port's structural
  *  laws so the migrations cannot silently take it back:
  *
- *  1. MEDIA VOCABULARY PARITY — the gallery client's typed
- *     media-kinds.ts and the estate's mediaVocab() SSOT stay equal
- *     (kinds, labels, extensions, gallery flags, classifier key
- *     order) — one vocabulary, two typed copies, zero drift.
+ *  1. (RETIRED 2026-10-11, the li-ay stroke) MEDIA VOCABULARY PARITY
+ *     died with the second copy: the client DERIVES from the
+ *     contract's mediaVocab() now, and the law lives in
+ *     media-vocabulary.spec.ts (derivation + no-literal ban +
+ *     absolute pins). Two typed copies pinned equal was the old
+ *     world's compromise; one producer made it decorative.
  *  2. RUNS-WINDOW LAW — the host pulls the door's hard max (500),
  *     never a smaller window that lets sidecar floods push artifact
  *     rows out of the listing.
  *  3. SERVED-LIB BYTE PROOFS — the built client bundle carries the
- *     ported machinery (the single Media tab id/kind/order, both host
- *     feeds, the bench CAS choreography, the estate-artifact +
- *     cards-run addresses, the modal + wand classes) AND carries no
- *     trace of the deleted package's standalone Flows tab (the
- *     single-tab law: drafts live only behind the Media panel's
- *     segmented toggle) — the BUILT-LIB LAW: src edits reach the host
- *     only after a package build, so the bytes are what ships.
+ *     ported machinery AND carries no trace of the deleted package's
+ *     standalone Flows tab — with the FRESHNESS law (the li-ay
+ *     round's F4): the bundle is judged on CODE bytes (comments
+ *     stripped — a header comment quoting the copy never satisfies
+ *     the arm), every hand probe must ALSO live in the current
+ *     SOURCE (a stale lib that still carries a removed face reds),
+ *     and every route/address literal the SOURCE declares must be in
+ *     the BUNDLE (a src edit the build never ate reds) — the
+ *     BUILT-LIB LAW: src edits reach the host only after a package
+ *     build, so the bytes are what ships.
  *  4. FILENAME CONTRACTS SINGLE DEFINITION — the poster/window-film
  *     regex laws live in exactly one file on the client plane (the
  *     Sep-6 audit's F5: restated magic stems drift silently).
@@ -34,59 +39,12 @@ const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '..', '..', '..', '..')
 const GALLERY = join(ROOT, 'packages', 'web', 'infer-gallery')
 
-/* 1. MEDIA VOCABULARY PARITY — the client's typed copy against the
- * estate's SSOT (packages/harness/estate-queue/src/mediaKinds.ts — a
- * FLAT record: per-kind exts, gallery<Kind> listing subsets,
- * maxListedImages). The client bundle cannot import the estate's TS
- * source, so the two copies are pinned equal by assertion — the same
- * law the old media-plugin's media-kinds.json parity wall carried. */
-interface EstateVocab {
-  image: readonly string[]
-  audio: readonly string[]
-  video: readonly string[]
-  model: readonly string[]
-  galleryImage: readonly string[]
-  galleryAudio: readonly string[]
-  galleryVideo: readonly string[]
-  galleryModel: readonly string[]
-  maxListedImages: number
-}
-
-async function loadEstateVocab(): Promise<EstateVocab> {
-  const mod = await import(join('..', '..', '..', '..', 'packages', 'harness', 'estate-queue', 'src', 'mediaKinds.ts'))
-  const fn = (mod as unknown as { mediaVocab: () => EstateVocab }).mediaVocab
-  return fn()
-}
-
-interface ClientKindDef { label: string, exts: readonly string[], gallery: readonly string[] }
-interface ClientVocab { kinds: Record<string, ClientKindDef>, policy: { maxListedImages: number } }
-
-async function loadClientKinds(): Promise<ClientVocab> {
-  const mod = await import(join('..', '..', '..', '..', 'packages', 'web', 'infer-gallery', 'src', 'client', 'media-kinds.ts'))
-  return (mod as unknown as { MEDIA_KINDS: ClientVocab }).MEDIA_KINDS
-}
-
-test('media vocabulary parity: the gallery client and the estate carry ONE vocab', async () => {
-  const estate = await loadEstateVocab()
-  const client = await loadClientKinds()
-  const estateShape: Record<string, { exts: readonly string[], gallery: readonly string[] }> = {
-    video: { exts: estate.video, gallery: estate.galleryVideo },
-    image: { exts: estate.image, gallery: estate.galleryImage },
-    audio: { exts: estate.audio, gallery: estate.galleryAudio },
-    model: { exts: estate.model, gallery: estate.galleryModel },
-  }
-  // the four kinds, same set on both planes
-  assert.deepEqual(new Set(Object.keys(client.kinds)), new Set(Object.keys(estateShape)),
-    'the four media kinds must match the estate SSOT')
-  for (const kind of Object.keys(estateShape)) {
-    assert.deepEqual(client.kinds[kind]?.exts, estateShape[kind].exts, `${kind} exts (the classifier vocabulary)`)
-    assert.deepEqual(client.kinds[kind]?.gallery, estateShape[kind].gallery, `${kind} gallery subset (what lists in the sidebar)`)
-  }
-  assert.equal(client.policy.maxListedImages, estate.maxListedImages, 'maxListedImages policy')
-  // classifier precedence is a CLIENT-side law (key order): video
-  // first, so a contradictory row can never list as its image poster.
-  assert.equal(Object.keys(client.kinds)[0], 'video', 'classifier precedence: video must classify first')
-})
+/* 1. MEDIA VOCABULARY PARITY — RETIRED (2026-10-11, the li-ay
+ * stroke): the client's hand copy is gone; media-kinds.ts DERIVES
+ * from the contract's mediaVocab(), and the law — derivation, the
+ * no-literal ban, the absolute pins — lives in
+ * media-vocabulary.spec.ts. A parity arm over a derivation is a
+ * tautology; decorative walls are deleted, not accumulated. */
 
 test('the runs-window law: the host pulls the door hard max (500), at its USE SITES', async () => {
   const host = readFileSync(join(GALLERY, 'src', 'index.ts'), 'utf8')
@@ -115,6 +73,52 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
   // SHAPES now: the css-module symbol the build mints
   // (overlay_module_css_default) with its .lightbox/.wand USES, and
   // the badge rule's own literal with its quotes.
+  //
+  // THE FRESHNESS LAW (the li-ay round's F4, 2026-10-11): the old
+  // arm judged the bundle ALONE — a needle could be satisfied by a
+  // HEADER COMMENT the build preserves (the copy stays green while
+  // the machinery dies), and a face REMOVED from src kept passing
+  // until someone rebuilt (stale bytes are indistinguishable from
+  // fresh). Three closures now:
+  //   (a) CODE-BYTES judgement — comments are stripped from BOTH the
+  //       bundle and the src census before any needle match;
+  //   (b) SRC-PRESENCE — every hand probe must ALSO live in the
+  //       CURRENT source (a stale lib that still carries a removed
+  //       face reds; a needle surviving only in a src comment reds);
+  //   (c) DERIVED ROUTE PROBES — every route/address literal the
+  //       source declares must be in the bundle (a src edit the
+  //       build never ate reds). The needle list can no longer rot
+  //       behind a forgotten rebuild.
+  const stripComments = (text: string): string => text
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .split('\n')
+    .filter((l: string) => !l.trim().startsWith('//'))
+    .join('\n')
+  const codeBundle = stripComments(bundle)
+  const srcCensus: string[] = []
+  const walkSrc = (dir: string): void => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name)
+      if (e.isDirectory()) walkSrc(p)
+      else if (/\.(tsx?|css)$/.test(e.name)) srcCensus.push(stripComments(readFileSync(p, 'utf8')))
+    }
+  }
+  // the CLIENT bundle compiles the client plane only — the host
+  // (src/index.ts, lib/index.js) is a different artifact with its
+  // own routes; judging host literals against client bytes reds
+  // forever, and judging nothing lets the client plane rot.
+  walkSrc(join(GALLERY, 'src', 'client'))
+  assert.ok(srcCensus.length >= 10, `census floor: the gallery src plane is real (${srcCensus.length} files — the walk rotted?)`)
+  // the bundler re-quotes string literals ('media' → "media") and
+  // keeps template backticks; the presence judgement is
+  // QUOTE-AGNOSTIC so a needle proves the same code on both planes
+  // regardless of the printer's quote style
+  const normalize = (t: string): string => t.replace(/['`]/g, '"')
+  const srcCode = normalize(srcCensus.join('\n'))
+
+  // build-minted: the css-module symbol exists only after bundling —
+  // src-presence is vacuous for it; everything else proves both sides.
+  const BUILD_MINTED = /^overlay_module_css_default/
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
     ['media tab kind', 'kind: "media"'],
@@ -137,7 +141,31 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]
   for (const [name, needle] of probes) {
-    assert.ok(bundle.includes(needle), `built lib/client.js lost: ${name} (${needle}) — did the build run after the edit?`)
+    assert.ok(normalize(codeBundle).includes(needle),
+      `built lib/client.js lost (in CODE, not comments): ${name} (${needle}) — did the build run after the edit?`)
+    if (!BUILD_MINTED.test(needle)) {
+      assert.ok(srcCode.includes(needle),
+        `probe ${name} (${needle}) is gone from CURRENT src but still rides the stale bundle — a face the source no longer ships`)
+    }
+  }
+  // (c) THE DERIVED ROUTE PROBES: every route/address literal the
+  // src declares must reach the bytes, judged by its FULL DELIMITED
+  // SPELLING — a substring probe cannot see a rename (`…/flow2?…`
+  // contains `…/flow`), so the quotes ride the match on both sides.
+  // A new leg added to src without a rebuild ships dead code on the
+  // host; a renamed leg ships the OLD route.
+  const declared = new Set<string>()
+  for (const literal of srcCode.match(/['"`](\/(?:infer-gallery|v1)\/[A-Za-z0-9_\-/.?=&${}]*)['"`]/g) ?? []) {
+    declared.add(literal.slice(1, -1))
+  }
+  for (const literal of srcCode.match(/['"`]dsh-resource:\/\/[a-z-]+['"`]/g) ?? []) {
+    declared.add(literal.slice(1, -1))
+  }
+  assert.ok(declared.size >= 6, `route census floor (${declared.size} literals — the extraction rotted?)`)
+  const bundleNorm = normalize(codeBundle)
+  for (const route of declared) {
+    assert.ok(bundleNorm.includes('"' + route + '"'),
+      `src declares the route literal "${route}" but the built bundle does not carry it — rebuild before shipping`)
   }
   // THE SINGLE-TAB LAW: the deleted package's standalone Flows
   // registration must not ship — drafts are reachable only through the

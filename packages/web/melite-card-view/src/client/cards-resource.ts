@@ -198,29 +198,26 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // the server's — a mirror is a second producer the moment the server
 // moves, and the wall that compared the copies could only name the
 // ones it knew. The client imports the contract's.
-import { SESSION_RE as BENCH_SESSION_RE } from '../../../../web-kit/contracts/src/benchStage.ts'
-export { BENCH_SESSION_RE }
-
-/** Sanitize one candidate id onto a legal bench session key ('main'
- *  for anything the bench would refuse — the estate's own SESSION_RE). */
-export function benchSessionKey(id: string | undefined): string {
-  // THE ONE SPELLING of the unattributed bench (the address
-  // grammar's root — the bare bench address IS the shared bench).
-  // No verb, no fetch, no component defaults its own 'main': they
-  // all fall here (stroke 81's sessionkey law).
-  return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
-}
+// THE DECISION MOVED BESIDE THE GRAMMAR (the li-ay stroke,
+// 2026-10-11): the sanitize body was this file's own spelling of
+// `SESSION_RE.test(id) ? id : 'main'` — one of FOUR on the estate
+// (this one, the gallery client's, and two inline in the agent
+// tool). The contract floor owns the decision now; the local name
+// stays for this module's callers, but there is no second producer
+// to drift.
+import { benchSessionOf } from '../../../../web-kit/contracts/src/benchStage.ts'
+export { benchSessionOf as benchSessionKey }
 
 /** The bench address for one session key. */
 export function benchAddressOf(sessionKey: string): string {
-  return CARDS_BENCH_ADDRESS + '/' + benchSessionKey(sessionKey)
+  return CARDS_BENCH_ADDRESS + '/' + benchSessionOf(sessionKey)
 }
 
 /** The session key a bench address carries (the bare legacy address
  *  and every non-bench address resolve to 'main'). */
 export function benchSessionOfAddress(address: string): string {
   if (!address.startsWith(CARDS_BENCH_ADDRESS + '/')) return 'main'
-  return benchSessionKey(address.slice(CARDS_BENCH_ADDRESS.length + 1))
+  return benchSessionOf(address.slice(CARDS_BENCH_ADDRESS.length + 1))
 }
 
 /** The run address (the wand's target, plan §5). */
@@ -335,7 +332,7 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
     rev: typeof doc['rev'] === 'number' ? (doc['rev'] as number) : 0,
     stages,
     log,
-    sessionKey: benchSessionKey(sessionKey),
+    sessionKey: benchSessionOf(sessionKey),
   }
 }
 
@@ -345,7 +342,7 @@ export function readBench(doc: Record<string, unknown>, sessionKey: string): Car
  *  birth (rev 1) lands as a FRESH frame and the spotlight reveals
  *  the very first card. */
 export function emptyBench(sessionKey: string): CardsBenchValue {
-  const key = benchSessionKey(sessionKey)
+  const key = benchSessionOf(sessionKey)
   return readBench({ draft_id: 'bench-' + key, rev: 0, intent: '', stages: [] }, key)
 }
 
@@ -358,7 +355,7 @@ function isMissingBench(e: unknown): boolean {
  *  after its own edits (the provider's bench stream is a single
  *  snapshot; same-address navigation does not re-run it). */
 export async function fetchBench(sessionKey: string, signal?: AbortSignal): Promise<CardsBenchValue> {
-  const key = benchSessionKey(sessionKey)
+  const key = benchSessionOf(sessionKey)
   try {
     return readBench(await unwrapRemote(estateRemote().bench.get(key, signal), 'bench/get') as unknown as Record<string, unknown>, key)
   } catch (e) {
@@ -449,11 +446,11 @@ export function watchBenchLands(
     return halt
   }
   const lastRevs = new Map<string, number>()
-  let activeKey = benchSessionKey(getSession())
+  let activeKey = benchSessionOf(getSession())
   let wakeRekey: (() => void) | undefined
   let rekeyLatch: Promise<'rekey'> = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
   const offSubscribe = subscribeSession?.(() => {
-    const wanted = benchSessionKey(getSession())
+    const wanted = benchSessionOf(getSession())
     if (wanted !== activeKey && !stopped) wakeRekey?.()
   })
   const openStream = (key: string) => remote!.$stream<Record<string, unknown>>({
@@ -475,7 +472,7 @@ export function watchBenchLands(
           ])
         if (raced === 'rekey') {
           rekeyLatch = new Promise(resolve => { wakeRekey = () => resolve('rekey') })
-          const wanted = benchSessionKey(getSession())
+          const wanted = benchSessionOf(getSession())
           if (wanted !== activeKey) {
             activeKey = wanted
             void stream.dispose()
@@ -904,7 +901,7 @@ export async function restoreRunToBench(
   if (run.draftId === null || run.draftId === '') {
     throw new Error('this run names no draft — nothing to restore')
   }
-  const key = benchSessionKey(sessionKey)
+  const key = benchSessionOf(sessionKey)
   let draft: Record<string, unknown>
   try {
     draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), 'drafts/get') as unknown as Record<string, unknown>

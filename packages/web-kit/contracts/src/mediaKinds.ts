@@ -10,8 +10,15 @@
 //
 // THE LAWS THE DATA CARRIES (from the file's $comment, preserved):
 //  - gallery = exts that LIST in the sidebar; exts = the full
-//    classifier. Gallery extras (svg/bmp/mkv/m4a/aac) classify but
-//    do NOT list — deliberate, documented here, not scattered.
+//    classifier. Gallery extras (svg/bmp/avif/mkv/m4v/avi/m4a/aac)
+//    classify but do NOT list — deliberate, documented here, not
+//    scattered. Gallery lists only what the ESTATE itself mints;
+//    the extras are real media a run directory can hold (a
+//    restored archive, a copied artifact) and must classify, hero,
+//    and drill — they just never list (the li-ay stroke, 2026-10-11:
+//    two private hero regexes carried avif|m4v|avi while this vocab
+//    did not, and dropped svg/bmp entirely — one vocabulary, or the
+//    seats disagree by construction).
 //  - maxListedImages = 3: the door-tier cap (_MAX_IMGS) — image
 //    rows past it are counted but unlisted, flagged by the run
 //    row's truncated marker {listed, total}. The client display
@@ -31,9 +38,9 @@ export interface MediaVocab {
 /** The estate media-kind vocabulary (typed DATA — see header). */
 export function mediaVocab(): MediaVocab {
   return {
-    image: ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp"],
+    image: ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "avif"],
     audio: ["wav", "flac", "mp3", "ogg", "m4a", "aac"],
-    video: ["mp4", "webm", "mkv", "mov"],
+    video: ["mp4", "webm", "mkv", "mov", "m4v", "avi"],
     model: ["glb", "gltf"],
     galleryImage: ["png", "jpg", "jpeg", "webp", "gif"],
     galleryAudio: ["wav", "flac", "ogg", "mp3"],
@@ -41,6 +48,63 @@ export function mediaVocab(): MediaVocab {
     galleryModel: ["glb", "gltf"],
     maxListedImages: 3,
   };
+}
+
+/** The one media KIND a name carries, or undefined when the name is
+ * not media. THE ONE CLASSIFIER (the li-ay stroke): four seats
+ * classified artifact names — the estate's disk-row hero
+ * (runsRegistry.enrichDiskRow), the run-list kind derivation, the
+ * gallery client's vocabulary, and the restore stamp's media filter
+ * (bench-load) — and the two private regex seats disagreed with the
+ * two vocab seats on BOTH ends (svg/bmp dropped by the heroes,
+ * avif/m4v/avi hero'd but never classified). Every seat answers
+ * through THIS function now; a seat that wants "is it media" asks
+ * `mediaKindOf(name) !== undefined` and a seat that wants "is it a
+ * video" asks `mediaKindOf(name) === "video"`. The extension is the
+ * last dot-segment, lowercased, exactly as the vocab stores it. */
+export type MediaKind = "image" | "audio" | "video" | "model";
+
+const KIND_BY_EXT: Readonly<Record<string, MediaKind>> = (() => {
+  const table: Record<string, MediaKind> = {};
+  const vocab = mediaVocab();
+  // fixed order: video, image, audio, model (the client's documented
+  // precedence — moot while the ext sets are disjoint, pinned by the
+  // disjointness wall so it stays moot)
+  (["video", "image", "audio", "model"] as const).forEach((kind) => {
+    for (const ext of vocab[kind]) {
+      if (table[ext] === undefined) table[ext] = kind;
+    }
+  });
+  return table;
+})();
+
+/** The media kind a filename carries, or undefined for non-media. */
+export function mediaKindOf(name: string): MediaKind | undefined {
+  const dot = name.lastIndexOf(".");
+  if (dot < 0 || dot === name.length - 1) return undefined;
+  return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+}
+
+/** Does this name carry any media kind at all? (the hero filters'
+ * ONE spelling — never a private extension regex again) */
+export function isMediaArtifactName(name: string): boolean {
+  return mediaKindOf(name) !== undefined;
+}
+
+/** The vocabulary's ext sets are DISJOINT (the classifier's
+ * determinism floor: one name, one kind — the precedence order only
+ * matters the day this stops being true, and this wall makes that
+ * day loud instead of silent). */
+export function mediaKindsDisjoint(): boolean {
+  const vocab = mediaVocab();
+  const seen = new Set<string>();
+  for (const kind of ["video", "image", "audio", "model"] as const) {
+    for (const ext of vocab[kind]) {
+      if (seen.has(ext)) return false;
+      seen.add(ext);
+    }
+  }
+  return true;
 }
 
 /** The MIME table for artifact SERVING (the audio-seek stroke,

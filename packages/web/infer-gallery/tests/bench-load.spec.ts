@@ -333,7 +333,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'r1',
       flow: {
-        artifacts: ['/data/run-r1/out.png'],
+        artifacts: ['/data/run-0f1e2d-r1/out.png'],
         card_snapshot: { card: 'image-gen', params: { prompt: 'ran prompt', draft_id: 'd9', test: 1 } },
         bench_snapshot: {
           stages: [
@@ -355,7 +355,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       id: 's_0',
       card: 'image-gen',
       provenance: 'restored',
-      result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r1/out.png') },
+      result: { run_id: 'r1', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-r1/out.png') },
     })
     expect('runStatus' in stages[0]!).toBe(false)
     expect(stages[1]).toEqual({ id: 's_1', card: 'other', provenance: 'restored' })
@@ -374,7 +374,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'r-leak',
       flow: {
-        artifacts: ['/data/run-r-leak/tts/SaveAudio.0_tts_00001.flac'],
+        artifacts: ['/data/run-0f1e2d-rleak/tts/SaveAudio.0_tts_00001.flac'],
         card_snapshot: { card: 'sfx', params: { prompt: 'thunder' } },
         bench_snapshot: {
           stages: [
@@ -418,7 +418,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       id: 's_0',
       card: 'sfx',
       provenance: 'restored',
-      result: { run_id: 'r-leak', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-r-leak/tts/SaveAudio.0_tts_00001.flac') },
+      result: { run_id: 'r-leak', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rleak/tts/SaveAudio.0_tts_00001.flac') },
     })
   })
 
@@ -426,7 +426,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'r2',
       flow: {
-        artifacts: ['/data/run-r2/out.png'],
+        artifacts: ['/data/run-0f1e2d-r2/out.png'],
         card_snapshot: { card: 'image-gen', params: { prompt: 'solo' } },
         bench_snapshot: { stages: [{ id: 's_0', card: 'image-gen' }], intent: '' },
       },
@@ -450,7 +450,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'rm',
       flow: {
-        artifacts: ['/data/runs/output/run-rm/mask/SaveImage.0_mask_combined_00001_.png'],
+        artifacts: ['/data/runs/output/run-0f1e2d-rm/mask/SaveImage.0_mask_combined_00001_.png'],
         card_snapshot: {
           card: 'mask',
           params: {
@@ -484,7 +484,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'rg',
       flow: {
-        artifacts: ['/data/run-rg/out.png'],
+        artifacts: ['/data/run-0f1e2d-rg/out.png'],
         card_snapshot: { card: 'image-gen', params: { model: 'z-image', prompt: 'a hat' } },
       },
     }
@@ -500,7 +500,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'rs',
       flow: {
-        artifacts: ['/data/run-rs/out.png'],
+        artifacts: ['/data/run-0f1e2d-rs/out.png'],
         card_snapshot: { card: 'mask', params: { model: 'mask' } },
         bench_snapshot: {
           stages: [
@@ -567,7 +567,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'ra',
       flow: {
-        artifacts: ['/data/runs/output/run-ra/tts/SaveAudio.0_tts_00001.flac'],
+        artifacts: ['/data/runs/output/run-0f1e2d-ra/tts/SaveAudio.0_tts_00001.flac'],
         card_snapshot: { card: 'tts', params: { model: 'qwen3-tts', text: 'say it' } },
       },
     }
@@ -578,7 +578,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
       card: 'tts',
-      result: { run_id: 'ra', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-ra/tts/SaveAudio.0_tts_00001.flac') },
+      result: { run_id: 'ra', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-ra/tts/SaveAudio.0_tts_00001.flac') },
     })
   })
 
@@ -586,7 +586,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'rv',
       flow: {
-        artifacts: ['/data/runs/output/run-rv/generate/film.mp4'],
+        artifacts: ['/data/runs/output/run-0f1e2d-rv/generate/film.mp4'],
         card_snapshot: { card: 'video-gen', params: { prompt: 'a film' } },
       },
     }
@@ -596,7 +596,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
-      result: { run_id: 'rv', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rv/generate/film.mp4') },
+      result: { run_id: 'rv', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rv/generate/film.mp4') },
     })
   })
 
@@ -614,10 +614,10 @@ describe('loadRunOntoBench — the run record wins', () => {
       run_id: 'rh3',
       flow: {
         artifacts: [
-          '/data/runs/output/run-rh3/h3-film/h3_t4_w2_00004_.mp4',
-          '/data/runs/output/run-rh3/h3-film/h3_t4_film_00021_.mp4',
-          '/data/runs/output/run-rh3/h3-film/h3_t4_w1_00005_.mp4',
-          '/data/runs/output/run-rh3/h3-film/notes.txt',
+          '/data/runs/output/run-0f1e2d-rh3/h3-film/h3_t4_w2_00004_.mp4',
+          '/data/runs/output/run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4',
+          '/data/runs/output/run-0f1e2d-rh3/h3-film/h3_t4_w1_00005_.mp4',
+          '/data/runs/output/run-0f1e2d-rh3/h3-film/notes.txt',
         ],
         card_snapshot: { card: 'h3-timeline', params: { prompt: 'the storm' } },
       },
@@ -630,12 +630,12 @@ describe('loadRunOntoBench — the run record wins', () => {
     const result = stages[0]?.['result'] as Record<string, unknown>
     expect(result['run_id']).toBe('rh3')
     expect(result['url'], 'the hero is the concatenated film, not the first-listed window').toBe(
-      R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
+      R('run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4'),
     )
     expect(result['artifacts']).toEqual({
-      'run-rh3/h3-film/h3_t4_film_00021_.mp4': R('run-rh3/h3-film/h3_t4_film_00021_.mp4'),
-      'run-rh3/h3-film/h3_t4_w2_00004_.mp4': R('run-rh3/h3-film/h3_t4_w2_00004_.mp4'),
-      'run-rh3/h3-film/h3_t4_w1_00005_.mp4': R('run-rh3/h3-film/h3_t4_w1_00005_.mp4'),
+      'run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_film_00021_.mp4'),
+      'run-0f1e2d-rh3/h3-film/h3_t4_w2_00004_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_w2_00004_.mp4'),
+      'run-0f1e2d-rh3/h3-film/h3_t4_w1_00005_.mp4': R('run-0f1e2d-rh3/h3-film/h3_t4_w1_00005_.mp4'),
     })
     expect(result['assetUrls']).toHaveLength(3)
   })
@@ -645,7 +645,7 @@ describe('loadRunOntoBench — the run record wins', () => {
       run_id: 'r-window',
       flow: {
         artifacts: [
-          '/data/run-r-window/h3_t4_w1_00001_.mp4',
+          '/data/run-0f1e2d-rwin/h3_t4_w1_00001_.mp4',
           '/outside/h3_t4_w2_00001_.mp4',
         ],
         card_snapshot: { card: 'h3-timeline', params: { prompt: 'window only' } },
@@ -659,9 +659,9 @@ describe('loadRunOntoBench — the run record wins', () => {
     const result = stages[0]?.['result'] as Record<string, unknown>
     const route = (path: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(path)
     expect(result).toMatchObject({
-      url: route('run-r-window/h3_t4_w1_00001_.mp4'),
-      artifacts: { 'run-r-window/h3_t4_w1_00001_.mp4': route('run-r-window/h3_t4_w1_00001_.mp4') },
-      assetUrls: [route('run-r-window/h3_t4_w1_00001_.mp4')],
+      url: route('run-0f1e2d-rwin/h3_t4_w1_00001_.mp4'),
+      artifacts: { 'run-0f1e2d-rwin/h3_t4_w1_00001_.mp4': route('run-0f1e2d-rwin/h3_t4_w1_00001_.mp4') },
+      assetUrls: [route('run-0f1e2d-rwin/h3_t4_w1_00001_.mp4')],
     })
   })
 
@@ -669,7 +669,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'rm',
       flow: {
-        artifacts: ['/data/runs/output/run-rm/mesh/model.glb'],
+        artifacts: ['/data/runs/output/run-0f1e2d-rm/mesh/model.glb'],
         card_snapshot: { card: 'img-to-mesh', params: {} },
       },
     }
@@ -679,7 +679,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     expect(d.errors).toEqual([])
     const stages = ensuredBody(calls).stages as Array<Record<string, unknown>>
     expect(stages[0]).toMatchObject({
-      result: { run_id: 'rm', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rm/mesh/model.glb') },
+      result: { run_id: 'rm', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rm/mesh/model.glb') },
     })
   })
 
@@ -769,7 +769,7 @@ describe('loadRunOntoBench — the run record wins', () => {
 
     const fullSide = {
       flow: {
-        artifacts: ['/data/run-rz/out.png'],
+        artifacts: ['/data/run-0f1e2d-rz/out.png'],
         card_snapshot: { card: 'a' },
         bench_snapshot: { stages: [{ id: 's_0', card: 'a' }, { id: 's_1', card: 'b' }], intent: '' },
       },
@@ -779,7 +779,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     await loadRunOntoBench('rz', c)
     expect(c.errors).toEqual([])
     const fullStages = ensuredBody(fullCalls.calls).stages as Array<Record<string, unknown>>
-    expect(fullStages[0]).toMatchObject({ result: { run_id: '', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-rz/out.png') } })
+    expect(fullStages[0]).toMatchObject({ result: { run_id: '', url: '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rz/out.png') } })
     expect(ensuredBody(fullCalls.calls).intent).toBe('restored run')
   })
 
@@ -787,7 +787,7 @@ describe('loadRunOntoBench — the run record wins', () => {
     const side = {
       run_id: 'r6',
       flow: {
-        artifacts: ['/data/run-r6/out.png'],
+        artifacts: ['/data/run-0f1e2d-r6/out.png'],
         bench_snapshot: {
           stages: [{ id: 's_0', card: 'a' }, { id: 's_1', card: 'b' }],
           intent: 'two stages, no snapshot card',

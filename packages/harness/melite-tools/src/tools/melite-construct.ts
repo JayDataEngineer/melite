@@ -1,4 +1,4 @@
-import { SESSION_RE, WIRE_STAGE_KEYS, normalizeBenchStages } from "@melite/contracts/benchStage"
+import { WIRE_STAGE_KEYS, benchSessionOf, normalizeBenchStages } from "@melite/contracts/benchStage"
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
 // (the bench rework, 2026-09-10; docs/plans/bench-rework-2026-09-10.md
 // §4). melite_flow executes; melite_construct AUTHORS — verbs over
@@ -52,8 +52,12 @@ export const DEFAULT_BENCH = 'main'
 // can only ever author its OWN bench — cross-conversation state is
 // unreachable, not merely discouraged.
 export function benchKeyOfExec(exec: { agent?: { id?: unknown } }): string {
+  // THE ONE SPELLING (the li-ay stroke, 2026-10-11): the sanitize
+  // decision was spelled inline here TWICE (this one and benchKeyOf
+  // below) while the two clients spelled it again — the contract
+  // floor owns the decision now, beside its grammar.
   const id = exec.agent?.id
-  return typeof id === 'string' && SESSION_RE.test(id) ? id : DEFAULT_BENCH
+  return benchSessionOf(typeof id === 'string' ? id : undefined)
 }
 
 type ConstructResult = {
@@ -67,7 +71,7 @@ type ConstructResult = {
 
 function benchKeyOf(a: Record<string, unknown>): string {
   const k = a['bench']
-  return typeof k === 'string' && SESSION_RE.test(k) ? k : DEFAULT_BENCH
+  return benchSessionOf(typeof k === 'string' ? k : undefined)
 }
 
 /** Refusal formatting shared by every verb (the remote's RemoteError

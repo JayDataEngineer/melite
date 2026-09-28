@@ -40428,9 +40428,7 @@ void main() {
 			const params = out["params"];
 			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
 			const rowCard = out["card"];
-			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
-				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
-			}
+			stripSelfNamedModel(rowCard, healed);
 			out["params"] = healed;
 			const outputs = out["outputs"];
 			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
@@ -40470,6 +40468,42 @@ void main() {
 		*  construction. */
 		const RESTORED_PROVENANCE_SPELLING = "restored";
 		const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+		const RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+		/** Sanitize one candidate id onto a legal bench session key —
+		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
+		* routing decision (the li-ay stroke, 2026-10-11): the decision
+		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+		* gallery client (bench-load.benchSessionOf), the cards tab
+		* (cards-resource.benchSessionKey), and TWICE inline in the agent
+		* tool — and the walls pinned each copy's grammar import while a
+		* gutted routing body ('main' for everything) stayed green behind
+		* the codec arms. The grammar moved to this floor for exactly this
+		* reason; the DECISION over it moves beside it, and every seat
+		* imports the same function. An address has one grammar and one
+		* sanitize — not four. */
+		function benchSessionOf(id) {
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** The run-relative tail of an absolute artifact path, or undefined
+		* when the path carries no run directory — e.g.
+		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+		* (the li-ay stroke): the restore stamp's private tailOf accepted
+		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+		* run-<hex>-<base62> and never look like that), so a path a run
+		* directory could not own still minted a served artifact address.
+		* One grammar for minting and one for taking the tail: the LAST
+		* run-shaped segment wins (the estate nests nothing under a run
+		* today; the last-wins order is the old behavior, kept). */
+		function runTailOf(path) {
+			const segments = path.split("/");
+			let found;
+			for (let i = 0; i < segments.length - 1; i++) {
+				if (segments[i + 1] === "") continue;
+				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+			}
+			return found;
+		}
 		/**
 		* THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
 		* audit's R5). `anny` is the original: the card boards the `anny`
@@ -40493,6 +40527,37 @@ void main() {
 		* family but is missing from this list.
 		*/
 		const SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
+		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
+		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
+		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
+		*  to re-implement it, and both copies drifted from the contract:
+		*
+		*  - one copy guarded `card !== ""` and the other did not, so a row
+		*    with `card: ""` and `params: {model: ""}` kept its model under
+		*    the contract and lost it under the client;
+		*  - one copy compared the RAW `params.model` and the other the
+		*    HEALED one;
+		*  - the multi-stage arm did not call `normalizeBenchStage` at all,
+		*    so it skipped the run-media path heal and the engine derivation
+		*    the single-card arm got.
+		*
+		*  All three were invisible: making both copies strip unconditionally
+		*  — the exact historical anny/h3-timeline defect — left
+		*  bench-stage-contract, closure-gate and media-sidebar GREEN, because
+		*  those walls pin the CONTRACT and the SET, and never drove the two
+		*  client use-sites.
+		*
+		*  One spelling now: every site asks this, which takes the row's card
+		*  and the params bag and strips in place. It is the contract's law,
+		*  stated once, with the `card !== ""` guard included. */
+		function stripSelfNamedModel(card, params) {
+			if (typeof card !== "string" || card === "") return;
+			if (typeof params !== "object" || params === null || Array.isArray(params)) return;
+			const bag = params;
+			if (bag["model"] !== card) return;
+			if (SELF_NAMED_FAMILIES.has(card)) return;
+			delete bag["model"];
+		}
 		//#endregion
 		//#region ../../web-kit/contracts/src/benchSnapshot.ts
 		function isRecord(v) {
@@ -40597,6 +40662,79 @@ void main() {
 			};
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp",
+					"avif"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov",
+					"m4v",
+					"avi"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
+		}
+		const KIND_BY_EXT = (() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		//#endregion
 		//#region src/client/bench-load.ts
 		/**
 		* bench-load — the restore gestures of the media plane (MediaPanel's
@@ -40622,10 +40760,12 @@ void main() {
 		*/
 		/** One bench session key — 'main' only for unattributed seats
 		*  (stroke 44: the bench belongs to the conversation; the gallery's
-		*  load writes the ACTIVE session's bench, never a stranger's). */
-		function benchSessionOf(id) {
-			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
-		}
+		*  load writes the ACTIVE session's bench, never a stranger's).
+		*  THE ONE SPELLING (the li-ay stroke): the sanitize decision used
+		*  to be this file's own function over the imported grammar; the
+		*  decision now lives beside its grammar on the contract floor and
+		*  every seat (this client, the cards tab, the agent tool) imports
+		*  the same function. */
 		/** The bench tab's address for one session (cross-plugin contract,
 		* the estate-artifact pattern: client bundles cannot import across
 		* plugins, so the form is restated with its definition site named —
@@ -40660,15 +40800,15 @@ void main() {
 		function resultOfRun(flow, runId) {
 			const arts = flow?.["artifacts"];
 			if (!Array.isArray(arts)) return void 0;
-			const isMedia = (a) => typeof a === "string" && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mkv|avi|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a);
-			const isVideo = (p) => /\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(p);
+			const isMedia = (a) => typeof a === "string" && mediaKindOf(a) !== void 0;
+			const isVideo = (p) => mediaKindOf(p) === "video";
 			const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i;
 			const media = arts.filter(isMedia);
 			if (media.length === 0) return void 0;
 			const film = media.find((p) => /(?:^|\/)h3_t4_film_\d+_\.mp4$/i.test(p) && !WINDOW_FILM.test(p));
 			const video = media.find((p) => isVideo(p) && !WINDOW_FILM.test(p));
 			const hero = film ?? video ?? media.find((p) => !WINDOW_FILM.test(p)) ?? media[0];
-			const tailOf = (p) => /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(p)?.[1];
+			const tailOf = runTailOf;
 			const heroTail = tailOf(hero);
 			if (heroTail === void 0) return void 0;
 			const route = (tail) => "/infer-gallery/artifact?path=" + encodeURIComponent(tail);
@@ -40784,9 +40924,7 @@ void main() {
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 						for (const st of bsStages) {
 							stripKeys(st, RESTORE_STRIP_KEYS);
-							const stCard = st["card"];
-							const stParams = st["params"];
-							if (typeof stCard === "string" && stCard !== "" && typeof stParams === "object" && stParams !== null && stParams["model"] === stCard && !SELF_NAMED_FAMILIES.has(stCard)) delete stParams["model"];
+							stripSelfNamedModel(st["card"], st["params"]);
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
 							st["provenance"] = RESTORED_PROVENANCE_SPELLING;
 						}
@@ -40804,7 +40942,7 @@ void main() {
 					const params = { ...parsedCard.value.params };
 					delete params["draft_id"];
 					delete params["test"];
-					if (params["model"] === card && !SELF_NAMED_FAMILIES.has(card)) delete params["model"];
+					stripSelfNamedModel(card, params);
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					const restoredCardRow = {
@@ -41042,67 +41180,63 @@ void main() {
 		}
 		//#endregion
 		//#region src/client/media-kinds.ts
-		/** The client classifier's vocabulary (typed DATA — see header). */
-		const MEDIA_KINDS = {
-			kinds: {
-				video: {
-					label: "Video",
-					exts: [
-						"mp4",
-						"webm",
-						"mkv",
-						"mov"
-					],
-					gallery: [
-						"mp4",
-						"webm",
-						"mov"
-					]
-				},
-				image: {
-					label: "Images",
-					exts: [
-						"png",
-						"jpg",
-						"jpeg",
-						"webp",
-						"gif",
-						"svg",
-						"bmp"
-					],
-					gallery: [
-						"png",
-						"jpg",
-						"jpeg",
-						"webp",
-						"gif"
-					]
-				},
-				audio: {
-					label: "Audio",
-					exts: [
-						"wav",
-						"flac",
-						"mp3",
-						"ogg",
-						"m4a",
-						"aac"
-					],
-					gallery: [
-						"wav",
-						"flac",
-						"ogg",
-						"mp3"
-					]
-				},
-				model: {
-					label: "3D",
-					exts: ["glb", "gltf"],
-					gallery: ["glb", "gltf"]
-				}
-			},
-			policy: { maxListedImages: 3 }
+		/**
+		* Media kinds — the CLIENT plane's kind vocabulary, DERIVED from the
+		* contract's mediaVocab() (the li-ay stroke, 2026-10-11).
+		*
+		* History: the deleted dsh-media package classified from its own
+		* media-kinds.json; the 2026-09-11 full port carried a HAND COPY of
+		* the vocabulary here ("parity-pinned" byte-equal by the wall — two
+		* typed copies, zero drift, by assertion). The copy is dead: the
+		* contract floor is importable from the browser (both planes build
+		* on it), so the client DERIVES now — exts and gallery subsets come
+		* from mediaVocab() itself, and only the UI LABELS are this file's
+		* own (a label is presentation, not classification).
+		*
+		* The laws the data carries (from the original file's $comment,
+		* preserved):
+		*  - gallery = exts that LIST in the sidebar; exts = the full
+		*    classifier. Gallery extras classify but do NOT list —
+		*    deliberate, documented at the vocab, not scattered.
+		*  - key order = classifier precedence (on a contradictory row the
+		*    earlier kind wins: video beats image).
+		*  - maxListedImages is the DOOR-tier cap (the estate serves it in
+		*    the run row's truncated marker); the client's >20 frame-dump
+		*    guard is the display-tier fallback, never the truncation law.
+		*/
+		/** The labels are the client's own; every EXTENSION LIST is the
+		*  contract's vocabulary, verbatim, in the vocab's own order. */
+		const LABELS = {
+			video: "Video",
+			image: "Images",
+			audio: "Audio",
+			model: "3D"
 		};
+		const GALLERY_KEY = {
+			video: "galleryVideo",
+			image: "galleryImage",
+			audio: "galleryAudio",
+			model: "galleryModel"
+		};
+		/** The client classifier's vocabulary (DERIVED — see header). */
+		const MEDIA_KINDS = (() => {
+			const vocab = mediaVocab();
+			const kinds = {};
+			for (const kind of [
+				"video",
+				"image",
+				"audio",
+				"model"
+			]) kinds[kind] = {
+				label: LABELS[kind],
+				exts: vocab[kind],
+				gallery: vocab[GALLERY_KEY[kind]]
+			};
+			return {
+				kinds,
+				policy: { maxListedImages: vocab.maxListedImages }
+			};
+		})();
 		//#endregion
 		//#region src/client/MediaPanel.tsx
 		/**
@@ -41998,4 +42132,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f284c708a7835c52930fe1232b65af7eadadd6d1";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f1edb69bfc8523840538783da1d37dfeaee1993b";

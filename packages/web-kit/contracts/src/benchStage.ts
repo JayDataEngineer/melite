@@ -355,6 +355,47 @@ export function runIdOk(id: string): boolean {
   return RUN_ID_RE.test(id);
 }
 
+/** Sanitize one candidate id onto a legal bench session key —
+ * 'main' for anything the grammar refuses. THE ONE SPELLING of the
+ * routing decision (the li-ay stroke, 2026-10-11): the decision
+ * `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+ * gallery client (bench-load.benchSessionOf), the cards tab
+ * (cards-resource.benchSessionKey), and TWICE inline in the agent
+ * tool — and the walls pinned each copy's grammar import while a
+ * gutted routing body ('main' for everything) stayed green behind
+ * the codec arms. The grammar moved to this floor for exactly this
+ * reason; the DECISION over it moves beside it, and every seat
+ * imports the same function. An address has one grammar and one
+ * sanitize — not four. */
+export function benchSessionOf(id: string | undefined): string {
+  return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+}
+
+/** The run-relative tail of an absolute artifact path, or undefined
+ * when the path carries no run directory — e.g.
+ * "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+ * "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+ * (the li-ay stroke): the restore stamp's private tailOf accepted
+ * ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+ * run-<hex>-<base62> and never look like that), so a path a run
+ * directory could not own still minted a served artifact address.
+ * One grammar for minting and one for taking the tail: the LAST
+ * run-shaped segment wins (the estate nests nothing under a run
+ * today; the last-wins order is the old behavior, kept). */
+export function runTailOf(path: string): string | undefined {
+  const segments = path.split("/");
+  let found: string | undefined;
+  for (let i = 0; i < segments.length - 1; i++) {
+    // a tail needs a LEAF: a path ending in the run directory
+    // itself ("…/run-x/") names no artifact
+    if ((segments[i + 1] as string) === "") continue;
+    if (RUN_ID_RE.test(segments[i] as string)) {
+      found = segments.slice(i).join("/");
+    }
+  }
+  return found;
+}
+
 /**
  * THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
  * audit's R5). `anny` is the original: the card boards the `anny`

@@ -22,25 +22,25 @@
  */
 
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
-import { RESTORE_STRIP_KEYS, RESTORED_PROVENANCE_SPELLING, normalizeBenchStage, stripKeys, stripSelfNamedModel } from '@melite/contracts/benchStage'
+import {
+  RESTORE_STRIP_KEYS,
+  RESTORED_PROVENANCE_SPELLING,
+  benchSessionOf,
+  normalizeBenchStage,
+  runTailOf,
+  stripKeys,
+  stripSelfNamedModel,
+} from '@melite/contracts/benchStage'
+import { mediaKindOf } from '@melite/contracts/mediaKinds'
 
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
- *  load writes the ACTIVE session's bench, never a stranger's). */
-// THE SERVER'S SESSION GRAMMAR, MIRRORED (the drafts package owns it; the
-// draft-id-grammar wall fails if the three ever differ — a client must
-// never accept an id the server refuses)
-// THE CONTRACT'S GRAMMAR (the identity law, 2026-09-28): the bench
-// key is an ADDRESS and has one grammar. This copy was a MIRROR of
-// the server's — a mirror is a second producer the moment the server
-// moves, and the wall that compared the copies could only name the
-// ones it knew. The client imports the contract's.
-import { SESSION_RE as BENCH_SESSION_RE } from '../../../../web-kit/contracts/src/benchStage.ts'
-export { BENCH_SESSION_RE }
-
-function benchSessionOf(id: string | undefined): string {
-  return typeof id === 'string' && BENCH_SESSION_RE.test(id) ? id : 'main'
-}
+ *  load writes the ACTIVE session's bench, never a stranger's).
+ *  THE ONE SPELLING (the li-ay stroke): the sanitize decision used
+ *  to be this file's own function over the imported grammar; the
+ *  decision now lives beside its grammar on the contract floor and
+ *  every seat (this client, the cards tab, the agent tool) imports
+ *  the same function. */
 
 /** The bench tab's address for one session (cross-plugin contract,
  * the estate-artifact pattern: client bundles cannot import across
@@ -91,9 +91,16 @@ function resultOfRun(
 ): Record<string, unknown> | undefined {
   const arts = flow?.['artifacts']
   if (!Array.isArray(arts)) return undefined
+  // ONE VOCABULARY (the li-ay stroke): these two private regexes
+  // were a SECOND classifier — they carried avif|m4v|avi the
+  // contract's vocab did not, and DROPPED svg|bmp it did carry, so
+  // an svg-only run restored with NO preview while an .avif restored
+  // with one the sidebar could not classify. The contract's
+  // mediaKindOf is the only classifier on this plane now (the wall
+  // bans the private spelling).
   const isMedia = (a: unknown): a is string =>
-    typeof a === 'string' && /\.(png|jpe?g|webp|gif|avif|mp4|webm|mov|m4v|mkv|avi|mp3|wav|ogg|flac|m4a|aac|glb|gltf)$/i.test(a)
-  const isVideo = (p: string): boolean => /\.(mp4|webm|mov|m4v|mkv|avi)$/i.test(p)
+    typeof a === 'string' && mediaKindOf(a) !== undefined
+  const isVideo = (p: string): boolean => mediaKindOf(p) === 'video'
   // THE FULL GALLERY RIDES THE STAMP (the operator's catch,
   // 2026-09-23: "reload card history, open the timeline card — the
   // preview shows ONE of the three clips"): the old stamp carried
@@ -112,7 +119,12 @@ function resultOfRun(
   )
   const video = media.find((p: string): boolean => isVideo(p) && !WINDOW_FILM.test(p))
   const hero = film ?? video ?? media.find((p: string): boolean => !WINDOW_FILM.test(p)) ?? media[0]
-  const tailOf = (p: string): string | undefined => /\/(run-[A-Za-z0-9_-]+\/.+)$/.exec(p)?.[1]
+  // THE TAIL GRAMMAR IS RUN_ID_RE (the li-ay stroke): this private
+  // tailOf accepted ANY "run-…" segment, so "/x/run-ZZZ/a.png" — a
+  // directory no run minted — minted a served artifact address. The
+  // contract's runTailOf takes the tail only under a REAL run id
+  // (run-<hex>-<base62>, the mint grammar).
+  const tailOf = runTailOf
   const heroTail = tailOf(hero)
   if (heroTail === undefined) return undefined
   const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
