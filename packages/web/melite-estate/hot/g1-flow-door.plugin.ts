@@ -27,5 +27,14 @@ export async function apply(ctx: Context): Promise<void> {
   const flow = { ...base, id: 'g1-live-probe', description: 'G1 live seat proof — registered by a patch save, retracted by another' }
   const off = registerRegistryFlow(flow)
   console.log(`[hot-g1-flow-door] LIVE — the flow seat serves '${flow.id}' (${flow.stages.length} stages, cloned from fit-seat)`)
-  ctx.effect(() => off)
+  // The disposer LOGS TOO (the lane-audit lesson: a proof artifact that
+  // only logs its arming is half-blind — the lane died with "g1 LIVE"
+  // as its last line while the door had already proven the retraction;
+  // the log could not show it).
+  ctx.effect(() => {
+    return () => {
+      off()
+      console.log(`[hot-g1-flow-door] RETRACTED — the disposer removed exactly '${flow.id}' from the live seat`)
+    }
+  })
 }
