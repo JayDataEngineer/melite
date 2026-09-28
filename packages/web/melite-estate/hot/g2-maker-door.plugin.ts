@@ -25,14 +25,22 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
-import { refreshCardDefs, theService } from '@melite/comfyui-cordis'
+import { loadCardDefs, refreshCardDefs, theService } from '@melite/comfyui-cordis'
 
 const schema = z.object({
   prompt: z.string().description('Prompt').extra('extra', { order: 0, group: 'prompt', columns: 2, width: 1, required: true, zone: 'params', wtype: 'textarea' }),
   seed: z.number().description('Seed').step(1).default(-1).extra('extra', { order: 1, group: 'prompt', width: 1, zone: 'params' }),
 })
 
-export function apply(ctx: Context): void {
+// COLD-BOOT SAFE (the lane crash the first armed row taught): the
+// insert row rides the profile PATCH, so it mounts at EVERY boot —
+// and at a cold boot this fiber can run BEFORE the estate bundle's
+// card boot, where theService() throws "card defs not booted". The
+// live-mount path (patch save after boot) resolves instantly; the
+// cold path awaits the same boot every other card consumer awaits.
+// Sync apply here crash-looped the lane (Restart=always, 5 restarts).
+export async function apply(ctx: Context): Promise<void> {
+  await loadCardDefs()
   console.log('[hot-g2-maker-door] LIVE — the G2 row is armed; the moss id-string card registers')
   ctx.effect(() => {
     const off = theService().registerCard({
