@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react"
 import type { CardStage } from "@melite/contracts"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { hydrateLayerA, serializeLayerA } from "./docHydrate"
-import { hydrateCalls, hydrateKeyframes, serializeCalls } from "./docCalls"
+import { hydrateCalls, hydrateKeyframes, serializeCalls, corruptCallsField } from "./docCalls"
 
 /** Document state (tenant §1). Verbatim lines 1536–1560. */
 export function useDocState(stage: CardStage) {
@@ -24,18 +24,21 @@ export function useDocState(stage: CardStage) {
   // back to STARTER_CALLS — and the guard used to initialize to the
   // HYDRATED serialization, so the mount-time persist no-opped and
   // the stage stayed calls-less until the first manual edit. A Run
-  // on such a stage met the gate verbatim ("no calls to
-  // compose"). The sentinel: when the PERSISTED params carried no
-  // calls (and no legacy beats), the ref inits to the empty string —
-  // never equal to a hydrated candidate — so the first persist
-  // effect fires and the starter doc lands on the stage. Stages
-  // that carried calls keep the no-op-on-mount behavior exactly.
+  // Stages that carried calls keep the no-op-on-mount behavior
+  // exactly. A CORRUPT array-shaped calls/beats string also counts
+  // as PRESENT (the fallback audit's CRITICAL-1): the starter shows
+  // as view state, but the sentinel HOLDS — the mount persist never
+  // writes the default back over the corrupt source. The parseable
+  // legacy string still arms (""), so the designed self-heal
+  // migration (parse → persist as a real array) is untouched.
   const rawList: unknown = Array.isArray(stage.params?.calls) && (stage.params?.calls as unknown[]).length > 0
     ? stage.params?.calls
     : Array.isArray(stage.params?.beats) && (stage.params?.beats as unknown[]).length > 0
       ? stage.params?.beats
       : null
-  const lastCallsRef = useRef(rawList !== null ? JSON.stringify(calls) : "")
+  const rawPresent = rawList !== null
+    || corruptCallsField({ calls: stage.params?.calls, beats: stage.params?.beats }) !== null
+  const lastCallsRef = useRef(rawPresent ? JSON.stringify(calls) : "")
   const [keyframes, setKeyframes] = useState<DocKeyframe[]>(() => hydrateKeyframes(stage.params?.keyframes))
   const [layerA, setLayerA] = useState<LayerA>(() => hydrateLayerA(stage.params))
   // The model ROUTE: params.model (the Layer A selector — wins at the
@@ -74,7 +77,11 @@ export function useDocState(stage: CardStage) {
         : Array.isArray(stage.params?.beats) && (stage.params?.beats as unknown[]).length > 0
           ? stage.params?.beats
           : null
-      lastCallsRef.current = rawList !== null ? JSON.stringify(incomingCalls) : ""
+      // corrupt sources HOLD here too — never re-arm the persist
+      // over an unparseable document (CRITICAL-1's second arm)
+      const rawPresent = rawList !== null
+        || corruptCallsField({ calls: stage.params?.calls, beats: stage.params?.beats }) !== null
+      lastCallsRef.current = rawPresent ? JSON.stringify(incomingCalls) : ""
       lastKeyframesRef.current = JSON.stringify(incomingKeyframes)
       lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA))
       return

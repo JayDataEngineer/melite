@@ -8,6 +8,31 @@ import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
 import { joinRefList, migrateCallKnobKey, splitRefList } from "../../timelineContract.ts"
 
+/** An array-SHAPED string that will not parse (or parses to a
+ * non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
+ * class ("the persist effect wrote 1 call back, and the multi-call
+ * plan was destroyed permanently"). The parseable case self-heals
+ * (parse → the mount persist rewrites it as a real array); the
+ * corrupt case must never fall to the starter SILENTLY. The studio
+ * shows the starter as VIEW state, the corruption is named loudly
+ * here, and useDocState's sentinel treats the field as PRESENT so no
+ * mount-persist ever writes the starter back over the corrupt
+ * source. Non-array-shaped strings ("not-json") are foreign values
+ * the vocabulary has always tolerated — not this crime. */
+export function corruptCallsField(raw: { calls?: unknown; beats?: unknown }): "calls" | "beats" | null {
+  for (const field of ["calls", "beats"] as const) {
+    const v = raw[field]
+    if (typeof v !== "string" || !v.trimStart().startsWith("[")) continue
+    try {
+      if (Array.isArray(JSON.parse(v))) continue
+    } catch {
+      /* unparseable — corrupt */
+    }
+    return field
+  }
+  return null
+}
+
 export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall[] {
   // Layer B: `calls` is the vocabulary (2026-08-16, the B/C conflation
   // fix). Legacy docs wrote `beats` where every beat was a call in
@@ -21,6 +46,19 @@ export function hydrateCalls(raw: { calls?: unknown; beats?: unknown }): DocCall
   // (1 default call), the persist effect wrote 1 call back, and the
   // multi-call plan was destroyed permanently. Parse string-encoded
   // arrays before checking Array.isArray; reject everything else.
+  const corrupt = corruptCallsField(raw)
+  if (corrupt !== null) {
+    // THE SILENT REPLACEMENT (the fallback audit's CRITICAL-1,
+    // 2026-09-28): an unparseable array-shaped string used to fall
+    // through to STARTER_CALLS with the persist effect armed — the
+    // corrupt source was overwritten by a 1-call default and the
+    // plan was destroyed with no trace. The starter is VIEW state
+    // only now; the crime is named, and useDocState holds the source.
+    console.error(
+      `VideoTimelineStudio: params.${corrupt} is array-shaped but unparseable — the document is corrupt. ` +
+        `The starter is shown as view state ONLY; nothing persists over the corrupt source until you edit.`,
+    )
+  }
   let callsRaw = raw.calls
   if (typeof callsRaw === "string" && callsRaw.trimStart().startsWith("[")) {
     try {

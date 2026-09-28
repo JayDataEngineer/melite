@@ -17,14 +17,25 @@ const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
  *  one under the estate's own tree. Before, a maker-lane run was
  *  invisible to the restart guard (status said idle, restart tore
  *  a live render). Conservative as ever: a stale "running" sidecar
- *  refuses the restart (safe). */
+ *  refuses the restart (safe).
+ *
+ *  FAIL-CLOSED (the fallback audit's HIGH-3, 2026-09-28): an
+ *  UNREADABLE sidecar or root used to `continue` — the run became
+ *  invisible and the guard failed OPEN (restart tore a live render
+ *  whose state file hit EACCES/EISDIR/EIO). Absent state (ENOENT,
+ *  ENOTDIR) is honestly inactive — nothing exists to protect;
+ *  every OTHER read failure is UNKNOWN state and counts as ACTIVE,
+ *  named with its errno so the refusal and the status view say
+ *  exactly what could not be read. */
 export function activeRuns(): string[] {
   const out: string[] = [];
   for (const dir of sweepOutputRoots()) {
     let names: string[];
     try {
       names = readdirSync(dir);
-    } catch {
+    } catch (e) {
+      if ((e as NodeJS.ErrnoException).code === "ENOENT") continue; // root not created yet — normal
+      out.push("(unreadable root: " + dir + " " + ((e as NodeJS.ErrnoException).code ?? "?") + ")");
       continue;
     }
     for (const name of names) {
@@ -32,7 +43,10 @@ export function activeRuns(): string[] {
       let buf: string;
       try {
         buf = readFileSync(join(dir, name, "_flow.json"), "utf-8").slice(0, 8191);
-      } catch {
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code ?? "?";
+        if (code === "ENOENT" || code === "ENOTDIR") continue; // no state file — nothing to protect
+        out.push(name + " (state unreadable: " + code + ")"); // unknown ⇒ active (fail-closed)
         continue;
       }
       const m = STATUS_RE.exec(buf);

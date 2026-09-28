@@ -463,6 +463,46 @@ describe("hStatus", () => {
     }
   });
 
+  it("FAIL-CLOSED: unreadable run state guards the restart (HIGH-3 — never invisible)", async () => {
+    // the fallback audit's HIGH-3: an unreadable _flow.json used to
+    // `continue` — the run vanished from the census and the restart
+    // guard failed OPEN. Unknown state now counts as ACTIVE, named
+    // with its errno; absent state (ENOENT) stays honestly inactive.
+    mkRoot();
+    try {
+      runFlow("run-ok", "running");
+      // EISDIR: the sidecar path is a directory — state exists but
+      // cannot be read (the deterministic stand-in for EACCES/EIO)
+      mkdirSync(join(ROOT, "data", "runs", "output", "run-mystery", "_flow.json"), { recursive: true });
+      // absent state: a run dir created before its sidecar lands
+      mkdirSync(join(ROOT, "data", "runs", "output", "run-fresh"), { recursive: true });
+      const [, env] = await manage({ action: "status" });
+      const active = (env.data as { active_runs: string[] }).active_runs;
+      assert.deepEqual(
+        active,
+        ["run-mystery (state unreadable: EISDIR)", "run-ok"],
+        "the unreadable run counts as active, errno named; the sidecar-less run does not",
+      );
+      // the lifecycle guard refuses on the unreadable run too
+      const [rcode, renv] = await manage({ action: "restart" });
+      assert.equal(rcode, 409);
+      assert.match(String(renv.detail), /run-mystery \(state unreadable: EISDIR\)/);
+      // and an unreadable EXTRA root is named, not swallowed
+      const rootAsFile = join(ROOT, "data", "runs-as-file");
+      writeFileSync(rootAsFile, "not a directory");
+      process.env.MELITE_STATE_ROOTS = rootAsFile;
+      const [, env3] = await manage({ action: "status" });
+      const active3 = (env3.data as { active_runs: string[] }).active_runs;
+      assert.ok(
+        active3.some((n) => n.startsWith("(unreadable root: ") && n.includes("ENOTDIR")),
+        "the unreadable root is named with its errno",
+      );
+      delete process.env.MELITE_STATE_ROOTS;
+    } finally {
+      rmRoot();
+    }
+  });
+
   it("serves declared model coordinates and ComfyUI version tags", async () => {
     mkRoot();
     try {

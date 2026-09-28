@@ -23,26 +23,48 @@ function optRefs(raw: Record<string, unknown> | undefined, k: string): string[] 
   return list.length > 0 ? list : undefined
 }
 
-function arrayValue(value: unknown): unknown[] {
+function arrayValue(value: unknown, field: string): unknown[] {
   if (Array.isArray(value)) return value
   if (typeof value !== 'string' || !value.trimStart().startsWith('[')) return []
   try {
     const parsed: unknown = JSON.parse(value)
-    return parsed as unknown[]
+    if (!Array.isArray(parsed)) {
+      // HIGH-4 (the fallback audit, 2026-09-28): a parseable
+      // non-array used to be cast blind (`as unknown[]`, iterating
+      // to zero) — the audio timeline vanished without a word and
+      // the film composed silent. Named now; view state stays empty
+      // and the corrupt source survives (serialize omits the key).
+      console.error(
+        `VideoTimelineStudio: params.${field} parses to a non-array — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`,
+      )
+      return []
+    }
+    return parsed
   } catch {
+    console.error(
+      `VideoTimelineStudio: params.${field} is array-shaped but unparseable — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`,
+    )
     return []
   }
 }
 
 function hydrateAudioClips(value: unknown): DocAudioClip[] | undefined {
   const clips: DocAudioClip[] = []
-  for (const [index, raw] of arrayValue(value).entries()) {
-    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) continue
+  for (const [index, raw] of arrayValue(value, 'audio_clips').entries()) {
+    if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
+      // HIGH-4: every dropped clip row is NAMED — a corrupt row used
+      // to `continue` silently and the film lost its audio timing.
+      console.warn(`VideoTimelineStudio: audio_clips[${index}] is not a clip row — dropped.`)
+      continue
+    }
     const row = raw as Record<string, unknown>
     let parsed: ReturnType<typeof parseFilmMixClips>[number] | undefined
     try {
       parsed = parseFilmMixClips([{ ...row }])[0]
-    } catch {
+    } catch (e) {
+      console.warn(
+        `VideoTimelineStudio: audio_clips[${index}] failed to hydrate (${String(e).slice(0, 120)}) — dropped; the film composes without this clip.`,
+      )
       continue
     }
     if (parsed === undefined) continue

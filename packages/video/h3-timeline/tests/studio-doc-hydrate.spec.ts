@@ -13,6 +13,53 @@ import { describe, expect, it } from "vitest"
 import assert from "node:assert/strict"
 import { hydrateLayerA, serializeLayerA } from "../src/ui/studio/docHydrate.ts"
 
+describe("hydrateLayerA audio defects are NAMED, never silent (HIGH-4)", () => {
+  it("an array-shaped unparseable audio_clips string is named loudly and never overwritten", () => {
+    const errors: string[] = []
+    const warns: string[] = []
+    const origErr = console.error
+    const origWarn = console.warn
+    console.error = (...a: unknown[]) => { errors.push(a.join(" ")) }
+    console.warn = (...a: unknown[]) => { warns.push(a.join(" ")) }
+    try {
+      // the corrupt list: view state has no clips (the film composes
+      // without them) — but the crime is named, and the serialized
+      // doc omits the key, so nothing is ever written over the source
+      const corrupt = hydrateLayerA({ audio_clips: "[{broken" })
+      assert.equal(corrupt.audio_clips, undefined)
+      assert.equal(errors.length, 1)
+      assert.match(errors[0]!, /audio_clips is array-shaped but unparseable/)
+      assert.match(errors[0]!, /composes WITHOUT it/)
+      assert.equal("audio_clips" in serializeLayerA(corrupt), false)
+      // a non-array-shaped string is tolerated foreign (same law as
+      // C1's "not-json") — never this crime class
+      errors.length = 0
+      const foreign = hydrateLayerA({ audio_clips: "not-json" })
+      assert.equal(foreign.audio_clips, undefined)
+      assert.equal(errors.length, 0)
+      // per-row drops are warned with their index
+      const rowDropped = hydrateLayerA({
+        audio_clips: [{ src: "/a/x.flac", start_frame: 0, dur_frames: 24 }, 42, null],
+      })
+      assert.equal(rowDropped.audio_clips?.length, 1)
+      assert.equal(warns.length, 2)
+      assert.match(warns[0]!, /audio_clips\[1\] is not a clip row/)
+      assert.match(warns[1]!, /audio_clips\[2\] is not a clip row/)
+      // a clip row parseFilmMixClips REJECTS is named with the reason
+      // (a positioned row with no src throws inside the parse)
+      warns.length = 0
+      const rejected = hydrateLayerA({ audio_clips: [{ src: "", start_frame: 3, dur_frames: 24 }] })
+      assert.equal(rejected.audio_clips, undefined)
+      assert.equal(warns.length, 1)
+      assert.match(warns[0]!, /audio_clips\[0\] failed to hydrate \(Error: audio_clips: a positioned clip row has no src/)
+      assert.match(warns[0]!, /composes without this clip/)
+    } finally {
+      console.error = origErr
+      console.warn = origWarn
+    }
+  })
+})
+
 describe("hydrateLayerA (params → Layer A)", () => {
   it("an empty doc hydrates the engine defaults", () => {
     const a = hydrateLayerA(undefined)

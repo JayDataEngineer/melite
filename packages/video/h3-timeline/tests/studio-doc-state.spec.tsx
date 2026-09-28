@@ -52,6 +52,23 @@ describe("hydration", () => {
     expect(result.current.keyframes.length).toBe(1)
   })
 
+  it("a CORRUPT array-shaped calls string shows the starter but never arms the mount persist (CRITICAL-1)", () => {
+    // the 2026-08-30 crime class: an unparseable string fell to
+    // STARTER_CALLS with the sentinel armed ("") — the first persist
+    // wrote the 1-call starter back over the corrupt source and the
+    // plan was destroyed permanently. The sentinel now HOLDS.
+    const { result } = renderHook(() => useDocState(stage({ calls: "[{broken" })))
+    assert.equal(result.current.calls.length, 1) // starter VIEW state
+    assert.ok(result.current.lastCallsRef.current.length > 0) // HOLD — no "" arming
+  })
+
+  it("a parseable string-encoded calls still arms the self-heal migration", () => {
+    const params = { calls: JSON.stringify([{ text: "s", start_frame: 0, end_frame: 24 }]) }
+    const { result } = renderHook(() => useDocState(stage(params)))
+    assert.equal(result.current.calls[0]!.text, "s")
+    assert.equal(result.current.lastCallsRef.current, "") // armed — the migration persists
+  })
+
   it("rehydrates when the same stage receives a new document", () => {
     const first = {
       calls: [{ text: "first", start_frame: 0, end_frame: 48 }],

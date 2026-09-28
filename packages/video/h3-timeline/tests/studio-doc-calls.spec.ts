@@ -53,6 +53,37 @@ describe("hydrateCalls (params → document)", () => {
     assert.deepEqual(hydrateCalls({ beats: "[{broken" }), STARTER_CALLS)
   })
 
+  it("an array-shaped unparseable string is NAMED, never silently replaced (CRITICAL-1)", () => {
+    const errors: string[] = []
+    const orig = console.error
+    console.error = (...a: unknown[]) => { errors.push(a.join(" ")) }
+    try {
+      // the corrupt case: starter as VIEW state + one loud crime
+      assert.deepEqual(hydrateCalls({ calls: "[{broken" }), STARTER_CALLS)
+      assert.equal(errors.length, 1)
+      assert.match(errors[0]!, /params\.calls is array-shaped but unparseable/)
+      assert.match(errors[0]!, /nothing persists over the corrupt source/)
+      errors.length = 0
+      // a corrupt beats outranked by healthy calls: still named
+      assert.deepEqual(hydrateCalls({ calls: [CALL], beats: "[{broken" }), [CALL])
+      assert.equal(errors.length, 1)
+      assert.match(errors[0]!, /params\.beats/)
+      errors.length = 0
+      // a parse-but-non-array STRING ("[object…"-shaped objects are
+      // rare; '{"a":1}' never looked like a calls doc) is tolerated
+      // foreign, like "not-json" — the crime class is strictly the
+      // unparseable array-shaped string. Junk ROWS inside a real
+      // array are the separately-pinned malformed-row skip.
+      assert.deepEqual(hydrateCalls({ calls: "not-json", beats: 42 }), STARTER_CALLS)
+      assert.equal(errors.length, 0)
+      // healthy string-encoded arrays never log
+      assert.deepEqual(hydrateCalls({ calls: JSON.stringify([CALL]) }), [CALL])
+      assert.equal(errors.length, 0)
+    } finally {
+      console.error = orig
+    }
+  })
+
   it("legacy beats map 1:1 when calls are absent", () => {
     assert.deepEqual(hydrateCalls({ beats: [CALL] }), [CALL])
   })

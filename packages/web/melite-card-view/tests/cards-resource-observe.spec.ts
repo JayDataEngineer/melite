@@ -105,6 +105,75 @@ describe("observeRunOutcome — the start read binds the row first", () => {
   });
 });
 
+describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'running' forever)", () => {
+  test("a downed gateway gets an 'unreachable' face, then recovery corrects it", async () => {
+    // the fallback audit's CRITICAL-2: a 502 loop used to retry
+    // forever with the tile stuck at 'running' — "a transport
+    // failure became 'still live'". Ten consecutive transport
+    // failures must patch an explicit 'unreachable' face, and the
+    // first successful poll must correct it back to 'running'.
+    vi.useFakeTimers();
+    let fakes: Fakes | undefined;
+    try {
+      // the start read (call 1) plus polls 2..11 all reject on the
+      // wire; call 12 is the recovery — the live doc answers.
+      fakes = stubEstate({
+        throws: Array.from({ length: 11 }, (_, i) => ({
+          method: "runs/status" as const,
+          onCall: i + 1,
+          message: "door down",
+        })),
+        runDocs: [RUNNING],
+      });
+      const ctrl = new AbortController();
+      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal);
+      // run the fake clock through the whole backoff chain
+      // (1.5s→10s cap across the failures and the recovery poll)
+      await vi.advanceTimersByTimeAsync(120_000);
+      ctrl.abort();
+      await expect(done).resolves.toBeNull();
+      const statuses = patchesOf(fakes).map(
+        (p) => (p["patch"] as { runStatus?: string }).runStatus,
+      );
+      // [0] the honest-optimism bind, [1] the escalation face,
+      // [2] the corrective live patch on recovery
+      expect(statuses).toEqual(["running", "unreachable", "running"]);
+    } finally {
+      vi.useRealTimers();
+      fakes?.unmount();
+    }
+  });
+
+  test("transient failures (under the threshold) never patch the unreachable face", async () => {
+    vi.useFakeTimers();
+    let fakes: Fakes | undefined;
+    try {
+      // three wire hiccups, then the live doc — a flap, not an outage
+      fakes = stubEstate({
+        throws: Array.from({ length: 3 }, (_, i) => ({
+          method: "runs/status" as const,
+          onCall: i + 1,
+          message: "hiccup",
+        })),
+        runDocs: [RUNNING],
+      });
+      const ctrl = new AbortController();
+      const done = observeRunOutcome("d_1", "s_0", "r_1", ctrl.signal);
+      await vi.advanceTimersByTimeAsync(30_000);
+      ctrl.abort();
+      await expect(done).resolves.toBeNull();
+      const statuses = patchesOf(fakes).map(
+        (p) => (p["patch"] as { runStatus?: string }).runStatus,
+      );
+      expect(statuses.includes("unreachable")).toBe(false);
+      expect(statuses[0]).toBe("running");
+    } finally {
+      vi.useRealTimers();
+      fakes?.unmount();
+    }
+  });
+});
+
 describe("observeRunOutcome — THE PHANTOM CURE (refused status, file-era verdict)", () => {
   function phantom(listRows: Array<Record<string, unknown>>): Fakes {
     return stubEstate({

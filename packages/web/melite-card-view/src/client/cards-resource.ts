@@ -561,6 +561,10 @@ async function observeRunOutcomeRun(
   // shows 'queued' — the old Queue-feedback law — never a lie about
   // running while the GPU is busy with another card).
   try {
+    // the initial probe's catch is HONEST optimism, not the C2 crime:
+    // the start just answered, so the run IS live server-side; this
+    // face survives exactly one poll interval before a real answer
+    // (or the transport escalation below) corrects it.
     const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => 'running')
     const first = startStatus === 'queued' || startStatus === 'pending' ? 'queued' : 'running'
     await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
@@ -574,6 +578,17 @@ async function observeRunOutcomeRun(
   let lastLive = 'running'
   let lastPct: number | null = null
   let lastAct = ''
+  // THE TRANSPORT ESCALATION (the fallback audit's CRITICAL-2): a
+  // downed gateway used to retry forever with the tile face stuck at
+  // 'running' — the audit's "a 502 becomes 'still live'". The estate
+  // ANSWERED-refusal arm below already cures the phantom case; the
+  // never-answers case now gets an explicit 'unreachable' face (an
+  // in-vocabulary free string the tile renders verbatim) after
+  // TRANSPORT_UNREACHABLE_AFTER consecutive failures, with backoff —
+  // and the next successful poll corrects the face (lastLive is
+  // blanked when the face lands, so the live patch always fires).
+  let transportFails = 0
+  const TRANSPORT_UNREACHABLE_AFTER = 10
   while (signal?.aborted !== true) {
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
@@ -596,9 +611,18 @@ async function observeRunOutcomeRun(
         // 'running' is the one non-terminal, and it polls on.
         return terminal === 'running' ? null : terminal
       }
-      await sleep(1500) // transport — the next poll may recover
+      transportFails += 1
+      if (transportFails === TRANSPORT_UNREACHABLE_AFTER) {
+        try {
+          await patchStageOutcome(draftId, stageId, { runStatus: 'unreachable', result: { run_id: runId } })
+          lastLive = '' // force the corrective live patch on recovery
+          onTouched?.()
+        } catch { /* bookkeeping */ }
+      }
+      await sleep(Math.min(1500 * transportFails, 10000)) // backoff — the estate returning is the cure
       continue
     }
+    transportFails = 0
     if (!isTerminalRun(row.status)) {
       // the LIVE flip (queued → running): patch the tile the moment
       // the estate picks the run up — never a stuck 'queued' face
