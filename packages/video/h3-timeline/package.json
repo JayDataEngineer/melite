@@ -17,9 +17,9 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-client-ui-renderer": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-tools": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-tools": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite-plugin/timeline": "workspace:*",
     "@melite/card-base": "workspace:*",
@@ -43,7 +43,7 @@
     "typescript": "~6.0.3"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web"
@@ -54,6 +54,6 @@
   },
   "sideEffects": true,
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.1.7-rc.2 <0.2.0"
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
   }
 }

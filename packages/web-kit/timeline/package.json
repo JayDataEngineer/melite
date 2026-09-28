@@ -11,7 +11,7 @@
     "./package.json": "./package.json"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "clsx": "*",

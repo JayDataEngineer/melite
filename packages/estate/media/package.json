@@ -28,16 +28,16 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
     "@melite/contracts": "workspace:*",
     "zod": "4.5.4"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-host-webserver": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-typert-generator": "0.1.7-rc.2",
-    "@deepseek-ai/dsh-typert-protocol": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-typert-generator": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3"
   },

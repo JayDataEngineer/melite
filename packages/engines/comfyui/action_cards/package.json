@@ -5,7 +5,7 @@
   "type": "module",
   "description": "The comfyui engine's card tenants (React studio forms). Scoped as a package so card files resolve the shared kit (@melite/* from packages/web/ui_components), the engine UI tenants (@melite-plugin/*), and their runtime deps. Cards are loaded by the editor registry by FILE glob; this package exists for module resolution, typecheck, and dependency hygiene.",
   "dependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.1.7-rc.2",
+    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@melite-plugin/3d": "workspace:*",
     "@melite-plugin/motion": "workspace:*",
     "@melite-plugin/timeline": "workspace:*",

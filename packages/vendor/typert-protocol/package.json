@@ -1,6 +1,6 @@
 {
   "name": "@deepseek-ai/dsh-typert-protocol",
-  "description": "VENDORED (re-vendored 2026-10-11): @deepseek-ai/dsh-typert-protocol 0.1.7-rc.2, copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src \u2014 version-identical to the registry artifact the estate links). WHY A VENDOR COPY: the DSH Typert generator's identity law (generator/src/analyzer.ts isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package \u2014 the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling (DSH's own aggregate references packages/typert/protocol; their tsconfig.host.json:169). Same name + same version means pnpm links every range-matching consumer onto THIS copy with no override. DO NOT EDIT the src files \u2014 re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1).",
+  "description": "VENDORED (re-vendored 2026-10-11): @deepseek-ai/dsh-typert-protocol 0.1.7-rc.2, copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src — version-identical to the registry artifact the estate links). WHY A VENDOR COPY: the DSH Typert generator's identity law (generator/src/analyzer.ts isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package — the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling (DSH's own aggregate references packages/typert/protocol; their tsconfig.host.json:169). Same name + same version means pnpm links every range-matching consumer onto THIS copy with no override. DO NOT EDIT the src files — re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1).",
   "version": "0.1.7-rc.2",
   "private": true,
   "type": "module",
@@ -36,6 +36,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-brand": "0.1.7-rc.2"
+    "@deepseek-ai/dsh-brand": "0.2.0-rc.1"
   }
 }

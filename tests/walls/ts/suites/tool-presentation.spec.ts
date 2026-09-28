@@ -84,16 +84,51 @@ const ALL: Array<[string, ToolDefinition]> = [
 // change it deliberately), and the union's members are read out of
 // the host's own source.
 const DSH_TOOLS_DIR: string = (() => {
+  // The pinned cell: the store holds a cell per version that ever
+  // resolved (0.1.7 lingered after the 0.2.0 hop), so the walk must
+  // select the cell the workspace DECLARES, not the first match.
+  const declaredRow = (() => {
+    const d = JSON.parse(readFileSync("packages/harness/melite-tools/package.json", "utf8")) as {
+      dependencies?: Record<string, string>;
+      devDependencies?: Record<string, string>;
+    };
+    const row = d.dependencies?.["@deepseek-ai/dsh-tools"] ?? d.devDependencies?.["@deepseek-ai/dsh-tools"];
+    return row === undefined ? null : row.replace(/^[\^~>=<\s]*/, "");
+  })();
   const roots: string[] = [join(REPO ?? "", "node_modules", ".pnpm")];
   for (const r of roots) {
     if (!existsSync(r)) continue;
+    const cells: string[] = [];
     for (const e of readdirSync(r, { withFileTypes: true })) {
       if (!e.isDirectory() || !e.name.startsWith("@deepseek-ai+dsh-tools@")) continue;
       const dir = join(r, e.name, "node_modules", "@deepseek-ai", "dsh-tools");
-      if (existsSync(join(dir, "package.json"))) return dir;
+      if (existsSync(join(dir, "package.json"))) cells.push(dir);
     }
+    if (cells.length === 0) continue;
+    if (declaredRow !== null) {
+      const hit = cells.find((c) => {
+        const v = (JSON.parse(readFileSync(join(c, "package.json"), "utf8")) as { version?: string }).version ?? "";
+        return v === declaredRow || satisfiesCell(c, declaredRow);
+      });
+      if (hit !== undefined) return hit;
+      throw new Error(
+        `the pinned dsh-tools ${declaredRow} has no store cell — run pnpm install (cells seen: ${cells.length})`,
+      );
+    }
+    return cells[0];
   }
   throw new Error("the installed dsh-tools package is not found — the kind oracle has no host to read");
+
+  function satisfiesCell(cell: string, row: string): boolean {
+    // exact rows only for now — a caret row matches by prefix on the
+    // release line (0.2.0-rc.x), which is all the workspace declares.
+    if (row.startsWith("^")) {
+      const line = row.slice(1).split("-rc.")[0] + "-rc.";
+      const v = (JSON.parse(readFileSync(join(cell, "package.json"), "utf8")) as { version?: string }).version ?? "";
+      return v.startsWith(line);
+    }
+    return false;
+  }
 })();
 
 const DSH_TOOLS_VERSION: string = (
@@ -128,13 +163,23 @@ describe("presentCall disclosure composition", () => {
     }
   });
 
-  it("the kind oracle is the host's own declaration (version pinned, union derived)", () => {
+  it("the kind oracle is the host's own declaration (version rides the one lockstep line, union derived)", () => {
     // F-L2: the host is a PINNED dependency — a bump that changes
     // the union is a deliberate edit here, not a silent drift, and
     // the members the wall judges are read from the host, never
-    // retyped beside it.
-    assert.equal(DSH_TOOLS_VERSION, "0.1.5-rc.2",
-      `the host dsh-tools version is pinned (found ${DSH_TOOLS_VERSION}) — a bump that changes ToolCallKind says so here`);
+    // retyped beside it. The version arm DERIVES the expected line
+    // from the workspace's own declared row (dep-doctor proves all
+    // dsh-* rows sit on it) — a hardcoded literal here drifted twice
+    // (0.1.5 → 0.1.7 missed, 0.1.7 → 0.2.0 caught) without ever
+    // judging the union; the MEMBERS arm below is the real oracle.
+    const declared = JSON.parse(
+      readFileSync("packages/harness/melite-tools/package.json", "utf8"),
+    );
+    const row = declared.dependencies?.["@deepseek-ai/dsh-tools"]
+      ?? declared.devDependencies?.["@deepseek-ai/dsh-tools"];
+    const want = String(row).replace(/^[\^~>=<\s]*/, "");
+    assert.ok(DSH_TOOLS_VERSION === want,
+      `the host dsh-tools (${DSH_TOOLS_VERSION}) must be the workspace's pinned ${want} — a bump that changes ToolCallKind says so here`);
     assert.deepEqual([...KINDS].sort(),
       ["delete", "edit", "execute", "fetch", "move", "other", "read", "search"],
       "the host's ToolCallKind members, read from the host's own source");
