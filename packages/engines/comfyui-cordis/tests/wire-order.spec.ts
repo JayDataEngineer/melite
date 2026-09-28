@@ -236,3 +236,84 @@ describe("the refusals the order-independence must NOT have cost", () => {
     expect((plan.workflow["s_0::n"] as Record<string, unknown>)["inputs"]).toEqual({ i: 7 });
   });
 });
+
+// ── THE MERGE ADDS NO NAMES (the li-bb stroke, 2026-10-11) ───────
+//
+// The merge seam's own comment claims it (pass 3 namespaces ids and
+// resolves $spells into link VALUES, "adding no class_type or input
+// key") — and the audit's finding 3 was that the claim had NO wall:
+// the check was deferred to the engines adapter's post-splice seat,
+// which walks the graph for OTHER laws. The day namespaceWires or
+// rewriteSpells grows a key — a "helpful" wired marker, a computed
+// cnet, anything — the merged graph would carry a name no card
+// declared, and no arm anywhere would say so. This block pins the
+// claim at the seam: the merged graph's names ARE the sources'
+// names, exactly, and every node's shape is its source's shape plus
+// nothing.
+describe("the merge adds no names (the seam's own claim, walled)", () => {
+  /** A stage whose node carries the shapes a merge might be tempted
+   *  to annotate: several inputs (a spell, a literal, a nested
+   *  array), a `_meta` sibling, and a second node so the
+   *  namespacing has real work to do. */
+  const rich = (stageId: string, spell: boolean): MergeRow =>
+    stage(stageId, {
+      workflow: {
+        save: { class_type: "SaveImage", inputs: {} },
+        n: {
+          class_type: "X",
+          // the spell is OPT-IN (the file's own law): a stage
+          // carrying a $w nothing wires is a stray spell and the
+          // merge refuses it — only s_1 wires
+          inputs: spell
+            ? { i: "$w", seed: 5, text: "keep me", nested: [1, "a"] }
+            : { i: "literal", seed: 5, text: "keep me", nested: [1, "a"] },
+          _meta: { title: "the node" },
+        },
+      },
+    } as Partial<MergeRow>);
+
+  it("the merged key set IS the namespaced union — no extra node, none dropped", () => {
+    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
+    expect([...Object.keys(plan.workflow)].sort()).toEqual(
+      ["s_0::n", "s_0::save", "s_1::n", "s_1::save"].sort(),
+    );
+    expect(Object.keys(plan.workflow).length).toBe(4);
+  });
+
+  it("every node's TOP-LEVEL keys are its source's keys, exactly (no marker, no computed sibling)", () => {
+    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
+    for (const sid of ["s_0", "s_1"]) {
+      const spell = sid === "s_1";
+      for (const nid of ["save", "n"]) {
+        const mergedNode = plan.workflow[`${sid}::${nid}`] as Record<string, unknown>;
+        const srcNode = (rich(sid, spell).workflow as Record<string, Record<string, unknown>>)[nid]!;
+        expect(Object.keys(mergedNode).sort(), `${sid}::${nid} carries exactly its source's keys`)
+          .toEqual(Object.keys(srcNode).sort());
+        expect(mergedNode["class_type"], `${sid}::${nid} class_type is untouched`)
+          .toBe(srcNode["class_type"]);
+        expect(mergedNode["_meta"], `${sid}::${nid} keeps its _meta verbatim`)
+          .toEqual(srcNode["_meta"]);
+      }
+    }
+  });
+
+  it("every node's INPUT KEYS are its source's input keys — the $spell resolves as a VALUE, never a new key", () => {
+    const plan = planMerge([rich("s_0", false), rich("s_1", true)], {}, { s_1: { w: "s_0.image" } });
+    for (const sid of ["s_0", "s_1"]) {
+      const spell = sid === "s_1";
+      const mergedInputs = (plan.workflow[`${sid}::n`] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
+      const srcInputs = ((rich(sid, spell).workflow as Record<string, Record<string, unknown>>)["n"]!)["inputs"] as Record<string, unknown>;
+      expect(Object.keys(mergedInputs).sort(), `${sid}::n inputs carry exactly their source's keys`)
+        .toEqual(Object.keys(srcInputs).sort());
+      // the untouched values ride verbatim — only the $spell's slot
+      // may change, and it changes into a link VALUE
+      expect(mergedInputs["seed"]).toBe(srcInputs["seed"]);
+      expect(mergedInputs["text"]).toBe(srcInputs["text"]);
+      expect(mergedInputs["nested"]).toEqual(srcInputs["nested"]);
+    }
+    // and the spell DID resolve (the wall is not vacuous: the merge
+    // ran its substitution, and still added no name)
+    const resolved = (plan.workflow["s_1::n"] as Record<string, unknown>)["inputs"] as Record<string, unknown>;
+    expect(resolved["i"]).toEqual(["s_0::save", 0]);
+  });
+});

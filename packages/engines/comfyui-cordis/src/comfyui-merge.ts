@@ -445,16 +445,17 @@ export async function executeFlowInner(
 ): Promise<FlowResult> {
   const plan = planMerge(rows, { ...initials }, inputNames);
   const client = sdkClient(server);
-  // THE MERGE SEAM CARRIES NO WALL — AND SAYS SO (the audit's GAP 2:
-  // this comment used to claim a names-walk that existed nowhere in
-  // this body). The walk that judges the merged graph is the ENGINES
-  // ADAPTER'S post-splice seat (entries/comfyui-engine, before
-  // host.executeFlow): the merge namespaces ids and resolves
-  // `$spell`s into link VALUES, adding no class_type or input key,
-  // so the adapter's walk of the spliced rows IS the walk of what
-  // this seam submits. `assertWiresResolve` checks that wires land.
-  // The day the merge learns to ADD a name, that seat catches it —
-  // and this comment must move with the check.
+  // THE MERGE SEAM'S NO-ADDITION CLAIM IS WALLED (the li-bb stroke,
+  // 2026-10-11 — this comment used to claim a names-walk that
+  // existed nowhere, then claimed the engines adapter's post-splice
+  // seat would catch an added name, which walks for other laws).
+  // wire-order.spec.ts's "the merge adds no names" block now pins it
+  // AT THE SEAM: the merged key set IS the namespaced union, every
+  // node's top-level keys and input keys are its source's exactly,
+  // class_type and _meta untouched — and the mutations that grow a
+  // key in namespaceWires or rewriteSpells red it by name. The day
+  // the merge learns to ADD a name legitimately, that wall is where
+  // the law gets restated — and this comment moves with it.
   const staged = await uploadReferenced(client, plan.workflow, { runsRoot: dirname(String(runDir)) });
   const { promptId, clientId } = await submitPrompt(client, staged.graph);
   active.set(String(runDir), { promptId, clientId, server });
