@@ -149,12 +149,105 @@ export function assertWiresResolve(
   }
 }
 
+/** One stage's producer table: declared output_nodes win; else the
+ *  single-Save binding; anything else refuses LOUD. Depends ONLY on
+ *  the row's own workflow, which is what lets the planner read every
+ *  table before it reads a single wire (see planMerge's pass 1). */
+function inferProducers(
+  sid: string,
+  wf: Record<string, EngineJson>,
+  row: MergeRow,
+): Record<string, string> {
+  const declared: Record<string, EngineJson> = row.outputNodes ?? {};
+  const stageProd: Record<string, string> = {};
+  if (Object.keys(declared).length > 0) {
+    for (const [channel, nid] of Object.entries(declared)) {
+      if (!(String(nid) in wf)) {
+        throw new ComfyError(
+          "stage " +
+            JSON.stringify(sid) +
+            ": output_nodes names node " +
+            JSON.stringify(String(nid)) +
+            " for channel " +
+            JSON.stringify(channel) +
+            " — the workflow carries no such node",
+        );
+      }
+      stageProd[sid + "::" + String(nid)] = channel;
+    }
+    return stageProd;
+  }
+  const saves: string[] = Object.keys(wf).filter((nid: string): boolean => {
+    const n = wf[nid] as Record<string, EngineJson>;
+    return (
+      typeof n === "object" &&
+      n !== null &&
+      String((n as Record<string, EngineJson>)["class_type"] ?? "").startsWith("Save")
+    );
+  });
+  if (saves.length === 1) {
+    for (const channel of Object.keys(row.outputs ?? {})) {
+      stageProd[sid + "::" + saves[0]] = channel;
+    }
+  } else if (saves.length > 1 && Object.keys(row.outputs ?? {}).length > 0) {
+    throw new ComfyError(
+      "stage " +
+        JSON.stringify(sid) +
+        ": ambiguous producers " +
+        JSON.stringify(saves) +
+        " — declare output_nodes {channel: node_id}",
+    );
+  }
+  return stageProd;
+}
+
+/** The wiring graph's acyclicity, judged ONCE over every stage's
+ *  wires (the order law's replacement, 2026-10-11). Before this, a
+ *  cycle was caught only by an accident: a stage could wire from a
+ *  stage EARLIER in the array, so s_0→s_1 plus s_1→s_0 happened to
+ *  refuse with a producer message that named the wrong fault. Now
+ *  that position no longer decides, the cycle is refused for what it
+ *  is, with its members named. */
+function assertAcyclic(
+  edges: Record<string, string[]>,
+  ids: string[],
+): void {
+  const state: Record<string, number> = {}; // 0 unvisited, 1 open, 2 done
+  const walk = (n: string, stack: string[]): void => {
+    if (state[n] === 2) return;
+    if (state[n] === 1) {
+      const at: number = stack.indexOf(n);
+      throw new ComfyError(
+        "the stages wire a cycle: " +
+          [...stack.slice(at < 0 ? 0 : at), n].join(" → ") +
+          " — a cycle composes nothing; break the loop",
+      );
+    }
+    state[n] = 1;
+    for (const next of edges[n] ?? []) walk(next, [...stack, n]);
+    state[n] = 2;
+  };
+  for (const id of ids) walk(id, []);
+}
+
 /** The merge plan for the link-free shapes
  *  the TS preview serves: namespaced copy + FromStage link
  *  resolution + the Load file-slot gate + the dangling gate.
  *  Producer inference (_producers: declared output_nodes, else the
  *  single-Save binding) — an ambiguous graph refuses
- *  LOUD with the producer text. */
+ *  LOUD with the producer text.
+ *
+ *  THE ORDER LAW IS NOT A LAW (2026-10-11). This walks in three
+ *  passes so a stage may wire from ANY other stage, not only one
+ *  earlier in the array: pass 1 infers every producer table (each
+ *  depends only on its own row), pass 2 judges acyclicity and
+ *  resolves every wire against the finished tables, pass 3
+ *  namespaces and substitutes. The single loop it replaced read
+ *  `producers` as it filled it, so a backward wire — which the bench
+ *  door admits and the draft store persists verbatim — died HERE,
+ *  with a message blaming the upstream stage for "declaring no
+ *  mergeable producer" when it declared one perfectly well. A
+ *  position in an array is not a semantic law; the wires are. */
 export function planMerge(
   rows: MergeRow[],
   initials: Record<string, EngineJson>,
@@ -162,6 +255,8 @@ export function planMerge(
 ): { workflow: Record<string, EngineJson> } {
   const merged: Record<string, EngineJson> = {};
   const producers: Record<string, Record<string, string>> = {};
+  const wfs: Record<string, Record<string, EngineJson>> = {};
+  const ids: string[] = [];
   for (const row of rows) {
     const sid: string = row.stageId;
     const wf: Record<string, EngineJson> = row.workflow;
@@ -173,65 +268,34 @@ export function planMerge(
           "bridge first; engine-only stages need params.workflow)",
       );
     }
-    // producer inference: declared output_nodes wins; else the
-    // single-Save binding; anything else refuses LOUD.
-    const declared: Record<string, EngineJson> = row.outputNodes ?? {};
-    const stageProd: Record<string, string> = {};
-    if (Object.keys(declared).length > 0) {
-      for (const [channel, nid] of Object.entries(declared)) {
-        if (!(String(nid) in wf)) {
-          throw new ComfyError(
-            "stage " +
-              JSON.stringify(sid) +
-              ": output_nodes names node " +
-              JSON.stringify(String(nid)) +
-              " for channel " +
-              JSON.stringify(channel) +
-              " — the workflow carries no such node",
-          );
-        }
-        stageProd[sid + "::" + String(nid)] = channel;
-      }
-    } else {
-      const saves: string[] = Object.keys(wf).filter((nid: string): boolean => {
-        const n = wf[nid] as Record<string, EngineJson>;
-        return (
-          typeof n === "object" &&
-          n !== null &&
-          String((n as Record<string, EngineJson>)["class_type"] ?? "").startsWith("Save")
-        );
-      });
-      if (saves.length === 1) {
-        for (const channel of Object.keys(row.outputs ?? {})) {
-          stageProd[sid + "::" + saves[0]] = channel;
-        }
-      } else if (saves.length > 1 && Object.keys(row.outputs ?? {}).length > 0) {
-        throw new ComfyError(
-          "stage " +
-            JSON.stringify(sid) +
-            ": ambiguous producers " +
-            JSON.stringify(saves) +
-            " — declare output_nodes {channel: node_id}",
-        );
-      }
+    wfs[sid] = wf;
+    producers[sid] = inferProducers(sid, wf, row);
+    ids.push(sid);
+  }
+
+  // ── PASS 2: the cycle gate, then every wire against the FINISHED
+  // producer tables (position no longer decides). ──────────────
+  const edges: Record<string, string[]> = {};
+  for (const sid of ids) {
+    edges[sid] = [];
+    for (const ref of Object.values(inputNames[sid] ?? {})) {
+      if (ref.startsWith("__initial__.")) continue;
+      // EVERY ref is an edge, dot or not. A dot-less ref names an
+      // upstream with an EMPTY channel, which no producer table can
+      // match — so it is refused below as a missing channel. Letting
+      // it skip the edge list would give one shape two voices: a
+      // dot-less SELF-ref would be reported as a missing producer
+      // rather than as the self-wire it is. `assertAcyclic` walks
+      // only over `ids`, so a ref naming a stage that is not on the
+      // bench adds an edge nobody follows and never a false cycle.
+      const dot: number = ref.indexOf(".");
+      edges[sid]!.push(dot < 0 ? ref : ref.slice(0, dot));
     }
-    const stageIds: Set<string> = new Set(Object.keys(wf));
-    const nsKeys: string[] = [];
-    for (const [nid, node] of Object.entries(wf)) {
-      const key: string = sid + "::" + nid;
-      if (key in merged) {
-        throw new ComfyError(
-          "stage " +
-            JSON.stringify(sid) +
-            ": duplicate namespaced node " +
-            JSON.stringify(key) +
-            " — stage ids and node ids collided",
-        );
-      }
-      merged[key] = namespaceWires(node, sid, stageIds);
-      nsKeys.push(key);
-    }
-    producers[sid] = stageProd;
+  }
+  assertAcyclic(edges, ids);
+
+  const linksByStage: Record<string, Record<string, [string, number]>> = {};
+  for (const sid of ids) {
     // this stage's FromStage-wired inputs -> link tuples.
     const links: Record<string, [string, number]> = {};
     for (const [name, ref] of Object.entries(inputNames[sid] ?? {})) {
@@ -272,6 +336,34 @@ export function planMerge(
       }
       links[name] = [ups[0] as string, 0];
     }
+    linksByStage[sid] = links;
+  }
+
+  // ── PASS 3: namespace, gate, substitute. ─────────────────────
+  const allLinks: Record<string, [string, number]> = {};
+  for (const sid of ids) {
+    const wf: Record<string, EngineJson> = wfs[sid] as Record<string, EngineJson>;
+    const links: Record<string, [string, number]> = linksByStage[sid] as Record<
+      string,
+      [string, number]
+    >;
+    const stageIds: Set<string> = new Set(Object.keys(wf));
+    const nsKeys: string[] = [];
+    for (const [nid, node] of Object.entries(wf)) {
+      const key: string = sid + "::" + nid;
+      if (key in merged) {
+        throw new ComfyError(
+          "stage " +
+            JSON.stringify(sid) +
+            ": duplicate namespaced node " +
+            JSON.stringify(key) +
+            " — stage ids and node ids collided",
+        );
+      }
+      merged[key] = namespaceWires(node, sid, stageIds);
+      nsKeys.push(key);
+    }
+    Object.assign(allLinks, links);
     // ROW-4 file-slot gate: a producer link
     // may only land in a tensor slot — Load* file slots refuse.
     for (const key of nsKeys) {
@@ -308,8 +400,11 @@ export function planMerge(
         "stage " + JSON.stringify(sid) + " node " + JSON.stringify(key.split("::", 2)[1]!),
       ) as Record<string, EngineJson>;
     }
-    assertWiresResolve(merged, links);
   }
+  // THE DANGLING GATE, ONCE, OVER THE WHOLE GRAPH (it always walked
+  // the entire `merged` dict; calling it per stage could only ever
+  // see a prefix, and the wires it judges now come from every stage).
+  assertWiresResolve(merged, allLinks);
   return { workflow: merged };
 }
 

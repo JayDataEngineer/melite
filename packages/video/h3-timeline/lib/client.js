@@ -1470,7 +1470,7 @@ window.__ModuleLoader__.load({
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, STALE_TAB_VOCABULARY, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -1523,13 +1523,6 @@ window.__ModuleLoader__.load({
 				"timeout_s"
 			];
 			RESTORED_PROVENANCE_SPELLING = "restored";
-			STALE_TAB_VOCABULARY = [
-				/STALE TAB/i,
-				/stale tab/i,
-				/cards-stale-build/,
-				/staleBuild/,
-				/buildVerdict/
-			];
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
@@ -1564,7 +1557,6 @@ window.__ModuleLoader__.load({
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
-			STALE_TAB_VOCABULARY: () => STALE_TAB_VOCABULARY,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -52890,4 +52882,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="77e328180bb8f139877dfc5d8ec3154a782b0d58";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="b244b57f3f4f13f73705c77637cdd761cddfcfcf";
