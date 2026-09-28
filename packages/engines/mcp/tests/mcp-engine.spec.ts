@@ -172,6 +172,27 @@ describe("mcpExecutor (the wire law)", () => {
       /is not a wire name/,
     );
     assert.equal(tools.calls.length, 0);
+    // THE LENGTH BOUND (the li-be disposition, 2026-10-11): the
+    // prose arm above cannot see it — a 65-character name of legal
+    // characters carries no space, and the mint
+    // `mcp__<server>__<tool>` would overflow the host's address
+    // silently. 64 rides, 65 refuses, in the row's voice.
+    await assert.rejects(
+      mcpExecutor(tools, "mcp:blender").executeStages(
+        [{ stageId: "w", outputs: {}, params: { tool: "t".repeat(65), args: {} } }],
+        dir,
+        {},
+        opts,
+      ),
+      /is not a wire name/,
+    );
+    await mcpExecutor(tools, "mcp:blender").executeStages(
+      [{ stageId: "w", outputs: {}, params: { tool: "t".repeat(64), args: {} } }],
+      dir,
+      {},
+      opts,
+    );
+    assert.equal(tools.calls.length, 1, "a 64-char name is legal and CALLS");
     rmSync(dir, { recursive: true, force: true });
   });
 
