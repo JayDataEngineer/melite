@@ -61,6 +61,374 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/extraKeys.ts
+		/** THE TYPED WRITE — declarations pass their literal through this
+		*  so an unknown key or malformed value fails EVERY wall: tsc at
+		*  the literal, this throw at runtime (spread arms), the boot
+		*  validator on any served envelope, and the estate law suite on
+		*  the wire. Never a silently dead write. */
+		function bag(b) {
+			const where = "extra bag";
+			for (const key of Object.keys(b)) if (!EXTRA_KEY_SET.has(key)) throw new Error(where + " carries '" + key + "' — not in the contract's vocabulary (packages/web-kit/contracts/src/extraKeys.ts). A key outside the table has no reader spelling and would be a silent dead write. Add it to EXTRA_KEYS with its type and owners, or fix the spelling.");
+			const str = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "string") throw new Error(where + "." + k + " must be a string — got " + JSON.stringify(v));
+			};
+			const num = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "number") throw new Error(where + "." + k + " must be a number — got " + JSON.stringify(v));
+			};
+			const bool = (k) => {
+				const v = b[k];
+				if (v !== void 0 && typeof v !== "boolean") throw new Error(where + "." + k + " must be a boolean — got " + JSON.stringify(v));
+			};
+			str("group");
+			str("visible_when");
+			str("tooltip");
+			str("placeholder");
+			str("optionsFrom");
+			str("wtype");
+			str("zone");
+			str("media");
+			bool("required");
+			bool("hidden");
+			bool("serveDefault");
+			num("width");
+			num("columns");
+			num("max_stack");
+			num("min");
+			num("max");
+			{
+				const v = b["order"];
+				if (v !== void 0 && v !== null && typeof v !== "number") throw new Error(where + ".order must be a number or null — got " + JSON.stringify(v));
+			}
+			{
+				const v = b["families"];
+				if (v !== void 0 && (!Array.isArray(v) || v.some((x) => typeof x !== "string"))) throw new Error(where + ".families must be a string[] — got " + JSON.stringify(v));
+			}
+			if (b.wtype !== void 0 && !WTYPE_SET.includes(b.wtype)) throw new Error(where + " carries wtype '" + b.wtype + "' — not in WTYPE_SET. The renderer has no arm for it (a foreign wtype silently renders as a plain text input). Add it to WTYPE_SET with its seat, or fix the spelling.");
+			if (b.zone !== void 0 && !ZONE_SET.includes(b.zone)) throw new Error(where + " carries zone '" + b.zone + "' — not in ZONE_SET (" + ZONE_SET.join(", ") + ").");
+			if (b.media !== void 0 && !MEDIA_SET.includes(b.media)) throw new Error(where + " carries media '" + b.media + "' — not in MEDIA_SET (" + MEDIA_SET.join(", ") + ").");
+			if (b.options !== void 0) {
+				const seen = /* @__PURE__ */ new Set();
+				for (const row of b.options) {
+					const value = typeof row === "string" ? row : row.value;
+					const label = typeof row === "string" ? row : row.label;
+					if (value === "") throw new Error(where + ".options carries an empty value");
+					if (label === "") throw new Error(where + ".options row '" + value + "' carries an empty label");
+					if (seen.has(value)) throw new Error(where + ".options carries duplicate value '" + value + "' — an ambiguous pick");
+					seen.add(value);
+				}
+			}
+			if (b.visible_when !== void 0 && b.visible_when !== "") for (const guard of b.visible_when.split("&")) {
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				if (ne < 0 && eq < 0) throw new Error(where + ".visible_when guard '" + g + "' carries no operator (= or !=)");
+				const at = ne >= 0 ? ne : eq;
+				const key = g.slice(0, at).trim();
+				const rhs = g.slice(at + (ne >= 0 ? 2 : 1)).trim();
+				if (key === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty key");
+				if (rhs === "") throw new Error(where + ".visible_when guard '" + g + "' carries an empty value");
+			}
+			return b;
+		}
+		/** THE TYPED READ — one getter for every face. `extraOf(node)`
+		*  narrows a serialized ref node's meta.extra to the bag type;
+		*  faces read keys off the result, never off a bare record. */
+		function extraOf(node) {
+			const raw = node?.meta?.["extra"];
+			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
+		}
+		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
+		var init_extraKeys = __esmMin((() => {
+			EXTRA_KEYS = [
+				"order",
+				"group",
+				"zone",
+				"wtype",
+				"width",
+				"columns",
+				"visible_when",
+				"tooltip",
+				"required",
+				"hidden",
+				"families",
+				"max_stack",
+				"media",
+				"placeholder",
+				"options",
+				"optionsFrom",
+				"serveDefault",
+				"min",
+				"max",
+				"default"
+			];
+			EXTRA_KEY_SET = new Set(EXTRA_KEYS);
+			WTYPE_SET = [
+				"number",
+				"select",
+				"slider",
+				"text",
+				"textarea",
+				"boolean",
+				"image",
+				"file",
+				"mesh",
+				"image_list",
+				"mask",
+				"loras",
+				"ip_adapters",
+				"controlnets"
+			];
+			WTYPE_SEATS = {
+				number: "atom",
+				select: "atom",
+				slider: "atom",
+				text: "atom",
+				textarea: "atom",
+				boolean: "atom",
+				image: "atom",
+				file: "atom",
+				mesh: "atom",
+				image_list: "rail",
+				mask: "mod-face",
+				loras: "mod-face",
+				ip_adapters: "mod-face",
+				controlnets: "mod-face"
+			};
+			MEDIA_SET = ["video", "audio"];
+			ZONE_SET = [
+				"inputs",
+				"params",
+				"mods"
+			];
+			ROLE_SET = ["path"];
+		}));
+		//#endregion
+		//#region ../../web-kit/contracts/src/laneRelations.ts
+		/** THE BLANK LAW (the estate's own): undefined, null, empty or
+		*  whitespace string, empty array, empty object = NOT stated. A
+		*  number (0 included), a boolean, a non-empty array (mod bag) or
+		*  object = stated. Pure, shared by every word. */
+		function laneBlank(v) {
+			if (v === void 0 || v === null) return true;
+			if (typeof v === "string") return v.trim() === "";
+			if (Array.isArray(v)) return v.every((entry) => laneBlank(entry));
+			if (typeof v === "object") {
+				const proto = Object.getPrototypeOf(v);
+				if (proto !== null && proto !== Object.prototype) return false;
+				return Object.values(v).every((entry) => laneBlank(entry));
+			}
+			return false;
+		}
+		/** Judge the four words over one stated state. PURE: no I/O, no
+		*  card code — the same call the bench door refuses with and the
+		*  form renders inline. Every row fires only on the STATED side of
+		*  the law (blank fields never violate requires/together; either_or
+		*  stays unarmed until a member is stated — authoring-in-progress
+		*  is never a write refusal). */
+		function judgeLaneRelations(relations, values) {
+			const out = [];
+			const stated = (name) => Object.prototype.hasOwnProperty.call(values, name) && !laneBlank(values[name]);
+			for (const rel of relations) {
+				if (rel === null || typeof rel !== "object") continue;
+				for (const row of rel.requires ?? []) {
+					if (row === null || typeof row !== "object" || typeof row.field !== "string") continue;
+					if (!stated(row.field)) continue;
+					const missing = (row.needs ?? []).filter((n) => !stated(n));
+					if (missing.length === 0) continue;
+					out.push({
+						field: row.field,
+						message: "field '" + row.field + "' requires " + quote(missing) + " on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(missing) + " too, or drop '" + row.field + "'")
+					});
+				}
+				for (const row of rel.conflicts ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					if (typeof row.a !== "string" || typeof row.b !== "string") continue;
+					if (!stated(row.a) || !stated(row.b)) continue;
+					out.push({
+						field: row.a,
+						message: "fields '" + row.a + "' + '" + row.b + "' conflict on this lane" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — drop one of them")
+					});
+				}
+				for (const row of rel.together ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const members = Array.isArray(row.fields) ? row.fields : [];
+					if (members.length === 0) continue;
+					if (!members.some(stated)) continue;
+					if (members.filter((m) => !stated(m)).length === 0) continue;
+					out.push({
+						field: members.find(stated) ?? members[0],
+						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
+					});
+				}
+				for (const row of rel.either_or ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : [];
+					if (groups.length === 0) continue;
+					const everyMember = groups.flat();
+					if (!everyMember.some(stated)) continue;
+					if (groups.filter((g) => g.every(stated)).length > 0) continue;
+					out.push({
+						field: everyMember.find(stated) ?? everyMember[0],
+						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
+					});
+				}
+				for (const row of rel.at_most_one ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (fields.length < 2) continue;
+					const present = fields.filter(stated);
+					if (present.length <= 1) continue;
+					out.push({
+						field: present[1],
+						message: "this lane takes at most one of " + quote(fields) + " — the state carries " + present.length + " (" + quote(present) + ")" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — one slot, one value")
+					});
+				}
+				for (const row of rel.required ?? []) {
+					if (row === null || typeof row !== "object") continue;
+					const fields = Array.isArray(row.fields) ? row.fields.filter((f) => typeof f === "string") : [];
+					if (row.any_of === true) {
+						if (fields.length === 0) continue;
+						if (fields.some(stated)) continue;
+						out.push({
+							field: fields[0],
+							message: "this lane requires one of " + quote(fields) + " — none is stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one of them")
+						});
+						continue;
+					}
+					const missing = fields.filter((f) => !stated(f));
+					if (missing.length === 0) continue;
+					out.push({
+						field: missing[0],
+						message: "this lane requires " + quote(fields) + " — " + quote(missing) + " is not stated" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state it, or use a lane that does not need it")
+					});
+				}
+			}
+			const seen = /* @__PURE__ */ new Set();
+			return out.filter((v) => {
+				if (seen.has(v.message)) return false;
+				seen.add(v.message);
+				return true;
+			});
+		}
+		/** Judge the LANE SURFACE (the parameter-surface half of the same
+		*  declaration): a STATED card-schema field outside the lane's
+		*  declared surface fires nothing at compose — refuse it here, in
+		*  the field's voice, a priori. `schemaFields` are the card's own
+		*  field names (the walk the claim law already owns); fields the
+		*  surface declares but the card does not carry are the claim
+		*  law's refusal, never this one. A null surface (the family
+		*  declares none) judges nothing — legacy families keep the card's
+		*  union table until they declare. */
+		function judgeLaneSurface(surface, schemaFields, values) {
+			if (surface === null || surface === void 0) return [];
+			const declared = new Set(surface);
+			const out = [];
+			for (const name of schemaFields) {
+				if (declared.has(name)) continue;
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				if (laneBlank(values[name])) continue;
+				out.push({
+					field: name,
+					message: "field '" + name + "' fires nothing on this lane (the variant's declared surface is " + (surface.length > 0 ? surface.join(", ") : "empty") + ") — drop it or switch lane"
+				});
+			}
+			return out;
+		}
+		/** The effective surface for one (family × variant) lane: the
+		*  family base plus the variant's additions (the cascade law —
+		*  later layers add, never subtract). Null family params = the
+		*  family declares no surface (the legacy card-authored truth). */
+		function laneSurfaceOf(familyParams, variantParams) {
+			if (familyParams === void 0 || familyParams === null) return null;
+			if (variantParams === void 0 || variantParams === null) return [...familyParams];
+			return [.../* @__PURE__ */ new Set([...familyParams, ...variantParams])];
+		}
+		function laneBoundsOf(familyBounds, variantBounds) {
+			if (familyBounds === void 0 || familyBounds === null) return variantBounds === void 0 || variantBounds === null ? null : { ...variantBounds };
+			if (variantBounds === void 0 || variantBounds === null) return { ...familyBounds };
+			const merged = { ...familyBounds };
+			for (const [name, row] of Object.entries(variantBounds)) merged[name] = {
+				...familyBounds[name] ?? {},
+				...row
+			};
+			return merged;
+		}
+		/** Judge the bounds over one stated state. PURE. Blank fields never
+		*  violate (the blank law: unstated is the family default's
+		*  business, not a refusal); non-numbers are the card schema's own
+		*  refusal, never re-voiced here; a stated number outside its row
+		*  refuses IN THE FIELD'S VOICE, cure included. */
+		function judgeLaneBounds(bounds, values) {
+			if (bounds === null) return [];
+			const out = [];
+			for (const [name, row] of Object.entries(bounds)) {
+				if (!Object.prototype.hasOwnProperty.call(values, name)) continue;
+				const v = values[name];
+				if (laneBlank(v) || typeof v !== "number" || !Number.isFinite(v)) continue;
+				const floor = row.min;
+				const ceiling = row.max;
+				if (!(floor !== void 0 && v < floor) && !(ceiling !== void 0 && v > ceiling)) continue;
+				const span = floor !== void 0 && ceiling !== void 0 ? floor + "–" + ceiling : floor !== void 0 ? "at least " + floor : "at most " + ceiling;
+				out.push({
+					field: name,
+					message: "'" + name + "': " + v + " is outside this lane's range (" + span + ") — the model owns the floor and the ceiling (the declaration, not the form)"
+				});
+			}
+			return out;
+		}
+		/** One family's declared lane surface + laws, verbatim. Absent
+		*  members stay absent (the absent-equals-empty law: nothing is
+		*  invented, and a family that declares nothing yields an empty
+		*  base with no relations key). */
+		function laneContractOf(decl) {
+			const variants = {};
+			for (const v of decl.variants ?? []) {
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				variants[v.id] = {
+					...v.params !== void 0 ? { params: [...v.params] } : {},
+					...v.relations !== void 0 ? { relations: v.relations } : {},
+					...v.bounds !== void 0 ? { bounds: v.bounds } : {},
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+				};
+			}
+			return {
+				base: [...decl.params ?? []],
+				...decl.relations !== void 0 ? { relations: decl.relations } : {},
+				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				variants
+			};
+		}
+		/** THE CONTRACT MAP for a card's declared families: family id → its
+		*  lane contract. Families that declare no params and no laws are
+		*  omitted (legacy families judge nothing; serving an empty row
+		*  would only cost the agent tokens). */
+		function laneContractsFor(familyIds, declOf) {
+			const out = {};
+			for (const id of familyIds) {
+				const decl = declOf(id);
+				if (decl === void 0) continue;
+				const contract = laneContractOf(decl);
+				if (contract.base.length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				out[id] = contract;
+			}
+			return out;
+		}
+		var RELATION_WORDS, quote;
+		var init_laneRelations = __esmMin((() => {
+			RELATION_WORDS = {
+				requires: true,
+				conflicts: true,
+				together: true,
+				either_or: true,
+				at_most_one: true,
+				required: true
+			};
+			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
+		}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/FlowTypes.ts
 		var init_FlowTypes = __esmMin((() => {}));
 		//#endregion
@@ -121,6 +489,32 @@ window.__ModuleLoader__.load({
 			}
 			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
 			return defects;
+		}
+		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
+		*  contract by A-M10): a source URL names a file by its PATHNAME's
+		*  last segment, percent-decoded — never the query, never the
+		*  fragment, never "". `split("/").pop()` kept both, so the manager
+		*  downloaded under a clean name while the row inspected one with
+		*  "f.safetensors?download=1" glued on, and the post-download check
+		*  reported model-not-landed for a model that WAS on disk. A URL
+		*  ending in "/" names no file: the result is "" and the caller's
+		*  destination check refuses it by name. One derivation, contract-
+		*  owned, so the wall can DRIVE it (a source-substring pin passed on
+		*  dead code). */
+		function artifactFileName(sourceUrl) {
+			let pathname = sourceUrl;
+			try {
+				pathname = new URL(sourceUrl).pathname;
+			} catch {
+				pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
+			}
+			if (pathname.endsWith("/")) return "";
+			const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
+			try {
+				return decodeURIComponent(last);
+			} catch {
+				return last;
+			}
 		}
 		var init_benchResult = __esmMin((() => {}));
 		//#endregion
@@ -652,6 +1046,28 @@ window.__ModuleLoader__.load({
 		function searchedVoice(roots) {
 			return "(searched " + roots.join(", ") + ")";
 		}
+		/**
+		* THE CROSS-ROOT ORDER, ONCE (the MCP/media audit's H4).
+		*
+		* Two readers resolve a run id across the manifest's roots and each
+		* built its own list: the media list (own root first) and the gallery
+		* artifact route (its own flow tree, then the manifest roots). With
+		* a run id present in two trees they could disagree about which
+		* bytes answer — the list serving one file while the artifact route
+		* serves another for the SAME run id.
+		*
+		* This is the order both readers take: the caller's own tree first
+		* (its own writes win), then the manifest roots in their declared
+		* order, de-duplicated.
+		*/
+		function crossRootOrder(ownTree, roots) {
+			const out = [];
+			for (const tree of [ownTree ?? "", ...roots]) {
+				if (tree === "") continue;
+				if (!out.includes(tree)) out.push(tree);
+			}
+			return out;
+		}
 		var init_rootsManifest = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/stagePreview.ts
@@ -826,7 +1242,7 @@ window.__ModuleLoader__.load({
 		function normalizeSegmentStatus(raw) {
 			return typeof raw === "string" && SEGMENT_STATUSES.includes(raw) ? raw : "empty";
 		}
-		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS;
+		var SEGMENT_STATUSES, FLF_MODES, TRACK_COLORS, DEFAULT_SEGMENT_PARAMS, DEFAULT_LIPSYNC_FIELDS, EDITOR_ONLY_SEGMENT_KEYS;
 		var init_timelineTypes = __esmMin((() => {
 			SEGMENT_STATUSES = [
 				"empty",
@@ -897,6 +1313,42 @@ window.__ModuleLoader__.load({
 				lipSyncedVideoUrl: null,
 				lipSyncPreferOriginal: false
 			};
+			EDITOR_ONLY_SEGMENT_KEYS = /* @__PURE__ */ new Set([
+				"frames",
+				"fps",
+				"resizeMethod",
+				"motionVideoB64",
+				"motionStrength",
+				"motionTrimStart",
+				"motionTrimEnd",
+				"motionOffset",
+				"resampleMode",
+				"scaleBy",
+				"upscaleMethod",
+				"useTiledEncode",
+				"tileSize",
+				"tileOverlap",
+				"imageAttentionStrength",
+				"flfMode",
+				"profile",
+				"guideStrength",
+				"guideCrf",
+				"relayEpsilon",
+				"teacacheEnabled",
+				"teacacheThreshold",
+				"progressiveEnabled",
+				"progressiveLevels",
+				"progressiveDelta",
+				"progressiveMode",
+				"retakePrompt",
+				"retakeStartFrame",
+				"retakeEndFrame",
+				"loras",
+				"model",
+				"samplingSteps",
+				"guideScale",
+				"motionAmplitude"
+			]);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/vocab.ts
@@ -918,29 +1370,219 @@ window.__ModuleLoader__.load({
 		//#region ../../web-kit/contracts/src/wire.ts
 		var init_wire = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/contracts/src/benchStage.ts
+		/** The run-media prefix a path addresses, or null when it addresses
+		*  none (the caller leaves such a value verbatim — this is a rewrite,
+		*  never a filter). */
+		function runMediaPrefixOf(value) {
+			if (value === "/melite-media/runs" || value.startsWith("/melite-media/runs/")) return RUN_MEDIA_PREFIX;
+			if (value === "/v1/assets/runs" || value.startsWith("/v1/assets/runs/")) return LEGACY_RUN_MEDIA_PREFIX;
+			return null;
+		}
+		/** THE ONE SPELLING: a run-media path in any spelling becomes the
+		*  live one. Everything else — a local file, an https URL, a $spell,
+		*  a run-relative name — rides verbatim. */
+		function canonicalRunMediaUrl(value) {
+			const prefix = runMediaPrefixOf(value);
+			if (prefix === null || prefix === "/melite-media/runs") return value;
+			return RUN_MEDIA_PREFIX + value.slice(prefix.length);
+		}
+		/** Rewrite every legacy run-media path inside a value (deep,
+		*  value-preserving, total). */
+		function healRunMediaPaths(value) {
+			if (typeof value === "string") return canonicalRunMediaUrl(value);
+			if (Array.isArray(value)) return value.map((x) => healRunMediaPaths(x));
+			if (value !== null && typeof value === "object") {
+				const out = {};
+				for (const [k, v] of Object.entries(value)) out[k] = healRunMediaPaths(v);
+				return out;
+			}
+			return value;
+		}
+		/** Strip a list of keys off a row (in place — the arm owns the row). */
+		function stripKeys(row, keys) {
+			for (const k of keys) delete row[k];
+		}
+		/** The engine a BENCH stage row declares — DERIVED when it does
+		*  not say, because the bench IS the card bench: every row in it
+		*  composes a card on the card plane, and a row that names another
+		*  engine says so out loud (the blender/mcp rows the bench carries
+		*  for previews). The run door's stricter rule — an mcp/flow stage
+		*  must NAME its engine — belongs to the flow document, which is a
+		*  different shape with its own gate; a bench row is not that.
+		*
+		*  This is the derivation that used to be written out by hand in
+		*  three writers (the bench normalizer, the add-card door, the run
+		*  door), which is how a GUI row and an agent row became different
+		*  documents. */
+		function stageEngineOf(row) {
+			const own = row["engine"];
+			if (typeof own === "string" && own !== "") return own;
+			return CARD_PLANE_ENGINE;
+		}
+		/** The one normalization every writer runs. Idempotent
+		*  (normalize(normalize(x)) === normalize(x)) and total (never
+		*  throws): a row in, a stage row out, with every derived field
+		*  derived, every run-memory field stripped, every run-media path
+		*  healed, and the era's self-naming model removed.
+		*
+		*  `index` is the row's position — the id fallback names it, so an
+		*  unaddressable row becomes addressable rather than vanishing.
+		*  Run memory is NOT stripped here: that is the birth/restore arms'
+		*  law (BIRTH_STRIP_KEYS), and the contract names the keys rather
+		*  than guessing which arm is running.
+		*/
+		function normalizeBenchStage(row, index) {
+			const out = row !== null && typeof row === "object" && !Array.isArray(row) ? { ...row } : {};
+			if (typeof out["id"] !== "string") out["id"] = typeof index === "number" ? "s_" + String(index) : index;
+			out["engine"] = stageEngineOf(out);
+			const ins = out["inputs"];
+			out["inputs"] = ins !== null && typeof ins === "object" && !Array.isArray(ins) ? healRunMediaPaths({ ...ins }) : {};
+			const params = out["params"];
+			const healed = healRunMediaPaths(params !== null && typeof params === "object" && !Array.isArray(params) ? params : {});
+			const rowCard = out["card"];
+			if (typeof rowCard === "string" && rowCard !== "" && healed["model"] === rowCard) {
+				if (!SELF_NAMED_FAMILIES.has(rowCard)) delete healed["model"];
+			}
+			out["params"] = healed;
+			const outputs = out["outputs"];
+			out["outputs"] = outputs !== null && typeof outputs === "object" && !Array.isArray(outputs) ? { ...outputs } : typeof rowCard === "string" && rowCard !== "" ? {} : { default: "image" };
+			return out;
+		}
+		/** Normalize a bench's whole stage list — the writers' array arm.
+		*  Group rows (a row with `children`) ride as they are beyond the
+		*  derived fields: they carry no engine or params of their own. */
+		function normalizeBenchStages(stages) {
+			if (!Array.isArray(stages)) return [];
+			const out = [];
+			for (const [i, row] of stages.entries()) {
+				const normalized = normalizeBenchStage(row, i);
+				const children = normalized["children"];
+				if (Array.isArray(children)) {
+					delete normalized["engine"];
+					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
+				}
+				out.push(normalized);
+			}
+			return out;
+		}
+		/** Is this a run id? */
+		function runIdOk(id) {
+			return RUN_ID_RE.test(id);
+		}
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var init_benchStage = __esmMin((() => {
+			CARD_PLANE_ENGINE = "comfyui";
+			RUN_MEDIA_PREFIX = "/melite-media/runs";
+			LEGACY_RUN_MEDIA_PREFIX = "/v1/assets/runs";
+			BIRTH_STRIP_KEYS = [
+				"history",
+				"resultParams",
+				"runStatus",
+				"resolved"
+			];
+			RUN_MEMORY_STRIP_KEYS = [
+				"result",
+				"runStatus",
+				"resolved",
+				"history",
+				"resultParams"
+			];
+			RESTORE_STRIP_KEYS = [
+				"result",
+				"resultParams",
+				"runStatus",
+				"resolved",
+				"history"
+			];
+			LOAD_CARRY_KEYS = [
+				"result",
+				"runStatus",
+				"history",
+				"resultParams"
+			];
+			STAGE_PATCH_KEYS = [
+				"params",
+				"result",
+				"runStatus",
+				"inputs",
+				"inputOutputs"
+			];
+			WIRE_STAGE_KEYS = [
+				"card",
+				"card_io",
+				"description",
+				"engine",
+				"expected",
+				"id",
+				"inputs",
+				"outputs",
+				"params",
+				"retries",
+				"skip_when",
+				"timeout_s"
+			];
+			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
+		}));
+		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
+			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
 			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
 			DEFAULT_SEGMENT_PARAMS: () => DEFAULT_SEGMENT_PARAMS,
+			EDITOR_ONLY_SEGMENT_KEYS: () => EDITOR_ONLY_SEGMENT_KEYS,
+			EXTRA_KEYS: () => EXTRA_KEYS,
+			EXTRA_KEY_SET: () => EXTRA_KEY_SET,
 			FLF_MODES: () => FLF_MODES,
+			LEGACY_RUN_MEDIA_PREFIX: () => LEGACY_RUN_MEDIA_PREFIX,
+			LOAD_CARRY_KEYS: () => LOAD_CARRY_KEYS,
+			MEDIA_SET: () => MEDIA_SET,
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
 			Provenance: () => Provenance,
+			RELATION_WORDS: () => RELATION_WORDS,
+			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
+			ROLE_SET: () => ROLE_SET,
+			RUN_ID_RE: () => RUN_ID_RE,
+			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
+			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
 			TRACK_COLORS: () => TRACK_COLORS,
+			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
+			WTYPE_SEATS: () => WTYPE_SEATS,
+			WTYPE_SET: () => WTYPE_SET,
+			ZONE_SET: () => ZONE_SET,
 			_cachedCount: () => _cachedCount,
 			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
+			artifactFileName: () => artifactFileName,
+			bag: () => bag,
 			benchResultDefects: () => benchResultDefects,
+			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
+			crossRootOrder: () => crossRootOrder,
 			dataUrlToObjectUrl: () => dataUrlToObjectUrl,
+			extraOf: () => extraOf,
 			hasModifierCapability: () => hasModifierCapability,
+			healRunMediaPaths: () => healRunMediaPaths,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isProvenance: () => isProvenance,
+			judgeLaneBounds: () => judgeLaneBounds,
+			judgeLaneRelations: () => judgeLaneRelations,
+			judgeLaneSurface: () => judgeLaneSurface,
 			kindForId: () => kindForId,
 			kindSpecOf: () => kindSpecOf,
+			laneBlank: () => laneBlank,
+			laneBoundsOf: () => laneBoundsOf,
+			laneContractOf: () => laneContractOf,
+			laneContractsFor: () => laneContractsFor,
+			laneSurfaceOf: () => laneSurfaceOf,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
 			loraLabel: () => loraLabel,
@@ -950,6 +1592,8 @@ window.__ModuleLoader__.load({
 			newControlnetEntry: () => newControlnetEntry,
 			newGenericEntry: () => newGenericEntry,
 			newLoraEntry: () => newLoraEntry,
+			normalizeBenchStage: () => normalizeBenchStage,
+			normalizeBenchStages: () => normalizeBenchStages,
 			normalizeLoraEntry: () => normalizeLoraEntry,
 			normalizeSegmentStatus: () => normalizeSegmentStatus,
 			projectStageView: () => projectStageView,
@@ -957,12 +1601,18 @@ window.__ModuleLoader__.load({
 			revokeAll: () => revokeAll,
 			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
+			runIdOk: () => runIdOk,
+			runMediaPrefixOf: () => runMediaPrefixOf,
 			searchedVoice: () => searchedVoice,
+			stageEngineOf: () => stageEngineOf,
+			stripKeys: () => stripKeys,
 			subcardCount: () => subcardCount,
 			subcardId: () => subcardId,
 			subcardsFromParams: () => subcardsFromParams
 		});
 		var init_src$2 = __esmMin((() => {
+			init_extraKeys();
+			init_laneRelations();
 			init_FlowTypes();
 			init_benchResult();
 			init_browserStorage();
@@ -982,6 +1632,7 @@ window.__ModuleLoader__.load({
 			init_timelineTypes();
 			init_vocab();
 			init_wire();
+			init_benchStage();
 		}));
 		//#endregion
 		//#region ../../web/card-base/src/studioRail.tsx
@@ -1428,6 +2079,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region ../../web/card-base/src/spec.ts
+		init_extraKeys();
+		init_laneRelations();
 		/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
 		*  served modifier kind owns — its fields' names plus its param_key
 		*  (the bag storage). CardForm EXCLUDES these from the flat param
@@ -1578,10 +2231,10 @@ window.__ModuleLoader__.load({
 					if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
 				}
 				const meta = node.meta ?? {};
-				const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
-				const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+				const extra = extraOf(node);
+				const families = Array.isArray(extra.families) ? extra.families : null;
 				if (families !== null && family !== void 0 && !families.includes(family)) continue;
-				if (extra["hidden"] === true) continue;
+				if (extra.hidden === true) continue;
 				let options;
 				if (node.type === "union" && Array.isArray(node.list)) {
 					const opts = [];
@@ -1599,11 +2252,11 @@ window.__ModuleLoader__.load({
 					}
 					if (opts.length > 0) options = opts;
 				}
-				if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+				if (Array.isArray(extra.options)) options = extra.options.map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
 					value: String(o["value"]),
 					label: String(o["label"])
 				} : String(o));
-				const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+				const hint = typeof extra.wtype === "string" ? extra.wtype : "";
 				let type;
 				if (hint !== "") type = hint;
 				else if (options !== void 0 && node.type === "union") type = "select";
@@ -1613,11 +2266,16 @@ window.__ModuleLoader__.load({
 				else if (node.type === "array") type = "loras";
 				else type = node.type ?? "string";
 				const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
-				const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+				const str = (k, m) => {
+					const b = extra[k];
+					if (typeof b === "string") return b;
+					const mk = m ?? k;
+					return typeof meta[mk] === "string" ? meta[mk] : void 0;
+				};
 				out.push({
 					name,
 					label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
-					order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+					order: typeof extra.order === "number" ? extra.order : void 0,
 					type,
 					default: meta["default"] === void 0 ? void 0 : meta["default"],
 					min: num("min"),
@@ -1626,13 +2284,13 @@ window.__ModuleLoader__.load({
 					options,
 					group: str("group") ?? "",
 					zone: str("zone"),
-					required: extra["required"] === true || meta["required"] === true,
+					required: extra.required === true || meta["required"] === true,
 					placeholder: str("placeholder"),
 					tooltip: str("tooltip"),
 					visible_when: str("visible_when"),
-					columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-					width: typeof extra["width"] === "number" ? extra["width"] : void 0,
-					max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+					columns: typeof extra.columns === "number" ? extra.columns : void 0,
+					width: typeof extra.width === "number" ? extra.width : void 0,
+					max_stack: typeof extra.max_stack === "number" ? extra.max_stack : void 0,
 					media: str("media")
 				});
 			}
@@ -1747,12 +2405,118 @@ window.__ModuleLoader__.load({
 			const rule = f.visible_when;
 			if (typeof rule !== "string" || rule === "") return true;
 			for (const guard of rule.split("&")) {
-				const eq = guard.indexOf("=");
-				if (eq < 0) continue;
-				const key = guard.slice(0, eq);
-				if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+				const g = guard.trim();
+				const ne = g.indexOf("!=");
+				const eq = ne >= 0 ? -1 : g.indexOf("=");
+				let key;
+				let wants;
+				let negate = false;
+				if (ne >= 0) {
+					key = g.slice(0, ne).trim();
+					wants = g.slice(ne + 2).split("|").map((w) => w.trim());
+					negate = true;
+				} else if (eq >= 0) {
+					key = g.slice(0, eq).trim();
+					wants = g.slice(eq + 1).split("|").map((w) => w.trim());
+				} else continue;
+				if (key === "") continue;
+				const val = String(values[key] ?? "");
+				const hit = wants.some((w) => w === "null" ? val === "" : w === val);
+				if (negate === hit) return false;
 			}
 			return true;
+		}
+		/** The resolved lane surface for the current variant, or null when
+		*  the family declares none (the legacy truth — visibility falls
+		*  back to visible_when). `variantId` is the RESOLVED variant
+		*  value (values.variant); an unknown id inherits the family base
+		*  verbatim (a Quant-only or unset axis). */
+		function laneSurfaceFor(spec, variantId) {
+			const lanes = spec.lanes;
+			if (lanes === void 0) return null;
+			const extra = variantId === null ? void 0 : lanes.variants?.[variantId]?.params;
+			return laneSurfaceOf(lanes.base, extra);
+		}
+		/** The relation words that judge the resolved lane: the family's
+		*  own + the variant's own (both layers fire — the DECL cascade). */
+		function laneRelationsFor(spec, variantId) {
+			const lanes = spec.lanes;
+			if (lanes === void 0) return [];
+			const out = [];
+			if (lanes.relations !== void 0) out.push(lanes.relations);
+			const v = variantId === null ? void 0 : lanes.variants?.[variantId]?.relations;
+			if (v !== void 0) out.push(v);
+			return out;
+		}
+		/** The numeric bounds that judge the resolved lane: family rows,
+		*  per-field replaced by the variant's own (the DECL cascade's
+		*  replace-law for numbers). */
+		function laneBoundsFor(spec, variantId) {
+			const lanes = spec.lanes;
+			if (lanes === void 0) return null;
+			return laneBoundsOf(lanes.bounds ?? null, variantId === null ? void 0 : lanes.variants?.[variantId]?.bounds ?? null);
+		}
+		/** Field visibility UNDER the lane contract: a declared surface
+		*  hides every field it does not name (the declaration is the
+		*  author — the field set IS the variant); a family that declares
+		*  no surface keeps the visible_when grammar. */
+		function fieldOnLane(spec, paramName, values) {
+			const surface = laneSurfaceFor(spec, typeof values["variant"] === "string" && values["variant"] !== "" ? values["variant"] : null);
+			if (surface === null) return true;
+			return surface.includes(paramName);
+		}
+		/** THE INLINE GATE: the lane's relation + surface violations over
+		*  what the state CARRIES — rendered under the named field while the
+		*  user types, refused by the bench door when the state is saved.
+		*  Empty = a state the run accepts.
+		*
+		*  THE CARRIED LAYERS, NOT THE RESOLVED MAP (2026-10-10, the
+		*  form-plane audit's CRITICAL-1): the resolved `values` map
+		*  materializes schema defaults and model_defaults as own
+		*  properties, so a defaulted field reads as STATED whether the user
+		*  ever touched it. On a lane that excludes a defaulted field that
+		*  produced a perpetual, UNCURABLE warning: the row was hidden
+		*  (fieldOnLane) so the cure ("drop it") was unclickable, and
+		*  unsetting it re-materialized the default. The bench judges the
+		*  PREPARED body — the operator's own params plus the stamps that
+		*  survive the null-skip — so the form judges the same thing: the
+		*  user layer over the base layer, non-null keys only. A schema
+		*  default is a PREFILL the operator never sent, and a variant's
+		*  `voice: null` stamp is exactly how the bench says "no persona on
+		*  this lane". */
+		function laneViolations(spec, fields, user, base) {
+			const carried = (key) => Object.prototype.hasOwnProperty.call(user, key) ? user[key] : (base ?? {})[key];
+			const rawVariant = carried("variant");
+			if (rawVariant !== void 0 && rawVariant !== null) {
+				if (typeof rawVariant !== "string" || rawVariant === "" || !laneVariantServed(spec, rawVariant)) return [];
+			}
+			const variantId = typeof rawVariant === "string" && rawVariant !== "" ? rawVariant : null;
+			const surface = laneSurfaceFor(spec, variantId);
+			const relations = laneRelationsFor(spec, variantId);
+			if (surface === null && relations.length === 0) return [];
+			const names = fields.map((f) => f.name);
+			const stated = {};
+			for (const src of [base ?? {}, user]) for (const [k, v] of Object.entries(src)) {
+				if (v === null || v === void 0) continue;
+				stated[k] = v;
+			}
+			const bounds = laneBoundsFor(spec, variantId);
+			return [
+				...judgeLaneSurface(surface, names, stated),
+				...judgeLaneRelations(relations, stated),
+				...judgeLaneBounds(bounds, stated)
+			];
+		}
+		/** Does the served doc offer this variant id? The VARIANT rows are
+		*  the served truth — a recipe row and a surface-less variant
+		*  (voicedesign) legitimately carry no `lanes.variants` entry and
+		*  still inherit the family base, so the check reads spec.variants
+		*  ids, never the lanes map's keys. */
+		function laneVariantServed(spec, variantId) {
+			return (Array.isArray(spec.variants) ? spec.variants : []).some((row) => {
+				const rec = row;
+				return rec?.id === variantId || rec?.key === variantId;
+			});
 		}
 		/** Group the visible fields (the spec's own group key, first-appearance
 		*  order — ungrouped first under no heading). */
@@ -1947,8 +2711,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:card-base/src/card.module.css.mjs
-		const css$4 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareEmptyIcon{align-items:center;display:flex}.FRpSCG_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.FRpSCG_squareActions>*{pointer-events:auto}.FRpSCG_squarePick{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.FRpSCG_squareBadge{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
-		const tagId$4 = "@melite/video-h3-timeline/card.module.css@7ac0a6ba";
+		const css$4 = ".FRpSCG_specForm :where(input,textarea,select,button){box-sizing:border-box}.FRpSCG_specForm{flex-direction:column;gap:12px;display:flex}.FRpSCG_specGroup{flex-direction:column;gap:8px;display:flex}.FRpSCG_modelAxes{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;display:grid}.FRpSCG_modelAxes .FRpSCG_specGroupTitle{grid-column:1/-1;margin-bottom:0}.FRpSCG_modelAxes>.FRpSCG_specHint{grid-column:1/-1}.FRpSCG_axesPair{grid-column:1/-1;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start;gap:10px;display:grid}.FRpSCG_axesPair>*{min-width:0}.FRpSCG_specGroupTitle{color:var(--dsw-alias-label-secondary,#61666b);letter-spacing:.04em;text-transform:uppercase;margin:0 0 2px;font-size:11px;font-weight:600}.FRpSCG_specField{flex-direction:column;gap:6px;display:flex}.FRpSCG_specFieldKey{color:var(--dsw-alias-label-secondary,#61666b);align-items:center;min-height:20px;font-size:12px;display:flex}.FRpSCG_specRequired{color:var(--dsw-alias-state-critical,#e5484d)}.FRpSCG_specHint{color:var(--dsw-alias-label-secondary,#61666b);font-size:11px}.FRpSCG_laneWarn{border-top:1px solid var(--dsw-alias-state-critical,#e5484d);border-bottom:1px solid var(--dsw-alias-state-critical,#e5484d);color:var(--dsw-alias-state-critical,#e5484d);margin:0;padding:6px 0;font-size:11px;line-height:1.5}.FRpSCG_laneWarn p{margin:0}.FRpSCG_specInfo{border:1px solid var(--dsw-alias-label-secondary,#61666b);width:12px;height:12px;color:var(--dsw-alias-label-secondary,#61666b);cursor:help;vertical-align:middle;user-select:none;border-radius:50%;flex:none;justify-content:center;align-items:center;margin-left:5px;font-family:Georgia,Times New Roman,serif;font-size:9px;font-style:italic;line-height:1;display:inline-flex}.FRpSCG_specFieldHead{justify-content:space-between;align-items:center;gap:6px;display:flex}.FRpSCG_specDice{width:20px;height:20px;color:var(--dsw-alias-label-secondary,#61666b);cursor:pointer;opacity:.65;background:0 0;border:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.FRpSCG_specDice:hover{opacity:1}.FRpSCG_specDiceOn{color:var(--dsw-alias-accent-primary,#4a7dbd);opacity:1}.FRpSCG_specSelect option{color:canvastext;background:canvas}.FRpSCG_specSelect{color-scheme:light;background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;border-radius:6px;width:100%;padding:5px 8px;font-size:13px}.FRpSCG_specSliderRow{align-items:center;gap:8px;display:flex}.FRpSCG_specSlider{flex:1}.FRpSCG_specSliderValue{color:var(--dsw-alias-label-secondary,#61666b);font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);text-align:right;min-width:4ch;font-size:12px}.FRpSCG_specTextarea{background:var(--dsw-alias-interactive-bg-hover,#2631480f);border:.5px solid var(--dsw-alias-border-l2,#0000001a);color:inherit;font:inherit;resize:vertical;border-radius:6px;width:100%;padding:6px 8px;font-size:13px}.FRpSCG_squareWrap{flex-direction:column;align-items:center;gap:4px;width:84px;display:flex}.FRpSCG_squareOff{opacity:.5;pointer-events:none}.FRpSCG_squareBox{border:.5px solid var(--dsw-alias-border-l2,#00000024);cursor:pointer;height:80px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;width:80px;display:flex;position:relative;overflow:hidden}.FRpSCG_squareOver{border-color:var(--dsw-alias-border-l3,#00000047);box-shadow:0 0 0 2px var(--dsw-alias-border-l1,#00000014)}.FRpSCG_squareThumb{object-fit:cover;width:100%;height:100%}.FRpSCG_squareMesh{pointer-events:none;position:absolute;inset:0}.FRpSCG_squareGlyph{color:var(--dsw-alias-label-tertiary,#00000073)}.FRpSCG_squareEmptyIcon{align-items:center;display:flex}.FRpSCG_squareActions{pointer-events:none;justify-content:flex-end;align-items:flex-end;padding:4px;display:flex;position:absolute;inset:0}.FRpSCG_squareActions>*{pointer-events:auto}.FRpSCG_squarePick{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;justify-content:center;align-items:center;width:22px;height:22px;padding:0;display:flex;position:absolute;top:4px;left:4px}.FRpSCG_squareBadge{color:var(--dsw-alias-label-secondary,#61666b);text-overflow:ellipsis;white-space:nowrap;max-width:100%;font-size:10px;line-height:17px;overflow:hidden}.FRpSCG_squareX{background:var(--dsw-alias-bg-module,#fff);border:.5px solid var(--dsw-alias-border-l2,#00000024);color:var(--dsw-alias-label-primary,#0f1115);cursor:pointer;border-radius:999px;align-items:center;padding:0 4px;font-size:10px;line-height:17px;display:flex;position:absolute;top:4px;right:4px}.FRpSCG_squareLabel{color:var(--dsw-alias-label-primary,#0f1115);text-overflow:ellipsis;white-space:nowrap;width:100%;font-size:11px;line-height:17px;overflow:hidden}.FRpSCG_squareMetric{color:var(--dsw-alias-label-tertiary,#00000073);font-size:10px;line-height:17px}.FRpSCG_squareFileInput{display:none}.FRpSCG_modSection{border-top:1px dashed var(--border,#80808040);flex-direction:column;gap:6px;margin-top:10px;padding-top:8px;display:flex}.FRpSCG_modHead{align-items:baseline;gap:8px;display:flex}.FRpSCG_modTitle{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}.FRpSCG_modHint{opacity:.45;font-size:9px}.FRpSCG_modRow{flex-wrap:wrap;align-items:stretch;gap:6px;margin:0;padding:0;list-style:none;display:flex}.FRpSCG_modTile{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#80808014);cursor:grab;touch-action:none;border-radius:8px;flex-direction:column;justify-content:center;gap:2px;min-width:84px;max-width:132px;padding:6px 8px;display:flex}.FRpSCG_modTile:active{cursor:grabbing}.FRpSCG_modTileLabel{text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.2;overflow:hidden}.FRpSCG_modTileStrength{opacity:.55;font-size:9px}.FRpSCG_modTileSteps{opacity:.55;font-variant-numeric:tabular-nums;font-size:9px}.FRpSCG_modAddSquare{border:1px dashed var(--dsw-alias-border-l3,#00000047);cursor:pointer;opacity:.7;height:64px;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:8px;justify-content:center;align-items:center;width:64px;display:flex}.FRpSCG_modAddSquare:hover{background:var(--dsw-alias-interactive-bg-hover,#0000000d);border-color:var(--dsw-alias-border-l4,#0006);opacity:1}.FRpSCG_tileDragging{opacity:.5}.FRpSCG_modTileRecipe{cursor:default;border-style:dashed}.FRpSCG_modTileRecipe .FRpSCG_modTileStrength:after{content:\" · recipe\"}.FRpSCG_specChips{flex-wrap:wrap;gap:4px;display:flex}.FRpSCG_specChip{border:1px solid var(--dsw-alias-border-l2,#8080804d);background:var(--dsw-alias-bg-base,transparent);color:var(--dsw-alias-label-secondary,inherit);cursor:pointer;border-radius:999px;padding:4px 8px;font-size:11px;line-height:1.2}.FRpSCG_specChipOn{border-color:var(--dsw-alias-accent,#80808099);background:var(--dsw-alias-bg-elevated,#8080801f);color:var(--dsw-alias-label-primary,inherit);font-weight:600}.FRpSCG_modLeafModal{width:min(760px,100vw - 32px);max-height:min(80vh,760px);overflow-y:auto}.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,7fr) minmax(240px,5fr);align-items:start;gap:12px;display:grid}.FRpSCG_modLeafStage{min-width:0}.FRpSCG_modStageCaption{letter-spacing:.06em;text-transform:uppercase;opacity:.7;font-size:10px;font-weight:600}@media (width<=720px){.FRpSCG_modLeafSplit{grid-template-columns:minmax(0,1fr)}}.FRpSCG_modLeaf{flex-direction:column;gap:10px;min-width:260px;display:flex}.FRpSCG_modLeafFields{gap:8px;display:grid}.FRpSCG_modLeafActions{gap:8px;display:flex}.FRpSCG_modField{flex-direction:column;gap:4px;font-size:11px;display:flex}.FRpSCG_modSelect{border:1px solid var(--border,#8080804d);background:var(--bg-elevated,#8080800f);color:inherit;color-scheme:light;border-radius:6px;padding:6px 8px;font-size:12px}.FRpSCG_modSelect option{color:canvastext;background:canvas}.FRpSCG_modLeafError{color:#e06c5f;margin:0;font-size:11px}.FRpSCG_pickList{flex-direction:column;gap:4px;max-height:60vh;margin:0;padding:0;list-style:none;display:flex;overflow-y:auto}.FRpSCG_pickRow{display:block}.FRpSCG_pickBtn{border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-primary);cursor:pointer;text-align:left;transition:border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), background-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);background:0 0;border-radius:6px;align-items:center;gap:10px;width:100%;padding:6px;display:flex}.FRpSCG_pickBtn:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-border-l4)}.FRpSCG_pickThumb{object-fit:cover;border-radius:4px;flex:none;width:40px;height:40px}.FRpSCG_pickGlyph{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);border-radius:4px;flex:none;justify-content:center;align-items:center;width:40px;height:40px;font-size:15px;font-weight:600;display:inline-flex}.FRpSCG_pickLabel{text-overflow:ellipsis;white-space:nowrap;font-size:13px;overflow:hidden}.FRpSCG_pickEmpty{color:var(--dsw-alias-label-tertiary);margin:0;font-size:13px}.FRpSCG_sourceRow{flex-direction:column;display:flex}.FRpSCG_specSlotRow{flex-wrap:wrap;align-items:flex-start;gap:8px;display:flex}.FRpSCG_specGrid{align-items:start;gap:8px;display:grid}.FRpSCG_specSlotCell{flex-direction:column;gap:4px;display:flex}.FRpSCG_inputRail{gap:10px}.FRpSCG_specStack{flex-direction:column;gap:6px;display:flex}[data-stack-add] .FRpSCG_squareBox{border-style:dashed}.FRpSCG_sz14{flex:none;width:14px;height:14px}.FRpSCG_wireDialog{width:min(448px,100vw - 32px);max-height:60vh;overflow-y:auto}.FRpSCG_wireUnwire{text-align:left;cursor:pointer;border:0;border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent);width:100%;color:var(--dsw-alias-state-error-primary);background:0 0;align-items:center;gap:8px;padding:8px 12px;font-size:11px;display:flex}.FRpSCG_wireUnwire:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireList{margin:0;padding:0;list-style:none}.FRpSCG_wireList>li+li{border-top:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 12%, transparent)}.FRpSCG_wireEmpty{color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);padding:12px;font-size:11px}.FRpSCG_wireOption{text-align:left;cursor:pointer;width:100%;color:var(--dsw-alias-label-primary);background:0 0;border:0;align-items:center;gap:8px;padding:8px 12px;display:flex}.FRpSCG_wireOption:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent)}.FRpSCG_wireSelected{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 8%, transparent)}.FRpSCG_wireIdx{font-variant-numeric:tabular-nums;background:color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;font-size:9px;font-weight:700;display:flex}.FRpSCG_wireThumb{object-fit:cover;border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);border-radius:4px;flex:none;width:32px;height:32px}.FRpSCG_wireThumbFallback{border:1px solid color-mix(in srgb, var(--dsw-alias-label-primary) 20%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);border-radius:4px;flex:none;justify-content:center;align-items:center;display:flex}.FRpSCG_wireMeta{flex:1;min-width:0}.FRpSCG_wireTitle{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-primary);font-size:11px;font-weight:500;overflow:hidden}.FRpSCG_wireOut{font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);margin-left:4px;font-size:9px}.FRpSCG_wireSub{text-overflow:ellipsis;white-space:nowrap;font-family:var(--dsw-alias-font-mono,ui-monospace, monospace);color:color-mix(in srgb, var(--dsw-alias-label-primary) 48%, transparent);font-size:9px;overflow:hidden}.FRpSCG_wiredTag{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);color:var(--dsw-alias-brand-primary);border-radius:4px;flex:none;padding:2px 6px;font-size:9px;font-weight:600}.FRpSCG_specLinkBtn{all:unset;cursor:pointer;color:var(--melite-accent,#6ea8fe);font:inherit;text-decoration:underline}.FRpSCG_specLinkBtn:disabled{cursor:default;color:var(--melite-muted,#8a8f98);text-decoration:none}.FRpSCG_specGrid :where(input,select){width:100%}.FRpSCG_groupTabs{flex-wrap:wrap;gap:6px;margin-bottom:10px;display:flex}.FRpSCG_groupTab{all:unset;cursor:pointer;font:inherit;color:inherit;border:1px solid var(--dsw-alias-border-l2,#80808059);border-radius:999px;padding:3px 10px}.FRpSCG_groupTab:hover{background:var(--dsw-alias-bg-module,#80808014)}.FRpSCG_groupTabActive{background:var(--dsw-alias-bg-module,#8080802e);border-color:var(--dsw-alias-border-l3,#8080808c)}.FRpSCG_tipAnchor{display:inline-flex}.FRpSCG_ctlRow,.FRpSCG_ctlRowSm{color:var(--dsw-alias-label-secondary);justify-content:space-between;align-items:center;gap:8px;font-size:10px;display:flex}.FRpSCG_ctlRow select,.FRpSCG_ctlRowSm select{font-size:10px}.FRpSCG_sectionLabel{justify-content:space-between;align-items:baseline;gap:8px;display:flex}.FRpSCG_sectionLabelText{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-tertiary);font-size:9px;font-weight:600}.FRpSCG_sectionLabelTail{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_emptyPane,.FRpSCG_emptyOverlay{text-align:center;flex-direction:column;justify-content:center;align-items:center;gap:6px;display:flex}.FRpSCG_emptyPane{box-sizing:border-box;width:100%;height:100%;padding:24px 0}.FRpSCG_emptyOverlay{pointer-events:none;padding:24px;position:absolute;inset:0}.FRpSCG_emptyTitle{color:var(--dsw-alias-label-secondary);margin:0;font-size:12px;font-weight:500}.FRpSCG_emptyHint{color:var(--dsw-alias-label-tertiary);max-width:25rem;margin:0;font-size:10px;line-height:1.6}.FRpSCG_paneHeaderPreview{flex:none;align-items:baseline;gap:6px;padding-bottom:6px;display:flex}.FRpSCG_paneHeaderStrip{border-bottom:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-interactive-bg-hover);align-items:center;gap:8px;padding:4px 10px;display:flex}.FRpSCG_paneTitle{text-transform:uppercase;letter-spacing:.06em;color:var(--dsw-alias-label-secondary);font-size:10px;font-weight:600}.FRpSCG_paneMeta{color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneMetaNum{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:9px}.FRpSCG_paneHint{color:var(--dsw-alias-label-tertiary);margin-left:auto;font-size:9px}.FRpSCG_paneShell{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-1);border-radius:6px;flex:none;overflow:hidden}@keyframes FRpSCG_panePulse{0%,to{opacity:1}50%{opacity:.45}}.FRpSCG_skeleton{background:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 22%, transparent);border-radius:6px;animation:1.6s ease-in-out infinite FRpSCG_panePulse}";
+		const tagId$4 = "@melite/video-h3-timeline/card.module.css@612c0f4b";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/video-h3-timeline";
@@ -1968,6 +2732,7 @@ window.__ModuleLoader__.load({
 			"groupTabActive": "FRpSCG_groupTabActive",
 			"groupTabs": "FRpSCG_groupTabs",
 			"inputRail": "FRpSCG_inputRail",
+			"laneWarn": "FRpSCG_laneWarn",
 			"modAddSquare": "FRpSCG_modAddSquare",
 			"modField": "FRpSCG_modField",
 			"modHead": "FRpSCG_modHead",
@@ -2162,6 +2927,57 @@ window.__ModuleLoader__.load({
 				className: cn(card_module_css_default.paneShell, className),
 				children
 			});
+		}
+		//#endregion
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
@@ -39610,7 +40426,7 @@ void main() {
 		*  drop-raycast position stays caller-computed). */
 		function meshAssetUrl(value) {
 			const match = /^data\/input\/([^?#]+)$/i.exec(value);
-			return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 		}
 		/** Normalize a loaded scene to a known viewing size — the
 		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
@@ -40059,8 +40875,10 @@ void main() {
 		/** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 		*  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 		*  artifact URLs. Every slot-shaped value renders the same way. */
+		const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
+		const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
 		function isImageUrl(value) {
-			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+			return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value);
 		}
 		/** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
 		*  the base-gaps primitive ③): a .glb/.gltf value — an estate path
@@ -40241,7 +41059,7 @@ void main() {
 				method: "POST",
 				headers: { "content-type": "application/json" },
 				body: JSON.stringify({
-					filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+					filename: file.name,
 					data: dataUrl
 				})
 			});
@@ -40499,7 +41317,7 @@ void main() {
 		* operator's DRY audit law: one seam, one small file, one wall). */
 		function SourceRow(props) {
 			const field = {
-				name: "__source_row__",
+				name: props.name ?? "__source_row__",
 				label: props.label,
 				type: props.kind === "image" ? "image" : "file"
 			};
@@ -40507,6 +41325,7 @@ void main() {
 				props.onEdit(v);
 			}, [props.onEdit]), {
 				candidates: props.candidates ?? [],
+				...props.candidatesFor !== void 0 ? { candidatesFor: props.candidatesFor } : {},
 				...props.loadMedia !== void 0 ? { loadMedia: props.loadMedia } : {},
 				...props.onFile !== void 0 ? { onFile: props.onFile } : {},
 				...props.accept !== void 0 ? { accept: props.accept } : {},
@@ -41284,11 +42103,14 @@ void main() {
 			const modFieldByName = /* @__PURE__ */ new Map();
 			for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
 			const railOf = (inp) => {
-				const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
+				const f = flatFields.find((x) => x.name === inp.name);
 				if (f === void 0) return void 0;
 				if (f.type === "image" || f.type === "file" || f.type === "mesh") return f;
 			};
 			const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0).filter((f) => fieldVisible(f, {
+				...value,
+				model: family ?? ""
+			})).filter((f) => fieldOnLane(spec, f.name, {
 				...value,
 				model: family ?? ""
 			}));
@@ -41296,9 +42118,20 @@ void main() {
 			const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name)).filter((f) => fieldVisible(f, {
 				...value,
 				model: family ?? ""
+			})).filter((f) => fieldOnLane(spec, f.name, {
+				...value,
+				model: family ?? ""
 			}));
-			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-			const groups = groupFields(flatFields.filter(visible), {
+			const visible = (f) => f.type !== "image_list" && !railNames.has(f.name) && fieldOnLane(spec, f.name, {
+				...value,
+				model: family ?? ""
+			});
+			const groupFieldsAll = flatFields.filter(visible);
+			const laneWarns = laneViolations(spec, flatFields, {
+				...user,
+				model: family ?? ""
+			}, base);
+			const groups = groupFields(groupFieldsAll, {
 				...value,
 				model: family ?? ""
 			});
@@ -41333,6 +42166,7 @@ void main() {
 					ariaLabel: `${f.label} ${String(i + 1)}`,
 					kind,
 					value: entry,
+					name: f.name,
 					...accept !== void 0 ? { accept } : {},
 					onEdit: (next) => {
 						const arr = [...entries];
@@ -41341,7 +42175,8 @@ void main() {
 						edit(f.name, arr);
 					},
 					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				}))), entries.length < cap ? (0, react.createElement)("div", {
 					className: card_module_css_default.specSlotCell,
 					"data-stack-add": f.name,
@@ -41351,13 +42186,15 @@ void main() {
 					ariaLabel: `Add ${f.label}`,
 					kind,
 					value: null,
+					name: f.name,
 					...accept !== void 0 ? { accept } : {},
 					onEdit: (next) => {
 						/* v8 ignore else -- the empty cell carries no clear verb (the square renders no Detach without an attached value, and the provider wires onClear for attached values only) — '' is unconstructible through the seam, so the else is the type fence, never a UI path */
 						if (next !== "") edit(f.name, [...entries, next]);
 					},
 					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
-					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {}
+					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
+					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				})) : null));
 			};
 			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
@@ -41368,7 +42205,10 @@ void main() {
 				value,
 				onSet: edit,
 				onDownloadModel
-			}), railFields.length > 0 || stackFields.length > 0 ? (0, react.createElement)("section", {
+			}), laneWarns.length > 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.laneWarn,
+				"data-lane-warn": String(laneWarns.length)
+			}, laneWarns.map((v, i) => (0, react.createElement)("p", { key: "lane-" + String(i) }, v.message))) : null, railFields.length > 0 || stackFields.length > 0 ? (0, react.createElement)("section", {
 				className: card_module_css_default.specGroup + " " + card_module_css_default.inputRail,
 				"data-input-rail": "1"
 			}, (0, react.createElement)("h4", { className: card_module_css_default.specGroupTitle }, "Inputs"), railFields.length > 0 ? (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, railFields.map((f) => {
@@ -44475,6 +45315,7 @@ void main() {
 		}
 		//#endregion
 		//#region src/ui/studio/docModel.ts
+		init_timelineTypes();
 		/**
 		* Convert a legacy audio_stem artifact name into a positioned clip at
 		* frame 0. The caller owns the async duration probe (Audio metadata)
@@ -44489,7 +45330,7 @@ void main() {
 				name,
 				src: stemSrc,
 				start_frame: 0,
-				dur_frames: Math.round(4 * (fps || 24)),
+				dur_frames: Math.round(4 * (typeof fps === "number" && fps > 0 ? fps : DEFAULT_SEGMENT_PARAMS.fps)),
 				gain: 1
 			};
 		}
@@ -45815,24 +46656,34 @@ void main() {
 			const list = normalizeDeclaredRefs(raw?.[k]);
 			return list.length > 0 ? list : void 0;
 		}
-		function arrayValue(value) {
+		function arrayValue(value, field) {
 			if (Array.isArray(value)) return value;
 			if (typeof value !== "string" || !value.trimStart().startsWith("[")) return [];
 			try {
-				return JSON.parse(value);
+				const parsed = JSON.parse(value);
+				if (!Array.isArray(parsed)) {
+					console.error(`VideoTimelineStudio: params.${field} parses to a non-array — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`);
+					return [];
+				}
+				return parsed;
 			} catch {
+				console.error(`VideoTimelineStudio: params.${field} is array-shaped but unparseable — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`);
 				return [];
 			}
 		}
 		function hydrateAudioClips(value) {
 			const clips = [];
-			for (const [index, raw] of arrayValue(value).entries()) {
-				if (raw === null || typeof raw !== "object" || Array.isArray(raw)) continue;
+			for (const [index, raw] of arrayValue(value, "audio_clips").entries()) {
+				if (raw === null || typeof raw !== "object" || Array.isArray(raw)) {
+					console.warn(`VideoTimelineStudio: audio_clips[${index}] is not a clip row — dropped.`);
+					continue;
+				}
 				const row = raw;
 				let parsed;
 				try {
 					parsed = parseFilmMixClips([{ ...row }])[0];
-				} catch {
+				} catch (e) {
+					console.warn(`VideoTimelineStudio: audio_clips[${index}] failed to hydrate (${String(e).slice(0, 120)}) — dropped; the film composes without this clip.`);
 					continue;
 				}
 				if (parsed === void 0) continue;
@@ -46005,7 +46856,31 @@ void main() {
 		}
 		//#endregion
 		//#region src/ui/studio/docCalls.ts
+		/** An array-SHAPED string that will not parse (or parses to a
+		* non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime
+		* class ("the persist effect wrote 1 call back, and the multi-call
+		* plan was destroyed permanently"). The parseable case self-heals
+		* (parse → the mount persist rewrites it as a real array); the
+		* corrupt case must never fall to the starter SILENTLY. The studio
+		* shows the starter as VIEW state, the corruption is named loudly
+		* here, and useDocState's sentinel treats the field as PRESENT so no
+		* mount-persist ever writes the starter back over the corrupt
+		* source. Non-array-shaped strings ("not-json") are foreign values
+		* the vocabulary has always tolerated — not this crime. */
+		function corruptCallsField(raw) {
+			for (const field of ["calls", "beats"]) {
+				const v = raw[field];
+				if (typeof v !== "string" || !v.trimStart().startsWith("[")) continue;
+				try {
+					if (Array.isArray(JSON.parse(v))) continue;
+				} catch {}
+				return field;
+			}
+			return null;
+		}
 		function hydrateCalls(raw) {
+			const corrupt = corruptCallsField(raw);
+			if (corrupt !== null) console.error(`VideoTimelineStudio: params.${corrupt} is array-shaped but unparseable — the document is corrupt. The starter is shown as view state ONLY; nothing persists over the corrupt source until you edit.`);
 			let callsRaw = raw.calls;
 			if (typeof callsRaw === "string" && callsRaw.trimStart().startsWith("[")) try {
 				const parsed = JSON.parse(callsRaw);
@@ -46203,8 +47078,11 @@ void main() {
 				calls: stage.params?.calls,
 				beats: stage.params?.beats
 			}));
-			const rawList = Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null;
-			const lastCallsRef = (0, react.useRef)(rawList !== null ? JSON.stringify(calls) : "");
+			const rawPresent = (Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null) !== null || corruptCallsField({
+				calls: stage.params?.calls,
+				beats: stage.params?.beats
+			}) !== null;
+			const lastCallsRef = (0, react.useRef)(rawPresent ? JSON.stringify(calls) : "");
 			const [keyframes, setKeyframes] = (0, react.useState)(() => hydrateKeyframes(stage.params?.keyframes));
 			const [layerA, setLayerA] = (0, react.useState)(() => hydrateLayerA(stage.params));
 			const lastKeyframesRef = (0, react.useRef)(JSON.stringify(keyframes));
@@ -46242,8 +47120,11 @@ void main() {
 				const stageChanged = stageIdRef.current !== stage.id;
 				stageIdRef.current = stage.id;
 				if (!stageChanged && currentSignature === incomingSignature) {
-					const rawList = Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null;
-					lastCallsRef.current = rawList !== null ? JSON.stringify(incomingCalls) : "";
+					const rawPresent = (Array.isArray(stage.params?.calls) && (stage.params?.calls).length > 0 ? stage.params?.calls : Array.isArray(stage.params?.beats) && (stage.params?.beats).length > 0 ? stage.params?.beats : null) !== null || corruptCallsField({
+						calls: stage.params?.calls,
+						beats: stage.params?.beats
+					}) !== null;
+					lastCallsRef.current = rawPresent ? JSON.stringify(incomingCalls) : "";
 					lastKeyframesRef.current = JSON.stringify(incomingKeyframes);
 					lastLayerARef.current = JSON.stringify(serializeLayerA(incomingLayerA));
 					return;
@@ -47266,10 +48147,20 @@ void main() {
 		/**
 		* The source-media types a family declares it ingests (FamilyEntry.accepts,
 		* a closed literal on the backend). Returns the declared list, or
-		* [] when the family declares none / is unknown → the canvas drop handler
-		* treats [] as "not a drop target" (no card spawned, no hard-fail on the
-		* MIME itself — there simply is no input family to receive the drop). The
-		* gate that replaces a free-coded isImageFile prefix check. (2026-08-09)
+		* [] when the family declares none / is unknown.
+		*
+		* THE READER TODAY, STATED HONESTLY (the accepts-consumer audit,
+		* 2026-10-10): this gate is SERVED (catalogEmission puts the DECL's
+		* accepts on the /v1/model-catalog families block) and READ here,
+		* but the promised last-mile consumer — a canvas drop handler
+		* spawning an input card only for accepted media types — does not
+		* exist in this checkout (the drop surface targets card slots via
+		* the shared ASSET_DRAG_MIME contract, never spawns). The DECL's
+		* truth is not a lie; the old comment's consumer was. The wiring
+		* is owed work on the ROADMAP (canvas drop-spawn), and this
+		* reader is the gate it will call — never a free-coded
+		* isImageFile prefix check. (authored 2026-08-09; corrected
+		* 2026-10-10)
 		*/
 		function familyAccepts(routeKey, cat = _cache$2 ?? {
 			families: {},
@@ -51985,4 +52876,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c2900c1bd88f21599984567f478ffb9e2e18a12a";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1d0fabb660e3177b4503d5cb1620d8f58e0cecb4";

@@ -71,6 +71,13 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
             readonly input: string;
             readonly live: readonly string[];
         };
+        /** A WIRED MEMBER CANNOT BE GROUPED (2026-10-10, the bench
+         *  audit's gap 6): the run's wiring walk reads the flat stage
+         *  list, so a member's wire dies the moment it is parked. */
+        "bench/grouped-row-wired": {
+            readonly session: string;
+            readonly stage: string;
+        };
         /** A wiring channel no param spells ($channel) — the wiring
          *  feeds nothing and the run would silently ignore it. */
         "bench/dead-wire": {
@@ -89,6 +96,14 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
         "bench/store-failed": Record<string, never>;
     }
 }
+/** Session key gate: same charset family as draft ids, capped so
+ * "bench-" + session always clears the 96-char draft ceiling.
+ * EXPORTED (the wall audit's B-C1, 2026-09-28): the draft-id-grammar
+ * wall drove the DRAFT regexes where it meant to drive this one —
+ * the rule was unreadable from the outside, so the wall sampled a
+ * neighbour. The export is the single derivation the clients' mirrors
+ * and the wall both pin against. */
+export declare const SESSION_RE: RegExp;
 declare const AUTHORS: readonly ["agent", "user"];
 type Author = (typeof AUTHORS)[number];
 interface BenchEntry {
@@ -109,6 +124,9 @@ export interface BenchBlock {
     log: BenchEntry[];
 }
 export declare function benchBlockOf(doc: Record<string, unknown>): BenchBlock;
+/** Birth defaults per the composer's law (id, inputs, provenance)
+ *  with the runner's object inputs. */
+export declare function normalizeStages(stagesIn: unknown, author: Author): Record<string, unknown>[];
 /** The ensure row: create marker, rev, intent, stages. */
 export interface BenchEnsureRow {
     readonly draft_id: string;

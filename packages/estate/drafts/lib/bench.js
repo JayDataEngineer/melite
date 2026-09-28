@@ -16,8 +16,13 @@ import { unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 /** Session key gate: same charset family as draft ids, capped so
- * "bench-" + session always clears the 96-char draft ceiling. */
-const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+ * "bench-" + session always clears the 96-char draft ceiling.
+ * EXPORTED (the wall audit's B-C1, 2026-09-28): the draft-id-grammar
+ * wall drove the DRAFT regexes where it meant to drive this one —
+ * the rule was unreadable from the outside, so the wall sampled a
+ * neighbour. The export is the single derivation the clients' mirrors
+ * and the wall both pin against. */
+export const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 function benchIdOf(session) {
     return "bench-" + session;
 }
@@ -62,7 +67,7 @@ function seedStateOf(row) {
 }
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
-function normalizeStages(stagesIn, author) {
+export function normalizeStages(stagesIn, author) {
     if (!Array.isArray(stagesIn))
         return [];
     return stagesIn
@@ -232,10 +237,16 @@ export async function ensureBench(drafts, body, admit) {
             " — a wholesale load would discard them; confirm with overwrite: true, " +
             "or grow the bench with add_stage / patch, or undo if this was a mistake", { current_rev: block.rev, stages: before.length });
     }
-    admitStages(admit, body["stages"]);
     // (the no-leak law: admit on the LOCAL normalized list, assign to
     // the cached doc only after the gates pass.)
     const staged = normalizeStages(body["stages"], author);
+    // THE JUDGED VIEW IS THE STORED VIEW (the bench audit's gap 11,
+    // 2026-10-10): this arm judged the RAW bodies and stored the
+    // normalized rows — the unwrap, the media heal and the self-naming
+    // strip all landed AFTER the judgment, so a body the normalizer
+    // would have healed could still be refused. The rows are shaped
+    // first, then judged — the order add uses.
+    admitStages(admit, staged);
     // THE STAGE MEMORY LAW (2026-09-20, the operator's catch: "why
     // does it never track history?"): a stage's OUTPUT MEMORY — its
     // landed result and archived history — belongs to the STAGE'S
@@ -493,16 +504,24 @@ export async function patchBench(drafts, session, body, admit) {
         // FOREVER, so a human actively editing a pre-law row never met
         // today's law. A patch is a live compose act; it judges with
         // the DECL the next run will compose from.
-        admitStage(admit, st["card"], cur, undefined);
+        // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
+        // 2026-10-10): the door judged the stripped view and stored the
+        // raw one, so a doc written by patch held a self-naming model
+        // key that add/load never store — and the next door to read that
+        // row (a group, an undo) judged a different object than the one
+        // on disk. The merge strips before judging AND before storing:
+        // one row, one view.
+        const stored = strippedForAdmission(typeof st["card"] === "string" ? st["card"] : "", cur);
+        admitStage(admit, st["card"], stored, undefined);
         // THE WIRING ADMISSION (phantom-wire cure): a params patch can
         // orphan a spell (drop the $image binding while the wire stays)
         // or strand a wire (introduce $image with no channel) — the
         // merged pair admits together, exactly as the run consumes them.
-        admitWiring(st, cur, isRecord(st["inputs"]) ? st["inputs"] : {}, 
+        admitWiring(st, stored, isRecord(st["inputs"]) ? st["inputs"] : {}, 
         // (the domain schema pins stages[].id: string with
         // backup-and-skip at read — a nullish id never reaches here)
         stagesOf(loaded.doc).map((r) => String(r["id"])), stageId, session);
-        st["params"] = cur;
+        st["params"] = stored;
     }
     if (paramsIn === undefined) {
         throw new RemoteError("bench/bad-body", "nothing to patch (params)", {});
@@ -546,7 +565,27 @@ function admitRestored(admit, stage, params) {
     const card = stage["card"];
     if (typeof card !== 'string' || card === '')
         return;
-    admit(card, params, undefined);
+    // A RESTORED COMPOUND IS JUDGED BY ITS MEMBERS (the bench audit's
+    // gap 9): the literal "group" card names nothing the model board
+    // knows, so an undo that reinserted a group row (or a snapshot
+    // restore) refused the bench's own state — an undo bricked by
+    // what the group door had just built. The members cross the same
+    // door they crossed when they were picked.
+    if (card === GROUP_CARD && Array.isArray(stage["children"])) {
+        for (const child of stage["children"]) {
+            if (!isRecord(child))
+                continue;
+            admitRestored(admit, child, isRecord(child["params"]) ? child["params"] : {});
+        }
+        return;
+    }
+    // THE STRIPPED VIEW, LIKE EVERY OTHER SEAT (the bench audit's gap
+    // 3, 2026-10-10): this arm judged the RAW row, so a restore of
+    // {model: <own card>} — which normalizeBenchStage strips at store
+    // and which add/patch admit through the stripped view — was
+    // REFUSED here as an unknown model. One admission means one view:
+    // the restored row is judged exactly as it would be written.
+    admit(card, strippedForAdmission(card, params), undefined);
 }
 /** The judged view of a row's params — the view the doc will HOLD
  *  (2026-10-10, the write-seat audit's row 7): normalizeBenchStage
@@ -571,6 +610,10 @@ function admitStage(admit, card, params, provenance = undefined) {
     // still bites.
     admit(card, strippedForAdmission(card, isRecord(params) ? params : {}), provenance);
 }
+/** The compound row's card literal — the bench's own shape, never a
+ *  declared card. Named once so every seat that must exempt a
+ *  compound says the same word (the load arm below). */
+const GROUP_CARD = "group";
 /** Admission over a wholesale stage list (the load arm — every row
  *  passes the same door an add passes). */
 function admitStages(admit, stages) {
@@ -579,6 +622,19 @@ function admitStages(admit, stages) {
     for (const s of stages) {
         if (!isRecord(s))
             continue;
+        // THE COMPOUND IS NOT A CARD (the bench audit's gap 9,
+        // 2026-10-10): groupBench writes a row whose card is the literal
+        // "group" and whose members ride in `children` — so loading the
+        // bench's own read-back asked the model board about a card that
+        // does not exist ("no registered card definition"), and an undo
+        // of such a load bricked on the bench's own prior state. The
+        // compound is judged by its MEMBERS: the same door each member
+        // crossed when it was picked (the compound-no-blind-spot law,
+        // stated on the way back in).
+        if (s["card"] === GROUP_CARD && Array.isArray(s["children"])) {
+            admitStages(admit, s["children"]);
+            continue;
+        }
         admitStage(admit, s["card"], s["params"], s["provenance"]);
     }
 }
@@ -675,16 +731,57 @@ function admitWiringList(stages, session) {
     for (const r of stages) {
         if (!isRecord(r))
             continue;
+        // THE COMPOUND'S OWN WIRES ARE JUDGED (the bench audit's gap 7,
+        // 2026-10-10): a compound row's inputs are {} by shape, so this
+        // walk passed over it vacuously — a wire hidden INSIDE a group
+        // survived a remove of the stage it pointed at, and ungroup then
+        // spilled the phantom onto the flat bench with nothing left to
+        // catch it. The walk descends: the compound is judged, and so is
+        // every child, against the same live set.
         admitWiring(r, isRecord(r["params"]) ? r["params"] : {}, isRecord(r["inputs"]) ? r["inputs"] : {}, liveIds, String(r["id"] ?? ""), session);
+        if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
+            for (const child of r["children"]) {
+                if (!isRecord(child))
+                    continue;
+                admitWiring(child, isRecord(child["params"]) ? child["params"] : {}, isRecord(child["inputs"]) ? child["inputs"] : {}, liveIds, String(child["id"] ?? ""), session);
+            }
+        }
     }
 }
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export async function addStageBench(drafts, session, body, admit) {
     refuseUnknown(body, ADD_KEYS);
-    admitStage(admit, body["card"], body["params"]);
-    const loaded = await loadBench(drafts, session);
-    casCheck(loaded.block, body["expect_rev"], session);
+    const loadedForAdmit = await loadBench(drafts, session);
+    casCheck(loadedForAdmit.block, body["expect_rev"], session);
+    // THE JUDGED VIEW IS THE STORED VIEW (the bench audit's gap 11,
+    // 2026-10-10): this arm judged the RAW body and then stored the
+    // normalized row — so the unwrap, the legacy-media heal and the
+    // default overlay were applied AFTER the judgment, and the door
+    // could refuse a row the normalizer would have healed (or admit one
+    // it would have reshaped). The row is shaped FIRST, then judged —
+    // the same order every other door uses.
+    const cardForRow = body["card"];
+    if (typeof cardForRow !== "string" || cardForRow === "") {
+        throw new RemoteError("bench/bad-body", "card is required", {});
+    }
+    const stageIdForAdmit = typeof body["id"] === "string" && body["id"] !== ""
+        ? body["id"]
+        : "s_" +
+            String(stagesOf(loadedForAdmit.doc).reduce((max, row) => {
+                const m = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
+                return m === null ? max : Math.max(max, Number(m[1]));
+            }, -1) + 1);
+    const admitted = normalizeBenchStage({
+        id: stageIdForAdmit,
+        card: cardForRow,
+        ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
+        ...(isRecord(wireParams(body["params"])) ? { params: wireParams(body["params"]) } : {}),
+        ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
+        ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
+    }, stageIdForAdmit);
+    admitStage(admit, admitted["card"], admitted["params"]);
+    const loaded = loadedForAdmit;
     const card = body["card"];
     if (typeof card !== "string" || card === "") {
         throw new RemoteError("bench/bad-body", "card is required", {});
@@ -834,6 +931,37 @@ export async function groupBench(drafts, session, body, admit = undefined) {
             ? row["params"]
             : {});
     }
+    // A WIRED ROW CANNOT BE GROUPED (the bench audit's gap 6, 2026-10-10
+    // — the direction the first cut of this gate still missed): the
+    // run's wiring walk (benchWiring in the runs registry) reads the
+    // FLAT stage list only, so a member's wire dies the moment the
+    // member leaves it — whether it pointed at another member or at a
+    // bystander. Parking it is a silent run-time starvation, so the
+    // door refuses and names the cure (ungroup first, or drop the wire).
+    for (const row of picked) {
+        const ins = row["inputs"];
+        if (isRecord(ins) && Object.keys(ins).length > 0) {
+            throw new RemoteError("bench/grouped-row-wired", "stage " + String(row["id"]) + " carries a wire (" + Object.keys(ins).join(", ") +
+                ") — grouping hides it from the run, which wires only the flat bench; ungroup it first, or drop the wire", { session, stage: String(row["id"]) });
+        }
+    }
+    // THE SURVIVORS RE-JUDGED, AND THE WIRES TOO (the bench audit's
+    // gap 6, 2026-10-10): a group moves rows OFF the flat bench, so a
+    // wire another member carried now points at a stage that is no
+    // longer addressable — a state remove_stage refuses and rewire
+    // refuses to create. Grouping admitted it silently, because this
+    // arm only judged the picked rows' models. The post-move bench is
+    // judged as a whole, on a copy, before the splice lands (the
+    // survivor law remove established, now applied to the other door
+    // that moves rows).
+    const afterGroup = stages.filter((r) => !picked.includes(r));
+    const compoundProbe = {
+        id: "g_probe",
+        card: GROUP_CARD,
+        children: picked,
+    };
+    afterGroup.splice(Math.min(firstIndex, afterGroup.length), 0, compoundProbe);
+    admitWiringList(afterGroup, session);
     for (const row of picked) {
         // picked rows ARE stages members (built from the walk above) —
         // splice by identity, no guard.
@@ -844,7 +972,7 @@ export async function groupBench(drafts, session, body, admit = undefined) {
     const gid = "g_r" + String(loaded.block.rev) + "c" + String(picked.length) + "_" + String(stages.length);
     const compound = {
         id: gid,
-        card: "group",
+        card: GROUP_CARD,
         children: picked,
     };
     stages.splice(Math.min(firstIndex, stages.length), 0, compound);
@@ -874,7 +1002,7 @@ export async function ungroupBench(drafts, session, body, admit = undefined) {
         : "agent";
     const stages = stagesOf(loaded.doc);
     const idx = stages.findIndex((s) => s["id"] === stageId);
-    if (idx < 0 || stages[idx]["card"] !== "group") {
+    if (idx < 0 || stages[idx]["card"] !== GROUP_CARD) {
         throw new RemoteError("bench/stage-not-found", "ungroup: no group stage " + stageId, { session, stage: stageId });
     }
     const compound = stages[idx];
@@ -893,6 +1021,14 @@ export async function ungroupBench(drafts, session, body, admit = undefined) {
             ? row["params"]
             : {});
     }
+    // THE SPILLED BENCH IS JUDGED AS A WHOLE (the bench audit's gap 6,
+    // 2026-10-10): a child that carried a wire to a stage the
+    // compound hid — or a wire to a member that the group removed from
+    // the flat bench — comes back as a PHANTOM, a state add, rewire and
+    // remove all refuse. Judged on a copy, before the splice.
+    const afterSpill = stages.filter((r) => r !== compound);
+    afterSpill.splice(Math.min(idx, afterSpill.length), 0, ...rows);
+    admitWiringList(afterSpill, session);
     stages.splice(idx, 1);
     stages.splice(Math.min(idx, stages.length), 0, ...rows);
     loaded.doc["stages"] = stages;
@@ -1054,8 +1190,28 @@ export async function undoBench(drafts, session, body, admit) {
         throw new RemoteError("bench/nothing-to-undo", "nothing to undo" + (filter !== null ? " (author " + filter + ")" : ""), {});
     }
     const stagesBefore = stagesOf(loaded.doc);
+    // THE MULTI-TARGET UNDO IS ATOMIC (the bench audit's gap 2,
+    // 2026-10-10): every inverse applied straight into the CACHED doc,
+    // so `undo {n: 2}` where the first target reverts cleanly and the
+    // second refuses left the first one's change in the live document
+    // with no rev and no log — a refused write that mutated, through
+    // the door whose whole job is repair. The inverses now run against
+    // a DEEP COPY and the swap happens only when every target applied
+    // (copy-on-judge, at the shape's own scale: an undo either lands
+    // whole or not at all).
+    const undoDoc = structuredClone(loaded.doc);
     for (const e of targets)
-        applyInverse(loaded.doc, e, admit, session);
+        applyInverse(undoDoc, e, admit, session);
+    // THE UNDOED BENCH IS WIRE-JUDGED WHOLE (the bench audit's gaps 4
+    // + 5, 2026-10-10): every restore arm above judged MODELS only, so
+    // the wiring half of a write was undo's blind spot: an undo-patch
+    // restored params that stranded a spell the wire still fed (a dead
+    // wire the forward patch refuses), and undo-remove/group/ungroup/
+    // snapshot reinserted rows that wired a stage no longer on the
+    // bench. One walk over the RESULT covers every arm at once — the
+    // survivor law remove established, applied to the repair door.
+    admitWiringList(stagesOf(undoDoc), session);
+    loaded.doc = undoDoc;
     const undone = targets
         .map((e) => e.rev)
         .sort((a, b) => a - b);

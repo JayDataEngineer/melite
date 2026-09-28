@@ -616,3 +616,67 @@ describe("bootModels (the transactional boot)", () => {
     assert.deepEqual(resolveCascade({ a: 1 }, null, null), { a: 1 });
   }, 240000);
 });
+
+describe("the either_or floor is refused where the row is WRITTEN (the schema auditor, 2026-09-28)", () => {
+  // schemastery does not enforce `.min()` on a NESTED array, so the
+  // grammar's two-alternative floor was never applied: a one-
+  // alternative (or empty) either_or REGISTERED and then judged
+  // nothing at run time — a word that means nothing, declared
+  // lawfully. A word's shape is a DECLARATION question, so it is
+  // refused at the admission seat, with the row's own coordinates.
+  // the probe is its OWN family, not a clone that keeps krea-2's
+  // routes (a clone would collide on the flat route ids — the
+  // flattener's one-owner law, which is a different door entirely)
+  const eitherOrDecl = (groups: unknown[]): ModelDecl =>
+    ({
+      id: "either-or-probe",
+      genre: "image",
+      label: "either-or probe",
+      variants: [],
+      relations: { either_or: [{ groups }] },
+    }) as unknown as ModelDecl;
+
+  const withService = async (fn: (svc: ModelsService) => void | Promise<void>): Promise<void> => {
+    const ctx = new Context();
+    await ctx.plugin(modelsProvider);
+    const svc = modelsService();
+    try {
+      await fn(svc);
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  };
+
+  it("a ONE-alternative either_or refuses, naming the row and the cure", async () => {
+    await withService((svc) => {
+      assert.throws(
+        () => svc.registerFamily(eitherOrDecl([["prompt"]])),
+        (e: unknown) => {
+          assert.ok(e instanceof ModelError, "a ModelError");
+          assert.match(String(e.message), /either_or\[0\]\.groups \(1 alternative/,
+            "the refusal names the row and the count");
+          assert.match(String(e.message), /at least two sources/,
+            "the refusal carries the law, not just the count");
+          return true;
+        },
+      );
+    });
+  });
+
+  it("an EMPTY either_or refuses too (a word with no alternatives is not a word)", async () => {
+    await withService((svc) => {
+      assert.throws(
+        () => svc.registerFamily(eitherOrDecl([])),
+        /either_or\[0\]\.groups \(0 alternatives/,
+      );
+    });
+  });
+
+  it("a LAWFUL two-alternative either_or registers (the floor does not refuse the law's own case)", async () => {
+    await withService((svc) => {
+      const decl = eitherOrDecl([["ref_audio", "ref_text"], ["qvoice"]]);
+      assert.doesNotThrow(() => svc.registerFamily(decl),
+        "two alternatives is the word's own shape — the gate refuses only below it");
+    });
+  });
+});

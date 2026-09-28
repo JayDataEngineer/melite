@@ -240,6 +240,23 @@ function relationDrift(relations: Record<string, unknown>, where: string): strin
       for (const k of strippedKeys(row as Record<string, unknown>, schema, `${where}/${key}[${String(i)}]`)) {
         out.push(`${key}[${String(i)}].${k}`);
       }
+      // THE EITHER_OR FLOOR, AT THE ADMISSION SEAT (the schema
+      // auditor, 2026-09-28): schemastery does not enforce `.min()`
+      // on a NESTED array, so the two-alternative floor the grammar
+      // claims was never applied — a one-alternative (or empty)
+      // either_or registered and then judged nothing at run time,
+      // which is a word that means nothing. A word's shape is a
+      // DECLARATION question, so it is refused HERE, where the row is
+      // written, with the row's own coordinates in the voice. (The
+      // judge keeps its pinned law: a malformed row judges nothing —
+      // it never invents a claim. One admission per door.)
+      if (key === "either_or") {
+        const groups = (row as { groups?: unknown }).groups;
+        const n = Array.isArray(groups) ? groups.length : 0;
+        if (n < 2) {
+          out.push(`${key}[${String(i)}].groups (${String(n)} alternative${n === 1 ? "" : "s"} — either_or is a choice between at least two sources; one source is the 'required' word)`);
+        }
+      }
     });
   }
   return out;
@@ -548,8 +565,11 @@ export class ModelsService extends Service {
   }
 
   /** Matrix coordinates → { route, engine, cell } (the R1
-   *  contract). ENGINE_TRUTH is ("mode", "variant") — the
-   *  compose's own declaration; the cascade never touches it. */
+   *  contract). The ENGINE_TRUTH triple ("mode", "variant",
+   *  "model") is validate.ts's export — the compose's own
+   *  declaration; the cascade never touches it. (The comment
+   *  drifted from the SSOT it described until the schema audit
+   *  named it: two words where the export carries three.) */
   resolve(id: string, variant?: string | null, quant?: string | null): {
     route: string;
     engine: string;

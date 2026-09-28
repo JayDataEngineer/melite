@@ -381,7 +381,12 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
 // ── THE LAWS THE WORK AND DESIGN AUDITS ADDED (2026-10-10) ─────────
 // These back the fixes that came out of the two adversarial audits;
 // each is a rule the tree would otherwise be free to break again.
-describe("THE AUDIT-ADDED LAWS", () => {
+describe("THE AUDIT-ADDED LAWS", async () => {
+  // the CONTRACT's own schema instance — a wall that imported its
+  // own copy of schemastery would be driving a second judge
+  const { SCHEMA: Schema } = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
+  const contractNs = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
+  const { ENGINE_TRUTH } = await import("../../../../packages/engines/comfyui-cordis/src/models/validate.ts");
   it("RULE 4b · no card declares a real `params` KNOB (the stanza unwrap's safety)", () => {
     // liftCardParams unwraps a `params` stanza (the run body's shape)
     // and liftStanza merges it. If any card ever declares a field
@@ -471,12 +476,69 @@ describe("THE AUDIT-ADDED LAWS", () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
-  it("RULE 7b · the main declaration's schema is CHECKED against its interface", () => {
+  it("RULE 7b · the main declaration's schema is CHECKED against its interface", async () => {
     // the design audit's Q1: ModelDecl was the one row left
-    // un-annotated, with two walls existing only to police the pair
-    const contract = read("packages/engines/comfyui-cordis/src/models/families/contract.ts");
-    expect(contract).toContain("export const ModelDecl: z<ModelDecl>");
-    expect(contract).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
+    // un-annotated, with two walls existing only to police the pair.
+    //
+    // BEHAVIOURAL NOW (the schema auditor, 2026-09-28): the old arm
+    // pinned the ANNOTATION TEXT plus a banned comment string, and
+    // the auditor added `audit_probe_field?: string` to the
+    // interface with no schema twin — every wall stayed green. An
+    // interface member the schema does not know is a declaration an
+    // author may write and registration will silently drop, which is
+    // the drift class this rule exists for. The pair is now driven:
+    // every OPTIONAL interface member is a key the schema carries
+    // (a row stating it resolves), and every member is either
+    // required or omittable (the minimal-row table, RULE 8).
+    const { SCHEMA } = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
+    const src = read("packages/engines/comfyui-cordis/src/models/families/contract.ts");
+    expect(src).toContain("export const ModelDecl: z<ModelDecl>");
+    expect(src).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
+    // the interface's own members, read from its declaration
+    const decl = src.match(/export interface ModelDecl\s*\{([\s\S]*?)\n\}/);
+    expect(decl, "the ModelDecl interface is declared where this arm reads it").not.toBeNull();
+    const members = [...(decl![1] as string).matchAll(/^\s{2}(\w+)(\??):\s*([^;]+);/gm)]
+      .map((m) => ({ name: m[1]!, optional: m[2] === "?", type: (m[3] ?? "").trim() }));
+    expect(members.length, "the interface census read its members (a regex rot empties it)").toBeGreaterThan(5);
+    // the schema's own keys, read from its declaration
+    const schemaBlock = src.match(/export const ModelDecl: z<ModelDecl> = z\.object\(\{([\s\S]*?)\n\}\);/);
+    expect(schemaBlock, "the ModelDecl schema is declared where this arm reads it").not.toBeNull();
+    const schemaKeys = new Set([...(schemaBlock![1] as string).matchAll(/^\s{2}(\w+):/gm)].map((m) => m[1]!));
+    // EVERY interface member is a schema key — this is the direction
+    // the annotation text could not see.
+    const orphans = members.filter((m) => !schemaKeys.has(m.name)).map((m) => m.name);
+    expect(orphans, `every interface member has a schema key (orphans: ${orphans.join(", ")}) — ` +
+      "an interface field the schema drops is a declaration an author may write and registration silently loses").toEqual([]);
+    // and the schema declares no key the interface does not (the
+    // reverse: a schema key no author may write is a dead field)
+    const memberNames = new Set(members.map((m) => m.name));
+    const extra = [...schemaKeys].filter((k) => !memberNames.has(k));
+    expect(extra, `the schema declares no key the interface does not (extras: ${extra.join(", ")})`).toEqual([]);
+    // and the pair is REAL: stating an optional member resolves
+    // a value per DECLARED type — the point is to state the member,
+    // so the shape has to be the one the interface promises
+    const valueFor = (type: string): unknown => {
+      // `string[]` and `Array<string>` are arrays OF strings, not strings
+      if (/^(string\[\]|Array<string>)/.test(type)) return ["x"];
+      if (type.startsWith("string")) return "x";
+      if (type.startsWith("boolean")) return true;
+      if (type.startsWith("number")) return 1;
+      if (type.startsWith("Record")) return {};
+      if (type.startsWith("Array")) return [];
+      return null; // a row-typed optional: null is the row's own absent form
+    };
+    const probe: Record<string, unknown> = { id: "d", genre: "image", label: "L", variants: [] };
+    for (const m of members) {
+      if (!m.optional) continue;
+      probe[m.name] = valueFor(m.type);
+    }
+    try {
+      (SCHEMA as unknown as { resolve(r: unknown, s: never, c: object, strict: boolean): unknown })
+        .resolve(probe, contractNs["ModelDecl"] as never, {}, true);
+    } catch (e) {
+      expect.unreachable(`a ModelDecl row carrying EVERY interface member must resolve — a member the ` +
+        `schema does not know is silently dropped at registration: ${String((e as Error).message).slice(0, 160)}`);
+    }
   });
 
   it("RULE 10 · the segment grammar is the CONTRACT'S (no door owns a private copy)", () => {
@@ -506,6 +568,65 @@ describe("THE AUDIT-ADDED LAWS", () => {
       // lookahead.
       if (/\(\?!\\\.{1,2}\$\)\[A-Za-z0-9\._-\]/.test(code)) {
         offenders.push(f + " — the media segment grammar re-spelled as a private regex; import segmentConfined from @melite/contracts/mediaKinds");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 8b · the schema minima are REAL, and they are judged BOTH ways (the schema auditor, 2026-09-28)", () => {
+    // The auditor's finding: `assertSchemaAcceptsMinimalRows` proves
+    // every schema ACCEPTS its minimal row, so a LOOSENED minimum
+    // (TogetherRow `.min(2)` → nothing) stayed green — the law was
+    // one-directional. And `.min()` on a NESTED array is not enforced
+    // by schemastery at all, which is why either_or's two-alternative
+    // floor now lives in the judge.
+    //
+    // This arm drives the SCHEMAS with below-minimum rows and
+    // requires a REFUSAL for each — the other direction.
+    const contract = contractNs as unknown as Record<string, unknown>;
+    const resolve = (schema: unknown, row: unknown): string => {
+      try {
+        (Schema as unknown as { resolve(r: unknown, s: never, c: object, strict: boolean): unknown })
+          .resolve(row, schema as never, {}, true);
+        return "accepted";
+      } catch {
+        return "refused";
+      }
+    };
+    const belowMinimum: Array<[string, unknown, unknown]> = [
+      ["ParamRequiresRow (needs min 1)", contract["ParamRequiresRow"], { field: "f", needs: [] }],
+      ["ParamTogetherRow (fields min 2)", contract["ParamTogetherRow"], { fields: ["a"] }],
+      ["ParamAtMostOneRow (fields min 2)", contract["ParamAtMostOneRow"], { fields: ["a"] }],
+      ["ParamRequiredRow (fields min 1)", contract["ParamRequiredRow"], { fields: [] }],
+    ];
+    const slack: string[] = [];
+    for (const [name, schema, row] of belowMinimum) {
+      if (schema === undefined) { slack.push(name + " (no such export)"); continue }
+      if (resolve(schema, row) !== "refused") slack.push(name);
+    }
+    expect(slack, `every declared minimum is ENFORCED (these accepted a below-minimum row: ${slack.join(", ")})`).toEqual([]);
+  });
+
+  it("RULE 7c · the engine-truth triple is spelled ONCE (the schema auditor, 2026-09-28)", () => {
+    // The auditor demonstrated the hole: adding a second literal
+    // `["mode","variant","model"]` beside the SSOT left every wall
+    // green. ENGINE_TRUTH is now pinned the way the stage-patch list
+    // is — one owner, and no module may re-spell the triple.
+    const offenders: string[] = [];
+    // The carve is the owner's own DECLARATION LINE, not its whole
+    // file: a first cut skipped validate.ts entirely, and a duplicate
+    // triple written in the next line of the very file that owns the
+    // SSOT sailed through. The owner keeps its one declaration; every
+    // other line of every file is judged.
+    const OWNER_DECL = /export const ENGINE_TRUTH[^\n]*/g;
+    for (const f of SOURCES) {
+      const code = codeOf(read(f)).replace(OWNER_DECL, "");
+      // any array literal naming two of the three engine-truth words
+      // beside each other is a second spelling
+      const hits = [...code.matchAll(/\[\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"[^\]]*\]/g)]
+        .filter((m) => ENGINE_TRUTH.includes(m[1]!) && ENGINE_TRUTH.includes(m[2]!));
+      if (hits.length > 0) {
+        offenders.push(f + " — the engine-truth triple is validate.ts's ENGINE_TRUTH; import it");
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);

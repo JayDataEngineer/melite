@@ -1,12 +1,9 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
+import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
+export { STAGE_PATCH_KEYS, type StagePatchKey };
 import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
-/** The stage-patch door's fixed key set (the old door's
- *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
- *  them in this order). */
-export declare const STAGE_PATCH_KEYS: readonly ["params", "result", "runStatus", "inputs", "inputOutputs"];
-export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
  *  never an error); a landing patch reports the patched key set and

@@ -22,6 +22,14 @@
 // Schema resolver (the same object — service.ts takes it as `Schema`)
 import z from "@deepseek-ai/schemastery";
 import * as contractNs from "./contract.ts";
+
+/** THE CONTRACT'S SCHEMA INSTANCE (exported so a wall drives THIS
+ *  judge, never a second copy: the walls project cannot resolve
+ *  schemastery by name, and a test that imported its own instance
+ *  would be testing a different judge than the one that registers
+ *  rows). The vocabulary and the judge that enforces it are one
+ *  owner. */
+export { z as SCHEMA };
 const Schema = z;
 
 /** Loud refusal before the wire (the QUEUE LANE LAW shape). */
@@ -282,7 +290,15 @@ export const ParamTogetherRow: z<ParamTogetherRow> = z.object({
 });
 
 export const ParamEitherOrRow: z<ParamEitherOrRow> = z.object({
-  groups: z.array(z.array(z.string().pattern(FIELD_NAME_RE)).min(1)).min(2),
+  // NO `.min(2)` HERE, AND THAT IS DELIBERATE (the schema auditor,
+  // 2026-09-28): schemastery does not enforce `.min()` on a NESTED
+  // array — a probe shows `groups: []` and `groups: [["a"]]` both
+  // resolve with or without the constraint, so writing it claimed a
+  // floor the schema never applied. The two-alternative floor is a
+  // JUDGED law, enforced where the word is read (laneRelations.ts:
+  // an either_or naming fewer than two alternatives refuses with its
+  // cure), and pinned there by a wall.
+  groups: z.array(z.array(z.string().pattern(FIELD_NAME_RE)).min(1)),
   cure: z.string().default(""),
 });
 

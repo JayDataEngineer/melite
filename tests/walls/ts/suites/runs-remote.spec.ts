@@ -4,7 +4,7 @@
 // storage, drafts, runs — over one mkdtemp state root. NO comfyui
 // seat on purpose: the pump's engine seam must settle the run
 // FAILED with the loud miswire text (never a silent accept).
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -867,4 +867,117 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
   )) as Record<string, unknown>;
   assert.equal(ok["ok"], true);
   await fiber.dispose();
+});
+
+// THE WHOLE-BENCH RUN (the operator's live refusal, 2026-09-28:
+// "compose-door: unknown param(s) on the image-gen card: card" —
+// Run ALL was broken on the shipped lane). The bench run composes
+// each card stage with `{ ...params, card }` (runsRegistry.ts:516),
+// and `card` was in no envelope list, so the row's own coordinate
+// rode the card's knob bag and the admission gate refused the
+// operator's own Run press with a key the door had just added
+// ITSELF.
+//
+// WHY NO WALL CAUGHT IT: every phase1Card test hands the door a
+// body it built itself — the path that INJECTS the coordinate (the
+// whole-bench run) was never driven. This arm drives it: a two-stage
+// WIRED bench (the only bench shape that takes the composed-run
+// path), through the real start door, and the composition must land.
+test("the whole-bench run composes every card stage (the row's own coordinates never ride a card)", { timeout: 60_000 }, async () => {
+  const { runs, fiber, root } = await boot();
+  const sig = new AbortController().signal;
+  // a bench with a cross-stage wire: s_1 takes s_0's image. The
+  // wire is what routes the door through composeBenchStages — the
+  // path that injects `card`.
+  const bench = {
+    draft_id: "d_ok",
+    status: "draft",
+    createdAt: 1700000000000,
+    completedAt: null,
+    intent: "bench run",
+    stages: [
+      { id: "s_0", card: "image-gen", params: { model: "krea-2", prompt: "a red boat" } },
+      {
+        id: "s_1",
+        card: "image-gen",
+        params: { model: "krea-2", prompt: "the same boat, closer" },
+        inputs: { image1: { stage: "s_0", output: "default" } },
+      },
+    ],
+  };
+  const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
+  writeFileSync(join(stateRoot, "drafts", "d_ok.json"), JSON.stringify(bench));
+  let refusal = "";
+  let runId: string | null = null;
+  try {
+    // the model DOOR with a wired bench IS the bench run (the
+    // door's own rule: "a bench with wires is a flow, whatever the
+    // caller named") — this is the shape the operator's Run ALL sends
+    const receipt = await runs.start({ model: "krea-2", test: true, draft_id: "d_ok" }, sig);
+    runId = receipt.run_id;
+  } catch (e) {
+    refusal = String((e as Error).message);
+  }
+  // THE COMPOSE is this arm's subject. A LATER refusal (this rig has
+  // no engine seat, so the run's declared source file does not exist
+  // and the run refuses sourceless) is not the compose's business —
+  // but the card-admission refusal IS, and that is the operator's.
+  assert.doesNotMatch(
+    refusal,
+    /unknown param\(s\)/,
+    `the whole-bench run composes — the operator's Run ALL must not be refused by the card's own admission gate: ${refusal}`,
+  );
+  // THIS RIG HAS NO ENGINE SEAT, so after a successful compose the run
+  // refuses sourceless — its declared output file does not exist. That
+  // refusal is the rig's honest verdict and it PROVES the compose ran
+  // (the compose comes first). It is also the ONLY acceptable refusal:
+  // anything else — a card admission, a lane law, a schema — is the
+  // compose failing, and it is what the operator hit.
+  if (refusal !== "") {
+    assert.match(refusal, /sources resolve nowhere/,
+      `the bench run's ONLY acceptable refusal in a rig with no engine is the sourceless one; ` +
+      `anything else means the compose failed: ${refusal}`);
+  }
+  assert.ok(runId !== null || /sources resolve nowhere/.test(refusal),
+    "the bench run got as far as registering a run id");
+  await fiber.dispose();
+});
+
+test("every coordinate the bench run injects is an ENVELOPE key (the same law, without the engine)", async () => {
+  // The deterministic half of the regression above: the bench run
+  // composes each stage as `{ ...params, card }`, and the card's
+  // admission gate must see the KNOBS only. A row coordinate riding
+  // the knob bag is the operator's refusal, so the envelope carries
+  // the CONTRACT's wire stage keys by derivation — a new stage key
+  // is filtered without anyone remembering to add it here.
+  const { CARD_ENVELOPE_KEYS } = await import("../../../../packages/harness/estate-queue/src/cardsRegistry.ts");
+  const { WIRE_STAGE_KEYS } = await import("../../../../packages/web-kit/contracts/src/benchStage.ts");
+  // `params` is the one wire key that is NOT an envelope key, and the
+  // exception is deliberate: it is the knob CONTAINER the stanza law
+  // unwraps, so filtering it would drop every knob a caller sent.
+  const missing = WIRE_STAGE_KEYS.filter((k) => k !== "params" && !CARD_ENVELOPE_KEYS.includes(k));
+  assert.deepEqual(missing, [],
+    `every wire stage coordinate is an envelope key (a coordinate that rides the knob bag refuses the operator's run: ${missing.join(", ")})`);
+  assert.ok(CARD_ENVELOPE_KEYS.includes("card"),
+    "the card id itself is an envelope key — the door's own injection must not become a knob");
+  // and the injection the bench run performs is envelope-only: a
+  // body carrying the row's own coordinates composes its knobs
+  // `model` is a DOOR key (it selects the family) and `params` is the
+  // container the stanza law unwraps — neither is a knob that rides.
+  const knobs = { prompt: "a red boat" };
+  const body = { ...knobs, ...Object.fromEntries(
+    WIRE_STAGE_KEYS.map((k) => [k, k === "card" ? "image-gen" : k === "id" ? "s_0" : undefined]),
+  ) };
+  const lifted = Object.fromEntries(Object.entries(body)
+    .filter(([k]) => !CARD_ENVELOPE_KEYS.includes(k) && body[k] !== undefined));
+  assert.deepEqual(lifted, knobs,
+    "a body carrying every row coordinate lifts to its KNOBS only — nothing else reaches a card");
+  // and the stanza still rides: `params` is the CONTAINER, and its
+  // keys are the knobs (the unwrap the exception above protects)
+  const withStanza = { ...body, params: { prompt: "a red boat", steps: 30 } };
+  const liftedStanza = Object.fromEntries(Object.entries(withStanza)
+    .filter(([k]) => !CARD_ENVELOPE_KEYS.includes(k))
+    .flatMap(([k, v]) => (k === "params" && typeof v === "object" && v !== null ? Object.entries(v as Record<string, unknown>) : [[k, v]])));
+  assert.deepEqual(liftedStanza, { prompt: "a red boat", steps: 30 },
+    "the params stanza still unwraps into the card's knobs (the container is not a knob, and filtering it would drop the whole body)");
 });

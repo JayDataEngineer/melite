@@ -34,13 +34,12 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
 import { admitWiring, benchBlockOf, strippedForAdmission } from "./bench.js";
+import { STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
+export { STAGE_PATCH_KEYS };
+import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
-/** The stage-patch door's fixed key set (the old door's
- *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
- *  them in this order). */
-export const STAGE_PATCH_KEYS = ["params", "result", "runStatus", "inputs", "inputOutputs"];
 /** The wrap voice for a thrown store error: Error.message when the
  *  value carries one, else the string form. Every store/domain throw
  *  site constructs `new Error` (or an Error subclass), so the else
@@ -502,79 +501,89 @@ let DraftsRemoteService = (() => {
             if (!telemetry && expectRev !== null && bench.rev !== expectRev) {
                 throw new RemoteError("bench/cas-conflict", `bench moved under the patch (expect_rev ${expectRev}, current ${bench.rev}) — re-read and re-apply`, { current_rev: bench.rev, expect_rev: expectRev });
             }
-            if ("result" in patch) {
-                // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
-                // preview's mini row is a CARD OUTPUT HISTORY): a stage's
-                // result is the CURRENT run's face, and every poll state
-                // overwrites it — the live patch ({run_id, progress}) would
-                // destroy the previous run's outputs. Before any result
-                // overwrite, a result CARRYING outputs is archived onto the
-                // stage's history, newest first, capped (12), deduped by its
-                // url set: only UNIQUE outputs ride (the operator's word — a
-                // re-run landing the same urls never double-lists). The
-                // history is DERIVED here, never patched in — the estate owns
-                // the trail; the client reads it.
-                //
-                // THE PARAMS SNAPSHOT (the output-component stroke — "old
-                // generations that had different parameters"): the params that
-                // MADE a result are captured at ITS LANDING (a parallel
-                // server-derived key), never at overwrite time — params
-                // edited between runs must not retroactively re-label the old
-                // generation. The archive entry carries the snapshot; the
-                // client diffs it against the live params for the chip.
-                const prev = stage["result"];
-                const next = patch["result"];
-                // THE TRAIL IS ONE LIST, HEAD = CURRENT (operator 2026-09-21,
-                // the lost-gen disease: "when I make a new gen it doesn't
-                // appear in history — clicking a history item overwrites the
-                // preview with no way to recover the most recent gen"). Two
-                // archives ride the SAME write, oldest-first so the order in
-                // the list is append-stable:
-                //   1. SUPERSEDE — a cleared/overwritten result that carried
-                //      outputs is archived (the stroke-40 law, unchanged).
-                //   2. LANDING — the incoming result itself, when it CARRIES
-                //      outputs, enters the trail at its own landing. The old
-                //      supersede-only law kept the CURRENT generation outside
-                //      history (it lived only in the result slot, one
-                //      view-pick away from unreachable). With the landing
-                //      archived, history[0] is ALWAYS the newest gen — no
-                //      pick, overwrite, or crash can orphan it. Live mid-run
-                //      patches ({run_id, progress} — no urls) archive
-                //      nothing, and the url-set dedup makes re-landings of
-                //      the same outputs idempotent.
-                const archiveInto = (urls, entry) => {
-                    const hist = Array.isArray(stage["history"]) ? [...stage["history"]] : [];
-                    const already = hist.some((e) => sameUrlSet(resultOutputUrls(e), urls));
-                    if (!already) {
-                        hist.unshift(entry);
-                        stage["history"] = hist.slice(0, 12);
+            // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
+            // 2026-10-10): the result/history/resultParams/runStatus arms
+            // assigned into the CACHED record here, ABOVE the model and
+            // wiring gates — so a patch carrying a result AND a bad model
+            // wrote the result into the live doc and then threw, leaving a
+            // result with no rev and no log (the copy-on-judge law's exact
+            // shape: a refused write must leave NOTHING behind). The arms
+            // now run as one closure AFTER both gates pass.
+            const writeTelemetry = () => {
+                if ("result" in patch) {
+                    // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
+                    // preview's mini row is a CARD OUTPUT HISTORY): a stage's
+                    // result is the CURRENT run's face, and every poll state
+                    // overwrites it — the live patch ({run_id, progress}) would
+                    // destroy the previous run's outputs. Before any result
+                    // overwrite, a result CARRYING outputs is archived onto the
+                    // stage's history, newest first, capped (12), deduped by its
+                    // url set: only UNIQUE outputs ride (the operator's word — a
+                    // re-run landing the same urls never double-lists). The
+                    // history is DERIVED here, never patched in — the estate owns
+                    // the trail; the client reads it.
+                    //
+                    // THE PARAMS SNAPSHOT (the output-component stroke — "old
+                    // generations that had different parameters"): the params that
+                    // MADE a result are captured at ITS LANDING (a parallel
+                    // server-derived key), never at overwrite time — params
+                    // edited between runs must not retroactively re-label the old
+                    // generation. The archive entry carries the snapshot; the
+                    // client diffs it against the live params for the chip.
+                    const prev = stage["result"];
+                    const next = patch["result"];
+                    // THE TRAIL IS ONE LIST, HEAD = CURRENT (operator 2026-09-21,
+                    // the lost-gen disease: "when I make a new gen it doesn't
+                    // appear in history — clicking a history item overwrites the
+                    // preview with no way to recover the most recent gen"). Two
+                    // archives ride the SAME write, oldest-first so the order in
+                    // the list is append-stable:
+                    //   1. SUPERSEDE — a cleared/overwritten result that carried
+                    //      outputs is archived (the stroke-40 law, unchanged).
+                    //   2. LANDING — the incoming result itself, when it CARRIES
+                    //      outputs, enters the trail at its own landing. The old
+                    //      supersede-only law kept the CURRENT generation outside
+                    //      history (it lived only in the result slot, one
+                    //      view-pick away from unreachable). With the landing
+                    //      archived, history[0] is ALWAYS the newest gen — no
+                    //      pick, overwrite, or crash can orphan it. Live mid-run
+                    //      patches ({run_id, progress} — no urls) archive
+                    //      nothing, and the url-set dedup makes re-landings of
+                    //      the same outputs idempotent.
+                    const archiveInto = (urls, entry) => {
+                        const hist = Array.isArray(stage["history"]) ? [...stage["history"]] : [];
+                        const already = hist.some((e) => sameUrlSet(resultOutputUrls(e), urls));
+                        if (!already) {
+                            hist.unshift(entry);
+                            stage["history"] = hist.slice(0, 12);
+                        }
+                    };
+                    // the params arm rides only when the snapshot NAMES something —
+                    // an undefined or empty {} snapshot carries no key (the chip
+                    // diffs against live params; an empty diff is no chip at all)
+                    const paramsArm = (snapshot) => snapshot !== undefined && typeof snapshot === "object" && !Array.isArray(snapshot)
+                        && Object.keys(snapshot).length > 0
+                        ? { params: snapshot }
+                        : {};
+                    if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
+                        archiveInto(resultOutputUrls(prev), {
+                            ...prev,
+                            ...paramsArm(stage["resultParams"]),
+                        });
                     }
-                };
-                // the params arm rides only when the snapshot NAMES something —
-                // an undefined or empty {} snapshot carries no key (the chip
-                // diffs against live params; an empty diff is no chip at all)
-                const paramsArm = (snapshot) => snapshot !== undefined && typeof snapshot === "object" && !Array.isArray(snapshot)
-                    && Object.keys(snapshot).length > 0
-                    ? { params: snapshot }
-                    : {};
-                if (resultOutputUrls(prev).length > 0 && !sameResultOutputs(prev, next)) {
-                    archiveInto(resultOutputUrls(prev), {
-                        ...prev,
-                        ...paramsArm(stage["resultParams"]),
-                    });
+                    stage["result"] = patch["result"];
+                    stage["resultParams"] = stage["params"];
+                    const landingUrls = resultOutputUrls(next);
+                    if (landingUrls.length > 0) {
+                        archiveInto(landingUrls, {
+                            ...next,
+                            ...paramsArm(stage["resultParams"]),
+                        });
+                    }
                 }
-                stage["result"] = patch["result"];
-                stage["resultParams"] = stage["params"];
-                const landingUrls = resultOutputUrls(next);
-                if (landingUrls.length > 0) {
-                    archiveInto(landingUrls, {
-                        ...next,
-                        ...paramsArm(stage["resultParams"]),
-                    });
-                }
-            }
-            if ("runStatus" in patch)
-                stage["runStatus"] = patch["runStatus"];
+                if ("runStatus" in patch)
+                    stage["runStatus"] = patch["runStatus"];
+            };
             // the params the row will HOLD once this write lands (undefined
             // when the body carries no params arm) — judged as half of the
             // (params, inputs) PAIR before either assignment rides.
@@ -587,7 +596,14 @@ let DraftsRemoteService = (() => {
                 const merged = stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
                     ? { ...stage["params"] }
                     : {};
-                const incoming = patch["params"];
+                // THE STORE-SEAT UNWRAP (the bench audit's gap 10, 2026-10-10):
+                // every other params-bearing door (add, patch, load) unwraps the
+                // wire's {item:[…]} array shape before it stores, so storage
+                // holds clean arrays; this door merged the raw body, so the SAME
+                // patch through bench/patch and through drafts/patch produced
+                // two different stored rows — and the wrapped shape is poison
+                // for every reader downstream.
+                const incoming = unwrapItemArrays(patch["params"]);
                 for (const k of Object.keys(incoming)) {
                     if (incoming[k] === null)
                         delete merged[k];
@@ -680,10 +696,22 @@ let DraftsRemoteService = (() => {
                 }
                 stage["inputs"] = mergedInputs;
             }
-            if (pendingParams !== undefined)
-                stage["params"] = pendingParams;
+            if (pendingParams !== undefined) {
+                // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
+                // 2026-10-10): this door judged the stripped view and stored
+                // the raw one — so a doc written here held a self-naming model
+                // key that add/load never store, and the next reader judged a
+                // different object than the one on disk. Strip once, judge that,
+                // store that.
+                stage["params"] = strippedForAdmission(typeof stage["card"] === "string" ? stage["card"] : "", pendingParams);
+            }
             if ("inputOutputs" in patch)
                 stage["inputOutputs"] = patch["inputOutputs"];
+            // EVERY GATE PASSED — the telemetry write lands now (deferred
+            // above so a refusal left no result behind; the run seat's own
+            // polls ride the same door and are judged by nothing, which is
+            // correct: a poll is not a composition)
+            writeTelemetry();
             // THE BUMP (author patches only — the telemetry law above): the
             // rev advances and the log carries the entry; a telemetry write
             // persists the row WITHOUT touching the bench block (no bump, no

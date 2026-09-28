@@ -7126,7 +7126,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -7157,6 +7157,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"history",
 				"resultParams"
 			];
+			STAGE_PATCH_KEYS = [
+				"params",
+				"result",
+				"runStatus",
+				"inputs",
+				"inputOutputs"
+			];
 			WIRE_STAGE_KEYS = [
 				"card",
 				"card_io",
@@ -7172,7 +7179,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"timeout_s"
 			];
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
-			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny"]);
+			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
 		//#region ../melite-run-wire/src/index.ts
@@ -8200,6 +8207,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			let lastLive = "running";
 			let lastPct = null;
 			let lastAct = "";
+			let transportFails = 0;
+			const TRANSPORT_UNREACHABLE_AFTER = 10;
 			while (signal?.aborted !== true) {
 				let row;
 				try {
@@ -8216,9 +8225,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						} catch {}
 						return terminal === "running" ? null : terminal;
 					}
-					await sleep(1500);
+					transportFails += 1;
+					if (transportFails === TRANSPORT_UNREACHABLE_AFTER) try {
+						await patchStageOutcome(draftId, stageId, {
+							runStatus: "unreachable",
+							result: { run_id: runId }
+						});
+						lastLive = "";
+						onTouched?.();
+					} catch {}
+					await sleep(Math.min(1500 * transportFails, 1e4));
 					continue;
 				}
+				transportFails = 0;
 				if (!isTerminalRun(row.status)) {
 					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
 					const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
@@ -8731,10 +8750,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const settled = block.kind === "tool-result";
 			const argsRaw = settled ? block.call?.argsRaw ?? "" : block.argsRaw ?? "";
 			let model = null;
+			let malformedArgs = false;
 			if (argsRaw !== "") try {
 				const args = JSON.parse(argsRaw);
 				if (typeof args["model"] === "string" && args["model"] !== "") model = args["model"];
-			} catch {}
+			} catch {
+				malformedArgs = true;
+			}
 			let draftId = null;
 			if (settled && block.isError !== true) {
 				const meta = block.meta;
@@ -8761,6 +8783,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return {
 				draftId,
 				model,
+				malformedArgs,
 				settled,
 				isError: block.isError === true
 			};
@@ -8910,6 +8933,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 								className: card_module_css_default$1.model,
 								children: doc?.intent ?? parsed.model ?? "flow"
+							}),
+							parsed.malformedArgs && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+								className: card_module_css_default$1.state,
+								"data-state": "error",
+								children: "args unparseable — corrupted call record"
 							}),
 							error !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("span", {
 								className: card_module_css_default$1.state,
@@ -9615,8 +9643,53 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			return out;
 		}
-		var quote;
+		/** One family's declared lane surface + laws, verbatim. Absent
+		*  members stay absent (the absent-equals-empty law: nothing is
+		*  invented, and a family that declares nothing yields an empty
+		*  base with no relations key). */
+		function laneContractOf(decl) {
+			const variants = {};
+			for (const v of decl.variants ?? []) {
+				if (v.params === void 0 && v.relations === void 0 && v.bounds === void 0 && v.sampler_envelope === void 0) continue;
+				variants[v.id] = {
+					...v.params !== void 0 ? { params: [...v.params] } : {},
+					...v.relations !== void 0 ? { relations: v.relations } : {},
+					...v.bounds !== void 0 ? { bounds: v.bounds } : {},
+					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
+				};
+			}
+			return {
+				base: [...decl.params ?? []],
+				...decl.relations !== void 0 ? { relations: decl.relations } : {},
+				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
+				variants
+			};
+		}
+		/** THE CONTRACT MAP for a card's declared families: family id → its
+		*  lane contract. Families that declare no params and no laws are
+		*  omitted (legacy families judge nothing; serving an empty row
+		*  would only cost the agent tokens). */
+		function laneContractsFor(familyIds, declOf) {
+			const out = {};
+			for (const id of familyIds) {
+				const decl = declOf(id);
+				if (decl === void 0) continue;
+				const contract = laneContractOf(decl);
+				if (contract.base.length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				out[id] = contract;
+			}
+			return out;
+		}
+		var RELATION_WORDS, quote;
 		var init_laneRelations = __esmMin((() => {
+			RELATION_WORDS = {
+				requires: true,
+				conflicts: true,
+				together: true,
+				either_or: true,
+				at_most_one: true,
+				required: true
+			};
 			quote = (fields) => fields.map((f) => "'" + f + "'").join(" + ");
 		}));
 		//#endregion
@@ -52482,6 +52555,32 @@ void main() {
 			if (r.error !== void 0 && typeof r.error !== "string") defects.push("error: present but not a string");
 			return defects;
 		}
+		/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
+		*  contract by A-M10): a source URL names a file by its PATHNAME's
+		*  last segment, percent-decoded — never the query, never the
+		*  fragment, never "". `split("/").pop()` kept both, so the manager
+		*  downloaded under a clean name while the row inspected one with
+		*  "f.safetensors?download=1" glued on, and the post-download check
+		*  reported model-not-landed for a model that WAS on disk. A URL
+		*  ending in "/" names no file: the result is "" and the caller's
+		*  destination check refuses it by name. One derivation, contract-
+		*  owned, so the wall can DRIVE it (a source-substring pin passed on
+		*  dead code). */
+		function artifactFileName(sourceUrl) {
+			let pathname = sourceUrl;
+			try {
+				pathname = new URL(sourceUrl).pathname;
+			} catch {
+				pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
+			}
+			if (pathname.endsWith("/")) return "";
+			const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
+			try {
+				return decodeURIComponent(last);
+			} catch {
+				return last;
+			}
+		}
 		var init_benchResult = __esmMin((() => {}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/browserStorage.ts
@@ -53283,7 +53382,6 @@ void main() {
 				"frames",
 				"fps",
 				"resizeMethod",
-				"order",
 				"motionVideoB64",
 				"motionStrength",
 				"motionTrimStart",
@@ -53353,6 +53451,7 @@ void main() {
 			NO_CN_SCHEMA: () => NO_CN_SCHEMA,
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
 			Provenance: () => Provenance,
+			RELATION_WORDS: () => RELATION_WORDS,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
@@ -53360,6 +53459,7 @@ void main() {
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -53368,6 +53468,7 @@ void main() {
 			_cachedCount: () => _cachedCount,
 			_resetBrowserStorageForTests: () => _resetBrowserStorageForTests,
 			applySubcardDrop: () => applySubcardDrop,
+			artifactFileName: () => artifactFileName,
 			bag: () => bag,
 			benchResultDefects: () => benchResultDefects,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -53388,6 +53489,8 @@ void main() {
 			kindSpecOf: () => kindSpecOf,
 			laneBlank: () => laneBlank,
 			laneBoundsOf: () => laneBoundsOf,
+			laneContractOf: () => laneContractOf,
+			laneContractsFor: () => laneContractsFor,
 			laneSurfaceOf: () => laneSurfaceOf,
 			loraAdaptersOf: () => loraAdaptersOf,
 			loraIdOf: () => loraIdOf,
@@ -56732,7 +56835,14 @@ void main() {
 		*  drag library; the estate drags natively). Carries the source id. */
 		const CARD_DRAG_MIME = "application/x-melite-card";
 		/** Parse the capability MIME off a drop event. null = absent or
-		*  malformed (falls through to the asset/file path) — old law. */
+		*  malformed (falls through to the asset/file path) — old law.
+		*
+		*  L9 (the fallback audit, 2026-09-28): `null` once covered TWO
+		*  different worlds — the MIME data genuinely absent (a foreign
+		*  drag: fall through, correct) and the MIME PRESENT but the body
+		*  unparseable (a corrupt capability drag the old law swallowed
+		*  silent). The third state below separates them; the drop handler
+		*  badges the corrupt body instead of doing nothing. */
 		function parseCapabilityDrop(raw) {
 			if (raw === "") return null;
 			try {
@@ -56741,6 +56851,19 @@ void main() {
 				return null;
 			} catch {
 				return null;
+			}
+		}
+		/** True when the capability MIME body is PRESENT but unparseable or
+		*  shape-wrong — a corrupt drag, not a foreign one. The consumer
+		*  must badge this (never a silent no-op); foreign drags (raw === '')
+		*  stay silent. */
+		function isMalformedCapabilityDrop(raw) {
+			if (raw === "") return false;
+			try {
+				const p = JSON.parse(raw);
+				return !(typeof p.service === "string" && typeof p.title === "string");
+			} catch {
+				return true;
 			}
 		}
 		//#endregion
@@ -60297,8 +60420,12 @@ void main() {
 				e.preventDefault();
 				setCapOver(false);
 				if (e.dataTransfer.types.includes("application/tech-noir-capability")) {
-					const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME));
-					if (cap === null) return;
+					const raw = e.dataTransfer.getData(CAPABILITY_DRAG_MIME);
+					const cap = parseCapabilityDrop(raw);
+					if (cap === null) {
+						if (isMalformedCapabilityDrop(raw)) setReloadError("That capability drag is malformed — reload the tab and drag the tile again");
+						return;
+					}
 					addStageWire({
 						card: cap.service,
 						...cap.params !== void 0 && Object.keys(cap.params).length > 0 ? { params: cap.params } : {},
@@ -61200,4 +61327,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="47ea6f2f4138a0f597ddb50f44723f0d641c8316";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d8ad70606e877f70a96c61974a023d5cfbf57935";

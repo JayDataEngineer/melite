@@ -173,3 +173,10 @@ packages/web/infer-gallery/e2e/mesh-door/dist/
 
 # dsh lane runtime lock (the 3088 lock-wait guard's file)
 gateway.lock
+
+# the ship's per-package content stamp (scripts/ship-lane.sh writes it at
+# build time and re-verifies it on every ship, --no-build included: the
+# receipt is a HASH of src, so the file itself is build output, never a
+# tracked artifact — a tracked stamp would be a stamp nobody can falsify)
+packages/*/lib/.src-stamp
+packages/*/*/lib/.src-stamp

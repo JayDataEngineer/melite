@@ -212,6 +212,15 @@ export function judgeLaneRelations(
     for (const row of rel.either_or ?? []) {
       if (row === null || typeof row !== 'object') continue
       const groups = Array.isArray(row.groups) ? row.groups.filter((g) => Array.isArray(g)) : []
+      // A MALFORMED ROW JUDGES NOTHING (the estate's own defensive
+      // law, pinned by this package's suite): a row that names no
+      // alternatives is not a claim, and the judge never invents one.
+      // The two-alternative FLOOR is therefore not the judge's job —
+      // it is the REGISTRATION seat's (models service relationDrift:
+      // a DECL row is refused where it is written, loudly, at boot,
+      // not silently ignored at run time). The first cut put it here
+      // and contradicted the pinned law; the registration gate is the
+      // one admission per door.
       if (groups.length === 0) continue
       const everyMember = groups.flat()
       if (!everyMember.some(stated)) continue // blank = in progress, never a write refusal
