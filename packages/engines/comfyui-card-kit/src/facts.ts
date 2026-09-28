@@ -29,16 +29,34 @@ export interface FactsReads {
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
 
-/** THE RELATION WORDS, wire twin (the judged grammar lives at
- * @melite/contracts/laneRelations — the zero-dep floor the bench
- * door, the form, and the law suites share; this is the derived
- * facts row's plain-JSON mirror of the DECL's declaration). */
-export interface LaneRelationsFacts {
-  requires?: Array<{ field: string; needs: string[]; cure?: string }>
-  conflicts?: Array<{ a: string; b: string; cure?: string }>
-  together?: Array<{ fields: string[]; cure?: string }>
-  either_or?: Array<{ groups: string[][]; cure?: string }>
+import type { LaneRelations } from '@melite/contracts/laneRelations'
+
+/** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,
+ *  the four-agent contract audit's top finding: this interface was a
+ *  hand-copy of four of the six words — `at_most_one` and `required`
+ *  were simply absent, so every facts reader was typed against a
+ *  grammar that could not name half the laws the DECLs declare (the
+ *  tts required-word rows included). The runtime clone always carried
+ *  them; the TYPE lied, which is the same drift class as the drift
+ *  gate, and it is now unrepresentable: the mirror is derived from
+ *  the floor, and the contract's own type test below fails to compile
+ *  the moment a seventh word lands here without landing there.
+ *
+ *  The judged shape is readonly; a facts row is a plain-JSON snapshot
+ *  built by JSON clone, so the mirror is its mutable counterpart. */
+type Mutable<T> = { -readonly [K in keyof T]: T[K] extends readonly (infer U)[] ? Mutable<U>[] : Mutable<T[K]> }
+export type LaneRelationsFacts = Mutable<LaneRelations>
+
+/** THE COMPILE-TIME PROOF (the drift wall, at the type level): every
+ *  word the floor declares is a word this mirror serves. Delete a
+ *  word from the floor and this line stops compiling; add one and it
+ *  compiles only if the mirror derives it. */
+type _EveryDeclaredWordIsMirrored = {
+  [K in keyof LaneRelations]-?: K extends keyof LaneRelationsFacts ? true : never
 }
+export type FactsMirrorCoversEveryWord = [keyof LaneRelationsFacts] extends [keyof LaneRelations]
+  ? true
+  : never
 
 export interface ModelFacts {
   id: string
@@ -104,7 +122,11 @@ export interface ModelVariantFacts {
    *  at the reader (never undefined inside deriveRow) — the TYPE
    *  honors the same law: optional on literal fixtures. */
   lane_inputs?: LaneInputsFacts
-  sampler_envelope?: { steps?: [number, number]; cfg?: [number, number] } | null
+  // THE DECLARATION'S OWN SPELLING (the contract audit): the DECL
+  // schema declares `z.array(z.number())` (families/contract.ts) and
+  // the floor mirrors `number[]`; this twin alone claimed a 2-TUPLE,
+  // so a reader asking whether `steps: [4]` is legal got two answers.
+  sampler_envelope?: { steps?: number[]; cfg?: number[] } | null
   defaults: Record<string, unknown>
   /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
    *  the params this variant accepts IN ADDITION to the family

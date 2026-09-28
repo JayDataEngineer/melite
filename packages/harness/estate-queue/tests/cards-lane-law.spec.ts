@@ -23,6 +23,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../src/cardsRegistry.ts";
 import { theService } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
+import { RELATION_WORDS } from "@melite/contracts/laneRelations";
 
 let svc: CardRegistryService;
 let bootCtx: Context;
@@ -985,17 +986,33 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(fam.ok).toBe(false);
   });
 
-  it("the boot gate knows the word (a grammar word the gate omits refuses a LEGAL declaration)", () => {
-    // the first cut of the new words booted REFUSED: the drift gate
-    // enumerated the vocabulary separately and did not know `required`
+  it("the boot gate READS the vocabulary (a hand list is how a legal declaration used to refuse)", () => {
+    // The first cut of the new words booted REFUSED: the drift gate
+    // enumerated the vocabulary separately and did not know `required`.
+    // The second cut listed all six — and was still a SECOND list, so
+    // a seventh word would land in the grammar and bind in no gate.
+    // The gate now READS the declared wrapper's own dict, and the
+    // seats that enumerate the words derive one key list. This pin
+    // holds the derivation (the old one held the list's existence).
     const src = readFileSync(
       new URL("../../../engines/comfyui-cordis/src/models/service.ts", import.meta.url),
       "utf8",
     );
-    const words = src.slice(src.indexOf("function relationRowSchemas"));
-    for (const word of ["requires", "conflicts", "together", "either_or", "at_most_one", "required"]) {
-      expect(words, "the boot gate must know the " + word + " word").toContain(word + ":");
-    }
+    const gate = src.slice(src.indexOf("function relationRowSchemas"));
+    expect(gate, "the gate reads the grammar's own dict").toContain(".dict");
+    expect(gate, "the gate takes each word's ROW schema (the array's element)").toContain(".inner");
+    expect(gate, "and no longer retypes the words").not.toMatch(/requires:\s*Param/);
+    // the derived list covers every word the floor declares, and the
+    // floor's list is the only enumeration left
+    expect(Object.keys(RELATION_WORDS).sort()).toEqual(
+      ["at_most_one", "conflicts", "either_or", "required", "requires", "together"],
+    );
+    const registry = readFileSync(
+      new URL("../src/cardsRegistry.ts", import.meta.url),
+      "utf8",
+    );
+    expect(registry, "the model-less intersection derives its words too").toContain("RELATION_WORDS");
+    expect(registry, "and no longer names them").not.toMatch(/"requires",\s*"conflicts"/);
   });
 });
 

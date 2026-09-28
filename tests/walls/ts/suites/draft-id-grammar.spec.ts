@@ -57,9 +57,26 @@ describe("the bench session grammar has one rule", () => {
       new URL("../../../../packages/web/infer-gallery/src/client/bench-load.ts", import.meta.url),
       "utf8",
     );
+    // CODE ONLY, AND THE PATHS EXIST (the walls audit's M6,
+    // 2026-10-10): the three reads matched file TEXT, so a pattern
+    // living in a COMMENT kept this arm green, and a path typo made
+    // the read throw on a file that no longer carries the grammar.
+    // Comments are stripped before the match, and the behavioural
+    // half below drives the owner's own regex.
     const pattern = /=\s*\/\^\[A-Za-z0-9_-\]\{1,64\}\$\//
-    expect(server, "the server's SESSION_RE").toMatch(pattern);
-    expect(clientA, "the cards tab's BENCH_SESSION_RE").toMatch(pattern);
-    expect(clientB, "the gallery's BENCH_SESSION_RE").toMatch(pattern);
+    for (const [name, src] of [["server", server], ["cards tab", clientA], ["gallery", clientB]] as const) {
+      const code = src
+        .replace(/\/\*[\s\S]*?\*\//g, " ")
+        .split("\n")
+        .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
+        .join("\n");
+      expect(code, `the ${name}'s SESSION_RE is code, not a comment`).toMatch(pattern);
+    }
+    // AND THE OWNER'S REGEX BEHAVES (the second half of the law: a
+    // grammar that accepts what the door refuses is the mirror bug)
+    expect(OWNER.test("session_1")).toBe(true);
+    expect(OWNER.test("bad/id")).toBe(false);
+    expect(MIRROR.test("session_1")).toBe(true);
+    expect(MIRROR.test("bad/id")).toBe(false);
   });
 });

@@ -51,7 +51,26 @@ const ATOM_HOSTS = [
   "packages/engines/comfyui/action_cards/motion/ui",
 ] as const;
 
+// REAL_SET IS NOT DEAD WEIGHT (the walls audit's M8, 2026-10-10): the
+// constant was declared, documented as "the real DSH client set", and
+// never referenced — so deleting the three packages it names left the
+// title claiming a pin that did not exist. The law is now live: if any
+// client surface still depends on one of them, the wall knows; if none
+// does, the set is asserted EMPTY and a re-introduction is a deliberate
+// edit to this file.
 describe("S4a — the real DSH client set is the estate's dependency", () => {
+  it("REAL_SET is either declared by a live surface or asserted gone (no dead constant)", () => {
+    const users: string[] = [];
+    for (const host of ATOM_HOSTS) {
+      const pkg = JSON.parse(readFileSync(join(repoRoot, host, "package.json"), "utf8"));
+      for (const dep of Object.keys(pkg.dependencies ?? {})) {
+        if ((REAL_SET as readonly string[]).includes(dep)) users.push(`${host} → ${dep}`);
+      }
+    }
+    assert.deepEqual(users, [],
+      `no live surface depends on the retired DSH client modules (got ${users.join(", ") || "none"} — a re-introduction must be argued in REAL_SET)`);
+  });
+
   it("every UI-bearing package declares the atoms at the 0.1.5-rc lockstep", () => {
     for (const host of ATOM_HOSTS) {
       const pkg = JSON.parse(readFileSync(join(repoRoot, host, "package.json"), "utf8"));

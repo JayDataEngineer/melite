@@ -90,6 +90,22 @@ export interface LaneRequiredRow {
   readonly cure?: string;
 }
 
+/** THE DECLARED WORDS, DERIVED (2026-10-10, the four-agent contract
+ *  audit): every seat that needs to ENUMERATE the vocabulary — the
+ *  boot drift gate, the model-less intersection, the agent render —
+ *  reads this list instead of retyping it. Three hand lists meant a
+ *  seventh word could land in the grammar and bind in two seats. The
+ *  keys are the interface's own, so the list cannot fall behind. */
+export const RELATION_WORDS = {
+  requires: true,
+  conflicts: true,
+  together: true,
+  either_or: true,
+  at_most_one: true,
+  required: true,
+} as const satisfies Record<string, true>
+export type RelationWord = keyof typeof RELATION_WORDS
+
 /** The four relation words — the DECL's relation declaration (the
  *  wire shape; the ModelDecl grammar in comfyui-cordis authors
  *  exactly this). Absent ≡ none (the absent-equals-empty law). */

@@ -28,9 +28,15 @@ export interface VariantRow {
   /** THE ROUTE ENVELOPE (the compose-side guard): closed bounds a
    *  caller-stated steps/cfg must live inside — the distilled-lane
    *  marriage is declared, never negotiated. */
+  /** THE DECLARATION'S OWN SPELLING (the contract audit, 2026-10-10):
+   *  the DECL schema declares arrays (`z.array(z.number())`) and the
+   *  contract floor mirrors `number[]`; this row alone claimed a
+   *  2-tuple, so the same envelope read as two different types on two
+   *  seats. The normalizer that produces it reads `unknown` and
+   *  yields the pair — the tuple bought nothing. */
   readonly sampler_envelope?: {
-    steps?: readonly [number, number];
-    cfg?: readonly [number, number];
+    steps?: readonly number[];
+    cfg?: readonly number[];
   } | null;
   /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
    *  this variant's accepted params IN ADDITION to the family base.

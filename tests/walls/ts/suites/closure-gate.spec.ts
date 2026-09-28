@@ -181,8 +181,13 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       const m = code.match(/(?:export )?const BOARDED[^=]*=\s*\[([^\]]*)\]/);
       if (m === null) continue;
       const members = [...m[1]!.matchAll(/["']([a-z0-9-]+)["']/g)].map((x) => x[1]!);
+      // PER MEMBER, NOT PER ARRAY (the walls audit's M5: the old
+      // `/Decl\.id/` test ran against the WHOLE array text, so
+      // `[SomeDecl.id, "retyped-literal"]` passed — one honest member
+      // excused any number beside it). Each member is judged on its
+      // own: a member that is NOT a DECL's .id is the retyping.
       for (const id of members) {
-        if (/Decl\.id/.test(m[1]!)) continue;
+        if (new RegExp(`\\b${id}\\.id\\b`).test(m[1]!)) continue;
         offenders.push(`${f} — BOARDED retypes '${id}'; every member should be a DECL's .id`);
       }
     }
@@ -193,7 +198,11 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const src = read("packages/engines/comfyui-card-kit/src/lanes-image.ts");
     const code = codeOf(src);
     // the old inline spelling is gone; the named owner answers
-    expect(code).not.toMatch(/p\.sampler\s*\|\|/);
+    // BOTH SPELLINGS (the walls audit's M5, 2026-10-10): the ban
+    // caught `p.sampler || "euler"` while `p.sampler ?? "euler"` — the
+    // same second writer of the lane default, written with the other
+    // falsy-check — walked past.
+    expect(code).not.toMatch(/p\.sampler\s*(\|\||\?\?)/);
     expect(code).not.toMatch(/p\.scheduler\s*\|\|/);
     expect(code).toContain("laneSampler(p)");
   });

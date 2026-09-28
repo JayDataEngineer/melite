@@ -45,7 +45,7 @@ import {
   ParamTogetherRow as ParamTogetherRowSchema,
   ParamAtMostOneRow as ParamAtMostOneRowSchema,
   ParamEitherOrRow as ParamEitherOrRowSchema,
-  ParamRequiredRow as ParamRequiredRowSchema,
+  ParamRelationWords as ParamRelationWordsSchema,
   type CellRow,
   type ModelDecl,
   type VariantRow,
@@ -192,18 +192,33 @@ function strippedKeys(
  *  members ARE the words; each member's resolved shape is the row
  *  schema the drift check wants. */
 function relationRowSchemas(): Record<string, unknown> {
-  // resolving an EMPTY wrapper fills defaults and omits the optional
-  // members, so it cannot enumerate the words. The declared type is
-  // the enumeration: one object listing every word once, and the gate
-  // refuses a word the type does not name.
-  return {
-    requires: ParamRequiresRowSchema,
-    conflicts: ParamConflictsRowSchema,
-    together: ParamTogetherRowSchema,
-    either_or: ParamEitherOrRowSchema,
-    at_most_one: ParamAtMostOneRowSchema,
-    required: ParamRequiredRowSchema,
-  } as unknown as Record<string, unknown>;
+  // THE WORDS ARE READ, NOT RETYPED (2026-10-10, the four-agent
+  // contract audit's Step 0). This function used to return a
+  // hand-written object literal listing all six words — the second
+  // enumeration of the vocabulary, under a comment claiming it read
+  // the schema's own keys. A seventh word landing in the grammar
+  // would pass this gate's enumeration and boot an unbound law.
+  //
+  // The wrapper IS a schemastery object, so it carries its own .dict
+  // (the pattern the codebase already reads at service.ts's own
+  // formSchemas leg and in facts.ts) — the enumeration now comes from
+  // the declaration itself, and the import of the six row schemas
+  // disappears with the literal.
+  const dict = (ParamRelationWordsSchema as unknown as { dict?: Record<string, unknown> }).dict;
+  if (dict === undefined) {
+    throw new ModelError(
+      "the relation grammar's own wrapper carries no dict — the word enumeration would be a second hand list; refusing",
+    );
+  }
+  // Each word's value is `z.array(<row>)` — the ROW schema is the
+  // array's element (schemastery keeps it on `.inner`, the same
+  // accessor the card seat already reads for array-of-object dicts).
+  return Object.fromEntries(
+    Object.entries(dict).map(([word, schema]) => [
+      word,
+      (schema as { inner?: unknown }).inner ?? schema,
+    ]),
+  );
 }
 
 function relationDrift(relations: Record<string, unknown>, where: string): string[] {

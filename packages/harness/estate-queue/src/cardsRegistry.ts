@@ -104,7 +104,7 @@ export { CardArmError } from "./cardsArmError.ts";
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
-import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf } from "@melite/contracts/laneRelations";
+import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
 import { lanePackFolders, lanePresenceRefusal } from "./cardsLanes.ts";
 import { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
@@ -620,9 +620,13 @@ export class CardRegistryService extends Service {
       }
       return JSON.stringify(row);
     };
-    const WORDS = [
-      "requires", "conflicts", "together", "either_or", "at_most_one", "required",
-    ] as const;
+    // THE WORDS COME FROM THE DECLARED SHAPE (2026-10-10, the
+    // four-agent contract audit): this tuple was a THIRD hand
+    // enumeration of the vocabulary — a seventh word would intersect
+    // only the words this list happened to name, silently emptying
+    // every word it missed. One key list, derived from the judged
+    // floor, so the intersection cannot fall behind the grammar.
+    const WORDS = Object.keys(RELATION_WORDS) as Array<keyof LaneRelations>;
     const perFamily: Array<Array<{ key: string; word: string; row: unknown }>> =
       declaring.map((row) => {
         const fam: LaneRelations | undefined = row.relations;
