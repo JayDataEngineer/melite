@@ -1620,6 +1620,73 @@ describe("drafts.patch admits the MERGED view (the GUI param editor's door)", ()
     assert.equal(ok.delivered, true);
   });
 
+  test("the store-seat unwrap rides drafts/patch too (the same body stores the same row through either door — the bench audit's gap 10)", async () => {
+    // 2026-10-10: add, patch and load unwrap the wire's {item:[…]}
+    // array shape before storing; drafts/patch merged the raw body,
+    // so the identical patch produced two different stored rows and
+    // the wrapped shape is poison for every reader downstream.
+    const { ctx, domain } = await bootCtx();
+    await domain.table("docs").put("bench-unwrap", {
+      rev: 1,
+      doc: { stages: [{ id: "s_0", card: "card-a", params: {} }] },
+    } as never);
+    const drafts = new DraftsRemoteService(ctx);
+    const ok = await drafts.patch("bench-unwrap", "s_0", {
+      params: { image: { item: ["a.png", "b.png"] } },
+    } as never, null, sig);
+    assert.equal(ok.delivered, true);
+    const row = await domain.table("docs").get("bench-unwrap") as unknown as {
+      doc: { stages: Array<{ params: Record<string, unknown> }> };
+    };
+    assert.deepEqual(row.doc.stages[0]!.params["image"], ["a.png", "b.png"],
+      "storage holds the clean array (the wrapped shape never lands)");
+  });
+
+  test("a REFUSED patch writes NO telemetry (a result patch that also carried a bad model left a result behind — the bench audit's gap 1)", async () => {
+    // 2026-10-10: the result/history/runStatus arms assigned into the
+    // CACHED record ABOVE the model and wiring gates, so a body
+    // carrying a result AND a bad model wrote the result and then
+    // threw — a result with no rev and no log, i.e. a refused write
+    // that mutated. The arms now run after both gates.
+    const { ctx, domain } = await bootCtx();
+    // the admission seat that refuses a model no family declares
+    ctx.provide("cardRegistry", {
+      resolveStageParams: (body: Record<string, unknown>): Record<string, unknown> | null => ({ ...body }),
+      admitStageModel: (): { ok: true } | { ok: false; error: string; offered: string[] } => ({
+        ok: false, error: "bench/bad-model", offered: [],
+      }),
+      admitStageRelations: (): { ok: true } | { ok: false; error: string } => ({ ok: true }),
+    });
+    await domain.table("docs").put("bench-tel", {
+      rev: 3,
+      doc: { stages: [{ id: "s_0", card: "card-a", params: {} }] },
+    } as never);
+    const drafts = new DraftsRemoteService(ctx);
+    // the refused body: a result AND a model no family declares
+    const refused = await codeOf(drafts.patch("bench-tel", "s_0", {
+      result: { url: "https://x/y.png", artifacts: { default: "https://x/y.png" } },
+      params: { model: "gibberish-net" },
+    } as never, null, sig));
+    assert.ok(refused.startsWith("bench/bad-model"), "the model gate refuses: " + refused);
+    const row = await domain.table("docs").get("bench-tel") as unknown as {
+      rev: number;
+      doc: { stages: Array<Record<string, unknown>> };
+    };
+    assert.equal(row.doc.stages[0]!["result"], undefined,
+      "the refused write left NO result (the cached record is the domain's own object)");
+    assert.equal(row.doc.stages[0]!["history"], undefined, "and no history entry");
+    assert.equal(row.rev, 3, "and no rev bump — the write never happened");
+    // the honest patch DOES land its result
+    const ok = await drafts.patch("bench-tel", "s_0", {
+      result: { url: "https://x/z.png", artifacts: { default: "https://x/z.png" } },
+    } as never, null, sig);
+    assert.equal(ok.delivered, true);
+    const after = await domain.table("docs").get("bench-tel") as unknown as {
+      doc: { stages: Array<Record<string, unknown>> };
+    };
+    assert.ok(after.doc.stages[0]!["result"] !== undefined, "the lawful result landed");
+  });
+
   test("a params-only keystroke that orphans a wire refuses bench/dead-wire (the PAIR is judged, not the half)", async () => {
     // 2026-10-10, the write-seat audit's row 3: the wiring gate ran
     // only when the body carried `inputs`, so a params-only edit

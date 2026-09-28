@@ -78,7 +78,14 @@ async function boot(): Promise<{ ctx: Context; disclose: DiscloseDirectoryServic
   return { ctx, disclose, root };
 }
 
-test("discover — both planes, live rows, the door's voices", async () => {
+// THE LOAD-SIZED TIMEOUT (2026-10-10): this arm boots BOTH planes
+// over a real Context (cards, models, flows, skills, drafts) and
+// drives the discovery door through them — the spec default of 5s
+// cannot hold that under a full-fleet run, and a wall that dies of
+// its own boot time is a wall that lies (it reports a red the code
+// never produced). 60s is far above the arm's real cost and far
+// below "hung".
+test("discover — both planes, live rows, the door's voices", { timeout: 60_000 }, async () => {
   const { ctx, disclose } = await boot();
   // 1. unknown lookup refuses with the door's exact voice.
   assert.throws(

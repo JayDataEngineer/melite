@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import {test, describe } from "vitest";
 import assert from "node:assert/strict";
 import {
   ensureBench,
@@ -317,3 +317,48 @@ test("crafted tail: inverses without stage/index/from/before degrade; unknown ki
   assert.equal(ids.includes("ghost"), false);
   assert.equal(ids.includes("nope"), false, "unknown-kind snapshot did not apply");
 });
+
+describe("THE MULTI-TARGET UNDO IS ATOMIC (the bench audit's gap 2)", () => {
+  test("a late refusal leaks NEITHER target (a repair door that half-repairs is worse than one that refuses)", async () => {
+    // 2026-10-10: the inverses applied straight into the cached doc,
+    // so `undo {n: 2}` whose first target reverts cleanly and whose
+    // second refuses left the first change in the live document with
+    // no rev and no log. The inverses now run on a deep copy.
+    //
+    // The log is crafted so the SECOND target's restore reinserts a
+    // row the seat refuses (the audit's repro): rev 2 is a patch
+    // whose inverse reverts cleanly; rev 3 is a remove_stage whose
+    // inverse row carries a model no family declares.
+    const drafts = await boot();
+    await seed(drafts, "atomic", {
+      // the live row says seed 1; the patch's params_before says 9 —
+      // so the undo's first target REALLY changes it (an identical
+      // value would make the inverse a no-op and nothing could leak)
+      stages: [{ id: "keep", card: "card-a", params: { seed: 1 } }],
+      bench: {
+        rev: 3,
+        log: [
+          entry(1, "add_stage", "agent", { stage: "keep", row: { id: "keep", card: "card-a", params: { seed: 1 } } }),
+          // newest-first application: rev 3 (the patch) reverts
+          // CLEANLY first, then rev 2 (the remove) reinserts the
+          // poison row and refuses — so the leak, before the kill,
+          // is the patch's change sitting in the live document with
+          // no rev and no log.
+          entry(2, "remove_stage", "agent", { stage: "gone", row: { id: "gone", card: "card-a", params: { model: "poison-net" } } }),
+          entry(3, "patch", "agent", { stage: "keep", params_before: { seed: 9 } }),
+        ],
+      },
+    });
+    const refuseRestore = (card: string, params: Record<string, unknown>): void => {
+      if (params["model"] === "poison-net") throw new Error("bench/bad-model");
+    };
+    const before = getBench(drafts, "atomic");
+    const beforeJson = JSON.stringify(before.stages);
+    const refused = await codeOf(undoBench(drafts, "atomic", { n: 2, expect_rev: 3 }, refuseRestore));
+    assert.match(String(refused), /bad-model/, "the restore refuses");
+    const after = getBench(drafts, "atomic");
+    assert.equal(JSON.stringify(after.stages), beforeJson,
+      "the bench is byte-identical after the refused undo — the first target did NOT land");
+  });
+});
+

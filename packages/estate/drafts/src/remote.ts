@@ -14,6 +14,7 @@ import {
 } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { admitWiring, benchBlockOf, strippedForAdmission, type BenchBlock } from "./bench.js";
+import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
 import type { DraftRecord, DraftsDomainSpec } from "./spec.js";
@@ -691,6 +692,15 @@ export class DraftsRemoteService extends TypertRemoteService {
         { current_rev: bench.rev, expect_rev: expectRev },
       );
     }
+    // THE TELEMETRY WRITE IS DEFERRED (the bench audit's gap 1,
+    // 2026-10-10): the result/history/resultParams/runStatus arms
+    // assigned into the CACHED record here, ABOVE the model and
+    // wiring gates — so a patch carrying a result AND a bad model
+    // wrote the result into the live doc and then threw, leaving a
+    // result with no rev and no log (the copy-on-judge law's exact
+    // shape: a refused write must leave NOTHING behind). The arms
+    // now run as one closure AFTER both gates pass.
+    const writeTelemetry = (): void => {
     if ("result" in patch) {
       // THE OUTPUT HISTORY (stroke 40 — the operator's QOL law: the
       // preview's mini row is a CARD OUTPUT HISTORY): a stage's
@@ -764,6 +774,7 @@ export class DraftsRemoteService extends TypertRemoteService {
       }
     }
     if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
+    }
     // the params the row will HOLD once this write lands (undefined
     // when the body carries no params arm) — judged as half of the
     // (params, inputs) PAIR before either assignment rides.
@@ -777,7 +788,16 @@ export class DraftsRemoteService extends TypertRemoteService {
         stage["params"] !== null && typeof stage["params"] === "object" && !Array.isArray(stage["params"])
           ? { ...(stage["params"] as Record<string, unknown>) }
           : {};
-      const incoming: Record<string, unknown> = patch["params"] as Record<string, unknown>;
+      // THE STORE-SEAT UNWRAP (the bench audit's gap 10, 2026-10-10):
+      // every other params-bearing door (add, patch, load) unwraps the
+      // wire's {item:[…]} array shape before it stores, so storage
+      // holds clean arrays; this door merged the raw body, so the SAME
+      // patch through bench/patch and through drafts/patch produced
+      // two different stored rows — and the wrapped shape is poison
+      // for every reader downstream.
+      const incoming: Record<string, unknown> = unwrapItemArrays(
+        patch["params"] as Record<string, unknown>,
+      ) as Record<string, unknown>;
       for (const k of Object.keys(incoming)) {
         if (incoming[k] === null) delete merged[k];
         else merged[k] = incoming[k];
@@ -871,8 +891,24 @@ export class DraftsRemoteService extends TypertRemoteService {
       }
       stage["inputs"] = mergedInputs;
     }
-    if (pendingParams !== undefined) stage["params"] = pendingParams;
+    if (pendingParams !== undefined) {
+      // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
+      // 2026-10-10): this door judged the stripped view and stored
+      // the raw one — so a doc written here held a self-naming model
+      // key that add/load never store, and the next reader judged a
+      // different object than the one on disk. Strip once, judge that,
+      // store that.
+      stage["params"] = strippedForAdmission(
+        typeof stage["card"] === "string" ? (stage["card"] as string) : "",
+        pendingParams,
+      );
+    }
     if ("inputOutputs" in patch) stage["inputOutputs"] = patch["inputOutputs"];
+    // EVERY GATE PASSED — the telemetry write lands now (deferred
+    // above so a refusal left no result behind; the run seat's own
+    // polls ride the same door and are judged by nothing, which is
+    // correct: a poll is not a composition)
+    writeTelemetry();
     // THE BUMP (author patches only — the telemetry law above): the
     // rev advances and the log carries the entry; a telemetry write
     // persists the row WITHOUT touching the bench block (no bump, no

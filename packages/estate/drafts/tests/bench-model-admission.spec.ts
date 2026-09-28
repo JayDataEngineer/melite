@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { test, describe } from "vitest";
 import assert from "node:assert/strict";
 import { ensureBench, getBench, patchBench, addStageBench, undoBench, groupBench, ungroupBench, removeStageBench } from "../src/bench.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
@@ -318,4 +318,69 @@ test("the write doors judge the STRIPPED row — a self-naming model never meets
     () => addStageBench(drafts, "strip", { card: "tts", params: { model: "gibberish-net" }, expect_rev: 1 }, admit2),
     /bad-model/,
   );
+});
+
+describe("the RESTORE arm judges the stored (stripped) row", () => {
+  test("a RESTORED row is judged exactly as it would be written (the strip is one admission's law, not add/patch's — the bench audit's gap 3)", async () => {
+    // 2026-10-10: admitRestored passed the RAW row to the
+    // admission, so grouping (or any restore) of a row carrying
+    // {model: <own card>} refused it as an unknown model — while
+    // add and patch admitted the identical body, because they judge
+    // the stripped view. One admission, one view.
+    const drafts = await boot();
+    const seen: Array<Record<string, unknown>> = [];
+    // a seat that REFUSES the unstripped view: any judged row still
+    // carrying the self-naming model throws (the old restore law)
+    const admit = (card: string, params: Record<string, unknown>): void => {
+      if (params["model"] === card) throw new Error("bench/bad-model (unstripped view)");
+      seen.push({ card, params: { ...params } });
+    };
+    await ensureBench(drafts, { session: "restore-strip" });
+    await addStageBench(drafts, "restore-strip", { card: "tts", params: { text: "one" }, expect_rev: 0 }, admit);
+    await addStageBench(drafts, "restore-strip", { card: "tts", params: { model: "tts", text: "two" }, expect_rev: 1 }, admit);
+    seen.length = 0;
+    // the GROUP restore judges BOTH rows — with the strip, the row
+    // that stores the self-naming key is judged without it and the
+    // restore lands; before the kill this threw bench/bad-model
+    const grouped = await groupBench(
+      drafts,
+      "restore-strip",
+      { stages: ["s_0", "s_1"], expect_rev: 2 },
+      admit,
+    );
+    assert.ok(grouped !== undefined);
+    assert.equal(seen.length, 2, "the restore judged both rows");
+    for (const row of seen) {
+      assert.notEqual((row["params"] as Record<string, unknown>)["model"], "tts",
+        "no restored row was judged in the unstripped view");
+    }
+  });
+
+describe("the compound row is judged by its members (the bench audit's gap 9)", () => {
+  test("a grouped bench loads back: the read-back is unloadable no more", async () => {
+    // 2026-10-10: load judged every row through the model board, and
+    // a compound row's card is the literal "group" — so the bench's
+    // OWN read-back refused with "no registered card definition",
+    // and an undo of such a load bricked on the bench's prior state.
+    const drafts = await boot();
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await ensureBench(drafts, { session: "grp-load" });
+    await addStageBench(drafts, "grp-load", { card: "card-a", params: { seed: 1 }, expect_rev: 0 }, admit);
+    await addStageBench(drafts, "grp-load", { card: "card-b", params: { seed: 2 }, expect_rev: 1 }, admit);
+    await groupBench(drafts, "grp-load", { stages: ["s_0", "s_1"], expect_rev: 2 }, admit);
+    // read the bench back, and load exactly what it holds
+    const row = getBench(drafts, "grp-load");
+    const stages = (row as unknown as { stages: Array<Record<string, unknown>> }).stages;
+    assert.equal(stages.length, 1, "the bench holds the compound");
+    assert.equal(stages[0]!["card"], "group", "whose card literal is the compound's own");
+    judged.length = 0;
+    // the load of the bench's own state must land
+    const reloaded = await codeOf(
+      ensureBench(drafts, { session: "grp-load", stages, overwrite: true }, admit),
+    );
+    assert.ok(!String(reloaded).startsWith("bench/bad-model"),
+      "the grouped bench loads back (was: no registered card definition) — " + String(reloaded));
+  });
+});
 });

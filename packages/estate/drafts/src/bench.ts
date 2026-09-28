@@ -407,10 +407,16 @@ export async function ensureBench(
       { current_rev: block.rev, stages: before.length },
     );
   }
-  admitStages(admit, body["stages"]);
   // (the no-leak law: admit on the LOCAL normalized list, assign to
   // the cached doc only after the gates pass.)
   const staged: Record<string, unknown>[] = normalizeStages(body["stages"], author);
+  // THE JUDGED VIEW IS THE STORED VIEW (the bench audit's gap 11,
+  // 2026-10-10): this arm judged the RAW bodies and stored the
+  // normalized rows — the unwrap, the media heal and the self-naming
+  // strip all landed AFTER the judgment, so a body the normalizer
+  // would have healed could still be refused. The rows are shaped
+  // first, then judged — the order add uses.
+  admitStages(admit, staged);
   // THE STAGE MEMORY LAW (2026-09-20, the operator's catch: "why
   // does it never track history?"): a stage's OUTPUT MEMORY — its
   // landed result and archived history — belongs to the STAGE'S
@@ -554,7 +560,11 @@ export function getBench(
 /** One loaded bench (session-validated, existing). */
 interface LoadedBench {
   readonly draftId: string;
-  readonly doc: Record<string, unknown>;
+  /** Mutable for one reason: the atomic undo swaps in its deep copy
+   *  once every target has applied (the multi-target copy law). No
+   *  other arm reassigns it — every other door mutates in place
+   *  BEFORE it saves, judged on a copy of the row it rewrites. */
+  doc: Record<string, unknown>;
   readonly block: BenchBlock;
 }
 
@@ -738,14 +748,25 @@ export async function patchBench(
     // FOREVER, so a human actively editing a pre-law row never met
     // today's law. A patch is a live compose act; it judges with
     // the DECL the next run will compose from.
-    admitStage(admit, st["card"], cur, undefined);
+    // THE STORED ROW IS THE JUDGED ROW (the bench audit's gap 3,
+    // 2026-10-10): the door judged the stripped view and stored the
+    // raw one, so a doc written by patch held a self-naming model
+    // key that add/load never store — and the next door to read that
+    // row (a group, an undo) judged a different object than the one
+    // on disk. The merge strips before judging AND before storing:
+    // one row, one view.
+    const stored = strippedForAdmission(
+      typeof st["card"] === "string" ? (st["card"] as string) : "",
+      cur,
+    );
+    admitStage(admit, st["card"], stored, undefined);
     // THE WIRING ADMISSION (phantom-wire cure): a params patch can
     // orphan a spell (drop the $image binding while the wire stays)
     // or strand a wire (introduce $image with no channel) — the
     // merged pair admits together, exactly as the run consumes them.
     admitWiring(
       st,
-      cur,
+      stored,
       isRecord(st["inputs"]) ? (st["inputs"] as Record<string, unknown>) : {},
       // (the domain schema pins stages[].id: string with
       // backup-and-skip at read — a nullish id never reaches here)
@@ -753,7 +774,7 @@ export async function patchBench(
       stageId,
       session,
     );
-    st["params"] = cur;
+    st["params"] = stored;
   }
   if (paramsIn === undefined) {
     throw new RemoteError(
@@ -836,7 +857,26 @@ function admitRestored(
   if (admit === undefined) return;
   const card = stage["card"];
   if (typeof card !== 'string' || card === '') return;
-  admit(card, params, undefined);
+  // A RESTORED COMPOUND IS JUDGED BY ITS MEMBERS (the bench audit's
+  // gap 9): the literal "group" card names nothing the model board
+  // knows, so an undo that reinserted a group row (or a snapshot
+  // restore) refused the bench's own state — an undo bricked by
+  // what the group door had just built. The members cross the same
+  // door they crossed when they were picked.
+  if (card === GROUP_CARD && Array.isArray(stage["children"])) {
+    for (const child of stage["children"] as unknown[]) {
+      if (!isRecord(child)) continue;
+      admitRestored(admit, child, isRecord(child["params"]) ? (child["params"] as Record<string, unknown>) : {});
+    }
+    return;
+  }
+  // THE STRIPPED VIEW, LIKE EVERY OTHER SEAT (the bench audit's gap
+  // 3, 2026-10-10): this arm judged the RAW row, so a restore of
+  // {model: <own card>} — which normalizeBenchStage strips at store
+  // and which add/patch admit through the stripped view — was
+  // REFUSED here as an unknown model. One admission means one view:
+  // the restored row is judged exactly as it would be written.
+  admit(card, strippedForAdmission(card, params), undefined);
 }
 
 /** The judged view of a row's params — the view the doc will HOLD
@@ -870,12 +910,30 @@ function admitStage(
   admit(card, strippedForAdmission(card, isRecord(params) ? params : {}), provenance);
 }
 
+/** The compound row's card literal — the bench's own shape, never a
+ *  declared card. Named once so every seat that must exempt a
+ *  compound says the same word (the load arm below). */
+const GROUP_CARD = "group";
+
 /** Admission over a wholesale stage list (the load arm — every row
  *  passes the same door an add passes). */
 function admitStages(admit: StageAdmission | undefined, stages: unknown): void {
   if (admit === undefined || !Array.isArray(stages)) return;
   for (const s of stages) {
     if (!isRecord(s)) continue;
+    // THE COMPOUND IS NOT A CARD (the bench audit's gap 9,
+    // 2026-10-10): groupBench writes a row whose card is the literal
+    // "group" and whose members ride in `children` — so loading the
+    // bench's own read-back asked the model board about a card that
+    // does not exist ("no registered card definition"), and an undo
+    // of such a load bricked on the bench's own prior state. The
+    // compound is judged by its MEMBERS: the same door each member
+    // crossed when it was picked (the compound-no-blind-spot law,
+    // stated on the way back in).
+    if (s["card"] === GROUP_CARD && Array.isArray(s["children"])) {
+      admitStages(admit, s["children"]);
+      continue;
+    }
     admitStage(admit, s["card"], s["params"], s["provenance"]);
   }
 }
@@ -1011,9 +1069,42 @@ export async function addStageBench(
   admit?: StageAdmission,
 ): Promise<BenchStageRow> {
   refuseUnknown(body, ADD_KEYS);
-  admitStage(admit, body["card"], body["params"]);
-  const loaded: LoadedBench = await loadBench(drafts, session);
-  casCheck(loaded.block, body["expect_rev"], session);
+  const loadedForAdmit: LoadedBench = await loadBench(drafts, session);
+  casCheck(loadedForAdmit.block, body["expect_rev"], session);
+  // THE JUDGED VIEW IS THE STORED VIEW (the bench audit's gap 11,
+  // 2026-10-10): this arm judged the RAW body and then stored the
+  // normalized row — so the unwrap, the legacy-media heal and the
+  // default overlay were applied AFTER the judgment, and the door
+  // could refuse a row the normalizer would have healed (or admit one
+  // it would have reshaped). The row is shaped FIRST, then judged —
+  // the same order every other door uses.
+  const cardForRow: unknown = body["card"];
+  if (typeof cardForRow !== "string" || cardForRow === "") {
+    throw new RemoteError("bench/bad-body", "card is required", {});
+  }
+  const stageIdForAdmit: string =
+    typeof body["id"] === "string" && body["id"] !== ""
+      ? (body["id"] as string)
+      : "s_" +
+        String(
+          stagesOf(loadedForAdmit.doc).reduce((max: number, row: Record<string, unknown>): number => {
+            const m: RegExpMatchArray | null = /^s_(\d+)$/.exec(String(row["id"] ?? ""));
+            return m === null ? max : Math.max(max, Number(m[1]));
+          }, -1) + 1,
+        );
+  const admitted: Record<string, unknown> = normalizeBenchStage(
+    {
+      id: stageIdForAdmit,
+      card: cardForRow,
+      ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
+      ...(isRecord(wireParams(body["params"])) ? { params: wireParams(body["params"]) } : {}),
+      ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
+      ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
+    },
+    stageIdForAdmit,
+  );
+  admitStage(admit, admitted["card"], admitted["params"]);
+  const loaded: LoadedBench = loadedForAdmit;
   const card: unknown = body["card"];
   if (typeof card !== "string" || card === "") {
     throw new RemoteError("bench/bad-body", "card is required", {});
@@ -1234,7 +1325,7 @@ export async function groupBench(
     "g_r" + String(loaded.block.rev) + "c" + String(picked.length) + "_" + String(stages.length);
   const compound: Record<string, unknown> = {
     id: gid,
-    card: "group",
+    card: GROUP_CARD,
     children: picked,
   };
   stages.splice(Math.min(firstIndex, stages.length), 0, compound);
@@ -1273,7 +1364,7 @@ export async function ungroupBench(
   const idx: number = stages.findIndex(
     (s: Record<string, unknown>): boolean => s["id"] === stageId,
   );
-  if (idx < 0 || stages[idx]!["card"] !== "group") {
+  if (idx < 0 || stages[idx]!["card"] !== GROUP_CARD) {
     throw new RemoteError(
       "bench/stage-not-found",
       "ungroup: no group stage " + stageId,
@@ -1522,7 +1613,18 @@ export async function undoBench(
     );
   }
   const stagesBefore: Record<string, unknown>[] = stagesOf(loaded.doc);
-  for (const e of targets) applyInverse(loaded.doc, e, admit, session);
+  // THE MULTI-TARGET UNDO IS ATOMIC (the bench audit's gap 2,
+  // 2026-10-10): every inverse applied straight into the CACHED doc,
+  // so `undo {n: 2}` where the first target reverts cleanly and the
+  // second refuses left the first one's change in the live document
+  // with no rev and no log — a refused write that mutated, through
+  // the door whose whole job is repair. The inverses now run against
+  // a DEEP COPY and the swap happens only when every target applied
+  // (copy-on-judge, at the shape's own scale: an undo either lands
+  // whole or not at all).
+  const undoDoc = structuredClone(loaded.doc);
+  for (const e of targets) applyInverse(undoDoc, e, admit, session);
+  loaded.doc = undoDoc;
   const undone: number[] = targets
     .map((e: BenchEntry): number => e.rev)
     .sort((a: number, b: number): number => a - b);
