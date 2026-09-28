@@ -9,6 +9,7 @@ import { join } from "node:path";
 import {
   expandRegistryFlow,
   getRegistryFlow,
+  registerRegistryFlow,
   registryFlowNames,
   registryFlowToInline,
   registryInitialsError,
@@ -43,6 +44,66 @@ describe("registry", () => {
     assert.deepEqual([...names].sort(), names);
     assert.ok(getRegistryFlow("character") !== undefined);
     assert.equal(getRegistryFlow("ghost"), undefined);
+  });
+
+  // G1 (2026-10-11): the live seat. The REGISTRY literal is the BOOT
+  // SEED, never the registry — a registration must serve at once and
+  // its disposer must remove exactly that row (the fiber-owned
+  // lifetime the live-reload doc demanded for flows).
+  describe("live seat (G1)", () => {
+    const liveFlow = (): RegistryFlow => {
+      const base = getRegistryFlow("fit-seat")!;
+      return { ...base, id: "live-probe", description: "G1 live seat probe" };
+    };
+    const disposers: Array<() => void> = [];
+    const disposeAll = (): void => {
+      while (disposers.length > 0) disposers.pop()!();
+    };
+    afterEach(disposeAll);
+
+    it("a live registration serves at once and the disposer removes exactly that row", () => {
+      assert.equal(getRegistryFlow("live-probe"), undefined);
+      const seedBefore = registryFlowNames().length;
+      disposers.push(registerRegistryFlow(liveFlow()));
+      // served at once — names, getter, expansion (no restart, no rebuild)
+      assert.ok(registryFlowNames().includes("live-probe"));
+      assert.equal(registryFlowNames().length, seedBefore + 1);
+      const got = getRegistryFlow("live-probe")!;
+      assert.equal(got.description, "G1 live seat probe");
+      assert.equal(expandRegistryFlow(got).id, "live-probe");
+      // the disposer removes ONLY our row — the seed is untouched
+      disposeAll();
+      assert.equal(getRegistryFlow("live-probe"), undefined);
+      assert.equal(registryFlowNames().length, seedBefore);
+      assert.ok(getRegistryFlow("fit-seat") !== undefined);
+    });
+
+    it("a duplicate id refuses LOUD (one owner per flow id — the interlock)", () => {
+      disposers.push(registerRegistryFlow(liveFlow()));
+      assert.throws(() => registerRegistryFlow(liveFlow()), /registered twice/);
+    });
+
+    it("a stages-less flow refuses — a flow is a pipeline, an empty one is authoring noise", () => {
+      const base = liveFlow();
+      assert.throws(
+        () => registerRegistryFlow({ ...base, stages: [] }),
+        /no stages/,
+      );
+      assert.throws(
+        () => registerRegistryFlow({ ...base, stages: undefined as never }),
+        /no stages/,
+      );
+    });
+
+    it("a disposed row cannot dispose a later twin (the disposer owns identity, not the id)", () => {
+      const first = registerRegistryFlow(liveFlow());
+      first();
+      const second = registerRegistryFlow(liveFlow());
+      first(); // stale disposer re-fire must NOT kill the live twin
+      assert.ok(getRegistryFlow("live-probe") !== undefined);
+      second();
+      assert.equal(getRegistryFlow("live-probe"), undefined);
+    });
   });
 
   it("expansion resolves from_flow links (single-hop) and copies rows", () => {

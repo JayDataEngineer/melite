@@ -304,14 +304,47 @@ const REGISTRY: Record<string, RegistryFlow> = {
   "skin-apply": SKIN_APPLY,
 };
 
-/** All registered flow names (the flow.scan_flow_ids order — sorted). */
+// THE LIVE SEAT (G1, 2026-10-11 — live-reload-surface doc's type
+// asymmetry, closed): the REGISTRY literal above is the BOOT SEED,
+// never the registry itself. Registrations ride a fiber-owned
+// disposer (ctx.effect at the plugin seam) exactly like cards and
+// families — a drop-in can add a flow to a running host; disposing
+// the fiber removes it. No filesystem discovery: the door stays a
+// drop-in naming a seam, never a sweep.
+const LIVE_FLOWS = new Map<string, RegistryFlow>(Object.entries(REGISTRY));
+
+/** Register one flow into the live seat. LOUD: a duplicate id
+ *  refuses (one owner per flow id — the same interlock as cards and
+ *  model families). Returns the disposer; call it and the flow is
+ *  gone from every read below. */
+export function registerRegistryFlow(flow: RegistryFlow): () => void {
+  if (LIVE_FLOWS.has(flow.id)) {
+    throw new Error(
+      `flow '${flow.id}' registered twice — one owner per flow id (the interlock)`,
+    );
+  }
+  if (!Array.isArray(flow.stages) || flow.stages.length === 0) {
+    throw new Error(
+      `flow '${String(flow.id)}' has no stages — a flow is a pipeline, an empty one is authoring noise`,
+    );
+  }
+  LIVE_FLOWS.set(flow.id, flow);
+  return () => {
+    // only OUR row dies — a later registration under the same id
+    // (impossible today, the interlock above) would not be reverted
+    if (LIVE_FLOWS.get(flow.id) === flow) LIVE_FLOWS.delete(flow.id);
+  };
+}
+
+/** All registered flow names (the flow.scan_flow_ids order — sorted;
+ *  the live seat, so a hot registration is visible at once). */
 export function registryFlowNames(): string[] {
-  return Object.keys(REGISTRY).sort();
+  return [...LIVE_FLOWS.keys()].sort();
 }
 
 /** The raw (unexpanded) declaration, or undefined for unknown names. */
 export function getRegistryFlow(name: string): RegistryFlow | undefined {
-  return REGISTRY[name];
+  return LIVE_FLOWS.get(name);
 }
 
 /** Resolve every fromFlow row against its source flow (Stage.from_flow

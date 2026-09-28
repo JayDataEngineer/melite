@@ -19,9 +19,11 @@
  */
 import { describe, it } from 'vitest'
 import assert from 'node:assert/strict'
+import { readdirSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ModelsService } from '../src/models/service.ts'
+import { FAMILY_PLUGINS } from '../src/models/families/index.ts'
 
 import { DECL as declAceStep, family as familyAceStep } from '../../../models/ace-step/src/index.ts'
 import { DECL as declAnima, family as familyAnima } from '../../../models/anima/src/index.ts'
@@ -112,6 +114,30 @@ const FAMILIES: Array<{ id: string; decl: { id: string }; family: { name: string
 ]
 
 describe('models registry HMR safety (every family)', () => {
+  // G1 (2026-10-11): the roster census — two-way, the li-az law for
+  // flows applied to families. FAMILY_PLUGINS must equal the set of
+  // family packages: a new package forgotten in the table mounts
+  // NOTHING (silent vanish), and a stale table entry names a package
+  // that no longer exists. The live seat below only proves mounting
+  // for families the table actually carries.
+  it('the family roster is a two-way census (packages/models == FAMILY_PLUGINS)', () => {
+    const mounted = FAMILY_PLUGINS.map((p) => (p.name ?? '').replace(/^family-/, '')).sort()
+    const dirs = readdirSync(
+      new URL('../../../../packages/models', import.meta.url).pathname,
+      { withFileTypes: true },
+    )
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort()
+    assert.deepEqual(
+      mounted,
+      dirs,
+      mounted.length === dirs.length
+        ? 'membership differs (see diff)'
+        : `count drift: ${mounted.length} mounted vs ${dirs.length} dirs`,
+    )
+  })
+
   for (const { id, decl, family } of FAMILIES) {
     it(`${id}: plugin shape plus fiber dispose retracts the family`, async () => {
       assert.equal(typeof family.name, 'string', `${id} has a plugin name`)
