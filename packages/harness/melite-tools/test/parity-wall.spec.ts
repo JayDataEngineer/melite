@@ -7,9 +7,25 @@
 // truth, all of them green. One enumeration feeds the door, the
 // tool face, and the serve; this wall pins the third leg to the
 // first two, forever.
+//
+// REBUILT 2026-10-11 (the dead-wall audit, finding #1). The first cut
+// computed `served` HERE — `{...walked, ...filtered decl.defaults}` —
+// and then asserted that `walked` survived it. Both arms were true by
+// the spread's own construction, so 28 tests passed without ever
+// reading the serve. Proven: cutting the `declaredDefaults(...)` spread
+// out of production `discovery.ts` — restoring exactly the pre-fix
+// blank-knob shape this wall's header says it exists to forbid — left
+// all 28 GREEN.
+//
+// It now drives `specBody`, the real row builder, and reads
+// `model_defaults` off what it returns. The expectation is still
+// derived (one enumeration, two readers) but the SUBJECT is
+// production's, which is the whole difference: the door and the serve
+// are two seats, and a wall that only looks at one of them is a note.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { loadCardDefs, declaredDefaults, getModel } from "@melite/comfyui-cordis";
+import { loadCardDefs, declaredDefaults, getModel, theService } from "@melite/comfyui-cordis";
+import { specBody } from "../src/discovery.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 
 function hasRequiredField(def: CardDefinition): boolean {
@@ -52,25 +68,38 @@ describe("THE PARITY WALL (walked defaults ≡ served model_defaults, every card
             `${id} declares no defaults or required fields (neither flat nor mod-owned) — a knob-less card is a wall failure`);
         }
 
-        // the serve layer (discovery's row, verbatim): walked under
-        // the family row's own non-null, non-array defaults
-        const served = {
-          ...walked,
-          ...Object.fromEntries(
-            Object.entries(modelDefaults).filter(([, v]) => v !== null && !Array.isArray(v)),
-          ),
-        };
+        // THE SERVE, DRIVEN (not recomputed). `specBody` is the
+        // production row builder: give it the same card and family
+        // and read what it actually serves. A divergence between the
+        // door's walk and the serve's row is exactly what this wall
+        // exists to catch, so the subject must be the serve itself.
+        const body = specBody(
+          theService(),
+          defs,
+          { card: id, service: "comfyui", model: family },
+        ) as { model_defaults?: Record<string, unknown> };
+        assert.equal(typeof body["model_defaults"], "object",
+          `${id}/${family}: the serve carries no model_defaults object`);
+        const served = body["model_defaults"] as Record<string, unknown>;
 
-        // EVERY declared default must survive the serve — the UI
-        // prefills exactly what the door walks
-        for (const [k, v] of Object.entries(walked)) {
-          assert.ok(k in served, `${id}.${k} declared default ${JSON.stringify(v)} is missing from the served model_defaults`);
-          assert.ok(served[k] !== undefined && served[k] !== null, `${id}.${k} served null/undefined — the blank-knob crime`);
-        }
-        // and the serve invents NOTHING the door doesn't know (a
-        // served default with no declaration is a second owner)
-        for (const k of Object.keys(served)) {
-          assert.ok(k in walked || k in (decl?.defaults ?? {}), `${id}.${k} is served but declared NOWHERE — a second owner`);
+        // The door's walk, spelled independently here — ONE
+        // enumeration that both seats are supposed to share, and the
+        // assertion is that the two AGREE, not that a spread of one
+        // into the other is a superset of itself.
+        assert.deepEqual(
+          served,
+          {
+            ...walked,
+            ...Object.fromEntries(
+              Object.entries(modelDefaults).filter(([, v]) => v !== null && !Array.isArray(v)),
+            ),
+          },
+          `${id}/${family}: the serve's model_defaults disagree with the door's walked defaults`,
+        );
+        // and the blank-knob crime, stated on the SERVE's own values
+        for (const [k, v] of Object.entries(served)) {
+          assert.notEqual(v, null, `${id}/${family}.${k} served null — the blank-knob crime`);
+          assert.notEqual(v, undefined, `${id}/${family}.${k} served undefined — the blank-knob crime`);
         }
       });
     }

@@ -80,8 +80,15 @@ describe("the boundary laws", () => {
     expect(seen).toHaveLength(2);
     expect(seen[1]).toEqual(seen[0]);
     expect(seen[0]).toEqual({ limit: 8 });
-    // the empty string is the blank field, not malformed JSON
-    await expect(executeStages(row(""), runDir, [], opts as never)).resolves.toBeDefined();
+    // the empty string is the blank field, not malformed JSON — and
+    // BLANK means an EMPTY CALL (the dead-wall audit's finding #4:
+    // this arm used to assert only `resolves.toBeDefined()`, so
+    // `if (text === "") return { garbage_injected: true }` composed
+    // poison onto the wire and 7/7 stayed green). The assertion is on
+    // the COMPOSED CALL, not on the fact that a promise settled.
+    await executeStages(row(""), runDir, [], opts as never);
+    expect(seen).toHaveLength(3);
+    expect(seen[2]).toEqual({});
     await expect(executeStages(row("{nope"), runDir, [], opts as never))
       .rejects.toThrow(/mcp 'args' is not valid JSON/);
     // a JSON array is not a JSON object — refused by name too

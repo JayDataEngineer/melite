@@ -190,8 +190,6 @@ describe("compileFlowInline", () => {
           inputs: {
             good: { stage: "up", output: "img" },
             seed: { initial: "seed" },
-            junk: 5,
-            half: { stage: "up" },
           },
         }),
       ]),
@@ -208,19 +206,65 @@ describe("compileFlowInline", () => {
     assert.deepEqual(filled.stages[0]!.expected, {});
     assert.deepEqual(filled.stages[0]!.outputNodes, {});
     assert.deepEqual(filled.stages[0]!.inputNames, {});
-    const badParams = compileFlowInline(doc([stage({ params: ["x"], outputs: ["y"], expected: 5 })])) as {
-      stages: CompiledStage[];
-    };
-    assert.deepEqual(badParams.stages[0]!.params, {});
-    assert.deepEqual(badParams.stages[0]!.outputs, { default: "image" });
+    // output_nodes INSIDE params is still a tolerant cell (a nested
+    // field, not a stage coordinate) — the ban above covers the
+    // stage-level keys only, and this arm keeps that honest.
     const badNodes = compileFlowInline(
       doc([stage({ params: { output_nodes: ["x"] } })]),
     ) as { stages: CompiledStage[] };
     assert.deepEqual(badNodes.stages[0]!.outputNodes, {});
-    const noInputs = compileFlowInline(doc([stage({ inputs: ["x"] })])) as {
-      stages: CompiledStage[];
+  });
+
+  // THE SILENCE WAS PINNED HERE (the coverage audit, HIGH finding #2).
+  // This file used to assert `params:["x"] → {}` and `inputs:["x"] →
+  // {}` — i.e. it pinned the run registering a stage whose wiring had
+  // been silently dropped, while the BENCH door refused the same
+  // shapes. Two seats, one shape, opposite judgments. The bench is
+  // right, so these arms now pin the refusal. The old assertions are
+  // not deleted: they are the defect, restated as what must happen.
+  describe("a malformed container or binding REFUSES (it used to be coerced away)", () => {
+    const refused = (body: unknown): string => {
+      const r = compileFlowInline(doc([stage(body as Record<string, unknown>)]));
+      // the refusal carries {status, payload:{error, code}} — the
+      // message lives at payload.error, not on the refusal itself
+      assert.ok("payload" in r, `expected a refusal, got ${JSON.stringify(r)}`);
+      const payload = (r as { payload: { error?: unknown } }).payload;
+      assert.equal(typeof payload.error, "string", "the refusal carries no message");
+      return String(payload.error);
     };
-    assert.deepEqual(noInputs.stages[0]!.inputNames, {});
+
+    it("params: an array refuses, naming the container", () => {
+      assert.match(refused({ params: ["x"] }), /params must be an object \(got array\)/);
+    });
+    it("params: a string refuses", () => {
+      assert.match(refused({ params: "x" }), /params must be an object \(got string\)/);
+    });
+    it("params: null refuses", () => {
+      assert.match(refused({ params: null }), /params must be an object \(got null\)/);
+    });
+    it("inputs: an array refuses (a dropped input list is a dropped wire)", () => {
+      assert.match(refused({ inputs: ["x"] }), /inputs must be an object \(got array\)/);
+    });
+    it("outputs and expected refuse on the same law", () => {
+      assert.match(refused({ outputs: ["y"] }), /outputs must be an object/);
+      assert.match(refused({ expected: 5 }), /expected must be an object \(got number\)/);
+    });
+    it("a malformed BINDING refuses: a number where a wire belongs", () => {
+      assert.match(refused({ inputs: { junk: 5 } }), /input "junk" is neither \{stage, output\} nor \{initial\}/);
+    });
+    it("a half binding refuses: {stage} with no output channel", () => {
+      assert.match(
+        refused({ inputs: { half: { stage: "up" } } }),
+        /input "half" is neither \{stage, output\} nor \{initial\}/,
+      );
+    });
+    it("an ABSENT container is still legal (most stages carry no inputs at all)", () => {
+      const { stages } = compileFlowInline(doc([stage({ params: { workflow: {} } })])) as {
+        stages: CompiledStage[];
+      };
+      assert.equal(stages.length, 1);
+      assert.deepEqual(stages[0]!.inputNames, {});
+    });
   });
 });
 

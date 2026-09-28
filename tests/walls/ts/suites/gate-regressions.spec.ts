@@ -447,16 +447,38 @@ describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-0
 
   it("the bench stage id has ONE producer (the admitted row and the stored row cannot differ)", () => {
     const bench = read("packages/estate/drafts/src/bench.ts");
-    // the law lives in one exported mint, and the max+1 arithmetic
-    // exists exactly once in the file
-    expect((bench.match(/Math\.max\((?:acc|max), Number\(m\[1\]\)\)/g) ?? []).length,
-      "the max+1 mint arithmetic is written once (two copies is two producers)").toBe(1);
+    // THE LAW, AND THE SHAPE IT NOW HAS (2026-10-11). This arm used
+    // to grep for one `Math.max(acc, Number(m[1]))` and for exactly
+    // three `mintStageId(` call sites. Both held while the file
+    // carried the duplication anyway: the LOAD path minted its own
+    // repair id with a second copy of the same arithmetic, and
+    // `addStageBench` called the mint twice (its own comment claiming
+    // "there is one producer of the value" sat directly above the
+    // two calls). A count of one is not a law about a FORMULA; it is
+    // a law about a spelling, and a rename moves it.
+    //
+    // The arithmetic now lives in named helpers — `highestStageSuffix`
+    // reads the bench's highest suffix, `nextStageId` picks the next
+    // free one — and both id producers call them. The law is restated
+    // as what it always meant: the arithmetic is DEFINED once, and no
+    // site spells its own.
+    for (const helper of ["function highestStageSuffix(", "function nextStageId(", "function takenStageIds("]) {
+      expect((bench.match(new RegExp(helper.replace(/[()]/g, "\\$&"), "g")) ?? []).length,
+        `${helper} is defined exactly once — two definitions are two producers of "the next id"`)
+        .toBe(1);
+    }
+    // NO site re-derives the max+1 by hand any more
+    expect(bench, "no site writes the max+1 arithmetic by hand (highestStageSuffix owns it)")
+      .not.toMatch(/Math\.max\((?:acc|max), Number\(m\[1\]\)\)/);
+    // the mint is exported, and the WRITE door binds its value ONCE
+    // and reads it for both the admitted and the stored row
     expect(bench, "the one mint is exported for the wall and for every door")
       .toMatch(/export function mintStageId\(/);
-    // both the admitted row and the stored row take it
-    const uses = (bench.match(/mintStageId\(/g) ?? []).length;
-    expect(uses, "both call sites take the one mint (the definition plus both doors)")
-      .toBe(3);
+    expect((bench.match(/mintStageId\(/g) ?? []).length,
+      "the mint is called from the wall-visible definition and from the write door only")
+      .toBe(2);
+    expect(bench, "the stored row READS the admitted row's id (one call, not two producers)")
+      .toMatch(/const stageId: string = stageIdForAdmit;/);
     expect(bench).not.toMatch(/"s_" \+\s*\n\s*String\(/);
   });
 });

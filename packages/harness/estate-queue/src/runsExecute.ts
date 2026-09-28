@@ -140,18 +140,49 @@ export type SettleFn = (run: RunRecord) => void;
     // (start, restore, queue replay) already walks. NO SEAT-BRANCH
     // GATE (the audit's finding: the first cut walked only when
     // seatExecutor was null, and production ALWAYS takes the seat
-    // path — the wall was dead on the lane): the rows walk on BOTH
-    // paths here, and the engines adapter walks the post-splice
-    // graph again at its own submit — pre-splice voice from the run
-    // seat, final-graph judgment from the adapter, one judge.
+    // path — the wall was dead on the lane).
+    //
+    // AND THE CLAIM WAS FALSE UNTIL NOW (the coverage audit's HIGH
+    // finding, proven live by two independent probes: seat-mounted +
+    // armed doc + a graph naming an undeclared class_type → the run
+    // COMPLETED and the engine was submitted). `rows` is `[]` on the
+    // seat path, so this loop iterated ZERO times in production while
+    // the comment above claimed "the rows walk on BOTH paths here".
+    // The adapter's post-splice walk caught the poison anyway, which
+    // is why nobody saw it — but the run seat's own voice (naming the
+    // STAGE, before the engine is ever touched) never fired on the
+    // lane, and a composition without the adapter would submit poison
+    // with the suite green.
+    //
+    // The fence therefore judges `fenceRows` on BOTH paths: the
+    // spliced rows where the seat path already built them, and the
+    // raw stage params on the seat path (PRE-splice, exactly as the
+    // comment always claimed). Splicing rewires node REFERENCES; it
+    // adds no class_type and no input key, so the name surface the
+    // judge walks is the same either way — and the seat path's own
+    // submit is left untouched.
     // Unarmed (no wiring service in the composition): the wall
     // stands down — the standing law.
     const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
     if (wiring !== undefined) {
-      for (let i = 0; i < rows.length; i++) {
+      const fenceRows: MergeRow[] =
+        rows.length > 0
+          ? rows
+          : run.stages.map(
+              (stage, i: number): MergeRow => ({
+                stageId: stage.id,
+                // PRE-splice on the seat path: the judge walks names,
+                // and names are the same before and after a splice.
+                workflow: (run.params[i] ?? {}) as Record<string, EngineJson>,
+                outputs: { ...(stage.outputs as Record<string, EngineJson>) },
+                outputNodes: { ...(run.outputNodes[i] as Record<string, EngineJson>) },
+                params: { ...(run.params[i] as Record<string, EngineJson>) },
+              }),
+            );
+      for (let i = 0; i < fenceRows.length; i++) {
         const stage = run.stages[i];
         try {
-          wiring.assert(String(stage["card"] ?? "flow"), rows[i]!.workflow);
+          wiring.assert(String(stage["card"] ?? "flow"), fenceRows[i]!.workflow);
         } catch (exc: unknown) {
           const text: string = errText(exc);
           for (const st of run.stages) {

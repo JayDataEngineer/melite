@@ -300,10 +300,16 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
-  it("RULE 6 · no default written twice: the lane solver has one owner", () => {
-    const src = read("packages/engines/comfyui-card-kit/src/lanes-image.ts");
-    const code = codeOf(src);
-    // the old inline spelling is gone; the named owner answers
+  it("RULE 6 · no default written twice: the lane solver has one owner, ESTATE-WIDE", () => {
+    // THE BAN IS NO LONGER ONE FILE (the dead-wall audit's finding
+    // #3). This rule read only `lanes-image.ts`, so the exact banned
+    // spelling written in `lanes-image-tools.ts` sailed: RULE 6 green,
+    // the whole closure file 22/22 green. A one-owner rule pinned to
+    // one owner is a note about that file, not a law about the
+    // estate — and a second writer of a lane default is precisely
+    // what a second FILE would be.
+    //
+    // The old inline spelling is gone; the named owner answers
     // BOTH SPELLINGS (the walls audit's M5, 2026-10-10): the ban
     // caught `p.sampler || "euler"` while `p.sampler ?? "euler"` — the
     // same second writer of the lane default, written with the other
@@ -312,9 +318,25 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // falsy spellings for `sampler` and only `||` for `scheduler` —
     // the same law written asymmetrically is the same drift waiting
     // to happen. Both keys, both spellings.
-    expect(code).not.toMatch(/p\.sampler\s*(\|\||\?\?)/);
-    expect(code).not.toMatch(/p\.scheduler\s*(\|\||\?\?)/);
-    expect(code).toContain("laneSampler(p)");
+    const offenders: string[] = [];
+    let judged = 0;
+    for (const f of SOURCES) {
+      // the owner itself is where `laneSampler(p)` legitimately lives;
+      // the ban is on a SECOND writer of the default, wherever it sits
+      const code = codeOf(read(f));
+      judged += 1;
+      if (/p\.sampler\s*(\|\||\?\?)/.test(code)) {
+        offenders.push(`${f} — writes a second sampler default (p.sampler || / ??)`);
+      }
+      if (/p\.scheduler\s*(\|\||\?\?)/.test(code)) {
+        offenders.push(`${f} — writes a second scheduler default (p.scheduler || / ??)`);
+      }
+    }
+    expect(judged, "no source was judged — the census rotted").toBeGreaterThan(50);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+    // and the named owner still answers, in its own file
+    const owner = codeOf(read("packages/engines/comfyui-card-kit/src/lanes-image.ts"));
+    expect(owner).toContain("laneSampler(p)");
   });
 
   it("RULE 6d · the restored-provenance spelling is the CONTRACT'S (a coordinate has one writer)", () => {

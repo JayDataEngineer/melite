@@ -22,7 +22,7 @@
  */
 
 import { parseBenchSnapshot, parseCardSnapshot } from '@melite/contracts/benchSnapshot'
-import { RESTORE_STRIP_KEYS, RESTORED_PROVENANCE_SPELLING, SELF_NAMED_FAMILIES, normalizeBenchStage, stripKeys } from '@melite/contracts/benchStage'
+import { RESTORE_STRIP_KEYS, RESTORED_PROVENANCE_SPELLING, normalizeBenchStage, stripKeys, stripSelfNamedModel } from '@melite/contracts/benchStage'
 
 /** One bench session key — 'main' only for unattributed seats
  *  (stroke 44: the bench belongs to the conversation; the gallery's
@@ -285,14 +285,12 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
           // (anny really does board the anny family). A restore and a
           // fresh compose were therefore not the same law. The
           // contract's own strip runs here; the client holds no copy.
-          const stCard = st['card']
-          const stParams = st['params']
-          if (typeof stCard === 'string' && stCard !== ''
-            && typeof stParams === 'object' && stParams !== null
-            && (stParams as Record<string, unknown>)['model'] === stCard
-            && !SELF_NAMED_FAMILIES.has(stCard)) {
-            delete (stParams as Record<string, unknown>)['model']
-          }
+          // THE CONTRACT'S STRIP, ASKED (no copy — see the client's
+          // history: the two hand-copied versions of this law drifted
+          // from the contract and every wall stayed green, because
+          // the walls pin the contract and the SET and never drove
+          // these two restore arms).
+          stripSelfNamedModel(st['card'], st['params'])
           if (ranCard !== undefined && st['card'] === ranCard && result !== undefined) st['result'] = result
           st['provenance'] = RESTORED_PROVENANCE_SPELLING
         }
@@ -331,7 +329,9 @@ export async function loadRunOntoBench(runId: string, deps: BenchLoadDeps): Prom
       // …and here the same law, the same exemption (this copy
       // stripped unconditionally too — the divergence the audits
       // named, in the arm that restores a RAN stage).
-      if (params['model'] === card && !SELF_NAMED_FAMILIES.has(card)) delete params['model']
+      // THE CONTRACT'S STRIP, ASKED (one spelling; the copy this
+      // replaced was missing the `card !== ''` guard the contract has).
+      stripSelfNamedModel(card, params)
       const intentSrc = typeof params['prompt'] === 'string' ? params['prompt'] as string : 'restored run'
       const result = resultOfRun(flow as Record<string, unknown> | null, String((side as Record<string, unknown>)['run_id'] ?? ''))
       // THE STAGE ROW IS THE CONTRACT'S (the audit's Rule 1: this arm

@@ -1,0 +1,9 @@
+{
+  "_what": "A TRACKED RECEIPT of the output channels that real wired benches in ~/.dsh/storages/drafts/docs actually name, per producing card. Not a hand-written expectation: captured from the live store, and drift-checked against it whenever the store is present (the wall unions the two). A fresh clone has no store, and this receipt is what keeps the arm from silently judging nothing there.",
+  "_captured": "2026-10-11, from 16 real wires across 3 cards in the live store",
+  "channels": {
+    "image-gen": ["default"],
+    "tts": ["default", "voices"],
+    "sfx": ["default"]
+  }
+}

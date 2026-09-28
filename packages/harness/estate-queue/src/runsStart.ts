@@ -189,6 +189,48 @@ export function compileFlowInline(
         "preview_scope",
       );
     }
+    // A MALFORMED CONTAINER IS REFUSED, NOT COERCED (the coverage
+    // audit's HIGH finding, proven independently by two auditors).
+    // This door used to treat `params: ["x"]` and `inputs: ["x"]` as
+    // absent: the run registered "clean", the operator saw a
+    // completed run with its wiring silently gone, and
+    // runs-start.spec.ts ASSERTED that silence. The bench door
+    // refuses the same shapes (bench/bad-wire) — two seats, one
+    // shape, opposite judgments. The bench is right: a container that
+    // cannot be read is not an absent container.
+    for (const key of ["params", "inputs", "outputs", "expected"] as const) {
+      const raw: unknown = st[key];
+      if (raw === undefined) continue;
+      if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+        return refusal(
+          400,
+          "flow_inline stage " + JSON.stringify(sid) + ": " + key +
+            " must be an object (got " +
+            (raw === null ? "null" : Array.isArray(raw) ? "array" : typeof raw) +
+            "); a shape that cannot be read is refused here, not dropped — a dropped " +
+            key + " makes the run register without it",
+          "invalid_request",
+        );
+      }
+    }
+    // AND A MALFORMED BINDING inside a well-formed container, for the
+    // same reason: `{stage: "up"}` with no output channel is a wire
+    // that resolves to nothing, and dropping it is indistinguishable
+    // from never having wired it.
+    const rawInputs = st["inputs"] as Record<string, unknown> | undefined;
+    for (const [name, ref] of Object.entries(rawInputs ?? {})) {
+      const rr = ref as Record<string, unknown>;
+      const shaped = typeof rr === "object" && rr !== null && !Array.isArray(rr);
+      if (shaped && (typeof rr["stage"] === "string" && typeof rr["output"] === "string")) continue;
+      if (shaped && typeof rr["initial"] === "string") continue;
+      return refusal(
+        400,
+        "flow_inline stage " + JSON.stringify(sid) + ": input " + JSON.stringify(name) +
+          " is neither {stage, output} nor {initial} (got " + JSON.stringify(ref) +
+          ") — a wire that cannot be read is refused here, not dropped",
+        "invalid_request",
+      );
+    }
     const params: Record<string, EngineJson> =
       typeof st["params"] === "object" && st["params"] !== null && !Array.isArray(st["params"])
         ? (st["params"] as Record<string, EngineJson>)

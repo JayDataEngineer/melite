@@ -2,6 +2,7 @@
 // zero logic changes): closed vocabularies, flow-domain types, FlowError,
 // and the card-registry face.
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
+import { INLINE_TOP_KEYS } from "./runsGates.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 
 /** The door's answer (status folds away at the remote seam; the
@@ -55,8 +56,17 @@ export const KIND_VOCAB: readonly string[] = [
 ];
 export const SKIP_VOCAB: readonly string[] = ["present", "absent"];
 
-// _INLINE_TOP_KEYS sorted (dead/allowed messages).
-export const INLINE_TOP_SORTED: readonly string[] = ["description", "id", "stages"];
+// _INLINE_TOP_KEYS sorted (dead/allowed messages) — DERIVED, not
+// retyped (the identity law, 2026-10-11; the B1 finding). This was a
+// hand-typed copy of runsGates' INLINE_TOP_KEYS: equal today, and a
+// SILENT start-vs-validate disagreement the moment either side grew —
+// proven, not predicted. Adding a top-level key to the start door's
+// list alone left the start verdict `ok`, the validate door refusing
+// `unknown keys ["labels"]`, and 115 tests green. The very next line
+// below already DERIVED its sibling from the contract; this one was
+// the copy the same audit had to be shown twice. The members are
+// runsGates'; only the sort is ours.
+export const INLINE_TOP_SORTED: readonly string[] = [...INLINE_TOP_KEYS].sort();
 // sorted(WIRE_STAGE_KEYS) — DERIVED, not retyped (the identity law,
 // 2026-09-28). This was a hand-sorted copy of the contract's list:
 // equal today, and a silent start-vs-validate disagreement the moment

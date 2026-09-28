@@ -1,6 +1,6 @@
 import { describe, test } from "vitest";
 import assert from "node:assert/strict";
-import { ensureBench, getBench, patchBench, addStageBench, rewireBench, removeStageBench } from "../src/bench.ts";
+import { ensureBench, getBench, patchBench, addStageBench, rewireBench, removeStageBench, normalizeStages } from "../src/bench.ts";
 import { boot, codeOf, seed } from "./bench-helpers.ts";
 
 // ── the wiring admission (2026-09-15, the phantom-wire cure) ─────
@@ -360,5 +360,76 @@ describe("a malformed inputs CONTAINER refuses, like every other malformed wire 
       stage: "s_0", expect_rev: 1, params: { prompt: "a lighthouse" },
     });
     assert.equal(row.stage, "s_0");
+  });
+});
+
+// ── A LOAD MUST NOT LAND TWO ROWS UNDER ONE ID (2026-10-11) ─────
+// The identity audit's A3, proved through the real functions: the
+// write door mints `s_2` over `[s_1]`, but the LOAD path fills an
+// id-less row from its POSITION, so `[{id:"s_1"}, {…no id…}]` landed
+// as `["s_1","s_1"]`. Only add_stage carries the duplicate gate, so
+// nothing caught it — and two rows under one id is not cosmetic:
+// `stageRow()` finds the first, a rewire writes the first, and the
+// second row's wiring becomes a wire naming a stage the bench answers
+// with someone else's body.
+describe("a load never lands two rows under one stage id", () => {
+  test("an id-less row beside an id'd row is re-minted, not duplicated", () => {
+    const rows = normalizeStages(
+      [
+        { id: "s_1", card: "image-gen", params: { prompt: "first" } },
+        { card: "image-gen", params: { prompt: "second" } },
+      ],
+      "agent",
+    );
+    const ids = rows.map((r) => String(r["id"]));
+    assert.equal(new Set(ids).size, ids.length, `ids collided: ${JSON.stringify(ids)}`);
+    assert.ok(ids.includes("s_1"), "the row that HAD an id keeps it");
+  });
+
+  test("a row's OWN id is never rewritten (a re-mint that steals an id is worse)", () => {
+    const rows = normalizeStages(
+      [
+        { id: "s_0", card: "image-gen" },
+        { id: "s_7", card: "image-gen" },
+        { card: "image-gen" },
+      ],
+      "agent",
+    );
+    assert.deepEqual(rows.map((r) => String(r["id"])), ["s_0", "s_7", "s_2"]);
+  });
+
+  test("several id-less rows each get a DISTINCT id", () => {
+    const rows = normalizeStages(
+      [{ card: "image-gen" }, { card: "image-gen" }, { card: "image-gen" }],
+      "agent",
+    );
+    const ids = rows.map((r) => String(r["id"]));
+    assert.equal(new Set(ids).size, 3, `ids collided: ${JSON.stringify(ids)}`);
+  });
+
+  test("an id already ahead of the filled one is still reserved (no steal-forward)", () => {
+    // the filled row sits at index 0 and would take s_0; a later row
+    // already holds s_0 by name, so the fill must move past it
+    const rows = normalizeStages(
+      [{ card: "image-gen" }, { id: "s_0", card: "image-gen" }],
+      "agent",
+    );
+    const ids = rows.map((r) => String(r["id"]));
+    assert.equal(new Set(ids).size, ids.length, `ids collided: ${JSON.stringify(ids)}`);
+    assert.equal(ids[1], "s_0", "the named row keeps its id");
+  });
+
+  test("THE DOOR: a load carrying a duplicate lands two distinct rows", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, {
+      session: "dup",
+      stages: [
+        { id: "s_0", card: "image-gen", params: { prompt: "first" } },
+        { card: "image-gen", params: { prompt: "second" } },
+      ],
+    });
+    const stages = getBench(drafts, "dup").stages as unknown as Array<Record<string, unknown>>;
+    const ids = stages.map((r) => String(r["id"]));
+    assert.equal(new Set(ids).size, ids.length, `the store now holds a duplicate id: ${JSON.stringify(ids)}`);
   });
 });
