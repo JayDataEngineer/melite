@@ -218,7 +218,15 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     const guard = p.catch((e: unknown) => e)
     vi.advanceTimersByTimeAsync(1000).then(() => ac.abort(new Error('user cancelled')))
     const settled = await Promise.race([guard, vi.advanceTimersByTimeAsync(6000).then(() => new Promise(() => {}))])
-    assert.ok(settled instanceof Error || settled === undefined)
+    // THE ABORT MUST REACH THE CALLER (the walls audit's H9): the old
+    // line accepted `settled === undefined` — which is exactly what a
+    // hung wait (the race's never-resolving branch) produces, so a
+    // broken sleep-abort wiring shipped a "cancel-safe" tool. The
+    // wait must REJECT with the abort's own reason, promptly.
+    assert.ok(settled instanceof Error,
+      `the cancelled wait rejects (got ${String(settled)} — a hung wait is not a cancellation)`)
+    assert.match((settled as Error).message, /user cancelled|abort/i,
+      'and it carries the abort reason')
   })
 
   test('a bare abort (no reason) falls back to the generic error (the ?? arm)', async () => {

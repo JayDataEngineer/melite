@@ -154,7 +154,13 @@ describe('THE ESTATE CONTRACT LAWS (every card × family × mod, three faces)', 
   })
 
   test('LAW 2 — every visible_when guard parses against the interpreter\'s grammar and names a REAL sibling', () => {
-    expect(guards.length, 'guards were found on the wire').toBeGreaterThanOrEqual(0)
+    // THE FLOOR IS A FLOOR (the walls audit's C3, 2026-10-10): the
+    // old line was toBeGreaterThanOrEqual(0) — true for every
+    // possible count, so deleting the visible_when harvest left this
+    // arm judging ZERO guards and passing. The guards provably exist
+    // (input-prep, rig and music declare them), so the wall requires
+    // them — the same idiom LAW 1 and LAW 9 use in this file.
+    expect(guards.length, 'guards were found on the wire').toBeGreaterThan(0)
     const bad: string[] = []
     for (const g of guards) {
       for (const guard of g.rule.split('&')) {

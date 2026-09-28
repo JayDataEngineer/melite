@@ -320,11 +320,16 @@ test("THE ADMISSION SEAT IS LIVE (the walls audit's severest row, 2026-10-10): a
     ),
   );
   assert.ok(refused !== null && typeof refused === "object", "the write refuses");
+  // THE EXACT ADMISSION CODE (the walls audit's H2, 2026-10-10: the
+  // first cut accepted ANY bench/* — a bench/cas-conflict for an
+  // unknown model passed this arm). The code is pinned, and the
+  // model is named, as two separate hard asserts.
   const code = (refused as { code: string }).code;
-  assert.ok(
-    code.startsWith("bench/") || /frobnicate|unknown|not.*boarded/i.test(JSON.stringify(refused)),
-    "the refusal names the model in an admission voice: " + code,
-  );
+  assert.equal(code, "bench/bad-model",
+    "the write refuses the unknown model in the admission's own code: " + JSON.stringify(refused).slice(0, 200));
+  assert.match(String((refused as { message: string }).message ?? JSON.stringify(refused)),
+    /frobnicate-net/,
+    "the refusal NAMES the model it refused");
   // and the honest row lands: a declared family admits
   const okAdd = await ctx.benchRemote.addStage(
     "s1",

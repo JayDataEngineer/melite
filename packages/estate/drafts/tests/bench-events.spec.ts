@@ -107,9 +107,23 @@ describe("the bench/subscribe stream remote", () => {
     // finish wins, both listeners come off, nothing double-resolves
     notifyBenchChange("main");
     controller.abort();
+    // THE RACE'S OWN VERDICT (the walls audit's C2, 2026-10-10): the
+    // old line was `second.done === false || second.done === true` —
+    // true for every possible value, so a double-finish regression
+    // (the racing write resolving the parked gen with done:true and
+    // swallowing the change frame) passed this arm unchanged. The
+    // race has TWO honest shapes and the pin states BOTH, so the
+    // broken one is a red: the write wins (a final frame at the
+    // current rev), or the abort wins (a clean end) — and the NEXT
+    // next() agrees (no second frame, no hang, no throw).
     const second = await parked;
-    // either a final frame or a clean end — never a hang or a throw
-    expect(second.done === false || second.done === true).toBe(true);
+    if (second.done === true) {
+      // the abort won first: a clean end, nothing swallowed
+      expect(second.value).toBeUndefined();
+    } else {
+      // the write won: a FINAL FRAME carrying the row it delivered
+      expect(second.value.rev).toBe(5);
+    }
     const last = await gen.next();
     expect(last.done).toBe(true);
   });

@@ -122,8 +122,22 @@ describe("THE THREE AUDIO LANES (D-M-E)", () => {
     assert.equal(guides.length, 3, "one pin per class lane");
     // the chain: each guide's positive is the prior guide's output
     // (or the r2v cond for the first) — dialogue lands first
+    // THE CHAIN, ASSERTED (the walls audit's C1, 2026-10-10): the old
+    // line was `!Array.isArray(x) || true` — true for every input, so
+    // a guide chain that dropped or misordered its positives passed.
+    // The chain is the law: guide 1 takes the r2v condition, each
+    // later guide takes the prior guide's output, and the dialogue
+    // slice is pinned first.
     const first = guides[0]![1].inputs;
-    assert.ok(!Array.isArray(first.positive) || true, "positive flows");
+    const firstPositive = Array.isArray(first.positive) ? first.positive[0] : undefined;
+    assert.ok(firstPositive !== undefined,
+      `the first guide's positive is wired (got ${JSON.stringify(first.positive)})`);
+    for (let i = 1; i < guides.length; i++) {
+      const pos = guides[i]![1].inputs["positive"];
+      const expected = guides[i - 1]![0]; // the prior guide's output handle
+      assert.equal(Array.isArray(pos) ? pos[0] : pos, expected,
+        `guide ${String(i)} chains from the prior guide (the audio chain law)`);
+    }
     const slices = scoped(out, "window1_", "MeliteAudioSlice");
     assert.equal(slices.length, 3, "one slice per class");
   });

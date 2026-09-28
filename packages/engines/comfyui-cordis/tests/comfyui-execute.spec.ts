@@ -13,12 +13,17 @@ import { describe, it, expect, vi } from "vitest";
 
 let interruptCalls = 0;
 let qvoicePath = "";
+/** Every server the transport was constructed with — the wire's own
+ *  receipt (the walls audit's H3: the old empty-override arm asserted
+ *  `true` and proved nothing). */
+const serverSeen: string[] = [];
 let loudReading: { loudness_lufs: number; peak_db: number } | null = null;
 let freshReading: { reused_existing: boolean; voice_file: string } | null = null;
 
 vi.mock("../src/comfyui-transport.ts", () => ({
   sdkClient: (server: string) => ({
     server,
+    ...(serverSeen.push(server), {}),
     clientId: "client-1",
     queuePrompt: async () => ({ prompt_id: "p-1" }),
     getHistory: async () => ({ History: [{ prompt: ["x", "p-1"] }] }),
@@ -394,9 +399,23 @@ describe("executeSingle (the non-plugin face)", () => {
     const r = await executeSingle("/tmp/run-slow", {}, {}, {});
     expect(r.promptId).toBe("p-1");
   });
-  it("an empty override falls to the config-resolved server", async () => {
+  it("an empty override falls to the CONFIG-RESOLVED server (the walls audit's H3 — `expect(true)` proved nothing)", async () => {
+    // The old arm ran the call and asserted true: an empty override
+    // passed VERBATIM to the SDK (or the config resolution was
+    // dropped) and the arm stayed green. The transport mock's own
+    // receipt is the oracle: the server the seat handed the SDK must
+    // be the config's endpoint, never the empty string.
+    serverSeen.length = 0;
     await executeSingle("/tmp/run-2", {}, {}, {}, "");
-    expect(true).toBe(true);
+    expect(serverSeen.length, "the transport was constructed").toBeGreaterThan(0);
+    for (const server of serverSeen) {
+      expect(server, "the empty override never reached the SDK verbatim").not.toBe("");
+    }
+    // and a NON-empty override DOES reach it (the other half: the
+    // receipt is live, not a formality)
+    serverSeen.length = 0;
+    await executeSingle("/tmp/run-3", {}, {}, {}, "http://override:8188");
+    expect(serverSeen).toContain("http://override:8188");
   });
   it("carries a non-empty engine qvoice path into the result", async () => {
     qvoicePath = "/mnt/data/models/audio/voices/demo.qvoice";

@@ -31,6 +31,10 @@ let ctx: Context;
 // a tmp tree; a leaked env var redirects benchDir() for every suite
 // that shares the worker after us. Stash, set, RESTORE.
 const stashed: Record<string, string | undefined> = {};
+/** The seeded bench doc's path (the arm below reads it back after the
+ *  boot — the walls audit's H7: a boot that DELETED the seed still
+ *  settled every seat and the old arm passed). */
+let seedPath = "";
 
 beforeAll(async () => {
   for (const k of ["DSH_HOME", "MELITE_STATE_ROOT"]) stashed[k] = process.env[k];
@@ -44,7 +48,8 @@ beforeAll(async () => {
   const docs = join(home, "storages", "drafts", "docs");
   mkdirSync(docs, { recursive: true });
   const saved = readFileSync("/tmp/bench-doc-saved.json", "utf8");
-  writeFileSync(join(docs, "bench-session-6d8ed483-16d3-4ec7-b08e-5c2ccbf09928.json"), saved);
+  seedPath = join(docs, "bench-session-6d8ed483-16d3-4ec7-b08e-5c2ccbf09928.json");
+  writeFileSync(seedPath, saved);
   process.env["DSH_HOME"] = home;
   ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never
@@ -69,6 +74,16 @@ describe("the estate bundle boots with a live bench doc present", () => {
       }
       await new Promise((r) => setTimeout(r, 50));
     }
-    expect(true).toBe(true);
+    // THE SEED SURVIVED THE BOOT (the walls audit's H7: the arm
+    // polled the seats and asserted true — a boot that DELETED the
+    // seeded bench doc still settled every seat and passed. The seed
+    // is the subject of the repro, so it is verified after the boot.)
+    // the bench row IS the file the repro seeds (bench.ts reads
+    // $DSH_HOME/storages/drafts/docs) — read it back off disk, which
+    // is where a boot-time wipe would show
+    const { readFileSync: rf, existsSync: ex } = await import("node:fs");
+    expect(ex(seedPath), "the seeded bench doc survived the boot (a boot that wiped it would still settle every seat)").toBe(true);
+    const row = JSON.parse(rf(seedPath, "utf8")) as { record?: { doc?: { stages?: unknown[] } } };
+    expect((row.record?.doc?.stages ?? []).length, "and it still carries its stage").toBe(1);
   }, 30_000);
 });

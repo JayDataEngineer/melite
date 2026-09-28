@@ -173,6 +173,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     const defs = await loadCardDefs();
     const starving: string[] = [];
     const handWritten: string[] = [];
+    // THE JUDGED FLOOR (the walls audit's H6, 2026-10-10): three
+    // filters skip fields (no dict — pinned below; non-params zone;
+    // non-number type; schema-owned default) and none of them was
+    // counted, so retagging every numeric params field to another
+    // zone judged ZERO fields and the width/height burn returned
+    // green. The census states how many fields it walked.
+    let walked = 0;
     for (const [cardId, def] of defs) {
       const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
         (def as { schema?: unknown }).schema;
@@ -192,6 +199,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         const meta = field?.meta;
         const zone = meta?.extra?.zone;
         const guard = meta?.extra?.visible_when;
+        walked++;
         if (zone !== "params") continue;
         if (field.type !== "number") continue; // strings' emptiness is honest
         if (meta?.default !== undefined) continue; // the schema owns it
@@ -233,6 +241,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.deepEqual(starving, [], "starving fields found:\n  " + starving.join("\n  "));
     // the exemption list itself is a wall: hand-built carriers are
     // named, never a growing hole
+    assert.ok(walked >= 60,
+      `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set empties the arm)`);
     assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
@@ -396,6 +406,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     for (const list of boarded.values()) for (const b of list) claimed.add(b);
     const cat = buildCatalog(modelIds().map((id) => getModel(id)));
     const servedAddr = new Set(Object.keys(cat.models));
+    // THE SERVED FLOOR (the walls audit's H8, 2026-10-10): a
+    // buildCatalog that returned `{models:{}}` made both loops judge
+    // ZERO addresses and pass under a title that claims the catalog
+    // offers only runnable atoms. The census states its size.
+    assert.ok(servedAddr.size >= 59,
+      `the catalog serves its roster (${String(servedAddr.size)} addresses — an emptied catalog passes nothing)`);
     const owners = new Map<string, string[]>();
     for (const addr of servedAddr) {
       const o = [...registryIds()].find((rid) => {
@@ -405,6 +421,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       assert.ok(o !== undefined, `served address '${addr}' has no owning atom`);
       owners.set(o, [...(owners.get(o) ?? []), addr]);
     }
+    assert.ok(owners.size > 0, "the owner walk claimed real atoms");
     for (const [o, addrs] of owners) {
       const covered = [o, ...addrs].some((a) => claimed.has(a));
       assert.ok(covered, `served owner '${o}' is claimed by no card (board it or unoffer it — the catalog offers only runnable atoms)`);

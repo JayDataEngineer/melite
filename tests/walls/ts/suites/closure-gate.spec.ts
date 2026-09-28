@@ -111,13 +111,23 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       "estate-queue/src/runsExecute.ts",
     ];
     const offenders: string[] = [];
+    // THE ALLOW-LIST IS CHECKED AGAINST THE TREE (the walls audit's
+    // H10, 2026-10-10): a hand list is a list that rots — a renamed
+    // writer (or a seventh one) matched nothing and the rule judged
+    // zero files. Every listed writer must EXIST, and the loop must
+    // have read every one of them.
+    const missing = WRITERS.filter((w) => !SOURCES.some((f) => f.includes(w)));
+    expect(missing, `every listed writer exists in the tree (missing: ${missing.join(", ")})`).toEqual([]);
+    const scanned: string[] = [];
     for (const f of SOURCES) {
       if (!WRITERS.some((w) => f.includes(w))) continue;
+      scanned.push(f);
       const code = codeOf(read(f));
       if (/["']comfyui["']/.test(code)) {
         offenders.push(f + " — a stage-row writer spells the engine; take stageEngineOf/CARD_PLANE_ENGINE");
       }
     }
+    expect(scanned.length, "the rule scanned every listed writer").toBe(WRITERS.length);
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 

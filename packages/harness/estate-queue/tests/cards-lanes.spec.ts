@@ -11,7 +11,7 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { laneFilesStatus, lanePackFolders, lanePresenceRefusal } from "../src/cardsLanes.ts";
-import { getModel } from "@melite/comfyui-cordis";
+import { getModel, registryIds } from "@melite/comfyui-cordis";
 
 const DIR = join(tmpdir(), "melite-lanes-" + process.pid);
 const CFG = join(DIR, "endpoint.json");
@@ -158,19 +158,29 @@ describe("lanePresenceRefusal (the gate)", () => {
   });
   it("a missing lane file refuses with folders + the law code", () => {
     arm(null);
-    // point the gate at a family whose files do NOT exist in MODELS:
-    // use a temp family override through getModel's own registry —
-    // the honest path is a family we did NOT just write. Any family
-    // with a lane file absent from this temp store refuses.
-    const fam = "anycreature";
-    const li = (getModel(fam)?.lane_inputs ?? {}) as Record<string, unknown>;
-    const wants = Object.values(li).filter(
-      (v): v is string => typeof v === "string" && v.trim() !== "",
+    // THE PROBE FINDS ITS OWN FAMILY (the walls audit's H5,
+    // 2026-10-10): the old arm pointed at "anycreature", which
+    // declares NO lane_inputs at all — so `wants.length === 0` fired
+    // on every run and the arm asserted nothing under a title that
+    // claims a pin. The honest probe: find a family that DOES
+    // declare lane files, and ask about it in the temp store where
+    // those files do not exist.
+    const fam = registryIds()
+      .map((id) => ({ id, li: (getModel(id)?.lane_inputs ?? {}) as Record<string, unknown> }))
+      .find(({ li }) => Object.values(li).some((v) => typeof v === "string" && v.trim() !== ""));
+    assert.ok(fam !== undefined, "the registry declares a family with lane files to probe");
+    // the gate THROWS its CardArmError for a miss (the return shape
+    // is the stand-down's)
+    assert.throws(
+      () => lanePresenceRefusal(fam!.id),
+      (e: Error & { code?: string }) => {
+        assert.equal(e.code, "lane_input_missing", "the law's own code");
+        assert.match(e.message, /folders checked:/, "the refusal names the folders it checked");
+        assert.match(e.message, new RegExp(fam!.id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+          "and the family it judged");
+        return true;
+      },
+      `the missing lane file refuses loud (${fam!.id})`,
     );
-    if (wants.length === 0) return; // no lane rows: nothing to probe
-    const r = lanePresenceRefusal(fam);
-    assert.ok(r instanceof Error);
-    assert.equal((r as { code?: string }).code, "lane_input_missing");
-    assert.match((r as Error).message, /folders checked:/);
   });
 });

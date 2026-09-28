@@ -775,8 +775,22 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     (e: Error & { code?: string }) => /is not on disk/.test(e.message) && e.code === "runs/invalid-request",
   );
   // 3. no run registered (the gate fired before registration).
+  // THE DISK IS THE ORACLE (the walls audit's H1, 2026-10-10): the
+  // list rows surface only sidecar fields, so the old arm — scanning
+  // the LIST for the refused path — passed even when start()
+  // registered the run BEFORE the gate refused (both refused arms
+  // stayed red-correct and the arm stayed green). The refused doc
+  // carries test:true, and this wall's runs land under
+  // test-output/ (which list() never scans), so the honest check
+  // reads BOTH output roots on disk.
+  const { readdirSync: rd, existsSync: ex } = await import("node:fs");
+  const runRoots = [join(booted.root, "output"), join(booted.root, "test-output")];
+  const registered = runRoots.flatMap((r) => (ex(r) ? rd(r) : []))
+    .filter((name) => name.startsWith("run-"));
+  assert.deepEqual(registered, [],
+    `the refusal registered no run (found ${registered.join(", ") || "none"})`);
   const list = (await runs.list("500", sig)) as { runs?: unknown[] };
-  assert.ok(!JSON.stringify(list).includes("no/such/file.png"), "nothing queued from the refusal");
+  assert.ok(!JSON.stringify(list).includes("no/such/file.png"), "and the list carries no trace of it");
   // 4. an on-disk photo with a WRONG EXTENSION refuses the stageable
   //    check (the typed media vocab gate).
   const badExt = { flow: "character", test: true, draft_id: "d_ok", starter_image: "docs/CONFORMANCE_LEDGER.md" };

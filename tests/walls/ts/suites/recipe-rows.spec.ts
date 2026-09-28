@@ -161,6 +161,12 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
   it("LAW B + C: every stamp key is a declared card param and every scalar sits inside the card's own bounds", async (): Promise<void> => {
     await loadCardDefs();
     const carried = cardCarriedFamilies();
+    // THE JUDGED FLOOR (the walls audit's H4, 2026-10-10): the two
+    // skips below meant that a formSchemas() that returned null, or
+    // declaredScalars that broke for every family, left this arm
+    // judging ZERO stamps and bounds and passing. LAW A pins its
+    // checked count; this arm pins its own.
+    let judged = 0;
     for (const id of modelIds()) {
       const f = getModel(id);
       const caller = carried.get(id);
@@ -170,6 +176,7 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       for (const row of f.variants ?? []) {
         const stamp = row.wire_defaults ?? {};
         for (const [k, v] of Object.entries(stamp)) {
+          judged++;
           assert.ok(scalars.has(k), `${id} recipe ${row.id}: stamps "${k}" — the card ${caller} declares no such param (a dead stamp)`);
           const spec = scalars.get(k)!;
           if (typeof v === "number") {
@@ -181,6 +188,8 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
         }
       }
     }
+    assert.ok(judged > 40,
+      `LAW B + C judged real stamps (${String(judged)} — a formSchemas that returns null, or a declaredScalars that broke everywhere, would empty this arm)`);
   });
 
   // THE LOAD-SIZED TIMEOUT (2026-10-10): this arm boots the REAL
