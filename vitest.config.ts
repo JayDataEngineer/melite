@@ -64,6 +64,15 @@ import {
 // require()s custom reporters (which is also why the reporter is CJS).
 const uncoveredLocationsReporter = fileURLToPath(new URL('./scripts/coverage-uncovered-locations.cjs', import.meta.url))
 
+/** THE BOOT BUDGET, PER PROJECT (see the root comment above).
+ *  A vitest project does NOT inherit the root's testTimeout, so the
+ *  budget is spread into every project's own config through this
+ *  helper. A project added later spreads it too — the budget cannot
+ *  be forgotten by omission, which is exactly how it was forgotten
+ *  for a year (root-only) and how the pre-commit hook kept bouncing
+ *  green trees on 5s timeouts that vanish in isolation. */
+const BOOT_BUDGET = { testTimeout: 30_000, hookTimeout: 30_000 } as const;
+
 const DECK = rootPath('packages/web/melite-card-deck')
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
 const GALLERY = rootPath('packages/web/infer-gallery')
@@ -118,20 +127,33 @@ const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includ
 const TMP_SWEEP = path.join('tests', 'global-sweep.ts')
 
 export default defineConfig({
-  // THE BOOT BUDGET (2026-10-10): many suites here mount the real
-  // card/model registry — a boot, not a pure function — and the 5s
-  // default was sized for the latter. Under a full-suite run (568
-  // files compiling at once) those boots overrun it and the suite
-  // reported timeouts that vanish when the same file runs alone: a
-  // wall that fails only under load is worse than no wall, because it
-  // trains the reader to re-run instead of read. 30s is the honest
-  // budget for a boot; nothing here takes 30s to fail.
+  // THE BOOT BUDGET (2026-10-10; CORRECTED 2026-09-28): many suites
+  // here mount the real card/model registry — a boot, not a pure
+  // function — and the 5s default was sized for the latter. Under a
+  // full-suite run (372 files compiling at once, and the pre-commit
+  // hook running the whole node project) those boots overrun it and
+  // the suite reported timeouts that vanish when the same file runs
+  // alone: a wall that fails only under load is worse than no wall,
+  // because it trains the reader to re-run instead of read.
+  //
+  // THE CORRECTION, and it matters: this budget was set HERE, at the
+  // root, for a year of commits — and a vitest PROJECT does not
+  // inherit the root's testTimeout. Every project below started from
+  // the 5s default anyway, which is why the hook kept bouncing green
+  // trees on "Test timed out in 5000ms" and the lesson was misread as
+  // flakiness. The budget is applied to each project below, through
+  // the shared helper, so it is inherited by every one of them (and by
+  // any project added later — a new project cannot forget it).
+  //
+  // 30s is the honest budget for a boot; nothing here takes 30s to
+  // fail, and nothing here should be re-run instead of read.
   testTimeout: 30_000,
   hookTimeout: 30_000,
   test: {
     projects: [
       {
         plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
         resolve: {
           alias: { ...resolutionFacade() },
         },
@@ -170,6 +192,7 @@ export default defineConfig({
       },
       {
         plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
         resolve: {
           alias: {
             ...resolutionFacade(),
@@ -272,6 +295,7 @@ export default defineConfig({
       },
       {
         plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
         resolve: {
           alias: {
             ...resolutionFacade(),
@@ -346,6 +370,7 @@ export default defineConfig({
       },
       {
         plugins: [standardDecoratorPlugin()],
+        ...BOOT_BUDGET,
         resolve: {
           alias: {
             ...resolutionFacade(),

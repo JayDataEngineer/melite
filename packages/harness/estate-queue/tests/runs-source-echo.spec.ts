@@ -16,6 +16,7 @@ import {
 } from "../src/runsSourceEcho.ts";
 import { registerCompiledRun } from "../src/runsStart.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
+import { newRunId } from "../src/queueCore.ts";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { RunRecord } from "../src/runsTypes.ts";
 
@@ -48,10 +49,22 @@ const stageWith = (params: Record<string, EngineJson>): CompiledStage => ({
   outputNodes: {},
   inputNames: {},
 });
+/** The door is REQUIRED by the type (the operator's live refusal,
+ *  2026-09-28: the run id used to have a second producer here, so a
+ *  composed graph and its run could name different runs). These arms
+ *  are about the SOURCE gate, not the id seam, so the helper supplies
+ *  a door when a caller does not — the id is still the caller's and
+ *  the run registers under exactly it. */
 const mustRegister = (
-  args: Parameters<typeof registerCompiledRun>[0],
+  args: Omit<Parameters<typeof registerCompiledRun>[0], "door"> & {
+    door?: Parameters<typeof registerCompiledRun>[0]["door"];
+  },
 ): { run: RunRecord; queuePosition: number } => {
-  const out = registerCompiledRun(args);
+  const withDoor = {
+    ...args,
+    door: args.door ?? { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
+  };
+  const out = registerCompiledRun(withDoor);
   if ("payload" in out) throw new Error("expected registration, got refusal: " + JSON.stringify(out.payload));
   return out;
 };
@@ -283,6 +296,7 @@ describe("registerCompiledRun (the source-echo gate)", () => {
       testFlag: false,
       draftId: "d1",
       stateRoot: root,
+      door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
       enqueue: (row) => {
         seen.push(row.runId);
         return 0;

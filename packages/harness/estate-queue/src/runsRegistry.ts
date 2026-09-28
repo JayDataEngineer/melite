@@ -608,6 +608,27 @@ export class RunsRuntimeService extends Service {
     try {
       benchDoc = (await this.ctx.draftsRemote.get(checked.draftId, signal)) as Record<string, unknown>;
     } catch { benchDoc = undefined; }
+    // THE ONE RUN ID, MINTED ONCE (the operator's live refusal,
+    // 2026-09-28: "run sources resolve nowhere (1 dead:
+    // run-65dc3ee505ef-…/gen)").
+    //
+    // Every composed graph carries its OWN `${runId}/gen` output
+    // prefix, so the run id is not a label — it is an INPUT to every
+    // stage's composition, and a forward reference to it must name
+    // the run that will exist. The bench-run path minted it TWICE:
+    // once to compose the stages (runIdSeed) and again below to
+    // register the run (runId). The two are different values, so
+    // every composed graph pointed at a run that was never created;
+    // the source resolver — correctly, and for the right reason —
+    // treated each `${runId}/gen` as a dead source and the run
+    // refused before it registered.
+    //
+    // One mint, one id, both consumers: the compose and the
+    // registration cannot disagree about which run exists, because
+    // there is only one value to disagree about. A wall drives the
+    // pair (the composed run's own forward references resolve, which
+    // is impossible when the two ids differ).
+    const runId: string = reuse?.runId ?? newRunId();
     let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);
@@ -650,8 +671,18 @@ export class RunsRuntimeService extends Service {
         // edges for the worker to link. A $spell survives into the
         // composed graph on purpose: the merge resolves it into the
         // upstream stage's output (that is what a FromStage link IS).
-        const runIdSeed = reuse?.runId ?? newRunId();
-        const composed = await this.composeBenchStages(benchDoc, runIdSeed);
+        // THE ONE RUN ID (the operator's live refusal, 2026-09-28:
+        // "run sources resolve nowhere (1 dead: run-65dc3ee505ef-…/
+        // gen)"). The bench run minted the id TWICE: once here, to
+        // compose the stages — and again below, to register the run.
+        // Every composed graph carries its own `${runId}/gen` output
+        // prefix, so the second mint left every forward reference
+        // naming a run that was never created; the source resolver
+        // (rightly) treated them as dead sources and the run refused
+        // before it registered. The id is minted ONCE, here, and both
+        // the compose and the registration take it — one derivation,
+        // and a wall drives the pair.
+        const composed = await this.composeBenchStages(benchDoc, runId);
         const rest: Record<string, unknown> = { ...body };
         delete rest["model"];
         delete rest["card"];
@@ -692,7 +723,6 @@ export class RunsRuntimeService extends Service {
         if (e instanceof CardArmError) throw toRemoteError(cardRefusal(e));
         throw e;
       }
-      const runId: string = reuse?.runId ?? newRunId();
       let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
       try {
         composed = await cards.phase2Card(p1, runId);
@@ -1011,12 +1041,23 @@ export class RunsRuntimeService extends Service {
       draftId: checked.draftId,
       stateRoot,
       enqueue: (row): number => this.core.enqueue(row as never),
-      // The replay arm (stroke 83): same id, no card identity —
-      // _request.json/_flow.json rewrite in place, the pump picks
-      // the rehydrated (REAL params) row up on the boot kick.
-      ...(reuse === undefined
-        ? {}
-        : { door: { runId: reuse.runId, pipeline: pipelineOf(body), requestBody: body } }),
+      // THE RUN ID IS AN INPUT, NOT A LABEL (the operator's live
+      // refusal, 2026-09-28: "run sources resolve nowhere (1 dead:
+      // run-65dc3ee505ef-…/gen)").
+      //
+      // Every composed graph carries its own `${runId}/gen` output
+      // prefix, so the id the stages were composed under MUST be the
+      // id the run registers under. This door used to pass it only
+      // on the replay seam, so a normal flow_inline/bench run fell
+      // through to runsStart's own mint — a DIFFERENT value — and
+      // every forward reference in every composed graph then named a
+      // run that was never created. The resolver (rightly) called
+      // them dead sources and the run refused before it registered.
+      //
+      // The id rides ALWAYS. The replay arm (stroke 83) keeps its
+      // meaning: the SAME id, rewritten in place, the pump picking
+      // the rehydrated row up on the boot kick.
+      door: { runId, pipeline: pipelineOf(body), requestBody: body },
     });
     // THE SOURCE-ECHO REFUSAL (same law on the inline door).
     if ("payload" in reg) throw toRemoteError(reg);

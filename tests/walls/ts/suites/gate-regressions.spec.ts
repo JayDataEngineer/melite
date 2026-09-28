@@ -380,3 +380,31 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     expect(verify).not.toMatch(/\[ -d "\$REPO\/\$p\/lib" \] \|\| continue/);
   });
 });
+
+describe("THE BOOT BUDGET REACHES EVERY PROJECT (the hook's 5s bounces, 2026-09-28)", () => {
+  // The budget lived at the vitest ROOT for a year, and a vitest
+  // project does not inherit the root's testTimeout — so every
+  // project started from the 5s default anyway, and the pre-commit
+  // hook (which runs the whole node project) kept bouncing green
+  // trees on "Test timed out in 5000ms". The failures vanished in
+  // isolation, so the lesson that got written down was "flaky",
+  // which is the wrong lesson: the budget was never applied.
+  //
+  // The budget is now spread per project through BOOT_BUDGET. This
+  // arm requires every project in the config to carry it, so a
+  // project added later (or the spread removed) refuses here rather
+  // than at the hook, two hundred commits later.
+  it("every vitest project inherits the boot budget (a project that does not is a 5s wall)", () => {
+    const src = read("vitest.config.ts");
+    const projects = (src.match(/^\s*name: '[^']+',$/gm) ?? []).length;
+    const budgets = (src.match(/\.\.\.BOOT_BUDGET/g) ?? []).length;
+    expect(projects, "the config declares projects (a config with none defeats this arm)").toBeGreaterThan(0);
+    expect(budgets, `every project spreads BOOT_BUDGET (${String(projects)} projects, ${String(budgets)} spreads)`)
+      .toBe(projects);
+    // and the budget is the honest one, not a token value
+    expect(src).toMatch(/BOOT_BUDGET = \{ testTimeout: 30_000, hookTimeout: 30_000 \}/);
+    // the root's own copy is kept for anything that reads it, and
+    // the correction is written down where the next reader looks
+    expect(src).toMatch(/does NOT inherit the root's testTimeout/);
+  });
+});

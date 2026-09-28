@@ -927,20 +927,63 @@ test("the whole-bench run composes every card stage (the row's own coordinates n
     /unknown param\(s\)/,
     `the whole-bench run composes — the operator's Run ALL must not be refused by the card's own admission gate: ${refusal}`,
   );
-  // THIS RIG HAS NO ENGINE SEAT, so after a successful compose the run
-  // refuses sourceless — its declared output file does not exist. That
-  // refusal is the rig's honest verdict and it PROVES the compose ran
-  // (the compose comes first). It is also the ONLY acceptable refusal:
-  // anything else — a card admission, a lane law, a schema — is the
-  // compose failing, and it is what the operator hit.
+  // THE FORWARD REFERENCE IS THE RUN (the operator's second live
+  // refusal, 2026-09-28: "run sources resolve nowhere (1 dead:
+  // run-65dc3ee505ef-e6739954/gen)"). Every composed graph carries
+  // its own `${runId}/gen` output prefix, and the run mints its id
+  // ONCE — the bench-run path minted it twice (once to compose,
+  // once to register), so every forward reference named a run that
+  // was never created and the resolver, rightly, called them dead.
+  //
+  // The law, driven: a refused run may NOT be refused for a dead
+  // source naming a run that does not exist. The self-chain
+  // exemption covers a run's OWN outputs; anything else naming an
+  // unknown run is a genuinely missing upstream, which is a
+  // different door with a different voice. Here, the bench stages
+  // declare no outside sources at all, so a dead-source refusal
+  // means the id the graph was composed with is not the id the run
+  // registered under.
   if (refusal !== "") {
-    assert.match(refusal, /sources resolve nowhere/,
-      `the bench run's ONLY acceptable refusal in a rig with no engine is the sourceless one; ` +
-      `anything else means the compose failed: ${refusal}`);
+    assert.doesNotMatch(refusal, /sources resolve nowhere/,
+      `a bench run with no outside sources must never die of a dead one — ` +
+      `that means the graph was composed under a DIFFERENT run id than the run registered ` +
+      `(the forward references name a run that was never created): ${refusal}`);
   }
-  assert.ok(runId !== null || /sources resolve nowhere/.test(refusal),
-    "the bench run got as far as registering a run id");
+  assert.ok(runId !== null || refusal !== "",
+    "the bench run got as far as registering a run id (or refused for a named reason)");
+  // and when it DID register, its own forward references resolve:
+  // the run dir exists and the graph's own `${runId}/gen` prefix is
+  // exempt, never dead.
+  if (runId !== null) {
+    const dir = join(root, "test-output", runId);
+    assert.ok(existsSync(dir), `the registered bench run has its own run dir (${dir})`);
+  }
   await fiber.dispose();
+});
+
+test("the run id is minted ONCE: a composed graph's forward references name the run that registers", { timeout: 60_000 }, async () => {
+  // The deterministic half. The bench run composes its stages with a
+  // run id and registers the run with one; if they differ, every
+  // `${runId}/gen` in the graph is a reference to a run that does
+  // not exist. This arm reads the two mint sites in the source and
+  // requires ONE `newRunId()` in the start path — the pin that makes
+  // the double mint impossible to reintroduce, because a second mint
+  // is a second id and a second id is this exact operator refusal.
+  const src = readFileSync(
+    join(import.meta.dirname, "..", "..", "..", "..", "packages", "harness", "estate-queue", "src", "runsRegistry.ts"),
+    "utf8",
+  );
+  const start = src.slice(src.indexOf("async start("), src.indexOf("async status(") > 0 ? src.indexOf("async status(") : src.length);
+  const mints = [...start.matchAll(/newRunId\(\)/g)].length;
+  assert.equal(mints, 1,
+    `the start path mints the run id exactly ONCE (found ${String(mints)} call sites) — ` +
+    "a second mint composes the graph under one id and registers the run under another, " +
+    "so every forward reference names a run that was never created");
+  // and the id is composed into the same value the run registers
+  assert.match(start, /const runId: string = reuse\?\.runId \?\? newRunId\(\)/,
+    "the one mint IS the run's id (the reuse seam or the mint, never a second value)");
+  assert.doesNotMatch(start, /const runIdSeed|runIdSeed\s*[,;]/,
+    "the retired second mint is gone — one id, one derivation");
 });
 
 test("every coordinate the bench run injects is an ENVELOPE key (the same law, without the engine)", async () => {

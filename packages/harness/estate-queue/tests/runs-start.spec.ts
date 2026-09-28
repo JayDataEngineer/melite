@@ -15,6 +15,7 @@ import {
   unknownDraftRefusal,
 } from "../src/runsStart.ts";
 import type { CompiledStage } from "../src/runsStart.ts";
+import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
 
 /** registerCompiledRun now returns a refusal union (the source-echo
@@ -270,35 +271,40 @@ describe("registerCompiledRun", () => {
     outputNodes: {},
     inputNames: {},
   } as unknown as CompiledStage;
-  it("mints, routes the out root on the test flag, and writes the durable pair", () => {
+  it("registers UNDER THE CALLER'S RUN ID, routes the out root, and writes the durable pair", () => {
     const root = tmp();
     const seen: string[] = [];
+    // THE RUN ID IS THE CALLER'S (the operator's live refusal,
+    // 2026-09-28). This arm used to assert the opposite — that the
+    // door MINTS an id when given none — which is the second
+    // producer that let a composed graph and its run name different
+    // runs ("run sources resolve nowhere (1 dead: run-…/gen)"). The
+    // door is required now and carries a required id, so a caller
+    // that forgets one does not compile; the id the caller composed
+    // its stages under is the id the run registers under.
+    const runId = newRunId();
     const { run, queuePosition } = mustRegister({
       compiled: compiled([one]),
       testFlag: true,
       draftId: "d1",
       stateRoot: root,
+      door: { runId, pipeline: "flow_inline", requestBody: { model: "m" } },
       enqueue: (row) => {
         seen.push(row.runId);
         return 0;
       },
     });
-    assert.match(run.runId, /^run-[0-9a-f]{12}-[0-9a-f]{8}$/);
+    assert.equal(run.runId, runId, "the run registers under the id it was composed with");
     assert.equal(queuePosition, 0);
     assert.deepEqual(seen, [run.runId]);
     assert.ok(run.dir.startsWith(join(root, "test-output")));
-    assert.deepEqual(JSON.parse(readFileSync(join(run.dir, "_request.json"), "utf8")), {
-      stages: [
-        {
-          id: "s",
-          params: { workflow: {} },
-          outputs: { default: "image" },
-          expected: {},
-          outputNodes: {},
-          inputNames: {},
-        },
-      ],
-    });
+    // THE REQUEST SIDECAR IS THE DOOR'S BODY (the card-snapshot law:
+    // the sidecar records what the run was ASKED with, so the wand
+    // can restore the flow that made this image). Before the door
+    // became required, a caller with no door fell back to the
+    // COMPILED shape here — the same seam that let a run register
+    // under an id its graph never named.
+    assert.deepEqual(JSON.parse(readFileSync(join(run.dir, "_request.json"), "utf8")), { model: "m" });
     const sidecar = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8"));
     assert.equal(sidecar["status"], "queued");
     assert.equal(sidecar["pipeline"], "flow_inline");
@@ -483,7 +489,8 @@ describe("registerCompiledRun", () => {
       testFlag: false,
       draftId: "d1",
       stateRoot: root,
-      enqueue: () => 0,
+      enqueue: () => 0,      door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
+
     });
     assert.equal(run.variant, undefined);
     const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;
@@ -594,6 +601,7 @@ describe("registerCompiledRun", () => {
             testFlag: false,
             draftId: "d1",
             stateRoot: root,
+            door: { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
             enqueue: () => 0,
           }),
         /EACCES|EPERM|permission/i,

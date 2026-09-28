@@ -374,7 +374,25 @@ export function registerCompiledRun(args: {
    *  BEFORE phase-2 compose — a refusal names its field, never a
    *  zombie slot) + the pipeline/cardId/request body for the
    *  registration writes. */
-  door?: {
+  /** THE DOOR IS REQUIRED, AND ITS RUN ID WITH IT (the operator's
+   *  live refusal, 2026-09-28: "run sources resolve nowhere (1 dead:
+   *  run-65dc3ee505ef-…/gen)").
+   *
+   *  This used to be `door?:` with `door?.runId ?? newRunId()`
+   *  below — a SECOND PRODUCER of the run id, living in the start
+   *  chain. Every composed graph carries its own `${runId}/gen`
+   *  output prefix, so the id is not a label on a run, it is an
+   *  INPUT to every stage's composition: two producers means the
+   *  graph and the run can name different runs, and the forward
+   *  references become dead sources.
+   *
+   *  THE CONTRACT NOW FORBIDS THE SECOND PRODUCER: `door` and its
+   *  `runId` are required, and there is no fallback mint anywhere in
+   *  this function. A caller that forgets the id does not get a
+   *  second one — it does not COMPILE. That is the difference
+   *  between a wall (which can be forgotten, and was) and a type
+   *  (which cannot be forgotten at all). */
+  door: {
     runId: string;
     pipeline: string;
     /** The card arm's identity (card snapshot law). The inline
@@ -390,7 +408,10 @@ export function registerCompiledRun(args: {
   };
 }): { run: RunRecord; queuePosition: number } | StartRefusal {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
-  const runId: string = door?.runId ?? newRunId();
+  // THE ONE RUN ID (see the type above): the caller's. There is no
+  // second producer here, and there cannot be one without failing the
+  // compiler.
+  const runId: string = door.runId;
   // THE SOURCE-ECHO GUARD (the source-echo law, 2026-09-23): every
   // compiled stage's params are swept for source pointers BEFORE the
   // run dir exists — a dead source refuses here with its URL named,
