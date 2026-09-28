@@ -2058,6 +2058,7 @@ window.__ModuleLoader__.load({
 				kind,
 				title: () => title,
 				guide: [{
+					id: `${id}-guide`,
 					order: guideOrder,
 					title: () => title,
 					description: () => guideDescription,
@@ -2098,4 +2099,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="44d715c4b0cea0bc2cf753367c5f6523e4d70c7c";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8d06ed0dfdb08d616b9be832ffe12907a5c0e194";

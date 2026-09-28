@@ -465,7 +465,8 @@ window.__ModuleLoader__.load({
 					"webp",
 					"gif",
 					"svg",
-					"bmp"
+					"bmp",
+					"avif"
 				],
 				audio: [
 					"wav",
@@ -479,7 +480,9 @@ window.__ModuleLoader__.load({
 					"mp4",
 					"webm",
 					"mkv",
-					"mov"
+					"mov",
+					"m4v",
+					"avi"
 				],
 				model: ["glb", "gltf"],
 				galleryImage: [
@@ -504,6 +507,19 @@ window.__ModuleLoader__.load({
 				maxListedImages: 3
 			};
 		}
+		(() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
 		/**
 		* @license
 		* Copyright 2010-2026 Three.js Authors
@@ -40637,7 +40653,7 @@ void main() {
 					url: mesh
 				}],
 				label: "square-mesh"
-			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
 				className: card_module_css_default.squareActions,
 				onClick: (event) => {
 					event.stopPropagation();
@@ -42091,7 +42107,7 @@ void main() {
 					const isOpen = open[g] === true;
 					return (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.DisclosureRow, {
 						key: g,
-						icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutline20),
+						icon: (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconArchiveOutlineRegular),
 						title,
 						open: isOpen,
 						expandable: true,
@@ -42182,4 +42198,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="963e917cb511e2378f0ec3209f2830e9330e43d8";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f039611d4442c18b6bcb7de65d672a7abd010c9c";

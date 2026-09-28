@@ -42090,6 +42090,7 @@ void main() {
 					kind: "media",
 					title: () => "Media",
 					guide: [{
+						id: "media-tab-guide",
 						order: 51,
 						title: () => "Media",
 						description: () => "Every run's artifacts — the archive, with the lightbox, chips, search and the cards wand.",
@@ -42132,4 +42133,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f1edb69bfc8523840538783da1d37dfeaee1993b";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="45b48a1397440f0b654c49d7898ef47dce4872f0";

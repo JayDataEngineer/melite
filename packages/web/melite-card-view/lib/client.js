@@ -49074,7 +49074,7 @@ void main() {
 					url: mesh
 				}],
 				label: "square-mesh"
-			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
 				className: card_module_css_default.squareActions,
 				onClick: (event) => {
 					event.stopPropagation();
@@ -50609,7 +50609,7 @@ void main() {
 				onClick: (e) => {
 					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
 				anchor: null,
 				getAnchorRect: () => pickAt.rect,
@@ -56857,7 +56857,7 @@ void main() {
 				onClick: () => {
 					props.onStop();
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 16 }), (0, react.createElement)("span", null, "Stop")) : (0, react.createElement)("button", {
 				key: "run",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
@@ -56866,7 +56866,7 @@ void main() {
 				onClick: () => {
 					(boundRef.current ?? props.onRun)();
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 16 }), (0, react.createElement)("span", null, "Run")), (0, react.createElement)("button", {
 				key: "close",
 				className: card_module_css_default$1.drillRunBtn,
 				type: "button",
@@ -56880,7 +56880,7 @@ void main() {
 			}, live ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.drillProgress,
 				"data-testid": "drill-progress"
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.zoomMeter }, (0, react.createElement)("span", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }), (0, react.createElement)("span", null, [act !== "" ? act : "running", pct !== null ? " · " + String(pct) + "%" : ""].join("")), pct !== null ? (0, react.createElement)("span", { className: card_module_css_default$1.zoomMeter }, (0, react.createElement)("span", {
 				className: card_module_css_default$1.zoomMeterFill,
 				style: { width: pct + "%" }
 			})) : null) : failedText !== null || startError !== null ? (0, react.createElement)("span", {
@@ -57286,7 +57286,7 @@ void main() {
 				"data-testid": "tile-spin",
 				role: "status",
 				"aria-label": "running"
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }), row.progress !== null && row.progress.max > 0 ? (0, react.createElement)("span", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }), row.progress !== null && row.progress.max > 0 ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.tilePct,
 				"data-testid": "tile-progress",
 				"aria-label": "progress percent"
@@ -57299,7 +57299,7 @@ void main() {
 					e.stopPropagation();
 					onRemove(row);
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconTrashOutline16, { size: 14 })), grouping ? null : rowRunning(row) ? (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconTrashOutlineRegular, { size: 14 })), grouping ? null : rowRunning(row) ? (0, react.createElement)("button", {
 				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
 				type: "button",
 				"aria-label": "Stop run",
@@ -57309,7 +57309,7 @@ void main() {
 					e.stopPropagation();
 					onStop(row);
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFill16, { size: 14 })) : (0, react.createElement)("button", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconStopFillRegular, { size: 14 })) : (0, react.createElement)("button", {
 				className: card_module_css_default$1.tileIconBtn + " " + card_module_css_default$1.tileRunBtn,
 				type: "button",
 				"aria-label": "Run stage",
@@ -57318,7 +57318,7 @@ void main() {
 					e.stopPropagation();
 					onRun(row);
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }))), (0, react.createElement)("span", { className: card_module_css_default$1.tileCaption }, (0, react.createElement)("span", { className: card_module_css_default$1.tileTitle }, row.title, wiredFrom ? (0, react.createElement)("span", {
 				className: card_module_css_default$1.wiredMark,
 				title: "source wired"
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
@@ -60688,7 +60688,7 @@ void main() {
 				disabled: running || live.stages.length === 0,
 				title: running ? "the pass is running" : "run every card in bench order — one run per card, stop on failure",
 				onClick: onRun
-			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutline16, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutline16, { size: 14 }), " Play"), saving ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), " Play"), saving ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: saveName,
 				placeholder: "flow name",
 				onChange: (e) => {
@@ -61350,6 +61350,7 @@ void main() {
 						return resolved.replace(/^dsh-resource:\/\/cards\//, "");
 					},
 					guide: [{
+						id: "cards-tab-guide",
 						order: 50,
 						title: () => "Media Flow",
 						description: () => "The media flow — the shared bench and its runs."
@@ -61422,4 +61423,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f17f66b664e0e23a3f6c0fff61d9047057ec5e49";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f44402413fdc962ee9d932050363bfbea68f2dc1";

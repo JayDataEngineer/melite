@@ -1468,6 +1468,41 @@ window.__ModuleLoader__.load({
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
+		/** Sanitize one candidate id onto a legal bench session key —
+		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
+		* routing decision (the li-ay stroke, 2026-10-11): the decision
+		* `SESSION_RE.test(id) ? id : 'main'` was spelled FOUR times — the
+		* gallery client (bench-load.benchSessionOf), the cards tab
+		* (cards-resource.benchSessionKey), and TWICE inline in the agent
+		* tool — and the walls pinned each copy's grammar import while a
+		* gutted routing body ('main' for everything) stayed green behind
+		* the codec arms. The grammar moved to this floor for exactly this
+		* reason; the DECISION over it moves beside it, and every seat
+		* imports the same function. An address has one grammar and one
+		* sanitize — not four. */
+		function benchSessionOf(id) {
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
+		}
+		/** The run-relative tail of an absolute artifact path, or undefined
+		* when the path carries no run directory — e.g.
+		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
+		* "run-4f2a1c-ab12/tts/line.flac". THE TAIL GRAMMAR IS RUN_ID_RE
+		* (the li-ay stroke): the restore stamp's private tailOf accepted
+		* ANY "run-…" segment ("run-ZZZ/x.png" previewed; run ids are minted
+		* run-<hex>-<base62> and never look like that), so a path a run
+		* directory could not own still minted a served artifact address.
+		* One grammar for minting and one for taking the tail: the LAST
+		* run-shaped segment wins (the estate nests nothing under a run
+		* today; the last-wins order is the old behavior, kept). */
+		function runTailOf(path) {
+			const segments = path.split("/");
+			let found;
+			for (let i = 0; i < segments.length - 1; i++) {
+				if (segments[i + 1] === "") continue;
+				if (RUN_ID_RE.test(segments[i])) found = segments.slice(i).join("/");
+			}
+			return found;
+		}
 		/** THE SELF-NAMING STRIP, AS A DECISION (2026-10-11, the client-plane
 		*  audit's F1). `normalizeBenchStage` applies this inline; the RESTORE
 		*  arms in `packages/web/infer-gallery/src/client/bench-load.ts` used
@@ -1597,6 +1632,7 @@ window.__ModuleLoader__.load({
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
 			benchResultDefects: () => benchResultDefects,
+			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
 			cardResultFromRecord: () => cardResultFromRecord,
 			cnEntriesOf: () => cnEntriesOf,
@@ -1638,6 +1674,7 @@ window.__ModuleLoader__.load({
 			rootsManifest: () => rootsManifest,
 			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
+			runTailOf: () => runTailOf,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			stripKeys: () => stripKeys,
@@ -2976,7 +3013,8 @@ window.__ModuleLoader__.load({
 					"webp",
 					"gif",
 					"svg",
-					"bmp"
+					"bmp",
+					"avif"
 				],
 				audio: [
 					"wav",
@@ -2990,7 +3028,9 @@ window.__ModuleLoader__.load({
 					"mp4",
 					"webm",
 					"mkv",
-					"mov"
+					"mov",
+					"m4v",
+					"avi"
 				],
 				model: ["glb", "gltf"],
 				galleryImage: [
@@ -3015,6 +3055,19 @@ window.__ModuleLoader__.load({
 				maxListedImages: 3
 			};
 		}
+		(() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js
 		/**
@@ -41001,7 +41054,7 @@ void main() {
 					url: mesh
 				}],
 				label: "square-mesh"
-			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
+			})) : props.emptyIcon === void 0 ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph }) : (0, react.createElement)("span", { className: card_module_css_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? (0, react.createElement)("span", {
 				className: card_module_css_default.squareActions,
 				onClick: (event) => {
 					event.stopPropagation();
@@ -42743,7 +42796,7 @@ void main() {
 				onClick: (e) => {
 					setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 				}
-			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutline16, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
+			}, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlusOutlineRegular, { className: card_module_css_default.squareGlyph })) : null), pickAt !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Menu, {
 				open: true,
 				anchor: null,
 				getAnchorRect: () => pickAt.rect,
@@ -52912,4 +52965,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="78630ebe142271a0e874252f801adedb1062fd13";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="bb41c33e372199b3da5b46cfb8b79c71481222e8";
