@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
+import { spawnSync, execSync } from "node:child_process";
 
 // GATE REGRESSIONS — one pin per WEDGE this estate has actually been
 // wedged on (2026-10-10, the operator's law: "make sure we are
@@ -229,6 +229,33 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
 
   it("a stamp mismatch REFUSES with the cure (re-run without --no-build)", () => {
     expect(ship).toMatch(/is STALE .*re-run WITHOUT --no-build/);
+  });
+
+  it("THE STALE-FACE VOCABULARY IS DERIVED FROM THE WALLS' HELPER and judges EVERY client bundle (the li-ba stroke)", () => {
+    // F3 (the deferred findings): the gate grepped ONE literal
+    // ("STALE TAB") on ONE bundle while the walls' helper spells the
+    // full five-pattern ban — four faces could ride any other
+    // bundle green, and a sixth pattern added to the helper would
+    // never reach the gate. The extraction, the census floor, and
+    // the all-bundles loop are all pinned now, and the extraction is
+    // EXECUTED here against the live helper so a helper shape the
+    // sed cannot parse reds in the suite, not silently at ship time.
+    expect(ship).toContain("sed -n 's#^  /\\(.*\\)/i\\?,$#\\1#p'");
+    expect(ship).toContain("tests/walls/helpers/stale-tab-vocabulary.ts");
+    expect(ship).toContain("tr -cd '|' | wc -c");
+    expect(ship).toContain('if [ "$(printf \'%s\' "$STALE_RE" | tr -cd \'|\' | wc -c)" -lt 4 ]');
+    expect(ship).toContain('for p in "${CLIENT_BUNDLES[@]}"; do');
+    expect(ship).toContain('if grep -Eiq "$STALE_RE"');
+    // the derivation is REAL: run the gate's own extraction and
+    // compare against the helper's declared bodies
+    const helper = read("tests/walls/helpers/stale-tab-vocabulary.ts");
+    const declared = [...helper.matchAll(/^  \/(.+)\/i?,\s*$/gm)].map((m) => m[1]);
+    expect(declared.length, "the helper still declares the five faces").toBeGreaterThanOrEqual(5);
+    const extracted = execSync(
+      "sed -n 's#^  /\\(.*\\)/i\\?,$#\\1#p' tests/walls/helpers/stale-tab-vocabulary.ts | paste -sd'|' -",
+      { cwd: REPO, encoding: "utf8" },
+    ).trim();
+    expect(extracted).toBe(declared.join("|"));
   });
 });
 

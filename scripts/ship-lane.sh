@@ -284,12 +284,26 @@ if [ "$DO_BUILD" -eq 1 ]; then
       exit 1
     fi
   done
-  # the receipt the operator cares about: the bundle the browser
-  # fetches must not carry a face we deleted
-  if grep -q "STALE TAB" "$REPO/packages/web/melite-card-view/lib/client.js" 2>/dev/null; then
-    bad "the card-view bundle still carries the removed STALE TAB face — the browser would show it"
+  # the receipt the operator cares about: NO bundle the browser
+  # fetches may carry a face we deleted. THE VOCABULARY IS DERIVED
+  # (the li-ba stroke, 2026-10-11): the gate used to grep ONE
+  # literal ("STALE TAB") on ONE bundle while the walls' own helper
+  # spells the full five-pattern ban — four faces (cards-stale-build,
+  # staleBuild, buildVerdict, the case-folded spelling) could ride
+  # any OTHER bundle green. The helper is the ONE owner (a wall
+  # tool, node-only — it never rides into a browser bundle); the
+  # gate extracts its regex bodies and judges EVERY client bundle.
+  STALE_RE="$(sed -n 's#^  /\(.*\)/i\?,$#\1#p' "$REPO/tests/walls/helpers/stale-tab-vocabulary.ts" | paste -sd'|' -)"
+  if [ "$(printf '%s' "$STALE_RE" | tr -cd '|' | wc -c)" -lt 4 ]; then
+    bad "the stale-face extraction rotted (got '${STALE_RE:-<empty>}' from tests/walls/helpers/stale-tab-vocabulary.ts) — the gate would judge nothing"
     exit 1
   fi
+  for p in "${CLIENT_BUNDLES[@]}"; do
+    if grep -Eiq "$STALE_RE" "$REPO/$p/lib/client.js" 2>/dev/null; then
+      bad "$p/lib/client.js still carries a removed stale-tab face (vocabulary: tests/walls/helpers/stale-tab-vocabulary.ts) — the browser would show it"
+      exit 1
+    fi
+  done
   ok "no client bundle carries a removed face"
   # THE POST-EMIT NET (the ship audit's stale-.d.ts hole, 2026-10-10):
   # the typecheck above ran BEFORE the build, so every src-run
