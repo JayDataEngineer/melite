@@ -16,7 +16,7 @@ import { addStageWire, groupStagesWire, reorderStageWire } from './add-stage.ts'
 import { CardZoomOverlay } from './zoom.tsx'
 import type { StageViewOwnerProps } from './types.ts'
 import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
-import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop } from './dnd-payloads.ts'
+import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from './dnd-payloads.ts'
 import { benchRow, groupStagesByCard, rowRunning, type CardRowLineTabRow } from './bench-row.ts'
 import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
@@ -151,8 +151,17 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     e.preventDefault()
     setCapOver(false)
     if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
-      const cap = parseCapabilityDrop(e.dataTransfer.getData(CAPABILITY_DRAG_MIME))
-      if (cap === null) return
+      const raw = e.dataTransfer.getData(CAPABILITY_DRAG_MIME)
+      const cap = parseCapabilityDrop(raw)
+      if (cap === null) {
+        // L9: a PRESENT-but-corrupt capability body badges — the drag
+        // was ours, so a silent no-op reads as breakage. Foreign/empty
+        // data stays quiet (that is the fall-through contract).
+        if (isMalformedCapabilityDrop(raw)) {
+          setReloadError('That capability drag is malformed \u2014 reload the tab and drag the tile again')
+        }
+        return
+      }
       // the door's ADD_KEYS carry no `title` — stages are named by
       // their card (benchRow: title ?? card ?? id); the payload's
       // title is diagnostics, not a stage field.

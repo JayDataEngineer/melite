@@ -523,7 +523,16 @@ async function runSingle(
   if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
   const defs = await loadCardDefs()
   const resolved = resolveSpecKey(card, defs, boardedMap(defs))
-  const cardDef = resolved === null ? undefined : defs.get(resolved.card)
+  // M7 (the fallback audit): an unknown card used to degrade to
+  // `cardDef === undefined`, the tool still birthed a draft with the
+  // bogus card id, and the refusal surfaced only at the run door —
+  // the bench polluted with an uncomposable stage first. The law is
+  // the tool's own comment above ("surfaces the arm's refusal
+  // voices"): refuse HERE, before anything is written.
+  if (resolved === null) {
+    return { mode: 'card', target: card, error: `unknown card '${card}' — name a registered card or family (melite_discover lists them); nothing was written to the bench` }
+  }
+  const cardDef = defs.get(resolved.card)
   const normalizedBag = normalizeJsonArrayParams(bag, cardDef?.jsonArrayParams)
   // CARD BIRTH LAW (2026-09-13, the hour-6 form regression): a card
   // tool's draft is born with THE CARD ID AS ITS INTENT and one

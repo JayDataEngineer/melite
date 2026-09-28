@@ -84,18 +84,24 @@ export interface FlowCardsProps {
 export function parseCardsBlock(block: ToolCallBlockView): {
   draftId: string | null
   model: string | null
+  malformedArgs: boolean
   settled: boolean
   isError: boolean
 } {
   const settled = block.kind === 'tool-result'
   const argsRaw = settled ? (block.call?.argsRaw ?? '') : (block.argsRaw ?? '')
   let model: string | null = null
+  let malformedArgs = false
   if (argsRaw !== '') {
     try {
       const args = JSON.parse(argsRaw) as Record<string, unknown>
       if (typeof args['model'] === 'string' && args['model'] !== '') model = args['model']
     } catch {
-      // malformed args render header-less; never throws
+      // L10 (the fallback audit): malformed args used to render
+      // header-less — indistinguishable from a model-less call. The
+      // flag carries the defect to the header, which badges it
+      // visibly; the render still never throws.
+      malformedArgs = true
     }
   }
   let draftId: string | null = null
@@ -123,7 +129,7 @@ export function parseCardsBlock(block: ToolCallBlockView): {
       }
     }
   }
-  return { draftId, model, settled, isError: block.isError === true }
+  return { draftId, model, malformedArgs, settled, isError: block.isError === true }
 }
 
 /** Draft doc + live run status, fetched and polled (all doors in draft.ts). */
@@ -256,6 +262,9 @@ export function FlowCards({ block, openSurface }: FlowCardsProps) {
       <div className={css.head}>
         <span className={css.badge}>melite</span>
         <span className={css.model}>{doc?.intent ?? parsed.model ?? 'flow'}</span>
+        {/* L10: a corrupt args body badges — never a header-less
+            render that reads as a model-less call */}
+        {parsed.malformedArgs && <span className={css.state} data-state="error">args unparseable — corrupted call record</span>}
         {error !== null && <span className={css.state} data-state="error" role="button" tabIndex={0} onClick={refresh} onKeyDown={refresh}>{error} · retry</span>}
       </div>
       {doc === null && error === null && <div className={css.load}>cards…</div>}

@@ -151,7 +151,12 @@ export function spawnRows(
   let sks: string[];
   try {
     sks = readdirSync(join(cdir, "agents", "spawn")).sort();
-  } catch {
+  } catch (e) {
+    // M6: ENOENT is the normal no-spawn dir; any other read failure
+    // names itself — the spawn surface must not vanish silently.
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`skill rows: spawn dir unreadable (${join(cdir, "agents", "spawn")}): ${String(e)}`);
+    }
     return out;
   }
   for (const sk of sks) {
@@ -177,7 +182,13 @@ export function engineDirs(enginesRoot: string): string[] {
   let tops: string[];
   try {
     tops = readdirSync(enginesRoot).sort();
-  } catch {
+  } catch (e) {
+    // M6: ENOENT is the normal no-engines tree; any other read
+    // failure names itself — the whole skill walk must not degrade
+    // to empty invisibly.
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`skill rows: engines root unreadable (${enginesRoot}): ${String(e)}`);
+    }
     return [];
   }
   const out: string[] = [];

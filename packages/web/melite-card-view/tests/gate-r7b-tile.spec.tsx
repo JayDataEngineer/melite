@@ -219,3 +219,25 @@ describe("the card-drop guards — ghosts and self-drops never reorder", () => {
     expect(spies.onReorderDrop).not.toHaveBeenCalled();
   });
 });
+
+// L9 (the fallback audit): the capability parser's THREE worlds —
+// foreign (empty), corrupt (present but unparseable/shape-wrong),
+// valid. `null` alone once covered foreign+corrupt and the corrupt
+// world was swallowed silent at the drop target.
+describe("parseCapabilityDrop — the three worlds (L9)", () => {
+  test("empty is foreign (silent), corrupt bodies are malformed, valid parses", async () => {
+    const { parseCapabilityDrop, isMalformedCapabilityDrop } = await import("../src/client/dnd-payloads.ts");
+    // foreign: empty data, both probes quiet
+    expect(parseCapabilityDrop("")).toBe(null);
+    expect(isMalformedCapabilityDrop("")).toBe(false);
+    // corrupt world 1: unparseable JSON
+    expect(parseCapabilityDrop("{not json")).toBe(null);
+    expect(isMalformedCapabilityDrop("{not json")).toBe(true);
+    // corrupt world 2: parses but the shape is wrong
+    expect(parseCapabilityDrop(JSON.stringify({ service: "svc" }))).toBe(null);
+    expect(isMalformedCapabilityDrop(JSON.stringify({ service: "svc" }))).toBe(true);
+    // valid: parses, not malformed
+    expect(parseCapabilityDrop(JSON.stringify({ service: "svc", title: "Svc" }))).toEqual({ service: "svc", title: "Svc" });
+    expect(isMalformedCapabilityDrop(JSON.stringify({ service: "svc", title: "Svc" }))).toBe(false);
+  });
+});

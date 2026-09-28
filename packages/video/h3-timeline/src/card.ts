@@ -1195,6 +1195,16 @@ function renderH3Window(
   assertGridLength(p.length, `h3-timeline window ${k}`)
   const isT4r = family === 't4r'
   const isChain = family === 't4_chain'
+  // (M5, the fallback audit — judged LAWFUL and now documented: this
+  // is the fresh-card admission, not a fallback crime. The window
+  // shape's text face is p.prompt (declared required=True, "optional
+  // at parse"); the FRESH-PRESS law (operator 2026-09-17, pinned in
+  // card.spec.ts "a fresh press composes") admits an absent/blank
+  // prompt as empty conditioning — the fresh-card one-shot document
+  // renders. The film path refuses textless calls instead (the
+  // no-fallbacks law at the calls walk); the single-call LIFT may
+  // lawfully write p.prompt from call text because in the one-window
+  // shape p.prompt IS the text owner — never a substitute.)
   const prompt = (p.prompt ?? '') as string
   // card knob first (image), renderer alias second.
   const guideImage = (p.image ?? p.image_name ?? '') as string

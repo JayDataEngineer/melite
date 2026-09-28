@@ -68,6 +68,24 @@ describe("the h3-timeline compose gate", () => {
     assert.ok(Object.keys(out).length > 0, "the fresh-card document composes real nodes");
   });
 
+  it("M5: the fresh-card admission — a blank prompt renders EMPTY conditioning, never an error", () => {
+    // the fallback audit's M5 verdict, pinned: `p.prompt ?? ''` at
+    // the window render is the deliberate fresh-card admission (the
+    // operator's 2026-09-17 fresh-press law), NOT a fallback crime.
+    // The asymmetry with films is the law: a FILM's textless call
+    // refuses (card-gap.spec pins it); the one-window shape's text
+    // owner is p.prompt itself, and absent = empty conditioning.
+    const g = new GraphBuilder();
+    def.compose(def.schema({ calls: [{ start_frame: 0, end_frame: 90 }] }), model, g, "run_textless_single");
+    const out = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    assert.ok(Object.keys(out).length > 0, "the textless single-call window composes (the admission)");
+    const carriers = Object.values(out).filter((n) => n.inputs["prompt"] !== undefined);
+    assert.ok(carriers.length > 0, "the graph carries a prompt input");
+    for (const n of carriers) {
+      assert.equal(n.inputs["prompt"], "", "absent prompt = empty conditioning — never coerced, never refused");
+    }
+  });
+
   it("one text call composes the film rail (t4_open derivation)", () => {
     const g = new GraphBuilder();
     def.compose(

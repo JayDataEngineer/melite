@@ -245,6 +245,26 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(startBody.draft_id, 'd9')
   })
 
+  // M7 (the fallback audit): an unknown card refused at the TOOL —
+  // never a draft birthed with the bogus id, never a run-door
+  // refusal after the bench is polluted.
+  test('an UNKNOWN card refuses at the tool — the bench is never polluted (M7)', async () => {
+    const seen = cardMocks()
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute(
+      { card: 'no-such-card', model: 'new-model-1', prompt: 'hi' },
+      fakeExec(AbortSignal.timeout(2000)),
+    ) as Record<string, unknown>
+    assert.match(String(out.error), /unknown card 'no-such-card'/)
+    assert.match(String(out.error), /nothing was written to the bench/)
+    assert.equal(out.mode, 'card')
+    assert.equal(
+      seen.calls.some((c) => c.url.endsWith('/v1/bench/ensure')),
+      false,
+      'no bench/ensure call — the refusal precedes every write',
+    )
+  })
+
   // THE WIRED-BENCH CONTRACT (2026-10-10, the operator's a-priori
   // order): a single-card body against a bench carrying wiring
   // composes ONE stage with inputNames: {} — the wires would be
@@ -840,7 +860,7 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
   test('presentCall names card | flow | adhoc | ? (junk renders generic)', () => {
     const tool = meliteFlow((async () => ({})) as EstateRequest)
     const pc = (a: unknown) => tool.presentCall!(a as never)! // the faces never return undefined for these args
-    assert.equal(pc({ card: 'img' }).title, 'Run img')
+    assert.equal(pc({ card: 'image-gen' }).title, 'Run image-gen')
     assert.equal(pc({ card: '', flow: 'foo' }).title, 'Run foo')
     assert.equal(pc({ flow: 'foo' }).title, 'Run foo')
     assert.equal(pc({ card: 5, flow: 'f' }).title, 'Run f')
@@ -871,10 +891,10 @@ describe('melite_flow presentCall/render/meta — the faces', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'c', model: 'm1' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm1' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r9')
-    assert.deepEqual(tool.output.presentationMeta!({ card: 'c', model: 'm1' }, out as never), {
-      mode: 'card', target: 'c', model: 'm1', draft_id: 'd9', run_id: 'r9', status: 'queued',
+    assert.deepEqual(tool.output.presentationMeta!({ card: 'image-gen', model: 'm1' }, out as never), {
+      mode: 'card', target: 'image-gen', model: 'm1', draft_id: 'd9', run_id: 'r9', status: 'queued',
     })
     assert.deepEqual(tool.output.presentationMeta!({} as never, {} as never), { mode: '?', target: '?' })
     // a nullish frozen value (legacy sessions) falls back the same way
@@ -1098,9 +1118,9 @@ describe('melite_flow card — compose inside', () => {
   test('a missing model refuses before any HTTP', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'card')
-    assert.equal(out.target, 'img')
+    assert.equal(out.target, 'image-gen')
     assert.ok(String(out.error).includes('model is required'), String(out.error))
     assert.equal(seen.calls.length, 0)
   })
@@ -1108,10 +1128,10 @@ describe('melite_flow card — compose inside', () => {
   test('no prompt anywhere: the intent falls back to the card', async () => {
     const seen = mockFetch([ensureOk('d3'), benchAlive, startOk('r3')])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, 'r3')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init)
-    assert.equal(ensureBody.intent, 'img')
+    assert.equal(ensureBody.intent, 'image-gen')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     assert.equal(startBody.model, 'm')
     assert.equal('prompt' in startBody, false)
@@ -1126,12 +1146,12 @@ describe('melite_flow card — compose inside', () => {
     const tool = meliteFlow(seen.request)
     const long = 'p'.repeat(100)
     const out = await tool.execute(
-      { card: 'img', model: 'm', prompt: long, params: { seed: 1 } },
+      { card: 'image-gen', model: 'm', prompt: long, params: { seed: 1 } },
       fakeExec(AbortSignal.timeout(2000)),
     ) as Record<string, unknown>
     assert.equal(out.run_id, 'r4')
     const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
-    assert.equal(ensureBody.intent, 'img')
+    assert.equal(ensureBody.intent, 'image-gen')
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
     assert.equal(startBody.prompt, long)
     assert.equal(startBody.seed, 1)
@@ -1141,7 +1161,7 @@ describe('melite_flow card — compose inside', () => {
     const seen = mockFetch([ensureOk('d5'), benchAlive, startOk('r5')])
     const tool = meliteFlow(seen.request)
     await tool.execute(
-      { card: 'img', model: 'm', prompt: '', params: { prompt: 'p2' } },
+      { card: 'image-gen', model: 'm', prompt: '', params: { prompt: 'p2' } },
       fakeExec(AbortSignal.timeout(2000)),
     )
     const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
@@ -1157,9 +1177,9 @@ describe('melite_flow card — compose inside', () => {
       benchAlive,
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.mode, 'card')
-    assert.equal(out.target, 'img')
+    assert.equal(out.target, 'image-gen')
     assert.ok(String(out.error).includes('bench moved'), String(out.error))
     assert.equal(out.draft_id, undefined)
     assert.equal(seen.calls.some((c) => c.url.endsWith('/v1/flows/start')), false)
@@ -1174,7 +1194,7 @@ describe('melite_flow card — compose inside', () => {
       ensureOk('d6'),
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'wire-down')
   })
 
@@ -1187,7 +1207,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    await assert.rejects(tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))), /socket hangup/)
+    await assert.rejects(tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))), /socket hangup/)
   })
 
   test('a messageless remote start refusal values the queue default', async () => {
@@ -1199,7 +1219,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.error, 'queue refused the start')
     assert.equal(out.mode, 'card')
   })
@@ -1213,7 +1233,7 @@ describe('melite_flow card — compose inside', () => {
       },
     ])
     const tool = meliteFlow(seen.request)
-    const out = await tool.execute({ card: 'img', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    const out = await tool.execute({ card: 'image-gen', model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
     assert.equal(out.run_id, '')
     assert.equal(out.status, 'queued')
     assert.equal(out.draft_id, 'd9')
@@ -1289,17 +1309,21 @@ describe('melite_flow card — compose inside', () => {
     })
   })
 
-  test('an 80+ char card id truncates the bench intent (the receipt stays readable)', async () => {
+  test('an 80+ char card id is REFUSED at the tool (M7) — unknown ids never reach the bench', async () => {
+    // (M7 rewrote this arm: unknown card ids refuse before any write,
+    // so the truncation no longer has a live producer — registry ids
+    // are short. The defensive slice stays in the source for the day
+    // a real id runs long; the LAW here is the refusal.)
     const seen = mockFetch([ensureOk('d_long'), benchAlive, startOk('r_long')])
     const tool = meliteFlow(seen.request)
     const card = 'c'.repeat(81)
     const out = await tool.execute({ card, model: 'm' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.equal(out.run_id, 'r_long')
-    assert.equal(out.draft_id, 'd_long')
-    const ensureBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/bench/ensure'))!.init) as { intent: string }
-    assert.equal(ensureBody.intent, 'c'.repeat(77) + '…')
-    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
-    assert.equal(startBody.model, 'm')
+    assert.match(String(out.error), /unknown card/)
+    assert.equal(
+      seen.calls.some((c) => c.url.endsWith('/v1/bench/ensure')),
+      false,
+      'the long unknown id refuses before the bench write',
+    )
   })
 })
 

@@ -533,9 +533,7 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
   const src: string = edge.stage + "." + edge.output;
   let kind = "";
   for (const st of flow.stages) {
-    const base: RegistryStage = st.fromFlow !== null
-      ? resolveLink(st) ?? st
-      : st;
+    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st) : st;
     if (base.id === edge.stage) {
       kind = base.outputs[edge.output] ?? base.cardIo[edge.output] ?? "";
     }
@@ -543,22 +541,40 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
   return "stage " + src + (kind !== "" ? " (" + kind + ")" : "");
 }
 
-function resolveLink(st: RegistryStage): RegistryStage | null {
-  /* v8 ignore next -- both callers guard st.fromFlow !== null before
-     the call: the fence never fires (2026-09-12) */
-  if (st.fromFlow === null) return null;
+/** L8 (the fallback audit, 2026-09-28): a dangling fromFlow link used
+ *  to fall back to the LINKING row (`?? st`) — the rendered skill body
+ *  then described the link's own engine/card as if it were the linked
+ *  base, lying to the agent that reads it. The REGISTRY is code: a
+ *  link that cannot resolve is an authoring bug and REFUSES LOUD,
+ *  naming the flow and stage. (Both callers guard fromFlow !== null
+ *  before the call; the fence throw below is the rim's contract.) */
+function resolveLink(st: RegistryStage): RegistryStage {
+  if (st.fromFlow === null) {
+    throw new Error("resolveLink: stage '" + st.id + "' carries no fromFlow link (caller guard missing)");
+  }
   const link: RegistryFromFlow = st.fromFlow;
   const src: RegistryFlow | undefined = REGISTRY[link.flow];
-  if (src === undefined) return null;
-  return src.stages.find((s: RegistryStage): boolean => s.id === link.stage) ??
-    null;
+  if (src === undefined) {
+    throw new Error(
+      "registry: stage '" + st.id + "' links from unknown flow '" + link.flow +
+      "' (known flows: " + Object.keys(REGISTRY).sort().join(", ") + ")",
+    );
+  }
+  const base: RegistryStage | undefined = src.stages.find((s: RegistryStage): boolean => s.id === link.stage);
+  if (base === undefined) {
+    throw new Error(
+      "registry: stage '" + st.id + "' links from unknown stage '" + link.flow + "/" + link.stage +
+      "' (known stages: " + src.stages.map((s: RegistryStage): string => s.id).sort().join(", ") + ")",
+    );
+  }
+  return base;
 }
 
 /** Render one registry flow as its skill-body text. */
 export function registrySkillBody(flow: RegistryFlow): string {
   const lines: string[] = ["# flow " + flow.id, "", flow.description, "", "## stages"];
   for (const st of flow.stages) {
-    const base: RegistryStage = st.fromFlow !== null ? (resolveLink(st) ?? st) : st;
+    const base: RegistryStage = st.fromFlow !== null ? resolveLink(st) : st;
     let head = "- " + st.id + " (";
     head += st.fromFlow !== null
       ? "from " + st.fromFlow.flow + "/" + st.fromFlow.stage

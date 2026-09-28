@@ -215,8 +215,8 @@ describe("registryInitialsError", () => {
   });
 });
 
-describe("registrySkillBody dangling links", () => {
-  it("renders unknown stages without kinds (resolveLink null arms)", () => {
+describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
+  it("a link to an unknown flow THROWS named (never renders the linking row as its own base)", () => {
     const plain = (
       id: string,
       description: string,
@@ -233,33 +233,36 @@ describe("registrySkillBody dangling links", () => {
       skipWhen: null,
       fromFlow: null,
     });
-    const fake: RegistryFlow = {
+    const ghostFlow: RegistryFlow = {
       id: "fake",
       description: "d",
       stages: [
         plain("z", ""),
-        {
-          ...plain("b", "bee"),
-          inputs: {
-            inp: { stage: "ghost-stage", output: "o" },
-            vanishing: { stage: "z", output: "gone" },
-          },
-          fromFlow: { flow: "ghost-flow", stage: "x" },
-        },
-        {
-          ...plain("c", "cee"),
-          fromFlow: { flow: "character", stage: "ghost-stage" },
-        },
+        { ...plain("b", "bee"), fromFlow: { flow: "ghost-flow", stage: "x" } },
       ],
       initialValidators: {},
       tool: null,
       skillRefs: [],
     };
-    const text = registrySkillBody(fake);
+    assert.throws(
+      () => registrySkillBody(ghostFlow),
+      /stage 'b' links from unknown flow 'ghost-flow' \(known flows: /,
+    );
+    // and a link to an unknown STAGE of a known flow throws named too
+    const ghostStage: RegistryFlow = {
+      ...ghostFlow,
+      stages: [
+        plain("z", ""),
+        { ...plain("c", "cee"), fromFlow: { flow: "character", stage: "ghost-stage" } },
+      ],
+    };
+    assert.throws(
+      () => registrySkillBody(ghostStage),
+      /stage 'c' links from unknown stage 'character\/ghost-stage' \(known stages: /,
+    );
+    // a plain (unlinked) flow still renders its engine line verbatim
+    const text = registrySkillBody({ ...ghostFlow, stages: [plain("z", "")] });
     assert.ok(text.includes("- z (comfyui)\n"));
-    assert.ok(text.includes("input inp: stage ghost-stage.o"));
-    assert.ok(text.includes("input vanishing: stage z.gone"));
-    assert.ok(text.includes("from ghost-flow/x"));
   });
 });
 

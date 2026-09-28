@@ -100,14 +100,36 @@ describe("cardSkillDocs", () => {
     }
   });
 
-  it("unreadable docs skip (never refuse the bundle)", () => {
+  it("unreadable docs skip but are NAMED (M6 — never a silent narrow)", () => {
     const dir = mkdtempSync(join(tmpdir(), "agents-unread-"));
+    const errors: string[] = [];
+    const orig = console.error;
+    console.error = (...a: unknown[]) => { errors.push(a.join(" ")); };
     try {
       const agents = join(dir, "src", "agents");
-      mkdirSync(join(agents, "skip.md"), { recursive: true });
+      mkdirSync(join(agents, "skip.md"), { recursive: true }); // EISDIR stand-in
       writeFileSync(join(agents, "keep.md"), "k");
       assert.deepEqual(cardSkillDocs(dir).map((d) => d.path), ["src/agents/keep.md"]);
+      assert.equal(errors.length, 1, "the unreadable doc is named");
+      assert.match(errors[0]!, /card skill doc unreadable/);
+      assert.match(errors[0]!, /skip\.md/);
+      // the normal no-agents card stays SILENT (ENOENT is not a defect)
+      errors.length = 0;
+      assert.deepEqual(cardSkillDocs(join(tmpdir(), "no-such-dir-zzz")), []);
+      assert.equal(errors.length, 0);
+      // a non-ENOENT failure on the agents DIR itself is named too
+      const dir2 = mkdtempSync(join(tmpdir(), "agents-notdir-"));
+      try {
+        mkdirSync(join(dir2, "src"), { recursive: true });
+        writeFileSync(join(dir2, "src", "agents"), "not a directory");
+        assert.deepEqual(cardSkillDocs(dir2), []);
+        assert.equal(errors.length, 1);
+        assert.match(errors[0]!, /card agents dir unreadable/);
+      } finally {
+        rmSync(dir2, { recursive: true, force: true });
+      }
     } finally {
+      console.error = orig;
       rmSync(dir, { recursive: true, force: true });
     }
   });

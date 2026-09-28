@@ -27,8 +27,18 @@ describe("parseCardsBlock — the model header", () => {
   test("a settled call without a head has no model (never a throw)", () => {
     expect(parseCardsBlock(settledBlock()).model).toBeNull();
   });
-  test("malformed args render header-less (never a throw)", () => {
-    expect(parseCardsBlock(callBlock({ argsRaw: "{oops" })).model).toBeNull();
+  test("malformed args badge the defect — the flag carries to the header (L10)", () => {
+    // model stays null (nothing to name), but the corruption is no
+    // longer indistinguishable from a model-less call: the flag
+    // rides to the render, which badges "args unparseable".
+    const parsed = parseCardsBlock(callBlock({ argsRaw: "{oops" }));
+    expect(parsed.model).toBeNull();
+    expect(parsed.malformedArgs).toBe(true);
+  });
+  test("parseable args never flag (the badge is corrupt-body-only)", () => {
+    expect(parseCardsBlock(callBlock({ argsRaw: JSON.stringify({ seed: 1 }) })).malformedArgs).toBe(false);
+    expect(parseCardsBlock(callBlock({ argsRaw: "" })).malformedArgs).toBe(false);
+    expect(parseCardsBlock(callBlock({ argsRaw: JSON.stringify({ model: "krea-2" }) })).malformedArgs).toBe(false);
   });
   test("a missing model key renders header-less", () => {
     expect(parseCardsBlock(callBlock({ argsRaw: JSON.stringify({ seed: 1 }) })).model).toBeNull();

@@ -72,7 +72,15 @@ export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: strin
   let files: string[] = [];
   try {
     files = readdirSync(agents).filter((f): boolean => f.endsWith(".md"));
-  } catch {
+  } catch (e) {
+    // M6 (the fallback audit): ENOENT is the normal no-agents card —
+    // most cards ship none. Any OTHER read failure is a real defect
+    // and is NAMED (the bundle must not silently narrow the agent's
+    // constraints); the bundle still serves (a disclose read never
+    // refuses the door), but the degrade is visible in the log.
+    if ((e as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error(`disclose: card agents dir unreadable (${agents}): ${String(e)}`);
+    }
     return [];
   }
   files.sort((a, b): number => {
@@ -91,8 +99,10 @@ export function cardSkillDocs(pkgDir: string): Array<{ path: string; text: strin
       const text: string = readFileSync(join(agents, f), "utf8").slice(0, budget);
       budget -= text.length;
       out.push({ path: "src/agents/" + f, text });
-    } catch {
-      // unreadable — skip, never refuse the bundle
+    } catch (e) {
+      // M6: an unreadable skill doc is named, never skipped silent —
+      // the agent's constraints must not narrow invisibly.
+      console.error(`disclose: card skill doc unreadable (${join(agents, f)}): ${String(e)}`);
     }
   }
   return out;
@@ -222,21 +232,20 @@ export function skillLinesForCard(repo: string, cardId: string): Array<Record<st
 export function skillLinesForFamilies(repo: string, fams: readonly string[]): Array<Record<string, unknown>> {
   const out: Array<Record<string, unknown>> = [];
   const seen = new Set<string>();
-  let engines: string[];
-  try {
-    engines = engineDirs(join(repo, "packages", "engines"));
-  } catch {
-    /* engineDirs returns [] instead of throwing (missing roots
-       read empty) */
-    return out;
-  }
+  // (M6: engineDirs never throws — missing roots read empty — so the
+  // old try/catch here was a dead arm; removed. If it ever DOES
+  // throw, the error propagates loud: fail-closed is the law.)
+  const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   // walk once, bucket per family — the bundle emits boarded order
   const perFam = new Map<string, Array<{ id: string; line: Record<string, unknown>; entrance: boolean }>>();
   for (const engine of engines) {
     let rows;
     try {
       rows = modelRows(engine);
-    } catch {
+    } catch (e) {
+      // M6: an engine whose model rows cannot be read vanishes from
+      // the skill walk — that degrade is NAMED, never silent.
+      console.error(`disclose: model rows unreadable (${engine}): ${String(e)}`);
       continue;
     }
     for (const doc of rows) {

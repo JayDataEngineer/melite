@@ -183,6 +183,24 @@ describe("the grid's foreign voices — capability, asset, file", () => {
     expect(await screen.findByText("add refused", {}, { timeout: 4000 })).toBeTruthy();
   });
 
+  // L9 (the fallback audit): a PRESENT-but-corrupt capability body
+  // badges — the drag was ours; a silent no-op reads as breakage.
+  // Foreign/empty data stays quiet (the fall-through contract).
+  test("a malformed capability drop badges and never writes (L9)", async () => {
+    mountView(three());
+    await screen.findByText("rev 1");
+    // corrupt body: the MIME is ours, the payload is not JSON
+    fireEvent.drop(grid(), {
+      dataTransfer: {
+        types: ["application/tech-noir-capability"],
+        getData: () => "{not json",
+        setData: () => {}, files: [],
+      },
+    });
+    expect(await screen.findByText(/malformed/, {}, { timeout: 4000 })).toBeTruthy();
+    expect(calls().some((p) => p.method === "bench/add-stage")).toBe(false);
+  });
+
   test("a foreign asset-add throw voices 'add refused' (never a partial stage)", async () => {
     mountView(three(), { throws: [{ method: "bench/add-stage", value: "kablam" }] });
     await screen.findByText("rev 1");
