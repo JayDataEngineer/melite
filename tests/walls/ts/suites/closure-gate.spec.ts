@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { SELF_NAMED_FAMILIES, STALE_TAB_VOCABULARY } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+import { SELF_NAMED_FAMILIES } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+import { STALE_TAB_VOCABULARY } from "../../helpers/stale-tab-vocabulary.ts";
 import { assertSchemaAcceptsMinimalRows } from "../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";

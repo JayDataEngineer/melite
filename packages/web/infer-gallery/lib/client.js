@@ -40437,6 +40437,40 @@ void main() {
 			return out;
 		}
 		/**
+		* THE RUN ID GRAMMAR (2026-10-10, the bypass audit's MEDIUM-2: it was
+		* spelled in five modules — the media route, the source echo, the
+		* gallery, and two agent tools — with no pin, so a change to the mint
+		* would have some readers accept and some refuse, silently).
+		* A run id is `run-<hex>-<token>`; the media route's parse and every
+		* reader that keys a path by it use this one.
+		*/
+		/** THE SESSION GRAMMAR — the bench key (the identity law, 2026-09-28).
+		*
+		*  This grammar was spelled in FOUR places: the drafts owner, two
+		*  inline copies in melite-construct (the agent's bench key), and
+		*  the browser's own. The grammar wall pinned the server and two
+		*  clients, so tightening ONE copy left the whole suite green — a
+		*  copy the wall does not name is a copy the wall does not hold.
+		*
+		*  The contract floor owns it now, and both sides import it: the
+		*  drafts package re-exports it for its own callers, the agent tool
+		*  reads it, and the wall bans the inline spelling everywhere else.
+		*  A bench key is an ADDRESS (it names a stored document), and an
+		*  address has one grammar. */
+		/** THE RESTORED-PROVENANCE SPELLING (the identity law, 2026-09-28).
+		*
+		*  "restored" is the coordinate the model-repair law reads: a row
+		*  that came off an archive is exempt from the live admission, and a
+		*  live composer's typo of it is refused. It was WRITTEN as a bare
+		*  literal in five places (the drafts reader, the snapshot restore,
+		*  and three client restore arms) while the estate's door already
+		*  carried a named spelling — a door and its callers reading the same
+		*  coordinate from two sources. The contract floor owns it now, and
+		*  the door re-exports it, so every reader and every writer agree by
+		*  construction. */
+		const RESTORED_PROVENANCE_SPELLING = "restored";
+		const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+		/**
 		* THE CARDS WHOSE OWN ID IS ALSO A FAMILY (2026-10-10, the work
 		* audit's R5). `anny` is the original: the card boards the `anny`
 		* family, and its compose declares `requiresModel: false` (its
@@ -40589,9 +40623,8 @@ void main() {
 		/** One bench session key — 'main' only for unattributed seats
 		*  (stroke 44: the bench belongs to the conversation; the gallery's
 		*  load writes the ACTIVE session's bench, never a stranger's). */
-		const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 		function benchSessionOf(id) {
-			return typeof id === "string" && BENCH_SESSION_RE.test(id) ? id : "main";
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
 		/** The bench tab's address for one session (cross-plugin contract,
 		* the estate-artifact pattern: client bundles cannot import across
@@ -40751,10 +40784,11 @@ void main() {
 						const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 						for (const st of bsStages) {
 							stripKeys(st, RESTORE_STRIP_KEYS);
+							const stCard = st["card"];
 							const stParams = st["params"];
-							if (typeof st["card"] === "string" && typeof stParams === "object" && stParams !== null && stParams["model"] === st["card"]) delete stParams["model"];
+							if (typeof stCard === "string" && stCard !== "" && typeof stParams === "object" && stParams !== null && stParams["model"] === stCard && !SELF_NAMED_FAMILIES.has(stCard)) delete stParams["model"];
 							if (ranCard !== void 0 && st["card"] === ranCard && result !== void 0) st["result"] = result;
-							st["provenance"] = "restored";
+							st["provenance"] = RESTORED_PROVENANCE_SPELLING;
 						}
 						await loadStagesOntoBench(bsStages, (bs.intent !== "" ? bs.intent : "restored run").slice(0, 77), deps);
 						return;
@@ -40770,7 +40804,7 @@ void main() {
 					const params = { ...parsedCard.value.params };
 					delete params["draft_id"];
 					delete params["test"];
-					if (params["model"] === card) delete params["model"];
+					if (params["model"] === card && !SELF_NAMED_FAMILIES.has(card)) delete params["model"];
 					const intentSrc = typeof params["prompt"] === "string" ? params["prompt"] : "restored run";
 					const result = resultOfRun(flow, String(side["run_id"] ?? ""));
 					const restoredCardRow = {
@@ -40779,7 +40813,7 @@ void main() {
 							card,
 							params
 						}, 0),
-						provenance: "restored"
+						provenance: RESTORED_PROVENANCE_SPELLING
 					};
 					if (result !== void 0) restoredCardRow["result"] = result;
 					await loadStagesOntoBench([restoredCardRow], intentSrc.slice(0, 77), deps);
@@ -40796,7 +40830,7 @@ void main() {
 							id: "s_0",
 							params
 						}, 0),
-						provenance: "restored"
+						provenance: RESTORED_PROVENANCE_SPELLING
 					};
 					if (result !== void 0) restoredBareRow["result"] = result;
 					await loadStagesOntoBench([restoredBareRow], "restored run", deps);
@@ -41964,4 +41998,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a460554b80d2fbc57768c95c4da0d8eadd391122";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f284c708a7835c52930fe1232b65af7eadadd6d1";

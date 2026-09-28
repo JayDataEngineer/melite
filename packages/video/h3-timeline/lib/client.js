@@ -1470,7 +1470,7 @@ window.__ModuleLoader__.load({
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, STALE_TAB_VOCABULARY, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -1522,12 +1522,23 @@ window.__ModuleLoader__.load({
 				"skip_when",
 				"timeout_s"
 			];
+			RESTORED_PROVENANCE_SPELLING = "restored";
+			STALE_TAB_VOCABULARY = [
+				/STALE TAB/i,
+				/stale tab/i,
+				/cards-stale-build/,
+				/staleBuild/,
+				/buildVerdict/
+			];
+			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
 			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
@@ -1543,6 +1554,7 @@ window.__ModuleLoader__.load({
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
 			Provenance: () => Provenance,
 			RELATION_WORDS: () => RELATION_WORDS,
+			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
@@ -1550,7 +1562,9 @@ window.__ModuleLoader__.load({
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			STALE_TAB_VOCABULARY: () => STALE_TAB_VOCABULARY,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -52876,4 +52890,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1d0fabb660e3177b4503d5cb1620d8f58e0cecb4";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="77e328180bb8f139877dfc5d8ec3154a782b0d58";

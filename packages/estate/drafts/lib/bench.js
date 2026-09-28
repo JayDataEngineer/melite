@@ -22,7 +22,12 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
  * the rule was unreadable from the outside, so the wall sampled a
  * neighbour. The export is the single derivation the clients' mirrors
  * and the wall both pin against. */
-export const SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+/** THE CONTRACT'S GRAMMAR, RE-EXPORTED (the identity law, 2026-09-28):
+ *  the bench key is an address and has ONE grammar — the contract
+ *  floor's. This copy was the owner; the floor is now. */
+import { BENCH_DRAFT_RE, RESTORED_PROVENANCE_SPELLING, SESSION_RE } from "@melite/contracts/benchStage";
+import { RESTORED_PROVENANCE } from "./remote.js";
+export { SESSION_RE };
 function benchIdOf(session) {
     return "bench-" + session;
 }
@@ -114,8 +119,19 @@ export function normalizeStages(stagesIn, author) {
         // family) refused at its next admission with no repair — the
         // one job the coordinate exists for. The author's own rows are
         // stamped as before; a restored row keeps its mark.
-        if (row["provenance"] !== "restored")
+        // THE COORDINATE HAS TWO SPELLINGS, AND BOTH ARE KEPT (the
+        // walls audit, 2026-09-28, found this by fixing the birth arm
+        // to judge its stored rows: the stamp respected the WIRE string
+        // and silently overwrote the in-process SYMBOL, so a
+        // server-armed restore lost its mark on the very path that
+        // exists to carry it). A coordinate with one spelling on the
+        // wire and another in memory is two facts wearing one name —
+        // the stamp respects both, and the door that mints the symbol
+        // is the only producer of it.
+        if (row["provenance"] !== RESTORED_PROVENANCE_SPELLING
+            && row["provenance"] !== RESTORED_PROVENANCE) {
             row["provenance"] = author;
+        }
         return row;
     });
 }
@@ -192,7 +208,18 @@ export async function ensureBench(drafts, body, admit) {
     const rec = drafts.table("docs").get(draftId);
     if (rec === undefined) {
         const stagesIn = Array.isArray(body["stages"]) ? body["stages"] : [];
-        admitStages(admit, stagesIn);
+        // THE JUDGE SEES THE STORED ROW — BIRTH TOO (the walls audit,
+        // 2026-09-28, found live: the birth arm called admitStages on
+        // the RAW body and then stored the NORMALIZED rows, so the
+        // "shaped first, then judged" comment above was false for the
+        // birth path. Two different objects were in play: a raw body row
+        // was judged, and a normalized one was stored — the exact law the
+        // load arm had already been fixed for. The birth arm now judges
+        // `born`, the very rows it is about to put on disk.
+        const born = normalizeStages(stagesIn, author);
+        for (const row of born)
+            stripKeys(row, BIRTH_STRIP_KEYS);
+        admitStages(admit, born);
         // A BENCH IS BORN CLEAN OF ARCHIVES (the cross-bench history
         // leak, 2026-09-23 — live proof bench-session-2bd2a61f): the
         // wand restores onto fresh sessions carrying stage rows from a
@@ -202,9 +229,6 @@ export async function ensureBench(drafts, body, admit) {
         // birth memory is `result` — the wand's preview stamp for the
         // ran card. The LOAD arm keeps the stage memory law whole
         // (same-id carry + fill-never-clobber).
-        const born = normalizeStages(stagesIn, author);
-        for (const row of born)
-            stripKeys(row, BIRTH_STRIP_KEYS);
         admitWiringList(born, session);
         const doc = {
             draft_id: draftId,
@@ -535,7 +559,19 @@ export async function patchBench(drafts, session, body, admit) {
         // on disk. The merge strips before judging AND before storing:
         // one row, one view.
         const stored = strippedForAdmission(typeof st["card"] === "string" ? st["card"] : "", cur);
-        admitStage(admit, st["card"], stored, undefined);
+        // THE COMPOUND IS JUDGED BY ITS MEMBERS HERE TOO (the walls
+        // audit, 2026-09-28, found this LIVE: patching a stage that
+        // belongs to a compound judged the COMPOUND ROW as a whole, and
+        // the literal "group" — a card no model board knows — reached the
+        // board and refused the operator's own patch. A group's patch
+        // is a patch of a MEMBER, so the members cross the door and the
+        // compound never does.)
+        if (st["card"] === GROUP_CARD && Array.isArray(st["children"])) {
+            admitRestored(admit, st, isRecord(st["params"]) ? st["params"] : {});
+        }
+        else {
+            admitStage(admit, st["card"], stored, undefined);
+        }
         // THE WIRING ADMISSION (phantom-wire cure): a params patch can
         // orphan a spell (drop the $image binding while the wire stays)
         // or strand a wire (introduce $image with no channel) — the
@@ -1458,7 +1494,7 @@ export function notifyBenchChange(session) {
  *  remote.ts — outside this module; it fires this with the session
  *  parsed from the bench-shaped draft id). */
 export function notifyBenchDocWrite(draftId) {
-    const m = /^bench-([A-Za-z0-9_-]{1,64})$/.exec(draftId);
+    const m = BENCH_DRAFT_RE.exec(draftId);
     if (m !== null)
         notifyBenchChange(m[1]);
 }

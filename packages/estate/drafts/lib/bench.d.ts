@@ -103,7 +103,11 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
  * the rule was unreadable from the outside, so the wall sampled a
  * neighbour. The export is the single derivation the clients' mirrors
  * and the wall both pin against. */
-export declare const SESSION_RE: RegExp;
+/** THE CONTRACT'S GRAMMAR, RE-EXPORTED (the identity law, 2026-09-28):
+ *  the bench key is an address and has ONE grammar — the contract
+ *  floor's. This copy was the owner; the floor is now. */
+import { SESSION_RE } from "@melite/contracts/benchStage";
+export { SESSION_RE };
 declare const AUTHORS: readonly ["agent", "user"];
 type Author = (typeof AUTHORS)[number];
 interface BenchEntry {
@@ -289,5 +293,4 @@ export declare function notifyBenchChange(session: string): void;
  *  remote.ts — outside this module; it fires this with the session
  *  parsed from the bench-shaped draft id). */
 export declare function notifyBenchDocWrite(draftId: string): void;
-export {};
 //# sourceMappingURL=bench.d.ts.map

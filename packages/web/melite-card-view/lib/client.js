@@ -7126,7 +7126,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function runIdOk(id) {
 			return RUN_ID_RE.test(id);
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -7178,6 +7178,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"skip_when",
 				"timeout_s"
 			];
+			RESTORED_PROVENANCE_SPELLING = "restored";
+			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
+			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
@@ -7915,14 +7918,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region src/client/cards-resource.ts
+		init_benchStage();
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
-		const BENCH_SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 		/** Sanitize one candidate id onto a legal bench session key ('main'
 		*  for anything the bench would refuse — the estate's own SESSION_RE). */
 		function benchSessionKey(id) {
-			return typeof id === "string" && BENCH_SESSION_RE.test(id) ? id : "main";
+			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
 		/** The bench address for one session key. */
 		function benchAddressOf(sessionKey) {
@@ -53437,6 +53440,7 @@ void main() {
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
 			DEFAULT_LIPSYNC_FIELDS: () => DEFAULT_LIPSYNC_FIELDS,
@@ -53452,6 +53456,7 @@ void main() {
 			PROVENANCE_VALUES: () => PROVENANCE_VALUES,
 			Provenance: () => Provenance,
 			RELATION_WORDS: () => RELATION_WORDS,
+			RESTORED_PROVENANCE_SPELLING: () => RESTORED_PROVENANCE_SPELLING,
 			RESTORE_STRIP_KEYS: () => RESTORE_STRIP_KEYS,
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
@@ -53459,6 +53464,7 @@ void main() {
 			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
+			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
@@ -61327,4 +61333,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d8ad70606e877f70a96c61974a023d5cfbf57935";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="165d48a08da36fbeeca31c32e74f7aec13214d00";

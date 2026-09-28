@@ -340,26 +340,6 @@ export const WIRE_STAGE_KEYS: readonly string[] = [
  *  construction. */
 export const RESTORED_PROVENANCE_SPELLING = "restored";
 
-/** THE STALE-TAB VOCABULARY (the identity law, 2026-09-28).
- *
- *  "The tab is never stale" is the operator's law, and TWO walls
- *  policed it with two hand-copied five-regex lists. Dropping
- *  /buildVerdict/ from one list left every suite green: a wall's
- *  vocabulary is part of the LAW, and a law copied into two places
- *  is a law that will disagree with itself the first time it grows
- *  (the same failure that made a new relation word illegal at boot).
- *
- *  The contract floor owns the vocabulary; both walls import it, so
- *  a new spelling is added in exactly one place and both walls judge
- *  it. */
-export const STALE_TAB_VOCABULARY: readonly RegExp[] = [
-  /STALE TAB/i,
-  /stale tab/i,
-  /cards-stale-build/,
-  /staleBuild/,
-  /buildVerdict/,
-];
-
 export const SESSION_RE: RegExp = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** The bench DRAFT id: the session key under the bench- prefix (the

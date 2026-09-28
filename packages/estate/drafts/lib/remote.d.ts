@@ -140,6 +140,8 @@ export declare const RESTORED_PROVENANCE: unique symbol;
  *  into the server's authority. Nothing else in the tree needs it:
  *  the raw string is passed everywhere else and only these two
  *  comparisons treat it as the marker. */
+/** THE CONTRACT'S SPELLING (the identity law, 2026-09-28) — the
+ *  door and its callers read ONE coordinate, not two. */
 export declare const RESTORED_WIRE_SPELLING = "restored";
 /** THE LANE ADMISSION SEAT (2026-10-10, the YOU_ARE_A_LIAR fix
  *  shape 3): after the model admission passes, the registry judges

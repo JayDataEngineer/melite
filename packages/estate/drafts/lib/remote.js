@@ -34,7 +34,7 @@ var __esDecorate = (this && this.__esDecorate) || function (ctor, descriptorIn, 
 };
 import { Remote, RemoteError, TypertRemoteService, } from "@deepseek-ai/dsh-typert-protocol";
 import { admitWiring, benchBlockOf, strippedForAdmission } from "./bench.js";
-import { STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
+import { STAGE_PATCH_KEYS, RESTORED_PROVENANCE_SPELLING } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
@@ -179,7 +179,9 @@ export const RESTORED_PROVENANCE = Symbol("melite.restored-provenance");
  *  into the server's authority. Nothing else in the tree needs it:
  *  the raw string is passed everywhere else and only these two
  *  comparisons treat it as the marker. */
-export const RESTORED_WIRE_SPELLING = "restored";
+/** THE CONTRACT'S SPELLING (the identity law, 2026-09-28) — the
+ *  door and its callers read ONE coordinate, not two. */
+export const RESTORED_WIRE_SPELLING = RESTORED_PROVENANCE_SPELLING;
 /** The bench documents' id prefix (the bench family, not a flow export). */
 const BENCH_ID_PREFIX = "bench-";
 /** A plain record (the module's own shape guard). */

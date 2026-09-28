@@ -13,7 +13,8 @@ import {
   healRunMediaPaths,
   normalizeBenchStage,
   stageEngineOf,
-  stripKeys, STALE_TAB_VOCABULARY } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+  stripKeys } from "../../../../packages/web-kit/contracts/src/benchStage.ts";
+import { STALE_TAB_VOCABULARY } from "../../helpers/stale-tab-vocabulary.ts";
 
 // THE BENCH STAGE CONTRACT (operator, 2026-10-10: "The bench media
 // flow is always the same, no matter if the AI agent OR the human
