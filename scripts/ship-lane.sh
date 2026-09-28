@@ -37,6 +37,15 @@ ORIGIN="${MELITE_LANE_ORIGIN:-https://cloud.tailb1e597.ts.net:3088}"
 DO_BUILD=1
 CHECK_ONLY=0
 
+# the print helpers live ABOVE every use (the wall audit's M9
+# behavioural fixture caught this live: the --unit refusal at the
+# arg gate called bad() before its definition — bash printed
+# "bad: command not found" where the FAIL line belonged, and the
+# client-bundle discovery said say() the same way).
+say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
+ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
+bad()  { printf '   \033[31mFAIL\033[0m %s\n' "$*"; }
+
 while [ $# -gt 0 ]; do
   case "$1" in
     --no-build) DO_BUILD=0; shift ;;
@@ -130,10 +139,6 @@ for genre in sorted(os.listdir(os.path.join(root, "packages"))):
 PYEOF
 )
 say "the client bundles (discovered from the ./client exports): ${CLIENT_BUNDLES[*]}"
-
-say()  { printf '\n\033[1m== %s\033[0m\n' "$*"; }
-ok()   { printf '   \033[32mok\033[0m   %s\n' "$*"; }
-bad()  { printf '   \033[31mFAIL\033[0m %s\n' "$*"; }
 
 # ------------------------------------------------------- the gates
 # (THE AUDIT'S TWO HOLES, closed 2026-10-10: the builds used to run

@@ -529,8 +529,11 @@ export const DEFAULT_LIPSYNC_FIELDS: Pick<TimelineSegment, 'lipSyncedVideoUrl' |
  * timeline-vocabularies wall fails the moment a key is none of them.
  */
 export const EDITOR_ONLY_SEGMENT_KEYS: ReadonlySet<string> = new Set([
-  // the segment's own geometry
-  "frames", "fps", "resizeMethod", "order",
+  // the segment's own geometry. ("order" lived here for a while but
+  // is NOT a SegmentParams key — it rides the parent TimelineSegment
+  // (timelineTypes.ts order: number) — the vocabularies wall's hatch
+  // pin caught it blessing a key this vocabulary does not carry.)
+  "frames", "fps", "resizeMethod",
   // the motion track (its own lane in the editor; a run receives the
   // composed motion, never these controls)
   "motionVideoB64", "motionStrength", "motionTrimStart", "motionTrimEnd",

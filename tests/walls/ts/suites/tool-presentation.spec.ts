@@ -4,9 +4,11 @@
 // salient rawInput) instead of the generic fallback (title = tool name,
 // raw args dump).
 //
-// Pinned: all 9 tools expose presentCall (the rework unified
-// card_run + flow_run + build_flow + refine_draft into melite_flow);
-// cards are 'generic' with a
+// Pinned: the wall's tool set equals MELITE_TOOL_NAMES exactly (the
+// registry derivation — index.ts seats the tools, this wall houses
+// them; orphans and squatters both fail); every tool exposes
+// presentCall (the rework unified card_run + flow_run + build_flow +
+// refine_draft into melite_flow); cards are 'generic' with a
 // non-empty title; kinds come from the ToolCallKind vocabulary; salient
 // ids ride the title/rawInput; junk args (null/undefined/garbage) never
 // throw (the registry may call presenters during streaming AND replay).
@@ -30,15 +32,28 @@ import { meliteLoad } from "../../../../packages/harness/melite-tools/src/tools/
 import { runStatus } from "../../../../packages/harness/melite-tools/src/tools/run-status.ts";
 import { skillIndex } from "../../../../packages/harness/melite-tools/src/tools/skill-index.ts";
 import { skillRead } from "../../../../packages/harness/melite-tools/src/tools/skill-read.ts";
+import { meliteView } from "../../../../packages/harness/melite-tools/src/tools/melite-view.ts";
+import { meliteRead } from "../../../../packages/harness/melite-tools/src/tools/melite-read.ts";
+import { MELITE_TOOL_NAMES } from "../../../../packages/harness/melite-tools/src/index.ts";
 
 import type { EstateRequest } from "../../../../packages/harness/melite-tools/src/estate.ts";
 
 // the factories' seam drifted gateway-string → request-closure; this
 // wall never dials (construction + presentCall only), so the undialed
-// URL stands in for the closure — one cast here, not nine below.
+// URL stands in for the closure — one cast here, not eleven below.
 const GW = "http://127.0.0.1:9" as unknown as EstateRequest;
 const STUB_LLM = { complete: async () => ({ text: "stub" }) };
+// the observe doors take the harness Context, not the request — an
+// undialed stand-in with the one method their presentCall paths touch.
+const STUB_CTX = { get: (): undefined => undefined } as never;
 
+// THE REGISTRY DERIVATION (the wall audit's M13, 2026-09-28): this
+// list used to be nine hand-named tools while index.ts seated ELEVEN
+// (melite_view + melite_read rode the deferred doors outside the
+// wall) — a hand list the registry outgrew silently. The set below is
+// now pinned EQUAL to MELITE_TOOL_NAMES: a tool registered without a
+// wall row fails the equality, and a wall row without a registry seat
+// fails it too. The count is never spelled again.
 const ALL: Array<[string, ToolDefinition]> = [
   ["comfy_manage", comfyManage(GW)],
   ["melite_discover", meliteDiscover(GW)],
@@ -49,6 +64,8 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["run_status", runStatus(GW)],
   ["melite_skill_index", skillIndex(GW)],
   ["melite_skill_read", skillRead(GW)],
+  ["melite_view", meliteView(STUB_CTX)],
+  ["melite_read", meliteRead(STUB_CTX)],
 ];
 
 const KINDS = new Set([
@@ -63,8 +80,20 @@ const KINDS = new Set([
 ]);
 
 describe("presentCall disclosure composition", () => {
-  it("all 9 tools declare presentCall; presentResult stays omitted", () => {
-    assert.equal(ALL.length, 9);
+  it("the wall's tool set IS the registry's tool set (no orphans, no squatters)", () => {
+    // THE M13 KILL: the wall judges every tool the plugin can own —
+    // derived, not hand-counted. Adding a tool to index.ts without a
+    // wall row (or vice versa) breaks this equality, not production.
+    const wallNames = ALL.map(([name]) => name).sort();
+    const registryNames = [...MELITE_TOOL_NAMES].sort();
+    assert.deepEqual(
+      wallNames,
+      registryNames,
+      "the wall and the registry disagree — every registered tool needs a wall row",
+    );
+  });
+
+  it("every tool declares presentCall; presentResult stays omitted", () => {
     for (const [name, def] of ALL) {
       assert.equal(typeof def.presentCall, "function", `${name} needs presentCall`);
       assert.equal(def.presentResult, undefined, `${name} must not implement presentResult`);

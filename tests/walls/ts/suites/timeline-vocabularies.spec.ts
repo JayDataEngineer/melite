@@ -27,10 +27,38 @@ describe("the timeline's three vocabularies have no silent third", () => {
       new URL("../../../../packages/web-kit/contracts/src/timelineTypes.ts", import.meta.url),
       "utf8",
     );
-    const segmentKeys = [...types.matchAll(/^\s{2}([a-z][A-Za-z0-9_]*)\??:/gm)].map((m) => m[1]!);
+    // indent-agnostic on purpose: the interface is one-space indented,
+    // and the wall audit's M11 found the ORIGINAL two-space regex had
+    // never matched a single key — segmentKeys was dead from birth,
+    // which is why no arm missed it. Scoped to the interface's own
+    // body (the file carries other interfaces whose keys are not this
+    // vocabulary). The census floor below makes rot loud forever.
+    const segBody = types.match(/export interface SegmentParams \{([\s\S]*?)\n\}/)?.[1] ?? "";
+    const segmentKeys = [...segBody.matchAll(/^ +([a-z][A-Za-z0-9_]*)\??:/gm)].map((m) => m[1]!);;
     // the editor's own defaults table names the ones that matter
+    // (line-start keys only — mid-line comments say things like
+    // "operator order:" and are not defaults rows)
     const defaults = types.match(/DEFAULT_SEGMENT_PARAMS: SegmentParams = \{([\s\S]*?)\n\}/)?.[1] ?? "";
-    const editorNames = [...defaults.matchAll(/([a-z][A-Za-z0-9_]*)\s*:/g)].map((m) => m[1]!);
+    const editorNames = [...defaults.matchAll(/^ +([a-z][A-Za-z0-9_]*)\s*:/gm)].map((m) => m[1]!);
+    // THE ESCAPE HATCH IS PINNED TOO (the wall audit's M11): a key in
+    // EDITOR_ONLY_SEGMENT_KEYS that SegmentParams does not declare
+    // would excuse a typo forever — accepted by the classifier, never
+    // read against the interface it claims to bless.
+    expect(segmentKeys.length, "the SegmentParams census found no members — the regex rotted").toBeGreaterThan(0);
+    for (const blessed of EDITOR_ONLY_SEGMENT_KEYS) {
+      expect(
+        segmentKeys.includes(blessed),
+        `EDITOR_ONLY_SEGMENT_KEYS blesses '${blessed}', which SegmentParams does not declare — the hatch excuses a key that does not exist`,
+      ).toBe(true);
+    }
+    // and the defaults table names real interface keys (a defaults row
+    // for an interface key that was renamed is its own silent rot)
+    for (const name of editorNames) {
+      expect(
+        segmentKeys.includes(name),
+        `DEFAULT_SEGMENT_PARAMS names '${name}', which SegmentParams does not declare`,
+      ).toBe(true);
+    }
     // Object.values of the knob map carries the literal union — the
     // wall only needs membership, so read it as a string set.
     const bridged: ReadonlySet<string> = new Set<string>(Object.values(LEGACY_KNOB_KEY));
@@ -47,10 +75,13 @@ describe("the timeline's three vocabularies have no silent third", () => {
     const topLevel = new Set(
       [...card.matchAll(/^\s{2}([a-z][A-Za-z0-9_]*):\s*z\./gm)].map((m) => m[1]!),
     );
-    for (const name of editorNames) {
-      // every editor default key reaches the card SOMEWHERE — its
-      // own knob surface, a declared translation, or a top-level
-      // field — never both-nor (silently lost on the way to a run).
+    for (const name of new Set([...segmentKeys, ...editorNames])) {
+      // every INTERFACE key (not just the defaults) is classified —
+      // segmentKeys was computed and never used (M11's second half):
+      // a key added to SegmentParams outside the defaults table was
+      // silently unpinned. It reaches the card SOMEWHERE — its own
+      // knob surface, a declared translation, or a top-level field —
+      // never both-nor (silently lost on the way to a run).
       expect(
         bridged.has(name) || cardKeys.has(name) || topLevel.has(name) || EDITOR_ONLY_SEGMENT_KEYS.has(name),
         `editor key '${name}' is UNCLASSIFIED: it reaches neither the card's knob surface, its ` +

@@ -22,6 +22,8 @@
 // Run: npx vitest run tests/walls/ts/suites/seed-sentinel.spec.ts
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { GraphBuilder } from "../../../../packages/engines/comfyui-card-kit/src/graph.ts";
 import { imageEdit, mintSeed, musicT1 } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
 import type { ModelFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
@@ -125,5 +127,44 @@ describe("GATE S: the seed sentinel mints at render", () => {
     const ks: unknown[] = seedsOf(g, "KSampler", "seed");
     assert.equal(ks.length, 1, "one sampler node");
     assert.ok(isMinted(ks[0]), "sampler minted: " + String(ks[0]));
+  });
+
+  it("every seed-consuming lane mints through the one helper (derived, never hand-listed)", (): void => {
+    // THE M12 KILL: this wall pinned musicT1 + imageEdit BY HAND while
+    // nine lanes consume seeds — any other lane could regress to a
+    // raw p.seed and the wall stayed green (the exact rot the
+    // MiniMax crash came from). The pinned set is now DERIVED from
+    // the sources: a lane file that so much as names a seed must
+    // mint through the helper, and the random mint itself may live
+    // ONLY in graph-helpers (nowhere else mints its own).
+    const dir = join(import.meta.dirname, "../../../../packages/engines/comfyui-card-kit/src");
+    const lanes = readdirSync(dir).filter((f) => f.startsWith("lanes-") && f.endsWith(".ts"));
+    // the census is pinned EXACTLY (the header's "nine lanes" is 2026-
+    // 09-09 history — consolidation left five lane files; a sixth file
+    // or a rename is a deliberate wall edit, never a silent drift).
+    assert.deepEqual(
+      [...lanes].sort(),
+      ["lanes-3d.ts", "lanes-audio.ts", "lanes-image-tools.ts", "lanes-image.ts", "lanes-video.ts"],
+      "the lane-file census changed — update this pin deliberately",
+    );
+    const offenders: string[] = [];
+    for (const f of lanes) {
+      const src = readFileSync(join(dir, f), "utf8");
+      if (/\bseed\b/i.test(src) && !/mintSeed|voiceLockSeed/.test(src)) offenders.push(f);
+    }
+    assert.deepEqual(
+      offenders,
+      [],
+      "lane files name a seed without minting through the helper: " + offenders.join(", "),
+    );
+    // the mint is one function: Math.random lives in graph-helpers and
+    // nowhere else in card-kit (a lane rolling its own random is a
+    // second mint — the shared-value law dies with it).
+    const randoms: string[] = [];
+    for (const f of readdirSync(dir).filter((f) => f.endsWith(".ts"))) {
+      if (f === "graph-helpers.ts") continue;
+      if (readFileSync(join(dir, f), "utf8").includes("Math.random")) randoms.push(f);
+    }
+    assert.deepEqual(randoms, [], "Math.random outside graph-helpers: " + randoms.join(", "));
   });
 });

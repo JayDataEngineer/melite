@@ -385,7 +385,13 @@ describe("the webhook faces — the tap's fold renders live", () => {
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {}, progress: { value: 1, max: 0 } } as never]);
     await openFirstTile();
     const strip = document.querySelector('[data-testid="drill-webhooks"]');
-    expect(strip?.textContent ?? "").not.toContain("%");
+    // THE VACUOUS PASS (wall audit M19): `strip?.textContent ?? ""`
+    // made this arm green even when the strip never rendered — the
+    // no-% claim judged an empty string. The strip renders
+    // unconditionally (stage-drill.tsx webhookFeed), so its absence
+    // is a real crime, never a pass.
+    expect(strip, "the webhook strip must render even without a percent face").not.toBeNull();
+    expect(strip!.textContent ?? "").not.toContain("%");
   });
 });
 

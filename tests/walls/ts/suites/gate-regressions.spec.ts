@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 
 // GATE REGRESSIONS — one pin per WEDGE this estate has actually been
 // wedged on (2026-10-10, the operator's law: "make sure we are
@@ -86,6 +87,28 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     expect(tierAt, "a restart-only ship must still typecheck the tiers").toBeLessThan(
       ship.indexOf('if [ "$DO_BUILD" -eq 1 ]; then'),
     );
+  });
+
+  it("the ship's refusals are BEHAVIOURAL (a bogus --unit exits 2, prints FAIL, refuses before any gate)", () => {
+    // THE M9 KILL: this arm judged the playbook by substring — four
+    // regexes over ship-lane.sh's text — while the script's own
+    // refusal path had never been executed by anything but the
+    // operator. The first behavioural probe caught a live bug every
+    // regex blessed: the --unit refusal called bad() before bash had
+    // defined it, so the console said "bad: command not found" where
+    // the FAIL line belonged. Behaviour is the receipt now.
+    const syntax = spawnSync("bash", ["-n", join(REPO, "scripts/ship-lane.sh")]);
+    expect(syntax.status, "ship-lane.sh must stay syntactically whole").toBe(0);
+    const res = spawnSync(
+      "bash",
+      [join(REPO, "scripts/ship-lane.sh"), "--unit", "bogus.service"],
+      { encoding: "utf8", timeout: 15000 },
+    );
+    expect(res.status, "an unsanctioned --unit must refuse (exit 2)").toBe(2);
+    const out = res.stdout + res.stderr;
+    expect(out).toMatch(/FAIL/);
+    expect(out).toMatch(/sanctioned lane/);
+    expect(out, "the refusal is EARLY — no gate section may run first").not.toMatch(/== /);
   });
 
   it("every compiled package carries noEmitOnError (a red build must not emit)", () => {

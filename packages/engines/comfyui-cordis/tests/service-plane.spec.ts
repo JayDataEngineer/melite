@@ -1337,6 +1337,7 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
       .filter((f) => existsSync(f));
     const crimes: string[] = [];
     const stale: string[] = [];
+    const corrupt: string[] = [];
     let nodes = 0;
     const walk = (o: unknown): Array<{ ct: string; inputs: Record<string, unknown> }> => {
       if (Array.isArray(o)) return o.flatMap(walk);
@@ -1349,7 +1350,11 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
     };
     for (const f of files) {
       let d: unknown;
-      try { d = JSON.parse(readFileSync(f, 'utf8')); } catch { continue }
+      // THE SILENT SKIP (wall audit M22): a corrupt _flow.json used
+      // to `catch { continue }` — the wall judged nothing and stayed
+      // green while a landed run's graph was unreadable. A corrupt
+      // flow is a crime the wall names, never one it steps over.
+      try { d = JSON.parse(readFileSync(f, 'utf8')); } catch (e) { corrupt.push(`${f}: ${String(e)}`); continue }
       for (const node of walk(d)) {
         nodes += 1;
         const declared = declaredOf(doc, node.ct);
@@ -1373,6 +1378,7 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
     }
     console.log(`shipped-graph wall: ${files.length} flows, ${nodes} nodes, ${crimes.length} crimes, ${stale.length} doc-vintage widgets`)
     if (stale.length > 0) console.log('doc vintage (the live engine declares these; this snapshot does not): ' + stale.join(', '))
+    assert.deepEqual(corrupt, [], 'corrupt _flow.json files — the wall may not step over an unreadable landed graph')
     assert.deepEqual(crimes, [])
   });
 
