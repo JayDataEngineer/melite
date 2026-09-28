@@ -1,6 +1,6 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
-import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Context, Service } from '@deepseek-ai/cordis'
@@ -62,20 +62,27 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
   const server = ctx.get('webServer', true) as unknown as FakeWebServer
   const routes = new Map(server.captured.map((c) => [c.route.replace(/^infer-gallery: | route$/, ''), c]))
   const byPath = (p: string): Captured => server.captured.find((c) => c.route.includes(p))!
-  assert.ok(byPath('/runs'), 'runs route registered')
-  assert.ok(byPath('/drafts'), 'drafts route registered')
-  assert.ok(byPath('/flow'), 'flow route registered')
-  assert.ok(byPath('/artifact'), 'artifact route registered')
-  // NOT `routes.size >= 0` (the walls audit's row 12, 2026-10-10):
-  // every Map is at least zero — the arm could not fail. The law
-  // pinned instead: the gallery's route set is EXACTLY the set the
-  // server registered (nothing silently collapsed into a duplicate
-  // key), and it is non-trivial.
-  const registered = new Set(server.captured.map((c) => c.route.replace(/^infer-gallery: | route$/, '')))
-  assert.equal(routes.size, registered.size,
-    `the route map must not collapse a registered route (map ${routes.size} vs registered ${registered.size})`)
-  assert.ok(routes.size >= 4,
-    `the gallery serves its real routes (${String(routes.size)} seen — the registration emptied?)`)
+  // C-C3 (the wall audit): four substring pins and a `>= 4` floor
+  // guarded a six-route door — artifact-delete and artifact-rename
+  // could vanish silently. The expected set is DERIVED from the
+  // source now (every `path: '/infer-gallery/...'` literal in
+  // index.ts), and the registered set must equal it EXACTLY: a route
+  // added at source but not registered, registered but not at
+  // source, or renamed on one side only, all fail here.
+  const gallerySource = readFileSync(
+    join(import.meta.dirname, '..', '..', '..', '..', 'packages', 'web', 'infer-gallery', 'src', 'index.ts'),
+    'utf8',
+  )
+  const expected = [...gallerySource.matchAll(/path:\s*'([^']+)'/g)].map((m) => m[1]!).sort();
+  assert.ok(expected.length >= 6, `census floor: the source declares its routes (${expected.length} — the read rotted?)`);
+  const registeredPaths = server.captured.map((c) => {
+    const m = c.route.match(/'(\/[^']*)'/);
+    return m?.[1] ?? c.route;
+  }).sort();
+  assert.deepEqual(registeredPaths, expected,
+    `the gallery registers EXACTLY the source's route set (registered ${JSON.stringify(registeredPaths)} vs source ${JSON.stringify(expected)})`);
+  assert.equal(routes.size, new Set(registeredPaths).size,
+    'the route map must not collapse a registered route (two routes, one key)');
 
   // 1. IN-TREE, estate absent: LOUD 502 naming the fix.
   const res1 = new FakeRes()
@@ -86,6 +93,7 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
 
   // 2. IN-TREE, the runs seat present: the list answers, artifact
   //    names rewrite to the same-origin route.
+  const listCalls: string[] = []
   class StubRuns extends Service {
     constructor(ctx: Context) {
       super(ctx, 'runs')
@@ -94,7 +102,14 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
       // THE RUNS-WINDOW LAW (restored with the media full port): the
       // host always pulls the door's hard max — a smaller window lets
       // sidecar floods push artifact rows out of the listing.
-      assert.equal(limit, '500')
+      //
+      // C-M13 (the wall audit, 2026-09-28): the assertion lived
+      // INSIDE the stub — a host that never called the door passed it
+      // (the law was judged zero times), and a throw from inside a
+      // stub can surface as an unrelated error. The window is
+      // RECORDED here and asserted OUTSIDE, after the route ran, and
+      // the call count is pinned (the door is asked, exactly once).
+      listCalls.push(limit)
       return {
         runs: [
           { run_id: 'run-abc123-tag', thumbnail: 'run-abc123-tag/img.png', artifacts: [{ url: 'run-abc123-tag/out.png' }] },
@@ -108,6 +123,11 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
   assert.equal(res2.status, 200)
   const payload = JSON.parse(String(res2.body)) as { runs: Array<{ thumbnail: string; artifacts: Array<{ url: string }> }> }
   assert.equal(payload.runs[0]?.thumbnail, '/infer-gallery/artifact?path=run-abc123-tag%2Fimg.png')
+  // C-M13: the window law is asserted OUTSIDE the stub, with the
+  // call count pinned — the door is asked exactly once, and it is
+  // asked for the door's hard max.
+  assert.deepEqual(listCalls, ['500'],
+    'the gallery asked the runs door exactly once, for its hard max (the window law, judged outside the stub)')
 
   // 3. the artifact route: run-relative confinement — escape
   //    refuses 400; a real leaf streams from the output tree.
@@ -199,5 +219,48 @@ test('the artifact grammar accepts subdir names and refuses traversal (the live-
     const bad = await t(evil)
     assert.equal(bad.status, 400, 'must refuse: ' + evil)
     assert.match(String(bad.body), /forbidden_path/)
+  }
+})
+
+// C-C3 (the wall audit): the artifact-delete and artifact-rename
+// routes had NO behavioural arm — they were the two routes the
+// `>= 4` floor was silently missing. These round-trips drive each
+// handler's refusal laws directly (the fail-closed half of the
+// contract: method discipline, containment, sidecar protection).
+test('the delete + rename routes round-trip their refusal laws', async () => {
+  const galleryMod = (await import('../../../../packages/web/infer-gallery/src/index.ts')) as {
+    default?: Plugin;
+  } & Record<string, unknown>
+  const gallery: Plugin = galleryMod.default ?? (galleryMod as unknown as Plugin)
+  const ctx = new Context()
+  const flowDir = mkdtempSync(join(tmpdir(), 'gallery-wall-'))
+  const server = new FakeWebServer(ctx)
+  await ctx.plugin(gallery, { flowDir })
+  const byPath = (p: string): Captured => server.captured.find((c) => c.route.includes(p))!
+  // a request whose body is a JSON string (readJsonBody consumes
+  // the data/end events)
+  const post = (payload: string) => ({
+    method: 'POST',
+    on(event: string, fn: (d?: Uint8Array) => void): void {
+      if (event === 'data') fn(new TextEncoder().encode(payload))
+      if (event === 'end') fn()
+    },
+  })
+  for (const route of ['/infer-gallery/artifact-delete', '/infer-gallery/artifact-rename']) {
+    // method discipline: GET refuses 405
+    const wrong = new FakeRes()
+    await byPath(route).handler({ method: 'GET', url: route } as never, wrong)
+    assert.equal(wrong.status, 405, route + ': non-POST refuses 405')
+    assert.match(String(wrong.body), /method_not_allowed/, route + ': names the law')
+    // containment: an absolute path refuses
+    const abs = new FakeRes()
+    await byPath(route).handler(post(JSON.stringify({ path: '/etc/passwd', name: 'x.png' })) as never, abs)
+    assert.equal(abs.status, 400, route + ': non-run-relative path refuses')
+    assert.match(String(abs.body), /forbidden_path/, route + ': names the containment law')
+    // provenance: sidecars are never media
+    const side = new FakeRes()
+    await byPath(route).handler(post(JSON.stringify({ path: 'run-abc123-word/_request.json', name: 'x.png' })) as never, side)
+    assert.equal(side.status, 400, route + ': protected sidecar refuses')
+    assert.match(String(side.body), /protected_sidecar/, route + ': names the provenance law')
   }
 })

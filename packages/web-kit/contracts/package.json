@@ -8,6 +8,7 @@
     ".": "./src/index.ts",
     "./FlowTypes": "./src/FlowTypes.ts",
     "./benchSnapshot": "./src/benchSnapshot.ts",
+    "./benchResult": "./src/benchResult.ts",
     "./browserStorage": "./src/browserStorage.ts",
     "./buildStamp": "./src/buildStamp.ts",
     "./card": "./src/card.ts",

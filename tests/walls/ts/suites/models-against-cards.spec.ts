@@ -14,6 +14,7 @@
 
 import "../../../helpers/boot-models.ts";
 import { modelsService } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { ENGINE_TRUTH as ENGINE_TRUTH_SSOT } from "../../../../packages/engines/comfyui-cordis/src/models/validate.ts";
 import { assertSchemaAcceptsMinimalRows } from '../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts';
 import { readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
@@ -33,6 +34,16 @@ function execGrep(token: string, roots: string[], skip: readonly string[] = []):
   }
 }
 import { describe, it } from "vitest";
+
+// D-M11 (the wall audit, 2026-09-28): the catalog's served-address
+// census and the owner-atom census are EXACT — floors let the
+// roster drift dark. Adding a family/variant/cell is a deliberate
+// edit that touches these numbers.
+const SERVED_ADDR_CENSUS = 60
+const OWNER_ATOM_CENSUS = 24
+import { mkdtempSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import assert from "node:assert/strict";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
@@ -92,15 +103,14 @@ async function allAdmits(): Promise<Map<string, readonly string[]>> {
   return out;
 }
 
-/** comfyui compose's engine truth (ENGINE_TRUTH_KEYS @ 034e1f97,
- *  compose/__init__.py line 76 — "the audio lanes' default mode
- *  (tts/design) rides defaults and the renderer reads it as data"). */
-// ENGINE_TRUTH mirrors the boot contract's call (service.ts): the
-// compose's own declaration keys, never card fields. "model" is the
-// ROUTE RE-POINT token — a card boarding a route address (qvoice
-// across ALL qwen3-tts, operator 2026-09-23) walks that view's
-// defaults and the token must skip like "variant" does.
-const ENGINE_TRUTH = ["mode", "variant", "model"] as const;
+/**
+ * The compose's own declaration keys, never card fields (born
+ * ENGINE_TRUTH_KEYS @ 034e1f97 — "the audio lanes' default mode
+ * (tts/design) rides defaults and the renderer reads it as data").
+ * One SSOT since the models-against-cards audit's finding 5:
+ * validate.ts exports it; the boot call (service.ts) and this wall
+ * import the same triple. */
+const ENGINE_TRUTH = ENGINE_TRUTH_SSOT;
 
 async function cardTable(): Promise<CardDomains> {
   const defs = await loadCardDefs();
@@ -145,7 +155,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // stroke 87 — fit + skin retired with their cards). The
     // admission map rides 7th (wd14's checkpoint default is legal
     // on the tagger card — the weights law, 2026-09-22).
-    assert.ok(checked.length >= 24, `expected ≥24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
+    assert.equal(checked.length, 26, `expected 26 checked pairs (D-M11 exact census; 24 was the retired-wan-vace era), got ${checked.length}`);
   });
 
   // THE STARVING-FIELD LAW (2026-10-09, the empty-form burn): a
@@ -179,7 +189,22 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // counted, so retagging every numeric params field to another
     // zone judged ZERO fields and the width/height burn returned
     // green. The census states how many fields it walked.
+    // D-C5 (the wall audit, 2026-09-28): the counter incremented
+    // BEFORE the continue filters — re-typing every numeric field to
+    // string kept the census fat while ZERO fields reached the
+    // judge, and the arm greened over an empty pass. The counted
+    // number is JUDGED now: incremented only where the starving law
+    // actually runs.
+    let judged = 0;
     let walked = 0;
+    // finding 6 (the audit, 2026-09-28): the surface-successor
+    // `continue` skips the field for a family whose params SURFACE
+    // excludes it — a legitimate successor law, but INVISIBLE: a
+    // surface emptied to `[]` skipped every unscoped knob while
+    // the census stayed fat. The skip is COUNTED now (exact pin),
+    // and the dict-less exemption census below already names the
+    // neither-bucket cards.
+    let surfaceSkips = 0;
     for (const [cardId, def] of defs) {
       const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ??
         (def as { schema?: unknown }).schema;
@@ -203,6 +228,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         if (zone !== "params") continue;
         if (field.type !== "number") continue; // strings' emptiness is honest
         if (meta?.default !== undefined) continue; // the schema owns it
+        judged++;
         if (typeof guard === "string" && guard.startsWith("model=")) {
           // family-SCOPED knob: the named family is the one owner
           const fam = guard.slice("model=".length);
@@ -231,7 +257,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
           const decl = registryModel(fam);
           if (decl === undefined) continue; // unknown families refuse elsewhere
           const surface = decl.params as string[] | undefined;
-          if (Array.isArray(surface) && !surface.includes(name)) continue; // not that family's param
+          if (Array.isArray(surface) && !surface.includes(name)) { surfaceSkips++; continue; } // not that family's param (counted — an emptied surface is visible)
           if ((decl.defaults as Record<string, unknown> | undefined)?.[name] === undefined) {
             starving.push(`${cardId}.${name}: unscoped but family '${fam}' declares no default — that family's form starves`);
           }
@@ -243,6 +269,15 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // named, never a growing hole
     assert.ok(walked >= 60,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set empties the arm)`);
+    assert.ok(judged >= 5,
+      `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge empties the arm)`);
+    // exact: the 2 skips are qwen-img-edit-2511's declared
+    // resolution rows (width/height are not its params — it
+    // declares its own), the surface-successor precedent. GROWTH
+    // means a family emptied its params surface, and every skip is
+    // a knob the starving law no longer judges.
+    assert.equal(surfaceSkips, 2,
+      `surface-successor skips are 2 today — qwen-img-edit-2511's width/height (saw ${String(surfaceSkips)}: growth means a family emptied its params surface, and every skip is a knob the starving law no longer judges)`);
     assert.deepEqual(handWritten, HAND_WRITTEN_CARRIERS,
       `the hand-written-carrier exemption is pinned (seen ${handWritten.join(", ") || "—"} vs the named ${HAND_WRITTEN_CARRIERS.join(", ") || "—"} — a card that rewrites itself out of the census must be argued in this list)`);
   });
@@ -277,6 +312,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // ways, in estate-queue's cards-lane-law.spec.ts.)
     const defs = await loadCardDefs();
     let declaring = 0;
+    let judgedSurfaces = 0;
     for (const atom of allDecls().map((d) => d.id)) {
       const fam = registryModel(atom);
       const withSurface = fam.variants.filter(
@@ -284,6 +320,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       );
       if (withSurface.length === 0) continue;
       declaring += 1;
+      judgedSurfaces += withSurface.length;
       const variantIds = new Set(fam.variants.filter((v) => v.group === "Variant").map((v) => v.id));
       for (const declared of withSurface) {
         assert.ok(
@@ -305,7 +342,16 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         );
       }
     }
-    assert.ok(declaring >= 1, "the per-variant surface law lost its only speaker — update this wall with the successor");
+    // D-M12 (the wall audit, 2026-09-28): `>= 1` let the speaker
+    // set shrink to one family (or none, had the grammar died) while
+    // the arm's title still claimed the law. The census is exact:
+    // TWO families declare per-variant surfaces today. And the
+    // per-family judgment itself is counted — a loop that skipped
+    // every family (a `params` shape change) is an empty pass no
+    // more.
+    assert.ok(judgedSurfaces >= 2,
+      `the surface law JUDGED real variant surfaces (${String(judgedSurfaces)} — a params-shape change that empties the loop is an empty pass)`);
+    assert.equal(declaring, 2, "the per-variant surface census (D-M12): families declaring variant surfaces — a deliberate edit, never drift");
   });
 
   it("every non-empty COMFYUI card ref names a REGISTERED card (the amnesty is over)", async (): Promise<void> => {
@@ -390,7 +436,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         err instanceof ModelError && String(err.message).includes("wd14: default 'checkpoint'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews(), await allAdmits());
-    assert.ok(checked.length >= 24, `expected 24 checked pairs (wan-vace/scail2 retired 2026-09-21), got ${checked.length}`);
+    assert.equal(checked.length, 26, `expected 26 checked pairs (D-M11 exact census; 24 was the retired-wan-vace era), got ${checked.length}`);
   });
 
   it("every served owner is claimed (the catalog offers only runnable atoms)", async (): Promise<void> => {
@@ -410,7 +456,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // buildCatalog that returned `{models:{}}` made both loops judge
     // ZERO addresses and pass under a title that claims the catalog
     // offers only runnable atoms. The census states its size.
-    assert.ok(servedAddr.size >= 59,
+    // D-M11: the floor became an exact pin — the catalog's address
+    // census is a deliberate number, never drift
+    assert.equal(servedAddr.size, SERVED_ADDR_CENSUS,
       `the catalog serves its roster (${String(servedAddr.size)} addresses — an emptied catalog passes nothing)`);
     const owners = new Map<string, string[]>();
     for (const addr of servedAddr) {
@@ -421,11 +469,91 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       assert.ok(o !== undefined, `served address '${addr}' has no owning atom`);
       owners.set(o, [...(owners.get(o) ?? []), addr]);
     }
-    assert.ok(owners.size > 0, "the owner walk claimed real atoms");
+    assert.equal(owners.size, OWNER_ATOM_CENSUS, "the owner walk claimed real atoms (exact census)");
     for (const [o, addrs] of owners) {
       const covered = [o, ...addrs].some((a) => claimed.has(a));
       assert.ok(covered, `served owner '${o}' is claimed by no card (board it or unoffer it — the catalog offers only runnable atoms)`);
     }
+  });
+
+  it("the UNSERVED rows are named (gap c, models-against-cards audit 2026-09-28): dead DECL ids cannot appear silently", async (): Promise<void> => {
+    // The served-owner arm above is structurally blind to rows the
+    // catalog never serves: an id can die (card retired, tool enum
+    // moved on) and linger in the registry forever, unwatched. The
+    // audit counted 21. The carve is EXACT now: every id boarded by
+    // no card is either honestly `unoffered: true` (17) or a
+    // foreign-engine row (4 — ace-step/anycreature/moss/skintokens,
+    // served through their own engine's door, never comfyui's
+    // catalog). A 22nd silent row refuses; an unoffered flag
+    // disappearing from one of the 17 refuses.
+    await loadCardDefs();
+    const svc = theService();
+    const boardedSet = new Set<string>();
+    for (const cid of svc.cardIds()) for (const f of svc.getCardDef(cid)?.boarded ?? []) boardedSet.add(f);
+    const dead: string[] = [];
+    const unoffered: string[] = [];
+    const foreign: string[] = [];
+    for (const id of registryIds()) {
+      if (boardedSet.has(id)) continue;
+      dead.push(id);
+      const decl = registryModel(id) as { unoffered?: boolean };
+      if (decl?.unoffered === true) unoffered.push(id); else foreign.push(id);
+    }
+    assert.deepEqual(dead, [
+      "ace-step", "anycreature", "auto-detect", "basic_resize", "concat", "dwpose",
+      "flux-fill-dev", "gem_soma", "latentsync", "ltx-2-3", "ltx-director-distilled",
+      "mesh_refine", "moss", "pixel_upscale", "rtx-vsr", "see-through", "skintokens",
+      "somax", "step1x_texture", "stretchy-rig", "trellis_native",
+    ], `the unboarded registry rows are the named 21 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
+    assert.equal(unoffered.length, 17, `17 of the 21 carry unoffered:true (saw ${String(unoffered.length)})`);
+    assert.deepEqual(foreign, ["ace-step", "anycreature", "moss", "skintokens"],
+      `the 4 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 5th non-unoffered unboarded row is a silent death`);
+  });
+
+  it("provisions are SHAPED rows and the declaring split is named (gap a, the audit 2026-09-28)", async (): Promise<void> => {
+    // the old arm checked `name !== ""` only: url/folder could be
+    // empty strings, sha256 could be a non-digest, size_bytes
+    // negative — every shape lie passed. The grammar pins the row
+    // (ProvisionRow); this wall pins the DATA: every declared row
+    // carries a non-empty name, an http(s) url, a NON-ABSOLUTE
+    // folder under the models root, a 64-hex sha256 when present,
+    // and a non-negative size when present. The declaring split is
+    // EXACT: 9 families declare provisions, and the SERVED-catalog
+    // families declaring none is the provisioner-catalog carve the
+    // E-C1 census names — this arm pins the DECL side of it.
+    const PROVISION_DECLARERS = ["anny", "h3", "kimodo", "pixal3d", "qwen-img-21",
+      "qwen-img-edit-21", "qwen-img-edit-2511", "trellis2-native", "yue2"];
+    // the rows those nine declare, exactly (D-M12: a floor let a
+    // family's whole table go unjudged)
+    const PROVISION_ROW_COUNT = 42;
+    const declarers: string[] = [];
+    let judged = 0;
+    for (const id of registryIds()) {
+      const rows = (registryModel(id) as { provisions?: Array<Record<string, unknown>> }).provisions ?? [];
+      if (rows.length === 0) continue;
+      declarers.push(id);
+      for (const row of rows) {
+        judged++;
+        assert.ok(typeof row["name"] === "string" && row["name"] !== "", `${id}: a provision row carries an empty name`);
+        assert.match(String(row["url"]), /^https?:\/\//, `${id}/${String(row["name"])}: url is not http(s)`);
+        assert.ok(typeof row["folder"] === "string" && row["folder"] !== "" && !String(row["folder"]).startsWith("/"),
+          `${id}/${String(row["name"])}: folder must be a non-empty relative path under the models root`);
+        if (row["sha256"] !== undefined) {
+          assert.match(String(row["sha256"]), /^[0-9a-f]{64}$/, `${id}/${String(row["name"])}: sha256 is not a 64-hex digest`);
+        }
+        if (row["size_bytes"] !== undefined) {
+          assert.ok(typeof row["size_bytes"] === "number" && row["size_bytes"] >= 0,
+            `${id}/${String(row["name"])}: size_bytes is negative`);
+        }
+      }
+    }
+    assert.deepEqual(declarers, PROVISION_DECLARERS,
+      `the provision declarers are the named 9 (saw ${declarers.join(", ")}) — a family starting or stopping its own provisioning is a deliberate edit`);
+    // D-M12 (the wall audit, 2026-09-28): a floor let a whole
+    // family's rows go unjudged. The judged row count is EXACT.
+    assert.equal(judged, PROVISION_ROW_COUNT,
+      `the shape arm judged exactly ${String(PROVISION_ROW_COUNT)} provision rows (saw ${String(judged)}) — ` +
+      "a row appearing or leaving a family is a deliberate edit");
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {
@@ -485,14 +613,48 @@ describe("the schema/interface agreement", () => {
         },
       ],
     };
-    // it registers (the wall is loud if it does not) and is then
-    // withdrawn, so the probe never joins the registry
+    // D-C6 (the wall audit, 2026-09-28): the probe used to register,
+    // assert NOTHING, and never withdraw (the disposer was discarded
+    // into an empty finally) — a registerFamily that threw silently
+    // or swallowed the row passed the arm. The full lifecycle is
+    // pinned now: absent -> register -> PRESENT -> dispose -> absent,
+    // and the duplicate-id refusal is its own arm.
+    assert.ok(!svc.registryIds().includes("agreement-probe"),
+      "the probe's id is not in the registry before the test (a stale probe from an earlier un-withdrawn run is its own failure)");
+    const dispose = svc.registerFamily(decl as never);
+    assert.ok(svc.registryIds().includes("agreement-probe"),
+      "registerFamily ACCEPTED the hand-written minimal DECL (it is in the registry now)");
+    assert.equal(svc.registryModel("agreement-probe").id, "agreement-probe",
+      "the registered row reads back by id");
+    dispose();
+    assert.ok(!svc.registryIds().includes("agreement-probe"),
+      "the disposer withdrew the probe (the registry is not a test fixture's ashtray)");
+  });
+
+  it("registerFamily refuses a duplicate id LOUD (the one-owner interlock)", () => {
+    const svc = modelsService();
+    const decl = {
+      id: "agreement-probe-dup",
+      label: "Dup probe",
+      genre: "image",
+      form: "image",
+      engine: "comfyui",
+      source: { repo_id: "Comfy-Org/ProbeDup", filename: "probe-dup.safetensors" },
+      variants: [
+        { id: "v", label: "V", group: "Variant", route: "agreement-probe-dup", cells: [{ quant: "fp16", label: "FP16" }] },
+      ],
+    };
+    const dispose = svc.registerFamily(decl as never);
     try {
-      svc.registerFamily(decl as never);
+      assert.throws(
+        () => svc.registerFamily(decl as never),
+        /registered twice|one owner per model id/,
+        "the duplicate id refuses with the interlock's voice",
+      );
     } finally {
-      // the registry is a test fixture; a duplicate id on a re-run is
-      // the loud arm, which is correct
+      dispose();
     }
+    assert.ok(!svc.registryIds().includes("agreement-probe-dup"), "the dup probe withdrew");
   });
 });
 
@@ -555,7 +717,13 @@ describe("curated vocabulary subsets derive from the engine SSOT", () => {
       .filter((l) => !l.trim().startsWith("//"))
       .join("\n");
     const members = [...code.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
-    assert.ok(members.length > 0, "the list is not empty");
+    // D-M10 (the wall audit, 2026-09-28): `> 0` was the floor that
+    // let dead code pass (the card could stop READING the list and
+    // the wall stayed green on the comment's prose). The count is
+    // EXACT — eleven stand today — and the served schema options
+    // DERIVE from the same members (the curation IS the served set).
+    assert.equal(members.length, 11,
+      `the film's curated sampler list is eleven (saw ${String(members.length)}) — a deliberate edit, never silent drift`);
     for (const name of members) {
       assert.ok(
         (SAMPLER_OPTIONS as readonly string[]).includes(name),
@@ -585,40 +753,117 @@ describe("the DECLARATION claims are declared AND consumed", () => {
       const decl = registryModel(fam) as { canvas_default?: boolean };
       if (decl?.canvas_default === true) declarers.push(fam);
     }
-    assert.ok(declarers.length <= 1,
-      "canvas_default is READ by a find (first match wins), so two declarers mean an undeclared preference: " +
-      declarers.join(", "));
+    // finding 9 (2026-09-28): `<= 1` allowed ZERO — krea-2 dying
+    // silently left the canvas with no default family. The sole
+    // declarer is EXACT: krea-2.
+    assert.deepEqual(declarers, ["krea-2"],
+      "canvas_default is READ by a find (first match wins) and its sole declarer is krea-2 — two declarers are an undeclared preference, zero is a canvas with no default (saw: " +
+      declarers.join(", ") + ")");
   });
 
-  it("base_body has a reader (a declarer nobody reads is a claim nothing keeps)", () => {
-    const readers = execGrep("base_body", ["packages/"], [
+  it("base_body stays DEAD (a declarer nobody reads is a claim nothing keeps)", () => {
+    // D-C7 (the wall audit, 2026-09-28): the arm counted the
+    // DECLARER as its own reader (anny's index.ts hit the grep) —
+    // it could never fail while the lie lived. The kill is real
+    // now: the member left both the grammar and anny's DECL (the
+    // parametric neutral bake superseded the GLB staging). The pin
+    // is reintroduction-shaped: if ANY family declares base_body
+    // again, a READ-shaped consumer (a `.base_body` access outside
+    // the grammar, the specs, and the declaring file) must exist,
+    // or this wall fails.
+    // the scans are SHAPE-based, comment-immune: a declaration is
+    // the key with a colon (code, never prose), a reader is the
+    // member access `.base_body`. Both run over code with line
+    // comments stripped so the kill's own epitaph cannot trip it.
+    const codeOf = (path: string): string =>
+      readFileSync(path, "utf8").split("\n")
+        .filter((l: string) => !l.trim().startsWith("//"))
+        .join("\n");
+    const all = execGrep("base_body", ["packages/"], [
       "models/families/contract.ts", // the grammar
       ".spec.ts",
       "schema.d.ts",
     ]);
-    assert.ok(readers.length > 0,
-      "base_body is declared by a family but read by NOTHING outside the grammar — " +
-      "either a consumer is owed or the member should go (the design audit's Q5)");
+    const declarers = all.filter((f: string) => /^\s*"base_body"\s*:/m.test(codeOf(f)));
+    const readers = all.filter((f: string) => /\.base_body\b/.test(codeOf(f)));
+    assert.ok(readers.length === 0,
+      "base_body has read-shaped consumers (" + readers.join(", ") + ") — un-kill this member deliberately: restore the grammar row, the declaring family, and this wall");
+    assert.ok(declarers.length === 0,
+      "base_body is declared again (" + declarers.join(", ") + ") with no read-shaped consumer — " +
+      "a claim nothing keeps (the design audit's Q5; the D-C7 kill)");
   });
 
-  it("every provision names a file its lane can look for (the fetch-hint name match)", async () => {
-    // the audit: lanePresenceMiss names the file it could not find; a
-    // provisions row whose name differs leaves the download hint
-    // silently dropped
+  it("the fetch hint is a NAME MATCH, proven on a real miss (D-C9)", async () => {
+    // the audit: lanePresenceMiss builds its download hint by
+    // matching p.name === miss.name — the wall only asserted
+    // non-empty names, so a provisions row whose name DIFFERED from
+    // the lane file dropped the hint silently and the arm stayed
+    // green. The join is proven behaviourally now: a probe family
+    // whose lane file is ABSENT (empty models root) misses, and the
+    // hint appears ONLY when a provisions row carries the exact
+    // name — a same-family row naming a different file never feeds
+    // the hint.
     await loadCardDefs();
-    const facts: Record<string, { provisions?: Array<{ name?: string }> }> = {};
-    for (const fam of registryIds()) {
-      facts[fam] = registryModel(fam) as { provisions?: Array<{ name?: string }> };
-    }
-    const mismatches: string[] = [];
-    for (const [addr, row] of Object.entries(facts)) {
-      for (const p of row.provisions ?? []) {
-        if (typeof p.name !== "string" || p.name === "") {
-          mismatches.push(addr + ": a provision names no file");
-        }
+    const { lanePresenceMiss } = await import(
+      "../../../../packages/harness/estate-queue/src/cardsLanes.ts"
+    );
+    const svc = modelsService();
+    const base = {
+      label: "Hint probe",
+      genre: "image",
+      form: "image",
+      engine: "comfyui",
+      source: { repo_id: "Comfy-Org/HintProbe", filename: "hint-probe.safetensors" },
+    };
+    const declWith = (provisions: Array<{ name: string; url: string }>) => ({
+      ...base,
+      id: "lane-hint-probe",
+      lane_inputs: { unet: "probe-weights.safetensors" },
+      provisions,
+      variants: [
+        { id: "v", label: "V", group: "", route: "lane-hint-probe", cells: [{ quant: "fp16", label: "FP16" }] },
+      ],
+    });
+    // an empty models root: every lane file misses
+    const emptyRoot = mkdtempSync(join(tmpdir(), "hint-probe-root-"));
+    const prevRoot = process.env["MELITE_REPO_ROOT"];
+    process.env["MELITE_REPO_ROOT"] = emptyRoot;
+    try {
+      // 1. the EXACT match feeds the hint
+      const disposeExact = svc.registerFamily(declWith([
+        { name: "unrelated-extra.txt", url: "https://example.test/extra.txt" },
+        { name: "probe-weights.safetensors", url: "https://example.test/probe.safetensors" },
+      ]) as never);
+      try {
+        const miss = lanePresenceMiss("lane-hint-probe");
+        assert.ok(miss !== null, "the absent lane file misses (the probe family's unet is not on disk)");
+        assert.match(String((miss as { message?: string }).message), /lane presence/,
+          "the miss names the law (lane presence)");
+        assert.match(String((miss as { message?: string }).message), /fetch it: https:\/\/example\.test\/probe\.safetensors/,
+          "the hint rides the EXACTLY-matching provisions row");
+        assert.doesNotMatch(String((miss as { message?: string }).message), /extra\.txt/,
+          "a provisions row naming a DIFFERENT file never feeds the hint");
+      } finally {
+        disposeExact();
       }
+      // 2. no matching row: the miss stands WITHOUT a hint (and that
+      //    absence is named — never a silent fallback to some other row)
+      const disposeNoMatch = svc.registerFamily(declWith([
+        { name: "a-different-file.safetensors", url: "https://example.test/other.safetensors" },
+      ]) as never);
+      try {
+        const miss = lanePresenceMiss("lane-hint-probe");
+        assert.ok(miss !== null, "the miss still fires without a matching provision");
+        assert.doesNotMatch(String((miss as { message?: string }).message), /fetch it/,
+          "no exact name match means NO hint — the join is a name match, not a family-level guess");
+      } finally {
+        disposeNoMatch();
+      }
+    } finally {
+      if (prevRoot === undefined) delete process.env["MELITE_REPO_ROOT"];
+      else process.env["MELITE_REPO_ROOT"] = prevRoot;
     }
-    assert.deepEqual(mismatches, []);
+    assert.ok(!svc.registryIds().includes("lane-hint-probe"), "the probe withdrew");
   });
 });
 
@@ -632,6 +877,12 @@ describe("the DECLARATION claims are declared AND consumed", () => {
 describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, and ordered)", () => {
   it("no empty row, no off-surface key, no inverted span — family and variants alike", () => {
     const offenders: string[] = [];
+    // D-C8 (the wall audit, 2026-09-28): every arm inside the loop
+    // was a continue/return — a bounds tree that never reached a
+    // judge (all families losing their bounds at once) passed with
+    // zero judgments. The judged count is pinned now.
+    let judged = 0;
+    let judgedFamilies = 0;
     for (const id of modelIds()) {
       let decl: unknown;
       try { decl = getModel(id); } catch { continue; }
@@ -644,7 +895,9 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
       const familySurface = new Set(d.params ?? []);
       const judge = (layer: string, surface: ReadonlySet<string>, bounds: Record<string, { min?: number; max?: number }> | undefined): void => {
         if (bounds === undefined) return;
+        judgedFamilies++;
         for (const [field, row] of Object.entries(bounds)) {
+          judged++;
           if (!surface.has(field)) {
             offenders.push(`${id}/${layer}: bounds name '${field}', which ${layer === "family" ? "the family surface" : `variant ${layer}'s surface`} does not declare — dead air no seat judges (drop the row or surface the field)`);
           }
@@ -664,5 +917,60 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
       }
     }
     assert.deepEqual(offenders, [], offenders.join("\n"));
+    // gap b (the audit, 2026-09-28): floors became the EXACT
+    // census — qwen-img-edit-21 is the estate's SOLE declarer: one
+    // family layer, 2 rows (width/height), judged once per ROUTE
+    // id the loop walks (3 ids: the family + its two flat routes —
+    // the same decl seen three times, which is why the count is 3).
+    // Its death is no longer a green pass.
+    assert.equal(judgedFamilies, 3,
+      `the bounds census is EXACT: qwen-img-edit-21's row judged over its 3 ids (saw ${String(judgedFamilies)} — the sole declarer dying must not pass green)`);
+    assert.equal(judged, 6,
+      `the bounds row census is exact (saw ${String(judged)} — a schema change that empties a bounds table is a deliberate edit, never silent)`);
+  });
+
+  it("the bounds ROWS reach their consumers (gap b): judgeLaneBounds refuses out-of-span with the DECL's own spans", async (): Promise<void> => {
+    // the census above pins the DATA; this arm pins the WIRING —
+    // the consumers (laneBoundsOf + judgeLaneBounds, the registry's
+    // judge at cardsRegistry.ts) were referenced by no wall. The
+    // sole declarer's live rows are driven through the REAL judge:
+    // an in-span value passes, each endpoint's violation refuses
+    // IN THE FIELD'S VOICE, and the variant layer TIGHTENS the
+    // family row (per-endpoint merge — the nearer layer wins).
+    const { judgeLaneBounds, laneBoundsOf } = await import(
+      "../../../../packages/web-kit/contracts/src/laneRelations.ts"
+    );
+    const decl = registryModel("qwen-img-edit-21") as {
+      bounds?: Record<string, { min?: number; max?: number }>;
+      variants?: { id: string; bounds?: Record<string, { min?: number; max?: number }> }[];
+    };
+    assert.ok(decl.bounds !== undefined, "qwen-img-edit-21 lost its family bounds — the sole declarer (see the census above)");
+    const field = Object.keys(decl.bounds)[0]!;
+    const row = decl.bounds[field]!;
+    // the full judge contract on the family row
+    if (row.min !== undefined) {
+      assert.equal(judgeLaneBounds(decl.bounds ?? {}, { [field]: row.min - 1 }).length > 0, true,
+        `an under-span ${field} refuses through the real judge`);
+    }
+    if (row.max !== undefined) {
+      assert.equal(judgeLaneBounds(decl.bounds ?? {}, { [field]: row.max + 1 }).length > 0, true,
+        `an over-span ${field} refuses through the real judge`);
+    }
+    const inSpan = row.min !== undefined ? row.min : row.max;
+    assert.deepEqual(judgeLaneBounds(decl.bounds ?? {}, { [field]: inSpan }), [],
+      `an in-span ${field} passes clean through the real judge`);
+    // the MERGE consumer: a variant with bounds composes over the
+    // family row per-endpoint (a variant ceiling tightens without
+    // dropping the family floor)
+    const variantWithBounds = (decl.variants ?? []).find((v) => v.bounds !== undefined);
+    if (variantWithBounds !== undefined) {
+      const merged = laneBoundsOf(decl.bounds ?? {}, variantWithBounds.bounds ?? {});
+      assert.ok(merged !== null, "the merge consumer returned null over two live rows");
+      for (const [name, vrow] of Object.entries(variantWithBounds.bounds ?? {})) {
+        const m = merged![name]!;
+        assert.equal(m.min ?? vrow.min ?? decl.bounds?.[name]?.min, m.min,
+          `variant ${variantWithBounds.id}/${name}: the merged floor is the per-endpoint law (variant states, family holds)`);
+      }
+    }
   });
 });

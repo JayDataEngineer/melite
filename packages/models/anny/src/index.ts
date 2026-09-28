@@ -40,7 +40,11 @@ export const DECL: ModelDecl = {
     "note": "our own pack (vendor/comfyui_extensions/melite-poser-nodes) — the ray-era poser chain, stopgap arc 2026-09-04"
   },
   "studio": null,
-  "base_body": "anny-base-body.glb",
+  // (D-C7, 2026-09-28: "base_body" KILLED — the member had one
+  // declarer (here) and zero readers since the parametric bake
+  // landed (the neutral body IS the all-defaults bake; the GLB
+  // staging path is the superseded 2026-09-04 phase-1 shape). A
+  // claim nothing reads is a lie the walls audit caught green.)
   "genre": "3d",
   "mods": [
     "hmr-estimate",

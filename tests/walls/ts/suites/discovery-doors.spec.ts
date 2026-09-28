@@ -36,6 +36,7 @@ import { loadCardDefs } from "../../../../packages/engines/comfyui-cordis/src/ca
 // the family DECLARED, through the service that composes it.
 import { KREA_ROWS } from "../../../../packages/models/krea-2/mods/loras.ts";
 import { ZIMAGE_CONTROLNET_ROWS } from "../../../../packages/models/z-image/mods/controlnet.ts";
+import { ZIMAGE_IPADAPTER_ROWS } from "../../../../packages/models/z-image/mods/ip_adapter.ts";
 
 describe("the discovery door arms (live /v1 derivation)", () => {
   it("serves the krea-2 envelope with the family-owned lora options (LORA LAW)", async () => {
@@ -168,18 +169,20 @@ describe("the discovery door arms (live /v1 derivation)", () => {
       value: string; label: string; tooltip: string;
       defaults: { weight?: number }; model: string;
     }>;
-    assert.deepEqual(options.map((o) => o.value), ["style", "composition", "face", "generic"]);
-    const weights: Record<string, number> = { style: 1, composition: 1, face: 0.85, generic: 1 };
-    const files: Record<string, string> = {
-      style: "ip-adapter-light_v11.safetensors",
-      composition: "ip-adapter-plus_sd15.safetensors",
-      face: "ip-adapter-faceid-plusv2_sd15.safetensors",
-      generic: "ip-adapter_sd15.safetensors",
-    };
-    for (const o of options) {
-      assert.equal(o.defaults.weight, weights[o.value], `${o.value} seeds its declared weight`);
-      assert.equal(o.model, files[o.value], `${o.value} stamps the retired filename as a catalog note`);
-      assert.ok((o.tooltip ?? "").length > 0, `${o.value} serves its tooltip`);
+    // B-M7 (the wall audit, 2026-09-28): the option ids, the weight
+    // table and the filename table were RE-TYPED copies of
+    // ZIMAGE_IPADAPTER_ROWS — drift on either side moved together
+    // and the arm could not fail. The DECLARATION is the oracle now,
+    // field-by-field (the same law as the controlnet arm above).
+    assert.deepEqual(options.map((o) => o.value), ZIMAGE_IPADAPTER_ROWS.map((r) => r.id),
+      "the served options ARE the declared rows, in order");
+    for (const row of ZIMAGE_IPADAPTER_ROWS) {
+      const opt = options.find((o) => o.value === row.id);
+      assert.notEqual(opt, undefined, `${row.id} has an option (the declared rows all ride)`);
+      assert.equal(opt!.defaults.weight, row.default_weight, `${row.id} seeds its declared weight`);
+      assert.equal(opt!.model, row.filename, `${row.id} stamps the retired filename as a catalog note`);
+      assert.equal(opt!.label, row.label, `${row.id} serves its declared label`);
+      assert.equal(opt!.tooltip, row.tooltip, `${row.id} serves its declared tooltip`);
     }
     const schemas = (spec as { mod_schemas: Record<string, unknown> }).mod_schemas;
     assert.ok("ip_adapter" in schemas, "the ip_adapter pack envelope rides mod_schemas");

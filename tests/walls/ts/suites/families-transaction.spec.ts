@@ -99,7 +99,16 @@ describe("boot is transactional (all-or-nothing)", () => {
     // the SAME plugin retracts with the failed load
     await ctx.fiber.dispose();
     assert.equal(svc.familyCount(), 0, "context dispose empties its table");
-    assert.ok(before >= 0);
+    // C-L14 (the wall audit, 2026-09-28): `before >= 0` cannot
+    // fail — a count is never negative, so the arm proved nothing.
+    // The TRANSACTIONAL fact is the rollback: the good row was
+    // registered in the same fiber as the broken one, so if the
+    // refusal leaked it, the count would be non-zero. It is zero
+    // the moment the fiber rejects — all-or-nothing, proven.
+    const afterReject = svc.familyCount();
+    assert.equal(afterReject, 0,
+      `the refused fiber left NOTHING behind — its good row rolled back with the broken one (saw ${String(afterReject)})`);
+    assert.equal(before, 0, "the context started empty (the census is meaningful)");
   });
 });
 

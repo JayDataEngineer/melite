@@ -42,10 +42,22 @@ const svc = theService();
 test("mods registered through the service as plugins (PORT LAW: Schemastery contracts)", () => {
   // the absorption is non-empty for all four families
   const edit = svc.cardModFields("image-edit");
-  const editNames = new Set(edit.flatMap(names));
-  for (const n of ["image1", "lanpaint_enabled", "outpaint_overlap", "mask", "mask_mode", "loras"]) {
-    assert.ok(editNames.has(n), `image-edit absorbed surface misses ${n}`);
-  }
+  // D-M13 (the wall audit, 2026-09-28): this arm used has() over a
+  // set while both siblings deepEqual the EXACT absorbed surface —
+  // a dropped or added field walked past. The exact list is pinned
+  // (field order IS the contract — schemastery preserves
+  // declaration order).
+  assert.deepEqual(edit.flatMap(names), [
+    // (D-M13: the exact absorbed surface, declaration order — the
+    // old arm's has() over six names let twenty fields drift past)
+    "image1",
+    "lanpaint_enabled", "lanpaint_num_steps", "lanpaint_step_size", "lanpaint_lambda",
+    "lanpaint_beta", "lanpaint_friction", "lanpaint_prompt_mode",
+    "outpaint_top", "outpaint_right", "outpaint_bottom", "outpaint_left", "outpaint_overlap",
+    "loras",
+    "mask", "input_mask", "mask_mode", "mask_detector", "mask_context_pad",
+    "mask_grow", "mask_feather", "mask_threshold", "mask_invert", "mask_detail_size", "mask_denoise",
+  ], "image-edit absorbs the edit packs' surface, exactly and in order");
   // every mod's fields ARE a z.object contract (the dual-decl pattern)
   for (const a of edit) {
     assert.ok(a.fields.dict !== undefined, `pack ${a.pack} carries a Schemastery object contract`);
@@ -232,20 +244,31 @@ test("the correction stroke: flavors are family-owned and the boarding is bidire
   // THE MARRIAGE GRAMMAR (#36): entries are pack names or
   // {pack, marries} declarations — the boarding test reads the
   // pack name either way (one normalizer, the service's own law)
+  // D-M13 (the wall audit, 2026-09-28): both walks were `?? []` +
+  // continue with NO census — a mods/flavor table emptied at the
+  // source judged ZERO rows and passed vacuously. Both are counted.
+  let judgedBoardings = 0;
   for (const id of registryIds()) {
     for (const entry of (getModel(id).mods ?? []).map((m) => (typeof m === "string" ? m : m.pack))) {
+      judgedBoardings++;
       assert.ok(packs.has(entry) || verbs.has(entry),
         `${id} boards '${entry}' — dead boarding (the amnesty is over)`);
     }
   }
   // every flavor's family boards its pack (undeclared mutation —
   // the marriage grammar normalizes to pack names, the same law)
+  let judgedFlavors = 0;
   for (const flavor of svc.flavorRegistrations()) {
     for (const fam of flavor.families) {
+      judgedFlavors++;
       assert.ok((getModel(fam).mods ?? []).map((m) => (typeof m === "string" ? m : m.pack)).includes(flavor.pack),
         `${fam} carries a '${flavor.pack}' flavor its DECL does not board`);
     }
   }
+  assert.ok(judgedBoardings >= 5,
+    `the boarding walk judged real rows (${String(judgedBoardings)} — a mods table emptied at the source is an empty pass)`);
+  assert.ok(judgedFlavors >= 5,
+    `the flavor walk judged real rows (${String(judgedFlavors)} — a flavor registry emptied at the source is an empty pass)`);
   // every DECLARED pack boarding HAS a flavor for that family (the
   // satisfaction law's third edge — a boarding whose flavor file
   // was lost is a silent dead mutation, the boot gate refuses it)
@@ -497,19 +520,33 @@ test("gate (d), the pack fate: every boarded pack is fired or refused-loud", asy
   // pass. Live pin: every DECL pack entry has a fate (the boot
   // refuses otherwise, so this wall and the boot read one table).
   const guard = await import("../../../../packages/engines/comfyui-card-kit/src/mods/guard.ts");
-  for (const p of ["loras", "controlnet", "qvoice", "lanpaint", "mask"]) guard.assertPackFate(p);
+  // D-M13 (the wall audit, 2026-09-28): the loop named FIVE packs by
+  // hand while PACK_FATE carries SEVEN — qvoice_save and ip_adapter
+  // walked past unchecked. The check DERIVES from the fate table
+  // itself now (one truth, no second list), and the table's own
+  // census is exact: seven fates stand.
+  for (const p of Object.keys(guard.PACK_FATE)) guard.assertPackFate(p);
+  assert.equal(Object.keys(guard.PACK_FATE).length, 7,
+    `the fate table carries its packs (${String(Object.keys(guard.PACK_FATE).length)} — a pack landed or retired without touching this census is drift)`);
   const { registryIds, registryModel } = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
   const verbs = new Set(svc.verbIds());
+  // D-M13: the boarding walk was `?? []` + continue with no census —
+  // a mods table emptied at the source judged ZERO boardings and
+  // passed vacuously. Judged boardings are counted now.
+  let judgedBoardings = 0;
   for (const id of registryIds()) {
     for (const entry of ((registryModel(id).mods ?? []) as readonly (string | { pack: string })[])
       .map((m) => (typeof m === "string" ? m : m.pack))) {
       if (verbs.has(entry)) continue;
+      judgedBoardings++;
       assert.ok(
         (guard.PACK_FATE as Record<string, string>)[entry] !== undefined,
         `model '${id}' boards fateless pack '${entry}' — land the lane or the loud refusal first`,
       );
     }
   }
+  assert.ok(judgedBoardings >= 5,
+    `the fate walk judged real boardings (${String(judgedBoardings)} — a mods table emptied at the source is an empty pass)`);
 });
 
 test("the verb mirror: every mounted verb is boarded by its families' DECLs", async () => {

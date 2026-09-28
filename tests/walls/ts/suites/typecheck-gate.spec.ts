@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { execFile } from "node:child_process";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { execFile, execFileSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
 const run = promisify(execFile);
@@ -132,6 +133,36 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
     expect(script).toMatch(/TCFAIL.*-ne 0[\s\S]*?exit 1/s);
   });
 
+  it("F-M5: the discovery command EXECUTES (a fixture tree proves the find's own law)", () => {
+    // The arms above are substring regexes — the claim is
+    // behavioural: the pipeline DISCOVERS tsconfig dirs while
+    // skipping node_modules. The SHIPPED command is extracted from
+    // the script text (never retyped here — one derivation) and run
+    // against a fixture tree containing every trap: a real package,
+    // a NESTED package, a tsconfig inside node_modules (must be
+    // skipped), and a dot-dir (skipped by the repo walk's own law
+    // only if the command says so — here we pin the command's raw
+    // behaviour and the ship loop's `*/packages/*` guard).
+    const script = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
+    const m = script.match(/find "[^"]*" -name tsconfig[.]json -not -path '[*][/]node_modules[/][*]' -printf '%h.n'/);
+    expect(m, "the shipped find command is extractable (one derivation — a retype here would drift)").not.toBeNull();
+    const fixture = mkdtempSync(join(tmpdir(), "tc-gate-fixture-"));
+    const mk = (rel: string): string => {
+      mkdirSync(join(fixture, rel), { recursive: true });
+      writeFileSync(join(fixture, rel, "tsconfig.json"), "{}\n");
+      return rel;
+    };
+    const real = mk("packages/alpha");
+    const nested = mk("packages/group/beta");
+    mk("packages/alpha/node_modules/trap"); // must NOT be discovered
+    writeFileSync(join(fixture, "tsconfig.json"), "{}\n"); // outside packages/ — not discovered
+    const cmd = m![0].replace('find "$REPO/packages"', `find "${fixture}/packages"`);
+    const out = execFileSync("/usr/bin/env", ["bash", "-c", cmd], { encoding: "utf8" });
+    const found = out.trim().split("\n").filter(Boolean)
+      .map((l) => l.replace(`${fixture}/`, "")).sort();
+    expect(found).toEqual([real, nested].sort());
+  });
+
   it("THE TEST TIER rides both gates (spec files are a plane — one implementation, two callers)", () => {
     // li-aq.3, the rules audit's HIGH-2: package tsconfigs include
     // src/** only, so SPEC files were typed by nothing — a spec
@@ -147,8 +178,11 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
     expect(script).toMatch(/rootDir/); // the flatten's one deletion
     const ship = readFileSync(join(REPO, "scripts", "ship-lane.sh"), "utf8");
     expect(ship).toMatch(/typecheck-tests\.mjs[\s\S]*?exit 1/s);
-    const gate = readFileSync(import.meta.filename, "utf8");
-    expect(gate).toMatch(/typecheck-tests\.mjs/); // this wall runs it below
+    // F-L4 (the wall audit, 2026-09-28): the last line read THIS
+    // FILE and matched its own text — a wall grepping itself proves
+    // nothing (delete the runner call and the assertion still
+    // passed on the comment). Dropped: the arm BELOW runs the
+    // script for real, which is the only proof that exists.
   });
 
   it("the test tier typechecks clean (the TS2724 class dies at the wall)", async () => {

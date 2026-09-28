@@ -70,12 +70,24 @@ afterAll(() => {
 
 interface SkillLine { id?: string }
 
+// C-M8 (the wall audit, 2026-09-28): the advertisement censuses,
+// pinned exactly at the wall's own read (the ids are read above and
+// every one of them round-tripped, so this number is the truth of
+// the tree, not a guess). A card or flow that loses its skill line
+// moves this and says so.
+const EXPECTED_CARD_SKILLS = 24;
+const EXPECTED_FLOW_SKILLS = 8;
+
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
-  it("every CARD skill line it advertises, hSkillRead serves 200 with a body", () => {
+  it("every CARD skill line it advertises, hSkillRead serves 200 with a body", async () => {
     const disclose = ctx.get("disclose") as DiscloseDirectoryService;
     const cards = disclose.discover("cards", "", "") as { cards: Array<{ id?: string; name?: string }> };
     const ids = (cards.cards ?? []).map((c) => c.id ?? c.name).filter(Boolean) as string[];
-    assert.ok(ids.length >= 10, "the card plane rode (" + ids.length + ")");
+    // C-M8 (the wall audit, 2026-09-28): `>= 10` let the card plane
+    // shrink silently. The census is the CARD REGISTRY's, exactly.
+    const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+    assert.equal(ids.length, (await loadCardDefs()).size,
+      "the card plane is the card registry, exactly (no floor, no drift)");
     const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
     const loader = ctx.get("load") as LoadResolverService;
     let advertised = 0;
@@ -92,15 +104,22 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
         assert.ok(typeof body === "string" && body.length > 0, `${sid} served 200 with an empty body`);
       }
     }
-    // the law is only testable if the planes actually advertise
-    assert.ok(advertised >= 5, `only ${advertised} skill ids advertised across ${ids.length} cards`);
+    // the law is only testable if the planes actually advertise —
+    // and the advertisement is a CENSUS, not a floor: every
+    // advertised id was read above, so the exact count is the
+    // roster's own (a card that lost its skill line would show).
+    assert.equal(advertised, EXPECTED_CARD_SKILLS,
+      `exactly ${String(EXPECTED_CARD_SKILLS)} card skill ids advertised across ${String(ids.length)} cards`);
   });
 
-  it("every FLOW skill line it advertises, hSkillRead serves 200 with a body", () => {
+  it("every FLOW skill line it advertises, hSkillRead serves 200 with a body", async () => {
     const disclose = ctx.get("disclose") as DiscloseDirectoryService;
     const flows = disclose.discover("flows", "", "") as { flows: Array<{ name?: string }> };
     const names = (flows.flows ?? []).map((f) => f.name).filter(Boolean) as string[];
-    assert.ok(names.length >= 11, "the flow plane rode");
+    // C-M8: exact, against the flow registry (13 today).
+    const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+    assert.equal(names.length, registryFlowNames().length,
+      "the flow plane is the flow registry, exactly (no floor, no drift)");
     const stateRoot = process.env["MELITE_STATE_ROOT"] as string;
     const loader = ctx.get("load") as LoadResolverService;
     let advertised = 0;
@@ -112,8 +131,16 @@ describe("the id namespace law: load-advertised ids round-trip through the read 
         advertised += 1;
         const res = hSkillRead(repo, stateRoot, sid);
         assert.equal(res.status, 200, `flow ${name} advertises ${sid} but the read door answers ${res.status}`);
+        // C-C1 (the wall audit): this arm checked ONLY the status —
+        // the card arm's body law (200 with a NON-EMPTY body) was
+        // never copied over, so a 200 with an empty body passed for
+        // every flow skill. Same law, same door.
+        const payload = res.payload as { body?: string; content?: string };
+        const body = payload.body ?? payload.content ?? "";
+        assert.ok(typeof body === "string" && body.length > 0, `${sid} served 200 with an empty body`);
       }
     }
-    assert.ok(advertised >= 1, `flows advertised ${advertised} skill ids — nothing to pin`);
+    assert.equal(advertised, EXPECTED_FLOW_SKILLS,
+      `exactly ${String(EXPECTED_FLOW_SKILLS)} flow skill ids advertised — nothing to pin, nothing to lose`);
   });
 });

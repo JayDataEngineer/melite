@@ -160,9 +160,24 @@ describe("the melite tool faces answer over the live composition", () => {
   it("melite_discover EXECUTES and RENDERS disclosure lines (no silent disclosure)", async () => {
     const { envelope, lines } = await drive("melite_discover", { lookup: "all" });
     const env = envelope as { flows?: unknown[]; cards?: unknown[]; error?: string };
-    assert.ok(Array.isArray(env.flows) && env.flows.length >= 11,
-      `flows ride in the envelope (got ${env.flows?.length ?? "none"}: ${JSON.stringify(envelope).slice(0, 300)}`);
-    assert.ok(Array.isArray(env.cards) && env.cards.length >= 1, "cards ride in the envelope");
+    // F-M3 (the wall audit, 2026-09-28): `>= 11` and `>= 1` floors
+    // were hand numbers beside a live registry — the envelope now
+    // serves the REGISTRY'S OWN census, exactly.
+    const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+    const flowNames = registryFlowNames();
+    assert.ok(flowNames.length >= 10, `the flows registry is real (${String(flowNames.length)})`);
+    // F-M3 exact: the envelope's OWN census claim (counts.flows) is
+    // the registry's census — the rows view may clamp (the
+    // counts-first law), the count never lies.
+    const counts = (envelope as { counts?: { flows?: number; cards?: number } }).counts;
+    assert.equal(counts?.flows, flowNames.length,
+      `the envelope's flows census IS the registry's (got ${String(counts?.flows)} vs ${String(flowNames.length)} registered: ${JSON.stringify(envelope).slice(0, 300)})`);
+    assert.ok(Array.isArray(env.flows) && env.flows.length > 0, "the flows rows view rides");
+    const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+    const cardIds = [...(await loadCardDefs()).keys()];
+    assert.equal(counts?.cards, cardIds.length,
+      `the envelope's cards census IS the registry's (got ${String(counts?.cards)} vs ${String(cardIds.length)} registered)`);
+    assert.ok(Array.isArray(env.cards) && env.cards.length > 0, "the cards rows view rides");
     assert.ok(lines.length >= 1 && lines.join("").length > 0,
       `render returns model-facing lines (got ${lines.length}: ${lines.join(" | ").slice(0, 200)}`);
   });
@@ -293,9 +308,13 @@ describe("the melite tool faces answer over the live composition", () => {
     const env = envelope as { content?: string; error?: string };
     const body = typeof env.content === "string" ? env.content : "";
     assert.ok(body.length > 0, `the envelope carries the body`);
+    // F-L3 (the wall audit, 2026-09-28): the pin compared only the
+    // body's FIRST FORTY CHARACTERS — a renderer that carried the
+    // head and dropped the rest passed. The FULL body is the pin.
     const text = lines.join("\n");
-    assert.ok(text.length > body.slice(0, 40).length && text.includes(body.slice(0, 40)),
-      `the rendered lines carry the body's head (got: ${text.slice(0, 200)}`);
+    assert.ok(body.length > 40, `the body is long enough for a full-body pin (${String(body.length)} chars)`);
+    assert.ok(text.includes(body),
+      `the rendered lines carry the WHOLE body, not a head (body ${String(body.length)} chars, text ${String(text.length)} chars; got: ${text.slice(0, 200)})`);
   });
 
   it("melite_load render CARRIES params + digest (the follow-up call needs them)", async () => {

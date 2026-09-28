@@ -9,6 +9,8 @@
 // mounts, exactly like a lane restart after any composed session.
 //
 // It is a REPRO first: run it and read the failure's own voice.
+import { bundleSeats } from "../../helpers/bundle-seats.ts";
+const REPO = new URL("../../../../", import.meta.url).pathname.replace(/\/$/, "");
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from "node:fs";
@@ -64,7 +66,32 @@ beforeAll(async () => {
 
 describe("the estate bundle boots with a live bench doc present", () => {
   it("every provider seat settles (the wedge repro)", async () => {
-    const names = ["queue", "draftsRemote", "benchRemote", "cardRegistry", "disclose", "manage", "meliteSkills", "load", "runs"];
+    // B-M8 (the wall audit, 2026-09-28): nine hand-typed names for a
+    // bundle that mounts eighteen — the same rot as the composition
+    // twin, and the wedge this arm exists to catch. The census is
+    // DERIVED from the bundle's import closure and pinned exactly
+    // (the composition wall holds the same derivation; the engine
+    // executor seats are conditional per configured engine id, and
+    // this rig configures none).
+    const names = bundleSeats(REPO + "/packages/web/melite-estate/src/index.ts", REPO)
+      .filter((n) => !n.startsWith("melite-engine-"));
+    expect(names).toEqual([
+      "benchRemote",
+      "cardRegistry",
+      "comfyui",
+      "disclose",
+      "draftsRemote",
+      "engines",
+      "load",
+      "manage",
+      "manageRemote",
+      "mediaRemote",
+      "meliteSkills",
+      "provisioning",
+      "queue",
+      "runs",
+      "runsRemote",
+    ]);
     const deadline = Date.now() + 20_000;
     for (;;) {
       const missing = names.filter((n) => ctx.get(n, false) === undefined);

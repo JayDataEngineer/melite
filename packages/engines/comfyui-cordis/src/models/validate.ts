@@ -23,6 +23,18 @@ export interface FieldDomain {
 /** card id → (field name → domain). */
 export type CardDomains = ReadonlyMap<string, ReadonlyMap<string, FieldDomain>>;
 
+/** ENGINE_TRUTH (the one SSOT, models-against-cards audit finding 5,
+ * 2026-09-28): the compose's own declaration keys — never card
+ * fields. "model" is the ROUTE RE-POINT token (resolver_defaults
+ * .model, the krea-2-raw precedent): a card boarding a route
+ * address (qvoice across ALL qwen3-tts, operator 2026-09-23) walks
+ * that view's defaults, and the token must skip like "variant"
+ * does. The boot call (service.ts) and the walls read THIS export —
+ * the triple was hand-spelled in three places (the suite ghost-cited
+ * a retired python file); a fourth spelling is the drift this
+ * export kills. */
+export const ENGINE_TRUTH: readonly string[] = ["mode", "variant", "model"];
+
 /** Schemastery field schema (structural — no package dep). The
  *  union's alternatives live at .list (NODE level, not
  *  .meta.list) and each const carries .value. */

@@ -49,8 +49,24 @@ describe("THE REPO TIER (tools/ + tests/ typed by nothing)", () => {
     // found six live defects. If the arm is deleted from the script,
     // the plane goes dark again — silently, because the package loop
     // never covered it.
+    // C-M9 (the wall audit, 2026-09-28): the second pin
+    // (`/repo tier/`) matched the CONSOLE STRINGS — delete the
+    // spawnSync that runs the repo tier, keep the two log lines, and
+    // the arm still passed with the plane dark. The arm is now
+    // pinned by its FUNCTIONAL call shape: the repo tier's tsc runs
+    // through a spawnSync whose argv names the tracked config, and
+    // its failure branch increments the failure tally (the script
+    // exits non-zero on a red tier).
     const script = read("scripts/typecheck-tests.mjs");
-    expect(script).toContain('"-p", "tsconfig.repotier.json"');
+    const call = script.match(
+      /spawnSync\(\s*process\.execPath\s*,\s*\[tsc\s*,\s*"--noEmit"\s*,\s*"-p"\s*,\s*"tsconfig\.repotier\.json"\]/,
+    );
+    expect(call, "the repo tier runs through the tsc spawnSync naming tsconfig.repotier.json").not.toBeNull();
+    // and the failure branch of THAT call feeds the exit tally (a
+    // run whose result is ignored would report green while dark)
+    const after = script.slice((call?.index ?? 0) + (call?.[0].length ?? 0), (call?.index ?? 0) + 700);
+    expect(after).toMatch(/failed\+\+|status\s*!==?\s*0|status\s*===\s*0/);
+    // the console line survives as the operator's receipt
     expect(script).toMatch(/repo tier/);
   });
 
@@ -155,14 +171,35 @@ describe("THE LAX TRIPLE (strict:false anywhere)", () => {
 });
 
 describe("THE DRIFT FLOOR (>= 85 let packages go dark)", () => {
-  it("the discovery pin is exact — no floor form remains", () => {
+  it("the discovery pin is exact — no floor form remains, and the number is LIVE", () => {
     // THE WEDGE: expect(count).toBeGreaterThanOrEqual(85) let the
     // count drift silently down to 85 while packages went dark, and
     // never heard a new package at all. The exact pin's own
     // regression is the floor FORM creeping back into the spec.
+    // C-C5 (the wall audit, 2026-09-28): the ban only matched 80s —
+    // a `>= 70` or `>= 120` floor walked past — and the meta-pin
+    // HARDCODED 88, so the two literals could drift apart silently.
+    // The ban is total now (ANY numeric floor on the count), and the
+    // expected number is DERIVED by the same walk the gate itself
+    // runs: adding a package without touching the gate's literal
+    // fails HERE, with the arithmetic spelled out.
     const gate = read("tests/walls/ts/suites/typecheck-gate.spec.ts");
-    expect(gate).not.toMatch(/toBeGreaterThanOrEqual\(8\d\)/);
-    expect(gate).toContain(").toBe(88)");
+    expect(gate, "no numeric floor may replace the exact pin (any decade)").not.toMatch(/toBeGreaterThanOrEqual\(\d+\)/);
+    // derive the live count exactly as the gate does
+    const live: string[] = [];
+    const walk = (dir: string, depth: number): void => {
+      let entries;
+      try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return }
+      for (const e of entries) {
+        if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        if (e.isDirectory() && depth < 2) walk(p, depth + 1);
+        else if (e.isFile() && e.name === "tsconfig.json") live.push(dir);
+      }
+    };
+    walk(join(REPO, "packages"), 0);
+    expect(live.length, "census floor: the walk sees the estate (the derivation rotted)").toBeGreaterThan(10);
+    expect(gate, `the gate pins the LIVE tsconfig count (${live.length}) — touch its literal when the estate grows`).toContain(`).toBe(${live.length})`);
   });
 });
 
@@ -205,18 +242,72 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // "shipped green" while the operator ran yesterday's bytes. The
     // list is now derived from the export map itself.
     expect(ship).toContain('(data.get("exports") or {}).get("./client")');
-    for (const pkg of ["packages/motion/motion", "packages/video/h3-timeline", "packages/3d/img-to-mesh"]) {
-      const manifest = JSON.parse(read(`${pkg}/package.json`)) as {
-        exports?: Record<string, { default?: string } | string>;
-      };
-      const client = manifest.exports?.["./client"];
-      const target = typeof client === "string" ? client : client?.default;
-      expect(target, `${pkg} exports a built client bundle`).toBe("./lib/client.js");
+    // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
+    // packages the export map carries — a fourth built bundle would
+    // have joined the ship while this arm watched three. The set is
+    // DISCOVERED from every manifest now and pinned exactly: six
+    // built bundles (./lib/client.js) plus the viewer's hot-loaded
+    // ./src client, which is the one that must NOT be built.
+    const discovered: Array<{ pkg: string; target: string; built: boolean }> = [];
+    const walkPkgs = (dir: string, depth: number): void => {
+      if (depth > 2) return;
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (!e.isDirectory() || e.name === "node_modules" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        const manifest = join(p, "package.json");
+        if (existsSync(manifest)) {
+          const data = JSON.parse(readFileSync(manifest, "utf8")) as {
+            exports?: Record<string, { default?: string } | string>;
+          };
+          const client = data.exports?.["./client"];
+          const target = typeof client === "string" ? client : client?.default;
+          if (typeof target === "string") {
+            discovered.push({ pkg: p, target, built: target.replace("./", "") === "lib/client.js" });
+          }
+        }
+        walkPkgs(p, depth + 1);
+      }
+    };
+    walkPkgs(join(REPO, "packages"), 0);
+    expect(discovered.map((d) => [d.pkg.replace(`${REPO}/`, ""), d.target, d.built]).sort(),
+      "every manifest carrying a ./client export, and whether it is BUILT")
+      .toEqual([
+        ["packages/3d/img-to-mesh", "./lib/client.js", true],
+        ["packages/motion/motion", "./lib/client.js", true],
+        ["packages/video/h3-timeline", "./lib/client.js", true],
+        ["packages/web/infer-gallery", "./lib/client.js", true],
+        ["packages/web/melite-card-deck", "./lib/client.js", true],
+        ["packages/web/melite-card-view", "./lib/client.js", true],
+        ["packages/web/viewer", "./src/client/index.ts", false],
+      ]);
+    // the ship's own discovery must therefore carry all six built
+    // bundles — the export-map filter is the same law
+    for (const d of discovered.filter((x) => x.built)) {
+      expect(ship, `${d.pkg} is a built client bundle`).toContain(
+        d.pkg.replace(`${REPO}/`, "").replace("packages/", "").split("/").pop() as string,
+      );
     }
   });
 
   it("a missing client package FAILS the ship (never skips)", () => {
-    expect(ship).not.toMatch(/for p in "\$\{CLIENT_BUNDLES\[@\]\}"; do\s*\n\s*if \[ ! -d "\$REPO\/\$p" \]; then continue; fi/);
+    // C-M12 (the wall audit, 2026-09-28): a NEGATIVE regex cannot
+    // see a reintroduction written differently — a split-line `if`,
+    // an `&&`, or `[[ -d ]]` all match neither the old pattern nor
+    // its absence. The pin is POSITIVE now: the loop's own body is
+    // read, and the missing-directory branch must NAME the failure
+    // and exit non-zero (a `continue` or a bare test would ship a
+    // 404ing bundle).
+    const loopAt = ship.indexOf('for p in "${CLIENT_BUNDLES[@]}"; do');
+    expect(loopAt, "the client-bundle loop exists").toBeGreaterThan(-1);
+    const loop = ship.slice(loopAt);
+    // the branch is the lines between the loop head and the build
+    // step that follows it (read by shape, not by a fixed offset)
+    const buildAt = loop.indexOf("node node_modules/tsdown");
+    expect(buildAt, "the client build step follows the existence check").toBeGreaterThan(-1);
+    const branch = loop.slice(0, loop.lastIndexOf("\n", buildAt));
+    expect(branch, "the loop's missing-directory branch is present").toContain('[ ! -d "$REPO/$p" ]');
+    expect(branch, "a missing client bundle is named and FAILS the ship").toMatch(/bad\s+"[^"]*"/);
+    expect(branch, "the branch exits non-zero (never continues past a 404ing bundle)").toMatch(/exit 1/);
   });
 
   it("every probe is FATAL — a gate that cannot fail is a log line", () => {
@@ -224,21 +315,45 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // the script still printed SHIPPED: a fail-open model board, a
     // gateless form and a blind agent face all shipped green.
     const probeBlock = ship.slice(ship.indexOf('say "PROVE the lane runs this tree'));
-    const fails = probeBlock.match(/^\s*bad "/gm) ?? [];
-    const fatal = probeBlock.match(/^\s*bad "[\s\S]*?\n\s*exit 1/gm) ?? [];
-    expect(fails.length).toBeGreaterThan(0);
-    // every `bad` in the prove/declare section is followed by exit 1
-    // (the cleanup warning is the one allowed exception — it says the
-    // operator must act by hand, and the ship already proved itself)
-    const nonFatal = probeBlock
-      .split(/\n\s*bad "/)
-      .slice(1)
-      .filter((chunk) => {
-        const first = chunk.split("\n")[0] ?? "";
-        if (first.includes("could not remove the probe stage")) return false;
-        return !/exit 1/.test(chunk.slice(0, 400));
-      });
-    expect(nonFatal, `non-fatal gates: ${nonFatal.map((c) => c.split("\n")[0]).join(" | ")}`).toEqual([]);
+    // C-L17 (the wall audit, 2026-09-28): the scan looked 400
+    // CHARACTERS ahead — an `exit 1` written 401 chars later (or
+    // after a long message) read as a fail-open gate, and a long
+    // message wrote the same gate both fatal and non-fatal
+    // depending on the day. The scan is now STRUCTURAL: each `bad`
+    // line's own branch is its indentation span (from the line to
+    // the next line at the same-or-lower indent), and the branch
+    // must carry the exit. The one exemption — the cleanup warning
+    // that says the operator must act by hand — is matched on the
+    // MESSAGE ITSELF, wherever the line wraps it.
+    const lines = probeBlock.split("\n");
+    const badLines = lines
+      .map((line, i) => ({ line, i }))
+      .filter(({ line }) => /^\s*bad "/.test(line));
+    expect(badLines.length, "the prove section has gates to judge").toBeGreaterThan(0);
+    const EXEMPT = "could not remove the probe stage";
+    const nonFatal: string[] = [];
+    for (const { line, i } of badLines) {
+      if (line.includes(EXEMPT)) continue; // named exemption: the operator acts by hand
+      const indent = line.length - line.trimStart().length;
+      let exit = false;
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const next = lines[j] ?? "";
+        const trimmed = next.trim();
+        if (trimmed === "") continue;
+        // a `then` BLOCK's body shares the `bad` line's indent, so
+        // same-indent lines are still inside the branch; the branch
+        // ends at its own closer (`fi` / `done` / `}` / `;;`) or at
+        // a line indented LESS than the gate.
+        const nextIndent = next.length - next.trimStart().length;
+        const isCloser = ["fi", "done", "esac", "}", ";;", ")"].includes(trimmed)
+          || trimmed.startsWith("fi ") || trimmed.startsWith("done ");
+        if (isCloser) break;
+        if (nextIndent < indent) break;
+        if (/\bexit\b/.test(next)) { exit = true; break }
+      }
+      if (!exit) nonFatal.push(line.trim().slice(0, 90));
+    }
+    expect(nonFatal, `non-fatal gates (a ` + "`bad`" + ` with no exit in its own branch): ${nonFatal.join(" | ")}`).toEqual([]);
   });
 
   it("the load bundle's lane contract is PROVEN on the live lane", () => {

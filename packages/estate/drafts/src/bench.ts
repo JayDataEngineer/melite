@@ -193,7 +193,7 @@ function seedStateOf(row: Record<string, unknown>): string {
 
 /** Birth defaults per the composer's law (id, inputs, provenance)
  *  with the runner's object inputs. */
-function normalizeStages(
+export function normalizeStages(
   stagesIn: unknown,
   author: Author,
 ): Record<string, unknown>[] {

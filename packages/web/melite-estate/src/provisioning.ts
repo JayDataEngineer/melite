@@ -28,6 +28,7 @@ import {
   type ModelDecl,
   type ProvisionRow,
 } from "@melite/comfyui-cordis";
+import { artifactFileName } from "@melite/contracts/benchResult";
 import { mergeManifest } from "@melite/comfyui-cordis/provisioning-manifest";
 import { resolveStoreRoot } from "@melite/estate-models";
 import { factsPath } from "@melite/estate-queue";
@@ -105,27 +106,7 @@ function familyPlan(
     };
   }
   const coordinates = routeCoordinates(ref, decl);
-  /** The download filename a source URL names: its PATHNAME's last
- *  segment, percent-decoded. Never the query, never the fragment,
- *  never "" (a URL ending in "/" names no file — the caller's
- *  destination check refuses it by name). */
-function artifactFileName(sourceUrl: string): string {
-  let pathname = sourceUrl;
-  try {
-    pathname = new URL(sourceUrl).pathname;
-  } catch {
-    // not an absolute URL — take everything before ? and #
-    pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
-  }
-  const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
-  try {
-    return decodeURIComponent(last);
-  } catch {
-    return last;
-  }
-}
-
-const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
+  const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
   const artifact = resolved.cell?.artifact;
   if (artifact === undefined || artifact === null) {
     throw new Error(`model "${ref.id}" declares no downloadable provisions`);

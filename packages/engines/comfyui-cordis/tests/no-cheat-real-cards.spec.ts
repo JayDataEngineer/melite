@@ -35,7 +35,10 @@ const factsDoc = loadFacts(
 );
 
 const defs: Map<string, CardDefinition> = await loadCardDefs();
-assert.ok(defs.size >= 15, `the registry serves every card (got ${defs.size})`); // 15: the voice-lock card died 2026-09-21 (design moved into the tts card's mods)
+// F-M2 (the wall audit, 2026-09-28): a >= 15 floor lets the roster
+// SHRINK to 15 silently. The census is EXACT: the card set is named
+// by count — a card dying or being born is a deliberate edit here.
+assert.equal(defs.size, 15, `the registry serves exactly 15 cards (got ${defs.size}) — a card dying or being born is a deliberate edit (voice-lock died 2026-09-21)`);
 
 const boot = async (): Promise<ComfyUIService> => {
   const ctx = new Context();
@@ -64,10 +67,22 @@ describe("THE REAL-CARD NO-CHEAT WALL (every card, every boarded model, through 
           );
           // cards also voice their own loud required-param refusals
           // as plain named Errors (the estate's convention) — lawful.
-          // A CRASH (TypeError/ReferenceError or crash-shaped message)
-          // is an outright bug and fails the wall
+          // A CRASH is an outright bug and fails the wall.
+          // F-L6 (the wall audit, 2026-09-28): the old pin was a
+          // four-alternative message REGEX — a crash whose message
+          // said something else ("x is not iterable", "Assignment to
+          // constant variable", a stack-overflow RangeError) rode
+          // through. The law is now a SHAPE: a lawful refusal is
+          // either the estate's named ComposeRefusal or a plain
+          // Error/TypeError-free named throw — anything else (a
+          // built-in runtime fault, a non-Error throw, a message
+          // that reads like a runtime fault) is a crash, whatever
+          // its wording.
           const crash = e instanceof TypeError || e instanceof ReferenceError
-            || /cannot read|is not a function|is undefined|null pointer/i.test(err.message);
+            || e instanceof RangeError || e instanceof SyntaxError
+            || e instanceof URIError
+            || !(e instanceof Error)
+            || /cannot read|is not a function|is not iterable|is undefined|null pointer|not assignable|Assignment to constant/i.test(err.message);
           assert.ok(!crash, `compose crashed (not a refusal): ${err.message}`);
         }
       });

@@ -2,6 +2,7 @@
 // Extracted from flowsData.ts (the god-file cut, 2026-09-18): one
 // module of declarations, one line per flow; flowsData.ts keeps the
 // types, the helpers, and the assembled REGISTRY.
+import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import type { RegistryFlow } from "./flowsData.ts";
 import { plainStage, initial, zImageWorkflow, linkedStage, fromStage } from "./flowsData.ts";
 import { GARMENT_WORKFLOW } from "./flowsGarmentWorkflow.ts";
@@ -17,7 +18,7 @@ export const ANNY_HMR: RegistryFlow = {
   stages: [
     plainStage({
       id: "estimate",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description: "MultiHMR2 regression + loud single-person lock",
       inputs: { photo: initial("photo") },
       expected: { photo: "image" },
@@ -66,7 +67,7 @@ export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
   stages: [
     plainStage({
       id: "estimate",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description: "SAM 3D Body commercial chain → grounded anny GLB",
       inputs: { photo: initial("photo") },
       expected: { photo: "image" },
@@ -99,7 +100,7 @@ export const ANNY_PARAMS: RegistryFlow = {
   stages: [
     plainStage({
       id: "instantiate",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description: "Preset params → grounded anny GLB",
       inputs: { params_json: initial("params_json") },
       expected: { params_json: "text" },
@@ -131,7 +132,7 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
   stages: [
     plainStage({
       id: "tts",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       card: "tts",
       description: "Qwen3-TTS text to speech via the tts card",
       inputs: { text: initial("prompt") },
@@ -188,7 +189,7 @@ export const BODY_TO_SOMAX: RegistryFlow = {
   stages: [
     plainStage({
       id: "rig",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description:
         "SOMA-77 template weight transfer (barycentric, the autorig pack's " +
         "baked function via KimodoExportFBX standalone-rig mode)",
@@ -230,7 +231,7 @@ export const CHARACTER: RegistryFlow = {
   stages: [
     plainStage({
       id: "img",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description:
         "z-image character sheet (skipped when the operator brings starter_image)",
       inputs: { character_prompt: initial("character_prompt") },
@@ -245,7 +246,7 @@ export const CHARACTER: RegistryFlow = {
     }),
     plainStage({
       id: "gimg",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description:
         "z-image garment sheet (skipped when the operator brings garment_image_1)",
       inputs: { garment_prompt: initial("garment_prompt") },
@@ -266,7 +267,7 @@ export const CHARACTER: RegistryFlow = {
     }),
     plainStage({
       id: "garment",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description:
         "pixal3d garment lift incl. the remesh tail (step e folded — GetMeshInfo " +
         "-> RemeshMesh -> DecimateMesh ride in-chain)",
@@ -315,7 +316,7 @@ export const FIT_SEAT: RegistryFlow = {
   stages: [
     plainStage({
       id: "seat",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description: "FitRow (knobs -> meld row) -> FitProp (graft) -> proof views",
       inputs: {
         body: initial("body"),
@@ -409,7 +410,7 @@ export const IMAGE_UPSCALE: RegistryFlow = {
   stages: [
     plainStage({
       id: "make",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       card: "image-gen",
       description: "T2I via the image-gen card (the named model's own generate_t2i.json)",
       inputs: { prompt: initial("prompt") },
@@ -420,7 +421,7 @@ export const IMAGE_UPSCALE: RegistryFlow = {
     }),
     plainStage({
       id: "polish",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       card: "upscale-tools",
       description: "SeedVR2 1080p upscale via the upscale-tools card",
       inputs: { image: fromStage("make", "image") },
@@ -499,7 +500,7 @@ export const KIMODO_NATIVE: RegistryFlow = {
   stages: [
     plainStage({
       id: "t2m",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description: "Kimodo text-to-pose via live ComfyUI nodes",
       inputs: { prompt: initial("prompt") },
       expected: { prompt: "text" },
@@ -546,7 +547,7 @@ export const MUSIC_NATIVE: RegistryFlow = {
   stages: [
     plainStage({
       id: "music",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       card: "music",
       description:
         "MiniMax Music 3 via the music card — the lane composes the doc " +
@@ -603,7 +604,7 @@ export const SKIN_APPLY: RegistryFlow = {
   stages: [
     plainStage({
       id: "coat",
-      engine: "comfyui",
+      engine: CARD_PLANE_ENGINE,
       description:
         "SkinPack (maps) -> SkinSidecar (sidecar) -> SkinApply (graft) -> proof views",
       inputs: {

@@ -18,7 +18,7 @@
 // machine-wide. L4 test flag rides every mode. The draft_id rides
 // the value AND the render's leading `card <draftId>` token — the
 // chat tile handle (FlowCards parseCardsBlock), never an agent arg.
-import { RUN_MEDIA_PREFIX, canonicalRunMediaUrl } from '@melite/contracts/benchStage'
+import { CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, canonicalRunMediaUrl } from '@melite/contracts/benchStage'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
@@ -554,7 +554,7 @@ async function runSingle(
       stages: [{
         id: 's_0',
         card,
-        engine: 'comfyui',
+        engine: CARD_PLANE_ENGINE,
         params: normalizedBag,
       }],
     }, signal)
@@ -623,7 +623,7 @@ async function runTemplate(
     draftId = await loadBench(request, {
       session: a.bench,
       intent: flow,
-      stages: [{ id: 's_0', engine: 'comfyui', ref_flow: flow, params: {} }],
+      stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, ref_flow: flow, params: {} }],
     }, signal)
   } catch (e) {
     // The bench remote's refusal (RemoteError) — its message is the

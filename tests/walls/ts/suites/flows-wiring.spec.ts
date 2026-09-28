@@ -37,8 +37,12 @@ beforeAll(async (): Promise<void> => {
 
 describe("the flow-registry wiring wall (the live door's own construction, over every registry flow)", () => {
   it("serves a non-empty registry", () => {
+    // C-M7 (the wall audit, 2026-09-28): `>= 10` against 13 real
+    // flows let three die silently. The census is exact, and it is
+    // the registry's own name list — no hand number beside it.
     const names = registryFlowNames();
-    assert.ok(names.length >= 10, `expected ≥10 registry flows, got ${names.length}`);
+    assert.equal(names.length, 13, `the registry serves exactly 13 flows, got ${names.length}`);
+    assert.equal(new Set(names).size, names.length, "the registry's flow names are unique");
   });
 
   it("every registry flow compiles through inlineArm at 200 (wires + kinds + card gate + $channels)", () => {
@@ -61,11 +65,11 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     };
     const stage = tts.stages[0]!;
     const names = Object.keys(stage.inputs);
-    // THE WIRED-INPUT FLOOR (the walls audit's M1, 2026-10-10): the
-    // loop over an EMPTY inputs map passed vacuously — the exact rot
-    // this wall closed (a flow that stopped wiring anything passed).
-    assert.ok(names.length > 0,
-      `audio-native-tts wires at least one input (got ${String(names.length)} — an unwired flow passes this arm)`);
+    // C-L16 (the wall audit, 2026-09-28): `names.length > 0` is a
+    // floor — a flow that wired the WRONG inputs passed. The truth is
+    // exactly one wired input, "text", and it is pinned as a set.
+    assert.deepEqual(names, ["text"],
+      `audio-native-tts wires exactly ["text"] (got ${JSON.stringify(names)}) — a new wired input is a deliberate edit, not a floor`);
     for (const name of names) {
       assert.ok(stage.expected[name] !== undefined,
         `audio-native-tts stage wires input '${name}' with no expected Kind — the exact hole this wall closed`);

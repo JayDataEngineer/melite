@@ -114,7 +114,12 @@ test("drafts/list serves the legacy import, recency DESC", async () => {
   // Newer mtime first.
   assert.equal(out.drafts[0]!.draft_id, "d_new");
   assert.equal(out.drafts[1]!.draft_id, "d_old");
-  // Index row: first-seen model + name display keys.
+  // B-L11 (the wall audit, 2026-09-28): these reads were non-null
+  // ASSERTED (`drafts[0]!.model`) — a missing row threw a TypeError
+  // instead of failing with the law's name, and `!` reads as "the
+  // row is there" without ever saying it. The row's existence is
+  // asserted, then its fields.
+  assert.ok(out.drafts[0] !== undefined, "the newer draft row rides (recency DESC)");
   assert.equal(out.drafts[0]!.model, "krea-2");
   assert.equal(out.drafts[0]!.name, "hero");
 });
@@ -507,9 +512,25 @@ test("drafts/patch refuses unknown keys with the door's old voice", async () => 
     ctx.draftsRemote.patch("d_new", "s_0", { params: { steps: 1 }, bogus: 1 }, null, sig),
   );
   assert.equal(failure?.["code"], "draft/patch-unknown-keys");
-  assert.match(
+  // B-M9 (the wall audit, 2026-09-28): the voice was re-typed here
+  // AND at runsGates.ts:76 — a new patch key landed in the contract
+  // and this arm kept passing against its stale sentence. The voice
+  // is COMPOSED from the contract's own list now, in its declared
+  // order, and the list is pinned exactly (a new key is a conscious
+  // edit of the pin, never a silent divergence).
+  // the list is the CONTRACT's (one spelling) — and BOTH doors take
+  // it: the drafts admission and the runs gate import the same
+  // const, so they can never disagree about what the door wants.
+  const { STAGE_PATCH_KEYS } = await import("../../../../packages/web-kit/contracts/src/benchStage.ts");
+  assert.deepEqual([...STAGE_PATCH_KEYS],
+    ["params", "result", "runStatus", "inputs", "inputOutputs"],
+    "the accepted stage-patch keys, exact and in the voice's order");
+  const { STAGE_PATCH_KEYS: GATE_LIST } = await import("../../../../packages/harness/estate-queue/src/runsGates.ts");
+  assert.deepEqual([...GATE_LIST], [...STAGE_PATCH_KEYS], "the runs gate's list IS the contract's (no second copy)");
+  assert.equal(
     String(failure?.["message"] ?? ""),
-    /unknown stage patch key\(s\): bogus \(want params, result, runStatus, inputs, inputOutputs\)/,
+    `unknown stage patch key(s): bogus (want ${STAGE_PATCH_KEYS.join(", ")})`,
+    "the refusal voice is the contract's list, joined — never a retyped sentence",
   );
 });
 
@@ -558,6 +579,9 @@ test("the wire arms speak: every remoteExportX delegates verbatim", async () => 
   assert.ok(ensured, "birth");
   const bench = await ctx.benchRemote.remoteExportGet("s1", sig);
   assert.ok(bench, "get serves the session's bench row");
+  // B-L11: the birth row's rev is 0 EXACTLY (a truthy check would
+  // pass at 1, and the whole CAS chain below is numbered from it).
+  assert.equal(bench.rev, 0, "a born bench sits at rev 0 (the CAS chain's origin)");
   const patched = await ctx.benchRemote.remoteExportPatch(
     "s1",
     { stage: "a", params: { x: 1 }, expect_rev: 0 },

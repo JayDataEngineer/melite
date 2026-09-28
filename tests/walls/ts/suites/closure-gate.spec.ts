@@ -42,7 +42,12 @@ const SOURCES = SRC_ROOTS.flatMap((r) => walk(r));
 // vacuously green. The floor is pinned near the real count (615 at
 // the pin); a tree that shrinks by a third has lost roots, and a
 // wall that iterates nothing proves nothing.
-expect(SOURCES.length >= 400,
+// A-M12 (the wall audit, 2026-09-28): the floor sat at 400 against
+// a real tree of ~615 — a tree that lost a THIRD of its roots still
+// passed. The pin is a tight band now: the count derives from the
+// same walk at run time, pinned to today's census ±10% (growth is
+// fine; collapse is the hole the floor existed for).
+expect(SOURCES.length >= 550,
   `SOURCES must walk the tree (got ${String(SOURCES.length)} files from ${SRC_ROOTS.join(", ")} — a renamed root or a widened skip rule emptied the gate)`).toBe(true);
 expect(SOURCES.some((f) => f.includes("/src/")), "the walk reaches src trees").toBe(true);
 
@@ -88,7 +93,22 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       // could not tell them apart and flagged both.
       for (const line of code.split("\n")) {
         if (!line.includes("/v1/assets/runs") && !line.includes("/melite-media/runs")) continue;
-        const isProse = line.length > 200 || /description:|tooltip:/.test(line);
+        // A-M6 (the wall audit, 2026-09-28): the old escape excused
+        // ANY line over 200 chars — a 201-char DEFINITION walked.
+        // PROSE ONLY now: a comment line, or a description/tooltip
+        // field naming a path inside a sentence.
+        // A string that MENTIONS the prefix mid-sentence is prose;
+        // a string that IS the prefix (starts at the opening quote
+        // or a template head) is a definition. The last quote
+        // before the match decides: prose if words precede the
+        // prefix inside the same string.
+        const at = line.indexOf("/v1/assets/runs") >= 0 ? line.indexOf("/v1/assets/runs") : line.indexOf("/melite-media/runs");
+        const before = line.slice(0, at);
+        const lastQuote = Math.max(before.lastIndexOf("'"), before.lastIndexOf('"'), before.lastIndexOf('`'));
+        const head = before.slice(lastQuote + 1).trim();
+        const isProse = /^\s*(\/\/|\*|#)/.test(line)
+          || /description:|tooltip:/.test(line)
+          || (lastQuote >= 0 && head.length > 0); // words inside the string before the prefix → a sentence
         if (isProse) continue;
         offenders.push(f + " — a run-media prefix is DEFINED outside the contract (import it)");
       }
@@ -129,6 +149,29 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     }
     expect(scanned.length, "the rule scanned every listed writer").toBe(WRITERS.length);
     expect(offenders, offenders.join("\n")).toEqual([]);
+    // A-M7 (the wall audit, 2026-09-28): scanned==6 proved the
+    // listed writers EXIST, not that no 7th writer was born — the
+    // audit's probe found five spellers outside the list
+    // (estate.ts, melite-flow.ts ×2, flowsRegistryRows.ts ×2,
+    // cardDefs.ts — all fixed to CARD_PLANE_ENGINE in the same
+    // stroke). The completeness pin is a REPO-WIDE discovery over
+    // the same SOURCES: the literal may appear ONLY in the named
+    // carve — the DECL grammar's own self-test fixture (contract.ts
+    // declares the engine STRING; its fixture row is data) and the
+    // e2e client fixtures (tour drives the client with a fake row).
+    // Any new spelling anywhere refuses.
+    const CARVE = [
+      "models/families/contract.ts", // the DECL grammar's self-test fixture row — the grammar declares the STRING
+      "e2e/tour.ts", // e2e client fixture: tour drives the client with a fake stage row
+      "tests/estate-harness.ts", // the card-view test harness's fake bench row (test data, not a writer)
+    ];
+    const spellers: string[] = [];
+    for (const f of SOURCES) {
+      if (CARVE.some((c) => f.includes(c))) continue;
+      const code = codeOf(read(f));
+      if (/engine\s*:\s*["']comfyui["']/.test(code)) spellers.push(f);
+    }
+    expect(spellers, `the engine literal is spelled only in the carve (spellers: ${spellers.join(", ")})`).toEqual([]);
   });
 
   it("RULE 3 · nothing demanded that can be derived: the card plane's engine is not invented", () => {
@@ -139,8 +182,18 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
       const code = codeOf(read(f));
-      if (/engine:\s*(spec\.engine\s*\?\?|\(\s*spec\.engine)/.test(code)) {
-        offenders.push(f + " — a card authors the stage engine; the contract derives it");
+      // A-L18 (the wall audit, 2026-09-28): the pattern named two
+      // shapes (`spec.engine ??` and `(spec.engine`) — a third
+      // spelling (`spec.engine ||`, a ternary, an Object.assign)
+      // walked past. The LAW is behavioural, not textual: no card
+      // file may WRITE an `engine` key at all — the contract derives
+      // it from the card id (benchStage.ts's stageEngineOf). A card
+      // that reads an engine (a test, a type) may still say it.
+      for (const line of code.split("\n")) {
+        if (/\bengine\b\s*[:,=]/.test(line) && !/\/\//.test(line)) {
+          offenders.push(f + " — a card authors the stage engine; the contract derives it");
+          break;
+        }
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
@@ -254,18 +307,45 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // caught `p.sampler || "euler"` while `p.sampler ?? "euler"` — the
     // same second writer of the lane default, written with the other
     // falsy-check — walked past.
+    // A-L16 (the wall audit, 2026-09-28): the ban covered BOTH
+    // falsy spellings for `sampler` and only `||` for `scheduler` —
+    // the same law written asymmetrically is the same drift waiting
+    // to happen. Both keys, both spellings.
     expect(code).not.toMatch(/p\.sampler\s*(\|\||\?\?)/);
-    expect(code).not.toMatch(/p\.scheduler\s*\|\|/);
+    expect(code).not.toMatch(/p\.scheduler\s*(\|\||\?\?)/);
     expect(code).toContain("laneSampler(p)");
   });
 
+  it("RULE 6b · the stage-patch key list is spelled ONCE (B-M9's second copy)", () => {
+    // The old door's fixed key set lived in TWO production modules —
+    // the drafts admission and the runs gate — with the same members
+    // in a DIFFERENT order, each composing its own refusal voice. A
+    // key added to one door left the other refusing it. The list is
+    // the contract's now; no module may re-spell it.
+    const offenders: string[] = [];
+    for (const f of SOURCES) {
+      if (f.includes("web-kit/contracts/src/benchStage.ts")) continue;
+      const code = codeOf(read(f));
+      if (/const\s+STAGE_PATCH_KEYS\s*[:=]/.test(code)) {
+        offenders.push(f + " — the stage-patch key list is the contract's; import it");
+      }
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
   it("RULE 7 · the cross-root order and the servable leaf are the contract's", () => {
-    // both readers take the contract's rules
-    const gallery = read("packages/web/infer-gallery/src/index.ts");
-    expect(gallery).toContain("crossRootOrder");
-    expect(gallery).toContain("servableLeaf");
-    const media = read("packages/estate/media/src/index.ts");
-    expect(media).toContain("servableLeaf");
+    // BOTH READERS TAKE THE CONTRACT'S RULES — behaviourally: the
+    // contract's own predicates are imported and CALLED, not merely
+    // named. A-L23 (the wall audit, 2026-09-28): `toContain` on a
+    // NAME passes on a bare import the file never calls (an unused
+    // import satisfies toContain and the reader keeps its own
+    // copy). The import must be a CALL SITE, and the reader's own
+    // judgement must move with the contract's rule.
+    const gallery = codeOf(read("packages/web/infer-gallery/src/index.ts"));
+    expect(gallery, "the gallery CALLS crossRootOrder (an import alone proves nothing)").toMatch(/crossRootOrder\s*\(/);
+    expect(gallery, "the gallery CALLS servableLeaf").toMatch(/servableLeaf\s*\(/);
+    const media = codeOf(read("packages/estate/media/src/index.ts"));
+    expect(media, "the media reader CALLS servableLeaf").toMatch(/servableLeaf\s*\(/);
   });
 
   it("RULE 8 · the schema is the contract: every row's minimal form resolves", () => {
@@ -276,10 +356,22 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
   it("RULE 9 · there is no stale-tab claim and no shared build-stamp global in a client", () => {
     // the operator's own law: the tab is never stale
     const offenders: string[] = [];
+    // A-L17 (the wall audit, 2026-09-28): this rule was NARROWER
+    // than its bench-stage twin — the twin bans five spellings
+    // (/stale tab/i, staleBuild, buildVerdict, ...) over three
+    // client roots, this one banned three over a path filter. A
+    // stricter twin and a looser copy is a hole with a name. The
+    // vocabulary is now the TWIN'S, spelled once here as the shared
+    // list both walls carry (and the bench-stage twin asserts its
+    // own copy against the same shapes).
+    const STALE = [/STALE TAB/i, /stale tab/i, /cards-stale-build/, /staleBuild/, /buildVerdict/];
     for (const f of SOURCES.filter((p) => p.includes("/web/") && /client/.test(p))) {
       const code = codeOf(read(f));
-      if (/STALE TAB|cards-stale-build|staleBuild/.test(code)) {
-        offenders.push(f + " — a client claims the tab is stale (the bench is live)");
+      for (const re of STALE) {
+        if (re.test(code)) offenders.push(f + " matches " + String(re) + " — a client claims the tab is stale (the bench is live)");
+      }
+      if (code.includes("__MELITE_BUILD_STAMP__")) {
+        offenders.push(f + " reads the shared build-stamp global (which bundle ran last is not this bundle's build)");
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
@@ -301,8 +393,18 @@ describe("THE AUDIT-ADDED LAWS", () => {
       const code = codeOf(read(f));
       // a schema member named params: (not a description, not a
       // hand-built object key in unrelated logic)
-      if (/^\s*params:\s*z\./m.test(code) || /["']params["']\s*:\s*(?:z\.|bag\()/m.test(code)) {
-        offenders.push(f + " — declares a `params` field; the stanza unwrap would dissolve it");
+      // A-L22 (the wall audit, 2026-09-28): the ban named two
+      // literal shapes — a computed key (`[PARAMS_KEY]: z.…`, where
+      // the constant is "params") and a spread-then-params walked
+      // past. The law is by RESOLUTION: a card may not declare a
+      // member whose resolved key is `params`, and a computed key
+      // whose text is not literally "params" is a new spelling to
+      // name here, not a hole.
+      const literal = /^\s*params:\s*z\./m.test(code) || /["']params["']\s*:\s*(?:z\.|bag\()/m.test(code);
+      const computed = /\[\s*["'][^"']+["']\s*\]\s*:\s*(?:z\.|bag\()/m.test(code)
+        || /\[\s*\w+\s*\]\s*:\s*(?:z\.|bag\()/m.test(code);
+      if (literal || computed) {
+        offenders.push(f + " — declares a `params` field (literal or computed key); the stanza unwrap would dissolve it");
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
@@ -349,9 +451,21 @@ describe("THE AUDIT-ADDED LAWS", () => {
     for (const f of SOURCES) {
       const code = codeOf(read(f));
       if (f.includes("laneRelations.ts")) continue;
-      if (/const blank\s*=\s*\(v:\s*unknown\)|function blank\(/.test(code)
-        || /const isBlank\s*=\s*\(v:\s*unknown\)/.test(code)) {
-        offenders.push(f + " — a hand-rolled blank; import laneBlank from @melite/contracts/laneRelations");
+      // A-L20 (the wall audit, 2026-09-28): three hand-rolled blank
+      // spellings were named and a fourth (`const isBlank = (v: any)
+      //`, `const blankish = ...`, an arrow with a typed param) walked
+      // past. The ban is by SHAPE: a local blank predicate is any
+      // function or arrow whose body is a nullish/emptiness test —
+      // the contract's laneBlank is the only one allowed to exist.
+      const shaped = [
+        /(?:const|let|function)\s+\w*[Bb]lank\w*\s*(?:=\s*(?:\(|function)|\()/,
+        /\w*[Bb]lank\w*\s*(?:=\s*\([^)]*\)\s*=>|\([^)]*\)\s*\{[^}]*===?\s*(?:null|undefined))/,
+      ];
+      for (const re of shaped) {
+        if (re.test(code)) {
+          offenders.push(f + " — a hand-rolled blank (" + String(re) + "); import laneBlank from @melite/contracts/laneRelations");
+          break;
+        }
       }
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
@@ -407,9 +521,32 @@ describe("THE AUDIT-ADDED LAWS", () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       const code = codeOf(read(f));
-      const decls = [...code.matchAll(/(?:export\s+)?(?:interface|type)\s+StageRow\b/g)];
+      // A-L21 (the wall audit, 2026-09-28): the ban named ONE
+      // class spelling — a `declare global` StageRow or a class
+      // StageRow walked past the interface/type scan. The law is by
+      // NAME across every declaration form.
+      const decls = [...code.matchAll(/(?:export\s+)?(?:interface|type|class|declare\s+global\s*\{[^}]*\b)(\s*)StageRow\b/g)];
       if (decls.length > 0) {
         offenders.push(f + " — declares a bare StageRow (FlowStageRow or RunStageRow)");
+      }
+      // and the qualified names are the FOUR concepts — a fifth
+      // spelling must name itself in the carve below, not sail past
+      // the FIVE named concepts: the four estate rows plus the
+      // engine contract's own EngineStageRow (the row an engine
+      // receives — a different concept that must not be renamed into
+      // one of the estate four)
+      const qualified = new Set(["FlowStageRow", "RunStageRow", "BenchStageRow", "BenchStageView", "EngineStageRow", "StageOutcomeRow"]);
+      // TYPE POSITIONS only: a helper FUNCTION named buildStageRow
+      // is not a stage-row concept (the ban is about the TYPE names
+      // an import can confuse).
+      // ... and only in the PLAIN-TS modules: a .tsx file's
+      // `<MotionStageView ...>` is a React COMPONENT, not a
+      // stage-row type (the estate's row types live in .ts).
+      if (!f.endsWith(".tsx")) for (const m of code.matchAll(/(?:[:<]|\bas\s+|\bextends\s+|\bimplements\s+)\b(\w*Stage(?:Row|View))\b/g)) {
+        if (!qualified.has(m[1]!)) {
+          offenders.push(f + " — '" + m[1]! + "' is not one of the four stage-row concepts; a new name is a carve, not a spelling");
+          break;
+        }
       }
       // L13 (li-aq.3): the ban matched only the INTERFACE spelling —
       // `type BenchStageRow = …` (the alias) sailed through, the

@@ -92,14 +92,36 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
     () => disclose.discover("models", "", ""),
     /unknown lookup 'models' \(all \| cards \| flows\)/,
   );
-  // 2. the flows plane: the registry's eleven, live-derived
+  // 2. the flows plane: the registry's own census, exact
   //    (fit-seat carries its tool.json stage_title leaf).
+  //    A-M8 (the wall audit, 2026-09-28): `>= 11` and `>= 1`
+  //    floors let the roster shrink silently; the door now serves
+  //    the REGISTRIES' censuses, exactly.
+  const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+  const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+  const flowCensus = registryFlowNames().length;
+  const cardCensus = (await loadCardDefs()).size;
   const all = disclose.discover("all", "", "");
-  assert.ok(Array.isArray(all.flows) && all.flows.length >= 11, "the registry flows ride");
-  assert.ok(Array.isArray(all.cards) && all.cards.length >= 1, "the card defs ride");
-  const fit = all.flows?.find((f) => f.name === "fit-seat");
+  assert.ok(Array.isArray(all.flows) && all.flows.length === flowCensus,
+    `the registry flows ride, exactly (got ${String(all.flows?.length)} vs ${String(flowCensus)} registered)`);
+  assert.ok(Array.isArray(all.cards) && all.cards.length === cardCensus,
+    `the card defs ride, exactly (got ${String(all.cards?.length)} vs ${String(cardCensus)} registered)`);
+  // A-M14 (the wall audit, 2026-09-28): one row's shape was checked
+  // (fit-seat) — a malformed SECOND row rode. Every row is now
+  // checked, and every served name is a REGISTERED name (two-way:
+  // the door may not invent a flow, nor drop one).
+  const rows = all.flows ?? [];
+  const malformed = rows.filter((f) => typeof (f as { name?: unknown }).name !== "string"
+    || (f as { name?: unknown }).name === ""
+    || typeof (f as { stages?: unknown }).stages !== "number");
+  assert.deepEqual(malformed.map((f) => JSON.stringify(f)), [],
+    `every served flow row is shaped (name:string non-empty, stages:number) — ${String(rows.length)} rows`);
+  const servedNames = rows.map((f) => (f as { name: string }).name).sort();
+  assert.deepEqual(servedNames, [...registryFlowNames()].sort(),
+    "the served flow names ARE the registered names, exactly (neither invented nor dropped)");
+  const fit = rows.find((f) => (f as { name: string }).name === "fit-seat");
   assert.ok(fit, "fit-seat present");
-  assert.equal(typeof fit.stages, "number");
+  assert.equal(typeof (fit as { stages?: unknown }).stages, "number");
   // 3. lookup=cards carries ONLY cards.
   const cardsOnly = disclose.discover("cards", "", "");
   assert.equal(cardsOnly.flows, undefined);
@@ -133,8 +155,9 @@ test("the tools' lane grammar serves /v1/discover from the seat", async () => {
   const res = (await request("GET", "/v1/discover?lookup=all", undefined, new AbortController().signal)) as {
     flows?: unknown[]; cards?: unknown[];
   };
-  assert.ok(Array.isArray(res.flows) && res.flows.length >= 11, "lane serves flows");
-  assert.ok(Array.isArray(res.cards) && res.cards.length >= 1, "lane serves cards");
+  const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
+  assert.ok(Array.isArray(res.flows) && res.flows.length === registryFlowNames().length, "lane serves flows, exactly");
+  assert.ok(Array.isArray(res.cards) && res.cards.length > 0, "lane serves cards");
   // the seatless estate answers the LOUD no-remote voice (a context
   // with no disclose row — the lane grammar's own law).
   const bare = new Context();
@@ -185,8 +208,11 @@ test("the manage seat — the door's vocabulary + refusal envelope (REBUILD-15)"
     else process.env["INFERENCE_TEST_SANDBOX"] = hadStatusSandbox;
   }
   assert.equal(st.ok, true);
-  assert.notEqual(st.data?.endpoint?.reachable, true,
-    "the sandboxed status never claims a live engine (the oracle is fixed, not self-referential)");
+  // A-M11 (the wall audit, 2026-09-28): notEqual(reachable, true)
+  // passed for reachable === undefined too — an absent field is not
+  // an honest "not reachable". The truth is strict: false.
+  assert.equal(st.data?.endpoint?.reachable, false,
+    "the sandboxed status says NOT reachable, strictly (undefined is not an honest verdict — the oracle is fixed, not self-referential)");
   assert.match(st.detail, /server not reachable/);
   // 4. the lifecycle guard, HERMETIC: INFERENCE_TEST_SANDBOX pins
   //    the endpoint config to {} (the leak gate) so the restart arm
@@ -227,16 +253,26 @@ async function manageRefusal(
     act(doc: unknown, signal: AbortSignal): Promise<unknown>;
   };
   assert.ok(manage, "the manage seat is live");
+  // A-L24 (the wall audit, 2026-09-28): the sentinel lived INSIDE
+  // the try — a door that ANSWERED the doc it must refuse threw the
+  // sentinel, the same catch caught it, and the failure surfaced as
+  // "a RemoteError" (a missing sentinel masquerading as a wrong
+  // error). The refusal is now read out of the try, and the
+  // no-throw case speaks for itself.
+  let caught: unknown;
+  let answered = false;
   try {
     await manage.act(doc, sig);
-    throw new Error("expected manage/refused");
+    answered = true;
   } catch (e) {
-    const re = (await import('@deepseek-ai/dsh-typert-protocol')).remoteErrorOf(e);
-    assert.ok(re, "a RemoteError");
-    assert.equal(re.code, "manage/refused");
-    const d = (re as unknown as { details?: { action?: string } }).details ?? {};
-    return { code: re.code, message: re.message, action: d.action };
+    caught = e;
   }
+  assert.ok(!answered, "expected manage/refused — the door ANSWERED a doc it must refuse");
+  const re = (await import('@deepseek-ai/dsh-typert-protocol')).remoteErrorOf(caught);
+  assert.ok(re, `a RemoteError (got ${String(caught)})`);
+  assert.equal(re.code, "manage/refused");
+  const d = (re as unknown as { details?: { action?: string } }).details ?? {};
+  return { code: re.code, message: re.message, action: d.action };
 }
 
 test("the skills seat — index + read, the door's voices (REBUILD-16)", async () => {
@@ -286,9 +322,21 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const idx = skills.index() as { count?: number; skills?: unknown; families?: Array<{ id: string }>; cards?: Array<{ id: string }>; flows?: { ids: string[] } };
   assert.ok(typeof idx.count === "number" && idx.count > 0, "non-empty index over the seeded bench");
   assert.equal(idx.skills, undefined, "the flat dump is dead");
+  // A-M14: the same law on the benched index — ONE row's id was
+  // checked; every row's shape is checked now, and the served set is
+  // the SEEDED set exactly (the bench is the admission).
   assert.ok((idx.families ?? []).some((f) => f.id === "krea-2"), "the benched family serves");
   assert.ok((idx.cards ?? []).some((c) => c.id === "image-gen"), "the benched card serves");
   assert.ok(!(idx.cards ?? []).some((c) => c.id === "image-edit"), "unbenched cards never ride");
+  const badFamilies = (idx.families ?? []).filter((f) => typeof f.id !== "string" || f.id === "");
+  assert.deepEqual(badFamilies, [], "every benched family row carries its id");
+  const badCards = (idx.cards ?? []).filter((c) => typeof (c as { id?: unknown }).id !== "string"
+    || (c as { id?: unknown }).id === "");
+  assert.deepEqual(badCards, [], "every benched card row carries its id");
+  assert.deepEqual((idx.families ?? []).map((f) => f.id).sort(), ["krea-2"],
+    "the families are the SEEDED ones, exactly");
+  assert.deepEqual((idx.cards ?? []).map((c) => (c as { id: string }).id).sort(), ["image-gen"],
+    "the cards are the SEEDED ones, exactly");
   // 2. a flow skill read answers the DOC (the registry render or
   //    the SKILL.md leaf).
   const sig = new AbortController().signal;

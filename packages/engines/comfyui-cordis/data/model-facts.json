@@ -180,19 +180,6 @@
           ]
         }
       ]
-    },
-    "voice-lock": {
-      "outputs": [
-        {
-          "label": "Voice-locked audio",
-          "many": false,
-          "patterns": [
-            ".flac",
-            ".mp3",
-            ".wav"
-          ]
-        }
-      ]
     }
   },
   "extension_node_types": {

@@ -155,3 +155,37 @@ export function benchResultDefects(row: unknown): string[] {
   }
   return defects
 }
+
+/** THE DOWNLOAD FILENAME (the boundary audit's C5, promoted to the
+ *  contract by A-M10): a source URL names a file by its PATHNAME's
+ *  last segment, percent-decoded — never the query, never the
+ *  fragment, never "". `split("/").pop()` kept both, so the manager
+ *  downloaded under a clean name while the row inspected one with
+ *  "f.safetensors?download=1" glued on, and the post-download check
+ *  reported model-not-landed for a model that WAS on disk. A URL
+ *  ending in "/" names no file: the result is "" and the caller's
+ *  destination check refuses it by name. One derivation, contract-
+ *  owned, so the wall can DRIVE it (a source-substring pin passed on
+ *  dead code). */
+export function artifactFileName(sourceUrl: string): string {
+  let pathname = sourceUrl
+  try {
+    pathname = new URL(sourceUrl).pathname
+  } catch {
+    // not an absolute URL — take everything before # and ?
+    pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl
+  }
+  // A PATHNAME ENDING IN "/" NAMES A DIRECTORY, NOT A FILE: the
+  // documented law (the caller's destination check refuses an empty
+  // name by name) was FALSE against the implementation — the empty
+  // segments were filtered, so ".../models/x/" yielded "x", the
+  // directory's own name, and the downloader was handed a filename
+  // that is not a file. Honoured here, once.
+  if (pathname.endsWith("/")) return ""
+  const last = pathname.split("/").filter((s) => s !== "").pop() ?? ""
+  try {
+    return decodeURIComponent(last)
+  } catch {
+    return last
+  }
+}

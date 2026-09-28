@@ -65,36 +65,56 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // DOWNLOAD — anima, the HF-provisioned family, declares a type
     // with no repo. The old if-guard skipped exactly those rows and
     // asserted a tautology on the rest.)
+    // E-C1 (the wall audit, 2026-09-28): the arm's `typeof
+    // src.type === "string"` was satisfied by "" — 58 of 60 rows
+    // carried type:"" and the titled law could not fail. The
+    // censuses are EXACT now: typed/untyped/repo-without-file are
+    // named sets, and their sum is the row census (no skip-guard:
+    // a row losing its source object fails presence below). The
+    // untyped mass is a DELIBERATE carve, visible here: those
+    // atoms' origins live in the provisioner catalog (provision
+    // rows / lane_inputs), outside the DECL — typing them here
+    // would fabricate provenance, so the wall names them instead
+    // of pretending the column is full.
+    const TYPED_IDS = ["music3", "yue2"]; // huggingface — the two DECL-stated origins
+    const REPO_WITHOUT_FILE_IDS = ["anny", "kimodo"]; // vendored pack / assets-only repo
     let downloads = 0;
-    let typed = 0;
-    for (const row of Object.values(modelCatalog())) {
+    const typedIds: string[] = [];
+    const untypedIds: string[] = [];
+    const repoNoFileIds: string[] = [];
+    const rows = Object.values(modelCatalog());
+    for (const row of rows) {
       const src = row.source as { type?: unknown; repo_id?: unknown; filename?: unknown } | undefined | null;
-      if (src === undefined || src === null) continue;
-      assert.equal(typeof src.type, "string",
-        `${row.id} serves a source object with no type — a row that names no origin`);
-      typed++;
+      assert.ok(src !== undefined && src !== null,
+        `${row.id} serves NO source object — a row that names no origin at all`);
+      assert.equal(typeof src.type, "string", `${row.id}: source.type is a string`);
+      if (src.type !== "") { typedIds.push(row.id); }
+      else { untypedIds.push(row.id); }
       if (typeof src.repo_id === "string" && src.repo_id !== "") {
         if (typeof src.filename === "string" && src.filename !== "") {
           downloads++;
+        } else {
+          // A REPO WITHOUT A FILE IS A PACK, not a half download:
+          // the emitter's wire carries type/repo_id/filename only.
+          // The named carve is EXACT (the wall audit found the
+          // single-name wave while TWO rows lived).
+          repoNoFileIds.push(row.id);
         }
-        // A REPO WITHOUT A FILE IS A PACK, not a half download: the
-        // emitter's wire carries type/repo_id/filename only, and
-        // anny's own vendored poser chain names its repo with no
-        // file (the pack is in the tree, not in a hub). What would
-        // be a half row is a repo that is neither — the emitter
-        // cannot produce that, and the counts below say so.
       } else {
         assert.equal(src.filename, undefined,
           `${row.id} names a file without naming a repo — the file belongs to nobody`);
       }
     }
-    // the arm must SEE both halves or it iterates nothing. The
-    // counts are pinned to the truth, not a round floor: the FAMILY
-    // rows mostly name a repo (or a vendored pack) while the FILE
-    // downloads ride the variant CELLS' artifacts — two family rows
-    // carry repo+filename today. An emptied source column trips
-    // both.
-    assert.ok(typed > 30, `typed sources serve (${String(typed)} seen — the catalog emptied?)`);
+    // the arithmetic is closed: typed + untyped = rows (the skip
+    // guard is dead — every row is judged)
+    assert.equal(typedIds.length + untypedIds.length, rows.length,
+      `every row is judged: ${String(typedIds.length)} typed + ${String(untypedIds.length)} untyped = ${String(rows.length)} rows`);
+    assert.deepEqual(typedIds, TYPED_IDS,
+      `the DECL-stated origins are the named pair (saw ${JSON.stringify(typedIds)}) — a family stating its origin is a deliberate edit`);
+    assert.deepEqual(repoNoFileIds, REPO_WITHOUT_FILE_IDS,
+      `the repo-without-file carve is the named pair (saw ${JSON.stringify(repoNoFileIds)}) — a third pack-row is a deliberate edit`);
+    assert.equal(untypedIds.length, 58,
+      `the untyped census is exact (${String(untypedIds.length)} — atoms whose origins ride the provisioner catalog; growth or shrinkage is a deliberate edit)`);
     assert.equal(downloads, 2,
       `the repo+filename rows are pinned (${String(downloads)} today — a new family download is a deliberate edit)`);
   });

@@ -134,7 +134,13 @@ const FRAME_DUMP = /(^|_)\d{3,}_?\.png$/i
  *  `<stem>_w<idx>_<seq>_.mp4` — the sequence rides a TRAILING
  *  UNDERSCORE before the extension; the old hash-then-dot pattern
  *  matched nothing, so windows classified as finals. */
-const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/
+const WINDOW_FILM = /_w\d+_\w+_?\.mp4$/i
+/** (D-C2, 2026-09-28: the `i` flag is not cosmetic — bench-load's
+ * hero pick spelled the same law case-insensitively while this
+ * listing filter did not, so an .MP4 window film classified as a
+ * FINAL here while the hero skipped it. The media-sidebar wall's
+ * one-spelling arm caught the drift; the two declarations are now
+ * character-identical.) */
 /** Poster siblings rendered beside a film, keyed by artifact stem. */
 const POSTER_STEMS = [/^(.+)_last_frame\.png$/i, /^(.+)_poster\.png$/i]
 

@@ -21,6 +21,7 @@
 // schemastery's default export is BOTH the z facade and the
 // Schema resolver (the same object — service.ts takes it as `Schema`)
 import z from "@deepseek-ai/schemastery";
+import * as contractNs from "./contract.ts";
 const Schema = z;
 
 /** Loud refusal before the wire (the QUEUE LANE LAW shape). */
@@ -423,7 +424,44 @@ export function assertSchemaAcceptsMinimalRows(): void {
     // omitted the lane declaration was tsc-clean and refused at
     // registration. The same bug class, at the top of the grammar.
     ["ModelDecl", ModelDecl, { id: "d", genre: "image", label: "L", variants: [] }],
+    // A-M15 (the wall audit, 2026-09-28): the table was hand-
+    // maintained — a NEW exported schema escaped the minimal-row
+    // law silently. The relation rows complete the table, and the
+    // SELF-ENUMERATION below refuses the next escape by name.
+    // length-1 arrays: the schemas demand non-empty lists (a
+    // requires row with NO needs, a together row with NO fields,
+    // are meaningless) — the minimal MEANINGFUL row states one.
+    ["ParamRequiresRow", ParamRequiresRow, { field: "f", needs: ["g"] }],
+    ["ParamConflictsRow", ParamConflictsRow, { a: "a", b: "b" }],
+    ["ParamTogetherRow", ParamTogetherRow, { fields: ["f", "g"] }], // min(2): together means at least a pair
+    ["ParamEitherOrRow", ParamEitherOrRow, { groups: [["f"]] }],
+    ["ParamAtMostOneRow", ParamAtMostOneRow, { fields: ["f", "g"] }], // min(2): a slot family needs alternatives
+    ["ParamRequiredRow", ParamRequiredRow, { fields: ["f"] }], // min(1): a required row names what it requires
+    ["ParamRelationWords", ParamRelationWords, {}],
+    ["ParamBoundRow", ParamBoundRow, {}],
+    // caught by the self-enumeration the moment it landed (A-M15):
+    // StudioRow was exported with no minimal entry — the exact
+    // escape the hand-table era allowed.
+    ["StudioRow", StudioRow, { tenant: "t" }],
   ];
+  // SELF-ENUMERATION (A-M15): every export of THIS module that is a
+  // schemastery object (carries .dict) must sit in the table above —
+  // a new exported schema without a minimal row refuses here, by
+  // name, instead of escaping the law. The self-import is live
+  // namespace binding (ESM), not a copy.
+  const exportedSchemas = Object.entries(contractNs)
+    .filter(([, v]) => v !== null && typeof v === "function" && typeof (v as { dict?: unknown }).dict === "object")
+    .map(([k]) => k)
+    .sort();
+  const tabled = minimal.map(([name]) => String(name)).sort();
+  const escaped = exportedSchemas.filter((k) => !tabled.includes(k));
+  if (escaped.length > 0) {
+    throw new Error(
+      "contract drift: exported schema(s) " + escaped.join(", ") +
+      " carry no minimal-row entry in assertSchemaAcceptsMinimalRows — " +
+      "a new exported schema must join the table (the hand-list era ended)",
+    );
+  }
   for (const [name, schema, row] of minimal) {
     try {
       Schema.resolve(row, schema as never, {}, true);
@@ -519,7 +557,10 @@ export const ModelDecl: z<ModelDecl> = z.object({
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
   prompt_guide: z.union([z.dict(z.any()), z.const(null)]).required(false),
-  base_body: z.string().default(""),
+  // (D-C7, 2026-09-28: base_body KILLED with its last declarer —
+  // one declaration, zero readers, superseded by the parametric
+  // neutral bake. The wall pins the kill: a reintroduction with no
+  // read-shaped consumer fails models-against-cards.)
   accepts: z.array(z.string()).default([]),
   timeout_floor: z.number().min(0).required(false),
   canvas_default: z.boolean().required(false),
@@ -583,7 +624,6 @@ export interface ModelDecl {
   variant_groups?: VariantGroupRow[];
   provisions?: ProvisionRow[];
   prompt_guide?: Record<string, unknown> | null;
-  base_body?: string;
   accepts?: string[];
   timeout_floor?: number;
   canvas_default?: boolean;

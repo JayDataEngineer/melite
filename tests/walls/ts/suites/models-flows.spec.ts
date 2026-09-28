@@ -12,9 +12,21 @@
 //   2. for every such family, the variant ids, cell quants, cell
 //      routes and variant routes AGREE between the registry and the
 //      row (derivation that drifts from truth refuses LOUD);
-//   3. the flows plane's registry (flowsRegistry, rebuilt 918c48a0)
-//      is loadable and its flow names are legal ids — the models
-//      plane's VerbEngine flow arms (phase 2) will name these.
+//   3. the flows plane's registry (flowsRegistry) is loadable and its
+//      flow names are legal ids — the models plane's VerbEngine flow
+//      arms will name these.
+//
+// WHAT THIS WALL PINS (its own header, kept honest — the wall audit's
+// E-M7 found this list promising a flowsRegistry pin the file did
+// not carry):
+//   1. every assembled facts row exists in the registry (or serves a
+//      route), and the facts table's census is exact;
+//   2. for every such family, the variant ids, cell quants, cell
+//      routes and variant routes AGREE between registry and row;
+//   3. the judged-cell census is exact (the resolve arm);
+//   4. the facts FILE is pinned against the registry (E-C2: roster
+//      exact, no frozen escapes, two-way coverage, every card row
+//      real, every outputs slice shaped).
 //
 // Run: npx vitest run tests/walls/ts/suites/models-flows.spec.ts
 
@@ -24,6 +36,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getModel, modelIds, registryIds, registryModel, resolve } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { readFileSync } from "node:fs";
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
@@ -68,7 +81,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     // their cards — the DCC surface moved to the blender MCP skills)
     // ≥26 since the form-seams stroke (ideogram facts retired with
     // its card 2026-09-17)
-    assert.ok(factIds.length >= 26, `expected ≥26 fact families, got ${factIds.length}`);
+    // E-M7 (the wall audit, 2026-09-28): a floor let half the facts
+    // table vanish silently. The census is exact (29 today).
+    assert.equal(factIds.length, 29, `expected exactly 29 fact families, got ${factIds.length}`);
     const actions = await actionCardLanes();
     for (const id of factIds) {
       if (actions.has(id)) continue;
@@ -115,7 +130,9 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
         }
       }
     }
-    assert.ok(checked >= 38, `expected ≥38 checked cells, got ${checked}`);
+    // E-M7: the checked-cell census is exact (80 today — the floors
+    // let a whole family stop being judged).
+    assert.equal(checked, 80, `expected exactly 80 checked cells, got ${checked}`);
   });
 
   it("resolve() rides for every compose family (the R1 contract)", async (): Promise<void> => {
@@ -130,11 +147,22 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     for (const id of Object.keys(facts.models)) {
       if (actions.has(id)) continue;
       judged++;
+      // E-C3 (the wall audit, 2026-09-28): `typeof route ===
+      // "string"` was true BY CONSTRUCTION (resolve's return type
+      // is a string) — the arm could not fail. The route must be
+      // NON-EMPTY and a real serving id.
       const r = resolve(id);
-      assert.ok(typeof r.route === "string", `${id}: resolve gave no route`);
+      assert.ok(typeof r.route === "string" && r.route !== "", `${id}: resolve gave an empty route`);
+      assert.ok(modelIds().includes(r.route), `${id}: resolve route '${String(r.route)}' serves no lane`);
     }
-    assert.ok(judged >= 20,
-      `the resolve() arm judged real families (${String(judged)} of ${String(Object.keys(facts.models).length)} rows — an emptied roster must not pass)`);
+    // E-C3: the census is exact — every row except the rows that
+    // ARE action-card lanes (id collision) is judged; drift is
+    // deliberate. 29 stand today.
+    const total = Object.keys(facts.models).length;
+    const actionRows = Object.keys(facts.models).filter((id) => actions.has(id)).length;
+    assert.equal(judged, total - actionRows,
+      `the resolve() arm's census is exact (${String(judged)} judged; ${String(total)} rows - ${String(actionRows)} action-lane rows — drift is deliberate)`);
+    assert.equal(total, 29, `the facts roster is 29 rows (saw ${String(total)}) — a 30th family is a deliberate edit`);
   });
 });
 
@@ -173,3 +201,115 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       `the mods arm judged real families (${String(judged)} — an emptied facts roster must not pass)`);
   });
 
+
+// ── E-C2 (the wall audit, 2026-09-28): THE RAW FILE IS THE ORACLE ──
+// The spec's every comparison read `facts.models` — the view
+// loadFacts DERIVES through the same registry reads it was being
+// compared against: registry-vs-registry, a tautology that could
+// not fail while the JSON's own bytes rotted. These arms read the
+// RAW JSON with readFileSync + JSON.parse — the frozen file itself
+// — and pin its three live claims: the roster (both directions),
+// the card mapping (row→card and card-slice keys), and the
+// outputs/requires_by_family slices (the file's raison d'être,
+// compared by NO arm before).
+describe("the facts FILE is pinned against the registry (E-C2)", () => {
+  const raw = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
+    rows?: Record<string, { card?: string; frozen?: unknown }>;
+    cards?: Record<string, { outputs?: Array<{ label?: string; patterns?: string[] }>; requires_by_family?: Record<string, string[]> }>;
+  };
+  const FACTS_ROW_CENSUS = 29;
+
+  it("the frozen roster is exact, and the frozen-variant escape hatch census is named", async (): Promise<void> => {
+    await loadCardDefs();
+    const ids = Object.keys(raw.rows ?? {}).sort();
+    assert.equal(ids.length, FACTS_ROW_CENSUS,
+      `the facts roster is ${String(FACTS_ROW_CENSUS)} rows (saw ${String(ids.length)}) — a family added or retired is a deliberate edit`);
+    // the FROZEN escape hatch: a row carrying `frozen` bypasses the
+    // registry derivation entirely (its variants ride the file's
+    // bytes). NONE are frozen today — a first frozen row must be
+    // argued here, or the tautology hole reopens through the back
+    // door.
+    const frozen = ids.filter((id) => (raw.rows?.[id] as { frozen?: unknown } | undefined)?.frozen !== undefined);
+    assert.deepEqual(frozen, [],
+      `rows frozen against derivation (${frozen.join(", ")}) — pin them here deliberately or derive them`);
+    // REVERSE DIRECTION (the audit's missing arm): every family any
+    // card BOARDS must have a facts row — a 46th registry family is
+    // invisible to the old one-way arm
+    const svc = theService();
+    const missing: string[] = [];
+    for (const cardId of svc.cardIds()) {
+      for (const fam of svc.getCardDef(cardId)?.boarded ?? []) {
+        if (!ids.includes(fam)) missing.push(`${cardId} boards ${fam}`);
+      }
+    }
+    assert.deepEqual(missing, [],
+      `boarded families with NO facts row (${missing.join("; ")}) — the compose plane cannot see their lanes`);
+  });
+
+  it("every row maps to a REAL card, and every card slice names a REAL card", async (): Promise<void> => {
+    await loadCardDefs();
+    const svc = theService();
+    const cardIds = new Set(svc.cardIds());
+    assert.ok(cardIds.size >= 10, `census floor: the card plane is real (${String(cardIds.size)} cards)`);
+    for (const [id, row] of Object.entries(raw.rows ?? {})) {
+      assert.ok(typeof row.card === "string" && row.card !== "", `facts row '${id}' names no card`);
+      assert.ok(cardIds.has(row.card!), `facts row '${id}' maps to card '${row.card}', which the card plane does not serve`);
+    }
+    for (const key of Object.keys(raw.cards ?? {})) {
+      assert.ok(cardIds.has(key), `facts card slice '${key}' names a card the card plane does not serve`);
+    }
+  });
+
+  it("outputs slices are real (label + dot-patterns), requires_by_family keys are registry families", async (): Promise<void> => {
+    await loadCardDefs();
+    const slices = raw.cards ?? {};
+    const sliceKeys = Object.keys(slices).sort();
+    // outputs are the file's reason to exist: every card slice
+    // carries at least one output with a label and dot-prefixed
+    // patterns (the compose plane's file-kind vocabulary)
+    for (const key of sliceKeys) {
+      const outputs = slices[key]?.outputs ?? [];
+      assert.ok(outputs.length > 0, `card slice '${key}' carries NO outputs — the compose plane cannot describe its artifacts`);
+      for (const o of outputs) {
+        assert.ok(typeof o.label === "string" && o.label !== "", `card slice '${key}': an output carries no label`);
+        assert.ok(Array.isArray(o.patterns) && o.patterns.length > 0, `card slice '${key}' output '${o.label}': no patterns`);
+        for (const p of o.patterns ?? []) {
+          assert.ok(p.startsWith("."), `card slice '${key}' output '${o.label}': pattern '${p}' is not a dot-suffix`);
+        }
+      }
+    }
+    // requires_by_family: keys must be registry families (a typo
+    // starves the pack silently); the carrying pair is named
+    const carriers: string[] = [];
+    for (const key of sliceKeys) {
+      const rbf = slices[key]?.requires_by_family;
+      if (rbf === undefined) continue;
+      carriers.push(key);
+      for (const fam of Object.keys(rbf)) {
+        assert.ok(registryIds().includes(fam),
+          `card slice '${key}' requires_by_family names '${fam}', which the registry does not hold — a typo starves the pack`);
+        assert.ok(Array.isArray(rbf[fam]) && rbf[fam]!.length > 0, `card slice '${key}' requires_by_family['${fam}'] is empty`);
+      }
+    }
+    assert.deepEqual(carriers, ["img-to-mesh", "tagger"],
+      `the requires_by_family carriers are the named pair (saw ${JSON.stringify(carriers)}) — a third carrier is a deliberate edit`);
+    // A-L25 (the wall audit, 2026-09-28): the frozen card slices
+    // were checked for SHAPE and key-membership, never against the
+    // LIVE card plane that generates them — so a hand-edited facts
+    // file (or a card edit whose snapshot was not re-dumped) drifted
+    // silently, and the two copies disagreed about which packs a
+    // family needs. The frozen rows ARE the live rows now, compared
+    // key-by-key: a divergence refuses, naming the card and family.
+    const defs = await loadCardDefs();
+    for (const key of carriers) {
+      const live = (defs.get(key) as unknown as { requiresByFamily?: Record<string, readonly string[]> } | undefined)
+        ?.requiresByFamily ?? {};
+      const frozen = slices[key]?.requires_by_family ?? {};
+      assert.deepEqual(
+        Object.fromEntries(Object.entries(frozen).map(([f, v]) => [f, [...v].sort()])),
+        Object.fromEntries(Object.entries(live).map(([f, v]) => [f, [...v].sort()])),
+        `card '${key}': the FROZEN requires_by_family IS the live card's (a hand-edited facts file or an un-dumped card edit refuses here)`,
+      );
+    }
+  });
+});

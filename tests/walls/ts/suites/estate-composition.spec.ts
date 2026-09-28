@@ -19,6 +19,11 @@ import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {describe, it, beforeAll} from "vitest";
+import { expect } from "vitest";
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { bundleSeats } from "../../helpers/bundle-seats.ts";
+const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
@@ -77,18 +82,42 @@ async function settle(names: string[]): Promise<void> {
 
 describe("the estate bundle composes", () => {
   it("every provider seat settles (no order break, no dropped row)", async () => {
-    await settle([
-      "queue",
-      "draftsRemote",
+    // B-M8 (the wall audit, 2026-09-28): the ten hand-typed names
+    // were a list that rots — the bundle mounts NINETEEN seats, so
+    // nine were never waited for (the wedge this wall exists to
+    // catch). The census is DERIVED from the bundle's own import
+    // closure (every `super(ctx, "seat")` it reaches), and pinned
+    // EXACTLY below so a new seat is a conscious edit.
+    const seats = bundleSeats(join(REPO, "packages/web/melite-estate/src/index.ts"), REPO);
+    expect(seats, "the bundle's seat census, derived from its import closure").toEqual([
       "benchRemote",
       "cardRegistry",
-      "disclose",
-      "manage",
-      "meliteSkills",
-      "load",
-      "runs",
       "comfyui",
+      "disclose",
+      "draftsRemote",
+      "engines",
+      "load",
+      "manage",
+      "manageRemote",
+      "mediaRemote",
+      "melite-engine-agent",
+      "melite-engine-craft",
+      "melite-engine-mcp",
+      "meliteSkills",
+      "provisioning",
+      "queue",
+      "runs",
+      "runsRemote",
     ]);
+    // THE ENGINE-EXECUTOR SEATS ARE CONDITIONAL BY CONTRACT: the
+    // engine packages seat one executor per CONFIGURED engine id
+    // (this rig configures none), and the contract NAMES them —
+    // `melite-engine-<id>` — so the carve is the naming law, not a
+    // hand list of the ones that happen to be absent today.
+    const engineSeats = seats.filter((n) => n.startsWith("melite-engine-"));
+    const unconditional = seats.filter((n) => !n.startsWith("melite-engine-"));
+    expect(unconditional.length, "the unconditional census is the bulk of the bundle").toBeGreaterThan(10);
+    await settle(unconditional);
   }, 30000);
 
   it("the disclose plane answers through the bundle (cards + flows ride — EXACT, derived)", async () => {

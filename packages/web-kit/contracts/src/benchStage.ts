@@ -275,6 +275,22 @@ export function normalizeBenchStages(stages: unknown): Array<Record<string, unkn
  * writer of the same wire shape could drift. It is the contract's
  * now, and both import it.
  */
+/** THE STAGE-PATCH KEY SET (B-M9, the wall audit, 2026-09-28): the
+ *  old door's fixed list lived in TWO production modules — the drafts
+ *  door that admits the patch and the runs gate that judges it — with
+ *  the SAME members in a DIFFERENT order, and each door composed its
+ *  own refusal voice from its own copy. A key added to one door left
+ *  the other refusing it; the two voices disagreed about what the
+ *  door wanted. One list, in the contract, in the voice's order. */
+export const STAGE_PATCH_KEYS = [
+  "params",
+  "result",
+  "runStatus",
+  "inputs",
+  "inputOutputs",
+] as const;
+export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
+
 export const WIRE_STAGE_KEYS: readonly string[] = [
   "card",
   "card_io",

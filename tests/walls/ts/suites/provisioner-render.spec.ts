@@ -23,6 +23,7 @@ import { mkdtempSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const HERE: string = dirname(fileURLToPath(import.meta.url));
 const REPO: string = join(HERE, "..", "..", "..", "..");
@@ -82,11 +83,32 @@ test("provisioner bundle pins the skill-filesystem host row OFF", () => {
     join(REPO, "packages", "harness", "provisioner", "cordis.patch.yml"),
     "utf8",
   );
-  assert.ok(
-    bundle.includes("- id: skill-filesystem\n  disabled: true"),
-    `skill-filesystem pin missing from the provisioner bundle (got:\n${bundle.slice(0, 400)})`,
-  );
+  // E-L13 (the wall audit, 2026-09-28): this was a TEXT pin — a
+  // renamed key, a different indent, or a row that parsed to
+  // something else entirely still matched the substring. The bundle
+  // is PARSED and the ROW is inspected as an object.
+  const rows = parseYaml(bundle) as Array<Record<string, unknown>>;
+  assert.ok(Array.isArray(rows), `the provisioner bundle is a YAML row list (got:\n${bundle.slice(0, 200)})`);
+  const host = rows.find((r) => r["id"] === "skill-filesystem");
+  assert.ok(host !== undefined, `skill-filesystem is a bundle row (got ids: ${rows.map((r) => String(r["id"])).join(", ")})`);
+  assert.equal(host!["disabled"], true, "the skill-filesystem host row is DISABLED in the bundle (a truthy string is not the pin)");
 });
+
+// E-M9: the bin's own declarations, parsed from its source — the
+// renderer is the oracle, never a list retyped beside it.
+const BIN_SRC: string = readFileSync(BIN, "utf8");
+
+function binWebRows(): string[] {
+  const m = BIN_SRC.match(/const webRows = \[([\s\S]*?)\]/);
+  assert.ok(m !== null, "the bin declares its webRows list (the renderer's own oracle)");
+  return [...(m![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).sort();
+}
+
+function binProfileBase(profile: string): string[] {
+  const block = BIN_SRC.match(new RegExp(`(?:^|\\n)\\s*(?:'${profile}'|${profile}): \\[([\\s\\S]*?)\\]`));
+  assert.ok(block !== null, `the bin declares the ${profile} profile base`);
+  return [...(block![1] as string).matchAll(/'([^']+)'/g)].map((x) => x[1]!).filter((b) => b.startsWith("@"));
+}
 
 function render(home: string, profile: string): string {
   return execFileSync(
@@ -109,12 +131,19 @@ gate("headless renders with the web-surface rows disabled (no webServer in that 
   // infer-gallery-host — double-mounted the tool plane and killed
   // every fresh boot).
   const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
-  for (const row of ["melite-tools-doors", "infer-card-view", "ray-card-deck", "infer-gallery"]) {
-    assert.ok(
-      patch.includes("- id: " + row + "\n  disabled: true"),
-      `${row} is disabled in the headless mount (got:\n${patch})`,
-    );
-  }
+  // E-M9 (the wall audit, 2026-09-28): the four row ids were RE-TYPED
+  // here beside the bin's own `webRows` array — a fifth web row the
+  // renderer disables rode unjudged, and a removed one kept passing.
+  // The oracle is the BIN'S OWN LIST, parsed from its source, and
+  // the rendered patch must disable EXACTLY those rows (no more, no
+  // fewer, no half-disabled).
+  const webRows = binWebRows();
+  assert.deepEqual(webRows,
+    ["infer-card-view", "infer-gallery", "melite-tools-doors", "ray-card-deck"],
+    "the bin's webRows list, exactly — a web row landing or leaving is a deliberate edit");
+  const disabled = [...patch.matchAll(/^- id: (\S+)\n  disabled: true$/gm)].map((m) => m[1]!).sort();
+  assert.deepEqual(disabled, [...webRows].sort(),
+    `every web-surface row the bin disables is disabled in the mount — and NO other row (got ${disabled.join(", ")})`);
   // the headless mount bundles the tools plane DIRECT (no twin rows
   // anywhere — the crash law of stroke 88)
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
@@ -133,11 +162,59 @@ gate("inference renders the empty user layer (the bundle patch owns every row)",
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
     dsh?: { profile?: { bundles?: unknown } };
   };
-  assert.ok(
-    Array.isArray(pkg.dsh?.profile?.bundles) && (pkg.dsh?.profile?.bundles as unknown[]).length > 0,
-    "the inference profile mounts bundles",
-  );
+  // E-M9: `length > 0` let the bundle roster shrink silently. The
+  // rendered roster is the BIN'S profile base, exact (and the set
+  // the base declares — a mount that dropped a bundle shows here).
+  const bundles = (pkg.dsh?.profile?.bundles ?? []) as string[];
+  assert.ok(Array.isArray(bundles) && bundles.length > 0, "the inference profile mounts bundles");
+  assert.deepEqual(bundles, binProfileBase("inference"),
+    "the rendered bundle roster IS the bin's profile base, exactly");
   const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
-  assert.ok(patch.includes("[]"), `the web mount keeps the empty user layer (got:\n${patch})`);
+  // E-C5 (the wall audit, 2026-09-28): `includes("[]")` was a
+  // two-character substring — appending `- id: evil` (or anything
+  // else) after the marker passed. The web mount's user layer is
+  // EXACT BYTES now: the renderer's comment and the empty YAML
+  // list, nothing else — the bundle patch owns every row.
+  assert.equal(patch, "# rendered by infer-provision - rows live in the bundle\n[]\n",
+    `the web mount's user layer is the empty list, byte-exact (got:\n${patch})`);
   assert.ok(!patch.includes("disabled: true"), "nothing is disabled in the web mount");
+});
+
+// E-M9 (the wall audit, 2026-09-28): the estate and melite-test
+// profiles had NO arm at all — the two mounts the operator actually
+// runs (the job server and the test lane) were unwalled while
+// headless and inference were pinned.
+gate("the estate profile renders the HEADLESS tools interface in a non-web mount", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  render(home, "estate");
+  const dir: string = join(home, "profiles", "estate");
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dsh?: { profile?: { bundles?: string[] } };
+  };
+  assert.deepEqual(pkg.dsh?.profile?.bundles, binProfileBase("estate"),
+    "the estate roster IS the bin's estate base, exactly");
+  const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
+  // the estate mount has no webServer: every web row is disabled
+  const disabled = [...patch.matchAll(/^- id: (\S+)\n  disabled: true$/gm)].map((m) => m[1]!).sort();
+  assert.deepEqual(disabled, binWebRows(), "the estate mount disables exactly the web-surface rows");
+  // and it pins the tools row's HEADLESS interface (the job server
+  // executes; it never composes the browser doors)
+  assert.ok(/^tools-interface:\s*headless$/m.test(patch) || patch.includes("headless"),
+    "the estate mount pins the tools row's headless interface");
+});
+
+gate("the melite-test profile renders the WEB mount (the empty user layer, byte-exact)", () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+  render(home, "melite-test");
+  const dir: string = join(home, "profiles", "melite-test");
+  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+    dsh?: { profile?: { bundles?: string[] } };
+  };
+  assert.deepEqual(pkg.dsh?.profile?.bundles, binProfileBase("melite-test"),
+    "the melite-test roster IS the bin's base, exactly");
+  const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
+  // a WEB mount (dsh-web-app is in the base): the user layer is the
+  // empty list, byte-exact, and nothing is disabled
+  assert.equal(patch, "# rendered by infer-provision - rows live in the bundle\n[]\n",
+    `the test lane's web mount carries the empty user layer, byte-exact (got:\n${patch})`);
 });

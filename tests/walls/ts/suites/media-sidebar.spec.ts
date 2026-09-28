@@ -1,6 +1,6 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -88,16 +88,33 @@ test('media vocabulary parity: the gallery client and the estate carry ONE vocab
   assert.equal(Object.keys(client.kinds)[0], 'video', 'classifier precedence: video must classify first')
 })
 
-test('the runs-window law: the host pulls the door hard max (500)', async () => {
+test('the runs-window law: the host pulls the door hard max (500), at its USE SITES', async () => {
   const host = readFileSync(join(GALLERY, 'src', 'index.ts'), 'utf8')
+  // D-C4 (the wall audit, 2026-09-28): the arm pinned the SPELLING
+  // and never the wiring — RUNS_LIMIT could sit unused beside a
+  // hand-typed '500' in the fetch and the wall stayed green. The
+  // constant's USES are pinned now: the route URL and the seat call
+  // both interpolate the constant, and no bare '500' rides the
+  // runs path.
   const m = host.match(/const RUNS_LIMIT = '(\d+)'/)
   assert.ok(m !== null, 'RUNS_LIMIT spelling moved — update this wall')
   assert.equal(m[1], '500', 'a smaller window lets sidecar floods push artifact rows out of the listing')
+  const uses = host.match(/RUNS_LIMIT/g) ?? []
+  assert.ok(uses.length >= 3,
+    `RUNS_LIMIT must WIRE its uses (declaration + route + seat call), not just sit declared (saw ${uses.length})`)
+  assert.ok(host.includes('limit=${RUNS_LIMIT}'), 'the runs route interpolates RUNS_LIMIT')
+  assert.ok(/list\(RUNS_LIMIT/.test(host), 'the seat call passes RUNS_LIMIT')
 })
 
 test('served-lib byte proofs: the built client carries the ported machinery', () => {
   const bundle = readFileSync(join(GALLERY, 'lib', 'client.js'), 'utf8')
   // THE BUILT-LIB LAW: these bytes are what the DSH loader serves.
+  // D-C1 (the wall audit): three probes were PROSE — '3D' matches
+  // ~400 places in any bundle, 'wand'/'lightbox' match the css text
+  // and comments — none could fail. The class probes are CODE
+  // SHAPES now: the css-module symbol the build mints
+  // (overlay_module_css_default) with its .lightbox/.wand USES, and
+  // the badge rule's own literal with its quotes.
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
     ['media tab kind', 'kind: "media"'],
@@ -112,9 +129,10 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['cards bench address', 'dsh-resource://cards/bench'],
     ['cards run address', 'dsh-resource://cards/run/'],
     ['estate-artifact address prefix', 'dsh-resource://estate-artifact/'],
-    ['the modal class rides (lightbox)', 'lightbox'],
-    ['the wand class rides', 'wand'],
-    ['3D badge', '3D'],
+    ['the css-module symbol mints (lightbox class)', 'overlay_module_css_default'],
+    ['the modal class USES the module (lightbox)', 'overlay_module_css_default.lightbox'],
+    ['the wand class USES the module', 'overlay_module_css_default.wand'],
+    ["3D badge (the badge rule's own literal)", 'text: "3D"'],
     ['honest 3D absence copy', '3D view unavailable'],
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]
@@ -140,30 +158,76 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
 })
 
 test('filename contracts live in exactly one client file (poster + window-film + frame-dump)', () => {
-  const contracts: RegExp[] = [
-    /_last_frame\\\.png/,       // poster sibling stem (escaped in source)
-    /_w\\d\+_/,                 // window film suffix
-    /FRAME_DUMP/,               // numbered frame dump guard
+  // D-C2 (the wall audit, 2026-09-28): the arm scanned THREE files
+  // of the client dir by hand ('MediaPanel', 'ui', 'decode') — a
+  // contract leaking into any of the other ten walked past. The
+  // client plane is WALKED now, and the carrier set must be exactly
+  // MediaPanel.tsx. The regexes are the SOURCE'S OWN FULL
+  // spellings (the old wall regexes were loose substrings of the
+  // real WINDOW_FILM), and POSTER_STEMS — unnamed by the old wall —
+  // rides its own arm.
+  const clientFiles = readdirSync(join(GALLERY, 'src', 'client')).filter(
+    (f) => /\.(tsx?|css)$/.test(f),
+  ).sort();
+  assert.ok(clientFiles.length >= 10, `census floor: the client plane is real (${clientFiles.length} files — the walk rotted?)`);
+  const contracts: Array<[string, RegExp, string[]]> = [
+    ['poster sibling stem (_last_frame.png)', /_last_frame\\\.png/, ['MediaPanel.tsx']],
+    ['poster sibling stem (_poster.png)', /_poster\\\.png/, ['MediaPanel.tsx']],
+    // the film suffix is a LEGITIMATE TWO-SITE mirror: MediaPanel's
+    // listing filter and bench-load's hero pick BOTH spell
+    // WINDOW_FILM — the wall pins the exact pair AND (below) that
+    // the two spellings are character-identical (one spelling in
+    // two files, never two spellings)
+    ['window film suffix (full spelling)', /_w\\d\+_\\w\+_\?\\\.mp4\$/, ['MediaPanel.tsx', 'bench-load.ts']],
+    ['numbered frame dump guard (FRAME_DUMP)', /FRAME_DUMP/, ['MediaPanel.tsx']],
   ]
-  for (const re of contracts) {
+  for (const [name, re, expectedCarriers] of contracts) {
     const carriers: string[] = []
-    for (const f of ['MediaPanel.tsx']) {
+    for (const f of clientFiles) {
       const src = readFileSync(join(GALLERY, 'src', 'client', f), 'utf8')
       if (re.test(src)) carriers.push(f)
     }
-    assert.deepEqual(carriers, ['MediaPanel.tsx'], `contract ${String(re)} must live in exactly MediaPanel.tsx`)
-    // and nowhere else on the client plane
-    const ui = readFileSync(join(GALLERY, 'src', 'client', 'ui.tsx'), 'utf8')
-    const decode = readFileSync(join(GALLERY, 'src', 'client', 'decode.ts'), 'utf8')
-    assert.ok(!re.test(ui) && !re.test(decode), 'filename contracts must not leak into shared modules')
+    assert.deepEqual(carriers, expectedCarriers, `contract ${name} must live in exactly ${JSON.stringify(expectedCarriers)} (found in ${JSON.stringify(carriers)})`)
   }
+  // THE ONE-SPELLING LAW (the two-site mirror): both WINDOW_FILM
+  // declarations are the SAME regex text — a drift between the two
+  // is two laws, and the hero pick diverges from the listing.
+  const filmSpellings = ['MediaPanel.tsx', 'bench-load.ts'].map((f) => {
+    const src = readFileSync(join(GALLERY, 'src', 'client', f), 'utf8')
+    return (src.match(/WINDOW_FILM = (\/.+\/[a-z]*)/) ?? [])[1];
+  });
+  assert.ok(filmSpellings.every((x) => x !== undefined), 'WINDOW_FILM declarations found in both mirrors');
+  assert.equal(filmSpellings[0], filmSpellings[1],
+    `the two WINDOW_FILM spellings drifted apart: ${filmSpellings[0]} vs ${filmSpellings[1]}`);
 })
 
 test('token single-site: DSW token spellings live only in ui.tokens.ts', () => {
+  // D-C3 (the wall audit, 2026-09-28): the allow-list named SIX
+  // files while the dir holds thirteen — and overlay.module.css
+  // carries `--dsw-alias-*` fallbacks TODAY, unchecked. The whole
+  // client plane is walked now. The css module is the ONE named
+  // exception (its var() fallbacks ARE the token site's mirror for
+  // non-token contexts, spelled in the audit fix as the explicit
+  // carve); every other file restating a raw token fails.
+  const clientFiles = readdirSync(join(GALLERY, 'src', 'client')).filter(
+    (f) => /\.(tsx?|css)$/.test(f),
+  ).sort();
+  assert.ok(clientFiles.length >= 10, `census floor: the client plane is real (${clientFiles.length} files — the walk rotted?)`);
   const tokens = readFileSync(join(GALLERY, 'src', 'client', 'ui.tokens.ts'), 'utf8')
   assert.ok(/--dsw-alias/.test(tokens), 'ui.tokens.ts is the token site')
-  for (const f of ['MediaPanel.tsx', 'ui.tsx', 'useFeed.ts', 'decode.ts', 'bench-load.ts', 'index.ts']) {
+  const EXPLICIT_CSS_EXCEPTION = 'overlay.module.css' // var() fallbacks only — the declared carve
+  for (const f of clientFiles) {
+    if (f === 'ui.tokens.ts' || f === EXPLICIT_CSS_EXCEPTION || f === 'css-modules.d.ts') continue
     const src = readFileSync(join(GALLERY, 'src', 'client', f), 'utf8')
     assert.ok(!/--dsw-alias|--dsw-ref/.test(src), `${f} restates raw DSW tokens — import from ui.tokens.ts instead`)
   }
+  // and the exception is honest: the css carries var() FALLBACKS
+  // (a --dsw- token with a literal default), never a bare token use
+  const css = readFileSync(join(GALLERY, 'src', 'client', EXPLICIT_CSS_EXCEPTION), 'utf8')
+  const bare = [...css.matchAll(/(^|[^(])--dsw-[a-z-]+/gm)].filter((m) => {
+    const before = css.slice(Math.max(0, m.index! - 6), m.index!)
+    return !before.includes('var(')
+  });
+  assert.deepEqual(bare.map(() => 'bare token'), [],
+    `overlay.module.css carries --dsw- tokens OUTSIDE var() fallbacks (the carve is fallbacks only)`)
 })

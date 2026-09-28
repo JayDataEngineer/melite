@@ -139,7 +139,10 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
       assert.ok(stamping.length > 0,
         `${id}: declares the Recipe group, its card (${caller}) renders the dropdown, and NO row stamps — author truthful rows (the 2026-09-18 retirement left zero exemptions)`);
     }
-    assert.ok(checked > 13, `the law reached the table (checked ${checked})`);
+    // E-M10 (the wall audit, 2026-09-28): a `> 13` floor let a
+    // family stop carrying Recipe rows unnoticed. The census is
+    // exact: 16 card-carried families judge the law.
+    assert.equal(checked, 16, `the law reaches the table, exactly (checked ${String(checked)})`);
   });
 
   it("DEBT RETIRED: the 15-family census resolutions hold (stamps stamp, scoped stay scoped)", async (): Promise<void> => {
@@ -156,7 +159,28 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
         assert.ok(stamping.length > 0, `${id} lost its stamps — restore the truthful rows`);
       }
     }
+    // E-M10 (the wall audit, 2026-09-28): the "15 families" census
+    // counted 14 ATOMS plus the h3-keyframe ALIAS — a second name
+    // for h3-timeline's rows, so a family could be retired and the
+    // alias kept the number at 15. The atom set is named, and the
+    // alias is asserted to BE one (it resolves to the same variants
+    // array — a separate declaration would be a second SSOT).
+    const ALIASES: Record<string, string> = { "h3-keyframe": "h3" };
+    const atoms = Object.keys(RESOLVED).filter((id) => !(id in ALIASES));
+    assert.equal(atoms.length, 14,
+      `the census carries 14 model ATOMS (saw ${String(atoms.length)}): ${atoms.join(", ")}`);
+    for (const [alias, atom] of Object.entries(ALIASES)) {
+      assert.ok(alias in RESOLVED, `${alias} is a resolved name`);
+      const aliasRows = (getModel(alias).variants ?? []).map((v: VariantRow) => v.id);
+      const atomRows = (getModel(atom).variants ?? []).map((v: VariantRow) => v.id);
+      assert.deepEqual(aliasRows, atomRows,
+        `${alias} is an ALIAS of ${atom} — the same variants, not a second declaration`);
+    }
   });
+
+// E-M10: the two action cards carry no live envelope (no form
+// params to stamp against) — the census that makes the skip honest.
+const ACTION_CARDS_WITHOUT_ENVELOPE: string[] = [];
 
   it("LAW B + C: every stamp key is a declared card param and every scalar sits inside the card's own bounds", async (): Promise<void> => {
     await loadCardDefs();
@@ -167,12 +191,17 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // judging ZERO stamps and bounds and passing. LAW A pins its
     // checked count; this arm pins its own.
     let judged = 0;
+    // E-M10: the `scalars.size === 0` skip had NO census — a family
+    // whose formSchemas went null would skip and the arm stayed
+    // green. The skipped set is now COUNTED and pinned: exactly the
+    // two action cards carry no live envelope, by design.
+    const noEnvelope: string[] = [];
     for (const id of modelIds()) {
       const f = getModel(id);
       const caller = carried.get(id);
       if (caller === undefined) continue;
       const scalars = declaredScalars(caller, id);
-      if (scalars.size === 0) continue; // no live envelope (action cards)
+      if (scalars.size === 0) { noEnvelope.push(id); continue } // action cards: no live envelope
       for (const row of f.variants ?? []) {
         const stamp = row.wire_defaults ?? {};
         for (const [k, v] of Object.entries(stamp)) {
@@ -188,6 +217,12 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
         }
       }
     }
+    // E-M10: no card-carried family skips today (the set is empty,
+    // and it is PINNED as empty — a family landing here means its
+    // formSchemas went null, which used to skip in silence).
+    assert.deepEqual(noEnvelope, ACTION_CARDS_WITHOUT_ENVELOPE,
+      `no card-carried family may skip the scalar law (saw ${noEnvelope.join(", ")}) — ` +
+      "a card that lost its formSchemas would land here, and the law would stop judging it");
     assert.ok(judged > 40,
       `LAW B + C judged real stamps (${String(judged)} — a formSchemas that returns null, or a declaredScalars that broke everywhere, would empty this arm)`);
   });
@@ -211,11 +246,23 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     // bounds row, so LAW B and LAW C bind there by declaration.
     await loadCardDefs();
     const carried = cardCarriedFamilies();
-    const caller = carried.get("music3");
-    assert.ok(caller !== undefined, "music3 is card-carried");
-    const scalars = declaredScalars(caller!, "music3");
-    const duration = scalars.get("duration");
-    assert.ok(duration !== undefined, "duration is a declared scalar");
+    // E-L12 (the wall audit, 2026-09-28): the arm derived scalars
+    // from MUSIC3 (the TTS lane) and then judged the IMAGE lanes'
+    // admissions — two different paths, so the derivation proved
+    // nothing about what was judged. The judged lanes' OWN scalars
+    // are derived now: the image-edit row's width/height bounds come
+    // from image-edit's envelope, and the dead-key refusal from the
+    // image-gen envelope.
+    const editCaller = carried.get("qwen-img-edit-21");
+    assert.ok(editCaller !== undefined, "qwen-img-edit-21 is card-carried");
+    const editScalars = declaredScalars(editCaller!, "qwen-img-edit-21");
+    const width = editScalars.get("width");
+    assert.ok(width !== undefined, "width is a declared scalar on the JUDGED lane's own card");
+    const genCaller = carried.get("krea-2");
+    assert.ok(genCaller !== undefined, "krea-2 is card-carried");
+    const genScalars = declaredScalars(genCaller!, "krea-2");
+    assert.ok(!genScalars.has("not_a_param"),
+      "the dead key is absent from the JUDGED lane's own envelope (the refusal below is about this card)");
     const registry = new CardRegistryService(new Context());
     await registry.prime();
     const lawful = registry.admitStageRelations("image-edit", {

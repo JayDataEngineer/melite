@@ -189,7 +189,7 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     assert.equal(fresh["steps"], 9);
   });
 
-  it("the framework symbol is the REAL one (no reimplementation)", (): void => {
+  it("the framework symbol is the REAL one (no reimplementation)", async (): Promise<void> => {
     // resolveConfig must exist on a plain Service subclass built
     // the same way — proving we ride the shipped class, not a copy
     class Probe extends Service {
@@ -215,15 +215,53 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
       { steps?: unknown; cfg?: unknown };
     assert.equal(merged.steps, 52, "the head layer wins (the cascade's own law)");
     assert.equal(merged.cfg, 3.5, "the head's own keys ride");
-    // and the models service's cascade seat is not shadowed by a
-    // local reimplementation (the file must IMPORT the primitive)
-    const src = readFileSync(
-      new URL("../../../../packages/engines/comfyui-cordis/src/models/models.ts", import.meta.url),
+    // E-C4 (the wall audit, 2026-09-28): the grep used to read
+    // models.ts, where the symbols appear only in COMMENTS — the
+    // real cascade lives in service.ts (ctx.intercept building the
+    // view, svc[symbols.resolveConfig] composing through it). The
+    // proof reads service.ts CODE (comments stripped) and requires
+    // BOTH halves of the wiring.
+    const serviceSrc = readFileSync(
+      new URL("../../../../packages/engines/comfyui-cordis/src/models/service.ts", import.meta.url),
       "utf8",
     );
-    assert.match(src, /resolveConfig|symbols/,
-      "the models plane rides the framework's resolver (a local reimplementation is the drift this arm stood for)");
-    assert.notEqual(MODELS_SERVICE, "");
+    const code = serviceSrc.split("\n").filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*")).join("\n");
+    assert.match(code, /ctx\.intercept|this\.ctx\.intercept/,
+      "the cascade builds its layer through ctx.intercept (the framework's view primitive — a reimplementation is the drift this arm stood for)");
+    assert.match(code, /symbols\.resolveConfig/,
+      "the cascade composes through Service[symbols.resolveConfig] (the shipped symbol, not a copy)");
+    // E-L11 (the wall audit, 2026-09-28): `notEqual(MODELS_SERVICE,
+    // "")` was a filler — a constant is never empty, so the arm
+    // proved nothing. The seat key is the ENGINE'S EXPORT, compared
+    // against the module that owns it: a rename on either side
+    // breaks here.
+    const owner = await import("../../../../packages/engines/comfyui-cordis/src/models/models.ts");
+    assert.equal(MODELS_SERVICE, owner.MODELS_SERVICE,
+      "the seat key this wall uses IS the engine's exported seat key (one spelling)");
+  });
+
+  it("the cascade WIRING composes: base < intercept < head, and the root stays clean (E-C4)", (): void => {
+    // the behavioural half the audit owed: not "cordis works" but
+    // OUR seat's cascade method — the same call resolve() rides —
+    // layering a family base, a variant intercept, and a cell head.
+    const svc = modelsService();
+    const base = { steps: 20, cfg: 4.5, sampler: "euler" };
+    // the intercept layer: overrides ONE key, adds another
+    const withIntercept = svc.cascade(base, { steps: 30, seed: 7 }, null);
+    assert.equal(withIntercept.steps, 30, "the intercept layer beats the family base");
+    assert.equal(withIntercept.cfg, 4.5, "the base's untouched keys survive the intercept");
+    assert.equal(withIntercept.seed, 7, "the intercept's own keys ride");
+    // the full chain: base < intercept < head (closest wins)
+    const full = svc.cascade(base, { steps: 30 }, { steps: 40, cfg: 7 });
+    assert.equal(full.steps, 40, "the head (cell) beats the intercept (variant) beats the base (family)");
+    assert.equal(full.cfg, 7, "the head's own keys ride over the base");
+    assert.equal(full.sampler, "euler", "the base's untouched keys survive the whole chain");
+    // AND THE ROOT STAYS CLEAN (the wall's own third law): the
+    // intercepted view must not leak into the next resolution — a
+    // second cascade WITHOUT the intercept sees the base alone.
+    const after = svc.cascade(base, null, null);
+    assert.equal(after.steps, 20, "the root view is clean after an intercepted resolution (the intercept never leaked)");
+    assert.equal(after.seed, undefined, "the intercept's keys do not persist into later resolutions");
   });
 
   it("krea-2 pins hold byte-for-byte on the primitive", (): void => {
@@ -233,5 +271,41 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     const raw = mergedDefaults("krea-2", "raw");
     assert.equal(raw["steps"], 52);
     assert.equal(raw["cfg"], 3.5);
+  });
+
+  it("EVERY family merges its own declared defaults (E-L11: not one family of forty-five)", (): void => {
+    // E-L11 (the wall audit, 2026-09-28): the byte pin above judged
+    // ONE family of 45 — forty-four could merge nothing at all. The
+    // law is now census-wide: every registered family resolves
+    // through the primitive, and its merged view carries the shape
+    // the card plane reads (a record, string/number values only).
+    const svc = modelsService();
+    const ids = svc.registryIds();
+    // the walk is over EVERY id the seat holds (a floor: arms above
+    // this one register well-formed probe families on the same
+    // service, so the absolute count moves with them — the exact
+    // census of the PRODUCTION families is pinned by the boot arm).
+    assert.ok(ids.length >= 45,
+      `the census walks the whole registry (${String(ids.length)} families; the sample was one)`);
+    // An EMPTY bag is a lawful declaration (a rig family with no
+    // knobs); what may not happen is a family that does not RESOLVE
+    // or a merged value the card plane cannot carry.
+    const unresolved: string[] = [];
+    const malformed: string[] = [];
+    for (const id of ids) {
+      const merged = mergedDefaults(id);
+      if (merged === null || typeof merged !== "object" || Array.isArray(merged)) {
+        unresolved.push(id);
+        continue;
+      }
+      for (const [k, v] of Object.entries(merged)) {
+        const t = typeof v;
+        if (t !== "string" && t !== "number" && t !== "boolean") {
+          malformed.push(`${id}.${k} is ${t}`);
+        }
+      }
+    }
+    assert.deepEqual(unresolved, [], "every family resolves through the primitive (a family that did not is named)");
+    assert.deepEqual(malformed, [], "every merged default is a scalar the card plane can carry");
   });
 });

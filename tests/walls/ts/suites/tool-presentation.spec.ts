@@ -18,6 +18,12 @@
 // Run: npx vitest run tests/walls/ts/suites/tool-presentation.spec.ts
 // (or the whole gate: pnpm run test)
 import { describe, it } from "vitest";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const REPO = join(HERE, "..", "..", "..", "..");
 import assert from "node:assert/strict";
 import type { ToolDefinition } from "../../../../packages/harness/melite-tools/src/types.ts";
 import { meliteFlow } from "../../../../packages/harness/melite-tools/src/tools/melite-flow.ts";
@@ -68,16 +74,38 @@ const ALL: Array<[string, ToolDefinition]> = [
   ["melite_read", meliteRead(STUB_CTX)],
 ];
 
-const KINDS = new Set([
-  "read",
-  "edit",
-  "delete",
-  "move",
-  "search",
-  "execute",
-  "fetch",
-  "other",
-]);
+// F-L2 (the wall audit, 2026-09-28): this set was a HAND COPY of
+// dsh-tools' ToolCallKind union — a type-only union cannot be
+// imported at runtime, so the copy was the only option, and it
+// rots the moment the host adds a kind (the wall would then refuse
+// a legitimate kind). The set is now DERIVED from the host's own
+// declaration: the installed dsh-tools package is located, its
+// version is PINNED (the union is a host fact, and a host bump may
+// change it deliberately), and the union's members are read out of
+// the host's own source.
+const DSH_TOOLS_DIR: string = (() => {
+  const roots: string[] = [join(REPO ?? "", "node_modules", ".pnpm")];
+  for (const r of roots) {
+    if (!existsSync(r)) continue;
+    for (const e of readdirSync(r, { withFileTypes: true })) {
+      if (!e.isDirectory() || !e.name.startsWith("@deepseek-ai+dsh-tools@")) continue;
+      const dir = join(r, e.name, "node_modules", "@deepseek-ai", "dsh-tools");
+      if (existsSync(join(dir, "package.json"))) return dir;
+    }
+  }
+  throw new Error("the installed dsh-tools package is not found — the kind oracle has no host to read");
+})();
+
+const DSH_TOOLS_VERSION: string = (
+  JSON.parse(readFileSync(join(DSH_TOOLS_DIR, "package.json"), "utf8")) as { version?: string }
+).version ?? "";
+
+const KINDS: Set<string> = new Set((() => {
+  const decl = readFileSync(join(DSH_TOOLS_DIR, "lib", "types", "presentation.d.ts"), "utf8")
+    .match(/export type ToolCallKind =([^;]+);/);
+  if (decl === null) throw new Error("dsh-tools no longer declares ToolCallKind where this wall reads it");
+  return [...decl[1]!.matchAll(/'([^']+)'/g)].map((m) => m[1]!);
+})());
 
 describe("presentCall disclosure composition", () => {
   it("the wall's tool set IS the registry's tool set (no orphans, no squatters)", () => {
@@ -100,12 +128,28 @@ describe("presentCall disclosure composition", () => {
     }
   });
 
+  it("the kind oracle is the host's own declaration (version pinned, union derived)", () => {
+    // F-L2: the host is a PINNED dependency — a bump that changes
+    // the union is a deliberate edit here, not a silent drift, and
+    // the members the wall judges are read from the host, never
+    // retyped beside it.
+    assert.equal(DSH_TOOLS_VERSION, "0.1.5-rc.2",
+      `the host dsh-tools version is pinned (found ${DSH_TOOLS_VERSION}) — a bump that changes ToolCallKind says so here`);
+    assert.deepEqual([...KINDS].sort(),
+      ["delete", "edit", "execute", "fetch", "move", "other", "read", "search"],
+      "the host's ToolCallKind members, read from the host's own source");
+  });
+
   it("every card is generic with a non-empty title and a vocabulary kind", () => {
     for (const [name, def] of ALL) {
       const view = def.presentCall!({ ["probe_" + name]: true });
       assert.equal(view?.card, "generic", `${name} card`);
       assert.ok(view?.title && view.title.length > 0, `${name} title`);
-      assert.ok(view?.kind === undefined || KINDS.has(view.kind), `${name} kind`);
+      // F-L2: `kind === undefined ||` excused a MISSING kind — the
+      // icon-picking bridge reads it, and a view without one shows
+      // no affordance. Every card now carries a declared kind.
+      assert.equal(typeof view?.kind, "string", `${name} declares a kind (an icon-picking bridge reads it)`);
+      assert.ok(KINDS.has(view!.kind!), `${name} kind "${String(view?.kind)}" is in the host's ToolCallKind union`);
     }
   });
 

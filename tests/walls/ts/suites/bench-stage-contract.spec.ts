@@ -48,16 +48,23 @@ describe("the bench stage contract — one row, one shape, one spelling", () => 
   });
 
   it("run media: ONE spelling out, both spellings accepted in, nothing else touched", () => {
-    expect(canonicalRunMediaUrl(LEGACY_RUN_MEDIA_PREFIX + "/run-1/a.png")).toBe(RUN_MEDIA_PREFIX + "/run-1/a.png");
-    expect(canonicalRunMediaUrl(RUN_MEDIA_PREFIX + "/run-1/a.png")).toBe(RUN_MEDIA_PREFIX + "/run-1/a.png");
+    // A-M13 (the wall audit, 2026-09-28): the expectations were
+    // built from the SAME imported constants the implementation
+    // rides — drift on either side moved both together and the arm
+    // could not fail. The WIRE BYTES are pinned as literals now
+    // (the URL is the contract, independent of any constant).
+    expect(canonicalRunMediaUrl(LEGACY_RUN_MEDIA_PREFIX + "/run-1/a.png")).toBe("/melite-media/runs/run-1/a.png");
+    expect(canonicalRunMediaUrl(RUN_MEDIA_PREFIX + "/run-1/a.png")).toBe("/melite-media/runs/run-1/a.png");
     // deep, and total: a bag heals, a spell and a local file ride
     const healed = healRunMediaPaths({
       image1: [LEGACY_RUN_MEDIA_PREFIX + "/run-1/a.png"],
       src: { item: LEGACY_RUN_MEDIA_PREFIX + "/run-1/b.flac" },
       keep: ["/home/user/a.png", "$spell", "https://x.test/a.png"],
     }) as Record<string, unknown>;
-    expect(JSON.stringify(healed)).toContain(RUN_MEDIA_PREFIX + "/run-1/a.png");
-    expect(JSON.stringify(healed)).toContain(RUN_MEDIA_PREFIX + "/run-1/b.flac");
+    expect(JSON.stringify(healed)).toContain("/melite-media/runs/run-1/a.png");
+    expect(JSON.stringify(healed)).toContain("/melite-media/runs/run-1/b.flac");
+    expect(JSON.stringify(healed)).not.toContain("/v1/assets/runs/run-1/a.png",
+      "the legacy spelling heals everywhere, deep");
     expect(healed["keep"]).toEqual(["/home/user/a.png", "$spell", "https://x.test/a.png"]);
   });
 
@@ -153,14 +160,36 @@ describe("the stale-tab regression (it may not come back)", () => {
     // EVERY client bundle, so the value is whichever bundle ran
     // last. Nothing may compare it against the lane's stamps again;
     // the lane still serves them as its own diagnostic.
-    const client = readFileSync(
-      "packages/web/melite-card-view/src/client/cards-tab-body.tsx",
-      "utf8",
-    )
-      .split("\n")
-      .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
-      .join("\n");
-    expect(client).not.toContain("__MELITE_BUILD_STAMP__");
-    expect(client).not.toContain("card-build");
+    // A-M9 (the wall audit, 2026-09-28): the arm read ONE file —
+    // the law is plane-wide. The same three roots as arm 1 are
+    // walked (with the same read floor), because the stamp rides
+    // every bundle, not just the tab body's.
+    const roots = [
+      "packages/web/melite-card-view/src",
+      "packages/web/card-base/src",
+      "packages/web/infer-gallery/src",
+    ];
+    const offenders: string[] = [];
+    let read = 0;
+    const walk = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        const p = join(dir, e.name);
+        if (e.isDirectory()) { walk(p); continue }
+        if (!/\.(ts|tsx|css)$/.test(e.name)) continue;
+        read++;
+        const code = readFileSync(p, "utf8")
+          .split("\n")
+          .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
+          .join("\n");
+        if (code.includes("__MELITE_BUILD_STAMP__")) offenders.push(p + " reads the shared global");
+        if (code.includes("card-build")) offenders.push(p + " re-derives the stamp verdict");
+      }
+    };
+    for (const r of roots) {
+      if (!existsSync(r)) continue;
+      walk(r);
+    }
+    expect(read, `the walk read the client trees (${String(read)} files — a renamed root empties the arm)`).toBeGreaterThan(20);
+    expect(offenders, offenders.join("\n")).toEqual([]);
   });
 });

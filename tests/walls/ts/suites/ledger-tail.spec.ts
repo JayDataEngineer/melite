@@ -94,7 +94,13 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
     ledger(rawLimit: string, rawEvent: string): { entries: Array<{ ts?: number; event?: string }>; shown: number; matched: number }
   }
   const missing = queue2.ledger('50', '')
-  assert.ok(missing !== undefined, 'the missing-journal seat answers (never throws)')
+  // C-L15 (the wall audit, 2026-09-28): `!== undefined` cannot fail
+  // against a call that either returns or throws — the arm said
+  // nothing about what the seat answered. The SHAPE is the law: the
+  // envelope exists and is an object (a throw is the failure this
+  // arm exists to catch, and the reads below judge it).
+  assert.equal(typeof missing, 'object', 'the missing-journal seat answers with an envelope (never throws)')
+  assert.notEqual(missing, null, 'the answer is an envelope, not null')
   assert.deepEqual(missing.entries, [], 'a root with no ledger file answers EMPTY')
   assert.equal(missing.matched, 0, 'a missing file matches nothing')
   assert.equal(missing.shown, 0, 'a missing file shows nothing')
@@ -110,4 +116,50 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
   const lane = (await request('GET', '/v1/ledger?limit=2&event=run.x', undefined, new AbortController().signal)) as { shown?: number; matched?: number }
   assert.equal(lane.shown, 2)
   assert.equal(lane.matched, 5)
+})
+
+// C-C4 (the wall audit, 2026-09-28): the clamp law was pinned on a
+// 5-row fixture — `shown 5` cannot tell "clamped to 500" from "all
+// there were", so raising the cap to 5000 or dropping it entirely
+// kept the wall green. This fixture writes MORE rows than the cap:
+// 600, so limit '999' PROVES the clamp (500 < 600 ≤ 999) and the
+// floor arms prove the minimum ('0', '-3' -> 1, never 0 — an
+// empty answer from a non-empty journal is the vacuous-pass bug).
+test('the ledger clamp is 1..500 — proven against a journal LARGER than the cap', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'ledger-clamp-'))
+  process.env['MELITE_STATE_ROOT'] = root
+  const ctx = new Context()
+  await ctx.plugin(timerPlugin as unknown as Plugin)
+  await ctx.plugin(queuePlugin as unknown as Plugin, { repoRoot: root })
+  const queue = ctx.get('queue', false) as {
+    ledger(rawLimit: string, rawEvent: string): { entries: unknown[]; shown: number; matched: number }
+  }
+  for (let i = 1; i <= 600; i++) {
+    appendLedger(root, 'clamp.x' + i, { i }, 1700000000 + i)
+  }
+  // the ceiling: a limit ABOVE the cap shows exactly the cap (600
+  // rows exist, so 500 is the clamp, not the census)
+  for (const over of ['999', '501']) {
+    const t = queue.ledger(over, '')
+    assert.equal(t.shown, 500, `limit '${over}' clamps to 500 (600 rows exist — this is the cap, not the census)`)
+    assert.equal(t.entries.length, 500, `limit '${over}': 500 entries serve`)
+  }
+  // garbage falls to the DEFAULT (50 — the door's own law; never a
+  // 400, never the cap), and 600 rows make 50 distinguishable from
+  // "everything" for the first time
+  const junk = queue.ledger('junk', '')
+  assert.equal(junk.shown, 50, "garbage limit falls to the default 50 (600 rows exist — this is the default, not the census)")
+  assert.equal(junk.entries.length, 50, 'garbage limit: 50 entries serve')
+  // the floor: below 1 clamps UP to 1, never 0
+  for (const under of ['0', '-3']) {
+    const t = queue.ledger(under, '')
+    assert.equal(t.shown, 1, `limit '${under}' clamps up to 1 (an empty answer from a non-empty journal is the vacuous-pass bug)`)
+  }
+  // and a within-range limit takes the N newest
+  const t = queue.ledger('3', '')
+  assert.equal(t.shown, 3)
+  const first = t.entries[0] as { event?: string }
+  const last = t.entries[2] as { event?: string }
+  assert.equal(first.event, 'clamp.x598')
+  assert.equal(last.event, 'clamp.x600')
 })

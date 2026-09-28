@@ -874,7 +874,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
      only when the catch above fired (unconstructible here —
      see the range note). */
   if (domains !== null) {
-    const { validateRegistryAgainstCards } = await import("./validate.ts");
+    const { validateRegistryAgainstCards, ENGINE_TRUTH } = await import("./validate.ts");
     // ENGINE_TRUTH ("mode", "variant", "model"): the compose's own
     // declaration keys, never card fields. "model" is the ROUTE
     // RE-POINT token (resolver_defaults.model, the krea-2-raw
@@ -883,7 +883,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     // operator 2026-09-23) walks that view's defaults and the
     // token must skip like "variant" does.
     validateRegistryAgainstCards(
-      decls, domains, ["mode", "variant", "model"], boardings,
+      decls, domains, ENGINE_TRUTH, boardings,
       new Set(svc.modelIds()),
       new Map(svc.modelIds().map((id): [string, ModelDecl] => [id, svc.getModel(id)])),
       cardAdmits,

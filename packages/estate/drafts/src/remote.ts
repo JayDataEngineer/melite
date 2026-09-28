@@ -14,6 +14,8 @@ import {
 } from "@deepseek-ai/dsh-typert-protocol";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { admitWiring, benchBlockOf, strippedForAdmission, type BenchBlock } from "./bench.js";
+import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
+export { STAGE_PATCH_KEYS, type StagePatchKey };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
@@ -53,11 +55,6 @@ export type {
   BenchUndoRow,
 } from "./bench.js";
 
-/** The stage-patch door's fixed key set (the old door's
- *  STAGE_PATCH_KEYS, order verbatim — the unknown-keys voice lists
- *  them in this order). */
-export const STAGE_PATCH_KEYS = ["params", "result", "runStatus", "inputs", "inputOutputs"] as const;
-export type StagePatchKey = (typeof STAGE_PATCH_KEYS)[number];
 
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,

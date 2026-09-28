@@ -1,3 +1,4 @@
+import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 /**
  * estate.ts — the tools' ONE transport: the ctx seats, in-process.
  *
@@ -181,7 +182,7 @@ async function trySeats(
     const ensure: Record<string, unknown> = {
       session: 'default',
       intent,
-      stages: [{ id: 's_0', engine: 'comfyui', params }],
+      stages: [{ id: 's_0', engine: CARD_PLANE_ENGINE, params }],
       // THE TOOL-BENCH OWNERSHIP LAW (2026-09-22, the maker jam):
       // this lane is the SOLE writer of the 'default' scope — the
       // wholesale replace of our own prior one-shot mint IS the

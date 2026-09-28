@@ -62,7 +62,7 @@ async function boot(): Promise<Booted> {
   // from the endpoint config — pinned to an unreachable port so the
   // refusal is deterministic (never a live-engine accident).
   const endpointPath = join(root, "dead_endpoint.json");
-  writeFileSync(endpointPath, JSON.stringify({ url: "http://127.0.0.1:9" }));
+  writeFileSync(endpointPath, JSON.stringify({ url: "http://127.0.0.1:9", extra: "sibling", nested: { keep: true } }));
   process.env["COMFYUI_ENDPOINT_CONFIG"] = endpointPath;
   const stateRoot = join(root, "state");
   mkdirSync(join(stateRoot, "drafts"), { recursive: true });
@@ -174,9 +174,14 @@ test("endpointConfigPath honors COMFYUI_ENDPOINT_CONFIG (the wall's own override
   const saved = process.env["COMFYUI_ENDPOINT_CONFIG"];
   delete process.env["COMFYUI_ENDPOINT_CONFIG"];
   try {
-    assert.ok(
-      endpointConfigPath().endsWith("comfyui_endpoint.json"),
-      "without the env var the packaged default resolves",
+    // D-L14 (the wall audit, 2026-09-28): `endsWith` accepted ANY
+    // path with that filename — a resolver that had drifted to a
+    // different directory's comfyui_endpoint.json passed. The
+    // default is the PACKAGED path, exactly.
+    assert.equal(
+      endpointConfigPath(),
+      join(process.cwd(), "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"),
+      "without the env var the PACKAGED default resolves — exactly (a same-named file elsewhere is not the default)",
     );
   } finally {
     process.env["COMFYUI_ENDPOINT_CONFIG"] = saved;
@@ -198,8 +203,15 @@ test("endpoint_set refuses a non-url at 400 without probing or writing", async (
       return true;
     },
   );
-  const kept = JSON.parse(readFileSync(join(root, "dead_endpoint.json"), "utf8")) as { url: string };
-  assert.equal(kept.url, "http://127.0.0.1:9");
+  // D-L14: "writes only url" never checked that the SIBLING keys
+  // survived — a writer that replaced the config wholesale (dropping
+  // every sibling key) passed this arm. The fixture now carries
+  // siblings, and a refused write must mutate NOTHING.
+  const kept = JSON.parse(readFileSync(join(root, "dead_endpoint.json"), "utf8")) as Record<string, unknown>;
+  assert.equal(kept["url"], "http://127.0.0.1:9", "the refused write left the url alone");
+  assert.deepEqual(kept,
+    { url: "http://127.0.0.1:9", extra: "sibling", nested: { keep: true } },
+    "the refused write mutated NOTHING — the sibling keys survived byte-for-byte");
   await fiber.dispose();
 });
 

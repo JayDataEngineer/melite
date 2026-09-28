@@ -822,8 +822,25 @@ test("the remote adapter speaks every registry arm (start/status/list/stop/valid
   const receipt = await adapter.remoteExportStart(inlineBody("d_ok"), sig);
   assert.match(receipt.run_id, /^run-[0-9a-f]{12}-[0-9a-f]{8}$/);
   // status: the live row, adapter-verbatim.
-  const row = await adapter.remoteExportStatus(receipt.run_id, sig);
-  assert.ok(["queued", "running", "failed"].includes(String(row["status"])));
+  // F-L5 (the wall audit, 2026-09-28): the pin listed three of the
+  // five statuses the run vocabulary declares ("completed" and
+  // "stopped" sat outside the list), so it was a near-tautology —
+  // it passed for any transient reading and could not tell "the row
+  // is a live status" from "the row settled and nobody looked". The
+  // arm now POLLS TO TERMINAL: it watches the row until it reaches a
+  // terminal status (bounded), which is the fact the arm wanted.
+  const terminal = new Set<string>(["completed", "failed", "stopped", "error"]);
+  let seen: string | undefined;
+  const deadline = Date.now() + 30_000;
+  for (;;) {
+    const row = await adapter.remoteExportStatus(receipt.run_id, sig);
+    seen = String(row["status"]);
+    if (terminal.has(seen)) break;
+    if (Date.now() > deadline) break;
+    await new Promise((r) => setTimeout(r, 250));
+  }
+  assert.ok(seen !== undefined && terminal.has(seen),
+    `the run reached a TERMINAL status (the vocabulary's own set), not a transient reading (saw ${String(seen)})`);
   // list: the raw-limit envelope rides the adapter (py int()
   // semantics). The queued run carries test: true — the door's skip
   // law hides it, so the envelope serves 0.

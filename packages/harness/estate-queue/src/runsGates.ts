@@ -58,7 +58,8 @@ import z from "@deepseek-ai/schemastery";
 // ./vocab.ts — re-exported here for the gates' callers.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS } from "./vocab.ts";
-import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
+import { WIRE_STAGE_KEYS, STAGE_PATCH_KEYS } from "@melite/contracts/benchStage";
+export { STAGE_PATCH_KEYS };
 
 /** flow_inline top-level keys (the served shape). */
 export const INLINE_TOP_KEYS: readonly string[] = ["description", "id", "stages"];
@@ -72,15 +73,9 @@ export const STAGE_KEYS: readonly string[] = WIRE_STAGE_KEYS;
 /** Stage/flow identifier shape. */
 export const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
 
-/** PATCH .../stages/:sid accepted keys (fixed order — the voice joins this list). */
-export const STAGE_PATCH_KEYS: readonly string[] = [
-  "result",
-  "runStatus",
-  "params",
-  "inputs",
-  "inputOutputs",
-];
-
+/** PATCH .../stages/:sid accepted keys — the CONTRACT's list, in the
+ *  voice's order (B-M9: this was a second copy in a different order;
+ *  the two doors disagreed about what the door wants). */
 /** editor_runs.draft_id_ok shape: 1..96 chars of [A-Za-z0-9_-]. */
 // THE DRAFT ID GRAMMAR MIRRORS ITS OWNER (the census's H13: this copy
 // had NO length cap, so a 200-char id passed this door and was

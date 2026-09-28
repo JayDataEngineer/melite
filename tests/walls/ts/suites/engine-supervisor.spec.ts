@@ -468,3 +468,84 @@ describe("EngineSupervisor reachability", () => {
     await s.dispose();
   });
 });
+
+// B-M10 (the wall audit, 2026-09-28): the harness RECORDED every
+// cleared timer and no arm ever asserted the ledger — so a supervisor
+// that armed, replaced and leaked handles passed every test, and the
+// header's "dispose quiesces" was a claim, never a check. Both laws
+// are driven now, against the source's real semantics (a FIRED
+// handle needs no clear — the callback drops it first; dispose
+// waits for an in-flight probe by design).
+describe("the cleared-timer ledger and dispose quiescence (B-M10)", () => {
+  it("every cleared handle is one this supervisor armed, and exhaustion arms nothing", async () => {
+    const t = manualTimers();
+    const calls: string[] = [];
+    const s = new EngineSupervisor({
+      probe: scriptProbe(["fail", "fail", "fail", "fail"], calls),
+      setTimer: t.setTimer,
+      clearTimer: t.clearTimer,
+      policy: resolveSupervisorPolicy({ maxAttempts: 2 }, "supervisor"),
+    });
+    s.start();
+    await tick();
+    assert.equal(t.timers.length, 1, "the first failure armed a retry timer");
+    // drain the budget: every retry fires, fails, and re-arms until
+    // the attempt count passes the ceiling — the last failure
+    // exhausts the supervisor and arms NOTHING.
+    let guard = 0;
+    while (s.current !== "exhausted" && guard < 10) {
+      guard += 1;
+      const pending = t.timers[t.timers.length - 1]!;
+      const armedBefore = t.timers.length;
+      pending.fire();
+      await tick();
+      await tick();
+      if (s.current === "exhausted") {
+        assert.equal(t.timers.length, armedBefore, "exhaustion arms nothing (the budget is spent)");
+      } else {
+        assert.equal(t.timers.length, armedBefore + 1, "a retry within budget re-arms once");
+      }
+    }
+    assert.equal(s.current, "exhausted", "the budget was spent (the arm could not spin forever)");
+    // THE LEDGER LAW: nothing was ever cleared that this
+    // supervisor did not arm (a supervisor clearing a foreign
+    // handle, or a stale one twice, is a leak of someone else's
+    // timer — the bug the recording existed to catch).
+    const armed = new Set(t.timers);
+    const foreign = t.cleared.filter((h) => !armed.has(h as never));
+    assert.deepEqual(foreign, [], "every cleared handle is one this supervisor armed");
+    await s.dispose();
+  });
+
+  it("dispose clears a PENDING armed handle and is quiescent afterwards", async () => {
+    const t = manualTimers();
+    const calls: string[] = [];
+    const s = new EngineSupervisor({
+      probe: scriptProbe(["fail", "fail", "fail", "fail"], calls),
+      setTimer: t.setTimer,
+      clearTimer: t.clearTimer,
+    });
+    s.start();
+    await tick();
+    const armed = t.timers.length;
+    assert.ok(armed > 0, "a retry is pending at dispose time");
+    const state = s.current;
+    const clearedBefore = t.cleared.length;
+    await s.dispose();
+    assert.equal(t.cleared.length, clearedBefore + 1, "dispose cleared the pending handle");
+    const cleared = t.cleared[t.cleared.length - 1];
+    assert.ok(t.timers.includes(cleared as never), "the cleared handle was one we armed");
+    assert.equal(t.timers.length, armed, "dispose armed nothing");
+    // THE QUIESCENCE CLAIM: a handle that FIRES after dispose (the
+    // real timer was cleared, but a fired-before-clear race, or a
+    // direct call, must still be inert) moves nothing and arms
+    // nothing; neither does a traffic report.
+    for (const entry of t.timers) entry.fire();
+    await tick();
+    await tick();
+    s.noteFailure(REFUSED);
+    await tick();
+    assert.equal(s.current, state, "a post-dispose fire moves no state");
+    assert.equal(t.timers.length, armed, "a post-dispose fire arms no timer");
+  });
+});

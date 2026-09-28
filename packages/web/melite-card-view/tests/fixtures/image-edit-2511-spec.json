@@ -362,9 +362,9 @@
   "loader_info": null,
   "mod_schemas": {
     "lanpaint": {
-      "uid": 3325,
+      "uid": 3323,
       "refs": {
-        "3244": {
+        "3242": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -380,7 +380,7 @@
             "description": "Image 1"
           }
         },
-        "3248": {
+        "3246": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -393,7 +393,7 @@
             }
           }
         },
-        "3255": {
+        "3253": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -410,7 +410,7 @@
             }
           }
         },
-        "3262": {
+        "3260": {
           "type": "number",
           "meta": {
             "min": 0.1,
@@ -427,7 +427,7 @@
             }
           }
         },
-        "3269": {
+        "3267": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -444,7 +444,7 @@
             }
           }
         },
-        "3276": {
+        "3274": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -461,7 +461,7 @@
             }
           }
         },
-        "3283": {
+        "3281": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -478,17 +478,17 @@
             }
           }
         },
-        "3284": {
+        "3282": {
           "type": "const",
           "meta": {},
           "value": "negative"
         },
-        "3285": {
+        "3283": {
           "type": "const",
           "meta": {},
           "value": "positive"
         },
-        "3289": {
+        "3287": {
           "type": "union",
           "meta": {
             "default": "negative",
@@ -506,11 +506,11 @@
             }
           },
           "list": [
-            3284,
-            3285
+            3282,
+            3283
           ]
         },
-        "3296": {
+        "3294": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -527,7 +527,7 @@
             }
           }
         },
-        "3303": {
+        "3301": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -544,7 +544,7 @@
             }
           }
         },
-        "3310": {
+        "3308": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -561,7 +561,7 @@
             }
           }
         },
-        "3317": {
+        "3315": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -578,7 +578,7 @@
             }
           }
         },
-        "3324": {
+        "3322": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -595,41 +595,41 @@
             }
           }
         },
-        "3325": {
+        "3323": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "image1": 3244,
-            "lanpaint_enabled": 3248,
-            "lanpaint_num_steps": 3255,
-            "lanpaint_step_size": 3262,
-            "lanpaint_lambda": 3269,
-            "lanpaint_beta": 3276,
-            "lanpaint_friction": 3283,
-            "lanpaint_prompt_mode": 3289,
-            "outpaint_top": 3296,
-            "outpaint_right": 3303,
-            "outpaint_bottom": 3310,
-            "outpaint_left": 3317,
-            "outpaint_overlap": 3324
+            "image1": 3242,
+            "lanpaint_enabled": 3246,
+            "lanpaint_num_steps": 3253,
+            "lanpaint_step_size": 3260,
+            "lanpaint_lambda": 3267,
+            "lanpaint_beta": 3274,
+            "lanpaint_friction": 3281,
+            "lanpaint_prompt_mode": 3287,
+            "outpaint_top": 3294,
+            "outpaint_right": 3301,
+            "outpaint_bottom": 3308,
+            "outpaint_left": 3315,
+            "outpaint_overlap": 3322
           }
         }
       }
     },
     "loras": {
-      "uid": 3174,
+      "uid": 3172,
       "refs": {
-        "3162": {
+        "3160": {
           "type": "string",
           "meta": {}
         },
-        "3163": {
+        "3161": {
           "type": "number",
           "meta": {}
         },
-        "3169": {
+        "3167": {
           "type": "number",
           "meta": {
             "min": 1,
@@ -645,18 +645,18 @@
             }
           }
         },
-        "3170": {
+        "3168": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "name": 3162,
-            "strength": 3163,
-            "steps": 3169
+            "name": 3160,
+            "strength": 3161,
+            "steps": 3167
           }
         },
-        "3173": {
+        "3171": {
           "type": "array",
           "meta": {
             "default": [],
@@ -669,23 +669,23 @@
               "order": 0
             }
           },
-          "inner": 3170
+          "inner": 3168
         },
-        "3174": {
+        "3172": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "loras": 3173
+            "loras": 3171
           }
         }
       }
     },
     "mask": {
-      "uid": 3394,
+      "uid": 3392,
       "refs": {
-        "3328": {
+        "3326": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -698,7 +698,7 @@
             }
           }
         },
-        "3332": {
+        "3330": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -714,22 +714,22 @@
             "description": "Region Mask"
           }
         },
-        "3333": {
+        "3331": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "3334": {
+        "3332": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "3335": {
+        "3333": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "3339": {
+        "3337": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -754,32 +754,32 @@
             }
           },
           "list": [
-            3333,
-            3334,
-            3335
+            3331,
+            3332,
+            3333
           ]
         },
-        "3340": {
+        "3338": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "3341": {
+        "3339": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "3342": {
+        "3340": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "3343": {
+        "3341": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "3347": {
+        "3345": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -800,13 +800,13 @@
             }
           },
           "list": [
+            3338,
+            3339,
             3340,
-            3341,
-            3342,
-            3343
+            3341
           ]
         },
-        "3354": {
+        "3352": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -824,7 +824,7 @@
             }
           }
         },
-        "3361": {
+        "3359": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -842,7 +842,7 @@
             }
           }
         },
-        "3368": {
+        "3366": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -860,7 +860,7 @@
             }
           }
         },
-        "3375": {
+        "3373": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -878,7 +878,7 @@
             }
           }
         },
-        "3379": {
+        "3377": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -893,7 +893,7 @@
             }
           }
         },
-        "3386": {
+        "3384": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -911,7 +911,7 @@
             }
           }
         },
-        "3393": {
+        "3391": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -929,23 +929,23 @@
             }
           }
         },
-        "3394": {
+        "3392": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 3328,
-            "input_mask": 3332,
-            "mask_mode": 3339,
-            "mask_detector": 3347,
-            "mask_context_pad": 3354,
-            "mask_grow": 3361,
-            "mask_feather": 3368,
-            "mask_threshold": 3375,
-            "mask_invert": 3379,
-            "mask_detail_size": 3386,
-            "mask_denoise": 3393
+            "mask": 3326,
+            "input_mask": 3330,
+            "mask_mode": 3337,
+            "mask_detector": 3345,
+            "mask_context_pad": 3352,
+            "mask_grow": 3359,
+            "mask_feather": 3366,
+            "mask_threshold": 3373,
+            "mask_invert": 3377,
+            "mask_detail_size": 3384,
+            "mask_denoise": 3391
           }
         }
       }
@@ -956,283 +956,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 2735,
+    "uid": 2733,
     "refs": {
-      "331": {
+      "329": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "332": {
+      "330": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "333": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "334": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "335": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "336": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "337": {
+      "335": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "338": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "339": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "340": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "341": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "342": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "343": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "344": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "345": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "346": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "347": {
+      "345": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "348": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "349": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "350": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "351": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "352": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "353": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "354": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "355": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "356": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "357": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "358": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "359": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "360": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "361": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "362": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "363": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "364": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "365": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "366": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "367": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "368": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "369": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "370": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "371": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "372": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "373": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "374": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "375": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "377": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "378": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "379": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "380": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "381": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "382": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "383": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "384": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "385": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "2669": {
+      "2667": {
         "type": "string",
         "meta": {}
       },
-      "2673": {
+      "2671": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1248,9 +1248,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 2669
+        "inner": 2667
       },
-      "2677": {
+      "2675": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1260,7 +1260,7 @@
           "description": "Input Image"
         }
       },
-      "2681": {
+      "2679": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1270,7 +1270,7 @@
           "description": "Image 2"
         }
       },
-      "2685": {
+      "2683": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1280,11 +1280,11 @@
           "description": "Image 3"
         }
       },
-      "2686": {
+      "2684": {
         "type": "string",
         "meta": {}
       },
-      "2689": {
+      "2687": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1293,9 +1293,9 @@
             "hidden": true
           }
         },
-        "inner": 2686
+        "inner": 2684
       },
-      "2693": {
+      "2691": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1305,7 +1305,7 @@
           "description": "Region Mask"
         }
       },
-      "2696": {
+      "2694": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1320,7 +1320,7 @@
           }
         }
       },
-      "2699": {
+      "2697": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1333,7 +1333,7 @@
           }
         }
       },
-      "2702": {
+      "2700": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1348,7 +1348,7 @@
           }
         }
       },
-      "2705": {
+      "2703": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1363,7 +1363,7 @@
           }
         }
       },
-      "2710": {
+      "2708": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1377,7 +1377,7 @@
           }
         }
       },
-      "2716": {
+      "2714": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1394,7 +1394,7 @@
           }
         }
       },
-      "2722": {
+      "2720": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1411,7 +1411,7 @@
           }
         }
       },
-      "2724": {
+      "2722": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1425,6 +1425,8 @@
           }
         },
         "list": [
+          329,
+          330,
           331,
           332,
           333,
@@ -1467,12 +1469,10 @@
           370,
           371,
           372,
-          373,
-          374,
-          375
+          373
         ]
       },
-      "2726": {
+      "2724": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1486,18 +1486,18 @@
           }
         },
         "list": [
+          375,
+          376,
           377,
           378,
           379,
           380,
           381,
           382,
-          383,
-          384,
-          385
+          383
         ]
       },
-      "2730": {
+      "2728": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1511,7 +1511,7 @@
           }
         }
       },
-      "2734": {
+      "2732": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1525,29 +1525,29 @@
           }
         }
       },
-      "2735": {
+      "2733": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 2673,
-          "image1": 2677,
-          "image2": 2681,
-          "image3": 2685,
-          "reference_images": 2689,
-          "input_mask": 2693,
-          "prompt": 2696,
-          "negative_prompt": 2699,
-          "width": 2702,
-          "height": 2705,
-          "seed": 2710,
-          "steps": 2716,
-          "cfg": 2722,
-          "sampler": 2724,
-          "scheduler": 2726,
-          "use_stock_nodes": 2730,
-          "double_reference": 2734
+          "input_images": 2671,
+          "image1": 2675,
+          "image2": 2679,
+          "image3": 2683,
+          "reference_images": 2687,
+          "input_mask": 2691,
+          "prompt": 2694,
+          "negative_prompt": 2697,
+          "width": 2700,
+          "height": 2703,
+          "seed": 2708,
+          "steps": 2714,
+          "cfg": 2720,
+          "sampler": 2722,
+          "scheduler": 2724,
+          "use_stock_nodes": 2728,
+          "double_reference": 2732
         }
       }
     }

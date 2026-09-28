@@ -65,8 +65,11 @@ describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the e
   });
 
   it("the vocabularies are non-empty and duplicate-free (a broken regen cannot serve a hollow menu)", () => {
-    expect(SAMPLER_OPTIONS.length).toBeGreaterThan(10);
-    expect(SCHEDULER_OPTIONS.length).toBeGreaterThan(5);
+    // F-L1 (the wall audit, 2026-09-28): `> 10` / `> 5` are floors
+    // against a real roster of 45 samplers and 9 schedulers — a
+    // regen that dropped twenty names passed. The censuses are exact.
+    expect(SAMPLER_OPTIONS.length).toBe(45);
+    expect(SCHEDULER_OPTIONS.length).toBe(9);
     expect(new Set(SAMPLER_OPTIONS).size).toBe(SAMPLER_OPTIONS.length);
     expect(new Set(SCHEDULER_OPTIONS).size).toBe(SCHEDULER_OPTIONS.length);
   });

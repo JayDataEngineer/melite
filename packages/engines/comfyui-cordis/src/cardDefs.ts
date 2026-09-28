@@ -12,6 +12,7 @@
 // ['comfyui']` at module level — passing only { apply } drops the
 // inject declaration and the service dies with "cannot get property
 // comfyui without inject").
+import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
@@ -303,7 +304,7 @@ export async function provisionsByFamily(
   }
   for (const [id, def] of defs) {
     if (def.provisions !== undefined && def.provisions.length > 0) {
-      out[id] = { engine: 'comfyui', provisions: [...def.provisions] }
+      out[id] = { engine: CARD_PLANE_ENGINE, provisions: [...def.provisions] }
     }
   }
   return out

@@ -37,7 +37,7 @@ import "../../../helpers/boot-models.ts";
 import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join } from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, fail, it } from "vitest";
 import { Context, type Plugin } from "@deepseek-ai/cordis";
 import Storage from "@deepseek-ai/dsh-storage";
 import {
@@ -58,6 +58,35 @@ const SEATS = [
   "queue", "runs", "runsRemote", "draftsRemote", "benchRemote",
   "cardRegistry", "disclose", "manage", "meliteSkills",
 ] as const;
+
+// C-C2 (the wall audit): SEATS was a hand list and had already
+// drifted — the bundle's real `load` and `manageRemote` seats were
+// absent, so either dying silently passed the settle wall. The list
+// is now the SMOKE CORE only; the FULL law derives from the context
+// itself: cordis's reflect service declares every service property
+// (`ctx.reflect.props`, type 'service' — 18 today: load,
+// manageRemote, provisioning, mediaRemote, models, engines...), and
+// every DECLARED service must resolve after boot — a declared-but-
+// unsettled seat is exactly the false death this suite hunts, and
+// no hand list can omit it again.
+async function everyDeclaredSeatResolves(ctx: Context, ms: number): Promise<string[]> {
+  const deadline = Date.now() + ms;
+  let names: string[] = [];
+  for (;;) {
+    const props = (ctx.reflect as unknown as { props: Record<string, { type?: string }> }).props;
+    names = Object.entries(props).filter(([, v]) => v?.type === "service").map(([k]) => k).sort();
+    const missing = names.filter((n) => ctx.get(n, false) === undefined);
+    if (missing.length === 0 || Date.now() > deadline) {
+      // census floor (the vacuous-pass law): the derivation must see
+      // a REAL population — if the props dict's shape ever changes,
+      // this fails LOUD instead of judging an empty set.
+      expect(names.length, "reflect declares a real service population (census floor)").toBeGreaterThan(10);
+      expect(names, "the two seats the audit found missing ride the declaration (load, manageRemote)").toEqual(expect.arrayContaining(["load", "manageRemote"]));
+      return missing;
+    }
+    await new Promise((r) => setTimeout(r, 100));
+  }
+}
 
 const contexts: Context[] = [];
 const sandboxes: string[] = [];
@@ -134,6 +163,32 @@ async function settleMissing(ctx: Context, names: readonly string[], ms: number)
   }
 }
 
+// C-M10 (the wall audit, 2026-09-28): the live-tail arm's skip
+// budget. A permanent skip is a permanent hole: the arm judged
+// nothing and the wall said green. The count lives under the
+// suite's own tmp state (never in the repo), survives across runs
+// so "consecutive" is real, and is CLEARED by any judged run.
+const LIVE_TAIL_SKIP_TOLERANCE = 3;
+const SKIP_LEDGER = join(tmpdir(), "melite-live-tail-skip.json");
+
+function readSkipLedger(): number {
+  try {
+    const parsed = JSON.parse(readFileSync(SKIP_LEDGER, "utf8")) as { skips?: unknown };
+    return typeof parsed.skips === "number" ? parsed.skips : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeSkipLedger(count: number): void {
+  try {
+    writeFileSync(SKIP_LEDGER, JSON.stringify({ skips: count }));
+  } catch {
+    // an unwritable tmp is not a reason to fail the arm that was
+    // judged (the ledger only governs the SKIP path).
+  }
+}
+
 describe("the false-death hunt's four laws", () => {
   it("1. VERBATIM: the bundle settles every seat on an empty root", { timeout: 30_000 }, async () => {
     const root = join(sandbox("law1-empty"), "runs");
@@ -141,6 +196,11 @@ describe("the false-death hunt's four laws", () => {
     const ctx = await bootBundle(root);
     const missing = await settleMissing(ctx, SEATS, 20_000);
     expect(missing).toEqual([]);
+    // AND THE DERIVED FULL LAW (C-C2): every seat the bundle
+    // REGISTERED resolves — `load`, `manageRemote`, and any seat a
+    // future row adds, with no hand list to maintain.
+    const registered = await everyDeclaredSeatResolves(ctx, 5_000);
+    expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
   it("2. THE TREE: the bundle settles every seat against a copy of the REAL runs tree", { timeout: 40_000 }, async () => {
@@ -151,6 +211,8 @@ describe("the false-death hunt's four laws", () => {
     const ctx = await bootBundle(root);
     const missing = await settleMissing(ctx, SEATS, 20_000);
     expect(missing).toEqual([]);
+    const registered = await everyDeclaredSeatResolves(ctx, 5_000);
+    expect(registered, "every service the context registered is settled (a registered-but-unsettled seat is the false death)").toEqual([]);
   });
 
   it("3. THE ENV PIN: without MELITE_STATE_ROOT the queue constructor refuses LOUD (and the fiber buries it)", { timeout: 20_000 }, async () => {
@@ -212,15 +274,34 @@ describe("the false-death hunt's four laws", () => {
         await new Promise((r) => setTimeout(r, 300));
       }
     }
-    if (realHolder !== null) {
-      expect(realHolder).toMatch(/^\d+$/);
-    } else {
+    if (realHolder === null) {
       // MID-RESTART IS A REPORTED OBSERVATION, never a fake pass
       // (the audit's GAP 5: `expect(true).toBe(true)` cannot fail,
       // so the live-tail arm judged nothing). The copy rule the
       // absence documents stays owned by the deletion arm above;
       // this arm's honest verdict is a skip that names the state.
-      t.skip(true, "the lane lock was absent for the whole window (mid-restart) — the live-tail arm cannot judge this run");
+      //
+      // C-M10 (the wall audit, 2026-09-28): a permanent skip is a
+      // permanent hole — an absent lock skipped this arm FOREVER
+      // and the wall reported green while judging nothing. The skip
+      // is TOLERATED A FIXED NUMBER OF CONSECUTIVE RUNS and then
+      // FAILS: a lock missing across consecutive runs is not a
+      // restart, it is a dead lane (or a renamed lock), and the wall
+      // must say so instead of skipping in perpetuity.
+      const consecutive = readSkipLedger() + 1;
+      writeSkipLedger(consecutive);
+      if (consecutive > LIVE_TAIL_SKIP_TOLERANCE) {
+        fail(`the live lane's runs lock was absent for ${String(consecutive)} CONSECUTIVE runs — ` +
+          "that is a dead lane (or a renamed lock file), not a restart. " +
+          "The live-tail arm refuses to skip in perpetuity: fix the lane or re-point REAL_RUNS.");
+      }
+      t.skip(true, `the lane lock was absent (run ${String(consecutive)} of ` +
+        `${String(LIVE_TAIL_SKIP_TOLERANCE + 1)} tolerated) — the live-tail arm cannot judge this run`);
+    } else {
+      // a judged run CLEARS the ledger — the tolerance is
+      // consecutive, never cumulative.
+      expect(realHolder).toMatch(/^\d+$/);
+      writeSkipLedger(0);
     }
   });
 });

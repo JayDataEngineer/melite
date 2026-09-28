@@ -81,6 +81,9 @@ importers:
       vitest:
         specifier: ^4.1.8
         version: 4.1.11(@opentelemetry/api@1.9.1)(@types/node@24.13.3)(@vitest/coverage-v8@4.1.11)(happy-dom@20.13.1)(jsdom@29.1.1)(vite@8.2.2(@types/node@24.13.3)(jiti@2.7.0)(yaml@2.9.0))
+      yaml:
+        specifier: 2.9.0
+        version: 2.9.0
 
   packages/3d/anny:
     dependencies:
@@ -2714,6 +2717,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/engine-agent':
         specifier: workspace:*
         version: link:../../engines/agent
