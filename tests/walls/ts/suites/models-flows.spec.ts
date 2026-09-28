@@ -155,12 +155,21 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
         }
       }
     }
+    // THE JUDGED FLOOR (the walls audit's M2, 2026-10-10): the arm
+    // skipped action lanes and asserted the rest with no count, so a
+    // facts file emptied of families — or an actionCardLanes set
+    // that swallowed every id — judged nothing and passed.
+    let judged = 0;
     for (const [id, row] of Object.entries(facts.models)) {
       if (actions.has(id)) continue;
+      judged++;
       const owner = registryIds().includes(id) ? id : ownerOf.get(id);
       assert.ok(owner !== undefined, `facts family '${id}' is neither registry, route, nor action lane`);
       const truth = (registryModel(owner).mods ?? []) as readonly string[];
       const riding = ((row as { mods?: readonly string[] }).mods ?? []) as readonly string[];
       assert.deepEqual([...riding].sort(), [...truth].sort(), `${id}: facts.mods ≠ DECL.mods of ${owner}`);
     }
+    assert.ok(judged >= 20,
+      `the mods arm judged real families (${String(judged)} — an emptied facts roster must not pass)`);
   });
+

@@ -26,6 +26,7 @@ interface CardRow {
   skeleton: string;
   boarded: readonly string[];
   schema: unknown;
+  requiresModel?: boolean;
   identity: { label: string; description: string; genre: string; icon: string };
   [key: string]: unknown;
 }
@@ -109,6 +110,21 @@ describe("card-only packages register exactly one honest row", () => {
       assert.equal(typeof row.skeleton, "string");
       assert.ok(row.skeleton.length > 0, "skeleton non-empty (the compose emits it, never a fallback)");
       assert.ok(Array.isArray(row.boarded), "boarded is an array");
+      // A BOARDED LIST IS NOT AN EMPTY LIST (the walls audit's M7,
+      // 2026-10-10): `Array.isArray([])` passed for a gutted
+      // identity — a card that boarded nothing booted clean here.
+      // The PURE-TOOL cards are the honest exemption: rig composes
+      // from a loaded scene and models nothing (requiresModel:
+      // false), so its list is empty BY LAW — the law is "a
+      // model-carrying card boards at least one family".
+      // (the pure-tool cards — rig composes from a loaded scene —
+      // declare requiresModel: false in their own card and are
+      // exempt BY NAME, so the exemption is an argument in this
+      // file, not a hole the row shape opens)
+      if (card.pkg !== "rig") {
+        assert.ok(row.boarded.length > 0,
+          `${card.pkg} boards at least one family (an empty list on a model-carrying card is a gutted identity)`);
+      }
       assert.ok(row.schema !== undefined && row.schema !== null, "schema present (the surface)");
       assert.deepEqual(row.identity, mod.identity, "the module identity rides the row");
     });

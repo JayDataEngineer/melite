@@ -1,4 +1,13 @@
 import "../../../helpers/boot-models.ts";
+
+/** code lines only — a comment may NAME a token; a string literal or
+ *  a retyped const is the duplication (the closure gate's idiom). */
+const codeOf = (src: string): string =>
+  src
+    .replace(/\/\*[\s\S]*?\*\//g, " ")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
+    .join("\n");
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -14,7 +23,12 @@ describe("the boundary laws", () => {
     // design-era archive row lost the 'restored' mark the model
     // repair law reads — and refused at its next admission with no
     // repair. The stamp is now conditional.
-    const src = readFileSync("packages/estate/drafts/src/bench.ts", "utf8");
+    // CODE ONLY (the walls audit's M4, 2026-10-10): a raw
+    // toContain passes when the expression is mentioned in a COMMENT —
+    // and the provenance law is exactly the kind a comment may name
+    // while the normalizer stops stamping. Comments are stripped
+    // before the assertion (the closure gate's codeOf idiom).
+    const src = codeOf(readFileSync("packages/estate/drafts/src/bench.ts", "utf8"));
     expect(src).toContain('row["provenance"] !== "restored"');
   });
 

@@ -119,11 +119,16 @@ describe("the stale-tab regression (it may not come back)", () => {
     ];
     const banned = [/STALE TAB/i, /stale tab/i, /cards-stale-build/, /staleBuild/, /buildVerdict/];
     const offenders: string[] = [];
+    // THE WALK IS COUNTED (the walls audit's M3, 2026-10-10): a
+    // renamed root made the walk read nothing and the arm passed
+    // under a title that says "no client source claims…".
+    let read = 0;
     const walk = (dir: string): void => {
       for (const e of readdirSync(dir, { withFileTypes: true })) {
         const p = join(dir, e.name);
         if (e.isDirectory()) { walk(p); continue }
         if (!/\.(ts|tsx|css)$/.test(e.name)) continue;
+        read++;
         // CODE only: a comment may NAME the regression (this file
         // does), a rendered string or a read may not.
         const code = readFileSync(p, "utf8")
@@ -139,6 +144,7 @@ describe("the stale-tab regression (it may not come back)", () => {
       if (!existsSync(r)) continue;
       walk(r);
     }
+    expect(read, `the walk read the client trees (${String(read)} files — a renamed root empties the arm)`).toBeGreaterThan(20);
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 

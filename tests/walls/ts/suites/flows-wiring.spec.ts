@@ -60,7 +60,13 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
       stages: Array<{ inputs: Record<string, unknown>; expected: Record<string, string> }>;
     };
     const stage = tts.stages[0]!;
-    for (const name of Object.keys(stage.inputs)) {
+    const names = Object.keys(stage.inputs);
+    // THE WIRED-INPUT FLOOR (the walls audit's M1, 2026-10-10): the
+    // loop over an EMPTY inputs map passed vacuously — the exact rot
+    // this wall closed (a flow that stopped wiring anything passed).
+    assert.ok(names.length > 0,
+      `audio-native-tts wires at least one input (got ${String(names.length)} — an unwired flow passes this arm)`);
+    for (const name of names) {
       assert.ok(stage.expected[name] !== undefined,
         `audio-native-tts stage wires input '${name}' with no expected Kind — the exact hole this wall closed`);
     }

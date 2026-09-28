@@ -200,8 +200,20 @@ describe("the melite tool faces answer over the live composition", () => {
       prompt: "a two-bar funk guitar loop",
     });
     const env = envelope as Record<string, unknown>;
-    const answered = typeof env["run_id"] === "string" || typeof env["error"] === "string";
-    assert.ok(answered, `the envelope answers (got: ${JSON.stringify(envelope).slice(0, 300)}`);
+    // THE SAME SHAPE AS THE melite_flow ARM (the walls audit's M10,
+    // 2026-10-10): `typeof x === "string"` accepts the EMPTY string,
+    // so an envelope with `run_id: ""` or `error: ""` passed. Each
+    // half is pinned in its own shape.
+    const runId = typeof env["run_id"] === "string" ? env["run_id"] : undefined;
+    const refused = typeof env["error"] === "string" ? env["error"] : undefined;
+    assert.ok(runId !== undefined || refused !== undefined,
+      `the envelope answers (got: ${JSON.stringify(envelope).slice(0, 300)}`);
+    if (refused !== undefined) {
+      assert.ok(refused.trim().length > 0, "a refusal names itself (empty error string)");
+    }
+    if (runId !== undefined) {
+      assert.ok(runId.trim().length > 0, "a run_id is a non-empty id");
+    }
     assert.ok(lines.length >= 1 && lines.join("").length > 0,
       `render returns model-facing lines (got ${lines.length}: ${lines.join(" | ").slice(0, 200)}`);
   });
