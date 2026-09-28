@@ -145,6 +145,22 @@ function validateDecl(decl: ModelDecl): void {
       );
     });
   }
+  // THE VARIANT'S OWN RELATIONS GET THE SAME GATE (the DECL audit's
+  // gap 5, 2026-10-10): relationDrift ran only on the FAMILY's rows,
+  // so a variant row with a misspelled word (`requiers`) or a
+  // misspelled member booted clean and bound NOTHING while its author
+  // believed a law held — the same silence the family-level gate
+  // was written to kill, one level down. Every declared row is
+  // checked where it is declared.
+  for (const [i, v] of decl.variants.entries()) {
+    const vrel = (v as unknown as Record<string, unknown>)["relations"];
+    if (vrel === undefined || vrel === null) continue;
+    relationDrift(vrel as Record<string, unknown>, `${String(decl.id)}/variants[${String(i)}]/relations`).forEach((k) => {
+      throw new ModelError(
+        `model row ${String(decl.id)} variant ${String(v.id)} relations: unknown relation word/key refused (extra: forbid — the law): ${k}`,
+      );
+    });
+  }
   if (decl.params !== undefined && !Array.isArray(decl.params)) {
     throw new ModelError(`${String(decl.id)}: params must be an array of field names`);
   }

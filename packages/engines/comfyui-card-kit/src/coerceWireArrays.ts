@@ -90,6 +90,18 @@ export function coerceWireArrays(
     if (v === '') {
       out = out ?? { ...raw }
       out[key] = []
+    } else if (typeof v === 'string' && v.startsWith('$')) {
+      // THE SINGLE-SPELL ARM (2026-10-10, the anchor-law commission's
+      // live receipt: `params {input_images: "$input_images"}` + a
+      // wire of that name died at the schema gate with `expected
+      // array but got $input_images` — the bench grammar's own
+      // example spells a channel into a LIST field, and the lane
+      // itself takes a spelled member of the ordered list). A bare
+      // `$name` on a key the schema declares an array IS the
+      // one-element list [spell] — the same restore the single-
+      // element wire arm below already makes, keyed on the dict.
+      out = out ?? { ...raw }
+      out[key] = [v]
     } else if (isItemWrapped(v)) {
       out = out ?? { ...raw }
       out[key] = (v as Record<string, unknown>)['item']

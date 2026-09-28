@@ -193,3 +193,30 @@ describe("coerceWireNumbers — the deep element fill (035 attempt-8's last dise
     assert.deepEqual(out.audio_clips, [{ start_frame: 144, dur_frames: 134, text: "x" }]);
   });
 });
+
+describe("the SINGLE-SPELL arm (the anchor-law commission's live receipt, 2026-10-10)", () => {
+  // The maker wrote the bench grammar's own example into a LIST
+  // field — `params {input_images: "$input_images"}` with a wire of
+  // that name — and the schema gate refused with "expected array but
+  // got $input_images". The lane takes a spelled member of the
+  // ordered list, so a bare $name on an array-declared key IS the
+  // one-element list. This is the third arm of the same restore
+  // family (empty-string, item-wrapped, single-element).
+  const schema = { dict: { input_images: { type: "array" }, prompt: { type: "string" } } };
+
+  it("a bare $spell on an array-declared key fills to the one-element list", () => {
+    const out = coerceWireArrays(schema, { input_images: "$input_images" });
+    assert.deepEqual(out["input_images"], ["$input_images"]);
+  });
+
+  it("a REAL array rides untouched, and a string field's $spell is untouched", () => {
+    const out = coerceWireArrays(schema, { input_images: ["a.png", "$b"], prompt: "$words" });
+    assert.deepEqual(out["input_images"], ["a.png", "$b"]);
+    assert.equal(out["prompt"], "$words", "a scalar field's spell is the merge's business, not this seat's");
+  });
+
+  it("a non-spell string still refuses (never silent)", () => {
+    const out = coerceWireArrays(schema, { input_images: "a.png" });
+    assert.equal(out["input_images"], "a.png", "a plain string is not a list — Schemastery's refusal stays honest");
+  });
+});

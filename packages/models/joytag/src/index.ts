@@ -48,6 +48,24 @@ export const DECL: ModelDecl = {
       "label": "Quant",
     }
   ],
+  // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
+  // the GAP-7 shape on the legacy lanes): the card's compose seat has
+  // refused this field since the merge, imperatively, while the bench
+  // admitted the same draft — a state the form could build and the run
+  // refused. Stated as the law, the bench-write door refuses it first,
+  // in the field's voice (the tts precedent: this is the one relation
+  // word that deliberately overrides the blank tolerance, and this
+  // field is exactly the one where "still being typed" composes
+  // nothing).
+  "relations": {
+    "required": [
+      {
+        "fields": ["input_image"],
+        "cure": "a tagger inverts an image — nothing to tag is a refusal; state the image",
+      },
+    ],
+  },
+
 };
 
 export const family: Plugin = {

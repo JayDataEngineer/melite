@@ -183,7 +183,12 @@ describe("the recipe schema-master (Rule A/B/C — semantic validation over the 
     }
   });
 
-  it("TEETH PROOF: the REAL admission refuses an out-of-bounds stamp and a dead key (the constants are not the proof)", async (): Promise<void> => {
+  // THE LOAD-SIZED TIMEOUT (2026-10-10): this arm boots the REAL
+  // card registry (every model family, every card def) — the spec
+  // default of 5s cannot hold that under a full-fleet run, and a
+  // wall that dies of its own boot time reports a red the code never
+  // produced.
+  it("TEETH PROOF: the REAL admission refuses an out-of-bounds stamp and a dead key (the constants are not the proof)", { timeout: 60_000 }, async (): Promise<void> => {
     // 2026-10-10, the walls audit's row 6: this arm used to compare
     // ITS OWN constants — `900 > duration.max` proves the wall can
     // do arithmetic, never that the master refuses. The teeth are

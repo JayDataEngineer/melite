@@ -473,7 +473,13 @@ describe("phase1Card + phase2Card (the two phases, one compose seat)", () => {
     composeOnce.mockClear();
     const facts = svc.modelFacts();
     const mid = Object.keys(facts)[0] as string;
-    const p1 = await svc.phase1Card({ model: mid }, mid);
+    // THE BODY IS NOW A LEGAL ONE (2026-10-10, the DECL audit's gap 4
+    // kill): the first model is an image family, whose required word
+    // now says the prompt must be stated — a prompt-less body is
+    // refused at the bench AND at the phase seat, and this arm is
+    // about the two phases riding one seat, not about composing
+    // nothing.
+    const p1 = await svc.phase1Card({ model: mid, prompt: "a harbour at dusk" }, mid);
     expect(p1.spell).toBeNull();
     const c = await svc.phase2Card(p1, "run-1");
     expect(c.graph).toEqual({ graph: true });

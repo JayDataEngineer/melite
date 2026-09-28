@@ -216,6 +216,73 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     if (!verdict.ok) expect(verdict.error).toContain("clones no reference");
   });
 
+  it("THE LEGACY LANES DECLARE THEIR REQUIRED FIELD (the GAP-7 shape on seven cards — the bench refuses what compose refused)", () => {
+    // 2026-10-10, the DECL audit's gap 4: image-gen, music, sfx,
+    // motion, tagger, upscale-tools and input-prep each refused
+    // their core field IMPERATIVELY at compose while the bench
+    // admitted the same draft. Every boarded family now declares it,
+    // so the bench refuses in the field's voice first — the model-
+    // less rows meet it through the intersection, the named models
+    // through their own family.
+    const cases: Array<[string, string]> = [
+      ["image-gen", "prompt"],
+      ["music", "prompt"],
+      ["sfx", "prompt"],
+      ["motion", "prompt"],
+      ["tagger", "input_image"],
+      ["upscale-tools", "input_image"],
+      ["input-prep", "source"],
+    ];
+    for (const [card, field] of cases) {
+      const board = ((svc as unknown as { defsSync?: () => Map<string, { boarded?: readonly string[] }> }).defsSync?.() ?? new Map()).get(card);
+      const fams = board?.boarded ?? [];
+      expect(fams.length, `${card} boards families`).toBeGreaterThan(0);
+      // THE NAMED HALF (the kill): a draft that names its family
+      // meets the family's own word — the run's lane now refuses
+      // BEFORE compose, in the field's voice.
+      for (const fam of fams) {
+        const named = svc.admitStageRelations(card, { model: fam });
+        expect(named.ok, `${card}/${fam} must refuse a ${field}-less row`).toBe(false);
+        if (!named.ok) expect(named.error).toContain(field);
+        const withField = svc.admitStageRelations(card, { model: fam, [field]: "x" } as Record<string, unknown>);
+        expect(withField.ok, `${card}/${fam} admits its ${field}`).toBe(true);
+      }
+    }
+    // THE MODEL-LESS STAND-DOWN IS THE DOCUMENTED LEGACY LAW (stated
+    // here so the gap is not mistaken for a hole): a family that
+    // declares no params SURFACE takes no part in the model-less
+    // intersection (the card's own union table authors those fields),
+    // so a model-less row on these legacy cards still admits — the
+    // lane it will compose is decided by the run's selection, and the
+    // named half above is where the refusal lands. The families that
+    // DO declare a surface (the tts and edit pair) meet their rows
+    // model-lessly, as cards-lane-law pins elsewhere.
+  });
+
+  it("the design lane's export pair is REQUIRED (the GAP-7 shape one lane over — the bench refuses what compose refused)", () => {
+    // 2026-10-10, the DECL audit's gap 3: the compose seat refused a
+    // design-lane row with NEITHER half, but the family's together
+    // word fires only when a member is STATED — so that state was
+    // bench-ADMITTED and run-refused. The design lane now declares the
+    // pair as required (it exists to export).
+    const neither = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      variant: "voicedesign",
+      text: "the sample",
+    });
+    expect(neither.ok).toBe(false);
+    if (!neither.ok) expect(neither.error).toMatch(/design lane exports a voice|voice_name/);
+    // the pair stated composes (the cure stands)
+    const both = svc.admitStageRelations("tts", {
+      model: "qwen3-tts-voicedesign",
+      variant: "voicedesign",
+      text: "the sample",
+      voice_name: "warm_1",
+      design_prompt: "a warm narrator",
+    });
+    expect(both.ok).toBe(true);
+  });
+
   it("an export stated with a saved persona refuses (1.7B customvoice, style wound too)", () => {
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
@@ -227,8 +294,13 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     });
     expect(verdict.ok).toBe(false);
     if (!verdict.ok) {
-      expect(verdict.error).toContain("no saved persona");
-      expect(verdict.error).toContain("performs nothing");
+      // ONE LAW, ONE LAYER (2026-10-10, the DECL audit's gap 8): the
+      // 1.7B family carried this row at BOTH the family and the
+      // customvoice-variant level (the 0.6B sibling states it at
+      // family level only) — the duplicate is gone, and the voice is
+      // the family's own row.
+      expect(verdict.error).toContain("performs no saved persona");
+      expect(verdict.error).toContain("an export creates the voice");
     }
   });
 });

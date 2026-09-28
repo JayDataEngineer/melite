@@ -95,6 +95,36 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     );
   });
 
+  it("a misspelled relation word on a VARIANT refuses too (the DECL audit's gap 5 — every row is gated where it is declared)", (): void => {
+    // 2026-10-10: relationDrift ran only on the FAMILY's rows, so a
+    // variant row with the same typo booted clean and bound nothing
+    // while its author believed a lane law held.
+    const svc = modelsService();
+    assert.throws(
+      () => svc.registerFamily({
+        ...svc.getModel("z-image"),
+        id: "typo-variant-relation",
+        variants: [{
+          id: "v", label: "V", group: "Variant", cells: [],
+          relations: { requiers: [{ field: "prompt", needs: ["steps"] }] },
+        }],
+      } as never),
+      /requiers|unknown relation/,
+      "a variant-level misspelled word refuses at the gate",
+    );
+    // and a legal variant row still boots (the gate is not a blanket)
+    svc.registerFamily({
+      ...svc.getModel("z-image"),
+      id: "legal-variant-relation",
+      variants: [{
+        id: "v", label: "V", group: "Variant", cells: [],
+        relations: { required: [{ fields: ["prompt"] }] },
+      }],
+    } as never);
+    assert.equal(svc.getModel("legal-variant-relation") !== undefined, true,
+      "a legal variant relation boots");
+  });
+
   it("a typo INSIDE a relation row refuses too (the row's own keys, not just the word's)", (): void => {
     const svc = modelsService();
     assert.throws(

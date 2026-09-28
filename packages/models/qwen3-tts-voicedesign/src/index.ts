@@ -70,13 +70,6 @@ export const DECL: ModelDecl = {
       // delivery style on a save fires nothing at compose.
       "params": ["voice", "style_instruction"],
       "relations": {
-        "conflicts": [
-          {
-            "a": "voice_name",
-            "b": "style_instruction",
-            "cure": "an export performs nothing — drop the delivery style to save the designed voice, then style its performances afterwards",
-          },
-        ],
       },
       "resolver_defaults": {
         "model": "qwen3-tts-voicedesign",
@@ -106,9 +99,22 @@ export const DECL: ModelDecl = {
         "synth_lane": "design",
       },
       // THE LANE SURFACE: the design lane adds NOTHING to the
-      // family base — its own required pair (design_prompt +
-      // voice_name, the together word above) is already in it, and
-      // it carries no persona, no reference, no delivery style.
+      // family base — it carries no persona, no reference, no
+      // delivery style.
+      // THE EXPORT PAIR IS REQUIRED HERE (2026-10-10, the DECL
+      // audit's gap 3: the compose seat refused a design-lane row
+      // with NEITHER half, but the family's together word fires only
+      // when a member is STATED — so that state was admitted at the
+      // bench and refused at the run, the GAP-7 shape one lane over).
+      // The design lane exists to export: its required word says so.
+      "relations": {
+        "required": [
+          {
+            "fields": ["voice_name", "design_prompt"],
+            "cure": "the design lane exports a voice — state the persona description and the Design mod's name (the save fires from this lane by definition)",
+          },
+        ],
+      },
       "resolver_defaults": {
         "model": "qwen3-tts-voicedesign",
         "variant": "voicedesign",
