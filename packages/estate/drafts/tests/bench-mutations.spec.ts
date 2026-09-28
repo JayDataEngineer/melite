@@ -1,4 +1,4 @@
-import { test } from "vitest";
+import { describe, test } from "vitest";
 import assert from "node:assert/strict";
 import {
   ensureBench,
@@ -403,4 +403,84 @@ test("a row id outside the s_N shape never feeds the mint (max stays, s_0 rides 
   });
   // hero-1/note are INVISIBLE to the mint; s_7 is the max — s_8 next
   assert.equal(added.stage, "s_8");
+});
+
+// ── MUTATION CONTAINMENT (the li-bc stroke, 2026-10-11) ──────────
+//
+// The deferred finding: remove_stage and rewire had refusal arms and
+// intent-churn arms, but no arm proved the CONTAINMENT law — that a
+// mutation touches exactly what it names and nothing else. A remove
+// that also dropped a survivor's history, or a rewire that rewrote a
+// bystander's params, would pass every existing arm (the intent
+// re-derives fine; the id mint is intact). The judged-and-stored
+// view arms (bench-model-admission) and the junk-model refusals rode
+// in with li-ax; containment is this block's whole job.
+describe("MUTATION CONTAINMENT — a mutation touches only what it names", () => {
+  // each row wires to ANOTHER stage (a self-wire refuses at read —
+  // the door's own law); backward wiring is legal by order-independence
+  const richRow = (id: string, card: string, wiredTo: string): Record<string, unknown> => ({
+    id, card, params: { prompt: `p-${id}`, seed: 7, image: "$image" },
+    inputs: { image: { stage: wiredTo, output: "default" } },
+    outputs: { default: "image" },
+    history: [{ run_id: "run-0f1e2d-old", url: "/x/old.png" }],
+    provenance: "authored",
+  });
+
+  test("remove_stage preserves every survivor BYTE-IDENTICALLY (disk re-read, not the in-memory doc)", async () => {
+    const drafts = await boot();
+    await seed(drafts, "contain-rm", {
+      intent: "tts",
+      stages: [richRow("s_0", "tts", "s_2"), richRow("s_1", "tts", "s_0"), richRow("s_2", "tts", "s_0")],
+    });
+    const before = await getBench(drafts, "contain-rm");
+    const beforeStages = before.stages as Array<Record<string, unknown>>;
+    const survivorBefore = JSON.stringify(beforeStages.filter((s) => s["id"] !== "s_1"));
+    await removeStageBench(drafts, "contain-rm", { stage: "s_1", expect_rev: 0 });
+    const after = await getBench(drafts, "contain-rm");
+    const afterStages = after.stages as Array<Record<string, unknown>>;
+    // the survivor set is unchanged, byte for byte — no re-derivation
+    // churn, no history loss, no params rewrite riding the removal
+    const survivorAfter = JSON.stringify(afterStages);
+    assert.equal(survivorAfter, survivorBefore,
+      "remove_stage may drop ONLY the named row — survivors ride byte-identical");
+    assert.equal(afterStages.length, 2, "exactly the named row left");
+  });
+
+  test("rewire touches ONLY the target row's inputs — every bystander is byte-identical", async () => {
+    const drafts = await boot();
+    await seed(drafts, "contain-rw", {
+      intent: "tts",
+      stages: [
+        richRow("s_0", "tts", "s_2"),
+        { ...richRow("s_1", "tts", "s_0"), inputs: { image: { stage: "s_0", output: "default" } } },
+        richRow("s_2", "tts", "s_0"),
+      ],
+    });
+    // snapshot as BYTES (getBench can serve the domain's cached doc —
+    // the same object references the rewire mutates in place)
+    const snap = (b: Record<string, unknown>): Record<string, unknown> =>
+      JSON.parse(JSON.stringify(b)) as Record<string, unknown>;
+    const before = snap(await getBench(drafts, "contain-rw") as unknown as Record<string, unknown>);
+    await rewireBench(drafts, "contain-rw", {
+      stage: "s_1", input: "image", from: { stage: "s_2", output: "default" }, expect_rev: 0,
+    });
+    const after = snap(await getBench(drafts, "contain-rw") as unknown as Record<string, unknown>);
+    const rowsAfter = after["stages"] as Array<Record<string, unknown>>;
+    const rowsBefore = before["stages"] as Array<Record<string, unknown>>;
+    for (const row of rowsAfter) {
+      if (row["id"] === "s_1") continue;
+      const src = rowsBefore.find((s) => s["id"] === row["id"])!;
+      assert.equal(JSON.stringify(row), JSON.stringify(src),
+        `bystander ${String(row["id"])} is byte-identical after rewire`);
+    }
+    const target = rowsAfter.find((s) => s["id"] === "s_1")!;
+    const targetBefore = rowsBefore.find((s) => s["id"] === "s_1")!;
+    // the target's inputs changed — and NOTHING else on the target
+    assert.notEqual(JSON.stringify(target["inputs"]), JSON.stringify(targetBefore["inputs"]),
+      "the rewire landed on the target's inputs");
+    const { inputs: _i, ...targetRest } = target;
+    const { inputs: _j, ...beforeRest } = targetBefore;
+    assert.equal(JSON.stringify(targetRest), JSON.stringify(beforeRest),
+      "the target's non-input members are untouched");
+  });
 });
