@@ -97,8 +97,31 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
   //    A-M8 (the wall audit, 2026-09-28): `>= 11` and `>= 1`
   //    floors let the roster shrink silently; the door now serves
   //    the REGISTRIES' censuses, exactly.
+  //    THE HAND-PINNED ROSTER (the li-az stroke, 2026-10-11):
+  //    door↔registry equality is DERIVED from the live read — but a
+  //    registry that LOSES a row shrinks both sides of that
+  //    comparison and the wall stays green. The flows/ DIRECTORY is
+  //    no oracle either (8 leaves, not 1:1 — five leaves ride no
+  //    registry row; the registry is the truth, the dir is a
+  //    residue). The absolute roster is pinned HERE, by hand, and
+  //    the equality is two-way: a flow added to the registry reds
+  //    until this pin grows WITH intent; a flow dropped reds by
+  //    name. Deliberate is the point — a roster change is an API
+  //    change, and the wall is where it gets said out loud.
+  const THE_FLOW_ROSTER = [
+    "agent-spawn", "anny-hmr", "anny-hmr-commercial", "anny-params",
+    "audio-native-tts", "body-to-somax", "character", "craft-loop",
+    "fit-seat", "image-upscale", "kimodo-native", "music-native",
+    "skin-apply",
+  ];
   const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
   const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
+  const PINNED = [...THE_FLOW_ROSTER].sort();
+  const registered = [...registryFlowNames()].sort();
+  const dropped = PINNED.filter((n) => !registered.includes(n));
+  const invented = registered.filter((n) => !PINNED.includes(n));
+  assert.deepEqual({ dropped, invented }, { dropped: [], invented: [] },
+    "the registry roster equals the HAND-PINNED roster, two-way (dropped: in the pin, not the registry; invented: in the registry, not the pin)");
   const flowCensus = registryFlowNames().length;
   const cardCensus = (await loadCardDefs()).size;
   const all = disclose.discover("all", "", "");
@@ -117,8 +140,8 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
   assert.deepEqual(malformed.map((f) => JSON.stringify(f)), [],
     `every served flow row is shaped (name:string non-empty, stages:number) — ${String(rows.length)} rows`);
   const servedNames = rows.map((f) => (f as { name: string }).name).sort();
-  assert.deepEqual(servedNames, [...registryFlowNames()].sort(),
-    "the served flow names ARE the registered names, exactly (neither invented nor dropped)");
+  assert.deepEqual(servedNames, PINNED,
+    "the served flow names ARE the pinned roster, exactly (neither invented nor dropped)");
   const fit = rows.find((f) => (f as { name: string }).name === "fit-seat");
   assert.ok(fit, "fit-seat present");
   assert.equal(typeof (fit as { stages?: unknown }).stages, "number");
@@ -129,7 +152,8 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
   // 4. lookup=flows carries ONLY flows.
   const flowsOnly = disclose.discover("flows", "", "");
   assert.equal(flowsOnly.cards, undefined);
-  assert.ok((flowsOnly.flows?.length ?? 0) >= 11);
+  assert.equal(flowsOnly.flows?.length ?? 0, PINNED.length,
+    `lookup=flows serves the full pinned roster (${String(PINNED.length)}), exactly — a floor here let the roster shrink silently`);
   // 5. q tokens ALL match (case-folded): 'fit seat' hits fit-seat;
   //    a token absent from every row empties the plane.
   const q1 = disclose.discover("flows", "fit seat", "");
