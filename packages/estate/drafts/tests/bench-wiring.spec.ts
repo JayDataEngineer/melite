@@ -277,3 +277,88 @@ describe("the intent heuristic (a removed intent re-points, a kept one stands)",
     assert.equal(row.session, "ghost");
   });
 })
+
+// ── THE CONTAINER FAILS CLOSED (2026-10-11, the wire audit) ─────
+// The wire audit's one fail-open: a malformed `inputs` CONTAINER was
+// indistinguishable from an absent one. `isRecord(x) ? x : {}` made
+// `inputs: []` succeed, store no wire, and answer the caller "added" —
+// so the loss surfaced much later as a missing required param at run
+// time. A malformed BINDING already refused (bench/bad-wire) and
+// rewire's malformed `from` already refused (bench/bad-body): the
+// container was the single shape that failed open, which is the one
+// shape the operator would never think to check.
+describe("a malformed inputs CONTAINER refuses, like every other malformed wire shape", () => {
+  /** `getBench(...).stages` is a JsonValue, so the no-leak arms
+   *  below narrow it once here rather than casting at each site. */
+  const stages = (drafts: Parameters<typeof getBench>[0], session: string): unknown[] => {
+    const s: unknown = getBench(drafts, session)["stages"];
+    assert.ok(Array.isArray(s), "the bench serves an array of stages");
+    return s as unknown[];
+  };
+
+  test("add_stage with a non-record inputs refuses and names the shape", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const refusal = await codeOf(addStageBench(drafts, "s", {
+      card: "image-edit",
+      expect_rev: 1,
+      params: { prompt: "zoom out" },
+      inputs: [] as never,
+    }));
+    assert.match(refusal, /bench\/bad-body/);
+    assert.match(refusal, /inputs must be an object/);
+    // AND the refused write mutated nothing — no stage, no half-wire.
+    assert.equal(stages(drafts, "s").length, 1);
+  });
+
+  test("add_stage with a string inputs refuses too (any non-record)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    const refusal = await codeOf(addStageBench(drafts, "s", {
+      card: "image-gen",
+      expect_rev: 0,
+      inputs: "s_0.image" as never,
+    }));
+    assert.match(refusal, /bench\/bad-body/);
+    assert.equal(stages(drafts, "s").length, 0);
+  });
+
+  test("an ABSENT inputs is still legal (the one-stage bench, which is most of them)", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    const row = await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    assert.equal(row.stage, "s_0");
+    const first = stages(drafts, "s")[0] as { inputs?: unknown };
+    assert.deepEqual(first.inputs, {});
+  });
+
+  test("patch cannot carry `inputs` at all — the wire has ONE door", async () => {
+    // The audit found a merge-with-null-delete branch on the patch
+    // path and I nearly walled it. `PATCH_KEYS` does not admit
+    // `inputs`, so `refuseUnknown` answers first and that branch is
+    // unreachable for a bench. The law is the better one: an edge is
+    // added by add_stage/rewire and removed by rewire/remove, never
+    // smuggled in through a params-shaped door. Pinned so the key is
+    // not "helpfully" added later.
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const refusal = await codeOf(patchBench(drafts, "s", {
+      stage: "s_0", expect_rev: 1,
+      inputs: { image: { stage: "s_0", output: "image" } } as never,
+    }));
+    assert.match(refusal, /bench\/bad-body/);
+    assert.match(refusal, /unknown bench key\(s\): inputs/);
+  });
+
+  test("a patch with an ABSENT inputs still merges nothing and succeeds", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "s" });
+    await addStageBench(drafts, "s", { card: "image-gen", expect_rev: 0 });
+    const row = await patchBench(drafts, "s", {
+      stage: "s_0", expect_rev: 1, params: { prompt: "a lighthouse" },
+    });
+    assert.equal(row.stage, "s_0");
+  });
+});

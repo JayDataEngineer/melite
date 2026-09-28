@@ -559,11 +559,20 @@ export function getBench(
   // deliberately tolerant of loose-but-harmless shapes (junk cells
   // and dead wires are refused with precise voices at the run door
   // and at the next write door; the patch-tolerance laws pin that
-  // they serve). The two crimes refused HERE are the ones that
-  // compose degenerately: a SELF-WIRE (a cycle — the run's generic
-  // no-FromStage voice hid it) and a wire to a DEAD STAGE (its
-  // source removed after the fact). Whatever wrote the doc — an
-  // older door, a hand edit — the store is held at read.
+  // they serve). ONE crime is refused HERE, and it is the one that
+  // composes degenerately with no other voice: a SELF-WIRE, which is
+  // a cycle, and which the run's generic no-FromStage message hid.
+  //
+  // (2026-10-11, the wire audit: the comment above used to claim
+  // this gate also refused a wire to a DEAD STAGE. It never did, and
+  // the code below says why it must not — crafted-undo docs may hold
+  // one legitimately between mutations, and serve must not brick the
+  // bench a fix needs to open. The law was correct and the comment
+  // was the thing that drifted; a reader auditing against the prose
+  // would have gone looking for a check that does not exist.)
+  //
+  // Whatever wrote the doc — an older door, a hand edit — the store
+  // is held at read for that one crime.
   if (Array.isArray(doc["stages"])) {
     for (const st of doc["stages"] as unknown[]) {
       if (typeof st !== "object" || st === null) continue;
@@ -1177,6 +1186,27 @@ export async function addStageBench(
   // the row stored below are the same row, under the same id, because
   // there is one producer of the value.
   const stageIdForAdmit: string = mintStageId(stagesOf(loadedForAdmit.doc), body);
+  // A MALFORMED `inputs` CONTAINER REFUSES (the audit's fail-open).
+  // `isRecord(...) ? ... : {}` treats a non-record `inputs` exactly
+  // like an absent one: the caller is told the stage was added, no
+  // wire is stored, and the loss surfaces much later as a missing
+  // required param at run time. A bad BINDING already refuses
+  // (bench/bad-wire) and rewire's non-record `from` already refuses
+  // (bench/bad-body) — the container was the one shape that failed
+  // open. The READ path stays tolerant on purpose (a doc already on
+  // disk is not the caller's mistake, and the serve/run doors judge
+  // it there); this is the door where the caller can still be told.
+  const rawInputs: unknown = body["inputs"];
+  if (rawInputs !== undefined && !isRecord(rawInputs)) {
+    throw new RemoteError(
+      "bench/bad-body",
+      "stage " + JSON.stringify(stageIdForAdmit) +
+        ": inputs must be an object of channel → {stage, output} | {initial} (got " +
+        typeof rawInputs +
+        "); a wire that cannot be read is refused here, not dropped",
+      {},
+    );
+  }
   const admitted: Record<string, unknown> = normalizeBenchStage(
     {
       id: stageIdForAdmit,
