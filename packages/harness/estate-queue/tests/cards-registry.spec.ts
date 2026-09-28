@@ -55,6 +55,37 @@ describe("the lazy reads", () => {
   it("defsSync serves the primed card definitions", () => {
     expect(svc.defsSync().size).toBeGreaterThan(0);
   });
+  it("defsSync follows a refreshCardDefs swap — the registry reads the ONE cache the doors serve (the G2 receipt, 2026-10-11)", async () => {
+    // THE ONE TRUTH: /v1/forms serves loadCardDefs()'s module cache
+    // and refreshCardDefs() swaps it. This seat used to return its
+    // own boot-time copy — a live-mounted hot card served in forms
+    // and REFUSED at POST /v1/flows/validate ("is not a registered
+    // card"). The prime stays (the primed proof); the READ rides
+    // the one cache. This arm mounts the G2 drop-in the way the
+    // lane does and asserts the SEAT sees the card the MOMENT the
+    // forms door does — no re-prime.
+    const { loadCardDefs, refreshCardDefs, theService } = await import("@melite/comfyui-cordis");
+    const { apply: applyG2 } = await import("../../../web/melite-estate/hot/g2-maker-door.plugin.ts");
+    const defs = await loadCardDefs();
+    expect(defs.has("hot-g2-door")).toBe(false);
+    expect(svc.defsSync().has("hot-g2-door")).toBe(false);
+    const fiberCtx = new Context();
+    await fiberCtx.plugin({ name: "g2-wall", apply: applyG2 });
+    try {
+      // refreshCardDefs SWAPS the module cache (a new map) — the
+      // doors re-read loadCardDefs(); the old local would still be
+      // the pre-refresh object
+      const served = await loadCardDefs();
+      expect(served.has("hot-g2-door")).toBe(true); // the drop-in's refreshCardDefs served it in the forms cache
+      expect(svc.defsSync().has("hot-g2-door")).toBe(true); // …and the registry seat reads the SAME cache, no re-prime
+    } finally {
+      await fiberCtx.fiber.dispose();
+    }
+    expect((await loadCardDefs()).has("hot-g2-door")).toBe(false);
+    expect(svc.defsSync().has("hot-g2-door")).toBe(false); // the disposer's refresh un-serves at the seat too
+    expect(refreshCardDefs).toBeTypeOf("function");
+    void theService;
+  });
   it("modelFacts derives once and caches; cardDecls derives from defs+facts and caches", () => {
     const facts = svc.modelFacts();
     expect(Object.keys(facts).length).toBeGreaterThan(0);

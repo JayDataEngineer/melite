@@ -91,7 +91,7 @@ import type { Context } from "@deepseek-ai/cordis";
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
 import { EngineContext } from "@melite/comfyui-cordis";
-import { bootModels, buildCatalog, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
+import { bootModels, buildCatalog, cardDefsNow, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
@@ -291,7 +291,17 @@ export class CardRegistryService extends Service {
           "for the seats)",
       );
     }
-    return this.defs;
+    // THE ONE TRUTH (the G2 receipt, 2026-10-11): /v1/forms serves
+    // loadCardDefs()'s module cache and refreshCardDefs() swaps it;
+    // this seat used to return its own boot-time copy, so a
+    // live-mounted hot card served in forms and REFUSED at
+    // POST /v1/flows/validate ("is not a registered card") — the
+    // boot snapshot forked the truth. The prime stays (boot must
+    // still build the cache + models + object info, and this.defs
+    // is the primed proof); the READ rides the one cache. Cold and
+    // steady-state boots are byte-identical: cardDefsNow() is the
+    // same object prime() captured until a refresh swaps it.
+    return cardDefsNow() ?? this.defs;
   }
 
   /** The frozen model facts (strict — a missing file throws LOUD;

@@ -243,6 +243,15 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   return cache
 }
 
+/** The module cache, SYNC, for seats that must not fork the truth
+ *  (the G2 receipt, 2026-10-11): null before the first loadCardDefs()
+ *  — a cold caller still primes. After a refreshCardDefs() swap this
+ *  is the SAME map every per-request door (forms, form-spec,
+ *  catalog) serves; the estate registry reads it so a live-mounted
+ *  hot card validates at POST /v1/flows/validate the moment it
+ *  serves — one cache, not a boot snapshot and its fork. */
+export const cardDefsNow = (): Map<string, CardDefinition> | null => cache;
+
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
  *  card registered after boot (the hot root's drop-ins) never

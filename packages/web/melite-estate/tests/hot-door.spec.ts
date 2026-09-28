@@ -12,8 +12,10 @@ import { Context } from '@deepseek-ai/cordis'
 import { loadCardDefs, theService } from '@melite/comfyui-cordis'
 import { apply as applyRealMod } from '../hot/examples/real-mod.plugin.ts'
 import { apply as applyRealCard } from '../hot/examples/real-card.plugin.ts'
+import { apply as applyG2Door } from '../hot/g2-maker-door.plugin.ts'
 import * as realModModule from '../hot/examples/real-mod.plugin.ts'
 import * as realCardModule from '../hot/examples/real-card.plugin.ts'
+import * as g2DoorModule from '../hot/g2-maker-door.plugin.ts'
 
 vi.setConfig({ testTimeout: 240000 })
 
@@ -33,7 +35,7 @@ describe('THE HOT DOOR (#39): the real drop-ins under hot/examples/', () => {
     // silent-rot shape: a default export ADDED beside apply (or
     // replacing it) keeps every named-import wall green while the
     // loader serves nothing.
-    for (const mod of [realCardModule, realModModule]) {
+    for (const mod of [realCardModule, realModModule, g2DoorModule]) {
       expect('default' in mod).toBe(false)
       expect(typeof mod.apply).toBe('function')
       expect(Object.keys(mod).sort()).toEqual(['apply'])
@@ -97,6 +99,55 @@ describe('THE HOT DOOR (#39): the real drop-ins under hot/examples/', () => {
     } finally {
       await first.fiber.dispose()
     }
+    expect(theService().cardIds().includes('hot-sketch')).toBe(false)
+  })
+})
+
+describe('THE G2 ARM: the maker-profile row is live (2026-10-11)', () => {
+  it('g2-maker-door.plugin.ts boards the moss ID STRING on a card id no package claims, serves, and un-serves with the fiber', async () => {
+    await loadCardDefs()
+    const svc = theService()
+    // the boarding law, verified LIVE (not trusted from this file's
+    // comment): moss is claimed by no packaged card — the served
+    // table's every other def that boards moss would own its form
+    const defsBefore = await loadCardDefs()
+    for (const [id, def] of defsBefore) {
+      // EXACT membership (a JSON substring would false-positive on
+      // 'moss-sfx' — the sfx card boards THAT family, not moss)
+      const boarded = (def as unknown as { boarded?: string[] }).boarded ?? []
+      if (boarded.includes('moss')) throw new Error('a packaged card (' + id + ') already claims moss — the G2 drop-in would hijack its form')
+    }
+    expect(defsBefore.has('hot-g2-door')).toBe(false)
+
+    const ctx = await mount(applyG2Door)
+    expect(svc.cardIds().includes('hot-g2-door')).toBe(true)
+    const defs = await loadCardDefs()
+    const def = defs.get('hot-g2-door') as unknown as Record<string, unknown>
+    expect(def).not.toBe(undefined)
+    // THE ID-STRING SPELLING (the G2 charge): the boarded family is
+    // the string 'moss' — never an imported DECL
+    expect(JSON.stringify(def.boarded)).toBe('["moss"]')
+    expect((def.identity as { label: string }).label).toBe('Hot G2 Door')
+
+    await ctx.fiber.dispose()
+    expect(svc.cardIds().includes('hot-g2-door')).toBe(false)
+    expect((await loadCardDefs()).has('hot-g2-door')).toBe(false)
+  })
+
+  it('a SECOND drop-in boarding the same family REFUSES family-taken — the krea-2-hijack cure holds across hot cards too', async () => {
+    // The runtime law is stricter than "distinct card ids": ONE
+    // family, ONE card, even between two hot drop-ins. The G2 card
+    // holds moss; the retired example (hot-sketch) boards the same
+    // family and the register refuses it LOUD — the same
+    // service.ts family gate that cured the krea-2 outage.
+    await loadCardDefs()
+    const first = await mount(applyG2Door)
+    try {
+      await expect(mount(applyRealCard)).rejects.toThrow(/family-taken|moss.*already boarded/)
+    } finally {
+      await first.fiber.dispose()
+    }
+    expect(theService().cardIds().includes('hot-g2-door')).toBe(false)
     expect(theService().cardIds().includes('hot-sketch')).toBe(false)
   })
 })
