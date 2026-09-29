@@ -111,6 +111,11 @@ export interface EstateFakesOptions {
   addStageRevs?: number[]
   runDocs?: Array<Record<string, unknown>>
   patchFailures?: Array<Record<string, unknown>>
+  /** Revs the drafts/patch ok arms ANSWER, in call order (the real
+   *  door names the rev each landing write produced — THE
+   *  CONFIRMED-WRITE LAW's currency; the fake's omission hid the
+   *  CAS-storm shape the write-seat audit found). */
+  patchAnswerRevs?: Array<number>
   refusals?: EstateRefusal[]
   throws?: EstateThrow[]
   listRows?: Array<Record<string, unknown>>
@@ -342,7 +347,14 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
           // full rows) — the cast pins them against the wire row.
           return ok(opts.patchFailures.shift()! as unknown as DraftPatchRow)
         }
-        return ok({ draftId: 'bench-s1', stageId, delivered: true, patched: applyDraftPatch(stageId, patch) })
+        const answeredRev = opts.patchAnswerRevs !== undefined && opts.patchAnswerRevs.length > 0
+          ? opts.patchAnswerRevs.shift()!
+          : undefined
+        return ok({
+          draftId: 'bench-s1', stageId, delivered: true,
+          ...(answeredRev !== undefined ? { rev: answeredRev } : {}),
+          patched: applyDraftPatch(stageId, patch),
+        })
       },
       // THE INDEX DOOR (drafts/list rides the same namespace — the
       // bind requires it; no wall scripts it, so it serves the empty

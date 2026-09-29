@@ -154,35 +154,33 @@ export type SettleFn = (run: RunRecord) => void;
     // lane, and a composition without the adapter would submit poison
     // with the suite green.
     //
-    // The fence therefore judges `fenceRows` on BOTH paths: the
-    // spliced rows where the seat path already built them, and the
-    // raw stage params on the seat path (PRE-splice, exactly as the
-    // comment always claimed). Splicing rewires node REFERENCES; it
-    // adds no class_type and no input key, so the name surface the
-    // judge walks is the same either way — and the seat path's own
-    // submit is left untouched.
+    // The fence therefore judges ONE GRAPH per stage on BOTH paths:
+    // the spliced rows where the seat path already built them, and
+    // the SEAT path's own splice of the stage params HERE — because
+    // the compiled params are the ENVELOPE {workflow, output_nodes},
+    // not the graph. The first cut walked the envelope raw and every
+    // object-valued param became a PHANTOM NODE: an armed doc
+    // refused every seat-path run as "card 'flow' built node
+    // 'workflow' with no class_type — the graph is not addressable"
+    // (the operator's face, 2026-10-10 — a card that COULD run,
+    // refused by a wall judging its own envelope). The same cut
+    // named the card from a stage row that carries none, falling
+    // back to the invented 'flow'. The walk now names the REAL
+    // card: the stage's own card when stamped, the record's cardId
+    // (registration's own law: stamped for card runs, absent for
+    // inline — never a guess), the stage id last.
     // Unarmed (no wiring service in the composition): the wall
     // stands down — the standing law.
     const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
     if (wiring !== undefined) {
-      const fenceRows: MergeRow[] =
-        rows.length > 0
-          ? rows
-          : run.stages.map(
-              (stage, i: number): MergeRow => ({
-                stageId: stage.id,
-                // PRE-splice on the seat path: the judge walks names,
-                // and names are the same before and after a splice.
-                workflow: (run.params[i] ?? {}) as Record<string, EngineJson>,
-                outputs: { ...(stage.outputs as Record<string, EngineJson>) },
-                outputNodes: { ...(run.outputNodes[i] as Record<string, EngineJson>) },
-                params: { ...(run.params[i] as Record<string, EngineJson>) },
-              }),
-            );
-      for (let i = 0; i < fenceRows.length; i++) {
-        const stage = run.stages[i];
+      for (let i = 0; i < run.stages.length; i++) {
+        const stage = run.stages[i]!;
         try {
-          wiring.assert(String(stage["card"] ?? "flow"), fenceRows[i]!.workflow);
+          const graph =
+            rows.length > 0
+              ? rows[i]!.workflow
+              : spliceWorkflow(run.params[i] as Record<string, EngineJson>);
+          wiring.assert(String(stage["card"] ?? run.cardId ?? stage.id), graph);
         } catch (exc: unknown) {
           const text: string = errText(exc);
           for (const st of run.stages) {

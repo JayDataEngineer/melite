@@ -11,6 +11,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { resetStageWrites } from "../src/client/draft.ts";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
@@ -19,6 +20,12 @@ import type { StageViewOwnerProps } from "../src/client/types.ts";
 afterEach(() => {
   cleanup();
   unbindEstateRemote();
+  // the write ledger is module-level memory; specs share draft/stage
+  // ids, so a refusal recorded by one test must not refuse the next
+  // (the same discipline as unbindEstateRemote — the audit's
+  // order-dependent-green finding: this file had NO reset, so its
+  // greens rode on the suites that ran before it).
+  resetStageWrites();
   vi.unstubAllGlobals();
 });
 
@@ -105,6 +112,8 @@ function mountBench(
     startDocs: estate?.startDocs,
     refusals: estate?.refusals,
     throws: estate?.throws,
+    patchFailures: estate?.patchFailures,
+    patchAnswerRevs: estate?.patchAnswerRevs,
   });
   render(h(CardsTab, {
     useTabInfo: () => ({ tab: {
@@ -158,12 +167,40 @@ describe("the authoring contract — a typed field RIDES the row", () => {
       // {prompt} doc is an unknown key the door refuses).
       const landed = patches.some((c) => {
         const patch = c.args["patch"] as Record<string, unknown>;
-        const params = (patch["params"] ?? patch) as Record<string, unknown>;
-        return params["prompt"] === "a red cloak";
+        // STRICT SHAPE (the audit's permissive-matcher finding): the
+        // door's doc wraps the fields under `params` — a flat
+        // {prompt} body is an unknown key the door REFUSES, so the
+        // pin must demand the wrap, not tolerate its absence.
+        const params = patch["params"];
+        if (typeof params !== "object" || params === null) return false;
+        return (params as Record<string, unknown>)["prompt"] === "a red cloak";
       });
       if (!landed) throw new Error("prompt never rode a patch; patches: " + JSON.stringify(patches.map((c) => c.args["patch"])));
       expect(landed).toBe(true);
     }, { timeout: 4000 });
+  });
+
+  test("a DEAD WRITE shows its face on the form the moment the door answers (the audit's silent branch)", async () => {
+    // THE WRITE-SEAT AUDIT'S SILENT-DEAD-WRITE FINDING (2026-10-10):
+    // the ordinary authoring branch swallowed its failures
+    // (`.catch(() => {})`), so a typed edit whose write died surfaced
+    // ONLY as a run refusal, minutes later, with no face at the
+    // field. The scheduled write's promise settles when the door
+    // ANSWERED now, and the drill puts the failure on the form —
+    // the slot arm's own law, generalized to every authoring write.
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+    ], undefined, {
+      patchFailures: [{ delivered: false, reason: "bench/stale-window" }],
+    });
+    doors.specFields = "prompt";
+    await openFirstTile();
+    const field = await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    fireEvent.change(field, { target: { value: "a red cloak" } });
+    const face = await screen.findByTestId("stage-write-face", {}, { timeout: 4000 });
+    expect(face.textContent).toContain("THE WRITE DID NOT LAND");
+    expect(face.textContent).toContain("bench/stale-window");
+    expect(face.textContent).toContain("studio shows your edit");
   });
 
   test("the typed prompt reaches the RUN start body (no lane refusal can say 'prompt is not stated')", async () => {

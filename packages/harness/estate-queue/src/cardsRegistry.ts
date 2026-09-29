@@ -224,7 +224,18 @@ export function familyFace(fam: string): string {
  *  conflict, an unknown selection) still refuses HERE — that state
  *  can never compose and the operator learns at the keystroke. The
  *  judge is the contracts' own (laneRelations): the required class
- *  is the one whose sentence opens "this lane requires". */
+ *  is the one whose sentence opens "this lane requires".
+ *
+ *  THE FILTER IS SEAT-SCOPED (the four-agent law audit, 2026-10-10,
+ *  its one violation): the first cut filtered inside the SHARED
+ *  judge, so the run and validate seats stopped hearing the
+ *  required word too and the DECL went decorative — enforcement
+ *  survived only because every live card duplicates the word as an
+ *  imperative belt. Only the WRITE door's call passes
+ *  admitIncomplete=true; every other seat judges the declaration
+ *  strict (li-o's own law: "no card needs a hand-written copy of
+ *  the law to be safe at Run"). The belt remains as backstop for
+ *  families that declare nothing. */
 function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneViolation[] {
   return violations.filter((v) => !v.message.startsWith("this lane requires"));
 }
@@ -639,7 +650,9 @@ export class CardRegistryService extends Service {
     card: string,
     params: Record<string, unknown>,
   ): { ok: true } | { ok: false; error: string } {
-    const verdict = this.laneVerdict(card, params);
+    // THE WRITE DOOR'S OWN CALL passes admitIncomplete — the ONLY
+    // seat that admits an unstated required word (the law above).
+    const verdict = this.laneVerdict(card, params, true);
     return verdict === null ? { ok: true } : { ok: false, error: verdict };
   }
 
@@ -662,6 +675,7 @@ export class CardRegistryService extends Service {
   private modellessDraftVerdict(
     card: string,
     params: Record<string, unknown>,
+    admitIncomplete: boolean,
   ): string | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) return null;
@@ -739,10 +753,14 @@ export class CardRegistryService extends Service {
       : null;
     // the surface judgment stays the undeclared-key gate's voice
     // (it already ran above); only the WORDS and the SPANS judge here
-    const violations: LaneViolation[] = incompleteDraftViolations([
+    // — the incomplete-draft filter applies ONLY at the write seat
+    const judged: readonly LaneViolation[] = [
       ...judgeLaneRelations([relations], lift),
       ...judgeLaneBounds(bounds, lift),
-    ]);
+    ];
+    const violations: LaneViolation[] = admitIncomplete
+      ? incompleteDraftViolations(judged)
+      : [...judged];
     void surface;
     if (violations.length > 0) {
       return "lane (draft, model-less) refuses the state: " +
@@ -754,6 +772,7 @@ export class CardRegistryService extends Service {
   private laneVerdict(
     card: string,
     params: Record<string, unknown>,
+    admitIncomplete = false,
   ): string | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
     if (def === undefined) return null; // mcp/flow ids — not lane-admitted
@@ -783,7 +802,7 @@ export class CardRegistryService extends Service {
       // word was already declared); a word only some families state
       // stays the run door's voice. No union — a union would refuse
       // states the composing family admits.
-      return this.modellessDraftVerdict(card, params); // null when no family agrees on any word
+      return this.modellessDraftVerdict(card, params, admitIncomplete); // null when no family agrees on any word
     }
     let prep: PreparedCard;
     try {
@@ -884,12 +903,16 @@ export class CardRegistryService extends Service {
       variantRow?.bounds ?? null,
     );
     // THE INCOMPLETE-DRAFT LAW rides the family arm too (see the
-    // helper): the unstated required word is the run door's voice.
-    const violations: LaneViolation[] = incompleteDraftViolations([
+    // helper): the unstated required word is the run door's voice —
+    // so the filter applies ONLY when the WRITE seat is asking.
+    const judgedFam: readonly LaneViolation[] = [
       ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
       ...judgeLaneRelations(relations, prep.params),
       ...judgeLaneBounds(bounds, prep.params),
-    ]);
+    ];
+    const violations: LaneViolation[] = admitIncomplete
+      ? incompleteDraftViolations(judgedFam)
+      : [...judgedFam];
     if (violations.length > 0) {
       return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
         violations.map((v) => v.message).join("; ");

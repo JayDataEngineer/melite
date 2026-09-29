@@ -233,3 +233,113 @@ describe("runOne's wiring fence (the schema plane, not a submit opt)", () => {
     assert.equal(run.status, "completed");
   });
 });
+
+// ── THE SEAT-PATH FENCE (2026-10-10, the operator's live face:
+// "Error: card 'flow' built node 'workflow' with no class_type —
+// the graph is not addressable" — "can't run cards.... the entire
+// contract has been violated as it allowed me to make a card that
+// could not run"). Production ALWAYS takes the seat path (the
+// engines seat — the same dispatch the doors spec pins), and the
+// fence's first cut walked that path's RAW stage params: the
+// compiled ENVELOPE {workflow, output_nodes}, not the graph. The
+// envelope's own 'workflow' key judged as a PHANTOM NODE, so an
+// armed doc refused every seat-path run — a card that COULD run,
+// killed by a wall judging its own envelope — and the refusal named
+// a card the same cut INVENTED (the stage row carries no card; the
+// fallback guessed 'flow'). The pins below drive the real seat path
+// with the envelope a compiled card run actually carries.
+describe("runOne's wiring fence on the SEAT path (production's path)", () => {
+  /** ctx with the REAL 'engines' seat (the contract's own service —
+   * ctx.get reads the isolate registry, so a literal assignment is
+   * invisible) carrying ONE fake comfyui record whose executor
+   * counts its executeStages calls: exactly the dispatch production
+   * resolves, stroke 53's law. */
+  const seatCtx = async (): Promise<{ ctx: Context; calls: { n: number } }> => {
+    const { EnginesService } = await import("@melite/engine-contract");
+    const ctx = new Context();
+    const seat = new EnginesService(ctx);
+    const calls = { n: 0 };
+    seat.register("comfyui", {
+      executor: {
+        executeStages: async (): Promise<{
+          stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }>;
+        }> => {
+          calls.n++;
+          return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
+        },
+      },
+    });
+    return { ctx, calls };
+  };
+
+  it("THE OPERATOR'S FACE, CURED: an envelope-params card run on the seat path SUBMITS against an armed doc", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    // armed WITH the run's class ("X") — the wall stands for truth
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["X"]), new Map());
+    const run = runWithCard("flow_inline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 1, "the seat executor submitted — the envelope is not a graph, its 'workflow' key is not a node");
+    assert.equal(run.status, "completed", "a card that CAN run, runs");
+    assert.equal(run.error, "", "no phantom-node refusal");
+  });
+
+  it("the seat path's refusal names the UNDECLARED CLASS, not the envelope's own keys — and never reaches the executor", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["KSampler"]), new Map());
+    const run = runWithCard("flow_inline");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 0, "the engine was NEVER called — the refusal predates any action");
+    assert.equal(run.status, "failed");
+    assert.ok(
+      String(run.error).includes("wired node class 'X'"),
+      "the refusal names the undeclared class: " + String(run.error),
+    );
+    assert.ok(
+      !String(run.error).includes("no class_type"),
+      "the phantom-node face is dead: " + String(run.error),
+    );
+  });
+
+  it("the refusal names the run's REAL card (the record's cardId), never an invented one", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["KSampler"]), new Map());
+    // cardId is registration's own law: stamped for card runs, never
+    // a guess — the fixture's stage row carries none, exactly like a
+    // real compiled run.
+    const run = runWithCard("image-gen");
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 0);
+    assert.ok(
+      String(run.error).includes("card 'image-gen'"),
+      "the wall names the record's card: " + String(run.error),
+    );
+    assert.ok(
+      !String(run.error).includes("card 'flow'"),
+      "the invented card name is dead: " + String(run.error),
+    );
+  });
+
+  it("a seat-path stage whose params carry no graph refuses in the splice's own voice, pre-submit", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["X"]), new Map());
+    const run: RunRecord = {
+      ...runWithCard("flow_inline"),
+      params: [{ prompt: "typed words with nowhere to compose" }],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 0, "no submit for a graphless stage");
+    assert.equal(run.status, "failed");
+    assert.ok(
+      String(run.error).includes("compose must emit the graph"),
+      "the splice's own voice: " + String(run.error),
+    );
+  });
+});

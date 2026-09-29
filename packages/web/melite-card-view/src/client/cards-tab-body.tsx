@@ -173,6 +173,37 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
   const [localRunError, setLocalRunError] = useState<string | null>(null)
+  // THE ERROR-IS-NOT-A-LATCH LAW (operator 2026-10-10: "errors don't
+  // go away when we have a successful gen"): localRunError speaks
+  // for a start THIS tab attempted and never saw answered. It was
+  // cleared only by the next verb press HERE — so a generation that
+  // landed through ANY other hand (the agent's melite_flow, another
+  // tab on the same bench, a headless commission) left the strip up
+  // forever OVER the successful gen it already replaced. The bench
+  // is the server's document (the no-stale-tab law, above): the
+  // moment a stage row lands TERMINAL-DONE that this tab did not
+  // watch go terminal before, the stale claim retires. The derived
+  // half (terminalStageErrorOf below) still surfaces any row that
+  // is failed NOW — the face stays honest in both directions, never
+  // a latch.
+  const terminalSeen = useRef<ReadonlyMap<string, string> | null>(null)
+  useEffect(() => {
+    const value = snapshot?.value
+    if (value === undefined || value.kind === 'run') return
+    const cur = new Map<string, string>()
+    for (const s of value.stages) {
+      cur.set(s.id, typeof s.runStatus === 'string' ? s.runStatus : '')
+    }
+    const prev = terminalSeen.current
+    terminalSeen.current = cur
+    if (prev === null) return // first frame: baseline, no claim to retire
+    for (const [id, status] of cur) {
+      if (status === 'done' && prev.get(id) !== 'done') {
+        setLocalRunError(null)
+        return
+      }
+    }
+  }, [snapshot?.value])
   // THE DEPLOY HANDSHAKE (2026-09-23, the stale-tab root rot): probe
   // THERE IS NO STALE TAB (operator, 2026-10-10, in the operator's
   // own words: "THE TAB IS NEVER STALE, IT IS LITERALLY IMPOSSIBLE

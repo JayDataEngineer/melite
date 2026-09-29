@@ -678,16 +678,22 @@ describe("THE OPERATOR'S FACE (the 2026-09-29 outage, pinned 2026-09-29)", () =>
     expect(outOfEnvelope.ok, "a number outside the declared envelope can never compose — it refuses HERE").toBe(false);
   });
 
-  it("the run seat refuses the same state, naming the field and what it is (the contract's run door)", async () => {
-    // The run's own sentence for this state is the card schema's
-    // required-param refusal ('required param prompt missing or
-    // empty ... (what the picture IS)') — the lane word below states
-    // the same law in the lane's voice. Both name the field and the
-    // cure; the write door admits the draft (the incomplete-draft
-    // law), so the press is where the operator hears it.
+  it("the run seat refuses the same state in the DECL's own voice (the law's run door)", async () => {
+    // THE FOUR-AGENT LAW AUDIT'S ONE VIOLATION, restored (2026-10-10):
+    // the incomplete-draft filter had crept into the SHARED judge, so
+    // the run seat stopped hearing the required word and the DECL
+    // went decorative — enforcement survived only as the card's
+    // imperative belt ('required param prompt missing or empty',
+    // image-gen's own copy of the law). The filter is SEAT-SCOPED
+    // now: the WRITE door admits the unstated word (the pin above),
+    // the RUN seat judges the declaration — li-o's own law, "no card
+    // needs a hand-written copy of the law to be safe at Run". The
+    // belt stays as backstop for families that declare nothing; the
+    // DECL's sentence is the voice the press meets, and it names the
+    // field and the cure in one line.
     await expect(
       svc.phase1Card({ ...PROMPTLESS }, "krea-2"),
-    ).rejects.toThrow(/required param 'prompt' missing or empty/);
+    ).rejects.toThrow(/this lane requires 'prompt'.*write the prompt/);
   });
 
   it("the cured draft (prompt stated) composes phase 1 — the door and the run agree", async () => {
@@ -746,6 +752,25 @@ describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", ()
       }
     });
   }
+
+  // THE ONE SANCTIONED DIVERGENCE (the law audit's F4 — the parity
+  // table could not see the incomplete-draft filter at all): an
+  // UNSTATED required word is the single state class where the two
+  // seats DELIBERATELY disagree — the write door admits (a card
+  // under construction is bench state; the operator types the
+  // prompt next), the run door refuses in the lane's own sentence.
+  // It is pinned HERE, beside the table, as law — so it can never
+  // ride the table itself (a door-admitted lane refusal there would
+  // be red, correctly), and so the divergence can never silently
+  // widen: any OTHER write-admits/run-refuses lane state is the
+  // parity bug the table above exists to catch.
+  it("the one sanctioned divergence: an unstated required word (the write door admits, the run refuses)", async () => {
+    const PROMPTLESS = { model: "krea-2", variant: "turbo" } as Record<string, unknown>;
+    expect(svc.admitStageRelations("image-gen", PROMPTLESS).ok).toBe(true);
+    await expect(
+      svc.phase1Card({ ...PROMPTLESS }, "krea-2"),
+    ).rejects.toThrow(/this lane requires 'prompt'.*write the prompt/);
+  });
 });
 
 // ── THE PARITY LAW, PROVEN END TO END (2026-10-10, the behavioural
@@ -919,8 +944,11 @@ describe("THE RE-CHECK'S TWO BYPASSES ARE CLOSED", () => {
     // INTERSECTION verdict — the words every boarded declaring
     // family agrees on — so the pin holds the call, not a blanket
     // tolerance. (The familyless card still stands down: the
-    // verdict returns null when nothing declares.)
-    expect(arm).toContain("return this.modellessDraftVerdict(card, params);");
+    // verdict returns null when nothing declares.) The call carries
+    // the SEAT param (the law audit's fix): only the write door's
+    // caller passes admitIncomplete=true — every other seat judges
+    // the declaration strict.
+    expect(arm).toContain("return this.modellessDraftVerdict(card, params, admitIncomplete);");
   });
 });
 
@@ -956,6 +984,22 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
         { model: "qwen3-tts", text: "speak" },
       ),
     ).toBeNull();
+  });
+
+  it("an UNSTATED required word refuses at the validate seat too — the DECL is not decorative here (the law audit's F3)", async () => {
+    // The incomplete-draft filter is seat-scoped: it admits at the
+    // WRITE door only. Validate composes — it judges the declaration
+    // strict, in the lane's own sentence, exactly like the run seat.
+    const refused = await svc.composeValidateCard(
+      "image-gen",
+      "krea-2",
+      { model: "krea-2", variant: "turbo" },
+      "krea-2",
+      { model: "krea-2", variant: "turbo" },
+    );
+    expect(refused).not.toBeNull();
+    expect(refused?.code).toBe("lane_refusal");
+    expect(refused?.message).toMatch(/this lane requires 'prompt'/);
   });
 
   it("the seat judges the BODY, never the overlay (the rule in source)", () => {

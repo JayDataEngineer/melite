@@ -9,13 +9,13 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
 import { axisUnset, titleCaseId } from '@melite/card-base/spec'
-import { scheduleStageParam } from './draft.ts'
+import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/wire'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
 import { BboxLeafCanvas } from '@melite/image-mask-studio/bbox-canvas'
 import { cardLlmArg } from '@melite/catalog'
-import { paramFields, patchStageOutcome, patchStageParams, mediaUrl } from './draft.ts'
+import { paramFields, patchStageOutcome, patchStageParams, mediaUrl, stageWriteState } from './draft.ts'
 import css from './card.module.css'
 import { StudioShell } from '@melite/card-base/shell'
 import { fetchMediaLibrary, uploadInputFile } from './cards-resource.ts'
@@ -136,6 +136,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   const [enhancing, setEnhancing] = useState(false)
   const [enhanceNote, setEnhanceNote] = useState<{ err: boolean, text: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // THE LEDGER FACE (the write-seat audit's silent-dead-write finding,
+  // 2026-10-10): the ordinary authoring branch used to swallow its
+  // write failures (`.catch(() => {})`) — a typed edit whose write
+  // died surfaced ONLY as a run refusal, minutes later, with no face
+  // at the field. The scheduled write's promise now settles when the
+  // door ANSWERED (superseded waits included), so the drill can put
+  // the failure ON the form the moment it happens — the slot arm's
+  // own law, generalized to every authoring write.
+  const [writeFace, setWriteFace] = useState<string | null>(null)
   const [loaded, setLoaded] = useState(false)
   const reportSurface = onSurface ?? (() => {})
   // (THE LIVE GESTURE STATE moved to the frame (hour-26): the top
@@ -205,7 +214,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // null-domain half deletes the bench key). A model-pick
         // re-key seeds from the USER state (the pick survives; the
         // new matrix's rows seed under it).
-        setUser(seedUser(doc, freshOpen ? held : userRef.current))
+        const seeded = seedUser(doc, freshOpen ? held : userRef.current)
+        setUser(seeded)
+        if (freshOpen) {
+          // THE GHOST RECONCILE (the write-seat audit's dead-end
+          // finding): a failed key the reopened form no longer holds
+          // would refuse every run forever while the studio shows
+          // the field empty — the ledger drops what nobody carries.
+          reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded)
+        }
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
       })
@@ -273,7 +290,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // leaves on the same ledger (a null param DELETEs it — the
       // door's own law), so "inherited" is the row's state and not
       // only this modal's.
-      void scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).catch(() => {})
+      void scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).then(() => {
+        // the door ANSWERED: the ledger is the truth (the promise
+        // resolves either way — the failure memory is the ledger's,
+        // per-key and latest-wins)
+        const st = stageWriteState(bench.draftId, stage.id)
+        setWriteFace(st.failedKeys.length > 0
+          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
+            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+          : null)
+      })
       return
     }
     setUser((m) => ({ ...m, [name]: v }))
@@ -293,7 +320,17 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
     if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh') {
-      void scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).catch(() => {})
+      void scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).then(() => {
+        // the door ANSWERED: the ledger is the truth (the promise
+        // resolves either way — the failure memory is the ledger's,
+        // per-key and latest-wins)
+        const st = stageWriteState(bench.draftId, stage.id)
+        setWriteFace(st.failedKeys.length > 0
+          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
+            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+          : null)
+      })
     }
     // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
     // wire an image from the previous flow, it doesn't stay after I
@@ -411,18 +448,32 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       }
       const results = doc.results ?? {}
       const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : [])
-      setUser((m) => {
-        const next: SpecValues = { ...m }
-        for (const [field, r] of Object.entries(results)) {
-          if (typeof r?.positive !== 'string' || r.positive === '') continue
-          if (field === 'prompt' || declared.has(field)) next[field] = r.positive
-          if (field === 'prompt' && declared.has('negative_prompt')
-            && typeof r.negative === 'string' && r.negative !== '') {
-            next['negative_prompt'] = r.negative
-          }
+      // THE SWEPT PATCH (the write-seat audit's finding 3): the sweep
+      // used to setUser ALONE — an enhanced prompt lived in this
+      // modal's state and EVAPORATED on close-without-Run, the exact
+      // death the authoring contract killed for typing. The swept
+      // values now register in the write ledger like every other
+      // edit: what the studio shows is what the engine gets.
+      const sweptPatch: Record<string, unknown> = {}
+      for (const [field, r] of Object.entries(results)) {
+        if (typeof r?.positive !== 'string' || r.positive === '') continue
+        if (field === 'prompt' || declared.has(field)) sweptPatch[field] = r.positive
+        if (field === 'prompt' && declared.has('negative_prompt')
+          && typeof r.negative === 'string' && r.negative !== '') {
+          sweptPatch['negative_prompt'] = r.negative
         }
-        return next
-      })
+      }
+      setUser((m) => ({ ...m, ...sweptPatch }))
+      if (Object.keys(sweptPatch).length > 0) {
+        void scheduleStageParam(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
+          const st = stageWriteState(bench.draftId, stage.id)
+          setWriteFace(st.failedKeys.length > 0
+            ? 'THE ENHANCE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+              + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
+              + 'The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land.'
+            : null)
+        })
+      }
       const swept = Object.entries(results)
         .filter(([field, r]) => typeof r?.positive === 'string' && r.positive !== ''
           && (field === 'prompt' || declared.has(field))).length
@@ -753,6 +804,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // the rail's bottom.
         error !== null ? h('div', { className: css.drillRunRow },
           h('span', { className: css.runError }, error),
+        ) : null,
+        writeFace !== null ? h('div', { className: css.drillRunRow },
+          h('span', { className: css.runError, 'data-testid': 'stage-write-face' }, writeFace),
         ) : null,
       ),
       preview: h('div', { className: css.outputs },

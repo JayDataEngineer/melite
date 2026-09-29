@@ -211,14 +211,23 @@ export function stageWriteState(draftId: string, stageId: string): StageWriteSta
  *  ledger here, coalesced per key on a short trailing delay (a
  *  keystroke storm is one write, not forty) — module-level state, so
  *  a view flip cannot kill a pending write by killing its timer
- *  owner (the 2026-09-23 burn's exact death). The run gate FORCES
- *  every pending write before composing (flushStageWrites below), so
- *  the engine can only ever see what the studio shows. */
+ *  owner (the 2026-09-23 burn's exact death). ONE hole, named
+ *  honestly rather than patched with a lying flush: a write inside
+ *  its trailing window dies on TAB CLOSE (the door's CAS fence
+ *  needs the write's answer; no beacon can land one) — the run
+ *  gate is the wall that catches it. The run gate FORCES every
+ *  pending write before composing (flushStageWrites below), so the
+ *  engine can only ever see what the studio shows. */
 const SCHEDULED_TRAILING_MS = 300
 interface ScheduledParamWrite {
   readonly timer: ReturnType<typeof setTimeout>
   readonly params: Record<string, unknown>
   readonly expectRev: number | undefined
+  /** Callers waiting on this key's write (the write-seat audit's
+   *  orphaned-promise finding: a superseded or forced-out-of-band
+   *  write MUST still settle its waiters when the door answers —
+   *  "settles when the door answered" is the API's own doc). */
+  readonly waiters: Array<() => void>
 }
 /** Pending trailing writes, keyed draft/stage then param key (the
  *  coalescing unit: one write per key, the newest value wins). */
@@ -235,60 +244,93 @@ function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledPa
 }
 
 /** Register an authoring edit: the value rides the row on the
- *  trailing delay, or NOW when `immediate` (discrete picks). The
- *  promise settles when the door answered; the ledger owns the
- *  failure memory either way. */
+ *  trailing delay. The promise settles when the door ANSWERED —
+ *  also when a later edit superseded this one (the waiters ride the
+ *  newest write's fate: one key, one write, every waiter hears it)
+ *  and when the run gate forced the write out of band. The ledger
+ *  owns the failure memory either way. */
 export function scheduleStageParam(
   draftId: string,
   stageId: string,
   params: Record<string, unknown>,
   expectRev?: number,
-  immediate = false,
 ): Promise<void> {
   const row = scheduledRow(draftId, stageId)
+  if (Object.keys(params).length === 0) {
+    return Promise.resolve()
+  }
   // patchStageParams owns the DOOR'S DOC SHAPE (benchStage's
   // STAGE_PATCH_KEYS — the wire's key is `params`; the flat
   // client-side vocabulary is wrapped by that function, never by a
-  // caller).
-  const send = (merged: Record<string, unknown>, rev: number | undefined): Promise<void> =>
-    patchStageParams(draftId, stageId, merged, rev)
-  if (immediate || Object.keys(params).length === 0) {
-    // a discrete pick: no coalescing, the write leaves now (the slot
-    // flush law's own immediacy)
-    return send(params, expectRev)
+  // caller). THE REV AT SEND TIME (the write-seat audit's amplifier
+  // finding): the ledger's confirmedRev — the rev the door itself
+  // answered for this stage's last landing write — beats the
+  // render-time rev callers hand in; a trailing write that fires
+  // after an earlier one landed rides the FRESH rev instead of
+  // colliding with the stale one by construction.
+  const send = (merged: Record<string, unknown>, rev: number | undefined): Promise<void> => {
+    const confirmed = writeRow(draftId, stageId).confirmedRev
+    return patchStageParams(draftId, stageId, merged, confirmed ?? rev)
   }
-  let settle: (() => void) | null = null
-  const done = new Promise<void>((resolve) => { settle = resolve })
-  for (const [k, v] of Object.entries(params)) {
-    const prev = row.get(k)
-    if (prev !== undefined) clearTimeout(prev.timer)
-    const merged: Record<string, unknown> = prev !== undefined ? { ...prev.params } : {}
-    merged[k] = v
-    row.set(k, {
-      params: merged,
-      expectRev,
-      timer: setTimeout(() => {
-        row.delete(k)
-        void send(merged, expectRev).then(() => { settle?.() }, () => { settle?.() })
-      }, SCHEDULED_TRAILING_MS),
-    })
-  }
+  const keys = Object.keys(params)
+  const remaining = { n: keys.length }
+  const done = new Promise<void>((resolve) => {
+    const settle = (): void => {
+      remaining.n -= 1
+      if (remaining.n === 0) resolve()
+    }
+    for (const [k, v] of Object.entries(params)) {
+      const prev = row.get(k)
+      if (prev !== undefined) clearTimeout(prev.timer)
+      const merged: Record<string, unknown> = prev !== undefined ? { ...prev.params } : {}
+      merged[k] = v
+      // the superseded write's waiters ride THIS write's fate (one
+      // key, one write — every caller that asked hears the answer)
+      const waiters = prev !== undefined ? [...prev.waiters, settle] : [settle]
+      row.set(k, {
+        params: merged,
+        expectRev,
+        waiters,
+        timer: setTimeout(() => {
+          row.delete(k)
+          void send(merged, expectRev).then(
+            () => { for (const w of waiters) w() },
+            () => { for (const w of waiters) w() },
+          )
+        }, SCHEDULED_TRAILING_MS),
+      })
+    }
+  })
   return done
 }
 
 /** Fire every pending trailing write for the stage NOW (the run
- *  gate's first move — a press composes what the studio shows). */
-function forceScheduledWrites(draftId: string, stageId: string): Promise<void> {
+ *  gate's first move — a press composes what the studio shows).
+ *  SERIALIZED, one write landing before the next leaves (the
+ *  write-seat audit's CAS-violation finding: the first cut fanned
+ *  the keys out CONCURRENTLY at one shared render-time rev, every
+ *  writer collided, each retry round eliminated exactly one, and
+ *  the rebase budget (PATCH_ATTEMPTS=3) exhausted at four-plus keys
+ *  into a SPURIOUS refusal the operator never typed). Serial and
+ *  riding confirmedRev at send time, a single-author press lands
+ *  every key with ZERO collisions; a true second author is met
+ *  with the full rebase budget per write. Settling is still
+ *  non-throwing here — the LEDGER owns the failure memory and the
+ *  run gate voices it. */
+async function forceScheduledWrites(draftId: string, stageId: string): Promise<void> {
   const key = draftId + '/' + stageId
   const row = scheduledWrites.get(key)
-  if (row === undefined || row.size === 0) return Promise.resolve()
-  const pending: Array<Promise<void>> = []
-  for (const [k, write] of row) {
+  if (row === undefined || row.size === 0) return
+  for (const [k, write] of [...row.entries()]) {
+    void k
     clearTimeout(write.timer)
     row.delete(k)
-    pending.push(patchStageParams(draftId, stageId, write.params, write.expectRev).catch(() => {}))
+    try {
+      const confirmed = writeRow(draftId, stageId).confirmedRev
+      await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev)
+    } catch { /* the ledger records; the gate voices */ }
+    for (const w of write.waiters) w()
   }
-  return Promise.all(pending).then(() => {})
 }
 
 /** Await every authoring write still in flight for the stage (the
@@ -332,6 +374,28 @@ export function resetStageWrites(): void {
     for (const write of row.values()) clearTimeout(write.timer)
   }
   scheduledWrites.clear()
+}
+
+/** Reconcile the failure memory against what the studio NOW shows
+ * (the write-seat audit's dead-end finding, 2026-10-10): a key whose
+ * write FAILED stays in failedKeys forever — but after the drill
+ * closes and REOPENS, the edit state reseeds from the HELD row, so
+ * the studio shows the field empty while the run gate still refuses
+ * naming a key nobody holds anymore (a GHOST: the cure — "retype the
+ * field" — is invisible, the refusal looks like a lie). A failed key
+ * that the held row does not carry AND the freshly seeded edit state
+ * does not carry is dead weight from a prior session of the form;
+ * the ledger drops it. A key either side still carries KEEPS its
+ * refusal — that failure is live and the gate must voice it. */
+export function reconcileStageWriteFailures(
+  draftId: string, stageId: string,
+  heldParams: Record<string, unknown>, seededParams: Record<string, unknown>,
+): void {
+  const row = writeRow(draftId, stageId)
+  for (const k of [...row.failedKeys]) {
+    if (!(k in heldParams) && !(k in seededParams)) row.failedKeys.delete(k)
+  }
+  if (row.failedKeys.size === 0) row.lastError = null
 }
 
 /** The CAS dance (the run-start face law, 2026-09-14): write with the

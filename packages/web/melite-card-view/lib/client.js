@@ -7624,9 +7624,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  ledger here, coalesced per key on a short trailing delay (a
 		*  keystroke storm is one write, not forty) — module-level state, so
 		*  a view flip cannot kill a pending write by killing its timer
-		*  owner (the 2026-09-23 burn's exact death). The run gate FORCES
-		*  every pending write before composing (flushStageWrites below), so
-		*  the engine can only ever see what the studio shows. */
+		*  owner (the 2026-09-23 burn's exact death). ONE hole, named
+		*  honestly rather than patched with a lying flush: a write inside
+		*  its trailing window dies on TAB CLOSE (the door's CAS fence
+		*  needs the write's answer; no beacon can land one) — the run
+		*  gate is the wall that catches it. The run gate FORCES every
+		*  pending write before composing (flushStageWrites below), so the
+		*  engine can only ever see what the studio shows. */
 		const SCHEDULED_TRAILING_MS = 300;
 		/** Pending trailing writes, keyed draft/stage then param key (the
 		*  coalescing unit: one write per key, the newest value wins). */
@@ -7641,50 +7645,72 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return row;
 		}
 		/** Register an authoring edit: the value rides the row on the
-		*  trailing delay, or NOW when `immediate` (discrete picks). The
-		*  promise settles when the door answered; the ledger owns the
-		*  failure memory either way. */
-		function scheduleStageParam(draftId, stageId, params, expectRev, immediate = false) {
+		*  trailing delay. The promise settles when the door ANSWERED —
+		*  also when a later edit superseded this one (the waiters ride the
+		*  newest write's fate: one key, one write, every waiter hears it)
+		*  and when the run gate forced the write out of band. The ledger
+		*  owns the failure memory either way. */
+		function scheduleStageParam(draftId, stageId, params, expectRev) {
 			const row = scheduledRow(draftId, stageId);
-			const send = (merged, rev) => patchStageParams(draftId, stageId, merged, rev);
-			if (immediate || Object.keys(params).length === 0) return send(params, expectRev);
-			let settle = null;
-			const done = new Promise((resolve) => {
-				settle = resolve;
+			if (Object.keys(params).length === 0) return Promise.resolve();
+			const send = (merged, rev) => {
+				const confirmed = writeRow(draftId, stageId).confirmedRev;
+				return patchStageParams(draftId, stageId, merged, confirmed ?? rev);
+			};
+			const remaining = { n: Object.keys(params).length };
+			return new Promise((resolve) => {
+				const settle = () => {
+					remaining.n -= 1;
+					if (remaining.n === 0) resolve();
+				};
+				for (const [k, v] of Object.entries(params)) {
+					const prev = row.get(k);
+					if (prev !== void 0) clearTimeout(prev.timer);
+					const merged = prev !== void 0 ? { ...prev.params } : {};
+					merged[k] = v;
+					const waiters = prev !== void 0 ? [...prev.waiters, settle] : [settle];
+					row.set(k, {
+						params: merged,
+						expectRev,
+						waiters,
+						timer: setTimeout(() => {
+							row.delete(k);
+							send(merged, expectRev).then(() => {
+								for (const w of waiters) w();
+							}, () => {
+								for (const w of waiters) w();
+							});
+						}, SCHEDULED_TRAILING_MS)
+					});
+				}
 			});
-			for (const [k, v] of Object.entries(params)) {
-				const prev = row.get(k);
-				if (prev !== void 0) clearTimeout(prev.timer);
-				const merged = prev !== void 0 ? { ...prev.params } : {};
-				merged[k] = v;
-				row.set(k, {
-					params: merged,
-					expectRev,
-					timer: setTimeout(() => {
-						row.delete(k);
-						send(merged, expectRev).then(() => {
-							settle?.();
-						}, () => {
-							settle?.();
-						});
-					}, SCHEDULED_TRAILING_MS)
-				});
-			}
-			return done;
 		}
 		/** Fire every pending trailing write for the stage NOW (the run
-		*  gate's first move — a press composes what the studio shows). */
-		function forceScheduledWrites(draftId, stageId) {
+		*  gate's first move — a press composes what the studio shows).
+		*  SERIALIZED, one write landing before the next leaves (the
+		*  write-seat audit's CAS-violation finding: the first cut fanned
+		*  the keys out CONCURRENTLY at one shared render-time rev, every
+		*  writer collided, each retry round eliminated exactly one, and
+		*  the rebase budget (PATCH_ATTEMPTS=3) exhausted at four-plus keys
+		*  into a SPURIOUS refusal the operator never typed). Serial and
+		*  riding confirmedRev at send time, a single-author press lands
+		*  every key with ZERO collisions; a true second author is met
+		*  with the full rebase budget per write. Settling is still
+		*  non-throwing here — the LEDGER owns the failure memory and the
+		*  run gate voices it. */
+		async function forceScheduledWrites(draftId, stageId) {
 			const key = draftId + "/" + stageId;
 			const row = scheduledWrites.get(key);
-			if (row === void 0 || row.size === 0) return Promise.resolve();
-			const pending = [];
-			for (const [k, write] of row) {
+			if (row === void 0 || row.size === 0) return;
+			for (const [k, write] of [...row.entries()]) {
 				clearTimeout(write.timer);
 				row.delete(k);
-				pending.push(patchStageParams(draftId, stageId, write.params, write.expectRev).catch(() => {}));
+				try {
+					const confirmed = writeRow(draftId, stageId).confirmedRev;
+					await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev);
+				} catch {}
+				for (const w of write.waiters) w();
 			}
-			return Promise.all(pending).then(() => {});
 		}
 		/** Await every authoring write still in flight for the stage (the
 		* run gate's flush). Never throws — the caller reads the settled
@@ -7704,6 +7730,22 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const state = await flushStageWrites(draftId, stageId);
 			if (state.failedKeys.length === 0) return null;
 			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
+		}
+		/** Reconcile the failure memory against what the studio NOW shows
+		* (the write-seat audit's dead-end finding, 2026-10-10): a key whose
+		* write FAILED stays in failedKeys forever — but after the drill
+		* closes and REOPENS, the edit state reseeds from the HELD row, so
+		* the studio shows the field empty while the run gate still refuses
+		* naming a key nobody holds anymore (a GHOST: the cure — "retype the
+		* field" — is invisible, the refusal looks like a lie). A failed key
+		* that the held row does not carry AND the freshly seeded edit state
+		* does not carry is dead weight from a prior session of the form;
+		* the ledger drops it. A key either side still carries KEEPS its
+		* refusal — that failure is live and the gate must voice it. */
+		function reconcileStageWriteFailures(draftId, stageId, heldParams, seededParams) {
+			const row = writeRow(draftId, stageId);
+			for (const k of [...row.failedKeys]) if (!(k in heldParams) && !(k in seededParams)) row.failedKeys.delete(k);
+			if (row.failedKeys.size === 0) row.lastError = null;
 		}
 		/** The CAS dance (the run-start face law, 2026-09-14): write with the
 		*  held rev; on the door's cas-conflict RE-READ the rev and re-apply
@@ -60147,6 +60189,7 @@ void main() {
 			const [enhancing, setEnhancing] = (0, react.useState)(false);
 			const [enhanceNote, setEnhanceNote] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
+			const [writeFace, setWriteFace] = (0, react.useState)(null);
 			const [loaded, setLoaded] = (0, react.useState)(false);
 			const reportSurface = onSurface ?? (() => {});
 			const [removing, setRemoving] = (0, react.useState)(false);
@@ -60181,7 +60224,9 @@ void main() {
 				fetchFormSpec(family).then((doc) => {
 					if (!alive) return;
 					setSpec(doc);
-					setUser(seedUser(doc, freshOpen ? held : userRef.current));
+					const seeded = seedUser(doc, freshOpen ? held : userRef.current);
+					setUser(seeded);
+					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded);
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
@@ -60229,7 +60274,10 @@ void main() {
 						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
 						return next;
 					});
-					scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).catch(() => {});
+					scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).then(() => {
+						const st = stageWriteState(bench.draftId, stage.id);
+						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					});
 					return;
 				}
 				setUser((m) => ({
@@ -60239,7 +60287,10 @@ void main() {
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape2 = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).catch(() => {});
+				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).then(() => {
+					const st = stageWriteState(bench.draftId, stage.id);
+					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+				});
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
@@ -60319,14 +60370,19 @@ void main() {
 					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : []);
-					setUser((m) => {
-						const next = { ...m };
-						for (const [field, r] of Object.entries(results)) {
-							if (typeof r?.positive !== "string" || r.positive === "") continue;
-							if (field === "prompt" || declared.has(field)) next[field] = r.positive;
-							if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") next["negative_prompt"] = r.negative;
-						}
-						return next;
+					const sweptPatch = {};
+					for (const [field, r] of Object.entries(results)) {
+						if (typeof r?.positive !== "string" || r.positive === "") continue;
+						if (field === "prompt" || declared.has(field)) sweptPatch[field] = r.positive;
+						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = r.negative;
+					}
+					setUser((m) => ({
+						...m,
+						...sweptPatch
+					}));
+					if (Object.keys(sweptPatch).length > 0) scheduleStageParam(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
+						const st = stageWriteState(bench.draftId, stage.id);
+						setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
 					});
 					const swept = Object.entries(results).filter(([field, r]) => typeof r?.positive === "string" && r.positive !== "" && (field === "prompt" || declared.has(field))).length;
 					if (swept === 0) setEnhanceNote({
@@ -60509,7 +60565,10 @@ void main() {
 					paintFace: PaintLeafCanvas,
 					bboxFace: BboxLeafCanvas,
 					paintReference: "input_image"
-				}) : (0, react.createElement)("pre", { className: card_module_css_default$1.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default$1.drillRunRow }, (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error)) : null),
+				}) : (0, react.createElement)("pre", { className: card_module_css_default$1.mono }, JSON.stringify(held, null, 2))), error !== null ? (0, react.createElement)("div", { className: card_module_css_default$1.drillRunRow }, (0, react.createElement)("span", { className: card_module_css_default$1.runError }, error)) : null, writeFace !== null ? (0, react.createElement)("div", { className: card_module_css_default$1.drillRunRow }, (0, react.createElement)("span", {
+					className: card_module_css_default$1.runError,
+					"data-testid": "stage-write-face"
+				}, writeFace)) : null),
 				preview: (0, react.createElement)("div", { className: card_module_css_default$1.outputs }, (0, react.createElement)("div", {
 					className: card_module_css_default$1.outputsPreview + " " + card_module_css_default$1.previewClickable,
 					"data-testid": "stage-preview-seat",
@@ -61315,6 +61374,20 @@ void main() {
 				};
 			}, [lastRunId, snapshot?.value]);
 			const [localRunError, setLocalRunError] = (0, react.useState)(null);
+			const terminalSeen = (0, react.useRef)(null);
+			(0, react.useEffect)(() => {
+				const value = snapshot?.value;
+				if (value === void 0 || value.kind === "run") return;
+				const cur = /* @__PURE__ */ new Map();
+				for (const s of value.stages) cur.set(s.id, typeof s.runStatus === "string" ? s.runStatus : "");
+				const prev = terminalSeen.current;
+				terminalSeen.current = cur;
+				if (prev === null) return;
+				for (const [id, status] of cur) if (status === "done" && prev.get(id) !== "done") {
+					setLocalRunError(null);
+					return;
+				}
+			}, [snapshot?.value]);
 			const outcomeAbort = (0, react.useRef)(null);
 			const [benchTick, setBenchTick] = (0, react.useState)(0);
 			(0, react.useEffect)(() => () => {
@@ -61724,4 +61797,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f7c222b1ae5a4b10ba0a31edde4dbe5d8eb509ea";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a7d13222b8df3609c92ec85b73c3b64e88afeb32";

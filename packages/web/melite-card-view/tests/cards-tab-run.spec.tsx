@@ -205,3 +205,70 @@ describe("the run verb — the flush-then-start law", () => {
     expect(posted.some((p) => p.method === "runs/start")).toBe(false);
   });
 });
+
+describe("the error face retires on an external success — an error is a claim, not a latch", () => {
+  // THE OPERATOR'S LAW (2026-10-10: "errors don't go away when we
+  // have a successful gen"): localRunError spoke for a start THIS
+  // tab attempted — but it was cleared only by the next verb press
+  // HERE, so a generation landing through any OTHER hand (the
+  // agent's melite_flow, another tab, a headless commission) left
+  // the refusal strip up forever over the success that had already
+  // replaced it. The face now retires the moment a stage row lands
+  // terminal-done that this tab did not watch go terminal; the
+  // derived half (a FAILED row's reason) stays honest in both
+  // directions.
+  test("a refused start's strip leaves when a generation lands done through another hand", async () => {
+    formCtl.formSpec = "ok";
+    const idle = { id: "s_0", card: "image-gen", engine: "comfyui", params: {} };
+    let benchValue: CardsBenchValue = {
+      kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [idle],
+    } as unknown as CardsBenchValue;
+    stubDoors({
+      benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [{ ...idle }] },
+      draftStages: [{ ...idle } as unknown as Record<string, unknown>],
+      draftBenchRev: 1,
+      refusals: [{ method: "runs/start", message: "card 'image-gen' refuses the state" }],
+    });
+    const props = {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: (): { status: "live", value: CardsBenchValue } => ({ status: "live", value: benchValue }),
+    };
+    const view = render(h(CardsTab, props));
+    await openFirstTile();
+    fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
+    // the refused start voices (the zoom's status seat and/or the
+    // tab's strip — multiple seats may carry it, at least one must)
+    await waitFor(() => {
+      expect(screen.getAllByText(/refuses the state/).length).toBeGreaterThan(0);
+    });
+    // THE OTHER HAND: the agent's generation lands — the resource
+    // re-emits the row terminal-done; THIS tab pressed nothing
+    benchValue = {
+      kind: "bench", draftId: "bench-p", rev: 2, log: [],
+      stages: [{
+        ...idle, runStatus: "done",
+        result: { run_id: "r_ext", url: "/v1/runs/r_ext/media/out.png" },
+      }],
+    } as unknown as CardsBenchValue;
+    view.rerender(h(CardsTab, props));
+    await waitFor(() => {
+      expect(screen.queryAllByText(/refuses the state/)).toEqual([]);
+    });
+    // the derived half stays honest: a row that is failed NOW faces
+    // its reason — retirement never muted the live truth
+    benchValue = {
+      kind: "bench", draftId: "bench-p", rev: 3, log: [],
+      stages: [{ ...idle, runStatus: "failed", result: { run_id: "r_x", error: "engine cold" } }],
+    } as unknown as CardsBenchValue;
+    view.rerender(h(CardsTab, props));
+    await waitFor(() => {
+      // both honest seats may carry it (the tab strip and the zoom's
+      // status seat) — at least one must
+      expect(screen.getAllByText("engine cold").length).toBeGreaterThan(0);
+    });
+  });
+});
