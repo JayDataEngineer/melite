@@ -1769,16 +1769,43 @@ window.__ModuleLoader__.load({
 				variants[v.id] = {
 					...v.params !== void 0 ? { params: [...v.params] } : {},
 					...v.relations !== void 0 ? { relations: v.relations } : {},
-					...v.bounds !== void 0 ? { bounds: v.bounds } : {},
+					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
 					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
 				};
 			}
 			return {
-				base: [...decl.params ?? []],
+				...decl.params !== void 0 ? { base: [...decl.params] } : {},
 				...decl.relations !== void 0 ? { relations: decl.relations } : {},
 				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
 				variants
 			};
+		}
+		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+		* "the entire point of the schema rework was so this was impossible
+		* by design"): a variant's sampler_envelope is the SAME closed
+		* interval the bench's stamp gate refuses with (envelopeRefusal) —
+		* project it into the variant's bounds rows so the form's inline
+		* gate, the run gate, and the compose door judge ONE truth. The
+		* envelope OWNS both endpoints for steps/cfg (the door is the
+		* authority; a family bound that contradicts its own variant's
+		* envelope is a DECL bug, and the door's voice wins). Before this,
+		* a family that declared only envelopes (krea-2) served bounds
+		* null — the form judged NOTHING while the door refused the write
+		* 300ms after the press. */
+		function envelopeBoundsOf(bounds, envelope) {
+			const out = { ...bounds ?? {} };
+			if (envelope === void 0) return out;
+			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
+				...out.steps ?? {},
+				min: envelope.steps[0],
+				max: envelope.steps[1]
+			};
+			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
+				...out.cfg ?? {},
+				min: envelope.cfg[0],
+				max: envelope.cfg[1]
+			};
+			return out;
 		}
 		/** THE CONTRACT MAP for a card's declared families: family id → its
 		*  lane contract. Families that declare no params and no laws are
@@ -1790,7 +1817,7 @@ window.__ModuleLoader__.load({
 				const decl = declOf(id);
 				if (decl === void 0) continue;
 				const contract = laneContractOf(decl);
-				if (contract.base.length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
 				out[id] = contract;
 			}
 			return out;
@@ -56985,4 +57012,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d73656994d0fb6aee9f4e519c2d1bf6a037ae76b";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d9e289dcf306e0ed70708c925b65df1faa371dc1";

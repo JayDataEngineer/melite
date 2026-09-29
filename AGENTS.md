@@ -130,3 +130,20 @@ Python, gateway, C, and old ComfyUI seam material may remain as history only
 when clearly labeled. Update the owning declaration, current documentation,
 tests, and the relevant recorded-session snapshot together. Never commit
 credentials or machine secrets.
+
+# LAWS
+
+## 1: CONFORM
+
+Conformance to DSH Cordis. If you look in refernces, you will see our north star. The 
+golden path. The deep seek harness base. In this the are code patterns,
+docs and cookbooks you MUST conform to.
+
+## 2: DOCUMENTATION
+
+The key to manage continuously compacting context is to document
+
+a) ROADMAP.md - roadmap of features that need to be added
+b) docs/lessons/**.md: A list of lessons, usually mistakes that prevent the same mistakes repeated.
+	- When you notice that you have done a big error, or have made an expensive mistake,
+	you must MATICULOUSLY document them there as to prevent their reccurance.

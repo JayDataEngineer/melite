@@ -389,14 +389,20 @@ else
 fi
 
 # 1b. THE DECLARED LANE LAW RIDES THE LANE (the DECL audit's gap 1
-# closing in production: a bench write that the image-edit families
-# now refuse must refuse HERE, through the same door the agent
-# crosses — a card whose new relation rows did not reach the lane
-# would otherwise ship green)
+# closing in production). NOTE THE LAW MOVED (li-bs, the authoring
+# contract): the WRITE door now ADMITS an unstated required word —
+# an unfinished card is addable; the RUN seat is the strict door
+# (pinned in estate-queue's cards-lane-law.spec: a prompt-less edit
+# admits at admitStageRelations and refuses at phase1Card). The
+# write-time refusal that still proves the DECL rows are LIVE is
+# the RANGE rule (the width burn law): a stated width below the
+# family's declared floor refuses HERE, through the same door the
+# agent crosses — a lane whose relation rows did not reach it would
+# admit the burn and ship green.
 code=$(post "/v1/bench/main/add_stage" \
-  "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"image1\":\"x.png\"},\"expect_rev\":$rev}")
-if [ "$code" = "400" ] && grep -qE "prompt|input_images|image1" /tmp/ship-probe.json; then
-  ok "the declared edit lane refuses a prompt-less edit (the DECL rows are live)"
+  "{\"card\":\"image-edit\",\"params\":{\"model\":\"qwen-img-edit-21\",\"prompt\":\"make it night\",\"image1\":\"x.png\",\"width\":-50,\"height\":1024},\"expect_rev\":$rev}")
+if [ "$code" = "400" ] && grep -q "outside this lane's range" /tmp/ship-probe.json; then
+  ok "the declared edit lane refuses an out-of-range width at write time (the DECL rows are live)"
 else
   bad "the edit lane's DECL rows did not fire (HTTP $code) — the lane is running an OLD build or the rows never reached it"
   exit 1
