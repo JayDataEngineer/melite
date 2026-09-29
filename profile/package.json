@@ -2,7 +2,7 @@
   "name": "dsh-profile-melite-test",
   "private": true,
   "dependencies": {
-    "@deepseek-ai/dsh-experimental-agent-team-profile": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-experimental-agent-team-profile": "0.2.0-rc.2",
     "@melite-plugin/dsh-card-deck": "link:/home/user/Documents/programs/active/inference.cpp/packages/web/melite-card-deck",
     "@melite-plugin/dsh-card-view": "link:/home/user/Documents/programs/active/inference.cpp/packages/web/melite-card-view",
     "@melite-plugin/dsh-estate": "link:/home/user/Documents/programs/active/inference.cpp/packages/web/melite-estate",
