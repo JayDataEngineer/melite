@@ -180,3 +180,4 @@ gateway.lock
 # tracked artifact — a tracked stamp would be a stamp nobody can falsify)
 packages/*/lib/.src-stamp
 packages/*/*/lib/.src-stamp
+.tsconfig.test.json
