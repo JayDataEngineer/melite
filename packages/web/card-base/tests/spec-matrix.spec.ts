@@ -39,6 +39,10 @@ const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantR
   group,
   defaults: {},
   route: 'krea-2',
+  // A Quant row's coordinate is its quant — the STAMPER IS TOTAL
+  // (2026-09-29): a row without it refuses at the stamp, so every
+  // fixture Quant row declares its coordinate explicitly.
+  ...(group === 'Quant' ? { quant: extra.quant ?? id } : {}),
   ...extra,
 })
 

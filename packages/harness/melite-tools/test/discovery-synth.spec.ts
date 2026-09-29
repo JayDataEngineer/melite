@@ -205,7 +205,6 @@ describe('specBody primary envelope', () => {
             engine: 'variant-engine',
             resolver_defaults: { steps: 10 },
             cells: [
-              { quant: '', label: 'Empty', route: 'syn-a' },
               { quant: 'q-hide', label: 'Hidden', route: 'syn-a', hide_from_dropdown: true },
               { quant: 'q-noroute', label: 'NoRoute' },
               { quant: 'int8', label: 'INT8', route: 'syn-a', engine: 'cell-eng', vram_peak_gb: 20, resolver_defaults: { b: 2 } },
@@ -275,8 +274,7 @@ describe('specBody primary envelope', () => {
     return { defs, res: { card: 'syn-card', service: 'syn-b', model: 'syn-a' } }
   }
 
-  test('variants filter, dedupe, and label every cell', () => {
-    const { defs, res } = mega()
+  test('variants filter, dedupe, and label every cell', () => {    const { defs, res } = mega()
     const spec = specBody(mockState.svc as ComfyUIService, defs, res) as Record<string, unknown>
     assert.equal(spec['engine'], 'custom-engine')
     // THE BASE LAYER INPUT: the family row's own defaults (the schema
@@ -324,6 +322,27 @@ describe('specBody primary envelope', () => {
       vram_peak_gb: null,
       owner: '',
     })
+  })
+
+  test('THE BIRTH WALL (2026-09-29, the second live break): a quantless cell REFUSES the spec — never silently skips', () => {
+    // The DECL validator refuses it upstream (service.ts: "a cell
+    // needs a quant"); if one ever reaches the expander — a bypassed
+    // validator, a foreign DECL — the spec REFUSES AT BIRTH. The old
+    // silent skip was the fallback that hid the construction hole:
+    // a Quant row without its coordinate would stamp its catalog
+    // address where the door reads the value ('raw__int8').
+    const { defs, res } = mega()
+    mockState.decls = {
+      'syn-a': decl({
+        variants: [
+          { id: 'v', group: 'Variant', cells: [{ quant: '', label: 'Empty', route: 'syn-a' }] },
+        ],
+      }),
+    }
+    assert.throws(
+      () => specBody(mockState.svc as ComfyUIService, defs, res),
+      /\/v: a cell needs a quant \(refused at the spec's birth/,
+    )
   })
 
   test('modifiers scope packs, absorb fields, and tooltip options', () => {

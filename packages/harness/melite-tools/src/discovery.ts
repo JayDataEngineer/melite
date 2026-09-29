@@ -203,7 +203,18 @@ function specVariants(
     rows.push(variantRow(v, declEngine))
     seen.add(v.id)
     for (const c of v.cells ?? []) {
-      if (!c.quant || c.hide_from_dropdown === true) continue
+      if (c.hide_from_dropdown === true) continue
+      if (!c.quant) {
+        // THE BIRTH WALL (2026-09-29, the second live break): a
+        // Quant cell without its quant coordinate is an ILLEGAL ROW.
+        // The DECL validator refuses it upstream; if one ever
+        // reaches here the expander REFUSES LOUD — never silently
+        // skips (a skipped cell is a hidden vocabulary hole, and a
+        // stamped composite id is the live break the door caught).
+        throw new Error(
+          `${decl.id}/${v.id}: a cell needs a quant (refused at the spec's birth — an axis row without its coordinate must never serve)`,
+        )
+      }
       if (!c.route) continue
       if (c.route !== key && c.route !== service && !primary) continue
       const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant

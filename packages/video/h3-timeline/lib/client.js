@@ -2858,7 +2858,9 @@ window.__ModuleLoader__.load({
 		*  Variant, the cell quant for Quant. Never the flat-catalog id.
 		* PURE. */
 		function axisStampOf(row) {
-			return row.group === "Quant" && typeof row.quant === "string" && row.quant !== "" ? row.quant : row.id;
+			if (row.group !== "Quant") return row.id;
+			if (typeof row.quant === "string" && row.quant !== "") return row.quant;
+			throw new Error("illegal Quant row " + JSON.stringify(row.id) + " (owner " + JSON.stringify(row.owner ?? "") + "): no quant coordinate — the row is refused at the stamp; the spec server must refuse it at birth");
 		}
 		/** The durable param key an axis rides (the group's id, lowercased —
 		*  'variant', 'quant', 'recipe', 'precision'). */
@@ -2942,27 +2944,33 @@ window.__ModuleLoader__.load({
 			const heldModel = doc["model"];
 			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
 			const out = [];
-			const variantRows = (spec.variants ?? []).filter((r) => r.group === "Variant");
+			const all = spec.variants ?? [];
+			const configured = all.filter((r) => r.group !== "Recipe" && r.group !== "Quant");
+			const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== "Quant");
 			const rawVariant = doc["variant"];
+			let offered;
 			if (typeof rawVariant === "string" && rawVariant !== "") {
-				const offered = variantRows.find((r) => r.id === rawVariant);
-				if (offered === void 0) out.push({ message: "card_compose: unknown variant " + JSON.stringify(rawVariant) + " for model " + JSON.stringify(spec.model ?? "") + " (known: " + variantRows.map((r) => r.id).join(", ") + ")" });
-				else {
-					const rawQuant = doc["quant"];
-					if (typeof rawQuant === "string" && rawQuant !== "") {
-						const cells = (spec.variants ?? []).filter((r) => r.group === "Quant" && r.owner === offered.id);
-						if (!cells.some((c) => c.quant === rawQuant)) out.push({ message: "card_compose: unknown quant " + JSON.stringify(rawQuant) + " for model " + JSON.stringify(spec.model ?? "") + " variant " + JSON.stringify(offered.id) + " (known: " + cells.map((c) => c.quant).join(", ") + ")" });
-					}
-					const env = offered.sampler_envelope ?? null;
-					if (env !== null) for (const knob of ["steps", "cfg"]) {
-						const bound = env[knob];
-						if (bound === void 0) continue;
-						const stated = doc[knob];
-						if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
-						const [lo, hi] = bound;
-						if (stated >= lo && stated <= hi) continue;
-						out.push({ message: "card_compose: stated " + knob + " " + String(stated) + " is OUTSIDE the route envelope for variant " + JSON.stringify(offered.id) + (offered.route !== "" ? " (route " + offered.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." });
-					}
+				offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant);
+				if (offered === void 0) {
+					out.push({ message: "card_compose: unknown variant " + JSON.stringify(rawVariant) + " for model " + JSON.stringify(spec.model ?? "") + " (known: " + pool.map((r) => r.id).join(", ") + ")" });
+					return out;
+				}
+			} else offered = pool[0];
+			if (offered !== void 0) {
+				const rawQuant = doc["quant"];
+				if (typeof rawQuant === "string" && rawQuant !== "") {
+					const cells = all.filter((r) => r.group === "Quant" && r.owner === offered.id);
+					if (!cells.some((c) => c.quant === rawQuant)) out.push({ message: "card_compose: unknown quant " + JSON.stringify(rawQuant) + " for model " + JSON.stringify(spec.model ?? "") + " variant " + JSON.stringify(offered.id) + " (known: " + cells.map((c) => c.quant).join(", ") + ")" });
+				}
+				const env = offered.sampler_envelope ?? null;
+				if (env !== null) for (const knob of ["steps", "cfg"]) {
+					const bound = env[knob];
+					if (bound === void 0) continue;
+					const stated = doc[knob];
+					if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
+					const [lo, hi] = bound;
+					if (stated >= lo && stated <= hi) continue;
+					out.push({ message: "card_compose: stated " + knob + " " + String(stated) + " is OUTSIDE the route envelope for variant " + JSON.stringify(offered.id) + (offered.route !== "" ? " (route " + offered.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." });
 				}
 			}
 			return out;
@@ -42419,6 +42427,7 @@ void main() {
 				...user,
 				model: family ?? ""
 			}, base);
+			const gateViolations = composeValidate(spec, user);
 			const groups = groupFields(groupFieldsAll, {
 				...value,
 				model: family ?? ""
@@ -42493,7 +42502,11 @@ void main() {
 					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 				})) : null));
 			};
-			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, (0, react.createElement)(PackPrompt, {
+			return (0, react.createElement)("div", { className: card_module_css_default.specForm }, gateViolations.length > 0 ? (0, react.createElement)("div", {
+				className: card_module_css_default.laneWarn,
+				"data-compose-gate": String(gateViolations.length),
+				role: "alert"
+			}, (0, react.createElement)("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), gateViolations.map((v, i) => (0, react.createElement)("p", { key: "gate-" + String(i) }, v.message))) : null, (0, react.createElement)(PackPrompt, {
 				spec,
 				onInstallPack
 			}), (0, react.createElement)(ModelAxes, {
@@ -53172,4 +53185,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="2e23ed4a94117d56d3c428d271ce81db120d2a20";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8b8d904acdbefc9bca9447690f92058898575651";

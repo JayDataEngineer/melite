@@ -1246,8 +1246,21 @@ export function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string
  *  Variant, the cell quant for Quant. Never the flat-catalog id.
  * PURE. */
 export function axisStampOf(row: VariantRow): string {
-  return row.group === 'Quant' && typeof row.quant === 'string' && row.quant !== ''
-    ? row.quant : row.id
+  if (row.group !== 'Quant') return row.id
+  if (typeof row.quant === 'string' && row.quant !== '') return row.quant
+  // NO FALLBACK (2026-09-29, the second live break): the old
+  // `?? row.id` arm was the second vocabulary's doorway — it
+  // legalized stamping the catalog's composite address ('raw__int8')
+  // where the door's contract speaks the cell coordinate ('int8').
+  // A Quant row without its coordinate is an ILLEGAL ROW: discovery
+  // refuses it at birth, and if a hole ever reopens the stamper
+  // REFUSES LOUD here rather than construct a contract the door
+  // would refuse a millisecond later.
+  throw new Error(
+    'illegal Quant row ' + JSON.stringify(row.id)
+    + ' (owner ' + JSON.stringify(row.owner ?? '') + '): no quant coordinate —'
+    + ' the row is refused at the stamp; the spec server must refuse it at birth',
+  )
 }
 
 /** The durable param key an axis rides (the group's id, lowercased —
@@ -1456,11 +1469,14 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
 //     envelopeRefusal, the exact break that fired the operator's
 //     live incident ('stated cfg 3.5 is OUTSIDE the route envelope
 //     for variant "turbo" — the declared envelope is [1, 2]').
-//   The door's own skips mirror verbatim: an unstated variant is
-//   resolved by the door (never refused here); a non-numeric stated
-//   knob is skipped (the door's own typeof guard); a variant with no
-//   envelope declares nothing; a doc whose model points at another
-//   family is judged by THAT family's spec, not this one.
+//   The door's own skips mirror verbatim: an unstated variant
+//   RESOLVES to the door's pool[0] (never skipped — the second live
+//   break: the gate once skipped the quant clause on unstated
+//   variants while the door judged against pool[0], and a poisoned
+//   quant sailed through); a non-numeric stated knob is skipped
+//   (the door's own typeof guard); a variant with no envelope
+//   declares nothing; a doc whose model points at another family is
+//   judged by THAT family's spec, not this one.
 
 export interface ComposeViolation {
   /** the door's own voice — the same message the estate would send,
@@ -1481,51 +1497,76 @@ export function composeValidate(
     return []
   }
   const out: ComposeViolation[] = []
-  const variantRows = (spec.variants ?? []).filter((r) => r.group === 'Variant')
+  const all = spec.variants ?? []
+  // THE DOOR'S POOL, mirrored (selectVariant): offered non-Recipe
+  // rows — the served list mixes the discovery-expanded Quant CELLS
+  // into the same array, and the door's facts row never sees those;
+  // an all-Recipe family falls back to the whole offered list (the
+  // door's own configured.length gate).
+  const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant')
+  const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant')
   const rawVariant = doc['variant']
+  let offered: VariantRow | undefined
   if (typeof rawVariant === 'string' && rawVariant !== '') {
-    const offered = variantRows.find((r) => r.id === rawVariant)
+    // the door matches id OR route (selectVariant: v.id === x ||
+    // v.route === x) — a route-spelled variant is LEGAL at the door
+    // and must be legal here.
+    offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant)
     if (offered === undefined) {
       out.push({
         message: 'card_compose: unknown variant ' + JSON.stringify(rawVariant)
           + ' for model ' + JSON.stringify(spec.model ?? '')
-          + ' (known: ' + variantRows.map((r) => r.id).join(', ') + ')',
+          + ' (known: ' + pool.map((r) => r.id).join(', ') + ')',
       })
-    } else {
-      // clause 2 — the stated quant must be a cell of THIS variant
-      const rawQuant = doc['quant']
-      if (typeof rawQuant === 'string' && rawQuant !== '') {
-        const cells = (spec.variants ?? []).filter(
-          (r) => r.group === 'Quant' && r.owner === offered.id,
-        )
-        if (!cells.some((c) => c.quant === rawQuant)) {
-          out.push({
-            message: 'card_compose: unknown quant ' + JSON.stringify(rawQuant)
-              + ' for model ' + JSON.stringify(spec.model ?? '') + ' variant ' + JSON.stringify(offered.id)
-              + ' (known: ' + cells.map((c) => c.quant).join(', ') + ')',
-          })
-        }
+      return out
+    }
+  } else {
+    // THE DOOR'S DEFAULT (selectVariant: variant = pool[0]) — the
+    // second live break (2026-09-29, 'unknown quant "raw__int8"'):
+    // the gate SKIPPED the quant clause when variant was unstated,
+    // while the door resolves pool[0] and REFUSES the quant against
+    // it. An unstated variant is never a skip — it is a resolution,
+    // exactly the door's.
+    offered = pool[0]
+  }
+  if (offered !== undefined) {
+    // clause 2 — the stated quant must be a cell of THIS variant
+    const rawQuant = doc['quant']
+    if (typeof rawQuant === 'string' && rawQuant !== '') {
+      const cells = all.filter(
+        (r) => r.group === 'Quant' && r.owner === offered.id,
+      )
+      if (!cells.some((c) => c.quant === rawQuant)) {
+        out.push({
+          message: 'card_compose: unknown quant ' + JSON.stringify(rawQuant)
+            + ' for model ' + JSON.stringify(spec.model ?? '') + ' variant ' + JSON.stringify(offered.id)
+            + ' (known: ' + cells.map((c) => c.quant).join(', ') + ')',
+        })
       }
-      // clause 3 — the envelope, against the STATED variant (never
-      // the still-held one: the half-switch's whole failure was the
-      // door judging raw's cfg against turbo's envelope)
-      const env = offered.sampler_envelope ?? null
-      if (env !== null) {
-        for (const knob of ['steps', 'cfg'] as const) {
-          const bound = env[knob]
-          if (bound === undefined) continue
-          const stated = doc[knob]
-          if (typeof stated !== 'number' || !Number.isFinite(stated)) continue
-          const [lo, hi] = bound
-          if (stated >= lo && stated <= hi) continue
-          out.push({
-            message: 'card_compose: stated ' + knob + ' ' + String(stated)
-              + ' is OUTSIDE the route envelope for variant ' + JSON.stringify(offered.id)
-              + (offered.route !== '' ? ' (route ' + offered.route + ')' : '')
-              + ' — the declared envelope is [' + String(lo) + ', ' + String(hi) + ']'
-              + '. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.',
-          })
-        }
+    }
+    // clause 3 — the envelope, against the RESOLVED variant (the
+    // stated one, else the door's pool[0] — never the still-held
+    // one: the half-switch's whole failure was the door judging
+    // raw's cfg against turbo's envelope). The door judges the RAW
+    // body BEFORE the overlay stamps (stampCardOverlay calls
+    // envelopeRefusal first) — so only EXPLICIT numeric knobs count,
+    // never composed defaults.
+    const env = offered.sampler_envelope ?? null
+    if (env !== null) {
+      for (const knob of ['steps', 'cfg'] as const) {
+        const bound = env[knob]
+        if (bound === undefined) continue
+        const stated = doc[knob]
+        if (typeof stated !== 'number' || !Number.isFinite(stated)) continue
+        const [lo, hi] = bound
+        if (stated >= lo && stated <= hi) continue
+        out.push({
+          message: 'card_compose: stated ' + knob + ' ' + String(stated)
+            + ' is OUTSIDE the route envelope for variant ' + JSON.stringify(offered.id)
+            + (offered.route !== '' ? ' (route ' + offered.route + ')' : '')
+            + ' — the declared envelope is [' + String(lo) + ', ' + String(hi) + ']'
+            + '. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.',
+        })
       }
     }
   }

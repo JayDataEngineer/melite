@@ -22,6 +22,26 @@ const spec: FormSpecDoc = {
   ],
 }
 
+/** THE SERVED SHAPE VERBATIM (the second live break, 2026-09-29):
+ *  the discovery expander de-dupes shared quants by MUTILATING the
+ *  row address — two variants both declaring int8 serve TWO Quant
+ *  rows, ids 'int8' and 'raw__int8', SAME quant coordinate 'int8',
+ *  owners turbo/raw. The id is an address; the quant is the value.
+ *  Any writer that stamps the address where the door reads the
+ *  value constructs an impossible contract — and the gate (not the
+ *  door) must be the one that says so. */
+const servedSpec: FormSpecDoc = {
+  form: 'image-gen', model: 'krea-2',
+  variants: [
+    { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
+      sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw', steps: 52, cfg: 3.5 }, route: 'krea-2-raw',
+      sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+    { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+    { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+  ],
+}
+
 describe('THE MIRROR LAW: clause 3 — the envelope (the operator\'s live break)', () => {
   test('the exact incident: cfg 3.5 stated against turbo [1,2] refuses with the door\'s own voice', () => {
     const v = composeValidate(spec, { variant: 'turbo', cfg: 3.5 })
@@ -45,9 +65,21 @@ describe('THE MIRROR LAW: clause 3 — the envelope (the operator\'s live break)
     expect(composeValidate(spec, { variant: 'turbo', steps: 4, cfg: 2 })).toEqual([])
   })
 
-  test('the door\'s own skips mirror verbatim: non-numeric stated knobs and absent variants never refuse', () => {
+  test('the door\'s own skips mirror verbatim: non-numeric stated knobs never refuse', () => {
     expect(composeValidate(spec, { variant: 'turbo', cfg: 'huge' })).toEqual([])
-    expect(composeValidate(spec, { cfg: 3.5 })).toEqual([])
+  })
+
+  test('THE SECOND LIVE BREAK: an UNSTATED variant resolves to the door\'s pool[0] — the doc is judged, never skipped', () => {
+    // the door (selectVariant): rawVariant null → variant = pool[0]
+    // (turbo) → envelopeRefusal judges stated cfg against [1,2].
+    // The gate once SKIPPED every clause when variant was unstated —
+    // that skip is what let the poisoned quant sail to the door.
+    const v = composeValidate(spec, { cfg: 3.5 })
+    expect(v).toHaveLength(1)
+    expect(v[0]!.message).toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
+    // and the clean half: a doc the door's default ADMITS (turbo's
+    // own marriage) passes with no variant stated
+    expect(composeValidate(spec, { cfg: 1.5, steps: 6 })).toEqual([])
   })
 
   test('a variant with no envelope declares nothing (opt-in per route)', () => {
@@ -87,6 +119,38 @@ describe('THE MIRROR LAW: the scope skips (this spec judges its own family\'s do
   })
   test('a null spec judges nothing (the carrier that cannot serialize)', () => {
     expect(composeValidate(null, { variant: 'turbo', cfg: 3.5 })).toEqual([])
+  })
+})
+
+describe('THE SECOND LIVE BREAK (2026-09-29): the poisoned quant, the served shape, the door\'s resolution', () => {
+  test('THE INCIDENT VERBATIM: quant "raw__int8" with variant UNSTATED refuses at the gate, not the door', () => {
+    // the exact doc the operator's tab wrote: the catalog's
+    // composite ADDRESS stamped where the door reads the cell VALUE.
+    // The door resolved pool[0]=turbo and refused '(known: int8)';
+    // the gate must refuse FIRST, with the same voice.
+    const v = composeValidate(servedSpec, { quant: 'raw__int8' })
+    expect(v).toHaveLength(1)
+    expect(v[0]!.message).toBe(
+      'card_compose: unknown quant "raw__int8" for model "krea-2" variant "turbo" (known: int8)',
+    )
+  })
+
+  test('the same poison with the variant STATED refuses against THAT variant', () => {
+    const v = composeValidate(servedSpec, { variant: 'raw', quant: 'raw__int8' })
+    expect(v).toHaveLength(1)
+    expect(v[0]!.message).toBe(
+      'card_compose: unknown quant "raw__int8" for model "krea-2" variant "raw" (known: int8)',
+    )
+  })
+
+  test('the VALUE spelling passes on both rows — one coordinate, one truth', () => {
+    expect(composeValidate(servedSpec, { variant: 'turbo', quant: 'int8' })).toEqual([])
+    expect(composeValidate(servedSpec, { variant: 'raw', quant: 'int8' })).toEqual([])
+  })
+
+  test('a route-spelled variant is LEGAL (the door matches id OR route — selectVariant\'s own find)', () => {
+    expect(composeValidate(servedSpec, { variant: 'krea-2-raw', quant: 'int8', steps: 52, cfg: 3.5 })).toEqual([])
+    expect(composeValidate(servedSpec, { variant: 'krea-2', steps: 9 })).toHaveLength(1)
   })
 })
 

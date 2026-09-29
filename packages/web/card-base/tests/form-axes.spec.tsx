@@ -19,6 +19,10 @@ const V = (id: string, group: string, extra: Partial<VariantRow> = {}): VariantR
   group,
   defaults: {},
   route: 'krea-2',
+  // A Quant row's coordinate is its quant — the STAMPER IS TOTAL
+  // (2026-09-29): an illegal row without it refuses at the stamp,
+  // so every fixture Quant row declares its coordinate explicitly.
+  ...(group === 'Quant' ? { quant: extra.quant ?? id } : {}),
   ...extra,
 }) as VariantRow
 
@@ -607,4 +611,22 @@ test('THE VOCABULARY LAW\'S DISPLAY: a held door-stamp (quant int8) grounds to i
   expect(quant.dataset['refused'], 'never rendered refused').toBeUndefined()
   const variant = screen.getByLabelText('Variant') as HTMLSelectElement
   expect(variant.value).toBe('raw')
+})
+
+// ── THE STAMPER IS TOTAL (2026-09-29, the second live break: the
+//    old `?? row.id` fallback was the second vocabulary's doorway —
+//    it legalized stamping the composite ADDRESS 'raw__int8' where
+//    the door reads the cell VALUE 'int8'). A Quant row without its
+//    coordinate is an ILLEGAL ROW: discovery refuses it at birth,
+//    and the stamper REFUSES rather than construct what the door
+//    would refuse a millisecond later. ──────────────────────────
+test('THE STAMPER IS TOTAL: an illegal Quant row (no coordinate) THROWS at the stamp — no id fallback exists', async () => {
+  const { axisStampOf } = await import('../src/spec.ts')
+  const illegal = { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', owner: 'raw' } as unknown as VariantRow
+  expect(() => axisStampOf(illegal)).toThrow(/illegal Quant row "raw__int8".*no quant coordinate/)
+  // the two legal spellings of the served shape BOTH stamp the value
+  expect(axisStampOf({ id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' } as unknown as VariantRow)).toBe('int8')
+  expect(axisStampOf({ id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' } as unknown as VariantRow)).toBe('int8')
+  // non-Quant rows keep the id — the address IS the value there
+  expect(axisStampOf({ id: 'raw', label: 'Raw', group: 'Variant', defaults: {}, route: 'krea-2-raw' } as unknown as VariantRow)).toBe('raw')
 })

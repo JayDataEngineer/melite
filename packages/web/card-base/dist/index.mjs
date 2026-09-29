@@ -1,8 +1,11 @@
 import { createRequire } from "node:module";
-import { Button, DisclosureRow, IconArchiveOutline20, IconPlusOutline16, Input, Menu, Modal, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
+import { extraOf } from "@melite/contracts/extraKeys";
+import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf } from "@melite/contracts/laneRelations";
+import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Fragment as Fragment$1, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { mediaVocab } from "@melite/contracts/mediaKinds";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
@@ -210,10 +213,10 @@ function projectDict(env, dict, family) {
 			if (a !== void 0 && b !== void 0 && (nullConst(a) && b.type !== "const" || nullConst(b) && a.type !== "const")) node = nullConst(a) ? b : a;
 		}
 		const meta = node.meta ?? {};
-		const extra = typeof meta["extra"] === "object" && meta["extra"] !== null && !Array.isArray(meta["extra"]) ? meta["extra"] : {};
-		const families = Array.isArray(extra["families"]) ? extra["families"] : null;
+		const extra = extraOf(node);
+		const families = Array.isArray(extra.families) ? extra.families : null;
 		if (families !== null && family !== void 0 && !families.includes(family)) continue;
-		if (extra["hidden"] === true) continue;
+		if (extra.hidden === true) continue;
 		let options;
 		if (node.type === "union" && Array.isArray(node.list)) {
 			const opts = [];
@@ -231,11 +234,11 @@ function projectDict(env, dict, family) {
 			}
 			if (opts.length > 0) options = opts;
 		}
-		if (Array.isArray(extra["options"])) options = extra["options"].map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
+		if (Array.isArray(extra.options)) options = extra.options.map((o) => typeof o === "string" ? o : typeof o === "object" && o !== null && "value" in o && "label" in o ? {
 			value: String(o["value"]),
 			label: String(o["label"])
 		} : String(o));
-		const hint = typeof extra["wtype"] === "string" ? extra["wtype"] : "";
+		const hint = typeof extra.wtype === "string" ? extra.wtype : "";
 		let type;
 		if (hint !== "") type = hint;
 		else if (options !== void 0 && node.type === "union") type = "select";
@@ -245,11 +248,16 @@ function projectDict(env, dict, family) {
 		else if (node.type === "array") type = "loras";
 		else type = node.type ?? "string";
 		const num = (k) => typeof meta[k] === "number" ? meta[k] : void 0;
-		const str = (k) => typeof extra[k] === "string" ? extra[k] : typeof meta[k] === "string" ? meta[k] : void 0;
+		const str = (k, m) => {
+			const b = extra[k];
+			if (typeof b === "string") return b;
+			const mk = m ?? k;
+			return typeof meta[mk] === "string" ? meta[mk] : void 0;
+		};
 		out.push({
 			name,
 			label: typeof meta["description"] === "string" && meta["description"] !== "" ? meta["description"] : name,
-			order: typeof extra["order"] === "number" ? extra["order"] : void 0,
+			order: typeof extra.order === "number" ? extra.order : void 0,
 			type,
 			default: meta["default"] === void 0 ? void 0 : meta["default"],
 			min: num("min"),
@@ -258,13 +266,13 @@ function projectDict(env, dict, family) {
 			options,
 			group: str("group") ?? "",
 			zone: str("zone"),
-			required: extra["required"] === true || meta["required"] === true,
+			required: extra.required === true || meta["required"] === true,
 			placeholder: str("placeholder"),
 			tooltip: str("tooltip"),
 			visible_when: str("visible_when"),
-			columns: typeof extra["columns"] === "number" ? extra["columns"] : void 0,
-			width: typeof extra["width"] === "number" ? extra["width"] : void 0,
-			max_stack: typeof extra["max_stack"] === "number" ? extra["max_stack"] : void 0,
+			columns: typeof extra.columns === "number" ? extra.columns : void 0,
+			width: typeof extra.width === "number" ? extra.width : void 0,
+			max_stack: typeof extra.max_stack === "number" ? extra.max_stack : void 0,
 			media: str("media")
 		});
 	}
@@ -379,12 +387,118 @@ function fieldVisible(f, values) {
 	const rule = f.visible_when;
 	if (typeof rule !== "string" || rule === "") return true;
 	for (const guard of rule.split("&")) {
-		const eq = guard.indexOf("=");
-		if (eq < 0) continue;
-		const key = guard.slice(0, eq);
-		if (!guard.slice(eq + 1).split("|").includes(String(values[key] ?? ""))) return false;
+		const g = guard.trim();
+		const ne = g.indexOf("!=");
+		const eq = ne >= 0 ? -1 : g.indexOf("=");
+		let key;
+		let wants;
+		let negate = false;
+		if (ne >= 0) {
+			key = g.slice(0, ne).trim();
+			wants = g.slice(ne + 2).split("|").map((w) => w.trim());
+			negate = true;
+		} else if (eq >= 0) {
+			key = g.slice(0, eq).trim();
+			wants = g.slice(eq + 1).split("|").map((w) => w.trim());
+		} else continue;
+		if (key === "") continue;
+		const val = String(values[key] ?? "");
+		const hit = wants.some((w) => w === "null" ? val === "" : w === val);
+		if (negate === hit) return false;
 	}
 	return true;
+}
+/** The resolved lane surface for the current variant, or null when
+*  the family declares none (the legacy truth — visibility falls
+*  back to visible_when). `variantId` is the RESOLVED variant
+*  value (values.variant); an unknown id inherits the family base
+*  verbatim (a Quant-only or unset axis). */
+function laneSurfaceFor(spec, variantId) {
+	const lanes = spec.lanes;
+	if (lanes === void 0) return null;
+	const extra = variantId === null ? void 0 : lanes.variants?.[variantId]?.params;
+	return laneSurfaceOf(lanes.base, extra);
+}
+/** The relation words that judge the resolved lane: the family's
+*  own + the variant's own (both layers fire — the DECL cascade). */
+function laneRelationsFor(spec, variantId) {
+	const lanes = spec.lanes;
+	if (lanes === void 0) return [];
+	const out = [];
+	if (lanes.relations !== void 0) out.push(lanes.relations);
+	const v = variantId === null ? void 0 : lanes.variants?.[variantId]?.relations;
+	if (v !== void 0) out.push(v);
+	return out;
+}
+/** The numeric bounds that judge the resolved lane: family rows,
+*  per-field replaced by the variant's own (the DECL cascade's
+*  replace-law for numbers). */
+function laneBoundsFor(spec, variantId) {
+	const lanes = spec.lanes;
+	if (lanes === void 0) return null;
+	return laneBoundsOf(lanes.bounds ?? null, variantId === null ? void 0 : lanes.variants?.[variantId]?.bounds ?? null);
+}
+/** Field visibility UNDER the lane contract: a declared surface
+*  hides every field it does not name (the declaration is the
+*  author — the field set IS the variant); a family that declares
+*  no surface keeps the visible_when grammar. */
+function fieldOnLane(spec, paramName, values) {
+	const surface = laneSurfaceFor(spec, typeof values["variant"] === "string" && values["variant"] !== "" ? values["variant"] : null);
+	if (surface === null) return true;
+	return surface.includes(paramName);
+}
+/** THE INLINE GATE: the lane's relation + surface violations over
+*  what the state CARRIES — rendered under the named field while the
+*  user types, refused by the bench door when the state is saved.
+*  Empty = a state the run accepts.
+*
+*  THE CARRIED LAYERS, NOT THE RESOLVED MAP (2026-10-10, the
+*  form-plane audit's CRITICAL-1): the resolved `values` map
+*  materializes schema defaults and model_defaults as own
+*  properties, so a defaulted field reads as STATED whether the user
+*  ever touched it. On a lane that excludes a defaulted field that
+*  produced a perpetual, UNCURABLE warning: the row was hidden
+*  (fieldOnLane) so the cure ("drop it") was unclickable, and
+*  unsetting it re-materialized the default. The bench judges the
+*  PREPARED body — the operator's own params plus the stamps that
+*  survive the null-skip — so the form judges the same thing: the
+*  user layer over the base layer, non-null keys only. A schema
+*  default is a PREFILL the operator never sent, and a variant's
+*  `voice: null` stamp is exactly how the bench says "no persona on
+*  this lane". */
+function laneViolations(spec, fields, user, base) {
+	const carried = (key) => Object.prototype.hasOwnProperty.call(user, key) ? user[key] : (base ?? {})[key];
+	const rawVariant = carried("variant");
+	if (rawVariant !== void 0 && rawVariant !== null) {
+		if (typeof rawVariant !== "string" || rawVariant === "" || !laneVariantServed(spec, rawVariant)) return [];
+	}
+	const variantId = typeof rawVariant === "string" && rawVariant !== "" ? rawVariant : null;
+	const surface = laneSurfaceFor(spec, variantId);
+	const relations = laneRelationsFor(spec, variantId);
+	if (surface === null && relations.length === 0) return [];
+	const names = fields.map((f) => f.name);
+	const stated = {};
+	for (const src of [base ?? {}, user]) for (const [k, v] of Object.entries(src)) {
+		if (v === null || v === void 0) continue;
+		stated[k] = v;
+	}
+	const bounds = laneBoundsFor(spec, variantId);
+	return [
+		...judgeLaneSurface(surface, names, stated),
+		...judgeLaneRelations(relations, stated),
+		...judgeLaneBounds(bounds, stated)
+	];
+}
+/** Does the served doc offer this variant id? The VARIANT rows are
+*  the served truth — a recipe row and a surface-less variant
+*  (voicedesign) legitimately carry no `lanes.variants` entry and
+*  still inherit the family base, so the check reads spec.variants
+*  ids, never the lanes map's keys. */
+function laneVariantServed(spec, variantId) {
+	return (Array.isArray(spec.variants) ? spec.variants : []).some((row) => {
+		const rec = row;
+		return rec?.id === variantId || rec?.key === variantId;
+	});
 }
 /** Group the visible fields (the spec's own group key, first-appearance
 *  order — ungrouped first under no heading). */
@@ -539,6 +653,20 @@ function activeRowId(spec, values, group, active) {
 		return v.id;
 	}
 }
+/** THE AXIS STAMP VOCABULARY (2026-09-29, caught LIVE by the
+*  compose gate in the CI seat: the client stamped the Quant row's
+*  composed catalog id — 'raw__int8' — where the door's contract
+*  speaks the CELL's quant field — 'int8'; the gate refused with the
+*  door's own voice and the write never left the studio, which is
+*  exactly the law working). The value an axis pick stamps on the
+*  durable key is the value the DOOR reads: the variant id for
+*  Variant, the cell quant for Quant. Never the flat-catalog id.
+* PURE. */
+function axisStampOf(row) {
+	if (row.group !== "Quant") return row.id;
+	if (typeof row.quant === "string" && row.quant !== "") return row.quant;
+	throw new Error("illegal Quant row " + JSON.stringify(row.id) + " (owner " + JSON.stringify(row.owner ?? "") + "): no quant coordinate — the row is refused at the stamp; the spec server must refuse it at birth");
+}
 /** The durable param key an axis rides (the group's id, lowercased —
 *  'variant', 'quant', 'recipe', 'precision'). */
 function axisKey(group) {
@@ -560,11 +688,11 @@ function axisPickPatch(spec, row) {
 	const active = {};
 	for (const g of groups) if (g === row.group) active[g] = row.id;
 	else if (typeof row.defaults["model"] === "string") active[g] = void 0;
-	if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id;
+	if (groups.includes(row.group)) patch[axisKey(row.group)] = axisStampOf(row);
 	if (at < 0) return patch;
 	for (const g of groups.slice(at + 1)) {
 		const composing = composingRows(spec, g, active);
-		if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
+		if (composing.length > 0) patch[axisKey(g)] = axisStampOf(composing[0]);
 		else patch[axisKey(g)] = "";
 	}
 	return patch;
@@ -602,6 +730,20 @@ function modelSwitchPatch(spec, model) {
 	patch["model"] = model;
 	return patch;
 }
+/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
+*  operator's live bench: a stage carrying quant:"" — born when a
+*  model switch CLEARED the axis to '' — which the RUN door refused:
+*  'unknown quant "" for model "z-image" variant "turbo" (known:
+*  int8)'). A stated EMPTY selection is UNSTATED: the authoring
+*  seat unsets the key instead of writing the empty string, so
+*  compose defaults the cell. ONE pure decision, shared by the seed
+*  (seedAxisValues omits) and the write (the drill's onSet unsets)
+*  — the form's rendering is untouched (a missing axis key reads
+*  as '' on screen). */
+function axisUnset(name, v, spec) {
+	if (v !== "" || spec === null) return false;
+	return axisGroups(spec).some((g) => axisKey(g) === name);
+}
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
 *  law: each axis defaults to its FIRST composing row). Held values
 *  win (a reopened stage never re-seeds). */
@@ -618,7 +760,7 @@ function seedAxisValues(spec, held) {
 			const composing = composingRows(spec, g, active);
 			active[g] = composing.length > 0 ? composing[0].id : "";
 		}
-		out[axisKey(g)] = active[g];
+		if (active[g] !== "") out[axisKey(g)] = active[g];
 	}
 	const heldModel = held["model"];
 	if (typeof heldModel !== "string" || heldModel === "") {
@@ -647,6 +789,56 @@ function seedUser(spec, held) {
 	};
 	if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 	return out;
+}
+function composeValidate(spec, doc) {
+	if (spec === null) return [];
+	const heldModel = doc["model"];
+	if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
+	const out = [];
+	const all = spec.variants ?? [];
+	const configured = all.filter((r) => r.group !== "Recipe" && r.group !== "Quant");
+	const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== "Quant");
+	const rawVariant = doc["variant"];
+	let offered;
+	if (typeof rawVariant === "string" && rawVariant !== "") {
+		offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant);
+		if (offered === void 0) {
+			out.push({ message: "card_compose: unknown variant " + JSON.stringify(rawVariant) + " for model " + JSON.stringify(spec.model ?? "") + " (known: " + pool.map((r) => r.id).join(", ") + ")" });
+			return out;
+		}
+	} else offered = pool[0];
+	if (offered !== void 0) {
+		const rawQuant = doc["quant"];
+		if (typeof rawQuant === "string" && rawQuant !== "") {
+			const cells = all.filter((r) => r.group === "Quant" && r.owner === offered.id);
+			if (!cells.some((c) => c.quant === rawQuant)) out.push({ message: "card_compose: unknown quant " + JSON.stringify(rawQuant) + " for model " + JSON.stringify(spec.model ?? "") + " variant " + JSON.stringify(offered.id) + " (known: " + cells.map((c) => c.quant).join(", ") + ")" });
+		}
+		const env = offered.sampler_envelope ?? null;
+		if (env !== null) for (const knob of ["steps", "cfg"]) {
+			const bound = env[knob];
+			if (bound === void 0) continue;
+			const stated = doc[knob];
+			if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
+			const [lo, hi] = bound;
+			if (stated >= lo && stated <= hi) continue;
+			out.push({ message: "card_compose: stated " + knob + " " + String(stated) + " is OUTSIDE the route envelope for variant " + JSON.stringify(offered.id) + (offered.route !== "" ? " (route " + offered.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." });
+		}
+	}
+	return out;
+}
+/** Compose the CANDIDATE doc the door would judge: the bench row's
+*  held params, the user layer's overrides, then the in-flight frame
+*  — later layers win, and a null value DELETES the key (the wire's
+*  own unset law). This is composition: the full doc, assembled
+*  where the edit happens, so the law can run BEFORE the write. */
+function composeCandidateDoc(held, user, frame) {
+	const doc = {
+		...held,
+		...user
+	};
+	for (const [k, v] of Object.entries(frame)) if (v === null) delete doc[k];
+	else doc[k] = v;
+	return doc;
 }
 //#endregion
 //#region src/chrome.ts
@@ -705,6 +897,7 @@ var card_module_default = {
 	"groupTabActive": "VMoOIq_groupTabActive",
 	"groupTabs": "VMoOIq_groupTabs",
 	"inputRail": "VMoOIq_inputRail",
+	"laneWarn": "VMoOIq_laneWarn",
 	"modAddSquare": "VMoOIq_modAddSquare",
 	"modelAxes": "VMoOIq_modelAxes",
 	"modField": "VMoOIq_modField",
@@ -1258,7 +1451,7 @@ function loader() {
 *  drop-raycast position stays caller-computed). */
 function meshAssetUrl(value) {
 	const match = /^data\/input\/([^?#]+)$/i.exec(value);
-	return match === null ? value : `/v1/assets/inputs/${match[1]}`;
+	return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 }
 /** Normalize a loaded scene to a known viewing size — the
 *  autoFitToHeight law, verbatim port: center X/Z, scale the largest
@@ -1707,8 +1900,10 @@ function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, emptyHint
 /** THE "is this a thumbnail" rule (SlotSquare's, kept verbatim):
 *  data: images, blob: fresh-upload mirrors, and http(s)/root-relative
 *  artifact URLs. Every slot-shaped value renders the same way. */
+const IMAGE_EXTS = [...mediaVocab().image, "avif"].filter((e) => e !== "svg");
+const IMAGE_EXT_RE = new RegExp("\\.(?:" + IMAGE_EXTS.join("|") + ")(?:[?#]|$)", "i");
 function isImageUrl(value) {
-	return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\.(?:png|jpe?g|webp|gif|bmp|avif)(?:[?#]|$)/i.test(value);
+	return /^data:image\//i.test(value) || /^blob:/i.test(value) || /^(?:https?:)?\/[^"'<>]*\./i.test(value) && IMAGE_EXT_RE.test(value);
 }
 /** THE MESH FACE of the same rule (the mesh wire type, 2026-09-21 —
 *  the base-gaps primitive ③): a .glb/.gltf value — an estate path
@@ -1795,7 +1990,7 @@ function InputSquare(props) {
 			url: mesh
 		}],
 		label: "square-mesh"
-	})) : props.emptyIcon === void 0 ? createElement(IconPlusOutline16, { className: card_module_default.squareGlyph }) : createElement("span", { className: card_module_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? createElement("span", {
+	})) : props.emptyIcon === void 0 ? createElement(IconPlusOutlineRegular, { className: card_module_default.squareGlyph }) : createElement("span", { className: card_module_default.squareEmptyIcon }, props.emptyIcon), props.actions !== void 0 && props.actions !== null && props.actions !== false && !disabled ? createElement("span", {
 		className: card_module_default.squareActions,
 		onClick: (event) => {
 			event.stopPropagation();
@@ -2054,7 +2249,7 @@ async function uploadInputFile(file) {
 		method: "POST",
 		headers: { "content-type": "application/json" },
 		body: JSON.stringify({
-			filename: file.name.replace(/[^A-Za-z0-9._-]/g, "_"),
+			filename: file.name,
 			data: dataUrl
 		})
 	});
@@ -2807,7 +3002,7 @@ function PackPromptRow({ id, onInstallPack }) {
 		}
 	}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
 }
-function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
 	const groups = axisGroups(spec);
 	if (groups.length === 0) return null;
 	const models = modelChoices(spec);
@@ -2820,8 +3015,7 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 	for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
 	const contract = spec.features?.variant_groups ?? {};
 	const pick = (row) => {
-		const patch = axisPickPatch(spec, row);
-		for (const [k, v] of Object.entries(patch)) onSet(k, v);
+		onPick(axisPickPatch(spec, row));
 	};
 	const knobStamp = (r) => axisPickPatch(spec, r);
 	rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
@@ -2841,8 +3035,10 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 		const heldRaw = value[axisKey(g)];
 		const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
 		const rows = rowsOf(g, active);
-		if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
-		else if (heldId !== void 0) active[g] = heldId;
+		if (heldId !== void 0 && rows.some((r) => r.id === heldId || (r.quant ?? "") === heldId)) {
+			const grounded = rows.find((r) => r.quant === heldId && r.id !== heldId);
+			active[g] = grounded !== void 0 ? grounded.id : heldId;
+		} else if (heldId !== void 0) active[g] = heldId;
 		else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
 	}
 	const modelField = createElement("label", { className: card_module_default.specField }, createElement("span", {
@@ -2855,8 +3051,7 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 		value: shownModel,
 		onChange: (e) => {
 			const m = e.target.value;
-			const patch = modelSwitchPatch(spec, m);
-			for (const [k, v] of Object.entries(patch)) onSet(k, v);
+			onPick(modelSwitchPatch(spec, m));
 		}
 	}, refusedModel !== void 0 ? createElement("option", {
 		key: refusedModel,
@@ -2872,7 +3067,7 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 		const rows = rowsOf(g, active);
 		const heldRaw = value[axisKey(g)];
 		const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-		const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
+		const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId || (r.quant ?? "") === heldId) ? heldId : void 0;
 		if (rows.length === 0 && refusedId === void 0) return null;
 		const label = contract[g]?.label ?? titleCaseId(g);
 		return createElement("label", {
@@ -2919,7 +3114,7 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 		}
 	}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null, restGroups.map((g) => axisField(g)), createElement(RecipePills, {
 		spec,
-		onSet,
+		onPick,
 		values: value
 	}));
 }
@@ -2939,14 +3134,14 @@ function ModelAxes({ spec, value, onSet, onDownloadModel }) {
 * THE REUSE LAW: extracted so EVERY model surface seats the same
 * dropdown -- CardForm under the axes, a studio beside its model
 * route. Never a second implementation. */
-function RecipePills({ spec, onSet, values }) {
+function RecipePills({ spec, onPick, values }) {
 	const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
 	if (pillRows.length === 0) return null;
 	const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
 	const pick = (id) => {
 		const row = pillRows.find((r) => r.id === id);
 		if (row === void 0) return;
-		for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
+		onPick(axisPickPatch(spec, row));
 	};
 	return createElement("label", { className: card_module_default.specField }, createElement("span", { className: card_module_default.specFieldKey }, "Recipe"), createElement("select", {
 		className: card_module_default.specSelect,
@@ -3107,7 +3302,7 @@ function SpecPanel({ model, sections, values, onEdit, spec: specProp, error: err
 *  over the USER layer (the settings law: presence IS the override
 *  mark, the reset chip removes it). The constructor OWNS the square
 *  provider (no call site wires it, no call site can forget it). */
-function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
+function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
 	const fields = fieldsOf(spec);
 	const value = resolveValue(spec, user, base);
 	const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -3138,11 +3333,14 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 	const modFieldByName = /* @__PURE__ */ new Map();
 	for (const k of modKinds) for (const f of k.fields) if (!modFieldByName.has(f.name)) modFieldByName.set(f.name, f);
 	const railOf = (inp) => {
-		const f = flatFields.find((x) => x.name === inp.name) ?? modFieldByName.get(inp.name);
+		const f = flatFields.find((x) => x.name === inp.name);
 		if (f === void 0) return void 0;
 		if (f.type === "image" || f.type === "file" || f.type === "mesh") return f;
 	};
 	const railFields = signature.map((inp) => typeof inp?.name === "string" ? railOf(inp) : void 0).filter((f) => f !== void 0).filter((f) => fieldVisible(f, {
+		...value,
+		model: family ?? ""
+	})).filter((f) => fieldOnLane(spec, f.name, {
 		...value,
 		model: family ?? ""
 	}));
@@ -3150,9 +3348,21 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 	const stackFields = flatFields.filter((f) => f.type === "image_list" && !modFieldByName.has(f.name)).filter((f) => fieldVisible(f, {
 		...value,
 		model: family ?? ""
+	})).filter((f) => fieldOnLane(spec, f.name, {
+		...value,
+		model: family ?? ""
 	}));
-	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name);
-	const groups = groupFields(flatFields.filter(visible), {
+	const visible = (f) => f.type !== "image_list" && !railNames.has(f.name) && fieldOnLane(spec, f.name, {
+		...value,
+		model: family ?? ""
+	});
+	const groupFieldsAll = flatFields.filter(visible);
+	const laneWarns = laneViolations(spec, flatFields, {
+		...user,
+		model: family ?? ""
+	}, base);
+	const gateViolations = composeValidate(spec, user);
+	const groups = groupFields(groupFieldsAll, {
 		...value,
 		model: family ?? ""
 	});
@@ -3166,19 +3376,27 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 	const stackRow = (f) => {
 		const v = value[f.name];
 		const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
-		const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
+		const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : void 0;
+		const over = cap !== void 0 && entries.length > cap;
 		const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
 		const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
 		return createElement("div", {
 			key: "stack-" + f.name,
 			className: card_module_default.specStack,
 			"data-input-stack": f.name,
-			"data-stack-count": String(entries.length)
+			"data-stack-count": String(entries.length),
+			...over ? { "data-stack-over": String(cap) } : {}
 		}, createElement("div", {
 			className: card_module_default.modHead,
 			"data-stack-head": f.name,
 			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-		}, createElement("span", { className: card_module_default.modTitle }, f.label), createElement("span", { className: card_module_default.modHint }, `${String(entries.length)} / ${String(cap)}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), createElement("div", { className: card_module_default.specSlotRow }, entries.map((entry, i) => createElement("div", {
+		}, createElement("span", { className: card_module_default.modTitle }, f.label), createElement("span", {
+			className: card_module_default.modHint,
+			...over ? { style: { color: "var(--dsh-danger, #f44)" } } : {}
+		}, `${String(entries.length)}${cap !== void 0 ? " / " + String(cap) : ""}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), over ? createElement("p", {
+			className: card_module_default.laneWarn,
+			style: { margin: 0 }
+		}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, createElement("div", { className: card_module_default.specSlotRow }, entries.map((entry, i) => createElement("div", {
 			key: f.name + ":" + String(i),
 			className: card_module_default.specSlotCell,
 			title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
@@ -3198,7 +3416,7 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
 			...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
 			...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
-		}))), entries.length < cap ? createElement("div", {
+		}))), cap === void 0 || entries.length < cap ? createElement("div", {
 			className: card_module_default.specSlotCell,
 			"data-stack-add": f.name,
 			title: f.tooltip
@@ -3218,15 +3436,23 @@ function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPat
 			...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
 		})) : null));
 	};
-	return createElement("div", { className: card_module_default.specForm }, createElement(PackPrompt, {
+	return createElement("div", { className: card_module_default.specForm }, gateViolations.length > 0 ? createElement("div", {
+		className: card_module_default.laneWarn,
+		"data-compose-gate": String(gateViolations.length),
+		role: "alert"
+	}, createElement("p", { style: { fontWeight: 700 } }, "THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row."), gateViolations.map((v, i) => createElement("p", { key: "gate-" + String(i) }, v.message))) : null, createElement(PackPrompt, {
 		spec,
 		onInstallPack
 	}), createElement(ModelAxes, {
 		spec,
 		value,
 		onSet: edit,
+		onPick,
 		onDownloadModel
-	}), railFields.length > 0 || stackFields.length > 0 ? createElement("section", {
+	}), laneWarns.length > 0 ? createElement("div", {
+		className: card_module_default.laneWarn,
+		"data-lane-warn": String(laneWarns.length)
+	}, laneWarns.map((v, i) => createElement("p", { key: "lane-" + String(i) }, v.message))) : null, railFields.length > 0 || stackFields.length > 0 ? createElement("section", {
 		className: card_module_default.specGroup + " " + card_module_default.inputRail,
 		"data-input-rail": "1"
 	}, createElement("h4", { className: card_module_default.specGroupTitle }, "Inputs"), railFields.length > 0 ? createElement("div", { className: card_module_default.specSlotRow }, railFields.map((f) => {
@@ -3725,7 +3951,7 @@ function ModifiersSection(props) {
 		onClick: (e) => {
 			setPickAt({ rect: e.currentTarget.getBoundingClientRect() });
 		}
-	}, createElement(IconPlusOutline16, { className: card_module_default.squareGlyph })) : null), pickAt !== null ? createElement(Menu, {
+	}, createElement(IconPlusOutlineRegular, { className: card_module_default.squareGlyph })) : null), pickAt !== null ? createElement(Menu, {
 		open: true,
 		anchor: null,
 		getAnchorRect: () => pickAt.rect,
@@ -4005,9 +4231,116 @@ function ModTile(props) {
 	}, createElement("span", { className: card_module_default.modTileLabel }, props.label), props.strength !== void 0 ? createElement("span", { className: card_module_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? createElement("span", { className: card_module_default.modTileSteps }, `${String(props.steps)} steps`) : null);
 }
 //#endregion
+//#region src/estate-remote.ts
+/** The estate's domain refusal ({ok:false} answers): the message
+* rides verbatim; the class separates DOMAIN verdicts from transport
+* failures so policy code (the gone-verdict, the poll, the CAS
+* rebase) can discriminate. */
+var EstateRefusedError = class extends Error {
+	constructor(message) {
+		super(message);
+		this.name = "EstateRefusedError";
+	}
+};
+let bound;
+/** The armed lazy source (see armEstateRemoteLazyBind): the studio
+*  bind's order-proof wake, plain JS — no cordis fiber. */
+let lazySource;
+/** Capture the namespaces (the mounter's direct bind — or a test's
+*  honest fake). Idempotent; the last bind wins. */
+function bindEstateRemote(namespaces) {
+	bound = namespaces;
+}
+/** Arm the lazy bind (the studio bundles' order-proof wake): the
+*  factory captures a plain getter reading the namespaces through
+*  the inject-free reflect seam (ctx.get — cordis' own type doc:
+*  "Read a service from the store without the inject requirement").
+*  No cordis fiber, no inject list, no epoch — a getter cannot be
+*  parked dormant, refused by a proxy, or poisoned into a parent
+*  fiber's inject set (the four receipts that killed every fiber
+*  binder). The FIRST verb pulls it (estateRemote, below); if the
+*  namespaces still do not exist the loud refusal below speaks. */
+function armEstateRemoteLazyBind(source) {
+	lazySource = source;
+}
+/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
+*  MOUTH: the first verb after the mounts land pulls the armed
+*  getter once (order-proof — by first use, the mounter has long
+*  booted); a verb before the mounts (or on a host without the
+*  estate plugin) meets the loud wiring refusal, never a hang and
+*  never a silent fallback. */
+function estateRemote() {
+	if (bound === void 0 && lazySource !== void 0) try {
+		bindEstateRemoteFromRemote(lazySource());
+	} catch {}
+	if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+	return bound;
+}
+/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
+*  receipt): the client-bundle preset inlines card-base into every
+*  consumer bundle, so this module's `bound` singleton exists PER
+*  BUNDLE — the from-media outage's second layer. Every attempt to
+*  bind through a RUNTIME child fiber died on cordis' own machinery
+*  (dotted-only injects: the proxy refuses `child.remote`; parent-
+*  only: the fiber starts INACTIVE; both: the runner's own inspect
+*  sync breaks). The harness never binds this way. Its consumers —
+*  product-analytics, ui-settings, ui-model-selection — declare
+*  STATIC plugin injects with BOTH levels (`['remote',
+*  'remote.productAnalytics']`), the loader waits for the mounted
+*  namespaces before their apply runs, and they read
+*  `ctx.remote.<namespace>` directly. That is this bind:
+*
+*  - a CONSUMING studio declares `export const inject = ['slots',
+*    'remote', 'remote.bench', 'remote.drafts', 'remote.runs',
+*    'remote.media']` on its client entry — the loader guarantees
+*    the namespaces exist when its apply runs;
+*  - the MOUNTER (card-view) injects only the parent 'remote' (the
+*    dotted names on the mounter would wait on its own $mount — the
+*    2026-09-15 deadlock) and binds directly after its mounts;
+*  - both call THIS function, the one spelling of the bind, loud on
+*    any absent namespace (a mis-injected entry is a wiring bug,
+*    never a silent hole).
+*
+*  THE WALL pins every studio entry's inject list; the singleton
+*  throw stays the runtime guard. */
+function bindEstateRemoteFromRemote(remote) {
+	const { bench, drafts, runs, media } = remote;
+	if (bench === void 0 || drafts === void 0 || runs === void 0 || media === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+	const namespaces = {
+		bench,
+		drafts,
+		runs,
+		media
+	};
+	bindEstateRemote(namespaces);
+	return namespaces;
+}
+/** Await one namespace method's RemoteResult and unwrap it: the
+*  value on ok, the estate's refusal text (verbatim) on the error
+*  branch. Accepts the promise directly so call sites stay one
+*  expression. */
+async function unwrapRemote(result, voice) {
+	const settled = await result;
+	if (settled.ok === true) return settled.value;
+	const { error } = settled;
+	const failure = error;
+	throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+}
+/** Refusal discrimination for policy code (the CAS rebase, the
+* gone-verdict, the poll's file-era arms). */
+function isEstateRefusal(error) {
+	return error instanceof EstateRefusedError;
+}
+//#endregion
 //#region src/slots.ts
 function defineStageViewRegistration(key, view, inject) {
 	return (ctx) => {
+		armEstateRemoteLazyBind(() => ({
+			bench: ctx.get("remote.bench"),
+			drafts: ctx.get("remote.drafts"),
+			runs: ctx.get("remote.runs"),
+			media: ctx.get("remote.media")
+		}));
 		ctx.slots.inject("cards.stage.view", () => {
 			ctx.slots.register({
 				name: "cards.stage.view",
@@ -4107,39 +4440,6 @@ function resolveValueLayered(spec, base, user) {
 		return out;
 	}
 	return resolveValue(spec, user, base);
-}
-//#endregion
-//#region src/estate-remote.ts
-/** The estate's domain refusal ({ok:false} answers): the message
-* rides verbatim; the class separates DOMAIN verdicts from transport
-* failures so policy code (the gone-verdict, the poll, the CAS
-* rebase) can discriminate. */
-var EstateRefusedError = class extends Error {
-	constructor(message) {
-		super(message);
-		this.name = "EstateRefusedError";
-	}
-};
-/** The bound namespaces — LOUD when unbound: a verb call before the
-* mount (or after unload) is a wiring bug, never a silent fallback. */
-function estateRemote() {
-	throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
-}
-/** Await one namespace method's RemoteResult and unwrap it: the
-*  value on ok, the estate's refusal text (verbatim) on the error
-*  branch. Accepts the promise directly so call sites stay one
-*  expression. */
-async function unwrapRemote(result, voice) {
-	const settled = await result;
-	if (settled.ok === true) return settled.value;
-	const { error } = settled;
-	const failure = error;
-	throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
-}
-/** Refusal discrimination for policy code (the CAS rebase, the
-* gone-verdict, the poll's file-era arms). */
-function isEstateRefusal(error) {
-	return error instanceof EstateRefusedError;
 }
 //#endregion
 //#region src/runs-policy.ts
@@ -4247,7 +4547,7 @@ async function pollRunStageUrl(runId, stageId, opts, signal) {
 	}
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom.production.js
+//#region ../../../node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom.production.js
 /**
 * @license React
 * react-dom.production.js
@@ -4286,11 +4586,13 @@ var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 		findDOMNode: null
 	};
 	var REACT_PORTAL_TYPE = Symbol.for("react.portal");
+	var REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable");
+	var REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key");
 	function createPortal$1(children, containerInfo, implementation) {
 		var key = 3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
 		return {
 			$$typeof: REACT_PORTAL_TYPE,
-			key: null == key ? null : "" + key,
+			key: null == key ? null : key === REACT_OPTIMISTIC_KEY ? REACT_OPTIMISTIC_KEY : "" + key,
 			children,
 			containerInfo,
 			implementation
@@ -4302,6 +4604,12 @@ var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 		if ("string" === typeof input) return "use-credentials" === input ? input : "";
 	}
 	exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = Internals;
+	exports.browser = function(reason) {
+		return {
+			$$typeof: REACT_RECOVERABLE_TYPE,
+			_reason: reason
+		};
+	};
 	exports.createPortal = function(children, container) {
 		var key = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
 		if (!container || 1 !== container.nodeType && 9 !== container.nodeType && 11 !== container.nodeType) throw Error(formatProdErrorMessage(299));
@@ -4343,7 +4651,8 @@ var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 				Internals.d.M(href, {
 					crossOrigin,
 					integrity: "string" === typeof options.integrity ? options.integrity : void 0,
-					nonce: "string" === typeof options.nonce ? options.nonce : void 0
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+					fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0
 				});
 			}
 		} else options ?? Internals.d.M(href);
@@ -4370,7 +4679,9 @@ var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 			Internals.d.m(href, {
 				as: "string" === typeof options.as && "script" !== options.as ? options.as : void 0,
 				crossOrigin,
-				integrity: "string" === typeof options.integrity ? options.integrity : void 0
+				integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+				nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+				fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0
 			});
 		} else Internals.d.m(href);
 	};
@@ -4386,10 +4697,10 @@ var require_react_dom_production = /* @__PURE__ */ __commonJSMin(((exports) => {
 	exports.useFormStatus = function() {
 		return ReactSharedInternals.H.useHostTransitionStatus();
 	};
-	exports.version = "19.2.8";
+	exports.version = "19.3.0";
 }));
 //#endregion
-//#region ../../../node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/cjs/react-dom.development.js
+//#region ../../../node_modules/.pnpm/react-dom@19.3.0_react@19.3.0/node_modules/react-dom/cjs/react-dom.development.js
 /**
 * @license React
 * react-dom.development.js
@@ -4407,16 +4718,21 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 		}
 		function createPortal$1(children, containerInfo, implementation) {
 			var key = 3 < arguments.length && void 0 !== arguments[3] ? arguments[3] : null;
-			try {
-				testStringCoercion(key);
-				var JSCompiler_inline_result = !1;
-			} catch (e) {
-				JSCompiler_inline_result = !0;
+			if (null == key) key = null;
+			else if (key === REACT_OPTIMISTIC_KEY) key = REACT_OPTIMISTIC_KEY;
+			else {
+				try {
+					testStringCoercion(key);
+					var JSCompiler_inline_result = !1;
+				} catch (e) {
+					JSCompiler_inline_result = !0;
+				}
+				JSCompiler_inline_result && (console.error("The provided key is an unsupported type %s. This value must be coerced to a string before using it here.", "function" === typeof Symbol && Symbol.toStringTag && key[Symbol.toStringTag] || key.constructor.name || "Object"), testStringCoercion(key));
+				key = "" + key;
 			}
-			JSCompiler_inline_result && (console.error("The provided key is an unsupported type %s. This value must be coerced to a string before using it here.", "function" === typeof Symbol && Symbol.toStringTag && key[Symbol.toStringTag] || key.constructor.name || "Object"), testStringCoercion(key));
 			return {
 				$$typeof: REACT_PORTAL_TYPE,
-				key: null == key ? null : "" + key,
+				key,
 				children,
 				containerInfo,
 				implementation
@@ -4454,9 +4770,15 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 			},
 			p: 0,
 			findDOMNode: null
-		}, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+		}, REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_RECOVERABLE_TYPE = Symbol.for("react.recoverable"), REACT_OPTIMISTIC_KEY = Symbol.for("react.optimistic_key"), ReactSharedInternals = React.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
 		"function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error("React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills");
 		exports.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE = Internals;
+		exports.browser = function(reason) {
+			return {
+				$$typeof: REACT_RECOVERABLE_TYPE,
+				_reason: reason
+			};
+		};
 		exports.createPortal = function(children, container) {
 			var key = 2 < arguments.length && void 0 !== arguments[2] ? arguments[2] : null;
 			if (!container || 1 !== container.nodeType && 9 !== container.nodeType && 11 !== container.nodeType) throw Error("Target container is not a DOM element.");
@@ -4511,7 +4833,8 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 				if (null == options.as || "script" === options.as) encountered = getCrossOriginStringAs(options.as, options.crossOrigin), Internals.d.M(href, {
 					crossOrigin: encountered,
 					integrity: "string" === typeof options.integrity ? options.integrity : void 0,
-					nonce: "string" === typeof options.nonce ? options.nonce : void 0
+					nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+					fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0
 				});
 			} else options ?? Internals.d.M(href);
 		};
@@ -4544,7 +4867,9 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 			"string" === typeof href && (options ? (encountered = getCrossOriginStringAs(options.as, options.crossOrigin), Internals.d.m(href, {
 				as: "string" === typeof options.as && "script" !== options.as ? options.as : void 0,
 				crossOrigin: encountered,
-				integrity: "string" === typeof options.integrity ? options.integrity : void 0
+				integrity: "string" === typeof options.integrity ? options.integrity : void 0,
+				nonce: "string" === typeof options.nonce ? options.nonce : void 0,
+				fetchPriority: "string" === typeof options.fetchPriority ? options.fetchPriority : void 0
 			})) : Internals.d.m(href));
 		};
 		exports.requestFormReset = function(form) {
@@ -4559,7 +4884,7 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 		exports.useFormStatus = function() {
 			return resolveDispatcher().useHostTransitionStatus();
 		};
-		exports.version = "19.2.8";
+		exports.version = "19.3.0";
 		"undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStop(Error());
 	})();
 }));
@@ -4960,7 +5285,7 @@ function DeclarativeStudio(props) {
 			const isOpen = open[g] === true;
 			return createElement(DisclosureRow, {
 				key: g,
-				icon: createElement(IconArchiveOutline20),
+				icon: createElement(IconArchiveOutlineRegular),
 				title,
 				open: isOpen,
 				expandable: true,
@@ -5004,4 +5329,4 @@ function StudioFields({ fields, value, onEdit, square }) {
 	})));
 }
 //#endregion
-export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, ControlRow, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, EmptyState, InputSquare, MESH_SQUARE_ACCEPT, ModelAxes, ModifiersSection, OverlayKnob, PackPrompt, PaneHeader, PaneShell, RecipePills, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Tip, TriStateAtom, WirePickerModal, activeRecipeId, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, coerceFieldEdit, composeUnset, composingRows, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, inputEdgeOf, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, postManageAction, quantRowsFor, readAsDataUrl, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, specDefaults, titleCaseId, unsetFaceLabel, unsetFaceTip, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, CARD_SLOTS, CardForm, ControlRow, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, EmptyState, InputSquare, MESH_SQUARE_ACCEPT, ModelAxes, ModifiersSection, OverlayKnob, PackPrompt, PaneHeader, PaneShell, RecipePills, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Tip, TriStateAtom, WirePickerModal, activeRecipeId, activeRowId, activeVariantId, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, inputEdgeOf, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, postManageAction, quantRowsFor, readAsDataUrl, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, specDefaults, titleCaseId, unsetFaceLabel, unsetFaceTip, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, variantGroupsContract, variantRows };

@@ -28,7 +28,7 @@
  */
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, laneViolations, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -254,6 +254,17 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     { ...user, model: family ?? '' },
     base,
   )
+  // THE INTAKE GATE (2026-09-29, the render law — the operator's
+  // words: THE CARD DOES NOT RENDER IMPOSSIBLE CONTRACTS). The pick
+  // gates judge every WRITE the composer makes; this seat judges
+  // every doc that ARRIVES — a reopened stage, a foreign writer, a
+  // tab running older bytes, a hand-edit. The judged doc is the
+  // EXPLICIT user layer (the door's own law: envelopeRefusal fires
+  // on the raw body, before overlay stamps and schema defaults —
+  // unfinished cards still render, only CONSTRUCTED impossibilities
+  // refuse). A violation renders the door's voice ABOVE the form:
+  // the impossible value never presents as live, selectable truth.
+  const gateViolations = composeValidate(spec, user)
   // THE MODEL GUARD (the grammar's own key — the base owns the
   // mechanism, the card owns the leaves): the serving family rides
   // the visibility values as `model`, so a field may declare
@@ -379,6 +390,13 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     )
   }
   return h('div', { className: css.specForm },
+    gateViolations.length > 0
+      ? h('div', { className: css.laneWarn, 'data-compose-gate': String(gateViolations.length), role: 'alert' },
+          h('p', { style: { fontWeight: 700 } },
+            'THE COMPOSE GATE REFUSED THIS DOC — the card will not render an impossible contract. Fix the stated value, or reset the row.'),
+          gateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)),
+        )
+      : null,
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),

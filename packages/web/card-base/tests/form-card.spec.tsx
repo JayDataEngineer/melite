@@ -623,3 +623,74 @@ test('LANES: the export pair warns on the real doc, and clears when cured', () =
   form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', text: 'x', design_prompt: 'a warm narrator', voice_name: 'warm_1' } })
   expect(document.querySelector('[data-lane-warn]')).toBeNull()
 })
+
+// ── THE INTAKE GATE (2026-09-29, the render law — the operator's
+//    words: THE CARD DOES NOT RENDER IMPOSSIBLE CONTRACTS). The
+//    pick gates judge every write the composer makes; this seat
+//    judges every doc that ARRIVES — a reopened stage, a foreign
+//    writer, a tab running older bytes, a hand-edit. The second
+//    live break ('unknown quant "raw__int8" ... (known: int8)')
+//    was a poisoned doc the WRITE door caught; the card must catch
+//    it at RENDER, with the door's voice, before it can present as
+//    live truth. ────────────────────────────────────────────────
+test('THE INTAKE GATE: an arrived poisoned quant renders the door\'s refusal face — never live truth', () => {
+  form({
+    spec: doc({
+      variants: [
+        { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+          sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw',
+          sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+        { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+        { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+      ],
+    }),
+    user: { quant: 'raw__int8' },
+  })
+  const face = document.querySelector('[data-compose-gate]')
+  if (face === null) throw new Error('the intake face must render for a poisoned doc')
+  expect(face.getAttribute('role')).toBe('alert')
+  expect(face.textContent ?? '').toContain('THE COMPOSE GATE REFUSED THIS DOC')
+  expect(face.textContent ?? '').toContain('the card will not render an impossible contract')
+  expect(face.textContent ?? '').toContain('unknown quant "raw__int8" for model "krea-2" variant "turbo" (known: int8)')
+  cleanup()
+  // the VALUE spelling renders clean — one coordinate, one truth
+  form({
+    spec: doc({
+      variants: [
+        { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+          sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw',
+          sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+        { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+        { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+      ],
+    }),
+    user: { variant: 'raw', quant: 'int8' },
+  })
+  expect(document.querySelector('[data-compose-gate]')).toBeNull()
+})
+
+test('THE INTAKE GATE: an unfinished card still renders — only CONSTRUCTED impossibilities refuse', () => {
+  form({ user: {} })
+  expect(document.querySelector('[data-compose-gate]')).toBeNull()
+  cleanup()
+  // a bare explicit knob with no variant stated is judged against
+  // the door's pool[0] — the mirror of selectVariant's default
+  form({
+    spec: doc({
+      variants: [
+        { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2' }, route: 'krea-2',
+          sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+        { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw' }, route: 'krea-2-raw',
+          sampler_envelope: { steps: [30, 60], cfg: [2, 6] } },
+        { id: 'int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2', quant: 'int8', owner: 'turbo' },
+        { id: 'raw__int8', label: 'INT8', group: 'Quant', defaults: {}, route: 'krea-2-raw', quant: 'int8', owner: 'raw' },
+      ],
+    }),
+    user: { cfg: 3.5 },
+  })
+  const face = document.querySelector('[data-compose-gate]')
+  if (face === null) throw new Error('the default-variant judgment must render')
+  expect(face.textContent ?? '').toContain('stated cfg 3.5 is OUTSIDE the route envelope for variant "turbo"')
+})

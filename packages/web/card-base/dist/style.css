@@ -73,6 +73,20 @@
   font-size: 11px;
 }
 
+.VMoOIq_laneWarn {
+  border-top: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  border-bottom: 1px solid var(--dsw-alias-state-critical, #e5484d);
+  color: var(--dsw-alias-state-critical, #e5484d);
+  margin: 0;
+  padding: 6px 0;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.VMoOIq_laneWarn p {
+  margin: 0;
+}
+
 .VMoOIq_specInfo {
   border: 1px solid var(--dsw-alias-label-secondary, #61666b);
   width: 12px;
