@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
-import { axisUnset, titleCaseId } from '@melite/card-base/spec'
+import { axisUnset, composeCandidateDoc, composeValidate, titleCaseId } from '@melite/card-base/spec'
 import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/wire'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
@@ -66,6 +66,27 @@ export function ScrollLockedDetail(props: { children?: ReactNode, testid?: strin
     }, { passive: true })
   }, [])
   return h('div', { className: css.zoomDetail, ...(props.testid !== undefined ? { 'data-testid': props.testid } : {}), ref: bind }, props.children)
+}
+
+/** THE COMPOSE GATE'S VOICE (2026-09-29, the operator's law: a card
+ *  IS its contract — an invalid doc is refused at COMPOSITION, never
+ *  shipped to the door to be refused after the wire). The message is
+ *  the door's OWN law text; the prefix names the plane that caught
+ *  it. The studio still shows the edit (the same hopeful-overlay
+ *  semantics the door-refusal always had), but NO frame leaves and
+ *  the bench never receives a doc it would refuse. */
+function composeGateRefusal(
+  spec: FormSpecDoc | null,
+  held: Record<string, unknown> | undefined,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): string | null {
+  if (spec === null) return null
+  const violations = composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))
+  const first = violations[0]
+  if (first === undefined) return null
+  return 'THE COMPOSE GATE REFUSED — ' + first.message
+    + ' — the write never left the studio. Fix the stated value, or pick a different route.'
 }
 
 export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }: {
@@ -303,7 +324,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // leaves on the same ledger (a null param DELETEs it — the
       // door's own law), so "inherited" is the row's state and not
       // only this modal's.
-      void scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).then(() => {
+      const refused = composeGateRefusal(spec, stage.params, user, { [name]: null })
+      if (refused !== null) { setWriteFace(refused); return }
+      void scheduleStageParam(bench.draftId, stage.id, name, null, bench.rev).then(() => {
         // the door ANSWERED: the ledger is the truth (the promise
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins)
@@ -333,7 +356,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
     if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh') {
-      void scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).then(() => {
+      const refused = composeGateRefusal(spec, stage.params, user, { [name]: v })
+      if (refused !== null) { setWriteFace(refused); return }
+      void scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
         // the door ANSWERED: the ledger is the truth (the promise
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins)
@@ -360,6 +385,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // patchStageParams wraps the door's doc (STAGE_PATCH_KEYS'
       // `params` key); the clear rides the null-unset arm (a null
       // param DELETEs its key, bench.ts's own law).
+      const slotFrame = v === '' ? { [name]: null } : { [name]: v }
+      const refused = composeGateRefusal(spec, stage.params, user, slotFrame)
+      if (refused !== null) { setWriteFace(refused); return }
       void patchStageParams(bench.draftId, stage.id,
         v === '' ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {
@@ -372,7 +400,63 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             + ' (unlanded keys: ' + name + ').')
         })
     }
-  }, [spec, bench.draftId, bench.rev, stage.id])
+  }, [spec, user, bench.draftId, bench.rev, stage.id])
+  // THE ATOMIC PICK (2026-10-12, the operator's live break: switch
+  // krea-2 turbo→raw refused 'stated cfg 3.5 is OUTSIDE the route
+  // envelope for variant "turbo" — the declared envelope is [1, 2]').
+  // A pick is a MARRIAGE: the variant key, its defaults, and the
+  // below-axis re-seeds are ONE contract. The per-key onSet loop sent
+  // cfg 3.5 (raw's default) to a bench still holding variant turbo —
+  // the door judged the half-state against the OLD envelope and
+  // refused, leaving unlanded keys and a lying studio. ONE write now:
+  // every key of the pick's patch, one CAS, one judgment against the
+  // NEW variant's envelope — the door's marriage law, honored at the
+  // authoring boundary.
+  const onPick = useCallback((patch: Record<string, unknown>): void => {
+    // THE EMPTY-SELECTION LAW rides the atomic pick too (a model
+    // switch CLEARS cross-spec axes to ''): an axis key set to '' is
+    // UNSTATED — it leaves the user map and its wire key rides null
+    // (a DELETE, the door's own law), exactly like onSet's unset arm.
+    const landed: Record<string, unknown> = {}
+    const nulls: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(patch)) {
+      if (axisUnset(k, v, spec)) nulls[k] = null
+      else landed[k] = v
+    }
+    setUser((m) => {
+      const next: SpecValues = { ...m }
+      for (const k of Object.keys(nulls)) delete next[k]
+      return { ...next, ...landed }
+    })
+    const frame = { ...landed, ...nulls }
+    // patchStageParams — NOT scheduleStageParam: the scheduler
+    // coalesces PER KEY (each key its own timer and its own door
+    // write), which is the half-switch again. The atomic door takes
+    // the WHOLE patch in one CAS write and registers every key in
+    // the ledger (in flight, per-key failure memory, confirmed rev).
+    const refused = composeGateRefusal(spec, stage.params, user, frame)
+    if (refused !== null) { setWriteFace(refused); return }
+    void patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(
+      () => {
+        const st = stageWriteState(bench.draftId, stage.id)
+        setWriteFace(st.failedKeys.length > 0
+          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
+            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+          : null)
+      },
+      () => {
+        // the promise REJECTS on refusal (the ledger keeps the
+        // memory); the write face speaks the same voice as onSet
+        const st = stageWriteState(bench.draftId, stage.id)
+        setWriteFace(st.failedKeys.length > 0
+          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+            + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
+            + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
+          : null)
+      },
+    )
+  }, [spec, user, bench.draftId, bench.rev, stage.id])
   // THE UNSET PATH (the settings law): removing an override is a
   // first-class edit — the key leaves the user map and the row
   // re-derives to its base (defaults <- model defaults <- base).
@@ -392,12 +476,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
     if (shape === 'image' || shape === 'file' || shape === 'mesh') {
+      const refused = composeGateRefusal(spec, stage.params, user, { [name]: null })
+      if (refused !== null) { setWriteFace(refused); return }
       void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
         .catch((e: unknown) => {
           setError(e instanceof Error ? e.message : 'slot write failed')
         })
     }
-  }, [spec, bench.draftId, bench.rev, stage.id])
+  }, [spec, user, bench.draftId, bench.rev, stage.id])
   // THE RESOLVED VALUE — derived per render (never state): exactly
   // what a Run composes, what the prompt tile and the enhance sweep
   // read, what the form shows. THE SERVED BASE (hour-26 stroke 15,
@@ -492,7 +578,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       }
       setUser((m) => ({ ...m, ...sweptPatch }))
       if (Object.keys(sweptPatch).length > 0) {
-        void scheduleStageParam(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
+        // ONE atomic write (2026-10-12 construction law): the sweep is
+        // a discrete gesture, not typing — it lands as ONE frame so
+        // the door judges the swept fields together, never the
+        // half-swept state the per-key scheduler would produce.
+        const refused = composeGateRefusal(spec, stage.params, user, sweptPatch)
+        if (refused !== null) { setWriteFace(refused); return }
+        void patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
           const st = stageWriteState(bench.draftId, stage.id)
           setWriteFace(st.failedKeys.length > 0
             ? 'THE ENHANCE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
@@ -547,6 +639,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       const sameAsHeld = userKeys.size === heldKeys.size
         && [...userKeys].every((k) => Object.is(user[k], held[k]))
       if (Object.keys(patch).length > 0 && !sameAsHeld) {
+        // THE COMPOSE GATE AT THE RUN SEAT: the full-doc sync is a
+        // write like any other — an invalid candidate refuses HERE,
+        // in the studio, before anything reaches the engine.
+        const refused = composeGateRefusal(spec, held, user, {})
+        if (refused !== null) { setError(refused); return }
         await patchStageParams(bench.draftId, stage.id, patch, bench.rev)
       }
       onRun()
@@ -799,7 +896,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
           ? h(SpecForm, {
-            spec, user, base: servedBase, onSet, onUnset, wire,
+            spec, user, base: servedBase, onSet, onPick, onUnset, wire,
             onPatch: onPatchParams,
             // THE TWO PROMPTS' ARMS (stroke 18, the operator's law:
             // offered-but-absent PROMPTS, never blocks): a boarded

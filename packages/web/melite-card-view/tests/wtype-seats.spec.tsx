@@ -45,6 +45,7 @@ const Host = (doc: FormSpecDoc): ReturnType<typeof createElement> => createEleme
     spec: doc,
     user,
     onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+    onPick: () => {},
   })
 })
 

@@ -1236,6 +1236,20 @@ export function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string
   return undefined
 }
 
+/** THE AXIS STAMP VOCABULARY (2026-09-29, caught LIVE by the
+ *  compose gate in the CI seat: the client stamped the Quant row's
+ *  composed catalog id — 'raw__int8' — where the door's contract
+ *  speaks the CELL's quant field — 'int8'; the gate refused with the
+ *  door's own voice and the write never left the studio, which is
+ *  exactly the law working). The value an axis pick stamps on the
+ *  durable key is the value the DOOR reads: the variant id for
+ *  Variant, the cell quant for Quant. Never the flat-catalog id.
+ * PURE. */
+export function axisStampOf(row: VariantRow): string {
+  return row.group === 'Quant' && typeof row.quant === 'string' && row.quant !== ''
+    ? row.quant : row.id
+}
+
 /** The durable param key an axis rides (the group's id, lowercased —
  *  'variant', 'quant', 'recipe', 'precision'). */
 export function axisKey(group: string): string {
@@ -1269,7 +1283,7 @@ export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
   // only when the group rides as an axis — a Recipe-row pick on a
   // card without the field keeps its declared-knob defaults, never
   // the undeclareable `recipe` key (the compose-door refusal).
-  if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id
+  if (groups.includes(row.group)) patch[axisKey(row.group)] = axisStampOf(row)
   // ONLY the axes BELOW the picked one re-seed (the chain runs one
   // direction); the axes above stay exactly as the user set them. A
   // group outside the axes (Recipe since the yield) has nothing
@@ -1277,7 +1291,7 @@ export function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues {
   if (at < 0) return patch
   for (const g of groups.slice(at + 1)) {
     const composing = composingRows(spec, g, active)
-    if (composing.length > 0) patch[axisKey(g)] = composing[0].id
+    if (composing.length > 0) patch[axisKey(g)] = axisStampOf(composing[0])
     else patch[axisKey(g)] = ''
   }
   return patch
@@ -1414,3 +1428,124 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
   return out
 }
 
+
+// ── THE CLIENT'S COMPOSE GATE (2026-09-29, the operator's law: "IF
+//    THE CARD IS A CONTRACT/SCHEMA, HOW THE [REDACTED 2026-11-05] DOES THE SYSTEM
+//    ALLOW CONSTRUCTING BAD CONTRACTS? IT CAN ALL BE VALIDATED
+//    BEFOREHAND, IN THE CODE") ───────────────────────────────────
+// The estate door has always held this law (cardsVariant.ts:
+// selectVariant + envelopeRefusal) — but the door judges AFTER the
+// wire, on the merged doc. The client was a DELTA-EMITTER: per-key
+// patches over state held elsewhere, so no full doc existed at the
+// composer and validation could only live at the state-holder. The
+// composer now assembles the CANDIDATE doc and runs the door's OWN
+// law over the SERVED spec BEFORE any frame exists.
+//
+// THE MIRROR DISCIPLINE: exactly the door's clauses, no stricter, no
+// looser. A client gate stricter than the door refuses writes the
+// estate would admit (a new lie); looser lets the door be the first
+// line again (the old lie). When the door's law changes, this mirror
+// changes WITH it — pinned by the mirror wall.
+//   clause 1 (marriage): a stated variant must be an offered
+//     Variant-row id of this spec (the door: selectVariant's
+//     unknown-variant refusal);
+//   clause 2 (quant cell): a stated quant must be a Quant row owned
+//     by the stated variant (the door: selectVariant's cell refusal);
+//   clause 3 (envelope): a numeric steps/cfg stated in the doc must
+//     sit inside the STATED variant's sampler_envelope — the door:
+//     envelopeRefusal, the exact break that fired the operator's
+//     live incident ('stated cfg 3.5 is OUTSIDE the route envelope
+//     for variant "turbo" — the declared envelope is [1, 2]').
+//   The door's own skips mirror verbatim: an unstated variant is
+//   resolved by the door (never refused here); a non-numeric stated
+//   knob is skipped (the door's own typeof guard); a variant with no
+//   envelope declares nothing; a doc whose model points at another
+//   family is judged by THAT family's spec, not this one.
+
+export interface ComposeViolation {
+  /** the door's own voice — the same message the estate would send,
+   *  prefixed by the gate that caught it (BEFORE the wire). */
+  message: string
+}
+
+export function composeValidate(
+  spec: FormSpecDoc | null,
+  doc: SpecValues,
+): ComposeViolation[] {
+  if (spec === null) return []
+  const heldModel = doc['model']
+  if (typeof heldModel === 'string' && heldModel !== '' && spec.model !== undefined
+    && spec.model !== '' && heldModel !== spec.model) {
+    // this spec is not the law-holder for that doc — the door will
+    // read the doc's own family spec (the drill refetches per model)
+    return []
+  }
+  const out: ComposeViolation[] = []
+  const variantRows = (spec.variants ?? []).filter((r) => r.group === 'Variant')
+  const rawVariant = doc['variant']
+  if (typeof rawVariant === 'string' && rawVariant !== '') {
+    const offered = variantRows.find((r) => r.id === rawVariant)
+    if (offered === undefined) {
+      out.push({
+        message: 'card_compose: unknown variant ' + JSON.stringify(rawVariant)
+          + ' for model ' + JSON.stringify(spec.model ?? '')
+          + ' (known: ' + variantRows.map((r) => r.id).join(', ') + ')',
+      })
+    } else {
+      // clause 2 — the stated quant must be a cell of THIS variant
+      const rawQuant = doc['quant']
+      if (typeof rawQuant === 'string' && rawQuant !== '') {
+        const cells = (spec.variants ?? []).filter(
+          (r) => r.group === 'Quant' && r.owner === offered.id,
+        )
+        if (!cells.some((c) => c.quant === rawQuant)) {
+          out.push({
+            message: 'card_compose: unknown quant ' + JSON.stringify(rawQuant)
+              + ' for model ' + JSON.stringify(spec.model ?? '') + ' variant ' + JSON.stringify(offered.id)
+              + ' (known: ' + cells.map((c) => c.quant).join(', ') + ')',
+          })
+        }
+      }
+      // clause 3 — the envelope, against the STATED variant (never
+      // the still-held one: the half-switch's whole failure was the
+      // door judging raw's cfg against turbo's envelope)
+      const env = offered.sampler_envelope ?? null
+      if (env !== null) {
+        for (const knob of ['steps', 'cfg'] as const) {
+          const bound = env[knob]
+          if (bound === undefined) continue
+          const stated = doc[knob]
+          if (typeof stated !== 'number' || !Number.isFinite(stated)) continue
+          const [lo, hi] = bound
+          if (stated >= lo && stated <= hi) continue
+          out.push({
+            message: 'card_compose: stated ' + knob + ' ' + String(stated)
+              + ' is OUTSIDE the route envelope for variant ' + JSON.stringify(offered.id)
+              + (offered.route !== '' ? ' (route ' + offered.route + ')' : '')
+              + ' — the declared envelope is [' + String(lo) + ', ' + String(hi) + ']'
+              + '. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.',
+          })
+        }
+      }
+    }
+  }
+  return out
+}
+
+/** Compose the CANDIDATE doc the door would judge: the bench row's
+ *  held params, the user layer's overrides, then the in-flight frame
+ *  — later layers win, and a null value DELETES the key (the wire's
+ *  own unset law). This is composition: the full doc, assembled
+ *  where the edit happens, so the law can run BEFORE the write. */
+export function composeCandidateDoc(
+  held: SpecValues,
+  user: SpecValues,
+  frame: Record<string, unknown>,
+): SpecValues {
+  const doc: SpecValues = { ...held, ...user }
+  for (const [k, v] of Object.entries(frame)) {
+    if (v === null) delete doc[k]
+    else doc[k] = v
+  }
+  return doc
+}

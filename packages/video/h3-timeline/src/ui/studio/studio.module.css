@@ -630,3 +630,12 @@ details[open] > summary .chev { transform: rotate(180deg); }
   font-size: 11px;
   line-height: 1.45;
 }
+
+/* THE GATE FACE (2026-09-29): the compose gate's refusal voice at
+ * the studio rail — the drill's runError face, same token. */
+.gateFace {
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 11px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}

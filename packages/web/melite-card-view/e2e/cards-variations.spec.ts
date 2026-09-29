@@ -132,7 +132,7 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
   test('image-gen krea-2: the variant envelopes are served on the wire the browser reads', async ({ page }) => {
     const errors = collectPageErrors(page)
     await settle(page)
-    const { rail } = await openBench(page, [{ card: 'image-gen', params: { model: 'krea-2' } }])
+    const { key, rail } = await openBench(page, [{ card: 'image-gen', params: { model: 'krea-2' } }])
     expect(await rail.count(), 'the krea-2 lane boarded').toBe(1)
 
     await rail.first().click({ timeout: 15_000, force: true })
@@ -167,6 +167,28 @@ test.describe("the variation law pins (the operator's three breaks, held at the 
     await page.waitForTimeout(3_000)
     await expect(page.locator('select[data-axis="Variant"]').first(), 'the raw route is held').toHaveValue('raw')
     await expect(page.locator('[data-lane-warn]'), 'raw: still exactly one lane-warn strip').toHaveCount(1)
+
+    // —— THE MARRIAGE WRITE (2026-10-12, the operator's live break:
+    // 'THE WRITE DID NOT LAND — card_compose: stated cfg 3.5 is
+    // OUTSIDE the route envelope for variant "turbo" ... The studio
+    // shows your edit; the bench does not'). A pick is ONE contract —
+    // the variant key AND its defaults land in the SAME write, judged
+    // against the NEW variant's envelope. The UI axis alone is NOT
+    // the truth: the BENCH row is. Read it fresh off the wire.
+    await expect(page.locator('text=THE WRITE DID NOT LAND'), 'no refused write face').toHaveCount(0)
+    const benchValue = await callBench(page, 'bench/get', { sessionKey: key }) as { stages?: Array<{ params?: Record<string, unknown> }>; doc?: { stages?: Array<{ params?: Record<string, unknown> }> } }
+    // the wire's own shape (tour.ts's seed law): the value may be
+    // flat {draft_id, rev, stages} or doc-wrapped — read both, never
+    // a silent {} that would fake a missing write
+    const benchDoc = benchValue?.doc ?? benchValue ?? {}
+    const params = benchDoc.stages?.at(-1)?.params ?? {}
+    expect(params['variant'], 'the bench row holds the raw pick').toBe('raw')
+    const cfg = Number(params['cfg'])
+    const steps = Number(params['steps'])
+    expect(cfg, `the landed cfg sits INSIDE raw's envelope [2, 6] (got ${String(params['cfg'])})`).toBeGreaterThanOrEqual(2)
+    expect(cfg).toBeLessThanOrEqual(6)
+    expect(steps, `the landed steps sit INSIDE raw's envelope [30, 60] (got ${String(params['steps'])})`).toBeGreaterThanOrEqual(30)
+    expect(steps).toBeLessThanOrEqual(60)
     await page.getByRole('button', { name: 'Collapse card' }).click({ timeout: 10_000 })
     await expectNoPageErrors(page, errors)
   })

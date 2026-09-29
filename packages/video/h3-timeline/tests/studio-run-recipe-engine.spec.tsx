@@ -79,16 +79,25 @@ function serve(): void {
 
 function engine(layerA: Record<string, unknown>, over?: Record<string, unknown>) {
   const keys: [string, unknown][] = []
+  // THE ATOMIC PICK SEAT (2026-09-29): picks ride setLayerA (the
+  // whole-doc functional setter); the harness applies the updater
+  // to the held doc like the studio's own Dispatch.
+  let doc: Record<string, unknown> = { fps: 24, ...layerA }
   const els = render(
     <RunRecipeEngine
       stage={{ params: { width: 800, height: 600 } } as never}
-      layerA={{ fps: 24, ...layerA } as unknown as LayerA}
+      layerA={doc as unknown as LayerA}
       setLayerAKey={(k, v) => { keys.push([k as string, v]) }}
+      setLayerA={(updater) => {
+        doc = typeof updater === "function"
+          ? (updater as (p: unknown) => unknown)(doc) as Record<string, unknown>
+          : updater as unknown as Record<string, unknown>
+      }}
       refArtifacts={[{ name: "own_out.png", url: "/melite-media/runs/r8/img/own_out.png" }]}
       {...over}
     />,
   )
-  return { keys, els }
+  return { keys, els, doc: () => doc }
 }
 
 // ── THE PICKER WIRE (2026-09-21, the From-media break) ──────────────
@@ -169,7 +178,7 @@ describe("recipe (clock + route) — the document's identity", () => {
 
   it("RULE A: the family's recipe pills stamp next to the model — the lora bag INCLUDED", async () => {
     serve()
-    const { keys } = engine({ fps: 30 })
+    const { keys, doc } = engine({ fps: 30 })
     // the pills ride CardForm's own axes (the generic seam seats
     // them — the hand-seated copy is dead)
     const recipeSelect = async (): Promise<HTMLElement> => {
@@ -181,16 +190,18 @@ describe("recipe (clock + route) — the document's identity", () => {
     const optionIds = Array.from(turbo.querySelectorAll("option")).map((o) => o.getAttribute("value"))
     assert.ok(optionIds.includes("draft_02mp"))
     assert.ok(!optionIds.includes("default")) // stamp-less row: a dead option renders never
-    // the click writes the FULL payload — the lora bag rides the
-    // stamp (the Rule A amendment of stroke 38's drop)
+    // the pick writes the FULL payload in ONE atomic write — the
+    // lora bag rides the stamp (the Rule A amendment of stroke 38's
+    // drop); the per-key verb stays SILENT (the 2026-09-29 law)
     fireEvent.change(turbo as HTMLElement, { target: { value: "turbo_lightx2v" } })
-    assert.deepEqual(keys, [["loras", [{ id: "h3_lightx2v_turbo" }]]])
+    assert.deepEqual(keys, [], "the per-key verb never carries a pick")
+    assert.deepEqual(doc().loras, [{ id: "h3_lightx2v_turbo" }])
     cleanup()
   })
 
   it("the geometry pill stamps width/height; FPS stays an editable document control", async () => {
     serve()
-    const { keys } = engine({ fps: 30 })
+    const { keys, doc } = engine({ fps: 30 })
     await screen.findByLabelText("Recipe")
     // THE READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL SEE
     // THIS [REDACTED 2026-11-05] SKIN?"): geometry owns ONE surface — the Width /
@@ -199,7 +210,11 @@ describe("recipe (clock + route) — the document's identity", () => {
     assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)
     fireEvent.change(await screen.findByLabelText("Recipe"), { target: { value: "draft_02mp" } })
     fireEvent.change(screen.getByLabelText("FPS"), { target: { value: "24" } })
-    assert.deepEqual(keys, [["width", 768], ["height", 448], ["fps", 24]])
+    // the recipe stamp landed atomically (width+height together);
+    // FPS is a document control and keeps the per-key verb
+    assert.equal(doc().width, 768)
+    assert.equal(doc().height, 448)
+    assert.deepEqual(keys, [["fps", 24]])
     cleanup()
   })
 
@@ -303,6 +318,7 @@ describe("geometry (resolved readout + the declared inject rows)", () => {
         stage={{} as never}
         layerA={{ fps: 24 } as unknown as LayerA}
         setLayerAKey={() => {}}
+        setLayerA={() => {}}
         refArtifacts={[]}
       />,
     )
@@ -336,6 +352,84 @@ describe("the dead recipe fictions stay dead (pinned absent)", () => {
     ]) {
       assert.equal(screen.queryByLabelText(dead), null, dead)
     }
+    cleanup()
+  })
+})
+
+describe("THE ATOMIC PICK LAW at the studio rail (2026-09-29)", () => {
+  it("a Recipe pick lands the row's defaults in ONE whole-doc write — the per-key verb never fires", async () => {
+    serve()
+    // Draft 02MP carries width 768 + height 448 — the pick must land
+    // the whole stamp as ONE setLayerA updater; the per-key
+    // setLayerAKey seat must stay SILENT for the pick (a pick is a
+    // contract, not a key sequence — the half-switch law). No
+    // recipe key persists by design: the selection DERIVES from the
+    // stamp (activeRecipeId) — the select itself is the receipt.
+    const { keys, doc } = engine({ width: 1024, height: 640 })
+    const pick = await screen.findByLabelText("Recipe")
+    fireEvent.change(pick, { target: { value: "draft_02mp" } })
+    assert.deepEqual(keys, [], "the per-key verb never carries a pick")
+    assert.equal(doc().width, 768)
+    assert.equal(doc().height, 448)
+    // no re-render in this harness (the mock Dispatch applies the
+    // updater to the held doc); the STAMP is the truth, and the
+    // selection derives from it on the studio's real render cycle
+    assert.equal("recipe" in doc() ? doc().recipe : undefined, undefined, "no recipe key persists — the stamp is the truth")
+    cleanup()
+  })
+})
+
+describe("THE COMPOSE GATE at the studio rail (law C — the schema is never thrown away)", () => {
+  /** A DECL that contradicts ITSELF: the variant declares a steps
+   *  envelope [4, 40] while a Recipe row's stamp carries steps 60.
+   *  The gate composes the candidate doc and refuses BEFORE any
+   *  layerA write — the schema rides every arm, or it is gutter
+   *  trash (operator, 2026-09-29). */
+  function selfContradicting(): unknown {
+    return {
+      form: "h3-timeline",
+      features: { variant_groups: { Variant: { label: "Variant" }, Recipe: { label: "Recipe" } } },
+      schema: schemaEnvelope({
+        steps: { type: "number", meta: { description: "Sampling steps (run)", default: 20, min: 4, max: 40 } },
+      }),
+      variants: [
+        { id: "h3", label: "Standard", group: "Variant", defaults: {}, route: "h3-timeline", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "",
+          sampler_envelope: { steps: [4, 40], cfg: [1, 10] } },
+        { id: "overdraft", label: "Overdraft", group: "Recipe", defaults: { steps: 60 }, route: "", hint: null, engine: "comfyui", quant: null, vram_peak_gb: null, owner: "" },
+      ],
+    }
+  }
+  function serveGate(): void {
+    vi.stubGlobal("fetch", () =>
+      Promise.resolve(new Response(JSON.stringify(selfContradicting()), { headers: { "content-type": "application/json" } })))
+  }
+
+  it("a recipe stamp outside the variant envelope REFUSES — the doc is untouched, the face speaks the door's voice", async () => {
+    serveGate()
+    // the envelope clause judges the STATED variant (the door's own
+    // skip law: no variant stated → the door resolves): the user
+    // layer holds variant h3, so the candidate doc states it and the
+    // envelope [4, 40] is the law the recipe stamp must survive
+    const { doc } = engine({ fps: 24, steps: 20, variant: "h3" })
+    const pick = await screen.findByLabelText("Recipe")
+    fireEvent.change(pick, { target: { value: "overdraft" } })
+    // the write never happened: the doc holds EXACTLY what it held
+    assert.equal(doc().steps, 20, "a refused pick never touches layerA")
+    assert.equal(doc().variant, "h3")
+    const face = await screen.findByRole("alert")
+    assert.match(face.textContent ?? "", /THE COMPOSE GATE REFUSED/)
+    assert.match(face.textContent ?? "", /stated steps 60 is OUTSIDE the route envelope for variant "h3"/)
+    cleanup()
+  })
+
+  it("the positive control: an in-envelope pick lands atomically and no refusal face shows", async () => {
+    serve()
+    const { doc } = engine({ steps: 20 })
+    const pick = await screen.findByLabelText("Recipe")
+    fireEvent.change(pick, { target: { value: "draft_02mp" } })
+    assert.equal(doc().width, 768)
+    assert.equal(doc().height, 448)
+    assert.equal(screen.queryByRole("alert"), null, "no refusal face on a legal pick")
     cleanup()
   })
 })

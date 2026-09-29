@@ -48,10 +48,21 @@ function PackPromptRow({ id, onInstallPack }: {
       : 'Install request failed — retry from the assets tab'))
 }
 
-export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
+export function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }: {
   spec: FormSpecDoc
   value: SpecValues
   onSet(name: string, v: unknown): void
+  /** THE ATOMIC PICK, REQUIRED BY CONSTRUCTION (2026-10-12, the
+   *  operator's live break: switch krea-2 turbo→raw refused 'stated
+   *  cfg 3.5 is OUTSIDE the route envelope for variant "turbo"').
+   *  A pick is a MARRIAGE — the variant key, its defaults, and the
+   *  below-axis re-seeds are ONE contract landing as ONE write.
+   *  Per-key writes judge the defaults against the STILL-HELD old
+   *  variant and the door refuses the half-state. There is NO
+   *  per-key fallback: a host that cannot write a whole patch
+   *  cannot offer picks at all — the compiler refuses it here,
+   *  not the run door later. */
+  onPick: (patch: SpecValues) => void
   /** THE RECIPE'S SEAT (stroke 20, the operator's placement law):
    *  when the card owns a recipe field AND the matrix serves, the
    *  field renders HERE — under Model/Variant/Quant — never at the
@@ -91,8 +102,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
   }
   const contract = spec.features?.variant_groups ?? {}
   const pick = (row: VariantRow): void => {
-    const patch = axisPickPatch(spec, row)
-    for (const [k, v] of Object.entries(patch)) onSet(k, v)
+    onPick(axisPickPatch(spec, row))
   }
   // RULE A — THE RECIPE LAW (operator, 2026-09-18: "All Cards must
   // have Recipies… This *includes* LORAs being setup this way"):
@@ -147,8 +157,12 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     const heldRaw = value[axisKey(g)]
     const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
     const rows = rowsOf(g, active)
-    if (heldId !== undefined && rows.some((r) => r.id === heldId)) {
-      active[g] = heldId
+    // THE VOCABULARY GROUND (2026-09-29): the user layer holds the
+    // DOOR's stamp (quant 'int8'), the option list speaks catalog
+    // ids ('raw__int8') — a held value grounds by EITHER face
+    if (heldId !== undefined && rows.some((r) => r.id === heldId || (r.quant ?? '') === heldId)) {
+      const grounded = rows.find((r) => r.quant === heldId && r.id !== heldId)
+      active[g] = grounded !== undefined ? grounded.id : heldId
     } else if (heldId !== undefined) {
       active[g] = heldId // refused — rendered as itself below
     } else {
@@ -177,7 +191,12 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
       onChange: (e: unknown) => {
         const m = (e as { target: { value: string } }).target.value
         const patch = modelSwitchPatch(spec, m)
-        for (const [k, v] of Object.entries(patch)) onSet(k, v)
+        // THE ATOMIC PICK (same marriage law as the variant pick,
+        // 2026-10-12): a model switch re-seeds EVERY axis — sending
+        // the re-point per key lets the door judge the half-state
+        // (model 2.1 against the still-held variant lightning) and
+        // refuse, stranding unlanded keys. ONE write, whole patch.
+        onPick(patch)
       },
     },
       // the refused model renders AS ITSELF — the run will shoot
@@ -207,7 +226,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
     const rows = rowsOf(g, active)
     const heldRaw = value[axisKey(g)]
     const heldId = typeof heldRaw === 'string' && heldRaw !== '' ? heldRaw : undefined
-    const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId) ? heldId : undefined
+    const refusedId = heldId !== undefined && !rows.some((r) => r.id === heldId || (r.quant ?? '') === heldId) ? heldId : undefined
     if (rows.length === 0 && refusedId === undefined) return null
     const label = contract[g]?.label ?? titleCaseId(g)
     return h('label', { key: g, className: css.specField },
@@ -277,7 +296,7 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
       : null,
     // the axes below the pair (Quant, …) keep the grid's flow.
     restGroups.map((g) => axisField(g)),
-    h(RecipePills, { spec, onSet, values: value }),
+    h(RecipePills, { spec, onPick, values: value }),
   )
 }
 
@@ -297,9 +316,14 @@ export function ModelAxes({ spec, value, onSet, onDownloadModel }: {
  * THE REUSE LAW: extracted so EVERY model surface seats the same
  * dropdown -- CardForm under the axes, a studio beside its model
  * route. Never a second implementation. */
-export function RecipePills({ spec, onSet, values }: {
+export function RecipePills({ spec, onPick, values }: {
   spec: FormSpecDoc
-  onSet: (name: string, value: unknown) => void
+  /** THE ATOMIC PICK LAW (2026-09-29, the fourth seat): the row's
+   * FULL stamp lands as ONE write — the per-key onSet loop was the
+   * recipe half-switch (width here, height a beat later), the same
+   * crime the drill's law killed at the bench wire. REQUIRED: a
+   * host that cannot write whole patches does not mount. */
+  onPick: (patch: Record<string, unknown>) => void
   /** the USER layer (the selection derives from it -- the one
    * truth; absent = always the placeholder). */
   values?: SpecValues
@@ -310,7 +334,7 @@ export function RecipePills({ spec, onSet, values }: {
   const pick = (id: string): void => {
     const row = pillRows.find((r) => r.id === id)
     if (row === undefined) return
-    for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v)
+    onPick(axisPickPatch(spec, row))
   }
   return h('label', { className: css.specField },
     h('span', { className: css.specFieldKey }, 'Recipe'),

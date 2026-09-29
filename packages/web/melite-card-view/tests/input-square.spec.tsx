@@ -43,7 +43,7 @@ test('select options render text for BOTH door shapes', () => {
     }),
   }
   const user: SpecValues = { resolution: '512', bg: 'auto' }
-  render(createElement(SpecForm, { spec: doc, user, onSet: () => {} }))
+  render(createElement(SpecForm, { spec: doc, user, onSet: () => {}, onPick: () => {} }))
   const s1 = screen.getByLabelText('Resolution') as HTMLSelectElement
   expect([...s1.options].map((o) => o.textContent)).toEqual(['512', '1024'])
   const s2 = screen.getByLabelText('BG') as HTMLSelectElement
@@ -156,6 +156,7 @@ function HostSquare(): ReturnType<typeof createElement> {
       spec: IMAGE_DOC,
       user: values,
       onSet: onEdit,
+      onPick: () => {},
       square,
     }),
   )
@@ -222,6 +223,7 @@ test('the seam: renderSourcePick claims the picker face — the host override be
         spec: IMAGE_DOC,
         user: {},
         onSet: vi.fn(),
+        onPick: () => {},
         square,
       }),
     )

@@ -37,15 +37,25 @@ function serve(): void {
 
 function engine(layerA: Record<string, unknown>) {
   const keys: [string, unknown][] = []
+  // THE ATOMIC PICK SEAT (2026-09-29): picks ride setLayerA — the
+  // whole-doc functional setter — never the per-key verb. The
+  // harness applies the updater to the held doc, exactly like the
+  // studio's own Dispatch.
+  let doc: Record<string, unknown> = { fps: 24, ...layerA }
   render(
     <RunRecipeEngine
       stage={{ params: {} } as never}
-      layerA={{ fps: 24, ...layerA } as never}
+      layerA={doc as unknown as never}
       setLayerAKey={(k: string, v: unknown) => { keys.push([k, v]) }}
+      setLayerA={(updater) => {
+        doc = typeof updater === "function"
+          ? (updater as (p: unknown) => unknown)(doc) as Record<string, unknown>
+          : updater as unknown as Record<string, unknown>
+      }}
       refArtifacts={[]}
     />,
   )
-  return { keys }
+  return { keys, doc: () => doc }
 }
 
 describe("geometry rows ride the generic seam (min+max = the slider law)", () => {

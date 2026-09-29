@@ -23,18 +23,25 @@
  * injects own geometry, one surface).
  */
 import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base"
+import { axisUnset, composeCandidateDoc, composeValidate } from "@melite/card-base/spec"
 import { fetchMediaLibrary } from "@melite/card-base/media-library"
+import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"
 import type { CardStage } from "@melite/contracts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */
 export function RunRecipeEngine({
-  stage, layerA, setLayerAKey, refArtifacts,
+  stage, layerA, setLayerAKey, setLayerA, refArtifacts,
 }: {
   stage: CardStage
   layerA: LayerA
   setLayerAKey: SetLayerAKey
+  /** The whole-doc setter (the ATOMIC PICK LAW's verb): a pick is
+   * ONE contract — the axis key AND its chain's defaults land in
+   * ONE state write, never key-by-key (the half-switch the drill's
+   * law killed at the bench wire; the same law at the studio rail). */
+  setLayerA: Dispatch<SetStateAction<LayerA>>
   /** The pickers' artifact index (own run ∪ upstreams — the studio's
    * one candidate source, the same rows the call-card ref buckets
    * serve). Threaded to the form wire so the input rail's From-flow /
@@ -65,8 +72,15 @@ export function RunRecipeEngine({
     candidates: refArtifacts.map((a) => ({ id: a.name, label: a.name, url: a.url })),
     loadMedia: fetchMediaLibrary,
   }
+  // THE GATE FACE (the drill's own voice): a refused compose never
+  // writes, and the refusal SAYS so in the door's words — never a
+  // silent drop, never a face that blames the operator.
+  const [gateFace, setGateFace] = useState<string | null>(null)
   return (
     <>
+      {gateFace !== null ? (
+        <div role="alert" data-gate-face="1" className={s.gateFace}>{gateFace}</div>
+      ) : null}
       <div className={s.group} data-testid="tl-recipe-chrome">
         <div className={s.groupTitle}>Recipe</div>
         {/* THE ROUTE ROW IS DEAD (operator 2026-09-20: "we use ONE
@@ -100,6 +114,43 @@ export function RunRecipeEngine({
           base={(stage.params ?? undefined) as Record<string, unknown> | undefined}
           onSet={edit}
           onUnset={(n) => setLayerAKey(n as keyof LayerA, undefined)}
+          // THE ATOMIC PICK LAW (the same arm the bench drill seats):
+          // a model/variant pick rides ONE whole-doc write — the
+          // per-key setter could never express "variant AND its
+          // defaults" as one contract. The empty-selection law rides
+          // it too: an axis key set to '' is UNSTATED — it leaves
+          // the doc (undefined), never a held empty string.
+          // THE COMPOSE GATE (law C, 2026-09-29 — the operator's
+          // call: the schema is NOT thrown away when the seat gets
+          // hard): the pick composes the FULL candidate doc and is
+          // judged against the door's own clauses BEFORE any state
+          // write. A refused pick never touches layerA — the schema
+          // rides every arm, studio rail included, or it is gutter
+          // trash.
+          onPick={(patch) => {
+            const candidate = composeCandidateDoc(
+              (stage.params ?? {}) as Record<string, unknown>,
+              layerA as unknown as Record<string, unknown>,
+              patch,
+            )
+            const violations = composeValidate(spec, candidate)
+            if (violations.length > 0) {
+              setGateFace(
+                'THE COMPOSE GATE REFUSED — ' + violations[0].message
+                  + ' — the write never left the studio. Fix the stated value, or pick a different route.',
+              )
+              return
+            }
+            setGateFace(null)
+            setLayerA((prev) => {
+              const next: Record<string, unknown> = { ...prev }
+              for (const [k, v] of Object.entries(patch)) {
+                if (axisUnset(k, v, spec)) next[k] = undefined
+                else next[k] = v
+              }
+              return next as unknown as LayerA
+            })
+          }}
           wire={wire}
         />
       ) : null}

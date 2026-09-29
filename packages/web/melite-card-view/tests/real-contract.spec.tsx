@@ -84,6 +84,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
         onSet: (name: string, v: unknown) => {
           setState((m) => ({ ...m, user: { ...m.user, [name]: v } }))
         },
+        onPick: () => {},
       })
     }))
     // the one list renders as the input stack — the real cap rides
@@ -115,6 +116,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
       spec: REAL21,
       user: { model: 'qwen-img-edit-21', prompt: 'a cat' },
       onSet: () => {},
+      onPick: () => {},
     }))
     expect(screen.queryByLabelText('Region Mask')).toBeNull()
     expect(screen.getByText('Modifiers')).toBeTruthy()

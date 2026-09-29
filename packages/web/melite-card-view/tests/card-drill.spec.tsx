@@ -12,7 +12,7 @@
  * Pill, StateDot). fetch is stubbed whole (the wire frame the tab
  * posts is parsed and recorded, per method).
  */
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
@@ -832,4 +832,191 @@ test('a CAS-conflicted write re-reads the rev and re-applies once — the run st
   expect((writes[1]?.args as { expectRev?: unknown }).expectRev).toBe(8)
   const start = calls.find((c) => c.method === 'runs/start')
   expect(start?.args).toMatchObject({ doc: { steps: 20 } })
+})
+
+// ── THE ATOMIC PICK / THE MARRIAGE LAW (2026-10-12, the operator's
+//    live break: "I OPEN THE IMG GEN CARD, I SWITCH VARIANT TO THE
+//    NON TURBO" → 'THE WRITE DID NOT LAND — card_compose: stated cfg
+//    3.5 is OUTSIDE the route envelope for variant "turbo" ... The
+//    studio shows your edit; the bench does not') ────────────────
+// A variant pick is a MARRIAGE — the variant key, its defaults, and
+// the below-axis re-seeds are ONE contract, ONE write. The per-key
+// path sent cfg 3.5 (raw's default) to a bench still holding turbo;
+// the compose door judged the half-state against the OLD envelope
+// and refused it (the door is right; the authoring boundary was
+// split). THE PIN: the pick lands as ONE drafts/patch frame carrying
+// variant AND steps AND cfg TOGETHER — never a lone default against
+// the old variant.
+test('a variant pick lands as ONE marriage write — variant, steps, and cfg in the same frame', async () => {
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 4 } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2' },
+      { id: 'raw', label: 'Raw', group: 'Variant', defaults: { model: 'krea-2-raw', steps: 52, cfg: 3.5 }, route: 'krea-2-raw' },
+    ],
+  }
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': kreaSpec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube' } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2' } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const variant = await screen.findByLabelText('Variant', {}, { timeout: 2000 })
+  expect((variant as HTMLSelectElement).value).toBe('turbo')
+  // THE PICK: the operator's gesture — turbo → raw
+  await user.selectOptions(variant, 'raw')
+  // THE MARRIAGE: one frame carries variant AND its defaults together
+  await waitFor(() => {
+    const frames = calls
+      .filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+    const marriage = frames.find((p) => p['variant'] === 'raw' && p['steps'] === 52 && p['cfg'] === 3.5)
+    expect(marriage, 'ONE write carries the whole marriage: variant raw + steps 52 + cfg 3.5').toBeDefined()
+    // and NO half-state ever hit the wire: a frame carrying raw's
+    // cfg without the variant key is the refused half-switch itself
+    const half = frames.filter((p) => p['cfg'] === 3.5 && p['variant'] !== 'raw')
+    expect(half, 'no frame sends raw\'s defaults against the old variant').toEqual([])
+  })
+})
+
+// ── THE COMPOSE GATE AT THE DRILL (2026-09-29, the operator's law:
+//    "IF THE CARD IS A CONTRACT, HOW DOES THE SYSTEM ALLOW
+//    CONSTRUCTING BAD CONTRACTS? IT CAN ALL BE VALIDATED BEFOREHAND,
+//    IN THE CODE"). The client is a doc-COMPOSER now: every write
+//    path assembles the full candidate doc and runs the door's own
+//    law BEFORE any wire frame exists. An invalid doc is refused in
+//    the studio, with the door's voice — the estate never receives
+//    what it would refuse. ────────────────────────────────────────
+test('THE COMPOSE GATE: a typed cfg outside the envelope never reaches the wire — refused in the studio with the door\'s own voice', async () => {
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 4 } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
+        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    ],
+  }
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': kreaSpec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: 4, cfg: 1 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2', variant: 'turbo', steps: 4, cfg: 1 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // number fields render as slider atoms (input[type=range], the
+  // spec's own widget law) — drive the range directly; CardForm's
+  // edit verb coerces '9' to the number before onSet
+  const cfgField = await screen.findByLabelText('CFG', {}, { timeout: 4000 })
+  // THE GESTURE: slide 9 against turbo's [1,2] envelope
+  fireEvent.input(cfgField, { target: { value: '9' } })
+  fireEvent.change(cfgField, { target: { value: '9' } })
+  // THE GATE: the door's own law, caught at composition — the face
+  // speaks BEFORE any wire round-trip
+  await waitFor(() => {
+    expect(document.body.textContent ?? '').toContain('THE COMPOSE GATE REFUSED')
+    expect(document.body.textContent ?? '').toContain('stated cfg 9 is OUTSIDE the route envelope for variant "turbo"')
+  })
+  // and NO frame ever left: not the trailing scheduler, not a flush
+  await new Promise((r) => setTimeout(r, 500))
+  expect(calls.filter((c) => c.method === 'drafts/patch'), 'the invalid doc never reached the wire').toEqual([])
+})
+
+// THE POSITIVE CONTROL: the same field INSIDE the envelope writes
+// normally — the gate is exactly the door's law, never stricter
+test('THE COMPOSE GATE\'S POSITIVE CONTROL: cfg inside the envelope writes as before', async () => {
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 4 } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
+        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    ],
+  }
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': kreaSpec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: 4, cfg: 1 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2', variant: 'turbo', steps: 4, cfg: 1 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  const cfgField = await screen.findByLabelText('CFG', {}, { timeout: 4000 })
+  fireEvent.input(cfgField, { target: { value: '1.5' } })
+  fireEvent.change(cfgField, { target: { value: '1.5' } })
+  await waitFor(() => {
+    const frames = calls.filter((c) => c.method === 'drafts/patch')
+      .map((c) => ((c.args as { patch?: { params?: Record<string, unknown> } }).patch?.params) ?? {})
+    expect(frames.some((p) => p['cfg'] === 1.5), 'the valid doc writes as before').toBe(true)
+  })
+  expect(document.body.textContent ?? '').not.toContain('THE COMPOSE GATE REFUSED')
 })

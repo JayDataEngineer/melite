@@ -125,6 +125,7 @@ test('CardForm renders Model, Variant, and Quant selects ABOVE the parameters', 
       spec: KREA,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -171,6 +172,11 @@ test('picking Raw applies the overlay: steps/cfg ride, quant clears, the model N
         edits[name] = v
         setUser((m) => ({ ...m, [name]: v }))
       },
+      // THE ATOMIC PICK SEAT (required by construction)
+      onPick: (patch: Record<string, unknown>) => {
+        Object.assign(edits, patch)
+        setUser((m) => ({ ...m, ...patch }))
+      },
     })
   })
   render(comp)
@@ -189,6 +195,7 @@ test('no matrix, no axes — the plain form is unchanged', () => {
     spec: { ...KREA, variants: [] },
     user: { prompt: 'x' },
     onSet: () => {},
+    onPick: () => {},
   })
   render(comp)
   expect(screen.queryByLabelText('Model')).toBeNull()
@@ -419,10 +426,14 @@ test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing p
   // the seed carries no recipe key (stroke 33)
   expect(state.user['recipe']).toBeUndefined()
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   render(createElement(SpecForm, {
     spec: SEEDVR,
     user: state.user,
     onSet,
+    onPick,
   }))
   const model = screen.getByLabelText('Model') as HTMLSelectElement
   expect(model.value).toBe('seedvr2_ema')
@@ -442,10 +453,14 @@ test('the seedvr2 drill renders Model + Variant and NO Recipe seat — nothing p
 test('the qwen drill chains Quant by owner — the user layer never gains a recipe key', async () => {
   const state = { user: seedUser(QWEN, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   render(createElement(SpecForm, {
     spec: QWEN,
     user: state.user,
     onSet,
+    onPick,
   }))
   expect((screen.getByLabelText('Variant') as HTMLSelectElement).value).toBe('lightning')
   expect((screen.getByLabelText('Quant') as HTMLSelectElement).value).toBe('lightning4')
@@ -531,10 +546,14 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
   // a bespoke card field — survives intact.)
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   const { container } = render(createElement(SpecForm, {
     spec: PILLS,
     user: state.user,
     onSet,
+    onPick,
   }))
   // THE DROPDOWN (operator, 2026-09-18): one select, never links
   const select = container.querySelector('[data-recipe-select]') as HTMLElement
@@ -547,10 +566,14 @@ test('RULE A: a stamp that is ENTIRELY mod-owned STILL renders its pill — the 
 test('KNOB STAMP: the pill click writes its full payload — no recipe key, ever', async () => {
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   const { container } = render(createElement(SpecForm, {
     spec: PILLS,
     user: state.user,
     onSet,
+    onPick,
   }))
   fireEvent.change(container.querySelector('[data-recipe-select]') as HTMLElement, { target: { value: 'quick' } })
   await waitFor(() => {
@@ -564,10 +587,14 @@ test('KNOB STAMP: the pill click writes its full payload — no recipe key, ever
 test('RULE A MIXED: a row carrying knobs AND the lora bag stamps BOTH — the full payload is the preset', async () => {
   const state = { user: seedUser(PILLS, {}) as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   const { container } = render(createElement(SpecForm, {
     spec: PILLS,
     user: state.user,
     onSet,
+    onPick,
   }))
   const select = container.querySelector('[data-recipe-select]') as HTMLElement
   expect(select).not.toBeNull()
@@ -625,10 +652,14 @@ test('stroke 34: the drill renders NO recipe select — the dead layer has no se
   // the heal dropped the poison before the mount
   expect(state.user['recipe']).toBeUndefined()
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   const { container } = render(createElement(SpecForm, {
     spec: IMGGEN,
     user: state.user,
     onSet,
+    onPick,
   }))
   // 2026-09-18: the FAMILY axis renders as the dropdown select —
   // the dead CARD layer (`recipe` param knob) still has no seat
@@ -659,10 +690,14 @@ test('modelSwitchPatch: a model switch re-seeds every axis (never the old family
 test('switching the Model select resets the Variant axis (the drill never holds turbo-for-anima)', async () => {
   const state = { user: { prompt: 'a cat', model: 'krea-2', variant: 'turbo', quant: 'int8' } as SpecValues }
   const onSet = (name: string, v: unknown): void => { state.user = { ...state.user, [name]: v } }
+  // THE ATOMIC PICK SEAT (required by construction): the host
+  // merges the WHOLE patch — picks are one contract, one write
+  const onPick = (patch: Record<string, unknown>): void => { state.user = { ...state.user, ...patch } }
   render(createElement(SpecForm, {
     spec: { ...KREA, families: [{ id: 'anima', present: true }] },
     user: state.user,
     onSet,
+    onPick,
   }))
   // a FAMILY switch clears the axes (the refetched family's rows
   // seed — stroke 19/20's law); krea-2-raw is not an option at all
@@ -691,6 +726,7 @@ test('THE LANE PROOF: the Model select renders the HELD model as itself, refused
       spec: KREA,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -721,6 +757,7 @@ test('a held INVALID axis on a VALID model refuses too — the ungated union no 
       spec: KREA,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -743,6 +780,7 @@ test('a held coord that breaks the OWNER CHAIN refuses as itself — the first-r
       spec: KREA,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -759,6 +797,7 @@ test('one pick repairs a refused stage — the pick\'s overlay re-points the mod
       spec: KREA,
       user: { model: 'anima', variant: 'turbo', quant: 'int8' },
       onSet: (name: string, v: unknown) => { edits[name] = v },
+      onPick: (patch: Record<string, unknown>) => { Object.assign(edits, patch) },
     })
   })
   render(comp)
@@ -786,6 +825,7 @@ test('a boarded-but-not-downloaded family SERVES in the Model rail — visible, 
       spec,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -809,6 +849,7 @@ test('a HELD absent family grounds through the families block — the rail shows
       spec,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -832,6 +873,7 @@ test('a DECLARED extension pack the engine cannot see renders AS ITSELF — mark
       spec,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
       onInstallPack: (id: string) => { fired = id; return Promise.resolve(true) },
     })
   })
@@ -857,6 +899,7 @@ test('no install arm, no prompt chrome — and absent boarded family option is P
       spec,
       user,
       onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },
+      onPick: (patch: Record<string, unknown>) => { setUser((m) => ({ ...m, ...patch })) },
     })
   })
   render(comp)
@@ -874,7 +917,7 @@ test('the Model rail NEVER renders a family\'s prose label — ids only (the DEC
   const spec = { ...KREA, families: [{ id: 'z-image', present: true }, { id: 'anima', present: false }] }
   const comp = createElement(function Host() {
     const [user, setUser] = useState<SpecValues>({ model: 'krea-2' })
-    return createElement(SpecForm, { spec, user, onSet: (n: string, v: unknown) => { setUser((m) => ({ ...m, [n]: v })) } })
+    return createElement(SpecForm, { spec, user, onSet: (n: string, v: unknown) => { setUser((m) => ({ ...m, [n]: v })) }, onPick: () => {} })
   })
   render(comp)
   const model = (await screen.findByLabelText('Model')) as HTMLSelectElement
@@ -897,6 +940,15 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
       onSet: (n: string, v: unknown) => {
         setUser((m) => {
           const next = { ...m, [n]: v }
+          picked.push({ ...next })
+          return next
+        })
+      },
+      // THE ATOMIC PICK SEAT (required by construction): the switch
+      // lands as ONE frame — model + cleared axes, never per-key
+      onPick: (patch: Record<string, unknown>) => {
+        setUser((m) => {
+          const next = { ...m, ...patch }
           picked.push({ ...next })
           return next
         })
@@ -940,9 +992,14 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
     ],
   }
   const sets: Array<[string, unknown]> = []
+  // THE ATOMIC PICK LAW (2026-09-29): recipe picks ride ONE onPick
+  // write carrying the row's FULL stamp — the per-key onSet face is
+  // retired at this surface too
+  const picks: Record<string, unknown>[] = []
   const { container } = render(createElement(SpecForm, {
     spec: SEAT, user: { model: 'krea-2' },
     onSet: (n: string, v: unknown) => { sets.push([n, v]) },
+    onPick: (patch: Record<string, unknown>) => { picks.push(patch) },
   }))
   // RULE A: the lora-only row RENDERS its option — the bag IS the
   // preset (the stroke-38 drop amended 2026-09-18; the lora still
@@ -957,12 +1014,13 @@ test('SEAT: the pills render UNDER THE MODEL SECTION — the lora row\'s pill in
   // writer — no `recipe` param ever stamps (the probe's compose
   // door refuses it; the selection DERIVES from the stamped payload)
   // RULE A: the quick row stamps its knob; the realism row stamps
-  // its bag — each row's FULL payload is its preset
+  // its bag — each row's FULL payload is its preset, in ONE write
   fireEvent.change(select, { target: { value: 'quick' } })
-  await waitFor(() => { expect(sets).toContainEqual(['steps', 6]) })
+  await waitFor(() => { expect(picks).toContainEqual({ steps: 6 }) })
   fireEvent.change(select, { target: { value: 'realism' } })
-  await waitFor(() => { expect(sets).toContainEqual(['loras', [{ id: 'krea2_realism_lora' }]]) })
-  expect(sets.filter(([n]) => n === 'recipe')).toEqual([]) // the dead key never rides
+  await waitFor(() => { expect(picks).toContainEqual({ loras: [{ id: 'krea2_realism_lora' }] }) })
+  expect(sets).toEqual([]) // the per-key verb never carries a pick
+  expect(picks.every((p) => !('recipe' in p))).toBe(true) // the dead key never rides
 })
 
 
@@ -979,7 +1037,7 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
       steps: { type: 'number', meta: { description: 'Steps', default: 8, extra: { group: 'sampling' } } },
     }),
   }
-  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {}, onPick: () => {} }))
   // THE SUBMENU LAW (stroke 89): multi-group specs seat each group
   // behind its tab — the columns group renders in ITS panel.
   fireEvent.click(screen.getByRole('tab', { name: 'Resolution' }))
@@ -1025,7 +1083,7 @@ test('textareas span the FULL row in a columns group (prompts never sit side by 
       negative_prompt: { type: 'string', meta: { description: 'Negative Prompt', extra: { wtype: 'textarea', group: 'prompt', columns: 2, width: 1 } } },
     }),
   }
-  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {}, onPick: () => {} }))
   const ta = (await screen.findByLabelText('Prompt')) as HTMLTextAreaElement
   // STARTS two lines
   expect(ta.getAttribute('rows')).toBe('2')
@@ -1059,7 +1117,7 @@ test('the grid law is parametric — columns:4 with a width:2 span, no overflow 
       denoise: { type: 'number', meta: { description: 'Denoise', default: 0.7, extra: { group: 'frame', columns: 4, width: 1, wtype: 'number' } } },
     }),
   }
-  render(createElement(SpecForm, { spec, user: {}, onSet: () => {} }))
+  render(createElement(SpecForm, { spec, user: {}, onSet: () => {}, onPick: () => {} }))
   const head = await screen.findByText('Frame')
   const grid = head.parentElement?.querySelector('div[class*="specGrid"]') as HTMLElement
   expect(grid).not.toBeNull()

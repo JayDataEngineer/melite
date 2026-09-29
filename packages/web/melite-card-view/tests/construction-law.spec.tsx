@@ -46,6 +46,7 @@ describe('the construction law (bare CardForm)', () => {
     render(createElement(CardForm, {
       spec: IMAGE_SPEC,
       user: {},
+      onPick: () => {},
       onSet: () => {},
     }))
     // the square's own DOM: role=button, aria-label "<label> source"
@@ -60,6 +61,7 @@ describe('the construction law (bare CardForm)', () => {
     render(createElement(CardForm, {
       spec: IMAGE_SPEC,
       user: {},
+      onPick: () => {},
       onSet: () => {},
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
@@ -71,6 +73,7 @@ describe('the construction law (bare CardForm)', () => {
     render(createElement(CardForm, {
       spec: IMAGE_SPEC,
       user: {},
+      onPick: () => {},
       onSet: (name: string, v: unknown) => { edits[name] = v },
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))
@@ -172,6 +175,7 @@ describe('the construction law (DRY)', () => {
     const { container } = render(createElement(CardForm, {
       spec: doc,
       user: {},
+      onPick: () => {},
       onSet: () => {},
       wire: { candidates: [{ id: 's_0', label: 'a red cube', url: '/media/out.png' }] },
     }))

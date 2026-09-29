@@ -84,10 +84,10 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
     const fakes = wire({ patchAnswerRevs: [10, 11, 12, 13] });
     // four keys coalesced in the trailing window — the audit's exact
     // storm shape (the old concurrent fan-out refused here spuriously)
-    void scheduleStageParam("bench-s1", "s_0", { prompt: "a red cloak" }, 7);
-    void scheduleStageParam("bench-s1", "s_0", { steps: 8 }, 7);
-    void scheduleStageParam("bench-s1", "s_0", { turbo: true }, 7);
-    void scheduleStageParam("bench-s1", "s_0", { seed: 42 }, 7);
+    void scheduleStageParam("bench-s1", "s_0", "prompt", "a red cloak", 7);
+    void scheduleStageParam("bench-s1", "s_0", "steps", 8, 7);
+    void scheduleStageParam("bench-s1", "s_0", "turbo", true, 7);
+    void scheduleStageParam("bench-s1", "s_0", "seed", 42, 7);
     const state = await flushStageWrites("bench-s1", "s_0");
     // every write landed; the ledger holds no refusal
     expect(state.failedKeys).toEqual([]);
@@ -105,9 +105,9 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
     // one key lands through its timer, then a later edit to another
     // key fires — the render-time rev (7) is STALE by then, and the
     // old code collided with it by construction.
-    void scheduleStageParam("bench-s1", "s_0", { prompt: "first" }, 7);
+    void scheduleStageParam("bench-s1", "s_0", "prompt", "first", 7);
     await new Promise((r) => setTimeout(r, 360));
-    void scheduleStageParam("bench-s1", "s_0", { steps: 4 }, 7);
+    void scheduleStageParam("bench-s1", "s_0", "steps", 4, 7);
     await new Promise((r) => setTimeout(r, 360));
     const state = await flushStageWrites("bench-s1", "s_0");
     expect(state.failedKeys).toEqual([]);
@@ -122,8 +122,8 @@ describe("THE FORCED WRITE IS SERIALIZED ON THE DOOR'S ANSWERED REV (the audit's
 describe("A SUPERSEDED WRITE'S PROMISE STILL SETTLES (the audit's Q2)", () => {
   test("the first caller hears the answer through the newest write — nobody hangs", async () => {
     wire();
-    const first = scheduleStageParam("bench-s1", "s_1", { prompt: "draft one" }, 7);
-    const second = scheduleStageParam("bench-s1", "s_1", { prompt: "draft two" }, 7);
+    const first = scheduleStageParam("bench-s1", "s_1", "prompt", "draft one", 7);
+    const second = scheduleStageParam("bench-s1", "s_1", "prompt", "draft two", 7);
     // one key, one write: exactly ONE patch leaves, carrying the NEWEST
     // value (latest-wins coalescing — the proven contract, untouched)
     await Promise.all([first, second]);
@@ -135,7 +135,7 @@ describe("A SUPERSEDED WRITE'S PROMISE STILL SETTLES (the audit's Q2)", () => {
 
   test("the run gate's FORCE settles the waiters too (out-of-band fire, same answer)", async () => {
     wire();
-    const scheduled = scheduleStageParam("bench-s1", "s_1", { steps: 12 }, 7);
+    const scheduled = scheduleStageParam("bench-s1", "s_1", "steps", 12, 7);
     // the gate fires the pending write out of band — the schedule's
     // own promise must still settle (the old code orphaned it)
     await flushStageWrites("bench-s1", "s_1");
@@ -191,11 +191,11 @@ describe('THE FLUSH LOOPS UNTIL THE STAGE IS QUIET (the 2026-10-11 mid-force fin
       onPatchCall: () => {
         if (!scheduledMidForce) {
           scheduledMidForce = true;
-          void scheduleStageParam('bench-s1', 's_0', { seed: 42 }, 7);
+          void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
         }
       },
     });
-    void scheduleStageParam('bench-s1', 's_0', { prompt: 'a blue cloak' }, 7);
+    void scheduleStageParam('bench-s1', 's_0', "prompt", 'a blue cloak', 7);
     const state = await flushStageWrites('bench-s1', 's_0');
     // the gate answered QUIET: the mid-force write is not still riding
     expect(state.pending).toBe(0);
@@ -222,8 +222,8 @@ describe('TWO TIMERS IN ONE TICK LAND AT DISTINCT REVS (the 2026-10-11 send-coll
   test('the second trailing write rides the rev the first\'s landing answered — never the shared render-time rev', async () => {
     const fakes = wire({ patchAnswerRevs: [10, 11] });
     // two keys scheduled in the SAME tick — both timers fire together
-    void scheduleStageParam('bench-s1', 's_0', { steps: 8 }, 7);
-    void scheduleStageParam('bench-s1', 's_0', { seed: 42 }, 7);
+    void scheduleStageParam('bench-s1', 's_0', "steps", 8, 7);
+    void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
     // let the natural trailing window elapse (no force — the TIMER
     // arm is the seat under test)
     await new Promise((r) => setTimeout(r, 600));
@@ -258,11 +258,11 @@ describe('A TIMER FIRING MID-FORCE RIDES THE CHAIN (the W5 killer face)', () => 
     // A scheduled and FORCED immediately (the gate holds its patch
     // open); B lands in the schedule MID-FORCE (after the snapshot)
     // and its whole trailing window elapses while A is still held
-    void scheduleStageParam('bench-s1', 's_0', { prompt: 'held' }, 7);
+    void scheduleStageParam('bench-s1', 's_0', "prompt", 'held', 7);
     const flushP = flushStageWrites('bench-s1', 's_0');
     await vi.advanceTimersByTimeAsync(0); // A's patch reaches the gate
     // B registers mid-force (the HOLE 3 state), trailing window armed
-    void scheduleStageParam('bench-s1', 's_0', { seed: 42 }, 7);
+    void scheduleStageParam('bench-s1', 's_0', "seed", 42, 7);
     // the window elapses WITH A STILL HELD — B's natural timer fires
     // mid-force (under the bare send it wrote at the stale rev 7)
     await vi.advanceTimersByTimeAsync(300);

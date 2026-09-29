@@ -34,7 +34,7 @@ function doc(): FormSpecDoc {
 
 function mount() {
   const onSet = vi.fn()
-  render(h(CardForm, { spec: doc(), user: {}, onSet, wire: { candidates: [] } }))
+  render(h(CardForm, { spec: doc(), user: {}, onSet, onPick: () => {}, wire: { candidates: [] } }))
   return { onSet }
 }
 

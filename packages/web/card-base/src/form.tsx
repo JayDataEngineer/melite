@@ -54,7 +54,7 @@ export { PackPrompt, ModelAxes, RecipePills } from './axes.tsx'
  *  over the USER layer (the settings law: presence IS the override
  *  mark, the reset chip removes it). The constructor OWNS the square
  *  provider (no call site wires it, no call site can forget it). */
-export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }: {
+export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }: {
   /** the WHOLE emission (the schema envelope + model/variants) —
    *  REQUIRED now: the fields, the axes, and the mod param rows all
    *  derive from THIS (useFormSpec fetches it). */
@@ -71,6 +71,10 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
    *  visual. Absent = the registry-less lane derive. */
   base?: SpecValues
   onSet(name: string, v: unknown): void
+  /** THE ATOMIC PICK, REQUIRED (the marriage law — see
+   *  ModelAxes.onPick): a pick lands as ONE multi-key write. No
+   *  per-key fallback exists by construction. */
+  onPick: (patch: Record<string, unknown>) => void
   /** Remove an override (the reset path): the host patches the key
    *  out of the user layer; the row re-derives to its base. */
   onUnset?(name: string): void
@@ -378,7 +382,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
-    h(ModelAxes, { spec, value, onSet: edit, onDownloadModel }),
+    h(ModelAxes, { spec, value, onSet: edit, onPick, onDownloadModel }),
     laneWarns.length > 0
       ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length) },
           laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)),

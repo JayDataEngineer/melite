@@ -186,6 +186,7 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: () => {},
+    onPick: () => {},
   }))
   expect(screen.queryByLabelText('Region Mode')).toBeNull()
   expect(screen.queryByLabelText('Feather')).toBeNull()
@@ -207,6 +208,7 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: onEdit,
+    onPick: () => {},
   }))
   // open the kind picker, pick the mask kind
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
@@ -237,6 +239,7 @@ test('OPTION kinds still ride the served rows: lora create seeds the row default
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: onEdit,
+    onPick: () => {},
   }))
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
   fireEvent.click(await screen.findByText('LoRAs', undefined, { timeout: 2000 }))
@@ -321,6 +324,7 @@ async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>
     spec: PAINT_SPEC,
     user: values,
     onSet: (name: string, v: unknown) => { values[name] = v },
+    onPick: () => {},
     ...(extra ?? {}),
   }))
   fireEvent.click(screen.getByRole('button', { name: 'Add modifier' }))
@@ -376,6 +380,7 @@ test('undeclared kind + hosted face: no verb — the face is declared, never sni
     spec: plain,
     user: values,
     onSet: (name: string, v: unknown) => { values[name] = v },
+    onPick: () => {},
     paintFace: FakeFace,
     paintReference: 'input_image',
   }))

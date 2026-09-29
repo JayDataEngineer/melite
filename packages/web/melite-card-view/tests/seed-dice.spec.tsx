@@ -41,7 +41,7 @@ const DICE: FormSpecDoc = {
 }
 
 function mount(onSet: (n: string, v: unknown) => void, user: Record<string, unknown> = {}): HTMLElement {
-  const { container } = render(createElement(SpecForm, { spec: DICE, user, onSet }))
+  const { container } = render(createElement(SpecForm, { spec: DICE, user, onSet, onPick: () => {} }))
   return container
 }
 
@@ -95,6 +95,7 @@ test('TYPING FIXES: a number typed while random flips the dice hollow by DERIVAT
     spec: DICE,
     user: holder.user,
     onSet: (n, v) => { holder.user = { ...holder.user, [n]: v } },
+    onPick: () => {},
   }))
   expect((container.querySelector('[data-seed-dice]') as HTMLElement).getAttribute('data-seed-dice')).toBe('random')
   // the user layer now holds a concrete seed (what typing lands after
@@ -103,6 +104,7 @@ test('TYPING FIXES: a number typed while random flips the dice hollow by DERIVAT
     spec: DICE,
     user: { ...holder.user, seed: 9127 },
     onSet: () => {},
+    onPick: () => {},
   }))
   const dice = next.querySelector('[data-seed-dice]') as HTMLElement
   expect(dice.getAttribute('data-seed-dice')).toBe('fixed')

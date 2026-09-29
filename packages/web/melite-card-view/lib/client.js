@@ -7675,8 +7675,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  newest write's fate: one key, one write, every waiter hears it)
 		*  and when the run gate forced the write out of band. The ledger
 		*  owns the failure memory either way. */
-		function scheduleStageParam(draftId, stageId, params, expectRev) {
+		function scheduleStageParam(draftId, stageId, name, value, expectRev) {
 			const row = scheduledRow(draftId, stageId);
+			const params = { [name]: value };
 			if (Object.keys(params).length === 0) return Promise.resolve();
 			const send = (merged, rev) => {
 				const confirmed = writeRow(draftId, stageId).confirmedRev;
@@ -10678,6 +10679,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return v.id;
 			}
 		}
+		/** THE AXIS STAMP VOCABULARY (2026-09-29, caught LIVE by the
+		*  compose gate in the CI seat: the client stamped the Quant row's
+		*  composed catalog id — 'raw__int8' — where the door's contract
+		*  speaks the CELL's quant field — 'int8'; the gate refused with the
+		*  door's own voice and the write never left the studio, which is
+		*  exactly the law working). The value an axis pick stamps on the
+		*  durable key is the value the DOOR reads: the variant id for
+		*  Variant, the cell quant for Quant. Never the flat-catalog id.
+		* PURE. */
+		function axisStampOf(row) {
+			return row.group === "Quant" && typeof row.quant === "string" && row.quant !== "" ? row.quant : row.id;
+		}
 		/** The durable param key an axis rides (the group's id, lowercased —
 		*  'variant', 'quant', 'recipe', 'precision'). */
 		function axisKey(group) {
@@ -10699,11 +10712,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const active = {};
 			for (const g of groups) if (g === row.group) active[g] = row.id;
 			else if (typeof row.defaults["model"] === "string") active[g] = void 0;
-			if (groups.includes(row.group)) patch[axisKey(row.group)] = row.id;
+			if (groups.includes(row.group)) patch[axisKey(row.group)] = axisStampOf(row);
 			if (at < 0) return patch;
 			for (const g of groups.slice(at + 1)) {
 				const composing = composingRows(spec, g, active);
-				if (composing.length > 0) patch[axisKey(g)] = composing[0].id;
+				if (composing.length > 0) patch[axisKey(g)] = axisStampOf(composing[0]);
 				else patch[axisKey(g)] = "";
 			}
 			return patch;
@@ -10800,6 +10813,50 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			};
 			if (!fieldsOf(spec).some((f) => f.name === "recipe")) delete out["recipe"];
 			return out;
+		}
+		function composeValidate(spec, doc) {
+			if (spec === null) return [];
+			const heldModel = doc["model"];
+			if (typeof heldModel === "string" && heldModel !== "" && spec.model !== void 0 && spec.model !== "" && heldModel !== spec.model) return [];
+			const out = [];
+			const variantRows = (spec.variants ?? []).filter((r) => r.group === "Variant");
+			const rawVariant = doc["variant"];
+			if (typeof rawVariant === "string" && rawVariant !== "") {
+				const offered = variantRows.find((r) => r.id === rawVariant);
+				if (offered === void 0) out.push({ message: "card_compose: unknown variant " + JSON.stringify(rawVariant) + " for model " + JSON.stringify(spec.model ?? "") + " (known: " + variantRows.map((r) => r.id).join(", ") + ")" });
+				else {
+					const rawQuant = doc["quant"];
+					if (typeof rawQuant === "string" && rawQuant !== "") {
+						const cells = (spec.variants ?? []).filter((r) => r.group === "Quant" && r.owner === offered.id);
+						if (!cells.some((c) => c.quant === rawQuant)) out.push({ message: "card_compose: unknown quant " + JSON.stringify(rawQuant) + " for model " + JSON.stringify(spec.model ?? "") + " variant " + JSON.stringify(offered.id) + " (known: " + cells.map((c) => c.quant).join(", ") + ")" });
+					}
+					const env = offered.sampler_envelope ?? null;
+					if (env !== null) for (const knob of ["steps", "cfg"]) {
+						const bound = env[knob];
+						if (bound === void 0) continue;
+						const stated = doc[knob];
+						if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
+						const [lo, hi] = bound;
+						if (stated >= lo && stated <= hi) continue;
+						out.push({ message: "card_compose: stated " + knob + " " + String(stated) + " is OUTSIDE the route envelope for variant " + JSON.stringify(offered.id) + (offered.route !== "" ? " (route " + offered.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." });
+					}
+				}
+			}
+			return out;
+		}
+		/** Compose the CANDIDATE doc the door would judge: the bench row's
+		*  held params, the user layer's overrides, then the in-flight frame
+		*  — later layers win, and a null value DELETES the key (the wire's
+		*  own unset law). This is composition: the full doc, assembled
+		*  where the edit happens, so the law can run BEFORE the write. */
+		function composeCandidateDoc(held, user, frame) {
+			const doc = {
+				...held,
+				...user
+			};
+			for (const [k, v] of Object.entries(frame)) if (v === null) delete doc[k];
+			else doc[k] = v;
+			return doc;
 		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/clsx@2.1.1/node_modules/clsx/dist/clsx.mjs
@@ -50146,7 +50203,7 @@ void main() {
 				}
 			}, st === "idle" ? "Install " + id : st === "busy" ? "Requesting…" : st === "queued" ? "Install queued ✓ (restart the engine when it lands)" : "Install request failed — retry from the assets tab"));
 		}
-		function ModelAxes({ spec, value, onSet, onDownloadModel }) {
+		function ModelAxes({ spec, value, onSet, onPick, onDownloadModel }) {
 			const groups = axisGroups(spec);
 			if (groups.length === 0) return null;
 			const models = modelChoices(spec);
@@ -50159,8 +50216,7 @@ void main() {
 			for (const f of spec.families ?? []) if (f.label !== void 0 && f.label !== "") familyFace.set(f.id, f.label);
 			const contract = spec.features?.variant_groups ?? {};
 			const pick = (row) => {
-				const patch = axisPickPatch(spec, row);
-				for (const [k, v] of Object.entries(patch)) onSet(k, v);
+				onPick(axisPickPatch(spec, row));
 			};
 			const knobStamp = (r) => axisPickPatch(spec, r);
 			rowsFor(spec, "Recipe").filter((r) => Object.keys(knobStamp(r)).length > 0);
@@ -50180,8 +50236,10 @@ void main() {
 				const heldRaw = value[axisKey(g)];
 				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
 				const rows = rowsOf(g, active);
-				if (heldId !== void 0 && rows.some((r) => r.id === heldId)) active[g] = heldId;
-				else if (heldId !== void 0) active[g] = heldId;
+				if (heldId !== void 0 && rows.some((r) => r.id === heldId || (r.quant ?? "") === heldId)) {
+					const grounded = rows.find((r) => r.quant === heldId && r.id !== heldId);
+					active[g] = grounded !== void 0 ? grounded.id : heldId;
+				} else if (heldId !== void 0) active[g] = heldId;
 				else active[g] = activeRowId(spec, value, g, active) ?? (rows.length > 0 ? rows[0].id : "");
 			}
 			const modelField = (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", {
@@ -50194,8 +50252,7 @@ void main() {
 				value: shownModel,
 				onChange: (e) => {
 					const m = e.target.value;
-					const patch = modelSwitchPatch(spec, m);
-					for (const [k, v] of Object.entries(patch)) onSet(k, v);
+					onPick(modelSwitchPatch(spec, m));
 				}
 			}, refusedModel !== void 0 ? (0, react.createElement)("option", {
 				key: refusedModel,
@@ -50211,7 +50268,7 @@ void main() {
 				const rows = rowsOf(g, active);
 				const heldRaw = value[axisKey(g)];
 				const heldId = typeof heldRaw === "string" && heldRaw !== "" ? heldRaw : void 0;
-				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId) ? heldId : void 0;
+				const refusedId = heldId !== void 0 && !rows.some((r) => r.id === heldId || (r.quant ?? "") === heldId) ? heldId : void 0;
 				if (rows.length === 0 && refusedId === void 0) return null;
 				const label = contract[g]?.label ?? titleCaseId(g);
 				return (0, react.createElement)("label", {
@@ -50258,7 +50315,7 @@ void main() {
 				}
 			}, dlState === "idle" ? "Download " + (heldFam.label ?? titleCaseId(heldFam.id)) : dlState === "busy" ? "Requesting…" : dlState === "queued" ? "Download queued ✓ (run when it lands)" : "Download request failed — retry from the assets tab")) : null, restGroups.map((g) => axisField(g)), (0, react.createElement)(RecipePills, {
 				spec,
-				onSet,
+				onPick,
 				values: value
 			}));
 		}
@@ -50278,14 +50335,14 @@ void main() {
 		* THE REUSE LAW: extracted so EVERY model surface seats the same
 		* dropdown -- CardForm under the axes, a studio beside its model
 		* route. Never a second implementation. */
-		function RecipePills({ spec, onSet, values }) {
+		function RecipePills({ spec, onPick, values }) {
 			const pillRows = rowsFor(spec, "Recipe").filter((r) => Object.keys(axisPickPatch(spec, r)).length > 0);
 			if (pillRows.length === 0) return null;
 			const active = values !== void 0 ? activeRecipeId(spec, values) : void 0;
 			const pick = (id) => {
 				const row = pillRows.find((r) => r.id === id);
 				if (row === void 0) return;
-				for (const [k, v] of Object.entries(axisPickPatch(spec, row))) onSet(k, v);
+				onPick(axisPickPatch(spec, row));
 			};
 			return (0, react.createElement)("label", { className: card_module_css_default.specField }, (0, react.createElement)("span", { className: card_module_css_default.specFieldKey }, "Recipe"), (0, react.createElement)("select", {
 				className: card_module_css_default.specSelect,
@@ -50373,7 +50430,7 @@ void main() {
 		*  over the USER layer (the settings law: presence IS the override
 		*  mark, the reset chip removes it). The constructor OWNS the square
 		*  provider (no call site wires it, no call site can forget it). */
-		function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
+		function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, square, atoms, onPatch, onDownloadModel, onInstallPack, paintFace, bboxFace, paintReference }) {
 			const fields = fieldsOf(spec);
 			const value = resolveValue(spec, user, base);
 			const fieldByName = new Map(fields.map((f) => [f.name, f]));
@@ -50513,6 +50570,7 @@ void main() {
 				spec,
 				value,
 				onSet: edit,
+				onPick,
 				onDownloadModel
 			}), laneWarns.length > 0 ? (0, react.createElement)("div", {
 				className: card_module_css_default.laneWarn,
@@ -60278,6 +60336,19 @@ void main() {
 				ref: bind
 			}, props.children);
 		}
+		/** THE COMPOSE GATE'S VOICE (2026-09-29, the operator's law: a card
+		*  IS its contract — an invalid doc is refused at COMPOSITION, never
+		*  shipped to the door to be refused after the wire). The message is
+		*  the door's OWN law text; the prefix names the plane that caught
+		*  it. The studio still shows the edit (the same hopeful-overlay
+		*  semantics the door-refusal always had), but NO frame leaves and
+		*  the bench never receives a doc it would refuse. */
+		function composeGateRefusal(spec, held, user, frame) {
+			if (spec === null) return null;
+			const first = composeValidate(spec, composeCandidateDoc(held ?? {}, user, frame))[0];
+			if (first === void 0) return null;
+			return "THE COMPOSE GATE REFUSED — " + first.message + " — the write never left the studio. Fix the stated value, or pick a different route.";
+		}
 		function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRemoved, onResync, onPatchParams, renderStageView, renderPreview, onSurface, runId, canRemove, bindRun, bindEnhance }) {
 			String(stage.title ?? stage.card ?? stage.id);
 			const held = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
@@ -60375,7 +60446,12 @@ void main() {
 						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
 						return next;
 					});
-					scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).then(() => {
+					const refused = composeGateRefusal(spec, stage.params, user, { [name]: null });
+					if (refused !== null) {
+						setWriteFace(refused);
+						return;
+					}
+					scheduleStageParam(bench.draftId, stage.id, name, null, bench.rev).then(() => {
 						const st = stageWriteState(bench.draftId, stage.id);
 						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 					});
@@ -60388,18 +60464,70 @@ void main() {
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape2 = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).then(() => {
-					const st = stageWriteState(bench.draftId, stage.id);
-					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
-				});
+				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") {
+					const refused = composeGateRefusal(spec, stage.params, user, { [name]: v });
+					if (refused !== null) {
+						setWriteFace(refused);
+						return;
+					}
+					scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
+						const st = stageWriteState(bench.draftId, stage.id);
+						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					});
+				}
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape === "image" || shape === "file" || shape === "mesh") patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
-					setError("THE WRITE DID NOT LAND — " + (e instanceof Error ? e.message : "slot write failed") + " (unlanded keys: " + name + ").");
+				if (shape === "image" || shape === "file" || shape === "mesh") {
+					const slotFrame = v === "" ? { [name]: null } : { [name]: v };
+					const refused = composeGateRefusal(spec, stage.params, user, slotFrame);
+					if (refused !== null) {
+						setWriteFace(refused);
+						return;
+					}
+					patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
+						setError("THE WRITE DID NOT LAND — " + (e instanceof Error ? e.message : "slot write failed") + " (unlanded keys: " + name + ").");
+					});
+				}
+			}, [
+				spec,
+				user,
+				bench.draftId,
+				bench.rev,
+				stage.id
+			]);
+			const onPick = (0, react.useCallback)((patch) => {
+				const landed = {};
+				const nulls = {};
+				for (const [k, v] of Object.entries(patch)) if (axisUnset(k, v, spec)) nulls[k] = null;
+				else landed[k] = v;
+				setUser((m) => {
+					const next = { ...m };
+					for (const k of Object.keys(nulls)) delete next[k];
+					return {
+						...next,
+						...landed
+					};
+				});
+				const frame = {
+					...landed,
+					...nulls
+				};
+				const refused = composeGateRefusal(spec, stage.params, user, frame);
+				if (refused !== null) {
+					setWriteFace(refused);
+					return;
+				}
+				patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(() => {
+					const st = stageWriteState(bench.draftId, stage.id);
+					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+				}, () => {
+					const st = stageWriteState(bench.draftId, stage.id);
+					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 				});
 			}, [
 				spec,
+				user,
 				bench.draftId,
 				bench.rev,
 				stage.id
@@ -60414,11 +60542,19 @@ void main() {
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
-				if (shape === "image" || shape === "file" || shape === "mesh") patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
-					setError(e instanceof Error ? e.message : "slot write failed");
-				});
+				if (shape === "image" || shape === "file" || shape === "mesh") {
+					const refused = composeGateRefusal(spec, stage.params, user, { [name]: null });
+					if (refused !== null) {
+						setWriteFace(refused);
+						return;
+					}
+					patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
+						setError(e instanceof Error ? e.message : "slot write failed");
+					});
+				}
 			}, [
 				spec,
+				user,
 				bench.draftId,
 				bench.rev,
 				stage.id
@@ -60482,10 +60618,17 @@ void main() {
 						...m,
 						...sweptPatch
 					}));
-					if (Object.keys(sweptPatch).length > 0) scheduleStageParam(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
-						const st = stageWriteState(bench.draftId, stage.id);
-						setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
-					});
+					if (Object.keys(sweptPatch).length > 0) {
+						const refused = composeGateRefusal(spec, stage.params, user, sweptPatch);
+						if (refused !== null) {
+							setWriteFace(refused);
+							return;
+						}
+						patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
+							const st = stageWriteState(bench.draftId, stage.id);
+							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
+						});
+					}
 					const swept = Object.keys(sweptPatch).length;
 					if (swept === 0) setEnhanceNote({
 						err: true,
@@ -60521,7 +60664,14 @@ void main() {
 					for (const k of userKeys) patch[k] = user[k];
 					for (const k of heldKeys) if (!userKeys.has(k)) patch[k] = null;
 					const sameAsHeld = userKeys.size === heldKeys.size && [...userKeys].every((k) => Object.is(user[k], held[k]));
-					if (Object.keys(patch).length > 0 && !sameAsHeld) await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
+					if (Object.keys(patch).length > 0 && !sameAsHeld) {
+						const refused = composeGateRefusal(spec, held, user, {});
+						if (refused !== null) {
+							setError(refused);
+							return;
+						}
+						await patchStageParams(bench.draftId, stage.id, patch, bench.rev);
+					}
 					onRun();
 				} catch (e) {
 					setError(e instanceof Error ? e.message : "run failed");
@@ -60659,6 +60809,7 @@ void main() {
 					user,
 					base: servedBase,
 					onSet,
+					onPick,
 					onUnset,
 					wire,
 					onPatch: onPatchParams,
@@ -61928,4 +62079,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="603c9724855fb867c6087c6aa8588d6960c41a73";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6d402e21c5b5da47890d3c6e1574e86fff81026f";

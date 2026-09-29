@@ -546,7 +546,7 @@ test('CARDFORM THREAD: wire.loadMedia seats into the mod leaf — the served row
     } as unknown as FormSpecDoc
     const onSet = vi.fn()
     render(h(CardForm, {
-      spec, user: {}, onSet, onUnset: () => {},
+      spec, user: {}, onSet, onPick: () => {}, onUnset: () => {},
       wire: { candidates: [], loadMedia: fetchMediaLibrary },
     }))
     fireEvent.click(document.querySelector('[data-subcard-add="mod"]') as HTMLElement)

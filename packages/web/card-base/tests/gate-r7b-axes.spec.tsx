@@ -51,20 +51,20 @@ test('RECIPE: absent values layer shows the placeholder (never a grounded lie)',
   // axes.tsx:285 — values undefined takes the `: undefined` arm: the
   // selection derives from the user layer, and with no layer there is
   // never a recipe to claim.
-  const onSet = vi.fn()
-  render(h(RecipePills, { spec: doc(), onSet }))
+  const onPick = vi.fn()
+  render(h(RecipePills, { spec: doc(), onPick }))
   const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
   expect(select.value).toBe('')
   expect(screen.getByText('-- recipe --')).not.toBeNull()
-  expect(onSet).not.toHaveBeenCalled()
+  expect(onPick).not.toHaveBeenCalled()
 })
 
 test('RECIPE: a change to an unoffered id writes nothing (never a pick from thin air)', () => {
   // axes.tsx:288 — pick('ghost-recipe') finds no row and returns: a
   // stale DOM option (a spec swap landing under an open select)
   // cannot stamp knobs the card never declared.
-  const onSet = vi.fn()
-  render(h(RecipePills, { spec: doc(), values: {}, onSet }))
+  const onPick = vi.fn()
+  render(h(RecipePills, { spec: doc(), values: {}, onPick }))
   const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
   const stale = document.createElement('option')
   stale.value = 'ghost-recipe'
@@ -74,18 +74,18 @@ test('RECIPE: a change to an unoffered id writes nothing (never a pick from thin
   select.addEventListener('change', (e) => { seen = (e.target as HTMLSelectElement).value })
   fireEvent.change(select, { target: { value: 'ghost-recipe' } })
   expect(seen).toBe('ghost-recipe')
-  expect(onSet).not.toHaveBeenCalled()
+  expect(onPick).not.toHaveBeenCalled()
 })
 
 test('RECIPE: re-picking the placeholder writes nothing (the empty-select skip)', () => {
   // axes.tsx:300 — onChange with '' takes the skip arm: the
   // placeholder is a face, never a stamp.
-  const onSet = vi.fn()
-  render(h(RecipePills, { spec: doc(), values: {}, onSet }))
+  const onPick = vi.fn()
+  render(h(RecipePills, { spec: doc(), values: {}, onPick }))
   const select = screen.getByRole('combobox', { name: 'Recipe' }) as HTMLSelectElement
   fireEvent.change(select, { target: { value: 'recipe-x' } })
-  expect(onSet).toHaveBeenCalledWith('steps', 50)
-  onSet.mockClear()
+  expect(onPick).toHaveBeenCalledWith({ steps: 50 })
+  onPick.mockClear()
   fireEvent.change(select, { target: { value: '' } })
-  expect(onSet).not.toHaveBeenCalled()
+  expect(onPick).not.toHaveBeenCalled()
 })

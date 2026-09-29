@@ -96,6 +96,7 @@ test('the drill renders NO recipe select — the dead layer has no face', () => 
     spec: GEN,
     user: {},
     onSet: vi.fn(),
+    onPick: () => {},
   }))
   expect(screen.queryByLabelText('Recipe')).toBeNull()
 })

@@ -285,10 +285,21 @@ function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledPa
 export function scheduleStageParam(
   draftId: string,
   stageId: string,
-  params: Record<string, unknown>,
+  /** ONE key — the trailing coalescer's unit is a single typed
+   *  field. This signature is the 2026-10-12 construction fix: the
+   *  old Record<string, unknown> ACCEPTED a multi-key marriage patch
+   *  and silently split it per key, so a variant pick that did
+   *  everything right still produced half-switch writes the compose
+   *  door refused ('stated cfg 3.5 is OUTSIDE the route envelope for
+   *  variant "turbo"'). Multi-key writes are CONTRACTS, not typing:
+   *  they can only reach patchStageParams — ONE door write, judged
+   *  against the state they describe. */
+  name: string,
+  value: unknown,
   expectRev?: number,
 ): Promise<void> {
   const row = scheduledRow(draftId, stageId)
+  const params: Record<string, unknown> = { [name]: value }
   if (Object.keys(params).length === 0) {
     return Promise.resolve()
   }

@@ -255,11 +255,15 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
       await flushStageWrites("bench-p", "s_0");
       const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
       expect(patches.length).toBeGreaterThan(0);
-      const last = patches[patches.length - 1]!;
-      const served = (((last.args as { patch?: { params?: { seed?: unknown } } }).patch ?? {}).params ?? {}) as { seed?: unknown };
-      // 42 the NUMBER — a hand edit's shape; "42" the STRING would
-      // land a param the run's schema parse refuses
-      expect(served.seed).toBe(42);
+      // the WIRE truth (2026-09-29 repin): the sweep's atomic frame
+      // carries the coerced NUMBER — the trailing per-key scheduler
+      // may land a prompt frame AFTER it, so "last frame" is not the
+      // sweep's seat. SOME frame carries seed 42 the NUMBER; NO
+      // frame anywhere carries "42" the string a hand edit can
+      // never even make.
+      const servedFrames = patches.map((c) => ((((c.args as { patch?: { params?: Record<string, unknown> } }).patch ?? {}).params ?? {})));
+      expect(servedFrames.some((f) => f["seed"] === 42), "the coerced number rides an atomic sweep frame").toBe(true);
+      expect(servedFrames.some((f) => f["seed"] === "42"), "the enhancer's raw string never rides the wire").toBe(false);
     } finally {
       fakes.unmount();
       unbindEstateRemote();

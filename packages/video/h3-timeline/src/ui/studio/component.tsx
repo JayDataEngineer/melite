@@ -240,6 +240,7 @@ export function VideoTimelineStudio({
             stage={stage}
             layerA={layerA}
             setLayerAKey={fx.setLayerAKey}
+            setLayerA={doc.setLayerA}
             refArtifacts={audio.refArtifacts}
           />
           {/* RunAdvancedPanels is DEAD (the generic-seam law): CardForm

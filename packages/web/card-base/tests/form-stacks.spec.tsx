@@ -38,10 +38,11 @@ function doc(over: Record<string, unknown> = {}): FormSpecDoc {
 function form(props: Partial<Parameters<typeof CardForm>[0]> & { wire?: SquareWire } = {}) {
   const onSet = vi.fn()
   const onUnset = vi.fn()
+  const onPick = vi.fn()
   const rendered = render(h(CardForm, {
-    spec: doc(), user: {}, onSet, onUnset, ...props,
+    spec: doc(), user: {}, onSet, onUnset, onPick, ...props,
   }))
-  return { onSet, onUnset, ...rendered }
+  return { onSet, onUnset, onPick, ...rendered }
 }
 
 function bindMedia(items: Array<{ url: string; name: string }>): void {
