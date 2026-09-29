@@ -217,7 +217,7 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     if (!verdict.ok) expect(verdict.error).toContain("clones no reference");
   });
 
-  it("THE LEGACY LANES DECLARE THEIR REQUIRED FIELD (the GAP-7 shape on seven cards — the bench refuses what compose refused)", () => {
+  it("THE LEGACY LANES DECLARE THEIR REQUIRED FIELD (the GAP-7 shape on seven cards — the RUN refuses what compose refused)", async () => {
     // 2026-10-10, the DECL audit's gap 4: image-gen, music, sfx,
     // motion, tagger, upscale-tools and input-prep each refused
     // their core field IMPERATIVELY at compose while the bench
@@ -241,10 +241,16 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
       // THE NAMED HALF (the kill): a draft that names its family
       // meets the family's own word — the run's lane now refuses
       // BEFORE compose, in the field's voice.
+      // THE INCOMPLETE-DRAFT LAW (2026-10-10): the ${field}-less
+      // draft is bench state at the WRITE seat (adding a card must
+      // land — the operator types the field next), and the RUN seat
+      // refuses it in the declared word.
       for (const fam of fams) {
         const named = svc.admitStageRelations(card, { model: fam });
-        expect(named.ok, `${card}/${fam} must refuse a ${field}-less row`).toBe(false);
-        if (!named.ok) expect(named.error).toContain(field);
+        expect(named.ok, `${card}/${fam}: a ${field}-less draft is bench state`).toBe(true);
+        await expect(
+          svc.phase1Card({ model: fam, [field]: "" }, fam),
+        ).rejects.toThrow(new RegExp(field));
         const withField = svc.admitStageRelations(card, { model: fam, [field]: "x" } as Record<string, unknown>);
         expect(withField.ok, `${card}/${fam} admits its ${field}`).toBe(true);
       }
@@ -260,7 +266,7 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
     // model-lessly, as cards-lane-law pins elsewhere.
   });
 
-  it("the design lane's export pair is REQUIRED (the GAP-7 shape one lane over — the bench refuses what compose refused)", () => {
+  it("the design lane's export pair is REQUIRED (the GAP-7 shape one lane over — the RUN refuses what compose refused)", async () => {
     // 2026-10-10, the DECL audit's gap 3: the compose seat refused a
     // design-lane row with NEITHER half, but the family's together
     // word fires only when a member is STATED — so that state was
@@ -271,8 +277,15 @@ describe("THE EXPORT CONFLICT WALL (an export performs nothing)", () => {
       variant: "voicedesign",
       text: "the sample",
     });
-    expect(neither.ok).toBe(false);
-    if (!neither.ok) expect(neither.error).toMatch(/design lane exports a voice|voice_name/);
+    // THE INCOMPLETE-DRAFT LAW (2026-10-10): the write seat admits
+    // the half-stated draft — a card under construction is bench
+    // state — and the RUN seat refuses it in the declared word.
+    expect(neither.ok).toBe(true);
+    await expect(
+      svc.phase1Card({
+        model: "qwen3-tts-voicedesign", variant: "voicedesign", text: "the sample",
+      }, "qwen3-tts-voicedesign"),
+    ).rejects.toThrow(/design lane exports a voice|voice_name/);
     // the pair stated composes (the cure stands)
     const both = svc.admitStageRelations("tts", {
       model: "qwen3-tts-voicedesign",
@@ -644,22 +657,37 @@ describe("THE OPERATOR'S FACE (the 2026-09-29 outage, pinned 2026-09-29)", () =>
   // two doors ever diverge on this face again, this wall is red.
   const PROMPTLESS = { model: "krea-2", variant: "turbo" } as Record<string, unknown>;
 
-  it("the bench-write door refuses the promptless krea-2/turbo draft FIRST, in the field's voice", () => {
+  // THE INCOMPLETE-DRAFT LAW (2026-10-10, the operator's second
+  // face, which OVERTURNED this arm): "I CAN'T ADD CARDS" — the add
+  // door seeds the axes with no content, so a write-door
+  // required-word refusal made adding an image IMPOSSIBLE ("THERE
+  // SHOULD HAVE BEEN A CONTRACT, SO USERS CAN ADD CARDS"). An
+  // unstated required word is the RUN door's voice; the write door
+  // judges only states that can never compose. The run seat below
+  // still refuses the promptless draft in the field's own voice —
+  // the contract is complete, the operator hears it at the press.
+  it("the write door ADMITS the promptless draft (a card under construction is bench state)", () => {
     const verdict = svc.admitStageRelations("image-gen", PROMPTLESS);
-    expect(verdict.ok, "a promptless image draft never reaches the run door").toBe(false);
-    if (!verdict.ok) {
-      expect(verdict.error).toContain("lane 'krea-2/turbo' refuses the state");
-      expect(verdict.error).toContain("this lane requires 'prompt'");
-      expect(verdict.error).toContain("'prompt' is not stated");
-      expect(verdict.error).toContain("every image lane states WHAT the picture is");
-      expect(verdict.error).toContain("write the prompt");
-    }
+    expect(verdict, "adding an image card must land: the prompt comes next, in the drill").toEqual({ ok: true });
   });
 
-  it("the run seat refuses the same state with the SAME lane voice (the parity promise)", async () => {
+  it("a STATED-but-wrong state still refuses at the write door (the incomplete-draft law is narrow)", () => {
+    const undeclared = svc.admitStageRelations("image-gen", { ...PROMPTLESS, frobnicate: 1 });
+    expect(undeclared.ok).toBe(false);
+    const outOfEnvelope = svc.admitStageRelations("image-gen", { ...PROMPTLESS, steps: 5000 });
+    expect(outOfEnvelope.ok, "a number outside the declared envelope can never compose — it refuses HERE").toBe(false);
+  });
+
+  it("the run seat refuses the same state, naming the field and what it is (the contract's run door)", async () => {
+    // The run's own sentence for this state is the card schema's
+    // required-param refusal ('required param prompt missing or
+    // empty ... (what the picture IS)') — the lane word below states
+    // the same law in the lane's voice. Both name the field and the
+    // cure; the write door admits the draft (the incomplete-draft
+    // law), so the press is where the operator hears it.
     await expect(
       svc.phase1Card({ ...PROMPTLESS }, "krea-2"),
-    ).rejects.toThrow(/lane 'krea-2\/turbo' refuses the state.*write the prompt/);
+    ).rejects.toThrow(/required param 'prompt' missing or empty/);
   });
 
   it("the cured draft (prompt stated) composes phase 1 — the door and the run agree", async () => {
@@ -944,27 +972,35 @@ describe("THE LANE LAWS AT THE VALIDATE SEAT", () => {
 // a declaration now — and the first DECL to use a word that did not
 // exist before this commit.
 describe("THE REQUIRED WORD ON A REAL LANE", () => {
-  it("a tts state with no text refuses at bench-write, naming the field and the cure", () => {
+  it("a tts state with no text is bench state; the RUN seat refuses it, naming the field", async () => {
+    // THE INCOMPLETE-DRAFT LAW (2026-10-10): an unstated required
+    // word is the run door's voice; the write door judges only
+    // states that can never compose.
     const verdict = svc.admitStageRelations("tts", { model: "qwen3-tts", text: "" });
-    expect(verdict.ok).toBe(false);
-    if (!verdict.ok) {
-      expect(verdict.error).toContain("text");
-      expect(verdict.error).toMatch(/requires|speak words/);
-    }
+    expect(verdict.ok).toBe(true);
+    await expect(
+      svc.phase1Card({ model: "qwen3-tts", text: "" }, "qwen3-tts"),
+    ).rejects.toThrow(/text/);
   });
 
   it("a tts state WITH text is unaffected (the word judges only what it names)", () => {
     expect(svc.admitStageRelations("tts", { model: "qwen3-tts", text: "hello" }).ok).toBe(true);
   });
 
-  it("the MODEL-LESS draft row meets the same word (the audit's GAP 7: the form refused what the bench admitted)", () => {
+  it("the MODEL-LESS draft row meets the same word AT THE RUN SEAT (the audit's GAP 7: the form, the run, and now the bench in one voice)", async () => {
     // no model at all — the draft intersection judges the words
     // every boarded declaring family states; `required: text` is
     // one on both tts families, so the draft refuses exactly the
     // state the form refuses.
+    // THE INCOMPLETE-DRAFT LAW (2026-10-10): the model-less row with
+    // no text is bench state too — the words ride the run door, which
+    // composes the card's own default family and refuses the same
+    // state the form refuses.
     const no = svc.admitStageRelations("tts", { text: "" });
-    expect(no.ok).toBe(false);
-    if (!no.ok) expect(no.error).toContain("text");
+    expect(no.ok).toBe(true);
+    await expect(
+      svc.phase1Card({ text: "" }, "qwen3-tts"),
+    ).rejects.toThrow(/text/);
     const yes = svc.admitStageRelations("tts", { text: "hello" });
     expect(yes.ok).toBe(true);
     // a family whose families agree on nothing extra stays tolerant:
@@ -1037,7 +1073,7 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     expect(fam.ok).toBe(true);
   });
 
-  it("the edit compose law is a DECL now — prompt-less and anchor-less drafts refuse at bench-write (the GAP-7 shape, killed)", () => {
+  it("the edit compose law is a DECL now — prompt-less and anchor-less drafts refuse at the RUN seat (the GAP-7 shape, killed)", async () => {
     // 2026-10-10, the DECL audit's row 2: compose has refused a
     // prompt-less or anchor-less edit imperatively since the merge,
     // while the bench admitted the same drafts — a state the form
@@ -1046,18 +1082,32 @@ describe("THE REQUIRED WORD ON A REAL LANE", () => {
     // draft meets them through the intersection, and a NAMED model
     // meets its own family's words — the same voice compose speaks,
     // before the run.
+    // THE INCOMPLETE-DRAFT LAW (2026-10-10): both drafts are bench
+    // state; the RUN seat refuses each in the declared word — the
+    // same voice compose has always spoken, at the press.
+    // the family comes from the card's OWN boarding (a hardcoded id
+    // rots the moment the edit families are re-slotted — the run
+    // seat answered 'no facts row' for a retired id)
+    const editFam = ((svc as unknown as { defsSync?: () => Map<string, { boarded?: readonly string[] }> }).defsSync?.() ?? new Map())
+      .get("image-edit")?.boarded?.[0] ?? "";
+    expect(editFam, "image-edit boards a family").not.toBe("");
     const bare = svc.admitStageRelations("image-edit", {});
-    expect(bare.ok).toBe(false);
-    if (!bare.ok) expect(bare.error).toMatch(/prompt/);
+    expect(bare.ok).toBe(true);
+    await expect(svc.phase1Card({}, editFam)).rejects.toThrow(/prompt/);
     const anchorless = svc.admitStageRelations("image-edit", { prompt: "make it warmer" });
-    expect(anchorless.ok).toBe(false);
-    if (!anchorless.ok) expect(anchorless.error).toMatch(/input_images|image1|anchor/i);
+    expect(anchorless.ok).toBe(true);
+    await expect(
+      svc.phase1Card({ prompt: "make it warmer" }, editFam),
+    ).rejects.toThrow(/input_images|image1|anchor/i);
     // the legacy vocabulary is a legal anchor (the merge's own law)
     const legacy = svc.admitStageRelations("image-edit", { prompt: "make it warmer", image1: "x.png" });
     expect(legacy.ok).toBe(true);
-    // the named model meets its own family's words
-    const fam = svc.admitStageRelations("image-edit", { model: "qwen-img-edit-2511", prompt: "warm" });
-    expect(fam.ok).toBe(false);
+    // the named model meets its own family's words — at the run
+    const fam = svc.admitStageRelations("image-edit", { model: editFam, prompt: "warm" });
+    expect(fam.ok).toBe(true);
+    await expect(
+      svc.phase1Card({ model: editFam, prompt: "warm" }, editFam),
+    ).rejects.toThrow(/input_images|image1|anchor/i);
   });
 
   it("tts siblings AGREE on the voice_name x style_instruction row — the model-less intersection holds it (the DECL audit's row 5)", () => {

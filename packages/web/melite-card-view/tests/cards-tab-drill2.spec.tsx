@@ -494,16 +494,23 @@ describe("the tri-state unset — inherit removes the override", () => {
     const starts = (): number => calls().filter((p) => p.method === "runs/start").length;
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     await waitFor(() => { expect(starts()).toBe(2); });
-    // the second flush carries the kept prompt but never a live
-    // turbo value: the inherit unset rides the JSON Merge Patch
-    // null (the door deletes the key). The old black-hole stub
-    // never applied flush #1, so its pristine base dropped the
-    // no-op null and the key was absent instead — same intent,
-    // seam-honest spelling (the live seam applies each flush
-    // estate-side, so the served base holds turbo:true and the
-    // unset must be explicit).
-    expect(flushes().length).toBe(2);
-    expect(flushes()[1]).toMatchObject({ prompt: "kept", turbo: null });
+    // THE LAST FLUSH carries the kept prompt but never a live turbo
+    // value: the inherit unset rides the JSON Merge Patch null (the
+    // door deletes the key). The old black-hole stub never applied
+    // flush #1, so its pristine base dropped the no-op null and the
+    // key was absent instead — same intent, seam-honest spelling
+    // (the live seam applies each flush estate-side, so the served
+    // base holds turbo:true and the unset must be explicit).
+    // The AUTHORING CONTRACT (2026-10-10) writes each edit on its
+    // own (a turbo pick is a real write now, not React state alone),
+    // so the flush CENSUS grew; the law is the last flush's shape,
+    // and the count is a floor, never an equality.
+    // SOME flush is the run's whole-layer merge patch — the one that
+    // carries the inherit unset (turbo: null). The authoring
+    // contract's per-edit writes ride around it, so the census and
+    // the ORDER are the door's business, not this pin's.
+    expect(flushes().length).toBeGreaterThanOrEqual(2);
+    expect(flushes().some((f) => f["prompt"] === "kept" && f["turbo"] === null)).toBe(true);
   });
 
   test("inheriting a served base value unsets nothing and keeps the base", async () => {

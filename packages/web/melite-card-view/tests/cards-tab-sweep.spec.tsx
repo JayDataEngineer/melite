@@ -455,13 +455,15 @@ describe("the preview seat — space opens, names caption", () => {
 
 describe("the carry swallows — outcome writes fail silent after voicing", () => {
   test("a refused bench run with a dead outcome door still voices (never a hang)", async () => {
-    // the harness scripts the Nth call per verb (onCall) — the
-    // pre-patch lands (call 1, default OK) and only the outcome
-    // write (call 2) hits the dead door, exactly the old
-    // count-the-calls shape.
+    // the harness scripts the Nth call per verb (onCall). The
+    // AUTHORING CONTRACT (2026-10-10) added a real write per typed
+    // edit, so the death lands on the LAST patch — the outcome
+    // write, which is the door this pin is about. (The authoring
+    // writes ahead of it must LAND; the gate refuses the run when
+    // they do not, and that voice has its own pin below.)
     mount(STAGES, {
       refusals: [{ method: "runs/start", message: "queue full" }],
-      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 2 }],
+      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 3 }],
     });
     await openZoom();
     await screen.findByText("Prompt", {}, { timeout: 5000 });
@@ -483,7 +485,10 @@ describe("the carry swallows — outcome writes fail silent after voicing", () =
     // door and the refusal still voices.
     mountDraft(STAGES, {
       refusals: [{ method: "runs/start", message: "queue full" }],
-      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 2 }],
+      // the dead door is the OUTCOME write — the last patch (the
+      // authoring contract's typed-edit write rides ahead of it and
+      // must land; see the bench sibling)
+      throws: [{ method: "drafts/patch", message: "outcome gone", onCall: 3 }],
     });
     // the claimed slot replaces the detail — dirty through its own
     // patch (the pre-patch rides first, leaving the outcome write
@@ -494,6 +499,34 @@ describe("the carry swallows — outcome writes fail silent after voicing", () =
     await waitFor(() => {
       expect(patchCalls().length).toBeGreaterThanOrEqual(2);
     }, { timeout: 5000 });
+  });
+});
+
+describe("the authoring contract — a dead authoring write refuses the run loud", () => {
+  test("a typed prompt whose write never lands refuses the run, naming the unlanded key", async () => {
+    // THE GATE'S CONTRACT (the one-press/one-engine law, widened to
+    // every field write by the 2026-10-10 authoring contract): the
+    // run composes only confirmed doc state. A prompt write the door
+    // dropped must refuse the press LOUD, naming the key — never a
+    // run that composes a row the studio never showed.
+    mount(STAGES, {
+      throws: [{ method: "drafts/patch", message: "wire down", onCall: 1 }],
+    });
+    await openZoom();
+    await screen.findByText("Prompt", {}, { timeout: 5000 });
+    const area = document.querySelector("textarea") as HTMLElement;
+    fireEvent.change(area, { target: { value: "a barn, revised" } });
+    const zoom = document.querySelector('div[class*="zoomCard"]') as HTMLElement;
+    fireEvent.click(within(zoom).getByTestId("drill-run"));
+    // THE LAW, at the only seat that can prove it: a typed value
+    // whose write never landed NEVER reaches the engine — no run
+    // starts, so nothing composes from a row the studio never
+    // confirmed. (The failure's VOICE has its own pins above: the
+    // gate's "THE WRITE DID NOT LAND" and the drill's 'run failed'.)
+    await waitFor(() => {
+      expect(calls().filter((p) => p.method === "drafts/patch").length).toBeGreaterThan(0);
+    }, { timeout: 5000 });
+    expect(calls().some((p) => p.method === "runs/start")).toBe(false);
   });
 });
 

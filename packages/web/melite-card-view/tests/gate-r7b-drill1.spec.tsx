@@ -129,6 +129,65 @@ async function openFirstTile(): Promise<void> {
   await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
 }
 
+// THE AUTHORING CONTRACT (2026-10-10, the operator's live face:
+// "Generate Image: lane 'krea-2/turbo' refuses the state: this lane
+// requires 'prompt' — 'prompt' is not stated" — and "THERE SHOULD
+// HAVE BEEN A CONTRACT, SO USERS CAN ADD CARDS"). The contract: what
+// you TYPE in a card IS that card's state on the bench. The add
+// door seeds the axes (model/variant ride the row) but a typed
+// schema field went to React state alone — CardForm forwards its
+// onPatch to the MODS section only — so the run's fresh-read
+// composed a row that never heard the prompt and the lane refused.
+// These pins hold the contract: the typed value rides the row, and
+// the run composes what the studio shows.
+describe("the authoring contract — a typed field RIDES the row", () => {
+  test("typing a prompt patches the stage row (the value the studio shows is the value the engine gets)", async () => {
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+    ]);
+    doors.specFields = "prompt";
+    await openFirstTile();
+    const field = await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    fireEvent.change(field, { target: { value: "a red cloak" } });
+    await waitFor(() => {
+      const patches = calls().filter((c) => c.method === "drafts/patch");
+      // the print: what the door actually received
+      if (patches.length === 0) throw new Error("no drafts/patch yet; calls: " + JSON.stringify(calls().map((c) => c.method)));
+      expect(patches.length).toBeGreaterThan(0);
+      // THE DOOR'S DOC SHAPE: the write's key is `params` (a flat
+      // {prompt} doc is an unknown key the door refuses).
+      const landed = patches.some((c) => {
+        const patch = c.args["patch"] as Record<string, unknown>;
+        const params = (patch["params"] ?? patch) as Record<string, unknown>;
+        return params["prompt"] === "a red cloak";
+      });
+      if (!landed) throw new Error("prompt never rode a patch; patches: " + JSON.stringify(patches.map((c) => c.args["patch"])));
+      expect(landed).toBe(true);
+    }, { timeout: 4000 });
+  });
+
+  test("the typed prompt reaches the RUN start body (no lane refusal can say 'prompt is not stated')", async () => {
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+    ]);
+    doors.specFields = "prompt";
+    await openFirstTile();
+    const field = await screen.findByLabelText("Prompt", {}, { timeout: 4000 });
+    fireEvent.change(field, { target: { value: "a red cloak" } });
+    // the drill's own Run press — the bench chrome's Play (the drill
+    // binds the press through bindRun, so the tile's own verb runs
+    // the OPEN stage, the operator's one-press path)
+    const run = await screen.findByRole("button", { name: /play/i }, { timeout: 4000 });
+    fireEvent.click(run);
+    await waitFor(() => {
+      const starts = calls().filter((c) => c.method === "runs/start");
+      expect(starts.length).toBeGreaterThan(0);
+      const doc = starts[starts.length - 1]!.args["doc"] as Record<string, unknown>;
+      expect(JSON.stringify(doc)).toContain("a red cloak");
+    }, { timeout: 6000 });
+  });
+});
+
 describe("the slot flush's foreign voice — a down wire still names the face", () => {
   test("a foreign slot-write throw voices 'slot write failed' (never a throw past the pick)", async () => {
     doors.formsTable = "fail";

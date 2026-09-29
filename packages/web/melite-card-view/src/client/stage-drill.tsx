@@ -9,6 +9,7 @@ import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gall
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
 import { axisUnset, titleCaseId } from '@melite/card-base/spec'
+import { scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/wire'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
@@ -268,9 +269,32 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val
         return next
       })
+      // THE AUTHORING CONTRACT rides the unset too: the row's key
+      // leaves on the same ledger (a null param DELETEs it — the
+      // door's own law), so "inherited" is the row's state and not
+      // only this modal's.
+      void scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).catch(() => {})
       return
     }
     setUser((m) => ({ ...m, [name]: v }))
+    // THE AUTHORING CONTRACT (2026-10-10, the operator's live face:
+    // 'Generate Image: lane krea-2/turbo refuses the state: this lane
+    // requires prompt — prompt is not stated'). A typed field used to
+    // live in this state alone: CardForm forwards onPatch to the MODS
+    // section only, so the run's fresh-read composed a row that never
+    // heard the prompt and the lane refused the image. Every
+    // non-slot edit now REGISTERS in the write ledger (the trailing
+    // coalescing write, forced by the run gate) — what the studio
+    // shows is what the engine gets. Slots keep their immediate flush
+    // below (the discrete-gesture law); the slot arm never reaches
+    // here.
+    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+    const shape2: string | undefined = spec !== null
+      ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
+    /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+    if (shape2 !== 'image' && shape2 !== 'file' && shape2 !== 'mesh') {
+      void scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).catch(() => {})
+    }
     // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
     // wire an image from the previous flow, it doesn't stay after I
     // close the card"): a slot-shaped pick (image/file/mesh) is a
@@ -283,6 +307,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
     if (shape === 'image' || shape === 'file' || shape === 'mesh') {
+      // patchStageParams wraps the door's doc (STAGE_PATCH_KEYS'
+      // `params` key); the clear rides the null-unset arm (a null
+      // param DELETEs its key, bench.ts's own law).
       void patchStageParams(bench.draftId, stage.id,
         v === '' ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {

@@ -197,10 +197,109 @@ export function stageWriteState(draftId: string, stageId: string): StageWriteSta
   return { pending: row.inflight.size, failedKeys: [...row.failedKeys], lastError: row.lastError, confirmedRev: row.confirmedRev }
 }
 
+/** THE AUTHORING CONTRACT (2026-10-10, the operator's live face:
+ *  "Generate Image: lane 'krea-2/turbo' refuses the state: this lane
+ *  requires 'prompt' — 'prompt' is not stated" — and "THERE SHOULD
+ *  HAVE BEEN A CONTRACT, SO USERS CAN ADD CARDS"). What you type in
+ *  a card IS that card's state on the bench. A typed SCHEMA field
+ *  used to live in the drill's React state alone (CardForm forwards
+ *  its onPatch to the MODS section only), so the run's fresh-read
+ *  composed a row that never heard the prompt — the row rode the
+ *  axis seeds and nothing else, and the lane refused the image.
+ *
+ *  The contract's write: EVERY non-slot field edit registers in the
+ *  ledger here, coalesced per key on a short trailing delay (a
+ *  keystroke storm is one write, not forty) — module-level state, so
+ *  a view flip cannot kill a pending write by killing its timer
+ *  owner (the 2026-09-23 burn's exact death). The run gate FORCES
+ *  every pending write before composing (flushStageWrites below), so
+ *  the engine can only ever see what the studio shows. */
+const SCHEDULED_TRAILING_MS = 300
+interface ScheduledParamWrite {
+  readonly timer: ReturnType<typeof setTimeout>
+  readonly params: Record<string, unknown>
+  readonly expectRev: number | undefined
+}
+/** Pending trailing writes, keyed draft/stage then param key (the
+ *  coalescing unit: one write per key, the newest value wins). */
+const scheduledWrites = new Map<string, Map<string, ScheduledParamWrite>>()
+
+function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledParamWrite> {
+  const key = draftId + '/' + stageId
+  let row = scheduledWrites.get(key)
+  if (row === undefined) {
+    row = new Map()
+    scheduledWrites.set(key, row)
+  }
+  return row
+}
+
+/** Register an authoring edit: the value rides the row on the
+ *  trailing delay, or NOW when `immediate` (discrete picks). The
+ *  promise settles when the door answered; the ledger owns the
+ *  failure memory either way. */
+export function scheduleStageParam(
+  draftId: string,
+  stageId: string,
+  params: Record<string, unknown>,
+  expectRev?: number,
+  immediate = false,
+): Promise<void> {
+  const row = scheduledRow(draftId, stageId)
+  // patchStageParams owns the DOOR'S DOC SHAPE (benchStage's
+  // STAGE_PATCH_KEYS — the wire's key is `params`; the flat
+  // client-side vocabulary is wrapped by that function, never by a
+  // caller).
+  const send = (merged: Record<string, unknown>, rev: number | undefined): Promise<void> =>
+    patchStageParams(draftId, stageId, merged, rev)
+  if (immediate || Object.keys(params).length === 0) {
+    // a discrete pick: no coalescing, the write leaves now (the slot
+    // flush law's own immediacy)
+    return send(params, expectRev)
+  }
+  let settle: (() => void) | null = null
+  const done = new Promise<void>((resolve) => { settle = resolve })
+  for (const [k, v] of Object.entries(params)) {
+    const prev = row.get(k)
+    if (prev !== undefined) clearTimeout(prev.timer)
+    const merged: Record<string, unknown> = prev !== undefined ? { ...prev.params } : {}
+    merged[k] = v
+    row.set(k, {
+      params: merged,
+      expectRev,
+      timer: setTimeout(() => {
+        row.delete(k)
+        void send(merged, expectRev).then(() => { settle?.() }, () => { settle?.() })
+      }, SCHEDULED_TRAILING_MS),
+    })
+  }
+  return done
+}
+
+/** Fire every pending trailing write for the stage NOW (the run
+ *  gate's first move — a press composes what the studio shows). */
+function forceScheduledWrites(draftId: string, stageId: string): Promise<void> {
+  const key = draftId + '/' + stageId
+  const row = scheduledWrites.get(key)
+  if (row === undefined || row.size === 0) return Promise.resolve()
+  const pending: Array<Promise<void>> = []
+  for (const [k, write] of row) {
+    clearTimeout(write.timer)
+    row.delete(k)
+    pending.push(patchStageParams(draftId, stageId, write.params, write.expectRev).catch(() => {}))
+  }
+  return Promise.all(pending).then(() => {})
+}
+
 /** Await every authoring write still in flight for the stage (the
  * run gate's flush). Never throws — the caller reads the settled
  * state and refuses the run on any failure. */
 export async function flushStageWrites(draftId: string, stageId: string): Promise<StageWriteState> {
+  // THE PENDING-FIRST LAW: a trailing write that has not fired yet
+  // is still an authoring write — the press forces it before the
+  // compose reads the row (the 2026-10-10 burn: press typed, press
+  // ran, the prompt was still in a timer).
+  await forceScheduledWrites(draftId, stageId)
   const row = writeRow(draftId, stageId)
   while (row.inflight.size > 0) {
     await Promise.allSettled([...row.inflight])
@@ -229,6 +328,10 @@ export async function refuseForUnlandedWrite(draftId: string, stageId: string): 
  * law). */
 export function resetStageWrites(): void {
   stageWrites.clear()
+  for (const row of scheduledWrites.values()) {
+    for (const write of row.values()) clearTimeout(write.timer)
+  }
+  scheduledWrites.clear()
 }
 
 /** The CAS dance (the run-start face law, 2026-09-14): write with the

@@ -7610,10 +7610,87 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				confirmedRev: row.confirmedRev
 			};
 		}
+		/** THE AUTHORING CONTRACT (2026-10-10, the operator's live face:
+		*  "Generate Image: lane 'krea-2/turbo' refuses the state: this lane
+		*  requires 'prompt' — 'prompt' is not stated" — and "THERE SHOULD
+		*  HAVE BEEN A CONTRACT, SO USERS CAN ADD CARDS"). What you type in
+		*  a card IS that card's state on the bench. A typed SCHEMA field
+		*  used to live in the drill's React state alone (CardForm forwards
+		*  its onPatch to the MODS section only), so the run's fresh-read
+		*  composed a row that never heard the prompt — the row rode the
+		*  axis seeds and nothing else, and the lane refused the image.
+		*
+		*  The contract's write: EVERY non-slot field edit registers in the
+		*  ledger here, coalesced per key on a short trailing delay (a
+		*  keystroke storm is one write, not forty) — module-level state, so
+		*  a view flip cannot kill a pending write by killing its timer
+		*  owner (the 2026-09-23 burn's exact death). The run gate FORCES
+		*  every pending write before composing (flushStageWrites below), so
+		*  the engine can only ever see what the studio shows. */
+		const SCHEDULED_TRAILING_MS = 300;
+		/** Pending trailing writes, keyed draft/stage then param key (the
+		*  coalescing unit: one write per key, the newest value wins). */
+		const scheduledWrites = /* @__PURE__ */ new Map();
+		function scheduledRow(draftId, stageId) {
+			const key = draftId + "/" + stageId;
+			let row = scheduledWrites.get(key);
+			if (row === void 0) {
+				row = /* @__PURE__ */ new Map();
+				scheduledWrites.set(key, row);
+			}
+			return row;
+		}
+		/** Register an authoring edit: the value rides the row on the
+		*  trailing delay, or NOW when `immediate` (discrete picks). The
+		*  promise settles when the door answered; the ledger owns the
+		*  failure memory either way. */
+		function scheduleStageParam(draftId, stageId, params, expectRev, immediate = false) {
+			const row = scheduledRow(draftId, stageId);
+			const send = (merged, rev) => patchStageParams(draftId, stageId, merged, rev);
+			if (immediate || Object.keys(params).length === 0) return send(params, expectRev);
+			let settle = null;
+			const done = new Promise((resolve) => {
+				settle = resolve;
+			});
+			for (const [k, v] of Object.entries(params)) {
+				const prev = row.get(k);
+				if (prev !== void 0) clearTimeout(prev.timer);
+				const merged = prev !== void 0 ? { ...prev.params } : {};
+				merged[k] = v;
+				row.set(k, {
+					params: merged,
+					expectRev,
+					timer: setTimeout(() => {
+						row.delete(k);
+						send(merged, expectRev).then(() => {
+							settle?.();
+						}, () => {
+							settle?.();
+						});
+					}, SCHEDULED_TRAILING_MS)
+				});
+			}
+			return done;
+		}
+		/** Fire every pending trailing write for the stage NOW (the run
+		*  gate's first move — a press composes what the studio shows). */
+		function forceScheduledWrites(draftId, stageId) {
+			const key = draftId + "/" + stageId;
+			const row = scheduledWrites.get(key);
+			if (row === void 0 || row.size === 0) return Promise.resolve();
+			const pending = [];
+			for (const [k, write] of row) {
+				clearTimeout(write.timer);
+				row.delete(k);
+				pending.push(patchStageParams(draftId, stageId, write.params, write.expectRev).catch(() => {}));
+			}
+			return Promise.all(pending).then(() => {});
+		}
 		/** Await every authoring write still in flight for the stage (the
 		* run gate's flush). Never throws — the caller reads the settled
 		* state and refuses the run on any failure. */
 		async function flushStageWrites(draftId, stageId) {
+			await forceScheduledWrites(draftId, stageId);
 			const row = writeRow(draftId, stageId);
 			while (row.inflight.size > 0) await Promise.allSettled([...row.inflight]);
 			return stageWriteState(draftId, stageId);
@@ -60152,12 +60229,17 @@ void main() {
 						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
 						return next;
 					});
+					scheduleStageParam(bench.draftId, stage.id, { [name]: null }, bench.rev).catch(() => {});
 					return;
 				}
 				setUser((m) => ({
 					...m,
 					[name]: v
 				}));
+				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+				const shape2 = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
+				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
+				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") scheduleStageParam(bench.draftId, stage.id, { [name]: v }, bench.rev).catch(() => {});
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
@@ -61642,4 +61724,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="dfefa888e59a8cf4ff7bf2c2ef24a89a4a4636ee";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="f7c222b1ae5a4b10ba0a31edde4dbe5d8eb509ea";

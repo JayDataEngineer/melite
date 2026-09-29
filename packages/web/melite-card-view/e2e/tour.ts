@@ -63,13 +63,17 @@ export async function settle(page: Page): Promise<void> {
  *  fail on host HISTORY (the pre-stroke spec leaned on the operator's
  *  accumulated session list). The tour needs an open conversation —
  *  the expand seat lives in the "conversation.session.header.corner"
- *  slot, which only an OPEN conversation renders — so when no seat is
- *  up, MINT a session through the GUI's own composer (type a first
- *  message, Enter): the only GUI-honest door to a real conversation,
- *  and it opens the conversation directly (no tree row surgery). */
+ *  slot, which only an OPEN conversation renders — so ALWAYS mint
+ *  through the GUI's own composer (type a message, Enter), even when
+ *  a seat is already up: the host reopens the LAST conversation on
+ *  load (2026-10-10: a leftover "New Session" from an aborted run
+ *  handed the authoring-contract wall an EMPTY key and its bench
+ *  read fell through to the seatless arm), and a send into the OPEN
+ *  conversation fires the SAME session/prompt frame with THAT
+ *  conversation's id — the returned key is always the conversation
+ *  the tab is about to show, never a guess off host history. */
 export async function openAConversation(page: Page): Promise<{ opened: boolean; sessionKey: string }> {
   const seat = page.locator('[data-sidebar-right-expand]').first()
-  if (await seat.isVisible().catch(() => false)) return { opened: true, sessionKey: '' }
   // THE MINT'S OWN KEY: the composer's first send is a
   // session/prompt REQUEST whose args carry the conversation's
   // sessionId — the same wire the GUI rode — and a well-formed
@@ -98,7 +102,11 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
   await page.keyboard.press('Enter')
   await seat.waitFor({ state: 'visible', timeout: 20_000 }).catch(() => {})
   const opened = await seat.isVisible().catch(() => false)
-  await page.waitForTimeout(2_000)
+  // THE KEY IS A RECEIPT, not a hope: poll for the mint's own frame
+  // (a flat wait can outrun a slow send), and a wall whose mint never
+  // named a key fails HERE with a named cause — never downstream on
+  // an empty-key URL that falls through to the seatless arm.
+  for (let i = 0; i < 40 && mintedKey === ''; i++) await page.waitForTimeout(250)
   page.off('request', onPrompt)
   return { opened, sessionKey: mintedKey }
 }
@@ -142,12 +150,17 @@ export async function seedBenchH3(page: Page, sessionKey: string): Promise<void>
     value = await callBench(page, 'bench/get', { sessionKey })
   }
   const parsed = value as
-    | { stages?: unknown[]; bench?: { rev?: number }; doc?: { stages?: unknown[]; bench?: { rev?: number } } }
+    | { stages?: unknown[]; rev?: number; bench?: { rev?: number }; doc?: { stages?: unknown[]; rev?: number; bench?: { rev?: number } } }
     | undefined
   const doc = parsed?.doc ?? parsed ?? {}
   const stages = Array.isArray(doc.stages) ? doc.stages : []
+  // THE REV IS FLAT on the bench doc ({"draft_id","session","rev",
+  // "stages"} — the ensure/get wire's own shape). The old parser read
+  // only doc.bench.rev, which never exists: it silently held 0, which
+  // only ever matched because ensure BIRTHS at 0 — a leftover bench
+  // at rev≥1 refused the seed with a CAS conflict (2026-10-10).
+  const rev = typeof doc.rev === 'number' ? doc.rev : typeof doc.bench?.rev === 'number' ? doc.bench.rev : 0
   if (stages.some((s) => typeof s === 'object' && s !== null && 'card' in s && (s as { card?: unknown }).card === 'h3-timeline')) return
-  const rev = typeof doc.bench?.rev === 'number' ? doc.bench.rev : 0
   await callBench(page, 'bench/add-stage', {
     sessionKey,
     doc: {

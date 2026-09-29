@@ -206,6 +206,29 @@ export function familyFace(fam: string): string {
  // except the boot sites, which route through
  // ctx.get('cardRegistry') — see main.ts).
 
+/** THE INCOMPLETE-DRAFT LAW (2026-10-10, the operator's second
+ *  face — "Generate Image: lane 'krea-2/turbo' refuses the state:
+ *  this lane requires 'prompt'" AT THE ADD DOOR, and "I CAN'T ADD
+ *  CARDS"): a required word that is simply UNSTATED is not a
+ *  write-door refusal — a card under construction is bench state,
+ *  and the add door seeds the axes (model/variant) with no content
+ *  because the operator types the prompt next. A write-door
+ *  required-word refusal made adding an image impossible, which is
+ *  the opposite of the contract the operator asked for ("THERE
+ *  SHOULD HAVE BEEN A CONTRACT, SO USERS CAN ADD CARDS").
+ *
+ *  The split, one line: an UNSTATED required word is the RUN door's
+ *  voice (it judges the same words in the same sentence when the
+ *  press composes); a STATED-but-wrong state (a knob that fires
+ *  nothing on this lane, a number out of its declared bounds, a
+ *  conflict, an unknown selection) still refuses HERE — that state
+ *  can never compose and the operator learns at the keystroke. The
+ *  judge is the contracts' own (laneRelations): the required class
+ *  is the one whose sentence opens "this lane requires". */
+function incompleteDraftViolations(violations: readonly LaneViolation[]): LaneViolation[] {
+  return violations.filter((v) => !v.message.startsWith("this lane requires"));
+}
+
 export class CardRegistryService extends Service {
   /** The primed card definitions (null until prime()). */
   private defs: Map<string, CardDefinition> | null = null;
@@ -716,10 +739,10 @@ export class CardRegistryService extends Service {
       : null;
     // the surface judgment stays the undeclared-key gate's voice
     // (it already ran above); only the WORDS and the SPANS judge here
-    const violations: LaneViolation[] = [
+    const violations: LaneViolation[] = incompleteDraftViolations([
       ...judgeLaneRelations([relations], lift),
       ...judgeLaneBounds(bounds, lift),
-    ];
+    ]);
     void surface;
     if (violations.length > 0) {
       return "lane (draft, model-less) refuses the state: " +
@@ -860,11 +883,13 @@ export class CardRegistryService extends Service {
       famRow.bounds ?? null,
       variantRow?.bounds ?? null,
     );
-    const violations: LaneViolation[] = [
+    // THE INCOMPLETE-DRAFT LAW rides the family arm too (see the
+    // helper): the unstated required word is the run door's voice.
+    const violations: LaneViolation[] = incompleteDraftViolations([
       ...judgeLaneSurface(surface, prep.decl.schemaNames, prep.params),
       ...judgeLaneRelations(relations, prep.params),
       ...judgeLaneBounds(bounds, prep.params),
-    ];
+    ]);
     if (violations.length > 0) {
       return "lane '" + prep.fam + "/" + laneVariantId + "' refuses the state: " +
         violations.map((v) => v.message).join("; ");
