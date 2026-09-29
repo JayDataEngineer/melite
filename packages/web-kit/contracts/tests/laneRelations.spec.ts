@@ -13,6 +13,7 @@ import {
   judgeLaneRelations,
   judgeLaneSurface,
   laneBoundsOf,
+  laneContractOf,
   laneSurfaceOf,
 } from "../src/laneRelations.ts";
 import type { LaneRelations } from "../src/laneRelations.ts";
@@ -282,5 +283,59 @@ describe('judgeLaneBounds (the RANGE RULE)', () => {
       laneBoundsOf({ steps: { min: 1, max: 50 } }, { steps: { max: 12, min: 2 } }),
       { steps: { min: 2, max: 12 } },
     )
+  })
+})
+
+// ── THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+// "the entire point of the schema rework was so this was impossible
+// by design") — a variant's sampler_envelope is the SAME closed
+// interval the bench's stamp gate refuses with; the contract
+// projects it into the variant's bounds rows so the form's inline
+// gate, the run gate, and the compose door judge ONE truth. The
+// live proof it was broken: krea-2 declares ONLY envelopes — the
+// served bounds read null, the form judged NOTHING, and a stated
+// cfg 3.5 rode the wire to a door that refused it 300ms later.
+describe('laneContractOf projects the route envelope into bounds', () => {
+  const decl = {
+    params: ['prompt'],
+    variants: [
+      {
+        id: 'turbo',
+        params: ['prompt'],
+        sampler_envelope: { steps: [4, 8], cfg: [1, 2] },
+      },
+      {
+        id: 'capped',
+        bounds: { steps: { min: 2, max: 30 }, width: { min: 256 } },
+        sampler_envelope: { steps: [5, 10] },
+      },
+      { id: 'bare' },
+    ],
+  }
+
+  it('an envelope-only variant serves bounds the form can judge (the krea-2 shape)', () => {
+    const row = laneContractOf(decl as never).variants.turbo!
+    assert.deepEqual(row.bounds, { steps: { min: 4, max: 8 }, cfg: { min: 1, max: 2 } })
+    assert.deepEqual(row.sampler_envelope, { steps: [4, 8], cfg: [1, 2] })
+  })
+
+  it('the envelope OWNS steps/cfg endpoints; untouched bound rows ride verbatim', () => {
+    const row = laneContractOf(decl as never).variants.capped!
+    assert.deepEqual(row.bounds, {
+      steps: { min: 5, max: 10 },
+      width: { min: 256 },
+    })
+  })
+
+  it('a variant with neither is not served at all (the absent-equals-empty law)', () => {
+    const served = laneContractOf(decl as never).variants
+    assert.equal(served.bare, undefined)
+  })
+
+  it('the projected bounds judge the door\'s own refusal — stated cfg 3.5 over turbo [1,2] fires', () => {
+    const bounds = laneBoundsOf(null, laneContractOf(decl as never).variants.turbo!.bounds ?? null)
+    const violations = judgeLaneBounds(bounds, { cfg: 3.5, steps: 6 })
+    assert.equal(violations.length, 1)
+    assert.match(violations[0]!.message, /'cfg': 3.5 is outside this lane's range \(1–2\)/)
   })
 })

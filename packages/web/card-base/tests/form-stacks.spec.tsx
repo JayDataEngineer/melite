@@ -163,8 +163,33 @@ test('STACKS: the audio lane seats its own head hint (the OS dialog filters audi
   form({ user: { takes: ['https://host/t.wav'] } })
   const stack = document.querySelector('[data-input-stack="takes"]')
   if (stack === null) throw new Error('the audio stack seats')
-  expect(stack.querySelector('[data-stack-head="takes"]')?.textContent).toContain('1 / 8 · audio')
+  // THE CAP IS DECLARED, NEVER INVENTED (2026-10-11): `takes`
+  // declares no max_stack — the counter renders the count with NO
+  // denominator and NO invented 8; the add-cell stays (no declared
+  // cap to vanish at)
+  expect(stack.querySelector('[data-stack-head="takes"]')?.textContent).toContain('Takes1 · audio')
+  expect(stack.querySelector('[data-stack-head="takes"]')?.textContent).not.toContain('/ 8')
   expect(stack.querySelector('[data-stack-add="takes"]')).not.toBeNull()
+})
+
+test('STACKS: a draft past the DECLARED cap renders the over-cap refusal inline (the lane cap narrow)', () => {
+  // the operator's live bug: an 18-entry draft on a 3-cap lane —
+  // the face must state what the compose door would refuse, under
+  // the head, with the door's numbers
+  form({ user: { refs: ['a.png', 'b.png', 'c.png'] } })
+  let stack = document.querySelector('[data-input-stack="refs"]')
+  if (stack === null) throw new Error('the stack seats')
+  // refs declares max_stack 2 (the doc fixture): 3 stated is OVER
+  expect(stack.getAttribute('data-stack-over')).toBe('2')
+  expect(stack.textContent).toContain("3 stated, this lane admits 2 — remove 1")
+  expect(stack.querySelector('[data-stack-add="refs"]')).toBeNull()
+  // and the legal state (1 of 2) renders clean — no refusal row
+  form({ user: { refs: ['a.png'] } })
+  const mounts = document.querySelectorAll('[data-input-stack="refs"]')
+  stack = mounts[mounts.length - 1]!
+  expect(stack.getAttribute('data-stack-over')).toBeNull()
+  expect(stack.textContent).not.toContain('this lane admits')
+  expect(stack.querySelector('[data-stack-add="refs"]')).not.toBeNull()
 })
 
 test('STACKS: max_stack + media serve from the declaration extra (the walker reads them)', async () => {

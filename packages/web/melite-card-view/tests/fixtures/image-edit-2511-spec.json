@@ -1243,10 +1243,11 @@
             "width": 1,
             "zone": "inputs",
             "wtype": "image_list",
-            "max_stack": 16,
+            "max_stack": 3,
             "serveDefault": true,
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
-          }
+          },
+          "max_stack": 3
         },
         "inner": 2666
       },

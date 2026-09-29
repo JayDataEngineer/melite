@@ -11,15 +11,16 @@
  * zero page errors across the whole flow.
  */
 import { expect, test } from '@playwright/test'
-import { openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
+import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
 
 test('From media on an input card: menu opens, modal lists the runs library, a pick lands', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  // THE LEDGER IS THE SPINE'S (tour.ts), not a third hand-rolled copy:
+  // only the shared collector knows the cold host's boot-race 503s and
+  // the wall's own readiness probe are transport, not page errors — a
+  // local listener re-records both and fails every cold-lane run.
+  const errors: string[] = collectPageErrors(page)
 
   await settle(page)
   const { opened, sessionKey } = await openAConversation(page)
@@ -81,5 +82,5 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
     ).toBeVisible({ timeout: 10_000 })
   }
 
-  expect(errors, errors.join('\n')).toEqual([])
+  await expectNoPageErrors(page, errors)
 })

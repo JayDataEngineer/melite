@@ -24,6 +24,14 @@ export type EngineParamValue =
  * engine's executor — never to the consumer. */
 export interface EngineStageRow {
   readonly stageId: string;
+  /** The stage's owning card id when the run was card-commissioned
+   *  (VOICES ONLY: the wiring wall names the composer of the graph
+   *  it judges — 'card <id> built node ...'. Absent for flow /
+   *  engine-only stages, where the wall names the stage id; the
+   *  audit's F-2, 2026-10-11: the adapter used to pass the stageId
+   *  as a card name for EVERY run, so a refusal named a card that
+   *  never composed the graph.) */
+  readonly card?: string;
   readonly outputs: Readonly<Record<string, EngineParamValue>>;
   readonly params: Readonly<Record<string, EngineParamValue>>;
 }

@@ -448,7 +448,13 @@ export interface LaneContractVariantRow {
 }
 
 export interface LaneContractRow {
-  base: readonly string[]
+  /** The declared surface — ABSENT when the family declares no
+   *  params at all (2026-10-11, the envelope wall: a family may
+   *  judge relations/bounds/envelopes while owning no surface —
+   *  krea-2's shape. Absent base = the form falls back to the
+   *  card's own visibility; `base: []` stays the explicit
+   *  black-form statement). */
+  base?: readonly string[]
   relations?: LaneRelations
   bounds?: Record<string, { min?: number; max?: number }>
   variants: Record<string, LaneContractVariantRow>
@@ -483,18 +489,51 @@ export function laneContractOf (decl: LaneContractDecl): LaneContractRow {
     variants[v.id] = {
       ...(v.params !== undefined ? { params: [...v.params] } : {}),
       ...(v.relations !== undefined ? { relations: v.relations } : {}),
-      ...(v.bounds !== undefined ? { bounds: v.bounds } : {}),
+      ...(v.bounds !== undefined || v.sampler_envelope !== undefined
+        ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) }
+        : {}),
       // the variant's sampler domain rides the contract too — the
       // bench judges it, so the face that composes must state it
       ...(v.sampler_envelope !== undefined ? { sampler_envelope: v.sampler_envelope } : {}),
     }
   }
   return {
-    base: [...(decl.params ?? [])],
+    // ABSENT when the family declares no surface at all (krea-2's
+    // shape: relations + envelopes, params undeclared — the form
+    // falls back to the card's own visibility while every law
+    // still judges)
+    ...(decl.params !== undefined ? { base: [...decl.params] } : {}),
     ...(decl.relations !== undefined ? { relations: decl.relations } : {}),
     ...(decl.bounds !== undefined ? { bounds: decl.bounds } : {}),
     variants,
   }
+}
+
+/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+ * "the entire point of the schema rework was so this was impossible
+ * by design"): a variant's sampler_envelope is the SAME closed
+ * interval the bench's stamp gate refuses with (envelopeRefusal) —
+ * project it into the variant's bounds rows so the form's inline
+ * gate, the run gate, and the compose door judge ONE truth. The
+ * envelope OWNS both endpoints for steps/cfg (the door is the
+ * authority; a family bound that contradicts its own variant's
+ * envelope is a DECL bug, and the door's voice wins). Before this,
+ * a family that declared only envelopes (krea-2) served bounds
+ * null — the form judged NOTHING while the door refused the write
+ * 300ms after the press. */
+function envelopeBoundsOf (
+  bounds: Record<string, { min?: number; max?: number }> | undefined,
+  envelope: { steps: number[]; cfg: number[] } | undefined,
+): Record<string, { min?: number; max?: number }> {
+  const out: Record<string, { min?: number; max?: number }> = { ...(bounds ?? {}) }
+  if (envelope === undefined) return out
+  if (Array.isArray(envelope.steps) && envelope.steps.length === 2) {
+    out.steps = { ...(out.steps ?? {}), min: envelope.steps[0], max: envelope.steps[1] }
+  }
+  if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) {
+    out.cfg = { ...(out.cfg ?? {}), min: envelope.cfg[0], max: envelope.cfg[1] }
+  }
+  return out
 }
 
 /** THE CONTRACT MAP for a card's declared families: family id → its
@@ -510,10 +549,11 @@ export function laneContractsFor (
     const decl = declOf(id)
     if (decl === undefined) continue
     const contract = laneContractOf(decl)
-    // a family with no declared base surface, no laws and no
-    // variant additions has nothing to say (the legacy stand-down)
+    // a family with no declared surface, no laws and no variant
+    // additions has nothing to say (the legacy stand-down; an
+    // ABSENT base is the no-surface truth, not an empty one)
     const silent =
-      contract.base.length === 0 &&
+      (contract.base ?? []).length === 0 &&
       contract.relations === undefined &&
       contract.bounds === undefined &&
       Object.keys(contract.variants).length === 0

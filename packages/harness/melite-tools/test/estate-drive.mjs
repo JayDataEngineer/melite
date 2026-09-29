@@ -14,7 +14,7 @@
 // runtime home's env — a spawned `dsh --profile estate`, no second
 // process, no :33081). Run:
 //   node packages/harness/melite-tools/test/estate-drive.mjs
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
 const DSH_HOME = '/home/user/Documents/programs/active/inference.cpp/data/runtime/dsh-harness-home'
@@ -43,7 +43,23 @@ const pending = new Map()
 let settled = false
 
 try { appendFileSync(RAW, '') } catch {}
-const child = spawn('/home/user/.local/bin/dsh', ['--profile', 'estate'], {
+// LANE LAW (li-bu class, the audit's F-11): no hard-coded machine
+// binary — the drive honors DSH_BIN (else `dsh` on PATH) and REFUSES
+// a binary below the repo's floor (>=0.2.0-rc.1, the provisioner's
+// own pin). A below-floor shell is the banned class (the typert
+// codec mismatch burn). The sanctioned door for a lane remains the
+// sibling provisioner; this drive only ever proves the estate
+// profile the provisioner installed.
+const DSH_BIN = process.env.DSH_BIN ?? 'dsh'
+const vprobe = spawnSync(DSH_BIN, ['--version'], { encoding: 'utf8' })
+const vm = /(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?/.exec((vprobe.stdout ?? '') + ' ' + (vprobe.stderr ?? ''))
+const vcur = vm ? [Number(vm[1]), Number(vm[2]), Number(vm[3]), vm[4] !== undefined ? Number(vm[4]) : 1e6] : null
+const vfloor = [0, 2, 0, 1]
+if (vcur === null || vcur < vfloor) {
+  console.error('[drive] ' + DSH_BIN + ' is not a dsh at the version floor (>=0.2.0-rc.1) — boot only through the provision')
+  process.exit(1)
+}
+const child = spawn(DSH_BIN, ['--profile', 'estate'], {
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     // dsh 0.1.2-rc.1 imports out-of-tree melite plugins as TS sources;

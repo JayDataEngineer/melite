@@ -386,7 +386,7 @@ test('✦ Agent Enhance sweeps the declared fields and writes back through the v
   }, { timeout: 4000 })
   expect((screen.getByLabelText('Negative Prompt') as HTMLTextAreaElement).value)
     .toBe('blurry, low quality, distorted')
-  expect(screen.getByText('enhanced via dsh/default (1 field)')).toBeTruthy()
+  expect(screen.getByText('enhanced via dsh/default (2 fields)')).toBeTruthy()
 })
 
 // ── THE CARD LLM DROPDOWN (operator order: "the cards need a model

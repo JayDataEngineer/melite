@@ -19,6 +19,7 @@ export {
   type SchemaRef,
   type SchemaEnvelope,
   schemaEnvelope,
+  coerceFieldEdit,
   fieldsOf,
   fieldsOfEnvelope,
   resolveValue,

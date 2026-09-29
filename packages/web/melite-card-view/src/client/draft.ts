@@ -213,11 +213,14 @@ export function stageWriteState(draftId: string, stageId: string): StageWriteSta
  *  a view flip cannot kill a pending write by killing its timer
  *  owner (the 2026-09-23 burn's exact death). ONE hole, named
  *  honestly rather than patched with a lying flush: a write inside
- *  its trailing window dies on TAB CLOSE (the door's CAS fence
- *  needs the write's answer; no beacon can land one) — the run
- *  gate is the wall that catches it. The run gate FORCES every
+ *  its trailing window dies on DRILL CLOSE — but on a real BROWSER
+ *  TAB close the whole heap dies with the page (this ledger, the
+ *  timers, the run gate itself — no beforeunload/beacon exists, and
+ *  none honestly can: the door's CAS fence needs the write's
+ *  answer). The tab-close loss window is REAL and UNCOVERED; the
+ *  drill-close half is caught by the run gate, which FORCES every
  *  pending write before composing (flushStageWrites below), so the
- *  engine can only ever see what the studio shows. */
+ *  engine only ever sees what the studio shows. */
 const SCHEDULED_TRAILING_MS = 300
 interface ScheduledParamWrite {
   readonly timer: ReturnType<typeof setTimeout>
@@ -232,6 +235,36 @@ interface ScheduledParamWrite {
 /** Pending trailing writes, keyed draft/stage then param key (the
  *  coalescing unit: one write per key, the newest value wins). */
 const scheduledWrites = new Map<string, Map<string, ScheduledParamWrite>>()
+
+/** Per-stage SEND CHAIN (the second audit's timer-fan-out finding,
+ *  2026-10-11): two keys scheduled in the same tick fire their
+ *  timers together and both read the SAME confirmedRev — the second
+ *  collides and burns a rebase round, the exact CAS fan-out the
+ *  force path killed, relocated to the timers. Every send for a
+ *  stage — timer or force — rides this chain, so each write reads
+ *  the rev the PREVIOUS landing answered, by construction. */
+const sendChains = new Map<string, Promise<void>>()
+
+function enqueueSend(
+  draftId: string, stageId: string, thunk: () => Promise<void>,
+): Promise<void> {
+  const key = draftId + '/' + stageId
+  const prev = sendChains.get(key) ?? Promise.resolve()
+  const link = prev.then(thunk)
+  // the CHAIN never rejects (a failed link must not jam the next
+  // write); the CALLER holds the raw link and settles on it
+  sendChains.set(key, link.then(() => undefined, () => undefined))
+  return link
+}
+
+/** Keys still sitting in their trailing window (the flush's
+ *  liveness check — a schedule that survives the loop below is
+ *  voiced, never composed over). */
+function pendingScheduledKeys(draftId: string, stageId: string): string[] {
+  const row = scheduledWrites.get(draftId + '/' + stageId)
+  if (row === undefined) return []
+  return [...row.keys()]
+}
 
 function scheduledRow(draftId: string, stageId: string): Map<string, ScheduledParamWrite> {
   const key = draftId + '/' + stageId
@@ -293,7 +326,7 @@ export function scheduleStageParam(
         waiters,
         timer: setTimeout(() => {
           row.delete(k)
-          void send(merged, expectRev).then(
+          void enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(
             () => { for (const w of waiters) w() },
             () => { for (const w of waiters) w() },
           )
@@ -326,8 +359,13 @@ async function forceScheduledWrites(draftId: string, stageId: string): Promise<v
     clearTimeout(write.timer)
     row.delete(k)
     try {
-      const confirmed = writeRow(draftId, stageId).confirmedRev
-      await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev)
+      // through the SAME send chain as the timers (the second
+      // audit, 2026-10-11): a timer firing mid-force otherwise
+      // races the force's write at the same confirmedRev
+      await enqueueSend(draftId, stageId, async () => {
+        const confirmed = writeRow(draftId, stageId).confirmedRev
+        await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev)
+      })
     } catch { /* the ledger records; the gate voices */ }
     for (const w of write.waiters) w()
   }
@@ -340,11 +378,23 @@ export async function flushStageWrites(draftId: string, stageId: string): Promis
   // THE PENDING-FIRST LAW: a trailing write that has not fired yet
   // is still an authoring write — the press forces it before the
   // compose reads the row (the 2026-10-10 burn: press typed, press
-  // ran, the prompt was still in a timer).
-  await forceScheduledWrites(draftId, stageId)
-  const row = writeRow(draftId, stageId)
-  while (row.inflight.size > 0) {
-    await Promise.allSettled([...row.inflight])
+  // ran, the prompt was still in a timer). AND THE LOOP (the second
+  // audit's mid-force finding, 2026-10-11): a keystroke registered
+  // DURING the force's await is a TIMER again — one forced sweep
+  // drained inflight only and the gate answered clean with the new
+  // write still riding, composing a row the studio no longer showed.
+  // The flush therefore repeats until the stage is QUIET — no
+  // schedule, nothing in flight — bounded, and a schedule that
+  // outlives the bound is VOICED by the gate, never composed over.
+  const key = draftId + '/' + stageId
+  for (let guard = 0; guard < 16; guard++) {
+    await forceScheduledWrites(draftId, stageId)
+    const row = writeRow(draftId, stageId)
+    while (row.inflight.size > 0) {
+      await Promise.allSettled([...row.inflight])
+    }
+    const sched = scheduledWrites.get(key)
+    if (sched === undefined || sched.size === 0) break
   }
   return stageWriteState(draftId, stageId)
 }
@@ -356,7 +406,16 @@ export async function flushStageWrites(draftId: string, stageId: string): Promis
  * Null = the press may compose. Never throws. */
 export async function refuseForUnlandedWrite(draftId: string, stageId: string): Promise<string | null> {
   const state = await flushStageWrites(draftId, stageId)
-  if (state.failedKeys.length === 0) return null
+  if (state.failedKeys.length === 0) {
+    // guard-expiry honesty: a schedule that outlived the flush loop
+    // (a pathological author typing through sixteen sweeps) is an
+    // unlanded write too — the gate voices it, never composes over
+    const stillRiding = pendingScheduledKeys(draftId, stageId)
+    if (stillRiding.length === 0) return null
+    return 'THE WRITE DID NOT LAND — run refused: authoring write(s) still in their trailing window after repeated flush '
+      + '(unlanded keys: ' + stillRiding.join(', ') + '). '
+      + 'The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.'
+  }
   return 'THE WRITE DID NOT LAND — run refused: '
     + (state.lastError ?? 'authoring write(s) still in flight')
     + ' (unlanded keys: ' + state.failedKeys.join(', ') + '). '
@@ -371,9 +430,17 @@ export async function refuseForUnlandedWrite(draftId: string, stageId: string): 
 export function resetStageWrites(): void {
   stageWrites.clear()
   for (const row of scheduledWrites.values()) {
-    for (const write of row.values()) clearTimeout(write.timer)
+    for (const write of row.values()) {
+      clearTimeout(write.timer)
+      // settle the waiters (the second audit's orphan note): a
+      // caller still awaiting a schedule this reset dropped would
+      // hang silently — "settles when the door answered" becomes
+      // "settles when the ledger itself is torn down"
+      for (const w of write.waiters) w()
+    }
   }
   scheduledWrites.clear()
+  sendChains.clear()
 }
 
 /** Reconcile the failure memory against what the studio NOW shows
@@ -383,17 +450,25 @@ export function resetStageWrites(): void {
  * the studio shows the field empty while the run gate still refuses
  * naming a key nobody holds anymore (a GHOST: the cure — "retype the
  * field" — is invisible, the refusal looks like a lie). A failed key
- * that the held row does not carry AND the freshly seeded edit state
- * does not carry is dead weight from a prior session of the form;
- * the ledger drops it. A key either side still carries KEEPS its
- * refusal — that failure is live and the gate must voice it. */
+ * is dead weight from a prior session of the form only when NOBODY
+ * can show it: the held row does not carry it, the freshly seeded
+ * edit state does not carry it, AND the form does not DECLARE it
+ * (the second audit's live-drop finding, 2026-10-11: seedUser seeds
+ * only held keys + axis rows, but the form RENDERS every declared
+ * field — a declared-but-never-written 'prompt' shows an empty field
+ * the operator can retype, so its refusal is live and curable, not
+ * a ghost). A key any of the three still carries KEEPS its refusal
+ * — that failure is live and the gate must voice it. */
 export function reconcileStageWriteFailures(
   draftId: string, stageId: string,
   heldParams: Record<string, unknown>, seededParams: Record<string, unknown>,
+  declaredKeys: ReadonlySet<string> = new Set(),
 ): void {
   const row = writeRow(draftId, stageId)
   for (const k of [...row.failedKeys]) {
-    if (!(k in heldParams) && !(k in seededParams)) row.failedKeys.delete(k)
+    if (!(k in heldParams) && !(k in seededParams) && !declaredKeys.has(k)) {
+      row.failedKeys.delete(k)
+    }
   }
   if (row.failedKeys.size === 0) row.lastError = null
 }

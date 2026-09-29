@@ -46,7 +46,15 @@ def main() -> None:
     args = parser.parse_args()
 
     if not (HOME / "profiles" / "estate").is_dir():
-        sys.exit("harness home missing — run: uv run python tools/provision.py dsh")
+        # LANE LAW (li-bu class, the audit's F-12): the profile must
+        # come from the LIVING provision doors — tools/provision.py is
+        # gone. Repo-side the provisioner renders+installs it:
+        #   node packages/harness/provisioner/bin/infer-provision.mjs all
+        # and a lane boots only through the sibling provisioner:
+        #   ~/Documents/programs/active/dsh-provision/apply.sh launch --lane X
+        sys.exit("harness home missing the estate profile — install it "
+                  "with packages/harness/provisioner/bin/infer-provision.mjs "
+                  "(lanes boot only through dsh-provision apply.sh launch)")
 
     with DeepSeekHarness(
         provider=args.provider,

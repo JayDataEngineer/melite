@@ -247,8 +247,41 @@ describe("the slot flush's foreign voice — a down wire still names the face", 
     fireEvent.click(pick);
     // the pick wrote the bench row NOW (the slot flush law) — the
     // wire's foreign throw lands as the fallback text
-    expect(await screen.findByText("slot write failed", {}, { timeout: 4000 })).toBeTruthy();
+    // W9 aligned this voice: the foreign throw now rides the same
+    // THE WRITE DID NOT LAND prefix as the other arms — the old
+    // words survive INSIDE it (never a third face again)
+    expect(await screen.findByText(/slot write failed/, {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(true);
+  });
+});
+
+describe("the slot flush's REFUSED write — the third face speaks the write voice (W9)", () => {
+  test("a refused slot-write voices 'THE WRITE DID NOT LAND' naming the unlanded key (one voice with the other arms)", async () => {
+    mountBench([
+      { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
+      { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/b.png" } },
+    ], undefined, { patchFailures: [{ delivered: false, reason: "bench/stale-window" }] });
+    // modes AFTER the mount — stubFetch re-arms the defaults
+    doors.formsTable = "fail";
+    doors.specFields = "prompt-image";
+    doors.specInputs = true;
+    await openFirstTile();
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: /input image source/i }));
+    const flow = await screen.findByText("From flow", {}, { timeout: 4000 });
+    fireEvent.click(flow.closest('[role="menuitem"], [role="option"], li') as HTMLElement);
+    const rows = await screen.findAllByTestId("source-pick-row", {}, { timeout: 4000 });
+    const pick = rows.find((el) => (el.textContent ?? "").includes("/b.png")) ?? rows[rows.length - 1];
+    fireEvent.click(pick);
+    // the SAME voice the typing arm and the run gate speak: the
+    // prefix, the door's reason, the unlanded key by name — never a
+    // third face (the raw door text alone) again
+    await screen.findByText(
+      /THE WRITE DID NOT LAND[\s\S]*bench\/stale-window[\s\S]*unlanded keys: input_image/,
+      {},
+      { timeout: 4000 },
+    );
   });
 });
 

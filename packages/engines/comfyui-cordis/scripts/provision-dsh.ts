@@ -17,15 +17,44 @@ export const DSH_PROFILE = "estate";
 export const DSH_PROFILE_BUNDLES: readonly string[] = ["@deepseek-ai/dsh-base",
   "@deepseek-ai/dsh-sdk-app", DSH_PROVISIONER_NAME, "@melite/harness-tools"];
 
+/** The version floor: the repo's own runtime pin
+ *  (packages/harness/provisioner/package.json — ">=0.2.0-rc.1
+ *  <0.3.0"). A dsh below the floor is the banned class (li-bu's
+ *  burn: the mise 0.1.5-rc.2 shell's typert registry demanded
+ *  codec.schema.parse while our contributions declare
+ *  codec.create — the bench namespace never mounted, and every
+ *  symptom landed far from the cause). Lanes boot only through
+ *  the provision; this resolver enforces the same floor for the
+ *  binary an ad-hoc proof may hand it. */
+const DSH_VERSION_FLOOR: readonly [number, number, number, number] = [0, 2, 0, 1];
+
+function versionTuple(text: string): [number, number, number, number] | null {
+  const m = /(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?/.exec(text);
+  if (m === null) return null;
+  const rc = m[4] !== undefined ? Number(m[4]) : 1_000_000; // -rc.N sorts BEFORE the final
+  return [Number(m[1]), Number(m[2]), Number(m[3]), rc];
+}
+
 export function resolveDshLaunch(): string[] {
   // The bundled dsh runtime launcher. Deployment config, never
-  // guessed: DSH_BIN names the binary, else `dsh` on PATH.
+  // guessed: DSH_BIN names the binary, else `dsh` on PATH — and
+  // EITHER way the binary must sit at or above the version floor.
   const bin = (process.env.DSH_BIN ?? "").trim();
-  if (bin && existsSync(bin)) return [bin];
+  const candidates: string[] = [];
+  if (bin && existsSync(bin)) candidates.push(bin);
   const w = spawnSync("which", ["dsh"], { encoding: "utf8" });
   const found = (w.stdout ?? "").trim().split("\n")[0]?.trim() ?? "";
-  if (w.status === 0 && found) return [found];
-  fail("no dsh runtime resolvable (DSH_BIN or `dsh` on PATH) — " +
+  if (w.status === 0 && found) candidates.push(found);
+  for (const c of candidates) {
+    const v = spawnSync(c, ["--version"], { encoding: "utf8" });
+    const tuple = versionTuple((v.stdout ?? "") + " " + (v.stderr ?? ""));
+    if (tuple === null) continue; // not a dsh — try the next candidate
+    if (tuple >= DSH_VERSION_FLOOR) return [c];
+    fail("dsh at " + JSON.stringify(c) + " is v" + tuple.join(".") +
+      ", below the " + DSH_VERSION_FLOOR.slice(0, 3).join(".") + "-rc." +
+      String(DSH_VERSION_FLOOR[3]) + " floor — the composition proof needs the provisioned runtime (the lane boots through the provision)");
+  }
+  fail("no dsh runtime resolvable at the version floor (DSH_BIN or `dsh` on PATH, >=0.2.0-rc.1) — " +
     "the composition proof needs the bundled runtime");
 }
 

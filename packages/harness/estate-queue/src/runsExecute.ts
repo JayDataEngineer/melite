@@ -99,6 +99,12 @@ export type SettleFn = (run: RunRecord) => void;
       rows = seatExecutor !== null ? [] : run.stages.map(
         (stage, i: number): MergeRow => ({
           stageId: stage.id,
+          card:
+            typeof stage["card"] === "string" && stage["card"] !== ""
+              ? stage["card"]
+              : typeof run.cardId === "string" && run.cardId !== ""
+                ? run.cardId
+                : undefined,
           workflow: spliceWorkflow(run.params[i] as Record<string, EngineJson>),
           outputs: { ...(stage.outputs as Record<string, EngineJson>) },
           outputNodes: { ...(run.outputNodes[i] as Record<string, EngineJson>) },
@@ -172,14 +178,39 @@ export type SettleFn = (run: RunRecord) => void;
     // Unarmed (no wiring service in the composition): the wall
     // stands down — the standing law.
     const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
-    if (wiring !== undefined) {
+    // UNARMED, THE WHOLE FENCE STANDS DOWN — splice included (the
+    // second audit, 2026-10-11: the cut below spliced outside the
+    // wall's own stand-down, so a lane whose /object_info fetch
+    // failed — wall disarmed, judgment forbidden — still refused
+    // runs with the SPLICE's compose voice. A/B: an unarmed
+    // mcp:blender run completed before the cut and failed after,
+    // the executor never called. armed() mirrors the wall's own
+    // doc-null stand-down; assert() re-checks it inside.)
+    if (wiring !== undefined && wiring.armed()) {
       for (let i = 0; i < run.stages.length; i++) {
         const stage = run.stages[i]!;
+        // THE WALK IS A COMFY-GRAPH LAW: the stage's OWN engine token
+        // is the discriminator (runEngine's rule, per stage). Absent
+        // or card-plane → the compiled params are the comfy envelope;
+        // anything else is a foreign lane (mcp/craft/agent) whose tool
+        // params are NOT a graph — its seats own its voices, and this
+        // wall never judges it, armed or not.
+        const eng: unknown = stage["engine"];
+        if (
+          rows.length === 0 &&
+          typeof eng === "string" &&
+          eng !== "" &&
+          eng !== CARD_PLANE_ENGINE
+        ) {
+          continue;
+        }
         try {
           const graph =
             rows.length > 0
               ? rows[i]!.workflow
-              : spliceWorkflow(run.params[i] as Record<string, EngineJson>);
+              : spliceWorkflow(
+                  (run.params[i] ?? {}) as Record<string, EngineJson>,
+                );
           wiring.assert(String(stage["card"] ?? run.cardId ?? stage.id), graph);
         } catch (exc: unknown) {
           const text: string = errText(exc);
@@ -231,6 +262,16 @@ export type SettleFn = (run: RunRecord) => void;
         const genericRows = run.stages.map(
           (stage, i: number): EngineStageRow => ({
             stageId: stage.id,
+            // the card label for the adapter's walk voice — the
+            // SAME preference chain the estate fence above uses
+            // (stage's own card, then the run's, then the stage id
+            // for flow stages that never had one)
+            card:
+              typeof stage["card"] === "string" && stage["card"] !== ""
+                ? stage["card"]
+                : typeof run.cardId === "string" && run.cardId !== ""
+                  ? run.cardId
+                  : undefined,
             outputs: { ...(stage.outputs as Record<string, EngineJson>) },
             params: { ...(run.params[i] as Record<string, EngineJson>) },
           }),

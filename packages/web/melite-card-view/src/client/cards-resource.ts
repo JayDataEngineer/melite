@@ -58,6 +58,10 @@ export type { BenchNamespace }
 import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
 
+// the draft tail's delay (module scope: the other sleeps in this
+// file are locals of other generator scopes)
+const tailDelay = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms) })
+
 /** The cards resource's Remote failure code, merged into the
  *  protocol's one vocabulary (cookbook §2: declaration merging, next
  *  to the throw — the gateway/internal bucket died with the app). */
@@ -1059,6 +1063,33 @@ export function openCardsResource(
         return
       }
       yield { ok: true, value }
+      // THE DRAFT TAIL (the second audit's HOLE 1, 2026-10-11): one
+      // snapshot per open left the error face a LATCH on this surface
+      // — the retirement effect's dep never moved, so a generation
+      // that landed through ANY other hand (the agent's commission,
+      // a sibling tab) never retired the strip: the operator's exact
+      // bug, uncured on the drill tab. The tail re-reads the doc on
+      // the same DOC-CHANGE GATE the bench holds (rev + the stages'
+      // own bytes): a foreign-landed gen moves the faces, the frame
+      // yields, the claim retires; the agent's param writes drift
+      // the rev, so no rendered field can move unseen either way. A
+      // transient read failure keeps the last frame standing.
+      let lastRev = value.rev
+      let lastFaces = JSON.stringify(value.stages)
+      while (!ctx.signal.aborted) {
+        await tailDelay(1500)
+        if (ctx.signal.aborted) return
+        let next: CardsDraftValue
+        try {
+          next = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), 'drafts/get') as unknown as Record<string, unknown>)
+        } catch { continue }
+        const faces = JSON.stringify(next.stages)
+        if (lastRev === next.rev && lastFaces === faces) continue
+        lastRev = next.rev
+        lastFaces = faces
+        value = next
+        yield { ok: true, value }
+      }
       return
     }
     // run view: hydrate, then poll the status remote until terminal or

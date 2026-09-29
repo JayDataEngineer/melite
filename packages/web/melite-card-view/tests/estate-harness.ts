@@ -116,6 +116,18 @@ export interface EstateFakesOptions {
    *  CONFIRMED-WRITE LAW's currency; the fake's omission hid the
    *  CAS-storm shape the write-seat audit found). */
   patchAnswerRevs?: Array<number>
+  /** Fires SYNCHRONOUSLY at drafts/patch CALL time — while the
+   *  caller still awaits the answer. The mid-force pins schedule a
+   *  write inside it: "a keystroke registered DURING the force's
+   *  await" (draft.ts's flush-loop law), a state no post-hoc await
+   *  can reconstruct. */
+  onPatchCall?: (stageId: string, patch: Record<string, unknown>) => void
+  /** Holds every drafts/patch answer OPEN until the promise resolves
+   *  (awaited BEFORE the scripted answer is served). The send-chain
+   *  pins use it to hold a write in flight at a chosen instant — a
+   *  natural trailing timer firing MID-FORCE, the exact race the
+   *  chain exists to serialize. */
+  patchGate?: () => Promise<void>
   refusals?: EstateRefusal[]
   throws?: EstateThrow[]
   listRows?: Array<Record<string, unknown>>
@@ -126,6 +138,8 @@ export interface EstateFakesOptions {
 export interface EstateFakes {
   calls: EstateCall[]
   setRunStatus: (status: string) => void
+  /** Move the served drafts/get doc between polls (the draft-tail pins). */
+  setDraftDoc: (doc: { rev?: number; stages?: Array<Record<string, unknown>> }) => void
   unmount: () => void
 }
 
@@ -152,6 +166,11 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
   const runDocs = [...(opts.runDocs ?? [])]
   const liveRun: Record<string, unknown> = { run_id: 'run-1', status: 'queued', draft_id: 'bench-s1', stages: [] }
   const draftStages = opts.draftStages ?? [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: liveParams }]
+  // THE DRAFT TAIL'S MUTABLE DOC (HOLE 1's pins): setDraftDoc moves
+  // the served rev/stages between polls — a foreign-landed
+  // generation landing through another hand mid-watch.
+  let liveDraftRev: number | undefined
+  let liveDraftStages: Array<Record<string, unknown>> | undefined
   const refusalQueue = [...(opts.refusals ?? [])]
   const throwQueue = [...(opts.throws ?? [])]
   const listRows = [...(opts.listRows ?? [])]
@@ -331,14 +350,18 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         // served garbage stages ride verbatim — the cast pins the
         // served bytes against the wire row without sanitizing them.
         return ok({
-          draft_id: 'bench-s1', rev: 7, intent: opts.draftIntent ?? '',
+          draft_id: 'bench-s1',
+          rev: liveDraftRev ?? 7,
+          intent: opts.draftIntent ?? '',
           ...servedBench,
-          stages: servedStages,
+          stages: liveDraftStages ?? servedStages,
         } as DraftGetRow)
       },
       patch: async (draftId: string, stageId: string, patch: Record<string, unknown>, expectRev: number | null, signal?: AbortSignal) => {
         void signal
         calls.push({ method: 'drafts/patch', args: { draftId, stageId, patch, expectRev } })
+        opts.onPatchCall?.(stageId, patch)
+        if (opts.patchGate !== undefined) await opts.patchGate()
         takeThrow('drafts/patch')
         const patchRefused = takeRefusal('drafts/patch')
         if (patchRefused !== undefined) return patchRefused
@@ -430,6 +453,10 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
   return {
     calls,
     setRunStatus: (status: string) => { liveRun['status'] = status },
+    setDraftDoc: (doc: { rev?: number; stages?: Array<Record<string, unknown>> }) => {
+      if (doc.rev !== undefined) liveDraftRev = doc.rev
+      if (doc.stages !== undefined) liveDraftStages = doc.stages
+    },
     unmount: () => { unbindEstateRemote() },
   }
 }

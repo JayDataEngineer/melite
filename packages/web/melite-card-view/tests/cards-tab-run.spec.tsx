@@ -271,4 +271,56 @@ describe("the error face retires on an external success — an error is a claim,
       expect(screen.getAllByText("engine cold").length).toBeGreaterThan(0);
     });
   });
+
+  test("a VERB refusal survives a foreign terminal-done — only its own verb's success clears it (W6)", async () => {
+    formCtl.formSpec = "ok";
+    const idle = { id: "s_0", card: "image-gen", engine: "comfyui", params: {} };
+    const other = { id: "s_1", card: "image-gen", engine: "comfyui", params: {} };
+    let benchValue: CardsBenchValue = {
+      kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [idle, other],
+    } as unknown as CardsBenchValue;
+    stubDoors({
+      benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [{ ...idle }, { ...other }] },
+      draftStages: [{ ...idle }, { ...other }] as unknown as Array<Record<string, unknown>>,
+      draftBenchRev: 1,
+      // ONE refusal: the first remove dies, the retry lands
+      refusals: [{ method: "bench/remove-stage", message: "bench/no-remove-today" }],
+    });
+    const props = {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: (): { status: "live", value: CardsBenchValue } => ({ status: "live", value: benchValue }),
+    };
+    const view = render(h(CardsTab, props));
+    // the trash dies on the wire — the strip voices the verb refusal
+    fireEvent.click(screen.getAllByTestId("tile-remove")[0]!);
+    expect(await screen.findByText("bench/no-remove-today", {}, { timeout: 4000 })).toBeTruthy();
+    // THE OTHER HAND lands a generation on the SIBLING stage — the
+    // terminal-done retires START claims, never a verb claim: an
+    // unrelated success eating an unanswered refusal is information
+    // loss outright
+    benchValue = {
+      kind: "bench", draftId: "bench-p", rev: 2, log: [],
+      stages: [{
+        ...other, runStatus: "done",
+        result: { run_id: "r_ext", url: "/v1/runs/r_ext/media/out.png" },
+      }, idle],
+    } as unknown as CardsBenchValue;
+    view.rerender(h(CardsTab, props));
+    // the sibling's terminal-done RENDERED (the retire effect ran on
+    // the transition) — and the verb claim still stands over it
+    await waitFor(() => {
+      expect(document.querySelector('[data-stage-id="s_1"]')?.getAttribute("data-stage-status")).toBe("done");
+    });
+    expect(screen.getByText("bench/no-remove-today")).toBeTruthy();
+    // the claim's OWN verb succeeds — the retry lands and the strip
+    // retires (never a latch in either direction)
+    fireEvent.click(screen.getAllByTestId("tile-remove")[0]!);
+    await waitFor(() => {
+      expect(screen.queryAllByText("bench/no-remove-today")).toEqual([]);
+    });
+  });
 });

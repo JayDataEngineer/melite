@@ -196,6 +196,11 @@ switch (cmd) {
       installDeps(renderProfile(name))
     }
     log('boot with:')
+    log('  LANES BOOT ONLY THROUGH THE PROVISION (the lane law, li-bu):')
+    log('  ~/Documents/programs/active/dsh-provision/apply.sh launch --lane <name>')
+    log('  (this command installs the profiles; the sibling provisioner owns the')
+    log('   launch — binary pin, version floor, home, and unit. The shapes below')
+    log('   are what the door runs UNDER THE HOOD, never a hand-run shortcut:)')
     log('  dsh --profile inference              # the studio GUI')
     log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
     log('  dsh --profile estate                 # the SDK job server (estate row)')

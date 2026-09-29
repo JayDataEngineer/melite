@@ -11,6 +11,7 @@ export { ComposeRefusal } from './errors.ts';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
 import type { PromptGraph, JsonValue } from '@melite/comfyui-card-kit/graph'
+import { modelsService } from './models/service.ts'
 import { assertControlNetSchedule } from '@melite/comfyui-card-kit/guard'
 import { coerceWireArrays, coerceWireNumbers, unwrapItemArrays, wireTypeLedger } from '@melite/comfyui-card-kit'
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts'
@@ -698,12 +699,30 @@ export class ComfyUIService extends Service {
     const def = this.cards.get(cardId)
     if (def === undefined) return null
     const carrier = (def.schemaCarrier ?? def.schema) as { toJSON?: () => unknown }
-    const schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null
+    let schema = typeof carrier.toJSON === 'function' ? carrier.toJSON() : null
     const mods: Record<string, unknown> = {}
     for (const absorbed of this.cardModFields(cardId)) {
       if (!absorbed.families.includes(family)) continue
       const c = absorbed.fields as { toJSON?: () => unknown }
       mods[absorbed.pack] = typeof c.toJSON === 'function' ? c.toJSON() : null
+    }
+    // THE LANE CAP NARROW (2026-10-11, the operator's wall: "the
+    // 2511 model is still showing 18 input images even though it
+    // only has 3 by design"): a multi-family card declares its
+    // stack face at the ROOMIEST boarded cap (image-edit: 16), and
+    // the card's own law says "the list capacity rides each lane
+    // DECL's max_images" — the served form narrows every stack
+    // field's max_stack to THIS family's lane_inputs.max_images so
+    // the face renders the boarded lane's truth (2511: 3, 2.1: 16)
+    // and the form refuses past it INLINE, never at the door.
+    if (schema !== null) {
+      let cap: unknown
+      try {
+        cap = modelsService().getModel(family).lane_inputs?.max_images
+      } catch {
+        cap = undefined
+      }
+      if (typeof cap === 'number' && cap > 0) schema = narrowStackCap(schema, cap)
     }
     return { schema, mods }
   }
@@ -1026,4 +1045,31 @@ export class ComfyUIService extends Service {
   assertWiring(cardId: string, graph: unknown): void {
     assertWiringAgainst(this.objectInfoNodes, this.objectInfoInputs, cardId, graph)
   }
+}
+
+/** Narrow every stack field's max_stack in a serialized schema
+ *  envelope (schemastery toJSON: {uid, refs}) to the boarded lane's
+ *  declared image capacity — the card declares the ROOMIEST boarded
+ *  cap; the lane's own max_images is the truth the face must render
+ *  (the image-edit law, stated on the card itself). PURE and
+ *  immutable: refs carrying no stack cap ride verbatim; the bare
+ *  meta spelling narrows with the extra-bag spelling. */
+export function narrowStackCap (schema: unknown, cap: number): unknown {
+  if (schema === null || typeof schema !== 'object') return schema
+  const env = schema as { uid?: unknown; refs?: unknown }
+  if (typeof env.refs !== 'object' || env.refs === null) return schema
+  const refs = env.refs as Record<number, { meta?: { extra?: Record<string, unknown>; max_stack?: unknown } }>
+  const next: Record<number, typeof refs[number]> = {}
+  let touched = false
+  for (const [id, ref] of Object.entries(refs)) {
+    const extra = ref.meta?.extra
+    const bare = ref.meta?.max_stack
+    const cur = typeof extra?.max_stack === 'number' ? extra.max_stack : typeof bare === 'number' ? bare : undefined
+    if (cur === undefined || cur <= cap) { next[Number(id)] = ref; continue }
+    touched = true
+    const meta = { ...(ref.meta ?? {}), max_stack: cap }
+    if (extra !== undefined) meta.extra = { ...extra, max_stack: cap }
+    next[Number(id)] = { ...ref, meta }
+  }
+  return touched ? { ...env, refs: next } : schema
 }

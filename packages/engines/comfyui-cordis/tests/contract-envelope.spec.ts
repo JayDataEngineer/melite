@@ -202,9 +202,11 @@ describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
 
   test("the engines adapter walks the POST-SPLICE graph (production's submit seat)", () => {
     const src = readFileSync(new URL("../src/entries/comfyui-engine.ts", import.meta.url), "utf8");
-    expect(src).toContain('wiring.assert(row.stageId, row.workflow)');
+    // the F-2 voice chain (2026-10-10): the card when the run was
+    // card-commissioned, the stage id only as the fallback
+    expect(src).toContain('wiring.assert(row.card ?? row.stageId, row.workflow)');
     // the walk predates the host submit — the only executeFlow call
-    const walk = src.indexOf("wiring.assert(row.stageId");
+    const walk = src.indexOf("wiring.assert(row.card ?? row.stageId");
     const submit = src.indexOf("host.executeFlow(");
     expect(walk).toBeGreaterThan(-1);
     expect(submit).toBeGreaterThan(-1);
@@ -249,3 +251,42 @@ describe("NO WALL AT THE SUBMIT SEAM (the opt is the hack)", () => {
     expect(wiringRow).toBeLessThan(hostRow);
   });
 });
+
+// ── THE LANE CAP NARROW (2026-10-11, the operator's wall: "the
+// 2511 model is still showing 18 input images even though it only
+// has 3 by design"): a multi-family card declares its stack face
+// at the ROOMIEST boarded cap (image-edit: 16) — the SERVED form
+// narrows it to the boarded lane's own lane_inputs.max_images, so
+// the 2511 face renders 3 and the 2.1 face renders 16. The card's
+// own law says so on its doc face; this pin holds the serve to it.
+describe('THE LANE CAP NARROW (the served stack cap is the boarded lane\'s own)', () => {
+  const capOf = (env: Envelope): number => {
+    const root = env.refs[env.uid]
+    const id = root.dict?.input_images
+    if (id === undefined) throw new Error('no input_images in the envelope root dict')
+    const cap = extraOf(env.refs[id]).max_stack
+    if (typeof cap !== 'number') throw new Error('input_images carries no max_stack')
+    return cap
+  }
+
+  test('the 2.1 serve keeps its own 16', async () => {
+    await loadCardDefs()
+    const schemas = theService().formSchemas('image-edit', 'qwen-img-edit-21')
+    expect(capOf(schemas!.schema as Envelope)).toBe(16)
+  })
+
+  test('the 2511 serve narrows to its own 3 — never the roomiest boarded cap', async () => {
+    const schemas = theService().formSchemas('image-edit', 'qwen-img-edit-2511')
+    expect(capOf(schemas!.schema as Envelope)).toBe(3)
+  })
+
+  test('the narrow is pure — the card\'s own declaration is untouched', async () => {
+    // the card object still declares the roomiest cap; each serve
+    // narrows its own copy (no mutation of the shared schema)
+    const s21 = theService().formSchemas('image-edit', 'qwen-img-edit-21')
+    const s2511 = theService().formSchemas('image-edit', 'qwen-img-edit-2511')
+    expect(capOf(s21!.schema as Envelope)).toBe(16)
+    expect(capOf(s2511!.schema as Envelope)).toBe(3)
+    expect((theService().getCardDef('image-edit')?.schema as { toJSON?: () => Envelope })?.toJSON).toBeDefined()
+  })
+})

@@ -236,7 +236,7 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
       [...document.querySelectorAll('[data-testid="source-pick-row"]')]
         .find((el) => (el.textContent ?? "").includes("image-gen")) as HTMLElement,
     );
-    expect(await screen.findByText("bench moved", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText(/bench moved/, {}, { timeout: 4000 })).toBeTruthy();
   });
 
   test("a throwing slot write voices the fallback (never a throw past the pick)", async () => {
@@ -250,7 +250,7 @@ describe("the slot flush — a pick writes the bench now, not at Run", () => {
       [...document.querySelectorAll('[data-testid="source-pick-row"]')]
         .find((el) => (el.textContent ?? "").includes("image-gen")) as HTMLElement,
     );
-    expect(await screen.findByText("slot write failed", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText(/slot write failed/, {}, { timeout: 4000 })).toBeTruthy();
   });
 });
 

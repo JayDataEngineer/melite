@@ -52,10 +52,19 @@ test.beforeEach(async ({ page }) => {
 async function settleHost(page: Page): Promise<void> {
   await page.goto(LANE_URL, { waitUntil: 'domcontentloaded' })
   await page.waitForTimeout(8_000)
-  const notice = page.getByRole('dialog', { name: 'Internal Testing Notice' }).getByRole('button', { name: 'Continue' })
-  if ((await notice.count()) > 0) {
-    await notice.click({ timeout: 10_000 })
-    await page.waitForTimeout(1_000)
+  // THE NOTICE CLASS, NOT A BAKED TITLE (the tour spine's law,
+  // li-bu): the shells retitle the first-run notice mid-arc
+  // ("Preview Notice" -> "Internal Testing Notice", 2026-10-10), so
+  // a baked dialog name rots on the next retitle. The filter matches
+  // any dialog heading /Notice/ with a Continue button, and the
+  // dismissal is RETRIED — a click merely attempted is not a click.
+  for (let round = 0; round < 3; round++) {
+    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
+    if ((await notice.count()) === 0) break
+    try {
+      await notice.click({ timeout: 10_000 })
+      await page.waitForTimeout(1_000)
+    } catch { /* round again — a cold host can re-mask mid-settle */ }
   }
   const expandSeat = page.locator('[data-sidebar-right-expand]').first()
   if ((await expandSeat.count()) === 0) {

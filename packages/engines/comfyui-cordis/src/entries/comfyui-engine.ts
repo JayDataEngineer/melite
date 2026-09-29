@@ -38,6 +38,7 @@ function toMergeRows(rows: readonly EngineStageRow[]): MergeRow[] {
   return rows.map(
     (row: EngineStageRow): MergeRow => ({
       stageId: row.stageId,
+      card: typeof row.card === "string" && row.card !== "" ? row.card : undefined,
       workflow: spliceWorkflow(row.params as Record<string, EngineJson>),
       outputs: { ...(row.outputs as Record<string, EngineJson>) },
       outputNodes: {
@@ -82,7 +83,11 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
       const wiring = ctx.get("comfyuiWiring") as ComfyUIWiringService | undefined;
       if (wiring !== undefined) {
         for (const row of mergeRows) {
-          wiring.assert(row.stageId, row.workflow);
+          // the VOICE names the composer (the audit's F-2): the
+          // card when the run was card-commissioned — the estate
+          // fence's own preference chain — never the stage id
+          // dressed as a card name
+          wiring.assert(row.card ?? row.stageId, row.workflow);
         }
       }
       options.report({

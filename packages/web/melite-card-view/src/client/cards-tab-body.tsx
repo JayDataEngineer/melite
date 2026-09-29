@@ -117,6 +117,27 @@ export function resolveCardsAddress(rawAddress: string): string {
 }
 
 /** The tab body component. */
+// THE STRIP'S CLAIM SHAPE (the second audit's W6): what the tab-top
+// error strip says, tagged by what KIND of claim it is — a start
+// claim retires on a foreign terminal-done; a verb claim clears
+// only when its own verb succeeds; nothing else eats either.
+interface RunClaim {
+  readonly text: string
+  readonly kind: 'start' | 'verb'
+  readonly verb?: string
+  /** start claims: whether the row-patch that lets the derived
+   *  half re-voice this refusal LANDED (an unlanded refusal must
+   *  not auto-retire — no face would remain anywhere) */
+  readonly rowLanded: boolean
+}
+const verbClaim = (verb: string, text: string): RunClaim => ({ text, kind: 'verb', verb, rowLanded: false })
+const startClaim = (text: string): RunClaim => ({ text, kind: 'start', rowLanded: true })
+/** a verb's SUCCESS clears only its own claim — never a start
+ *  claim, never another verb's (W6: an unrelated success eating an
+ *  unanswered refusal is information loss) */
+const clearVerb = (verb: string) => (claim: RunClaim | null): RunClaim | null =>
+  claim !== null && claim.kind === 'verb' && claim.verb === verb ? null : claim
+
 export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // THE SPOTLIGHT MARKER (stroke 42, the one-flow law): true while
   // THIS body is the mounted seat rendering the bench. The plugin's
@@ -172,7 +193,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     }).catch(() => { /* no runs yet — the empty state is honest */ })
     return () => { alive = false }
   }, [lastRunId, snapshot?.value])
-  const [localRunError, setLocalRunError] = useState<string | null>(null)
+  const [localRunError, setLocalRunError] = useState<RunClaim | null>(null)
   // THE ERROR-IS-NOT-A-LATCH LAW (operator 2026-10-10: "errors don't
   // go away when we have a successful gen"): localRunError speaks
   // for a start THIS tab attempted and never saw answered. It was
@@ -186,6 +207,16 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // half (terminalStageErrorOf below) still surfaces any row that
   // is failed NOW — the face stays honest in both directions, never
   // a latch.
+  //
+  // THE CLAIM'S KIND (the second audit's W6, 2026-10-11): the strip
+  // also voices VERB refusals (patch/remove/cancel/stop/refresh) —
+  // claims no row carries and the derived half can never re-derive.
+  // An unrelated gen retiring one of those made information vanish
+  // outright. Only START claims auto-retire on a foreign terminal
+  // — and only when their row-patch LANDED (carryFailure's patch
+  // can die; an unlanded refusal has no derived half to re-voice
+  // it, so it must not auto-retire either). Verb claims clear only
+  // when the SAME verb succeeds.
   const terminalSeen = useRef<ReadonlyMap<string, string> | null>(null)
   useEffect(() => {
     const value = snapshot?.value
@@ -199,7 +230,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (prev === null) return // first frame: baseline, no claim to retire
     for (const [id, status] of cur) {
       if (status === 'done' && prev.get(id) !== 'done') {
-        setLocalRunError(null)
+        setLocalRunError((claim) =>
+          claim !== null && claim.kind === 'start' && claim.rowLanded ? null : claim)
         return
       }
     }
@@ -294,8 +326,8 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // A failed refresh voices cards-refresh-failed AND blocks the
     // pass: Run ALL never composes from last-good state.
     if (snapshot.status === 'failed') {
-      setLocalRunError('refresh failed — showing the last good state, not composing from it ('
-        + (snapshot.failure?.message ?? 'cards resource failed') + ')')
+      setLocalRunError(verbClaim('refresh', 'refresh failed — showing the last good state, not composing from it ('
+        + (snapshot.failure?.message ?? 'cards resource failed') + ')'))
       return
     }
     setRunning(true)
@@ -309,7 +341,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       onTouched: touchBench,
     }).then((res) => {
       setRunning(false)
-      if (res.refused !== null) setLocalRunError(res.refused)
+      if (res.refused !== null) setLocalRunError(startClaim(res.refused))
     })
   }, [snapshot, touchBench])
   // RE-RUN ONE STAGE (the drill's Run): the COMPOSING door — the
@@ -323,7 +355,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // nothing.
     /* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
     if (snapshot?.value?.kind !== 'bench') {
-      setLocalRunError('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')')
+      setLocalRunError(startClaim('the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: ' + String(snapshot?.value?.kind ?? 'none') + ')'))
       return
     }
     setRunning(true)
@@ -337,7 +369,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // the why lands where the Run was pressed, not just the tab top.
     const carryFailure = (error: string): void => {
       setRunning(false)
-      setLocalRunError(error)
+      setLocalRunError(startClaim(error))
       // the snapshot's rev fences the row write (stale revs rebase
       // inside the door — the revless-write cure, 2026-09-14).
       /* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
@@ -346,7 +378,12 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       /* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
       void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
         .then(() => { touchBench() })
-        .catch(() => {})
+        .catch(() => {
+          // the row patch died: the derived half will never re-voice
+          // this refusal — the claim must NOT auto-retire (W6)
+          setLocalRunError((claim) =>
+            claim !== null && claim.kind === 'start' ? { ...claim, rowLanded: false } : claim)
+        })
     }
     // THE RUN GATE LIVES IN runCardStage (the one-press/one-engine
     // law — the tile, the drill, the draft view, Run ALL, and the
@@ -369,17 +406,21 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   const onStopStage = useCallback((stage: BenchStageView): void => {
     const rid = stageRuns[stage.id]
     if (rid === undefined) return
-    void stopRun(rid).catch((e: unknown) => {
-      setLocalRunError(e instanceof Error ? e.message : 'stop failed')
-    })
+    void stopRun(rid)
+      .then(() => { setLocalRunError(clearVerb('stop')) })
+      .catch((e: unknown) => {
+        setLocalRunError(verbClaim('stop', e instanceof Error ? e.message : 'stop failed'))
+      })
   }, [stageRuns])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
   const onRemoveStage = useCallback((stage: BenchStageView): void => {
     if (snapshot?.value?.kind !== 'bench') return
     void removeStageWire({ stage: stage.id, expect_rev: snapshot.value.rev }, snapshot.value.sessionKey)
-      .then(() => { touchBench() })
+      // the claim's own verb SUCCEEDING clears it (the W6 law's
+      // other half — a remove that lands retires the remove refusal)
+      .then(() => { setLocalRunError(clearVerb('remove')); touchBench() })
       .catch((e: unknown) => {
-        setLocalRunError(e instanceof Error ? e.message : 'remove failed')
+        setLocalRunError(verbClaim('remove', e instanceof Error ? e.message : 'remove failed'))
       })
   }, [snapshot, touchBench])
   // PARAMS PATCH for surface views (the slot's onPatch currency):
@@ -392,9 +433,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // that moved under the write refuses loud (the snapshot's rev
     // is the expect; the observer refreshes the doc on the refusal).
     void patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev)
-      .then(() => { setLocalRunError(null); touchBench() })
+      .then(() => { setLocalRunError(clearVerb('patch')); touchBench() })
       .catch((e: unknown) => {
-        setLocalRunError(e instanceof Error ? e.message : 'patch failed')
+        setLocalRunError(verbClaim('patch', e instanceof Error ? e.message : 'patch failed'))
         touchBench()
       })
   }, [snapshot, touchBench])
@@ -418,7 +459,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       if ('runId' in res) onStarted(res.runId, { draftId: value.draftId, stageId: target.id })
       else {
         setRunning(false)
-        setLocalRunError(res.refused)
+        setLocalRunError(startClaim(res.refused))
         // THE REFUSAL CARRY (same law as the bench drill): the
         // refused draft-stage start lands on its row, so the open
         // drill's failure face reads the why.
@@ -428,7 +469,10 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         /* v8 ignore next 1 -- the enclosing callback already returned on non-draft (probe 2026-09-19) */
         const rev = value.kind === 'draft' ? value.rev : undefined
         void patchStageOutcome(draftId, stageId, { runStatus: 'failed', result: { error } }, rev)
-          .catch(() => {})
+          .catch(() => {
+            setLocalRunError((claim) =>
+              claim !== null && claim.kind === 'start' ? { ...claim, rowLanded: false } : claim)
+          })
       }
     })
   }, [snapshot, onStarted])
@@ -442,18 +486,20 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     // draft's own bench revision fences the write; a moved draft
     // refuses loud, never merges under the earlier author.
     void patchStageParams(value.draftId, value.stageId, patch, value.rev)
-      .then(() => { setLocalRunError(null) })
+      .then(() => { setLocalRunError(clearVerb('patch')) })
       .catch((e: unknown) => {
-        setLocalRunError(e instanceof Error ? e.message : 'patch failed')
+        setLocalRunError(verbClaim('patch', e instanceof Error ? e.message : 'patch failed'))
       })
   }, [snapshot])
 
   // CANCEL — runs/stop on the run in view (both the resource stream
   // face and the in-tab local run face); the run-wire package's verb.
   const onStop = useCallback((runId: string): void => {
-    void stopRun(runId).catch((e: unknown) => {
-      setLocalRunError(e instanceof Error ? e.message : 'cancel failed')
-    })
+    void stopRun(runId)
+      .then(() => { setLocalRunError(clearVerb('cancel')) })
+      .catch((e: unknown) => {
+        setLocalRunError(verbClaim('cancel', e instanceof Error ? e.message : 'cancel failed'))
+      })
   }, [])
 
   const onBack = useCallback((): void => {
@@ -497,7 +543,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       h('p', { className: css.loading }, 'loading ' + address + '…'))
   }
   const stageError = value.kind === 'run' ? null : terminalStageErrorOf(value.stages)
-  const runError = localRunError ?? stageError
+  const runError = localRunError !== null ? localRunError.text : stageError
   return value.kind === 'bench'
     // Pure-DSH tab (2026-09-11): the bench renders the native BenchView
     // (tiles + drill + picker on the estate doors). The legacy 1:1
@@ -530,7 +576,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
           renderPreview,
           runId: lastRunId,
           refreshTick: benchTick,
-          startError: localRunError,
+          startError: localRunError !== null ? localRunError.text : null,
         }),
       )
     : value.kind === 'draft'

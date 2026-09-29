@@ -11,6 +11,9 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
+import { mountEstateFakes } from "./estate-harness.ts";
+import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { flushStageWrites } from "../src/client/draft.ts";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
@@ -26,7 +29,7 @@ type EnhanceMode =
   | "error-string" | "error-number" | "throw-string";
 
 interface Doors {
-  specFields: "one" | "two";
+  specFields: "one" | "two" | "seed";
   specModel: boolean;
   enhanceMode: EnhanceMode;
   enhanceResults: unknown;
@@ -56,6 +59,9 @@ function stubFetch(): void {
       };
       if (doors.specFields === "two") {
         fields["notes"] = { type: "string", meta: { description: "Notes", extra: { wtype: "textarea" } } };
+      }
+      if (doors.specFields === "seed") {
+        fields["seed"] = { type: "seed", meta: { description: "Seed" } };
       }
       return new Response(JSON.stringify({
         form: "image-gen", genre: "image", engine: "comfyui",
@@ -225,6 +231,39 @@ describe("the sweep landing — results ride the hand-edit seam", () => {
     expect(await screen.findByText("enhanced via skill (1 field)", {}, { timeout: 4000 })).toBeTruthy();
     const area = document.querySelector("textarea") as HTMLTextAreaElement;
     expect(area.value).toBe("P2");
+  });
+
+  test("a declared NUMBER field lands COERCED on the wire (W10 — the row receives the hand's shape, never the enhancer's string)", async () => {
+    // the estate must MOUNT for this pin: the swept patch rides the
+    // write ledger onto drafts/patch — the wire body is the verdict
+    const fakes = mountEstateFakes({
+      benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [{ id: "s_0" }] },
+      draftStages: [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }],
+      draftBenchRev: 1,
+    });
+    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
+    doors.specFields = "seed";
+    doors.enhanceResults = { seed: { positive: "42", via: "blueprint" } };
+    try {
+      const opener = userEvent.setup();
+      await opener.click(document.querySelector('button[class*="tileInner"]') as HTMLElement);
+      await screen.findByTestId("stage-preview-seat", {}, { timeout: 4000 });
+      await screen.findByText("Seed", {}, { timeout: 4000 });
+      await typePrompt("a red cube");
+      pressEnhance();
+      expect(await screen.findByText(/enhanced via blueprint \(1 field\)/, {}, { timeout: 4000 })).toBeTruthy();
+      await flushStageWrites("bench-p", "s_0");
+      const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
+      expect(patches.length).toBeGreaterThan(0);
+      const last = patches[patches.length - 1]!;
+      const served = (((last.args as { patch?: { params?: { seed?: unknown } } }).patch ?? {}).params ?? {}) as { seed?: unknown };
+      // 42 the NUMBER — a hand edit's shape; "42" the STRING would
+      // land a param the run's schema parse refuses
+      expect(served.seed).toBe(42);
+    } finally {
+      fakes.unmount();
+      unbindEstateRemote();
+    }
   });
 
   test("two fields without a via count plural (no road named)", async () => {

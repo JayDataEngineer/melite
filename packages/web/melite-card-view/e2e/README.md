@@ -50,6 +50,28 @@ The LAWS the script encodes (why each step exists):
   2026-09-12 regression this wall was born from, and the 2026-09-21
   CI-seat repair caught it live within three runs.
 
+- **THE COLD HOST IS NOT SERVED YET** (2026-10-11): the shell paints
+  long before the estate composition leaves its activation gate, so a
+  freshly booted lane answers EVERY seat door `503 estate/pending` for
+  its first `ESTATE_PENDING_GRACE_MS` (120s, `doors.ts`). Three
+  consequences, all owned by tour.ts's spine:
+  - `dismissOnboarding` WAITS the first-run dialogs out and only
+    returns once the composer is genuinely clickable — the API-key
+    dialog's readiness join resolves *during* boot, so a fixed 3s
+    dismissal raced it and ate the mint's composer click.
+  - `waitForEstate` polls a never-authored bench key (a `404` IS the
+    ready answer) until the gate lifts, so the mint types into a host
+    whose doors actually serve; `readBenchRow` polls the receipt the
+    same way. `playwright.config.ts`'s `timeout` covers that grace.
+  - the boot-race frames are TRANSPORT, not page errors: the shared
+    `collectPageErrors` drops exactly the `estate/pending` answer (by
+    code) and the wall's own readiness probe, and `expectNoPageErrors`
+    AWAITS the classification before asserting. Every other ≥400
+    still fails the wall. **Every spec must use these two — a
+    hand-rolled `page.on('response')` re-records the boot race and
+    fails every cold-lane run** (this took the wall from 1/6 to 5/6
+    in one pass, 2026-10-11).
+
 (The first-run API-key onboarding dialog is CLIENT state — it
 returns for every fresh browser context even on a configured host —
 so the spec itself dismisses it via tour.ts's `dismissOnboarding`.)

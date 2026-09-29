@@ -296,15 +296,31 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
     const entries = Array.isArray(v)
       ? v.filter((x): x is string => typeof x === 'string' && x !== '')
       : []
-    const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : 8
+    // THE CAP IS DECLARED, NEVER INVENTED (2026-10-11, the
+    // operator's wall: "composing cards isn't actually schema
+    // based — you just hardcode [REDACTED 2026-11-05]"): the served max_stack is
+    // the boarded lane's own (the serve narrows the roomiest card
+    // cap to the family's lane_inputs.max_images); an UNDECLARED cap
+    // is a card bug the face renders honestly (no add-cell limit,
+    // counter without a denominator) — never a silent hardcoded 8.
+    const cap = typeof f.max_stack === 'number' && f.max_stack > 0 ? f.max_stack : undefined
+    const over = cap !== undefined && entries.length > cap
     const kind = f.media === 'video' || f.media === 'audio' ? 'file' : 'image'
     const accept = f.media === 'video' ? 'video/*' : f.media === 'audio' ? 'audio/*' : undefined
-    return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length) },
+    return h('div', { key: 'stack-' + f.name, className: css.specStack, 'data-input-stack': f.name, 'data-stack-count': String(entries.length), ...(over ? { 'data-stack-over': String(cap) } : {}) },
       h('div', { className: css.modHead, 'data-stack-head': f.name, title: f.tooltip !== undefined && f.tooltip !== '' ? f.tooltip : undefined },
         h('span', { className: css.modTitle }, f.label),
-        h('span', { className: css.modHint },
-          `${String(entries.length)} / ${String(cap)}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`),
+        h('span', { className: css.modHint, ...(over ? { style: { color: 'var(--dsh-danger, #f44)' } } : {}) },
+          `${String(entries.length)}${cap !== undefined ? ' / ' + String(cap) : ''}${f.media !== undefined && f.media !== '' ? ' · ' + f.media : ''}`),
       ),
+      // THE OVER-CAP REFUSAL, INLINE (the schema-contract law: the
+      // form states what the compose door would refuse — a draft
+      // that ARRIVES past the lane's cap renders the law under the
+      // head, in the door's own voice, while the entries stay
+      // visible for the operator to cut)
+      over ? h('p', { className: css.laneWarn, style: { margin: 0 } },
+        `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`,
+      ) : null,
       h('div', { className: css.specSlotRow },
         entries.map((entry, i) =>
           h('div', {
@@ -335,7 +351,7 @@ export function CardForm({ spec, user, base, onSet, onUnset, wire, square, atoms
               ...(wire?.candidatesFor !== undefined ? { candidatesFor: wire.candidatesFor } : {}),
             }),
           )),
-        entries.length < cap
+        (cap === undefined || entries.length < cap)
           ? h('div', { className: css.specSlotCell, 'data-stack-add': f.name, title: f.tooltip },
               h(SourceRow, {
                 label: '',

@@ -7,7 +7,7 @@ import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
 import { axisUnset, titleCaseId } from '@melite/card-base/spec'
 import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/wire'
@@ -203,6 +203,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     fetchFormSpec(family)
       .then((doc) => {
         if (!alive) return
+        // ERROR-IS-NOT-A-LATCH, drill half (the law audit's F-5): a
+        // successful (re)fetch retires the 'form-spec unavailable'
+        // claim — the spec door healed through any hand, and the
+        // face must follow the state, not the last local verb
+        setError(null)
         setSpec(doc)
         // THE USER-LAYER SEED (the pass-along law under the settings
         // model): every HELD key rides verbatim (presence survived
@@ -221,7 +226,15 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // finding): a failed key the reopened form no longer holds
           // would refuse every run forever while the studio shows
           // the field empty — the ledger drops what nobody carries.
-          reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded)
+          // NOBODY includes the DECLARED fields (the second audit's
+          // live-drop finding, 2026-10-11): seedUser seeds only held
+          // keys + axis rows, but the form RENDERS every declared
+          // field — a declared key's refusal is live and curable
+          // (retype it), never a ghost.
+          reconcileStageWriteFailures(
+            bench.draftId, stage.id, held, seeded,
+            new Set(fieldsOf(doc).map((f) => f.name)),
+          )
         }
         setLoaded(true)
         reportSurface(doc.size === 'huge' ? 'huge' : '')
@@ -350,7 +363,13 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       void patchStageParams(bench.draftId, stage.id,
         v === '' ? { [name]: null } : { [name]: v }, bench.rev)
         .catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : 'slot write failed')
+          // THE THIRD FACE, ALIGNED (the second audit's W9): the
+          // slot arm used to speak the raw door message while the
+          // other two arms spoke the write-face voice — same stage,
+          // same failure class, two faces. ONE voice.
+          setError('THE WRITE DID NOT LAND — '
+            + (e instanceof Error ? e.message : 'slot write failed')
+            + ' (unlanded keys: ' + name + ').')
         })
     }
   }, [spec, bench.draftId, bench.rev, stage.id])
@@ -455,12 +474,20 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       // values now register in the write ledger like every other
       // edit: what the studio shows is what the engine gets.
       const sweptPatch: Record<string, unknown> = {}
+      // THE EDIT BOUNDARY OWNS COERCION (the second audit's W10):
+      // the enhancer speaks raw strings; a declared NUMBER/BOOLEAN
+      // field must receive what a HAND edit would produce (the
+      // coerced value), or the write lands a param shape the run's
+      // schema parse refuses — a shape no hand edit can even make.
+      const fieldByName = new Map(spec !== null ? fieldsOf(spec).map((f) => [f.name, f] as const) : [])
       for (const [field, r] of Object.entries(results)) {
         if (typeof r?.positive !== 'string' || r.positive === '') continue
-        if (field === 'prompt' || declared.has(field)) sweptPatch[field] = r.positive
+        if (field === 'prompt' || declared.has(field)) {
+          sweptPatch[field] = coerceFieldEdit(fieldByName.get(field), r.positive)
+        }
         if (field === 'prompt' && declared.has('negative_prompt')
           && typeof r.negative === 'string' && r.negative !== '') {
-          sweptPatch['negative_prompt'] = r.negative
+          sweptPatch['negative_prompt'] = coerceFieldEdit(fieldByName.get('negative_prompt'), r.negative)
         }
       }
       setUser((m) => ({ ...m, ...sweptPatch }))
@@ -474,9 +501,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
             : null)
         })
       }
-      const swept = Object.entries(results)
-        .filter(([field, r]) => typeof r?.positive === 'string' && r.positive !== ''
-          && (field === 'prompt' || declared.has(field))).length
+      // the note counts what the PATCH carries (the second audit's
+      // W10: sweptPatch may carry negative_prompt beyond the positive
+      // declared fields — the note used to count a different set
+      // than the write)
+      const swept = Object.keys(sweptPatch).length
       if (swept === 0) {
         // the call "succeeded" but nothing landed — that is a
         // rejection with the server's shape as its reason, not a

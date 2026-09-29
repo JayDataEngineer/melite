@@ -435,7 +435,11 @@ export interface FormSpecDoc {
    *  laneRelations). Absent = the legacy truth (visible_when owns
    *  visibility; nothing binds the card's union table). */
   lanes?: {
-    base: readonly string[]
+    /** ABSENT = the family declares no surface (krea-2's shape:
+     * relations + variant envelopes only) — the form falls back to
+     * the card's own visibility; `base: []` stays the explicit
+     * black-form statement. */
+    base?: readonly string[]
     relations?: LaneRelations
     /** The model's own numeric domains (the RANGE RULE — served so
      *  the form renders the floor/ceiling inline, the same

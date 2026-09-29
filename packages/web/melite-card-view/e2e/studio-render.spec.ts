@@ -27,17 +27,18 @@
  *   @melite-plugin/dsh-card-view exec playwright test
  */
 import { expect, test, type Page } from '@playwright/test'
-import { openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
+import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host with the seeded bench')
 
 test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic form', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  // stroke 83: name the failing resource (a bare "404" console line
-  // hides WHICH route — the diagnosis law)
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  // THE LEDGER IS THE SPINE'S (tour.ts), not a hand-rolled copy per
+  // spec: only the shared collector knows the cold host's boot-race
+  // 503s and the wall's own readiness probe are transport, not page
+  // errors — a local listener re-records both and fails every
+  // cold-lane run. It still names the failing resource (stroke 83: a
+  // bare "404" hides WHICH route — the diagnosis law).
+  const errors: string[] = collectPageErrors(page)
 
   await settle(page)
 
@@ -109,7 +110,7 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
 
   // 5 — the tour stays error-free
-  expect(errors, errors.join('\n')).toEqual([])
+  await expectNoPageErrors(page, errors)
 })
 
 // ── THE LAYOUT LAWS (the operator's hour-7, 2026-09-13 — enshrined
@@ -121,12 +122,13 @@ test('the h3-timeline bench card opens the VideoTimelineStudio, not the generic 
 // card violated all four at once; these assertions are the wall that
 // makes the regression impossible to re-land quietly.
 test('the studio layout: full-page modal, params left, fitted preview right, timeline under, run fold closed at the rail bottom', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  // stroke 83: name the failing resource (a bare "404" console line
-  // hides WHICH route — the diagnosis law)
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  // THE LEDGER IS THE SPINE'S (tour.ts), not a hand-rolled copy per
+  // spec: only the shared collector knows the cold host's boot-race
+  // 503s and the wall's own readiness probe are transport, not page
+  // errors — a local listener re-records both and fails every
+  // cold-lane run. It still names the failing resource (stroke 83: a
+  // bare "404" hides WHICH route — the diagnosis law).
+  const errors: string[] = collectPageErrors(page)
 
   await settle(page)
   const { opened, sessionKey } = await openAConversation(page)
@@ -187,7 +189,7 @@ test('the studio layout: full-page modal, params left, fitted preview right, tim
   })
   expect(scrolls, 'the rail column scrolls (overflow-y auto)').toMatch(/auto|scroll/)
 
-  expect(errors, errors.join('\n')).toEqual([])
+  await expectNoPageErrors(page, errors)
 })
 
 // ── THE ADD-DOOR REAL-CARD LAW (the operator's hour-7: "When I click
@@ -200,12 +202,13 @@ test('the studio layout: full-page modal, params left, fitted preview right, tim
 // spec form. (The hour-9 page-sized studio modal hijacking the door
 // was REPEALED by that same order — the studio is the ZOOM face.)
 test('the add door shows the REAL card for h3-timeline (not the spec form)', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  // stroke 83: name the failing resource (a bare "404" console line
-  // hides WHICH route — the diagnosis law)
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  // THE LEDGER IS THE SPINE'S (tour.ts), not a hand-rolled copy per
+  // spec: only the shared collector knows the cold host's boot-race
+  // 503s and the wall's own readiness probe are transport, not page
+  // errors — a local listener re-records both and fails every
+  // cold-lane run. It still names the failing resource (stroke 83: a
+  // bare "404" hides WHICH route — the diagnosis law).
+  const errors: string[] = collectPageErrors(page)
 
   await settle(page)
   const { opened, sessionKey } = await openAConversation(page)
@@ -236,7 +239,7 @@ test('the add door shows the REAL card for h3-timeline (not the spec form)', asy
   await expect(page.locator('[data-testid="motion-timeline-bar"]'), 'the timeline bar renders in the drill').toBeVisible()
   // the drill overlay titles the stage (the CardZoomOverlay shell)
   await expect(page.getByText('Stage h3-timeline', { exact: true })).toBeVisible({ timeout: 10_000 })
-  expect(errors, errors.join('\n')).toEqual([])
+  await expectNoPageErrors(page, errors)
 })
 
 // NOTE (2026-09-13): the chat-born bench path (estate normalization

@@ -305,4 +305,39 @@ describe("the adapter's post-splice wiring walk (production's submit path)", () 
     ).rejects.toThrow(/EmptyLatentImage\.no_such_knob/);
     expect(flow).not.toHaveBeenCalled();
   });
+
+  // THE VOICE NAMES THE COMPOSER (the audit's F-2): card id when the
+  // run was card-commissioned, the stage id when it was not — never
+  // a stage id dressed as a card, never a card the row never carried
+  it("a card-commissioned row refuses in the CARD's name (F-2)", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }));
+    const { seat, wiring } = await boot(flow);
+    wiring.arm(new Set(["KSampler"]), new Map());
+    const record = seat.resolve("comfyui");
+    await expect(
+      record.executor.executeStages(
+        [{ ...stageRow(), card: "krea-gen" }],
+        "/tmp/run-x",
+        {},
+        { shouldStop: (): boolean => false, report: vi.fn() },
+      ),
+    ).rejects.toThrow(/card 'krea-gen' wired node class 'EmptyLatentImage'/);
+    expect(flow).not.toHaveBeenCalled();
+  });
+
+  it("a stage-commissioned row names the STAGE in the composer slot (the honest fallback)", async () => {
+    const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }));
+    const { seat, wiring } = await boot(flow);
+    wiring.arm(new Set(["KSampler"]), new Map());
+    const record = seat.resolve("comfyui");
+    await expect(
+      record.executor.executeStages(
+        [stageRow()],
+        "/tmp/run-x",
+        {},
+        { shouldStop: (): boolean => false, report: vi.fn() },
+      ),
+    ).rejects.toThrow(/card 's0' wired node class 'EmptyLatentImage'/);
+    expect(flow).not.toHaveBeenCalled();
+  });
 });

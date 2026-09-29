@@ -261,6 +261,34 @@ describe("the family arms — undefined engine and the model re-key", () => {
     await user.click(firstTile());
     expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
   });
+
+  test("a HEALED spec door retires the latched error — never a dead form forever (F-5)", async () => {
+    doors.specFamilies = true;
+    mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
+    doors.specFamilies = true;
+    const user = userEvent.setup();
+    await user.click(firstTile());
+    await screen.findByText("Prompt", {}, { timeout: 4000 });
+    // the sequence inside ONE open drill: a model pick refetches the
+    // spec and the door DIES — the claim latches over the live form;
+    // the next pick refetches and the door HEALS — the success must
+    // retire the claim, or the form wears a dead door's words forever
+    doors.formSpec = "reject-error";
+    const axes = await waitFor(() => {
+      const el = document.querySelector('[data-model-axes="1"]');
+      if (el === null) throw new Error("model axes not found");
+      return el as HTMLElement;
+    });
+    await user.selectOptions(within(axes).getByRole("combobox", { name: "Model" }), "tts");
+    expect(await screen.findByText("door down", {}, { timeout: 4000 })).toBeTruthy();
+    doors.formSpec = "ok";
+    await user.selectOptions(within(document.querySelector('[data-model-axes="1"]') as HTMLElement).getByRole("combobox", { name: "Model" }), "image-gen");
+    await waitFor(() => {
+      expect(screen.queryByText("door down")).toBeNull();
+    });
+    expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
+    expect(doors.specUrls.some((u) => u.includes("model=tts"))).toBe(true);
+  });
 });
 
 describe("the spec-null enhance — the served base composes before the spec", () => {
@@ -317,7 +345,9 @@ describe("the sweep-landing arms — empty, negative, and empty-via", () => {
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "a red cube");
     pressEnhance();
-    expect(await screen.findByText("enhanced (1 field)", {}, { timeout: 4000 })).toBeTruthy();
+    // the W10 count law: the note counts what the WRITE carries —
+    // the swept patch holds prompt AND negative_prompt (2 fields)
+    expect(await screen.findByText("enhanced (2 fields)", {}, { timeout: 4000 })).toBeTruthy();
     const areas = [...document.querySelectorAll("textarea")].map((el) => (el as HTMLTextAreaElement).value);
     expect(areas).toContain("P2");
     expect(areas).toContain("N2");

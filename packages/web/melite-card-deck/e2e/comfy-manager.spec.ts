@@ -38,14 +38,23 @@ test.skip(!DECK_URL, 'E2E_DECK_URL (token-authenticated deck URL) is not set —
 async function settleHost(page: Page): Promise<void> {
   await page.goto(DECK_URL, { waitUntil: 'domcontentloaded' })
   // A FRESH deck home (dsh-harness-home carries no UI state) opens
-  // behind the first-run "Internal Testing Notice" dialog — its mask
-  // intercepts every pointer until Continue. It renders DURING the
-  // settle, so dismiss after the boot wait, not before.
+  // behind the first-run NOTICE dialog — its mask intercepts every
+  // pointer until Continue. It renders DURING the settle, so dismiss
+  // after the boot wait, not before.
   await page.waitForTimeout(8_000)
-  const notice = page.getByRole('dialog', { name: 'Internal Testing Notice' }).getByRole('button', { name: 'Continue' })
-  if (await notice.count() > 0) {
-    await notice.click({ timeout: 10_000 })
-    await page.waitForTimeout(1_000)
+  // THE NOTICE CLASS, NOT A BAKED TITLE (the tour spine's law,
+  // li-bu): the shells retitle the first-run notice mid-arc
+  // ("Preview Notice" -> "Internal Testing Notice", 2026-10-10), so
+  // a baked dialog name rots on the next retitle. The filter matches
+  // any dialog heading /Notice/ with a Continue button, and the
+  // dismissal is RETRIED — a click merely attempted is not a click.
+  for (let round = 0; round < 3; round++) {
+    const notice = page.getByRole('dialog').filter({ hasText: /Notice/ }).getByRole('button', { name: 'Continue' })
+    if ((await notice.count()) === 0) break
+    try {
+      await notice.click({ timeout: 10_000 })
+      await page.waitForTimeout(1_000)
+    } catch { /* round again — a cold host can re-mask mid-settle */ }
   }
 }
 

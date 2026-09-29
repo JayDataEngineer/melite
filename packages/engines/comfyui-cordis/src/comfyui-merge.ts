@@ -15,6 +15,10 @@ import type { ExecuteOpts } from "./comfyui-execute.ts";
 
 export interface MergeRow {
   readonly stageId: string;
+  /** the composer label for the third-walk voice (card id when the
+   *  run was card-commissioned, else undefined — the adapter falls
+   *  back to the stage id); never a graph input */
+  readonly card: string | undefined;
   readonly workflow: Record<string, EngineJson>;
   readonly outputs: Record<string, EngineJson>;
   readonly outputNodes: Record<string, EngineJson>;

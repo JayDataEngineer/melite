@@ -18,7 +18,10 @@ RUNS_ROOT=/tmp/e2e-studio-runs
 COOKIES=/tmp/e2e-studio-cookies.txt
 LOG=/tmp/e2e-studio-lane.log
 PROFILE_SRC="${E2E_STUDIO_PROFILE_SRC:-data/runtime/dsh-harness-home/profiles/melite-test}"
-REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# Bash-only REPO_ROOT (parameter expansion is a builtin): the spec's
+# stub-PATH seat runs this script with NOTHING resolvable — dirname
+# must never stand between the prereq gates and their verdict.
+REPO_ROOT="$(cd -- "${BASH_SOURCE[0]%/*}/.." && pwd)"
 cd "$REPO_ROOT"
 DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
@@ -55,6 +58,27 @@ if curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/"; then
   skip_or_fail "port $PORT busy — another host owns the lane"
 fi
 command -v "$DSH_BIN" >/dev/null 2>&1 || skip_or_fail "no dsh binary on PATH (set DSH_BIN)"
+
+# LANE LAW (li-bu class, the audit's F-8): whatever binary resolved
+# above MUST be the provisioned runtime — >=0.2.0-rc.1, the repo's own
+# pin (packages/harness/provisioner/package.json). A bare PATH dsh
+# below the floor is the banned class (the mise 0.1.5-rc.2 burn: a
+# shell whose typert registry refuses our codec shape, the bench
+# namespace never mounts, and every symptom lands far from the cause).
+# The sanctioned door for a lane is the sibling provisioner:
+#   ~/Documents/programs/active/dsh-provision/apply.sh launch --lane X
+dsh_version="$("$DSH_BIN" --version 2>/dev/null | head -1 || true)"
+python3 - "$dsh_version" <<'GATE' || exit 1
+import re, sys
+m = re.search(r"(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?", sys.argv[1] or "")
+if not m:
+    sys.exit("e2e-studio-lane: cannot read a version from '$DSH_BIN' — boot only through the provision (dsh-provision apply.sh launch)")
+maj, min_, pat, rc = (int(m.group(i)) if m.group(i) else None for i in (1, 2, 3, 4))
+cur = (maj, min_, pat, rc if rc is not None else 10**6)
+floor = (0, 2, 0, 1)
+if cur < floor:
+    sys.exit(f"e2e-studio-lane: $DSH_BIN is {'.'.join(m.groups())}, below the 0.2.0-rc.1 floor — boot only through the provision (dsh-provision apply.sh launch)")
+GATE
 SEED_DIR=""
 if [ -d "$PROFILE_SRC" ]; then
   SEED_DIR="$PROFILE_SRC"

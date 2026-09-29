@@ -687,14 +687,23 @@ export function specBody(
     // declaration, every face). Absent = the family declares no
     // surface (the legacy truth: the card's union table owns
     // visibility) — the form falls back to visible_when.
-    // A family with an EMPTY declared base serves no lanes block (the
-    // NIT from the audit): `params: []` is legal at the z, and
-    // serving it would tell the form that NO field renders — a
-    // silent black form, where absence honestly means "undeclared,
-    // fall back to the card's own visibility". The judge is
-    // unchanged: an empty surface still judges nothing here because
-    // no lanes block means no judgment.
-    ...(decl !== null && decl.params !== undefined && decl.params.length > 0 ? {
+    // A family that declares a SURFACE serves it; a family that
+    // declares NO surface while judging LAWS (krea-2's shape since
+    // the envelope wall, 2026-10-11: relations + variant envelopes,
+    // params undeclared) still serves its contract — base ABSENT
+    // (laneContractOf's optional-base law): the laws judge, the
+    // form falls back to the card's own visibility for fields.
+    // Before this gate widen, an envelope-only family served NO
+    // lanes block — the form judged nothing while the compose door
+    // refused the write 300ms after the press ("THE WRITE DID NOT
+    // LAND — stated cfg 3.5 is OUTSIDE the route envelope").
+    ...(decl !== null && (
+      decl.params !== undefined ||
+      decl.relations !== undefined ||
+      decl.bounds !== undefined ||
+      (decl.variants ?? []).some((v) =>
+        v.params !== undefined || v.relations !== undefined || v.bounds !== undefined || v.sampler_envelope !== undefined)
+    ) ? {
       lanes: sharedLaneContractOf(decl),
     } : {}),
     // THE FAMILIES BLOCK (the no-silent-drop law, hour 26 stroke 17):

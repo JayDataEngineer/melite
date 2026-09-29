@@ -342,4 +342,90 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
       "the splice's own voice: " + String(run.error),
     );
   });
+
+  it("a seat-path stage with NO params row refuses in the compose voice, not a raw TypeError (the F-1 audit)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["X"]), new Map());
+    const run: RunRecord = {
+      ...runWithCard("flow_inline"),
+      params: [undefined as unknown as Record<string, EngineJson>],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 0);
+    assert.equal(run.status, "failed");
+    assert.ok(
+      String(run.error).includes("compose must emit the graph"),
+      "no TypeError face — the compose voice: " + String(run.error),
+    );
+    assert.ok(
+      !String(run.error).includes("Cannot read properties"),
+      "the raw TypeError is dead: " + String(run.error),
+    );
+  });
+
+  it("a FOREIGN engine's stage is not a comfy graph — armed, the wall never judges its tool params (HOLE 2)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { EnginesService } = await import("@melite/engine-contract");
+    const { ctx } = await seatCtx();
+    // a second executor on the shared 'engines' seat — the mcp lane's
+    // own dispatch, exactly the audit's probe shape
+    // InstanceType spelling: the tier's tsc (5.7) refuses the bare
+    // class-as-type through the dynamic import (TS2749); 5.9 takes
+    // it — this spelling is legal on both, and the wall is the law.
+    const seat = ctx.get("engines") as InstanceType<typeof EnginesService>;
+    let foreign = 0;
+    seat.register("mcp:blender", {
+      executor: {
+        executeStages: async (): Promise<{
+          stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }>;
+        }> => {
+          foreign++;
+          return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
+        },
+      },
+    });
+    // ARMED with a class the tool params will never name — the wall
+    // is live and would refuse any phantom walk
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["X"]), new Map());
+    const run: RunRecord = {
+      ...runWithCard("mcp:blender"),
+      stages: [
+        {
+          id: "s",
+          name: "s",
+          index: 0,
+          status: "pending",
+          outputs: {},
+          expected: {},
+          engine: "mcp:blender",
+        },
+      ],
+      params: [
+        { tool: "blender.render", scene: "hero", options: { samples: 8 } },
+      ],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(foreign, 1, "the foreign executor ran — its tool params are not a graph");
+    assert.equal(run.status, "completed");
+    assert.equal(run.error, "");
+  });
+
+  it("UNARMED, the splice stands down WITH the wall — no compose refusal from a fence forbidden to judge (HOLE 2)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    // mounted, NEVER armed: the doc-owner's fetch failed — judgment
+    // is forbidden, and the pre-fix splice refused anyway
+    new ComfyUIWiringService(ctx);
+    const run: RunRecord = {
+      ...runWithCard("flow_inline"),
+      params: [{ prompt: "typed words with nowhere to compose" }],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 1, "the seat executor submitted — the unarmed fence judged nothing");
+    assert.equal(run.status, "completed");
+    assert.equal(run.error, "");
+  });
 });

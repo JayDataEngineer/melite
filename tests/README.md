@@ -27,6 +27,13 @@ The root Vitest config partitions specs into isolated node, DOM, DOM18, and
 React-18 deck projects. Package-local `typecheck` commands may still exist;
 they are not a second test runner.
 
+Browser-wall law (li-bu): the first-run masking notice is dismissed by its
+CLASS — any dialog heading `/Notice/` with a Continue button, retried until a
+real click lands — never by a baked title. The shells retitle it mid-arc
+("Preview Notice" -> "Internal Testing Notice"), and every baked copy
+(card-view's tour spine, the deck's two settle helpers) rots on the next
+retitle.
+
 ## Current layout
 
 ```text

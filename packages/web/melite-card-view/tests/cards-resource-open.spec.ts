@@ -139,23 +139,103 @@ describe("the unmounted bench face — one snapshot, then the honest voice", () 
   });
 });
 
-describe("the draft view — one snapshot per open", () => {
+describe("the draft view — a snapshot that TAILS (HOLE 1, 2026-10-11)", () => {
   const ADDR = "dsh-resource://cards/draft/draft-1/s_0";
 
-  test("a served draft snapshots the draft value", async () => {
+  /** Drive the stream, aborting after `want` frames (the tail never
+   *  ends on its own — a still-open tab is a still-polling tab). */
+  async function collectTail(
+    fakes: ReturnType<typeof mountEstateFakes>,
+    want: number,
+    run: () => Promise<void>,
+  ): Promise<Array<RemoteResult<never>>> {
+    const frames: Array<RemoteResult<never>> = [];
+    const controller = new AbortController();
+    const driving = (async (): Promise<void> => {
+      for await (const frame of openCardsResource(ADDR, { signal: controller.signal }, undefined, undefined)) {
+        frames.push(frame as RemoteResult<never>);
+        if (frames.length >= want) controller.abort();
+      }
+    })();
+    await run();
+    // wake the parked tail: under fake timers an abort mid-sleep
+    // leaves the pending interval unadvanced — advance one interval
+    // so the loop sees the flag and ends (a real timer fires alone)
+    controller.abort();
+    await vi.advanceTimersByTimeAsync(1600);
+    await driving;
+    void fakes;
+    return frames;
+  }
+
+  test("a served draft snapshots, and a foreign-landed generation yields a FRESH frame", async () => {
+    vi.useFakeTimers();
     const fakes = stubWire({
       draftStages: [{ id: "s_0" }],
       draftBenchRev: 3,
       draftIntent: "the film",
     });
     try {
-      const frames = await collect(ADDR, ctx());
-      expect(frames).toHaveLength(1);
+      let frames: Array<RemoteResult<never>> = [];
+      frames = await collectTail(fakes, 2, async () => {
+        await vi.advanceTimersByTimeAsync(0); // the snapshot frame
+        // the agent (or a sibling tab) lands a generation on the
+        // shared draft — the rev moves, a stage's bytes move
+        fakes.setDraftDoc({ rev: 4, stages: [{ id: "s_0", runStatus: "completed" }] });
+        await vi.advanceTimersByTimeAsync(1500); // one poll interval
+      });
+      expect(frames).toHaveLength(2);
       expect(frames[0]).toMatchObject({
         ok: true,
-        value: { kind: "draft", draftId: "draft-1", stageId: "s_0", intent: "the film", rev: 3 },
+        value: { kind: "draft", draftId: "draft-1", stageId: "s_0", intent: "the film" },
+      });
+      // the fresh frame carries the foreign-landed generation's
+      // bytes (the value's OWN rev rides the bench block — the doc
+      // rev feeds the change gate, not the rendered value)
+      expect(frames[1]).toMatchObject({
+        ok: true,
+        value: { stages: [{ id: "s_0", runStatus: "completed" }] },
       });
     } finally {
+      vi.useRealTimers();
+      fakes.unmount();
+    }
+  });
+
+  test("an unchanged doc yields NOTHING — three poll intervals, still one frame", async () => {
+    vi.useFakeTimers();
+    const fakes = stubWire({ draftStages: [{ id: "s_0" }] });
+    try {
+      const frames = await collectTail(fakes, 2, async () => {
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(4500); // three full intervals
+      });
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({ ok: true, value: { kind: "draft" } });
+    } finally {
+      vi.useRealTimers();
+      fakes.unmount();
+    }
+  });
+
+  test("a transient mid-tail read failure keeps the last frame standing (no failure frame)", async () => {
+    vi.useFakeTimers();
+    const fakes = stubWire({
+      draftStages: [{ id: "s_0" }],
+      // the SECOND get (the first poll after the snapshot) dies in
+      // transport — the estate hiccup the tail must ride out
+      throws: [{ method: "drafts/get", value: "wire flapped", onCall: 2 }],
+    });
+    try {
+      const frames = await collectTail(fakes, 2, async () => {
+        await vi.advanceTimersByTimeAsync(0);
+        await vi.advanceTimersByTimeAsync(1500); // the dying poll
+        await vi.advanceTimersByTimeAsync(1500); // a healthy one after
+      });
+      expect(frames).toHaveLength(1);
+      expect(frames[0]).toMatchObject({ ok: true, value: { kind: "draft" } });
+    } finally {
+      vi.useRealTimers();
       fakes.unmount();
     }
   });

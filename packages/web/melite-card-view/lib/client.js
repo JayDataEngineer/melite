@@ -7626,15 +7626,40 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  a view flip cannot kill a pending write by killing its timer
 		*  owner (the 2026-09-23 burn's exact death). ONE hole, named
 		*  honestly rather than patched with a lying flush: a write inside
-		*  its trailing window dies on TAB CLOSE (the door's CAS fence
-		*  needs the write's answer; no beacon can land one) — the run
-		*  gate is the wall that catches it. The run gate FORCES every
+		*  its trailing window dies on DRILL CLOSE — but on a real BROWSER
+		*  TAB close the whole heap dies with the page (this ledger, the
+		*  timers, the run gate itself — no beforeunload/beacon exists, and
+		*  none honestly can: the door's CAS fence needs the write's
+		*  answer). The tab-close loss window is REAL and UNCOVERED; the
+		*  drill-close half is caught by the run gate, which FORCES every
 		*  pending write before composing (flushStageWrites below), so the
-		*  engine can only ever see what the studio shows. */
+		*  engine only ever sees what the studio shows. */
 		const SCHEDULED_TRAILING_MS = 300;
 		/** Pending trailing writes, keyed draft/stage then param key (the
 		*  coalescing unit: one write per key, the newest value wins). */
 		const scheduledWrites = /* @__PURE__ */ new Map();
+		/** Per-stage SEND CHAIN (the second audit's timer-fan-out finding,
+		*  2026-10-11): two keys scheduled in the same tick fire their
+		*  timers together and both read the SAME confirmedRev — the second
+		*  collides and burns a rebase round, the exact CAS fan-out the
+		*  force path killed, relocated to the timers. Every send for a
+		*  stage — timer or force — rides this chain, so each write reads
+		*  the rev the PREVIOUS landing answered, by construction. */
+		const sendChains = /* @__PURE__ */ new Map();
+		function enqueueSend(draftId, stageId, thunk) {
+			const key = draftId + "/" + stageId;
+			const link = (sendChains.get(key) ?? Promise.resolve()).then(thunk);
+			sendChains.set(key, link.then(() => void 0, () => void 0));
+			return link;
+		}
+		/** Keys still sitting in their trailing window (the flush's
+		*  liveness check — a schedule that survives the loop below is
+		*  voiced, never composed over). */
+		function pendingScheduledKeys(draftId, stageId) {
+			const row = scheduledWrites.get(draftId + "/" + stageId);
+			if (row === void 0) return [];
+			return [...row.keys()];
+		}
 		function scheduledRow(draftId, stageId) {
 			const key = draftId + "/" + stageId;
 			let row = scheduledWrites.get(key);
@@ -7675,7 +7700,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						waiters,
 						timer: setTimeout(() => {
 							row.delete(k);
-							send(merged, expectRev).then(() => {
+							enqueueSend(draftId, stageId, () => send(merged, expectRev)).then(() => {
 								for (const w of waiters) w();
 							}, () => {
 								for (const w of waiters) w();
@@ -7706,8 +7731,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				clearTimeout(write.timer);
 				row.delete(k);
 				try {
-					const confirmed = writeRow(draftId, stageId).confirmedRev;
-					await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev);
+					await enqueueSend(draftId, stageId, async () => {
+						const confirmed = writeRow(draftId, stageId).confirmedRev;
+						await patchStageParams(draftId, stageId, write.params, confirmed ?? write.expectRev);
+					});
 				} catch {}
 				for (const w of write.waiters) w();
 			}
@@ -7716,9 +7743,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* run gate's flush). Never throws — the caller reads the settled
 		* state and refuses the run on any failure. */
 		async function flushStageWrites(draftId, stageId) {
-			await forceScheduledWrites(draftId, stageId);
-			const row = writeRow(draftId, stageId);
-			while (row.inflight.size > 0) await Promise.allSettled([...row.inflight]);
+			const key = draftId + "/" + stageId;
+			for (let guard = 0; guard < 16; guard++) {
+				await forceScheduledWrites(draftId, stageId);
+				const row = writeRow(draftId, stageId);
+				while (row.inflight.size > 0) await Promise.allSettled([...row.inflight]);
+				const sched = scheduledWrites.get(key);
+				if (sched === void 0 || sched.size === 0) break;
+			}
 			return stageWriteState(draftId, stageId);
 		}
 		/** THE RUN GATE'S VOICE (the one-press/one-engine law) — the ONE
@@ -7728,7 +7760,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* Null = the press may compose. Never throws. */
 		async function refuseForUnlandedWrite(draftId, stageId) {
 			const state = await flushStageWrites(draftId, stageId);
-			if (state.failedKeys.length === 0) return null;
+			if (state.failedKeys.length === 0) {
+				const stillRiding = pendingScheduledKeys(draftId, stageId);
+				if (stillRiding.length === 0) return null;
+				return "THE WRITE DID NOT LAND — run refused: authoring write(s) still in their trailing window after repeated flush (unlanded keys: " + stillRiding.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
+			}
 			return "THE WRITE DID NOT LAND — run refused: " + (state.lastError ?? "authoring write(s) still in flight") + " (unlanded keys: " + state.failedKeys.join(", ") + "). The persisted doc under this stage is not what the studio shows; nothing was sent to the engine.";
 		}
 		/** Reconcile the failure memory against what the studio NOW shows
@@ -7738,13 +7774,18 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* the studio shows the field empty while the run gate still refuses
 		* naming a key nobody holds anymore (a GHOST: the cure — "retype the
 		* field" — is invisible, the refusal looks like a lie). A failed key
-		* that the held row does not carry AND the freshly seeded edit state
-		* does not carry is dead weight from a prior session of the form;
-		* the ledger drops it. A key either side still carries KEEPS its
-		* refusal — that failure is live and the gate must voice it. */
-		function reconcileStageWriteFailures(draftId, stageId, heldParams, seededParams) {
+		* is dead weight from a prior session of the form only when NOBODY
+		* can show it: the held row does not carry it, the freshly seeded
+		* edit state does not carry it, AND the form does not DECLARE it
+		* (the second audit's live-drop finding, 2026-10-11: seedUser seeds
+		* only held keys + axis rows, but the form RENDERS every declared
+		* field — a declared-but-never-written 'prompt' shows an empty field
+		* the operator can retype, so its refusal is live and curable, not
+		* a ghost). A key any of the three still carries KEEPS its refusal
+		* — that failure is live and the gate must voice it. */
+		function reconcileStageWriteFailures(draftId, stageId, heldParams, seededParams, declaredKeys = /* @__PURE__ */ new Set()) {
 			const row = writeRow(draftId, stageId);
-			for (const k of [...row.failedKeys]) if (!(k in heldParams) && !(k in seededParams)) row.failedKeys.delete(k);
+			for (const k of [...row.failedKeys]) if (!(k in heldParams) && !(k in seededParams) && !declaredKeys.has(k)) row.failedKeys.delete(k);
 			if (row.failedKeys.size === 0) row.lastError = null;
 		}
 		/** The CAS dance (the run-start face law, 2026-09-14): write with the
@@ -8276,6 +8317,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region src/client/cards-resource.ts
 		init_benchStage();
+		const tailDelay = (ms) => new Promise((resolve) => {
+			setTimeout(resolve, ms);
+		});
 		/** The bench address (the legacy bare form serves 'main' — the
 		*  pre-session key records resolve unchanged). */
 		const CARDS_BENCH_ADDRESS = "dsh-resource://cards/bench";
@@ -8890,6 +8934,27 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						ok: true,
 						value
 					};
+					let lastRev = value.rev;
+					let lastFaces = JSON.stringify(value.stages);
+					while (!ctx.signal.aborted) {
+						await tailDelay(1500);
+						if (ctx.signal.aborted) return;
+						let next;
+						try {
+							next = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), "drafts/get"));
+						} catch {
+							continue;
+						}
+						const faces = JSON.stringify(next.stages);
+						if (lastRev === next.rev && lastFaces === faces) continue;
+						lastRev = next.rev;
+						lastFaces = faces;
+						value = next;
+						yield {
+							ok: true,
+							value
+						};
+					}
 					return;
 				}
 				let value;
@@ -10009,16 +10074,43 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				variants[v.id] = {
 					...v.params !== void 0 ? { params: [...v.params] } : {},
 					...v.relations !== void 0 ? { relations: v.relations } : {},
-					...v.bounds !== void 0 ? { bounds: v.bounds } : {},
+					...v.bounds !== void 0 || v.sampler_envelope !== void 0 ? { bounds: envelopeBoundsOf(v.bounds, v.sampler_envelope) } : {},
 					...v.sampler_envelope !== void 0 ? { sampler_envelope: v.sampler_envelope } : {}
 				};
 			}
 			return {
-				base: [...decl.params ?? []],
+				...decl.params !== void 0 ? { base: [...decl.params] } : {},
 				...decl.relations !== void 0 ? { relations: decl.relations } : {},
 				...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
 				variants
 			};
+		}
+		/** THE ROUTE ENVELOPE IS BOUNDS (2026-10-11, the operator's wall:
+		* "the entire point of the schema rework was so this was impossible
+		* by design"): a variant's sampler_envelope is the SAME closed
+		* interval the bench's stamp gate refuses with (envelopeRefusal) —
+		* project it into the variant's bounds rows so the form's inline
+		* gate, the run gate, and the compose door judge ONE truth. The
+		* envelope OWNS both endpoints for steps/cfg (the door is the
+		* authority; a family bound that contradicts its own variant's
+		* envelope is a DECL bug, and the door's voice wins). Before this,
+		* a family that declared only envelopes (krea-2) served bounds
+		* null — the form judged NOTHING while the door refused the write
+		* 300ms after the press. */
+		function envelopeBoundsOf(bounds, envelope) {
+			const out = { ...bounds ?? {} };
+			if (envelope === void 0) return out;
+			if (Array.isArray(envelope.steps) && envelope.steps.length === 2) out.steps = {
+				...out.steps ?? {},
+				min: envelope.steps[0],
+				max: envelope.steps[1]
+			};
+			if (Array.isArray(envelope.cfg) && envelope.cfg.length === 2) out.cfg = {
+				...out.cfg ?? {},
+				min: envelope.cfg[0],
+				max: envelope.cfg[1]
+			};
+			return out;
 		}
 		/** THE CONTRACT MAP for a card's declared families: family id → its
 		*  lane contract. Families that declare no params and no laws are
@@ -10030,7 +10122,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const decl = declOf(id);
 				if (decl === void 0) continue;
 				const contract = laneContractOf(decl);
-				if (contract.base.length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
+				if ((contract.base ?? []).length === 0 && contract.relations === void 0 && contract.bounds === void 0 && Object.keys(contract.variants).length === 0) continue;
 				out[id] = contract;
 			}
 			return out;
@@ -50354,19 +50446,27 @@ void main() {
 			const stackRow = (f) => {
 				const v = value[f.name];
 				const entries = Array.isArray(v) ? v.filter((x) => typeof x === "string" && x !== "") : [];
-				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : 8;
+				const cap = typeof f.max_stack === "number" && f.max_stack > 0 ? f.max_stack : void 0;
+				const over = cap !== void 0 && entries.length > cap;
 				const kind = f.media === "video" || f.media === "audio" ? "file" : "image";
 				const accept = f.media === "video" ? "video/*" : f.media === "audio" ? "audio/*" : void 0;
 				return (0, react.createElement)("div", {
 					key: "stack-" + f.name,
 					className: card_module_css_default.specStack,
 					"data-input-stack": f.name,
-					"data-stack-count": String(entries.length)
+					"data-stack-count": String(entries.length),
+					...over ? { "data-stack-over": String(cap) } : {}
 				}, (0, react.createElement)("div", {
 					className: card_module_css_default.modHead,
 					"data-stack-head": f.name,
 					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
-				}, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, f.label), (0, react.createElement)("span", { className: card_module_css_default.modHint }, `${String(entries.length)} / ${String(cap)}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
+				}, (0, react.createElement)("span", { className: card_module_css_default.modTitle }, f.label), (0, react.createElement)("span", {
+					className: card_module_css_default.modHint,
+					...over ? { style: { color: "var(--dsh-danger, #f44)" } } : {}
+				}, `${String(entries.length)}${cap !== void 0 ? " / " + String(cap) : ""}${f.media !== void 0 && f.media !== "" ? " · " + f.media : ""}`)), over ? (0, react.createElement)("p", {
+					className: card_module_css_default.laneWarn,
+					style: { margin: 0 }
+				}, `'${f.name}': ${String(entries.length)} stated, this lane admits ${String(cap)} — remove ${String(entries.length - cap)} before the write (the capacity follows the boarded model)`) : null, (0, react.createElement)("div", { className: card_module_css_default.specSlotRow }, entries.map((entry, i) => (0, react.createElement)("div", {
 					key: f.name + ":" + String(i),
 					className: card_module_css_default.specSlotCell,
 					title: f.tooltip !== void 0 && f.tooltip !== "" ? f.tooltip : void 0
@@ -50386,7 +50486,7 @@ void main() {
 					...wire?.loadMedia !== void 0 ? { loadMedia: wire.loadMedia } : {},
 					...wire?.candidates !== void 0 ? { candidates: wire.candidates } : {},
 					...wire?.candidatesFor !== void 0 ? { candidatesFor: wire.candidatesFor } : {}
-				}))), entries.length < cap ? (0, react.createElement)("div", {
+				}))), cap === void 0 || entries.length < cap ? (0, react.createElement)("div", {
 					className: card_module_css_default.specSlotCell,
 					"data-stack-add": f.name,
 					title: f.tooltip
@@ -60223,10 +60323,11 @@ void main() {
 				}
 				fetchFormSpec(family).then((doc) => {
 					if (!alive) return;
+					setError(null);
 					setSpec(doc);
 					const seeded = seedUser(doc, freshOpen ? held : userRef.current);
 					setUser(seeded);
-					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded);
+					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set(fieldsOf(doc).map((f) => f.name)));
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
@@ -60295,7 +60396,7 @@ void main() {
 				const shape = spec !== null ? fieldsOf(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape === "image" || shape === "file" || shape === "mesh") patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
-					setError(e instanceof Error ? e.message : "slot write failed");
+					setError("THE WRITE DID NOT LAND — " + (e instanceof Error ? e.message : "slot write failed") + " (unlanded keys: " + name + ").");
 				});
 			}, [
 				spec,
@@ -60371,10 +60472,11 @@ void main() {
 					const results = doc.results ?? {};
 					const declared = new Set(spec !== null ? fieldsOf(spec).map((f) => f.name) : []);
 					const sweptPatch = {};
+					const fieldByName = new Map(spec !== null ? fieldsOf(spec).map((f) => [f.name, f]) : []);
 					for (const [field, r] of Object.entries(results)) {
 						if (typeof r?.positive !== "string" || r.positive === "") continue;
-						if (field === "prompt" || declared.has(field)) sweptPatch[field] = r.positive;
-						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = r.negative;
+						if (field === "prompt" || declared.has(field)) sweptPatch[field] = coerceFieldEdit(fieldByName.get(field), r.positive);
+						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = coerceFieldEdit(fieldByName.get("negative_prompt"), r.negative);
 					}
 					setUser((m) => ({
 						...m,
@@ -60384,7 +60486,7 @@ void main() {
 						const st = stageWriteState(bench.draftId, stage.id);
 						setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
 					});
-					const swept = Object.entries(results).filter(([field, r]) => typeof r?.positive === "string" && r.positive !== "" && (field === "prompt" || declared.has(field))).length;
+					const swept = Object.keys(sweptPatch).length;
 					if (swept === 0) setEnhanceNote({
 						err: true,
 						text: "the enhancer returned no declared fields (" + Object.keys(results).join(", ") + ")"
@@ -61327,7 +61429,21 @@ void main() {
 		function resolveCardsAddress(rawAddress) {
 			return parseCardsAddress(rawAddress) !== null ? rawAddress : CARDS_BENCH_ADDRESS;
 		}
-		/** The tab body component. */
+		const verbClaim = (verb, text) => ({
+			text,
+			kind: "verb",
+			verb,
+			rowLanded: false
+		});
+		const startClaim = (text) => ({
+			text,
+			kind: "start",
+			rowLanded: true
+		});
+		/** a verb's SUCCESS clears only its own claim — never a start
+		*  claim, never another verb's (W6: an unrelated success eating an
+		*  unanswered refusal is information loss) */
+		const clearVerb = (verb) => (claim) => claim !== null && claim.kind === "verb" && claim.verb === verb ? null : claim;
 		function CardsTab(props) {
 			(0, react.useEffect)(() => {
 				markCardsSurface(true);
@@ -61384,7 +61500,7 @@ void main() {
 				terminalSeen.current = cur;
 				if (prev === null) return;
 				for (const [id, status] of cur) if (status === "done" && prev.get(id) !== "done") {
-					setLocalRunError(null);
+					setLocalRunError((claim) => claim !== null && claim.kind === "start" && claim.rowLanded ? null : claim);
 					return;
 				}
 			}, [snapshot?.value]);
@@ -61438,7 +61554,7 @@ void main() {
 			const onRun = (0, react.useCallback)(() => {
 				if (snapshot?.value?.kind !== "bench") return;
 				if (snapshot.status === "failed") {
-					setLocalRunError("refresh failed — showing the last good state, not composing from it (" + (snapshot.failure?.message ?? "cards resource failed") + ")");
+					setLocalRunError(verbClaim("refresh", "refresh failed — showing the last good state, not composing from it (" + (snapshot.failure?.message ?? "cards resource failed") + ")"));
 					return;
 				}
 				setRunning(true);
@@ -61454,13 +61570,13 @@ void main() {
 					onTouched: touchBench
 				}).then((res) => {
 					setRunning(false);
-					if (res.refused !== null) setLocalRunError(res.refused);
+					if (res.refused !== null) setLocalRunError(startClaim(res.refused));
 				});
 			}, [snapshot, touchBench]);
 			const onRunStage = (0, react.useCallback)((stage) => {
 				/* v8 ignore next 4 -- single-render law: BenchView mounts only with kind bench (probe 2026-09-19); the loud voice fences a shape the harness never produces */
 				if (snapshot?.value?.kind !== "bench") {
-					setLocalRunError("the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: " + String(snapshot?.value?.kind ?? "none") + ")");
+					setLocalRunError(startClaim("the bench is not ready to run from — reopen the Media Flow tab (snapshot kind: " + String(snapshot?.value?.kind ?? "none") + ")"));
 					return;
 				}
 				setRunning(true);
@@ -61469,7 +61585,7 @@ void main() {
 				const stageId = stage.id;
 				const carryFailure = (error) => {
 					setRunning(false);
-					setLocalRunError(error);
+					setLocalRunError(startClaim(error));
 					/* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
 					const snap = snapshot.value;
 					const rev = snap !== void 0 && snap.kind === "bench" ? snap.rev : void 0;
@@ -61479,7 +61595,12 @@ void main() {
 						result: { error }
 					}, rev).then(() => {
 						touchBench();
-					}).catch(() => {});
+					}).catch(() => {
+						setLocalRunError((claim) => claim !== null && claim.kind === "start" ? {
+							...claim,
+							rowLanded: false
+						} : claim);
+					});
 				};
 				runCardStage(draftId, stage).then((res) => {
 					if ("runId" in res) onStarted(res.runId, {
@@ -61498,8 +61619,10 @@ void main() {
 			const onStopStage = (0, react.useCallback)((stage) => {
 				const rid = stageRuns[stage.id];
 				if (rid === void 0) return;
-				stopRun(rid).catch((e) => {
-					setLocalRunError(e instanceof Error ? e.message : "stop failed");
+				stopRun(rid).then(() => {
+					setLocalRunError(clearVerb("stop"));
+				}).catch((e) => {
+					setLocalRunError(verbClaim("stop", e instanceof Error ? e.message : "stop failed"));
 				});
 			}, [stageRuns]);
 			/* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
@@ -61509,19 +61632,20 @@ void main() {
 					stage: stage.id,
 					expect_rev: snapshot.value.rev
 				}, snapshot.value.sessionKey).then(() => {
+					setLocalRunError(clearVerb("remove"));
 					touchBench();
 				}).catch((e) => {
-					setLocalRunError(e instanceof Error ? e.message : "remove failed");
+					setLocalRunError(verbClaim("remove", e instanceof Error ? e.message : "remove failed"));
 				});
 			}, [snapshot, touchBench]);
 			/* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
 			const onPatchParamsStage = (0, react.useCallback)((stage, patch) => {
 				if (snapshot?.value?.kind !== "bench" && snapshot?.value?.kind !== "draft") return;
 				patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev).then(() => {
-					setLocalRunError(null);
+					setLocalRunError(clearVerb("patch"));
 					touchBench();
 				}).catch((e) => {
-					setLocalRunError(e instanceof Error ? e.message : "patch failed");
+					setLocalRunError(verbClaim("patch", e instanceof Error ? e.message : "patch failed"));
 					touchBench();
 				});
 			}, [snapshot, touchBench]);
@@ -61540,7 +61664,7 @@ void main() {
 					});
 					else {
 						setRunning(false);
-						setLocalRunError(res.refused);
+						setLocalRunError(startClaim(res.refused));
 						const draftId = value.draftId;
 						const stageId = target.id;
 						const error = res.refused;
@@ -61549,7 +61673,12 @@ void main() {
 						patchStageOutcome(draftId, stageId, {
 							runStatus: "failed",
 							result: { error }
-						}, rev).catch(() => {});
+						}, rev).catch(() => {
+							setLocalRunError((claim) => claim !== null && claim.kind === "start" ? {
+								...claim,
+								rowLanded: false
+							} : claim);
+						});
 					}
 				});
 			}, [snapshot, onStarted]);
@@ -61558,14 +61687,16 @@ void main() {
 				const value = snapshot?.value;
 				if (value?.kind !== "draft") return;
 				patchStageParams(value.draftId, value.stageId, patch, value.rev).then(() => {
-					setLocalRunError(null);
+					setLocalRunError(clearVerb("patch"));
 				}).catch((e) => {
-					setLocalRunError(e instanceof Error ? e.message : "patch failed");
+					setLocalRunError(verbClaim("patch", e instanceof Error ? e.message : "patch failed"));
 				});
 			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
-				stopRun(runId).catch((e) => {
-					setLocalRunError(e instanceof Error ? e.message : "cancel failed");
+				stopRun(runId).then(() => {
+					setLocalRunError(clearVerb("cancel"));
+				}).catch((e) => {
+					setLocalRunError(verbClaim("cancel", e instanceof Error ? e.message : "cancel failed"));
 				});
 			}, []);
 			const onBack = (0, react.useCallback)(() => {
@@ -61583,7 +61714,7 @@ void main() {
 				return (0, react.createElement)(react.Fragment, null, (0, react.createElement)("p", { className: card_module_css_default$1.loading }, "loading " + address + "…"));
 			}
 			const stageError = value.kind === "run" ? null : terminalStageErrorOf(value.stages);
-			const runError = localRunError ?? stageError;
+			const runError = localRunError !== null ? localRunError.text : stageError;
 			return value.kind === "bench" ? (0, react.createElement)(react.Fragment, null, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
 				error: runError,
 				stages: value.stages,
@@ -61602,7 +61733,7 @@ void main() {
 				renderPreview,
 				runId: lastRunId,
 				refreshTick: benchTick,
-				startError: localRunError
+				startError: localRunError !== null ? localRunError.text : null
 			})) : value.kind === "draft" ? (0, react.createElement)(react.Fragment, null, failedLine, runError !== null ? (0, react.createElement)("p", { className: card_module_css_default$1.runError }, runError) : null, runError !== null ? (0, react.createElement)(RunRescue, {
 				error: runError,
 				stages: value.stages,
@@ -61797,4 +61928,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a7d13222b8df3609c92ec85b73c3b64e88afeb32";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="603c9724855fb867c6087c6aa8588d6960c41a73";
