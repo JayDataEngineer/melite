@@ -1335,6 +1335,21 @@ export function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues {
   patch['model'] = model
   return patch
 }
+/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
+ *  operator's live bench: a stage carrying quant:"" — born when a
+ *  model switch CLEARED the axis to '' — which the RUN door refused:
+ *  'unknown quant "" for model "z-image" variant "turbo" (known:
+ *  int8)'). A stated EMPTY selection is UNSTATED: the authoring
+ *  seat unsets the key instead of writing the empty string, so
+ *  compose defaults the cell. ONE pure decision, shared by the seed
+ *  (seedAxisValues omits) and the write (the drill's onSet unsets)
+ *  — the form's rendering is untouched (a missing axis key reads
+ *  as '' on screen). */
+export function axisUnset(name: string, v: unknown, spec: FormSpecDoc | null): boolean {
+  if (v !== "" || spec === null) return false;
+  return axisGroups(spec).some((g) => axisKey(g) === name);
+}
+
 /** Seed the axis keys for a fresh stage (the catalog's first-declared
  *  law: each axis defaults to its FIRST composing row). Held values
  *  win (a reopened stage never re-seeds). */
@@ -1355,7 +1370,15 @@ export function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues 
       const composing = composingRows(spec, g, active)
       active[g] = composing.length > 0 ? composing[0].id : ''
     }
-    out[axisKey(g)] = active[g]
+    // THE EMPTY-SELECTION LAW's form half (2026-10-10, the
+    // operator's live bench: a stage born with quant:"" that the
+    // RUN door refused — "unknown quant \"\"" for a lane whose only
+    // cell is int8). An axis with no composing row is UNSTATED, not
+    // stated-empty: the key is omitted so compose defaults it. The
+    // "" value was a form's unchosen control written as a value —
+    // the form rendering never changes (an axisKey the values lack
+    // reads as '' on the form side; the seed is params).
+    if (active[g] !== "") out[axisKey(g)] = active[g]
   }
   const heldModel = held['model']
   if (typeof heldModel !== 'string' || heldModel === '') {

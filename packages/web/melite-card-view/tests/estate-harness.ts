@@ -56,6 +56,7 @@ import type {
   BenchPatchRow,
   BenchReorderRow,
   BenchRewireRow,
+  BenchClearRow,
   BenchStageRow,
   BenchUndoRow,
   DraftGetRow,
@@ -240,6 +241,13 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       if (scriptedRev !== undefined) benchRevValue = scriptedRev
       return ok(scriptedRev !== undefined ? { ...defaultOk, rev: scriptedRev, stage: fresh } : { ...defaultOk, stage: fresh })
     }
+    // THE CLEAR ALL (2026-10-10): the fake mirrors the verb — every
+    // stage out, one rev.
+    if (method === 'bench/clear') {
+      benchStages.length = 0
+      benchRevValue += 1
+      return ok({ ...defaultOk, ...doc, cleared: benchStages.length })
+    }
     if (method === 'bench/remove-stage') {
       const stageId = doc['stage']
       const index = benchStages.findIndex((row) => row['id'] === stageId)
@@ -290,6 +298,7 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       undo: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/undo', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchUndoRow>>,
       'add-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/add-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       'remove-stage': (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/remove-stage', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
+      clear: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/clear', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchClearRow>>,
       reorder: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/reorder', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchReorderRow>>,
       group: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/group', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,
       ungroup: (sessionKey: string, doc: Record<string, unknown>, signal?: AbortSignal) => benchDocVerb('bench/ungroup', sessionKey, doc, signal) as unknown as Promise<RemoteResult<BenchStageRow>>,

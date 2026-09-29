@@ -5560,6 +5560,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			array(lazy(() => JsonValueRemoteCodec$schema15())),
 			record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 		]);
+		let JsonValueRemoteCodec$schema16$value;
+		const JsonValueRemoteCodec$schema16 = () => JsonValueRemoteCodec$schema16$value ??= union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema16())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema16())).readonly()
+		]);
 		let _melite_estate_drafts_bench_add_stage_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_add_stage_parameter_0$schema = () => _melite_estate_drafts_bench_add_stage_parameter_0$schema$value ??= string();
 		let _melite_estate_drafts_bench_add_stage_parameter_1$schema$value;
@@ -5578,6 +5588,25 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"session": string().readonly(),
 			"rev": number().readonly(),
 			"stage": string().readonly()
+		});
+		let _melite_estate_drafts_bench_clear_parameter_0$schema$value;
+		const _melite_estate_drafts_bench_clear_parameter_0$schema = () => _melite_estate_drafts_bench_clear_parameter_0$schema$value ??= string();
+		let _melite_estate_drafts_bench_clear_parameter_1$schema$value;
+		const _melite_estate_drafts_bench_clear_parameter_1$schema = () => _melite_estate_drafts_bench_clear_parameter_1$schema$value ??= record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema7())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+		])).readonly();
+		let _melite_estate_drafts_bench_clear_result$schema$value;
+		const _melite_estate_drafts_bench_clear_result$schema = () => _melite_estate_drafts_bench_clear_result$schema$value ??= object({
+			"draft_id": string().readonly(),
+			"session": string().readonly(),
+			"rev": number().readonly(),
+			"cleared": number().readonly()
 		});
 		let _melite_estate_drafts_bench_ensure_parameter_0$schema$value;
 		const _melite_estate_drafts_bench_ensure_parameter_0$schema = () => _melite_estate_drafts_bench_ensure_parameter_0$schema$value ??= record(string(), union([
@@ -5627,8 +5656,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema15())),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema16())),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema16())).readonly()
 			]).readonly(),
 			"stages": union([
 				literal(null),
@@ -5636,8 +5665,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema15())),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema16())),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema16())).readonly()
 			]).readonly(),
 			"log": array(record(string(), union([
 				literal(null),
@@ -5645,8 +5674,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema15())),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema16())),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema16())).readonly()
 			])).readonly()).readonly()
 		});
 		let _melite_estate_drafts_bench_group_parameter_0$schema$value;
@@ -5658,8 +5687,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema9())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema9())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema10())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema10())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_group_result$schema$value;
 		const _melite_estate_drafts_bench_group_result$schema = () => _melite_estate_drafts_bench_group_result$schema$value ??= object({
@@ -5716,8 +5745,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema8())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema8())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema9())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema9())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_reorder_result$schema$value;
 		const _melite_estate_drafts_bench_reorder_result$schema = () => _melite_estate_drafts_bench_reorder_result$schema$value ??= object({
@@ -5737,8 +5766,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema7())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema8())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema8())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_rewire_result$schema$value;
 		const _melite_estate_drafts_bench_rewire_result$schema = () => _melite_estate_drafts_bench_rewire_result$schema$value ??= object({
@@ -5792,8 +5821,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema11())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema11())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema12())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema12())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_undo_result$schema$value;
 		const _melite_estate_drafts_bench_undo_result$schema = () => _melite_estate_drafts_bench_undo_result$schema$value ??= object({
@@ -5807,8 +5836,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema12())),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema12())).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema13())),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema13())).readonly()
 			]).readonly()
 		});
 		let _melite_estate_drafts_bench_ungroup_parameter_0$schema$value;
@@ -5820,8 +5849,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema10())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema10())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema11())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema11())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_ungroup_result$schema$value;
 		const _melite_estate_drafts_bench_ungroup_result$schema = () => _melite_estate_drafts_bench_ungroup_result$schema$value ??= object({
@@ -5839,8 +5868,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema13())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema13())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema14())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_drafts_list_result$schema$value;
 		const _melite_estate_drafts_drafts_list_result$schema = () => _melite_estate_drafts_drafts_list_result$schema$value ??= object({
@@ -5870,10 +5899,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema14())),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema15())),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 			]).optional(),
 			"result": union([
 				_undefined(),
@@ -5888,10 +5917,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema14())),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema15())),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 			]).optional(),
 			"runStatus": union([
 				_undefined(),
@@ -5906,10 +5935,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema14())),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema15())),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 			]).optional(),
 			"inputs": union([
 				_undefined(),
@@ -5924,10 +5953,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema14())),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema15())),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 			]).optional(),
 			"inputOutputs": union([
 				_undefined(),
@@ -5942,10 +5971,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					number(),
 					literal(false),
 					literal(true),
-					array(lazy(() => JsonValueRemoteCodec$schema14())),
-					record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+					array(lazy(() => JsonValueRemoteCodec$schema15())),
+					record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 				])),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema14())).readonly()
+				record(string(), lazy(() => JsonValueRemoteCodec$schema15())).readonly()
 			]).optional()
 		});
 		let _melite_estate_drafts_drafts_patch_parameter_3$schema$value;
@@ -5996,7 +6025,45 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1143,
+						"line": 1145,
+						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-drafts#bench/clear",
+					service: "benchRemote",
+					namespace: "bench",
+					method: "clear",
+					implementation: "remoteExportClear",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "sessionKey",
+						wire: "sessionKey",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts#bench/clear:sessionKey",
+							create: _melite_estate_drafts_bench_clear_parameter_0$schema
+						}
+					}, {
+						name: "doc",
+						wire: "doc",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-drafts/types#BenchDoc",
+							create: _melite_estate_drafts_bench_clear_parameter_1$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-drafts/types#BenchClearRow",
+						create: _melite_estate_drafts_bench_clear_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/drafts/src/remote.ts",
+						"line": 1168,
 						"column": 9
 					}
 				},
@@ -6025,7 +6092,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1076,
+						"line": 1078,
 						"column": 9
 					}
 				},
@@ -6054,7 +6121,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 986,
+						"line": 988,
 						"column": 9
 					}
 				},
@@ -6092,7 +6159,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1189,
+						"line": 1204,
 						"column": 9
 					}
 				},
@@ -6130,7 +6197,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1133,
+						"line": 1135,
 						"column": 9
 					}
 				},
@@ -6168,7 +6235,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1153,
+						"line": 1155,
 						"column": 9
 					}
 				},
@@ -6206,7 +6273,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1174,
+						"line": 1189,
 						"column": 9
 					}
 				},
@@ -6244,7 +6311,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1163,
+						"line": 1178,
 						"column": 9
 					}
 				},
@@ -6273,7 +6340,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1004,
+						"line": 1006,
 						"column": 10
 					}
 				},
@@ -6311,7 +6378,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1217,
+						"line": 1232,
 						"column": 9
 					}
 				},
@@ -6349,7 +6416,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 1203,
+						"line": 1218,
 						"column": 9
 					}
 				},
@@ -6378,7 +6445,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 485,
+						"line": 487,
 						"column": 9
 					}
 				},
@@ -6398,7 +6465,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 479,
+						"line": 481,
 						"column": 9
 					}
 				},
@@ -6459,7 +6526,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/drafts/src/remote.ts",
-						"line": 575,
+						"line": 577,
 						"column": 9
 					}
 				}
@@ -10463,6 +10530,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			patch["model"] = model;
 			return patch;
 		}
+		/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
+		*  operator's live bench: a stage carrying quant:"" — born when a
+		*  model switch CLEARED the axis to '' — which the RUN door refused:
+		*  'unknown quant "" for model "z-image" variant "turbo" (known:
+		*  int8)'). A stated EMPTY selection is UNSTATED: the authoring
+		*  seat unsets the key instead of writing the empty string, so
+		*  compose defaults the cell. ONE pure decision, shared by the seed
+		*  (seedAxisValues omits) and the write (the drill's onSet unsets)
+		*  — the form's rendering is untouched (a missing axis key reads
+		*  as '' on screen). */
+		function axisUnset(name, v, spec) {
+			if (v !== "" || spec === null) return false;
+			return axisGroups(spec).some((g) => axisKey(g) === name);
+		}
 		/** Seed the axis keys for a fresh stage (the catalog's first-declared
 		*  law: each axis defaults to its FIRST composing row). Held values
 		*  win (a reopened stage never re-seeds). */
@@ -10479,7 +10560,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const composing = composingRows(spec, g, active);
 					active[g] = composing.length > 0 ? composing[0].id : "";
 				}
-				out[axisKey(g)] = active[g];
+				if (active[g] !== "") out[axisKey(g)] = active[g];
 			}
 			const heldModel = held["model"];
 			if (typeof heldModel !== "string" || heldModel === "") {
@@ -51385,6 +51466,13 @@ void main() {
 		async function removeStageWire(doc, sessionKey, signal) {
 			return await withRebase("remove-stage", doc, sessionKey, signal);
 		}
+		/** THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
+		*  — and a bench with a stranded wire had no way out but the wire).
+		*  The doc holds expect_rev only; the session key addresses the doc
+		*  the bar RENDERS (same law as remove). */
+		async function clearBenchWire(doc, sessionKey, signal) {
+			return await withRebase("clear", doc, sessionKey, signal);
+		}
 		/** The bench reorder verb caller (the drag-reorder path). Doc:
 		*  stage/to/expect_rev — `to` is the post-splice target index. */
 		async function reorderStageWire(doc, sessionKey, signal) {
@@ -60057,6 +60145,15 @@ void main() {
 				others
 			]);
 			const onSet = (0, react.useCallback)((name, v) => {
+				if (axisUnset(name, v, spec)) {
+					setUser((m) => {
+						if (!Object.prototype.hasOwnProperty.call(m, name)) return m;
+						const next = {};
+						for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val;
+						return next;
+					});
+					return;
+				}
 				setUser((m) => ({
 					...m,
 					[name]: v
@@ -60546,6 +60643,7 @@ void main() {
 			const [open, setOpen] = (0, react.useState)(null);
 			const [adding, setAdding] = (0, react.useState)(false);
 			const [reloadError, setReloadError] = (0, react.useState)(null);
+			const [clearing, setClearing] = (0, react.useState)(false);
 			const onOpen = (0, react.useCallback)((stage) => setOpen(stage), []);
 			const onClose = (0, react.useCallback)(() => setOpen(null), []);
 			const onAddCard = (0, react.useCallback)(() => setAdding(true), []);
@@ -60562,6 +60660,25 @@ void main() {
 					setReloadError(e instanceof Error ? e.message : "bench reload failed");
 				});
 			}, [sessionKey]);
+			const onClear = (0, react.useCallback)(() => {
+				if (!clearing) {
+					setClearing(true);
+					return;
+				}
+				setClearing(false);
+				setReloadError(null);
+				clearBenchWire({ expect_rev: live.rev }, sessionKey).then(() => {
+					setOpen(null);
+					reload();
+				}).catch((e) => {
+					setReloadError("clear refused — " + (e instanceof Error ? e.message : String(e)));
+				});
+			}, [
+				clearing,
+				live.rev,
+				sessionKey,
+				reload
+			]);
 			const onAdded = (0, react.useCallback)(() => {
 				setAdding(false);
 				reload();
@@ -60795,7 +60912,14 @@ void main() {
 				disabled: running || live.stages.length === 0,
 				title: running ? "the pass is running" : "run every card in bench order — one run per card, stop on failure",
 				onClick: onRun
-			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), " Play"), saving ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+			}, running ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconLoadingOutlineRegular, { size: 14 }) : (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.IconPlayOutlineRegular, { size: 14 }), " Play"), (0, react.createElement)("button", {
+				className: card_module_css_default$1.back,
+				type: "button",
+				disabled: running || live.stages.length === 0,
+				"data-bench-clear": clearing ? "confirm" : "idle",
+				title: clearing ? "confirm: every stage leaves the bench (undo restores them)" : "clear the whole bench — every stage out, one rev, undo restores them",
+				onClick: onClear
+			}, clearing ? "Confirm clear" : "Clear"), saving ? (0, react.createElement)("span", { className: card_module_css_default$1.groupBar }, (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Input, {
 				value: saveName,
 				placeholder: "flow name",
 				onChange: (e) => {
@@ -61518,4 +61642,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="db0a5a49c6fc512da72d0d2b786e5605ea6d4a1c";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="dfefa888e59a8cf4ff7bf2c2ef24a89a4a4636ee";

@@ -17,6 +17,7 @@ export type {
 } from "./remote.js";
 export type {
   BenchBlock,
+  BenchClearRow,
   BenchEnsureRow,
   BenchGetRow,
   BenchPatchRow,

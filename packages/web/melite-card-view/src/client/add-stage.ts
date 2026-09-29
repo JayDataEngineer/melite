@@ -23,6 +23,7 @@
  * moved bench costs one silent rebase, never a bricked tab.
  */
 import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-base/estate-remote'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 // THE SESSIONKEY LAW (stroke 81, the operator's burn): no verb may
 // default its session — a defaulted key is a latent misaddress (the
@@ -33,7 +34,9 @@ import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-ba
 
 /** The bench verbs this module rides (the namespace's method names —
  * typed keys on the generated client, so a typo is a compile error). */
-type BenchVerb = 'add-stage' | 'remove-stage' | 'reorder' | 'group' | 'ungroup'
+// 'clear' (2026-10-10, the operator's demanded clear-all) — the
+// nuclear verb: every stage out, one rev, undo restores all.
+type BenchVerb = 'add-stage' | 'remove-stage' | 'clear' | 'reorder' | 'group' | 'ungroup'
 
 /** The bench's CURRENT rev for one session — the CAS handle for a
  *  re-apply. Returns undefined when the read fails (the re-apply is
@@ -81,7 +84,12 @@ async function withRebase(
   const ns: BenchNamespace = estateRemote().bench
   const attempt = (expectRev: number): Promise<Record<string, unknown>> =>
     unwrapRemote(
-      ns[verb](sessionKey, { ...doc, expect_rev: expectRev }, signal),
+      // the verb union's answers differ per verb (BenchStageRow,
+      // BenchClearRow, …) — the caller reads the open record it
+      // needs, the same open-record law the generated client's own
+      // sugar rides (the cast is at the verb seam, not the rows).
+      ns[verb](sessionKey, { ...doc, expect_rev: expectRev }, signal) as unknown as
+        Promise<RemoteResult<Record<string, unknown>>>,
       'bench/' + verb,
     ).then((row) => row as unknown as Record<string, unknown>)
   const held = doc['expect_rev']
@@ -114,6 +122,14 @@ export async function addStageWire(doc: Record<string, unknown>, sessionKey: str
  *  wrong bench and refused 'stage not found'). */
 export async function removeStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
   return await withRebase('remove-stage', doc, sessionKey, signal)
+}
+
+/** THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
+ *  — and a bench with a stranded wire had no way out but the wire).
+ *  The doc holds expect_rev only; the session key addresses the doc
+ *  the bar RENDERS (same law as remove). */
+export async function clearBenchWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('clear', doc, sessionKey, signal)
 }
 
 /** The bench reorder verb caller (the drag-reorder path). Doc:

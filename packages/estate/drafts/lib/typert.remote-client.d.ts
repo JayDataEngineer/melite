@@ -4,11 +4,12 @@ import type {
   RemoteStreamHandle,
   TypertRemoteContribution,
 } from '@deepseek-ai/dsh-typert-protocol'
-import type { BenchDoc, BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, DraftGetRow, DraftListResult, DraftPatchRow, DraftStagePatch } from '@melite/estate-drafts/types'
+import type { BenchClearRow, BenchDoc, BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, DraftGetRow, DraftListResult, DraftPatchRow, DraftStagePatch } from '@melite/estate-drafts/types'
 
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface TypertRemoteNamespace$62656e6368 {
     'add-stage': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
+    clear: (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchClearRow>>
     ensure: (doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchEnsureRow>>
     get: (sessionKey: string, signal?: AbortSignal) => Promise<RemoteResult<BenchGetRow>>
     group: (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
@@ -27,6 +28,7 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
   }
   interface TypertRemoteMap {
     'bench/add-stage': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>
+    'bench/clear': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchClearRow>>
     'bench/ensure': (doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchEnsureRow>>
     'bench/get': (sessionKey: string, signal?: AbortSignal) => Promise<RemoteResult<BenchGetRow>>
     'bench/group': (sessionKey: string, doc: BenchDoc, signal?: AbortSignal) => Promise<RemoteResult<BenchStageRow>>

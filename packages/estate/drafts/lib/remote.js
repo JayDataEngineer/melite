@@ -39,7 +39,7 @@ export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 /** The wrap voice for a thrown store error: Error.message when the
  *  value carries one, else the string form. Every store/domain throw
  *  site constructs `new Error` (or an Error subclass), so the else
@@ -789,6 +789,7 @@ let BenchRemoteService = (() => {
     let _remoteExportPatch_decorators;
     let _remoteExportAddStage_decorators;
     let _remoteExportRemoveStage_decorators;
+    let _remoteExportClear_decorators;
     let _remoteExportRewire_decorators;
     let _remoteExportReorder_decorators;
     let _remoteExportGroup_decorators;
@@ -803,6 +804,7 @@ let BenchRemoteService = (() => {
             _remoteExportPatch_decorators = [Remote("patch")];
             _remoteExportAddStage_decorators = [Remote("add-stage")];
             _remoteExportRemoveStage_decorators = [Remote("remove-stage")];
+            _remoteExportClear_decorators = [Remote("clear")];
             _remoteExportRewire_decorators = [Remote("rewire")];
             _remoteExportReorder_decorators = [Remote("reorder")];
             _remoteExportGroup_decorators = [Remote("group")];
@@ -814,6 +816,7 @@ let BenchRemoteService = (() => {
             __esDecorate(this, null, _remoteExportPatch_decorators, { kind: "method", name: "remoteExportPatch", static: false, private: false, access: { has: obj => "remoteExportPatch" in obj, get: obj => obj.remoteExportPatch }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportAddStage_decorators, { kind: "method", name: "remoteExportAddStage", static: false, private: false, access: { has: obj => "remoteExportAddStage" in obj, get: obj => obj.remoteExportAddStage }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRemoveStage_decorators, { kind: "method", name: "remoteExportRemoveStage", static: false, private: false, access: { has: obj => "remoteExportRemoveStage" in obj, get: obj => obj.remoteExportRemoveStage }, metadata: _metadata }, null, _instanceExtraInitializers);
+            __esDecorate(this, null, _remoteExportClear_decorators, { kind: "method", name: "remoteExportClear", static: false, private: false, access: { has: obj => "remoteExportClear" in obj, get: obj => obj.remoteExportClear }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportRewire_decorators, { kind: "method", name: "remoteExportRewire", static: false, private: false, access: { has: obj => "remoteExportRewire" in obj, get: obj => obj.remoteExportRewire }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportReorder_decorators, { kind: "method", name: "remoteExportReorder", static: false, private: false, access: { has: obj => "remoteExportReorder" in obj, get: obj => obj.remoteExportReorder }, metadata: _metadata }, null, _instanceExtraInitializers);
             __esDecorate(this, null, _remoteExportGroup_decorators, { kind: "method", name: "remoteExportGroup", static: false, private: false, access: { has: obj => "remoteExportGroup" in obj, get: obj => obj.remoteExportGroup }, metadata: _metadata }, null, _instanceExtraInitializers);
@@ -958,6 +961,13 @@ let BenchRemoteService = (() => {
         async remoteExportRemoveStage(sessionKey, doc, signal) {
             return await this.removeStage(sessionKey, doc, signal);
         }
+        /** Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10,
+         *  "there is no clear all"): every stage out in one verb, one log
+         *  entry, undoable whole. The nuclear seat for a bench that is
+         *  itself the wound. */
+        async remoteExportClear(sessionKey, doc, signal) {
+            return await this.clear(sessionKey, doc, signal);
+        }
         /** Endpoint `bench/rewire` — set or clear one input binding. */
         async remoteExportRewire(sessionKey, doc, signal) {
             return await this.rewire(sessionKey, doc, signal);
@@ -1022,6 +1032,13 @@ let BenchRemoteService = (() => {
             signal.throwIfAborted();
             const drafts = await this.open(signal);
             const row = await removeStageBench(drafts, session, doc);
+            notifyBenchChange(session);
+            return row;
+        }
+        async clear(session, doc, signal) {
+            signal.throwIfAborted();
+            const drafts = await this.open(signal);
+            const row = await clearBench(drafts, session, doc);
             notifyBenchChange(session);
             return row;
         }

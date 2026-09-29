@@ -342,6 +342,39 @@ describe("THE TOLERANCE SEAMS (what this door does NOT own)", () => {
     expect(verdict).toEqual({ ok: true });
   });
 
+  // THE EMPTY-SELECTION LAW (2026-10-10, the operator's live bench:
+  // 'bench stage "s_0": card_compose phase 1: unknown quant "" for
+  // model "z-image" variant "turbo" (known: int8)') — a stated EMPTY
+  // variant/quant/model is not a selection, it is a form's unchosen
+  // control written as a value. The run door refuses it, so admitting
+  // it is the parity law's false admit. The write seat refuses HERE
+  // in the run door's own voice. A stated WRONG value still passes
+  // (the tolerance above: repairable, the run names it).
+  it("a stated EMPTY selection refuses at the write door, in the run door's voice", () => {
+    const verdict = svc.admitStageRelations("tts", {
+      model: "qwen3-tts",
+      variant: "",
+      text: "x",
+    });
+    expect(verdict.ok).toBe(false);
+    expect((verdict as { error: string }).error).toMatch(/variant/i);
+  });
+
+  it("an empty quant on a real variant refuses too (the operator's exact face)", () => {
+    const verdict = svc.admitStageRelations("image-gen", {
+      model: "z-image",
+      variant: "turbo",
+      quant: "",
+      prompt: "a cat",
+    });
+    expect(verdict.ok).toBe(false);
+    expect((verdict as { error: string }).error).toMatch(/quant/);
+  });
+
+  it("an ABSENT selection still passes (authoring tolerance — compose defaults it)", () => {
+    expect(svc.admitStageRelations("tts", { model: "qwen3-tts", text: "x" })).toEqual({ ok: true });
+  });
+
   it("a model-less row and an unknown card pass (not this seat's law)", () => {
     expect(svc.admitStageRelations("tts", { text: "x" })).toEqual({ ok: true });
     expect(svc.admitStageRelations("no-such-card", { model: "qwen3-tts" })).toEqual({ ok: true });

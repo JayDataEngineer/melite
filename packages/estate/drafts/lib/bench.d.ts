@@ -115,7 +115,7 @@ interface BenchEntry {
     rev: number;
     at: number;
     author: Author;
-    kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "undo";
+    kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
     stage?: string;
     summary?: string;
     /** Kind-specific inverse payload (undo applies it). */
@@ -222,7 +222,7 @@ export declare function strippedForAdmission(card: string, params: Record<string
  *  next run composes; inputs = the MERGED wiring; liveIds = the
  *  bench's stage ids after the write; selfId = the row's own id —
  *  self-wiring is a cycle, refused). Throws bench/* named. */
-export declare function admitWiring(row: Record<string, unknown>, params: Record<string, unknown>, inputs: Record<string, unknown>, liveIds: readonly string[], selfId: string, session: string): void;
+export declare function admitWiring(row: Record<string, unknown>, params: Record<string, unknown>, inputs: Record<string, unknown>, liveIds: readonly string[], selfId: string, session: string, tolerate?: ReadonlySet<string>): void;
 /** add_stage — append a card stage with optional wiring (the
  *  runner's input convention rides the row). */
 export declare function addStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchStageRow>;
@@ -257,6 +257,21 @@ export declare function ungroupBench(drafts: Domain<DraftsDomainSpec>, session: 
 /** remove_stage — splice one stage out (the inverse carries row +
  *  index for undo). */
 export declare function removeStageBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchStageRow>;
+/** The clear row. */
+export interface BenchClearRow {
+    readonly draft_id: string;
+    readonly session: string;
+    readonly rev: number;
+    readonly cleared: number;
+}
+/** clear — THE OPERATOR'S DEMANDED DOOR (2026-10-10, "there is no
+ *  clear all"): remove EVERY stage in one verb. No survivor can
+ *  dangle (there are no survivors), so the door admits on ANY bench
+ *  — including a wedged one no other verb can repair — and the ONE
+ *  log entry carries the full stages_before inverse (undo restores
+ *  everything). The nuclear seat: use it when the bench itself is
+ *  the wound. */
+export declare function clearBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>): Promise<BenchClearRow>;
 /** The rewire row. */
 export interface BenchRewireRow {
     readonly draft_id: string;

@@ -8,7 +8,7 @@ import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
-import { titleCaseId } from '@melite/card-base/spec'
+import { axisUnset, titleCaseId } from '@melite/card-base/spec'
 import { postManageAction } from '@melite/card-base/wire'
 import { createFilmSeam, FilmSeamBar, FilmSeamPlayer } from './filmSeam.tsx'
 import { PaintLeafCanvas } from '@melite/image-mask-studio/paint-canvas'
@@ -252,6 +252,24 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     })
   }, [spec, edgeMeta, candidates, others])
   const onSet = useCallback((name: string, v: unknown): void => {
+    // THE EMPTY-SELECTION LAW at the authoring boundary (2026-10-10,
+    // the operator's live bench: a stage carrying quant:"" — born by
+    // the model switch clearing an axis to '' — which the RUN door
+    // refused: 'unknown quant "" for model "z-image" variant "turbo"
+    // (known: int8)'). An axis key set to '' is UNSTATED, never a
+    // stated-empty selection: the key leaves the user map (the same
+    // gesture as the unset path below, whose name is the law) so
+    // compose defaults the cell. The form's own rendering is
+    // unchanged — a missing axis key reads as '' on screen.
+    if (axisUnset(name, v, spec)) {
+      setUser((m) => {
+        if (!Object.prototype.hasOwnProperty.call(m, name)) return m
+        const next: SpecValues = {}
+        for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val
+        return next
+      })
+      return
+    }
     setUser((m) => ({ ...m, [name]: v }))
     // THE SLOT FLUSH LAW (2026-09-15 — the operator's burn: "when I
     // wire an image from the previous flow, it doesn't stay after I

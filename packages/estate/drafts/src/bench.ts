@@ -147,7 +147,9 @@ interface BenchEntry {
   rev: number;
   at: number;
   author: Author;
-  kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "undo";
+  // "clear" (2026-10-10, the operator's demanded clear-all) — the
+  // nuclear verb: every stage out, one entry, inverse restores all.
+  kind: "patch" | "add_stage" | "remove_stage" | "rewire" | "reorder" | "group" | "ungroup" | "load" | "clear" | "undo";
   stage?: string;
   summary?: string;
   /** Kind-specific inverse payload (undo applies it). */
@@ -956,6 +958,12 @@ export async function patchBench(
       stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"])),
       stageId,
       session,
+      // THE UN-WEDGE LAW at the patch seat: patch touches params,
+      // never inputs — a pre-broken input ref (already dead before
+      // this patch) tolerates so the row's OTHER knobs stay
+      // editable; the merged params×inputs law still judges what
+      // the patch itself can create (an orphaned spell refuses).
+      toleratedByRow([st], liveIdsOf(stagesOf(loaded.doc))).get(stageId),
     );
     st["params"] = stored;
   }
@@ -1171,6 +1179,7 @@ export function admitWiring(
   liveIds: readonly string[],
   selfId: string,
   session: string,
+  tolerate?: ReadonlySet<string>,
 ): void {
   const spells: Set<string> = spellsOf(params);
   for (const [chan, ref] of Object.entries(inputs)) {
@@ -1190,7 +1199,14 @@ export function admitWiring(
           { session, stage: selfId, input: chan },
         );
       }
-      if (!liveIds.includes(up.stage)) {
+      // THE UN-WEDGE LAW (2026-10-10, the operator's wedge): this
+      // refusal fires only for a dangle the VERB CREATES. A ref the
+      // row already carried toward an ALREADY-DEAD stage (an
+      // interleaved write birthed it; no door admits creating it)
+      // passes through `tolerate` — the run door names it, and the
+      // cure doors (rewire-clear, remove, clear) must never refuse
+      // on the very state they cure. Creation still refuses LOUD.
+      if (!liveIds.includes(up.stage) && !(tolerate !== undefined && tolerate.has(up.stage))) {
         throw new RemoteError(
           "bench/wire-stage-not-found",
           "input '" + chan + "' wires stage '" + up.stage + "' — no such stage on the bench (live: " +
@@ -1221,7 +1237,71 @@ export function admitWiring(
  *  non-record rows filter out, and every surviving row carries a
  *  string id plus record params/inputs (the coerce arms at
  *  normalizeStages) — so no re-defense here. */
-function admitWiringList(stages: Array<Record<string, unknown>>, session: string): void {
+/** The live ids of a stage list (group children included — they
+ *  keep their stage ids under the compound). */
+function liveIdsOf(stages: Array<Record<string, unknown>>): Set<string> {
+  const out: Set<string> = new Set();
+  for (const r of stages) {
+    if (!isRecord(r)) continue;
+    out.add(String(r["id"] ?? ""));
+    if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
+      for (const child of r["children"] as unknown[]) {
+        if (isRecord(child)) out.add(String(child["id"] ?? ""));
+      }
+    }
+  }
+  return out;
+}
+
+/** The un-wedge law's tolerance table: for every row in the list
+ *  being JUDGED, the upstreams it wires that are absent from the
+ *  PRE-verb live set — refs the verb did not create (they were
+ *  already dead, or ride a restored snapshot the log itself
+ *  recorded) and must not be refused for. Keyed by row/child id.
+ *
+ *  The walk is over the JUDGED rows (not the pre rows): a verb
+ *  like clear leaves no pre rows at all, and undo restores rows
+ *  the pre state doesn't hold — the ref a row CARRIES is the
+ *  thing to classify, against what was live before the verb. A
+ *  ref newly introduced by a verb (rewire's `from`, a patch's
+ *  spell changes) never rides this table: those seats build their
+ *  tolerate sets from the PRE ROW's own inputs, so a fresh dead
+ *  target stays strict. */
+function toleratedByRow(
+  stages: Array<Record<string, unknown>>,
+  preLive: ReadonlySet<string>,
+): Map<string, Set<string>> {
+  const out: Map<string, Set<string>> = new Map();
+  const rowOf = (r: Record<string, unknown>, id: string): void => {
+    const inputs: unknown = r["inputs"];
+    if (!isRecord(inputs)) return;
+    for (const ref of Object.values(inputs)) {
+      const up: { stage?: string } = wireUpstreamOf(ref);
+      if (up.stage !== undefined && !preLive.has(up.stage)) {
+        const set: Set<string> | undefined = out.get(id);
+        if (set !== undefined) set.add(up.stage);
+        else out.set(id, new Set([up.stage]));
+      }
+    }
+  };
+  for (const r of stages) {
+    if (!isRecord(r)) continue;
+    const id: string = String(r["id"] ?? "");
+    rowOf(r, id);
+    if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
+      for (const child of r["children"] as unknown[]) {
+        if (isRecord(child)) rowOf(child, String(child["id"] ?? ""));
+      }
+    }
+  }
+  return out;
+}
+
+function admitWiringList(
+  stages: Array<Record<string, unknown>>,
+  session: string,
+  tolerate?: Map<string, Set<string>>,
+): void {
   // COERCED HERE (2026-10-10): a third caller — remove_stage's
   // survivor walk — feeds the LIVE doc list, whose rows predate the
   // normalize contract's guarantees whenever the doc predates it. A
@@ -1230,6 +1310,12 @@ function admitWiringList(stages: Array<Record<string, unknown>>, session: string
   const liveIds: string[] = stages
     .filter((r): boolean => isRecord(r))
     .map((r: Record<string, unknown>): string => String(r["id"] ?? ""));
+  // THE UN-WEDGE TOLERANCE: the map (per row id) carries the refs
+  // that pre-date the verb — the walk refuses only the danglings
+  // THIS verb creates; refs already dead before it pass through
+  // (the run door's voice — see admitWiring's tolerate law). Each
+  // seat states its own base for toleratedByRow.
+  const tolerateAll: Map<string, Set<string>> | undefined = tolerate;
   for (const r of stages) {
     if (!isRecord(r)) continue;
     // THE COMPOUND'S OWN WIRES ARE JUDGED (the bench audit's gap 7,
@@ -1246,6 +1332,7 @@ function admitWiringList(stages: Array<Record<string, unknown>>, session: string
       liveIds,
       String(r["id"] ?? ""),
       session,
+      tolerateAll?.get(String(r["id"] ?? "")),
     );
     if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
       for (const child of r["children"] as unknown[]) {
@@ -1257,6 +1344,7 @@ function admitWiringList(stages: Array<Record<string, unknown>>, session: string
           liveIds,
           String(child["id"] ?? ""),
           session,
+          tolerateAll?.get(String(child["id"] ?? "")),
         );
       }
     }
@@ -1567,7 +1655,9 @@ export async function groupBench(
     children: picked,
   };
   afterGroup.splice(Math.min(firstIndex, afterGroup.length), 0, compoundProbe);
-  admitWiringList(afterGroup, session);
+  // THE UN-WEDGE LAW at the group seat: rows keep the refs they
+  // carried; only the grouping changes. Judged against the pre live set.
+  admitWiringList(afterGroup, session, toleratedByRow(afterGroup, liveIdsOf(stages)));
   for (const row of picked) {
     // picked rows ARE stages members (built from the walk above) —
     // splice by identity, no guard.
@@ -1650,7 +1740,8 @@ export async function ungroupBench(
     (r: Record<string, unknown>): boolean => r !== compound,
   );
   afterSpill.splice(Math.min(idx, afterSpill.length), 0, ...rows);
-  admitWiringList(afterSpill, session);
+  // THE UN-WEDGE LAW at the ungroup seat (same as group's).
+  admitWiringList(afterSpill, session, toleratedByRow(afterSpill, liveIdsOf(stages)));
   stages.splice(idx, 1);
   stages.splice(Math.min(idx, stages.length), 0, ...rows);
   loaded.doc["stages"] = stages;
@@ -1705,6 +1796,18 @@ export async function removeStageBench(
   admitWiringList(
     stages.filter((_r: Record<string, unknown>, i: number): boolean => i !== idx),
     session,
+    // THE UN-WEDGE LAW at the remove seat: the survivors are judged
+    // against the PRE-removal live set — this removal refuses only
+    // the danglings IT creates (a survivor wiring the removed
+    // stage); a survivor's PRE-EXISTING dead ref (born by an
+    // interleaved write, refused by no door that admits creating
+    // it) passes through, else NO remove could ever land and the
+    // bench wedges (the operator's 2026-10-10 catch: "I can't even
+    // clear or delete from the bench").
+    toleratedByRow(
+      stages.filter((_r: Record<string, unknown>, i: number): boolean => i !== idx),
+      liveIdsOf(stages),
+    ),
   );
   stages.splice(idx, 1);
   loaded.doc["stages"] = stages;
@@ -1717,6 +1820,53 @@ export async function removeStageBench(
     inverse: { stage: stageId, row, index: idx },
   });
   return { draft_id: loaded.draftId, session, rev: newRev, stage: stageId };
+}
+
+const CLEAR_KEYS = ["expect_rev", "author"];
+
+/** The clear row. */
+export interface BenchClearRow {
+  readonly draft_id: string;
+  readonly session: string;
+  readonly rev: number;
+  readonly cleared: number;
+}
+
+/** clear — THE OPERATOR'S DEMANDED DOOR (2026-10-10, "there is no
+ *  clear all"): remove EVERY stage in one verb. No survivor can
+ *  dangle (there are no survivors), so the door admits on ANY bench
+ *  — including a wedged one no other verb can repair — and the ONE
+ *  log entry carries the full stages_before inverse (undo restores
+ *  everything). The nuclear seat: use it when the bench itself is
+ *  the wound. */
+export async function clearBench(
+  drafts: Domain<DraftsDomainSpec>,
+  session: string,
+  body: Record<string, unknown>,
+): Promise<BenchClearRow> {
+  refuseUnknown(body, CLEAR_KEYS);
+  const loaded: LoadedBench = await loadBench(drafts, session);
+  casCheck(loaded.block, body["expect_rev"], session);
+  const author: Author = authorOk(body["author"])
+    ? (body["author"] as Author)
+    : "agent";
+  const stages: Record<string, unknown>[] = stagesOf(loaded.doc);
+  const before: Record<string, unknown>[] = [...stages];
+  stages.length = 0;
+  loaded.doc["stages"] = stages;
+  syncIntent(loaded.doc, before, stages);
+  const newRev: number = await appendAndSave(drafts, loaded, {
+    author,
+    kind: "clear",
+    summary: "clear " + String(before.length) + " stages",
+    inverse: { stages_before: before },
+  });
+  return {
+    draft_id: loaded.draftId,
+    session,
+    rev: newRev,
+    cleared: before.length,
+  };
 }
 
 const REWIRE_KEYS = ["stage", "input", "from", "expect_rev", "author"];
@@ -1792,6 +1942,18 @@ export async function rewireBench(
     stagesOf(loaded.doc).map((r: Record<string, unknown>): string => String(r["id"])),
     stageId,
     session,
+    // THE UN-WEDGE LAW at the rewire seat: the tolerate table is
+    // built from the PRE ROW's own inputs — a ref the rewire
+    // NEWLY sets (its `from`) never rides it, so wiring a dead
+    // stage still refuses (the phantom-wire cure stands), while
+    // the row's other pre-broken inputs tolerate so rewiring one
+    // wire on a wounded row never wedges.
+    toleratedByRow(
+      isRecord(loaded.doc["stages"]) && Array.isArray(loaded.doc["stages"])
+        ? [st]
+        : [st],
+      liveIdsOf(stagesOf(loaded.doc)),
+    ).get(stageId),
   );
   st["inputs"] = inputs;
   const inverse: Record<string, unknown> = { stage: stageId, input };
@@ -1896,7 +2058,38 @@ export async function undoBench(
   // snapshot reinserted rows that wired a stage no longer on the
   // bench. One walk over the RESULT covers every arm at once — the
   // survivor law remove established, applied to the repair door.
-  admitWiringList(stagesOf(undoDoc), session);
+  // THE UN-WEDGE LAW rides here too (2026-10-10, the operator's
+  // wedge), with the resurrection line drawn by ROW, not by ref: a
+  // row that was already on the bench before the undo (or rides an
+  // undone CLEAR's recorded snapshot — clear's promise is that undo
+  // restores EVERYTHING, wounds included; the run door names them,
+  // the cure doors exist) keeps its pre-existing dead refs. A row
+  // the undo RESURRECTS through any other arm (remove's inverse,
+  // group's spill) judges STRICT — the phantom the forward doors
+  // refuse must not launder back through undo (gap 5 stands). Refs
+  // the undo itself orphans (a stage live before, gone after) still
+  // refuse LOUD.
+  (() => {
+    const baseRows: Array<Record<string, unknown>> = [...stagesBefore];
+    for (const e of targets) {
+      const inv: Record<string, unknown> = (e as { inverse?: Record<string, unknown> }).inverse ?? {};
+      if (e.kind === "clear" && Array.isArray(inv["stages_before"])) {
+        for (const row of inv["stages_before"] as unknown[]) {
+          if (isRecord(row)) baseRows.push(row);
+        }
+      }
+    }
+    const baseIds: Set<string> = liveIdsOf(baseRows);
+    const restored = stagesOf(undoDoc);
+    admitWiringList(
+      restored,
+      session,
+      toleratedByRow(
+        restored.filter((r: Record<string, unknown>): boolean => baseIds.has(String(r["id"] ?? ""))),
+        baseIds,
+      ),
+    );
+  })();
   loaded.doc = undoDoc;
   const undone: number[] = targets
     .map((e: BenchEntry): number => e.rev)
@@ -2106,11 +2299,11 @@ function applyInverse(
     st["inputs"] = inputs;
     return;
   }
-  // load: the coarse fallback — restore the snapshot. (Undo entries
-  // are never walk candidates — the skip at the top guarantees it —
-  // so no "undo" disjunct here.)
+  // load/clear: the coarse fallbacks — restore the snapshot. (Undo
+  // entries are never walk candidates — the skip at the top
+  // guarantees it — so no "undo" disjunct here.)
   const snapshot: unknown =
-    e.kind === "load" ? inv["stages_before"] : undefined;
+    e.kind === "load" || e.kind === "clear" ? inv["stages_before"] : undefined;
   if (Array.isArray(snapshot)) {
     // THE SNAPSHOT IS JUDGED (the audit's GAP 4, the load arm): a
     // coarse fallback that assigns stages wholesale re-enters every

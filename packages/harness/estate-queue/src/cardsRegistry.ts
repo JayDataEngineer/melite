@@ -774,6 +774,26 @@ export class CardRegistryService extends Service {
       // admit the parity law forbids). It refuses HERE, at the
       // write seat, in the same voice the run door speaks.
       if (e instanceof EnvelopeRefusal) return e.message;
+      // THE EMPTY-SELECTION LAW (2026-10-10, the operator's live
+      // bench: 'bench stage "s_0": card_compose phase 1: unknown
+      // quant "" for model "z-image" variant "turbo" (known: int8)')
+      // — a stated EMPTY variant/quant/model is not a selection, it
+      // is an authoring surface's unchosen control written as a
+      // value. The run door refuses it, so admitting it here is the
+      // false admit the parity law forbids (the envelope GAP-1
+      // shape, one axis over). Refuse HERE, in the run door's own
+      // voice — one spelling, both seats. A stated WRONG selection
+      // still passes (the tolerance below: repairable, the run
+      // names it); an ABSENT one still passes (compose defaults
+      // it). The form's own half of the law: seedAxisValues omits
+      // an empty axis key (card-base/src/spec.ts) so the GUI never
+      // authors the empty string in the first place.
+      if (
+        e instanceof CardArmError &&
+        (params["variant"] === "" || params["quant"] === "" || params["model"] === "")
+      ) {
+        return e.message;
+      }
       // selection/dangling failures keep the run door's voice —
       // this seat judges only the DECL's own words
       return null;

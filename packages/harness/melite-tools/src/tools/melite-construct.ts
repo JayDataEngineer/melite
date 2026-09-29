@@ -371,14 +371,14 @@ export function meliteConstruct(
       + 'inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card\'s declared ports, never files: '
       + 'inputs {image1: {stage: "s_0", output: "default"}} AND params {image1: "$image1"} — the $spell consumes the channel, the queue resolves it at run time; to chain '
       + 'the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card\'s ports — '
-      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | '
+      + 'state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | '
       + '{initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile '
       + 'check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with '
       + 'current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.',
     parameters: {
       verb: {
         type: 'string',
-        description: 'read | load | patch | add_stage | remove_stage | rewire | undo | validate.',
+        description: 'read | load | patch | add_stage | remove_stage | clear | rewire | undo | validate.',
       },
       stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
       card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
@@ -612,6 +612,15 @@ export function meliteConstruct(
             { stage: a.stage, expect_rev: a.expect_rev }, signal)
           return out({ rev: r.rev, stage: r.stage })
         }
+        if (verb === 'clear') {
+          // THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO
+          // CLEAR ALL"): every stage out in one verb, one log entry,
+          // undo restores everything. The cure for a bench that is
+          // itself the wound (a stranded wire no repair verb could
+          // reach before this law).
+          const r = await postBenchVerb(request, bench, 'clear', { expect_rev: a.expect_rev }, signal)
+          return out({ rev: r.rev, cleared: r.cleared })
+        }
         if (verb === 'rewire') {
           const r = await postBenchVerb(request, bench, 'rewire',
             {
@@ -632,7 +641,7 @@ export function meliteConstruct(
         }
         return jsonClean<ConstructResult>({
           verb, bench, ok: false,
-          error: 'unknown verb — want read|load|patch|add_stage|remove_stage|rewire|undo|validate',
+          error: 'unknown verb — want read|load|patch|add_stage|remove_stage|clear|rewire|undo|validate',
           error_kind: 'args',
         })
       } catch (e) {

@@ -2,7 +2,7 @@ import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { STAGE_PATCH_KEYS, type StagePatchKey } from "@melite/contracts/benchStage";
 export { STAGE_PATCH_KEYS, type StagePatchKey };
-import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow } from "./bench.js";
+import type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchClearRow, BenchStageRow, BenchUndoRow } from "./bench.js";
 export type { BenchEnsureRow, BenchGetRow, BenchPatchRow, BenchReorderRow, BenchRewireRow, BenchStageRow, BenchUndoRow, } from "./bench.js";
 /** Endpoint `drafts/patch` answer — the old door's delivered envelope:
  *  a missing doc/stage is delivered:false + reason (a DOMAIN outcome,
@@ -249,6 +249,11 @@ export declare class BenchRemoteService extends TypertRemoteService {
     remoteExportAddStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     /** Endpoint `bench/remove-stage` — splice one stage out. */
     remoteExportRemoveStage(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    /** Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10,
+     *  "there is no clear all"): every stage out in one verb, one log
+     *  entry, undoable whole. The nuclear seat for a bench that is
+     *  itself the wound. */
+    remoteExportClear(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchClearRow>;
     /** Endpoint `bench/rewire` — set or clear one input binding. */
     remoteExportRewire(sessionKey: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchRewireRow>;
     /** Endpoint `bench/reorder` — move one stage to a new index (the
@@ -268,6 +273,7 @@ export declare class BenchRemoteService extends TypertRemoteService {
     patch(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchPatchRow>;
     addStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
     removeStage(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchStageRow>;
+    clear(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchClearRow>;
     rewire(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchRewireRow>;
     undo(session: string, doc: BenchDoc, signal: AbortSignal): Promise<BenchUndoRow>;
 }

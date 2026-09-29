@@ -29,6 +29,7 @@ import {
   getBench,
   groupBench,
   patchBench,
+  clearBench,
   removeStageBench,
   reorderBench,
   rewireBench,
@@ -41,6 +42,7 @@ import type {
   BenchPatchRow,
   BenchReorderRow,
   BenchRewireRow,
+  BenchClearRow,
   BenchStageRow,
   BenchUndoRow,
 } from "./bench.js";
@@ -1158,6 +1160,19 @@ export class BenchRemoteService extends TypertRemoteService {
     return await this.removeStage(sessionKey, doc, signal);
   }
 
+  /** Endpoint `bench/clear` — THE OPERATOR'S CLEAR ALL (2026-10-10,
+   *  "there is no clear all"): every stage out in one verb, one log
+   *  entry, undoable whole. The nuclear seat for a bench that is
+   *  itself the wound. */
+  @Remote("clear")
+  async remoteExportClear(
+    sessionKey: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchClearRow> {
+    return await this.clear(sessionKey, doc, signal);
+  }
+
   /** Endpoint `bench/rewire` — set or clear one input binding. */
   @Remote("rewire")
   async remoteExportRewire(
@@ -1273,6 +1288,18 @@ export class BenchRemoteService extends TypertRemoteService {
     signal.throwIfAborted();
     const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
     const row = await removeStageBench(drafts, session, doc);
+    notifyBenchChange(session);
+    return row;
+  }
+
+  async clear(
+    session: string,
+    doc: BenchDoc,
+    signal: AbortSignal,
+  ): Promise<BenchClearRow> {
+    signal.throwIfAborted();
+    const drafts: Domain<DraftsDomainSpec> = await this.open(signal);
+    const row = await clearBench(drafts, session, doc);
     notifyBenchChange(session);
     return row;
   }

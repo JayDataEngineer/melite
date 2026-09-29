@@ -12,7 +12,7 @@ import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
 import { patchStageParams } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
 import { fetchBench, uploadInputFile, benchSessionKey } from './cards-resource.ts'
-import { addStageWire, groupStagesWire, reorderStageWire } from './add-stage.ts'
+import { addStageWire, clearBenchWire, groupStagesWire, reorderStageWire } from './add-stage.ts'
 import { CardZoomOverlay } from './zoom.tsx'
 import type { StageViewOwnerProps } from './types.ts'
 import type { BenchStageView, CardsBenchValue } from './cards-resource.ts'
@@ -68,6 +68,12 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
   const [open, setOpen] = useState<BenchStageView | null>(null)
   const [adding, setAdding] = useState(false)
   const [reloadError, setReloadError] = useState<string | null>(null)
+  // THE CLEAR ALL (2026-10-10, the operator's demand, two-step like
+  // every destructive control here): the button arms, the second
+  // press clears. No native confirm() (it is a blocking dialog with
+  // no voice of ours and no testable shape) — the chrome states the
+  // consequence and the door is one click away.
+  const [clearing, setClearing] = useState(false)
   const onOpen = useCallback((stage: BenchStageView): void => setOpen(stage), [])
   const onClose = useCallback((): void => setOpen(null), [])
   const onAddCard = useCallback((): void => setAdding(true), [])
@@ -90,6 +96,15 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
       })
       .catch((e: unknown) => { setReloadError(e instanceof Error ? e.message : 'bench reload failed') })
   }, [sessionKey])
+  const onClear = useCallback((): void => {
+    if (!clearing) { setClearing(true); return }
+    setClearing(false)
+    setReloadError(null)
+    clearBenchWire({ expect_rev: live.rev }, sessionKey)
+      .then(() => { setOpen(null); reload() })
+      .catch((e: unknown) => { setReloadError('clear refused — ' + (e instanceof Error ? e.message : String(e))) })
+  }, [clearing, live.rev, sessionKey, reload])
+
   const onAdded = useCallback((): void => {
     setAdding(false)
     reload()
@@ -342,6 +357,19 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
               title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
               onClick: onRun,
             }, running ? h(IconLoadingOutlineRegular, { size: 14 }) : h(IconPlayOutlineRegular, { size: 14 }), ' Play'),
+            // THE CLEAR ALL (2026-10-10): every stage out, one rev,
+            // undo restores all. The wedge cure — a bench whose wiring
+            // no repair verb could reach clears here.
+            h('button', {
+              className: css.back,
+              type: 'button',
+              disabled: running || live.stages.length === 0,
+              'data-bench-clear': clearing ? 'confirm' : 'idle',
+              title: clearing
+                ? 'confirm: every stage leaves the bench (undo restores them)'
+                : 'clear the whole bench — every stage out, one rev, undo restores them',
+              onClick: onClear,
+            }, clearing ? 'Confirm clear' : 'Clear'),
             saving
               ? h('span', { className: css.groupBar },
                   h(Input, { value: saveName, placeholder: 'flow name', onChange: (e: { target: { value: string } }) => { setSaveName(e.target.value) } }),

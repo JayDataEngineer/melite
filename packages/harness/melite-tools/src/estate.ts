@@ -74,6 +74,9 @@ interface Seats {
     patch(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     addStage(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     removeStage(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
+    // THE CLEAR ALL (2026-10-10, the operator's demanded door) — the
+    // drafts bench's clear verb, beside removeStage.
+    clear(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     rewire(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
     undo(session: string, doc: Record<string, unknown>, signal?: AbortSignal): Promise<unknown>
   }
@@ -245,7 +248,9 @@ async function trySeats(
   // routes to the matching seat method (the door's URL grammar is
   // the tools' lane grammar — the remote methods are 1:1 beneath).
   if (method === 'POST') {
-    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|rewire|undo)$/.exec(path)
+    // "clear" (2026-10-10, the operator's demanded clear-all) — the
+    // nuclear arm: every stage out, one log entry, undoable whole.
+    const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|clear|rewire|undo)$/.exec(path)
     if (arm !== null) {
       if (seats.benchRemote === undefined) return undefined
       if (body === undefined || typeof body !== 'object' || body === null) {
@@ -257,6 +262,7 @@ async function trySeats(
         case 'patch': return seats.benchRemote.patch(session, doc, signal)
         case 'add_stage': return seats.benchRemote.addStage(session, doc, signal)
         case 'remove_stage': return seats.benchRemote.removeStage(session, doc, signal)
+        case 'clear': return seats.benchRemote.clear(session, doc, signal)
         case 'rewire': return seats.benchRemote.rewire(session, doc, signal)
         case 'undo': return seats.benchRemote.undo(session, doc, signal)
       }

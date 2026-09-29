@@ -358,6 +358,20 @@ test('modelSwitchPatch: an axis with nothing composing rests empty', () => {
   expect(modelSwitchPatch(spec, 'krea-2')).toEqual({ model: 'krea-2', variant: 'r-hd', precision: '' })
 })
 
+// THE EMPTY-SELECTION LAW's form half (2026-10-10): an axis with
+// no composing row is UNSTATED — the seed OMITS the key. The old
+// seed wrote '' and the add door wrote that as the stage's params:
+// a bench stage born with quant:"", which the run door refuses
+// ('unknown quant "" ... (known: int8)' — the operator's live face).
+test('seedAxisValues: an axis with no composing row OMITS its key (never a stated "")', () => {
+  const sparse: FormSpecDoc = {
+    form: 'x',
+    features: { variant_groups: { Precision: {} } },
+    variants: [],
+  } as unknown as FormSpecDoc
+  expect(seedAxisValues(sparse, {})).toEqual({});
+});
+
 test('seedAxisValues: first-composing rows seed; the held always win; the family stamps the model', () => {
   const spec = doc()
   expect(seedAxisValues(spec, {})).toEqual({ variant: 'r-hd', quant: 'q-fp8', model: 'krea-2' })
@@ -368,13 +382,11 @@ test('seedAxisValues: first-composing rows seed; the held always win; the family
   expect(seedAxisValues(spec, { model: 7 })).toMatchObject({ model: 'krea-2' })
   // no axes, no seeds
   expect(seedAxisValues({ form: 'x' }, {})).toEqual({})
-  // an axis with nothing composing rests empty
-  const sparse: FormSpecDoc = {
-    form: 'x',
-    features: { variant_groups: { Precision: {} } },
-    variants: [],
-  } as unknown as FormSpecDoc
-  expect(seedAxisValues(sparse, {})).toEqual({ precision: '' })
+  // an axis with nothing composing stays UNSTATED — the key is
+  // OMITTED (2026-10-10's empty-selection law: this arm used to
+  // expect { precision: '' }, and that stated-empty is what the add
+  // door wrote into a stage's params — the operator's live bench
+  // refused at Run: 'unknown quant "" ... (known: int8)')
   // a familyless spec with a non-string held model stamps no model
   expect(seedAxisValues({ form: 'x' }, { model: 7 })).toEqual({})
 })

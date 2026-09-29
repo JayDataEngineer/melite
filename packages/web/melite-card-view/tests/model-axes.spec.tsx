@@ -94,9 +94,14 @@ test('axisPickPatch: the visible stamps ride; the route NEVER lands in the user 
 
 test('seedAxisValues: the first-declared law; held values win on reopen', () => {
   expect(seedAxisValues(KREA, {})).toEqual({ variant: 'turbo', quant: 'int8', model: 'krea-2' })
-  // a reopened stage holds its axes — no re-seed, model untouched
-  expect(seedAxisValues(KREA, { variant: 'raw', quant: '', model: 'krea-2-raw' }))
-    .toEqual({ variant: 'raw', quant: '' })
+  // a reopened stage holds its axes — no re-seed, model untouched.
+  // The 'raw' variant declares no quant cells, so the quant axis is
+  // UNSTATED and the seed OMITS the key (2026-10-10's empty-selection
+  // law: this arm used to expect quant: '' — the stated-empty that
+  // the add door wrote into a stage's params and the run door
+  // refused, 'unknown quant "" for model "z-image" variant "turbo"')
+  expect(seedAxisValues(KREA, { variant: 'raw', model: 'krea-2-raw' }))
+    .toEqual({ variant: 'raw' })
   // a matrix-less spec seeds nothing
   expect(seedAxisValues({ ...KREA, variants: [] }, {})).toEqual({})
 })

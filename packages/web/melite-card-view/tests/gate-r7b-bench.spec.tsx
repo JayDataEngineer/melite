@@ -140,6 +140,28 @@ function three(): BenchStageView[] {
   ];
 }
 
+// THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
+// — and a bench with a stranded wire had no way out but the wire).
+describe("the clear control — the demanded door, two-step", () => {
+  test("the chrome carries a Clear control that arms before it fires", async () => {
+    mountView(three());
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    const clear = screen.getByRole("button", { name: /clear/i });
+    // ONE press arms, never fires (the consequence is named, the
+    // destructive door is a second click away).
+    fireEvent.click(clear);
+    expect(calls().filter((c) => c.method === "bench/clear")).toHaveLength(0);
+    const confirm = screen.getByRole("button", { name: /confirm clear/i });
+    fireEvent.click(confirm);
+    await waitFor(() => { expect(calls().filter((c) => c.method === "bench/clear")).toHaveLength(1) });
+    // the fired call rides the bench's live rev (the CAS handle)
+    const fired = calls().find((c) => c.method === "bench/clear");
+    expect(fired?.args["doc"]).toMatchObject({ expect_rev: expect.any(Number) });
+    // and the grid empties from the reloaded truth
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(0) });
+  });
+});
+
 describe("the reload's foreign voice — a down wire still names the face", () => {
   test("a foreign bench/get throw voices 'bench reload failed' (never a throw past the tick)", async () => {
     const { rerender } = mountView(three(), { throws: [{ method: "bench/get", value: "kablam" }] });

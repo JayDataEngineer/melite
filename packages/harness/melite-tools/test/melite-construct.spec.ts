@@ -398,6 +398,27 @@ describe('melite_construct mutations — every verb', () => {
     assert.deepEqual(seen[0]!.body, { stage: 's1', expect_rev: 7 })
   })
 
+  // THE CLEAR ALL (2026-10-10, the operator: "THERE IS NO CLEAR ALL"
+  // — the bench wedge left no way out but the wedge).
+  test('clear empties the bench in one verb (the demanded clear all)', async () => {
+    const { seen, request } = mockRequest((method, path) => {
+      if (method === 'POST' && path === '/v1/bench/main/clear') return { rev: 12, cleared: 6 }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute({ verb: 'clear', expect_rev: 11 }, exec()) as Record<string, unknown>
+    assert.equal(out.cleared, 6)
+    assert.equal(out.rev, 12)
+    // no stage arg: the verb is the bench itself
+    assert.deepEqual(seen[0]!.body, { expect_rev: 11 })
+  })
+
+  test('the verb table ADVERTISES clear (an unlisted door is a door the agent never finds)', () => {
+    const tool = meliteConstruct(stubRequest())
+    const schema = JSON.stringify(tool.parameters ?? {})
+    assert.match(schema, /clear/)
+  })
+
   test('rewire sets a binding', async () => {
     const { seen, request } = mockRequest((method, path) => {
       if (method === 'POST' && path === '/v1/bench/main/rewire') return { rev: 9, stage: 's1', input: 'in' }
