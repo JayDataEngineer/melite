@@ -162,6 +162,15 @@ data/runtime/anny-commercial/sam-3d-body/
 # gitlink (exactly what commit 5dc013e4 did by accident).
 data/runtime/comfyui/
 
+# no DSH runtime or DSH home may ever live in-tree (ledger li-bn):
+# the provisioner owns runtimes (pin/dsh-version) and lane homes
+# (~/.dsh-dev). data/runtime/dsh was a hand-provisioned pnpm tree a
+# rogue drop-in exec'd beside the pin; dsh-harness-home held a FORKED
+# credential store. The !data/**/ traversal re-include left both one
+# `git add -A` away from committing machine secrets.
+data/runtime/dsh/
+data/runtime/dsh-harness-home/
+
 # Platform tier vendored plugins: lib/ is BUILT per-host by
 # plugins/gateway/scripts/link-vendored-platform.sh (harness layout), never committed
 vendor/cordis_plugins/*/lib/
