@@ -18,15 +18,16 @@
 // off the wire — the row's params must carry the typed words. No
 // compose, no engine: the receipt is the DOC.
 import { expect, test } from '@playwright/test'
-import { expectNoPageErrors, openAConversation, openCardsWithBench, settle, STUDIO_URL } from './tour.ts'
+import { collectPageErrors, expectNoPageErrors, openAConversation, openCardsWithBench, readBenchRow, settle, STUDIO_URL } from './tour.ts'
 
 test.skip(!STUDIO_URL, 'E2E_STUDIO_URL (token-authenticated shell URL) is not set — the browser-plane wall needs a live host')
 
 test('a typed prompt RIDES the bench row (the lane can never say "prompt is not stated")', async ({ page }) => {
-  const errors: string[] = []
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  // THE SHARED LEDGER, not a local copy: the boot-race pending frames
+  // (503 estate/pending, the host's own documented answer while the
+  // estate composition activates) are classified by code, and the
+  // classification is awaited before the assertion.
+  const errors: string[] = collectPageErrors(page)
 
   await settle(page)
   const { opened, sessionKey } = await openAConversation(page)
@@ -60,10 +61,11 @@ test('a typed prompt RIDES the bench row (the lane can never say "prompt is not 
   await page.waitForTimeout(2_500)
 
   // THE RECEIPT, off the wire: the bench row carries the typed words.
-  const read = await page.evaluate(async (key: string) => {
-    const res = await fetch('/v1/bench/' + encodeURIComponent(key), { headers: { accept: 'application/json' } })
-    return await res.text()
-  }, sessionKey)
+  // Past the activation grace (a freshly booted host answers every
+  // seat door 503 estate/pending for its first 120s — measured 2026-09-29,
+  // which is exactly where this wall used to die and call the boot race
+  // a contract failure).
+  const read = await readBenchRow(page, sessionKey)
   expect(read, 'the bench read answers').toContain(words)
 
   await expectNoPageErrors(page, errors)

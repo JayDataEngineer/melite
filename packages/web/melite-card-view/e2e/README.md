@@ -76,6 +76,73 @@ The LAWS the script encodes (why each step exists):
 returns for every fresh browser context even on a configured host —
 so the spec itself dismisses it via tour.ts's `dismissOnboarding`.)
 
+- **THE SEAT BOOTS THE TRACKED SEED ONLY** (2026-10-12, the
+  moss-404 lesson): the runtime dev profile
+  (`dsh-harness-home/melite-test`) arms the G2 hot door through
+  `cordis.patch.yml` — its patch watcher can mount→dispose→remount
+  the row mid-run, and the every-card wall boards a card the estate
+  then un-serves under it (form-spec 404s land as page errors; the
+  defs refresh blanks neighbor axes). A wall seat asserts STABLE
+  serving: it boots the committed seed-only profile. Operator pins
+  ride `settings.yaml` (copied separately), never the profile.
+
+## The every-card wall (cards-catalog.spec.ts, 2026-10-12)
+
+The operator's law — "you do Playwright, you test every last card,
+multiple variations" — is two tests that read the LIVE catalog (never
+a baked list) and drive EVERY card through the real lane UI:
+
+- **EVERY CARD boards and opens its declared face**: reads
+  `/v1/forms` + `/v1/model-catalog` (the same doors the GUI reads),
+  mints a fresh conversation (the mint names the bench key), boards
+  every card (the `mcp` card's seat refusal is PINNED by voice —
+  never skipped), then drives each tile: the drill must open and
+  render a declared face — the model axis, the studio preview seat,
+  or the custom studio's own controls (motion renders sliders/seed
+  with NO model axis; a `data-status` filter or a Model-select-only
+  assert both miss real faces). A zero-error page ledger closes it.
+- **EVERY MULTI-FAMILY CARD switches its family axis**: per card,
+  the drilled form must offer every declared family on SOME select
+  (usually the Model select; matrix/studio cards may seat families
+  on a group axis), and each switch must refetch that family's own
+  form-spec.
+
+THE DOM LAWS the wall encodes (each probed, not guessed):
+
+- **THE STABLE CATALOG READ**: a lane booted off a runtime profile
+  arms hot doors whose patch watcher can mount→dispose→remount at
+  boot — a mid-flap `/v1/forms` read boards a card that retracts
+  under the sweep (the moss 404, CI seat 2026-10-12). The wall reads
+  the catalog twice and refuses to drive until two reads NAME THE
+  SAME cards and families; a catalog that never stabilizes fails
+  loud with the flapping rows named. Never a silent trim.
+- **THE DRILL'S CLOSE SEAT** is the zoom bar's ✕ Close button
+  (`aria-label="Collapse card"`). A backdrop-corner click can land
+  inside the scroll container (target ≠ currentTarget — no close),
+  and a force-clicked covered tile is hit-test luck. A drill left
+  up makes later tile clicks land on the overlay: the drill never
+  retargets and every assertion reads the WRONG card's face.
+- **TILES BY CARD ID, NOT POSITION**: stage tiles share `tileInner`
+  with the +Add cell (filter `:not([aria-label="Add a card"])`),
+  and `data-status` is absent on drafts. The tile's own text carries
+  the card id — filter by it, or drive the bench's newest tile.
+- **UNPROVISIONED MODEL FILES ARE NOT PAGE ERRORS**: a custom
+  studio probes its family's provision doors on open (motion →
+  `/v1/models/kimodo/provisions/*.npz`) and a lane without that
+  model answers 502 — the DECLARED state. The ledger drops exactly
+  the provisions-door 502 pattern; every other ≥400 stays loud.
+
+## The law pins (cards-variations.spec.ts)
+
+The operator's three named breaks held at the BROWSER plane: the
+image-edit cap face (2511 admits exactly 3, 2.1 admits 16, read off
+the form-spec the page itself fetched), the ONE lane-warn strip
+(each required law voiced exactly once — the double-red cure), and
+krea-2's variant envelopes served on the wire the browser reads
+(turbo 4–8/1–2, raw 30–60/2–6, projection AND verbatim envelope),
+plus the variant-axis reseed on every model switch (the stale
+variant cure) and the model-switch refetch receipt.
+
 ## Run
 
 ```sh

@@ -83,12 +83,18 @@ describe('the browser-wall CI seat (scripts/e2e-studio-lane.sh)', () => {
     }
   })
 
-  it('the lane script prefers the runtime seed, falls to the tracked seed, and rewrites links at boot', () => {
-    // the preference order + the absolute-rewrite (relative links are
-    // seed-depth-correct; the throwaway home sits at another depth)
-    assert.match(text, /if \[ -d "\$PROFILE_SRC" \]; then\n\s+SEED_DIR="\$PROFILE_SRC"\n\s*elif \[ -d "\$TRACKED_SEED" \]; then/)
+  it('the lane script boots the TRACKED seed only, and rewrites links at boot', () => {
+    // THE SEAT'S SEED IS THE TRACKED SEED (2026-10-12, the moss-404
+    // lesson): the runtime dev profile arms the G2 hot door through
+    // cordis.patch.yml — its patch watcher can mount→dispose→remount
+    // the row mid-run and the every-card wall boards a card the
+    // estate then un-serves under it (form-spec 404s land as page
+    // errors; the defs refresh blanks neighbor axes). A wall seat
+    // asserts STABLE serving: committed seed-only profile, never the
+    // runtime one. Operator pins ride settings.yaml, not the profile.
+    assert.doesNotMatch(text, /PROFILE_SRC/, 'no runtime-profile preference remains')
+    assert.match(text, /if \[ -d "\$TRACKED_SEED" \]; then\n\s+SEED_DIR="\$TRACKED_SEED"/)
     assert.match(text, /os\.path\.isabs\(ref\[5:\]\)/, 'the boot rewrites relative links to machine-absolute')
-    assert.match(text, /E2E_STUDIO_PROFILE_SRC/, 'the seed source is overridable (the prove-boot path)')
     // the workspace row is REPO_ROOT-derived, never a machine hardcode
     assert.doesNotMatch(text, /"path": "\/home\//, 'no absolute machine path in the workspace seed')
     assert.match(text, /__REPO_ROOT__/)

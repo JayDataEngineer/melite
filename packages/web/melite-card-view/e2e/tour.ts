@@ -35,25 +35,119 @@ import { expect, type Page } from '@playwright/test'
 
 export const STUDIO_URL = process.env.E2E_STUDIO_URL ?? ''
 
-/** Dismiss the first-run API-key onboarding dialog when present. */
+/** The composer the mint types into: the reachability probe that
+ *  PROVES the masking dialogs are gone. A locator RESOLVING is not
+ *  reachability — under a mask Playwright reports the intercepting
+ *  subtree instead of clicking (2026-10-11: the composer resolved
+ *  fine and the click still timed out on the API-key input). */
+function composerOf(page: Page) {
+  return page.getByRole('textbox', { name: /Describe what you want to build/i }).first()
+}
+
+/** Dismiss the first-run masking dialogs — and only RETURN once the
+ *  composer is genuinely clickable.
+ *
+ *  Both dialogs are CLIENT state: they return for EVERY fresh browser
+ *  context (exactly what a wall drives) even on a configured host, and
+ *  each mask intercepts every pointer. The preview notice (0.2.0-rc.1
+ *  shells) cost the 2026-09-29 run five clicks into its mask and every
+ *  spec timing out at the same seat; a standing operator browser
+ *  dismissed it long ago. The shells retitle it mid-arc ("Preview
+ *  Notice" → "Internal Testing Notice", 2026-10-10), so the filter
+ *  matches the NOTICE CLASS by heading, never one baked title.
+ *
+ *  THE BUDGET IS WAITED OUT, NOT GUESSED (2026-10-11): a fixed 3s/5s
+ *  click — and then an instant `isVisible()` presence check — both
+ *  race a COLD host's first boot and swallow the miss, so test 1 of 6
+ *  on a freshly booted lane reproducibly timed out at the composer's
+ *  click with the API-key dialog still masking, while tests 2-6
+ *  passed warm. A dismissal that is merely ATTEMPTED is not a
+ *  dismissal: the loop re-tries until a real click lands, and DSH's
+ *  own web wall waits these same surfaces out the same way
+ *  (apps/web/tests/preview-boot.e2e.ts).
+ *
+ *  The loop is bounded: a host with NO dialogs probes true on the
+ *  first round and pays ~2s, and a composer slow to BOOT gets the last
+ *  round's full budget instead of the probe's. */
 export async function dismissOnboarding(page: Page): Promise<void> {
-  try {
-    await page.getByRole('button', { name: 'Configure later' }).click({ timeout: 3_000 })
-  } catch { /* host already configured — no onboarding dialog */ }
-  // THE PREVIEW NOTICE (0.2.0-rc.1 shells): a fresh browser context
-  // gets the shell's first-run notice dialog whose mask intercepts
-  // EVERY pointer — the 2026-09-29 run clicked the expand seat into
-  // that mask five times and every spec timed out at the same click.
-  // A standing operator browser dismissed it long ago, so only fresh
-  // contexts (exactly what a wall drives) ever see it. The rc shells
-  // retitled it mid-arc ("Preview Notice" → "Internal Testing
-  // Notice", 2026-10-10 run): the filter matches the NOTICE CLASS by
-  // heading, never one baked title — a retitle must not arm the mask
-  // against the wall again.
-  try {
-    await page.getByRole('dialog').filter({ hasText: /Notice/ })
-      .getByRole('button', { name: 'Continue' }).click({ timeout: 5_000 })
-  } catch { /* no first-run notice on this host */ }
+  const ROUNDS = 3
+  for (let round = 0; round < ROUNDS; round++) {
+    // The last round waits properly for a late-booting composer; the
+    // earlier rounds only ask "is anything still masking?".
+    const last = round === ROUNDS - 1
+    try {
+      await composerOf(page).click({ timeout: last ? 30_000 : 2_000 })
+      return
+    } catch { /* still masked (or not booted) — dismiss, then re-probe */ }
+    // THE NOTICE FIRST: it stacks OVER the API-key dialog, so the
+    // other order leaves the composer masked behind it.
+    try {
+      await page.getByRole('dialog').filter({ hasText: /Notice/ })
+        .getByRole('button', { name: 'Continue' }).click({ timeout: 10_000 })
+    } catch { /* no first-run notice on this host */ }
+    try {
+      await page.getByRole('button', { name: 'Configure later' }).click({ timeout: 30_000 })
+    } catch { /* host already configured — no onboarding dialog */ }
+  }
+}
+
+/** THE ACTIVATION GRACE (doors.ts `estateStillActivating`): every seat
+ *  door answers 503 `estate/pending` while ANY fiber is still
+ *  mid-transition, bounded by ESTATE_PENDING_GRACE_MS = 120s.
+ *  MEASURED on a cold throwaway lane home (2026-09-29): the gate held
+ *  the FULL 120s — a fiber stays activating and only the grace expiry
+ *  (the wedge escape the law was written for) released it — then
+ *  answered 200 on the first poll past the window. So on a freshly
+ *  booted host the browser plane is NOT ready when the shell paints,
+ *  and a wall that reads a seat door once, early, reads the boot race
+ *  and calls it a contract failure (the mint wall died exactly there).
+ *  The browser walls WAIT THE GRACE OUT rather than shortening it. */
+export const ESTATE_ACTIVATION_GRACE_MS = 150_000
+
+/** THE PENDING ANSWER, read as the CLASS the door speaks: a body
+ *  carrying the estate/pending code is the documented boot-race
+ *  transport, whatever the frame's status. */
+const isPendingBody = (body: string): boolean => body.includes('estate/pending')
+
+/** One poll grammar for every seat door the browser plane reads: ask
+ *  again until the door stops answering the boot race, bounded by the
+ *  grace plus slack. A gate that NEVER lifts returns its pending body,
+ *  so the caller still fails — with the door's own words — instead of
+ *  waiting forever. */
+async function pollPastPending(page: Page, url: string, budgetMs: number): Promise<string> {
+  const body = await page.evaluate(async ({ target, budget }: { target: string; budget: number }) => {
+    const deadline = Date.now() + budget
+    for (;;) {
+      const res = await fetch(target, { headers: { accept: 'application/json' } })
+      const body = await res.text().catch(() => '')
+      if (!body.includes('estate/pending')) return body
+      if (Date.now() > deadline) return body
+      await new Promise((resolve) => setTimeout(resolve, 2_000))
+    }
+  }, { target: url, budget: budgetMs })
+  return body
+}
+
+/** THE READINESS GATE — a step of every tour, before the mint. Wait
+ *  for the estate composition to leave its boot-race pending gate, so
+ *  the mint types into a host whose seat doors actually serve.
+ *
+ *  Read on a never-authored key: while the gate is closed the door
+ *  refuses BEFORE the estate is asked, so the probe proves readiness
+ *  without touching any conversation's bench. A 404 (no such bench) is
+ *  the READY answer — this wall wants the gate OPEN, not a row. */
+export const READY_PROBE_KEY = '__e2e_wall_ready__'
+export async function waitForEstate(page: Page, budgetMs = ESTATE_ACTIVATION_GRACE_MS): Promise<void> {
+  const settled = await pollPastPending(page, '/v1/bench/' + READY_PROBE_KEY, budgetMs)
+  expect(settled, 'the estate composition leaves its boot-race pending gate (doors.ts grace)').not.toContain('estate/pending')
+}
+
+/** THE RECEIPT, off the wire and past the grace: the bench row the
+ *  ENGINE would compose. The same door the wall has always read; the
+ *  only change is that the documented pending answer is waited out
+ *  rather than asserted against. */
+export async function readBenchRow(page: Page, sessionKey: string, budgetMs = ESTATE_ACTIVATION_GRACE_MS): Promise<string> {
+  return await pollPastPending(page, '/v1/bench/' + encodeURIComponent(sessionKey), budgetMs)
 }
 
 /** Let the host's own boot noise land before the tour's ledger. */
@@ -61,6 +155,18 @@ export async function settle(page: Page): Promise<void> {
   await page.goto(STUDIO_URL, { waitUntil: 'domcontentloaded' })
   await dismissOnboarding(page)
   await page.waitForTimeout(9_000)
+  // THE LATE MOUNT (the first spec on a fresh lane home, 2026-10-11):
+  // the API-key step's readiness join resolves DURING boot, so on a
+  // cold host the dialog lands after the first dismissal pass — and
+  // its mask then ate the mint's composer click, failing the wall
+  // where the mint types. The second pass runs after the boot-noise
+  // wait, by which point the dialog is definitively up; a host that
+  // never shows it pays the presence check alone.
+  await dismissOnboarding(page)
+  // THE HOST IS NOT SERVED YET (2026-09-29): the shell paints long
+  // before the estate composition leaves its activation gate, and the
+  // mint's own doors answer the boot race until it does.
+  await waitForEstate(page)
 }
 
 /** Open SOME conversation (stroke 83): the wall must never pass or
@@ -100,7 +206,7 @@ export async function openAConversation(page: Page): Promise<{ opened: boolean; 
     } catch { /* a stranger's frame shape is ignored */ }
   }
   page.on('request', onPrompt)
-  const composer = page.getByRole('textbox', { name: /Describe what you want to build/i }).first()
+  const composer = composerOf(page)
   await composer.click({ timeout: 10_000 })
   await page.keyboard.type('e2e wall: bench tour mint', { delay: 15 })
   await page.keyboard.press('Enter')
@@ -212,10 +318,26 @@ export async function openCardsWithBench(page: Page, mintedKey = ''): Promise<vo
   await page.waitForTimeout(4_000)
 }
 
+/** In-flight body reads for the ≥400 frames whose pending-ness is only
+ *  knowable by reading them — drained by expectNoPageErrors before it
+ *  asserts, so a slow classification can never be mistaken for a
+ *  clean ledger. */
+const pendingReads: Array<Promise<void>> = []
+
 /** The zero-error ledger every tour closes with: page errors,
  *  console errors, and any ≥400 HTTP frame (named — a bare "404"
- *  hides WHICH route; the diagnosis law). */
+ *  hides WHICH route; the diagnosis law).
+ *
+ *  THE BOOT RACE IS NOT A PAGE ERROR: a cold host answers the seat
+ *  doors with 503 `estate/pending` until the activation grace expires
+ *  (see ESTATE_ACTIVATION_GRACE_MS), and the shell's own background
+ *  reads collect those frames while the walls wait it out. Counting
+ *  them would fail every spec on a freshly booted lane for a transport
+ *  state the host documents as transient — so exactly the pending
+ *  answer is dropped, by its CODE, and every other ≥400 still fails
+ *  the wall. */
 export async function expectNoPageErrors(page: Page, errors: string[]): Promise<void> {
+  await Promise.all(pendingReads.splice(0))
   expect(errors, errors.join('\n')).toEqual([])
 }
 
@@ -223,7 +345,42 @@ export async function expectNoPageErrors(page: Page, errors: string[]): Promise<
 export function collectPageErrors(page: Page): string[] {
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message.slice(0, 150)}`))
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(`console: ${m.text().slice(0, 150)}`) })
-  page.on('response', (r) => { if (r.status() >= 400) errors.push(`http ${r.status()}: ${r.url().slice(0, 150)}`) })
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return
+    const text = m.text().slice(0, 150)
+    // THE HTTP ARM OWNS HTTP (2026-09-29): Chromium logs one "Failed
+    // to load resource: …503" line for EVERY failed fetch, so the
+    // console arm double-counts frames the response arm below already
+    // sees — with the URL, and with the body it classifies by code.
+    // A console line carries neither, so it can only ever be a blind
+    // duplicate: keeping it made every spec on a cold lane fail on the
+    // host's own documented boot race. Only the JS arm's errors (real
+    // script failures, unhandled rejections) are this arm's business.
+    if (/Failed to load resource/.test(text)) return
+    errors.push(`console: ${text}`)
+  })
+  page.on('response', (r) => {
+    if (r.status() < 400) return
+    // THE WALL'S OWN PROBE, never a page error: the readiness gate
+    // reads a key that deliberately has no bench, so its 404 IS the
+    // ready answer. A request the tour made is not the app's error.
+    if (r.url().includes(READY_PROBE_KEY)) return
+    // THE PENDING FRAME, identified by the door's own code: read the
+    // body rather than the status, so a 503 that is NOT the boot race
+    // (a real engine refusal) still lands in the ledger.
+    const status = r.status()
+    const url = r.url().slice(0, 150)
+    // AWAITED, NOT FIRED: the ledger closes its books synchronously,
+    // so a classification still in flight when the wall asserts could
+    // hide a real failure behind a wall that already passed. The
+    // handles are drained by expectNoPageErrors before the assertion.
+    pendingReads.push(r.text().then(
+      (body) => {
+        if (isPendingBody(body)) return
+        errors.push(`http ${status}: ${url}`)
+      },
+      () => { errors.push(`http ${status}: ${url}`) },
+    ))
+  })
   return errors
 }

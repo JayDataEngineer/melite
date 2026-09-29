@@ -15,7 +15,16 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './e2e',
-  timeout: 180_000,
+  // THE TIMEOUT COVERS THE HOST'S ACTIVATION GRACE, not the spec's own
+  // work: a freshly booted lane answers every seat door 503
+  // `estate/pending` until doors.ts's ESTATE_PENDING_GRACE_MS (120s)
+  // expires — measured holding the full window on a cold throwaway
+  // home, 2026-09-29. The first spec on a cold lane therefore spends
+  // ~2 minutes waiting for the host to be SERVED before its own steps
+  // begin, and 180s failed it at the wait, not at the contract. The
+  // budget is the grace plus the tour's own worst case; a spec that
+  // hangs still fails, just no longer before the host is ready.
+  timeout: 420_000,
   workers: 1,
   retries: 0,
   use: {

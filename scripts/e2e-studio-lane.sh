@@ -17,7 +17,6 @@ HOME_DIR=data/runtime/e2e-studio-home
 RUNS_ROOT=/tmp/e2e-studio-runs
 COOKIES=/tmp/e2e-studio-cookies.txt
 LOG=/tmp/e2e-studio-lane.log
-PROFILE_SRC="${E2E_STUDIO_PROFILE_SRC:-data/runtime/dsh-harness-home/profiles/melite-test}"
 # Bash-only REPO_ROOT (parameter expansion is a builtin): the spec's
 # stub-PATH seat runs this script with NOTHING resolvable — dirname
 # must never stand between the prereq gates and their verdict.
@@ -26,14 +25,17 @@ cd "$REPO_ROOT"
 DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
 
-# THE TRACKED SEED (2026-09-25, the fresh-checkout repair): the
-# profile the lane boots is a COMMITTED, PORTABLE seed — relative
-# link: deps (no machine paths), dead links from retired packages
-# dropped, node_modules materialized at boot by pnpm. The untracked
-# runtime seed stays the PREFERENCE when present (it may carry
-# operator pins); the tracked seed is the floor that makes a fresh
-# checkout run the lane at all.
+# THE TRACKED SEED IS THE SEAT'S ONLY SEED (2026-10-12, the moss-404
+# lesson): the runtime dev profile (dsh-harness-home/melite-test)
+# arms the G2 hot door through cordis.patch.yml — its patch watcher
+# can mount→dispose→remount that row MID-RUN, and the every-card wall
+# boards a card the estate then un-serves under it (form-spec 404s
+# land as page errors; the defs refresh blanks neighbor axes). A
+# wall seat asserts STABLE serving: it boots the committed, seed-only
+# profile — deterministic, fresh-checkout-true. Operator pins ride
+# settings.yaml (copied separately below), never the profile.
 TRACKED_SEED="packages/web/melite-card-view/e2e/profile-seed"
+SEED_DIR="$TRACKED_SEED"
 
 # THE REQUIRE MODE (the CI prerequisite law): E2E_STUDIO_REQUIRE=1
 # flips every skip law from exit-0 to a LOUD failure naming the
@@ -80,13 +82,10 @@ if cur < floor:
     sys.exit(f"e2e-studio-lane: $DSH_BIN is {'.'.join(m.groups())}, below the 0.2.0-rc.1 floor — boot only through the provision (dsh-provision apply.sh launch)")
 GATE
 SEED_DIR=""
-if [ -d "$PROFILE_SRC" ]; then
-  SEED_DIR="$PROFILE_SRC"
-elif [ -d "$TRACKED_SEED" ]; then
+if [ -d "$TRACKED_SEED" ]; then
   SEED_DIR="$TRACKED_SEED"
-  echo "[e2e-studio-lane] runtime seed absent — booting the TRACKED seed ($TRACKED_SEED)"
 else
-  skip_or_fail "no profile seed (neither $PROFILE_SRC nor $TRACKED_SEED)"
+  skip_or_fail "no profile seed ($TRACKED_SEED)"
 fi
 
 # ── teardown: host kill (process group) + home removal, ALWAYS ───
