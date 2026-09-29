@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   expandRegistryFlow,
+  linkedStage,
   getRegistryFlow,
   registerRegistryFlow,
   registryFlowNames,
@@ -103,6 +104,34 @@ describe("registry", () => {
       assert.ok(getRegistryFlow("live-probe") !== undefined);
       second();
       assert.equal(getRegistryFlow("live-probe"), undefined);
+    });
+
+    // THE SEAT-GAP WALL (the 2026-09-28 ledger audit): link
+    // resolution read the FROZEN boot literal, so a live-registered
+    // flow could never be a from_flow TARGET — the seat was
+    // write-only for expansion, and the arm above could not see it
+    // (fit-seat carries no links, so its expansion is trivial). A
+    // drop-in that registers a flow ANOTHER flow links to is exactly
+    // the composition the door exists for.
+    it("a live-registered flow is a legal from_flow TARGET (link resolution reads the seat)", () => {
+      const seed = getRegistryFlow("fit-seat")!;
+      const stageId = seed.stages[0]!.id;
+      // the SOURCE: registered live, never in the boot literal
+      disposers.push(registerRegistryFlow({ ...seed, id: "live-link-src" }));
+      // the LINKER: its only stage links into the live source
+      disposers.push(registerRegistryFlow({
+        ...seed,
+        id: "live-linker",
+        stages: [linkedStage("live-link-src", stageId, "linked-seat", {})],
+      }));
+      const expanded = expandRegistryFlow(getRegistryFlow("live-linker")!);
+      const linked = expanded.stages[0]!;
+      assert.equal(linked.fromFlow, null, "the link is resolved away");
+      assert.equal(linked.engine, seed.stages[0]!.engine,
+        "the linked stage CARRIES the source row's engine — proof the resolution read the live source, not a literal miss");
+      // and the skill-body path (resolveLink) reads the seat too
+      assert.ok(registrySkillBody(getRegistryFlow("live-linker")!).includes(linked.id),
+        "the rendered skill body names the linked stage");
     });
   });
 

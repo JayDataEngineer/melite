@@ -356,7 +356,14 @@ export function expandRegistryFlow(flow: RegistryFlow): RegistryFlow {
     (st: RegistryStage): RegistryStage => {
       if (st.fromFlow === null) return st;
       const link: RegistryFromFlow = st.fromFlow;
-      const src: RegistryFlow | undefined = REGISTRY[link.flow];
+      // THE LIVE SEAT, not the boot literal (the G1 seat-gap finding,
+      // 2026-09-28): link resolution read REGISTRY directly, so a
+      // flow registered live could never be a from_flow TARGET — the
+      // seat was write-only for expansion, and no wall could see it
+      // (the seed flow the walls clone has no links). A drop-in that
+      // registers a flow another flow links to is exactly the
+      // composition the door exists for.
+      const src: RegistryFlow | undefined = LIVE_FLOWS.get(link.flow);
       if (src === undefined) {
         throw new Error(
           "[flows_registry] flow " + flow.id + " stage " + st.id +
@@ -586,11 +593,12 @@ function resolveLink(st: RegistryStage): RegistryStage {
     throw new Error("resolveLink: stage '" + st.id + "' carries no fromFlow link (caller guard missing)");
   }
   const link: RegistryFromFlow = st.fromFlow;
-  const src: RegistryFlow | undefined = REGISTRY[link.flow];
+  // the LIVE SEAT, same law as expandRegistryFlow above
+  const src: RegistryFlow | undefined = LIVE_FLOWS.get(link.flow);
   if (src === undefined) {
     throw new Error(
       "registry: stage '" + st.id + "' links from unknown flow '" + link.flow +
-      "' (known flows: " + Object.keys(REGISTRY).sort().join(", ") + ")",
+      "' (known flows: " + registryFlowNames().join(", ") + ")",
     );
   }
   const base: RegistryStage | undefined = src.stages.find((s: RegistryStage): boolean => s.id === link.stage);

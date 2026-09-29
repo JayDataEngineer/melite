@@ -24,7 +24,7 @@
 //   1. SPLIT  — any dependency name resolving to more than one store
 //      instance across all workspace importers.
 //   2. LOCKSTEP — every `@deepseek-ai/dsh-*` range in the workspace
-//      sits on one release line (0.1.7-rc.* today); a mixed floor is
+//      sits on one release line (0.2.0-rc.* today); a mixed floor is
 //      the silent-drift the compatibility gate cannot see.
 //   3. PEER FLOOR — every bundle that ships a cordis.patch.yml
 //      declares a `@deepseek-ai/dsh` peerDependencies floor, so the
@@ -110,7 +110,7 @@ for (const dir of pkgDirs) {
 //     pnpm keys peer cells by the importer's OTHER peers, so the
 //     same `@deepseek-ai/dsh` floor yields several cells — but the
 //     runtime host supplies ONE instance and no importer bundles its
-//     own. The 0.1.7 compatibility gate reads exactly these floors.
+//     own. The host's compatibility gate reads exactly these floors.
 // Adding a name to the CLI class requires the reason in the row.
 const PEER_HASH_ONLY_OK = new Map([
   ["tsdown", "CLI bundler, invoked per package — its cells differ only by the typescript peer hash and never meet in one compiled program"],
@@ -179,7 +179,7 @@ for (const dir of pkgDirs) {
   const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
   const peers = pkg.peerDependencies ?? {};
   if (typeof peers["@deepseek-ai/dsh"] !== "string") {
-    fail("PEER-FLOOR", `${pkg.name} ships a bundle (cordis.patch.yml) but declares no '@deepseek-ai/dsh' peerDependencies floor — the 0.1.7 compatibility gate reads ONLY that key, so the next host hop boots beside stale dsh copies in silence`);
+    fail("PEER-FLOOR", `${pkg.name} ships a bundle (cordis.patch.yml) but declares no '@deepseek-ai/dsh' peerDependencies floor — the host's compatibility gate reads ONLY that key, so the next host hop boots beside stale dsh copies in silence`);
   }
 }
 
