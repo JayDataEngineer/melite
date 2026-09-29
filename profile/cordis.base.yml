@@ -77,7 +77,7 @@
           - id: dots-studio/dots-3-note-preview:free
             name: Dots3-Note Preview (free)
             contextWindow: 200000
-            maxTokens: 460800
+            maxTokens: 32768
             input:
               - text
           - id: nvidia/nemotron-3.5-lightning:free
