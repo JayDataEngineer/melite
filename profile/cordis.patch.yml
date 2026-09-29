@@ -1,0 +1,290 @@
+# profile-melite-test/cordis.patch.yml — THE DEV LANE COMPOSITION (hand-maintained).
+# Migrated to the 0.2.0-rc.1 train 2026-09-28 (operator: "dev rides the
+# latest RC, not old cruft"): the 0.1.7-rc.2 pnpm overrides are GONE; this
+# profile now installs and runs the same harness train as prod. The melite
+# series still rides as link: deps into the inference.cpp tree (dev = live
+# extension development), and every melite surface owns its existence row
+# via its bundle — this patch CONFIGURES rows by id only.
+#
+# Preserved lore (do not lose):
+# - THE RUNS ROOT PIN: melite-estate takes repoRoot and PINS the queue's
+#   state tree — the queue seat refuses to mount unpinned. Without it the
+#   bench/runs/drafts seats never compose: every queue door answers "no
+#   seat on this lane".
+# - THE HOT DOOR: patchReload "live" is the custom-profile default, so dsh
+#   watches this file; an insert row names a plugin file by path and the
+#   loader mounts/disposes it in the RUNNING lane — no restart.
+# - DEFAULT = SPACE BUNNY: the zai account went out of credit once (429
+#   "Insufficient balance" surfaced as PI_AI_ERROR empty responses); a
+#   default that cannot answer breaks every fallback turn.
+# - Retries: every provider declares retryPolicy (the 0.2.0 regression —
+#   retries are opt-in; without a policy every upstream flap is an instant
+#   failed turn). Same invariant as prod, same reasons.
+
+- insert:
+    - id: hot-g2-door
+      name: /home/user/Documents/programs/active/inference.cpp/packages/web/melite-estate/hot/g2-maker-door.plugin.ts
+
+- id: melite-estate
+  config:
+    repoRoot: /home/user/Documents/programs/active/inference.cpp/data/runs
+
+- id: llm-pi-ai
+  name: "@deepseek-ai/dsh-llm-pi-ai"
+  config:
+    providers:
+      xiaomi-token-plan-sgp:
+        apiKeyEnv: XIAOMI_TOKEN_PLAN_SGP_API_KEY
+        # 0.2.0 made retries opt-in per provider (pi-ai hardcodes maxRetries:0
+        # and delegates recovery to dsh-llm-retry, which no-ops when the
+        # provider declares no policy). PI_AI_ERROR is the fallback code the
+        # harness maps "provider returned an empty response" onto — NOT in the
+        # default retryable set — so without it here, every upstream flap is an
+        # instant failed turn. This block is why bunny flaps get retried.
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+      openrouter:
+        apiKeyEnv: OPENROUTER_API_KEY
+        api: openai-completions
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+        models:
+          - id: stealth/space-bunny-alpha
+            name: Space Bunny
+            contextWindow: 1000000
+            maxTokens: 524288
+            input:
+              - text
+              - image
+            reasoningEfforts:
+              off: null
+              low: low
+              medium: medium
+              high: high
+              max: max
+          - id: unbiased/pareto
+            name: Pareto (Union Alpha)
+            contextWindow: 200000
+            maxTokens: 131072
+            input:
+              - text
+          - id: dots-studio/dots-3-note-preview:free
+            name: Dots3-Note Preview (free)
+            contextWindow: 200000
+            maxTokens: 460800
+            input:
+              - text
+          - id: nvidia/nemotron-3.5-lightning:free
+            name: Nemotron 3.5 (free)
+            contextWindow: 131072
+            maxTokens: 65536
+            input:
+              - text
+          - id: nvidia/nemotron-3-ultra-550b-a55b:free
+            name: Nemotron 3 Ultra 550B (free)
+            contextWindow: 1000000
+            maxTokens: 65536
+            input:
+              - text
+          - id: poolside/laguna-s-2.1:free
+            name: Laguna S 2.1 (free)
+            contextWindow: 262144
+            maxTokens: 32768
+            input:
+              - text
+          - id: deepseek/deepseek-v4.1-flash
+            name: DeepSeek V4.1 Flash
+            contextWindow: 1048576
+            maxTokens: 943718
+            input:
+              - text
+              - image
+            reasoningEfforts:
+              off: null
+              low: low
+              medium: medium
+              high: high
+              max: max
+          - id: deepseek/deepseek-v4-flash-0731
+            name: DeepSeek V4 Flash (0731)
+            contextWindow: 1310720
+            maxTokens: 943718
+            input:
+              - text
+            reasoningEfforts:
+              off: null
+              low: low
+              medium: medium
+              high: high
+        reasoning: high
+      zai:
+        apiKeyEnv: ZAI_API_KEY
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+        models:
+          - id: glm-4.5-air
+            name: GLM-4.5-Air
+            contextWindow: 131072
+            maxTokens: 98304
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-4.7
+            name: GLM-4.7
+            contextWindow: 204800
+            maxTokens: 131072
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-5-turbo
+            name: GLM-5-Turbo
+            contextWindow: 200000
+            maxTokens: 131072
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-5.1
+            name: GLM-5.1
+            contextWindow: 200000
+            maxTokens: 131072
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-5.2
+            name: GLM-5.2
+            contextWindow: 1000000
+            maxTokens: 131072
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-5.3
+            name: GLM-5.3
+            contextWindow: 200000
+            maxTokens: 131072
+            input:
+              - text
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+          - id: glm-5v-turbo
+            name: GLM-5V-Turbo
+            contextWindow: 200000
+            maxTokens: 131072
+            input:
+              - text
+              - image
+            reasoningEfforts:
+              low: low
+              high: high
+              max: max
+              xhigh: max
+        reasoning: max
+        compat:
+          thinkingFormat: zai
+          supportsReasoningEffort: true
+      opencode-go:
+        apiKeyEnv: OPENCODE_API_KEY
+        api: openai-responses
+        baseURL: https://opencode.ai/zen/go/v1
+        reasoning: xhigh
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+        headers:
+          User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like
+            Gecko) Chrome/126.0 Safari/537.36
+          x-opencode-session: estate-job-server
+        models:
+          - id: muse-spark-1.3-contributor
+            name: Muse Spark 1.3 (Contributor)
+            contextWindow: 200000
+            input:
+              - text
+              - image
+            reasoningEfforts:
+              off: null
+              minimal: minimal
+              low: low
+              medium: medium
+              high: high
+              xhigh: xhigh
+              max: max
+      local-qwen:
+        apiKeyEnv: QWEN_VLLM_API_KEY
+        displayName: Local Qwen3.8-27B (vLLM, 4090)
+        api: openai-completions
+        baseURL: http://127.0.0.1:18020/v1
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+        models:
+          - id: qwen3.8-27b
+            name: Qwen3.8-27B
+            contextWindow: 150000
+            maxTokens: 32768
+            input:
+              - text
+
+- id: agent-default-model
+  name: "@deepseek-ai/dsh-agent-default-model"
+  config:
+    # DEFAULT = SPACE BUNNY (2026-09-28). The default was zai/glm-5.3,
+    # and the zai account is out of credit: every call returns
+    # 429 "Insufficient balance", which pi-ai surfaces to the agent as
+    # `PI_AI_ERROR: Provider returned an empty response`. A default that
+    # cannot answer breaks every turn that falls back to it, which is
+    # how a healthy selected model still looked broken.
+    # Verified live: openrouter/stealth/space-bunny-alpha -> HTTP 200.
+    provider: openrouter
+    model: stealth/space-bunny-alpha
+    reasoningEffort: high
+- id: agent-loop
+  name: "@deepseek-ai/dsh-agent-loop"
+  config:
+    agents: []
+    maxParallelToolCalls: 3
+
+- id: ui-settings-general
+  name: "@deepseek-ai/dsh-client-ui-settings-general"
+  config:
+    welcomeNoticeVersion: 2026-08-13.1
+
+- id: ui-theme
+  name: "@deepseek-ai/dsh-client-ui-theme"
+  config:
+    preference: dark

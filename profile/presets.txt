@@ -1,0 +1,17 @@
+# Which agent-presets/ directories render into profile-melite-test/.
+#
+# NONE — this list is intentionally empty.
+#
+# The dev lane composes no agent presets: its patch declares no
+# agent-preset-registry row, so nothing registers at runtime either way.
+# Saying so here means apply.sh copies zero preset directories into
+# ~/.dsh-dev/.agent-presets instead of all thirteen, which is what it did
+# before this manifest existed (and, for a while, wrote into PROD's home
+# instead — see the PRESETS_DIR fix in apply.sh).
+#
+# profile-melite-test/cordis.patch.yml is HAND-MAINTAINED, not rendered: the
+# renderer detects the missing GENERATED banner and skips it. This file is
+# still read, because it governs what lands in the lane's home.
+#
+# To start composing presets here: name them below, and note that the patch
+# would then need an agent-preset-registry row added by hand.
