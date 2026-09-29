@@ -79,7 +79,6 @@ COMPILED=(
   packages/estate/manage
   packages/estate/media
   packages/estate/runs
-  packages/vendor/typert-protocol
 )
 
 # THE CLIENT BUNDLES (operator, 2026-10-10: the STALE TAB

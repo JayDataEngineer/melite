@@ -94,10 +94,12 @@ describe("THE TYPECHECK GATE — every package, every run", () => {
     // ROSE (li-aq.3) — and then the audit killed the FLOOR (a
     // `>= 85` tripwire lets the count drift silently DOWN to 85
     // while three packages go dark, and never hears a new one at
-    // all): the pin is EXACT. 88 tsconfigs stand today; adding or
-    // removing a package MUST touch this number deliberately — a
-    // tsconfig deleted to dodge the net fails the wall by arithmetic.
-    expect(dirs.length).toBe(88);
+    // all): the pin is EXACT. 87 tsconfigs stand today (li-bo: the
+    // typert vendor died — its seat was the estate's live bench
+    // outage); adding or removing a package MUST touch this number
+    // deliberately — a tsconfig deleted to dodge the net fails the
+    // wall by arithmetic.
+    expect(dirs.length).toBe(87);
     // The incident's package is in the net BY NAME (the engine ran
     // from source, so no build step ever saw it).
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);

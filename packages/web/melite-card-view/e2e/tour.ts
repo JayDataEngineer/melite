@@ -40,6 +40,16 @@ export async function dismissOnboarding(page: Page): Promise<void> {
   try {
     await page.getByRole('button', { name: 'Configure later' }).click({ timeout: 3_000 })
   } catch { /* host already configured — no onboarding dialog */ }
+  // THE PREVIEW NOTICE (0.2.0-rc.1 shells): a fresh browser context
+  // gets the shell's "Preview Notice" dialog whose mask intercepts
+  // EVERY pointer — the 2026-09-29 run clicked the expand seat into
+  // that mask five times and every spec timed out at the same click.
+  // A standing operator browser dismissed it long ago, so only fresh
+  // contexts (exactly what a wall drives) ever see it.
+  try {
+    await page.getByRole('dialog').filter({ hasText: 'Preview Notice' })
+      .getByRole('button', { name: 'Continue' }).click({ timeout: 5_000 })
+  } catch { /* no preview notice on this host */ }
 }
 
 /** Let the host's own boot noise land before the tour's ledger. */

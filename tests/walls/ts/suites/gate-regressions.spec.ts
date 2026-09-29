@@ -133,7 +133,10 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     // the damage shipped anyway on the next restart.
     const shipList = ship.split("COMPILED=(")[1]?.split(")")[0] ?? "";
     const pkgs = shipList.split("\n").map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("#"));
-    expect(pkgs.length).toBeGreaterThanOrEqual(5);
+    // (li-bo: 4, not 5 — the typert vendor died; the protocol is
+    // upstream 0.2.0-rc.1 from the store now, prebuilt, so the ship
+    // compiles the four estate server packages and nothing else.)
+    expect(pkgs.length).toBeGreaterThanOrEqual(4);
     for (const p of pkgs) {
       const ts = read(`${p}/tsconfig.json`);
       expect(ts, `${p} must pin "noEmitOnError": true`).toContain('"noEmitOnError": true');
