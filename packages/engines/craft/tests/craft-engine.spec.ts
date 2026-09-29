@@ -461,6 +461,25 @@ describe("the provider (seat row)", () => {
     assert.deepEqual(seat.ids(), ["craft"]);
   });
 
+  // THE MESSAGE CONTRACT (the lane-audit wall, 2026-09-28): the
+  // estate's craft row treats EXACTLY this cordis duplicate-service
+  // message as ALREADY SEATED (its regex is
+  // /service "melite-engine-craft" has been registered at <([^>]+)>/).
+  // If cordis ever rewords provide()'s throw, that guard silently
+  // stops matching and the retry-forever wedge returns. This wall pins
+  // the message the guard depends on, at its source.
+  it("a second registration on ONE ctx throws the duplicate-service message verbatim", async () => {
+    const ctx = new Context();
+    await ctx.plugin(enginesContract);
+    new FakeLlmService(ctx);
+    new FakeAttachmentsService(ctx);
+    new CraftEngineService(ctx, { provider: "p", model: "m" });
+    assert.throws(
+      () => new CraftEngineService(ctx, { provider: "p", model: "m" }),
+      /service "melite-engine-craft" has been registered at <([^>]+)>/,
+    );
+  });
+
   it("refuses LOUD when the seat, llm, attachments, or the route config is missing", async () => {
     // a fresh fiber per arm (the service name registers per
     // construction — the throw comes AFTER the row lands)

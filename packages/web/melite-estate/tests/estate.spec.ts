@@ -385,6 +385,37 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     }
   })
 
+  // THE LANE-AUDIT WALL (2026-09-28): cordis's duplicate-service throw
+  // ('service "melite-engine-craft" has been registered at <X>') is
+  // SUCCESS wearing an error's clothes — the loader double-applied the
+  // row and the SECOND construction lost the race. Treated as retryable
+  // it re-armed on every adapters-updated forever (11 collision lines
+  // per boot on the live lane) and held every seat door in
+  // estate/pending. The fix treats exactly that message as ALREADY
+  // SEATED; every OTHER rejection keeps the loud-retry law above.
+  it('a duplicate-service rejection is ALREADY SEATED — one line, unsubscribe, no retry', async () => {
+    craftLane.mode = 'reject'
+    craftLane.reason = new Error('service "melite-engine-craft" has been registered at <melite-engine-craft-row>')
+    craftLane.calls = []
+    const lines = silence()
+    try {
+      const { ctx, listeners, unsubs } = toolsCtx()
+      await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+      await new Promise((r) => setTimeout(r, 20))
+      const logged = lines.join('\n')
+      expect(logged).toContain('craft engine: already seated at <melite-engine-craft-row> — nothing to do')
+      expect(logged).not.toContain('waiting for the next adapters-updated')
+      expect(unsubs).toEqual(['llm/adapters-updated'])
+      // the row is DONE: a later announcement must not attempt again.
+      listeners[0]?.()
+      await new Promise((r) => setTimeout(r, 20))
+      expect(craftLane.calls).toHaveLength(1)
+      expect(lines.filter((l) => l.includes('already seated'))).toHaveLength(1)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
   it('concurrent announcements serialize (one attempt at a time)', async () => {
     craftLane.mode = 'pending'
     craftLane.calls = []

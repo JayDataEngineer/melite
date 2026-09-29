@@ -249,7 +249,27 @@ const rows: readonly Plugin[] = [
           },
           (e: unknown) => {
             busy = false;
-            say(`craft engine: late seat attempt failed (${String((e as { message?: unknown })?.message ?? e).slice(0, 200)}) — waiting for the next adapters-updated`);
+            const message = String((e as { message?: unknown })?.message ?? e);
+            // ALREADY SEATED (the lane-audit finding, 2026-09-28): the
+            // loader can apply this row twice (double apply / two row
+            // fibers), and cordis's provide() throws the bare
+            // duplicate-service Error on the SECOND construction. That
+            // rejection is SUCCESS wearing an error's clothes — the
+            // seat exists at this row's own name. Treating it as
+            // retryable re-armed the attempt on every adapters-updated
+            // forever, re-printing "seated" before each throw (the
+            // seat line prints BEFORE the constructor), and holding
+            // every seat door in estate/pending for the grace window.
+            // The one-message match is the only signal: cordis throws
+            // a plain Error with no code.
+            const twin = /service "melite-engine-craft" has been registered at <([^>]+)>/.exec(message);
+            if (twin !== null) {
+              say(`craft engine: already seated at <${twin[1]}> — nothing to do`);
+              done = true;
+              off?.();
+              return;
+            }
+            say(`craft engine: late seat attempt failed (${message.slice(0, 200)}) — waiting for the next adapters-updated`);
           },
         );
       };
