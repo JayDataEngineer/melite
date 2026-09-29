@@ -1,4 +1,5 @@
 import path from 'node:path'
+import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
 import {
@@ -124,7 +125,13 @@ const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includ
 // under tmpdir(); the global sweep reclaims pre-run trees at teardown
 // so iterate-run-fix loops can never accumulate a million inodes
 // again (tests/global-sweep.ts owns the prefix table).
-const TMP_SWEEP = path.join('tests', 'global-sweep.ts')
+// CONFIG-ROOT-ABSOLUTE (2026-09-29, the per-package run fix): a bare
+// relative join resolves against the INVOKING cwd, so `vitest run`
+// from inside a package (pnpm --filter X exec vitest) looked for
+// <pkg>/tests/global-sweep.ts and died with ERR_LOAD_URL before a
+// single spec loaded — per-package runs were impossible. Resolved
+// against THIS config file, the sweep is found from any cwd.
+const TMP_SWEEP = fileURLToPath(new URL('./tests/global-sweep.ts', import.meta.url))
 
 export default defineConfig({
   // THE BOOT BUDGET (2026-10-10; CORRECTED 2026-09-28): many suites
@@ -205,8 +212,16 @@ export default defineConfig({
             // editor app. React pins at the STORE's matched 19 pair
             // (ONE react for the lane — the dual-React trap), icons
             // and three ride the card-view client's resolution.
-            react: rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react'),
-            'react-dom': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom'),
+            // DERIVED, NOT LITERAL (2026-09-29, the dangling-alias
+            // kill): these rows were hardcoded to react@19.2.8 store
+            // dirs, and the bump to 19.3.0 left every dom spec file
+            // importing react dead at load ("Failed to resolve
+            // import \"react\"") — a wall that fails wholesale the
+            // moment the lockfile moves. The store copy is resolved
+            // from the STUDIO HOST's own link, so the lane rides
+            // whatever pnpm actually installed.
+            react: realpathSync(path.join(CARD_VIEW, 'node_modules/react')),
+            'react-dom': realpathSync(path.join(CARD_VIEW, 'node_modules/react-dom')),
             // the react-dom CLIENT subpath (2026-09-16): motion-motion
             // pins its own React 18 tree, so a bare react-dom/client
             // import escapes the exact-match alias and lands on the
@@ -214,12 +229,21 @@ export default defineConfig({
             // (card-view) is React 19 — the lane pins it at the same
             // 19 copy as its parent (motion specs render through the
             // aliased copy directly; see the motion tests harness).
-            'react-dom/client': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom/client'),
-            'react/jsx-runtime': rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react/jsx-runtime'),
+            'react-dom/client': path.join(realpathSync(path.join(CARD_VIEW, 'node_modules/react-dom')), 'client'),
+            'react/jsx-runtime': path.join(realpathSync(path.join(CARD_VIEW, 'node_modules/react')), 'jsx-runtime'),
             // anser: the atoms' rc.2 dist imports this undeclared
             // transitive (editor's tree used to supply it). Pinned at
             // the store copy like the React pair.
             anser: rootPath('node_modules/anser'),
+            // simple-icons (2026-09-29, the anser class): the
+            // 0.2.0-rc.1 primitives' lib imports it straight from
+            // `simple-icons` but the published manifest carries it in
+            // devDependencies only, so the store package ships
+            // without it and every node-side import of the primitives
+            // died at load ("Failed to resolve import"). Root devDep
+            // at upstream's own 16.31.0; alias pins the hoisted root
+            // path like the React pair.
+            'simple-icons': rootPath('node_modules/simple-icons'),
             // shiki: the atoms' rc.2 dist imports these undeclared
             // transitives. 2026-09-14: they are ROOT devDeps now (the
             // editor's orphaned store dirs were untracked truth — a
@@ -372,7 +396,12 @@ export default defineConfig({
           environment: 'jsdom',
           pool: 'forks',
           execArgv: vitestExecArgv,
-          setupFiles: [PROXY_SETUP],
+          // the lane's DOM-observer seat (li-bp's dom-lane repair):
+          // the DSH Tooltip primitive instantiates ResizeObserver on
+          // open — jsdom ships none, so the wand's focus test was a
+          // latent red behind the dead load. Same honest shapes
+          // card-view's setup documents.
+          setupFiles: [PROXY_SETUP, `${GALLERY}/tests/setup.ts`],
           css: false,
           include: GALLERY_SPEC_TREES,
           exclude: ['**/*.e2e.ts', '**/*.expected.e2e.ts', '**/*.snapshot.ts'],

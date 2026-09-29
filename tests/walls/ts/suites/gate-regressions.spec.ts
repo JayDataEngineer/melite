@@ -135,7 +135,15 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     const pkgs = shipList.split("\n").map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("#"));
     // (li-bo: 4, not 5 — the typert vendor died; the protocol is
     // upstream 0.2.0-rc.1 from the store now, prebuilt, so the ship
-    // compiles the four estate server packages and nothing else.)
+    // compiles the four estate server packages and nothing else.
+    // li-bp RESTORED an in-tree copy at packages/vendor/typert-protocol
+    // as a GENERATION FACE ONLY — the DSH Typert generator's identity
+    // law requires the protocol's declarations inside a workspace
+    // package under packages/ — but no runtime import resolves it and
+    // the ship does NOT compile it (its lib ships verbatim, re-vendored
+    // from the pinned reference): the count stays 4. Raising it to 5
+    // would rebuild a copy-don't-invent tree; the hoist-shadow kill
+    // and typert-artifact-law pin the seam.)
     expect(pkgs.length).toBeGreaterThanOrEqual(4);
     for (const p of pkgs) {
       const ts = read(`${p}/tsconfig.json`);

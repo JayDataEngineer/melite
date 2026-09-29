@@ -22,7 +22,14 @@ pre-commit:
       # bounced on it while the same command exited 0 bare). The
       # fleet writes to a FILE; the verdict rides the last lines and
       # vitest's own exit code.
-      run: node node_modules/vitest/vitest.mjs run --project node > /tmp/hook-walls.log 2>&1; code=$?; tail -n 4 /tmp/hook-walls.log; exit $code
+      # THE LANE-ENV SCRUB (li-bp, 2026-09-29): the battery's own law —
+      # a shell that drove the 3088 lane carries MELITE_AGENT_ROUTE (and
+      # possibly a present-but-empty MELITE_MCP_ENGINES), and the walls
+      # judge the DEFAULTS: commission.spec expects the zai/glm-5.3
+      # brain default and estate.spec expects the mcp row's own config,
+      # so an ambient route/engines var flips two walls red on a green
+      # tree. The hook scrubs both exactly as `pnpm run test` does.
+      run: env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node node_modules/vitest/vitest.mjs run --project node > /tmp/hook-walls.log 2>&1; code=$?; tail -n 4 /tmp/hook-walls.log; exit $code
 
     - name: final-newline (staged text)
       run: node tools/hook-final-newline.mjs {staged_files}

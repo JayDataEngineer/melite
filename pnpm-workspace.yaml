@@ -32,6 +32,21 @@ packages:
     # The glob stays for future genre-grouped lanes.)
   - 'packages/engines/*/action_cards' # card tenants (resolution scope; @melite/cards)
   - 'packages/engines/*' # ENGINE DOMAIN (STAGE 1, 2026-09-08): engine leaves (@melite/engine-comfyui first; MCP-as-cards slots beside it — the package root, not action_cards/)
+  # THE GENERATION-FACE VENDOR IS NOT A WORKSPACE MEMBER (2026-09-29,
+  # the hoist-shadow kill): packages/vendor/typert-protocol exists for
+  # the Typert generator's registration law alone (isTypeMetaSymbol
+  # recognizes @Remote only inside a packages/ root — see
+  # tsconfig.host.json). As a MEMBER it matched its own name+version
+  # and pnpm linked the HOISTED node_modules/.pnpm/node_modules copy
+  # onto it — every tsc program that resolved the protocol through
+  # the hoist fallback then saw the VENDOR's declarations beside the
+  # store's, splitting RemoteResult identity across the two 0.2.0-rc.1
+  # copies (card-view's stream registration red with TS2322 while the
+  # runtime kept the store). The generator never needs pnpm: it walks
+  # tsconfig.host.json references by PATH, and the vendor's own build
+  # is self-contained. The wall that pins this:
+  # tests/walls/ts/suites/typert-artifact-law.spec.ts.
+  - '!packages/vendor/typert-protocol'
 
 allowBuilds:
   '@parcel/watcher': true

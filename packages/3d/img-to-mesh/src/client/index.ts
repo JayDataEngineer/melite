@@ -41,6 +41,11 @@ export function ImgToMeshStudio(props: StageViewOwnerProps): ReturnType<typeof h
  * module namespace IS the plugin: the loader consumes name/inject/apply). */
 export const name = 'imgToMeshStudio'
 
+// NO estate injects here (the fifth receipt, 2026-09-29): studios
+// load BEFORE the mounter in the plugin URL, and a static estate
+// inject parks this plugin forever waiting on card-view's own
+// $mount. The estate bind rides the factory's armed lazy getter over
+// the inject-free ctx.get seam — order-proof by construction.
 export const inject = ['slots']
 
 export const apply = defineStageViewRegistration('img-to-mesh', ImgToMeshStudio)

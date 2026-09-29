@@ -48,9 +48,111 @@ window.__ModuleLoader__.load({
 		let react_dom = require("react-dom");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
+		//#region ../../web/card-base/src/estate-remote.ts
+		/** The estate's domain refusal ({ok:false} answers): the message
+		* rides verbatim; the class separates DOMAIN verdicts from transport
+		* failures so policy code (the gone-verdict, the poll, the CAS
+		* rebase) can discriminate. */
+		var EstateRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "EstateRefusedError";
+			}
+		};
+		let bound;
+		/** The armed lazy source (see armEstateRemoteLazyBind): the studio
+		*  bind's order-proof wake, plain JS — no cordis fiber. */
+		let lazySource;
+		/** Capture the namespaces (the mounter's direct bind — or a test's
+		*  honest fake). Idempotent; the last bind wins. */
+		function bindEstateRemote(namespaces) {
+			bound = namespaces;
+		}
+		/** Arm the lazy bind (the studio bundles' order-proof wake): the
+		*  factory captures a plain getter reading the namespaces through
+		*  the inject-free reflect seam (ctx.get — cordis' own type doc:
+		*  "Read a service from the store without the inject requirement").
+		*  No cordis fiber, no inject list, no epoch — a getter cannot be
+		*  parked dormant, refused by a proxy, or poisoned into a parent
+		*  fiber's inject set (the four receipts that killed every fiber
+		*  binder). The FIRST verb pulls it (estateRemote, below); if the
+		*  namespaces still do not exist the loud refusal below speaks. */
+		function armEstateRemoteLazyBind(source) {
+			lazySource = source;
+		}
+		/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
+		*  MOUTH: the first verb after the mounts land pulls the armed
+		*  getter once (order-proof — by first use, the mounter has long
+		*  booted); a verb before the mounts (or on a host without the
+		*  estate plugin) meets the loud wiring refusal, never a hang and
+		*  never a silent fallback. */
+		function estateRemote() {
+			if (bound === void 0 && lazySource !== void 0) try {
+				bindEstateRemoteFromRemote(lazySource());
+			} catch {}
+			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+			return bound;
+		}
+		/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
+		*  receipt): the client-bundle preset inlines card-base into every
+		*  consumer bundle, so this module's `bound` singleton exists PER
+		*  BUNDLE — the from-media outage's second layer. Every attempt to
+		*  bind through a RUNTIME child fiber died on cordis' own machinery
+		*  (dotted-only injects: the proxy refuses `child.remote`; parent-
+		*  only: the fiber starts INACTIVE; both: the runner's own inspect
+		*  sync breaks). The harness never binds this way. Its consumers —
+		*  product-analytics, ui-settings, ui-model-selection — declare
+		*  STATIC plugin injects with BOTH levels (`['remote',
+		*  'remote.productAnalytics']`), the loader waits for the mounted
+		*  namespaces before their apply runs, and they read
+		*  `ctx.remote.<namespace>` directly. That is this bind:
+		*
+		*  - a CONSUMING studio declares `export const inject = ['slots',
+		*    'remote', 'remote.bench', 'remote.drafts', 'remote.runs',
+		*    'remote.media']` on its client entry — the loader guarantees
+		*    the namespaces exist when its apply runs;
+		*  - the MOUNTER (card-view) injects only the parent 'remote' (the
+		*    dotted names on the mounter would wait on its own $mount — the
+		*    2026-09-15 deadlock) and binds directly after its mounts;
+		*  - both call THIS function, the one spelling of the bind, loud on
+		*    any absent namespace (a mis-injected entry is a wiring bug,
+		*    never a silent hole).
+		*
+		*  THE WALL pins every studio entry's inject list; the singleton
+		*  throw stays the runtime guard. */
+		function bindEstateRemoteFromRemote(remote) {
+			const { bench, drafts, runs, media } = remote;
+			if (bench === void 0 || drafts === void 0 || runs === void 0 || media === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+			const namespaces = {
+				bench,
+				drafts,
+				runs,
+				media
+			};
+			bindEstateRemote(namespaces);
+			return namespaces;
+		}
+		/** Await one namespace method's RemoteResult and unwrap it: the
+		*  value on ok, the estate's refusal text (verbatim) on the error
+		*  branch. Accepts the promise directly so call sites stay one
+		*  expression. */
+		async function unwrapRemote(result, voice) {
+			const settled = await result;
+			if (settled.ok === true) return settled.value;
+			const { error } = settled;
+			const failure = error;
+			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+		}
+		//#endregion
 		//#region ../../web/card-base/src/slots.ts
 		function defineStageViewRegistration(key, view, inject) {
 			return (ctx) => {
+				armEstateRemoteLazyBind(() => ({
+					bench: ctx.get("remote.bench"),
+					drafts: ctx.get("remote.drafts"),
+					runs: ctx.get("remote.runs"),
+					media: ctx.get("remote.media")
+				}));
 				ctx.slots.inject("cards.stage.view", () => {
 					ctx.slots.register({
 						name: "cards.stage.view",
@@ -43146,34 +43248,6 @@ void main() {
 			return resolveValue(spec, user, base);
 		}
 		//#endregion
-		//#region ../../web/card-base/src/estate-remote.ts
-		/** The estate's domain refusal ({ok:false} answers): the message
-		* rides verbatim; the class separates DOMAIN verdicts from transport
-		* failures so policy code (the gone-verdict, the poll, the CAS
-		* rebase) can discriminate. */
-		var EstateRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "EstateRefusedError";
-			}
-		};
-		/** The bound namespaces — LOUD when unbound: a verb call before the
-		* mount (or after unload) is a wiring bug, never a silent fallback. */
-		function estateRemote() {
-			throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
-		}
-		/** Await one namespace method's RemoteResult and unwrap it: the
-		*  value on ok, the estate's refusal text (verbatim) on the error
-		*  branch. Accepts the promise directly so call sites stay one
-		*  expression. */
-		async function unwrapRemote(result, voice) {
-			const settled = await result;
-			if (settled.ok === true) return settled.value;
-			const { error } = settled;
-			const failure = error;
-			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
-		}
-		//#endregion
 		//#region \0dsh-css:card-base/src/studio.module.css.mjs
 		const css$2 = "._0RY71q_runError{color:var(--dsw-alias-label-error,#e05656);overflow-wrap:anywhere;font-size:11px}._0RY71q_zoomDetail{min-height:0;padding:14px;display:block;overflow-y:auto}._0RY71q_groupNote{color:var(--dsw-alias-label-secondary,#61666b);margin:0 0 10px;font-size:12px;line-height:20px}._0RY71q_studioGroup{flex-direction:column;gap:6px;display:flex}._0RY71q_studioGroupTitle{letter-spacing:.04em;text-transform:uppercase;opacity:.65;margin:0;font-size:11px;font-weight:600}._0RY71q_studioRail{flex-direction:column;gap:10px;min-width:0;display:flex}";
 		const tagId$2 = "@melite/video-h3-timeline/studio.module.css@7e793118";
@@ -52965,4 +53039,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="bb41c33e372199b3da5b46cfb8b79c71481222e8";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="0fcc18937ae448efb8aea5ae122e4ccb3fe990a0";

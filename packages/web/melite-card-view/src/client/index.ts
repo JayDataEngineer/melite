@@ -51,7 +51,7 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemote } from '@melite/card-base/estate-remote'
+import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base/estate-remote'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
@@ -152,38 +152,44 @@ export async function apply(ctx: ClientContext): Promise<void> {
   // the per-site catch logs it and the FIRST registration keeps the
   // seat. No cross-instance guard, no module/global flag.
 
-  // THE NAMESPACE SEATS (the inject fix, extended stroke 81): stream
-  // callbacks run detached from any inject-declaring fiber, and each
-  // namespace is a NESTED SERVICE whose access requires the dotted
-  // inject on the accessing fiber — the 2026-09-15 live lane died
-  // with "cannot get property \"remote.bench\" without inject". A
-  // static inject on THIS plugin would deadlock (the namespaces
-  // exist only after our own $mount lands), so the capture rides a
-  // CHILD PLUGIN started after the mounts: its fiber declares the
-  // four injects, resolves the namespace services once, and the
-  // captured objects are plain services — later calls at callback
-  // time carry no access checks. The bind ALSO seats the one-lane
-  // verb module (@melite/card-base/estate-remote): every
-  // bench/drafts/runs/media verb in the tab rides these namespaces. The child disposes with
-  // this plugin (the namespaces die with the mounts anyway).
+  // THE NAMESPACE SEATS (the inject fix, extended stroke 81, reshaped
+  // 2026-09-29 through card-base's shared binder): stream callbacks
+  // run detached from any inject-declaring fiber, and each namespace
+  // is a NESTED SERVICE whose access requires the dotted inject on
+  // the accessing fiber — the 2026-09-15 live lane died with "cannot
+  // get property \"remote.bench\" without inject". A static inject on
+  // THIS plugin would deadlock (the namespaces exist only after our
+  // own $mount lands), so the capture rides a CHILD PLUGIN started
+  // after the mounts: its fiber declares the four injects, resolves
+  // the namespace services once, and the captured objects are plain
+  // services — later calls at callback time carry no access checks.
+  // THE BUNDLE-SPLIT LAW (the from-media outage's second layer): the
+  // binder lives in card-base because EVERY bundle that inlines
+  // card-base carries its own singleton copy — this call binds THIS
+  // bundle's copy (the studio bundles bind theirs through
+  // defineStageViewRegistration's static injects), all to the SAME
+  // shared cordis services. Direct and sync (the harness shape, no
+  // child fiber): this plugin OWNS the mounts, which landed above,
+  // and statically injects the parent 'remote' only (the dotted
+  // names would wait on its own $mount — the deadlock law), so the
+  // namespaces are readable off ctx.remote the moment the mounts
+  // resolve. benchNs feeds the spotlight registration below.
   let benchNs: BenchNamespace | undefined
   try {
-    const fiber = ctx.plugin({
-      name: 'melite-card-view: estate namespaces',
-      inject: ['remote.bench', 'remote.drafts', 'remote.runs', 'remote.media'],
-      apply: (child: ClientContext): void => {
-        benchNs = child.remote.bench
-        bindEstateRemote({
-          bench: child.remote.bench,
-          drafts: child.remote.drafts,
-          runs: child.remote.runs,
-          media: child.remote.media,
-        })
-      },
-    })
-    await fiber
+    // THE MOUNTER'S READ (the fifth receipt): ctx.remote.bench through
+    // the proxy demands the dotted inject, which on the MOUNTER would
+    // wait on its own $mount — deadlock. cordis' own answer is the
+    // inject-free reflect seam: ctx.get, "Read a service from the
+    // store without the inject requirement". The namespaces this
+    // plugin just mounted come straight back.
+    benchNs = bindEstateRemoteFromRemote({
+      bench: ctx.get('remote.bench') as EstateNamespaces['bench'] | undefined,
+      drafts: ctx.get('remote.drafts') as EstateNamespaces['drafts'] | undefined,
+      runs: ctx.get('remote.runs') as EstateNamespaces['runs'] | undefined,
+      media: ctx.get('remote.media') as EstateNamespaces['media'] | undefined,
+    }).bench
   } catch (error) {
-    console.error('[melite-card-view] estate namespace fiber failed:', error)
+    console.error('[melite-card-view] estate direct bind failed:', error)
   }
 
   for (const tool of CARD_TOOLS) {

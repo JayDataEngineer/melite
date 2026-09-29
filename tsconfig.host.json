@@ -15,6 +15,19 @@
   // from the program; a lib/.d.ts resolution is not in the program's
   // sourceFiles map and crashes the analyzer. The vendored protocol
   // rides the alias.
+  //
+  // WHY THE VENDOR IS BACK (2026-09-29): the generator's identity
+  // law (isTypeMetaSymbol) recognizes @Remote ONLY when the
+  // protocol's declarations sit inside a registered package root —
+  // and loadRegistrations accepts roots under packages/ alone, so a
+  // store/lib resolution registers nothing and generation silently
+  // finds ZERO Remote methods (the exact li-bo outage shape: stale
+  // 0.1.7-rc.2 artifacts with `schema:` codecs vs the 0.2.0-rc.1
+  // registry client's `create()` factory demand). The vendor at
+  // 0.2.0-rc.1 (references/deepseek-harness copy) is the GENERATION
+  // FACE ONLY — runtime resolves the registry copy; the resolution
+  // receipt + version-parity wall live in
+  // tests/walls/ts/suites/typert-artifact-law.spec.ts.
   "extends": "./tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,

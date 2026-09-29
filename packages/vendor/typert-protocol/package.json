@@ -1,0 +1,41 @@
+{
+  "name": "@deepseek-ai/dsh-typert-protocol",
+  "description": "VENDORED (re-vendored 2026-09-29 at 0.2.0-rc.1, the pinned lane version): copied verbatim from this repo's references/deepseek-harness checkout (packages/typert/protocol/src). WHY THE COPY EXISTS: the DSH Typert generator's identity law (generator isTypeMetaSymbol) recognizes @Remote decorators only when the protocol's declaration files sit inside a registered workspace package under packages/ — the generator is a monorepo tool by construction, so the workspace must carry the protocol as a sibling (DSH's own aggregate references packages/typert/protocol; their tsconfig.host.json). GENERATION FACE ONLY: no pnpm override points at this copy and no consumer resolves it at runtime — every runtime import resolves the registry 0.2.0-rc.1 under node_modules (receipt: readlink of packages/estate/*/node_modules/@deepseek-ai/dsh-typert-protocol; wall: tests/walls/ts/suites/typert-artifact-law.spec.ts pins vendor version === resolved version). The 2026-10-11 de-vendor removed a 0.1.7-rc.2 copy that HAD been live-wired by a root override — that shadow stays dead; this copy restores only the generator registration. DO NOT EDIT the src files — re-vendor from references on upgrade (the copy-don't-invent law, AGENTS.md LAW 1).",
+  "version": "0.2.0-rc.1",
+  "private": true,
+  "type": "module",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
+    },
+    "./src/*": "./src/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/*.js",
+    "lib/*.d.ts"
+  ],
+  "license": "MIT",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.2"
+  },
+  "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
+    "@types/node": "^22.20.1",
+    "typescript": "^5.9.3"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepseek-ai/dsh-brand": "0.2.0-rc.1"
+  }
+}

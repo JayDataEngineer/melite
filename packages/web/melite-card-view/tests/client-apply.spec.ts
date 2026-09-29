@@ -34,6 +34,9 @@ interface FakeCtx {
   };
   failMount: boolean;
   failFiber: boolean;
+  /** the reflect-seam degradation face: ctx.get answers undefined
+   * for every namespace name (the mounts never landed). */
+  absentNamespaces: boolean;
   failRegisterKeys: Set<string>;
   uiSession?: unknown;
   sawSessionSubscribe?: boolean;
@@ -64,6 +67,7 @@ function fakeCtx(): FakeCtx {
     },
     failMount: false,
     failFiber: false,
+    absentNamespaces: false,
     failRegisterKeys: new Set(),
     ctx: {},
   };
@@ -92,6 +96,21 @@ function fakeCtx(): FakeCtx {
       if (fake.failFiber) throw new Error("fiber down");
       def.apply({ remote: fake.remote });
       return {};
+    },
+    // THE REFLECT SEAM (li-bp): the mounter binds through cordis'
+    // inject-free ctx.get — "Read a service from the store without
+    // the inject requirement". The fake answers the four namespace
+    // names the real mounts would have landed.
+    get: (name: string): unknown => {
+      // a dead mount lands no namespaces (the honest store face)
+      if (fake.absentNamespaces || fake.failMount) return undefined;
+      const ns: Record<string, unknown> = {
+        "remote.bench": fake.remote.bench,
+        "remote.drafts": {},
+        "remote.runs": {},
+        "remote.media": {},
+      };
+      return ns[name];
     },
     slots: {
       inject: (_name: string, fn: () => unknown): unknown => fn(),
@@ -218,9 +237,14 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     try {
       await apply(fake.ctx as never);
       // all three contributions fail on the dead mount — each logs,
-      // none throws (the boot survives)
-      expect(fake.errors).toHaveLength(3);
+      // none throws (the boot survives) — and the reflect-seam bind
+      // meets its own loud refusal (the namespaces never landed) plus
+      // the spotlight's honest degrade: five logged errors, every
+      // seat intact (li-bp)
+      expect(fake.errors).toHaveLength(5);
       expect(fake.errors[0]!.join(" ")).toContain("estate remote contribution failed to mount");
+      expect(fake.errors[3]!.join(" ")).toContain("estate direct bind failed");
+      expect(fake.errors[4]!.join(" ")).toContain("bench spotlight off");
       expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
       expect(fake.regs.providers).toHaveLength(1);
     } finally {
@@ -228,13 +252,17 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     }
   });
 
-  test("a dead namespace fiber degrades the provider (benchNs stays absent)", async () => {
+  test("an absent namespace degrades the provider (benchNs stays absent)", async () => {
     const fake = fakeCtx();
-    fake.failFiber = true;
+    // li-bp: the fiber binder is dead (five lane receipts); the
+    // degradation face now is the REFLECT SEAM answering undefined —
+    // the direct bind throws its loud refusal, apply catches it, the
+    // spotlight degrades honestly. The boot survives either way.
+    fake.absentNamespaces = true;
     try {
       await apply(fake.ctx as never);
       expect(fake.errors).toHaveLength(2);
-      expect(fake.errors[0]!.join(" ")).toContain("estate namespace fiber failed");
+      expect(fake.errors[0]!.join(" ")).toContain("estate direct bind failed");
       // the spotlight's own honest degrade (cards-resource.ts: the
       // namespace never mounted — the watcher reports off, loud)
       expect(fake.errors[1]!.join(" ")).toContain("bench spotlight off");
@@ -271,9 +299,10 @@ describe("apply() — the session source (stroke 44)", () => {
   test("the spotlight follows the selected conversation (no session: main)", async () => {
     const fake = fakeCtx();
     // the uiSession adapter answers a conversation; the provider's
-    // open is the observable seam — here the mount holds no bench
-    // namespace (fiber off), so the watcher degrades honestly
-    fake.failFiber = true;
+    // open is the observable seam — here the store answers no bench
+    // namespace (li-bp: the reflect seam reads undefined — the fiber
+    // face died with the binder), so the watcher degrades honestly
+    fake.absentNamespaces = true;
     fake.uiSession = {
       adapter: {
         current: {

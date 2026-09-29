@@ -20,6 +20,9 @@ describe('motion client adapter', () => {
     let pending: (() => void) | null = null
     const registrations: unknown[][] = []
     apply({
+      // the reflect-seam face (li-bp: the factory arms its lazy
+      // estate bind over ctx.get — the inject-free read cordis
+      // documents for services a consumer does not inject)
       slots: {
         inject: (seam: string, callback: () => void) => {
           expect(seam).toBe('cards.stage.view')
@@ -27,6 +30,7 @@ describe('motion client adapter', () => {
         },
         register: (...args: unknown[]) => registrations.push(args),
       },
+      get: (_name: string): unknown => undefined,
     })
     expect(name).toBe('motionStudio')
     expect(inject).toEqual(['slots'])

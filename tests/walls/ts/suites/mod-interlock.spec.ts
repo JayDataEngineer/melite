@@ -23,11 +23,21 @@
 // Run: npx vitest run tests/walls/ts/suites/mod-interlock.spec.ts
 
 import assert from "node:assert/strict";
+// THE PER-FILE BOOT, first import (li-bp's battery red): this spec
+// reads registryIds()/getModel() — the models service singleton —
+// but never booted it, inheriting whatever boot a SIBLING suite in
+// the same fork had left (scoped runs rode a neighbor's boot; the
+// battery's alphabetical order ran this file first, met an unbooted
+// singleton, and five tests died on "models service not booted").
+// The shared helper is the house pattern — same guarantee as every
+// models-* sibling, scoped to the files that ask for it.
+import "../../../helpers/boot-models.ts";
 import { test } from "vitest";
 import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-export of the pinned schemastery (walls cannot import node_modules TS)
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+
 
 /** Registry reads for the derivation (facts.ts renders through injected reads). */
 const reads = { getModel, registryIds, registryModel };

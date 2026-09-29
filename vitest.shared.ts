@@ -76,8 +76,12 @@ export function standardDecoratorPlugin() {
   }
 }
 
-/** The proxy-scrubbing setup file every config declares; exported so the wiring test names it once. */
-export const PROXY_SETUP = './scripts/test-proxy-environment.ts'
+/** The proxy-scrubbing setup file every config declares; exported so the wiring test names it once.
+ * CONFIG-ROOT-ABSOLUTE (2026-09-29, the per-package run fix — the TMP_SWEEP
+ * class): a './'-relative specifier resolves against the INVOKING cwd, so a
+ * package-cwd vitest run hunted <pkg>/scripts/test-proxy-environment.ts and
+ * loaded nothing. Resolved against this file, found from any cwd. */
+export const PROXY_SETUP = path.join(import.meta.dirname, 'scripts/test-proxy-environment.ts')
 
 /**
  * Source-plane resolution facade: the workspace packages whose `exports`/mains point at built

@@ -71,25 +71,93 @@ export interface EstateNamespaces {
 }
 
 let bound: EstateNamespaces | undefined
+/** The armed lazy source (see armEstateRemoteLazyBind): the studio
+ *  bind's order-proof wake, plain JS — no cordis fiber. */
+let lazySource: (() => Partial<EstateNamespaces>) | undefined
 
-/** Capture the namespaces (apply()'s child fiber — or a test's honest
- * fake). Idempotent; the last bind wins. */
+/** Capture the namespaces (the mounter's direct bind — or a test's
+ *  honest fake). Idempotent; the last bind wins. */
 export function bindEstateRemote(namespaces: EstateNamespaces): void {
   bound = namespaces
 }
 
-/** Drop the bind (tests isolate between cases). */
+/** Drop the bind (tests isolate between cases; also disarms the lazy
+ *  source so the next case starts from the honest unbound state). */
 export function unbindEstateRemote(): void {
   bound = undefined
+  lazySource = undefined
 }
 
-/** The bound namespaces — LOUD when unbound: a verb call before the
- * mount (or after unload) is a wiring bug, never a silent fallback. */
+/** Arm the lazy bind (the studio bundles' order-proof wake): the
+ *  factory captures a plain getter reading the namespaces through
+ *  the inject-free reflect seam (ctx.get — cordis' own type doc:
+ *  "Read a service from the store without the inject requirement").
+ *  No cordis fiber, no inject list, no epoch — a getter cannot be
+ *  parked dormant, refused by a proxy, or poisoned into a parent
+ *  fiber's inject set (the four receipts that killed every fiber
+ *  binder). The FIRST verb pulls it (estateRemote, below); if the
+ *  namespaces still do not exist the loud refusal below speaks. */
+export function armEstateRemoteLazyBind(source: () => Partial<EstateNamespaces>): void {
+  lazySource = source
+}
+
+/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
+ *  MOUTH: the first verb after the mounts land pulls the armed
+ *  getter once (order-proof — by first use, the mounter has long
+ *  booted); a verb before the mounts (or on a host without the
+ *  estate plugin) meets the loud wiring refusal, never a hang and
+ *  never a silent fallback. */
 export function estateRemote(): EstateNamespaces {
+  if (bound === undefined && lazySource !== undefined) {
+    try {
+      bindEstateRemoteFromRemote(lazySource())
+    } catch {
+      // the namespaces were still absent at verb time — fall through
+      // to the loud refusal below (the getter stays armed; a later
+      // verb retries against a booted mounter)
+    }
+  }
   if (bound === undefined) {
     throw new Error('estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)')
   }
   return bound
+}
+
+/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
+ *  receipt): the client-bundle preset inlines card-base into every
+ *  consumer bundle, so this module's `bound` singleton exists PER
+ *  BUNDLE — the from-media outage's second layer. Every attempt to
+ *  bind through a RUNTIME child fiber died on cordis' own machinery
+ *  (dotted-only injects: the proxy refuses `child.remote`; parent-
+ *  only: the fiber starts INACTIVE; both: the runner's own inspect
+ *  sync breaks). The harness never binds this way. Its consumers —
+ *  product-analytics, ui-settings, ui-model-selection — declare
+ *  STATIC plugin injects with BOTH levels (`['remote',
+ *  'remote.productAnalytics']`), the loader waits for the mounted
+ *  namespaces before their apply runs, and they read
+ *  `ctx.remote.<namespace>` directly. That is this bind:
+ *
+ *  - a CONSUMING studio declares `export const inject = ['slots',
+ *    'remote', 'remote.bench', 'remote.drafts', 'remote.runs',
+ *    'remote.media']` on its client entry — the loader guarantees
+ *    the namespaces exist when its apply runs;
+ *  - the MOUNTER (card-view) injects only the parent 'remote' (the
+ *    dotted names on the mounter would wait on its own $mount — the
+ *    2026-09-15 deadlock) and binds directly after its mounts;
+ *  - both call THIS function, the one spelling of the bind, loud on
+ *    any absent namespace (a mis-injected entry is a wiring bug,
+ *    never a silent hole).
+ *
+ *  THE WALL pins every studio entry's inject list; the singleton
+ *  throw stays the runtime guard. */
+export function bindEstateRemoteFromRemote(remote: Partial<EstateNamespaces>): EstateNamespaces {
+  const { bench, drafts, runs, media } = remote
+  if (bench === undefined || drafts === undefined || runs === undefined || media === undefined) {
+    throw new Error('estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)')
+  }
+  const namespaces: EstateNamespaces = { bench, drafts, runs, media }
+  bindEstateRemote(namespaces)
+  return namespaces
 }
 
 /** Await one namespace method's RemoteResult and unwrap it: the

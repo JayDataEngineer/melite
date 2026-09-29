@@ -22,6 +22,9 @@ import type { StageViewOwnerProps, PreviewOwnerProps } from '@melite/contracts'
 // The anchor: ui-slots' own slots module imports the module it
 // augments (declaration merging resolves through the same specifier).
 import type { SlotEntryDef } from '@deepseek-ai/dsh-client-ui-slots'
+// The lazy bind the stage-view factory arms (see estate-remote.ts
+// for the law and the four fiber receipts).
+import { armEstateRemoteLazyBind, type EstateNamespaces } from './estate-remote.ts'
 
 /** The seams' entry defs, checked against the merged contract. */
 export type CardSeamDefs = {
@@ -43,8 +46,28 @@ export function defineStageViewRegistration<I extends object = object>(
       component: (props: StageViewOwnerProps & I) => unknown,
     ) => unknown
   }
+  /** The inject-free reflect read (cordis ctx.get: "Read a service
+   *  from the store without the inject requirement") — the only
+   *  order-proof seam a studio bundle owns. */
+  get: (name: string) => unknown
 }) => void {
   return (ctx): void => {
+    // THE BUNDLE-SPLIT BIND (2026-09-29, the fifth receipt): a studio
+    // bundle inlines its own card-base copy whose estate singleton is
+    // unbound until this factory runs. Every cordis-fiber spelling
+    // died on the lane (proxy refuse / INACTIVE / runner inspect sync
+    // / loader-parked-forever — studios load BEFORE the mounter in
+    // the plugin URL, and a static estate inject waits on the
+    // mounter's own $mount). The order-proof wake is PLAIN JS: arm a
+    // getter over the inject-free ctx.get seam; the FIRST verb pulls
+    // it (estateRemote()), long after the mounter booted. A verb on a
+    // host without the estates meets the loud wiring refusal.
+    armEstateRemoteLazyBind(() => ({
+      bench: ctx.get('remote.bench') as EstateNamespaces['bench'] | undefined,
+      drafts: ctx.get('remote.drafts') as EstateNamespaces['drafts'] | undefined,
+      runs: ctx.get('remote.runs') as EstateNamespaces['runs'] | undefined,
+      media: ctx.get('remote.media') as EstateNamespaces['media'] | undefined,
+    }))
     ctx.slots.inject('cards.stage.view', () => {
       ctx.slots.register({
         name: 'cards.stage.view',

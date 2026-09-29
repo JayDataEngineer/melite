@@ -190,7 +190,14 @@ test('uploadInputFile: the estate path rides the param (never the bare name)', a
   const file = new File(['bytes'], 'my photo(1).png', { type: 'image/png' })
   expect(await uploadInputFile(file)).toEqual({ name: 'data/input/x.png', file: 'x.png' })
   const sent = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>
-  expect(sent['filename']).toBe('my_photo_1_.png')
+  // THE REAL NAME, NOT A MANGLED ONE (li-aq.5's audit GAP 4: the
+  // client must not rewrite the name through a charset the contracts'
+  // grammar never declared — the staged name must tell the truth
+  // about the local file; the rail judges it with the shared
+  // grammar). This assertion predates that law and kept expecting the
+  // old `my_photo_1_.png` mangling — invisible while the dom lane's
+  // react alias was dangling and every spec file died at load.
+  expect(sent['filename']).toBe('my photo(1).png')
   expect(String(sent['data']).startsWith('data:')).toBe(true)
 })
 

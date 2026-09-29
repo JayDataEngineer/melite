@@ -49,18 +49,36 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
   // THE PICKER CONTRACT (card-base square-provider): the modal is
   // titled 'From media', described 'The runs library', and serves
   // either pick rows or the honest empty state — never a dead pane.
+  // The pane's first verb fires the lazy estate bind (the order-proof
+  // law: the studio's singleton binds at first use), so the branch
+  // decision WAITS for the pane to settle — rows OR the empty state
+  // — before counting (a count raced against the load reads 0 with
+  // no empty text yet: the dead-pane false positive).
   await expect(page.locator('[role="dialog"]'), 'the picker modal opens').toBeVisible({ timeout: 10_000 })
   await expect(page.getByText('The runs library').first()).toBeVisible({ timeout: 10_000 })
   const rows = page.locator('[data-testid="source-pick-row"]')
+  await expect(
+    rows.first().or(page.getByText('nothing to pick yet')),
+    'the pane settles: pick rows or the honest empty state',
+  ).toBeVisible({ timeout: 15_000 })
   const rowCount = await rows.count()
   if (rowCount === 0) {
     await expect(page.getByText('nothing to pick yet'), 'the honest empty state when the runs library is empty').toBeVisible()
   } else {
     // a pick lands: clicking a row closes the modal and writes the
-    // source (the square gains a thumb — its aria flips to detach)
+    // source. The studio answers with EITHER face — the detach
+    // affordance (the seat accepted the source) or its own vocabulary
+    // law (h3's first-frame seat only accepts timeline-vocabulary
+    // sources: "that source is not in this timeline's vocabulary").
+    // Both are the pick LANDING; a dead pane or a swallowed click is
+    // the #41 outage.
     await rows.first().click({ timeout: 5_000 })
-    await page.waitForTimeout(1_000)
-    await expect(page.locator('[aria-label*="detach"i]').first(), 'the picked source lands (detach affordance appears)').toBeVisible({ timeout: 10_000 })
+    await expect(page.locator('[role="dialog"]'), 'the modal closes on pick').toBeHidden({ timeout: 10_000 })
+    await expect(
+      page.locator('[aria-label*="detach"i]').first()
+        .or(page.getByText("that source is not in this timeline’s vocabulary").or(page.getByText("that source is not in this timeline's vocabulary"))),
+      'the picked source lands: detach affordance or the seat\'s honest vocabulary law',
+    ).toBeVisible({ timeout: 10_000 })
   }
 
   expect(errors, errors.join('\n')).toEqual([])

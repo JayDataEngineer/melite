@@ -596,6 +596,48 @@ describe("THE RUN SEAT RIDES THE SAME DECLARATION (li-o's second voice)", () => 
   });
 });
 
+describe("THE OPERATOR'S FACE (the 2026-09-29 outage, pinned 2026-09-29)", () => {
+  // The reported surface read "Generate Image: lane 'krea-2/turbo'
+  // refuses the state: this lane requires 'prompt' — 'prompt' is not
+  // stated — every image lane states WHAT the picture is — write the
+  // prompt" AT THE RUN DOOR. The doors themselves were never the bug
+  // (the typed prompt died upstream in the studio's silent bench
+  // write), but the refusal arriving at the RUN door means the write
+  // door's same-voice refusal was never met — because the write never
+  // happened. This pins BOTH doors on the exact state the operator
+  // saw: the bench-write door refuses the promptless krea-2/turbo
+  // draft FIRST, in the field's voice; the run seat refuses the same
+  // state with the SAME lane voice; the cured draft composes. If the
+  // two doors ever diverge on this face again, this wall is red.
+  const PROMPTLESS = { model: "krea-2", variant: "turbo" } as Record<string, unknown>;
+
+  it("the bench-write door refuses the promptless krea-2/turbo draft FIRST, in the field's voice", () => {
+    const verdict = svc.admitStageRelations("image-gen", PROMPTLESS);
+    expect(verdict.ok, "a promptless image draft never reaches the run door").toBe(false);
+    if (!verdict.ok) {
+      expect(verdict.error).toContain("lane 'krea-2/turbo' refuses the state");
+      expect(verdict.error).toContain("this lane requires 'prompt'");
+      expect(verdict.error).toContain("'prompt' is not stated");
+      expect(verdict.error).toContain("every image lane states WHAT the picture is");
+      expect(verdict.error).toContain("write the prompt");
+    }
+  });
+
+  it("the run seat refuses the same state with the SAME lane voice (the parity promise)", async () => {
+    await expect(
+      svc.phase1Card({ ...PROMPTLESS }, "krea-2"),
+    ).rejects.toThrow(/lane 'krea-2\/turbo' refuses the state.*write the prompt/);
+  });
+
+  it("the cured draft (prompt stated) composes phase 1 — the door and the run agree", async () => {
+    const phase1 = await svc.phase1Card(
+      { ...PROMPTLESS, prompt: "a red bicycle against a white wall" },
+      "krea-2",
+    );
+    expect(phase1.fam).toBe("krea-2");
+  });
+});
+
 describe("THE PARITY LAW (the write door and the run must agree, BOTH ways)", () => {
   // The one wall that matters above all: a state the door admits and
   // the run refuses is a broken promise in the one direction the
