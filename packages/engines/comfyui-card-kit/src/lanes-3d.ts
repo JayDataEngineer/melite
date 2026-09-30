@@ -119,17 +119,13 @@ interface MeshLane {
 // goldens in that family's tests/golden/). This arm is deleted; the family is
 // the only home of the lane.
 
-/** transfer_rig_t1 — the rig copy: two mount-path constants feed the
- *  GPU KNN weight transfer; SaveRiggedModel persists the written GLB. */
-export function transferRigArm(g: GraphBuilder, p: Record<string, unknown>): void {
-  const rigged = g.node('PrimitiveString', { value: p.rigged_glb as string }).out()
-  const target = g.node('PrimitiveString', { value: p.target_glb as string }).out()
-  const outPath = g.node('KimodoTransferWeights', {
-    rigged_path: rigged, target_path: target,
-  }).out()
-  g.node('SaveRiggedModel', { rigged_path: outPath })
-}
-
+// THE RIG ARMS ARE FAMILY-OWNED (the kit-arm retirement, 2026-09-30 —
+// closed by the card-system stroke): the rig card's three lanes are the
+// families' declared actions — transfer_rig's `transfer` (the copy
+// lane), gem_soma's `rig` (the SOMA-77 auto lane), anycreature's
+// `bind` (the species lane). The card's mode knob names the family;
+// every node is composed family-side, each lane pinned to a committed
+// golden.
 // ── the rig card's arms (ROADMAP card program P0) ───────────────────
 // "skeleton + weights on this GLB" — three real lanes over the
 // vendored packs, all path-based (no checkpoints):
@@ -148,39 +144,7 @@ export function transferRigArm(g: GraphBuilder, p: Record<string, unknown>): voi
 // external ComfyUI-SkinToken pack is vendored + verified — a lane
 // whose node cannot register is not a lane (LAW 2).
 
-/** The rig card's SOMA auto arm — one KimodoExportFBX (the node's
- *  own action dispatch picks 'apply_weights' for a lone source_glb).
- *  rigged_path is the node's required "connect or leave empty" slot
- *  — an empty PrimitiveString rides (the dispatch never reads it on
- *  this arm). decimation defaults OFF on this surface (the node's
- *  own 0.2 default belongs to the export tail, not the rig hop). */
-export function rigSomaArm(p: Record<string, unknown>, g: GraphBuilder): void {
-  const source = g.node('PrimitiveString', { value: p.mesh_glb as string }).out()
-  const empty = g.node('PrimitiveString', { value: '' }).out()
-  g.node('KimodoExportFBX', {
-    rigged_path: empty,
-    source_glb: source,
-    file_format: 'glb',
-    preserve_texture: p.preserve_texture === true,
-    decimate_ratio: p.decimate_ratio as number,
-  })
-}
 
-/** The rig card's species arm — one RayCreatureRigBridge (bind a
- *  static mesh onto an anyCreature template skeleton; the node
- *  writes the bound GLB itself). */
-export function rigSpeciesArm(p: Record<string, unknown>, g: GraphBuilder): void {
-  const creature = g.node('PrimitiveString', { value: p.creature_glb as string }).out()
-  const mesh = g.node('PrimitiveString', { value: p.mesh_glb as string }).out()
-  const bound = g.node('RayCreatureRigBridge', {
-    creature_glb: creature,
-    mesh_glb: mesh,
-    height_ratio: p.height_ratio as number,
-    max_influences: p.max_influences as number,
-    strip_body: p.strip_body === true,
-  }).out()
-  g.node('SaveRiggedModel', { rigged_path: bound })
-}
 
 // ADMITMESHLIFT IS GONE (the kit-arm retirement, 2026-09-30): it existed for the
 // mesh arms, and each mesh family now carries its own copy inside its

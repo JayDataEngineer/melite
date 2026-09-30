@@ -1,0 +1,39 @@
+{
+  "PrimitiveString.0": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/m/creature.glb"
+    }
+  },
+  "PrimitiveString.1": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/m/mesh.glb"
+    }
+  },
+  "RayCreatureRigBridge.0": {
+    "class_type": "RayCreatureRigBridge",
+    "inputs": {
+      "creature_glb": [
+        "PrimitiveString.0",
+        0
+      ],
+      "mesh_glb": [
+        "PrimitiveString.1",
+        0
+      ],
+      "height_ratio": 0.9,
+      "max_influences": 4,
+      "strip_body": false
+    }
+  },
+  "SaveRiggedModel.0": {
+    "class_type": "SaveRiggedModel",
+    "inputs": {
+      "rigged_path": [
+        "RayCreatureRigBridge.0",
+        0
+      ]
+    }
+  }
+}

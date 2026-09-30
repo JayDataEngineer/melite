@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { rig } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "gem_soma",
@@ -69,6 +70,9 @@ export const DECL: ModelDecl = {
       "default": "default"
     }
   ],
+  // the rig action the rig card binds for its `auto` mode (the
+  // SOMA-77 weight transfer — the weights ship in the autorig pack).
+  "actions": [rig],
 };
 
 export const family: Plugin = {
@@ -78,3 +82,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { rig } from "./actions.ts";

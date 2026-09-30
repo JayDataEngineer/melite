@@ -30,7 +30,11 @@
 //    bound mesh).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { rigSomaArm, rigSpeciesArm, transferRigArm } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as transferRigDecl, transfer as transferRigAction } from '@melite/models-transfer_rig'
+import { DECL as gemSomaDecl, rig as somaRigAction } from '@melite/models-gem_soma'
+import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/models-anycreature'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 
@@ -105,7 +109,7 @@ export function apply(ctx: Context): void {
     ],
     requires: ['melite-autorig-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, _model, g, _runId) {
+    compose(p, _model, g, runId) {
       // THE SCHEMA GATE (the quad-remesh precedent): the declared
       // types + bounds own the last hop into the engine; every read
       // below is a read of the GATED doc.
@@ -120,21 +124,35 @@ export function apply(ctx: Context): void {
         const donor = String(doc.donor_glb || '')
         if (!donor.trim()) {
           throw new Error(
-            `required param 'donor_glb' (Rigged donor GLB) missing on the rig card's copy lane — the rig copy needs the donor whose skeleton + weights transfer`)
+            `required param 'donor_glb' (Rigged donor GLB) missing on the rig card's copy lane — the rig copy needs the donor rig AND the clothed target`,
+          )
         }
-        transferRigArm(g, { rigged_glb: donor, target_glb: mesh })
+        // THE DECLARED SEGMENT (the atom vocabulary, stroke 2): the
+        // card's mode knob names the family; the family composes the
+        // lane. Nothing below authors a node — the three arms moved to
+        // the families that own them (transfer_rig, gem_soma,
+        // anycreature), each pinned to a committed golden.
+        const action = declaredAction(transferRigDecl, 'transfer')
+        const row: ModelFacts = { id: transferRigDecl.id, family: transferRigDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
+        instantiateAction(action, { rigged_glb: donor, target_glb: mesh } as never, row, g, runId)
         return
       }
       if (mode === 'species') {
         const creature = String(doc.creature_glb || '')
         if (!creature.trim()) {
           throw new Error(
-            `required param 'creature_glb' (Creature template GLB) missing on the rig card's species lane — the bind needs the anyCreature skeleton GLB`)
+            `required param 'creature_glb' (Creature template GLB) missing on the rig card's species lane — the species bind needs both the creature template and the mesh`,
+          )
         }
-        rigSpeciesArm(doc, g)
+        const action = declaredAction(anycreatureDecl, 'bind')
+        const row: ModelFacts = { id: anycreatureDecl.id, family: anycreatureDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
+        instantiateAction(action, { creature_glb: creature, mesh_glb: mesh, height_ratio: doc.height_ratio, max_influences: doc.max_influences, strip_body: doc.strip_body } as never, row, g, runId)
         return
       }
-      rigSomaArm(doc, g)
+      // auto — the SOMA-77 template's own weights
+      const action = declaredAction(gemSomaDecl, 'rig')
+      const row: ModelFacts = { id: gemSomaDecl.id, family: gemSomaDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
+      instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture, decimate_ratio: doc.decimate_ratio } as never, row, g, runId)
     },
   }))
 }

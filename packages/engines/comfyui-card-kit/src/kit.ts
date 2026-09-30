@@ -65,9 +65,6 @@ export {
   finalizeAnny,
   MOTION_STRIP,
   finalizeMotion,
-  rigSomaArm,
-  rigSpeciesArm,
-  transferRigArm,
   MESH_RESOLUTIONS,
   MESH_BG_MODES,
   MESH_PIXAL_FOVS,
@@ -77,7 +74,6 @@ export {
   MESH_NORMAL_SIZES,
 } from './lanes-3d.ts'
 export {
-  maskT1,
   TAGGER_STRIP,
   finalizeTagger,
   finalizeMask,

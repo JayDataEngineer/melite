@@ -1,0 +1,36 @@
+{
+  "PrimitiveString.0": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/models/rigs/donor-rigged.glb"
+    }
+  },
+  "PrimitiveString.1": {
+    "class_type": "PrimitiveString",
+    "inputs": {
+      "value": "/out/clothed-target.glb"
+    }
+  },
+  "KimodoTransferWeights.0": {
+    "class_type": "KimodoTransferWeights",
+    "inputs": {
+      "rigged_path": [
+        "PrimitiveString.0",
+        0
+      ],
+      "target_path": [
+        "PrimitiveString.1",
+        0
+      ]
+    }
+  },
+  "SaveRiggedModel.0": {
+    "class_type": "SaveRiggedModel",
+    "inputs": {
+      "rigged_path": [
+        "KimodoTransferWeights.0",
+        0
+      ]
+    }
+  }
+}

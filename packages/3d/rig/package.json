@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the rig card (the 3d lane) — skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor→target), species (anyCreature bridge)",
+  "description": "the rig card (the 3d lane) \u2014 skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor\u2192target), species (anyCreature bridge)",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -18,7 +18,10 @@
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/contracts": "workspace:*"
+    "@melite/contracts": "workspace:*",
+    "@melite/models-anycreature": "workspace:*",
+    "@melite/models-gem_soma": "workspace:*",
+    "@melite/models-transfer_rig": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

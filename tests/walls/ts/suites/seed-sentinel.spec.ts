@@ -196,8 +196,10 @@ describe("GATE S: the seed sentinel mints at render", () => {
       [
         "anima/src/actions.ts",
         "anny/src/actions.ts",
+        "anycreature/src/actions.ts",
         "autoremesher/src/actions.ts",
         "florence2/src/actions.ts",
+        "gem_soma/src/actions.ts",
         "h3/src/actions.ts",
         "input/src/actions.ts",
         "joycaption/src/actions.ts",

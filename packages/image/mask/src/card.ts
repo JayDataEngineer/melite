@@ -40,12 +40,14 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import {
   finalizeMask,
-  maskT1,
   IMPACT_DETECTOR_IDS,
   IMPACT_DETECTOR_PROVISIONS,
   IMPACT_PACKS,
   impactArmNames,
 } from '@melite/comfyui-card-kit'
+import { instantiateAction } from '@melite/comfyui-card-kit'
+import { mask as maskLane } from './lane.ts'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 import { bag } from '@melite/contracts/extraKeys'
 
@@ -657,7 +659,21 @@ export function apply(ctx: Context): void {
       }
       if (paintMasks.length > 0) lane['paint_masks'] = paintMasks
 
-      maskT1(lane, PINS, g, runId)
+      // THE TOOL LANE (the atom vocabulary, stroke 2 — the card-system
+      // stroke): this card boards no family, so its lane is declared
+      // HERE as an action rather than authored inline — the pins are
+      // its facts, the knobs its params, the tree its build. The card
+      // composes it through the same interpreter every family's lane
+      // rides; the kit's `maskT1` is deleted with the move. A tool
+      // lane has no family DECL to resolve against, so the card's own
+      // declaration IS the action — `declaredAction` is the FAMILY
+      // resolver, and a card that declared a DECL to satisfy it would
+      // be a fake atom.
+      const row: ModelFacts = {
+        id: 'mask', family: 'mask', card: 'mask', defaults: {},
+        lane_inputs: { ...PINS }, variants: [], variant_groups: [], outputs: [], mods: [],
+      }
+      instantiateAction(maskLane, lane as never, row, g, runId)
     },
     // THE 512-HINT STRIP (the red-box hunt): kills the autofilled
     // {0,0,512,512} bboxes default on unscoped SAM3 detects (an

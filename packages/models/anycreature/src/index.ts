@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { bind } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "anycreature",
@@ -45,6 +46,9 @@ export const DECL: ModelDecl = {
       "cells": [],
     }
   ],
+  // the bind action the rig card binds for its `species` mode (the
+  // anyCreature skeleton bind — the caller brings both GLBs).
+  "actions": [bind],
 };
 
 export const family: Plugin = {
@@ -54,3 +58,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { bind } from "./actions.ts";
