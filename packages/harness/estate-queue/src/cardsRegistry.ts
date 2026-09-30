@@ -581,13 +581,14 @@ export class CardRegistryService extends Service {
         // The stage list names BOTH planes' riders: card stages by
         // card id, family stages by family.action (the five census
         // flows carry no card at all — compose-at-expansion, stroke 4).
-        const riders: string[] = [];
+        const cardRiders: string[] = [];
+        const familyRiders: string[] = [];
         for (const s of flow.stages) {
           const stage = s as { card?: unknown; family?: unknown; action?: unknown };
           if (typeof stage.card === "string" && stage.card !== "") {
-            riders.push(stage.card);
+            cardRiders.push(stage.card);
           } else if (typeof stage.family === "string" && stage.family !== "") {
-            riders.push(
+            familyRiders.push(
               stage.family + "." +
               (typeof stage.action === "string" ? stage.action : "?"),
             );
@@ -595,9 +596,18 @@ export class CardRegistryService extends Service {
         }
         return {
           ok: false,
-          error: "'" + card + "' is a flow, not a card — stages take card ids; compose its stages (" +
-            ([...new Set(riders)].join(", ") || "none listed") +
-            ") with add_stage (melite_load names the flow's stages and wiring)",
+          // The honest split: card riders compose onto the bench
+          // with add_stage; family riders (family.action) compose
+          // at expansion when the FLOW runs — the bench has no
+          // family-stage seat, so promising add_stage for them
+          // sent makers hunting a door that does not exist (the
+          // census commission, 2026-10-10).
+          error: "'" + card + "' is a flow, not a card — run it through the run doors " +
+            "(melite_flow) where its stages compose at expansion: card riders (" +
+            ([...new Set(cardRiders)].join(", ") || "none") +
+            ") may also be benched with add_stage; family riders (" +
+            ([...new Set(familyRiders)].join(", ") || "none") +
+            ") ride the flow itself (melite_load names the wiring)",
           offered: [],
         };
       }

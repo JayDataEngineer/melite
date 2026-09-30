@@ -203,7 +203,7 @@ describe("admitStageModel (the write-time gate)", () => {
     expect(r.ok).toBe(false);
     if (r.ok === false) {
       expect(r.error).toMatch(/is a flow, not a card/);
-      expect(r.error).toMatch(/add_stage/);
+      expect(r.error).toMatch(/melite_flow/);
       expect(r.offered).toEqual([]);
     }
   });
