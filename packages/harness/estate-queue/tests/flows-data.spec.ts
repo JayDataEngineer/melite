@@ -328,6 +328,12 @@ describe("registryInitialsError", () => {
         registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: "" }, r)!,
         /"bone" must be a non-empty name/,
       );
+      // a NON-STRING bone is present-but-wrong: the text-kind arm
+      // speaks, rather than a path or a number riding as a name
+      assert.match(
+        registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: 42 as never }, r)!,
+        /"bone" must be a non-empty name/,
+      );
       // (the gate walks keys in declaration order, so the two files
       // are real on disk before the bone's own shape is judged)
       writeFileSync(join(r.repoRoot, "b.glb"), "glb");
