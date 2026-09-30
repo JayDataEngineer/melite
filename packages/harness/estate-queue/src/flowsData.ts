@@ -276,6 +276,20 @@ export function registerRegistryFlow(flow: RegistryFlow): () => void {
       `flow '${String(flow.id)}' has no stages — a flow is a pipeline, an empty one is authoring noise`,
     );
   }
+  // THE SEAM'S TWO HALVES MUST AGREE (registration, not first use):
+  // a required initial the flow does not also VALIDATE gets no shape
+  // check, and the extractor — which walks initialValidators — never
+  // lifts it, so the value would reach the merge unlinked and die
+  // there as an unresolvable token. Refuse the row at its one
+  // registration instead of at the door, sixty seconds later.
+  for (const key of flow.requiredInitials ?? []) {
+    if (flow.initialValidators[key] === undefined) {
+      throw new Error(
+        `flow '${String(flow.id)}' requires initial '${key}' but declares no validator for it — ` +
+        "a required initial needs its kind (the gate shapes it; the extractor lifts it)",
+      );
+    }
+  }
   LIVE_FLOWS.set(flow.id, flow);
   return () => {
     // only OUR row dies — a later registration under the same id
@@ -560,6 +574,12 @@ export function normalizedInitialValue(
   kind: RegistryInitialKind,
   value: unknown,
 ): string | null {
+  // A TEXT initial is a BARE NAME: nothing unwraps it and nothing
+  // path-shaped reaches it, so the {path: …} arm below never runs
+  // for one. (It used to: a file path could be lifted as a bone
+  // name, reachable only because every call site runs the gate
+  // first — this arm makes the extractor honest on its own.)
+  if (kind === "text") return typeof value === "string" ? value : null;
   if (typeof value === "string") return value;
   if (kind === "bake_params") {
     // JSON.stringify(undefined) is undefined — the null-ish check
@@ -605,8 +625,10 @@ export function extractRequestInitials(
           (kind === "bake_params"
             ? " must be a params_json string or object (got " +
               (typeof value) + ")"
-            : " must be a file path string or {path: ...} (got " +
-              (typeof value) + ")"),
+            : kind === "text"
+              ? " must be a bare name (got " + (typeof value) + ")"
+              : " must be a file path string or {path: ...} (got " +
+                (typeof value) + ")"),
       };
     }
     initials[key] = normalized;
@@ -617,7 +639,13 @@ export function extractRequestInitials(
 // REBUILD-13 cut) ──
 
 function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
-  if ("initial" in edge) return "initial '" + edge.initial + "'";
+  // A REQUIRED INITIAL SAYS SO (the door refuses a request without
+  // it; the served body is where a caller learns that before they
+  // try). The flow's own requiredInitials list is the one truth.
+  if ("initial" in edge) {
+    return "initial '" + edge.initial + "'" +
+      ((flow.requiredInitials ?? []).includes(edge.initial) ? " (REQUIRED)" : "");
+  }
   const src: string = edge.stage + "." + edge.output;
   let kind = "";
   for (const st of flow.stages) {

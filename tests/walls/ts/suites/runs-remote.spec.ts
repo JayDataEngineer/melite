@@ -4,7 +4,7 @@
 // storage, drafts, runs — over one mkdtemp state root. NO comfyui
 // seat on purpose: the pump's engine seam must settle the run
 // FAILED with the loud miswire text (never a silent accept).
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { test } from "vitest";
@@ -726,6 +726,24 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     ok?: boolean;
   };
   assert.equal(fitSeat["ok"], true);
+  // and START registers the run (validate alone is not the claim):
+  // the door extracts the text initial, composes the verb, and the
+  // run exists before the pump settles it.
+  const bodyFile = join(tmpdir(), "fit-seat-body-" + Date.now() + ".glb");
+  const propFile = join(tmpdir(), "fit-seat-prop-" + Date.now() + ".glb");
+  writeFileSync(bodyFile, "glb");
+  writeFileSync(propFile, "glb");
+  try {
+    const fitStarted = (await runs.start(
+      { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r",
+        body: bodyFile, prop: propFile },
+      sig,
+    )) as Record<string, unknown>;
+    assert.match(String(fitStarted["run_id"]), /^run-/);
+  } finally {
+    rmSync(bodyFile, { force: true });
+    rmSync(propFile, { force: true });
+  }
   // 3. start on a single-stage flow: expansion rides the inline
   //    pipeline and the run REGISTERS (the pin sweep is the
   //    validate gate; start's engine seam is the pump) — the run
