@@ -16,9 +16,9 @@ import { join } from "node:path";
 import {
   resolveArtifactFile,
   findCardDangling,
+  findDanglingRefs,
   sweepOutputRoots,
 } from "../src/cardsDangling.ts";
-import { findDanglingRefs } from "../src/runsValidateArtifacts.ts";
 
 const ROOT = join(tmpdir(), "melite-dangling-" + process.pid);
 mkdirSync(ROOT, { recursive: true });
@@ -165,15 +165,26 @@ describe("resolveArtifactFile (the artifact rim)", () => {
       /malformed artifact URL/,
     );
   });
-  it("a non-artifact URL refuses the shape", () => {
-    assert.throws(
-      () => resolveArtifactFile("https://host/x.png", ROOT),
-      /not an artifact URL/,
-    );
+  it("one voice for non-swept shapes: a bare name refuses; runs-relative and absolute paths resolve", () => {
+    // The consolidated resolver keeps the validate door's faithful
+    // port (artifact_refs.py): a runs-relative <run>/<file> joins
+    // the root, an absolute path is its own candidate, and only a
+    // BARE name refuses — the ComfyUI input dir is the caller's
+    // staging concern, never a disk lookup. The old strict arm
+    // ("not an artifact URL") was the compose-side drift of the
+    // same function (card-plane audit finding 1, 2026-09-30).
     assert.throws(
       () => resolveArtifactFile("relative.png", ROOT),
-      /not an artifact URL/,
+      /artifact ref is a bare "relative.png" — not an absolute path, an artifact URL/,
     );
+    assert.throws(
+      () => resolveArtifactFile("https://host/x.png", ROOT),
+      /artifact not found on disk/,
+    );
+    mkdirSync(join(ROOT, "run-rel"), { recursive: true });
+    writeFileSync(join(ROOT, "run-rel", "x.png"), "x");
+    assert.equal(resolveArtifactFile("run-rel/x.png", ROOT), join(ROOT, "run-rel", "x.png"));
+    assert.equal(resolveArtifactFile(join(ROOT, "run-rel", "x.png"), ROOT), join(ROOT, "run-rel", "x.png"));
   });
   it("a well-formed URL to a MISSING file refuses not-found (run id voiced)", () => {
     assert.throws(

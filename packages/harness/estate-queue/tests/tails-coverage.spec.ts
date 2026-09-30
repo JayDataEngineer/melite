@@ -5,8 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { CardArmError, phaseRefusal } from "../src/cardsArmError.ts";
 import { inlineEdge, inlineSkip, inlineKind } from "../src/runsValidateInline.ts";
-import { resolveArtifactFile, refLocations, findDanglingRefs } from "../src/runsValidateArtifacts.ts";
-import { sweepOutputRoots } from "../src/cardsDangling.ts";
+import { resolveArtifactFile, refLocations, findDanglingRefs, sweepOutputRoots } from "../src/cardsDangling.ts";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

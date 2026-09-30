@@ -28,7 +28,7 @@
 export { FlowError } from "./runsValidateShared.ts";
 export type { CardRegistryLike, FlowsValidateAnswer } from "./runsValidateShared.ts";
 export { strictBody } from "./runsValidateStages.ts";
-export { findDanglingRefs } from "./runsValidateArtifacts.ts";
+export { findDanglingRefs } from "./cardsDangling.ts";
 export { inlineArm, serveSubject } from "./runsValidateServe.ts";
 
 // ── the door ────────────────────────────────────────────────────

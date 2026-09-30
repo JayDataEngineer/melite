@@ -1,6 +1,9 @@
-// cardsDangling.ts — the artifact-ref sweep. Extracted from
-// cardsRegistry: resolve run-artifact refs against the out roots
-// and walk bodies for every ref location.
+// cardsDangling.ts — the artifact-ref sweep, the ONE home both
+// doors ride (the compose gate's first hit and the validate
+// door's all-hits mirror share scanRefs — one resolver, one
+// voice per refusal). Extracted from cardsRegistry: resolve
+// run-artifact refs against the out roots and walk bodies for
+// every ref location.
 //
 // THE CROSS-ROOTS LAW (§23, extended here 2026-09-24 — receipt
 // transcript-034 step 18: the compose door refused a LIVE portrait
@@ -70,13 +73,22 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
       );
     }
     cand = join(outRoot, rel);
-    /* v8 ignore start -- refLocations yields artifact-URL strings only:
-       the shape arm never fires through the one caller (2026-09-12) */
+    /* v8 ignore start -- refLocations yields prefix-URL refs only (the
+       gateway feeds /v1/assets/runs/... URLs): the relative/absolute/bare
+       shapes are ported for faithfulness, unreachable here (2026-09-12) */
+  } else if (raw.includes("/") && !raw.startsWith("/")) {
+    cand = join(outRoot, raw);
+  } else if (raw.startsWith("/")) {
+    cand = raw;
   } else {
     throw new Error(
-      "artifact ref is not an artifact URL (" +
+      "artifact ref is a bare " +
+        JSON.stringify(raw) +
+        " — not an absolute path, an artifact URL (" +
         ASSET_RUNS_PREFIX + "<run>/<file> or " + MEDIA_RUNS_PREFIX +
-        "<run>/<file>): " + JSON.stringify(raw),
+        "<run>/<file>), or a runs-relative " +
+        "<run>/<file> (a bare filename lives in the ComfyUI input " +
+        "dir and is the caller's staging concern, never a disk lookup)",
     );
     /* v8 ignore stop */
   }
@@ -95,8 +107,9 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
     isFile = false;
   }
   if (!isFile) {
-    // (raw carries a matched prefix here — the slice always yields a run id.)
-    const run: string = raw.slice((prefix as string).length).split("/", 2)[0] as string;
+    const run: string = prefix !== null
+      ? raw.slice(prefix.length).split("/", 2)[0] as string // split yields >= 1
+      : /* v8 ignore next -- refs always carry a prefix through refLocations (2026-09-12) */ "?";
     throw new Error(
       "artifact not found on disk: " + JSON.stringify(raw) + " (looked up " + absCand + ") — the " +
         "upstream run may have been pruned, or the ref was never an output of run " + run,
@@ -127,14 +140,14 @@ export function refLocations(body: unknown): Array<{ location: string; ref: stri
   return out;
 }
 
-/** find_dangling_refs semantics: the first dangling (location, ref,
- *  why), or null when every wired artifact URL is live under ANY
- *  swept tree (§23 — the manifest walk, own root first; a miss
- *  names every searched tree so a two-roots box stays debuggable). */
-export function findCardDangling(
-  body: Record<string, unknown>,
-): [string, string, string] | null {
+/** The shared sweep body: every dangling (location, ref, why) in
+ *  refLocations' DFS order, each miss quoting the PRIMARY root
+ *  lookup (artifact_refs.py:161) + every searched tree (the
+ *  NAME-THE-ROOT law, §23 — receipt transcript-034 step 18: the
+ *  old voice named ONE tree and read like a pruned run). */
+function scanRefs(body: Record<string, unknown>): Array<[string, string, string]> {
   const roots: string[] = sweepOutputRoots();
+  const dangling: Array<[string, string, string]> = [];
   for (const { location, ref } of refLocations(body)) {
     let live = false;
     let primaryErr: Error | null = null;
@@ -148,16 +161,27 @@ export function findCardDangling(
       }
     }
     if (!live) {
-      // The NAME-THE-ROOT law (§23): the refusal carries the full
-      // manifest walk so the lane's two-roots moments read at a
-      // glance (receipt transcript-034 step 18 — the old voice
-      // named ONE tree and read like a pruned run).
-      return [
-        location,
-        ref,
-        (primaryErr as Error).message + " " + searchedVoice(roots),
-      ];
+      dangling.push([location, ref, (primaryErr as Error).message + " " + searchedVoice(roots)]);
     }
   }
-  return null;
+  return dangling;
+}
+
+/** find_dangling_refs semantics: every dangling (location, ref,
+ *  why) — the validate door's all-hits mirror. */
+export function findDanglingRefs(
+  body: Record<string, unknown>,
+): Array<[string, string, string]> {
+  return scanRefs(body);
+}
+
+/** The compose gate's first-hit question: the first dangling
+ *  (location, ref, why), or null when every wired artifact URL is
+ *  live under ANY swept tree (§23 — the manifest walk, own root
+ *  first; a miss names every searched tree so a two-roots box
+ *  stays debuggable). */
+export function findCardDangling(
+  body: Record<string, unknown>,
+): [string, string, string] | null {
+  return scanRefs(body)[0] ?? null;
 }
