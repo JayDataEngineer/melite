@@ -13,7 +13,7 @@ import assert from "node:assert/strict"
 import { useState } from "react"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
-import { deliveredFrames } from "../src/timelineContract.ts"
+import { deliveredFrames } from '@melite/models-h3/timelineContract'
 import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
 import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"

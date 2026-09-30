@@ -76,6 +76,11 @@ const slice = {
     // a ROUTE row: an alias address owned by base-model — the
     // exporter rule re-addresses its kept variants to ITSELF
     "alias-route": { card: "the-card", card_knobs: [] },
+    // the OWNING FAMILY rostered: its claimed-but-unrostered
+    // addresses (cell-route) derive below (the third live break's
+    // cure — the hand roster's drift can no longer strand a
+    // registry-claimed route)
+    "base-model": { card: "the-card", card_knobs: [] },
   },
   cards: { "the-card": { outputs: [], requires_by_family: { fam: ["steps"] } } },
   extension_node_types: { Custom: ["a", "b"] },
@@ -125,6 +130,25 @@ describe("loadFacts (the derivation arms)", () => {
     // kept: the owner-addressed variant (re-addressed to self) +
     // the shared-matrix '' row; dropped: the sibling's v-other table
     assert.deepEqual(row.variants.map((v) => v.route), ["alias-route", ""]);
+  });
+
+  it("THE EXPORTER RULE, AUTOMATED: a claimed-but-unrostered address of a ROSTERED family derives its own row", () => {
+    // the third live break ('no-model-facts: krea-2-raw'): the
+    // registry claims cell-route (base-model's cell) and the hand
+    // roster never listed it — compose phase 1 refused a route the
+    // registry itself resolves. The derivation fills over the hand
+    // roster: same deriveRow, the owner's card slice.
+    const row = facts.models["cell-route"];
+    assert.ok(row, "cell-route derives (the roster's omission is no longer a run break)");
+    assert.equal(row.card, "the-card", "the owner's card owns the route's slice");
+    assert.deepEqual(row.requires_by_family, { fam: ["steps"] }, "the owner's card slice rides");
+  });
+
+  it("an UNSERVED family's claimed addresses stay absent (a serving decision, never drift)", () => {
+    // routed-model is registered and claims its self-route, but no
+    // roster row serves it — the derivation must not paper a
+    // serving decision into existence
+    assert.equal(facts.models["routed-model"], undefined);
   });
 
   it("extension node types ride", () => {

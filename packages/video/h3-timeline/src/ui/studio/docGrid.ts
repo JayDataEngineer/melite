@@ -33,7 +33,7 @@ import {
   gridSnap,
   isGridLength,
   transitionOverlap,
-} from "../../timelineContract.ts"
+} from '@melite/models-h3/timelineContract'
 import type { DocCall } from "./docModel.ts"
 
 /** Is this window's seam a carried join? Index-aware, exactly the

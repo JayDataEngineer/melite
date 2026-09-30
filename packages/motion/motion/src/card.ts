@@ -5,7 +5,9 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { DECL as kimodoDecl } from '@melite/models-kimodo'
-import { motionLane, finalizeMotion } from '@melite/comfyui-card-kit'
+import { declaredAction, finalizeMotion, instantiateAction } from '@melite/comfyui-card-kit'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
@@ -31,6 +33,15 @@ export const schema = z.object({
 
 // THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
 export const BOARDED: string[] = [kimodoDecl.id]
+
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
+export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
+export const ACTION_BINDINGS: Record<string, Binding> = {
+  [kimodoDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(kimodoDecl, 'compose'), p, model, g, runId),
+}
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
@@ -88,7 +99,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     ],
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, model, g) {
+    compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
       // engine): schemastery walk enforces declared types + bounds
@@ -101,7 +112,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing on the motion card — the motion lane generates FROM a text prompt")
       }
-      motionLane(doc, model, g)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the motion card — every boarded family (kimodo) composes its own declared segment; this address owns none`)
+      }
     },
     finalize: finalizeMotion,
   }))

@@ -707,7 +707,7 @@ describe("curated vocabulary subsets derive from the engine SSOT", () => {
       "../../../../packages/engines/comfyui-card-kit/src/vocab.ts"
     );
     const src = readFileSync(
-      "packages/video/h3-timeline/src/card.ts",
+      "packages/models/h3/src/schema.ts",
       "utf8",
     );
     const named = src.match(/const H3_RECOMMENDED_SAMPLERS = \[([\s\S]*?)\] as const/);

@@ -12,6 +12,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
+import { ACTION_BINDINGS } from "../src/card.ts";
 import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
 import { fieldsOf, type FormSpecDoc, type SchemaEnvelope } from "@melite/card-base";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -204,5 +205,52 @@ describe("the dual-face law: the root is the row-mount marker", () => {
     const ctx = new Context();
     marker.apply(ctx);
     assert.equal(marker.name, "@melite/3d-img-to-mesh");
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the img-to-mesh card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// the legacy id-switch while its siblings compose the declared
+// segment; (2) the row composes ITS OWN declared segment — the lift
+// saves the textured glb, the rig copy saves the rigged glb. The
+// declared fallback (a family-less row) rides the legacy arms.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "img-to-mesh");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 3, `expected the served img-to-mesh addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    const fam = row.family ?? row.id;
+    const isRig = fam === "transfer_rig";
+    const params = isRig
+      ? { rigged_glb: "/m/donor.glb", target_glb: "/m/target.glb" }
+      : { input_image: "/m/photo.png", ...row.defaults };
+    const saveClass = isRig ? "SaveRiggedModel" : "Save3DAdvanced";
+    it(`address '${row.id}' (family '${fam}') is bound and composes its own truth`, () => {
+      assert.ok(
+        fam in ACTION_BINDINGS,
+        `family '${fam}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy id-switch`,
+      );
+      const g = new GraphBuilder();
+      def.compose(def.schema(params), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const save = Object.values(graph).find((n) => n.class_type === saveClass)!;
+      assert.ok(save, `the declared segment saves via ${saveClass}`);
+      if (!isRig) {
+        const expected = fam === "pixal3d" ? "pixal3d" : "trellis2_native";
+        assert.equal((save.inputs as { filename_prefix: string }).filename_prefix, expected, "the family prefix is a constant");
+      }
+    });
+  }
+
+  it("THE DECLARED REFUSAL: a row with no owning family refuses loud (a multi-family card never guesses a lane)", () => {
+    const row = { ...rows[0]!, id: "synthetic-mesh", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "/m/photo.png", ...rows[0]!.defaults }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-mesh' on the img-to-mesh card — every boarded family/,
+    );
   });
 });

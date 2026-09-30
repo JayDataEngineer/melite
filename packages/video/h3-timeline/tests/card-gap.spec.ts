@@ -26,7 +26,7 @@ import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
 import { gridSnap } from "../src/card.ts";
-import { computeFilmMix, parseFilmMixClips, stanzaSecs } from "../src/filmMix.ts";
+import { computeFilmMix, parseFilmMixClips, stanzaSecs } from '@melite/models-h3/filmMix';
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),

@@ -2,9 +2,24 @@
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (sfxT1).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { sfxT1 } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as mossSfxDecl } from '@melite/models-moss-sfx'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
+
+/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+ * family's declared sfx action — the card owns only dispatch; the
+ * segment factory lives in the family package (the legacy lane
+ * stays the declared fallback + byte-oracle). Keyed by OWNING
+ * FAMILY (`model.family ?? model.id` at dispatch — a route id keys
+ * nothing, the derived-row law). */
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [mossSfxDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(mossSfxDecl, 'sfx'), p, model, g, runId)
+  },
+}
 
 const schema = z.object({
   prompt: z.string().description("Sound Description").extra('extra', bag({ order: null, tooltip: "Describe the SOUND itself, not the scene (e.g. 'sharp metallic clang with long decay')", required: true, wtype: 'textarea', })),
@@ -37,7 +52,7 @@ export function apply(ctx: Context): void {
     id: 'sfx',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'sfx',
-    boarded: ['moss-sfx'],
+    boarded: [mossSfxDecl.id],
     tags: ['audio', 'sfx', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -61,7 +76,16 @@ export function apply(ctx: Context): void {
       if (!(doc.prompt as string)?.trim()) {
         throw new Error("required param 'prompt' missing or empty on the sfx card (describe the SOUND, not the scene)")
       }
-      sfxT1(doc, model, g, runId)
+      // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
+      // boarded family's own sfx action composes; the legacy kit
+      // lane is the declared fallback for family-less rows, never a
+      // silent second copy.
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the sfx card — every boarded family (moss-sfx) composes its own declared segment; this address owns none`)
+      }
     },
   }))
 }

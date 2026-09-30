@@ -24,7 +24,10 @@
 // preview.figure claim, rendered by the base form's mesh stage.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { annyLane, finalizeAnny } from '@melite/comfyui-card-kit'
+import { declaredAction, finalizeAnny, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as annyDecl } from '@melite/models-anny'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
@@ -67,6 +70,15 @@ export const identity = {
   icon: 'person',
 }
 
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
+export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
+export const ACTION_BINDINGS: Record<string, Binding> = {
+  [annyDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(annyDecl, 'compose'), p, model, g, runId),
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'anny',
@@ -76,7 +88,7 @@ export function apply(ctx: Context): void {
     requiresModel: false,
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'anny',
-    boarded: ['anny'],
+    boarded: [annyDecl.id],
     tags: ['3d', 'character', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -97,7 +109,7 @@ export function apply(ctx: Context): void {
     ],
     requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, _model, g, _runId) {
+    compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
       // engine): schemastery walk enforces declared types + bounds
@@ -107,30 +119,12 @@ export function apply(ctx: Context): void {
       // through inert. The composer's reads below are reads of the
       // GATED doc.
       const doc = schema(p) as Record<string, unknown>
-      // THE BODY, three arms — a GLB is NEVER required (stroke 89):
-      // 1. an attached GLB renders as-is;
-      // 2. empty → the identity sliders BAKE the body
-      //    (AnnyParamsToGlb: params_json → glb_path — parametric
-      //    end-to-end; untouched sliders = the neutral bake).
-      const body = String(doc.body_glb ?? '').trim()
-      // THE MORPHS (stroke 90): sparse local_changes — only NON-ZERO
-      // entries ride the wire (absent = the engine's own 0; the pin
-      // pins every default at 0, so untouched sliders never ship).
-      const localChanges: Record<string, number> = {}
-      for (const label of ANNY_MORPH_LABELS) {
-        const v = Number(doc[label])
-        if (Number.isFinite(v) && v !== ANNY_MORPH_DEFAULT) localChanges[label] = v
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the anny card — every boarded family (anny) composes its own declared segment; this address owns none`)
       }
-      const bodyPath = body !== ''
-        ? g.node('PrimitiveString', { value: body }).out()
-        : g.node('AnnyParamsToGlb', {
-            params_json: JSON.stringify({
-              dialect: 'authored',
-              phenotype: PHENOTYPE_DIMS.map((dim) => Number(doc[dim] ?? 0.5)),
-              local_changes: localChanges,
-            }),
-          }).out()
-      annyLane(doc, g, bodyPath)
     },
     finalize: finalizeAnny,
     // THE NATIVE FIGURE (stroke 90): before any run lands, the mesh

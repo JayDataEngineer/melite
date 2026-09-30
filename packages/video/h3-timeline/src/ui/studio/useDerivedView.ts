@@ -9,7 +9,7 @@ import { isImageUrl } from "@melite/card-base"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
 import type { DocCall, DocKeyframe, LayerA } from "./docModel"
 import { callsToPrompts, keyframesToLanes } from "./docCalls"
-import { refGenreOf } from "../../timelineContract.ts"
+import { refGenreOf } from '@melite/models-h3/timelineContract'
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 import type { useFilmAudio } from "./useFilmAudio"

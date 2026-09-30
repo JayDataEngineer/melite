@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { compose } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "kimodo",
@@ -138,7 +139,9 @@ export const DECL: ModelDecl = {
       },
     ],
   },
-
+  // the compose action the motion card binds (the motion_t1
+  // lane tree).
+  "actions": [compose],
 };
 
 export const family: Plugin = {
@@ -148,3 +151,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { compose } from "./actions.ts";

@@ -28,11 +28,18 @@ function mintRoot(): string {
 }
 
 
-const clone = (over: Record<string, unknown> = {}): ModelDecl =>
+const clone = (over: Record<string, unknown> = {}): ModelDecl => {
   // routeless variants by default (the base's real routes would
   // collide across registrations on one service — tests that need
-  // routes declare them explicitly)
-  structuredClone({ ...KREA, variants: [{ ...variant() }], ...over }) as unknown as ModelDecl;
+  // routes declare them explicitly). The family DOOR (actions)
+  // drops out with the spread: structuredClone cannot carry
+  // function members, and synthetic lane_inputs shapes ({base:"b"})
+  // are not the door's truth — the real doors ride the real
+  // bootModels() below + each family's own action spec; the
+  // admission gate gets its own arm with a synthetic door.
+  const { actions: _door, ...base } = KREA;
+  return structuredClone({ ...base, variants: [{ ...variant() }], ...over }) as unknown as ModelDecl;
+};
 
 const cell = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
   quant: "q8", label: "", source: null, description: "", route: "",
@@ -99,6 +106,96 @@ describe("registerFamily (the metaclass gates)", () => {
     assert.throws(
       () => fresh().registerFamily(clone({ variants: [{ ...variant(), cells: [{ ...cell(), quant: "" }] }] })),
       /a cell needs a quant/,
+    );
+  });
+
+  it("THE RECIPE↔WEIGHTS LAW: a cell that downloads what the lane never loads refuses at birth", () => {
+    // the third live break's silent half, as a registration refusal:
+    // raw's 52-step marriage stamping a checkpoint the lane truth
+    // never spells (turbo's weights would have loaded, silently)
+    const silent = clone({
+      variants: [{
+        ...variant(),
+        id: "raw",
+        resolver_defaults: { model: "krea-2-raw", steps: 52, cfg: 3.5 },
+        lane_inputs: {},
+        cells: [cell({
+          quant: "int8",
+          artifact: {
+            source_url: "https://host/d/krea2_raw_int8_convrot.safetensors",
+            filename: "krea2_raw_int8_convrot.safetensors",
+          },
+        })],
+      }],
+    });
+    assert.throws(
+      () => fresh().registerFamily(silent as unknown as ModelDecl),
+      /krea-2\/raw: cell downloads 'krea2_raw_int8_convrot\.safetensors' but no lane_input loads it/,
+    );
+    // the override cures it (the qwen lightning + tts meld precedent)
+    const cured = clone({
+      variants: [{
+        ...variant(),
+        id: "raw",
+        resolver_defaults: { model: "krea-2-raw", steps: 52, cfg: 3.5 },
+        lane_inputs: { unet: "krea2_raw_int8_convrot.safetensors" },
+        cells: [cell({
+          quant: "int8",
+          artifact: {
+            source_url: "https://host/d/krea2_raw_int8_convrot.safetensors",
+            filename: "krea2_raw_int8_convrot.safetensors",
+          },
+        })],
+      }],
+    });
+    assert.doesNotThrow(() => fresh().registerFamily(cured as unknown as ModelDecl));
+  });
+
+  it("THE ACTION ADMISSION GATE: a declared door's facts parse runs over the family row AND every variant merge at registration", () => {
+    // the atom vocabulary's family door, as a registration refusal:
+    // drift the door would catch at first compose refuses at BOOT,
+    // in the door's own voice (never reworded by the service). The
+    // synthetic door mirrors the real t2i doors' contract: it
+    // throws on a row whose unet it does not serve.
+    const door = {
+      id: "probe",
+      outputs: [{ name: "image", kind: "IMAGE" }],
+      params: [],
+      facts: (raw: Record<string, unknown>): unknown => {
+        if (raw.unet !== "good.safetensors") {
+          throw new Error(`probe door: lane_inputs.unet = ${JSON.stringify(raw.unet)} — this door serves good.safetensors only`);
+        }
+        return {};
+      },
+      build: (): unknown => ({}),
+    };
+    // green: the family row parses (absent actions ≡ no door — the
+    // conformance law; present actions validate). The door attaches
+    // AFTER clone — structuredClone cannot carry function members.
+    const base = clone({ id: "synth-door", lane_inputs: { unet: "good.safetensors" } });
+    base.actions = [door];
+    assert.doesNotThrow(() => fresh().registerFamily(base));
+    // family-row drift refuses at birth, in the door's own voice
+    const drifted = clone({ id: "synth-door", lane_inputs: { unet: "bad.safetensors" } });
+    drifted.actions = [door];
+    assert.throws(
+      () => fresh().registerFamily(drifted),
+      /probe door: lane_inputs\.unet = "bad\.safetensors" — this door serves good\.safetensors only/,
+    );
+    // THE MERGE HOLE (the bf16 precedent — variant lane_inputs
+    // re-spell door-read keys): a family row that parses green
+    // still refuses when a VARIANT merge drifts, because the merge
+    // is what a run composes. Family-row-only validation is a
+    // boot-green/compose-red hole; this arm pins it shut.
+    const merged = clone({
+      id: "synth-door",
+      lane_inputs: { unet: "good.safetensors" },
+      variants: [{ ...variant({ id: "v1", lane_inputs: { unet: "drifted.safetensors" } }) }],
+    });
+    merged.actions = [door];
+    assert.throws(
+      () => fresh().registerFamily(merged),
+      /probe door: lane_inputs\.unet = "drifted\.safetensors"/,
     );
   });
 

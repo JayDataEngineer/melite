@@ -23,7 +23,7 @@ import { defineCardTool } from '@melite/estate-call/cardTool'
 import type { EstateCall } from '@melite/estate-call'
 import { emitParamsSpec } from '@melite/comfyui-cordis/params-emit'
 import { carrier, identity, BOARDED, VARIANT_ADDRESSES, JSON_ARRAY_PARAMS } from './card.ts'
-import { SEAM_OVERLAP_FRAMES } from './timelineContract.ts'
+import { SEAM_OVERLAP_FRAMES } from '@melite/models-h3/timelineContract'
 
 export const TOOL_NAME = 'h3_timeline'
 

@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { tag } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "joytag",
@@ -66,7 +67,14 @@ export const DECL: ModelDecl = {
     ],
   },
 
+  // THE FAMILY'S DECLARED ACTIONS (the atom vocabulary, stroke 3):
+  // the tagger card binds this segment through ACTION_BINDINGS —
+  // the admission gate runs the facts parse at registration.
+  "actions": [tag],
+
 };
+
+
 
 export const family: Plugin = {
   name: "family-joytag",
@@ -75,3 +83,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { tag, parseTagFacts, type TagFacts, type TagParams } from "./actions.ts";

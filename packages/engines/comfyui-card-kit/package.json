@@ -22,7 +22,8 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/schemastery": "^3.18.4",
-    "@melite/contracts": "workspace:*"
+    "@melite/contracts": "workspace:*",
+    "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

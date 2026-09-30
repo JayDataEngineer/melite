@@ -21,7 +21,10 @@
 // card owns its defaults; the node receives those values directly.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { quadRemeshLane } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as autoremesherDecl } from '@melite/models-autoremesher'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { bag } from '@melite/contracts/extraKeys'
 
 const schema = z.object({
@@ -58,12 +61,21 @@ export const identity = {
   ],
 }
 
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
+export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
+export const ACTION_BINDINGS: Record<string, Binding> = {
+  [autoremesherDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(autoremesherDecl, 'remesh'), p, model, g, runId),
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'quad-remesh',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'quad-remesh',
-    boarded: ['autoremesher'],
+    boarded: [autoremesherDecl.id],
     tags: ['3d', 'remesh', 'optimize'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -80,7 +92,7 @@ export function apply(ctx: Context): void {
     ],
     requires: ['melite-autoremesher-nodes'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, _model, g, runId) {
+    compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
       // engine): schemastery walk enforces declared types + bounds
@@ -102,7 +114,12 @@ export function apply(ctx: Context): void {
         throw new Error(
           `smooth_normal = ${String(doc.smooth_normal)} refuses: the AutoRemesher node hardcodes --smooth-normal 0.0 (nodes.py) — the knob rides the card surface for the editor, but no graph can carry it`)
       }
-      quadRemeshLane(doc, g, runId)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the quad-remesh card — every boarded family (autoremesher) composes its own declared segment; this address owns none`)
+      }
     },
   }))
 }

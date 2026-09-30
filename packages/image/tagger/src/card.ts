@@ -5,9 +5,35 @@
 // comes from params.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { taggerLane, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from '@melite/comfyui-card-kit'
+import { declaredAction, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, instantiateAction } from '@melite/comfyui-card-kit'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { DECL as wd14Decl } from '@melite/models-wd14'
+import { DECL as joytagDecl } from '@melite/models-joytag'
+import { DECL as florence2Decl } from '@melite/models-florence2'
+import { DECL as joycaptionDecl } from '@melite/models-joycaption'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
+// family's declared action composes — the card delegates, never
+// authors nodes. Keyed by OWNING FAMILY (`model.family ?? model.id`
+// at dispatch — a route id keys nothing, the derived-row law); an
+// unbound family refuses loud at the dispatch.
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [wd14Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(wd14Decl, 'tag'), p, model, g, runId)
+  },
+  [joytagDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(joytagDecl, 'tag'), p, model, g, runId)
+  },
+  [florence2Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(florence2Decl, 'tag'), p, model, g, runId)
+  },
+  [joycaptionDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(joycaptionDecl, 'tag'), p, model, g, runId)
+  },
+}
 
 declare module '@melite/comfyui-cordis/service' {
   interface CardDefinition {
@@ -94,8 +120,9 @@ export function apply(ctx: Context): void {
     // retired row carried "" — engine truth wins, recorded in
     // docs/design/python-purge-2026-09-08.md).
     skeleton: 'tagger',
-    // the four boarded families.
-    boarded: ['wd14', 'joytag', 'florence2', 'joycaption'],
+    // the four boarded families (derived — the DECL ids are the
+    // one spelling; RULE 5).
+    boarded: [wd14Decl.id, joytagDecl.id, florence2Decl.id, joycaptionDecl.id],
     tags: ['image', 'tag', 'analyze'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -136,7 +163,12 @@ export function apply(ctx: Context): void {
       if (!img.trim()) {
         throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)")
       }
-      taggerLane(doc, model, g, runId)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the tagger card — every boarded family (wd14, joytag, florence2, joycaption) composes its own declared segment; this address owns none`)
+      }
     },
     finalize: finalizeTagger,
   }))

@@ -28,7 +28,7 @@ import {
   type StageViewOwnerProps,
 } from '@melite/contracts'
 import { VideoTimelineStudio } from '../ui/studio/component.tsx'
-import { refGenreOf } from '../timelineContract.ts'
+import { refGenreOf } from '@melite/models-h3/timelineContract'
 
 type H3HistoryRow = {
   runId?: string

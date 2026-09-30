@@ -20,7 +20,7 @@ import {
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
-} from "../src/timelineContract.ts"
+} from '@melite/models-h3/timelineContract'
 
 describe("refGenreOf (genre-typed ref buckets)", () => {
   it("window renders are films — *_main and the final cut class video", () => {

@@ -11,6 +11,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -18,7 +19,7 @@ const FACTS_PATH = join(
   "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
 );
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
-const DUMMY: ModelFacts = { id: "x", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
+const DUMMY: ModelFacts = { id: "x", family: "input", card: "x", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
 
 let def: CardDefinition;
 beforeAll(async () => {
@@ -152,5 +153,49 @@ describe("the input-prep compose gate", () => {
     const save = Object.values(graph).find((n) => n.class_type === "SaveImage");
     assert.ok(save, "the restage saves");
     assert.match(String(save!.inputs.filename_prefix), /run_1/);
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the input-prep card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// the legacy lane while its siblings compose the declared segment;
+// (2) the row composes ITS OWN declared segment — the staged source
+// saves under the run-scoped prefix. The weightless lane's graph is
+// the accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const prepRows = Object.values(facts.models).filter((m) => m.card === "input-prep");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(prepRows.length >= 1, `expected the served input-prep addresses, found ${String(prepRows.length)}`);
+  });
+
+  for (const row of prepRows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared segment.
+      const g = new GraphBuilder();
+      def.compose(def.schema({ source: "upload.png" }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const save = Object.values(graph).find((n) => n.class_type === "SaveImage")!;
+      assert.ok(save, "the declared segment saves the staged source");
+      assert.equal(save.inputs.filename_prefix, `wall_${row.id}/input_prep`, "compose stamps the run prefix");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape): the dispatch refuses loud rather than riding a legacy
+    // lane in the open (the interlock).
+    const row = { ...prepRows[0]!, id: "synthetic-prep", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ source: "upload.png" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-prep' on the input-prep card — every boarded family \(input\)/,
+    );
   });
 });

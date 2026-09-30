@@ -1,0 +1,247 @@
+// The atom's own proof (the atom vocabulary, stroke 3): the edit
+// action's serialized prompt is BYTE-IDENTICAL to the legacy
+// imageEdit 2511 arm on the same resolved facts — the card's binding
+// change moves no wire — the variant merge (lightning's re-spelled
+// unet) parses green at the door, the lanpaint and crop_stitch arms
+// carry their native tails, and the never-lie/node-shape/ceiling
+// refusals stay in the lane's voice. The interpreter's own contract
+// walls live in card-kit's tests/action.spec.ts.
+import { describe, it } from "vitest";
+import assert from "node:assert/strict";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { imageEdit, instantiateAction } from "@melite/comfyui-card-kit";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { DECL } from "../src/index.ts";
+import { edit, parseEditFacts } from "../src/actions.ts";
+
+// The REAL resolved shape the service hands compose: the DECL's own
+// lane_inputs on a minimal family row (mods = the DECL's own
+// boarding — lanpaint, loras, mask).
+const laneInputs = DECL.lane_inputs;
+assert.ok(laneInputs, "the qwen-img-edit-2511 DECL declares lane_inputs");
+const packs = (m: Array<string | { pack: string }>): string[] => m.map((x) => (typeof x === "string" ? x : x.pack));
+const FACTS: ModelFacts = {
+  id: DECL.id,
+  card: "image-edit",
+  defaults: {},
+  lane_inputs: laneInputs,
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+  mods: DECL.mods === undefined ? undefined : packs(DECL.mods),
+};
+
+const PARAMS = {
+  prompt: "make the hallway blue",
+  negative_prompt: "blur",
+  input_images: ["input/anchor.png"],
+  seed: 7,
+  steps: 20,
+  cfg: 2.5,
+  sampler: "euler",
+  scheduler: "simple",
+};
+
+describe("the edit action — byte-stability (the compatibility law)", () => {
+  it("the action's serialized prompt is identical to the legacy lane arm (the plain VAEEncode-of-source path)", () => {
+    const legacy = new GraphBuilder({});
+    imageEdit(PARAMS, FACTS, legacy, "probe");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, PARAMS, FACTS, action, "probe");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
+    assert.ok(nodes.filter((n) => n.class_type === "TextEncodeQwenImageEditPlus").length === 2, "the pos/neg encoder pair rides");
+    assert.ok(nodes.some((n) => n.class_type === "VAEEncode"), "the edit rides the source's own resolution");
+    assert.ok(nodes.some((n) => n.class_type === "ModelSamplingAuraFlow"), "the fixed 1.0 shift wraps the unet");
+  });
+
+  it("byte equality holds with references — the stock node's native image2/image3 optionals", () => {
+    const p = { ...PARAMS, input_images: ["input/anchor.png", "input/r1.png", "input/r2.png"] };
+    const legacy = new GraphBuilder({});
+    imageEdit(p, FACTS, legacy, "probe-refs");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-refs");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const enc = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "TextEncodeQwenImageEditPlus",
+    )!;
+    assert.ok("image1" in (enc.inputs ?? {}) && "image2" in (enc.inputs ?? {}) && "image3" in (enc.inputs ?? {}), "both reference slots filled");
+    const blank = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, input_images: ["input/anchor.png", ""] }, FACTS, blank, "probe-blank");
+    const enc2 = Object.values(blank.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "TextEncodeQwenImageEditPlus",
+    )!;
+    assert.ok(!("image2" in (enc2.inputs ?? {})), "a blank ref contributes no input at all (byte-stable plain graphs)");
+  });
+
+  it("byte equality holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)", () => {
+    const p = {
+      ...PARAMS,
+      input_mask: "input/region.png",
+      lanpaint_prompt_mode: "positive",
+      lanpaint_num_steps: 30,
+    };
+    const legacy = new GraphBuilder({});
+    imageEdit(p, FACTS, legacy, "probe-lp");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-lp");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
+    assert.ok(nodes.some((n) => n.class_type === "LanPaint_ImageEncode"), "the lanpaint latent rides");
+    const sampler = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "LanPaint_KSamplerAdvanced",
+    )!;
+    assert.equal(sampler.inputs?.steps, 30, "lanpaint_num_steps maps to the sampler's steps");
+    assert.equal(sampler.inputs?.LanPaint_PromptMode, "Prompt First", "positive mode maps to Prompt First");
+    assert.ok(nodes.some((n) => n.class_type === "LanPaint_ImageDecode"), "the lanpaint decode rides");
+    assert.ok(nodes.some((n) => n.class_type === "VAEDecode") === false, "no plain decode on this arm");
+  });
+
+  it("byte equality holds on the crop_stitch arm (the region detailer tail)", () => {
+    const p = {
+      ...PARAMS,
+      mask: [{ mask_mode: "crop_stitch", input_mask: "input/region.png", mask_denoise: 0.4, mask_detector: "person" }],
+    };
+    const legacy = new GraphBuilder({});
+    imageEdit(p, FACTS, legacy, "probe-region");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-region");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
+    assert.ok(nodes.some((n) => n.class_type === "SAMLoader") === false, "the detector rides the Impact provider, not SAMLoader");
+    assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), "the region detailer rides");
+  });
+
+  it("byte equality holds on the lightning variant's MERGED view (the variant override rides)", () => {
+    // The resolved row for the lightning route is the family row ⊕
+    // the variant's own lane_inputs (the recipe↔weights law — the
+    // re-spelled unet rides WITH its recipe).
+    const merged: ModelFacts = {
+      ...FACTS,
+      id: "qwen-img-edit-2511-lightning4",
+      lane_inputs: {
+        ...FACTS.lane_inputs,
+        unet: "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
+      },
+    };
+    const facts = parseEditFacts(merged.lane_inputs);
+    assert.equal(facts.unet, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
+    const legacy = new GraphBuilder({});
+    imageEdit({ ...PARAMS, steps: 4, cfg: 1 }, merged, legacy, "probe-lw");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, steps: 4, cfg: 1 }, merged, action, "probe-lw");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const unet = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
+      (n) => n.class_type === "UNETLoader",
+    )!;
+    assert.equal(unet.inputs?.unet_name, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
+  });
+
+  it("the never-lie guard keeps width/height 2.1-only — stated here they refuse field-named", () => {
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, width: 1024 }, FACTS, new GraphBuilder({}), "probe-w"),
+      /'width'\/'height' fire on the image-edit card only on the Qwen Image 2\.1 lane/,
+    );
+  });
+
+  it("the node-shape assert refuses a lying DECL cap past the stock node's own 3 slots", () => {
+    const lying: ModelFacts = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, max_images: 4 } };
+    assert.throws(
+      () => instantiateAction(edit, PARAMS, lying, new GraphBuilder({}), "probe-shape"),
+      /routes to the stock TextEncodeQwenImageEditPlus node.*declares max_images 4/,
+    );
+  });
+
+  it("the shared ceiling refuses LOUD past the DECL cap — never a quiet drop", () => {
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, input_images: ["input/a.png", "input/b.png", "input/c.png", "input/d.png"] }, FACTS, new GraphBuilder({}), "probe-cap"),
+      /this lane takes 3 input images total.*but the list counts 4.*drop 1/,
+    );
+  });
+
+  it("an empty one-list refuses — the anchor is mandatory (direct action callers)", () => {
+    assert.throws(
+      () => instantiateAction(edit, { ...PARAMS, input_images: [], image1: "" }, FACTS, new GraphBuilder({}), "probe-empty"),
+      /required param 'input_images' missing on the image-edit card \(the first image is the one being edited/,
+    );
+  });
+
+  it("byte equality holds when a flat key WINS over the bag (explicit flat keys override the region row)", () => {
+    const p = {
+      ...PARAMS,
+      input_mask: "input/flat-mask.png",
+      mask: [{ mask_mode: "crop_stitch", input_mask: "input/bag-mask.png", mask_denoise: 0.4 }],
+    };
+    const legacy = new GraphBuilder({});
+    imageEdit(p, FACTS, legacy, "probe-flatwins");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-flatwins");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const graph = action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
+    const flatRides = Object.values(graph).some((n) => Object.values(n.inputs ?? {}).includes("input/flat-mask.png"));
+    const bagRides = Object.values(graph).some((n) => Object.values(n.inputs ?? {}).includes("input/bag-mask.png"));
+    assert.ok(flatRides, "the flat input_mask wins over the bag's row");
+    assert.ok(!bagRides, "the bag's own mask path rides nowhere");
+  });
+
+  it("byte equality holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)", () => {
+    const p = {
+      ...PARAMS,
+      input_mask: "$region",
+      mask: [{ mask_grow: 0, mask_invert: true }],
+    };
+    const legacy = new GraphBuilder({});
+    imageEdit(p, FACTS, legacy, "probe-spell");
+    const action = new GraphBuilder({});
+    instantiateAction(edit, p, FACTS, action, "probe-spell");
+    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const graph = action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const nodes = Object.values(graph);
+    assert.ok(!nodes.some((n) => n.class_type === "LoadImageMask"), "a spelled mask rides verbatim — no mask load");
+    assert.ok(!nodes.some((n) => n.class_type === "GrowMask"), "grow 0 skips the grow node");
+    assert.ok(nodes.some((n) => n.class_type === "InvertMask"), "the stated invert rides");
+    const sampler = nodes.find((n) => n.class_type === "LanPaint_KSamplerAdvanced")!;
+    assert.equal(sampler.inputs.LanPaint_PromptMode, "Image First", "the default prompt mode is Image First");
+  });
+
+  it("GATE S rides the declared rule: the sentinel -1 mints a concrete seed, two runs differ", () => {
+    const g1 = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, seed: -1 }, FACTS, g1, "r-a");
+    const g2 = new GraphBuilder({});
+    instantiateAction(edit, { ...PARAMS, seed: -1 }, FACTS, g2, "r-b");
+    const seed = (g: GraphBuilder): unknown =>
+      (g.toJSON() as Record<string, { inputs: Record<string, unknown> }>)["KSampler.0"]?.inputs.seed;
+    const s1 = seed(g1);
+    const s2 = seed(g2);
+    assert.ok(typeof s1 === "number" && Number.isInteger(s1) && s1 >= 0, `minted a concrete int (got ${String(s1)})`);
+    assert.ok(typeof s2 === "number" && s2 >= 0);
+    assert.notEqual(s1, s2, "run-again under the sentinel mints fresh");
+  });
+});
+
+describe("the edit facts door (closed-set drift refuses loud)", () => {
+  it("a drifted encoder class refuses — the 2.1 key never routes this family's weights", () => {
+    assert.throws(
+      () => parseEditFacts({ ...FACTS.lane_inputs, text_encode_node: "TextEncodeQwenImage21" }),
+      /text_encode_node.*TextEncodeQwenImageEditPlus/,
+    );
+  });
+
+  it("a missing weight string refuses field-named", () => {
+    assert.throws(
+      () => parseEditFacts({ ...FACTS.lane_inputs, text_encoder: undefined }),
+      /lane_inputs\.text_encoder.*non-empty string/,
+    );
+  });
+
+  it("a degenerate max_images refuses", () => {
+    assert.throws(
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: 0 }),
+      /lane_inputs\.max_images.*number ≥ 1/,
+    );
+    assert.throws(
+      () => parseEditFacts({ ...FACTS.lane_inputs, max_images: "3" }),
+      /lane_inputs\.max_images.*number ≥ 1/,
+    );
+  });
+});

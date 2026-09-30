@@ -6,7 +6,7 @@
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
 import type { BeatKnobs, DocCall, DocKeyframe } from "./docModel"
 import { CALL_KNOB_KEYS, GUIDE_KINDS, KIND_OF_TRACK, STARTER_CALLS } from "./docModel"
-import { joinRefList, migrateCallKnobKey, splitRefList } from "../../timelineContract.ts"
+import { joinRefList, migrateCallKnobKey, splitRefList } from '@melite/models-h3/timelineContract'
 
 /** An array-SHAPED string that will not parse (or parses to a
  * non-array) is a CORRUPT calls/beats document — the 2026-08-30 crime

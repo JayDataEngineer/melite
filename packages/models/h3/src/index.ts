@@ -23,6 +23,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { film } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "h3",
@@ -459,6 +460,9 @@ export const DECL: ModelDecl = {
   ],
   "has_agent": true,
   "has_inference": true,
+  // the film action the h3-timeline card binds (the whole video
+  // lane: multi-window films, single windows, clips mixing).
+  "actions": [film],
 };
 
 export const family: Plugin = {

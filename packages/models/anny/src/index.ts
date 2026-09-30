@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { compose } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "anny",
@@ -90,7 +91,10 @@ export const DECL: ModelDecl = {
     "unet_variant": "",
     "vae": "",
     "weightless": false
-  }
+  },
+  // the compose action the anny card binds (the turnaround
+  // lane tree).
+  "actions": [compose],
 };
 
 export const family: Plugin = {
@@ -100,3 +104,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { compose } from "./actions.ts";

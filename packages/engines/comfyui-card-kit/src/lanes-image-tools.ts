@@ -688,8 +688,8 @@ export const TAGGER_EXTRA_OPTIONS = [
 
 /** The SaveText tail (every arm's consensus — moved verbatim from
  *  the tagger card). */
-function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: string): void {
-  g.node('SaveText', { text, filename_prefix: prefix, format: 'txt' })
+export function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: string): NodeRef {
+  return g.node('SaveText', { text, filename_prefix: prefix, format: 'txt' })
 }
 
 /** wd14_t1 — the WD14 booru interrogator (the canary arm; moved

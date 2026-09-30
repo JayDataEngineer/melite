@@ -22,7 +22,7 @@
 // Run: npx vitest run tests/walls/ts/suites/seed-sentinel.spec.ts
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GraphBuilder } from "../../../../packages/engines/comfyui-card-kit/src/graph.ts";
 import { imageEdit, mintSeed, musicT1 } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
@@ -166,5 +166,64 @@ describe("GATE S: the seed sentinel mints at render", () => {
       if (readFileSync(join(dir, f), "utf8").includes("Math.random")) randoms.push(f);
     }
     assert.deepEqual(randoms, [], "Math.random outside graph-helpers: " + randoms.join(", "));
+    // THE ACTION ROUTE (atom vocabulary, stroke 2): family actions
+    // under packages/models/*/src/actions.ts name seeds too — the
+    // mint stays the ONE helper (they mint through instantiateAction
+    // inside card-kit, never their own Math.random) and a seed
+    // param always rides the declared sentinel rule. The walk is
+    // two bounded levels (a recursive readdir walks the pnpm store
+    // through package node_modules symlinks and dies).
+    const modelsDir = join(import.meta.dirname, "../../../../packages/models");
+    const actionFiles = readdirSync(modelsDir, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && existsSync(join(modelsDir, d.name, "src/actions.ts")))
+      .map((d) => `${d.name}/src/actions.ts`)
+      .sort();
+    assert.deepEqual(
+      actionFiles,
+      [
+        "anima/src/actions.ts",
+        "anny/src/actions.ts",
+        "autoremesher/src/actions.ts",
+        "florence2/src/actions.ts",
+        "h3/src/actions.ts",
+        "input/src/actions.ts",
+        "joycaption/src/actions.ts",
+        "joytag/src/actions.ts",
+        "kimodo/src/actions.ts",
+        "krea-2/src/actions.ts",
+        "moss-sfx/src/actions.ts",
+        "music3/src/actions.ts",
+        "pixal3d/src/actions.ts",
+        "qwen-img-21/src/actions.ts",
+        "qwen-img-edit-21/src/actions.ts",
+        "qwen-img-edit-2511/src/actions.ts",
+        "qwen3-tts-voicedesign/src/actions.ts",
+        "qwen3-tts/src/actions.ts",
+        "seedvr2_ema/src/actions.ts",
+        "transfer_rig/src/actions.ts",
+        "trellis2-native/src/actions.ts",
+        "wd14/src/actions.ts",
+        "yue2/src/actions.ts",
+        "z-image/src/actions.ts",
+      ],
+      "the family-actions census changed — update this pin deliberately",
+    );
+    const actionOffenders: string[] = [];
+    const sentinelMisses: string[] = [];
+    for (const f of actionFiles) {
+      const src = readFileSync(join(modelsDir, f), "utf8");
+      if (src.includes("Math.random")) actionOffenders.push(f);
+      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"')) sentinelMisses.push(f);
+    }
+    assert.deepEqual(
+      actionOffenders,
+      [],
+      "family actions roll their own randomness (the mint is card-kit's alone): " + actionOffenders.join(", "),
+    );
+    assert.deepEqual(
+      sentinelMisses,
+      [],
+      "family actions name a seed without declaring the seed-sentinel rule: " + sentinelMisses.join(", "),
+    );
   });
 });

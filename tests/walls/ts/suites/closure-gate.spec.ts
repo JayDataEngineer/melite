@@ -219,6 +219,11 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const owned = new Set<string>([
       // the identity + derivation columns
       "id", "card", "defaults", "lane_inputs",
+      // the owning family of a route address (the addressOwners
+      // derivation) — read by the image-gen card's compose seat
+      // (ACTION_BINDINGS keys on model.family ?? model.id; card.ts
+      // — the route-id binding miss killed 2026-09-30)
+      "family",
       // the lane declaration itself (the DECL surface + its laws) —
       // carried by the row and read by the registry seat
       "params", "relations",
@@ -293,6 +298,80 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
           if (!live.has(id)) {
             offenders.push(`${f} — boards '${id}', which the registry does not declare (dead or typo'd id)`);
           }
+        }
+      }
+    }
+    expect(judged, "no card.ts was judged — the census rotted").toBeGreaterThan(10);
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
+
+  it("RULE 5b · card compose bindings derive from the family DECLs: declaredAction at every seat", async () => {
+    // The interlock the atom vocabulary owes (stroke 3's close):
+    // an ACTION_BINDINGS row resolves its action off the family's
+    // OWN DECL through declaredAction — the hand-imported action
+    // list (one static import per family, retyped per card) is the
+    // drift bug this kills: the family drops an action from its
+    // DECL and the card's import silently keeps composing a dead
+    // segment. Judged per seat, two laws:
+    //   1. every instantiateAction seat inside the bindings literal
+    //      takes declaredAction(<decl>, '<id>') — nothing else;
+    //   2. the id is one the imported DECL actually declares (a
+    //      card binding an unoffered action refuses at boarding —
+    //      the wall refuses first, at CI).
+    const offenders: string[] = [];
+    let judged = 0;
+    const checked = new Map<string, Set<string>>();
+    for (const f of SOURCES) {
+      if (!/\/card\.ts$/.test(f)) continue;
+      if (f === "packages/web-kit/contracts/src/card.ts") continue;
+      const code = codeOf(read(f));
+      // string-scan the bindings literal: the type annotation may
+      // itself carry braces (tts's slot record), so anchor at the
+      // assignment's `= {` and close at the first `}` at column 0
+      const anchor = code.indexOf("ACTION_BINDINGS");
+      if (anchor === -1) continue;
+      const open = code.indexOf("= {", anchor);
+      if (open === -1) continue;
+      const close = code.indexOf("\n}", open);
+      if (close === -1) continue;
+      judged += 1;
+      const body = code.slice(open, close);
+      const seats = [...body.matchAll(/instantiateAction\((.+?), p, model, g, runId\)/g)].map((x) => x[1]!.trim());
+      if (seats.length === 0) {
+        offenders.push(`${f} — ACTION_BINDINGS with no instantiateAction seats — the card shape changed`);
+        continue;
+      }
+      for (const seat of seats) {
+        const dm = seat.match(/^declaredAction\((\w+Decl),\s*'([a-z0-9_-]+)'\)$/);
+        if (!dm) {
+          offenders.push(`${f} — binding seat '${seat}' does not derive via declaredAction(<decl>, '<id>')`);
+          continue;
+        }
+        const [, declName, actionId] = dm as unknown as [string, string, string];
+        const im = code.match(new RegExp(`import \\{[^}]*DECL as ${declName}[^}]*\\} from '([^']+)'`));
+        if (!im) {
+          offenders.push(`${f} — seat names ${declName} but the file never imports it`);
+          continue;
+        }
+        const spec = im[1]!;
+        // walls resolve by path, not workspace name — every family
+        // package is '@melite/models-<dir>' with the DECL at root
+        const dir = spec.replace(/^@melite\/models-/, "");
+        if (!checked.has(dir)) {
+          const offered = new Set<string>();
+          try {
+            const mod = (await import(`../../../../packages/models/${dir}/src/index.ts`)) as {
+              DECL?: { actions?: Array<{ id: string }> };
+            };
+            for (const a of mod.DECL?.actions ?? []) offered.add(a.id);
+          } catch {
+            /* the offender line below reports the empty offer */
+          }
+          checked.set(dir, offered);
+        }
+        const offered = checked.get(dir)!;
+        if (!offered.has(actionId)) {
+          offenders.push(`${f} — binds '${actionId}' off ${spec}, which declares [${[...offered].join(", ") || "none"}]`);
         }
       }
     }

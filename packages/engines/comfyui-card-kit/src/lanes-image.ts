@@ -1,6 +1,6 @@
 import { laneBlank } from '@melite/contracts/laneRelations'
 import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
-import type { PromptGraph, StripTable } from './graph.ts'
+import type { NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from './mods/guard.ts'
@@ -28,10 +28,11 @@ const LANE_SCHEDULER_DEFAULT = 'simple';
 
 /** The lane's solver, honouring an EXPLICIT choice (a cleared select
  *  is not a choice: the lane's own default answers, exactly as the
- *  DECL cascade answers elsewhere). */
-const laneSampler = (p: Record<string, unknown>): string =>
+ *  DECL cascade answers elsewhere). Exported for the family actions
+ *  (the atom vocabulary: the same solver read, one vocabulary). */
+export const laneSampler = (p: Record<string, unknown>): string =>
   typeof p['sampler'] === 'string' && p['sampler'] !== '' ? p['sampler'] as string : LANE_SAMPLER_DEFAULT;
-const laneScheduler = (p: Record<string, unknown>): string =>
+export const laneScheduler = (p: Record<string, unknown>): string =>
   typeof p['scheduler'] === 'string' && p['scheduler'] !== '' ? p['scheduler'] as string : LANE_SCHEDULER_DEFAULT;
 
 export const IMAGE_GEN_STRIP: StripTable = {
@@ -314,7 +315,7 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
  * UltralyticsDetectorProvider model list, 2026-09-22): hand is the
  * s-variant this engine ships — the n-variant pin was a stale copy
  * that would refuse at execute time. */
-function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: TensorRef, maskPath: string): OutputHandle {
+export function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: TensorRef, maskPath: string): OutputHandle {
   const detector = (region.mask_detector ?? 'off') as string
   const expand = ((region.mask_grow ?? 8) as number) + ((region.mask_context_pad ?? 64) as number)
   if (detector !== 'off') {
@@ -358,11 +359,11 @@ function regionSegs(g: GraphBuilder, region: Record<string, unknown>, image: Ten
  * never change (the paste touches the seg mask only).
  * Lane-agnostic: the model/clip/vae/conditioning are whatever the
  * active lane built. */
-function detailerSave(
+export function detailerSave(
   g: GraphBuilder, p: Record<string, unknown>, region: Record<string, unknown>,
   io: { image: TensorRef, segs: OutputHandle, model: OutputHandle, clip: OutputHandle, vae: OutputHandle, positive: OutputHandle, negative: OutputHandle, seed: number },
   runId: string,
-): void {
+): NodeRef {
   const detailed = g.node('DetailerForEach', {
     image: io.image, segs: io.segs, model: io.model, clip: io.clip, vae: io.vae,
     guide_size: (region.mask_detail_size ?? 512) as number, guide_size_for: true, max_size: 1024,
@@ -372,7 +373,7 @@ function detailerSave(
     denoise: (region.mask_denoise ?? 0.5) as number, feather: (region.mask_feather ?? 8) as number,
     noise_mask: true, force_inpaint: true, wildcard: '', cycle: 1,
   }).out()
-  g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` })
+  return g.node('SaveImage', { images: detailed, filename_prefix: `${runId}/edit` })
 }
 
 /** A tensor carrier: a node's output handle, or THE SPELL ARM's raw
@@ -381,12 +382,12 @@ function detailerSave(
  *  [node, slot] link wherever the spell rides a node input; ROW-4
  *  refuses producer links in Load* file slots, so a spelled tensor
  *  NEVER builds a loader — the spell IS the tensor. */
-type TensorRef = OutputHandle | string
+export type TensorRef = OutputHandle | string
 
 /** True when the value names a wired stage input (the $spell law):
  *  '$image1' means "the upstream stage's wired output", never a
  *  file on disk. */
-const isSpell = (s: string): boolean => s.startsWith('$')
+export const isSpell = (s: string): boolean => s.startsWith('$')
 
 /** The image_edit block — the anchored instruction-edit lane (moved
  *  verbatim from the image-edit card). */

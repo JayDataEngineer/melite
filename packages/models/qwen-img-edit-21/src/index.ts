@@ -29,6 +29,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { edit } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "qwen-img-edit-21",
@@ -270,6 +271,7 @@ export const DECL: ModelDecl = {
   ],
   "has_agent": true,
   "has_inference": true,
+  "actions": [edit],
   "lane_inputs": {
     "clip_type": "qwen_image",
     "latent_node": "EmptyLatentImage",
@@ -298,3 +300,7 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+// The family's offered actions (the atom vocabulary): the edit
+// action the image-edit card binds.
+export { edit, parseEditFacts, type EditFacts, type EditParams } from "./actions.ts";

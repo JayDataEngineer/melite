@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { edit } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "qwen-img-edit-2511",
@@ -235,6 +236,7 @@ export const DECL: ModelDecl = {
   ],
   "has_agent": true,
   "has_inference": true,
+  "actions": [edit],
   "lane_inputs": {
     "background_removal": "",
     "checkpoint": "",
@@ -242,6 +244,12 @@ export const DECL: ModelDecl = {
     "clip_vision": "",
     "family": "",
     "latent_node": "EmptySD3LatentImage",
+    // THE LANE BRANCH KEY (made self-describing — the 2.1 family's
+    // own spelling of the same law): names this lane's encoder
+    // class. The edit action's facts door refuses any other value,
+    // so a drifted row never silently routes to another family's
+    // lane topology.
+    "text_encode_node": "TextEncodeQwenImageEditPlus",
     // THE IMAGE CAPACITY (the node's own truth — the card and the
     // lane RIDE this, never a hardcoded count): the stock
     // TextEncodeQwenImageEditPlus takes image1/2/3 — 3 total, anchor
@@ -267,3 +275,7 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+// The family's offered actions (the atom vocabulary): the edit
+// action the image-edit card binds.
+export { edit, parseEditFacts, type EditFacts, type EditParams } from "./actions.ts";

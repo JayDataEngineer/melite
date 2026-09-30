@@ -14,6 +14,7 @@ import { loadCardDefs, resolveCardFlowOutputs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
+import { ACTION_BINDINGS } from "../src/card.ts";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
@@ -274,6 +275,45 @@ describe("the h3-timeline compose gate", () => {
       [...VARIANT_ADDRESSES].sort(),
       ["h3-fl2va", "h3-keyframe", "h3-ref2va", "h3-timeline", "h3-timeline-ref"],
       "every historical address stays agent-reachable (the pre-correction family id h3-timeline rides as the timeline lane's route; h3-fl2va replaces the dead-family route h3)",
+    );
+  });
+});
+
+// THE EVERY-ADDRESS WALL (stroke E — the atom vocabulary's video
+// leg): every served address on this card resolves through the ONE
+// h3 family, so every row composes through the family's declared
+// film action (the binding keys on the family id, never the address
+// id); a family-less row rides the card's declared legacy else —
+// byte-identical by the action oracle, so the wall only proves the
+// ROUTING here: bound rows save through the family action, the
+// fallback composes the frozen card lane.
+describe("THE EVERY-ADDRESS WALL — every served address composes through the family action", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "h3-timeline");
+
+  it("the card serves its variant addresses (the wall's own footing)", () => {
+    assert.ok(rows.length >= 3, `expected the served h3-timeline addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    const fam = row.family ?? row.id;
+    it(`address '${row.id}' (family '${fam}') is bound to the film action and composes`, () => {
+      assert.strictEqual(fam, "h3", "every variant address folds to the ONE h3 family (the survivor-id law)");
+      assert.ok("h3" in ACTION_BINDINGS, "the h3 family holds the ACTION_BINDINGS row");
+      const g = new GraphBuilder();
+      def.compose(def.schema({ calls: [SHOT()], length: 56 }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string }>;
+      assert.ok(
+        Object.values(graph).some((n) => n.class_type === "SaveVideo"),
+        `address '${row.id}' composes a saving graph through the family action`,
+      );
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a family-less row REFUSES at the dispatch (the interlock)", () => {
+    const row = { ...structuredClone(rows[0]!), id: "legacy-h3", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ calls: [SHOT()], length: 56 }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'legacy-h3' on the h3-timeline card — every boarded family \(h3\)/,
     );
   });
 });

@@ -14,6 +14,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -71,5 +72,49 @@ describe("the sfx compose gate", () => {
       "upstream pipeline default (100), not the wan_audio layer floor (50)");
     assert.equal(synth.inputs.guidance_scale, 4.0,
       "upstream pipeline default (4.0), not the wan_audio layer default (5.0)");
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the sfx card serves: (1) the row's OWNING FAMILY
+// holds an ACTION_BINDINGS row — no address silently rides the
+// legacy lane while its siblings compose the declared segment; (2)
+// the row composes ITS OWN declared segment — the effect saves
+// under the run-scoped prefix. The audio lane's graph is the
+// accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "sfx");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 1, `expected the served sfx addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared segment.
+      const g = new GraphBuilder();
+      def.compose(def.schema({ prompt: "sharp metallic clang" }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const save = Object.values(graph).find((n) => n.class_type === "SaveAudio")!;
+      assert.ok(save, "the declared segment saves the effect");
+      assert.equal(save.inputs.filename_prefix, `wall_${row.id}/sfx`, "compose stamps the run prefix");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape): the dispatch refuses loud rather than riding a legacy
+    // lane in the open (the interlock).
+    const row = { ...rows[0]!, id: "synthetic-sfx", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-sfx' on the sfx card — every boarded family \(moss-sfx\)/,
+    );
   });
 });

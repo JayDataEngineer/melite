@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { sfx } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "moss-sfx",
@@ -107,6 +108,11 @@ export const DECL: ModelDecl = {
     ],
   },
 
+  // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
+  // the sfx action the sfx card binds (the MOSS-SoundEffect lane).
+  // The admission gate runs the facts parse at registration.
+  "actions": [sfx],
+
 };
 
 export const family: Plugin = {
@@ -116,3 +122,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { sfx, parseSfxFacts, type SfxFacts, type SfxParams } from "./actions.ts";

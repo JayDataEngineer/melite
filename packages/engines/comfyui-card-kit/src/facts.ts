@@ -61,6 +61,14 @@ export type FactsMirrorCoversEveryWord = [keyof LaneRelationsFacts] extends [key
 export interface ModelFacts {
   id: string
   card: string
+  /** The OWNING family id (the addressOwners derivation): a route
+   *  address ('krea-2-raw', 'qwen-img-21-bf16') names its ladder
+   *  owner here — derived rows always carry it; absent on hand
+   *  literals ≡ the row id (identity, never a refusal — the
+   *  FactsFile.owners law). Compose seats that key by family (the
+   *  card's ACTION_BINDINGS) read THIS field, never id: a route id
+   *  keys nothing and the row would silently ride the fallback. */
+  family?: string
   defaults: Record<string, string | number | boolean | null>
   lane_inputs: LaneInputsFacts
   /** THE BASE PARAMETER SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix
@@ -291,6 +299,7 @@ function deriveRow(
   const row: ModelFacts = {
     id: address,
     card,
+    family: owner,
     defaults: ((d.defaults ?? {}) as Record<string, string | number | boolean | null>),
     lane_inputs: ((d.lane_inputs ?? {}) as LaneInputsFacts),
     variants,
@@ -335,6 +344,31 @@ export function loadFacts(path: string, reads: FactsReads): FactsFile {
       reads,
       address,
       slice.card,
+      cardSlice?.outputs ?? [],
+      cardSlice?.requires_by_family,
+      owners,
+    )
+  }
+  // THE EXPORTER RULE, AUTOMATED (2026-09-29, the third live break:
+  // 'no-model-facts: krea-2-raw' — the raw variant stamped its route
+  // as the model and the hand roster never listed the address, so
+  // compose phase 1 refused a route the registry itself resolves).
+  // The roster was a hand-copy of registry truth and had drifted
+  // across 54 claimed addresses. Every address the registry claims
+  // whose OWNING family serves a row now derives its own row —
+  // through the same deriveRow that already shaped the hand-listed
+  // route rows (qwen3-tts-base). A family with no roster row is a
+  // serving decision (its routes cannot compose either way — the
+  // family itself is unserved), never silently papered over here.
+  for (const [address, owner] of owners) {
+    if (models[address] !== undefined) continue
+    const ownerSlice = slices.rows?.[owner]
+    if (ownerSlice === undefined || ownerSlice.frozen !== undefined) continue
+    const cardSlice = slices.cards?.[ownerSlice.card]
+    models[address] = deriveRow(
+      reads,
+      address,
+      ownerSlice.card,
       cardSlice?.outputs ?? [],
       cardSlice?.requires_by_family,
       owners,

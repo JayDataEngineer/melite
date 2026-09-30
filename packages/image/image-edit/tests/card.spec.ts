@@ -20,7 +20,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
-import { declCap } from "../src/card.ts";
+import { declCap, ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -704,5 +704,79 @@ describe("declCap (the max_images law — the card face rides the DECLs, missing
       assert.throws(() => declCap(bad as never), /declares no lane_inputs\.max_images/,
         `missing cap refuses: ${JSON.stringify(bad)}`);
     }
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the image-edit card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// the legacy lane while its siblings compose the declared segment;
+// (2) the row composes ITS OWN declared truth — the unet the row
+// spells is the unet the graph loads (the wrong-weights half), and
+// the encoder class the row spells is the class the graph builds
+// (the 2.1/EditPlus split). The row's lane_inputs are the oracle;
+// the graph is the accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const editRows = Object.values(facts.models).filter((m) => m.card === "image-edit");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(editRows.length >= 4, `expected the served edit addresses (families + routes), found ${String(editRows.length)}`);
+  });
+
+  for (const row of editRows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared weights + classes.
+      const g = new GraphBuilder();
+      def.compose(
+        def.schema({ ...row.defaults, prompt: "make the hallway blue", input_images: ["/m/anchor.png"], seed: 5 }),
+        row, g, `wall_${row.id}`,
+      );
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const nodes = Object.values(graph);
+      const li = row.lane_inputs as Record<string, unknown>;
+      const unet = nodes.find((n) => n.class_type === "UNETLoader")!;
+      assert.equal(
+        unet.inputs.unet_name, li.unet,
+        "the graph loads the row's OWN unet (the variant-merged view, not the family default)",
+      );
+      assert.ok(
+        nodes.some((n) => n.class_type === li.text_encode_node),
+        `the row's encoder class '${String(li.text_encode_node)}' builds`,
+      );
+    });
+  }
+
+  it("THE ROUTE SPREAD: route addresses resolve their owning family (the family field rides the derived rows)", () => {
+    const bf16 = facts.models["qwen-img-edit-21-bf16"]!;
+    assert.ok(bf16, "the bf16 route's derived row serves");
+    assert.equal(bf16.family, "qwen-img-edit-21");
+    assert.equal(bf16.lane_inputs.unet, "qwen_image_2.1_bf16.safetensors",
+      "the bf16 route's derived row carries the merged lane view");
+    const lw = facts.models["qwen-img-edit-2511-lightning4"]!;
+    assert.ok(lw, "the lightning route's derived row serves");
+    assert.equal(lw.family, "qwen-img-edit-2511");
+    assert.equal(lw.lane_inputs.unet, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors",
+      "the lightning route's derived row carries the recipe↔weights merge");
+  });
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape — the derived rows all resolve family): the dispatch
+    // refuses loud rather than riding a legacy lane in the open
+    // (the interlock).
+    const row = { ...facts.models["qwen-img-edit-2511"]!, id: "synthetic-edit", family: undefined };
+    assert.throws(
+      () => def.compose(
+        def.schema({ prompt: "make the hallway blue", input_images: ["/m/anchor.png"], seed: 5 }),
+        row as never, new GraphBuilder(), "wall_fallback",
+      ),
+      /no declared action for family 'synthetic-edit' on the image-edit card — every boarded family \(qwen-img-edit-21, qwen-img-edit-2511\)/,
+    );
   });
 });

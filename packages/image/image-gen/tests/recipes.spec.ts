@@ -22,6 +22,7 @@ import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";
+import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { registerCard } from "../src/card.ts";
 
 const boot = async (mods: string[] = []) => {
@@ -29,18 +30,21 @@ const boot = async (mods: string[] = []) => {
   const svc = new ComfyUIService(ctx);
   registerCard(ctx, svc);
   // Facts stub: the compose door requires a facts row for the model
-  // id (card gate + defaults). The krea-2 frozen row carries its
-  // card_knobs (the kit's injection splice); lane rest stays empty.
+  // id (card gate + defaults). The lane truth comes from the DECL
+  // itself (one truth — the stub rides the card's ACTION ROUTE
+  // since the atom vocabulary, and the bound door parses the row:
+  // an empty lane stub is drift, not a lane; the legacy arm had
+  // composed undefined-input nodes vacuously).
   const frozen = JSON.parse(
     readFileSync(new URL("../../../engines/comfyui-cordis/data/model-facts.json", import.meta.url), "utf8"),
   ) as { rows: Record<string, { card: string; card_knobs?: unknown[] }> };
   svc.setFacts({
     models: {
       "krea-2": {
-        id: "krea-2",
+        id: krea2Decl.id,
         card: frozen.rows["krea-2"]!.card,
         defaults: { width: 1024, height: 1024, steps: 8 },
-        lane_inputs: {},
+        lane_inputs: krea2Decl.lane_inputs ?? {},
         card_knobs: frozen.rows["krea-2"]!.card_knobs ?? [],
         variants: [],
         variant_groups: [],

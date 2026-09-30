@@ -4,10 +4,24 @@ import type { Context } from '@deepseek-ai/cordis'
 import { existsSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import z from '@deepseek-ai/schemastery'
-import { upscaleLane } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { resolveLinkedInput } from '@melite/comfyui-cordis/linked'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
+import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
+// action composes; the legacy kit lane stays the declared fallback
+// (byte-oracle + unbound-row safety). Keyed by OWNING FAMILY
+// (`model.family ?? model.id` at dispatch — a route id keys
+// nothing, the derived-row law).
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [seedvr2Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(seedvr2Decl, 'upscale'), p, model, g, runId)
+  },
+}
 
 const schema = z.object({
   input_image: z.string().role('path').description("Input image").extra('extra', bag({ order: 0, group: "input", width: 1, tooltip: "The frame to restore. Absolute mount path.", required: true, wtype: 'image', })),
@@ -53,7 +67,7 @@ export function apply(ctx: Context): void {
     id: 'upscale-tools',
     // stage-row id the compose emits (retired skeleton= verbatim; TS owns the truth post-flip).
     skeleton: 'generate',
-    boarded: ['seedvr2_ema'],
+    boarded: [seedvr2Decl.id],
     tags: ['image', 'upscale', 'enhance'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -108,7 +122,12 @@ export function apply(ctx: Context): void {
           throw new Error(`input_image '${ref}' is not a file on this estate (absolute mount path expected)`)
         }
       }
-      upscaleLane(doc, model, g, runId)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the upscale-tools card — every boarded family (seedvr2_ema) composes its own declared segment; this address owns none`)
+      }
     },
   }))
 }

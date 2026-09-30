@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { EDITOR_ONLY_SEGMENT_KEYS } from "../../../../packages/web-kit/contracts/src/timelineTypes.ts";
-import { CALL_KEYS, CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../../../packages/video/h3-timeline/src/timelineContract.ts";
+import { CALL_KEYS, CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../../../packages/models/h3/src/timelineContract.ts";
 import { hydrateCalls, serializeCalls } from "../../../../packages/video/h3-timeline/src/ui/studio/docCalls.ts";
 
 // THE TIMELINE'S THREE OWNERS, PINNED (the census's C5). The
@@ -72,10 +72,11 @@ describe("the timeline's three vocabularies have no silent third", () => {
     // The card's TOP-LEVEL params (seed, width, height, …) are a
     // different plane from the per-call knobs: an editor segment key
     // that is one of those reaches the run as a call-level field, not
-    // through the knob bridge. Read the card's own top-level keys so
-    // the wall judges "reaches the card" correctly.
+    // through the knob bridge. The paramSchema moved family-side
+    // (stroke E's single-home law) — read the family schema's own
+    // top-level keys so the wall judges "reaches the card" correctly.
     const card = readFileSync(
-      new URL("../../../../packages/video/h3-timeline/src/card.ts", import.meta.url),
+      new URL("../../../../packages/models/h3/src/schema.ts", import.meta.url),
       "utf8",
     );
     const topLevel = new Set(

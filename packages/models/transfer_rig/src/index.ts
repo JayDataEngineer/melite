@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { transfer } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "transfer_rig",
@@ -59,7 +60,10 @@ export const DECL: ModelDecl = {
     "unet_variant": "",
     "vae": "",
     "weightless": false
-  }
+  },
+  // the transfer action the img-to-mesh card binds (the rig-copy
+  // lane tree).
+  "actions": [transfer],
 };
 
 export const family: Plugin = {
@@ -69,3 +73,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { transfer } from "./actions.ts";

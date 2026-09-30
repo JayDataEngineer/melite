@@ -4,10 +4,24 @@
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (inputPrepLane).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { inputPrepLane } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { DECL as inputDecl } from '@melite/models-input'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
+// action composes; the legacy kit lane stays the declared fallback
+// (byte-oracle + unbound-row safety). Keyed by OWNING FAMILY
+// (`model.family ?? model.id` at dispatch — a route id keys
+// nothing, the derived-row law).
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [inputDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(inputDecl, 'prep'), p, model, g, runId)
+  },
+}
 
 const schema = z.object({
   // the staged source filename (the arm stages uploads/artifacts into
@@ -50,7 +64,7 @@ export function apply(ctx: Context): void {
     // stock-only card (requires = ()): LoadImage/ImageCrop/
     // ImageScale/SaveImage + LoadAudio/SaveAudio are ComfyUI core
     // no requires to declare.
-    boarded: ['input'],
+    boarded: [inputDecl.id],
     tags: ['image', 'input', 'prepare'],
     identity,
     // THE DISCOVERY ROWS (authored 2026-09-10 — the card postdates
@@ -93,7 +107,7 @@ export function apply(ctx: Context): void {
     // writes, which the projection unions from the facts file).
     admits: ['crop', 'scale'],
     schema: schema as unknown as (v: unknown) => Record<string, unknown>,
-    compose(p, _model, g, runId) {
+    compose(p, model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent —
       // the card's own declaration validates the last hop into the
       // engine): schemastery walk enforces the declared type (source
@@ -136,7 +150,13 @@ export function apply(ctx: Context): void {
         height: scaleHeight,
         method: doc['scale_method'],
       } : undefined)
-      inputPrepLane({ ...doc, crop, scale }, g, runId)
+      const gated = { ...doc, crop, scale }
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(gated, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the input-prep card — every boarded family (input) composes its own declared segment; this address owns none`)
+      }
     },
   }))
 }

@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { compose } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "music3",
@@ -117,6 +118,11 @@ export const DECL: ModelDecl = {
     ],
   },
 
+  // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
+  // the compose action the music card binds (the MiniMax Music 3 lane).
+  // The admission gate runs the facts parse at registration.
+  "actions": [compose],
+
 };
 
 export const family: Plugin = {
@@ -126,3 +132,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { compose, parseMusicFacts, type MusicFacts, type MusicParams } from "./actions.ts";

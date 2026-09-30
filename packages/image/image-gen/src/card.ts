@@ -9,7 +9,9 @@
 // client stamps as macros.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
+import { declaredAction, finalizeImageGen, instantiateAction } from '@melite/comfyui-card-kit'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -27,6 +29,32 @@ import { bag } from '@melite/contracts/extraKeys'
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id] as const
+
+/** The action bindings (the atom vocabulary, stroke-1 pilot): a
+ *  boarded family with a bound action composes through the atom's
+ *  own declared segment — the card delegates, never authors nodes.
+ *  Keyed by the OWNING FAMILY (model.family, never model.id: six of
+ *  ten served addresses are route ids — a route-keyed lookup misses
+ *  and silently composes nothing). Every boarded family holds a
+ *  bound action; the binding per family is the card's declared
+ *  compose contract, never an id switch inside lane code. Exported
+ *  for the every-address wall: each served facts row's OWNING
+ *  family must hold a row here — a boarded-but-unbound family
+ *  refuses loud at the dispatch, never a silent miss. */
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [krea2Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(krea2Decl, 't2i'), p, model, g, runId)
+  },
+  [zImageDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(zImageDecl, 't2i'), p, model, g, runId)
+  },
+  [animaDecl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(animaDecl, 't2i'), p, model, g, runId)
+  },
+  [qwenImg21Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(qwenImg21Decl, 't2i'), p, model, g, runId)
+  },
+}
 
 export const schema = z.object({
   // CARD-OWNED SURFACE (the 1:1 port, 2026-09-08): declaration
@@ -99,7 +127,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }
-      imageT2I(doc, model, g, runId)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) {
+        bound(doc, model, g, runId)
+        return
+      }
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the image-gen card — every boarded family (krea-2, z-image, anima, qwen-img-21) composes its own declared segment; this address owns none`)
+      }
     },
     finalize: finalizeImageGen,
   }))

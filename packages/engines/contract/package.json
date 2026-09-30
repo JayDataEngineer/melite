@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./engines": "./src/engines.ts",
     "./types": "./src/types.ts",
+    "./vocabulary": "./src/vocabulary.ts",
     "./package.json": "./package.json"
   },
   "scripts": {

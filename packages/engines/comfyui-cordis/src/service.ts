@@ -828,6 +828,16 @@ export class ComfyUIService extends Service {
     // schema parse below still runs — the single declaration guards
     // the params, never a second truth.
     if (def.requiresModel === false && (modelId === null || modelId === '')) {
+      // THE FAMILY RESOLVE (the atom vocabulary's interlock): compose
+      // derives from a family DECL, so a model-less row names the
+      // family when the card boards exactly one — the declared
+      // single-family arm, resolved here where the row is built (an
+      // explicit resolve, never a default hidden in the card). A
+      // zero- or multi-family board names no family: the caller's
+      // family picker is the choice there (emitParamsSchema
+      // synthesizes the knob), and a card whose compose needs a
+      // family refuses loud at its own dispatch.
+      const family = def.boarded.length === 1 ? def.boarded[0] : undefined
       let merged: Record<string, unknown>
       try {
         // THE NUMERIC-STRING FILL (commission 035, 2026-09-24):
@@ -858,7 +868,7 @@ export class ComfyUIService extends Service {
         }
       }
       const g = new GraphBuilder(this.pinDefaults)
-      def.compose(merged, { id: '', card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
+      def.compose(merged, { id: '', family, card: cardId, defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }, g, runId)
       const graph = g.toJSON()
       const finalized = def.finalize ? def.finalize(graph) : graph
       this.assertWiring(cardId, finalized)

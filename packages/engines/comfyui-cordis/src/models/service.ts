@@ -98,6 +98,60 @@ function validateDecl(decl: ModelDecl): void {
       }
     }
   }
+  // THE RECIPE↔WEIGHTS LAW (2026-09-29, the third live break's
+  // silent half): a cell's artifact is the DOWNLOAD; the run loads
+  // (atom ∪ variant) lane_inputs. A cell downloading a file the
+  // lane truth never loads is a silent wrong-weights run — krea-2
+  // raw shipped exactly that for 20 days (turbo's unet under a
+  // 52-step marriage, masked behind the missing facts row). The
+  // registry-wide sweep held at ZERO violators the day this wall
+  // landed; the qwen lightning + tts melds declare the override
+  // precedent (variant lane_inputs re-spell the swapped
+  // checkpoint). A mismatch refuses HERE, at registration, forever.
+  const WEIGHTS_FILE = /\.(safetensors|gguf|pth|bin|ckpt)$/i;
+  const atomLoads = new Set(
+    Object.values(decl.lane_inputs ?? {}).filter(
+      (x): x is string => typeof x === "string" && WEIGHTS_FILE.test(x),
+    ),
+  );
+  for (const v of decl.variants) {
+    const loads = new Set([
+      ...atomLoads,
+      ...Object.values(v.lane_inputs ?? {}).filter(
+        (x): x is string => typeof x === "string" && WEIGHTS_FILE.test(x),
+      ),
+    ]);
+    for (const c of v.cells) {
+      const art = c.artifact;
+      if (art === undefined || art === null) continue;
+      const fn = art.filename ?? (art.source_url !== undefined ? art.source_url.split("/").pop() : undefined);
+      if (fn === undefined || fn === "") continue;
+      if (!loads.has(fn)) {
+        throw new ModelError(
+          `${decl.id}/${v.id}: cell downloads '${fn}' but no lane_input loads it ` +
+            `(the recipe↔weights law — a variant that swaps checkpoints overrides lane_inputs; ` +
+            `a download the lane never loads is a silent wrong-weights run)`,
+        );
+      }
+    }
+  }
+  // THE ACTION ADMISSION GATE (the atom vocabulary's family door,
+  // stroke 0): a declared action's facts parse runs at REGISTRATION
+  // over the family row AND every variant merge — the merge a run
+  // actually composes (getModel splices variant over atom at read
+  // time; the bf16 precedent re-spells two door-read keys). Drift
+  // refuses HERE, at boot, in the door's own voice — the family's
+  // parse throw, never reworded by the service.
+  if (decl.actions !== undefined) {
+    for (const action of decl.actions) {
+      // spread of undefined yields {} — a door may face an empty
+      // row only when the family omits lane_inputs entirely
+      action.facts({ ...decl.lane_inputs });
+      for (const v of decl.variants) {
+        action.facts({ ...decl.lane_inputs, ...v.lane_inputs });
+      }
+    }
+  }
   // SCHEMA LEG runs AFTER the predicates (wall law: the refusal
   // TEXTS are the contract — a corrupt id/genre must keep refusing
   // with the words, not a schemastery ValidationError). Strict

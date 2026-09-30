@@ -5,9 +5,11 @@
 // core; no extension to declare (the retired card carried no requires).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { musicT1, yue2T1 } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as music3Decl } from '@melite/models-music3'
 import { DECL as yue2Decl } from '@melite/models-yue2'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
@@ -27,6 +29,21 @@ export const schema = z.object({
 // a retyped id breaks the card at RUNTIME — not-boarded — with every
 // wall green. image-gen has done it this way all along.
 export const BOARDED: string[] = [music3Decl.id, yue2Decl.id]
+
+/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+ * family's declared compose action per boarded family — the card
+ * owns only dispatch; the segment factories live in the family
+ * packages (the legacy lanes stay the declared fallback +
+ * byte-oracle). Keyed by OWNING FAMILY (`model.family ?? model.id`
+ * at dispatch — a route id keys nothing, the derived-row law). */
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [music3Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(music3Decl, 'compose'), p, model, g, runId)
+  },
+  [yue2Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(yue2Decl, 'compose'), p, model, g, runId)
+  },
+}
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
@@ -74,11 +91,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // THE LANE BRANCH (data never a family-id switch — the
       // latent_node precedent): yue2's rail resolves a checkpoint
       // row (one file carries model+clip+vae); music3's resolves
-      // the unet/clip/vae trio.
-      if (model.lane_inputs.latent_node === 'EmptyYuE2LatentAudio') {
-        yue2T1(doc, model, g, runId)
+      // the unet/clip/vae trio. THE DECLARED ACTIONS (the atom
+      // vocabulary, stroke 3): each boarded family's own compose
+      // action composes first — the data branch below is the
+      // declared legacy-lane fallback for family-less rows, never a
+      // silent second copy.
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) {
+        bound(doc, model, g, runId)
       } else {
-        musicT1(doc, model, g, runId)
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the music card — every boarded family (music3, yue2) composes its own declared segment; this address owns none`)
       }
     },
   }))

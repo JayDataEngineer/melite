@@ -11,9 +11,9 @@ import {
   computeFilmMix,
   parseFilmMixClips,
   stanzaSecs,
-} from "../src/filmMix.ts";
-import { spanStanzaFrames } from "../src/timelineContract.ts";
-import type { FilmMixClip, FilmMixSpan } from "../src/filmMix.ts";
+} from '@melite/models-h3/filmMix';
+import { spanStanzaFrames } from '@melite/models-h3/timelineContract';
+import type { FilmMixClip, FilmMixSpan } from '@melite/models-h3/filmMix';
 
 const SPAN = (start: number, end: number, transition?: string): FilmMixSpan =>
   transition === undefined ? { start, end } : { start, end, transition };

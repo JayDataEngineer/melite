@@ -13,8 +13,8 @@
  */
 import type { DocAudioClip, LayerA } from "./docModel"
 import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel"
-import { normalizeDeclaredRefs } from "../../timelineContract.ts"
-import { parseFilmMixClips } from "../../filmMix.ts"
+import { normalizeDeclaredRefs } from '@melite/models-h3/timelineContract'
+import { parseFilmMixClips } from '@melite/models-h3/filmMix'
 
 /** Card-level ref lists hydrate to arrays; absent/empty stays absent
  * (undefined = the compose sees no declared surface — same as today). */

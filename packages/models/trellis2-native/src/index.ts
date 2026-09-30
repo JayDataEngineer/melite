@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { mesh } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "trellis2-native",
@@ -227,7 +228,10 @@ export const DECL: ModelDecl = {
     "unet_variant": "",
     "vae": "trellis_2_shape_vae_bf16.safetensors",
     "weightless": false
-  }
+  },
+  // the mesh action the img-to-mesh card binds (the trellis_t1
+  // lane tree).
+  "actions": [mesh],
 };
 
 export const family: Plugin = {
@@ -237,3 +241,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { mesh } from "./actions.ts";

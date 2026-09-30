@@ -5,7 +5,7 @@
  */
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
-import { refGenreOf } from "../../timelineContract.ts"
+import { refGenreOf } from '@melite/models-h3/timelineContract'
 import { EmptyState, PaneHeader } from "@melite/card-base"
 import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"

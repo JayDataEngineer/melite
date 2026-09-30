@@ -9,13 +9,13 @@ import {
   KNOB_ORDER,
   LEGACY_KNOB_KEY,
   type KnobKey,
-} from "../../timelineContract.ts"
+} from '@melite/models-h3/timelineContract'
 // THE SEGMENT DEFAULTS are the contracts' (one owner for the film
 // clock's default — the census's M12 fix reads them from here)
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts/timelineTypes"
 
-export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from "../../timelineContract.ts"
-export type { KnobKey } from "../../timelineContract.ts"
+export { CALL_KNOB_KEYS, KNOB_ORDER, LEGACY_KNOB_KEY } from '@melite/models-h3/timelineContract'
+export type { KnobKey } from '@melite/models-h3/timelineContract'
 
 // ── The document types (the builder SCHEMA's shapes, client-side) ─────────
 

@@ -46921,7 +46921,7 @@ void main() {
 			}) });
 		}
 		//#endregion
-		//#region src/filmMix.ts
+		//#region ../../models/h3/src/filmMix.ts
 		/** Parse raw audio_clips rows — the card's one law for what a clip
 		*  IS: a src without a numeric start_frame refuses loud (never a
 		*  silent misplacement); a row without src is junk and skips; the
@@ -53185,4 +53185,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8b8d904acdbefc9bca9447690f92058898575651";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="5d27f74aa4aaf4be39acbc0f0852e84fd9ed3220";

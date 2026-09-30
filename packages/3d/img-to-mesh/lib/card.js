@@ -1,5 +1,8 @@
 import z from "@deepseek-ai/schemastery";
-import { MESH_AO_SIZES, MESH_ATLAS_SIZES, MESH_BG_MODES, MESH_NORMAL_SIZES, MESH_PIXAL_FOVS, MESH_RESOLUTIONS, admitMeshLift, pixalArm, transferRigArm, trellisArm } from "@melite/comfyui-card-kit";
+import { MESH_AO_SIZES, MESH_ATLAS_SIZES, MESH_BG_MODES, MESH_NORMAL_SIZES, MESH_PIXAL_FOVS, MESH_RESOLUTIONS, declaredAction, instantiateAction } from "@melite/comfyui-card-kit";
+import { DECL } from "@melite/models-pixal3d";
+import { DECL as DECL$1 } from "@melite/models-trellis2-native";
+import { DECL as DECL$2 } from "@melite/models-transfer_rig";
 import { SAMPLERS, SCHEDULERS, vocabulary } from "@melite/comfyui-card-kit/vocab";
 import { bag } from "@melite/contracts/extraKeys";
 //#region src/card.ts
@@ -275,14 +278,19 @@ const identity = {
 	genre: "3d",
 	icon: "box"
 };
+const ACTION_BINDINGS = {
+	[DECL.id]: (p, model, g, runId) => void instantiateAction(declaredAction(DECL, "mesh"), p, model, g, runId),
+	[DECL$1.id]: (p, model, g, runId) => void instantiateAction(declaredAction(DECL$1, "mesh"), p, model, g, runId),
+	[DECL$2.id]: (p, model, g, runId) => void instantiateAction(declaredAction(DECL$2, "transfer"), p, model, g, runId)
+};
 function apply(ctx) {
 	ctx.effect(() => ctx.comfyui.registerCard({
 		id: "img-to-mesh",
 		skeleton: "img-to-mesh",
 		boarded: [
-			"pixal3d",
-			"trellis2-native",
-			"transfer_rig"
+			DECL.id,
+			DECL$1.id,
+			DECL$2.id
 		],
 		tags: [
 			"3d",
@@ -331,25 +339,11 @@ function apply(ctx) {
 		schema,
 		compose(p, model, g, runId) {
 			const doc = schema(p);
-			if (model.id === "transfer_rig") {
-				const missing = [];
-				if (!String(doc.rigged_glb || "").trim()) missing.push("rigged_glb");
-				if (!String(doc.target_glb || "").trim()) missing.push("target_glb");
-				if (missing.length > 0) {
-					const label = {
-						rigged_glb: "Rigged source GLB",
-						target_glb: "Target GLB"
-					};
-					throw new Error(`required param(s) ${missing.map((m) => `'${m}' (${label[m]})`).join(", ")} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`);
-				}
-				transferRigArm(g, doc);
-				return;
-			}
-			admitMeshLift(doc, model);
-			if (model.id === "pixal3d") pixalArm(g, doc, model);
-			else trellisArm(g, doc, model);
+			const bound = ACTION_BINDINGS[model.family ?? model.id];
+			if (bound) bound(doc, model, g, runId);
+			else throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer_rig) composes its own segment; this address owns none`);
 		}
 	}));
 }
 //#endregion
-export { apply, identity, inject };
+export { ACTION_BINDINGS, apply, identity, inject };

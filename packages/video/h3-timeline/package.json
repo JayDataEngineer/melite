@@ -7,7 +7,6 @@
     ".": "./src/index.ts",
     "./client": "./lib/client.js",
     "./card": "./src/card.ts",
-    "./filmMix": "./src/filmMix.ts",
     "./package.json": "./package.json",
     "./tool": "./src/tool.ts",
     "./ui/studio/component": "./src/ui/studio/component.tsx"

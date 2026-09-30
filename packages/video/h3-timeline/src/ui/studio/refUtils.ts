@@ -8,7 +8,7 @@ export {
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
-} from "../../timelineContract.ts"
+} from '@melite/models-h3/timelineContract'
 /** One upstream image artifact — a link-to-previous-output picker row. */
 export interface LinkArtifact {
   /** The ctx-key NAME the picker writes (what _resolveSource resolves). */

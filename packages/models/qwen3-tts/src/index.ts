@@ -16,6 +16,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { speak, exportAction } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "qwen3-tts",
@@ -242,7 +243,12 @@ export const DECL: ModelDecl = {
     "unet_variant": "",
     "vae": "",
     "weightless": false
-  }
+  },
+  // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
+  // the speak + export actions the tts card binds (the 0.6B lane tree).
+  // The admission gate runs the facts parse at registration.
+  "actions": [speak, exportAction],
+
 };
 
 export const family: Plugin = {
@@ -282,3 +288,5 @@ export const PRESET_SPEAKERS: readonly string[] = [
   "ryan", "serena", "vivian", "aiden", "eric",
   "dylan", "sohee", "ono_anna", "uncle_fu",
 ];
+
+export { speak, exportAction, parseTtsFacts, type TtsFacts, type TtsParams } from "./actions.ts";

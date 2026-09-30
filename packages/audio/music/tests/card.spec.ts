@@ -15,6 +15,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -139,5 +140,56 @@ describe("the yue2 lane (YuE2-3B boarding — style + lyrics with ABC planning, 
     const graph = g.toJSON();
     assert.ok(graph["UNETLoader.0"] && graph["MiniMaxMusic3TextEncode.0"], "the music3 lane body stands");
     assert.ok(!graph["CheckpointLoaderSimple.0"], "no checkpoint node on the music3 lane");
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the music card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// the legacy lane while its siblings compose the declared segment;
+// (2) the row composes ITS OWN declared segment — the song saves
+// under the run-scoped prefix. The audio lane's graph is the
+// accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "music");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 2, `expected the served music addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared segment.
+      const g = new GraphBuilder();
+      def.compose(def.schema({ prompt: "wall probe", lyrics: "[verse]wall" }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const save = Object.values(graph).find((n) => n.class_type === "SaveAudioAdvanced")!;
+      assert.ok(save, "the declared segment saves the song");
+      assert.equal(save.inputs.filename_prefix, `wall_${row.id}/music`, "compose stamps the run prefix");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES on both data branches — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape): the dispatch refuses loud rather than riding a legacy
+    // lane in the open (the interlock) — on the music3 branch AND
+    // the YuE2 latent branch alike.
+    const row = { ...rows[0]!, id: "synthetic-music", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-music' on the music card — every boarded family \(music3, yue2\)/,
+    );
+    const yue2Row = rows.find((r) => r.lane_inputs.latent_node === "EmptyYuE2LatentAudio") ?? rows[0]!;
+    const fallen = { ...yue2Row, id: "synthetic-music-yue2", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "fallback probe" }), fallen as never, new GraphBuilder(), "wall_fallback_yue2"),
+      /no declared action for family 'synthetic-music-yue2' on the music card — every boarded family \(music3, yue2\)/,
+    );
   });
 });

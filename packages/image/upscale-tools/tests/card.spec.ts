@@ -29,6 +29,7 @@ beforeAll(async () => {
 // existence check — tmpdir files, chdir-free absolute paths).
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const model = facts.models["seedvr2_ema"]!;
 
@@ -113,5 +114,51 @@ describe("the upscale-tools compose gate", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ input_image: pic }), model, g, "run_3");
     assert.ok(g.toJSON()["SeedVR2VideoUpscaler.0"], "the upscaster rides");
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the upscale-tools card serves: (1) the row's
+// OWNING FAMILY holds an ACTION_BINDINGS row — no address silently
+// rides the legacy lane while its siblings compose the declared
+// segment; (2) the row composes ITS OWN declared truth — the unet
+// and vae the row spells are the weights the graph loads. The
+// row's lane_inputs are the oracle; the graph is the accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const upscaleRows = Object.values(facts.models).filter((m) => m.card === "upscale-tools");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(upscaleRows.length >= 1, `expected the served upscale addresses, found ${String(upscaleRows.length)}`);
+  });
+
+  for (const row of upscaleRows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared weights.
+      const g = new GraphBuilder();
+      def.compose(def.schema({ input_image: "$image" }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const li = row.lane_inputs as Record<string, unknown>;
+      const dit = Object.values(graph).find((n) => n.class_type === "SeedVR2LoadDiTModel")!;
+      assert.equal(dit.inputs.model, li.unet, "the graph loads the row's OWN DiT weights");
+      const vae = Object.values(graph).find((n) => n.class_type === "SeedVR2LoadVAEModel")!;
+      assert.equal(vae.inputs.model, li.vae, "the graph loads the row's OWN VAE weights");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape): the dispatch refuses loud rather than riding a legacy
+    // lane in the open (the interlock).
+    const row = { ...facts.models["seedvr2_ema"]!, id: "synthetic-upscale", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "$image" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-upscale' on the upscale-tools card — every boarded family \(seedvr2_ema\)/,
+    );
   });
 });

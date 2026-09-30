@@ -11,6 +11,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -169,6 +170,74 @@ describe("the tagger weights law (the variant rail owns the checkpoint)", () => 
     assert.deepEqual(
       Object.keys(jt.inputs).sort(), ["THRESHOLD", "addTag", "image", "removeTag"],
       "no checkpoint input exists on the joytag arm",
+    );
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the tagger card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row — no address silently rides
+// the legacy lane while its siblings compose the declared segment;
+// (2) the row composes ITS OWN declared segment — the family's own
+// interrogator class builds under the run-scoped prefix. The
+// family's class spelling is the oracle; the graph is the accused.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const taggerRows = Object.values(facts.models).filter((m) => m.card === "tagger");
+  // family → its own interrogator class (the oracle this wall
+  // accuses the graph with).
+  const OWN_CLASS: Record<string, string> = {
+    wd14: "WD14Tagger|pysssss",
+    joytag: "CXH_JoyTag",
+    florence2: "Florence2Run",
+    joycaption: "JJC_JoyCaption",
+  };
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(taggerRows.length >= 4, `expected the four tagger family rows, found ${String(taggerRows.length)}`);
+  });
+
+  it("THE BINDING COMPLETENESS: the bindings cover every legacy arm key (dispatch is total, never partial)", () => {
+    // The legacy lane dispatches by model.id over TAGGER_ARMS; the
+    // bindings dispatch by family — every arm the lane could ever
+    // compose must be bound, or an address silently rides the
+    // legacy lane while its siblings compose the declared segment.
+    const armKeys = Object.keys(OWN_CLASS);
+    for (const key of armKeys) {
+      assert.ok(key in ACTION_BINDINGS, `family '${key}' holds no ACTION_BINDINGS row`);
+    }
+  });
+
+  for (const row of taggerRows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      const family = (row.family ?? row.id) as string;
+      // (1) THE BINDING: the owning family holds a row.
+      assert.ok(
+        family in ACTION_BINDINGS,
+        `family '${family}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the family's own interrogator class builds.
+      const g = new GraphBuilder();
+      def.compose(def.schema({ input_image: "/m/p.png" }), row, g, `wall_${family}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const nodes = Object.values(graph);
+      assert.ok(
+        nodes.some((n) => n.class_type === OWN_CLASS[family]),
+        `the family's own interrogator '${OWN_CLASS[family]}' builds`,
+      );
+      const save = nodes.find((n) => n.class_type === "SaveText")!;
+      assert.equal(save.inputs.filename_prefix, `wall_${family}/tags`, "compose stamps the run prefix");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: an unboarded id REFUSES at the dispatch (declared, never silent)", () => {
+    // No served facts row carries an id outside the four families —
+    // the bindings cover the served set. A synthetic family-less
+    // row with an unboarded id refuses at the dispatch, naming the
+    // boarded families, rather than composing garbage (the interlock).
+    const row = { ...wd14, id: "synthetic-tagger", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ input_image: "/m/p.png" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-tagger' on the tagger card — every boarded family \(wd14, joytag, florence2, joycaption\)/,
     );
   });
 });

@@ -11,6 +11,7 @@ import type { Plugin } from "@deepseek-ai/cordis";
 // (same seam as ctx.comfyui through ./service):
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { t2i } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "anima",
@@ -117,6 +118,12 @@ export const DECL: ModelDecl = {
       },
     ],
   },
+  // THE FAMILY DOOR (the atom vocabulary, stroke 0): the t2i
+  // action's facts parse runs over this row and every variant
+  // merge AT REGISTRATION — a drifted lane_input (a renamed latent
+  // class, a bad variant override) refuses at boot in the door's
+  // own voice, never at first compose.
+  "actions": [t2i],
 
 };
 
@@ -127,3 +134,8 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+// The family's offered actions (the atom vocabulary): the t2i
+// segment the image-gen card binds. The card imports this beside
+// the DECL — the family's whole offer, one face.
+export { t2i, parseT2IFacts, type T2IFacts, type T2IParams } from "./actions.ts";

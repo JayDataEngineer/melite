@@ -17,6 +17,7 @@ import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 
 const FACTS_PATH = join(
   dirname(fileURLToPath(import.meta.url)),
@@ -110,14 +111,16 @@ describe("the tts compose gate", () => {
     );
   });
 
-  it("a non-string lane marker falls back to the speak admission", () => {
+  it("a non-string lane marker refuses field-named (the facts door — stroke 3's declared parse owns the lane truth)", () => {
     const model = {
       ...ttsModel,
       lane_inputs: { ...ttsModel.lane_inputs, synth_lane: 7 },
     } as ModelFacts;
     const g = new GraphBuilder();
-    def.compose(def.schema({ text: "hello" }), model, g, "r_lane");
-    assert.ok(g.toJSON()["AudiocoreTTS.0"]);
+    assert.throws(
+      () => def.compose(def.schema({ text: "hello" }), model, g, "r_lane"),
+      /lane_inputs\.synth_lane = 7 — speak, clone, or design is required/,
+    );
   });
 
   it("a design export refuses reference inputs and a saved persona", () => {
@@ -545,5 +548,107 @@ describe("the design lane (the SAVE half — the lane owns the task-named prompt
     const g = new GraphBuilder();
     def.compose(def.schema({ text: "the sample" }), designModel, g, "r_neither");
     assert.ok(Object.keys(g.toJSON()).length > 0, 'the synth lane composes');
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the tts card serves: (1) the row's OWNING FAMILY
+// holds an ACTION_BINDINGS row — no address silently rides the
+// legacy lane while its siblings compose the declared segment; (2)
+// the row composes ITS OWN declared segment — the words (or the
+// export pair) save under the run-scoped prefix. The lane's branch
+// DATA (synth_lane) picks the segment, never a family-id switch.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "tts");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 2, `expected the served tts addresses, found ${String(rows.length)}`);
+  });
+
+  // THE LANE PARAMS per resolved synth_lane: the clone lane needs
+  // its reference pair; the design lane needs its export pair; the
+  // speak lane needs only the words (admission on the card holds).
+  const laneParams = (row: ModelFacts): Record<string, unknown> => {
+    const lane = row.lane_inputs.synth_lane;
+    if (lane === "clone") {
+      return { text: "wall probe", ref_audio: "/m/ref.wav", ref_text: "the reference words" };
+    }
+    if (lane === "design") {
+      return { text: "wall probe", voice_name: "wall-host", design_prompt: "a wall probe voice" };
+    }
+    return { text: "wall probe" };
+  };
+
+  for (const row of rows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      // (1) THE BINDING: the owning family holds a row — a route id
+      // keying nothing was the silent miss this wall exists to kill.
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      // (2) THE COMPOSE: the row's own declared segment (the design
+      // lane saves under its own /design prefix — the export's
+      // artifact pair, not the speak lane's /tts).
+      const g = new GraphBuilder();
+      def.compose(def.schema(laneParams(row)), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const save = Object.values(graph).find((n) => n.class_type === "SaveAudio")!;
+      assert.ok(save, "the declared segment saves the render");
+      const suffix = row.lane_inputs.synth_lane === "design" ? "design" : "tts";
+      assert.equal(save.inputs.filename_prefix, `wall_${row.id}/${suffix}`, "compose stamps the run prefix");
+      if (row.lane_inputs.synth_lane === "design") {
+        const copy = Object.values(graph).find((n) => n.class_type === "MeliteQVoiceCopy")!;
+        assert.ok(copy, "the design lane exports the .qvoice artifact");
+        assert.equal(copy.inputs.dest_prefix, `wall_${row.id}/voices`, "the export persists into the run's own tree");
+      }
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    // A synthetic family-less row (no served facts row carries this
+    // shape): the dispatch refuses loud rather than riding a legacy
+    // lane in the open (the interlock).
+    const row = { ...rows[0]!, id: "synthetic-tts", family: undefined, lane_inputs: { ...rows[0]!.lane_inputs, synth_lane: "speak" } };
+    assert.throws(
+      () => def.compose(def.schema({ text: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-tts' on the tts card — every boarded family \(qwen3-tts, qwen3-tts-voicedesign\)/,
+    );
+  });
+
+  it("THE OTHER BINDING SEAT: the 0.6B family's save fires too (a stated Design pair on the CustomVoice row exports)", () => {
+    const g = new GraphBuilder();
+    def.compose(def.schema({ text: "sample", voice_name: "wall-host", design_prompt: "a wall probe voice" }), ttsModel, g, "wall_save_060");
+    const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+    const studio = Object.values(graph).find((n) => n.class_type === "AudiocoreVoiceStudio")!;
+    assert.equal(studio.inputs.mode, "export_lite", "the save binding routes to the export segment");
+    const copy = Object.values(graph).find((n) => n.class_type === "MeliteQVoiceCopy")!;
+    assert.equal(copy.inputs.dest_prefix, "wall_save_060/voices", "the export persists into the run's own tree");
+  });
+
+  it("THE DECLARED DESIGN FALLBACKS: a family-less design row rides the legacy lanes and the card's own design admission", () => {
+    // The design branch's own refusals and fallback are family-independent
+    // seats — the family rows now compose their declared actions, so the
+    // legacy rail is proven on a synthetic family-less row.
+    const bare = { ...ttsModel, id: "synthetic-tts-design", family: undefined, relations: undefined, lane_inputs: { ...ttsModel.lane_inputs, synth_lane: "design" } } as never as ModelFacts;
+    // the exact-missing voice: NEITHER half stated names nothing.
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", design_prompt: "warm" }), bare, new GraphBuilder(), "wall_design_missing"),
+      /required Design param\(s\) 'voice_name' missing or empty/,
+    );
+    // the export's off-surface inputs refuse.
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", voice_name: "host", design_prompt: "warm", ref_audio: "/m/r.wav" }), bare, new GraphBuilder(), "wall_design_ref"),
+      /params 'ref_audio'\/'ref_text' fire nothing on a Design export/,
+    );
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", voice_name: "host", design_prompt: "warm", qvoice: [{ qvoice: "/m/v.qvoice" }] }), bare, new GraphBuilder(), "wall_design_bag"),
+      /param 'qvoice' fires nothing on a Design export/,
+    );
+    // the declared fallback itself: the family-less design row REFUSES.
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", voice_name: "wall-host", design_prompt: "warm" }), bare, new GraphBuilder(), "wall_design_fallback"),
+      /no declared action for family 'synthetic-tts-design' on the tts card — every boarded family \(qwen3-tts, qwen3-tts-voicedesign\)/,
+    );
   });
 });

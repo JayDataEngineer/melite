@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the anny card (the 3d lane) — one card one package: the form card (schema groups → the base form's parameter submenu) + agents/ context",
+  "description": "the anny card (the 3d lane) \u2014 one card one package: the form card (schema groups \u2192 the base form's parameter submenu) + agents/ context",
   "main": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
@@ -17,7 +17,8 @@
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/contracts": "workspace:*"
+    "@melite/contracts": "workspace:*",
+    "@melite/models-anny": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

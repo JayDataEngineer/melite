@@ -22,6 +22,13 @@
 // derived (one enumeration, two readers) but the SUBJECT is
 // production's, which is the whole difference: the door and the serve
 // are two seats, and a wall that only looks at one of them is a note.
+// THE PER-FILE BOOT (li-m): this wall reads the model table
+// (getModel) and the serve (specBody -> owningAtom), so it owns its
+// world by booting the models service as its FIRST import — the
+// contract tests/helpers/boot-models.ts states. Inherited worker
+// state is not a world: in a full-project run this file landed in a
+// worker whose models service was never booted and refused loud.
+import '../../../../tests/helpers/boot-models.ts'
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { loadCardDefs, declaredDefaults, getModel, theService } from "@melite/comfyui-cordis";

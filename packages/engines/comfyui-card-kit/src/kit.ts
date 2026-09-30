@@ -33,6 +33,7 @@
 export { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 export { isItemWrapped, unwrapItemArrays, coerceWireArrays, coerceWireNumbers, wireTypeLedger } from './coerceWireArrays.ts'
 export { mintSeed, voiceLockSeed } from './graph-helpers.ts'
+export { declaredAction, instantiateAction, type ComfyActionSpec, type ComfyActionContext } from './action.ts'
 export {
   IMPACT_DETECTOR_IDS,
   IMPACT_DETECTORS,
@@ -55,7 +56,13 @@ export {
   editRefs,
   orderedInputImages,
   editImageCap,
+  regionSegs,
+  detailerSave,
+  isSpell,
+  laneSampler,
+  laneScheduler,
 } from './lanes-image.ts'
+export type { TensorRef } from './lanes-image.ts'
 export {
   VIDEO_NEGATIVE_FALLBACK,
   H3_T4_STRIP,
@@ -97,7 +104,18 @@ export {
   TAGGER_EXTRA_OPTIONS,
   TAGGER_ARMS,
   taggerLane,
+  taggerSaveText,
 } from './lanes-image-tools.ts'
+// the audio render blocks (the atom-vocabulary stroke 3: family
+// actions port the audiocore segments on the SAME calibrated pins
+// and loaders — one owner, the lanes stay as byte-oracles).
+export {
+  AUDIACORE_TTS_AUTOFILL,
+  AUDIACORE_STUDIO_AUTOFILL,
+  loadAudiocore,
+  saveAudio,
+  laneStr,
+} from './blocks/audio-kit.ts'
 // lanes.spec.ts names the StripTable type off the kit face (the lanes'
 // strip tables are StripTable-typed) — re-exported as a type, erased at runtime.
 export type { StripTable } from './graph.ts'

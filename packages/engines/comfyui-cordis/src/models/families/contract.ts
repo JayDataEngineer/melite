@@ -592,12 +592,31 @@ export const ModelDecl: z<ModelDecl> = z.object({
    *  addition to each variant's own). */
   relations: ParamRelationWords.required(false),
   bounds: z.dict(ParamBoundRow).required(false),
+  // THE FAMILY DOOR'S DECLARED ACTIONS (the atom vocabulary, stroke
+  // 0): executable doors on a data row — the schema twin is
+  // deliberately LOOSE (z.any members): a strict row schema would
+  // strip facts/build on the resolved copy. The interface's
+  // DeclaredAction erasure owns the shape.
+  actions: z.array(z.any()).required(false),
   // the interface documents all three as optional (absent ≡ false
   // to every reader), so the schema accepts their absence too
   has_agent: z.boolean().required(false),
   has_inference: z.boolean().required(false),
   has_rubric: z.boolean().required(false),
 });
+
+/** A declared action, ERASED for the DECL seam (the atom
+ *  vocabulary, stroke 0): the DECL carries the doors; the registry
+ *  validates them at registration; the card's static import keeps
+ *  the concrete spec typing at compose. Structural — this accepts
+ *  every engine's concrete ActionSpec with no cast. */
+export interface DeclaredAction {
+  readonly id: string;
+  readonly outputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
+  readonly params: ReadonlyArray<{ readonly name: string; readonly rule?: string }>;
+  readonly facts: (raw: Record<string, unknown>) => unknown;
+  readonly build: (...args: never[]) => unknown;
+}
 
 /** The family declaration — the model.unit's data shape.
  *
@@ -655,6 +674,17 @@ export interface ModelDecl {
   params?: string[];
   /** The family-wide relation words (judged on every lane). */
   relations?: ParamRelationWords;
+  /** The family's declared graph actions (the atom vocabulary):
+   *  the atom's own segment doors, validated at registration (the
+   *  facts parse runs over the family row and every variant merge
+   *  at registerFamily — drift refuses at boot, never at first
+   *  compose). The card's static import keeps the CONCRETE
+   *  ComfyActionSpec typing at the compose seam; this erasure
+   *  accepts every concrete spec with no cast (facts takes
+   *  Record<string, unknown> — LaneInputsFacts verbatim; build's
+   *  never[] params are the bottom type, assignable from any
+   *  build signature under strict contravariance). */
+  actions?: Array<DeclaredAction>;
   /** The family-wide numeric bounds (per-field replaced by a
    *  variant's own row when it states one, per-endpoint within the
    *  stated field — the RANGE RULE: whoever owns the default owns

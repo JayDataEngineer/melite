@@ -8,6 +8,7 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs } from "@melite/comfyui-cordis";
+import { ACTION_BINDINGS } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -121,5 +122,41 @@ describe("the motion compose gate", () => {
     def.compose(def.schema({ prompt: "runs" }), kimodo, g, "r1");
     const out = def.finalize!(g.toJSON());
     assert.ok(out["KimodoTextToPose.0"], "the strip keeps the pose node");
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row the motion card serves: (1) the row's OWNING
+// FAMILY holds an ACTION_BINDINGS row; (2) the row composes ITS OWN
+// declared segment — the pose synth rides the prompt. The declared
+// fallback (a family-less row) rides the legacy lane in the open.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "motion");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 1, `expected the served motion addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      const g = new GraphBuilder();
+      def.compose(def.schema({ prompt: "walks forward, then waves" }), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+      const pose = Object.values(graph).find((n) => n.class_type === "KimodoTextToPose")!;
+      assert.ok(pose, "the declared segment synthesizes the motion");
+      assert.equal(pose.inputs.prompt, "walks forward, then waves", "the prompt rides verbatim");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    const row = { ...rows[0]!, id: "synthetic-motion", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({ prompt: "fallback probe" }), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-motion' on the motion card — every boarded family \(kimodo\)/,
+    );
   });
 });

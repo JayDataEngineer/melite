@@ -77,13 +77,27 @@ const facts = loadFacts(FACTS_PATH, reads);
 describe("the models plane feeds the compose/flows plane (A2)", () => {
   it("every compose-plane family exists in the registry", async (): Promise<void> => {
     const factIds = Object.keys(facts.models).sort();
-    // 27 since stroke 87 (fit + skin facts rows retired with
-    // their cards — the DCC surface moved to the blender MCP skills)
-    // ≥26 since the form-seams stroke (ideogram facts retired with
-    // its card 2026-09-17)
     // E-M7 (the wall audit, 2026-09-28): a floor let half the facts
-    // table vanish silently. The census is exact (29 today).
-    assert.equal(factIds.length, 29, `expected exactly 29 fact families, got ${factIds.length}`);
+    // table vanish silently. THE THIRD LIVE BREAK (2026-09-29): the
+    // inverse is also true — a COUNT over what the roster already
+    // has is structurally blind to an ABSENCE. `krea-2-raw` was
+    // claimed by the registry, offered by the catalog, and had no
+    // facts row for 20 days while this pin held 29 green. The count
+    // is retired; the SET is derived from the registry itself:
+    // roster keys ∪ every claimed address of a served family.
+    const raw = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
+      rows?: Record<string, { frozen?: unknown }>;
+    };
+    const roster = new Set(Object.keys(raw.rows ?? {}));
+    const expected = new Set<string>(roster);
+    for (const [address, owner] of Object.entries(facts.owners)) {
+      if (roster.has(owner) && raw.rows?.[owner]?.frozen === undefined) expected.add(address);
+    }
+    assert.deepEqual(
+      factIds,
+      [...expected].sort(),
+      "facts keys ≡ roster ∪ claimed addresses of served families — a claimed address with no row is the third live break's exact shape",
+    );
     const actions = await actionCardLanes();
     for (const id of factIds) {
       if (actions.has(id)) continue;
@@ -102,7 +116,6 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
       // is the owner's ladder — checked when the owner is reached
       if (!registryIds().includes(id)) {
         assert.ok(modelIds().includes(id), `facts family '${id}' serves no route`);
-        checked += fam.variants.length;
         continue;
       }
       const decl = getModel(id);
@@ -130,9 +143,22 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
         }
       }
     }
-    // E-M7: the checked-cell census is exact (80 today — the floors
-    // let a whole family stop being judged).
-    assert.equal(checked, 80, `expected exactly 80 checked cells, got ${checked}`);
+    // E-M7 retired its constant (2026-09-29, the third live break):
+    // "80 today" was a count over what the roster had — blind to
+    // absence, and stale the moment derivation filled 31 addresses.
+    // The total law derives from the REGISTRY side: every cell of
+    // every variant of every judged registry family must have been
+    // compared. A family that stops being judged (the floors' old
+    // failure) or a facts variant dropped whole both redden here.
+    let expected = 0;
+    for (const id of registryIds()) {
+      if (actions.has(id) || facts.models[id] === undefined) continue;
+      expected += getModel(id).variants.reduce((n, v) => n + v.cells.length, 0);
+    }
+    assert.equal(
+      checked, expected,
+      `the matrix walk is TOTAL (checked ${String(checked)} of ${String(expected)} registry cells — a family or variant that stops being judged is a silent pass)`,
+    );
   });
 
   it("resolve() rides for every compose family (the R1 contract)", async (): Promise<void> => {

@@ -42,15 +42,10 @@
 // admission is the surface, firing is compose's call).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import {
-  finalizeImageEdit,
-  imageEdit,
-  impactArmNames,
-  IMPACT_DETECTOR_PROVISIONS,
-  orderedInputImages,
-  refuseImageEditFiring,
-} from '@melite/comfyui-card-kit'
+import { finalizeImageEdit, impactArmNames, IMPACT_DETECTOR_PROVISIONS, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
@@ -162,6 +157,24 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
 // was imported and its id retyped as a literal, so a rename broke the card
 // at runtime (not-boarded) with every wall green.
 export const BOARDED: string[] = [qwenImgEdit21Decl.id, qwenImgEdit2511Decl.id]
+
+/** The action bindings (the atom vocabulary, stroke 3): a boarded
+ *  family with a bound action composes through the atom's own
+ *  declared segment — the card delegates, never authors nodes.
+ *  Keyed by the OWNING FAMILY (model.family, never model.id: route
+ *  addresses must land on their family's row, never a silent miss
+ *  onto nothing). Every boarded family holds a bound action.
+ *  Exported for the every-address wall: each served facts row's
+ *  OWNING family must hold a row here — an unbound family refuses
+ *  loud at the dispatch. */
+export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
+  [qwenImgEdit21Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(qwenImgEdit21Decl, 'edit'), p, model, g, runId)
+  },
+  [qwenImgEdit2511Decl.id]: (p, model, g, runId) => {
+    instantiateAction(declaredAction(qwenImgEdit2511Decl, 'edit'), p, model, g, runId)
+  },
+}
 
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */
@@ -283,7 +296,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         throw new Error("required param 'input_images' missing on the image-edit card (the first image is the one being edited — an ordered list; legacy drafts may state image1 alone instead)")
       }
       refuseImageEditFiring(doc, model)
-      imageEdit(doc, model, g, runId)
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) {
+        bound(doc, model, g, runId)
+        return
+      }
+      throw new Error(
+        `no declared action for family '${String(model.family ?? model.id)}' on the image-edit card — every boarded family (qwen-img-edit-21, qwen-img-edit-2511) composes its own declared segment; this address owns none`)
     },
     finalize: finalizeImageEdit,
   }))

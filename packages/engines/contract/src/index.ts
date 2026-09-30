@@ -9,5 +9,6 @@ export type {
   EngineExecutor,
   EngineRecord,
 } from "./types.ts";
+export type { PortSpec, ParamSpec, ActionSpec } from "./vocabulary.ts";
 export { EnginesService, engineIdOk, enginesContract } from "./engines.ts";
 export { enginesContract as default } from "./engines.ts";

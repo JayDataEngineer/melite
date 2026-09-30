@@ -9,6 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
+import { remesh } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "autoremesher",
@@ -59,7 +60,10 @@ export const DECL: ModelDecl = {
     "unet_variant": "",
     "vae": "",
     "weightless": true
-  }
+  },
+  // the remesh action the quad-remesh card binds (the single-node
+  // lane tree).
+  "actions": [remesh],
 };
 
 export const family: Plugin = {
@@ -69,3 +73,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { remesh } from "./actions.ts";

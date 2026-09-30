@@ -6,7 +6,15 @@
 // through AnnyParamsToGlb when no GLB rides; the 254-morph sculpt
 // panel rides the pin vocabulary as SPARSE local_changes; the
 // native figure rides the served preview.figure claim.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { loadFacts } from "@melite/comfyui-card-kit/facts";
+import {
+  getModel, registryIds, registryModel,
+} from "../../../engines/comfyui-cordis/src/models/models.ts";
+import { ACTION_BINDINGS } from "../src/card.ts";
 import assert from "node:assert/strict";
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
@@ -14,7 +22,14 @@ import { ANNY_MORPH_LABELS } from "@melite/comfyui-card-kit/morphs";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
 
-const DUMMY_MODEL = { id: "", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
+const DUMMY_MODEL = { id: "", family: "anny", card: "", defaults: {}, lane_inputs: {}, card_knobs: [], variants: [], variant_groups: [], outputs: [] } as never;
+
+const FACTS_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "..", "..", "..", "..",
+  "packages", "engines", "comfyui-cordis", "data", "model-facts.json",
+);
+const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
 let def: CardDefinition;
 
@@ -160,5 +175,42 @@ describe("the anny compose gate", () => {
 
   it("the served preview claim names the identity model (the live arms derive client-side)", () => {
     assert.deepEqual(def.preview, { figure: { identityModel: "anny" } });
+  });
+});
+
+// ── THE EVERY-ADDRESS WALL (the atom vocabulary, stroke 3): for
+// EVERY facts row this card serves: (1) the row's OWNING FAMILY
+// holds an ACTION_BINDINGS row — no address silently rides the
+// legacy lane while its siblings compose the declared segment; (2)
+// the row composes ITS OWN declared segment — the turnaround
+// renders the 8 views. The declared fallback (a family-less row)
+// rides the legacy lane in the open, never a silent second copy.
+describe("THE EVERY-ADDRESS WALL — every served address composes its own declared segment", () => {
+  const rows = Object.values(facts.models).filter((m) => m.card === "anny");
+
+  it("the card serves every boarded family (the wall's own footing)", () => {
+    assert.ok(rows.length >= 1, `expected the served anny addresses, found ${String(rows.length)}`);
+  });
+
+  for (const row of rows) {
+    it(`address '${row.id}' (family '${row.family ?? row.id}') is bound and composes its own truth`, () => {
+      assert.ok(
+        (row.family ?? row.id) in ACTION_BINDINGS,
+        `family '${row.family ?? row.id}' holds no ACTION_BINDINGS row — address '${row.id}' would silently ride the legacy lane`,
+      );
+      const g = new GraphBuilder();
+      def.compose(def.schema({}), row, g, `wall_${row.id}`);
+      const graph = g.toJSON() as Record<string, { class_type: string }>;
+      const views = Object.values(graph).filter((n) => n.class_type === "SaveImage");
+      assert.equal(views.length, 8, "the declared segment renders the 8-view turnaround sheet");
+    });
+  }
+
+  it("THE DECLARED FALLBACK: a row with no owning family REFUSES — the card never guesses a lane", () => {
+    const row = { ...rows[0]!, id: "synthetic-anny", family: undefined };
+    assert.throws(
+      () => def.compose(def.schema({}), row as never, new GraphBuilder(), "wall_fallback"),
+      /no declared action for family 'synthetic-anny' on the anny card — every boarded family \(anny\)/,
+    );
   });
 });

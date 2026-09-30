@@ -18,7 +18,11 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/estate-call": "workspace:*"
+    "@melite/estate-call": "workspace:*",
+    "@melite/models-florence2": "workspace:*",
+    "@melite/models-joycaption": "workspace:*",
+    "@melite/models-joytag": "workspace:*",
+    "@melite/models-wd14": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

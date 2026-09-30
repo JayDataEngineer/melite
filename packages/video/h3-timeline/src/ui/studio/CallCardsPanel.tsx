@@ -11,7 +11,7 @@ import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel"
 import { CallCard } from "./CallCard"
-import { deliveredFrames } from "../../timelineContract.ts"
+import { deliveredFrames } from '@melite/models-h3/timelineContract'
 import type { LinkArtifact } from "./refUtils"
 import type { TimelineSelection } from "./useViewSelection"
 

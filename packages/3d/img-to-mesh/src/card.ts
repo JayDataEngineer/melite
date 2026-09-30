@@ -40,7 +40,12 @@
 // demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { trellisArm, pixalArm, transferRigArm, admitMeshLift, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from '@melite/comfyui-card-kit'
+import { DECL as pixal3dDecl } from '@melite/models-pixal3d'
+import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
+import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 
@@ -107,6 +112,18 @@ export const identity = {
   icon: 'box',
 }
 
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared action, keyed by the row's family
+// address — the id-switch dispatch died with them. A family-less
+// row (the declared fallback) rides the legacy lane arms below —
+// never a silent second copy.
+export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
+export const ACTION_BINDINGS: Record<string, Binding> = {
+  [pixal3dDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(pixal3dDecl, 'mesh'), p, model, g, runId),
+  [trellis2NativeDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(trellis2NativeDecl, 'mesh'), p, model, g, runId),
+  [transferRigDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(transferRigDecl, 'transfer'), p, model, g, runId),
+}
+
 export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'img-to-mesh',
@@ -116,7 +133,7 @@ export function apply(ctx: Context): void {
     // first — the operator's standing pick; the discovery arms
     // derive the default family/service from boarded[0], the picker
     // lists in this order).
-    boarded: ['pixal3d', 'trellis2-native', 'transfer_rig'],
+    boarded: [pixal3dDecl.id, trellis2NativeDecl.id, transferRigDecl.id],
     tags: ['3d', 'image', 'generate'],
     identity,
     // THE DISCOVERY ROWS (migrated 2026-09-10 from the frozen
@@ -169,30 +186,19 @@ export function apply(ctx: Context): void {
       // their rows), fills defaults, passes undeclared keys through
       // inert. The composer's reads below are reads of the GATED doc.
       const doc = schema(p) as Record<string, unknown>
-      // The arm IS the family's renderer (runId rides the signature;
-      // prefixes are family constants, not run-scoped, not knobs).
-      void runId
-      if (model.id === 'transfer_rig') {
-        const missing: Array<string> = []
-        if (!String(doc.rigged_glb || '').trim()) missing.push('rigged_glb')
-        if (!String(doc.target_glb || '').trim()) missing.push('target_glb')
-        if (missing.length > 0) {
-          // (2026-09-15: same UI-label law as the lift refusal below —
-          // the surface paints "Rigged source GLB" / "Target GLB".)
-          const label: Record<string, string> = {
-            rigged_glb: 'Rigged source GLB', target_glb: 'Target GLB',
-          }
-          throw new Error(
-            `required param(s) ${missing.map((m) => `'${m}' (${label[m]})`).join(', ')} missing on the transfer_rig lane — the rig copy needs the donor rig AND the clothed target`)
-        }
-        transferRigArm(g, doc)
-        return
-      }
-      admitMeshLift(doc, model)
-      if (model.id === 'pixal3d') {
-        pixalArm(g, doc, model)
-      } else {
-        trellisArm(g, doc, model)
+      // The arm IS the family's declared action (runId rides the
+      // signature; prefixes are family constants, not run-scoped,
+      // not knobs).
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound(doc, model, g, runId)
+      else {
+        // THE DECLARED REFUSAL (the multi-family law): every boarded
+        // family composes its OWN declared segment above; an address
+        // that owns none refuses HERE — a multi-family card never
+        // guesses a sibling's lane silently (the kit arms stay as
+        // the byte-oracles until the final interlock retires them).
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer_rig) composes its own segment; this address owns none`)
       }
     },
   }))

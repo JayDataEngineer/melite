@@ -3,9 +3,11 @@ import { laneBlank, judgeLaneRelations } from '@melite/contracts/laneRelations'
 // Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (ttsT1).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
+import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute } from '@melite/models-qwen3-tts'
 import { DECL as qwen3TtsVoicedesignDecl } from '@melite/models-qwen3-tts-voicedesign'
-import { qvoiceUse, ttsDesignT1, ttsT1 } from '@melite/comfyui-card-kit'
+import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
+import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
@@ -75,6 +77,24 @@ export const schema = z.object({
 // retyped id breaks the card at RUNTIME — not-boarded — with every wall
 // green; image-gen has been doing it this way all along)
 export const BOARDED: string[] = [qwen3TtsVoicedesignDecl.id, qwen3TtsDecl.id]
+
+/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+ * family's declared speak + export actions — the card owns only
+ * dispatch; the segment factories live in the family packages.
+ * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
+ * a route id keys nothing, the derived-row law); an unbound family
+ * refuses loud at the dispatch. */
+type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
+export const ACTION_BINDINGS: Record<string, { save: Binding; speak: Binding }> = {
+  [qwen3TtsDecl.id]: {
+    save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'export'), p, model, g, runId) },
+    speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'speak'), p, model, g, runId) },
+  },
+  [qwen3TtsVoicedesignDecl.id]: {
+    save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsVoicedesignDecl, 'export'), p, model, g, runId) },
+    speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsVoicedesignDecl, 'speak'), p, model, g, runId) },
+  },
+}
 
 // THE VARIANT ROUTE (agents can't pick matrix variants — the tool's
 // closed model enum additionally offers the Base variant's compose
@@ -269,7 +289,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         if (qvoiceStated(doc)) {
           throw new Error("param 'qvoice' fires nothing on a Design export (an export creates a new voice — it performs no saved persona; drop the Voice entry or switch to a performing lane)")
         }
-        ttsDesignT1(doc, model, g, runId)
+        // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
+        // boarded family's own export action composes; an unbound
+        // row refuses loud below.
+        const bound = ACTION_BINDINGS[model.family ?? model.id]
+        if (bound) bound.save(doc, model, g, runId)
+        else {
+          throw new Error(
+            `no declared action for family '${String(model.family ?? model.id)}' on the tts card — every boarded family (qwen3-tts, qwen3-tts-voicedesign) composes its own declared segment; this address owns none`)
+        }
         return
       }
       if (lane === 'clone') {
@@ -295,7 +323,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (!blank(doc.style_instruction) && model.lane_inputs.instruction_control !== true) {
         throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (lane_inputs.instruction_control is not true — choose a lane with instruction control or drop the instruction)")
       }
-      ttsT1(doc, model, g, runId)
+      // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
+      // boarded family's own speak action composes (branching on
+      // the resolved synth_lane DATA); an unbound row refuses loud
+      // below, never a silent second copy.
+      const bound = ACTION_BINDINGS[model.family ?? model.id]
+      if (bound) bound.speak(doc, model, g, runId)
+      else {
+        throw new Error(
+          `no declared action for family '${String(model.family ?? model.id)}' on the tts card — every boarded family (qwen3-tts, qwen3-tts-voicedesign) composes its own declared segment; this address owns none`)
+      }
     },
   }))
 }

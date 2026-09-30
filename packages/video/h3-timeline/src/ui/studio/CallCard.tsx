@@ -24,7 +24,7 @@ import {
   normalizeDeclaredRefs,
   refGenreOf,
   splitRefList,
-} from "../../timelineContract.ts"
+} from "@melite/models-h3/timelineContract"
 import type { CallCardDeps } from "./CallCardsPanel"
 
 /** A CARD-LEVEL reference chip (2026-09-23, the operator: the
