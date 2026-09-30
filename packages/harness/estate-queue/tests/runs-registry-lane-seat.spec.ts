@@ -185,6 +185,29 @@ describe("the runs door through the lane's models seat", () => {
     );
     assert.ok(!(authored instanceof RemoteError), "a hand-authored id is not a registry recovery");
 
+    // A doc with NO id at all (the compiler's own fixtures' shape)
+    // recovers nothing — the id arm is absent, not an error.
+    const idless = await remote(() =>
+      svc.start(
+        {
+          draft_id: "d1",
+          test: false,
+          flow_inline: {
+            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+          },
+        },
+        new AbortController().signal,
+      ),
+    );
+    // The COMPILER owns the id requirement (flow body needs at least
+    // id and stages) — it refuses before the recovery arm reads the
+    // id, so the recovery's "not a string id" arm is unreachable
+    // through the door and the compiler's voice is the one that
+    // answers.
+    assert.ok(idless instanceof RemoteError, "the compiler refuses an id-less inline");
+    assert.equal((idless as RemoteError).code, "runs/invalid-request");
+    assert.match((idless as RemoteError).message, /needs at least id and stages/);
+
     // A mangled durable body refuses loud at the door (the file
     // boundary), naming the initial — never an "[object Object]"
     // literal shipped to the engine.

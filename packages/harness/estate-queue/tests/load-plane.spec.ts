@@ -279,6 +279,15 @@ describe("loadCard", () => {
       folder === "checkpoints" && name === "a.safetensors" ? "/models/a.safetensors" : null,
   };
 
+  it("an absent seat falls back to the booted singleton (the lane-seat law's degrade arm)", () => {
+    // The booted singleton is the fallback when the context mounts no
+    // models seat — the same degrade the flow arm rides. It must not
+    // throw on a lane that never seated one.
+    const b = loadCard(REPO, cards as never, null, "anny");
+    assert.equal(b["name"], "anny");
+    assert.ok(Array.isArray(b["model_hints"]));
+  });
+
   it("bundles signature + agents + skills + hints + digest", () => {
     const b = loadCard(REPO, cards as never, models as never, "anny");
     assert.equal(b["name"], "anny");
