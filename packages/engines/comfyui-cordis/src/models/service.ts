@@ -714,6 +714,46 @@ export const modelsProvider: Plugin = {
   },
 };
 
+/** The LANES' provider: the catalog service plus every family
+ *  plugin applied into the SAME context — the bootModels recipe
+ *  in-process, so a lane serving the runs doors reads its seat
+ *  populated: ctx.get("models").allDecls() IS the booted table
+ *  (stroke 4's compose-at-expansion reads that seat; a bare
+ *  modelsProvider mount registers zero families and every family
+ *  stage refuses "registered: none"). Transactional like the
+ *  singleton boot: any family refusing or the contracts
+ *  cross-validation refusing fails the provider mount — a lane
+ *  never half-serves a table. */
+export const modelsFamiliesProvider: Plugin = {
+  name: "engine-model-catalog-families",
+  async apply(ctx: Context): Promise<void> {
+    await ctx.plugin(modelsProvider);
+    const { FAMILY_PLUGINS } = await import("./families/index.ts");
+    for (const family of FAMILY_PLUGINS) {
+      await ctx.plugin(family);
+    }
+    // Service registration is immediate but start settles on a
+    // fiber tick — one tick, then every family's effect has run
+    // and the table is whole (the bootModels timing law).
+    await new Promise((r) => setTimeout(r, 0));
+    // The injector read (the doors' own — property access on a
+    // fiber ctx demands inject; ctx.get resolves registered
+    // services without it).
+    const svc = ctx.get("models") as ModelsService | undefined;
+    if (svc === undefined) {
+      throw new ModelError(
+        "models service failed to register at the families provider mount",
+      );
+    }
+    if (svc.familyCount() !== FAMILY_PLUGINS.length) {
+      throw new ModelError(
+        `the families provider registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,
+      );
+    }
+    await validateBootContracts(svc);
+  },
+};
+
 /** Resolve the service for request-path helpers that take it as an
  *  optional trailing param: an explicit arg wins. Null = the caller
  *  forgot to thread ctx.models — a bug, so reads throw LOUD. */

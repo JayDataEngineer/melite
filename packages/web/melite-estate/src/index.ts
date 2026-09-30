@@ -18,7 +18,12 @@
 import type { Context } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 
-import modelsProvider from "@melite/comfyui-cordis/catalog-registry";
+// The families provider (service + every family plugin, stroke 4):
+// the runs doors' compose-at-expansion reads ctx.get("models"), so
+// the seat must carry the booted table — a bare service mount
+// registers zero families and every family stage refuses
+// "registered: none" (the 3088 commission's catch, 2026-10-10).
+import modelsFamiliesProvider from "@melite/comfyui-cordis/catalog-registry";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
 // The wiring doc service: engine state the compose, run, and
 // adapter seats share. Mounted BEFORE the host and the engines
@@ -325,7 +330,7 @@ const rows: readonly Plugin[] = [
       agentEngine(ctx, { provider: named[1] as string, model: named[2] as string, skills });
     },
   } as unknown as Plugin,
-  modelsProvider,
+  modelsFamiliesProvider,
   comfyuiWiring,
   comfyuiHost,
   comfyuiEngine,

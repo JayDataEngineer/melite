@@ -5,4 +5,10 @@
 // leaf's baseUrl — addressed code loads by address, never as a
 // `cordis:` builtin. Manifest row engine-model-catalog rides
 // BEFORE every consumer (the manage door via gateway-bridges).
-export { modelsProvider as default } from "../models/service.ts";
+// The DEFAULT is the families provider (the service plus every
+// family plugin, stroke 4): the estate — this entry's consumer —
+// serves the runs doors, whose compose-at-expansion reads
+// ctx.get("models"); a bare service registers zero families and
+// every family stage refuses "registered: none". The service-only
+// mount stays available as the named export for test rigs.
+export { modelsFamiliesProvider as default, modelsProvider } from "../models/service.ts";
