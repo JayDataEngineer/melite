@@ -537,14 +537,13 @@ export class RunsRuntimeService extends Service {
           // runtime; tsc had never run over this file).
           const refusal = cardRefusal(e);
           const p = refusal.payload as { error: string; code: string };
-          // THE CARD ARM'S CLASSIFICATION, KEPT (one voice per
-          // refusal): this arm used to collapse every card code into
-          // runs/invalid-request while the card arm preserved it
-          // through cardRefusal, so the same `lane_input_missing` —
-          // the one carrying the provision fetch URL — was a
-          // different code depending on which arm composed it. The
-          // stage name rides in the message; the classification is
-          // the card plane's own.
+          // THE CARD ARM'S CLASSIFICATION AND EVIDENCE, KEPT (one
+          // voice per refusal): a card refusal composes here exactly
+          // as it does on the card arm — the card plane's own code
+          // (lane_input_missing carries the provision fetch URL) and
+          // its loc/expected/got, which are what make it actionable.
+          // Only the stage name is added, because only this arm knows
+          // which bench stage failed.
           const mapped: RemoteError = toRemoteError(refusal);
           // THE WHOLE REFUSAL RIDES, not just its code: the card
           // plane's own loc/expected/got are what make a
