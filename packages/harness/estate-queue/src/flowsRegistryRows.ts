@@ -297,7 +297,8 @@ export const FIT_SEAT: RegistryFlow = {
   id: "fit-seat",
   description:
     "Seat a static prop onto a SOMAX body under the meld fit laws (the " +
-    "dress/prop verb engine): knob initials assemble the meld row in-pack, " +
+    "dress/prop verb engine): the meld row assembles in-pack from the verb's " +
+    "own vocabulary, " +
     "FitProp grafts, the turnaround proves.",
   stages: [
     plainStage({
@@ -534,7 +535,8 @@ export const SKIN_APPLY: RegistryFlow = {
   id: "skin-apply",
   description:
     "Deterministic skin detail maps onto a SOMAX body under the meld skin laws " +
-    "(the apply-skin verb engine): knob initials assemble the controller sidecar " +
+    "(the apply-skin verb engine): the controller sidecar assembles from the " +
+    "verb's own vocabulary " +
     "in-pack, SkinApply grafts, the turnaround proves.",
   stages: [
     plainStage({

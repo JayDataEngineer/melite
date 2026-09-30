@@ -15,17 +15,26 @@ import { SESSION_RE as SERVER_SESSION } from "../../../../packages/estate/drafts
 
 // THE MIRRORED-GRAMMAR LAW (2026-10-10, the census's H13): a draft
 // id is admitted by two doors with two grammars — the drafts
-// package's (the owner, 1..96) and the queue gate's copy. The copy
-// had NO length cap, so a long id passed one door and was refused
-// by the next in a different voice. A mirror is acceptable ONLY
-// while it is provably equal: this wall fails the moment they differ.
+// package's (the owner, 1..96) and the queue gate's former COPY. The
+// copy had NO length cap, so a long id passed one door and was
+// refused by the next in a different voice. The copy is now the
+// owner's own binding; closure-gate RULE 4d fails if a second
+// DECLARATION of the grammar ever appears.
+// THE MIRROR IS GONE: the queue imports the drafts package's binding
+// (runsGates.ts:201) and re-exports it, so "the two copies must stay
+// equal" is a comparison of one object with itself — a wall that can
+// no longer fail, which is the same self-licking pin this file's own
+// header condemns. What now has teeth is the DECLARATION COUNT in
+// closure-gate RULE 4d: exactly one DRAFT_ID_RE declaration in the
+// tree, offenders named. This block keeps the ids themselves honest
+// (the sampling below still exercises the ONE live grammar).
 describe("the draft-id grammar has one rule", () => {
-  it("the queue gate's copy IS the drafts package's rule", () => {
-    expect(MIRROR.source, "the mirrored grammar must equal the owner's, character for character")
-      .toBe(OWNER.source);
+  it("the queue gate SERVES the drafts package's own binding", () => {
+    expect(MIRROR, "the queue's address must BE the owner's object, not a copy of it")
+      .toBe(OWNER);
   });
 
-  it("both admit the same ids (a sampling that would expose any difference)", () => {
+  it("the one grammar admits the ids both doors must agree on (a sampling that would expose a wrong bound)", () => {
     const samples = [
       "a", "bench-main", "draft-6a96e487-704ce3fff6c0-1", "A_b-9",
       "", " ", "bench main", "bench/main", "bench.main",
@@ -33,7 +42,7 @@ describe("the draft-id grammar has one rule", () => {
       "café", "bench-🎬",
     ];
     for (const id of samples) {
-      expect(MIRROR.test(id), "mirror vs owner for " + JSON.stringify(id.slice(0, 12)))
+      expect(MIRROR.test(id), "the grammar's verdict for " + JSON.stringify(id.slice(0, 12)))
         .toBe(OWNER.test(id));
     }
   });

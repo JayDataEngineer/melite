@@ -129,21 +129,20 @@ describe.skipIf(!HAS_ENGINE || !HAS_BODY)(
         assert.doesNotMatch(run.error, /ambiguous producers/)
         assert.doesNotMatch(run.error, /neither a FromStage-wired input nor a request initial/)
 
-        // THE WORLD: the coat verb's DECLARED output is the proof
-        // sheet — the chain's beat-2 deliverable is "prove it with
-        // the turnaround" — so the harvested artifact is a real PNG
-        // the engine rendered from the grafted body (the grafted GLB
-        // itself is SkinApply's own file output, named in-pack).
+        // THE WORLD: the coat verb's DECLARED output is the grafted
+        // body (a mesh), so the stage's artifact is a real GLB the
+        // engine wrote. The proof sheet the action also renders is a
+        // terminal in the same graph and is harvested beside it.
         const runDir = join(sandbox.root, 'state', 'output', ans.run_id)
         const settled = run.stages.find((s) => s.status === 'completed' && (s.url ?? '') !== '')
         assert.ok(settled !== undefined, 'the completed stage carries its artifact url')
         const artifact = join(runDir, settled?.url as string)
-        assert.ok(existsSync(artifact), 'the proof sheet exists as real bytes: ' + artifact)
+        assert.ok(existsSync(artifact), 'the grafted body exists as real bytes: ' + artifact)
         assert.ok(statSync(artifact).size > 0, 'the artifact is not empty')
         assert.equal(
-          readFileSync(artifact).subarray(0, 4).toString('hex'),
-          '89504e47',
-          'the artifact is a real PNG the engine rendered',
+          readFileSync(artifact).subarray(0, 4).toString('latin1'),
+          'glTF',
+          'the declared mesh output is a real GLB the engine wrote',
         )
 
         const flow = JSON.parse(readFileSync(join(runDir, '_flow.json'), 'utf8')) as {

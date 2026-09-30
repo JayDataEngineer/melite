@@ -167,9 +167,17 @@ const seat = (
       throw new Error("unreached overlay");
     },
     composeValidateCard: async (): Promise<unknown> => null,
-    phase1Card: async (): Promise<unknown> => {
-      throw new Error("unreached phase1");
-    },
+    // the validate walk primes the engine itself; this fake answers
+    // "primed" so the walk proceeds to phase1 (both are real methods
+    // on CardRegistryService — the walk no longer guards a seat that
+    // might lack them).
+    primeObjectInfo: async (): Promise<boolean> => true,
+    // The validate walk DOES reach phase1 for a card= stage (that is
+    // the one-admission law: a green compile is not a runnable
+    // promise). This fake used to be a tripwire that no test crossed;
+    // a test that supplies `phase1Card` through cardOver overrides
+    // this, and a test that does not is not exercising a card stage.
+    phase1Card: async (): Promise<unknown> => ({}),
     phase2Card: async (): Promise<unknown> => {
       throw new Error("unreached phase2");
     },
@@ -356,9 +364,13 @@ describe("validate", () => {
     // The seat's pin does not answer (objectInfo() null — the engine
     // is down or the fake has no engine), so the sweep is unjudgeable
     // and the door takes the schema-only verdict. The old degrade
-    // answered a workflow_pin here, accusing the character flow's
-    // z-image stages of classes the pin never claimed not to serve.
-    const schemaOnly = await s.svc.validate({ flow: "character" }, sig());
+    // answered a workflow_pin here, accusing a flow's stages of
+    // classes the pin never claimed not to serve. The flow is
+    // anny-hmr, which is a family verb with no card stage, so the
+    // sweep is the only thing that can judge it (the character flow
+    // refuses earlier, at the fit verb's compose; image-upscale needs
+    // a card the structural fake does not serve).
+    const schemaOnly = await s.svc.validate({ flow: "anny-hmr" }, sig());
     // The POSITIVE the commit means: a served verdict. Asserting the
     // absence of a `code` key would pass for any success, including
     // one that carried pin errors under another field.

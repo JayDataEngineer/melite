@@ -28,10 +28,19 @@ type SeatParams = {
 };
 
 /** THE FIT ROW — the FitRow node's own declared defaults, verbatim
- *  (vendor/comfyui_extensions/melter-poser-nodes/fit_nodes.py:105).
- *  A fit verb with no named bone is a socket fit on a default row;
- *  naming a bone or a grip alignment is the Blender/MCP lane's door
- *  (the skills plane), not this flow's request schema. */
+ *  (vendor/comfyui_extensions/melite-poser-nodes/fit_nodes.py:105-116),
+ *  with ONE exception below.
+ *
+ *  THE BONE IS NOT A DEFAULT, BECAUSE THE ENGINE HAS NONE: the
+ *  vendor's row gate refuses an empty Bone before it chooses a mode
+ *  (fit_surgery.py:66-68 — "fit row needs Bone (which bone carries
+ *  it)"; socket mode is chosen AFTER that check, not instead of it).
+ *  A named bone belongs to the body being fitted, so it cannot be a
+ *  constant here, and it cannot be a request initial either: the
+ *  door's initialValidators admit photo/glb/bake_params only, so a
+ *  row spelling `$bone` names a key no flow can declare. Until the
+ *  seat grows a text initial, this verb refuses AT COMPOSE with the
+ *  name of the missing seam — the lowest level that can answer. */
 export const FIT_ROW = {
   model_name: "prop",
   bone: "",
@@ -65,19 +74,32 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   params: [{ name: "body" }, { name: "prop" }],
   facts: parseFitFacts,
   build({ p, g }): OutputHandle {
+    if (FIT_ROW.bone === "") {
+      throw new Error(
+        "fit.seat: the fit verb needs a BONE (which bone carries the prop) — the " +
+        "vendor's FitRow refuses an empty one, and no flow initial can carry a " +
+        "bone name yet (the door admits photo/glb/bake_params only). Seat a text " +
+        "initial kind, or name the bone through the rig door.",
+      );
+    }
     const row = g.node("FitRow", { ...FIT_ROW });
     const seatNode = g.node("FitProp", {
       body_glb_path: p.body,
       prop_glb_path: p.prop,
       row_json: row.out(0),
     });
-    return g.node("RayRenderGLBViews", {
+    // THE PROOF SHEET IS RENDERED, NOT RETURNED (the skin verb's
+    // shape): the declared output is the seated mesh, so the handle
+    // is the node that produces it; the renderer stays a terminal and
+    // the harvest finds its PNG there.
+    g.node("RayRenderGLBViews", {
       glb_path: seatNode.out(0),
       resolution: 768,
       framing: 1.2,
       focal_length: 50,
       samples: 64,
       transparent: true,
-    }).out(0);
+    });
+    return seatNode.out(0);
   },
 };

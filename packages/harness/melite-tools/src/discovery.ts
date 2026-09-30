@@ -549,6 +549,13 @@ export function stampOptionsFrom(
   }
 }
 
+/** THE UNKNOWN-CARD VOICE, SPOKEN ONCE (one voice per refusal):
+ *  the defs guard and the formSchemas miss are the same condition, so
+ *  both build the same sentence from this function. Two literals is
+ *  how they drifted apart in the first place. */
+export const unknownCardVoice = (card: string): string =>
+  `form-spec: card '${card}' unknown`
+
 export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
@@ -561,7 +568,7 @@ export function specBody(
   // condition is the drift this removes.
   const def = defs.get(res.card)
   if (def === undefined) {
-    throw new Error(`form-spec: card '${res.card}' unknown`)
+    throw new Error(unknownCardVoice(res.card))
   }
   const ident = def.identity
   if (ident === undefined) {
@@ -594,7 +601,7 @@ export function specBody(
   const envelopeKey = owningAtom(key)
   const schemas = svc.formSchemas(res.card, envelopeKey)
   if (schemas === null) {
-    throw new Error(`form-spec: card '${res.card}' unknown`)
+    throw new Error(unknownCardVoice(res.card))
   }
   // THE CATALOG-FED SELECT (2026-09-21, the freeform-lie kill): a
   // field declaring extra.optionsFrom names a MOD PACK — the door

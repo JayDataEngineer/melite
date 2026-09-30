@@ -270,9 +270,14 @@ function deriveRow(
       // THE ROUTE ENVELOPE (cardsVariant.envelopeRefusal reads it):
       // a distilled lane declares the closed bounds its sampler
       // marriage lives in — stated values outside refuse at compose.
+      // number[] — the declaration (line 136), the floor, and every
+      // consumer twin. The 2-tuple this cast claimed bought a reader
+      // asking "is steps: [4] legal" a second answer; normalizeEnvelope
+      // reads unknown and length-checks at runtime, so it accepts the
+      // array either way.
       sampler_envelope: ((v.sampler_envelope ?? null) as {
-        steps?: [number, number];
-        cfg?: [number, number];
+        steps?: number[];
+        cfg?: number[];
       } | null),
       defaults: (v.wire_defaults ?? {}) as Record<string, unknown>,
       // THE LANE SURFACE + RELATIONS (2026-10-10, the fix shape):

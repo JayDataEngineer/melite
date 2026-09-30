@@ -72,7 +72,7 @@ export function servedNodeClasses(cards?: CardRegistryLike | null): Set<string> 
   // queuing, still refuses a genuinely unserved class.
   if (cards === null || cards === undefined) return null;
   const oi: Record<string, unknown> | null = cards.objectInfo();
-  if (oi === null || oi === undefined) return null;
+  if (oi === null) return null;
   return new Set(Object.keys(oi));
 }
 

@@ -40,72 +40,56 @@ describe("the fit model plugin (the whole model, one package)", () => {
     assert.deepEqual(seat.outputs, [{ name: "seat", kind: "mesh" }]);
   });
 
-  it("the seat composes the meld graph with $-refs riding verbatim", () => {
+  // THE VERB REFUSES WITHOUT A BONE, at compose, naming the missing
+  // seam — which is why there is no composed-graph case here. The
+  // vendor's FitRow gate refuses an empty Bone before it picks a mode
+  // (fit_surgery.py:66-68), a bone name belongs to the body being
+  // fitted rather than to a constant, and no flow initial can carry
+  // one (the door admits photo/glb/bake_params only). So the honest
+  // shape of this verb today is a refusal, not a graph.
+  it("the seat refuses at compose, naming the seam a bone needs", () => {
     const g = new GraphBuilder();
-    const ref = (k: string): string => `$${k}`;
-    const out = seat.build({
-      p: {
-        // THE TWO FILES RIDE AS $-refs; the fit row is the verb's own
-        // vocabulary (stroke-89), so no knob is a request param and
-        // none can name a key the flow cannot declare.
-        body: ref("body"),
-        prop: ref("prop"),},
-      facts: seat.facts({}),
-      model: {
-        id: "fit",
-        card: "",
-        family: "fit",
-        defaults: {},
-        lane_inputs: {},
-        variants: [],
-        variant_groups: [],
-        outputs: [],
-      },
-      g,
-      runId: "",
-    });
-    assert.equal(out.nodeId, "RayRenderGLBViews.0");
-    assert.deepEqual(g.toJSON(), {
-      // THE FIT ROW IS THE VERB'S OWN VOCABULARY (stroke-89): the
-      // FitRow node's declared defaults, verbatim — not $-refs, which
-      // the door can never link (its initialValidators admit
-      // photo/glb/bake_params only).
-      "FitRow.0": {
-        class_type: "FitRow",
-        inputs: {
-          model_name: "prop",
-          bone: "",
-          align: "socket",
-          position: "0,0,0",
-          rotation: "0,0,0",
-          fit_ratio: 0.0,
-          fit_ref_bone: "",
-          fit_ref_bone2: "",
-          seat_ratio: 0.22,
-          finger_bone: "",
-          thumb_bone: "",
-          target_width: 0.0,
-        },
-      },
-      "FitProp.0": {
-        class_type: "FitProp",
-        inputs: {
-          body_glb_path: "$body",
-          prop_glb_path: "$prop",
-          row_json: ["FitRow.0", 0],
-        },
-      },
-      "RayRenderGLBViews.0": {
-        class_type: "RayRenderGLBViews",
-        inputs: {
-          glb_path: ["FitProp.0", 0],
-          resolution: 768,
-          framing: 1.2,
-          focal_length: 50,
-          samples: 64,
-          transparent: true,
-        },
-      },
-    });
+    assert.throws(
+      () =>
+        seat.build({
+          p: { body: "$body", prop: "$prop" },
+          facts: seat.facts({}),
+          model: {
+            id: "fit",
+            card: "",
+            family: "fit",
+            defaults: {},
+            lane_inputs: {},
+            variants: [],
+            variant_groups: [],
+            outputs: [],
+            mods: [],
+          },
+          g,
+          runId: "",
+        } as never),
+      /needs a BONE/,
+    );
+    assert.throws(
+      () =>
+        seat.build({
+          p: { body: "$body", prop: "$prop" },
+          facts: seat.facts({}),
+          model: {
+            id: "fit",
+            card: "",
+            family: "fit",
+            defaults: {},
+            lane_inputs: {},
+            variants: [],
+            variant_groups: [],
+            outputs: [],
+            mods: [],
+          },
+          g,
+          runId: "",
+        } as never),
+      /the door admits photo\/glb\/bake_params only/,
+    );
   });
 });

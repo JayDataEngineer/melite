@@ -4,6 +4,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError, remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
+import type { CardRegistryService } from "./cardsRegistry.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 import { getRegistryFlow, registryFlowNames, expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
@@ -174,17 +175,8 @@ export async function validate(
    *  named). */
   async function composeCardStagesAtValidate(
     liveDoc: unknown,
-    svc: unknown,
+    svc: CardRegistryService,
   ): Promise<string | null> {
-    const seat = svc as {
-      phase1Card?: unknown;
-      primeObjectInfo?: unknown;
-    };
-    // (a null registry is the door's own LOUD miswire — inlineArm
-    // refuses it before the walk is reached; only a registry that
-    // cannot COMPOSE lands here)
-    if (typeof seat.phase1Card !== "function" ||
-        typeof seat.primeObjectInfo !== "function") return null;
     // THE DOOR OWNS THE SHAPE (2026-09-25): runsValidateStages refuses
     // a non-object stage, a non-object params, an empty id and a
     // missing model BEFORE this walk reads them — every stage here is
@@ -193,13 +185,26 @@ export async function validate(
     // (a wall for an unreachable arm is a lie), so they are gone; a
     // body that skipped the door now fails loud instead of quietly
     // composing nothing.
-    const stages = (liveDoc as { flow_inline: { stages: unknown[] } }).flow_inline.stages;
+    // THE SUBJECT, THE WAY inlineArm FINDS IT: a body carrying
+    // flow_inline is read through it, and a body without one is its
+    // own subject (inlineArm's own envelope rule). Reading
+    // flow_inline.stages unconditionally assumed a key this walk's
+    // caller does not promise — the removed half-built-seat guard had
+    // been hiding it.
+    const liveRec: Record<string, unknown> =
+      typeof liveDoc === "object" && liveDoc !== null && !Array.isArray(liveDoc)
+        ? (liveDoc as Record<string, unknown>)
+        : {};
+    const envelope: unknown = "flow_inline" in liveRec ? liveRec["flow_inline"] : liveRec;
+    const stages: unknown[] = (envelope as { stages?: unknown }).stages instanceof Array
+      ? ((envelope as { stages: unknown[] }).stages)
+      : [];
     // a legal NON-card stage (a plain engine stage) is not this
     // walk's business: it composes through the engine
     const cardStages = stages.filter((st): st is Record<string, unknown> =>
       typeof (st as Record<string, unknown>)["card"] === "string" && (st as Record<string, unknown>)["card"] !== "");
     if (cardStages.length === 0) return null;
-    if (!(await (seat as unknown as { primeObjectInfo(): Promise<boolean> }).primeObjectInfo())) {
+    if (!(await svc.primeObjectInfo())) {
       return "compose walk skipped: engine unreachable (schema-only verdict — the start door composes before queuing)";
     }
     for (const st of cardStages) {
@@ -221,9 +226,7 @@ export async function validate(
           ? { ...params }
           : { ...params, model: mid };
       try {
-        await (seat as unknown as {
-          phase1Card(body: Record<string, unknown>, mid: string): Promise<unknown>;
-        }).phase1Card(body, mid);
+        await svc.phase1Card(body, mid);
       } catch (e) {
         if (e instanceof CardArmError) {
           return "REFUSED stage " + JSON.stringify(String(st["id"])) + ": " + e.message;

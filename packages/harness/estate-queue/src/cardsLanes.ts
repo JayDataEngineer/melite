@@ -25,10 +25,7 @@ import { CardArmError } from "./cardsArmError.ts";
  * unet folds diffusion_models). Keys absent here are declaration-
  * only — model_path/texture_vae ride pack-specific loaders whose
  * folders the estate cannot name without inventing a mapping. */
-// (D-C9, 2026-09-28: exported — the fetch-hint join wall reads
-// the same folder map the miss scan uses; a second hand-list in
-// the spec would be the retyped-SSOT sin this export kills.)
-export const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
+const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   text_encoder: ["text_encoders", "clip"],
   vae: ["vae"],
   unet: ["unet", "diffusion_models"],

@@ -1,4 +1,10 @@
-// core/params.ts — the gateway-plane admission gate.
+// runsGates.ts — the gateway-plane admission gate.
+//
+// THE HEADER BELOW ADDRESSES THE DEAD GATEWAY (2026-09-10): the
+// Python-era paths it names (core/params.ts, doors/*, runs.ts,
+// bridges.ts) are gone with the gateway itself; the gates they
+// described are the ones implemented here, and the path references
+// are provenance, not addresses.
 //
 // CORDIS CORE law (docs/patterns/cordis-core.md §4): the card plane
 // admits params through schemastery (the card plane's Schemastery

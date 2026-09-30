@@ -77,12 +77,16 @@ describe("the runs door through the lane's models seat", () => {
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "character" }, new AbortController().signal),
     );
-    // The same preview-scope voice the fake-seat pin holds: the
-    // family stages composed past admission (anny body, skin coat,
-    // fit seat) and the compiler answered with the skip_when scope.
-    assert.ok(err instanceof RemoteError, "the preview scope refuses, never a crash");
-    assert.equal((err as RemoteError).code, "runs/preview-scope");
-    assert.match((err as RemoteError).message, /skip_when/);
+    // The COMPOSE refusal comes first, and it is the fit verb's own
+    // voice: seat composes before the compiler runs, and the verb
+    // needs a bone (no flow initial can carry one yet). The
+    // skip_when preview scope the fake-seat pin holds is a LATER,
+    // deeper gate — this flow cannot reach it while its fit stage
+    // refuses, which is the point: the lowest level that can answer
+    // answers.
+    assert.ok(err instanceof RemoteError, "the compose refusal, never a crash");
+    assert.equal((err as RemoteError).code, "runs/invalid-request");
+    assert.match((err as RemoteError).message, /needs a BONE/);
     await ctx.fiber.dispose();
   });
 

@@ -38,13 +38,6 @@ export function parseSkinFacts(_raw: LaneInputsFacts): Record<string, never> {
  *  vendor node declares seed INT min 0 — the resolved channel value
  *  must be a non-negative int; the flow's input contract owns
  *  that, nothing downstream re-gates it. */
-export interface CoatParams {
-  readonly body: string;
-  readonly kind: string;
-  readonly map_size: string | number;
-  readonly seed: string | number;
-}
-
 /** THE VERB'S FIXED VOCABULARY — the SkinPack/SkinSidecar nodes' own
  *  declared defaults, not an invention here. The engine refuses
  *  anything else by name: seed is INT min 0 (the -1 random sentinel
@@ -101,13 +94,22 @@ export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, nev
       albedo: pack.out(0),
       normal: pack.out(1),
     });
-    return g.node("RayRenderGLBViews", {
+    // THE PROOF SHEET IS RENDERED, NOT RETURNED: the declared
+    // output is the verb's ARTIFACT (a mesh — the grafted body), so
+    // the returned handle must be the node that produces it. The
+    // renderer stays a terminal in the graph and the harvest finds
+    // its PNG there (the anny estimator's shape: return the artifact
+    // node, let the proof ride as an extra artifact). Returning the
+    // renderer published a PNG as the `skin` channel and wired an
+    // IMAGE into the next stage's body slot.
+    g.node("RayRenderGLBViews", {
       glb_path: apply.out(0),
       resolution: 768,
       framing: 1.2,
       focal_length: 50,
       samples: 64,
       transparent: true,
-    }).out(0);
+    });
+    return apply.out(0);
   },
 };

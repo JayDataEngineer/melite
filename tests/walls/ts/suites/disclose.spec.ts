@@ -362,11 +362,16 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   assert.deepEqual((idx.cards ?? []).map((c) => (c as { id: string }).id).sort(), ["image-gen"],
     "the cards are the SEEDED ones, exactly");
   // 2. a flow skill read answers the DOC (the registry render or
-  //    the SKILL.md leaf).
+  //    the SKILL.md leaf). The sample is skin-apply: fit-seat
+  //    refuses at compose (the bone seam, ROADMAP 44e), so its body
+  //    has nothing to render and the index skips it.
   const sig = new AbortController().signal;
-  const doc = skills.read("flow:fit-seat", sig);
-  assert.equal(doc.id, "flow:fit-seat");
-  assert.ok(typeof doc.content === "string" && doc.content.includes("fit-seat"), "body renders");
+  const doc = skills.read("flow:skin-apply", sig);
+  assert.equal(doc.id, "flow:skin-apply");
+  assert.ok(
+    typeof doc.content === "string" && doc.content.length > 0,
+    "the flow's skill body renders",
+  );
   // 3. unknown ids answer the door's voice.
   assert.throws(
     () => skills.read("flow:no-such-flow", sig),
@@ -377,8 +382,8 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   const laneIdx = (await request("GET", "/v1/skills", undefined, sig)) as { count?: number };
   assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the seeded index");
-  const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
-  assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
+  const laneDoc = (await request("GET", "/v1/skills/flow%3Askin-apply", undefined, sig)) as { id?: string };
+  assert.equal(laneDoc.id, "flow:skin-apply", "lane serves the read");
   // (env restore + tmp cleanup live in the file-level afterEach —
   // the ONE restore path; these nested finallies were the second
   // critique's double-restore smell)

@@ -645,9 +645,14 @@ function stampOptionsFrom(schema, svc, family) {
 		node.meta.extra = clone;
 	}
 }
+/** THE UNKNOWN-CARD VOICE, SPOKEN ONCE (one voice per refusal):
+*  the defs guard and the formSchemas miss are the same condition, so
+*  both build the same sentence from this function. Two literals is
+*  how they drifted apart in the first place. */
+const unknownCardVoice = (card) => `form-spec: card '${card}' unknown`;
 function specBody(svc, defs, res) {
 	const def = defs.get(res.card);
-	if (def === void 0) throw new Error(`form-spec: card '${res.card}' unknown`);
+	if (def === void 0) throw new Error(unknownCardVoice(res.card));
 	const ident = def.identity;
 	if (ident === void 0) throw new Error(`form-spec: card '${res.card}' declares no identity`);
 	const key = res.model;
@@ -659,7 +664,7 @@ function specBody(svc, defs, res) {
 	}
 	const envelopeKey = owningAtom(key);
 	const schemas = svc.formSchemas(res.card, envelopeKey);
-	if (schemas === null) throw new Error(`form-spec: card '${res.card}' unknown`);
+	if (schemas === null) throw new Error(unknownCardVoice(res.card));
 	stampOptionsFrom(schemas.schema, svc, envelopeKey);
 	const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, new Set(Object.keys(schemas.mods)));
 	let liveMids;

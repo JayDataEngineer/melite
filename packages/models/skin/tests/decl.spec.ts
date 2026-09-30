@@ -63,7 +63,14 @@ describe("the skin model plugin (the whole model, one package)", () => {
       g,
       runId: "",
     });
-    assert.equal(out.nodeId, "RayRenderGLBViews.0");
+    // THE HANDLE IS THE ARTIFACT: the declared output is a mesh (the
+    // grafted body), so the returned node must be the one that
+    // produces it — SkinApply, whose RETURN_TYPES carry the GLB path.
+    // Returning the proof renderer published a PNG as the mesh
+    // channel and wired an IMAGE into the next stage's body slot. The
+    // renderer is still in the graph below, as a terminal the harvest
+    // finds.
+    assert.equal(out.nodeId, "SkinApply.0");
     assert.deepEqual(g.toJSON(), {
       // THE COAT'S KNOBS ARE THE VERB'S OWN VOCABULARY (stroke-89):
       // the SkinPack/SkinSidecar nodes' declared defaults, verbatim —

@@ -50,10 +50,17 @@ describe("inlineEdge's nullish stage members", () => {
 });
 
 describe("modelValidateArm (the model envelope)", () => {
-  it("a model-less body still probes the strict voice", async () => {
+  it("a model-less body refuses with the id law's voice", async () => {
+    // The arm's status domain is {200, 400} — every return is a
+    // literal — so accepting 500 tested nothing, and accepting 200
+    // let a wrongly-admitted model-less body pass. `model` is a door
+    // key, so the walk reaches the FLOW_ID_RE refusal with an empty
+    // name: that IS the strict voice this case claims to probe.
     const ctx = new Context();
     const ans = await modelValidateArm({ model: undefined } as Record<string, unknown>, ctx);
-    expect([200, 400, 500]).toContain(ans.status);
+    expect(ans.status).toBe(400);
+    expect((ans.payload as { code?: string }).code).toBe("invalid_request");
+    expect((ans.payload as { error?: string }).error).toMatch(/is not a legal identifier/);
     await ctx.fiber.dispose();
   });
 
@@ -232,31 +239,28 @@ describe("modelValidateArm (the model envelope)", () => {
         await ctx.fiber.dispose();
       }
     }
-    // 4. a registry that cannot compose (no phase1Card, or no
-    // primeObjectInfo) leaves validate usable: the walk reports
-    // nothing rather than refusing a bench seat. (A registry that
-    // cannot even DEFINE the schema is the door's own LOUD miswire —
-    // inlineArm refuses it before the walk is reached.)
-    const defs = (): unknown => new Map([
-      ["tts", { requiresModel: true, schema: (p: unknown): unknown => p }],
-    ]);
-    for (const reg of [
-      { defsSync: defs, primeObjectInfo: () => Promise.resolve(true) },
-      { defsSync: defs, phase1Card: () => Promise.resolve({}) },
-    ]) {
-      const ctx = new Context();
-      (ctx as unknown as { cardRegistry: unknown }).cardRegistry = reg;
-      try {
-        const out = await validate(
-          { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts" })] } },
-          new AbortController().signal,
-          ctx,
-        ) as Record<string, unknown>;
-        expect(out["ok"]).toBe(true);
-        expect(out["note"]).toBeUndefined();
-      } finally {
-        await ctx.fiber.dispose();
-      }
+    // 4. AN UNPRIMED ENGINE leaves validate usable: the walk reports
+    // the schema-only note rather than refusing a bench seat. (A
+    // registry that cannot even DEFINE the schema is the door's own
+    // LOUD miswire — inlineArm refuses it before the walk is
+    // reached.) The registry is a CardRegistryService shape: the
+    // walk's own guard for a half-built seat is gone, because the
+    // service always carries both methods and a wall for an
+    // unreachable arm is a lie.
+    const ctx = new Context();
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = regWith(
+      (): Promise<unknown> => Promise.resolve({}),
+      false,
+    );
+    try {
+      const out = await validate(
+        { flow_inline: { id: "bench", stages: [cardStage({ model: "qwen3-tts" })] } },
+        new AbortController().signal,
+        ctx,
+      ) as Record<string, unknown>;
+      expect(out["ok"]).toBe(true);
+    } finally {
+      await ctx.fiber.dispose();
     }
   });
 

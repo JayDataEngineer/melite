@@ -360,13 +360,17 @@ describe("start flow arm", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
-  it("the character shim compiles to the skip_when preview scope", async () => {
+  it("the character shim refuses at COMPOSE — the fit verb's own voice, before any door policy", async () => {
+    // Seat composes before the compiler runs, and the verb needs a
+    // bone no flow initial can carry. The skip_when preview scope
+    // this flow used to reach is a LATER gate; the lowest level that
+    // can answer answers first (one voice, one layer).
     const s = seat();
     const err = await remote(() =>
       s.svc.start({ draft_id: "d1", test: false, flow: "character" }, sig()),
     );
-    assert.equal(err.code, "runs/preview-scope");
-    assert.match(err.message, /skip_when/);
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /needs a BONE/);
   });
 });
 
