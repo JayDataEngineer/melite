@@ -289,6 +289,35 @@ describe("flowRows", () => {
     mkEstate(false);
     assert.deepEqual(flowRows(ROOT), []);
   });
+
+  it("a flow that cannot load is SKIPPED, not thrown over every other row", () => {
+    mkEstate();
+    // The seat answers, and the answer is a table holding no family
+    // the registry's family stages name — one condition, named. The
+    // rows for every OTHER flow must still be served: the projection
+    // walks the whole registry, and a refusal here used to travel
+    // out as a lane-wide skill-read failure.
+    const bare = { allDecls: () => [] };
+    const rows = flowRows(ROOT, bare);
+    // A flow with no family stage composes byte-identically (zero
+    // lookups), so it still serves; the family-carrying ones drop out
+    // with their refusal carried on the row. THAT is the isolation:
+    // the broken subset is skipped, the rest of the lane is intact.
+    assert.ok(
+      rows.some((r) => r.row.id === "flow:agent-spawn"),
+      "a family-free flow still serves on a bare seat",
+    );
+    assert.equal(
+      rows.find((r) => r.row.id === "flow:anny-hmr"),
+      undefined,
+      "the family-carrying flow is skipped, not thrown over the rest",
+    );
+    // The contrast: this spec's first import boots the real table, so
+    // the un-seated read composes every family stage and serves every
+    // flow row. The skip is per-flow, never lane-wide.
+    const served = flowRows(ROOT);
+    assert.ok(served.length >= 11, "a seated table serves every flow row again");
+  });
 });
 
 describe("buildSkillIndex + findSkill", () => {

@@ -88,12 +88,35 @@ export function flowDecls(
     // Compose before projection (the doors' own order — stroke 4):
     // the family stages' derived outputs and edges render in the
     // served body only when the declarations compose first.
-    const seat = liveFamilySeat(modelsSeat);
-    const expanded = composeFamilyStages(
-      expandRegistryFlow(flow),
-      seat.decls,
-      seat.state,
-    );
+    //
+    // A FLOW THAT CANNOT LOAD IS SKIPPED, NOT THROWN (the row's own
+    // loadError field, finally written). flowDecls projects EVERY
+    // registered flow, so one flow's compose refusal used to refuse
+    // every skill read on the lane — including a card skill that
+    // exists and has nothing to do with it, answered 502 in another
+    // flow's words. The broken flow drops out of the index (the
+    // discover door will not list what cannot load) and its refusal
+    // rides on the row that carries it.
+    let expanded: ReturnType<typeof expandRegistryFlow>;
+    try {
+      const seat = liveFamilySeat(modelsSeat);
+      expanded = composeFamilyStages(
+        expandRegistryFlow(flow),
+        seat.decls,
+        seat.state,
+      );
+    } catch (e) {
+      out.push({
+        id: flow.id,
+        loadError: e instanceof Error ? e.message : String(e),
+        description: flow.description,
+        stages: [],
+        tool: null,
+        skillRefs: [],
+        hasSkillMd: false,
+      });
+      continue;
+    }
     const stages: { readonly id: string; readonly engine: string }[] =
       expanded.stages.map((s) => ({ id: s.id, engine: s.engine }));
     let tool: FlowToolDecl | null = null;
@@ -108,7 +131,7 @@ export function flowDecls(
     }
     out.push({
       id: flow.id,
-      loadError: null,
+      loadError: null,  // composed clean
       description: flow.description,
       stages,
       tool,
@@ -468,9 +491,8 @@ export function flowRows(
 ): FlowRow[] {
   const out: FlowRow[] = [];
   for (const decl of flowDecls(repo, modelsSeat)) {
-    /* v8 ignore next -- flowDecls marks loadError null (the registry
-       is code — declaration bugs throw LOUD instead): the skip never
-       fires (2026-09-12) */
+    // A flow that refused to compose is not a row the index lists
+    // (flowDecls carries its refusal on loadError).
     if (decl.loadError !== null) continue;
     const steps: StepRow[] = [];
     for (const s of decl.stages) {
