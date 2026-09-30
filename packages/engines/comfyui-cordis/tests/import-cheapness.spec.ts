@@ -20,8 +20,8 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
     assert.ok(mod !== null && mod !== undefined);
   });
 
-  it("cascadeInit stays exported (the shared once-per-process boot promise)", async () => {
+  it("cascadeInit stays exported (the shared once-per-process boot entry)", async () => {
     const mod = await import("../src/models/models.ts");
-    assert.equal(typeof mod.cascadeInit.then, "function");
+    assert.equal(typeof mod.cascadeInit, "function");
   });
 });

@@ -1041,8 +1041,12 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
  *  the table is empty, the boot throws — all-or-nothing, a broken
  *  family never half-serves. The contracts then cross-validate
  *  boot-loud (above) before the singleton owns the table. */
+let bootInFlight: Promise<ModelsService> | null = null;
+
 export async function bootModels(): Promise<ModelsService> {
   if (booted !== null) return booted;
+  if (bootInFlight !== null) return bootInFlight;
+  bootInFlight = (async (): Promise<ModelsService> => {
   const ctx = new Context();
   try {
     await ctx.plugin(modelsProvider);
@@ -1080,6 +1084,12 @@ export async function bootModels(): Promise<ModelsService> {
     throw err;
   }
   /* v8 ignore stop */
+  })();
+  try {
+    return await bootInFlight;
+  } finally {
+    bootInFlight = null;
+  }
 }
 
 /** The booted service (throws if bootModels has not settled). */

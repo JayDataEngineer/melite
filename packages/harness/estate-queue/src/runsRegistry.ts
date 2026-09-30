@@ -1,4 +1,3 @@
-import { parseSidecar } from "./queueSidecar.ts"
 import { mediaKindOf } from "./mediaKinds.ts"
 // runsRegistry.ts — the live-run registry as a HOST Cordis service
 // (REBUILD-6, gateway kill). Owns the rich run map + the serial
@@ -18,13 +17,8 @@ import type { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { stageEngineOf } from "@melite/contracts/benchStage";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
-import {
-  executeFlow,
-  needComfyUI,
-  spliceWorkflow,
-} from "@melite/comfyui-cordis";
-import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
-import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
+import { needComfyUI } from "@melite/comfyui-cordis";
+import type { EngineJson } from "@melite/comfyui-cordis";
 import {
   expandRegistryFlow,
   extractRequestInitials,
@@ -41,15 +35,12 @@ import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
-import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
 import {
   CardArmError,
-  type ModelFactsRow,
   type Phase1Card,
 } from "./cardsRegistry.ts";
-import { FlowError, strictBody } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {
@@ -60,14 +51,11 @@ import {
   unknownDraftRefusal,
 } from "./runsStart.ts";
 import type { CompiledStage } from "./runsStart.ts";
-import type { RunStageRow } from "./runsTypes.ts";
 import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
-import { inlineArm } from "./runsValidate.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import {
   errText,
   runLogTail,
-  runRel,
   settlePersist,
 } from "./runsTypes.ts";
 import type { RunRecord } from "./runsTypes.ts";

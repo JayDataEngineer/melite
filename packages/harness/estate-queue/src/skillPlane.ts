@@ -14,25 +14,16 @@
 // 2241-2250).
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-import { DIR_ID_ALIASES, disclosureRoot, stem } from "./skillFs.ts";
 import { benchPicksSync } from "./bench.ts";
-import { gateSkill } from "./skillFrontmatter.ts";
-import { projectToolProperties, flowDecls, readDoc, spawnRows, engineDirs, modelRows, cardRows, registryBody, flowRows } from "./skillRows.ts";
+import { appendLedger } from "./queue.ts";
+import { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 // the extracted planes re-export through the skill plane's door
 export { disclosureRoot } from "./skillFs.ts";
 export { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.ts";
-import { appendLedger } from "./queue.ts";
-import {
-  expandRegistryFlow,
-  getRegistryFlow,
-  registryFlowNames,
-  registrySkillBody,
-} from "./flowsData.ts";
 
 /** A wire-contract refusal the disclosure engine could not
  *  construct around — the doors translate it to a structured 500
@@ -56,10 +47,6 @@ export class LaneWireError extends Error {
 // ---------------------------------------------------------------------------
 // roots
 // ---------------------------------------------------------------------------
-
-/** Process boot seconds (Gateway.boot_at 1074: construction time;
- *  the module loads at server boot — the same instant). */
-const BOOT_AT: number = Date.now() / 1000;
 
 // ---------------------------------------------------------------------------
 // the flow declarations (the flows registry — flowsData.ts, re-homed
@@ -248,12 +235,6 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
     }
     throw e;
   }
-}
-
-interface AgentBlock {
-  readonly source: string;
-  readonly name: string;
-  readonly content: string;
 }
 
 /** The inline agent block (lane_disclosure._agent_block 780-793):

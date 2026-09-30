@@ -1,9 +1,7 @@
 // cardsLanes.ts — THE LANE PRESENCE GATE (the one-pattern law).
 // Extracted from cardsRegistry: which families have a live lane on
 // disk (the packs the compose arm refuses without).
-import { existsSync, readdirSync } from "node:fs";
-import { join } from "node:path";
-import { checkModelPresent, getModel, loadEndpointConfig, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { checkModelPresent, getModel, loadEndpointConfig } from "@melite/comfyui-cordis";
 import type { ModelDecl } from "@melite/comfyui-cordis";
 import { CardArmError } from "./cardsArmError.ts";
 

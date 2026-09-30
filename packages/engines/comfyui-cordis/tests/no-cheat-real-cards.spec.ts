@@ -26,7 +26,7 @@ import { getModel, registryIds, registryModel, cascadeInit } from "../src/models
 
 // li-m (the lazy-boot law): the import no longer boots models —
 // the spec awaits the shared boot before the first sync read.
-await cascadeInit;
+await cascadeInit();
 
 const here = dirname(fileURLToPath(import.meta.url));
 const factsDoc = loadFacts(

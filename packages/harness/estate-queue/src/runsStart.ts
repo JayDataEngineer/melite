@@ -26,14 +26,14 @@ import {
   checkFlowInlineTop,
   checkFlowStage,
 } from "./runsGates.ts";
-import { appendLedger, atomicWriteJson, newRunId, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies } from "./queue.ts";
+import { appendLedger, atomicWriteJson, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
-import type { RunRecord, RunStageRow } from "./runsTypes.ts";
+import type { RunRecord } from "./runsTypes.ts";
 
 /** The door's refusal shape (status carries the HTTP class; the
  *  remote folds it into RemoteError details). */

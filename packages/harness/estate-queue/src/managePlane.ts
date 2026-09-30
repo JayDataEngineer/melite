@@ -35,7 +35,7 @@ import type {
   ResourceRef,
   ResourceStatus,
 } from "@melite/estate-provisioning";
-import { ManagerApiError, managerBase, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
+import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
 

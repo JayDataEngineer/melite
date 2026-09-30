@@ -160,10 +160,6 @@ const LEAF = {
   dict: z.object({}).required(),
 };
 
-/** editor_runs.draft_id_ok as a schema: string + charset + 1..96
- *  length (min/max ride string LENGTH in schemastery). */
-const DraftIdField = z.string().pattern(DRAFT_ID_RE).min(1).max(96);
-
 /** Run one leaf schema, returning the structure verdict only. */
 function tryLeaf(schema: Parameters<typeof z.resolve>[1], v: unknown): boolean {
   try {

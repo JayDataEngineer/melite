@@ -3,7 +3,7 @@
 // facts/decl plane owns model-facts.json reads and the pure
 // defs+facts->rows derivation. No Service state — module truth.
 import { join } from "node:path";
-import { loadCardDefs, loadFacts, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 import type { LaneRelations } from "@melite/contracts/laneRelations";
 

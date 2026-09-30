@@ -43,6 +43,10 @@ export async function catalogProvisions(): Promise<Array<{ family: string; row: 
   // rows (the engine's provisionsByFamily — DECL provisions + card-
   // owned provisions; the model.py cell/provision walks died with
   // the py plane and the frozen catalog re-home died with the blob).
+  // ROADMAP-47: the boot no longer fires at import — callers of the
+  // sync singleton readers await the shared entry first.
+  const { cascadeInit } = await import("../src/models/models.ts");
+  await cascadeInit();
   const defs = await loadCardDefs();
   const byFamily = await provisionsByFamily(defs);
   const out: Array<{ family: string; row: ProvisionRow }> = [];

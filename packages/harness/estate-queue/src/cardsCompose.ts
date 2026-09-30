@@ -3,7 +3,7 @@
 // 2-6) and the in-process compose (steps 7-9). Explicit seat
 // deps; no Service state beyond the accessors the seat passes.
 import { ComfyUIService, resolveEngineBaseUrl, composeCards, ComposeRefusal, checkModelPresent, owningAtom } from "@melite/comfyui-cordis";
-import { EngineContext, composeModPlane, loadFacts, liveObjectInfo, theService } from "@melite/comfyui-cordis";
+import { EngineContext, composeModPlane, loadFacts, theService } from "@melite/comfyui-cordis";
 import type { FactsReads } from "@melite/comfyui-cordis";
 import type { PreparedCard } from "./cardsRegistry.ts";
 import { CardArmError, phaseRefusal } from "./cardsArmError.ts";

@@ -27,7 +27,7 @@ import type { CardDefinition } from "../src/service.ts";
 // best-effort swallow hid the failure).
 import { cascadeInit } from "../src/models/models.ts";
 
-await cascadeInit;
+await cascadeInit();
 
 const FACELESS = "data:text/javascript,export const x = 1";
 

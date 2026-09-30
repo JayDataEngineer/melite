@@ -1,9 +1,9 @@
 // skillRows.ts — the skill index's row walkers (extracted from
 // skillPlane.ts): tool properties, flow declarations, doc/spawn
 // rows, engine/model/card/flow rows — module truth over paths.
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
-import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, disclosureRoot, stem } from "./skillFs.ts";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
+import { DIR_ID_ALIASES, isDir, isFile, subdirs, readText, stem } from "./skillFs.ts";
 import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
 import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";

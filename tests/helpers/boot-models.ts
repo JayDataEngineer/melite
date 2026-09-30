@@ -20,6 +20,6 @@
 // scoped to the files that ask for it.
 import { cascadeInit } from "../../packages/engines/comfyui-cordis/src/models/models.ts";
 
-await cascadeInit;
+await cascadeInit();
 
 export {};

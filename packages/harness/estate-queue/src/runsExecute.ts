@@ -4,12 +4,11 @@
 // the stop-gated terminal mapping. Explicit deps, no Service state.
 import type { Context } from "@deepseek-ai/cordis";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { ComfyUIWiringService, executeFlow, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
+import { ComfyUIWiringService, loadCardDefs, needComfyUI, spliceWorkflow } from "@melite/comfyui-cordis";
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type RunStageRow } from "./runsTypes.ts";
 import { engineFilmName } from "./filmLead.ts";
-import { join } from "node:path";
 import { needComfyUI as _ncu } from "@melite/comfyui-cordis";
 type EngineCtx = Parameters<typeof _ncu>[0];
 

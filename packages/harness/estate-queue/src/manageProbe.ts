@@ -3,7 +3,7 @@
 // walk, the active-runs census, and the manager security probe.
 import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
-import type { Req, ManageCtx } from "./managePlane.ts";
+import type { ManageCtx } from "./managePlane.ts";
 import { sweepOutputRoots } from "./cardsDangling.ts";
 
 // ── runs / security / probe (TS-native) ────────────────────────────

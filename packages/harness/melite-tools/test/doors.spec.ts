@@ -2,6 +2,10 @@
 // real fs fixtures under data/input, cleaned up — no network): apply
 // wiring, catalog, enhance one-shot + sweep, uploads, input preview,
 // and the /v1 prefix door's discovery + seat lanes.
+// models boot first (ROADMAP-47: nothing fires at import — this
+// spec's enhance sweep resolves model keys through the booted
+// table, so it owns the boot the way the estate-queue specs do).
+import '../../../../tests/helpers/boot-models.ts'
 import { describe, test, afterEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'

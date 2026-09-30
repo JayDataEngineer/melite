@@ -58,9 +58,6 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return proto === Object.prototype;
 }
 
-const PRESET_ID_RE: RegExp = /^[a-z0-9][a-z0-9_\-]*$/;
-
-
 /** Required-field fetch (missing -> Field required on the parent). */
 function reqField(
   v: Record<string, unknown>,

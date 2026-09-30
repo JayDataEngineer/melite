@@ -90,35 +90,27 @@ import type { Context } from "@deepseek-ai/cordis";
  *  package (the registry-keyed instance ComfyUIService mounts on),
  *  imported through the engine's public surface like every other
  *  engine dep. No deep path, no runtime-only dodge. */
-import { EngineContext } from "@melite/comfyui-cordis";
-import { bootModels, buildCatalog, cardDefsNow, checkModelPresent, ComfyUIService, ComposeRefusal, composeCards, composeModPlane, getModel, liveScanOrder, loadCardDefs, loadEndpointConfig, loadFacts, modelIds, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
+import { bootModels, cardDefsNow, ComposeRefusal, getModel, liveScanOrder, loadCardDefs, loadFacts, registryIds, registryModel, resolveCardFlowOutputs, theService } from "@melite/comfyui-cordis";
 import type { CardDefinition, FactsFile, FactsReads } from "@melite/comfyui-cordis";
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { join, relative, resolve, sep } from "node:path";
-import { pathToFileURL } from "node:url";
 import { DOOR_KEYS } from "./runsGates.ts";
-import { FLOW_ID_RE } from "./runsGates.ts";
 import { getRegistryFlow } from "./flowsData.ts";
 import { CardArmError, EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
 export { CardArmError } from "./cardsArmError.ts";
-import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
+import type { CardDeclRow, ModelFactsRow, VariantRow } from "./cardsFacts.ts";
 import { factsPath, deriveDecls } from "./cardsFacts.ts";
 import { WIRE_STAGE_KEYS } from "@melite/contracts/benchStage";
 import type { LaneRelations, LaneViolation } from "@melite/contracts/laneRelations";
 import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, RELATION_WORDS } from "@melite/contracts/laneRelations";
-import { lanePackFolders, lanePresenceRefusal } from "./cardsLanes.ts";
-import { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
+import { lanePresenceRefusal } from "./cardsLanes.ts";
+import { selectCardVariant, liftCardParams } from "./cardsVariant.ts";
 import type { VariantSelection } from "./cardsVariant.ts";
-import { findCardDangling } from "./cardsDangling.ts";
-
 // the extracted planes re-export through the registry's public
 // surface (the walls import these names from here — one door)
 export { selectCardVariant, stampCardOverlay, liftCardParams } from "./cardsVariant.ts";
 export type { VariantSelection } from "./cardsVariant.ts";
-export { findCardDangling } from "./cardsDangling.ts";
 export type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
-import { ComfyUIWiringService, deriveWiringDoc, liveObjectInfo, resolveEngineBaseUrl, resolveRepoRoot } from "@melite/comfyui-cordis";
-import { admissionRefusal, composeOnce, liftStanza, prepareCardParams, type ComposeSeat } from "./cardsCompose.ts";
+import { ComfyUIWiringService, deriveWiringDoc, liveObjectInfo, resolveEngineBaseUrl } from "@melite/comfyui-cordis";
+import { admissionRefusal, composeOnce, liftStanza, prepareCardParams } from "./cardsCompose.ts";
 /** The card-envelope keys: SELECT the graph, never ride it.
  *
  *  THE ROW COORDINATES ARE THE CONTRACT'S (the operator's live
@@ -623,7 +615,6 @@ export class CardRegistryService extends Service {
     const boarded: readonly string[] = def.boarded;
     const mids: Set<string> = this.modelMids();
     const downloaded: string[] = boarded.filter((fam) => mids.has(fam));
-    const fam: string = this.resolveCardFamily(model, this.modelFacts());
     // THE ADDRESS MUST BE THE OFFER (2026-10-10, the behavioural
     // audit's BROKEN-A: this folded ANY declared route onto its
     // owning family, so `qwen3-tts-voicedesign-base` — a variant

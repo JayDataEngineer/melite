@@ -16,15 +16,17 @@
 // family composition (live proof: 3088 boots that printed nothing
 // for minutes, zero pending I/O — a promise that never settles;
 // cordis doctrine: composition happens in apply, never at import).
-// Nothing at import WAITS on the boot: `cascadeInit` (line 37)
-// FIRES bootModels() eagerly but unawaited — the promise floats,
-// so importing this module can never hang. bootModels is
-// once-per-process memoized; the estate's cardsRegistry awaits the
-// SAME boot (cardsRegistry.ts, the composition seat), and the
-// sync singleton readers below (the formSchema cap, manageRegistry,
-// loadRegistry's fallback reads) depend on the import-side fire
-// having settled. The lane seat (modelsFamiliesProvider) is a
-// SEPARATE table in the estate's context — see service.ts.
+// ROADMAP-47 (2026-10-11) finished the cut: NOTHING fires at
+// import either — the eager unawaited bootModels() floated the
+// 47-family dynamic import past vitest's per-file environment
+// teardown, and the rotating EnvironmentTeardownError rejections
+// failed green fleets (exit 1 with zero failed tests).
+// `cascadeInit()` fires the boot on FIRST CALL and memoizes;
+// callers that read the sync singleton below await it (or
+// bootModels) first — the estate's cardsRegistry awaits the SAME
+// boot (cardsRegistry.ts, the composition seat). The lane seat
+// (modelsFamiliesProvider) is a SEPARATE table in the estate's
+// context — see service.ts.
 
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
@@ -34,7 +36,16 @@ import { buildCatalog } from "./catalogEmission.ts";
 export * from "./families/contract.ts";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
-export const cascadeInit: Promise<void> = bootModels().then((): void => undefined);
+let cascadePromise: Promise<void> | null = null;
+
+/** The shared once-per-process boot entry: fires bootModels() on
+ * first call, memoizes, never at import (li-m + ROADMAP-47).
+ *
+ * @returns a promise that settles when the booted table is served. */
+export function cascadeInit(): Promise<void> {
+  cascadePromise ??= bootModels().then((): void => undefined);
+  return cascadePromise;
+}
 
 export function getModel(id: string): ModelDecl {
   return modelsService().getModel(id);
