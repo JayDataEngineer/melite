@@ -419,11 +419,14 @@ describe("validate", () => {
   });
 
   it("resolve hits compose (refusals, 200, unmapped codes stay LOUD)", async () => {
+    // The arm wraps ONE prepareCardParams (audit finding 2): the
+    // rig's facts row must carry the card the decls table answers,
+    // exactly as a real facts file would.
     const base = {
-      modelFacts: (): unknown => ({ m1: {} }),
+      modelFacts: (): unknown => ({ m1: { card: "c" } }),
       resolveCardFamily: (): unknown => "m1",
       modelMids: (): unknown => new Set<string>(),
-      overlayCardParams: async (): Promise<unknown> => ({ fam: "m1", card: "c", params: {} }),
+      cardDecls: (): unknown => ({ c: { skeleton: "" } }),
     };
     const refused = seat({
       ...base,
@@ -636,11 +639,14 @@ describe("validate", () => {
     assert.match(String(ans["run_id"]), /^run-/);
   });
 
-  it("overlay failures fold CardArmErrors and rethrow the rest", async () => {
+  it("prepare failures fold CardArmErrors and rethrow the rest", async () => {
+    // The overlay fork is gone (audit findings 2+3): prepareCardParams
+    // owns the arms, so a prepare-leg CardArmError is what folds and
+    // a raw prepare-leg error is what stays loud. resolveCardFamily
+    // is the leg the rig can stub after the resolves short-circuit.
     const arm = seat({
-      modelFacts: (): unknown => ({ m1: {} }),
-      resolveCardFamily: (): unknown => "m1",
-      overlayCardParams: async (): Promise<unknown> => {
+      modelFacts: (): unknown => ({ m1: { card: "c" } }),
+      resolveCardFamily: (): unknown => {
         throw new CardArmError(400, "overlay bad", "card_compose");
       },
     });
@@ -649,9 +655,8 @@ describe("validate", () => {
       "runs/card-compose",
     );
     const loud = seat({
-      modelFacts: (): unknown => ({ m1: {} }),
-      resolveCardFamily: (): unknown => "m1",
-      overlayCardParams: async (): Promise<unknown> => {
+      modelFacts: (): unknown => ({ m1: { card: "c" } }),
+      resolveCardFamily: (): unknown => {
         throw new Error("overlay exploded");
       },
     });

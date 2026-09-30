@@ -346,7 +346,11 @@ describe("overlayCardParams (the validate overlay, phase-1 voice)", () => {
   });
 
   it("an unregistered model id does not become a family-less card", () => {
-    expect(() => svc.overlayCardParams({}, "not-a-card")).toThrow(/composes outside the cordis plane/);
+    // Through the projection the voice is the door's own order
+    // (audit finding 3): an id that resolves NOWHERE answers the
+    // unknown-unit refusal — the cordis-plane skew voice belongs
+    // to ids that resolve but lack a facts row.
+    expect(() => svc.overlayCardParams({}, "not-a-card")).toThrow(/no model unit for model: not-a-card/);
   });
 
   it("a catalog id that resolves through a route still uses the family row", () => {

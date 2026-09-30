@@ -480,10 +480,10 @@ describe("stroke-82 stop-flag masking", () => {
 describe("stroke-82 variant-mid validate joint", () => {
   it("the middle disjunct validates 200", async () => {
     const s = seat({
-      modelFacts: (): unknown => ({ m1: {} }),
+      modelFacts: (): unknown => ({ m1: { card: "c" } }),
       resolveCardFamily: (): unknown => "m1",
       modelMids: (): unknown => new Set<string>(),
-      overlayCardParams: async (): Promise<unknown> => ({ fam: "m1", card: "c", params: {} }),
+      cardDecls: (): unknown => ({ c: { skeleton: "" } }),
     });
     const ans = (await s.svc.validate({ model: "mx" }, sig())) as Record<string, unknown>;
     assert.deepEqual(Object.keys(ans), ["ok", "model", "card", "cost"]);

@@ -204,7 +204,13 @@ export function prepareCardParams(
     body: Record<string, unknown>,
     mid: string,
     phase: string,
+    factsArg?: Record<string, ModelFactsRow>,
   ): PreparedCard {
+    // `factsArg` is the validate door's degraded read (an explicit
+    // resolve step, not a hidden default): the door answers from
+    // the catalog alone when the facts file is absent; every other
+    // seat omits it and takes the strict read here.
+    const facts: Record<string, ModelFactsRow> = factsArg ?? deps.modelFacts();
     const dangling = findCardDangling(body);
     if (dangling !== null) {
       const [location, ref, why] = dangling;
@@ -221,7 +227,6 @@ export function prepareCardParams(
         "invalid_request",
       );
     }
-    const facts: Record<string, ModelFactsRow> = deps.modelFacts();
     const resolves: boolean =
       mid in facts || deps.resolveCardFamily(mid, facts) in facts || deps.modelMids().has(mid);
     if (!resolves) {

@@ -10,10 +10,12 @@ import { getRegistryFlow, registryFlowNames, expandRegistryFlow, registryFlowToI
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
-import { inlineArm, strictBody, findDanglingRefs, type FlowError } from "./runsValidate.ts";
+import { inlineArm, strictBody, type FlowError } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import type { ModelFactsRow } from "./cardsFacts.ts";
 import { CardArmError } from "./cardsArmError.ts";
+import { prepareCardParams } from "./cardsCompose.ts";
+import type { PreparedCard } from "./cardsRegistry.ts";
 export async function validate(
   doc: unknown,
   signal: AbortSignal,
@@ -273,104 +275,40 @@ export async function modelValidateArm(
         },
       };
     }
-    // ARTIFACT-REF GATE first.
-    const dangling: Array<[string, string, string]> =
-      findDanglingRefs(body);
-    if (dangling.length > 0) {
-      const [location, ref, why] = dangling[0] as [string, string, string];
-      return {
-        status: 400,
-        payload: {
-          error:
-            "dangling artifact ref at " + JSON.stringify(location) + ": " +
-            ref + " (" + why + ")",
-          code: "invalid_request",
-        },
-      };
-    }
-    if (!FLOW_ID_RE.test(mid)) {
-      return {
-        status: 400,
-        payload: {
-          error: "model id " + JSON.stringify(mid) + " is not a legal identifier",
-          code: "invalid_request",
-        },
-      };
-    }
     const svc = ctx.cardRegistry;
-    // Resolution degrades to {} when the facts file is absent (the
-    // old cordisFacts degrade — the resolves check below then
-    // answers from the catalog alone; the strict overlay further
-    // down still throws LOUD).
+    // ONE PREPARE (the card-plane audit's finding 2, 2026-09-30):
+    // this arm used to hand-roll five of prepareCardParams'
+    // refusal arms (dangling, legality, the resolves predicate,
+    // the unknown-unit voice, the cordis-plane skew) with
+    // byte-identical strings — the messages drifted from the
+    // compose door's the day either side changed. The arm now
+    // wraps the single callee; the facts degrade below is THIS
+    // door's pinned policy (the catalog answers alone when the
+    // facts file is absent), handed to prepare as an explicit
+    // resolve step.
     let facts: Record<string, ModelFactsRow>;
     try {
       facts = svc.modelFacts();
     } catch {
       facts = {};
     }
-    const resolves: boolean =
-      mid in facts ||
-      svc.resolveCardFamily(mid, facts) in facts ||
-      svc.modelMids().has(mid);
-    // THE CARD-UNIT PASS (2026-10-08, the Run-press law): the
-    // bench's Run press addresses a family-less card by its OWN id
-    // (defaultFamilyForCard's documented fallback) — the door
-    // composes the card the press names. Only ids that are neither
-    // family NOR card refuse below (the unknown voice).
-    const cardUnit: boolean = !resolves &&
-      Object.prototype.hasOwnProperty.call(svc.cardDecls(facts), mid);
-    if (!resolves && !cardUnit) {
-      return {
-        status: 400,
-        payload: {
-          error: "no model unit for model: " + mid +
-            " (no .catalog.models row " + mid +
-            " in the frozen discovery catalog and no family declares route " +
-            mid + " in its variants' cells — checked the class tree's _routes map)",
-          code: "invalid_request",
-        },
-      };
-    }
-    if (!cardUnit) {
-      const fam: string = svc.resolveCardFamily(mid, facts);
-      const famRow: ModelFactsRow | undefined = facts[fam];
-      if (famRow === undefined) {
-        // Non-cordis compose arm (no family row): verdict + code.
-        return {
-          status: 400,
-          payload: {
-            error:
-              "card_compose phase 1: model " + JSON.stringify(mid) +
-              " composes outside the cordis plane (no family row — " +
-              "the model resolves but the facts file declares nothing for it)",
-            code: "card_compose",
-          },
-        };
-      }
-    }
-    // THE ROUTE-LENS STAMP OVERLAY (_route_stamp_overlay
-    // 705-751): family defaults + the selected variant's
-    // resolver_defaults, absent-keys-only, filtered to the card
-    // field surface.
-    let overlaid: { fam: string; card: string; params: Record<string, unknown> };
+    let prep: PreparedCard;
     try {
-      // (awaited — the overlay is sync today, but the arm owns the
-      // rejection either way: an async throw must fold, never float.)
-      overlaid = await svc.overlayCardParams(body, mid);
+      prep = prepareCardParams(svc, body, mid, "1", facts);
     } catch (e) {
       if (e instanceof CardArmError) {
         return { status: 400, payload: { error: e.message, code: e.code } };
       }
       throw e;
     }
-    const params: Record<string, unknown> = overlaid.params;
+    const params: Record<string, unknown> = prep.params;
     // IN-PROCESS COMPOSE: the SAME registry compose pipeline the
     // start arm rides composes for validate (one plane, both arms).
     const refused: { message: string; code: string } | null =
       // the body's OWN model address rides: the params are overlaid (the
       // model key is consumed), so the arm must not lose the address the
       // board check and the variant selection both judge
-      await svc.composeValidateCard(overlaid.card, overlaid.fam, params, mid, body);
+      await svc.composeValidateCard(prep.card, prep.fam, params, mid, body);
     if (refused !== null) {
       return {
         status: 400,

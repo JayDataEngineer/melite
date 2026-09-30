@@ -66,17 +66,17 @@ describe("modelValidateArm (the model envelope)", () => {
 
   it("a CARD id composes through the {model:} door — the Run press's own shape (2026-10-08, the mask correction's correction)", async () => {
     // the fake-seat pattern (runs-registry-reconcile's rig): a
-    // minimal registry stub — facts absent (the degrade), the
-    // decls table carrying the CARD row, the overlay + compose
-    // stubs answering the card-unit path (the live lane owns the
-    // real compose proof).
+    // minimal registry stub — facts absent (the door's degrade,
+    // handed to prepareCardParams as the explicit facts arg), the
+    // decls table carrying the CARD row, the compose stub
+    // answering the card-unit path (the live lane owns the real
+    // compose proof).
     const ctx = new Context();
     (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
       modelFacts: (): unknown => { throw new Error("no facts"); },
       resolveCardFamily: (mid: string): string => mid,
       modelMids: (): unknown => new Set<string>(),
       cardDecls: (): unknown => ({ mask: {} }),
-      overlayCardParams: (): unknown => ({ fam: "mask", card: "mask", params: {} }),
       composeValidateCard: (): Promise<unknown> => Promise.resolve(null),
     };
     const ans = await modelValidateArm({ model: "mask", params: {} }, ctx);

@@ -1053,44 +1053,13 @@ export class CardRegistryService extends Service {
     body: Record<string, unknown>,
     mid: string,
   ): OverlaidCard {
-    const facts: Record<string, ModelFactsRow> = this.modelFacts();
-    // THE CARD-UNIT ARM (2026-10-08, the Run-press law — prepare's
-    // twin): a family-less card id (the bench Run press's own
-    // shape) overlays NOTHING — no family row, no variants, no
-    // model defaults — the params lift verbatim and the card's
-    // declaration owns every default.
-    if (!(mid in facts) && !(this.resolveCardFamily(mid, facts) in facts) && !this.modelMids().has(mid)) {
-      const decls: Record<string, CardDeclRow> = this.cardDecls(facts);
-      if (Object.prototype.hasOwnProperty.call(decls, mid)) {
-        // fam '' — the engine's model-less marker (service.ts:617),
-        // never the card id (the not-boarded gate would refuse).
-        return { fam: "", card: mid, params: liftCardParams(body) };
-      }
-    }
-    const fam: string = this.resolveCardFamily(mid, facts);
-    const famRow: ModelFactsRow | undefined = facts[fam];
-    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
-    if (famRow === undefined) {
-      throw new CardArmError(
-        400,
-        "card_compose phase 1: model " + JSON.stringify(mid) +
-          " composes outside the cordis plane (no family row — the model resolves but the facts file declares nothing for it)",
-        "card_compose",
-      );
-    }
-    const decl: CardDeclRow | undefined = this.cardDecls(facts)[famRow.card];
-    /* v8 ignore next -- the frozen catalog covers every facts family+card today (probe 2026-09-12): the skew fence never fires */
-    if (decl === undefined) {
-      throw new CardArmError(
-        400,
-        "card_compose phase 1: unknown card " + JSON.stringify(famRow.card) +
-          " (no registered card definition for the card model " + JSON.stringify(mid) + " names)",
-        "card_compose",
-      );
-    }
-    const sel: VariantSelection = selectCardVariant(mid, famRow, body, "1");
-    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
-    return { fam, card: famRow.card, params: liftCardParams(stamped) };
+    // A thin projection over prepareCardParams (the card-plane
+    // audit's finding 3, 2026-09-30): this method was a third fork
+    // of the same refusal arms with the phase frozen to "1" and no
+    // model-id legality check. prepare owns every arm; the
+    // projection keeps the historical OverlaidCard shape.
+    const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
+    return { fam: prep.fam, card: prep.card, params: prep.params };
   }
 
   /** In-process validate compose (the CLI subprocess retired,
