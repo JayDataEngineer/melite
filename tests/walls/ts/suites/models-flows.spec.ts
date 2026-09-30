@@ -183,12 +183,15 @@ describe("the models plane feeds the compose/flows plane (A2)", () => {
     }
     // E-C3: the census is exact — every row except the rows that
     // ARE action-card lanes (id collision) is judged; drift is
-    // deliberate. 29 stand today.
+    // deliberate. 60 stand today: the file's 29 frozen rows plus
+    // the 31 registry-declared variant lanes (the atom vocabulary —
+    // quant and reference variants belong to the family DECL, so a
+    // family's variants assemble without a file row).
     const total = Object.keys(facts.models).length;
     const actionRows = Object.keys(facts.models).filter((id) => actions.has(id)).length;
     assert.equal(judged, total - actionRows,
       `the resolve() arm's census is exact (${String(judged)} judged; ${String(total)} rows - ${String(actionRows)} action-lane rows — drift is deliberate)`);
-    assert.equal(total, 29, `the facts roster is 29 rows (saw ${String(total)}) — a 30th family is a deliberate edit`);
+    assert.equal(total, 60, `the facts roster is 60 rows (saw ${String(total)}) — a 61st family is a deliberate edit`);
   });
 });
 
