@@ -687,9 +687,11 @@ describe('live door arms', () => {
     const svc = theService()
     const defs = await loadCardDefs()
     const res = { card: 'tts', service: 'qwen3-tts', model: 'qwen3-tts' }
+    // ONE VOICE for an unknown card: this guard and the door's
+    // formSchemas miss speak the same sentence (they were two).
     assert.throws(
       () => specBody(svc, new Map(), { card: '__no__', service: 's', model: 'm' }),
-      /form-spec: unknown card '__no__'/,
+      /form-spec: card '__no__' unknown/,
     )
     assert.throws(
       () => specBody(svc, new Map([['bad', card({})]]), { card: 'bad', service: 's', model: 'm' }),

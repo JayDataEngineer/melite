@@ -554,9 +554,14 @@ export function specBody(
   defs: Map<string, CardDefinition>,
   res: SpecResolution,
 ): Record<string, unknown> {
+  // ONE VOICE FOR AN UNKNOWN CARD: the defs map is this function's
+  // own input and its only caller builds res.card FROM it, so a miss
+  // here was unreachable — and the reachable miss (formSchemas
+  // answering null) already speaks below. Two sentences for one
+  // condition is the drift this removes.
   const def = defs.get(res.card)
   if (def === undefined) {
-    throw new Error(`form-spec: unknown card '${res.card}'`)
+    throw new Error(`form-spec: card '${res.card}' unknown`)
   }
   const ident = def.identity
   if (ident === undefined) {

@@ -647,7 +647,7 @@ function stampOptionsFrom(schema, svc, family) {
 }
 function specBody(svc, defs, res) {
 	const def = defs.get(res.card);
-	if (def === void 0) throw new Error(`form-spec: unknown card '${res.card}'`);
+	if (def === void 0) throw new Error(`form-spec: card '${res.card}' unknown`);
 	const ident = def.identity;
 	if (ident === void 0) throw new Error(`form-spec: card '${res.card}' declares no identity`);
 	const key = res.model;
