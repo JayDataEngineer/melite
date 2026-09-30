@@ -76,7 +76,7 @@ export interface RegistryStage {
 }
 
 /** The compile-time initial kinds (flow.initial_validators). */
-export type RegistryInitialKind = "photo" | "glb" | "bake_params";
+export type RegistryInitialKind = "photo" | "glb" | "bake_params" | "text";
 
 /** One headless-tool overlay (FlowToolOverlay: tool param -> the
  *  stage doc path it stamps, with the value choices map). */
@@ -115,6 +115,13 @@ export interface RegistryFlow {
   readonly description: string;
   readonly stages: readonly RegistryStage[];
   readonly initialValidators: Record<string, RegistryInitialKind>;
+  /** Initial names this flow cannot run without. An OPTIONAL initial
+   *  rides absent (the $channel/branch arms own it); a REQUIRED one
+   *  refuses at the door, before a run registers, so a verb whose
+   *  graph needs the value (the fit verb's bone — the vendor's row
+   *  gate refuses an empty one) never reaches the engine to fail
+   *  there. */
+  readonly requiredInitials?: readonly string[];
   readonly tool: RegistryTool | null;
   readonly skillRefs: readonly string[];
 }
@@ -501,8 +508,37 @@ export function registryInitialsError(
       }
       continue;
     }
+    // A TEXT initial is a bare name, not a file: a bone, a rig slot.
+    // The engine's own gate is on emptiness; the door's is on shape,
+    // so a path can never arrive where a name belongs.
+    if (kind === "text") {
+      const text: string = typeof value === "string" ? value : "";
+      if (text.trim() === "") {
+        return "initial " + JSON.stringify(key) + " must be a non-empty name";
+      }
+      if (text.includes("..") || text.includes("/") || text.includes("\\")) {
+        return "initial " + JSON.stringify(key) +
+          " is a bare name (no path separators, no traversal)";
+      }
+      continue;
+    }
     const err: string | null = checkFileInitial(key, kind, value, roots);
     if (err !== null) return err;
+  }
+  // A REQUIRED INITIAL refuses here, before a run registers (an
+  // optional one rides absent — the $channel/branch arms own it), and
+  // AFTER the present-value checks so a request carrying a bad value
+  // hears about THAT value first. The fit verb's bone is the case: the
+  // vendor's row gate refuses an empty one, so a request that omits it
+  // must learn that at the door, not sixty seconds into a render.
+  for (const key of flow.requiredInitials ?? []) {
+    const value: unknown = body[key];
+    if (value === undefined || value === null || value === "") {
+      return "initial " + JSON.stringify(key) +
+        " is REQUIRED by the " + JSON.stringify(flow.id) + " flow — " +
+        "this verb cannot run without it (name it in the request; the " +
+        "door refuses here rather than the engine refusing later)";
+    }
   }
   return null;
 }

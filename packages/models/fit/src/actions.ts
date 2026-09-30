@@ -25,6 +25,7 @@ export function parseFitFacts(_raw: LaneInputsFacts): Record<string, never> {
 type SeatParams = {
   readonly body: string;
   readonly prop: string;
+  readonly bone: string;
 };
 
 /** THE FIT ROW — the FitRow node's own declared defaults, verbatim
@@ -43,7 +44,6 @@ type SeatParams = {
  *  name of the missing seam — the lowest level that can answer. */
 export const FIT_ROW = {
   model_name: "prop",
-  bone: "",
   align: "socket",
   position: "0,0,0",
   rotation: "0,0,0",
@@ -71,18 +71,26 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   // can declare, and the merged worker refuses it by name). The row's
   // twelve fields are the FitRow node's own declared defaults, named
   // here once so the declaration owns the verb's vocabulary.
-  params: [{ name: "body" }, { name: "prop" }],
+  params: [{ name: "body" }, { name: "prop" }, { name: "bone" }],
   facts: parseFitFacts,
   build({ p, g }): OutputHandle {
-    if (FIT_ROW.bone === "") {
+    // THE BONE IS THE CALLER'S, NOT A CONSTANT (the verb's other
+    // fields are the node's declared defaults; a bone names a bone
+    // in the body being fitted, which no constant can know). The
+    // vendor's row gate refuses an empty one before it picks a mode
+    // (fit_surgery.py:66-69), and the flow's initial gate refuses
+    // an absent or empty initial before a run registers — so the
+    // engine's own refusal is unreachable, and a caller that cannot
+    // name a bone never reaches it.
+    const bone: unknown = p.bone;
+    if (typeof bone !== "string" || bone.trim() === "") {
       throw new Error(
         "fit.seat: the fit verb needs a BONE (which bone carries the prop) — the " +
-        "vendor's FitRow refuses an empty one, and no flow initial can carry a " +
-        "bone name yet (the door admits photo/glb/bake_params only). Seat a text " +
-        "initial kind, or name the bone through the rig door.",
+        "vendor's FitRow refuses an empty one. The door's initial gate refuses an " +
+        "absent or empty bone before a run registers.",
       );
     }
-    const row = g.node("FitRow", { ...FIT_ROW });
+    const row = g.node("FitRow", { ...FIT_ROW, bone: (bone as string).trim() });
     const seatNode = g.node("FitProp", {
       body_glb_path: p.body,
       prop_glb_path: p.prop,

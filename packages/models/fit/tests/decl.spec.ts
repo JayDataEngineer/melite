@@ -40,19 +40,49 @@ describe("the fit model plugin (the whole model, one package)", () => {
     assert.deepEqual(seat.outputs, [{ name: "seat", kind: "mesh" }]);
   });
 
-  // THE VERB REFUSES WITHOUT A BONE, at compose, naming the missing
-  // seam — which is why there is no composed-graph case here. The
-  // vendor's FitRow gate refuses an empty Bone before it picks a mode
-  // (fit_surgery.py:66-68), a bone name belongs to the body being
-  // fitted rather than to a constant, and no flow initial can carry
-  // one (the door admits photo/glb/bake_params only). So the honest
-  // shape of this verb today is a refusal, not a graph.
-  it("the seat refuses at compose, naming the seam a bone needs", () => {
+  // THE BONE IS THE CALLER'S, and it rides the graph: a named bone
+  // reaches FitRow verbatim, the rest of the row is the node's own
+  // declared defaults, and the proof sheet is rendered but NOT
+  // returned (the declared output is the seated mesh).
+  it("the seat composes the meld graph with the caller's bone", () => {
+    const g = new GraphBuilder();
+    const out = seat.build({
+      p: { body: "$body", prop: "$prop", bone: "hand_r" },
+      facts: seat.facts({}),
+      model: {
+        id: "fit",
+        card: "",
+        family: "fit",
+        defaults: {},
+        lane_inputs: {},
+        variants: [],
+        variant_groups: [],
+        outputs: [],
+        mods: [],
+      },
+      g,
+      runId: "",
+    } as never);
+    // THE HANDLE IS THE ARTIFACT (the skin verb's shape): the seated
+    // mesh, not the proof renderer.
+    assert.equal(out.nodeId, "FitProp.0");
+    const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+    assert.equal(graph["FitRow.0"]?.inputs["bone"], "hand_r", "the caller's bone rides verbatim");
+    assert.equal(graph["FitRow.0"]?.inputs["align"], "socket", "the rest is the node's default row");
+    assert.ok("RayRenderGLBViews.0" in graph, "the proof sheet is rendered in-graph");
+    assert.deepEqual(graph["FitProp.0"]?.inputs["prop_glb_path"], "$prop");
+  });
+
+  // An empty or absent bone refuses at COMPOSE, by name — the
+  // vendor's row gate refuses an empty Bone before it picks a mode
+  // (fit_surgery.py:66-69), so the door's graph must never carry
+  // one to the engine.
+  it("an empty bone refuses at compose rather than reaching the engine", () => {
     const g = new GraphBuilder();
     assert.throws(
       () =>
         seat.build({
-          p: { body: "$body", prop: "$prop" },
+          p: { body: "$body", prop: "$prop", bone: "  " },
           facts: seat.facts({}),
           model: {
             id: "fit",
@@ -69,27 +99,6 @@ describe("the fit model plugin (the whole model, one package)", () => {
           runId: "",
         } as never),
       /needs a BONE/,
-    );
-    assert.throws(
-      () =>
-        seat.build({
-          p: { body: "$body", prop: "$prop" },
-          facts: seat.facts({}),
-          model: {
-            id: "fit",
-            card: "",
-            family: "fit",
-            defaults: {},
-            lane_inputs: {},
-            variants: [],
-            variant_groups: [],
-            outputs: [],
-            mods: [],
-          },
-          g,
-          runId: "",
-        } as never),
-      /the door admits photo\/glb\/bake_params only/,
     );
   });
 });

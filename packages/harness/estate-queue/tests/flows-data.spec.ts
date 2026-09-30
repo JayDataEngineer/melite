@@ -302,7 +302,40 @@ describe("registryInitialsError", () => {
         /malformed artifact URL/,
       );
       const fit = getRegistryFlow("fit-seat")!;
-      assert.match(registryInitialsError(fit, { body: "b.txt" }, r)!, /not a stageable mesh/);
+      // the bone is a REQUIRED initial, so the body cases carry one:
+      // an absent bone refuses first, by name.
+      // the present-value checks run FIRST, so a bad body hears
+      // about the body; the required check answers the absent bone
+      assert.match(
+        registryInitialsError(fit, { body: "b.txt" }, r)!,
+        /not a stageable mesh/,
+      );
+      writeFileSync(join(r.repoRoot, "b.glb"), "glb");
+      writeFileSync(join(r.repoRoot, "p.glb"), "glb");
+      assert.match(
+        registryInitialsError(fit, { body: "b.glb", prop: "p.glb" }, r)!,
+        /"bone" is REQUIRED by the "fit-seat" flow/,
+      );
+      assert.match(
+        registryInitialsError(fit, { body: "b.txt", bone: "hand_r" }, r)!,
+        /not a stageable mesh/,
+      );
+      // a text initial is a BARE NAME: a path never arrives where a
+      // name belongs, and an empty one refuses.
+      // an EMPTY bone is present-but-empty: the text-kind arm speaks
+      // first, with the more specific voice.
+      assert.match(
+        registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: "" }, r)!,
+        /"bone" must be a non-empty name/,
+      );
+      // (the gate walks keys in declaration order, so the two files
+      // are real on disk before the bone's own shape is judged)
+      writeFileSync(join(r.repoRoot, "b.glb"), "glb");
+      writeFileSync(join(r.repoRoot, "p.glb"), "glb");
+      assert.match(
+        registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: "a/b" }, r)!,
+        /"bone" is a bare name/,
+      );
     } finally {
       dropRoots();
     }

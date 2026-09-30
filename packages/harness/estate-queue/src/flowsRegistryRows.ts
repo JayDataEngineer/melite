@@ -287,9 +287,18 @@ export const CHARACTER: RegistryFlow = {
     linkedStage("fit-seat", "seat", "seat", {
       body: fromStage("coat", "skin"),
       prop: fromStage("garment", "garment"),
+      bone: initial("bone"),
     }),
   ],
-  initialValidators: { starter_image: "photo", garment_image_1: "photo" },
+  initialValidators: {
+    starter_image: "photo",
+    garment_image_1: "photo",
+    // the fit verb's bone, carried as a text initial — this flow
+    // composes that verb, so the seat's required initial rides here
+    // too.
+    bone: "text",
+  },
+  requiredInitials: ["bone"],
   tool: null,
   skillRefs: [],
 };
@@ -305,16 +314,13 @@ export const FIT_SEAT: RegistryFlow = {
       id: "seat",
       engine: CARD_PLANE_ENGINE,
       description: "FitRow (knobs -> meld row) -> FitProp (graft) -> proof views",
-      // THE STAGE'S INPUTS ARE ITS FILES: the fit row's twelve knobs
-      // are the verb's own vocabulary inside the action (stroke-89),
-      // never request initials — the flow admits glb/photo/bake_params
-      // only, so a knob input here could never be gate-validated.
-      inputs: { body: initial("body"), prop: initial("prop") },
-      // THE EXPECTED CHANNELS ARE ITS FILES: the fit row's twelve
-      // knobs are the verb's own vocabulary inside the action, so
-      // they are neither wired inputs nor expected channels here —
-      // a typed-but-unwired channel is the door's own refusal.
-      expected: { body: "mesh", prop: "mesh" },
+      // THE TWO FILES AND THE BONE (the rest of the fit row is the
+      // verb's own vocabulary inside the action — stroke-89's law).
+      // The bone is a BARE NAME, so it rides the text initial kind,
+      // and it is REQUIRED: the vendor's row gate refuses an empty
+      // one, so a request without it must learn that at the door.
+      inputs: { body: initial("body"), prop: initial("prop"), bone: initial("bone") },
+      expected: { body: "mesh", prop: "mesh", bone: "text" },
       // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
       // vocabulary, stroke 4): the fit-seat verb's nodes compose
       // from the fit family's DECL — every knob rides verbatim, the
@@ -324,17 +330,15 @@ export const FIT_SEAT: RegistryFlow = {
       // the sanctioned seam, not a revival).
       family: "fit",
       action: "seat",
-      // THE TWO FILES ARE THE REQUEST (body + prop, both gate-checked
-      // as glb below); THE FIT ROW IS THE VERB'S (stroke-89's law,
-      // and the door's own type: initialValidators admit
-      // photo/glb/bake_params only, so a stage spelling `$fit_ratio`
-      // names a key no flow can declare — the merged worker refused it
-      // by name). The row's twelve fields are the FitRow node's
-      // declared defaults, fixed inside the action.
-      params: { body: "$body", prop: "$prop" },
+      // THE TWO FILES AND THE BONE ARE THE REQUEST (the door's own
+      // type now admits a text initial, so a bone rides like any
+      // other value); THE FIT ROW IS THE VERB'S (stroke-89's law —
+      // the merged worker refused an unlinkable `$fit_ratio`).
+      params: { body: "$body", prop: "$prop", bone: "$bone" },
     }),
   ],
-  initialValidators: { body: "glb", prop: "glb" },
+  initialValidators: { body: "glb", prop: "glb", bone: "text" },
+  requiredInitials: ["bone"],
   tool: null,
   skillRefs: [],
 };

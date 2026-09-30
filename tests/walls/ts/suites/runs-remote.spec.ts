@@ -719,11 +719,12 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     ok?: boolean;
   };
   assert.equal(skinApply["ok"], true, "a family verb expands live through the same arm");
-  // the fit verb's own refusal, at compose (the bone seam)
-  await assert.rejects(
-    () => runs.validate({ flow: "fit-seat" }, sig),
-    (e: unknown) => /needs a BONE/.test(remoteErrorOf(e)?.message ?? String(e)),
-  );
+  // the fit verb composes when its bone rides (the seam is the
+  // flow's required initial, not a kill switch in the action)
+  const fitSeat = (await runs.validate({ flow: "fit-seat", bone: "hand_r" }, sig)) as {
+    ok?: boolean;
+  };
+  assert.equal(fitSeat["ok"], true);
   // 3. start on a single-stage flow: expansion rides the inline
   //    pipeline and the run REGISTERS (the pin sweep is the
   //    validate gate; start's engine seam is the pump) — the run
@@ -733,31 +734,24 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     { flow: "skin-apply", test: true, draft_id: "d_ok" }, sig,
   )) as Record<string, unknown>;
   assert.match(String(started["run_id"]), /^run-/);
-  // 4. a MULTI-stage registry flow refuses with the FIRST gate that
-  //    names an unported shape, at the lowest level that can answer.
-  //    character (7 stages incl. the z-image builder graph) used to
-  //    reach the skip_when preview scope; it now stops one layer
-  //    earlier, at the fit verb's compose — a bone belongs to the
-  //    body being fitted and no flow initial can carry one (ROADMAP
-  //    44e). The door never widens quietly: it names the seam.
+  // 4. a MULTI-stage registry flow (character — 7 stages incl. the
+  //    z-image builder graph) serves at validate: the real pin
+  //    carries its classes, so the multi-stage compile is ok. The
+  //    door's own required initial rides the request — a bone the
+  //    verb needs, carried as a text initial.
+  const character = (await runs.validate({ flow: "character", bone: "hand_r" }, sig)) as {
+    ok?: boolean;
+  };
+  assert.equal(character["ok"], true);
   await assert.rejects(
-    runs.validate({ flow: "character" }, sig),
+    runs.start({ flow: "character", test: true, draft_id: "d_ok", bone: "hand_r" }, sig),
     (e: unknown) => {
       const re = remoteErrorOf(e);
       assert.ok(re, "a RemoteError");
-      assert.match(re.message, /needs a BONE/);
-      return true;
-    },
-  );
-  // a flow that DOES compose expands live through the same door
-  const skin = (await runs.validate({ flow: "skin-apply" }, sig)) as { ok?: boolean };
-  assert.equal(skin["ok"], true, "a composable flow expands through the shim");
-  await assert.rejects(
-    runs.start({ flow: "character", test: true, draft_id: "d_ok" }, sig),
-    (e: unknown) => {
-      const re = remoteErrorOf(e);
-      assert.ok(re, "a RemoteError");
-      assert.match(re.message, /needs a BONE/);
+      // the FIRST gate that names an unported shape refuses — for
+      // character that is its skip_when branches (the inline
+      // pipeline's own voice, never widened quietly).
+      assert.match(re.message, /skip_when is unported/);
       return true;
     },
   );
@@ -815,7 +809,14 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     () => runs.validate(blob, sig),
     (e: Error) => /browser-local/.test(e.message),
   );
-  // 6. absent initials ride PAST the initial gate (the $channel
+  // 5b. a REQUIRED initial refuses AT THE DOOR, by name — the fit
+  //     verb's bone: the vendor refuses an empty one, so a request
+  //     without it learns that here, not at the engine.
+  await assert.rejects(
+    () => runs.validate({ flow: "fit-seat" }, sig),
+    (e: unknown) => /"bone" is REQUIRED by the "fit-seat" flow/.test(remoteErrorOf(e)?.message ?? String(e)),
+  );
+  // 6. absent OPTIONAL initials ride PAST the initial gate (the $channel
   //    arms own them) — skin-apply then COMPILES through the wired
   //    registry's real pin, which PROVES the gate did not fire on
   //    absent initials (the ok, not a refusal, is the proof).

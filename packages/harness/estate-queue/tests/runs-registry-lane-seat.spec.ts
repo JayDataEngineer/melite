@@ -77,16 +77,13 @@ describe("the runs door through the lane's models seat", () => {
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "character" }, new AbortController().signal),
     );
-    // The COMPOSE refusal comes first, and it is the fit verb's own
-    // voice: seat composes before the compiler runs, and the verb
-    // needs a bone (no flow initial can carry one yet). The
-    // skip_when preview scope the fake-seat pin holds is a LATER,
-    // deeper gate — this flow cannot reach it while its fit stage
-    // refuses, which is the point: the lowest level that can answer
-    // answers.
-    assert.ok(err instanceof RemoteError, "the compose refusal, never a crash");
+    // The door's REQUIRED initial answers first: character composes
+    // the fit verb, which needs a bone, and the request carries none.
+    // The skip_when preview scope this flow reaches with a bone is a
+    // LATER gate — the lowest level that can answer answers first.
+    assert.ok(err instanceof RemoteError, "the required-initial refusal, never a crash");
     assert.equal((err as RemoteError).code, "runs/invalid-request");
-    assert.match((err as RemoteError).message, /needs a BONE/);
+    assert.match((err as RemoteError).message, /"bone" is REQUIRED/);
     await ctx.fiber.dispose();
   });
 
@@ -95,7 +92,7 @@ describe("the runs door through the lane's models seat", () => {
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
     assert.equal(seat.allDecls().length, 0);
     const err = await remote(() =>
-      svc.start({ draft_id: "d1", test: false, flow: "character" }, new AbortController().signal),
+      svc.start({ draft_id: "d1", test: false, flow: "character", bone: "hand_r" }, new AbortController().signal),
     );
     assert.ok(err instanceof RemoteError);
     assert.equal((err as RemoteError).code, "runs/invalid-request");
