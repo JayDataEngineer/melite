@@ -9,6 +9,7 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { buildSkillIndex, hSkillRead } from "./skillPlane.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
 // ROLE (cookbook adding-a-package role table): Directory: index/read over skill docs. Key "meliteSkills" —
 // renamed from "skills" (agent-trace audit, 2026-09-13): DSH core's own
@@ -36,7 +37,15 @@ export class SkillDirectoryService extends Service {
   read(sid: string, signal: AbortSignal): Record<string, unknown> {
     signal.throwIfAborted();
     const stateRoot: string = this.ctx.queue.stateRoot;
-    const answer = hSkillRead(resolveRepoRoot(), stateRoot, sid);
+    // The flow skill bodies compose from the LANE's seat (the
+    // lane-seat law): the same read the runs doors thread, so the
+    // served body and the composed graph never diverge.
+    const answer = hSkillRead(
+      resolveRepoRoot(),
+      stateRoot,
+      sid,
+      this.ctx.get("models") as FamilyModelsSeat | undefined,
+    );
     if (answer.status === 200) return answer.payload as Record<string, unknown>;
     const err = answer.payload as { error?: unknown };
     throw new Error(

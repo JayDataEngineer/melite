@@ -16,12 +16,15 @@
 // family composition (live proof: 3088 boots that printed nothing
 // for minutes, zero pending I/O — a promise that never settles;
 // cordis doctrine: composition happens in apply, never at import).
-// The boot is LAZY now: `cascadeInit` (still exported, still
-// once-per-process) is awaited where models are USED — the
-// estate's cardsRegistry applies `await bootModels()` itself
-// (cardsRegistry.ts, the composition seat), and the sync readers
-// below throw modelsService()'s named refusal if called before
-// any boot. Importing this module is CHEAP and can never hang.
+// Nothing at import WAITS on the boot: `cascadeInit` (line 37)
+// FIRES bootModels() eagerly but unawaited — the promise floats,
+// so importing this module can never hang. bootModels is
+// once-per-process memoized; the estate's cardsRegistry awaits the
+// SAME boot (cardsRegistry.ts, the composition seat), and the
+// sync singleton readers below (the formSchema cap, manageRegistry,
+// loadRegistry's fallback reads) depend on the import-side fire
+// having settled. The lane seat (modelsFamiliesProvider) is a
+// SEPARATE table in the estate's context — see service.ts.
 
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";

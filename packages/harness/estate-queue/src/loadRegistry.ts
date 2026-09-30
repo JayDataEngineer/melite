@@ -9,6 +9,7 @@ import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 import { modelsService, resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadCard, loadFlow } from "./loadPlane.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
 // ROLE (cookbook adding-a-package role table): Resolver: computes/locates one named answer (the bundle) without owning it. Key "load" unchanged.
 export class LoadResolverService extends Service {
@@ -32,7 +33,18 @@ export class LoadResolverService extends Service {
     }
     const repo = resolveRepoRoot();
     if (inferenceType === "flow") {
-      return { bundle: loadFlow(repo, name) };
+      // The flow bundle composes from the LANES seat (the lane-seat
+      // law, audit finding 4): the same read the runs doors thread, so
+      // the disclosed body and the composed graph never diverge. ctx.get
+      // is the injector API (an unmounted seat reads undefined and the
+      // plane degrades to the booted singleton).
+      return {
+        bundle: loadFlow(
+          repo,
+          name,
+          this.ctx.get("models") as FamilyModelsSeat | undefined,
+        ),
+      };
     }
     return { bundle: loadCard(repo, this.ctx.cardRegistry, modelsService(), name) };
   }

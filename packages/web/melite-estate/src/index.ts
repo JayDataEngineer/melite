@@ -60,6 +60,7 @@ import { craftEngineAutoRoute } from "@melite/engine-craft";
 // serves — one storage, a new serving path).
 import { agentEngine } from "@melite/engine-agent";
 import { findSkill, disclosureRoot } from "@melite/estate-queue";
+import type { FamilyModelsSeat } from "@melite/estate-queue";
 import { readFile } from "node:fs/promises";
 // The drafts service only — the storage PROVIDERS (hub, json
 // backend, domain form) belong to the composition site: dsh-base
@@ -315,7 +316,14 @@ const rows: readonly Plugin[] = [
       // refuses the skill LOUD at stage start.
       const skills = {
         read: async (id: string): Promise<string | null> => {
-          const found = findSkill(disclosureRoot(), id);
+          // The lane-seat law: the spawn reader composes flow bodies
+          // from the SAME seat the runs doors thread (ctx.get — the
+          // injector API; unmounted reads degrade to the singleton).
+          const found = findSkill(
+            disclosureRoot(),
+            id,
+            ctx.get("models") as FamilyModelsSeat | undefined,
+          );
           if (found === null) return null;
           if (found.bodyText !== null) return found.bodyText;
           try {
@@ -381,8 +389,20 @@ export interface Config {
   repoRoot?: string;
 }
 
-export function apply(ctx: Context, config: Config = {}): void {
+export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   for (const row of rows) {
+    // THE MODELS ROW IS AWAITED: a family that refuses at mount
+    // would otherwise land in cordis's logger alone — the estate
+    // boot continues, the seat unregisters, and every door
+    // silently degrades to the booted singleton. The await
+    // rethrows the provider's refusal here: the estate's own
+    // fiber goes inactive and the boot fails LOUD (the runbook's
+    // missing-credential recovery class). No ordering weight: no
+    // row below reads the seat at apply time.
+    if (row === modelsFamiliesProvider) {
+      await ctx.plugin(row);
+      continue;
+    }
     // the queue row receives the pin (its QueueConfig.repoRoot)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot });

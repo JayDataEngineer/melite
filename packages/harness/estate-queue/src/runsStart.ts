@@ -443,6 +443,13 @@ export function registerCompiledRun(args: {
      *  stamped and pipeline still rides the door. */
     cardId?: string;
     requestBody: Record<string, unknown>;
+    /** The flow arm's request initials (the start body's values for
+     *  the flow's declared initial validators, extracted after the
+     *  compile-time gate passed): threaded to the engine merge so
+     *  `$spell` params resolve. Absent on the card/replay arms —
+     *  the run reads none, the same degrade a flow without
+     *  declared initials rides. */
+    initials?: Record<string, EngineJson>;
     /** The bench doc read at submit (stroke 45d) — the FULL workflow
      *  the run was born from (all stages + intent), stamped verbatim
      *  so the wand restores the whole flow, not just the ran card. */
@@ -515,6 +522,7 @@ export function registerCompiledRun(args: {
     pipeline: "flow_inline",
     graphRows,
     outputNodes: compiled.stages.map((st: CompiledStage): Record<string, EngineJson> => ({ ...st.outputNodes })),
+    initials: { ...door.initials },
   };
   run.inputNames = Object.fromEntries(
     compiled.stages.map((st: CompiledStage): [string, Record<string, string>] => [st.id, { ...st.inputNames }]),

@@ -704,8 +704,11 @@ export class ModelsService extends Service {
 
 /** The provider plugin (fiber-owned): owns the ModelsService
  *  lifetime. No prime step (rows load lazily per repo root).
- *  Manifest row engine-model-catalog rides BEFORE every consumer
- *  (the manage door via gateway-bridges). Loadable entry:
+ *  Mounts the catalog SERVICE alone — zero family plugins, zero
+ *  registered families. Lanes that serve family flows mount
+ *  modelsFamiliesProvider instead (the estate does); this bare
+ *  form suits seats that only read the registry tables.
+ *  Loadable entry:
  *  packages/engines/comfyui-cordis/src/entries/catalog-registry.ts. */
 export const modelsProvider: Plugin = {
   name: "engine-model-catalog",
@@ -730,12 +733,11 @@ export const modelsFamiliesProvider: Plugin = {
     await ctx.plugin(modelsProvider);
     const { FAMILY_PLUGINS } = await import("./families/index.ts");
     for (const family of FAMILY_PLUGINS) {
+      // await settles registration (registry.ts's fiber.await runs
+      // the apply to completion): after this loop every family's
+      // effect has run — no extra tick needed or sufficient.
       await ctx.plugin(family);
     }
-    // Service registration is immediate but start settles on a
-    // fiber tick — one tick, then every family's effect has run
-    // and the table is whole (the bootModels timing law).
-    await new Promise((r) => setTimeout(r, 0));
     // The injector read (the doors' own — property access on a
     // fiber ctx demands inject; ctx.get resolves registered
     // services without it).

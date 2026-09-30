@@ -43,4 +43,20 @@ describe("the families provider (the lanes' models seat)", () => {
     const seat = ctx.get("models") as unknown as { familyCount(): number };
     expect(seat.familyCount()).toBe(0);
   });
+
+  it("disposing the provider fiber unwinds the whole seat (the ownership chain, pinned)", async () => {
+    const ctx = new Context();
+    // A SEPARATE lane from LANES: this test disposes it awaitedly
+    // so the unwind assertion reads settled state, not a teardown
+    // racing the afterAll sweep.
+    await ctx.plugin(modelsFamiliesProvider);
+    const seat = ctx.get("models") as unknown as { familyCount(): number };
+    expect(seat.familyCount()).toBe(47);
+    await ctx.fiber.dispose();
+    // ctx.plugin children are parent-owned: the provider's fiber
+    // disposes recursively — the ModelsService registration and
+    // every family's effect unwound with it. A future refactor
+    // that breaks this chain leaves the lane a ghost seat.
+    expect(ctx.get("models")).toBeUndefined();
+  });
 });

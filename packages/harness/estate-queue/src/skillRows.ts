@@ -9,6 +9,7 @@ import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";
 import { expandRegistryFlow, getRegistryFlow, registryFlowNames, registrySkillBody } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
 /** One registry headless-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
@@ -69,7 +70,14 @@ interface FlowDecl {
  *  declaration (empty today — the frozen refs pointed at the
  *  retired flow.py rows and the retired enhance recipes, which
  *  resolve nowhere and would only skip-loud). */
-export function flowDecls(repo: string): FlowDecl[] {
+/** @param modelsSeat the context's models service when mounted — the
+ *  disclosure composes from the SAME seat the runs doors thread (the
+ *  lane-seat law: the served body and the composed graph must agree;
+ *  the booted singleton otherwise) */
+export function flowDecls(
+  repo: string,
+  modelsSeat?: FamilyModelsSeat | null,
+): FlowDecl[] {
   if (!isDir(join(repo, "flows"))) return [];
   const out: FlowDecl[] = [];
   for (const name of registryFlowNames()) {
@@ -82,7 +90,7 @@ export function flowDecls(repo: string): FlowDecl[] {
     // served body only when the declarations compose first.
     const expanded = composeFamilyStages(
       expandRegistryFlow(flow),
-      liveFamilyDecls(),
+      liveFamilyDecls(modelsSeat),
     );
     const stages: { readonly id: string; readonly engine: string }[] =
       expanded.stages.map((s) => ({ id: s.id, engine: s.engine }));
@@ -428,13 +436,18 @@ export interface FlowRow {
  *  declaration fails to expand is an authoring bug: LOUD, never a
  *  silent empty body. The family stages compose first (the doors'
  *  own order) so the body names the action's derived outputs. */
-export function registryBody(flowId: string): string | null {
+/** @param modelsSeat the context's models service when mounted (the
+ *  same seat-threading law as flowDecls) */
+export function registryBody(
+  flowId: string,
+  modelsSeat?: FamilyModelsSeat | null,
+): string | null {
   const decl = getRegistryFlow(flowId);
   /* v8 ignore next -- callers pass live declaration ids (flowDecls):
      the miss never fires (2026-09-12) */
   if (decl === undefined) return null;
   return registrySkillBody(
-    composeFamilyStages(expandRegistryFlow(decl), liveFamilyDecls()),
+    composeFamilyStages(expandRegistryFlow(decl), liveFamilyDecls(modelsSeat)),
   );
 }
 
@@ -444,9 +457,14 @@ export function registryBody(flowId: string): string | null {
  *  registry render (flowsData.ts — the flow.py authoring plane died
  *  2026-09-08; the deleted source is neither servable nor wanted,
  *  so the declaration renders instead). */
-export function flowRows(repo: string): FlowRow[] {
+/** @param modelsSeat the context's models service when mounted (the
+ *  same seat-threading law as flowDecls) */
+export function flowRows(
+  repo: string,
+  modelsSeat?: FamilyModelsSeat | null,
+): FlowRow[] {
   const out: FlowRow[] = [];
-  for (const decl of flowDecls(repo)) {
+  for (const decl of flowDecls(repo, modelsSeat)) {
     /* v8 ignore next -- flowDecls marks loadError null (the registry
        is code — declaration bugs throw LOUD instead): the skip never
        fires (2026-09-12) */
@@ -482,7 +500,7 @@ export function flowRows(repo: string): FlowRow[] {
       bodyPath: decl.hasSkillMd
         ? join(repo, "flows", decl.id, "SKILL.md")
         : null,
-      bodyText: decl.hasSkillMd ? null : registryBody(decl.id),
+      bodyText: decl.hasSkillMd ? null : registryBody(decl.id, modelsSeat),
     });
   }
   return out;

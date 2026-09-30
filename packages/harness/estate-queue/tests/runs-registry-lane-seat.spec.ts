@@ -9,15 +9,18 @@
 // and every family stage refused "registered: none".
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import modelsFamiliesProvider from "@melite/comfyui-cordis/catalog-registry";
 import { modelsProvider } from "@melite/comfyui-cordis/models-service";
+import { ComfyUIHostService } from "@melite/comfyui-cordis";
+import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
+import type { RunRecord } from "../src/runsTypes.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -96,6 +99,55 @@ describe("the runs door through the lane's models seat", () => {
       (err as RemoteError).message,
       /no such family in the models seat \(registered: none\)/,
     );
+    await ctx.fiber.dispose();
+  });
+
+  it("the engine merge receives the run's request initials (the census commission's catch, pinned)", async () => {
+    const { svc, ctx } = await laneSeat(modelsFamiliesProvider);
+    // The engine seat as a cordis-registered subclass (needComfyUI
+    // instanceof-gates the host service — a structural fake cannot
+    // cross; the override captures the initials the worker threads).
+    let seen: Record<string, EngineJson> | null = null;
+    class CaptureEngine extends ComfyUIHostService {
+      constructor(c: Context) {
+        super(c, {});
+      }
+      override executeFlow(
+        rows: MergeRow[],
+        runDir: string,
+        inputNames: Record<string, Record<string, string>>,
+        initials: Record<string, EngineJson>,
+      ): Promise<FlowResult> {
+        seen = initials;
+        return Promise.resolve({ stages: {}, promptId: "p" });
+      }
+    }
+    new CaptureEngine(ctx);
+    const photo: string = join(TMP, "photo.png");
+    writeFileSync(photo, "png");
+    const ans = await svc.start(
+      { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo },
+      new AbortController().signal,
+    );
+    const row = ((): RunRecord => ans as unknown as { run: RunRecord }).run;
+    for (let i = 0; i < 500; i++) {
+      const live = (svc as unknown as {
+        core: { runs: Map<string, RunRecord> };
+      }).core.runs.get(ans.run_id);
+      if (live !== undefined && live.status !== "queued" && live.status !== "running") break;
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    const live = (svc as unknown as {
+      core: { runs: Map<string, RunRecord> };
+    }).core.runs.get(ans.run_id) as RunRecord;
+    assert.equal(live.status, "completed", "settled: " + live.error);
+    // The pin: the start body's photo (gate-validated at the door)
+    // reaches the engine merge as a request initial — the worker
+    // used to submit {} here, refusing every $spell-carrying stage
+    // ("$photo names neither a FromStage-wired input nor a request
+    // initial") after the door had already blessed the value.
+    assert.deepEqual(seen, { photo });
+    void row;
     await ctx.fiber.dispose();
   });
 });

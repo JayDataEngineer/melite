@@ -17,6 +17,7 @@ import type { CardRegistryService } from "./cardsRegistry.ts";
 import { getRegistryFlow } from "./flowsData.ts";
 import { toolBaseRows } from "./toolProjection.ts";
 import { modelRows, cardRows, engineDirs, flowRows, wireSkill, findSkill } from "./skillPlane.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { laneFilesStatus } from "./cardsLanes.ts";
 
 /** A card id → its package dir. The cardPackages rows are package
@@ -317,9 +318,15 @@ export function flowLeafDocs(repo: string, flowName: string): Array<{ path: stri
 /** Resolve one skill ref (a card:/model:/flow: sid) to its tier-1
  *  line through the planes registry (the melite_skill_index truth).
  *  Dangling refs line null — visible drift, never a refusal. */
-export function skillLineForRef(repo: string, ref: string): Record<string, unknown> {
+/** @param modelsSeat the context's models service when mounted (the
+ *  same seat-threading law the runs doors ride) */
+export function skillLineForRef(
+  repo: string,
+  ref: string,
+  modelsSeat?: FamilyModelsSeat | null,
+): Record<string, unknown> {
   try {
-    const found = findSkill(repo, ref);
+    const found = findSkill(repo, ref, modelsSeat);
     if (found !== null) return { ref, line: wireSkill(found.row) };
   } catch {
     // registry walk threw — line null below
@@ -422,7 +429,14 @@ export function loadCard(
  *  object validate/start enforce; null when the row declares
  *  none) + slim stages + the author's skill refs (verbatim) with
  *  their tier-1 lines. Throws LOUD on unknown flows. */
-export function loadFlow(repo: string, flowName: string): Record<string, unknown> {
+/** @param modelsSeat the context's models service when mounted — the
+ *  flow's skill lines resolve through the seat the runs doors
+ *  thread (the lane-seat law); the booted singleton otherwise */
+export function loadFlow(
+  repo: string,
+  flowName: string,
+  modelsSeat?: FamilyModelsSeat | null,
+): Record<string, unknown> {
   const row = getRegistryFlow(flowName);
   if (row === undefined) throw new Error(`disclose: unknown flow '${flowName}'`);
   const stages = row.stages.map((s): Record<string, unknown> => ({
@@ -472,7 +486,7 @@ export function loadFlow(repo: string, flowName: string): Record<string, unknown
   }
   const refs: Array<Record<string, unknown>> = [];
   for (const ref of row.skillRefs) {
-    const r = skillLineForRef(repo, ref);
+    const r = skillLineForRef(repo, ref, modelsSeat);
     refs.push(r);
     const line = r["line"] as Record<string, unknown> | null;
     /* v8 ignore next -- every registry skillRef resolves (the walk

@@ -16,6 +16,7 @@ import type { Context, Plugin } from "@deepseek-ai/cordis";
 import { ComfyUIWiringService } from "../wiringWall.ts";
 import type {
   EngineExecutor,
+  EngineParamValue,
   EngineRunOptions,
   EngineRunOutcome,
   EngineStageRow,
@@ -61,6 +62,7 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
       runDir: string,
       inputNames: Readonly<Record<string, Readonly<Record<string, string>>>>,
       options: EngineRunOptions,
+      initials: Readonly<Record<string, EngineParamValue>> = {},
     ): Promise<EngineRunOutcome> {
       const mergeRows: MergeRow[] = toMergeRows(rows);
       const nodeCount: number = mergeRows.reduce(
@@ -98,7 +100,13 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
         mergeRows,
         runDir,
         inputNames as Record<string, Record<string, string>>,
-        {},
+        // THE REQUEST INITIALS (the census commission's catch,
+        // 2026-10-10): the run's $spells resolve against these at
+        // planMerge — an empty record refused every initial-carrying
+        // census flow ("$photo names neither a FromStage-wired input
+        // nor a request initial") while the door's gate had already
+        // validated the values.
+        initials as Record<string, EngineJson>,
         {
           shouldStop: options.shouldStop,
           report: options.report,

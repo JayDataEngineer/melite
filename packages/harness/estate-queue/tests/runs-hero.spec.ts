@@ -50,6 +50,7 @@ const runWithCard = (cardId: string): RunRecord => ({
   stopFlag: false,
   params: [{ workflow: { "1": { class_type: "X", inputs: {} } } }],
   outputNodes: [{}],
+  initials: {},
   createdAt: 1,
   pipeline: "flow_inline",
   graphRows: [],
@@ -283,6 +284,21 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
     assert.equal(calls.n, 1, "the seat executor submitted — the envelope is not a graph, its 'workflow' key is not a node");
     assert.equal(run.status, "completed", "a card that CAN run, runs");
     assert.equal(run.error, "", "no phantom-node refusal");
+  });
+
+  it("a run row from before the initials field submits the empty record (the resurrected-row compat arm)", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const { ctx, calls } = await seatCtx();
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["X"]), new Map());
+    const run = runWithCard("flow_inline");
+    // rows written before RunRecord carried initials (the resurrect
+    // sweep's backfill leaves the key absent): the worker must
+    // submit {} — never dereference-and-crash, never skip the run.
+    delete (run as Partial<RunRecord>).initials;
+    await runOne(run, ctx, () => undefined);
+    assert.equal(calls.n, 1, "the seat executor submitted with the empty initials record");
+    assert.equal(run.status, "completed");
   });
 
   it("the seat path's refusal names the UNDECLARED CLASS, not the envelope's own keys — and never reaches the executor", async () => {

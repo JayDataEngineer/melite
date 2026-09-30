@@ -67,13 +67,20 @@ export interface EngineRunOptions {
  * splice + merge into ONE prompt); an MCP executor executes
  * per-stage wire commands. `inputNames` is the run's stage-input
  * wiring (stage-local name -> upstream artifact ref), identical in
- * shape to the merged path's. */
+ * shape to the merged path's. `initials` is the run's request
+ * initials — the flow's declared initial values the start body
+ * carried, gate-validated at the door — the values a stage's
+ * `$spell` params resolve against at merge; an engine whose param
+ * dialect has no `$spells` ignores it. Optional so existing
+ * shorter-signature executors stay assignable (absent = no
+ * initials to resolve). */
 export interface EngineExecutor {
   executeStages(
     rows: readonly EngineStageRow[],
     runDir: string,
     inputNames: Readonly<Record<string, Readonly<Record<string, string>>>>,
     options: EngineRunOptions,
+    initials?: Readonly<Record<string, EngineParamValue>>,
   ): Promise<EngineRunOutcome>;
 }
 

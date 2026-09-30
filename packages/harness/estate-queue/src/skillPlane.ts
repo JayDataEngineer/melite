@@ -22,6 +22,7 @@ import { DIR_ID_ALIASES, disclosureRoot, stem } from "./skillFs.ts";
 import { benchPicksSync } from "./bench.ts";
 import { gateSkill } from "./skillFrontmatter.ts";
 import { projectToolProperties, flowDecls, readDoc, spawnRows, engineDirs, modelRows, cardRows, registryBody, flowRows } from "./skillRows.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 // the extracted planes re-export through the skill plane's door
 export { disclosureRoot } from "./skillFs.ts";
 export { engineDirs, modelRows, cardRows, flowRows } from "./skillRows.ts";
@@ -260,11 +261,15 @@ interface AgentBlock {
 /** Skill lookup across flow + model + card rows
  *  (lane_disclosure.melite_skill_read 844-863). Flow rows may carry the
  *  rendered registry text (bodyText) instead of a file path. */
+/** @param modelsSeat the context's models service when mounted — the
+ *  flow rows compose from the seat the runs doors thread (the
+ *  lane-seat law); the booted singleton otherwise */
 export function findSkill(
   repo: string,
   sid: string,
+  modelsSeat?: FamilyModelsSeat | null,
 ): { row: SkillRow; path: string | null; bodyText: string | null } | null {
-  for (const fr of flowRows(repo)) {
+  for (const fr of flowRows(repo, modelsSeat)) {
     if (fr.row.id === sid) {
       return { row: fr.row, path: fr.bodyPath, bodyText: fr.bodyText };
     }
@@ -284,14 +289,17 @@ export function findSkill(
 /** GET /v1/skills/*: flow rows first, then model+card rows;
  *  success ledgers skill.read (compact envelope — queue.ts
  *  appendLedger). */
+/** @param modelsSeat the context's models service when mounted (the
+ *  same seat-threading law as findSkill) */
 export function hSkillRead(
   repo: string,
   stateRoot: string,
   sid: string,
+  modelsSeat?: FamilyModelsSeat | null,
 ): { status: number; payload: unknown } {
   try {
     const found: { row: SkillRow; path: string | null; bodyText: string | null } | null =
-      findSkill(repo, sid);
+      findSkill(repo, sid, modelsSeat);
     if (found === null) {
       return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
     }

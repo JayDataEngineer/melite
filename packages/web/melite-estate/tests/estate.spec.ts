@@ -105,7 +105,9 @@ afterEach(() => {
   delete process.env['MELITE_AGENT_ROUTE']
 })
 
-function mount(config?: { repoRoot?: string }): Ctx {
+// apply is async (the models row is awaited so a family refusal
+// fails the estate boot loud): mount awaits it the way cordis does.
+async function mount(config?: { repoRoot?: string }): Promise<Ctx> {
   const ctx: Ctx = {
     plugins: [],
     plugin(row, cfg) {
@@ -116,7 +118,7 @@ function mount(config?: { repoRoot?: string }): Ctx {
     effect: (fn: () => unknown) => fn(),
     root: { on: () => () => {} },
   }
-  apply(ctx as never, config as never)
+  await apply(ctx as never, config as never)
   return ctx
 }
 
@@ -128,14 +130,14 @@ describe('the bundle face', () => {
 })
 
 describe('dispatch — mount order is load order', () => {
-  it('seats the engines contract first', () => {
-    const ctx = mount({ repoRoot: '/tmp/pin' })
+  it('seats the engines contract first', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' })
     expect(ctx.plugins.length).toBeGreaterThan(5)
     expect(ctx.plugins[0]?.name).toBe('engine-contract')
   })
 
-  it('pins the queue row with repoRoot and passes row configs through verbatim', () => {
-    const ctx = mount({ repoRoot: '/tmp/pin' })
+  it('pins the queue row with repoRoot and passes row configs through verbatim', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' })
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
     expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin' })
     const blender = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
@@ -148,8 +150,8 @@ describe('dispatch — mount order is load order', () => {
      expect(mcpRow?.cfg).toEqual({ engines: ['mcp:blender'] })
   })
 
-  it('applies bare rows naked and defaults the config face', () => {
-    const ctx = mount()
+  it('applies bare rows naked and defaults the config face', async () => {
+    const ctx = await mount()
     const craft = ctx.plugins.find((p) => p.name === 'melite-engine-craft-row')
     expect(craft?.cfg).toBe(undefined)
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
@@ -159,8 +161,8 @@ describe('dispatch — mount order is load order', () => {
 
 type RowApply = (c: unknown, cfg: unknown) => unknown
 
-function rowApply(name: string): { fn: RowApply; cfg: unknown } {
-  const ctx = mount()
+async function rowApply(name: string): Promise<{ fn: RowApply; cfg: unknown }> {
+  const ctx = await mount()
   const found = ctx.plugins.find((p) => p.name === name)
   if (found?.row.apply === undefined) throw new Error('no appliable row ' + name)
   return { fn: found.row.apply as RowApply, cfg: found.cfg }
@@ -200,15 +202,15 @@ function toolsCtx(tools?: Record<string, unknown>) {
 }
 
 describe('mcp-client-blender row — the witnessed bridge apply', () => {
-  it('a sync bridge apply rides through untouched', () => {
+  it('a sync bridge apply rides through untouched', async () => {
     mcpBridge.mode = 'sync'
-    const { fn, cfg } = rowApply('mcp-client-blender')
+    const { fn, cfg } = await rowApply('mcp-client-blender')
     expect(fn(toolsCtx().ctx, cfg)).toBe('sync-value')
   })
 
-  it('an undefined bridge apply rides through untouched', () => {
+  it('an undefined bridge apply rides through untouched', async () => {
     mcpBridge.mode = 'undefined'
-    const { fn, cfg } = rowApply('mcp-client-blender')
+    const { fn, cfg } = await rowApply('mcp-client-blender')
     expect(fn(toolsCtx().ctx, cfg)).toBe(undefined)
   })
 
@@ -217,7 +219,7 @@ describe('mcp-client-blender row — the witnessed bridge apply', () => {
     mcpBridge.calls = []
     const lines = silence()
     try {
-      const { fn, cfg } = rowApply('mcp-client-blender')
+      const { fn, cfg } = await rowApply('mcp-client-blender')
       await expect(fn(toolsCtx().ctx, cfg)).resolves.toBe('bridge-value')
       expect(mcpBridge.calls[0]?.cfg).toMatchObject({ transport: 'stdio', serverName: 'blender' })
       expect(lines.join('\n')).toContain(
@@ -232,7 +234,7 @@ describe('mcp-client-blender row — the witnessed bridge apply', () => {
     mcpBridge.mode = 'resolve'
     const lines = silence()
     try {
-      const { fn, cfg } = rowApply('mcp-client-blender')
+      const { fn, cfg } = await rowApply('mcp-client-blender')
       await expect(
         fn(toolsCtx({ mcp__blender__scene_info: {} }).ctx, cfg),
       ).resolves.toBe('bridge-value')
@@ -245,7 +247,7 @@ describe('mcp-client-blender row — the witnessed bridge apply', () => {
   it('a rejected bridge logs its cause chain, then rethrows identical', async () => {
     const lines = silence()
     try {
-      const { fn, cfg } = rowApply('mcp-client-blender')
+      const { fn, cfg } = await rowApply('mcp-client-blender')
       const nested = new Error('outer', {
         cause: { message: 'mid', cause: { cause: { message: 'deep' } } },
       } as ErrorOptions)
@@ -271,17 +273,17 @@ describe('mcp-client-blender row — the witnessed bridge apply', () => {
 })
 
 describe('Unity MCP row — intentionally not composed', () => {
-  it('is absent from the estate composition', () => {
-    const ctx = mount({ repoRoot: '/tmp/pin' })
+  it('is absent from the estate composition', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' })
     expect(ctx.plugins.find((p) => p.name === 'mcp-client-unity')).toBeUndefined()
   })
 })
 
 describe('melite-engine-mcp-row — the gated seat read', () => {
-  it('announces its config LOUD and seats through the mcp lane', () => {
+  it('announces its config LOUD and seats through the mcp lane', async () => {
     const lines = silence()
     try {
-      const { fn, cfg } = rowApply('melite-engine-mcp-row')
+      const { fn, cfg } = await rowApply('melite-engine-mcp-row')
       const ctx = toolsCtx().ctx
       fn(ctx, cfg)
        expect(lines.join('\n')).toContain('[melite-estate] mcp row applying with config {"engines":["mcp:blender"]}')
@@ -296,12 +298,12 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
   // OFF state LOUD, and mcpEngines is never called (a flapping
   // blender handshake can no longer brick the estate: no seat, no
   // cycle). The 3D cards refuse by name at the door instead.
-  it('MELITE_MCP_ENGINES empty turns the row OFF loudly — no mcpEngines call, no flapping seat', () => {
+  it('MELITE_MCP_ENGINES empty turns the row OFF loudly — no mcpEngines call, no flapping seat', async () => {
     const lines = silence()
     vi.clearAllMocks()
     process.env['MELITE_MCP_ENGINES'] = ''
     try {
-      const { fn, cfg } = rowApply('melite-engine-mcp-row')
+      const { fn, cfg } = await rowApply('melite-engine-mcp-row')
       fn(toolsCtx().ctx, cfg)
       expect(lines.join('\n')).toContain('row OFF (MELITE_MCP_ENGINES empty)')
       expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
@@ -311,12 +313,12 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
     }
   })
 
-  it('MELITE_MCP_ENGINES overrides the default list', () => {
+  it('MELITE_MCP_ENGINES overrides the default list', async () => {
     const lines = silence()
     vi.clearAllMocks()
     process.env['MELITE_MCP_ENGINES'] = 'mcp:unity, mcp:blender'
     try {
-      const { fn, cfg } = rowApply('melite-engine-mcp-row')
+      const { fn, cfg } = await rowApply('melite-engine-mcp-row')
       const ctx = toolsCtx().ctx
       fn(ctx, cfg)
       expect(lines.join('\n')).toContain('{"engines":["mcp:unity","mcp:blender"]}')
@@ -333,7 +335,7 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     craftLane.mode = 'false'
     craftLane.calls = []
     const { ctx, listeners } = toolsCtx()
-    const { fn } = rowApply('melite-engine-craft-row')
+    const { fn } = await rowApply('melite-engine-craft-row')
     await fn(ctx, undefined)
     expect(craftLane.calls).toEqual([{ prefer: undefined }])
     expect(listeners).toHaveLength(1)
@@ -343,10 +345,11 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     craftLane.mode = 'false'
     craftLane.calls = []
     process.env['MELITE_CRITIC_ROUTE'] = 'prov/model'
-    await rowApply('melite-engine-craft-row').fn(toolsCtx().ctx, undefined)
+    const craftApply = (await rowApply('melite-engine-craft-row')).fn
+    craftApply(toolsCtx().ctx, undefined)
     expect(craftLane.calls).toEqual([{ prefer: { provider: 'prov', model: 'model' } }])
     process.env['MELITE_CRITIC_ROUTE'] = 'noslash'
-    await rowApply('melite-engine-craft-row').fn(toolsCtx().ctx, undefined)
+    craftApply(toolsCtx().ctx, undefined)
     expect(craftLane.calls[1]).toEqual({ prefer: undefined })
   })
 
@@ -354,7 +357,8 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     craftLane.mode = 'true'
     craftLane.calls = []
     const { ctx, listeners, unsubs } = toolsCtx()
-    await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+    const craftApply = (await rowApply('melite-engine-craft-row')).fn
+    craftApply(ctx, undefined)
     // the seating attempt settles on the microtask queue
     await new Promise((r) => setTimeout(r, 20))
     expect(craftLane.calls).toHaveLength(1)
@@ -371,7 +375,8 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     const lines = silence()
     try {
       const { ctx, listeners } = toolsCtx()
-      await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+      const craftApply = (await rowApply('melite-engine-craft-row')).fn
+      craftApply(ctx, undefined)
       await new Promise((r) => setTimeout(r, 20))
       expect(lines.join('\n')).toContain('craft engine: late seat attempt failed (route exploded)')
       // a messageless rejection still says something (the defensive arm).
@@ -400,7 +405,8 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     const lines = silence()
     try {
       const { ctx, listeners, unsubs } = toolsCtx()
-      await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+      const craftApply = (await rowApply('melite-engine-craft-row')).fn
+      craftApply(ctx, undefined)
       await new Promise((r) => setTimeout(r, 20))
       const logged = lines.join('\n')
       expect(logged).toContain('craft engine: already seated at <melite-engine-craft-row> — nothing to do')
@@ -420,7 +426,8 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     craftLane.mode = 'pending'
     craftLane.calls = []
     const { ctx, listeners } = toolsCtx()
-    await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+    const craftApply = (await rowApply('melite-engine-craft-row')).fn
+    craftApply(ctx, undefined)
     listeners[0]?.()
     listeners[0]?.()
     expect(craftLane.calls).toHaveLength(1)
@@ -432,7 +439,8 @@ describe('melite-engine-craft-row — serialized late seating', () => {
     craftLane.mode = 'pending'
     craftLane.calls = []
     const { ctx, cleanups, unsubs } = toolsCtx()
-    await rowApply('melite-engine-craft-row').fn(ctx, undefined)
+    const craftApply = (await rowApply('melite-engine-craft-row')).fn
+    craftApply(ctx, undefined)
     // the row seated nothing yet, but the announcement subscription
     // is live — disposal drops it (the off?.() defined arm; the
     // undefined arm is unreachable: off assigns synchronously in
@@ -446,10 +454,11 @@ describe('melite-engine-craft-row — serialized late seating', () => {
 })
 
 describe('melite-engine-agent-row — the named brain or a loud refusal', () => {
-  it('refuses LOUD without MELITE_AGENT_ROUTE (never a default brain)', () => {
+  it('refuses LOUD without MELITE_AGENT_ROUTE (never a default brain)', async () => {
     const lines = silence()
     try {
-      rowApply('melite-engine-agent-row').fn(toolsCtx().ctx, undefined)
+      const agentApply = (await rowApply('melite-engine-agent-row')).fn
+      agentApply(toolsCtx().ctx, undefined)
       expect(vi.mocked(agentEngine)).not.toHaveBeenCalled()
       expect(lines.join('\n')).toContain("engine 'agent' NOT seated")
     } finally {
@@ -457,11 +466,12 @@ describe('melite-engine-agent-row — the named brain or a loud refusal', () => 
     }
   })
 
-  it('a malformed route refuses the same way', () => {
+  it('a malformed route refuses the same way', async () => {
     process.env['MELITE_AGENT_ROUTE'] = 'noslash'
     const lines = silence()
     try {
-      rowApply('melite-engine-agent-row').fn(toolsCtx().ctx, undefined)
+      const agentApply = (await rowApply('melite-engine-agent-row')).fn
+      agentApply(toolsCtx().ctx, undefined)
       expect(vi.mocked(agentEngine)).not.toHaveBeenCalled()
       expect(lines.join('\n')).toContain("engine 'agent' NOT seated")
     } finally {
@@ -472,7 +482,8 @@ describe('melite-engine-agent-row — the named brain or a loud refusal', () => 
   it('a named route seats with the spawn-injection reader', async () => {
     process.env['MELITE_AGENT_ROUTE'] = 'prov/model'
     vi.mocked(agentEngine).mockClear()
-    rowApply('melite-engine-agent-row').fn(toolsCtx().ctx, undefined)
+    const agentApply = (await rowApply('melite-engine-agent-row')).fn
+    agentApply(toolsCtx().ctx, undefined)
     const opts = agentLane.opts as {
       provider: string
       model: string

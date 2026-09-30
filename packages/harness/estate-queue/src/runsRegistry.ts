@@ -469,6 +469,10 @@ export class RunsRuntimeService extends Service {
       pipeline: typeof pre["pipeline"] === "string" ? pre["pipeline"] as string : "flow_inline",
       graphRows: [],
       outputNodes: [],
+      // A vanished/torn sidecar's floor: a failed resurrect carries
+      // no request initials (the queued original's _flow.json is the
+      // durable mirror; a re-plan re-registers through the door).
+      initials: {},
     };
     settlePersist(row, stateRoot);
   }
@@ -943,6 +947,10 @@ export class RunsRuntimeService extends Service {
         queue_position: this.core.queuePosition(run.runId),
       };
     }
+    // The flow arm's request initials (declared at this scope so the
+    // registration below can carry them on the door — see the flow
+    // arm for the census-catch law).
+    const requestInitials: Record<string, EngineJson> = {};
     if (selected.door === "flow") {
       // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law):
       // the registry flow expands (from_flow links
@@ -963,6 +971,21 @@ export class RunsRuntimeService extends Service {
         );
       }
       const expanded = expandRegistryFlow(decl);
+      // THE INITIALS THE GATE JUST BLESSED RIDE THE RUN (the census
+      // commission's catch, 2026-10-10): the worker used to submit
+      // the engine merge with an empty initials record, so every
+      // census flow — whose stage params are `$spell`s over these
+      // very keys by design — died at planMerge ("$photo names
+      // neither a FromStage-wired input nor a request initial")
+      // AFTER the door had validated the values. The gate's own
+      // keys, present values only; absent stays absent (the
+      // $channel/branch arms own those).
+      for (const key of Object.keys(decl.initialValidators)) {
+        const value: unknown = body[key];
+        if (value !== undefined && value !== null) {
+          requestInitials[key] = value as EngineJson;
+        }
+      }
       // THE COMPILE-TIME INITIAL GATE (REBUILD-21; the dead door's
       // law): present initials refuse BEFORE any run registers —
       // validate runs the same gate, so start can never queue what
@@ -1108,6 +1131,9 @@ export class RunsRuntimeService extends Service {
         runId,
         pipeline: pipelineOf(body),
         requestBody: body,
+        ...(Object.keys(requestInitials).length === 0
+          ? {}
+          : { initials: requestInitials }),
         ...(benchDoc === undefined ? {} : { benchDoc }),
       },
     });

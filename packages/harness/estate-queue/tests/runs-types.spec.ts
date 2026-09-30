@@ -37,6 +37,7 @@ function record(over: Partial<RunRecord> = {}): RunRecord {
     stopFlag: false,
     params: [],
     outputNodes: [],
+    initials: {},
     createdAt: 1700000000,
     pipeline: "p",
     graphRows: [],
