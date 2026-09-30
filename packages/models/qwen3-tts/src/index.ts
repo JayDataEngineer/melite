@@ -158,7 +158,6 @@ export const DECL: ModelDecl = {
       // weights sit one level down with top-level safetensors).
       "lane_inputs": {
         "model_path": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
-        "synth_lane": "clone",
       },
       // THE RE-POINT (krea-2-raw precedent): a variant pick
       // resolves server-side to the route address; the NULL stamp
@@ -225,24 +224,8 @@ export const DECL: ModelDecl = {
   ],
   "has_inference": true,
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
     "family": "qwen3_tts",
-    "instruction_control": false,
-    "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
-    "sampling_shift": 0,
-    "synth_lane": "speak",
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
   },
   // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
   // the speak + export actions the tts card binds (the 0.6B lane tree).
@@ -289,4 +272,4 @@ export const PRESET_SPEAKERS: readonly string[] = [
   "dylan", "sohee", "ono_anna", "uncle_fu",
 ];
 
-export { speak, exportAction, parseTtsFacts, type TtsFacts, type TtsParams } from "./actions.ts";
+export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.ts";

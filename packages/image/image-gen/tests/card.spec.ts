@@ -179,10 +179,19 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
         unet.inputs.unet_name, li.unet,
         "the graph loads the row's OWN unet (the raw route's merged view, not the family default)",
       );
-      assert.ok(
-        nodes.some((n) => n.class_type === li.latent_node),
-        `the row's latent class '${String(li.latent_node)}' builds`,
-      );
+      if (typeof li.latent_node === "string") {
+        assert.ok(
+          nodes.some((n) => n.class_type === li.latent_node),
+          `the row's latent class '${li.latent_node}' builds`,
+        );
+      } else {
+        // a family whose header disclaims the latent member composes
+        // its own action's latent (qwen-img-21: EmptyLatentImage)
+        assert.ok(
+          nodes.some((n) => n.class_type === "EmptyLatentImage"),
+          "a family without a declared latent member still composes its action's latent",
+        );
+      }
       const encoder = typeof li.text_encode_node === "string" ? li.text_encode_node : "CLIPTextEncode";
       assert.ok(
         nodes.some((n) => n.class_type === encoder),

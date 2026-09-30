@@ -4,8 +4,8 @@ import { laneBlank, judgeLaneRelations } from '@melite/contracts/laneRelations'
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit'
-import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute } from '@melite/models-qwen3-tts'
-import { DECL as qwen3TtsVoicedesignDecl } from '@melite/models-qwen3-tts-voicedesign'
+import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, laneTopologyOf as ttsLaneTopologyOf, type TtsLaneTopology } from '@melite/models-qwen3-tts'
+import { DECL as qwen3TtsVoicedesignDecl, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -95,6 +95,13 @@ export const ACTION_BINDINGS: Record<string, { save: Binding; speak: Binding }> 
     speak: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsVoicedesignDecl, 'speak'), p, model, g, runId) },
   },
 }
+
+/** The resolved lane topology (the per-family map keyed on the
+ *  variant pick — the compose-side twin of the actions' dispatch):
+ *  the family field owns the pick (the ACTION_BINDINGS law), the
+ *  variant id owns the lane. */
+const laneTopology = (model: ModelFacts): TtsLaneTopology =>
+  (model.family === qwen3TtsVoicedesignDecl.id ? voicedesignLaneTopologyOf : ttsLaneTopologyOf)(model)
 
 // THE VARIANT ROUTE (agents can't pick matrix variants — the tool's
 // closed model enum additionally offers the Base variant's compose
@@ -231,16 +238,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       }
       // PER-LANE ADMISSION (each variant takes only its own inputs,
       // refused loud, never silently skipped): the branch key is the
-      // resolved lane_inputs DATA (synth_lane — the lane-branch law),
-      // never a family id. The cloner needs its 3-second reference;
-      // instruction control differs per variant (the operator's
-      // table): style text styles the PERSONA — on the person-less
-      // Base variant it fires nothing, so a stated one refuses;
-      // embeddings load nothing there either. The designer needs its
-      // Design entry (name + prompt).
-      const lane = typeof (model.lane_inputs as Record<string, unknown> | undefined)?.synth_lane === 'string'
-        ? (model.lane_inputs as Record<string, unknown>).synth_lane as string
-        : '';
+      // resolved lane TOPOLOGY (synth_lane, derived from the variant
+      // pick — the lane-branch law), never a family id. The cloner
+      // needs its 3-second reference; instruction control differs
+      // per variant (the operator's table): style text styles the
+      // PERSONA — on the person-less Base variant it fires nothing,
+      // so a stated one refuses; embeddings load nothing there
+      // either. The designer needs its Design entry (name + prompt).
+      const lane = laneTopology(model).synth_lane;
       // THE BLANK LAW IS THE CONTRACT'S (the design audit's Q4: this
       // hand-rolled copy called 0 and false BLANK — and `top_k: 0`
       // means "off" in this card's own tooltip — while the lane judge
@@ -320,8 +325,8 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         // judges it now (the one implementation, above) — the
         // imperative copy died with the audit's row 4.
       }
-      if (!blank(doc.style_instruction) && model.lane_inputs.instruction_control !== true) {
-        throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (lane_inputs.instruction_control is not true — choose a lane with instruction control or drop the instruction)")
+      if (!blank(doc.style_instruction) && !laneTopology(model).instruction_control) {
+        throw new Error("param 'style_instruction' fires nothing on the resolved TTS lane (this lane has no instruction control — choose a lane with instruction control or drop the instruction)")
       }
       // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
       // boarded family's own speak action composes (branching on

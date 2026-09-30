@@ -75,22 +75,7 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
-    "family": "anny",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "sam_vit_b_01ec64.pth",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
+    "model_path": "sam_vit_b_01ec64.pth"
   },
   // the family's declared actions: the compose action the anny card
   // binds (the turnaround lane tree), plus the estimator/bake

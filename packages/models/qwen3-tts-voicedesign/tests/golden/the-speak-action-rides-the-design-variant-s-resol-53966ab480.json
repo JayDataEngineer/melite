@@ -4,7 +4,7 @@
     "inputs": {
       "family": "qwen3_tts",
       "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-      "extras": "{\"variant\":\"customvoice\"}"
+      "extras": "{\"variant\":\"voicedesign\"}"
     }
   },
   "AudiocoreVoiceStudio.0": {

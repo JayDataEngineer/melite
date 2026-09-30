@@ -36,9 +36,9 @@ describe("the yue2 model plugin (the whole model, one package)", () => {
   it("the checkpoint lane is the ONE file row (model+clip+vae ride the checkpoint)", () => {
     const li = DECL.lane_inputs as Record<string, unknown>;
     assert.equal(li.checkpoint, "yue2_3b_int8_convrot.safetensors");
-    assert.equal(li.latent_node, "EmptyYuE2LatentAudio");
-    assert.equal(li.unet, "", "no unet row — the checkpoint carries the DiT");
-    assert.equal(li.text_encoder, "", "no text_encoder row — the checkpoint carries the LLM");
-    assert.equal(li.vae, "", "no vae row — the checkpoint carries the decoder");
+    // checkpoint is the row's ONLY member: the DiT, the LLM, and the
+    // decoder ride inside it, and the latent class (EmptyYuE2LatentAudio)
+    // is the action's own composition, never a lane fact.
+    assert.deepEqual(Object.keys(li), ["checkpoint"], "one file row, nothing else");
   });
 });

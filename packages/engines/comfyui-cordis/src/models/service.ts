@@ -38,6 +38,7 @@ import type { EngineJson } from "../comfyui.ts";
 import {
   ModelError,
   ModelRow,
+  EngineFacts,
   ModelDecl as ModelDeclSchema,
   VariantRow as VariantRowSchema,
   ParamRequiresRow as ParamRequiresRowSchema,
@@ -138,6 +139,28 @@ function validateDecl(decl: ModelDecl): void {
         );
       }
     }
+  }
+  // THE ENGINE FACTS DOOR (the complexity floor's stroke 1): the
+  // typed lane_inputs. A member the EngineFacts schema does not
+  // know refuses HERE, at boot, on the family row and every
+  // variant merge — the authoring hole the open dict left (typos
+  // and dead keys merged silently; four keys rode the GAP-7
+  // template on eighteen families with no reader). This door fires
+  // BEFORE the per-action facts parses: unknown-member ownership is
+  // the facts schema's, and the action doors only ever see their
+  // own members.
+  strippedKeys((decl.lane_inputs ?? {}) as Record<string, unknown>, EngineFacts, `${String(decl.id)}/lane_inputs`).forEach((k) => {
+    throw new ModelError(
+      `model row ${String(decl.id)} lane_inputs: unknown member(s) refused (extra: forbid — the law): ${k}`,
+    );
+  });
+  for (const [i, v] of decl.variants.entries()) {
+    const vrow = (v.lane_inputs ?? {}) as Record<string, unknown>;
+    strippedKeys(vrow, EngineFacts, `${String(decl.id)}/variants[${String(i)}]/lane_inputs`).forEach((k) => {
+      throw new ModelError(
+        `model row ${String(decl.id)} variant ${String(v.id)} lane_inputs: unknown member(s) refused (extra: forbid — the law): ${k}`,
+      );
+    });
   }
   // THE ACTION ADMISSION GATE (the atom vocabulary's family door,
   // stroke 0): a declared action's facts parse runs at REGISTRATION

@@ -12,9 +12,9 @@ import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { speak } from "../src/actions.ts";
 
-const stub = (id: string, synthLane: string): ModelFacts => ({
-  id, card: "tts", defaults: { mode: "tts" },
-  lane_inputs: { model_path: id, synth_lane: synthLane },
+const stub = (id: string, variant: string): ModelFacts => ({
+  id, card: "tts", defaults: { mode: "tts", variant },
+  lane_inputs: { model_path: id },
   variants: [], variant_groups: [], mods: ["qvoice_save"], accepts: [], studio: {},
 } as unknown as ModelFacts);
 
@@ -22,36 +22,43 @@ const dump = (g: GraphBuilder): Record<string, { class_type: string; inputs: Rec
   g.toJSON() as never;
 const classes = (row: Record<string, { class_type: string }>): string[] => Object.values(row).map((n) => n.class_type);
 
-describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
-  it("an absent key falls to the speak lane (the ''-absent law)", () => {
+describe("the tts lane dispatch (variant topology data, never the family id)", () => {
+  it("the head variant (customvoice) speaks — the default pick's own lane", () => {
     const g = new GraphBuilder();
-    instantiateAction(speak, { text: "hi", seed: 1 }, stub("anything", ""), g, "rs");
+    instantiateAction(speak, { text: "hi", seed: 1 }, stub("anything", "customvoice"), g, "rs");
     const row = dump(g);
     assert.ok(classes(row).includes("AudiocoreTTS"), "the speak lane emits the synth node");
     assert.ok(!Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "no studio node");
   });
 
-  it("a non-string synth lane value REFUSES field-named (the arm's silent speak fallback is gone)", () => {
-    // THE DIVERGENCE THE ARM WAS HIDING: the retired kit arm read
-    // `p.synth_lane || 'speak'`, so a garbage value fell to the speak
-    // lane in silence. The family's facts door reads the row directly
-    // and refuses a value outside speak|clone|design — the loud half of
-    // the same law the absent-key case pins.
+  it("an unknown variant id REFUSES field-named (the silent speak fallback is gone)", () => {
+    // THE DIVERGENCE THE RETIRED ARM HID: `p.synth_lane || 'speak'`
+    // let a garbage value fall to the speak lane in silence. The
+    // lane topology keys on the resolved variant and refuses an id
+    // the DECL declares no lane for — the loud half of the same
+    // law the head-variant case pins.
     const model = {
-      ...stub("anything", ""),
-      lane_inputs: { model_path: "anything", synth_lane: 7 },
+      ...stub("anything", "customvoice"),
+      defaults: { mode: "tts", variant: "yodel" },
     } as unknown as ModelFacts;
     assert.throws(
       () => instantiateAction(speak, { text: "hi", seed: 1 }, model, new GraphBuilder(), "rs"),
-      /lane_inputs\.synth_lane = 7 — speak, clone, or design is required/,
+      /qwen3-tts-voicedesign: no lane topology for variant "yodel" — the DECL declares no such lane/,
     );
   });
 
-  it("synth_lane 'clone' routes the clone lane (reference audio + transcript)", () => {
+  it("the base variant routes the clone lane (reference audio + transcript)", () => {
     const g = new GraphBuilder();
-    instantiateAction(speak, { text: "hi", seed: 1, ref_audio: "/a.wav", ref_text: "a" }, stub("whatever", "clone"), g, "rc");
+    instantiateAction(speak, { text: "hi", seed: 1, ref_audio: "/a.wav", ref_text: "a" }, stub("whatever", "base"), g, "rc");
     const row = dump(g);
     assert.ok(classes(row).includes("AudiocoreTTS"), "the clone lane emits the synth node");
     assert.ok(Object.values(row).some((n) => n.inputs.reference_audio === "/a.wav"), "the reference rides");
+  });
+
+  it("the voicedesign variant routes the design lane (the studio's export segment)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(speak, { text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("whatever", "voicedesign"), g, "rd");
+    const row = dump(g);
+    assert.ok(Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "the design lane emits the studio node");
   });
 });

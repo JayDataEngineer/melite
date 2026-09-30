@@ -27,7 +27,11 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
   it("carries the 2.1 EDIT lane contract: the same base weights + the encoder branch key (NO separate edit checkpoint exists)", () => {
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).text_encode_node, "TextEncodeQwenImage21");
     assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).unet, "qwen_image_2.1_int8_convrot.safetensors", "the edit rides the SAME base unet as t2i — the cache wraps it in-graph");
-    assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).latent_node, "EmptyLatentImage", "the edit samples at target resolution, never VAEEncode-of-source (the 2511 lane)");
+    // the edit samples at target resolution, never VAEEncode-of-source
+    // (the 2511 lane) — the ACTION owns that class (EmptyLatentImage
+    // at target resolution, its own facts door), so the row declares
+    // no latent member.
+    assert.equal((DECL.lane_inputs ?? {} as Record<string, unknown>).latent_node, undefined);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).steps, 25);
     assert.equal((DECL.defaults ?? {} as Record<string, unknown>).cfg, 1);
   });

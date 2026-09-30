@@ -162,7 +162,6 @@ export const DECL: ModelDecl = {
   "has_inference": true,
   "lane_inputs": {
     "clip_type": "qwen_image",
-    "latent_node": "EmptyLatentImage",
     "sampling_shift": 0,
     // THE LANE BRANCH KEY (the latent_node precedent — data, never
     // a family-id switch): naming the 2.1 encoder class routes the

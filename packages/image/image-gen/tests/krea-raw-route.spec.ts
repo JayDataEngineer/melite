@@ -72,7 +72,6 @@ describe("the third live break is dead (krea-2-raw serves)", () => {
     assert.equal(row.defaults.steps, 52, "raw's 52-step reference marriage");
     assert.equal(row.defaults.cfg, 3.5, "raw's cfg marriage");
     assert.equal(row.lane_inputs.unet, "krea2_raw_int8_convrot.safetensors", "RAW's checkpoint — never turbo's");
-    assert.equal(row.lane_inputs.unet_variant, "raw");
     // the FAMILY view is untouched: the atom spells the default
     // (turbo, first-declared — the matrix law)
     const family = facts.models["krea-2"];

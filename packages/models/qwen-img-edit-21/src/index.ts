@@ -274,8 +274,6 @@ export const DECL: ModelDecl = {
   "actions": [edit],
   "lane_inputs": {
     "clip_type": "qwen_image",
-    "latent_node": "EmptyLatentImage",
-    "sampling_shift": 0,
     // THE LANE BRANCH KEY (the latent_node precedent — data, never
     // a family-id switch): names the 2.1 encoder class; the kit's
     // imageEdit builder routes onto the cached-reference lane.

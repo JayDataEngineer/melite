@@ -238,12 +238,7 @@ export const DECL: ModelDecl = {
   "has_inference": true,
   "actions": [edit],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
     "clip_type": "qwen_image",
-    "clip_vision": "",
-    "family": "",
-    "latent_node": "EmptySD3LatentImage",
     // THE LANE BRANCH KEY (made self-describing — the 2.1 family's
     // own spelling of the same law): names this lane's encoder
     // class. The edit action's facts door refuses any other value,
@@ -255,16 +250,9 @@ export const DECL: ModelDecl = {
     // TextEncodeQwenImageEditPlus takes image1/2/3 — 3 total, anchor
     // + 2 references. Past that the kit refuses LOUD (switch lanes).
     "max_images": 3,
-    "model_path": "",
-    "sampling_shift": 0,
     "text_encoder": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
-    "texture_vae": "",
     "unet": "qwen_image_edit_2511_int8_convrot.safetensors",
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "qwen_image_vae.safetensors",
-    "weightless": false
+    "vae": "qwen_image_vae.safetensors"
   }
 };
 

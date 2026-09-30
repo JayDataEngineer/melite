@@ -7,26 +7,22 @@ import { film, parseH3Facts } from "../src/actions.ts";
 
 const LANE = {
   unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
-  clip: "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
-  vae_video: "minimax_h3_video_vae_int8_convrot.safetensors",
-  vae_audio: "minimax_h3_audio_vae_fp32.safetensors",
-  lora_folder: "loras/h3",
 };
 
 describe("the h3 film action's facts door", () => {
-  it("parses the declared lane files into the closed engine shape (extra keys tolerated)", () => {
+  it("parses the row's unet + the package const's three lane files into the closed engine shape", () => {
     const facts = parseH3Facts(LANE);
     expect(facts).toEqual({
       unet: LANE.unet,
-      clip: LANE.clip,
-      vae_video: LANE.vae_video,
-      vae_audio: LANE.vae_audio,
+      clip: "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
+      vae_video: "minimax_h3_video_vae_int8_convrot.safetensors",
+      vae_audio: "minimax_h3_audio_vae_fp32.safetensors",
     });
   });
 
-  it("a missing lane file refuses loud, naming the key", () => {
-    expect(() => parseH3Facts({ ...LANE, vae_audio: undefined }))
-      .toThrow(/lane_inputs\.vae_audio = undefined .* non-empty string/);
+  it("a missing unet refuses loud, naming the key", () => {
+    expect(() => parseH3Facts({ ...LANE, unet: undefined }))
+      .toThrow(/lane_inputs\.unet = undefined .* non-empty string/);
   });
 
   it("a blank lane filename refuses loud (an empty weight is no weight)", () => {
@@ -34,7 +30,7 @@ describe("the h3 film action's facts door", () => {
   });
 
   it("a non-string lane value refuses loud (never coerced)", () => {
-    expect(() => parseH3Facts({ ...LANE, clip: 42 })).toThrow(/lane_inputs\.clip = 42.*non-empty string/);
+    expect(() => parseH3Facts({ ...LANE, unet: 42 })).toThrow(/lane_inputs\.unet = 42.*non-empty string/);
   });
 
   it("an absent lane row refuses loud (a family that ships no lane_inputs parses no facts)", () => {

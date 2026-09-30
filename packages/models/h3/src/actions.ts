@@ -62,10 +62,21 @@ const I2V_MARKER_PROMPT = 'i2v marker branch — orphaned, never executed (r2v i
 // strength leaf — sharpen_strength).
 const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold: 0.05, iterations: 10 }
 
+/** The family's lane files that are NOT engine-general members
+ * (the complexity floor's stroke 1): the encoder and the two VAEs
+ * are invariants of THIS package's lane — no variant varies them,
+ * so they live beside the parser that reads them, never in a row
+ * a family could drift. The unet alone rides the DECL row: quants
+ * and hybrids vary it per route. */
+const LANE_FILES = {
+  clip: 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
+  vae_video: 'minimax_h3_video_vae_int8_convrot.safetensors',
+  vae_audio: 'minimax_h3_audio_vae_fp32.safetensors',
+} as const
+
 /** The h3 facts door: the resolved lane_inputs parsed into the
- * loader names the renderers read. The four files are the family's
- * own DECL row (the card's old second copy is retired; the engine
- * fallbacks below name the DECL's values, never a silent truth).
+ * loader names the renderers read (the unet from the row; the
+ * three invariants from the package's own LANE_FILES).
  *
  * @param raw the resolved lane_inputs (family ⊕ variant) */
 export interface H3Facts {
@@ -77,14 +88,11 @@ export interface H3Facts {
 
 export function parseH3Facts(raw: unknown): H3Facts {
   const lane = (raw ?? {}) as Record<string, unknown>
-  const read = (key: 'unet' | 'clip' | 'vae_video' | 'vae_audio'): string => {
-    const value = lane[key]
-    if (typeof value !== 'string' || value.trim() === '') {
-      throw new Error(`h3 film: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`)
-    }
-    return value
+  const unet = lane.unet
+  if (typeof unet !== 'string' || unet.trim() === '') {
+    throw new Error(`h3 film: lane_inputs.unet = ${JSON.stringify(unet)} — a non-empty string is required`)
   }
-  return { unet: read('unet'), clip: read('clip'), vae_video: read('vae_video'), vae_audio: read('vae_audio') }
+  return { unet, clip: LANE_FILES.clip, vae_video: LANE_FILES.vae_video, vae_audio: LANE_FILES.vae_audio }
 }
 
 /** The overlay re-check the film loop voices per stanza (the same

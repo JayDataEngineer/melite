@@ -49,8 +49,18 @@ beforeAll(async () => {
   const home = mkdtempSync(join(tmpdir(), "estate-bootdoc-home-"));
   const docs = join(home, "storages", "drafts", "docs");
   mkdirSync(docs, { recursive: true });
-  const saved = readFileSync("/tmp/bench-doc-saved.json", "utf8");
-  seedPath = join(docs, "bench-session-6d8ed483-16d3-4ec7-b08e-5c2ccbf09928.json");
+  // THE SEED is a REAL bench doc, read from the tree's own runtime
+  // home: the wall was authored against a /tmp copy of a live
+  // session that vanished with that box's tmp — an undeclared
+  // environmental dependency. data/runtime/ carries the same
+  // artifact shape, committed; the doc's filename rides its own
+  // draft_id.
+  const seedId = "bench-session-246122bc-46b7-4c65-bd96-b45b2ed8cf68";
+  const saved = readFileSync(
+    join(REPO, `data/runtime/dsh-harness-home/storages/drafts/docs/${seedId}.json`),
+    "utf8",
+  );
+  seedPath = join(docs, `${seedId}.json`);
   writeFileSync(seedPath, saved);
   process.env["DSH_HOME"] = home;
   ctx = new Context();

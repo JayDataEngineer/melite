@@ -10,7 +10,7 @@
 // lane. Sibling: models-qwen3-tts-voicedesign (the 1.7B model).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { DECL, family } from "../src/index.ts";
+import { DECL, family, LANE_TOPOLOGY } from "../src/index.ts";
 
 describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
@@ -23,7 +23,8 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
     assert.equal(DECL.id, "qwen3-tts");
     assert.equal(DECL.label, "Qwen3-TTS 0.6B");
     assert.equal((DECL.lane_inputs as Record<string, unknown>)["model_path"], "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged");
-    assert.equal((DECL.lane_inputs as Record<string, unknown>)["instruction_control"], false);
+    assert.equal(LANE_TOPOLOGY.customvoice?.instruction_control, false, "the head lane (CustomVoice) carries no instruction control");
+    assert.equal(LANE_TOPOLOGY.customvoice?.synth_lane, "speak", "the head lane is the default variant's lane — THE FLOW's lane");
     assert.ok((DECL.mods as string[]).includes("qvoice"), "the family loads embeddings (the CustomVoice lane)");
     // QVOICE SAVES AND LOADS ACROSS ALL qwen3-tts (operator
     // 2026-09-23, the full law): the save pack boards here too — the
@@ -54,7 +55,7 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
   it("the Base variant carries the clone lane — byte-identical to the dead family's truth", () => {
     const base = DECL.variants.find((v) => v.id === "base")!;
     const li = base.lane_inputs as Record<string, unknown>;
-    assert.equal(li["synth_lane"], "clone", "the lane branch reads data, never the family id");
+    assert.equal(LANE_TOPOLOGY.base?.synth_lane, "clone", "the lane branch reads the variant topology, never the family id");
     // THE HF-TREE ADDRESS (transcript-014, stage 3): the bare
     // container dir 'qwen3-tts' holds only hf/ — the C++ load gate
     // refused it (RuntimeError: Failed to load qwen3_tts). The

@@ -402,20 +402,20 @@ describe("registryModel + getModel (the two planes)", () => {
     const svc = fresh();
     const d = clone({
       id: "synth-a",
-      lane_inputs: { base: "b" },
+      lane_inputs: { unet: "b" },
       variants: [{ ...variant({ route: "r" }) }],
     });
     delete (d.variants[0] as unknown as Record<string, unknown>)["lane_inputs"];
     svc.registerFamily(d);
-    assert.deepEqual(svc.getModel("r").lane_inputs, { base: "b" });
+    assert.deepEqual(svc.getModel("r").lane_inputs, { unet: "b" });
     const other = fresh();
     const d2 = clone({
       id: "synth-a",
-      variants: [{ ...variant({ route: "r", lane_inputs: { extra: "e" } }) }],
+      variants: [{ ...variant({ route: "r", lane_inputs: { vae: "e" } }) }],
     });
     delete (d2 as unknown as Record<string, unknown>)["lane_inputs"];
     other.registerFamily(d2);
-    assert.deepEqual(other.getModel("r").lane_inputs, { extra: "e" });
+    assert.deepEqual(other.getModel("r").lane_inputs, { vae: "e" });
   });
 
   it("lane_inputs union; sourceless cells mint no source key", () => {
@@ -423,11 +423,11 @@ describe("registryModel + getModel (the two planes)", () => {
     svc.registerFamily(clone({
       id: "synth-a",
       source: undefined,
-      lane_inputs: { base: "b" },
-      variants: [{ ...variant({ route: "r", lane_inputs: { extra: "e" } }) }],
+      lane_inputs: { unet: "b" },
+      variants: [{ ...variant({ route: "r", lane_inputs: { vae: "e" } }) }],
     }));
     const view = svc.getModel("r");
-    assert.deepEqual(view.lane_inputs, { base: "b", extra: "e" });
+    assert.deepEqual(view.lane_inputs, { unet: "b", vae: "e" });
     assert.equal(view.source, undefined, "no cell source, no atom source — no key");
   });
 });

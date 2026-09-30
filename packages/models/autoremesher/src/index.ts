@@ -43,24 +43,6 @@ export const DECL: ModelDecl = {
       "label": "Quant",
     }
   ],
-  "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
-    "family": "",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": true
-  },
   // the remesh action the quad-remesh card binds (the single-node
   // lane tree).
   "actions": [remesh],

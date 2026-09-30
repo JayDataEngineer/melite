@@ -81,12 +81,12 @@ describe("the anny compose action — byte-stability (the compatibility law)", (
     );
   });
 
-  it("the door is the weightless vacuous parse (the bake loads no checkpoint)", () => {
+  it("the door is the vacuous parse (the bake loads no checkpoint)", () => {
     assert.deepEqual(parseAnnyFacts(FACTS.lane_inputs as never), {}, "nothing off the row is read");
-    assert.deepEqual(
-      (FACTS.lane_inputs as { weightless?: boolean }).weightless,
-      false,
-      "the row carries weights but the segment composes none",
+    assert.equal(
+      (FACTS.lane_inputs as { model_path?: string }).model_path,
+      "sam_vit_b_01ec64.pth",
+      "the row's one member names the sam weights; the segment composes none",
     );
   });
 });

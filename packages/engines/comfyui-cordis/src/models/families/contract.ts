@@ -140,6 +140,75 @@ export const CellRow: z<CellRow> = z.object({
   artifact: z.union([CellArtifact, z.const(null)]).default(null),
 });
 
+/** ENGINE FACTS (the complexity floor's stroke 1, 2026-09-30): the
+ * typed replacement for the open lane_inputs dict. Every member is
+ * absent-able — a family declares the facts it owns — and every
+ * member the schema does not know REFUSES at registerFamily, family
+ * row and every variant merge. The open dict (`z.dict(z.any())`)
+ * merged typos and junk silently; four keys rode the GAP-7 template
+ * on eighteen families with no reader at all. Excluded by design:
+ * the TTS cards' synth_lane/instruction_control (card-owned, read
+ * at audio/tts/src/card.ts), h3's clip/vae_video/vae_audio
+ * (H3Facts at models/h3/src/actions.ts owns them), and the mask
+ * card's sam2 pin (image/mask/src/card.ts — a tool lane, not a
+ * family declaration). `family` is a plain string, NOT the DECL id:
+ * moss-sfx spells a loader argument there
+ * (`family: "moss_sfx_v2"`). A type ALIAS (never an interface):
+ * aliases carry the implicit index signature, so EngineFacts
+ * assigns to the kit's loose Record readers without a cast —
+ * an interface would force `as unknown` at every seam. */
+export type EngineFacts = {
+  /** The diffusion model file the family's loader reads. */
+  readonly unet?: string;
+  /** The text-encoder file (stock CLIPLoader `clip_name`). */
+  readonly text_encoder?: string;
+  /** The VAE file. */
+  readonly vae?: string;
+  /** The loader's `type` argument (krea2, lumina2, …). */
+  readonly clip_type?: string;
+  /** The CLIPVision file (pixal3d, trellis2-native). */
+  readonly clip_vision?: string;
+  /** The texture VAE file (pixal3d, trellis2-native). */
+  readonly texture_vae?: string;
+  /** The background-removal model file (pixal3d, trellis2-native). */
+  readonly background_removal?: string;
+  /** The checkpoint file (yue2's convrot; a full-model load). */
+  readonly checkpoint?: string;
+  /** The latent node class a lane composes (krea-2, z-image,
+   * anima pin the literal; the action's own facts door enforces
+   * the spelling). */
+  readonly latent_node?: string;
+  /** The sampling-shift parameter for AuraFlow-class models. */
+  readonly sampling_shift?: number;
+  /** The image ceiling an edit lane accepts per run (≥ 1). */
+  readonly max_images?: number;
+  /** The text-encode node class (qwen lanes; the action's facts
+   * door pins the literal). */
+  readonly text_encode_node?: string;
+  /** A pack-specific loader's model file (anny, kimodo, tts). */
+  readonly model_path?: string;
+  /** A loader argument naming the engine-side family (moss-sfx,
+   * transfer_rig, the fit/skin pair — not the DECL id). */
+  readonly family?: string;
+}
+
+export const EngineFacts: z<EngineFacts> = z.object({
+  unet: z.string().required(false),
+  text_encoder: z.string().required(false),
+  vae: z.string().required(false),
+  clip_type: z.string().required(false),
+  clip_vision: z.string().required(false),
+  texture_vae: z.string().required(false),
+  background_removal: z.string().required(false),
+  checkpoint: z.string().required(false),
+  latent_node: z.string().required(false),
+  sampling_shift: z.number().required(false),
+  max_images: z.number().min(1).required(false),
+  text_encode_node: z.string().required(false),
+  model_path: z.string().required(false),
+  family: z.string().required(false),
+});
+
 export interface VariantRow {
   id: string;
   label: string;
@@ -167,9 +236,10 @@ export interface VariantRow {
    *  lives as a 2-number array on the wire). */
   sampler_envelope?: SamplerEnvelope;
   /** The variant's LANE INPUT stamps (the intercept over the
-   *  model's base lane_inputs — e.g. the base checkpoint's
-   *  model_path; merged base ← variant at the derived read). */
-  lane_inputs?: Record<string, unknown>;
+   *  model's base engine facts — e.g. the base checkpoint's
+   *  model_path; merged base ← variant at the derived read; the
+   *  members are EngineFacts, unknowns refused at registration). */
+  lane_inputs?: EngineFacts;
   wire_defaults?: Record<string, unknown> | null;
   /** THE LANE SURFACE (fix shape 1): the params this variant
    *  accepts IN ADDITION to the family base (the cascade law —
@@ -365,7 +435,7 @@ export const VariantRow: z<VariantRow> = z.object({
     steps: z.array(z.number()),
     cfg: z.array(z.number()),
   }).required(false),
-  lane_inputs: z.dict(z.any()).default({}),
+  lane_inputs: EngineFacts.default({}),
   wire_defaults: z.union([z.dict(z.any()), z.const(null)]).required(false),
   params: z.array(z.string().pattern(FIELD_NAME_RE)).required(false),
   relations: ParamRelationWords.required(false),
@@ -428,6 +498,9 @@ export function assertSchemaAcceptsMinimalRows(): void {
     ["SourceRow", SourceRow, {}],
     ["CellArtifact", CellArtifact, { source_url: "https://x/y", size_bytes: 1, sha256: "a".repeat(64) }],
     ["CellRow", CellRow, { quant: "q" }],
+    // THE ENGINE FACTS (the complexity floor's stroke 1): minimal
+    // is the EMPTY row — a family declares the facts it owns.
+    ["EngineFacts", EngineFacts, {}],
     ["VariantRow", VariantRow, { id: "v" }],
     ["VariantGroupRow", VariantGroupRow, { id: "g" }],
     ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
@@ -581,7 +654,7 @@ export const ModelDecl: z<ModelDecl> = z.object({
   accepts: z.array(z.string()).default([]),
   timeout_floor: z.number().min(0).required(false),
   canvas_default: z.boolean().required(false),
-  lane_inputs: z.dict(z.any()).default({}),
+  lane_inputs: EngineFacts.default({}),
   /** The family's BASE parameter surface (fix shape 1): the params
    *  EVERY lane of this family accepts. Absent = the family
    *  declares no surface (the legacy truth: the card's union table
@@ -671,8 +744,9 @@ export interface ModelDecl {
   timeout_floor?: number;
   canvas_default?: boolean;
   /** Per-family graph-variance rows (z-image's AuraFlow sampling
-   *  shift, qwen-3 encoder — the lane's own input truth). */
-  lane_inputs?: Record<string, unknown>;
+   *  shift, qwen-3 encoder — the lane's own input truth; the
+   *  members are EngineFacts, unknowns refused at registration). */
+  lane_inputs?: EngineFacts;
   /** THE BASE PARAMETER SURFACE (fix shape 1): the params every
    *  lane of this family accepts. Absent = the family declares no
    *  surface (the card's union table stays the field truth; the

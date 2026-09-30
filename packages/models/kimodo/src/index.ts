@@ -105,22 +105,7 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
-    "family": "kimodo",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "Kimodo-SOMA-RP-v1.1",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
+    "model_path": "Kimodo-SOMA-RP-v1.1"
   },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has

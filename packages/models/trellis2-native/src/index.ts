@@ -213,21 +213,10 @@ export const DECL: ModelDecl = {
   ],
   "lane_inputs": {
     "background_removal": "birefnet.safetensors",
-    "checkpoint": "",
-    "clip_type": null,
     "clip_vision": "dino_v3_L_naf_fp32.safetensors",
-    "family": "",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "",
-    "sampling_shift": 0,
-    "text_encoder": "",
     "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
     "unet": "trellis_2_int8_convrot.safetensors",
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "trellis_2_shape_vae_bf16.safetensors",
-    "weightless": false
+    "vae": "trellis_2_shape_vae_bf16.safetensors"
   },
   // the mesh action the img-to-mesh card binds (the trellis_t1
   // lane tree).

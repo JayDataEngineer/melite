@@ -44,22 +44,7 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
-    "family": "transfer_rig",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "somaskel77/skin_standard.npz",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
+    "model_path": "somaskel77/skin_standard.npz"
   },
   // the transfer action the img-to-mesh card binds (the rig-copy
   // lane tree).

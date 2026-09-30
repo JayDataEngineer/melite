@@ -3,8 +3,8 @@
     "class_type": "LoadAudiocoreModel",
     "inputs": {
       "family": "qwen3_tts",
-      "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-      "extras": "{\"variant\":\"customvoice\"}"
+      "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
+      "extras": "{\"variant\":\"base\"}"
     }
   },
   "AudiocoreVoiceStudio.0": {

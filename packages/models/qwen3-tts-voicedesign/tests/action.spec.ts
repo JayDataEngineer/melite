@@ -15,7 +15,7 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { join } from "node:path";
 import { DECL } from "../src/index.ts";
-import { speak, exportAction, parseTtsFacts } from "../src/actions.ts";
+import { speak, exportAction, parseTtsFacts, laneTopologyOf } from "../src/actions.ts";
 
 // The REAL resolved shape the service hands compose: the family row
 // with the DECL's own lane_inputs (the registry owns lane truth).
@@ -32,11 +32,12 @@ const FACTS: ModelFacts = {
   mods: MODS,
 };
 // The Design variant's resolved row (the fold: a variant pick
-// re-points the lane — synth_lane design, the VoiceDesign
-// checkpoint).
+// re-points the lane — the voicedesign topology is the design
+// lane, the VoiceDesign checkpoint).
 const DESIGN_FACTS: ModelFacts = {
   ...FACTS,
-  lane_inputs: { ...FACTS.lane_inputs, model_path: "Qwen3-TTS-12Hz-1.7B-VoiceDesign", synth_lane: "design" },
+  lane_inputs: { ...FACTS.lane_inputs, model_path: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
+  defaults: { ...FACTS.defaults, variant: "voicedesign" },
 };
 
 const PARAMS = {
@@ -113,7 +114,7 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
 
 
   it("byte equality holds on the MINIMAL doc (bare words + seed — every optional spread arm absent)", () => {
-    const minimalFacts: ModelFacts = { ...FACTS, defaults: {} };
+    const minimalFacts: ModelFacts = { ...FACTS, defaults: { variant: "customvoice" } };
     const p = { text: "bare words", seed: 11 };
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, minimalFacts, action, "probe-min");
@@ -123,16 +124,17 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.equal(synth.inputs.top_k, 0, "an unstated optional leaves the vendor autofill's own default (no override key)");
   });
 
-  // The clone lane rides a synthetic row (the 1.7B family serves
-  // its design route; the speak action's lane branch is DATA, so a
-  // clone-resolved row composes the clone segment on either
-  // family's checkpoint).
+  // The clone lane rides the Base variant's resolved row (the
+  // speak action's lane branch is DATA, so the base variant's
+  // topology composes the clone segment on this family's
+  // checkpoint).
   const CLONE_FACTS: ModelFacts = {
     ...FACTS,
-    lane_inputs: { ...FACTS.lane_inputs, model_path: "Qwen3-TTS-12Hz-1.7B-VoiceDesign", synth_lane: "clone" },
+    lane_inputs: { ...FACTS.lane_inputs, model_path: "Qwen3-TTS-12Hz-1.7B-Base-merged" },
+    defaults: { ...FACTS.defaults, variant: "base" },
   };
   it("byte equality holds on the clone lane's MINIMAL doc (reference pair + seed only)", () => {
-    const minimalClone: ModelFacts = { ...CLONE_FACTS, defaults: {} };
+    const minimalClone: ModelFacts = { ...CLONE_FACTS, defaults: { variant: "base" } };
     const p = { text: "bare clone", seed: 12, ref_audio: "/m/r.wav", ref_text: "the words" };
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, minimalClone, action, "probe-clone-min");
@@ -171,22 +173,27 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
     assert.notEqual(seedA, seedB, "each compose mints its own sentinel");
   });
 
-  it("the facts door refuses field-named, and the DECL's own rows parse clean", () => {
+  it("the facts door refuses field-named, the topology refuses unknown variants, and the DECL's own rows parse clean", () => {
     assert.throws(
-      () => parseTtsFacts({ synth_lane: "speak" }),
+      () => parseTtsFacts({}),
       /qwen3-tts-voicedesign speak: lane_inputs\.model_path = undefined — a non-empty string is required/,
     );
-    assert.throws(
-      () => parseTtsFacts({ model_path: "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged", synth_lane: "yodel" }),
-      /qwen3-tts-voicedesign speak: lane_inputs\.synth_lane = "yodel" — speak, clone, or design is required/,
-    );
     // the DECL's family row parses clean (the admission gate's
-    // proof — registration runs this same parse); ''-absent falls
-    // to speak.
+    // proof — registration runs this same parse).
     const raw = (DECL as { lane_inputs: Record<string, unknown> }).lane_inputs as Parameters<typeof parseTtsFacts>[0];
     const facts = parseTtsFacts(raw);
     assert.equal(facts.model_path, "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged");
-    assert.equal(facts.synth_lane, "speak");
-    assert.equal(parseTtsFacts({ model_path: "x" }).synth_lane, "", "an absent synth_lane falls to the speak lane");
+    // the lane topology: the head speaks with instruction control,
+    // the design variant designs, the base variant clones without
+    // it, an unknown variant id refuses loud.
+    assert.equal(laneTopologyOf(FACTS).synth_lane, "speak");
+    assert.equal(laneTopologyOf(FACTS).instruction_control, true);
+    assert.equal(laneTopologyOf(DESIGN_FACTS).synth_lane, "design");
+    assert.equal(laneTopologyOf(CLONE_FACTS).synth_lane, "clone");
+    assert.equal(laneTopologyOf(CLONE_FACTS).instruction_control, false);
+    assert.throws(
+      () => laneTopologyOf({ ...FACTS, defaults: { ...FACTS.defaults, variant: "yodel" } }),
+      /qwen3-tts-voicedesign: no lane topology for variant "yodel" — the DECL declares no such lane/,
+    );
   });
 });

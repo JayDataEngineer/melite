@@ -1,12 +1,12 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the compose action the music card binds. The DECL's
 // lane_inputs are the ONE facts door (checkpoint — ONE file carries
-// model+clip+vae, the latent_node precedent); the segment factory is
-// the lane IS this file, pinned to committed goldens in tests/golden/
+// model+clip+vae); the segment factory composes the latent class
+// itself (EmptyYuE2LatentAudio). The lane IS this file, pinned to
+// committed goldens in tests/golden/
 // — the wire the port produced while the kit's twin still existed and
 // the oracle compared them byte-for-byte. Creation order IS node-id
-// order (the recipe law). Keys the segment never reads (unet, vae,
-// … the strip shape) ride unvalidated.
+// order (the recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";

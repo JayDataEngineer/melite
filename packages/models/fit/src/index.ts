@@ -52,10 +52,6 @@ export const DECL: ModelDecl = {
       "label": "Variant",
     },
   ],
-  "lane_inputs": {
-    "family": "fit",
-    "weightless": true,
-  },
   // the seat action the fit-seat flow routes to (the fit-seat
   // verb's backend — family-owned nodes; SubActionMod law).
   "actions": [seat],

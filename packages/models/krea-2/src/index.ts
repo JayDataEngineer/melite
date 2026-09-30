@@ -109,8 +109,7 @@ export const DECL: ModelDecl = {
       // The cell's artifact (krea2_raw_int8_convrot) is the
       // download; this override is the run's lane spelling.
       "lane_inputs": {
-        "unet": "krea2_raw_int8_convrot.safetensors",
-        "unet_variant": "raw"
+        "unet": "krea2_raw_int8_convrot.safetensors"
       },
       "cells": [
         {
@@ -195,22 +194,12 @@ export const DECL: ModelDecl = {
   "has_agent": true,
   "has_inference": true,
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
     "clip_type": "krea2",
-    "clip_vision": "",
-    "family": "",
     "latent_node": "EmptySD3LatentImage",
-    "model_path": "",
     "sampling_shift": 0,
     "text_encoder": "qwen3vl_4b_fp8_scaled.safetensors",
-    "texture_vae": "",
     "unet": "krea2_turbo_int8_convrot.safetensors",
-    "unet_quant": "int8",
-    "unet_unconditional": "",
-    "unet_variant": "turbo",
-    "vae": "qwen_image_vae.safetensors",
-    "weightless": false
+    "vae": "qwen_image_vae.safetensors"
   },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has

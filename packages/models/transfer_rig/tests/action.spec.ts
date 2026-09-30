@@ -68,7 +68,7 @@ describe("the transfer_rig transfer action — byte-stability (the compatibility
 
   it("the door is the vacuous parse (the transfer is path-based — the row's lane weights never reach the segment)", () => {
     assert.deepEqual(parseTransferRigFacts(FACTS.lane_inputs as never), {}, "nothing off the row is read");
-    assert.equal((FACTS.lane_inputs as { weightless?: boolean }).weightless, false, "the row carries lane weights (boot/mirror truth); the segment composes none");
+    assert.equal((FACTS.lane_inputs as { model_path?: string }).model_path, "somaskel77/skin_standard.npz", "the row's one member names the rig skin (boot/mirror truth); the segment composes none");
   });
 // THE RIG-COPY CASE, at the lane's new home (the kit-arm retirement,
 // 2026-09-30 — closed by the card-system stroke): the kit wall walked

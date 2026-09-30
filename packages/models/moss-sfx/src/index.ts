@@ -73,22 +73,8 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
     "family": "moss_sfx_v2",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "MOSS-SoundEffect-v2.0-src",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
+    "model_path": "MOSS-SoundEffect-v2.0-src"
   },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has

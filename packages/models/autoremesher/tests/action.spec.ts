@@ -69,8 +69,8 @@ describe("the autoremesher remesh action — byte-stability (the compatibility l
     assert.equal(nodeOf(action).inputs.glb_path, "", "the empty path rides verbatim (the node refuses it loudly)");
   });
 
-  it("the door is the weightless vacuous parse (the binary owns its own weights)", () => {
+  it("the door is the vacuous parse (the binary owns its own weights)", () => {
     assert.deepEqual(parseAutoRemesherFacts(FACTS.lane_inputs as never), {}, "nothing off the row is read");
-    assert.equal((FACTS.lane_inputs as { weightless?: boolean }).weightless, true, "the family row declares weightless");
+    assert.equal(DECL.lane_inputs, undefined, "the family declares no lane facts at all");
   });
 });

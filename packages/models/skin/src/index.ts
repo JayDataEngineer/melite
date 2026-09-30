@@ -52,10 +52,6 @@ export const DECL: ModelDecl = {
       "label": "Variant",
     },
   ],
-  "lane_inputs": {
-    "family": "skin",
-    "weightless": true,
-  },
   // the coat action the skin-apply flow routes to (the apply-skin
   // verb's backend — family-owned nodes; SubActionMod law).
   "actions": [coat],

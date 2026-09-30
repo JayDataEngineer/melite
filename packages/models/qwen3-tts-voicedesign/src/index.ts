@@ -62,7 +62,6 @@ export const DECL: ModelDecl = {
       // the real weights, never at a name nothing provisioned.
       "lane_inputs": {
         "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
-        "synth_lane": "speak",
       },
       // THE LANE SURFACE: the persona picker + the instruct-text
       // style control ride this lane (the 1.7B CustomVoice
@@ -97,7 +96,6 @@ export const DECL: ModelDecl = {
       "route": "qwen3-tts-voicedesign-design",
       "lane_inputs": {
         "model_path": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-        "synth_lane": "design",
       },
       // THE LANE SURFACE: the design lane adds NOTHING to the
       // family base — it carries no persona, no reference, no
@@ -143,9 +141,7 @@ export const DECL: ModelDecl = {
       // snapshot law as the customvoice lane above: real weights,
       // real address.
       "lane_inputs": {
-        "instruction_control": false,
         "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
-        "synth_lane": "clone",
       },
       // THE RE-POINT + NULL STAMP: a variant pick resolves to this
       // family at the same route address; voice:null unsets any
@@ -257,24 +253,8 @@ export const DECL: ModelDecl = {
     ],
   },
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
     "family": "qwen3_tts",
-    "instruction_control": true,
-    "latent_node": "EmptySD3LatentImage",
     "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
-    "sampling_shift": 0,
-    "synth_lane": "speak",
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": null,
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
   },
   // THE DECLARED ACTIONS (the atom vocabulary, stroke 3):
   // the speak + export actions the tts card binds (the 1.7B lane tree).
@@ -305,4 +285,4 @@ export function variantRoute(decl: { variants?: ReadonlyArray<{ id: string; rout
   return typeof row?.route === 'string' ? row.route : ''
 }
 
-export { speak, exportAction, parseTtsFacts, type TtsFacts, type TtsParams } from "./actions.ts";
+export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.ts";

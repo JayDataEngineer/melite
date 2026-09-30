@@ -10,9 +10,9 @@ import { instantiateAction } from "@melite/comfyui-card-kit";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { exportAction } from "../src/actions.ts";
 
-const stub = (id: string, synthLane: string): ModelFacts => ({
+const stub = (id: string): ModelFacts => ({
   id, card: "tts", defaults: { mode: "tts" },
-  lane_inputs: { model_path: id, synth_lane: synthLane },
+  lane_inputs: { model_path: id },
   variants: [], variant_groups: [], mods: ["qvoice_save"], accepts: [], studio: {},
 } as unknown as ModelFacts);
 
@@ -20,13 +20,13 @@ const dump = (g: GraphBuilder): Record<string, { class_type: string; inputs: Rec
   g.toJSON() as never;
 const classes = (row: Record<string, { class_type: string }>): string[] => Object.values(row).map((n) => n.class_type);
 
-describe("the design route (a stated design_prompt picks the studio segment whatever the id)", () => {
-  it("synth_lane 'design' routes the VoiceStudio lane whatever the id", () => {
+describe("the export route (the exporter composes whatever the family id)", () => {
+  it("the export action routes the VoiceStudio lane whatever the id", () => {
     const g = new GraphBuilder();
     // THE LANE'S OWN PROMPT ROW (2026-09-23): design_prompt is the
     // card's task-named "Voice Persona & Timbre" row — the pack
     // carries the export name + sampling, never the prompt.
-    instantiateAction(exportAction, { text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("not-the-real-id", "design"), g, "rs");
+    instantiateAction(exportAction, { text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("not-the-real-id"), g, "rs");
     assert.ok(classes(dump(g)).includes("AudiocoreVoiceStudio"), "the design lane emits the studio node");
   });
 });

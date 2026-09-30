@@ -18,15 +18,14 @@ describe("the skin model plugin (the whole model, one package)", () => {
     assert.equal(typeof family.apply, "function");
   });
 
-  it("declares the carrier — weightless, unoffered, one coat action", () => {
+  it("declares the carrier — lane-fact-free, unoffered, one coat action", () => {
     assert.equal(DECL.id, "skin");
     assert.equal(DECL.label, "Skin (meld coat)");
     assert.equal(DECL.genre, "3d");
     assert.equal(DECL.engine, undefined);
     assert.equal(DECL.unoffered, true);
     assert.equal(DECL.form, undefined);
-    assert.equal(DECL.lane_inputs?.family, "skin");
-    assert.equal(DECL.lane_inputs?.weightless, true);
+    assert.equal(DECL.lane_inputs, undefined, "the carrier declares no engine-general facts (the binary owns its own weights)");
     assert.equal(DECL.variants.length, 1);
     assert.equal(DECL.variants[0]?.id, "standard");
     assert.deepEqual(

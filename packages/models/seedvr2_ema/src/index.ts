@@ -101,22 +101,8 @@ export const DECL: ModelDecl = {
     }
   ],
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "",
-    "clip_type": null,
-    "clip_vision": "",
-    "family": "",
-    "latent_node": "EmptySD3LatentImage",
-    "model_path": "",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
     "unet": "seedvr2_ema_3b_fp16.safetensors",
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "ema_vae_fp16.safetensors",
-    "weightless": false
+    "vae": "ema_vae_fp16.safetensors"
   },
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has

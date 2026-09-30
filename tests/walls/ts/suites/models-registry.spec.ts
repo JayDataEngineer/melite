@@ -11,6 +11,7 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { LANE_TOPOLOGY as VD_TOPOLOGY } from "../../../../packages/models/qwen3-tts-voicedesign/src/index.ts";
 import {
   modelCatalog,
   modelIds,
@@ -168,12 +169,12 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // resolving pick at registration (declaration order IS intent)
     const head = getModel("qwen3-tts-voicedesign");
     assert.equal((head.defaults as Record<string, unknown>).variant, "customvoice", "the head serves the family default (customvoice), not the last claimant");
-    assert.equal((head.lane_inputs as Record<string, unknown>).synth_lane, "speak", "the head lane is the default variant's lane — THE FLOW's lane");
+    assert.equal(VD_TOPOLOGY.customvoice?.synth_lane, "speak", "the head lane is the default variant's lane — THE FLOW's lane");
     // the design lane stays reachable through its STATED variant (the
     // stamp overlay + the variant's own lane truth), and the clone
     // lane through its own flat route
     const clone = getModel("qwen3-tts-voicedesign-base");
-    assert.equal((clone.lane_inputs as Record<string, unknown>).synth_lane, "clone");
+    assert.equal(VD_TOPOLOGY.base?.synth_lane, "clone");
     assert.equal((clone.defaults as Record<string, unknown>).variant, "base");
   });
 

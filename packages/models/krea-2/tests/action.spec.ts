@@ -75,7 +75,6 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
       lane_inputs: {
         ...FACTS.lane_inputs,
         unet: "krea2_raw_int8_convrot.safetensors",
-        unet_variant: "raw",
       },
     };
     const facts = parseT2IFacts(merged.lane_inputs);

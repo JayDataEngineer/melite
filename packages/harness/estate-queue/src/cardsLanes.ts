@@ -27,7 +27,6 @@ const LANE_FOLDERS: Readonly<Record<string, readonly string[]>> = {
   text_encoder: ["text_encoders", "clip"],
   vae: ["vae"],
   unet: ["unet", "diffusion_models"],
-  unet_unconditional: ["unet", "diffusion_models"],
   checkpoint: ["checkpoints"],
   clip_vision: ["clip_vision"],
   background_removal: ["background_removal"],

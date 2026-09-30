@@ -1,8 +1,9 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the speak + export actions the tts card binds. The
 // DECL's lane_inputs are the ONE facts door (model_path — the
-// audiocore load key; synth_lane — the lane-branch DATA, never a
-// family-id switch); the segment factories are the legacy ttsT1 /
+// audiocore load key); the lane branch (synth_lane) rides the
+// LANE_TOPOLOGY below, keyed on the resolved variant — data, never
+// a family-id switch; the segment factories are the legacy ttsT1 /
 // ttsDesignT1 tree verbatim on the kit's OWN calibrated pins,
 // loaders, and guards (one owner; the lanes stay as the
 // byte-oracles, proven in tests/action.spec.ts). Creation order IS
@@ -32,11 +33,11 @@ import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { GraphBuilder, NodeRef } from "@melite/comfyui-card-kit/graph";
 
-/** The closed facts shape the tts segments read (synth_lane: the
- * resolved lane branch — '' absent falls to speak). */
+/** The closed facts shape the tts segments read (model_path: the
+ * audiocore load key — the ONE engine-general member this family
+ * declares). */
 export type TtsFacts = {
   readonly model_path: string;
-  readonly synth_lane: "" | "speak" | "clone" | "design";
 };
 
 /** The gated params doc the tts segments read (the card's schema
@@ -44,10 +45,37 @@ export type TtsFacts = {
  * boundary). */
 export type TtsParams = Record<string, unknown>;
 
+/** The lane topology per variant id (the complexity floor's stroke
+ *  1): synth_lane and instruction_control are FAMILY-OWNED lane
+ *  facts derived from the resolved variant, never engine-general
+ *  members — the branch key is data (the variant pick), never a
+ *  family-id switch. A variant id outside the map is a broken DECL
+ *  and refuses loud. */
+export interface TtsLaneTopology {
+  readonly synth_lane: "speak" | "clone" | "design";
+  readonly instruction_control: boolean;
+}
+
+export const LANE_TOPOLOGY: Readonly<Record<string, TtsLaneTopology>> = {
+  base: { synth_lane: "clone", instruction_control: false },
+  customvoice: { synth_lane: "speak", instruction_control: false },
+};
+
+/** @param model the resolved row (family ⊕ variant)
+ *  @returns the lane topology the dispatch and the card's admission
+ *  read */
+export function laneTopologyOf(model: ModelFacts): TtsLaneTopology {
+  const key = typeof model.defaults.variant === "string" ? model.defaults.variant : "";
+  const topo = LANE_TOPOLOGY[key];
+  if (topo === undefined) {
+    throw new Error(`qwen3-tts: no lane topology for variant ${JSON.stringify(key)} — the DECL declares no such lane`);
+  }
+  return topo;
+}
+
 /** The tts facts door: the resolved lane_inputs parsed into the
- * closed shape — a missing model_path refuses field-named here; a
- * synth_lane outside the three honest lanes refuses field-named at
- * registration, never falls to a silent default at compose.
+ * closed shape — a missing model_path refuses field-named here, at
+ * registration and at compose.
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factories read */
 export function parseTtsFacts(raw: LaneInputsFacts): TtsFacts {
@@ -55,12 +83,7 @@ export function parseTtsFacts(raw: LaneInputsFacts): TtsFacts {
   if (typeof path !== "string" || path === "") {
     throw new Error(`qwen3-tts speak: lane_inputs.model_path = ${JSON.stringify(path)} — a non-empty string is required`);
   }
-  const lane = raw.synth_lane;
-  if (lane === undefined) return { model_path: path, synth_lane: "" };
-  if (lane !== "" && lane !== "speak" && lane !== "clone" && lane !== "design") {
-    throw new Error(`qwen3-tts speak: lane_inputs.synth_lane = ${JSON.stringify(lane)} — speak, clone, or design is required`);
-  }
-  return { model_path: path, synth_lane: lane };
+  return { model_path: path };
 }
 
 /** The speak segment: a stated .qvoice performs the text through
@@ -135,17 +158,18 @@ function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
   return g.node("SaveAudio", { audio: synth.out(), filename_prefix: `${runId}/tts` });
 }
 
-/** The speak action: the tts lane — three honest branches keyed on
- * the resolved synth_lane DATA (persona synthesis, Base clone,
- * design export), never a family-id switch. */
+/** The speak action: the tts lane — two honest branches keyed on
+ * the resolved variant topology (persona synthesis, Base clone),
+ * never a family-id switch; the design lane lives on the
+ * voicedesign family alone. */
 export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
   id: "speak",
   outputs: [{ name: "audio", kind: "AUDIO" }],
   params: [],
   facts: parseTtsFacts,
-  build({ p, facts, model, g, runId }) {
-    if (facts.synth_lane === "design") return exportSegment(p, model, g, runId).out();
-    if (facts.synth_lane === "clone") return cloneSegment(p, model, g, runId).out();
+  build({ p, model, g, runId }) {
+    const lane = laneTopologyOf(model).synth_lane;
+    if (lane === "clone") return cloneSegment(p, model, g, runId).out();
     return speakSegment(p, model, g, runId).out();
   },
 };

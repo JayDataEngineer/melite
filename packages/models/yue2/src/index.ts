@@ -86,22 +86,7 @@ export const DECL: ModelDecl = {
   ],
   "has_inference": true,
   "lane_inputs": {
-    "background_removal": "",
-    "checkpoint": "yue2_3b_int8_convrot.safetensors",
-    "clip_type": "",
-    "clip_vision": "",
-    "family": "",
-    "latent_node": "EmptyYuE2LatentAudio",
-    "model_path": "",
-    "sampling_shift": 0,
-    "text_encoder": "",
-    "texture_vae": "",
-    "unet": "",
-    "unet_quant": "",
-    "unet_unconditional": "",
-    "unet_variant": "",
-    "vae": "",
-    "weightless": false
+    "checkpoint": "yue2_3b_int8_convrot.safetensors"
   },
   "provisions": [
     {
