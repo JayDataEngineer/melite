@@ -24,15 +24,15 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     const row = getRegistryFlow("anny-hmr");
     assert.notEqual(row, undefined);
     const composed = composeFamilyStages(expandRegistryFlow(row!), decls);
-    const st = composed.stages[0] as {
-      params: { workflow: Record<string, { class_type: string; inputs: Record<string, unknown> }> };
-      outputs: Record<string, string>;
-    };
+    const st = composed.stages[0];
+    const wf = st.params as {
+      workflow: Record<string, { class_type: string; inputs: Record<string, unknown> }> };
+
     // THE WIRE PARITY: the composed envelope is the exact graph the
     // hand literal authored (classes, calibration, edges), with the
     // $-ref riding verbatim — the merged worker resolves it exactly
     // as it resolved the literal's.
-    assert.deepEqual(st.params.workflow, {
+    assert.deepEqual(wf.workflow, {
       "LoadImage.0": {
         class_type: "LoadImage",
         inputs: { image: "$photo" },
@@ -72,7 +72,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       decls,
     );
     assert.deepEqual(
-      (comm.stages[0] as { params: { workflow: unknown } }).params.workflow,
+      (comm.stages[0].params as { workflow: unknown }).workflow,
       {
         "LoadImage.0": { class_type: "LoadImage", inputs: { image: "$photo" } },
         "Sam3dBodyImageToAnny.0": {
@@ -86,7 +86,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       decls,
     );
     assert.deepEqual(
-      (bake.stages[0] as { params: { workflow: unknown } }).params.workflow,
+      (bake.stages[0].params as { workflow: unknown }).workflow,
       {
         "AnnyParamsToGlb.0": {
           class_type: "AnnyParamsToGlb",

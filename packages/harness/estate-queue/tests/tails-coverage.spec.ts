@@ -5,7 +5,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { CardArmError, phaseRefusal } from "../src/cardsArmError.ts";
 import { inlineEdge, inlineSkip, inlineKind } from "../src/runsValidateInline.ts";
-import { resolveArtifactFile, refLocations, findDanglingRefs, sweepOutputRoots } from "../src/cardsDangling.ts";
+import { resolveArtifactFile, refLocations, findCardDangling, sweepOutputRoots } from "../src/cardsDangling.ts";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -79,13 +79,15 @@ describe("the artifact rim (tolls and roots)", () => {
       { location: "$.b[0]", ref: "/v1/assets/runs/run-1/y.png" },
     ]);
   });
-  it("findDanglingRefs quotes the primary root lookup; a live file rides clean", () => {
+  it("findCardDangling quotes the primary root lookup; a live file rides clean", () => {
     const outRoot = sweepOutputRoots()[0];
     mkdirSync(join(outRoot, "run-tails"), { recursive: true });
     writeFileSync(join(outRoot, "run-tails", "live.png"), "x");
     try {
-      expect(findDanglingRefs({ deep: [{ ghost: "/v1/assets/runs/run-ghost/ghost.png" }] }).length).toBe(1);
-      expect(findDanglingRefs({ deep: [{ live: "/v1/assets/runs/run-tails/live.png" }] })).toEqual([]);
+      const ghost = findCardDangling({ deep: [{ ghost: "/v1/assets/runs/run-ghost/ghost.png" }] });
+      expect(ghost).not.toBeNull();
+      expect(ghost?.[2]).toMatch(/run-ghost/);
+      expect(findCardDangling({ deep: [{ live: "/v1/assets/runs/run-tails/live.png" }] })).toBeNull();
     } finally {
       const { rmSync } = require("node:fs") as typeof import("node:fs");
       rmSync(join(outRoot, "run-tails"), { recursive: true, force: true });

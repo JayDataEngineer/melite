@@ -16,7 +16,6 @@ import { join } from "node:path";
 import {
   resolveArtifactFile,
   findCardDangling,
-  findDanglingRefs,
   sweepOutputRoots,
 } from "../src/cardsDangling.ts";
 
@@ -120,14 +119,10 @@ describe("findCardDangling (the deep walk)", () => {
       assert.match(voice, /searched/, "the miss names the searched trees");
       assert.match(voice, /melite-dangling-lane/, "…including the lane's own root");
       assert.match(voice, /melite-dangling-extra/, "…and the extras root");
-      // the validate-door twin carries the same law:
-      const vMiss = findDanglingRefs({ src: "/v1/assets/runs/run-ghost/ghost.png" });
-      assert.equal(vMiss.length, 1, "the validate twin refuses the ghost too");
-      assert.match(String((vMiss[0] as unknown[])[2]), /searched/, "same NAME-THE-ROOT voice");
       assert.equal(
-        findDanglingRefs({ src: "/melite-media/runs/run-live/generate/portrait.png" }).length,
-        0,
-        "the validate twin accepts the media spelling",
+        findCardDangling({ src: "/melite-media/runs/run-live/generate/portrait.png" }),
+        null,
+        "the media spelling rides clean",
       );
     } finally {
       if (prevRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
@@ -166,13 +161,11 @@ describe("resolveArtifactFile (the artifact rim)", () => {
     );
   });
   it("one voice for non-swept shapes: a bare name refuses; runs-relative and absolute paths resolve", () => {
-    // The consolidated resolver keeps the validate door's faithful
-    // port (artifact_refs.py): a runs-relative <run>/<file> joins
-    // the root, an absolute path is its own candidate, and only a
-    // BARE name refuses — the ComfyUI input dir is the caller's
-    // staging concern, never a disk lookup. The old strict arm
-    // ("not an artifact URL") was the compose-side drift of the
-    // same function (card-plane audit finding 1, 2026-09-30).
+    // The resolver's ported shapes (artifact_refs.py): a
+    // runs-relative <run>/<file> joins the root, an absolute path
+    // is its own candidate, and only a BARE name refuses — the
+    // ComfyUI input dir is the caller's staging concern, never a
+    // disk lookup.
     assert.throws(
       () => resolveArtifactFile("relative.png", ROOT),
       /artifact ref is a bare "relative.png" — not an absolute path, an artifact URL/,
@@ -180,6 +173,16 @@ describe("resolveArtifactFile (the artifact rim)", () => {
     assert.throws(
       () => resolveArtifactFile("https://host/x.png", ROOT),
       /artifact not found on disk/,
+    );
+    // a runs-relative miss voices its OWN run id (the first
+    // segment); an absolute miss carries no run to name.
+    assert.throws(
+      () => resolveArtifactFile("run-absent/ghost.png", ROOT),
+      /never an output of run run-absent/,
+    );
+    assert.throws(
+      () => resolveArtifactFile(join(ROOT, "nowhere", "g.png"), ROOT),
+      /never an output of run \?/,
     );
     mkdirSync(join(ROOT, "run-rel"), { recursive: true });
     writeFileSync(join(ROOT, "run-rel", "x.png"), "x");

@@ -78,10 +78,10 @@ export const STAGE_KEYS_SORTED: readonly string[] = [...WIRE_STAGE_KEYS].sort();
 
 // ── strict-body vocab ───────────────────
 // Owned by the admission gate (runsGates — the SSOT shared with the
-// start door); the envelope lift the modelArm used to own here moved
-// to CardRegistryService.overlayCardParams (the SAME lift the start
-// door runs, so validate+start compose identical params). The id REs
-// stay here (flow-construction semantics, not envelope admission).
+// start door); the envelope lift is prepareCardParams' own (the
+// compose seat, one owner for both doors — validate + start
+// compose identical params). The id REs stay here
+// (flow-construction semantics, not envelope admission).
 
 // THE STAGE/FLOW ID SHAPE IS runsGates.FLOW_ID_RE — the admission
 // law the flow arms test before asking the registry, re-exported

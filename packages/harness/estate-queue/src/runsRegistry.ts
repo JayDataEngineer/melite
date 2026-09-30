@@ -49,11 +49,7 @@ import {
   type ModelFactsRow,
   type Phase1Card,
 } from "./cardsRegistry.ts";
-import {
-  FlowError,
-  findDanglingRefs,
-  strictBody,
-} from "./runsValidate.ts";
+import { FlowError, strictBody } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
 import type { QueueCore, QueueRefusal } from "./queue.ts";
 import {

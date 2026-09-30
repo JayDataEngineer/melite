@@ -26,7 +26,7 @@ const MCP_CARD = 'mcp'
  *  catalog, and — the Run-press law, 2026-10-08 — a family-less
  *  card rides its OWN id (defaultFamilyForCard's documented
  *  fallback): the door's card-unit arm composes the card verbatim
- *  (prepareCardParams/overlayCardParams branch; no family overlay).
+ *  (prepareCardParams' card-unit arm; no family overlay).
  *  THE PARAM IS THE WIRE (the two-month law): whatever the stage's
  *  slot holds — an upload's estate path or a picked upstream output's
  *  media-route url — rides the start doc VERBATIM; the engine stages

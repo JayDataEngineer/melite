@@ -134,7 +134,6 @@ describe("the runs door through the lane's models seat", () => {
       { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo },
       new AbortController().signal,
     );
-    const row = ((): RunRecord => ans as unknown as { run: RunRecord }).run;
     await settleRun(svc, ans.run_id);
     const live = (svc as unknown as {
       core: { runs: Map<string, RunRecord> };
@@ -146,7 +145,6 @@ describe("the runs door through the lane's models seat", () => {
     // ("$photo names neither a FromStage-wired input nor a request
     // initial") after the door had already blessed the value.
     assert.deepEqual(seen[0], { photo });
-    void row;
 
     // THE REPLAY PIN (the same wall, one process death later): the
     // durable request body is the shimmed flow_inline doc (the flow

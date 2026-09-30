@@ -124,7 +124,10 @@ function validateDecl(decl: ModelDecl): void {
     for (const c of v.cells) {
       const art = c.artifact;
       if (art === undefined || art === null) continue;
-      const fn = art.filename ?? (art.source_url !== undefined ? art.source_url.split("/").pop() : undefined);
+      // CellArtifact carries no filename field — the download's
+      // name is the source_url's last path segment (the downloader
+      // writes dest_root/dest_sub + that basename).
+      const fn = art.source_url.split("/").pop();
       if (fn === undefined || fn === "") continue;
       if (!loads.has(fn)) {
         throw new ModelError(

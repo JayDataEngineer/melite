@@ -163,9 +163,6 @@ const seat = (
     // answers whether a refused mid is a CARD (empty here — the
     // ghost stays a catalog miss).
     cardDecls: (): unknown => ({}),
-    overlayCardParams: async (): Promise<unknown> => {
-      throw new Error("unreached overlay");
-    },
     composeValidateCard: async (): Promise<unknown> => null,
     // the validate walk primes the engine itself; this fake answers
     // "primed" so the walk proceeds to phase1 (both are real methods
@@ -265,7 +262,6 @@ const modelDoorSeat = (
       modelFacts: (): unknown => ({ m1: {} }),
       resolveCardFamily: (): unknown => "m1",
       modelMids: (): unknown => new Set<string>(),
-      overlayCardParams: async (): Promise<unknown> => ({}),
       phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
       phase2Card: async (): Promise<unknown> => ({
         graph,
@@ -419,9 +415,9 @@ describe("validate", () => {
   });
 
   it("resolve hits compose (refusals, 200, unmapped codes stay LOUD)", async () => {
-    // The arm wraps ONE prepareCardParams (audit finding 2): the
-    // rig's facts row must carry the card the decls table answers,
-    // exactly as a real facts file would.
+    // The arm wraps ONE prepareCardParams: the rig's facts row must
+    // carry the card the decls table answers, exactly as a real
+    // facts file would.
     const base = {
       modelFacts: (): unknown => ({ m1: { card: "c" } }),
       resolveCardFamily: (): unknown => "m1",
@@ -473,8 +469,7 @@ describe("validate", () => {
         modelFacts: (): unknown => ({ m1: {} }),
         resolveCardFamily: (): unknown => "m1",
         modelMids: (): unknown => new Set<string>(),
-        overlayCardParams: async (): Promise<unknown> => ({}),
-        phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
+          phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
         phase2Card: async (): Promise<unknown> => ({
           graph,
           outputs: {},
@@ -531,8 +526,7 @@ describe("validate", () => {
         modelFacts: (): unknown => ({ m1: {} }),
         resolveCardFamily: (): unknown => "m1",
         modelMids: (): unknown => new Set<string>(),
-        overlayCardParams: async (): Promise<unknown> => ({}),
-        phase1Card: async (): Promise<unknown> => {
+          phase1Card: async (): Promise<unknown> => {
           throw new CardArmError(
             400,
             "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
@@ -640,10 +634,10 @@ describe("validate", () => {
   });
 
   it("prepare failures fold CardArmErrors and rethrow the rest", async () => {
-    // The overlay fork is gone (audit findings 2+3): prepareCardParams
-    // owns the arms, so a prepare-leg CardArmError is what folds and
-    // a raw prepare-leg error is what stays loud. resolveCardFamily
-    // is the leg the rig can stub after the resolves short-circuit.
+    // prepareCardParams owns the arms, so a prepare-leg CardArmError
+    // is what folds and a raw prepare-leg error is what stays loud.
+    // resolveCardFamily is the leg the rig can stub after the
+    // resolves short-circuit.
     const arm = seat({
       modelFacts: (): unknown => ({ m1: { card: "c" } }),
       resolveCardFamily: (): unknown => {
@@ -666,7 +660,7 @@ describe("validate", () => {
 
 describe("status + stop", () => {
   const live = (s: Seat, over: Partial<RunRecord> = {}): string => {
-    const row = {
+    const row: RunRecord = {
       runId: "run-live",
       status: "queued",
       stages: [],
@@ -959,7 +953,8 @@ describe("status + stop", () => {
       pipeline: "flow_inline",
       graphRows: [],
       outputNodes: [],
-    } as RunRecord);
+      initials: {},
+    });
     const got = await s.svc.status(runId, sig());
     const arts = got["artifacts"] as string[];
     assert.equal(arts.length, 3);
@@ -1280,7 +1275,7 @@ describe("cross-roots manifest (§23)", () => {
   }));
 
   const liveRow = (s: Seat): string => {
-    const row = {
+    const row: RunRecord = {
       runId: "run-live",
       status: "queued",
       stages: [],
@@ -1296,7 +1291,8 @@ describe("cross-roots manifest (§23)", () => {
       pipeline: "flow_inline",
       graphRows: [],
       outputNodes: [],
-    } as RunRecord;
+      initials: {},
+    };
     (s.core.runs as Map<string, RunRecord>).set(row.runId, row);
     return row.runId;
   };

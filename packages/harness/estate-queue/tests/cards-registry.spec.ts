@@ -24,6 +24,7 @@ import {
   needCardRegistry,
   familyFace,
 } from "../src/cardsRegistry.ts";
+import { prepareCardParams } from "../src/cardsCompose.ts";
 
 let svc: CardRegistryService;
 let ctx: Context;
@@ -328,39 +329,38 @@ describe("needCardRegistry (the miswire voice)", () => {
   });
 });
 
-describe("overlayCardParams (the validate overlay, phase-1 voice)", () => {
+describe("prepareCardParams, phase-1 voice (the run-start compose)", () => {
   it("a legal mid selects, stamps, and lifts", () => {
     const facts = svc.modelFacts();
     const mid = Object.keys(facts)[0] as string;
-    const out = svc.overlayCardParams({}, mid);
+    const out = prepareCardParams(svc, {}, mid, "1");
     expect(out.fam.length).toBeGreaterThan(0);
     expect(typeof out.card).toBe("string");
     expect(typeof out.params).toBe("object");
   });
 
   it("a family-less card id uses the card-unit marker", () => {
-    const out = svc.overlayCardParams({ model: "mask", input_image: "/m/p.png" }, "mask");
+    const out = prepareCardParams(svc, { model: "mask", input_image: "/m/p.png" }, "mask", "1");
     expect(out.fam).toBe("");
     expect(out.card).toBe("mask");
     expect(out.params["model"]).toBeUndefined();
   });
 
   it("an unregistered model id does not become a family-less card", () => {
-    // Through the projection the voice is the door's own order
-    // (audit finding 3): an id that resolves NOWHERE answers the
-    // unknown-unit refusal — the cordis-plane skew voice belongs
-    // to ids that resolve but lack a facts row.
-    expect(() => svc.overlayCardParams({}, "not-a-card")).toThrow(/no model unit for model: not-a-card/);
+    // An id that resolves NOWHERE answers the unknown-unit
+    // refusal — the cordis-plane skew voice belongs to ids that
+    // resolve but lack a facts row.
+    expect(() => prepareCardParams(svc, {}, "not-a-card", "1")).toThrow(/no model unit for model: not-a-card/);
   });
 
   it("a catalog id that resolves through a route still uses the family row", () => {
-    const out = svc.overlayCardParams({}, "h3-fl2va");
+    const out = prepareCardParams(svc, {}, "h3-fl2va", "1");
     expect(out.fam).toBe("h3");
     expect(out.card).toBe("h3-timeline");
   });
 
   it("the timeline route prepares as the h3 family, not a second family", () => {
-    const out = svc.overlayCardParams({ prompt: "x" }, "h3-timeline");
+    const out = prepareCardParams(svc, { prompt: "x" }, "h3-timeline", "1");
     expect(out.fam).toBe("h3");
   });
 
@@ -374,7 +374,7 @@ describe("overlayCardParams (the validate overlay, phase-1 voice)", () => {
     view.modelMids = () => new Set([...originalMids(), "mask"]);
     view.resolveCardFamily = (mid: string): string => mid === "mask" ? "h3" : originalResolve(mid);
     try {
-      const out = svc.overlayCardParams({ model: "mask" }, "mask");
+      const out = prepareCardParams(svc, { model: "mask" }, "mask", "1");
       expect(out.fam).toBe("h3");
     } finally {
       view.modelMids = originalMids;

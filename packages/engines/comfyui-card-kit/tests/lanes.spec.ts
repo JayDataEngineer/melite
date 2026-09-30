@@ -15,10 +15,9 @@ import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeImageEdit, finalizeTagger, finalizeMask,
-  maskT1,
   type StripTable,
   refuseImageEditFiring, finalizeAnny, finalizeMotion,
-  ttsT1, qvoiceUse,
+  qvoiceUse,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
 import { deriveDefaults } from "../src/graph.ts";
@@ -232,25 +231,11 @@ describe("vocabulary (the one-row law)", () => {
 // ── the stroke-78 arm sweep (coverage: every new loud arm fires) ──
 
 
-// ── THE TTS LANE DISPATCH (the lane-branch law, 2026-09-20) ──────────
-// branch key = lane_inputs DATA (synth_lane), never a family-id
-// switch — the latent_node/text_encode_node precedent, applied to
-// the tts trio. The stub ids are DELIBERATELY NOT the real family
-// ids: if the dispatch keyed on model.id these tests would route
-// wrong (that is the point — the key is the data, not the name).
-describe("the qvoice reader (a kit helper — the lane dispatch moved with its lane)", () => {
-  const stub = (id: string, synthLane: string) => ({
-    id,
-    card: "tts",
-    defaults: { mode: "tts" },
-    lane_inputs: { model_path: id, synth_lane: synthLane },
-    variants: [],
-    variant_groups: [],
-    mods: ["qvoice_save"],
-    accepts: [],
-    studio: {},
-  }) as never as import("../src/facts.ts").ModelFacts
-
+// ── THE QVOICE READER (a kit helper) ──────────
+// every family's action reads its qvoice through qvoiceUse: the
+// media-shape normalization and the refusal voices below are the
+// one contract the actions inherit.
+describe("the qvoice reader (a kit helper)", () => {
   it("normalizes every admitted qvoice media shape", () => {
     assert.deepEqual(qvoiceUse({ qvoice: "flat.qvoice", voice_strength: "1.25" }), { path: "flat.qvoice", strength: 1.25 });
     assert.deepEqual(qvoiceUse({ qvoice: [{ qvoice: "bag.qvoice", voice_strength: "0.5" }] }), { path: "bag.qvoice", strength: 0.5 });
@@ -275,10 +260,5 @@ describe("the qvoice reader (a kit helper — the lane dispatch moved with its l
     assert.throws(() => qvoiceUse({ qvoice: { voice_strength: "0.5" } }), /qvoice bag entry requires a string qvoice path/);
     assert.throws(() => qvoiceUse({ qvoice: { qvoice: 7 } }), /qvoice bag entry requires a string qvoice path/);
     assert.throws(() => qvoiceUse({ qvoice: 7 }), /qvoice must be a path or one-entry qvoice bag/);
-  });("an unusable qvoice bag entry refuses before graph construction", () => {
-    assert.throws(
-      () => ttsT1({ text: "hi", seed: 1, qvoice: [{ qvoice: 7 }] }, stub("anything", ""), new GraphBuilder(), "rq"),
-      /qvoice bag entry requires a string qvoice path/,
-    );
   });
 });

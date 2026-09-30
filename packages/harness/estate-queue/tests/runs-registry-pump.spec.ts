@@ -68,9 +68,6 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     },
     resolveCardFamily: (mid: unknown): unknown => mid,
     modelMids: (): unknown => new Set<string>(),
-    overlayCardParams: async (): Promise<unknown> => {
-      throw new Error("unreached overlay");
-    },
     composeValidateCard: async (): Promise<unknown> => null,
     phase1Card: async (): Promise<unknown> => {
       throw new Error("unreached phase1");
@@ -455,7 +452,7 @@ describe("pump + engine", () => {
     const runId = "run-teardown-fallback";
     const dir = join(s.state, "output", runId);
     mkdirSync(dir, { recursive: true });
-    const row = {
+    const row: RunRecord = {
       runId,
       status: "running",
       stages: [],
@@ -471,7 +468,8 @@ describe("pump + engine", () => {
       pipeline: "flow_inline",
       graphRows: [],
       outputNodes: [],
-    } as RunRecord;
+      initials: {},
+    };
     s.core.runs.set(runId, row);
     const ctx = (s.svc as unknown as { ctx: Context }).ctx;
     await ctx.fiber.dispose();

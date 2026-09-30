@@ -1042,26 +1042,6 @@ export class CardRegistryService extends Service {
     }
   }
 
-  /** The validate-door overlay (the SAME overlay, phase-1 voice) —
-   *  R1 selection + the route-lens stamp overlay + lift, so
-   *  start+validate compose the identical params (phase-1 with
-   *  run_id "" on both). Precondition: mid is legal and resolves to
-   *  a cordis family (the caller's own checks refuse first, same
-   *  voices). Throws CardArmError on unknown variant/quant or an
-   *  unregistered card. */
-  overlayCardParams(
-    body: Record<string, unknown>,
-    mid: string,
-  ): OverlaidCard {
-    // A thin projection over prepareCardParams (the card-plane
-    // audit's finding 3, 2026-09-30): this method was a third fork
-    // of the same refusal arms with the phase frozen to "1" and no
-    // model-id legality check. prepare owns every arm; the
-    // projection keeps the historical OverlaidCard shape.
-    const prep: PreparedCard = prepareCardParams(this, body, mid, "1");
-    return { fam: prep.fam, card: prep.card, params: prep.params };
-  }
-
   /** In-process validate compose (the CLI subprocess retired,
    *  2026-09-09): the SAME composeOnce pipeline the start path
    *  rides — facts + pin snapshot + stanza unwrap + admission gate
@@ -1361,17 +1341,6 @@ export interface PreparedCard {
    *  behind it, so the family-keyed gates (lane presence) skip and
    *  the card's declaration owns every default. */
   readonly familyless?: boolean;
-}
-
-
-// ── validate-door entry (the SAME overlay, phase-1 voice) ─────────
-// (Lives on the service now — overlayCardParams is
-// CardRegistryService.overlayCardParams.)
-
-export interface OverlaidCard {
-  readonly fam: string;
-  readonly card: string;
-  readonly params: Record<string, unknown>;
 }
 
 // ── in-process compose (the core: steps 7-9) ───────────────────────

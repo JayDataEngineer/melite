@@ -198,7 +198,13 @@ export function admissionRefusal(
    *  mirrors resolve_card_model + the validate modelArm: artifact
    *  sweep FIRST (fail fast — a sloppy compose never runs), then
    *  legality, existence, the non-cordis arm check, selection,
-   *  overlay, lift. */
+   *  overlay, lift.
+   *
+   * @param factsArg a caller-resolved facts table. The validate
+   *  door passes its degraded read (it answers from the catalog
+   *  alone when the facts file is absent); omitted by every other
+   *  seat, which takes the strict read here (`deps.modelFacts()`).
+   */
 export function prepareCardParams(
     deps: ComposeSeat,
     body: Record<string, unknown>,
@@ -206,10 +212,6 @@ export function prepareCardParams(
     phase: string,
     factsArg?: Record<string, ModelFactsRow>,
   ): PreparedCard {
-    // `factsArg` is the validate door's degraded read (an explicit
-    // resolve step, not a hidden default): the door answers from
-    // the catalog alone when the facts file is absent; every other
-    // seat omits it and takes the strict read here.
     const facts: Record<string, ModelFactsRow> = factsArg ?? deps.modelFacts();
     const dangling = findCardDangling(body);
     if (dangling !== null) {

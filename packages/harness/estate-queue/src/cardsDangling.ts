@@ -1,7 +1,6 @@
-// cardsDangling.ts — the artifact-ref sweep, the ONE home both
-// doors ride (the compose gate's first hit and the validate
-// door's all-hits mirror share scanRefs — one resolver, one
-// voice per refusal). Extracted from cardsRegistry: resolve
+// cardsDangling.ts — the artifact-ref sweep, the ONE home the
+// compose gate rides through prepareCardParams (one resolver,
+// one voice per refusal). Extracted from cardsRegistry: resolve
 // run-artifact refs against the out roots and walk bodies for
 // every ref location.
 //
@@ -73,9 +72,6 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
       );
     }
     cand = join(outRoot, rel);
-    /* v8 ignore start -- refLocations yields prefix-URL refs only (the
-       gateway feeds /v1/assets/runs/... URLs): the relative/absolute/bare
-       shapes are ported for faithfulness, unreachable here (2026-09-12) */
   } else if (raw.includes("/") && !raw.startsWith("/")) {
     cand = join(outRoot, raw);
   } else if (raw.startsWith("/")) {
@@ -90,7 +86,6 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
         "<run>/<file> (a bare filename lives in the ComfyUI input " +
         "dir and is the caller's staging concern, never a disk lookup)",
     );
-    /* v8 ignore stop */
   }
   const absCand: string = resolve(cand);
   const absRoot: string = resolve(outRoot);
@@ -107,9 +102,12 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
     isFile = false;
   }
   if (!isFile) {
-    const run: string = prefix !== null
-      ? raw.slice(prefix.length).split("/", 2)[0] as string // split yields >= 1
-      : /* v8 ignore next -- refs always carry a prefix through refLocations (2026-09-12) */ "?";
+    // The run id rides the ref's own first segment for every
+    // prefix-URL and runs-relative shape; an absolute path carries
+    // no run, so "?" names that absence.
+    const run: string = prefix !== null || (raw.includes("/") && !raw.startsWith("/"))
+      ? raw.slice(prefix !== null ? prefix.length : 0).split("/", 2)[0] as string // split yields >= 1
+      : "?";
     throw new Error(
       "artifact not found on disk: " + JSON.stringify(raw) + " (looked up " + absCand + ") — the " +
         "upstream run may have been pruned, or the ref was never an output of run " + run,
@@ -165,14 +163,6 @@ function scanRefs(body: Record<string, unknown>): Array<[string, string, string]
     }
   }
   return dangling;
-}
-
-/** find_dangling_refs semantics: every dangling (location, ref,
- *  why) — the validate door's all-hits mirror. */
-export function findDanglingRefs(
-  body: Record<string, unknown>,
-): Array<[string, string, string]> {
-  return scanRefs(body);
 }
 
 /** The compose gate's first-hit question: the first dangling

@@ -53,7 +53,7 @@ describe("the third live break is dead (krea-2-raw serves)", () => {
     // the hand roster, read raw — the derivation fills OVER it
     const slices = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as { rows: Record<string, { frozen?: unknown }> }
     const rostered = new Set(Object.keys(slices.rows ?? {}))
-    for (const [address, owner] of Object.entries(facts.owners)) {
+    for (const [address, owner] of Object.entries(facts.owners ?? {})) {
       const ownerRostered = rostered.has(owner) && slices.rows[owner]!.frozen === undefined
       if (!ownerRostered) continue // an unserved family is a serving decision, never drift
       assert.ok(

@@ -276,13 +276,10 @@ export async function modelValidateArm(
       };
     }
     const svc = ctx.cardRegistry;
-    // ONE PREPARE (the card-plane audit's finding 2, 2026-09-30):
-    // this arm used to hand-roll five of prepareCardParams'
-    // refusal arms (dangling, legality, the resolves predicate,
-    // the unknown-unit voice, the cordis-plane skew) with
-    // byte-identical strings — the messages drifted from the
-    // compose door's the day either side changed. The arm now
-    // wraps the single callee; the facts degrade below is THIS
+    // ONE PREPARE: this door owns no refusal voices of its own —
+    // prepareCardParams refuses (dangling, legality, resolves,
+    // unknown-unit, skew) and the arm folds its CardArmErrors
+    // into the validate answer. The facts degrade below is THIS
     // door's pinned policy (the catalog answers alone when the
     // facts file is absent), handed to prepare as an explicit
     // resolve step.

@@ -92,9 +92,6 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
     },
     resolveCardFamily: (mid: unknown): unknown => mid,
     modelMids: (): unknown => new Set<string>(),
-    overlayCardParams: async (): Promise<unknown> => {
-      throw new Error("unreached overlay");
-    },
     composeValidateCard: async (): Promise<unknown> => null,
     phase1Card: async (): Promise<unknown> => {
       throw new Error("unreached phase1");
