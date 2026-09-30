@@ -184,7 +184,10 @@ export const BODY_TO_SOMAX: RegistryFlow = {
     "Bare body GLB → SOMAX-rigged GLB: the anny→kimodo bridge (the baked " +
     "SOMA-77 template weight transfer, standalone-rig mode — no Blender). The " +
     "motion studio posts this behind the scenes when a wired body isn't SOMAX; " +
-    "any bare human mesh (anny bake, TRELLIS, upload) rides the same door.",
+    "any bare human mesh (anny bake, TRELLIS, upload) rides the same door. " +
+    "VALIDATE-ONLY on the queue's {flow:} door (2026-09-30 multi-stage " +
+    "boundary stamp): card= stages refuse at start — drive the rig card " +
+    "through the bench or {model:}.",
   stages: [
     plainStage({
       id: "rig",
@@ -223,7 +226,10 @@ export const CHARACTER: RegistryFlow = {
     "Headless keeper pipeline: z-image character + garment images (or " +
     "operator-supplied starters) -> ANNY commercial body -> SOMAX rig -> " +
     "pixal3d garment (remesh tail folded) -> skin detail -> automatic " +
-    "fit-seat attach -> dressed-GLB export.",
+    "fit-seat attach -> dressed-GLB export. VALIDATE-ONLY on the queue's " +
+    "{flow:} door (2026-09-30 multi-stage boundary stamp): card= stages " +
+    "refuse at start — drive the cards through the bench (construct " +
+    "chaining) or the {model:} door.",
   stages: [
     plainStage({
       id: "img",
@@ -237,11 +243,9 @@ export const CHARACTER: RegistryFlow = {
       outputs: { photo: "image" },
       cardIo: { photo: "image" },
       // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3 — the
-      // flow-system stroke): this stage used to hand-wire the z-image
-      // graph node by node in the flow plane — a second copy of the
-      // lane, drifting the moment a weight or a node default moved.
-      // It now names the card and the family; the family's declared
-      // t2i action composes the graph, exactly as the bench does.
+      // flow-system stroke): the stage names the card and the family;
+      // the family's declared t2i action composes the graph, exactly
+      // as the bench does. The flow row owns routing only.
       params: {
         model: "z-image",
         prompt: "$character_prompt",
@@ -517,7 +521,10 @@ export const KIMODO_NATIVE: RegistryFlow = {
   id: "kimodo-native",
   description:
     "Text-to-motion gate — ComfyUI Kimodo lane (island nodes, raw PyTorch " +
-    "kimodo package, local SOMA-RP-v1.1 weights + local LLM2Vec encoder).",
+    "kimodo package, local SOMA-RP-v1.1 weights + local LLM2Vec encoder). " +
+    "VALIDATE-ONLY on the queue's {flow:} door (2026-09-30 multi-stage " +
+    "boundary stamp): card= stages refuse at start — drive the motion card " +
+    "through the bench or {model:}.",
   stages: [
     plainStage({
       id: "t2m",

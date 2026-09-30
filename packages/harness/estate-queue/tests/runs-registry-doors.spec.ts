@@ -65,12 +65,12 @@ const seat = (
     // the door's absent-pin degrade) and card= stages read
     // defsSync.
     //
-    // CARD STAGES RIDE THESE FLOWS NOW (the atom vocabulary, stroke 3
-    // — the flow-system stroke): the character flow's z-image stages,
-    // garment stage, and rig hop (body-to-somax) used to hand-wire
-    // their graphs and are now card= stages, so the structural fake
-    // serves those cards and their family rows. The fake stays
-    // structural — no engine, no facts file, no compose.
+    // CARD STAGES RIDE THESE FLOWS (the atom vocabulary, stroke 3 —
+    // the flow-system stroke): the character flow's z-image stages,
+    // garment stage, and rig hop (body-to-somax) are card= stages,
+    // so the structural fake serves those cards and their family
+    // rows. The fake stays structural — no engine, no facts file, no
+    // compose.
     objectInfo: (): unknown => null,
     defsSync: (): unknown =>
       new Map([

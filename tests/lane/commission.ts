@@ -43,8 +43,11 @@ export const SUPERVISOR = join(REPO_ROOT, 'scripts/commission-supervisor.sh')
  *  the only video card, and the non-Unity mesh cards are
  *  `img-to-mesh`, `rig`, `quad-remesh` (plus the mesh-emitting
  *  registry flows anny-hmr / body-to-somax / character / fit-seat /
- *  skin-apply). `anny` alone writes an 8-view PNG sheet, not a mesh —
- *  a 3D brief must therefore reach a mesh-writing card. */
+ *  skin-apply — the card-stage flows among them are validate-only on
+ *  the queue: their cards compose through the bench, which is how
+ *  the maker reaches them). `anny` alone writes an 8-view PNG sheet,
+ *  not a mesh — a 3D brief must therefore reach a mesh-writing
+ *  card. */
 export interface PathTableRow {
   path: PathName
   /** the deliverable in the brief's own words */

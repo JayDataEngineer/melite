@@ -132,8 +132,8 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     expect(names.length, "the registry flows judged, exact").toBe(13);
     // (the atom vocabulary, stroke 3 — the flow-system stroke): the
     // five second-truth stages (character img/gimg/garment,
-    // body-to-somax rig, kimodo-native t2m) name cards now — their
-    // nodes compose family-side and this wall no longer judges them.
+    // body-to-somax rig, kimodo-native t2m) name cards — their nodes
+    // compose family-side, outside this wall's judgment.
     // The 17 that remain are the two sole-truth classes the ledger
     // records (li-ck): the anny estimator chains + verbatim bake, and
     // the meld flows whose cards were retired 2026-09-16.
