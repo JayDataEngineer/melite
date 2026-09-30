@@ -25,6 +25,31 @@
     - id: hot-g2-door
       name: /home/user/Documents/programs/active/inference.cpp/packages/web/melite-estate/hot/g2-maker-door.plugin.ts
 
+# THE TWIN CURE (2026-10-12): the profile stopped bundling
+# @melite/harness-provisioner. Its patch inserted an `infer-estate`
+# row (name '@melite-plugin/melite-estate' — the SAME package this
+# profile already mounts through the dsh-estate bundle's own
+# `melite-estate` row above). Two rows, one package: the second
+# mount's `new ModelsService` refused ("service models has been
+# registered"), the estate entry went INACTIVE, and the lane served
+# with an empty models table — every form-spec model refused. The
+# profile carried both bundles from 2026-09-29 but never cold-booted
+# until the 2026-10-11 re-ship, so the twin lay dormant. Rows the
+# provisioner bundle uniquely provided move HERE:
+- id: skill-filesystem
+  # column-0 override (patches the dsh-base row, mounts nothing):
+  # silence the host skill-filesystem row so discovery stays the
+  # estate's own surface.
+  disabled: true
+
+- insert:
+    # the one card studio with no self-patch: @melite/3d-img-to-mesh
+    # ships no cordis.patch.yml, so the row lives in the profile.
+    # h3-timeline and motion-motion self-register (h3-studio,
+    # motion-studio rows in their own bundles).
+    - id: card-studio-img-to-mesh
+      name: '@melite/3d-img-to-mesh'
+
 - id: melite-estate
   config:
     repoRoot: /home/user/Documents/programs/active/inference.cpp/data/runs

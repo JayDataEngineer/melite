@@ -30,7 +30,6 @@
     "@melite/estate-queue": "link:/home/user/Documents/programs/active/inference.cpp/packages/harness/estate-queue",
     "@melite/estate-runs": "link:/home/user/Documents/programs/active/inference.cpp/packages/estate/runs",
     "@melite/formats": "link:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/formats",
-    "@melite/harness-provisioner": "link:/home/user/Documents/programs/active/inference.cpp/packages/harness/provisioner",
     "@melite/harness-tools": "link:/home/user/Documents/programs/active/inference.cpp/packages/harness/melite-tools",
     "@melite/image-image-edit": "link:/home/user/Documents/programs/active/inference.cpp/packages/image/image-edit",
     "@melite/image-image-gen": "link:/home/user/Documents/programs/active/inference.cpp/packages/image/image-gen",
@@ -99,7 +98,6 @@
         "@melite-plugin/dsh-card-deck",
         "@melite-plugin/dsh-gallery",
         "dsh-glb-viewer",
-        "@melite/harness-provisioner",
         "@deepseek-ai/dsh-experimental-agent-team-profile"
       ],
       "train": "0.2.0-rc.1"
