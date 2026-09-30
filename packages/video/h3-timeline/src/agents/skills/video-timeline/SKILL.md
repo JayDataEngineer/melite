@@ -56,14 +56,14 @@ re-roll should preserve world texture.
 - The first call has no incoming seam.
 - Omit `transition` for the automatic continuation; set `transition: "cut"`
   on an incoming call for an independent window.
-- The carried path reserves the shared overlap and uses the `22 + 17k`
-  generated-frame grid. Current admission does not uniformly enforce every
-  single/cut length, so inspect the returned plan and receipt.
+- One span grid, uniform: first and `cut` calls author `22+17k` frames in
+  `[22,362]`; carried calls author `17k` frames (the carry's 22 frames come
+  from the generation head). Off-grid spans are refused at admission and
+  at the compose carrier, with the nearest legal frame named.
 - The automatic continuation uses a fixed 22-frame overlap; `transition:
   "cut"` is the deliberate independent-window choice.
-- The intended timeline is contiguous, but cross-call gaps/overlaps are not
-  yet an admission invariant. Treat either as an authoring defect and repair
-  it manually.
+- Calls tile, enforced at admission: a cross-call gap or overlap is refused
+  (`calls[i].start_frame` must equal `calls[i-1].end_frame`).
 
 Do not send retired `context`, seam-keyframe, `bed_audio`, or other undeclared
 fields. Top-level unknown fields are refused; some per-call compatibility keys

@@ -60,14 +60,14 @@ runbook. Never shell out to ComfyUI or hand-build a graph.
 call has no incoming seam. Omit `transition` for the automatic carry and set
 `transition: "cut"` on an incoming call when the shot should start fresh.
 
-## Timeline rules and current gaps
+## Timeline rules
 
-- Intended calls tile the delivered film, but the current card validates each
-  call independently and does not enforce cross-call adjacency. Treat a gap
-  or overlap as an authoring defect and inspect the plan/result yourself.
-- Carried spans use the shared carried-grid check. Single/cut lengths use the
-  current snapping path; do not assume every off-grid form has the same
-  refusal behavior.
+- Calls tile the delivered film, enforced at admission: a cross-call gap
+  or overlap is refused (`calls[i].start_frame` must equal
+  `calls[i-1].end_frame`).
+- One span grid covers every window shape: first and `cut` calls author
+  `22+17k` frames in `[22,362]`, carried calls `17k` frames. Off-grid
+  spans are refused with the nearest legal frame named.
 - Unknown per-call keys may be retained for compatibility and are not a
   reliable way to add behavior. Use only fields returned by `melite_load`.
 - There is no live seam-keyframe/context field. Do not send retired fields

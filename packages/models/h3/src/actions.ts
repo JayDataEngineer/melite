@@ -948,8 +948,14 @@ function renderH3Window(
     // node: never selected, yet a flipped switch would have run the
     // gold prompt. Direct wiring + an orphan = one lane, one truth.
     g.node('MiniMaxH3ImageToVideo', {
+      // Input census alignment (2026-10-12): the engine build's
+      // node declares clip/first_frame/height/last_frame/length/
+      // prompt/vae/width — context_steps and audio_context_steps
+      // are gone from the declaration, and the input wall walks
+      // orphans too, so wiring them refused the whole graph
+      // (BRIEF15: card_compose unknown-input on this node).
       prompt: I2V_MARKER_PROMPT, width: geoW, height: geoH,
-      length: lengthNode, context_steps: 1, audio_context_steps: 0,
+      length: lengthNode,
       clip, vae: vaeVideo, first_frame: bout.out(0), last_frame: bout.out(1),
     })
     cond = r2v.out(0)

@@ -27,10 +27,8 @@ The intended film uses:
 - no gaps or overlaps;
 - a call's own text and the declared transition on its incoming seam.
 
-The current implementation validates calls independently and does not yet
-enforce cross-call adjacency. A gap or overlap can therefore survive compile;
-the authoring result is defective until the plan/artifact is checked and the
-document is repaired.
+Admission enforces the tiling: `calls[i].start_frame` must equal
+`calls[i-1].end_frame`, and a gap or overlap is refused, not absorbed.
 
 ## Continuation
 

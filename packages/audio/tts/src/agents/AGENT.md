@@ -15,6 +15,19 @@ every door. The 0.6B is a fallback, never a choice you make
 unprompted; the Base route is named only when the job IS a clone from
 reference audio.
 
+## WHERE MOD FIELDS RIDE (the compose admission)
+
+Compose admission reads the card's DECLARED surface: card knobs, the
+contract admits, and the mod fields of the family the call SELECTS —
+selection is the `model` you state on the call (the estate door reads
+it from `params.model`; omit it and the default route's packs decide).
+A mod field refused as `unknown param(s)` means the family carrying
+its pack was not selected: state the family (`params.model:
+"qwen3-tts-voicedesign"` for `voice_name`/`design_prompt`) and the
+field rides top-level beside the knobs. `melite_load`'s mod
+advertisement lists fields from the DECL across families — it does
+not select one; the call does.
+
 ## THE THREE SIGNATURES (each variant does a different thing)
 
 - **VoiceDesign — the CHARACTER instruct.** design_prompt (Voice

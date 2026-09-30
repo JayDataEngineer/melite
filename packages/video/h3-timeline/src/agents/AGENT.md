@@ -26,14 +26,18 @@ headless maker uses `melite_flow` and `run_status` for its delegated run.
 ## Timeline shape
 
 - `calls` and `audio_clips` must be arrays.
-- Calls are intended to tile the delivered timeline without gaps or overlaps;
-  the current card does not yet enforce cross-call adjacency, so inspect the
-  plan/result and repair either defect.
+- Calls tile the delivered timeline, enforced: `calls[i].start_frame`
+  must equal `calls[i-1].end_frame`; gaps and overlaps are refused at
+  admission, not absorbed.
 - The first call has no incoming seam.
 - Omit `transition` for the automatic carry; set `transition: "cut"` on the
   incoming call for a deliberate fresh window.
-- A carried window uses the supported `22 + 17k` generated-frame grid and a
-  fixed 22-frame overlap; other span snapping/refusal behavior is not uniform.
+- One span grid, uniform across every window shape: the first call and
+  any `transition: "cut"` call author a `22+17k` span (56, 73, 90, 107 …)
+  inside `[22,362]`; a carried call authors a `17k` span (17, 34, 51 …)
+  because its 22 frames come from the generation head. Off-grid spans
+  are refused at admission and again at the compose carrier, with the
+  nearest legal frame named.
 - Do not send `context`, seam-keyframe, `bed_audio`, sampler/backend internals,
   or other undeclared fields. Top-level unknown fields are refused; some
   per-call compatibility keys may be retained but do not add behavior.
