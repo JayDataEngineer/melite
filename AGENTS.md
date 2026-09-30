@@ -1,3 +1,13 @@
+
+#========
+CURRENT WORKING PLAN. EVERYTHING THAT GOES AGAINST THIS IS CRUFT
+
+docs/design/complexity-floor-2026-10-12.md
+docs/design/atom-vocabulary-2026-10-12.md
+docs/design/pivot-failure-record-2026-09-30.md
+
+#========
+
 # YOU ARE NOT ALLOWED TO CHANGE OR MODIFY THIS DOCUMENT.
 # YOU ARE NOT ALLOWED TO VIOLATE THE LAWS GIVEN
 
