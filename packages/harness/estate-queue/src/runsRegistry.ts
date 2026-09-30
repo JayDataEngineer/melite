@@ -1058,23 +1058,35 @@ export class RunsRuntimeService extends Service {
     // durable request body is its flow_inline doc (the shim deleted
     // the flow name), so a run that rehydrates on the next boot
     // arrives here with no flow arm to extract, and its `$spell`s
-    // would die unlinkable at the engine merge. compileFlowInline's
-    // own first gate proves the doc carries a string `id`
-    // ("flow body needs at least id and stages"), so a doc that
-    // names a registry flow yields its declaration directly. A
-    // hand-authored or bench-composed doc names no registry flow
-    // and owns no declared initials — nothing to recover.
-    const replayDecl: ReturnType<typeof getRegistryFlow> = getRegistryFlow(
-      (inline as Record<string, unknown>)["id"] as string,
-    );
-    if (replayDecl !== undefined) {
-      const replayExtracted = extractRequestInitials(replayDecl, body);
-      if ("refusal" in replayExtracted) {
-        throw new RemoteError("runs/invalid-request", replayExtracted.refusal, {
-          loc: "body",
+    // would die unlinkable at the engine merge. A doc that names a
+    // registry flow yields its declaration and the SAME gate the
+    // flow arm ran — a hand-authored doc carrying a registry id must
+    // not buy itself the initial-carrier privilege while skipping
+    // the traversal, extension and on-disk checks that close it. A
+    // bench-composed doc's id is always "bench"-prefixed (never a
+    // registry name) and a hand-authored one usually names nothing
+    // registered: nothing to recover, nothing refused.
+    const replayId: unknown = (inline as Record<string, unknown>)["id"];
+    if (typeof replayId === "string") {
+      const replayDecl: ReturnType<typeof getRegistryFlow> = getRegistryFlow(replayId);
+      if (replayDecl !== undefined) {
+        const badReplayInitial: string | null = registryInitialsError(replayDecl, body, {
+          repoRoot: resolveRepoRoot(),
+          stateRoot,
         });
+        if (badReplayInitial !== null) {
+          throw new RemoteError("runs/invalid-request", badReplayInitial, {
+            loc: "body",
+          });
+        }
+        const replayExtracted = extractRequestInitials(replayDecl, body);
+        if ("refusal" in replayExtracted) {
+          throw new RemoteError("runs/invalid-request", replayExtracted.refusal, {
+            loc: "body",
+          });
+        }
+        Object.assign(requestInitials, replayExtracted.initials);
       }
-      Object.assign(requestInitials, replayExtracted.initials);
     }
     if (compiled.stages.length !== 1) {
       // THE CURATED-LANE LIFT (2026-09-25, the multi-stage boundary

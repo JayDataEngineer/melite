@@ -125,6 +125,10 @@ afterEach(() => {
   vi.unstubAllEnvs()
   delete process.env['MELITE_CRITIC_ROUTE']
   delete process.env['MELITE_AGENT_ROUTE']
+  // The ambient-env law (dsh-ci-test-reliability): a shell that drove
+  // the studio lane can carry a present-but-empty MELITE_MCP_ENGINES,
+  // and the mcp-row's own config assertion reads the environment.
+  delete process.env['MELITE_MCP_ENGINES']
 })
 
 // apply is async (the models row is awaited so a family refusal

@@ -53,9 +53,24 @@ export function batchRows(body: unknown, firstError: string, cards?: CardRegistr
 // callers pass no cards and get the same degrade (a unit caller
 // with no registry cannot know the pin — fail-open set, never a
 // throw on this sweep leg).
-export function servedNodeClasses(cards?: CardRegistryLike | null): Set<string> {
-  if (cards === null || cards === undefined) return new Set();
-  return new Set(Object.keys(cards.objectInfo() ?? {}));
+export function servedNodeClasses(cards?: CardRegistryLike | null): Set<string> | null {
+  // NULL, NOT EMPTY, when no pin can judge a class: no cards seat (a
+  // non-plugin caller), or the owner is mounted but the engine never
+  // answered (objectInfo() null — the snapshot is primed by a live
+  // read). An empty set and an absent pin are different facts: the
+  // first is the engine serving no classes, the second is nobody
+  // able to ask. Collapsing them made a down engine refuse every
+  // valid workflow with "class_type X is not in the engine's served
+  // node set (0 known classes) — fix the class name or install the
+  // node" — a false accusation carrying a wrong instruction. The
+  // caller skips the membership judgment on null (the schema-only
+  // verdict the compose walk's sibling leg already takes when the
+  // engine is unreachable); the start door, which composes before
+  // queuing, still refuses a genuinely unserved class.
+  if (cards === null || cards === undefined) return null;
+  const oi: Record<string, unknown> | null = cards.objectInfo();
+  if (oi === null || oi === undefined) return null;
+  return new Set(Object.keys(oi));
 }
 
 export function validateWorkflow(params: unknown, cards?: CardRegistryLike | null): string[] {
@@ -68,7 +83,7 @@ export function validateWorkflow(params: unknown, cards?: CardRegistryLike | nul
     typeof wfRec["workflow"] === "object" && wfRec["workflow"] !== null && !Array.isArray(wfRec["workflow"])
       ? wfRec["workflow"]
       : wf;
-  const known: Set<string> = servedNodeClasses(cards);
+  const known: Set<string> | null = servedNodeClasses(cards);
   const rows: string[] = [];
   for (const [nodeId, node] of Object.entries(raw as Record<string, unknown>)) {
     const cls: unknown =
@@ -77,7 +92,7 @@ export function validateWorkflow(params: unknown, cards?: CardRegistryLike | nul
         : undefined;
     if (cls === undefined || cls === null) {
       rows.push("workflow node " + JSON.stringify(nodeId) + ": no class_type");
-    } else if (!known.has(typeof cls === "string" ? cls : String(cls))) {
+    } else if (known !== null && !known.has(typeof cls === "string" ? cls : String(cls))) {
       rows.push(
         "workflow node " +
           JSON.stringify(nodeId) +

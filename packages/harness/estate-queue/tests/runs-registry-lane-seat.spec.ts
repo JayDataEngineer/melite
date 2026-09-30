@@ -102,7 +102,7 @@ describe("the runs door through the lane's models seat", () => {
     await ctx.fiber.dispose();
   });
 
-  it("the engine merge receives the run's request initials (the census commission's catch, pinned)", async () => {
+  it("the engine merge receives the run's request initials (the door's gate-blessed values, pinned)", async () => {
     const { svc, ctx } = await laneSeat(modelsFamiliesProvider);
     // The engine seat as a cordis-registered subclass (needComfyUI
     // instanceof-gates the host service — a structural fake cannot
@@ -185,6 +185,24 @@ describe("the runs door through the lane's models seat", () => {
     );
     assert.ok(!(authored instanceof RemoteError), "a hand-authored id is not a registry recovery");
 
+    // A NON-STRING id passes the compiler's top gate (it checks key
+    // presence, not type), so the recovery's typeof guard is live —
+    // a numeric id is not a registry name and recovers nothing.
+    const numericId = await remote(() =>
+      svc.start(
+        {
+          draft_id: "d1",
+          test: false,
+          flow_inline: {
+            id: 42 as unknown as string,
+            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+          },
+        },
+        new AbortController().signal,
+      ),
+    );
+    assert.ok(!(numericId instanceof RemoteError), "a non-string id is not a registry recovery");
+
     // A doc with NO id at all (the compiler's own fixtures' shape)
     // recovers nothing — the id arm is absent, not an error.
     const idless = await remote(() =>
@@ -207,6 +225,23 @@ describe("the runs door through the lane's models seat", () => {
     assert.ok(idless instanceof RemoteError, "the compiler refuses an id-less inline");
     assert.equal((idless as RemoteError).code, "runs/invalid-request");
     assert.match((idless as RemoteError).message, /needs at least id and stages/);
+
+    // THE GATE RIDES THE RECOVERY TOO: a hand-authored doc carrying a
+    // registry id buys the initial-carrier privilege, never a way
+    // around the flow arm's gate. A traversal path in the body
+    // refuses here exactly as it refuses on the flow arm — the value
+    // would otherwise reach the uploader, which stages local files by
+    // extension.
+    const traversal = await remote(() =>
+      svc.start(
+        { draft_id: "d1", test: false, ...durable, photo: "data/input/../../../../etc/hostile.png" },
+        new AbortController().signal,
+        { runId: "run-traversal" },
+      ),
+    );
+    assert.ok(traversal instanceof RemoteError, "the replay arm runs the same gate");
+    assert.equal((traversal as RemoteError).code, "runs/invalid-request");
+    assert.match((traversal as RemoteError).message, /refuses traversal/);
 
     // A mangled durable body refuses loud at the door (the file
     // boundary), naming the initial — never an "[object Object]"

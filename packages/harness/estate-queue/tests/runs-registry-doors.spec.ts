@@ -353,8 +353,19 @@ describe("validate", () => {
     );
     assert.equal(unknown.code, "runs/invalid-request");
     assert.match(unknown.message, /no flow named ghost in the registry/);
-    const pinned = await remote(() => s.svc.validate({ flow: "character" }, sig()));
-    assert.equal(pinned.code, "runs/workflow-pin");
+    // The seat's pin does not answer (objectInfo() null — the engine
+    // is down or the fake has no engine), so the sweep is unjudgeable
+    // and the door takes the schema-only verdict. The old degrade
+    // answered a workflow_pin here, accusing the character flow's
+    // z-image stages of classes the pin never claimed not to serve.
+    const schemaOnly = await s.svc.validate({ flow: "character" }, sig());
+    assert.equal(
+      (schemaOnly as Record<string, unknown>)["code"],
+      undefined,
+      "the unjudgeable pin takes the schema-only verdict, not a workflow_pin",
+    );
+    // The INITIAL gate is the flow arm's own voice and still refuses
+    // the present-but-absent input.
     const bad = await remote(() =>
       s.svc.validate({ flow: "character", starter_image: "/nonexistent.png" }, sig()),
     );

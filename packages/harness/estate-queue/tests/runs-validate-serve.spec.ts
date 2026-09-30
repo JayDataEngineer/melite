@@ -237,6 +237,12 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     expect(() => serveSubject({ id: "f1", stages: [evil] }, {}, null)).toThrow(RangeError);
   });
   it("a pinned ghost class serves the workflow_pin 400 (stage-stamped)", () => {
+    // An ANSWERING pin — the ghost verdict needs a registry that says
+    // which classes the engine serves. With no pin the sweep is
+    // unjudgeable and the door takes the schema-only 200 (the start
+    // door, which composes before queuing, still refuses the ghost
+    // against a live engine).
+    const answering = { objectInfo: () => ({ KSampler: {} }) } as never;
     const ans = inlineArm({
       flow_inline: {
         id: "f1",
@@ -245,11 +251,30 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
           params: { workflow: { "9": { class_type: "Ghost" } } },
         })],
       },
-    }, null);
+    }, answering);
     expect(ans.status).toBe(400);
     const payload = ans.payload as Record<string, unknown>;
     expect(payload["code"]).toBe("workflow_pin");
     expect(payload["loc"]).toBe('"a"');
     expect((payload["errors"] as Array<Record<string, unknown>>)[0]?.["stage"]).toBe('"a"');
+  });
+
+  it("an UNANSWERED pin takes the schema-only 200 — never a false per-class accusation", () => {
+    // The engine down (objectInfo() null) or no registry at all: the
+    // sweep cannot know which classes are served, so it judges shape
+    // only. The old degrade called every class unknown and refused
+    // with "install the node" — false, and misdirecting.
+    for (const pin of [null, { objectInfo: () => null } as never]) {
+      const ans = inlineArm({
+        flow_inline: {
+          id: "f1",
+          stages: [stage({
+            id: "a", outputs: { out: "image" },
+            params: { workflow: { "9": { class_type: "KSampler" } } },
+          })],
+        },
+      }, pin);
+      expect(ans.status).toBe(200);
+    }
   });
 });

@@ -46,21 +46,30 @@ describe("batchRows (the per-stage probe table)", () => {
       .toThrow(/no CardRegistryService/);
   });
   it("a workflow pin rides the batch rows too (the sweep leg)", () => {
+    // An ANSWERING pin: the ghost verdict needs a pin that says which
+    // classes the engine serves (an absent pin is unjudgeable, not an
+    // empty roster).
     const rows = batchRows({
       stages: [stage({ id: "a", params: { workflow: { "9": { class_type: "Ghost" } } } })],
-    }, "boom", null);
+    }, "boom", { objectInfo: () => ({ KSampler: {} }) } as never);
     expect(rows.length).toBe(2);
     expect(rows[1]).toMatchObject({ stage: '"a"', code: "workflow_pin" });
   });
 });
 
-describe("servedNodeClasses (the pin degrade)", () => {
-  it("no registry degrades to the empty set; a registry projects its object info", () => {
-    expect(servedNodeClasses(null)).toEqual(new Set());
-    expect(servedNodeClasses(undefined)).toEqual(new Set());
+describe("servedNodeClasses (the pin's state, not an empty set)", () => {
+  it("null means NOBODY CAN ASK; a set means the engine answered", () => {
+    // No cards seat (a non-plugin caller) and a mounted owner whose
+    // engine never answered are both UNJUDGEABLE — null, so the
+    // membership verdict is skipped instead of accusing every class.
+    expect(servedNodeClasses(null)).toBeNull();
+    expect(servedNodeClasses(undefined)).toBeNull();
+    expect(servedNodeClasses({ objectInfo: () => null } as never)).toBeNull();
+    // The engine answering with no classes IS an answer — a real,
+    // empty set, and the sweep judges against it.
+    expect(servedNodeClasses({ objectInfo: () => ({}) } as never)).toEqual(new Set());
     const cards = { objectInfo: () => ({ KSampler: {}, VAE: {} }) };
     expect(servedNodeClasses(cards as never)).toEqual(new Set(["KSampler", "VAE"]));
-    expect(servedNodeClasses({ objectInfo: () => null } as never)).toEqual(new Set());
   });
 });
 
@@ -70,8 +79,18 @@ describe("validateWorkflow (the pin verdicts)", () => {
     expect(validateWorkflow({ workflow: "flat" }, null)).toEqual([]);
     expect(validateWorkflow({ workflow: [1] }, null)).toEqual([]);
     expect(validateWorkflow({ workflow: {} }, null)).toEqual([]);
-    const rows = validateWorkflow({ workflow: { workflow: { "1": { class_type: "Ghost" } } } }, null);
-    expect(rows.length).toBe(1);
+    // No pin to judge against: the schema-only verdict. The old
+    // degrade called this a refusal ("Ghost is not in the engine's
+    // served node set (0 known classes) — install the node"), a false
+    // accusation with a wrong instruction whenever the engine was
+    // merely down.
+    expect(
+      validateWorkflow({ workflow: { workflow: { "1": { class_type: "Ghost" } } } }, null),
+    ).toEqual([]);
+    // Structure is judged without any pin — that check needs no engine.
+    expect(
+      validateWorkflow({ workflow: { "1": { no_class: 1 } } }, null),
+    ).toHaveLength(1);
   });
   it("a classless node, a scalar node, and an unknown class each refuse; a known class rides", () => {
     const rows = validateWorkflow({
@@ -101,14 +120,15 @@ describe("sweepWorkflows (the engine scoping)", () => {
     expect(sweepWorkflows({ stages: [7, null, "x"] }, null)).toEqual([]);
   });
   it("a labelless stage names its index; a pinned ghost stamps a workflow_pin row", () => {
+    const answering = { objectInfo: () => ({ KSampler: {} }) } as never;
     const rows = sweepWorkflows({
       stages: [stage({ params: { workflow: { "9": { class_type: "Ghost" } } } })],
-    }, null);
+    }, answering);
     expect(rows.length).toBe(1);
     expect(rows[0]).toMatchObject({ stage: '"s1"', code: "workflow_pin" });
     const noId: Record<string, unknown> = stage({ params: { workflow: { "9": { class_type: "Ghost" } } } });
     delete noId["id"];
-    const indexed = sweepWorkflows({ stages: [noId] }, null);
+    const indexed = sweepWorkflows({ stages: [noId] }, answering);
     expect(indexed[0]?.["stage"]).toBe('"stage[0]"');
   });
   it("a non-string engine skips (never a throw on this sweep leg)", () => {
