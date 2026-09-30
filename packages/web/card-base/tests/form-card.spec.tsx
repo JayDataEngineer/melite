@@ -602,6 +602,22 @@ test('LANES: the customvoice lane is quiet too, and a STATED off-surface value s
   expect(strip.textContent ?? '').toContain('fires nothing')
 })
 
+test('LANES: the admission strip seats with the refusal surface, never in the axes flow', () => {
+  // THE SEAT LAW (2026-09-30): a lane refusal rendered as a bare
+  // sibling after the axes grid READ as the Recipe row's value. The
+  // strip belongs to the form's refusal surface (beside the compose
+  // gate), before the axes; the axes block's last row carries no
+  // lane text.
+  form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant: 'customvoice', ref_audio: '/a.flac' } })
+  const strip = document.querySelector('[data-lane-warn="1"]')
+  if (strip === null) throw new Error('a carried off-surface value warns')
+  const axes = document.querySelector('[data-axes-pair]')
+  if (axes === null) throw new Error('the axes grid renders')
+  expect(strip.compareDocumentPosition(axes) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0)
+  expect(axes.parentElement?.contains(strip) ?? true, 'the strip is outside the axes section').toBe(false)
+  expect(axes.parentElement?.textContent ?? '', 'the axes rows carry no lane text').not.toContain('fires nothing')
+})
+
 test('LANES: an unknown or cleared variant is the run door\'s voice, never this strip', () => {
   for (const variant of ['not-a-variant', '']) {
     form({ spec: ttsDoc(), user: { model: 'qwen3-tts', variant, ref_audio: '/a.flac' } })

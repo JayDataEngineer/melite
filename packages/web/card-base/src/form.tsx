@@ -397,15 +397,18 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
           gateViolations.map((v, i) => h('p', { key: 'gate-' + String(i) }, v.message)),
         )
       : null,
+    // LANE REFUSALS SEAT WITH THE FORM'S REFUSAL SURFACE (the admission
+    // voice never renders inside the parameter flow — a bare sibling
+    // after the axes grid reads as the Recipe row's value).
+    laneWarns.length > 0
+      ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length), role: 'alert' },
+          laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)),
+        )
+      : null,
     // THE AXES ride the user layer through the same edit seam (their
     // picks are ordinary sets; the resolved value passes along).
     h(PackPrompt, { spec, onInstallPack }),
     h(ModelAxes, { spec, value, onSet: edit, onPick, onDownloadModel }),
-    laneWarns.length > 0
-      ? h('div', { className: css.laneWarn, 'data-lane-warn': String(laneWarns.length) },
-          laneWarns.map((v, i) => h('p', { key: 'lane-' + String(i) }, v.message)),
-        )
-      : null,
     railFields.length > 0 || stackFields.length > 0
       ? h('section', { className: css.specGroup + ' ' + css.inputRail, 'data-input-rail': '1' },
           // THE SECTION HEAD (#37, the Modifiers symmetry): the input
