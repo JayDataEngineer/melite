@@ -305,11 +305,22 @@ export function hSkillRead(
     }
     // THE SPAWN PLANE DOOR LAW: `-spawn` scoped leaves are the
     // spawned subagent's private briefs — the HTTP read door
-    // (melite_skill_read, the constructor's tool) refuses them by id; the
-    // spawn injection reads them through findSkill directly, never
-    // through this door.
+    // (melite_skill_read, the constructor's tool) refuses them by id;
+    // the spawn injection reads them through findSkill directly,
+    // never through this door. The refusal NAMES THE SCOPE: the row
+    // exists and this reader may not have it, which the absent-skill
+    // voice denied (the same 404 text answered a found row and a
+    // genuine miss alike).
     if (found.row.scope.endsWith("-spawn")) {
-      return { status: 404, payload: { error: "no such skill: " + JSON.stringify(sid) } };
+      return {
+        status: 404,
+        payload: {
+          error:
+            "skill " + JSON.stringify(sid) + " is scoped " +
+            JSON.stringify(found.row.scope) + " — the spawned subagent's own brief; " +
+            "this reader (the constructor session) never serves it",
+        },
+      };
     }
     let body: string;
     if (found.bodyText !== null) {

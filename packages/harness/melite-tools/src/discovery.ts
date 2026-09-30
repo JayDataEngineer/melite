@@ -28,6 +28,7 @@ import {
   loadCardDefs,
   modelIds,
   theService,
+  modelsService,
   emitModifierKinds,
   declaredDefaults,
 } from '@melite/comfyui-cordis'
@@ -98,6 +99,12 @@ export function resolveSpecKey(
   try {
     decl = getModel(key)
   } catch {
+    // Two different throws land here — the seat not being booted and
+    // a genuinely unknown model — and a name that cannot resolve is
+    // this function's contract, so both answer null. The form-spec
+    // DOOR asks the seat itself before calling, so a lane whose table
+    // has not settled speaks the table's voice instead of routing
+    // every model through the 404.
     return null
   }
   if (!isServedFamily(decl)) return null
@@ -1044,6 +1051,13 @@ export async function formSpecArm(
     return buildEngine()
   }
   const defs = await loadCardDefs()
+  // THE SEAT BEFORE THE NAME: a mounted-table question answered in
+  // the table's own voice. Without this the door's null collapsed
+  // "the table never booted" into "does not resolve (unknown,
+  // unoffered, or retired)" — a 404 naming the model as retired when
+  // the lane had no table to ask. The refusal propagates and the door
+  // renders it 500, exactly as it does for every other engine seat.
+  modelsService()
   const res = resolveSpecKey(model, defs, boardedMap(defs))
   if (res === null) return null
   return specBody(theService(), defs, res)

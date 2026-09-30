@@ -432,10 +432,20 @@ describe("hSkillRead", () => {
     try {
         // the spawn reader resolves it…
         assert.ok(findSkill(ROOT, "model:blender:rigging") !== null);
-        // …but the constructor's read door 404s the id
+        // …but the constructor's read door refuses the id IN ITS OWN
+        // VOICE: the row exists and this reader may not have it. The
+        // absent-skill text used to answer here, claiming a row the
+        // spawn reader had just resolved.
         const r = hSkillRead(ROOT, state, "model:blender:rigging");
         assert.equal(r.status, 404);
-        assert.deepEqual(r.payload, { error: "no such skill: \"model:blender:rigging\"" });
+        const refusal = (r.payload as { error: string }).error;
+        assert.match(refusal, /is scoped "model-spawn"/);
+        assert.match(refusal, /spawned subagent's own brief/);
+        // A genuine miss still answers as a miss.
+        const missing = hSkillRead(ROOT, state, "model:blender:no-such-skill");
+        assert.deepEqual(missing.payload, {
+          error: 'no such skill: "model:blender:no-such-skill"',
+        });
     } finally {
       rmSync(state, { recursive: true, force: true });
     }

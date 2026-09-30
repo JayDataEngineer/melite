@@ -359,13 +359,18 @@ export function loadCard(
   modelsSeat: CardModelsSeat | null | undefined,
   cardId: string,
 ): Record<string, unknown> {
+  // ADMISSION BEFORE THE DEPENDENCY (the flow arm's own order at
+  // loadFlow: the referent first, the seat that serves it second).
+  // Reading the models seat first made an unknown card answer in the
+  // engine's bootstrap voice ("models service not booted") instead of
+  // the load door's own "disclose: unknown card 'x'".
+  const defs = cards.defsSync();
+  const def = defs.get(cardId);
+  if (def === undefined) throw new Error(`disclose: unknown card '${cardId}'`);
   // The lane's seat when mounted (the lane-seat law — the same read
   // the flow arm threads), the booted singleton otherwise; an
   // unmounted seat degrades exactly like the flow arm.
   const models: CardModelsSeat = modelsSeat ?? modelsService();
-  const defs = cards.defsSync();
-  const def = defs.get(cardId);
-  if (def === undefined) throw new Error(`disclose: unknown card '${cardId}'`);
   const rows = toolBaseRows(defs);
   const pkgDir: string = resolveCardPackageDir(repo, cardId);
   const decls = new Map(models.allDecls().map((d): [string, { id: string; label: string; description: string; lane_inputs?: Record<string, unknown> }] => [d.id, { id: d.id, label: d.label, description: d.description ?? "", ...(d.lane_inputs === undefined ? {} : { lane_inputs: d.lane_inputs }) }]));

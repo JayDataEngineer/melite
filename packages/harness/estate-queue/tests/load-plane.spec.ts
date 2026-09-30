@@ -279,6 +279,23 @@ describe("loadCard", () => {
       folder === "checkpoints" && name === "a.safetensors" ? "/models/a.safetensors" : null,
   };
 
+  it("an unknown card answers in the LOAD door's voice, never the engine's bootstrap voice", () => {
+    // Admission before the dependency: the referent is checked first,
+    // so a missing card never surfaces as "models service not
+    // booted" on a lane whose singleton has not settled. The seat
+    // read here is the one that throws.
+    const exploding = {
+      get allDecls(): never {
+        throw new Error("models service not booted — await bootModels() first");
+      },
+    } as unknown as never;
+    assert.throws(
+      () => loadCard(REPO, cards as never, exploding, "ghost-card"),
+      /disclose: unknown card 'ghost-card'/,
+      "the card's own refusal, not the dependency's",
+    );
+  });
+
   it("an absent seat falls back to the booted singleton (the lane-seat law's degrade arm)", () => {
     // The booted singleton is the fallback when the context mounts no
     // models seat — the same degrade the flow arm rides. It must not
