@@ -281,14 +281,12 @@ export type SettleFn = (run: RunRecord) => void;
           run.dir,
           inputNames,
           { shouldStop, report },
-          // The run's request initials ride every engine submit (the
-          // census commission's catch, 2026-10-10): the values the
-          // start body carried for the flow's declared initials, so
-          // `$spell` params resolve at the engine's merge instead of
-          // refusing ("$photo names neither a FromStage-wired input
-          // nor a request initial"). Engines whose param dialect has
-          // no `$spells` ignore the record.
-          run.initials ?? {},
+          // The run's request initials ride every engine submit: the
+          // gate-blessed values the start door extracted for this
+          // flow's declared initials, so `$spell` params resolve at
+          // the engine's merge. Engines whose param dialect has no
+          // `$spells` ignore the record.
+          run.initials,
         );
         result = {
           stages: Object.fromEntries(
@@ -312,10 +310,8 @@ export type SettleFn = (run: RunRecord) => void;
             "merged submit (" + rows.length + " stages, " + nodeCount + " nodes)";
         }
         // Same law as the seat path above: the run's request initials
-        // resolve the `$spells` at this merge (the empty record this
-        // used to pass refused every initial-carrying census flow
-        // after the door had already validated the values).
-        result = await engine.executeFlow(rows, run.dir, inputNames, run.initials ?? {}, {
+        // resolve the `$spells` at this merge.
+        result = await engine.executeFlow(rows, run.dir, inputNames, run.initials, {
           shouldStop,
           report,
         });

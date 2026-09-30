@@ -506,6 +506,77 @@ export function registryInitialsError(
   }
   return null;
 }
+
+/** The initial VALUE one gate-blessed body entry carries, in the
+ *  string form the engine merge links a $spell against: file
+ *  initials give their path ({path: …} unwraps — the two spellings
+ *  the gate blesses), bake_params gives its params_json string
+ *  (objects stringify — the dialect the belt validates). Null
+ *  refuses a shape the gate would have refused, so a mangled
+ *  durable body fails loud at the door instead of shipping an
+ *  "[object Object]" literal to the engine.
+ *  @param key the initial's declared name, for the refusal voice
+ *  @param kind the declared validator kind
+ *  @param value the raw body entry
+ *  @returns the normalized string, or null when the shape is neither */
+export function normalizedInitialValue(
+  key: string,
+  kind: RegistryInitialKind,
+  value: unknown,
+): string | null {
+  if (typeof value === "string") return value;
+  if (kind === "bake_params") {
+    // JSON.stringify(undefined) is undefined — the null-ish check
+    // in the caller skips absent entries before this arm.
+    const s: string | undefined = JSON.stringify(value);
+    return s === undefined ? null : s;
+  }
+  if (
+    typeof value === "object" && value !== null && !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>)["path"] === "string"
+  ) {
+    return (value as Record<string, unknown>)["path"] as string;
+  }
+  return null;
+}
+
+/** The request initials a body carries for a flow's declared
+ *  validators, normalized per {@link normalizedInitialValue}:
+ *  declared keys, present values only; absent stays absent (the
+ *  $channel/branch arms own those). First refusal text, or null
+ *  when every present value normalizes. Both start doors (the
+ *  flow arm and the flow_inline replay arm, which recovers the
+ *  declaration from the inline doc's registry id) call this —
+ *  the replayed durable body re-extracts the same values the
+ *  original start extracted, so a queued run that reboots mid-
+ *  queue keeps its $spells linkable at the engine merge.
+ *  @param flow the declaration whose initialValidators own the keys
+ *  @param body the request body
+ *  @returns the normalized initials record, or a refusal string */
+export function extractRequestInitials(
+  flow: RegistryFlow,
+  body: Record<string, unknown>,
+): { initials: Record<string, string> } | { refusal: string } {
+  const initials: Record<string, string> = {};
+  for (const [key, kind] of Object.entries(flow.initialValidators)) {
+    const value: unknown = body[key];
+    if (value === undefined || value === null) continue;
+    const normalized: string | null = normalizedInitialValue(key, kind, value);
+    if (normalized === null) {
+      return {
+        refusal:
+          "initial " + JSON.stringify(key) +
+          (kind === "bake_params"
+            ? " must be a params_json string or object (got " +
+              (typeof value) + ")"
+            : " must be a file path string or {path: ...} (got " +
+              (typeof value) + ")"),
+      };
+    }
+    initials[key] = normalized;
+  }
+  return { initials };
+}
 // ── the skill-body render (REBUILD-16; the tail beyond the
 // REBUILD-13 cut) ──
 

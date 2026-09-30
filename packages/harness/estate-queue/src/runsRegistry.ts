@@ -27,6 +27,7 @@ import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cor
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import {
   expandRegistryFlow,
+  extractRequestInitials,
   getRegistryFlow,
   registryFlowToInline,
   registryInitialsError,
@@ -947,9 +948,11 @@ export class RunsRuntimeService extends Service {
         queue_position: this.core.queuePosition(run.runId),
       };
     }
-    // The flow arm's request initials (declared at this scope so the
-    // registration below can carry them on the door — see the flow
-    // arm for the census-catch law).
+    // The request initials this start carries (declared at this
+    // scope so the registration below can carry them on the door).
+    // Both flow arms fill it — the named flow shim below, and the
+    // flow_inline arm that recovers the declaration from the doc's
+    // registry id (the boot replay's shape).
     const requestInitials: Record<string, EngineJson> = {};
     if (selected.door === "flow") {
       // THE NAMED-FLOW SHIM (REBUILD-13; the dead door's own law):
@@ -971,21 +974,6 @@ export class RunsRuntimeService extends Service {
         );
       }
       const expanded = expandRegistryFlow(decl);
-      // THE INITIALS THE GATE JUST BLESSED RIDE THE RUN (the census
-      // commission's catch, 2026-10-10): the worker used to submit
-      // the engine merge with an empty initials record, so every
-      // census flow — whose stage params are `$spell`s over these
-      // very keys by design — died at planMerge ("$photo names
-      // neither a FromStage-wired input nor a request initial")
-      // AFTER the door had validated the values. The gate's own
-      // keys, present values only; absent stays absent (the
-      // $channel/branch arms own those).
-      for (const key of Object.keys(decl.initialValidators)) {
-        const value: unknown = body[key];
-        if (value !== undefined && value !== null) {
-          requestInitials[key] = value as EngineJson;
-        }
-      }
       // THE COMPILE-TIME INITIAL GATE (REBUILD-21; the dead door's
       // law): present initials refuse BEFORE any run registers —
       // validate runs the same gate, so start can never queue what
@@ -999,6 +987,20 @@ export class RunsRuntimeService extends Service {
           loc: "body",
         });
       }
+      // THE GATE-BLESSED INITIALS RIDE THE RUN: the worker submits
+      // them to the engine merge, where every `$spell` over these
+      // keys links against them — a flow whose stages spell a
+      // declared initial cannot merge without this record. The
+      // extractor's own shapes are the gate's ({path: …} unwraps,
+      // bake_params objects stringify), so the engine sees the
+      // same value the gate validated.
+      const extracted = extractRequestInitials(decl, body);
+      if ("refusal" in extracted) {
+        throw new RemoteError("runs/invalid-request", extracted.refusal, {
+          loc: "body",
+        });
+      }
+      Object.assign(requestInitials, extracted.initials);
       // THE FAMILY-ACTION STAGES COMPOSE HERE (the atom vocabulary,
       // stroke 4): a stage naming family+action composes its graph
       // from the family DECL at expansion — the wire downstream sees
@@ -1052,6 +1054,29 @@ export class RunsRuntimeService extends Service {
       | { stages: CompiledStage[] }
       | QueueRefusal = compileFlowInline(inline, knownEngines);
     if ("payload" in compiled) throw toRemoteError(compiled);
+    // THE REPLAY ARM RE-EXTRACTS THE INITIALS (the durable
+    // request body a queued flow run persists is its flow_inline
+    // doc — the shim deleted the flow name — so a run that
+    // rehydrates on the next boot arrives here with no flow arm to
+    // extract, and its `$spell`s would die unlinkable at the
+    // engine merge). The doc's id names the registry declaration
+    // when the shim minted it; recover it and extract the body
+    // values against the same gate. A hand-authored or bench-composed
+    // doc carries no registry id (or an unknown one) and owns no
+    // declared initials — nothing to recover.
+    const replayId: unknown = (inline as Record<string, unknown>)["id"];
+    if (typeof replayId === "string") {
+      const replayDecl: ReturnType<typeof getRegistryFlow> = getRegistryFlow(replayId);
+      if (replayDecl !== undefined) {
+        const replayExtracted = extractRequestInitials(replayDecl, body);
+        if ("refusal" in replayExtracted) {
+          throw new RemoteError("runs/invalid-request", replayExtracted.refusal, {
+            loc: "body",
+          });
+        }
+        Object.assign(requestInitials, replayExtracted.initials);
+      }
+    }
     if (compiled.stages.length !== 1) {
       // THE CURATED-LANE LIFT (2026-09-25, the multi-stage boundary
       // resolved): the merged worker was ALWAYS multi-stage — the

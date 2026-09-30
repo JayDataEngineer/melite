@@ -100,12 +100,9 @@ export function comfyuiExecutor(ctx: Context, host: ComfyUIHostService): EngineE
         mergeRows,
         runDir,
         inputNames as Record<string, Record<string, string>>,
-        // THE REQUEST INITIALS (the census commission's catch,
-        // 2026-10-10): the run's $spells resolve against these at
-        // planMerge — an empty record refused every initial-carrying
-        // census flow ("$photo names neither a FromStage-wired input
-        // nor a request initial") while the door's gate had already
-        // validated the values.
+        // THE REQUEST INITIALS: the run's $spells resolve against
+        // this record at planMerge — an empty record refuses any
+        // stage whose params spell an initial the flow declared.
         initials as Record<string, EngineJson>,
         {
           shouldStop: options.shouldStop,

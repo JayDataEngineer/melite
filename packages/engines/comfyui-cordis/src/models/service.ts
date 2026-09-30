@@ -1046,10 +1046,6 @@ export async function bootModels(): Promise<ModelsService> {
     for (const family of FAMILY_PLUGINS) {
       await ctx.plugin(family);
     }
-    // Service registration is immediate (service.ts:11) but start
-    // settles on a fiber tick — one tick, then every family's
-    // effect has run and the table is whole.
-    await new Promise((r) => setTimeout(r, 0));
     const svc = (ctx as unknown as Record<string, ModelsService>)[MODELS_SERVICE];
     /* v8 ignore next -- service registration is synchronous and
        immediate (service.ts:11); undefined is the impossible half

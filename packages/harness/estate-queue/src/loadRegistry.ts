@@ -7,9 +7,10 @@
 
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
-import { modelsService, resolveRepoRoot } from "@melite/comfyui-cordis";
+import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadCard, loadFlow } from "./loadPlane.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
+import type { CardModelsSeat } from "./loadPlane.ts";
 
 // ROLE (cookbook adding-a-package role table): Resolver: computes/locates one named answer (the bundle) without owning it. Key "load" unchanged.
 export class LoadResolverService extends Service {
@@ -46,7 +47,19 @@ export class LoadResolverService extends Service {
         ),
       };
     }
-    return { bundle: loadCard(repo, this.ctx.cardRegistry, modelsService(), name) };
+    // The card arm reads the LANE's seat for the same reason the flow
+    // arm above does (the lane-seat law): the disclosed presence hints
+    // must come from the lane that serves the run, not the import-side
+    // singleton — on a cold boot the singleton's own read can refuse
+    // "models service not booted" while this lane is fully seated.
+    return {
+      bundle: loadCard(
+        repo,
+        this.ctx.cardRegistry,
+        this.ctx.get("models") as CardModelsSeat | undefined,
+        name,
+      ),
+    };
   }
 }
 

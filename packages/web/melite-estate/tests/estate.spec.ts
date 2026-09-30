@@ -74,6 +74,28 @@ vi.mock('@melite/engine-mcp', async () => {
   return { mcpEngines: vitest.fn((...args: unknown[]) => { mcpLane.calls.push({ cfg: args[1] }) }) }
 })
 
+// The models seat row: the fake ctx EXECUTES it (a real family
+// registration is the provider's own package, not the estate's), so
+// the awaited-mount contract is pinnable here — a refusal must fail
+// the boot before any other row mounts.
+const modelsLane = vi.hoisted(() => ({
+  refusal: undefined as Error | undefined,
+  mounted: 0,
+}))
+vi.mock('@melite/comfyui-cordis/catalog-registry', () => ({
+  default: {
+    name: 'comfyui-models-families',
+    apply: () => {
+      modelsLane.mounted += 1
+      if (modelsLane.refusal !== undefined) throw modelsLane.refusal
+    },
+  },
+}))
+
+// Every row the fake ctx was asked to mount, in order — the atomicity
+// witness for the awaited seat (a refusal must leave exactly one).
+const attempted: Array<{ name: string }> = []
+
 const discloseLane = vi.hoisted(() => ({
   root: '/tmp/disclosure-root',
   found: null as null | { bodyText: string | null; path: string },
@@ -112,12 +134,22 @@ async function mount(config?: { repoRoot?: string }): Promise<Ctx> {
     plugins: [],
     plugin(row, cfg) {
       ctx.plugins.push({ name: String(row?.name), cfg, row: row as Ctx['plugins'][0]['row'] })
+      attempted.push({ name: String(row?.name) })
+      // The models seat row is EXECUTED by the fake (a real family
+      // registration is the provider's own package, not the estate's):
+      // the awaited mount's contract — a family refusal rethrown out
+      // of apply — is only observable when the row's apply runs. Every
+      // other row stays recorded-but-unapplied (the header's law).
+      if (row?.name === 'comfyui-models-families' && typeof row?.apply === 'function') {
+        return Promise.resolve((row.apply as (c: unknown, cfg: unknown) => unknown)(ctx, cfg))
+      }
       return row
     },
     get: (_name: string) => undefined,
     effect: (fn: () => unknown) => fn(),
     root: { on: () => () => {} },
   }
+  attempted.length = 0
   await apply(ctx as never, config as never)
   return ctx
 }
@@ -130,10 +162,35 @@ describe('the bundle face', () => {
 })
 
 describe('dispatch — mount order is load order', () => {
-  it('seats the engines contract first', async () => {
+  it('mounts the awaited models seat first, then the engines contract', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' })
     expect(ctx.plugins.length).toBeGreaterThan(5)
-    expect(ctx.plugins[0]?.name).toBe('engine-contract')
+    // The models row mounts BEFORE the loop and the loop skips it
+    // (identity), so it is recorded exactly once — at index 0. The
+    // await is what makes a family refusal fail the whole boot
+    // (below) instead of leaving a half-mounted lane.
+    expect(ctx.plugins.filter((p) => p.name === 'comfyui-models-families')).toHaveLength(1)
+    expect(ctx.plugins[0]?.name).toBe('comfyui-models-families')
+    expect(ctx.plugins[1]?.name).toBe('engine-contract')
+  })
+
+  it('a family refusal fails the estate boot before any other row mounts', async () => {
+    modelsLane.refusal = new Error('family "anny" refuses: unknown node')
+    const ctx = await mount({ repoRoot: '/tmp/pin' }).catch((e: unknown) => e)
+    try {
+      expect(ctx).toBeInstanceOf(Error)
+      expect((ctx as Error).message).toBe('family "anny" refuses: unknown node')
+      // Atomicity: cordis flips the fiber INACTIVE without running
+      // collected disposers, so a refusal that landed mid-loop would
+      // leave the engines/MCP/craft/agent seats registered on a lane
+      // whose runs, queue and disclosure doors never mounted. The
+      // fake's recording list proves the loop never started — the
+      // models row is the only mount attempted.
+      expect(attempted.map((p) => p.name)).toEqual(['comfyui-models-families'])
+    } finally {
+      modelsLane.refusal = undefined
+      attempted.length = 0
+    }
   })
 
   it('pins the queue row with repoRoot and passes row configs through verbatim', async () => {

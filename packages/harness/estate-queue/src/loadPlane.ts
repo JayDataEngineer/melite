@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import {cardPackages, cardWireName, emitModifierKinds, emitParamsSchema, getModel, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
+import {cardPackages, cardWireName, emitModifierKinds, emitParamsSchema, getModel, modelsService, resolveRepoRoot, theService} from "@melite/comfyui-cordis";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";
@@ -334,6 +334,16 @@ export function skillLineForRef(
   return { ref, line: null };
 }
 
+/** The lane's models seat as the CARD arm reads it: the four
+ *  disclosure methods (family rows, path/file presence, catalog
+ *  artifacts). ModelsService satisfies it structurally; ctx.get
+ *  returns the same service, so the card arm discloses from the
+ *  lane that serves the run (the lane-seat law). */
+export type CardModelsSeat = Pick<
+  ModelsService,
+  "allDecls" | "checkModelPresent" | "checkModelPathPresent" | "resolveCatalogArtifact"
+>;
+
 /** Melite load for a CARD: agents md + tool-call signature +
  *  tier-1 skill lines (the card's own AND every boarded family's
  *  model skills — ONE load hands the agent the whole craft: loading
@@ -346,9 +356,13 @@ export function skillLineForRef(
 export function loadCard(
   repo: string,
   cards: CardRegistryService,
-  models: ModelsService,
+  modelsSeat: CardModelsSeat | null | undefined,
   cardId: string,
 ): Record<string, unknown> {
+  // The lane's seat when mounted (the lane-seat law — the same read
+  // the flow arm threads), the booted singleton otherwise; an
+  // unmounted seat degrades exactly like the flow arm.
+  const models: CardModelsSeat = modelsSeat ?? modelsService();
   const defs = cards.defsSync();
   const def = defs.get(cardId);
   if (def === undefined) throw new Error(`disclose: unknown card '${cardId}'`);

@@ -62,13 +62,11 @@ export interface RunRecord {
   stopFlag: boolean;
   params: Record<string, EngineJson>[];
   outputNodes: Record<string, EngineJson>[];
-  /** The run's request initials (the census commission's catch,
-   *  2026-10-10): the start body's values for the flow's declared
-   *  initial validators, gate-validated at the door and threaded to
-   *  the engine merge so `$spell` params resolve. Empty for runs
-   *  whose flow declares no initials (or pre-initials sidecar rows,
-   *  which read as none — the same degrade an absent body key
-   *  rides). */
+  /** The run's request initials: the start body's values for the
+   *  flow's declared initial validators, gate-validated at the door
+   *  and threaded to the engine merge so `$spell` params resolve.
+   *  Empty for runs whose flow declares no initials and for a
+   *  failed resurrect's floor row. */
   initials: Record<string, EngineJson>;
   /** The settle persist (R3 mirror): registration stamps these so
    *  settle can rewrite the sidecar + ledger row. createdAt is

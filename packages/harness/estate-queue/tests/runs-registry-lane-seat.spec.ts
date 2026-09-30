@@ -9,7 +9,7 @@
 // and every family stage refused "registered: none".
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -107,7 +107,7 @@ describe("the runs door through the lane's models seat", () => {
     // The engine seat as a cordis-registered subclass (needComfyUI
     // instanceof-gates the host service — a structural fake cannot
     // cross; the override captures the initials the worker threads).
-    let seen: Record<string, EngineJson> | null = null;
+    const seen: Array<Record<string, EngineJson>> = [];
     class CaptureEngine extends ComfyUIHostService {
       constructor(c: Context) {
         super(c, {});
@@ -118,7 +118,7 @@ describe("the runs door through the lane's models seat", () => {
         inputNames: Record<string, Record<string, string>>,
         initials: Record<string, EngineJson>,
       ): Promise<FlowResult> {
-        seen = initials;
+        seen.push(initials);
         return Promise.resolve({ stages: {}, promptId: "p" });
       }
     }
@@ -130,13 +130,7 @@ describe("the runs door through the lane's models seat", () => {
       new AbortController().signal,
     );
     const row = ((): RunRecord => ans as unknown as { run: RunRecord }).run;
-    for (let i = 0; i < 500; i++) {
-      const live = (svc as unknown as {
-        core: { runs: Map<string, RunRecord> };
-      }).core.runs.get(ans.run_id);
-      if (live !== undefined && live.status !== "queued" && live.status !== "running") break;
-      await new Promise((r) => setTimeout(r, 10));
-    }
+    await settleRun(svc, ans.run_id);
     const live = (svc as unknown as {
       core: { runs: Map<string, RunRecord> };
     }).core.runs.get(ans.run_id) as RunRecord;
@@ -146,8 +140,76 @@ describe("the runs door through the lane's models seat", () => {
     // used to submit {} here, refusing every $spell-carrying stage
     // ("$photo names neither a FromStage-wired input nor a request
     // initial") after the door had already blessed the value.
-    assert.deepEqual(seen, { photo });
+    assert.deepEqual(seen[0], { photo });
     void row;
+
+    // THE REPLAY PIN (the same wall, one process death later): the
+    // durable request body is the shimmed flow_inline doc (the flow
+    // name is gone), so a queued run that rehydrates on the next boot
+    // arrives at the flow_inline arm — the only extraction used to sit
+    // in the flow arm, and the rehydrated run's merge got {} and died
+    // at planMerge. Replay the REAL persisted body; the merge must see
+    // the same initials.
+    const durable = JSON.parse(
+      readFileSync(join(TMP, "output", ans.run_id, "_request.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.equal(durable["flow"], undefined, "the shim deleted the flow name — the replay's shape");
+    const replay = await svc.start(
+      { draft_id: "d1", test: false, ...durable },
+      new AbortController().signal,
+      { runId: ans.run_id },
+    );
+    assert.equal(replay.run_id, ans.run_id, "the replay rewrites in place (stroke 83)");
+    await settleRun(svc, ans.run_id);
+    const replayed = (svc as unknown as {
+      core: { runs: Map<string, RunRecord> };
+    }).core.runs.get(ans.run_id) as RunRecord;
+    assert.equal(replayed.status, "completed", "the replay settled: " + replayed.error);
+    assert.deepEqual(seen[1], { photo }, "the rehydrated run's merge still links $photo");
+
+    // A doc whose id names NO registry flow owns no declared initials
+    // (a hand-authored or bench-composed inline) — the recovery is
+    // skipped, never a refusal.
+    const authored = await remote(() =>
+      svc.start(
+        {
+          draft_id: "d1",
+          test: false,
+          flow_inline: {
+            id: "not-a-registry-flow",
+            stages: [{ id: "s", engine: "comfyui", params: { workflow: { "1": { class_type: "UNETLoader", inputs: {} } } } }],
+          },
+        },
+        new AbortController().signal,
+      ),
+    );
+    assert.ok(!(authored instanceof RemoteError), "a hand-authored id is not a registry recovery");
+
+    // A mangled durable body refuses loud at the door (the file
+    // boundary), naming the initial — never an "[object Object]"
+    // literal shipped to the engine.
+    const mangled = await remote(() =>
+      svc.start(
+        { draft_id: "d1", test: false, ...durable, photo: 12 },
+        new AbortController().signal,
+        { runId: "run-mangled" },
+      ),
+    );
+    assert.ok(mangled instanceof RemoteError, "the mangled replay refuses");
+    assert.equal((mangled as RemoteError).code, "runs/invalid-request");
+    assert.match((mangled as RemoteError).message, /"photo" must be a file path string/);
     await ctx.fiber.dispose();
   });
 });
+
+/** Poll until the run leaves queued/running (the wall's own cadence). */
+const settleRun = async (svc: RunsRuntimeService, runId: string): Promise<void> => {
+  for (let i = 0; i < 500; i++) {
+    const live = (svc as unknown as {
+      core: { runs: Map<string, RunRecord> };
+    }).core.runs.get(runId);
+    if (live !== undefined && live.status !== "queued" && live.status !== "running") return;
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  throw new Error("never settled " + runId);
+};

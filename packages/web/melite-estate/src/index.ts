@@ -390,19 +390,19 @@ export interface Config {
 }
 
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
+  // THE MODELS ROW MOUNTS FIRST AND IS AWAITED: a family that
+  // refuses at mount would otherwise land in cordis's logger alone —
+  // the estate boot continues, the seat unregisters, and every door
+  // silently degrades to the booted singleton. The await rethrows
+  // the provider's refusal HERE, before any other row mounts: cordis
+  // flips this fiber to INACTIVE without running collected disposers,
+  // so a refusal that landed mid-loop would leave the engines, MCP,
+  // craft and agent seats registered on a lane whose runs, queue and
+  // disclosure doors never mounted. Mounting the seat first makes the
+  // refusal atomic — the whole lane fails or none of it does.
+  await ctx.plugin(modelsFamiliesProvider);
   for (const row of rows) {
-    // THE MODELS ROW IS AWAITED: a family that refuses at mount
-    // would otherwise land in cordis's logger alone — the estate
-    // boot continues, the seat unregisters, and every door
-    // silently degrades to the booted singleton. The await
-    // rethrows the provider's refusal here: the estate's own
-    // fiber goes inactive and the boot fails LOUD (the runbook's
-    // missing-credential recovery class). No ordering weight: no
-    // row below reads the seat at apply time.
-    if (row === modelsFamiliesProvider) {
-      await ctx.plugin(row);
-      continue;
-    }
+    if (row === modelsFamiliesProvider) continue;
     // the queue row receives the pin (its QueueConfig.repoRoot)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot });

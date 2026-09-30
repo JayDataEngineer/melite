@@ -443,12 +443,12 @@ export function registerCompiledRun(args: {
      *  stamped and pipeline still rides the door. */
     cardId?: string;
     requestBody: Record<string, unknown>;
-    /** The flow arm's request initials (the start body's values for
+    /** The flow arms' request initials (the start body's values for
      *  the flow's declared initial validators, extracted after the
      *  compile-time gate passed): threaded to the engine merge so
-     *  `$spell` params resolve. Absent on the card/replay arms —
-     *  the run reads none, the same degrade a flow without
-     *  declared initials rides. */
+     *  `$spell` params resolve. Absent when the flow declares no
+     *  initials, on the card arm, and on a hand-authored or
+     *  bench-composed inline doc. */
     initials?: Record<string, EngineJson>;
     /** The bench doc read at submit (stroke 45d) — the FULL workflow
      *  the run was born from (all stages + intent), stamped verbatim

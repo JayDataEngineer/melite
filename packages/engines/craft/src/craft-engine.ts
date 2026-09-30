@@ -92,7 +92,9 @@ export const craftLoopExecutor = (
               `craft stage ${JSON.stringify(row.stageId)}: no done verdict within ${maxIter ?? CRAFT_MAX_ITERATIONS_HARD_CAP} iterations (the circuit breaker)`,
             );
           }
-          // act: one nested engine stage, same run dir (captures land there)
+          // act: one nested engine stage, same run dir (captures land there).
+          // No request initials: a craft act's params are the critic's
+          // literal tool arguments, never a run's declared $spells.
           const act = await engines.resolve(command.engine).executor.executeStages(
             [{ stageId: `${row.stageId}#${iteration}`, outputs: {}, params: command.params as Record<string, EngineParamValue> }],
             runDir,

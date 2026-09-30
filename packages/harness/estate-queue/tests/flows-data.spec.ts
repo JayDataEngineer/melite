@@ -13,6 +13,8 @@ import {
   registerRegistryFlow,
   registryFlowNames,
   registryFlowToInline,
+  extractRequestInitials,
+  normalizedInitialValue,
   registryInitialsError,
   registrySkillBody,
 } from "../src/flowsData.ts";
@@ -327,6 +329,64 @@ describe("registryInitialsError", () => {
     } finally {
       dropRoots();
     }
+  });
+});
+
+describe("extractRequestInitials — the engine merge's linkable form", () => {
+  it("carries the gate's own shapes as the strings the merge links", () => {
+    // file initials: the two blessed spellings normalize to the path
+    assert.equal(normalizedInitialValue("photo", "photo", "a/b.png"), "a/b.png");
+    assert.equal(
+      normalizedInitialValue("photo", "photo", { path: "a/b.png" }),
+      "a/b.png",
+    );
+    // bake_params: a params_json string rides verbatim, an object
+    // stringifies (the dialect the belt validates)
+    assert.equal(normalizedInitialValue("params_json", "bake_params", "{}"), "{}");
+    assert.equal(
+      normalizedInitialValue("params_json", "bake_params", { a: 1 }),
+      '{"a":1}',
+    );
+  });
+
+  it("refuses a shape the gate would have refused (never a silent literal)", () => {
+    assert.equal(normalizedInitialValue("photo", "photo", { nope: 1 }), null);
+    assert.equal(normalizedInitialValue("photo", "photo", 7), null);
+    assert.equal(normalizedInitialValue("photo", "photo", ["a"]), null);
+    // an unstringifiable object (a function) is the null arm
+    assert.equal(
+      normalizedInitialValue("params_json", "bake_params", (() => {}) as unknown as object),
+      null,
+    );
+  });
+
+  it("extracts declared keys only; absent stays absent", () => {
+    const ansy = getRegistryFlow("anny-hmr-commercial")!;
+    const out = extractRequestInitials(ansy, { photo: { path: "p.png" } });
+    assert.deepEqual(out, { initials: { photo: "p.png" } });
+    // a body value for a key the flow does not declare never rides
+    assert.deepEqual(extractRequestInitials(ansy, { photo: "p.png", sneaky: "x" }), {
+      initials: { photo: "p.png" },
+    });
+    // absent initials: the $channel/branch arms own those
+    assert.deepEqual(extractRequestInitials(ansy, {}), { initials: {} });
+    assert.deepEqual(extractRequestInitials(ansy, { photo: null }), { initials: {} });
+  });
+
+  it("names the refusing initial in the door's own voice", () => {
+    const ansy = getRegistryFlow("anny-hmr-commercial")!;
+    const refused = extractRequestInitials(ansy, { photo: 12 });
+    assert.ok("refusal" in refused);
+    assert.match(refused.refusal, /"photo" must be a file path string or \{path: \.\.\.\} \(got number\)/);
+    const ap = getRegistryFlow("anny-params")!;
+    const refusedParams = extractRequestInitials(ap, {
+      params_json: (() => {}) as unknown as string,
+    });
+    assert.ok("refusal" in refusedParams);
+    assert.match(
+      refusedParams.refusal,
+      /"params_json" must be a params_json string or object/,
+    );
   });
 });
 
