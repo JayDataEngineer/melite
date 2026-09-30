@@ -1,4 +1,5 @@
 import { WIRE_STAGE_KEYS, benchSessionOf, normalizeBenchStages } from "@melite/contracts/benchStage"
+import { FLOW_ID_RE } from '@melite/estate-queue'
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
 // (the bench rework, 2026-09-10; docs/plans/bench-rework-2026-09-10.md
 // §4). melite_flow executes; melite_construct AUTHORS — verbs over
@@ -550,7 +551,14 @@ export function meliteConstruct(
           // itself (the bench's intent when legal, else 'bench').
           // The caller never spells an incantation.
           const intent: string = typeof b.intent === 'string' ? b.intent : ''
-          const flowId: string = /^[a-z_][a-z0-9_-]*$/.test(intent) && intent !== '' ? intent : 'bench'
+          // THE FLOW-ID LAW, FROM ITS ONE HOME (runsGates.FLOW_ID_RE):
+          // the same admission the start and validate doors apply. An
+          // inline copy of the regex here was a second answer to "is
+          // this a legal flow id" — the drift closure-gate RULE 4d
+          // exists to prevent, in the one file that was still
+          // carrying it.
+          const flowId: string =
+            intent !== '' && FLOW_ID_RE.test(intent) ? intent : 'bench'
           const r = await request( 'POST', '/v1/flows/validate',
             { flow_inline: { id: flowId, stages } }, signal, 20000) as Record<string, unknown>
           return out({ rev: b.rev, compiles: r['ok'] === true || r['valid'] === true, report: r })

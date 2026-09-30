@@ -80,10 +80,13 @@ export const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
 // THE DRAFT ID GRAMMAR MIRRORS ITS OWNER (the census's H13: this copy
 // had NO length cap, so a 200-char id passed this door and was
 // refused by the next with a different voice). The drafts package
-// owns the rule (DRAFT_ID_RE, 1..96); this is the same rule, and a
-// wall (draft-id-grammar.spec.ts) fails if the two ever differ — a
-// mirrored grammar with a pinned equality, not a second law.
-export const DRAFT_ID_RE: RegExp = /^[A-Za-z0-9_-]{1,96}$/;
+// OWNS the rule (DRAFT_ID_RE, 1..96) and this module re-exports that
+// exact object — the drafts spec's own JSDoc says the queue
+// re-exports it, which was false while the queue kept its own
+// byte-identical copy. draft-id-grammar.spec.ts still pins the two
+// as equal, and now that equality is the identity of one object
+// rather than the luck of two copies.
+export { DRAFT_ID_RE };
 
 // ── strict-wire decode (route() 4335-4340) ───────────────────
 // json.loads(body.decode() or "{}"); failure → 400 bad_json. The
@@ -195,7 +198,7 @@ export function isDictField(v: unknown): v is Record<string, unknown> {
 // draft_id_ok: the ONE address is @melite/estate-drafts (spec.ts —
 // the SSOT re-home; the dead core's own copy is gone). Re-exported
 // for the gates' callers.
-import { draftIdOk } from "@melite/estate-drafts";
+import { draftIdOk, DRAFT_ID_RE } from "@melite/estate-drafts";
 export { draftIdOk };
 
 // ── shared key-set helper ───────────────────────────────────────

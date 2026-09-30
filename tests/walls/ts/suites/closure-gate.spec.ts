@@ -627,6 +627,37 @@ describe("THE AUDIT-ADDED LAWS", async () => {
       "FLOW_ID_RE is the flow-name admission law and must be declared exactly once: " +
         declarations.join(", "),
     ).toHaveLength(1);
+    // The DRAFT-ID LAW, same shape: the drafts package owns it and the
+    // queue imports that binding. It used to be a byte-identical
+    // mirror, defended only by an equality wall — and the owner's own
+    // JSDoc claimed the re-export that had not happened.
+    const draftDecls: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      if (/\b(?:const|let|var)\s+DRAFT_ID_RE\s*(?::[^=]+)?=/.test(code)) {
+        draftDecls.push(f);
+      }
+    }
+    expect(
+      draftDecls,
+      "DRAFT_ID_RE is the drafts package's admission law and must be declared exactly once: " +
+        draftDecls.join(", "),
+    ).toHaveLength(1);
+    // AND NO INLINE COPY OF EITHER LAW: an unnamed literal applied to a
+    // flow id is the same second answer wearing a different name (the
+    // construct tool carried one for months).
+    const inline: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      if (/\^\[a-z_\]\[a-z0-9_-\]\*\$\/\.test/.test(code)) {
+        inline.push(f);
+      }
+    }
+    expect(
+      inline,
+      "the flow-id law is FLOW_ID_RE; an inline copy of its literal is the same " +
+        "second answer: " + inline.join(", "),
+    ).toEqual([]);
     // and the re-export spelling is what a second home must use
     const reExporters = SOURCES.filter((f) =>
       /export\s*\{[^}]*\bFLOW_ID_RE\b[^}]*\}\s*from/.test(codeOf(read(f))),

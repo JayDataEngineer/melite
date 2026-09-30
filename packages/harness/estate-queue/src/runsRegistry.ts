@@ -546,10 +546,21 @@ export class RunsRuntimeService extends Service {
           // stage name rides in the message; the classification is
           // the card plane's own.
           const mapped: RemoteError = toRemoteError(refusal);
+          // THE WHOLE REFUSAL RIDES, not just its code: the card
+          // plane's own loc/expected/got are what make a
+          // lane_input_missing actionable (which model, which folder,
+          // what was expected). This arm keeps them and adds the
+          // bench stage, so the two arms differ by the stage name
+          // and by nothing else.
+          const carried: Record<string, unknown> = { ...(mapped.details ?? {}) };
+          const cardLoc: unknown = carried["loc"];
+          carried["loc"] =
+            "stages/" + JSON.stringify(id) +
+            (typeof cardLoc === "string" && cardLoc !== "" ? " (" + cardLoc + ")" : "");
           throw new RemoteError(
             mapped.code,
             "bench stage " + JSON.stringify(id) + ": " + p.error,
-            { loc: "stages" },
+            carried as { loc?: string; expected?: string; got?: string },
           );
         }
         throw e;

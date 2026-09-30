@@ -9,6 +9,7 @@ import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { normalizeJsonArrayParams } from "@melite/estate-call/cardTool";
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
+import { FLOW_ID_RE, rootsManifest, searchedVoice } from "@melite/estate-queue";
 import { loadCardDefs, registryModel, theService } from "@melite/comfyui-cordis";
 import { execFile } from "node:child_process";
 import { basename, extname, join, resolve, sep } from "node:path";
@@ -17,7 +18,6 @@ import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 import { AttachmentError, AttachmentId } from "@deepseek-ai/dsh-attachment";
 import { listMedia } from "@melite/estate-media";
-import { rootsManifest, searchedVoice } from "@melite/estate-queue";
 //#region src/expansion.ts
 /**
 * THE EXPANSION SEAT (progressive disclosure, operator 2026-10-08 —
@@ -747,7 +747,7 @@ function meliteConstruct(request, opts = {}) {
 					});
 					const intent = typeof b.intent === "string" ? b.intent : "";
 					const r = await request("POST", "/v1/flows/validate", { flow_inline: {
-						id: /^[a-z_][a-z0-9_-]*$/.test(intent) && intent !== "" ? intent : "bench",
+						id: intent !== "" && FLOW_ID_RE.test(intent) ? intent : "bench",
 						stages
 					} }, signal, 2e4);
 					return out({

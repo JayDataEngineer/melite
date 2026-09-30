@@ -546,6 +546,13 @@ describe("validate", () => {
     assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code, not a generic collapse");
     assert.match(err.message, /bench stage "s_0"/);
     assert.match(err.message, /fetch it: https:\/\/example\/x/);
+    // THE EVIDENCE RIDES TOO: the card arm preserves the card plane's
+    // own loc/expected/got (pinned in the start spec), and "one voice
+    // per refusal" means this arm differs by the stage name and by
+    // nothing else — a lane_input_missing with no expected/got is a
+    // refusal nobody can act on.
+    const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
+    assert.match(String(details["loc"]), /stages\/"s_0"/, "the stage is named, beside the card's own loc");
   });
 
   it("THE WIRED-BENCH LAW: a single-card start on a WIRED bench becomes the bench run — never a refusal, never a discarded wire", async () => {
