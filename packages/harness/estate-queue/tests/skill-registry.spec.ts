@@ -1,6 +1,8 @@
 // skill-registry.spec.ts — the skills seat: the index serves the
 // repo, reads return docs / throw the door's voice, aborts refuse.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, afterEach } from "vitest";
+
 import assert from "node:assert/strict";
 import { mkdtempSync, rmSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

@@ -1,7 +1,9 @@
 // skill-plane.spec.ts — the skills plane: roots, walks (temp engine
 // trees), flow rows (temp + registry), the index/read doors, and the
 // ledger ride. Real-repo probes pin the wire shapes.
+import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, afterEach } from "vitest";
+
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

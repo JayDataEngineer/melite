@@ -480,12 +480,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // The served-owner arm above is structurally blind to rows the
     // catalog never serves: an id can die (card retired, tool enum
     // moved on) and linger in the registry forever, unwatched. The
-    // audit counted 21. The carve is EXACT now: every id boarded by
-    // no card is either honestly `unoffered: true` (17) or a
-    // foreign-engine row (4 — ace-step/anycreature/moss/skintokens,
-    // served through their own engine's door, never comfyui's
-    // catalog). A 22nd silent row refuses; an unoffered flag
-    // disappearing from one of the 17 refuses.
+    // audit counted 21; the stroke-4 verb families make 23. The
+    // carve is EXACT now: every id boarded by no card is either
+    // honestly `unoffered: true` (19) or a foreign-engine row (4 —
+    // ace-step/anycreature/moss/skintokens, served through their
+    // own engine's door, never comfyui's catalog). A 24th silent
+    // row refuses; an unoffered flag disappearing from one of the
+    // 19 refuses.
     await loadCardDefs();
     const svc = theService();
     const boardedSet = new Set<string>();
@@ -501,11 +502,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     }
     assert.deepEqual(dead, [
       "ace-step", "anycreature", "auto-detect", "basic_resize", "concat", "dwpose",
-      "flux-fill-dev", "gem_soma", "latentsync", "ltx-2-3", "ltx-director-distilled",
-      "mesh_refine", "moss", "pixel_upscale", "rtx-vsr", "see-through", "skintokens",
+      "fit", "flux-fill-dev", "gem_soma", "latentsync", "ltx-2-3", "ltx-director-distilled",
+      "mesh_refine", "moss", "pixel_upscale", "rtx-vsr", "see-through", "skin", "skintokens",
       "somax", "step1x_texture", "stretchy-rig", "trellis_native",
-    ], `the unboarded registry rows are the named 21 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
-    assert.equal(unoffered.length, 17, `17 of the 21 carry unoffered:true (saw ${String(unoffered.length)})`);
+    ], `the unboarded registry rows are the named 23 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
+    assert.equal(unoffered.length, 19, `19 of the 23 carry unoffered:true (saw ${String(unoffered.length)})`);
     assert.deepEqual(foreign, ["ace-step", "anycreature", "moss", "skintokens"],
       `the 4 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 5th non-unoffered unboarded row is a silent death`);
   });

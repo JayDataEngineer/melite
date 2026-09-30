@@ -427,6 +427,10 @@ export function loadFlow(repo: string, flowName: string): Record<string, unknown
   if (row === undefined) throw new Error(`disclose: unknown flow '${flowName}'`);
   const stages = row.stages.map((s): Record<string, unknown> => ({
     id: s.id,
+    // A family stage discloses its verb (family.action) — the card
+    // key stays "" and the family keys ride alongside (stroke 4's
+    // compose-at-expansion: the graph derives from the action).
+    ...(s.family !== "" ? { family: s.family, action: s.action } : {}),
     card: s.card,
     description: s.description,
     // fromFlow links resolve at COMPILE time (expandRegistryFlow) —
@@ -451,7 +455,21 @@ export function loadFlow(repo: string, flowName: string): Record<string, unknown
       skills.push(line);
     }
   };
-  for (const s of row.stages) pushLines(s.card);
+  const pushFamilyLines = (fam: string): void => {
+    for (const line of skillLinesForFamilies(repo, [fam])) {
+      const id = String((line as { id: unknown }).id);
+      if (id === "" || seen.has(id)) continue;
+      seen.add(id);
+      skills.push(line);
+    }
+  };
+  // Card stages ride the card's skill lines; family stages ride
+  // the FAMILY's (the boarded-craft law: no second hunt before
+  // compose — a census flow's stages are all family-side).
+  for (const s of row.stages) {
+    if (s.family !== "") pushFamilyLines(s.family);
+    else pushLines(s.card);
+  }
   const refs: Array<Record<string, unknown>> = [];
   for (const ref of row.skillRefs) {
     const r = skillLineForRef(repo, ref);

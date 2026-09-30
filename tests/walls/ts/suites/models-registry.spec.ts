@@ -23,19 +23,19 @@ import {
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 45 registry models, 96 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS fold — Base is a variant route of the .6, never a third family — 2026-09-21; the H3 fold — the timeline owns the whole surface, h3 + h3-keyframe died into its variants — 2026-09-21; the survivor-id correction — the family IS the checkpoint `h3`, timeline is the lane route h3-timeline, single-shot moves to h3-fl2va, the family self-address serves — 2026-09-22; yue2 boarded on the music card — 2026-09-20)", (): void => {
-    assert.equal(registryIds().length, 45); // -2: wan-vace + scail2-animate retired with the video-gen card (2026-09-21 — h3-timeline is the only video door) // +1: yue2 (2026-09-20) // +1: qwen3-tts-voicedesign // +2: the qwen 2.1 pair // -2: the H3 fold // 2026-09-22: the survivor-id correction renames h3-timeline → h3 in place (registry count unchanged)
-    assert.equal(modelIds().length, 98); // +1: qwen3-tts-voicedesign-design — the design lane's OWN flat route (transcript-015: the head serves the family default CustomVoice, so the design variant needs its own address), 2026-09-24 // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21 // +1: the survivor-id correction, 2026-09-22 — the family id h3 serves as its own address (the default variant claims it; the dead-family route h3 → h3-fl2va) // +1: qwen3-tts-voicedesign-base — the 1.7B Base clone lane's OWN flat route (the 1:1 matrix, 2026-09-23; the 0.6B owns 'qwen3-tts-base' — one owner per route id)
+  it("carries the hierarchy: 47 registry models, 96 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS fold — Base is a variant route of the .6, never a third family — 2026-09-21; the H3 fold — the timeline owns the whole surface, h3 + h3-keyframe died into its variants — 2026-09-21; the survivor-id correction — the family IS the checkpoint `h3`, timeline is the lane route h3-timeline, single-shot moves to h3-fl2va, the family self-address serves — 2026-09-22; yue2 boarded on the music card — 2026-09-20; the weightless verb families — fit + skin return UNOFFERED, action-only rows whose cards stay dead, the atom vocabulary stroke 4)", (): void => {
+    assert.equal(registryIds().length, 47); // -2: wan-vace + scail2-animate retired with the video-gen card (2026-09-21 — h3-timeline is the only video door) // +1: yue2 (2026-09-20) // +1: qwen3-tts-voicedesign // +2: the qwen 2.1 pair // -2: the H3 fold // 2026-09-22: the survivor-id correction renames h3-timeline → h3 in place (registry count unchanged) // +2: fit + skin return as unoffered weightless verb families (stroke 4 — the fit-seat/skin-apply stages compose from their declared actions; the 2026-09-16 CARD deaths stand — no serving route rides)
+    assert.equal(modelIds().length, 100); // +1: qwen3-tts-voicedesign-design — the design lane's OWN flat route (transcript-015: the head serves the family default CustomVoice, so the design variant needs its own address), 2026-09-24 // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21 // +1: the survivor-id correction, 2026-09-22 — the family id h3 serves as its own address (the default variant claims it; the dead-family route h3 → h3-fl2va) // +1: qwen3-tts-voicedesign-base — the 1.7B Base clone lane's OWN flat route (the 1:1 matrix, 2026-09-23; the 0.6B owns 'qwen3-tts-base' — one owner per route id) // +2: fit + skin's standard routes (stroke 4 — declared but UNOFFERED; the catalog serves neither)
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 86); // +1: the design lane route, 2026-09-24 // -2: wan-vace + scail2 comfy routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // ideogram gone (2026-09-17); fit + skin gone (stroke 87); +6 the qwen 2.1 pair (2026-09-21) // +1: the h3 family self-address, 2026-09-22 // +1: the 1:1 1.7B clone route, 2026-09-23
+    assert.equal(comfy.length, 88); // +1: the design lane route, 2026-09-24 // -2: wan-vace + scail2 comfy routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // ideogram gone (2026-09-17); fit + skin gone (stroke 87); +6 the qwen 2.1 pair (2026-09-21) // +1: the h3 family self-address, 2026-09-22 // +1: the 1:1 1.7B clone route, 2026-09-23 // +2: the fit + skin standard routes return (stroke 4 — unoffered, catalog-silent)
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 41); // -2: wan-vace + scail2 registry rows retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +1 the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as a variant) // +2 the qwen 2.1 pair (2026-09-21) // -2 the H3 fold (h3 + h3-keyframe died into h3-timeline's variants) // ideogram gone (2026-09-17); fit + skin gone (stroke 87)
+    assert.equal(rcomfy.length, 43); // -2: wan-vace + scail2 registry rows retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +1 the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as a variant) // +2 the qwen 2.1 pair (2026-09-21) // -2 the H3 fold (h3 + h3-keyframe died into h3-timeline's variants) // ideogram gone (2026-09-17); fit + skin gone (stroke 87) // +2: fit + skin return unoffered (stroke 4)
   });
 
   it("serves 59 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87; the qwen 2.1 pair 2026-09-21; yue2 2026-09-20; the h3 survivor-id correction — the family self-address offers — 2026-09-22)", (): void => {
@@ -201,7 +201,7 @@ describe("the resurrected model registry (families/variants/cells/links)", () =>
     // the stale 48 (the multimodal boardings — joycaption, florence2,
     // wd14, the tagger lanes, z-image, the qwen edit pairs — landed
     // without their wall bump; the pre-commit hook caught the drift)
-    assert.equal(variants, 73); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23)
-    assert.equal(cells, 81);
+    assert.equal(variants, 75); // +2: the 1:1 1.7B matrix — customvoice + base variants on qwen3-tts-voicedesign (operator 2026-09-23) // +2: fit + skin's Standard rows (stroke 4 — the unoffered verb families each declare one)
+    assert.equal(cells, 83);
   });
 });

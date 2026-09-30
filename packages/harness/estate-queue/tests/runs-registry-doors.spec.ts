@@ -7,10 +7,13 @@ import assert from "node:assert/strict";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Context } from "@deepseek-ai/cordis";
+import { Context, Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
+import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
+import { DECL as FIT_DECL } from "../../../models/fit/src/index.ts";
+import { DECL as SKIN_DECL } from "../../../models/skin/src/index.ts";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
@@ -43,6 +46,19 @@ interface Seat {
   cards: Record<string, (...args: never[]) => unknown>;
 }
 
+/** The models seat as a real cordis Service: ctx.get resolves only
+ *  injector-registered services, so the fake must mount the same
+ *  way the lane's real ModelsService does. Serves the three DECLs
+ *  the character flow's hops compose from. */
+class ModelsSeatFake extends Service {
+  constructor(ctx: Context) {
+    super(ctx, "models");
+  }
+  allDecls(): unknown[] {
+    return [ANNY_DECL, FIT_DECL, SKIN_DECL];
+  }
+}
+
 const seat = (
   cardOver: Record<string, (...args: never[]) => unknown> = {},
   d1Doc: Record<string, unknown> = {},
@@ -51,6 +67,14 @@ const seat = (
   const ctx = new Context();
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
+  // THE FAMILIES SEAT (the atom vocabulary, stroke 4): the
+  // character flow's body hop is a fromFlow link into the anny
+  // family's estimate stage, so the flow shim's compose reads the
+  // context's models service. The fake rides a real cordis Service
+  // (ctx.get resolves only injector-registered services) and serves
+  // the real anny/fit/skin DECLs (their declared actions), no
+  // engine, no facts file.
+  new ModelsSeatFake(ctx);
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
     get: async (id: string): Promise<unknown> => {
       if (id === "d1") return d1Doc;

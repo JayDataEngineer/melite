@@ -74,6 +74,7 @@ interface DeclaresActions {
     readonly id: string;
     readonly outputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
     readonly params: ReadonlyArray<{ readonly name: string; readonly rule?: string }>;
+    readonly laneIndependent?: boolean;
     readonly facts: (raw: Record<string, unknown>) => unknown;
     readonly build: (...args: never[]) => unknown;
   }>;

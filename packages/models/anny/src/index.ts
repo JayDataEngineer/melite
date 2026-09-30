@@ -9,7 +9,7 @@
 import type { Plugin } from "@deepseek-ai/cordis";
 import type { ModelsService } from "@melite/comfyui-cordis/models-service";
 import type { ModelDecl } from "@melite/comfyui-cordis/model-contract";
-import { compose } from "./actions.ts";
+import { compose, estimate, estimate_commercial, bake } from "./actions.ts";
 
 export const DECL: ModelDecl = {
   "id": "anny",
@@ -92,9 +92,12 @@ export const DECL: ModelDecl = {
     "vae": "",
     "weightless": false
   },
-  // the compose action the anny card binds (the turnaround
-  // lane tree).
-  "actions": [compose],
+  // the family's declared actions: the compose action the anny card
+  // binds (the turnaround lane tree), plus the estimator/bake
+  // backends the hmr-estimate and preset-load verbs drive through
+  // the queue (family-owned nodes — the flow rows route, never
+  // re-author, the graphs; SubActionMod law, stroke 89).
+  "actions": [compose, estimate, estimate_commercial, bake],
 };
 
 export const family: Plugin = {
@@ -105,4 +108,4 @@ export const family: Plugin = {
   },
 };
 
-export { compose } from "./actions.ts";
+export { compose, estimate, estimate_commercial, bake } from "./actions.ts";

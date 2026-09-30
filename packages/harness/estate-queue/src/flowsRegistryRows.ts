@@ -18,38 +18,20 @@ export const ANNY_HMR: RegistryFlow = {
     plainStage({
       id: "estimate",
       engine: CARD_PLANE_ENGINE,
+      // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
+      // vocabulary, stroke 4 — the estimator fork's resolution):
+      // photo→body is the hmr-estimate VERB (SubActionMod law,
+      // stroke 89 — its calibration knobs never join the anny card
+      // schema; they live FIXED in the family's action build). The
+      // row routes (family + action + the photo ref); the family's
+      // DECL composes the graph at expansion — one truth, the same
+      // hierarchy a card stage rides, without a card face.
+      family: "anny",
+      action: "estimate",
       description: "MultiHMR2 regression + loud single-person lock",
       inputs: { photo: initial("photo") },
       expected: { photo: "image" },
-      outputs: { body: "mesh" },
-      params: {
-        out_dir: "./output",
-        timeout_s: 1800,
-        workflow: {
-          load: { class_type: "LoadImage", inputs: { image: "$photo" } },
-          hmr: {
-            class_type: "MultiHMR2ImageToAnny",
-            inputs: {
-              image: ["load", 0],
-              conf_thresh: 0.4,
-              dist_thresh_nms: 0.25,
-              lowres: false,
-              save_anny_params: true,
-              save_mesh: true,
-              render: false,
-              filename_prefix: "anny/multihmr2",
-            },
-          },
-          select: {
-            class_type: "AnnySelectPerson",
-            inputs: { mesh_paths: ["hmr", 2], index: 0 },
-          },
-          ground: {
-            class_type: "AnnyGroundBody",
-            inputs: { glb_path: ["select", 0] },
-          },
-        },
-      },
+      params: { photo: "$photo" },
     }),
   ],
   initialValidators: { photo: "photo" },
@@ -67,21 +49,15 @@ export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
     plainStage({
       id: "estimate",
       engine: CARD_PLANE_ENGINE,
+      // the commercial engine of the same verb — family DECL owns
+      // the nodes (SAM 3D Body → grounded anny), person_index FIXED
+      // at the loudest detection (the verb's chip owns the picker)
+      family: "anny",
+      action: "estimate_commercial",
       description: "SAM 3D Body commercial chain → grounded anny GLB",
       inputs: { photo: initial("photo") },
       expected: { photo: "image" },
-      outputs: { body: "mesh" },
-      params: {
-        out_dir: "./output",
-        timeout_s: 3600,
-        workflow: {
-          load: { class_type: "LoadImage", inputs: { image: "$photo" } },
-          s3db: {
-            class_type: "Sam3dBodyImageToAnny",
-            inputs: { image: ["load", 0], person_index: 0 },
-          },
-        },
-      },
+      params: { photo: "$photo" },
     }),
   ],
   initialValidators: { photo: "photo" },
@@ -100,20 +76,15 @@ export const ANNY_PARAMS: RegistryFlow = {
     plainStage({
       id: "instantiate",
       engine: CARD_PLANE_ENGINE,
+      // the preset-load verb's backend — the verbatim bake the
+      // family declares (params_json rides verbatim; the bake
+      // validator judged the json at the initial gate)
+      family: "anny",
+      action: "bake",
       description: "Preset params → grounded anny GLB",
       inputs: { params_json: initial("params_json") },
       expected: { params_json: "text" },
-      outputs: { body: "mesh" },
-      params: {
-        out_dir: "./output",
-        timeout_s: 600,
-        workflow: {
-          bake: {
-            class_type: "AnnyParamsToGlb",
-            inputs: { params_json: "$params_json" },
-          },
-        },
-      },
+      params: { params_json: "$params_json" },
     }),
   ],
   initialValidators: { params_json: "bake_params" },
@@ -375,48 +346,30 @@ export const FIT_SEAT: RegistryFlow = {
         thumb_bone: "text",
         target_width: "num",
       },
-      outputs: { seat: "mesh" },
+      // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
+      // vocabulary, stroke 4): the fit-seat verb's nodes compose
+      // from the fit family's DECL — every knob rides verbatim, the
+      // proof framing is FIXED in the action build. The row routes;
+      // the declaration owns the graph (SubActionMod law — the
+      // 2026-09-16 retirement killed the fit CARD; the family is
+      // the sanctioned seam, not a revival).
+      family: "fit",
+      action: "seat",
       params: {
-        out_dir: "./output",
-        timeout_s: 1800,
-        workflow: {
-          row: {
-            class_type: "FitRow",
-            inputs: {
-              model_name: "$model_name",
-              bone: "$bone",
-              align: "$align",
-              position: "$position",
-              rotation: "$rotation",
-              fit_ratio: "$fit_ratio",
-              fit_ref_bone: "$fit_ref_bone",
-              fit_ref_bone2: "$fit_ref_bone2",
-              seat_ratio: "$seat_ratio",
-              finger_bone: "$finger_bone",
-              thumb_bone: "$thumb_bone",
-              target_width: "$target_width",
-            },
-          },
-          seat: {
-            class_type: "FitProp",
-            inputs: {
-              body_glb_path: "$body",
-              prop_glb_path: "$prop",
-              row_json: ["row", 0],
-            },
-          },
-          views: {
-            class_type: "RayRenderGLBViews",
-            inputs: {
-              glb_path: ["seat", 0],
-              resolution: 768,
-              framing: 1.2,
-              focal_length: 50,
-              samples: 64,
-              transparent: true,
-            },
-          },
-        },
+        body: "$body",
+        prop: "$prop",
+        model_name: "$model_name",
+        bone: "$bone",
+        align: "$align",
+        position: "$position",
+        rotation: "$rotation",
+        fit_ratio: "$fit_ratio",
+        fit_ref_bone: "$fit_ref_bone",
+        fit_ref_bone2: "$fit_ref_bone2",
+        seat_ratio: "$seat_ratio",
+        finger_bone: "$finger_bone",
+        thumb_bone: "$thumb_bone",
+        target_width: "$target_width",
       },
     }),
   ],
@@ -636,61 +589,20 @@ export const SKIN_APPLY: RegistryFlow = {
         seed: initial("seed"),
       },
       expected: { body: "mesh", kind: "text", map_size: "num", seed: "num" },
-      outputs: { skin: "mesh" },
+      // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
+      // vocabulary, stroke 4): the apply-skin verb's nodes compose
+      // from the skin family's DECL — every knob rides verbatim, the
+      // proof framing is FIXED in the action build. The row routes;
+      // the declaration owns the graph (SubActionMod law — the
+      // 2026-09-16 retirement killed the skin CARD; the family is
+      // the sanctioned seam, not a revival).
+      family: "skin",
+      action: "coat",
       params: {
-        out_dir: "./output",
-        timeout_s: 1800,
-        workflow: {
-          pack: {
-            class_type: "SkinPack",
-            inputs: { size: "$map_size", seed: "$seed" },
-          },
-          scar: {
-            class_type: "SkinSidecar",
-            inputs: { kind: "$kind", size: "$map_size", seed: "$seed" },
-          },
-          save_albedo: {
-            class_type: "SaveImage",
-            inputs: {
-              images: ["pack", 0],
-              filename_prefix: "skin_apply/out_albedo",
-            },
-          },
-          save_normal: {
-            class_type: "SaveImage",
-            inputs: {
-              images: ["pack", 1],
-              filename_prefix: "skin_apply/out_normal",
-            },
-          },
-          save_sidecar: {
-            class_type: "SaveText",
-            inputs: {
-              text: ["scar", 0],
-              filename_prefix: "skin_apply/out_kind",
-              format: "json",
-            },
-          },
-          apply: {
-            class_type: "SkinApply",
-            inputs: {
-              body_glb_path: "$body",
-              albedo: ["pack", 0],
-              normal: ["pack", 1],
-            },
-          },
-          views: {
-            class_type: "RayRenderGLBViews",
-            inputs: {
-              glb_path: ["apply", 0],
-              resolution: 768,
-              framing: 1.2,
-              focal_length: 50,
-              samples: 64,
-              transparent: true,
-            },
-          },
-        },
+        body: "$body",
+        kind: "$kind",
+        map_size: "$map_size",
+        seed: "$seed",
       },
     }),
   ],

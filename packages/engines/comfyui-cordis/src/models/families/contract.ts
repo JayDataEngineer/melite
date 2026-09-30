@@ -614,6 +614,13 @@ export interface DeclaredAction {
   readonly id: string;
   readonly outputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
   readonly params: ReadonlyArray<{ readonly name: string; readonly rule?: string }>;
+  /** Present-only-when-true: the action's facts door reads
+   *  NOTHING off a lane (weightless or estimator-class), so a flow
+   *  row may name it — the flow plane composes against the
+   *  model-less facts shape. Absent = lane-bound: only a card's
+   *  resolved model row may dispatch it (a flow naming it refuses
+   *  at compose, before any node builds). */
+  readonly laneIndependent?: boolean;
   readonly facts: (raw: Record<string, unknown>) => unknown;
   readonly build: (...args: never[]) => unknown;
 }

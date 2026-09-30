@@ -35,5 +35,10 @@ export interface ActionSpec<C, R> {
   readonly id: string;
   readonly outputs: readonly PortSpec[];
   readonly params: readonly ParamSpec[];
+  /** Present-only-when-true: the action reads nothing off a
+   *  resolved model row, so a flow row may name it and the flow
+   *  plane composes against the model-less facts shape. Absent =
+   *  lane-bound — only a card's resolved row may dispatch it. */
+  readonly laneIndependent?: boolean;
   readonly build: (ctx: C) => R;
 }

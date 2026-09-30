@@ -98,3 +98,79 @@ export const compose: ComfyActionSpec<AnnyParams, Record<string, never>> = {
     return last
   },
 };
+
+/** The estimator facts door: the estimation chain reads NOTHING off
+ *  a lane (no checkpoint, no encoder — the MHR regression and the
+ *  SAM chain are checkpoint-free python), so the door is the
+ *  weightless vacuous parse, exactly like compose's.
+ *  @param _raw the resolved lane_inputs (family ⊕ variant)
+ *  @returns the empty facts shape */
+export function parseEstimatorFacts(_raw: LaneInputsFacts): Record<string, never> {
+  return {}
+}
+
+/** The photo→body regression (the hmr-estimate verb's backend — the
+ *  flow 'anny-hmr' the chip drives through the queue): MultiHMR2
+ *  regression + the loud single-person lock, every calibration knob
+ *  FIXED here (conf 0.4 / nms 0.25 / grounded output) — an
+ *  estimator is a verb, not a bench surface (SubActionMod law,
+ *  stroke 89: its knobs never join the anny card schema; they ride
+ *  the family's own action declaration). */
+export const estimate: ComfyActionSpec<{ readonly photo: string }, Record<string, never>> = {
+  id: "estimate",
+  laneIndependent: true,
+  outputs: [{ name: "body", kind: "mesh" }],
+  params: [{ name: "photo" }],
+  facts: parseEstimatorFacts,
+  build({ p, g }): OutputHandle {
+    const load = g.node('LoadImage', { image: String(p.photo) })
+    const hmr = g.node('MultiHMR2ImageToAnny', {
+      image: load.out(0),
+      conf_thresh: 0.4,
+      dist_thresh_nms: 0.25,
+      lowres: false,
+      save_anny_params: true,
+      save_mesh: true,
+      render: false,
+      filename_prefix: 'anny/multihmr2',
+    })
+    const select = g.node('AnnySelectPerson', { mesh_paths: hmr.out(2), index: 0 })
+    return g.node('AnnyGroundBody', { glb_path: select.out(0) }).out(0)
+  },
+};
+
+/** The commercial photo→body chain (the hmr-estimate verb's
+ *  commercial engine — the flow 'anny-hmr-commercial'):
+ *  SAM 3D Body → grounded anny GLB, every link license-cleared for
+ *  sale (docs/design/commercial-estimator-chain.md). The
+ *  person_index stays FIXED at the loudest detection (0) — the
+ *  verb's own person picker is a chip knob, never a bench surface
+ *  (SubActionMod law). */
+export const estimate_commercial: ComfyActionSpec<{ readonly photo: string }, Record<string, never>> = {
+  id: "estimate_commercial",
+  laneIndependent: true,
+  outputs: [{ name: "body", kind: "mesh" }],
+  params: [{ name: "photo" }],
+  facts: parseEstimatorFacts,
+  build({ p, g }): OutputHandle {
+    const load = g.node('LoadImage', { image: String(p.photo) })
+    return g.node('Sam3dBodyImageToAnny', { image: load.out(0), person_index: 0 }).out(0)
+  },
+};
+
+/** The verbatim bake (the preset-load verb's backend — the flow
+ *  'anny-params'): authored 11-dim rows and re-instantiated
+ *  estimated params bake bit-exact (AnnyParamsToGlb — the body is
+ *  parametric end-to-end, stroke 89). params_json rides verbatim —
+ *  the bake validator (bake_params) judged the json at the flow's
+ *  initial gate; the action never re-parses what the door owns. */
+export const bake: ComfyActionSpec<{ readonly params_json: string }, Record<string, never>> = {
+  id: "bake",
+  laneIndependent: true,
+  outputs: [{ name: "body", kind: "mesh" }],
+  params: [{ name: "params_json" }],
+  facts: parseEstimatorFacts,
+  build({ p, g }): OutputHandle {
+    return g.node('AnnyParamsToGlb', { params_json: String(p.params_json) }).out(0)
+  },
+};

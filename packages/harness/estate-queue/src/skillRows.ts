@@ -8,6 +8,7 @@ import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
 import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";
 import { expandRegistryFlow, getRegistryFlow, registryFlowNames, registrySkillBody } from "./flowsData.ts";
+import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
 
 /** One registry headless-tool property, projected to the frozen
  *  FlowToolDecl shape (always ptype + description; enum / default /
@@ -76,7 +77,13 @@ export function flowDecls(repo: string): FlowDecl[] {
     /* v8 ignore next -- names and flows come from the same registry:
        the skip never fires (2026-09-12) */
     if (flow === undefined) continue;
-    const expanded = expandRegistryFlow(flow);
+    // Compose before projection (the doors' own order — stroke 4):
+    // the family stages' derived outputs and edges render in the
+    // served body only when the declarations compose first.
+    const expanded = composeFamilyStages(
+      expandRegistryFlow(flow),
+      liveFamilyDecls(),
+    );
     const stages: { readonly id: string; readonly engine: string }[] =
       expanded.stages.map((s) => ({ id: s.id, engine: s.engine }));
     let tool: FlowToolDecl | null = null;
@@ -419,13 +426,16 @@ export interface FlowRow {
  *  has its own SKILL.md or is unknown to the TS registry — the
  *  caller falls back to the file path). A registry flow whose
  *  declaration fails to expand is an authoring bug: LOUD, never a
- *  silent empty body. */
+ *  silent empty body. The family stages compose first (the doors'
+ *  own order) so the body names the action's derived outputs. */
 export function registryBody(flowId: string): string | null {
   const decl = getRegistryFlow(flowId);
   /* v8 ignore next -- callers pass live declaration ids (flowDecls):
      the miss never fires (2026-09-12) */
   if (decl === undefined) return null;
-  return registrySkillBody(expandRegistryFlow(decl));
+  return registrySkillBody(
+    composeFamilyStages(expandRegistryFlow(decl), liveFamilyDecls()),
+  );
 }
 
 /** LEVEL 4 flow rows (lane_disclosure._flow_rows 364-411): one gated

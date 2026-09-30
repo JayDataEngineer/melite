@@ -17,6 +17,8 @@ import {
   registrySkillBody,
 } from "../src/flowsData.ts";
 import type { RegistryFlow } from "../src/flowsData.ts";
+import { composeFamilyStages } from "../src/flowsFamilyCompose.ts";
+import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 
 let ROOT = "";
 afterEach(() => {
@@ -221,10 +223,28 @@ describe("registryFlowToInline", () => {
     assert.ok(
       !("output_nodes" in (kimodo.stages[0]!["params"] as Record<string, unknown>)),
     );
-    const annyInline = registryFlowToInline(getRegistryFlow("anny-hmr")!) as {
+    const annyInline = registryFlowToInline(
+      // The doors' own order (stroke 4): expand → compose → inline.
+      // The census rows carry no outputs — the DECL derivation owns
+      // them, and only the composed projection is door-legal.
+      composeFamilyStages(expandRegistryFlow(getRegistryFlow("anny-hmr")!), [
+        ANNY_DECL,
+      ]),
+    ) as {
       stages: Array<Record<string, unknown>>;
     };
     assert.ok(!("card" in annyInline.stages[0]!));
+    // the composed family stage carries the derived outputs and the
+    // workflow envelope (the seam's own projection)
+    assert.deepEqual(annyInline.stages[0]!["outputs"], { body: "mesh" });
+    const annyParams = annyInline.stages[0]!["params"] as {
+      workflow: Record<string, unknown>;
+    };
+    assert.ok(
+      typeof annyParams.workflow === "object" &&
+        annyParams.workflow !== null &&
+        "MultiHMR2ImageToAnny.0" in annyParams.workflow,
+    );
     assert.ok(!("skip_when" in tts.stages[0]!));
   });
 });

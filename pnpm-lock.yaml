@@ -510,6 +510,9 @@ importers:
       '@melite/models-dwpose':
         specifier: workspace:*
         version: link:../../models/dwpose
+      '@melite/models-fit':
+        specifier: workspace:*
+        version: link:../../models/fit
       '@melite/models-florence2':
         specifier: workspace:*
         version: link:../../models/florence2
@@ -588,6 +591,9 @@ importers:
       '@melite/models-seedvr2_ema':
         specifier: workspace:*
         version: link:../../models/seedvr2_ema
+      '@melite/models-skin':
+        specifier: workspace:*
+        version: link:../../models/skin
       '@melite/models-skintokens':
         specifier: workspace:*
         version: link:../../models/skintokens
@@ -1591,6 +1597,31 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
+  packages/models/fit:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.4
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.4
+        version: 3.18.4
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
   packages/models/florence2:
     dependencies:
       '@deepseek-ai/cordis':
@@ -2062,6 +2093,31 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/skin:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.4
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.4
+        version: 3.18.4
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
     devDependencies:
       '@types/node':
         specifier: ^22.20.0

@@ -578,15 +578,26 @@ export class CardRegistryService extends Service {
       }
       const flow = getRegistryFlow(card);
       if (flow !== undefined) {
-        const cards: string[] = [...new Set(
-          flow.stages
-            .map((s) => (s as { card?: unknown }).card)
-            .filter((c): c is string => typeof c === "string" && c !== ""),
-        )];
+        // The stage list names BOTH planes' riders: card stages by
+        // card id, family stages by family.action (the five census
+        // flows carry no card at all — compose-at-expansion, stroke 4).
+        const riders: string[] = [];
+        for (const s of flow.stages) {
+          const stage = s as { card?: unknown; family?: unknown; action?: unknown };
+          if (typeof stage.card === "string" && stage.card !== "") {
+            riders.push(stage.card);
+          } else if (typeof stage.family === "string" && stage.family !== "") {
+            riders.push(
+              stage.family + "." +
+              (typeof stage.action === "string" ? stage.action : "?"),
+            );
+          }
+        }
         return {
           ok: false,
-          /* v8 ignore next -- every registered flow carries at least one card stage (probe 2026-09-19, flowsData REGISTRY): the empty-list toll never fires through live data */
-          error: "'" + card + "' is a flow, not a card — stages take card ids; compose its cards (" + (cards.join(", ") || "none listed") + ") with add_stage (melite_load names the flow's stages and wiring)",
+          error: "'" + card + "' is a flow, not a card — stages take card ids; compose its stages (" +
+            ([...new Set(riders)].join(", ") || "none listed") +
+            ") with add_stage (melite_load names the flow's stages and wiring)",
           offered: [],
         };
       }

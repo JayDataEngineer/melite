@@ -1,7 +1,8 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
-import { registryFlowNames, getRegistryFlow } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { registryFlowNames, getRegistryFlow, expandRegistryFlow } from "../../../../packages/harness/estate-queue/src/flowsData.ts";
+import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 
 // THE REGISTRY-FLOW WIRING WALL (2026-10-10, the laws audit's
 // HIGH-4): compose validates every graph a CARD builds against the
@@ -66,6 +67,8 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
       return new Set([...(d.r ?? []), ...(d.o ?? [])]);
     };
     let nodes = 0;
+    let familyNodes = 0;
+    let familyStages = 0;
     // E-M8: the dotted-sub-key rule is real (a combo widget's
     // sub-value rides as "key.sub"), so it is kept — but it is
     // PINNED: every dotted key in the tree is named below, and a new
@@ -73,8 +76,22 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // unnumbered excuse is a hole; a numbered one is a census.
     const dottedKeys: string[] = [];
     for (const name of names) {
-      const row = getRegistryFlow(name) as { stages?: Array<Record<string, any>> } | undefined;
-      for (const st of row?.stages ?? []) {
+      const row = getRegistryFlow(name);
+      if (row === undefined) continue;
+      // (the atom vocabulary, stroke 4): a family-action stage
+      // composes its graph from the family DECL here — the wall
+      // judges the COMPOSED graph, not just hand literals, so a
+      // drifted DECL node refuses exactly like a drifted hand node.
+      // Seat law: the doors read ctx.get("models"); boot-models.ts
+      // boots the SAME registry into the singleton the fallback
+      // reads here, so liveFamilyDecls() IS the door's seat on this
+      // wire (the ctx path is exercised in the door specs).
+      const expanded = expandRegistryFlow(row);
+      const composed = composeFamilyStages(expanded, liveFamilyDecls());
+      for (let i = 0; i < composed.stages.length; i++) {
+        const isFamily = expanded.stages[i].family !== "";
+        if (isFamily) familyStages += 1;
+        const st = composed.stages[i] as Record<string, any>;
         const g = st?.params?.workflow;
         if (g === null || g === undefined || typeof g !== 'object') continue;
         for (const [nid, node] of Object.entries(g as Record<string, any>)) {
@@ -97,6 +114,7 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
             );
           }
           nodes += 1;
+          if (isFamily) familyNodes += 1;
           const declared = declaredOf(ct);
           // AN UNKNOWN CLASS IS THE WALL'S WHOLE POINT — the first
           // cut collected it into a list whose length then
@@ -125,19 +143,30 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
         }
       }
     }
-    console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes judged against the snapshot`)
+    console.log(`registry-flow wiring wall: ${names.length} flows, ${nodes} nodes judged against the snapshot (${familyNodes} composed from family actions)`)
     // E-M8: the censuses are EXACT (a floor let a fixture or a
     // graph shrink silently — the wall would judge less and say green).
-    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(56);
+    expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(14);
     expect(names.length, "the registry flows judged, exact").toBe(13);
-    // (the atom vocabulary, stroke 3 — the flow-system stroke): the
-    // five second-truth stages (character img/gimg/garment,
-    // body-to-somax rig, kimodo-native t2m) name cards — their nodes
-    // compose family-side, outside this wall's judgment.
-    // The 17 that remain are the two sole-truth classes the ledger
-    // records (li-ck): the anny estimator chains + verbatim bake, and
-    // the meld flows whose cards were retired 2026-09-16.
-    expect(nodes, "the nodes judged, exact").toBe(17);
+    // (the atom vocabulary, stroke 4 — completed): EVERY census
+    // stage's backend is a declared action now — anny's estimator
+    // chains + verbatim bake, and the meld verbs' coat/seat (their
+    // cards were retired 2026-09-16; the weightless skin/fit
+    // families are the sanctioned seam). Their nodes compose from
+    // the family DECLs at expansion, and this wall judges the
+    // composed graph on the EXPANDED plane (fromFlow hops
+    // materialize, so character's body/skin/fit hops count in).
+    // Zero hand-authored nodes remain — every census graph rides
+    // the same hierarchy a card stage rides; 29 is the total
+    // judged.
+    expect(familyNodes, "the nodes composed from family actions, exact").toBe(29);
+    // the STAGE census (exact): an action composing zero nodes would
+    // shrink the node count silently — the stage count refuses it.
+    // 8 = the 5 census rows' direct stages + character's 3 fromFlow
+    // hops (body/skin/fit materialize on the expanded plane).
+    expect(familyStages, "the stages composed from family actions, exact").toBe(8);
+    expect(nodes - familyNodes, "the hand-authored nodes remaining, exact").toBe(0);
+    expect(nodes, "the nodes judged, exact").toBe(29);
     // the dotted sub-keys: the remesh combo's sign_mode sub-values
     // died with the garment literal (the pixal3d mesh action owns
     // that node now). Zero is the current truth — a dotted sub-key

@@ -1,8 +1,9 @@
 // flows-wiring.spec.ts — THE FLOW-REGISTRY WIRING WALL (the
 // round-trip stroke 2026-09-20): every registry flow must pass the
 // SAME construction the live /v1/flows/validate door runs for a
-// named flow — expandRegistryFlow → registryFlowToInline →
-// inlineArm against the primed card registry.
+// named flow — expandRegistryFlow → composeFamilyStages →
+// registryFlowToInline → inlineArm against the primed card
+// registry.
 //
 // The hole this closes: audio-native-tts shipped with a wired
 // `prompt` input and NO expected Kind (kindsOk's own law: "every
@@ -13,10 +14,12 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/flows-wiring.spec.ts
 
+import "../../../helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { CardRegistryService } from "../../../../packages/harness/estate-queue/src/cardsRegistry.ts";
+import { composeFamilyStages, liveFamilyDecls } from "../../../../packages/harness/estate-queue/src/flowsFamilyCompose.ts";
 import {
   expandRegistryFlow,
   getRegistryFlow,
@@ -50,7 +53,11 @@ describe("the flow-registry wiring wall (the live door's own construction, over 
     for (const name of registryFlowNames()) {
       const decl = getRegistryFlow(name);
       assert.ok(decl !== undefined, `registry names ${name} but the getter misses it`);
-      const inlineDoc = registryFlowToInline(expandRegistryFlow(decl!));
+      // the door's own order (stroke 4): expand, COMPOSE the family
+      // stages (the booted models seat — boot-models.ts settles the
+      // singleton liveFamilyDecls reads), then inline.
+      const composed = composeFamilyStages(expandRegistryFlow(decl!), liveFamilyDecls());
+      const inlineDoc = registryFlowToInline(composed);
       const answer = inlineArm({ flow_inline: inlineDoc }, cards);
       if (answer.status !== 200) {
         failures.push(`${name}: ${String(answer.payload["error"] ?? "?").slice(0, 160)}`);

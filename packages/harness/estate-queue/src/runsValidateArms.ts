@@ -6,6 +6,8 @@ import { RemoteError, remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 import { getRegistryFlow, registryFlowNames, expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
+import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
+import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody, findDanglingRefs, type FlowError } from "./runsValidate.ts";
 import { FLOW_ID_RE } from "./runsGates.ts";
@@ -70,7 +72,32 @@ export async function validate(
             loc: "body",
           });
         }
-        const inlineDoc = registryFlowToInline(expanded);
+        // THE FAMILY-ACTION STAGES COMPOSE HERE TOO (the atom
+        // vocabulary, stroke 4): validate compiles the SAME composed
+        // envelope start registers — one admission law, both doors.
+        // The interpreter's refusals (unknown family/action,
+        // unadmitted param, contradicting hand-write) surface with
+        // the door's invalid-request voice.
+        let composedFlow: ReturnType<typeof expandRegistryFlow>;
+        try {
+          // The seat read rides ctx.get, the engines precedent in
+          // runsRegistry: an undeclared-inject property access
+          // would throw cordis's reflect voice instead of
+          // degrading to the booted singleton.
+          composedFlow = composeFamilyStages(
+            expanded,
+            liveFamilyDecls(
+              ctx.get("models") as FamilyModelsSeat | undefined,
+            ),
+          );
+        } catch (e) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            e instanceof Error ? e.message : String(e),
+            { loc: "stages" },
+          );
+        }
+        const inlineDoc = registryFlowToInline(composedFlow);
         const rest: Record<string, unknown> = { ...body };
         delete rest["flow"];
         liveDoc = { ...rest, flow_inline: inlineDoc };

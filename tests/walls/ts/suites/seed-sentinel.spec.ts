@@ -198,6 +198,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "anny/src/actions.ts",
         "anycreature/src/actions.ts",
         "autoremesher/src/actions.ts",
+        "fit/src/actions.ts",
         "florence2/src/actions.ts",
         "gem_soma/src/actions.ts",
         "h3/src/actions.ts",
@@ -215,6 +216,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
         "qwen3-tts-voicedesign/src/actions.ts",
         "qwen3-tts/src/actions.ts",
         "seedvr2_ema/src/actions.ts",
+        "skin/src/actions.ts",
         "transfer_rig/src/actions.ts",
         "trellis2-native/src/actions.ts",
         "wd14/src/actions.ts",
@@ -225,15 +227,36 @@ describe("GATE S: the seed sentinel mints at render", () => {
     );
     const actionOffenders: string[] = [];
     const sentinelMisses: string[] = [];
+    // THE CHANNEL CARVE (named, pinned): these actions carry a seed
+    // that arrives as a `$` channel ref the merged worker resolves
+    // per run — mintSeed takes ints only, so declaring the rule
+    // would refuse the ref at compose. A carve member must still
+    // spell the rationale in its source (the marker sentence below);
+    // every other file obeys the generic law.
+    const channelCarve = ["skin/src/actions.ts"];
+    const carveRationaleMisses: string[] = [];
     for (const f of actionFiles) {
       const src = readFileSync(join(modelsDir, f), "utf8");
       if (src.includes("Math.random")) actionOffenders.push(f);
-      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"')) sentinelMisses.push(f);
+      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"')) {
+        if (channelCarve.includes(f)) {
+          if (!src.includes("held by the channel instead of the mint")) {
+            carveRationaleMisses.push(f);
+          }
+        } else {
+          sentinelMisses.push(f);
+        }
+      }
     }
     assert.deepEqual(
       actionOffenders,
       [],
       "family actions roll their own randomness (the mint is card-kit's alone): " + actionOffenders.join(", "),
+    );
+    assert.deepEqual(
+      carveRationaleMisses,
+      [],
+      "channel-carve actions must spell the ref-resolution rationale in source: " + carveRationaleMisses.join(", "),
     );
     assert.deepEqual(
       sentinelMisses,

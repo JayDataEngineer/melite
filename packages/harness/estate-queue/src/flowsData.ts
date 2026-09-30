@@ -53,11 +53,18 @@ export interface RegistryFromFlow {
   readonly stage: string;
 }
 
-/** One authoring-stage row (the Stage(...) fields, JSON-shaped). */
+/** One authoring-stage row (the Stage(...) fields, JSON-shaped).
+ * A stage names EITHER a card (card ≠ "" — the card plane's
+ * dispatch) OR a family action (family + action ≠ "" — the
+ * family's DECL composes the nodes at expansion; flowsFamilyCompose
+ * owns that interpreter). Both empty = a raw workflow stage (the
+ * retired authoring shape — the census judges it). */
 export interface RegistryStage {
   readonly id: string;
   readonly engine: string;
   readonly card: string;
+  readonly family: string;
+  readonly action: string;
   readonly description: string;
   readonly inputs: Record<string, RegistryEdge>;
   readonly expected: Record<string, string>;
@@ -126,6 +133,8 @@ export function plainStage(row: {
   readonly id: string;
   readonly engine: string;
   readonly card?: string;
+  readonly family?: string;
+  readonly action?: string;
   readonly description: string;
   readonly inputs: Record<string, RegistryEdge>;
   readonly expected?: Record<string, string>;
@@ -138,6 +147,8 @@ export function plainStage(row: {
     id: row.id,
     engine: row.engine,
     card: row.card ?? "",
+    family: row.family ?? "",
+    action: row.action ?? "",
     description: row.description,
     inputs: row.inputs,
     expected: row.expected ?? {},
@@ -159,6 +170,8 @@ export function linkedStage(
     id,
     engine: "",
     card: "",
+    family: "",
+    action: "",
     description: "",
     inputs,
     expected: {},
