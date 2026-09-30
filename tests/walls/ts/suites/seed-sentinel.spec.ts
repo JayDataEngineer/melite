@@ -10,12 +10,14 @@
 //   1. mintSeed: -1 mints a non-negative int; explicit seeds ride
 //      verbatim; below -1 / non-int refuses LOUD with the pinned
 //      voice (never a silent coerce).
-//   2. musicT1 with -1: BOTH seed nodes (MiniMaxMusic3TextEncode +
-//      KSampler) carry the SAME minted non-negative int (the crash
-//      shape, closed).
-//   3. musicT1 with an explicit seed: both nodes carry it verbatim
-//      (golden parity — the compose goldens only ever use explicit
-//      seeds, so minting is identity there).
+//   2. the music3 action with -1: BOTH seed nodes
+//      (MiniMaxMusic3TextEncode + KSampler) carry the SAME minted
+//      non-negative int (the crash shape, closed). The lane is the
+//      family's own action now (the kit's musicT1 retired with the
+//      kit-arm retirement); the law is the mint, not the arm.
+//   3. the music3 action with an explicit seed: both nodes carry it
+//      verbatim (golden parity — the compose goldens only ever use
+//      explicit seeds, so minting is identity there).
 //   4. imageEdit with -1: the KSampler seed mints (the KSampler twin
 //      of the music crash).
 //
@@ -25,7 +27,8 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GraphBuilder } from "../../../../packages/engines/comfyui-card-kit/src/graph.ts";
-import { imageEdit, mintSeed, musicT1 } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
+import { imageEdit, instantiateAction, mintSeed } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
+import { compose as musicCompose } from "../../../../packages/models/music3/src/actions.ts";
 import type { ModelFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 
 function musicModel(): ModelFacts {
@@ -79,9 +82,9 @@ describe("GATE S: the seed sentinel mints at render", () => {
     }
   });
 
-  it("musicT1 with -1 shares one minted seed across both nodes", (): void => {
+  it("the music3 action with -1 shares one minted seed across both nodes", (): void => {
     const g = new GraphBuilder();
-    musicT1(musicParams(-1), musicModel(), g, "run-seedwall");
+    instantiateAction(musicCompose, musicParams(-1), musicModel(), g, "run-seedwall");
     const enc: unknown[] = seedsOf(g, "MiniMaxMusic3TextEncode", "seed");
     const ks: unknown[] = seedsOf(g, "KSampler", "seed");
     assert.equal(enc.length, 1, "one encode node");
@@ -90,18 +93,18 @@ describe("GATE S: the seed sentinel mints at render", () => {
     assert.equal(ks[0], enc[0], "the sampler shares the MINTED value");
   });
 
-  it("musicT1 with an explicit seed passes it verbatim", (): void => {
+  it("the music3 action with an explicit seed passes it verbatim", (): void => {
     const g = new GraphBuilder();
-    musicT1(musicParams(7), musicModel(), g, "run-seedwall");
+    instantiateAction(musicCompose, musicParams(7), musicModel(), g, "run-seedwall");
     assert.deepEqual(seedsOf(g, "MiniMaxMusic3TextEncode", "seed"), [7]);
     assert.deepEqual(seedsOf(g, "KSampler", "seed"), [7]);
   });
 
-  it("musicT1 with -2 refuses before emitting a node", (): void => {
+  it("the music3 action with -2 refuses before emitting a node", (): void => {
     const g = new GraphBuilder();
     assert.throws(
       (): void => {
-        musicT1(musicParams(-2), musicModel(), g, "run-seedwall");
+        instantiateAction(musicCompose, musicParams(-2), musicModel(), g, "run-seedwall");
       },
       /-1 \(random\) or a non-negative int is required/,
     );

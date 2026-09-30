@@ -512,42 +512,12 @@ export function maskT1(p: Record<string, unknown>, pins: { checkpoint: string; u
   }
 }
 
-/** The seedvr2_t1 block — the submittable upscale arm (moved verbatim
- *  from the upscale-tools card; the input_image admission stays on
- *  the card). That lane does NOT strip pin autofills — no
- *  finalize pass. */
-export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const seed = mintSeed(p)
-  const li = model.lane_inputs
-  // THE SPELLED ANCHOR (same law as maskT1's img memo above: a
-  // wired input_image rides the upscaler's tensor slot verbatim —
-  // the spells decl pools initials at phase-1 only, so a producer
-  // LINK still needs this arm or ROW-4 refuses it at merge).
-  const img: TensorRef = isSpell(p.input_image as string)
-    ? (p.input_image as string)
-    : g.node('LoadImage', { image: p.input_image }).out()
-  const dit = g.node('SeedVR2LoadDiTModel', {
-    model: li.unet as string,
-    device: 'cuda:0',
-  }).out()
-  const vae = g.node('SeedVR2LoadVAEModel', {
-    model: li.vae as string,
-    device: 'cuda:0',
-  }).out()
-  const up = g.node('SeedVR2VideoUpscaler', {
-    image: img,
-    dit,
-    vae,
-    seed,
-    resolution: p.resolution,
-    max_resolution: p.max_resolution,
-    batch_size: p.batch_size,
-    uniform_batch_size: true,
-  }).out()
-  g.node('SaveImage', { images: up, filename_prefix: `${runId}/gen` })
-}
-
-
+// THE UPSCALE LANE IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30):
+// the seedvr2_ema family composes its own upscale arm in its declared
+// action (packages/models/seedvr2_ema/src/actions.ts, pinned to
+// committed goldens in that family's tests/golden/ — the spelled
+// anchor, the seed sentinel and the lane-weight refusals included).
+// This arm is deleted; the family is the only home of the lane.
 // THE INPUT-PREP LANE IS FAMILY-OWNED (the kit-arm retirement,
 // 2026-09-30): the input family composes its own restage lane in its
 // declared action (packages/models/input/src/actions.ts, pinned to

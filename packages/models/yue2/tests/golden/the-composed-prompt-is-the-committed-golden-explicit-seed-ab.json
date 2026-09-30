@@ -1,0 +1,120 @@
+{
+  "CheckpointLoaderSimple.0": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "yue2_3b_int8_convrot.safetensors"
+    }
+  },
+  "YuE2GenerateABC.0": {
+    "class_type": "YuE2GenerateABC",
+    "inputs": {
+      "clip": [
+        "CheckpointLoaderSimple.0",
+        1
+      ],
+      "style": "dreamy synth-pop, 120 BPM",
+      "lyrics": "[chorus]hold the line",
+      "seed": 42,
+      "mode": "full",
+      "max_abc_tokens": 8192,
+      "temperature": 0.7,
+      "top_p": 0.9,
+      "top_k": 30,
+      "repetition_penalty": 1.005,
+      "penalty_window": 100
+    }
+  },
+  "YuE2GenerateMusic.0": {
+    "class_type": "YuE2GenerateMusic",
+    "inputs": {
+      "clip": [
+        "CheckpointLoaderSimple.0",
+        1
+      ],
+      "style": "dreamy synth-pop, 120 BPM",
+      "lyrics": "[chorus]hold the line",
+      "abc": [
+        "YuE2GenerateABC.0",
+        0
+      ],
+      "seed": 42,
+      "mode": "full",
+      "max_duration": 60,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2
+    }
+  },
+  "ConditioningZeroOut.0": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "YuE2GenerateMusic.0",
+        0
+      ]
+    }
+  },
+  "EmptyYuE2LatentAudio.0": {
+    "class_type": "EmptyYuE2LatentAudio",
+    "inputs": {
+      "batch_size": 1,
+      "seconds": [
+        "YuE2GenerateMusic.0",
+        1
+      ]
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 42,
+      "steps": 30,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "latent_image": [
+        "EmptyYuE2LatentAudio.0",
+        0
+      ],
+      "model": [
+        "CheckpointLoaderSimple.0",
+        0
+      ],
+      "positive": [
+        "YuE2GenerateMusic.0",
+        0
+      ],
+      "negative": [
+        "ConditioningZeroOut.0",
+        0
+      ]
+    }
+  },
+  "VAEDecodeAudio.0": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "CheckpointLoaderSimple.0",
+        2
+      ]
+    }
+  },
+  "SaveAudioAdvanced.0": {
+    "class_type": "SaveAudioAdvanced",
+    "inputs": {
+      "audio": [
+        "VAEDecodeAudio.0",
+        0
+      ],
+      "filename_prefix": "probe/music",
+      "format": "mp3",
+      "format.quality": "V0"
+    }
+  }
+}

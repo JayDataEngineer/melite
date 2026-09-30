@@ -1,10 +1,11 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the compose action the anny card binds. The body is
-// the card's own staging + turnaround tail moved verbatim (the
-// body's three arms: an attached GLB renders as-is; empty bakes
-// the body from the identity sliders; the 8-view sheet saves under
-// the anny_<view> convention). The lane stays as the byte-oracle,
-// proven in tests/action.spec.ts. Creation order IS node-id order
+// the staging + turnaround tail, composed here (the body's three
+// arms: an attached GLB renders as-is; empty bakes the body from the
+// identity sliders; the 8-view sheet saves under the anny_<view>
+// convention). The wire is pinned to committed goldens in
+// tests/golden/ — recorded while the card's legacy body existed and
+// the oracle compared them. Creation order IS node-id order
 // (the recipe law). Keys the segment never reads ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";

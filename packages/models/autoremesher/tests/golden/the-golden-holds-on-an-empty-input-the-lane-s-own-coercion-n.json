@@ -1,0 +1,15 @@
+{
+  "AutoRemesher.0": {
+    "class_type": "AutoRemesher",
+    "inputs": {
+      "glb_path": "",
+      "preset": "",
+      "target_quads": 80000,
+      "filename_prefix": "probe-empty/remeshed",
+      "edge_scaling": 0.5,
+      "sharp_edge": 30,
+      "adaptivity": 0.5,
+      "anisotropy": 0.5
+    }
+  }
+}

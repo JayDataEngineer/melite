@@ -1,15 +1,17 @@
-// The atom's own proof (the atom vocabulary, stroke 3): the compose
-// action's serialized prompt is BYTE-IDENTICAL to the legacy musicT1
-// on the same doc — the card's binding change moves no wire. The
-// DECL's lane_inputs are the facts door (the MiniMax trio rail); a
-// missing weight refuses field-named, never composes with an empty
-// filename. GATE S rides the declared seed-sentinel param (the
-// interpreter mints before the factory runs).
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// musicT1 still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The DECL's lane_inputs are the facts door
+// (the MiniMax trio rail); a missing weight refuses field-named, never
+// composes with an empty filename. GATE S rides the declared seed-sentinel
+// param (the interpreter mints before the factory runs).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { musicT1, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { compose, parseMusicFacts } from "../src/actions.ts";
 
@@ -42,13 +44,15 @@ const samplerOf = (g: GraphBuilder): { inputs: Record<string, unknown> } =>
     (n) => n.class_type === "KSampler",
   )!;
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the music3 compose action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane (explicit seed — the sentinel passes through)", () => {
-    const legacy = new GraphBuilder({});
-    musicT1({ ...PARAMS }, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden (explicit seed — the sentinel passes through)", () => {
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...PARAMS }, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-explicit-seed-th"), graphOf(action), "the composed prompt is the committed golden (explicit seed — the sentinel passes through)");
     assert.equal(samplerOf(action).inputs.seed, 42, "the explicit seed rides verbatim");
     const save = Object.values(action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).find(
       (n) => n.class_type === "SaveAudioAdvanced",
@@ -57,13 +61,11 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
     assert.equal(save.inputs.format, "mp3", "the mp3 pin rides");
   });
 
-  it("byte equality holds with re-stated knobs (duration + steps)", () => {
+  it("the golden holds with re-stated knobs (duration + steps)", () => {
     const p = { ...PARAMS, seed: 7, duration: 90, n_diffusion_steps: 48, guidance_scale: 3.2 };
-    const legacy = new GraphBuilder({});
-    musicT1({ ...p }, FACTS, legacy, "probe-knobs");
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...p }, FACTS, action, "probe-knobs");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-with-re-stated-knobs-duration-steps"), graphOf(action), "the golden holds with re-stated knobs (duration + steps)");
     assert.equal(samplerOf(action).inputs.steps, 48, "the restated steps ride");
   });
 

@@ -1,16 +1,19 @@
-// The atom's own proof (the atom vocabulary, stroke 3): the upscale
-// action's serialized prompt is BYTE-IDENTICAL to the legacy
-// upscaleLane on the same doc — the card's binding change moves no
-// wire. The DECL's lane_inputs are the facts door (unet + vae); a
-// missing weight refuses field-named, never composes with an empty
-// filename. GATE S rides the declared seed-sentinel param (the
-// interpreter mints before the factory runs). The interpreter's own
-// contract walls live in card-kit's tests/action.spec.ts.
+// The atom's own proof (the atom vocabulary, stroke 3): the wire is pinned
+// to a COMMITTED GOLDEN — recorded while the kit's legacy upscaleLane still
+// existed and this spec compared the two arms byte-for-byte. That arm is
+// deleted (the families own their lanes now), so the golden carries the
+// compatibility law. The DECL's lane_inputs are the facts door (unet + vae);
+// a missing weight refuses field-named, never composes with an empty
+// filename. GATE S rides the declared seed-sentinel param (the interpreter
+// mints before the factory runs). The interpreter's own contract walls live
+// in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { upscaleLane, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { upscale, parseUpscaleFacts } from "../src/actions.ts";
 
@@ -41,13 +44,15 @@ const upscalerOf = (g: GraphBuilder): { inputs: Record<string, unknown> } =>
     (n) => n.class_type === "SeedVR2VideoUpscaler",
   )!;
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the upscale action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane (explicit seed — the sentinel passes through)", () => {
-    const legacy = new GraphBuilder({});
-    upscaleLane({ ...PARAMS }, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden (explicit seed — the sentinel passes through)", () => {
     const action = new GraphBuilder({});
     instantiateAction(upscale, { ...PARAMS }, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-explicit-seed-th"), graphOf(action), "the composed prompt is the committed golden (explicit seed — the sentinel passes through)");
     assert.equal(upscalerOf(action).inputs.seed, 42, "the explicit seed rides verbatim");
     assert.equal(upscalerOf(action).inputs.uniform_batch_size, true, "the fixed batch law rides");
     const save = Object.values(action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).find(
@@ -56,23 +61,19 @@ describe("the upscale action — byte-stability (the compatibility law)", () => 
     assert.equal(save.inputs.filename_prefix, "probe/gen", "compose stamps the run prefix");
   });
 
-  it("byte equality holds with re-stated knobs (the resolution caps)", () => {
+  it("the golden holds with re-stated knobs (the resolution caps)", () => {
     const p = { ...PARAMS, seed: 7, resolution: 2160, max_resolution: 2048, batch_size: 4 };
-    const legacy = new GraphBuilder({});
-    upscaleLane({ ...p }, FACTS, legacy, "probe-knobs");
     const action = new GraphBuilder({});
     instantiateAction(upscale, { ...p }, FACTS, action, "probe-knobs");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-with-re-stated-knobs-the-resolution-caps"), graphOf(action), "the golden holds with re-stated knobs (the resolution caps)");
     assert.equal(upscalerOf(action).inputs.resolution, 2160, "the target rides");
   });
 
-  it("byte equality holds on the wired spell (a '$name' image rides verbatim, no loader)", () => {
+  it("the golden holds on the wired spell (a '$name' image rides verbatim, no loader)", () => {
     const p = { ...PARAMS, input_image: "$stage1" };
-    const legacy = new GraphBuilder({});
-    upscaleLane({ ...p }, FACTS, legacy, "probe-spell");
     const action = new GraphBuilder({});
     instantiateAction(upscale, { ...p }, FACTS, action, "probe-spell");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-wired-spell-a-name-image-rides-verba"), graphOf(action), "the golden holds on the wired spell (a '$name' image rides verbatim, no loader)");
     assert.ok(
       !Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "LoadImage"),
       "the spell IS the tensor — no loader builds",

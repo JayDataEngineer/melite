@@ -29,26 +29,11 @@ export function finalizeAnny(graph: PromptGraph): PromptGraph {
   return stripEmptyAutofill(graph, ANNY_STRIP)
 }
 
-/** The anny_t1 tail — composite the body (the CARD owns the body's
- *  three admission arms: an attached GLB path, or the identity
- *  sliders' bake — AnnyParamsToGlb → glb_path) → the 8-view
- *  turnaround sheet.
- *
- * THE SAM FICTION DIED (stroke 89, operator order 2026-09-17): the
- * RaySAMSegmentHairClothing ingest branch is DELETED — photo→body
- * is the hmr-estimate VERB (the MHR→SOMA→identity_coeffs chain),
- * never a compose arm of this lane. */
-export function annyLane(p: Record<string, unknown>, g: GraphBuilder, bodyPath: OutputHandle): void {
-  const glbPath = g.node('CompositeCharacter', { body_glb_path: bodyPath }).out()
-  renderGLBViews(g, glbPath, {
-    resolution: positive('resolution', p.resolution),
-    framing: positive('framing', p.framing),
-    focal_length: positive('focal_length', p.focal_length),
-    samples: positive('samples', p.samples),
-    transparent: String(p.transparent).toLowerCase() !== 'false',
-  }, 'anny')
-}
-
+// annyLane IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// anny family composes its own lane in its declared action
+// (packages/models/anny/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.
 // REMOVED stroke 87 (operator order): the fit lane (fitLane + finalizeFit +
 // FIT_STRIP + fitModelStem) and the skin lane (skinLane + finalizeSkin +
 // SKIN_STRIP + the KIND_TABLE sidecar port) — the cards retired to the
@@ -73,70 +58,20 @@ export function finalizeMotion(graph: PromptGraph): PromptGraph {
   return stripEmptyAutofill(graph, MOTION_STRIP)
 }
 
-/** The motion_t1 block — Kimodo checkpoint lane + optional preview
- *  bake (moved verbatim from the motion card; the prompt admission
- *  stays on the card). */
-export function motionLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder): void {
-  const seed = mintSeed(p)
-  const li = model.lane_inputs
-  const loader = g.node('KimodoLoader', { model_name: li.model_path as string }).out()
-
-  // the step-doc STRIPS the text trio before wiring — a padded
-  // string never reaches the node.
-  const prompts = ((p.motion_prompts ?? '') as string).trim()
-  const constraints = ((p.motion_constraints ?? '') as string).trim()
-  const chain: Record<string, unknown> = {}
-  if (p.motion_npz) chain.prev_motion_npz = p.motion_npz
-  if (prompts) chain.motion_prompts = prompts
-  if (constraints) chain.motion_constraints = constraints
-
-  const npz = g.node('KimodoTextToPose', {
-    model: loader,
-    prompt: (p.prompt as string).trim(),
-    seed,
-    duration_sec: p.duration_sec,
-    diffusion_steps: p.diffusion_steps,
-    num_samples: p.num_samples,
-    num_transition_frames: p.num_transition_frames,
-    cfg_type: p.cfg_type,
-    cfg_weight_a: p.cfg_weight_a,
-    cfg_weight_b: p.cfg_weight_b,
-    ...chain,
-  }).out()
-
-  if (p.preview_glb) {
-    g.node('RaySomaxBake', {
-      rigged_glb_path: p.preview_glb,
-      motion_npz_path: npz,
-      anim_name: 'motion',
-      fps: MOTION_BAKE_FPS,
-    })
-  }
-}
-
+// motionLane IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// kimodo family composes its own lane in its declared action
+// (packages/models/kimodo/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.
 // ── the single-node + staging lanes ───────────────────────────────
 // quad-remesh (ONE-implementation rule: the AutoRemesher node IS the
 // lane), upscale-tools (SeedVR2), input-prep (staged-source restage).
 
-/** The quad-remesh block — single AutoRemesher node (moved verbatim
- *  from the quad-remesh card; the input + smooth_normal admission
- *  stays on the card). */
-export function quadRemeshLane(p: Record<string, unknown>, g: GraphBuilder, runId: string): void {
-  const input = String(p.input || '')
-  // Family constant, never a knob (stable).
-  const prefix = `${runId}/remeshed`
-  g.node('AutoRemesher', {
-    glb_path: input,
-    preset: '',
-    target_quads: p.target_quads as number,
-    filename_prefix: prefix,
-    edge_scaling: p.edge_scaling as number,
-    sharp_edge: p.sharp_edge as number,
-    adaptivity: p.adaptivity as number,
-    anisotropy: p.anisotropy as number,
-  })
-}
-
+// quadRemeshLane IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// autoremesher family composes its own lane in its declared action
+// (packages/models/autoremesher/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.
 // ── archetype V: the mesh lift family (img-to-mesh, bespoke) ───────
 // THREE families behind one card: the dual guided lift head, the
 // shared structure→shape→texture→bake chain, and the rig-copy arm.

@@ -11,91 +11,16 @@ import {
   laneStr,
 } from './blocks/audio-kit.ts'
 
-/** The music_t1 block — the MiniMax Music 3 lane (moved verbatim
- *  from the music card; admission stays on the card). */
-export function musicT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const seed = mintSeed(p)
-  const li = model.lane_inputs
-  const unet = g.node('UNETLoader', { unet_name: laneStr(li.unet), weight_dtype: 'default' }).out()
-  const clip = g.node('CLIPLoader', { clip_name: laneStr(li.text_encoder), model_options: 'default', type: laneStr(li.clip_type) }).out()
-  const vae = g.node('VAELoader', { vae_name: laneStr(li.vae) }).out()
-  const cond = g.node('MiniMaxMusic3TextEncode', {
-    clip,
-    caption: p.prompt,
-    lyrics: p.lyrics ?? '',
-    seed,
-    max_duration: p.duration,
-    cfg_scale: p.lm_cfg_scale,
-    top_k: 50,
-  })
-  const zeroed = g.node('ConditioningZeroOut', { conditioning: cond.out(0) })
-  const latent = g.node('EmptyMiniMaxMusic3LatentAudio', { batch_size: 1, seconds: p.duration })
-  const sampled = g.node('KSampler', {
-    seed,
-    steps: p.n_diffusion_steps,
-    cfg: p.guidance_scale,
-    sampler_name: 'euler',
-    scheduler: 'simple',
-    denoise: 1.0,
-    latent_image: latent.out(),
-    model: unet,
-    positive: cond.out(0),
-    negative: zeroed.out(),
-  })
-  const audio = g.node('VAEDecodeAudio', { samples: sampled.out(), vae })
-  g.node('SaveAudioAdvanced', { audio: audio.out(), filename_prefix: `${runId}/music`, format: 'mp3', 'format.quality': 'V0' })
-}
-
-/** The yue2 lane — YuE2-3B text-to-music with ABC planning (the
- *  Comfy-Org release, stock nodes only; boarded 2026-09-20). Branch
- *  key = lane_inputs.checkpoint (the latent_node precedent — data
- *  never a family-id switch): ONE checkpoint carries model+clip+vae
- *  (CheckpointLoaderSimple); the music LLM plans ABC
- *  (YuE2GenerateABC, only when mode != off) then conditions
- *  (YuE2GenerateMusic — its seconds output sizes the latent, the
- *  template's own wiring); KSampler dpm_2/sgm_uniform at cfg 1
- *  (guidance lives on the AR side, never the sampler — the card's
- *  guidance_scale knob stays music3's); VAE decode, mp3 save. */
-export function yue2T1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const seed = mintSeed(p)
-  const li = model.lane_inputs
-  const ckpt = g.node('CheckpointLoaderSimple', { ckpt_name: laneStr(li.checkpoint) })
-  const style = p.prompt as string
-  const lyrics = (p.lyrics ?? '') as string
-  const mode = (p.mode ?? 'full') as string
-  // THE PLANNING GATE: mode off composes no planner node at all —
-  // GenerateMusic rides an empty abc (the engine's own off mode);
-  // full/melody ride YuE2GenerateABC with the same style + lyrics.
-  let abc: string | OutputHandle = ''
-  if (mode !== 'off') {
-    abc = g.node('YuE2GenerateABC', {
-      clip: ckpt.out(1), style, lyrics, seed, mode,
-      max_abc_tokens: 8192, temperature: 0.7, top_p: 0.9, top_k: 30,
-      repetition_penalty: 1.005, penalty_window: 100,
-    }).out(0)
-  }
-  const music = g.node('YuE2GenerateMusic', {
-    clip: ckpt.out(1), style, lyrics, abc, seed, mode,
-    max_duration: p.duration, temperature: 1.0, top_p: 0.95, top_k: 100,
-    repetition_penalty: 1.2,
-  })
-  const zeroed = g.node('ConditioningZeroOut', { conditioning: music.out(0) })
-  const latent = g.node('EmptyYuE2LatentAudio', { batch_size: 1, seconds: music.out(1) })
-  const sampled = g.node('KSampler', {
-    seed,
-    steps: p.n_diffusion_steps,
-    cfg: 1,
-    sampler_name: 'dpm_2',
-    scheduler: 'sgm_uniform',
-    denoise: 1.0,
-    latent_image: latent.out(),
-    model: ckpt.out(0),
-    positive: music.out(0),
-    negative: zeroed.out(),
-  })
-  const audio = g.node('VAEDecodeAudio', { samples: sampled.out(), vae: ckpt.out(2) })
-  g.node('SaveAudioAdvanced', { audio: audio.out(), filename_prefix: `${runId}/music`, format: 'mp3', 'format.quality': 'V0' })
-}
+// musicT1 IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// music3 family composes its own lane in its declared action
+// (packages/models/music3/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.
+// yue2T1 IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// yue2 family composes its own lane in its declared action
+// (packages/models/yue2/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.
 
 // ── archetype II: the audiocore family ────────────────────────────
 // LoadAudiocoreModel (family/model_path/extras from facts) → one
@@ -311,21 +236,8 @@ export function ttsDesignT1(p: Record<string, unknown>, model: ModelFacts, g: Gr
   })
 }
 
-/** The sfx_t1 block — the sound-effect lane (moved verbatim from the
- *  sfx card; admission stays on the card). */
-export function sfxT1(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const seed = mintSeed(p)
-  const loaded = loadAudiocore(g, model)
-  const synth = g.node('AudiocoreTTS', {
-    ...AUDIACORE_TTS_AUTOFILL,
-    model: loaded,
-    prompt: (p.prompt as string).trim(),
-    mode: 'tts',
-    guidance_scale: p.guidance_scale,
-    num_inference_steps: p.n_diffusion_steps,
-    duration_seconds: p.duration,
-    seed,
-  })
-  saveAudio(g, synth.out(), `${runId}/sfx`)
-}
-
+// sfxT1 IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// moss-sfx family composes its own lane in its declared action
+// (packages/models/moss-sfx/src/actions.ts, pinned to committed goldens in
+// that family's tests/golden/). This arm is deleted; the family is the
+// only home of the lane.

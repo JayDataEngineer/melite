@@ -1,0 +1,106 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "minimax_music3_dit_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+      "model_options": "default",
+      "type": "minimax"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "minimax_music3_dav.safetensors"
+    }
+  },
+  "MiniMaxMusic3TextEncode.0": {
+    "class_type": "MiniMaxMusic3TextEncode",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "caption": "funk, pop, soul, guitar, 105 BPM",
+      "lyrics": "[verse]shine a light",
+      "seed": 7,
+      "max_duration": 90,
+      "cfg_scale": 1.7,
+      "top_k": 50
+    }
+  },
+  "ConditioningZeroOut.0": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "MiniMaxMusic3TextEncode.0",
+        0
+      ]
+    }
+  },
+  "EmptyMiniMaxMusic3LatentAudio.0": {
+    "class_type": "EmptyMiniMaxMusic3LatentAudio",
+    "inputs": {
+      "batch_size": 1,
+      "seconds": 90
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 7,
+      "steps": 48,
+      "cfg": 3.2,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "latent_image": [
+        "EmptyMiniMaxMusic3LatentAudio.0",
+        0
+      ],
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "positive": [
+        "MiniMaxMusic3TextEncode.0",
+        0
+      ],
+      "negative": [
+        "ConditioningZeroOut.0",
+        0
+      ]
+    }
+  },
+  "VAEDecodeAudio.0": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "SaveAudioAdvanced.0": {
+    "class_type": "SaveAudioAdvanced",
+    "inputs": {
+      "audio": [
+        "VAEDecodeAudio.0",
+        0
+      ],
+      "filename_prefix": "probe-knobs/music",
+      "format": "mp3",
+      "format.quality": "V0"
+    }
+  }
+}

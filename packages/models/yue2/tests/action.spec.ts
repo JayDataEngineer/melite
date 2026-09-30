@@ -1,16 +1,18 @@
-// The atom's own proof (the atom vocabulary, stroke 3): the compose
-// action's serialized prompt is BYTE-IDENTICAL to the legacy yue2T1
-// on the same doc — the card's binding change moves no wire. The
-// DECL's lane_inputs are the facts door (checkpoint — one file
-// carries model+clip+vae); a missing checkpoint refuses
-// field-named, never composes with an empty filename. GATE S rides
-// the declared seed-sentinel param (the interpreter mints before
-// the factory runs).
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// yue2T1 still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The DECL's lane_inputs are the facts door
+// (checkpoint — one file carries model+clip+vae); a missing checkpoint
+// refuses field-named, never composes with an empty filename. GATE S rides
+// the declared seed-sentinel param (the interpreter mints before the factory
+// runs).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { yue2T1, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { compose, parseYue2Facts } from "../src/actions.ts";
 
@@ -42,35 +44,33 @@ const nodeOf = (g: GraphBuilder, classType: string): { inputs: Record<string, un
     (n) => n.class_type === classType,
   );
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the yue2 compose action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane (explicit seed, ABC planning on)", () => {
-    const legacy = new GraphBuilder({});
-    yue2T1({ ...PARAMS }, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden (explicit seed, ABC planning on)", () => {
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...PARAMS }, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-explicit-seed-ab"), graphOf(action), "the composed prompt is the committed golden (explicit seed, ABC planning on)");
     assert.ok(nodeOf(action, "YuE2GenerateABC"), "the planner rides the full mode");
     const save = nodeOf(action, "SaveAudioAdvanced")!;
     assert.equal(save.inputs.filename_prefix, "probe/music", "compose stamps the run prefix");
   });
 
-  it("byte equality holds with the planner OFF (mode off composes no ABC node — the engine's own off mode)", () => {
+  it("the golden holds with the planner OFF (mode off composes no ABC node — the engine's own off mode)", () => {
     const p = { ...PARAMS, seed: 7, mode: "off", duration: 45 };
-    const legacy = new GraphBuilder({});
-    yue2T1({ ...p }, FACTS, legacy, "probe-off");
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...p }, FACTS, action, "probe-off");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-with-the-planner-off-mode-off-composes-no-a"), graphOf(action), "the golden holds with the planner OFF (mode off composes no ABC node — the engine's own off mode)");
     assert.ok(!nodeOf(action, "YuE2GenerateABC"), "mode off composes no planner node at all");
   });
 
-  it("byte equality holds on the MINIMAL doc (caption + seed — lyrics and mode fall to their lane defaults)", () => {
+  it("the golden holds on the MINIMAL doc (caption + seed — lyrics and mode fall to their lane defaults)", () => {
     const p = { prompt: "dreamy synth-pop", seed: 11 };
-    const legacy = new GraphBuilder({});
-    yue2T1({ ...p }, FACTS, legacy, "probe-min");
     const action = new GraphBuilder({});
     instantiateAction(compose, { ...p }, FACTS, action, "probe-min");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-minimal-doc-caption-seed-lyrics-and-"), graphOf(action), "the golden holds on the MINIMAL doc (caption + seed — lyrics and mode fall to their lane defaults)");
     assert.ok(nodeOf(action, "YuE2GenerateABC"), "the absent mode falls to full — the planner rides");
     const music = nodeOf(action, "YuE2GenerateMusic")!;
     assert.equal(music.inputs.lyrics, "", "an absent lyrics falls to the empty string, never undefined");

@@ -15,10 +15,9 @@ import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeImageEdit, finalizeTagger, finalizeMask,
-  maskT1, upscaleLane,
-  annyLane,
+  maskT1,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  quadRemeshLane, musicT1, yue2T1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
+  imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
   ttsT1, qvoiceUse,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
@@ -481,29 +480,12 @@ describe("maskT1 (the selection lane's arms)", () => {
 // checkpoint, the wired spell, the file loader, the blank/non-string
 // refusals) live in each family's own action spec.
 
-describe("upscaleLane (the spelled anchor)", () => {
-  const base = { seed: 7, resolution: 1080, max_resolution: 2160, batch_size: 4 };
-  it("THE SPELL ARM: a spelled image builds no loader — the spell rides the upscaler verbatim", () => {
-    // Same gap family: the spells decl pools INITIALS at phase-1
-    // only — a producer LINK needs this arm or ROW-4 refuses it
-    // at merge (the card tests already compose "$image" through
-    // the pool; this wall pins the graph half).
-    const g = new GraphBuilder();
-    upscaleLane({ ...base, input_image: "$src" }, facts.models["seedvr2_ema"]!, g, "run_spell_up");
-    const row = dump(g);
-    assert.ok(!classes(row).includes("LoadImage"), "no loader carries the spell");
-    const up = Object.values(row).find((n) => n.class_type === "SeedVR2VideoUpscaler")!;
-    assert.equal(up.inputs.image, "$src", "the upscaler reads the wired tensor verbatim");
-  });
-
-  it("a file image keeps its loader (the disk handoff)", () => {
-    const g = new GraphBuilder();
-    upscaleLane({ ...base, input_image: "/m/p.png" }, facts.models["seedvr2_ema"]!, g, "run_path_up");
-    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
-    assert.equal(load.inputs.image, "/m/p.png", "paths keep the LoadImage disk handoff");
-  });
-});
-
+// THE UPSCALE LANE IS FAMILY-OWNED (the kit-arm retirement,
+// 2026-09-30): the seedvr2_ema family composes its own upscale arm
+// in its declared action, pinned to committed goldens
+// (packages/models/seedvr2_ema/tests/golden/) — the spelled anchor,
+// the explicit seed, the re-stated resolution caps and the GATE S
+// mint all live in that family's action spec now.
 // ── the input-prep row gates ──────────────────────────────────────
 // THE INPUT-PREP LANE IS FAMILY-OWNED (the kit-arm retirement,
 // 2026-09-30): the input family composes its own restage lane,
@@ -549,29 +531,14 @@ describe("the finalize strips", () => {
 });
 
 // ── the small exported helpers ────────────────────────────────────
-describe("the exported helpers", () => {
-  it("annyLane composites whatever body handle the card hands it (the admission stays on the card)", () => {
-    const render = { resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true };
-    const g = new GraphBuilder();
-    const prim = g.node("PrimitiveString", { value: "/m/b.glb" });
-    annyLane({ ...render }, g, prim.out());
-    const row = dump(g);
-    assert.ok(row["CompositeCharacter.0"], "the composite rides the card's handle");
-    assert.ok(classes(row).some((c) => c.startsWith("RayRenderGLBViews")), "the views ride");
-  });
-
-  it("annyLane has NO SAM arm (photo→body is the hmr-estimate verb — stroke 89)", () => {
-    const render = { resolution: 2, framing: 2, focal_length: 2, samples: 2, transparent: true };
-    const g = new GraphBuilder();
-    const prim = g.node("PrimitiveString", { value: "/m/b.glb" });
-    annyLane({ source_image: "/m/s.png", ...render } as Record<string, unknown>, g, prim.out());
-    const row = classes(dump(g));
-    assert.ok(!row.includes("RaySAMSegmentHairClothing"), "the SAM sprite node is gone from the lane");
-    assert.ok(!row.includes("LoadImage"), "no image ingest arm");
-  });
-
-
-});
+// THE 3D LANE ARMS ARE FAMILY-OWNED (the kit-arm retirement, 2026-09-30):
+// annyLane, motionLane and quadRemeshLane are deleted with the spec
+// blocks that owned them. The anny turnaround sheet, the kimodo motion
+// chain and the AutoRemesher lane are composed by their own families'
+// declared actions, each pinned to committed goldens
+// (packages/models/{anny,kimodo,autoremesher}/tests/golden/) — the
+// body-handle composition, the spell arm, the empty-pin reads and the
+// refusal voices all live in those families' action specs now.
 
 // ── the mesh-lift admission throws + the rig arm ──────────────────
 describe("the mesh-lift admissions and the rig copy", () => {
@@ -775,47 +742,9 @@ describe("deriveDefaults (the autofill derivation)", () => {
 
 // ── the residual lane arms (fit/quad/music/edit) ─────────────────
 describe("the residual lane arms", () => {
-  it("quadRemeshLane rides the AutoRemesher", () => {
-    const g = new GraphBuilder();
-    quadRemeshLane({ input: "/m/mesh.glb", target_quads: 40000 }, g, "run_1");
-    const node = Object.values(dump(g)).find((n) => n.class_type === "AutoRemesher")!;
-    assert.ok(node);
-    assert.equal(node.inputs.target_quads, 40000);
-    assert.equal(node.inputs.glb_path, "/m/mesh.glb");
-  });
 
-  it("quadRemeshLane's unstated input rides the empty pin (the card admits it)", () => {
-    const g = new GraphBuilder();
-    quadRemeshLane({ target_quads: 1000 }, g, "run_1b");
-    const node = Object.values(dump(g)).find((n) => n.class_type === "AutoRemesher")!;
-    assert.equal(node.inputs.glb_path, "");
-  });
 
-  it("musicT1 carries the lyrics overlay arm (stated and absent)", () => {
-    const model = facts.models["music3"]!;
-    const stated = new GraphBuilder();
-    musicT1({ prompt: "a funky loop", lyrics: "verse one", duration: 90, seed: 3 }, model, stated, "run_2");
-    const enc = Object.values(dump(stated)).find((n) => n.class_type === "MiniMaxMusic3TextEncode")!;
-    assert.equal(enc.inputs.lyrics, "verse one", "stated lyrics ride the encode");
 
-    const absent = new GraphBuilder();
-    musicT1({ prompt: "a funky loop", duration: 90, seed: 3 }, model, absent, "run_2b");
-    const enc2 = Object.values(dump(absent)).find((n) => n.class_type === "MiniMaxMusic3TextEncode")!;
-    assert.equal(enc2.inputs.lyrics, "", "unstated lyrics ride the lane's empty pin, never undefined");
-  });
-
-  it("yue2T1 composes both the stated and default planning modes", () => {
-    const model = facts.models["yue2"]!;
-    const stated = new GraphBuilder();
-    yue2T1({ prompt: "a warm theme", lyrics: "verse", mode: "full", duration: 30, n_diffusion_steps: 4, seed: 2 }, model, stated, "run_yue_full");
-    const full = Object.values(dump(stated)).find((n) => n.class_type === "YuE2GenerateABC")!;
-    assert.equal(full.inputs.mode, "full");
-
-    const absent = new GraphBuilder();
-    yue2T1({ prompt: "a warm theme", duration: 30, n_diffusion_steps: 4, seed: 2 }, model, absent, "run_yue_default");
-    const fallback = Object.values(dump(absent)).find((n) => n.class_type === "YuE2GenerateABC")!;
-    assert.equal(fallback.inputs.mode, "full");
-  });
 
 
   it("imageEdit wires the image2/image3 reference slots", () => {

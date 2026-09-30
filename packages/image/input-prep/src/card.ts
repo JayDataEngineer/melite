@@ -1,7 +1,9 @@
 // Tier 3 — the input-prep card (the input_prep renderer port).
 // The source lane: LoadImage -> [ImageCrop] -> [ImageScale] ->
 // SaveImage, or the audio restage LoadAudio -> SaveAudio.
-// Decl + admission + one kit recipe call — the lane body rides @melite/comfyui-card-kit (inputPrepLane).
+// Decl + admission + family dispatch — the lane body rides the input
+// family's own declared action (packages/models/input/src/actions.ts,
+// pinned to committed goldens in that family's tests/golden/).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
@@ -13,10 +15,9 @@ import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
-// action composes; the legacy kit lane stays the declared fallback
-// (byte-oracle + unbound-row safety). Keyed by OWNING FAMILY
-// (`model.family ?? model.id` at dispatch — a route id keys
-// nothing, the derived-row law).
+// action composes the whole segment; an unbound family refuses loud
+// at the dispatch. Keyed by OWNING FAMILY (`model.family ??
+// model.id` — a route id keys nothing, the derived-row law).
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
   [inputDecl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(inputDecl, 'prep'), p, model, g, runId)

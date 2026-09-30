@@ -1,9 +1,10 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the remesh action the quad-remesh card binds. The
-// segment factory is the legacy quadRemeshLane verbatim (ONE-IMPLEMENTATION
-// rule: the AutoRemesher node IS the lane); the input + smooth_normal
-// admission stays on the card. The lane stays as the byte-oracle,
-// proven in tests/action.spec.ts. The family is weightless (no
+// lane IS this file (ONE-IMPLEMENTATION rule: the AutoRemesher node
+// IS the lane); the input + smooth_normal admission stays on the card.
+// The wire is pinned to committed goldens in tests/golden/ — recorded
+// while the kit's twin existed and the oracle compared them. The
+// family is weightless (no
 // checkpoint loads — the door is the vacuous parse, the tagger
 // precedent).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";

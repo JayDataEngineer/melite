@@ -1,10 +1,10 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the upscale action the upscale-tools card binds. The
 // DECL's lane_inputs are the ONE facts door (unet + vae — the SeedVR2
-// pair); the segment factory is the legacy upscaleLane verbatim —
-// byte-identical graphs on the same doc (proven in
-// tests/action.spec.ts). Creation order IS node-id order (the
-// recipe law). The lane_inputs keys this segment never reads
+// pair); the lane IS this file, pinned to committed goldens in
+// tests/golden/ — the wire the port produced while the kit's twin
+// still existed and the oracle compared them byte-for-byte. Creation
+// order IS node-id order (the recipe law). The lane_inputs keys this segment never reads
 // (checkpoint, texture_vae, … the strip shape) ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";

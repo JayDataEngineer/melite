@@ -1,0 +1,98 @@
+{
+  "CheckpointLoaderSimple.0": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "yue2_3b_int8_convrot.safetensors"
+    }
+  },
+  "YuE2GenerateMusic.0": {
+    "class_type": "YuE2GenerateMusic",
+    "inputs": {
+      "clip": [
+        "CheckpointLoaderSimple.0",
+        1
+      ],
+      "style": "dreamy synth-pop, 120 BPM",
+      "lyrics": "[chorus]hold the line",
+      "abc": "",
+      "seed": 7,
+      "mode": "off",
+      "max_duration": 45,
+      "temperature": 1,
+      "top_p": 0.95,
+      "top_k": 100,
+      "repetition_penalty": 1.2
+    }
+  },
+  "ConditioningZeroOut.0": {
+    "class_type": "ConditioningZeroOut",
+    "inputs": {
+      "conditioning": [
+        "YuE2GenerateMusic.0",
+        0
+      ]
+    }
+  },
+  "EmptyYuE2LatentAudio.0": {
+    "class_type": "EmptyYuE2LatentAudio",
+    "inputs": {
+      "batch_size": 1,
+      "seconds": [
+        "YuE2GenerateMusic.0",
+        1
+      ]
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 7,
+      "steps": 30,
+      "cfg": 1,
+      "sampler_name": "dpm_2",
+      "scheduler": "sgm_uniform",
+      "denoise": 1,
+      "latent_image": [
+        "EmptyYuE2LatentAudio.0",
+        0
+      ],
+      "model": [
+        "CheckpointLoaderSimple.0",
+        0
+      ],
+      "positive": [
+        "YuE2GenerateMusic.0",
+        0
+      ],
+      "negative": [
+        "ConditioningZeroOut.0",
+        0
+      ]
+    }
+  },
+  "VAEDecodeAudio.0": {
+    "class_type": "VAEDecodeAudio",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "CheckpointLoaderSimple.0",
+        2
+      ]
+    }
+  },
+  "SaveAudioAdvanced.0": {
+    "class_type": "SaveAudioAdvanced",
+    "inputs": {
+      "audio": [
+        "VAEDecodeAudio.0",
+        0
+      ],
+      "filename_prefix": "probe-off/music",
+      "format": "mp3",
+      "format.quality": "V0"
+    }
+  }
+}

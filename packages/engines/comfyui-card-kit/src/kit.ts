@@ -68,15 +68,12 @@ export {
   H3_T4_STRIP,
   finalizeH3,
 } from './lanes-video.ts'
-export { musicT1, yue2T1, ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, qvoiceUse, type QVoiceUse, sfxT1 } from './lanes-audio.ts'
+export { ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,
-  annyLane,
   MOTION_STRIP,
   finalizeMotion,
-  motionLane,
-  quadRemeshLane,
   rigSomaArm,
   rigSpeciesArm,
   trellisArm,
@@ -93,7 +90,6 @@ export {
 } from './lanes-3d.ts'
 export {
   maskT1,
-  upscaleLane,
   TAGGER_STRIP,
   finalizeTagger,
   finalizeMask,

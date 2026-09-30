@@ -1,10 +1,11 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the compose action the motion card binds. The DECL's
 // lane_inputs are the ONE facts door (model_path — the Kimodo
-// checkpoint load key); the segment factory is the legacy
-// motionLane verbatim (KimodoLoader → KimodoTextToPose → optional
-// RaySomaxBake). The lane stays as the byte-oracle, proven in
-// tests/action.spec.ts. Creation order IS node-id order (the
+// checkpoint load key); the lane IS this file (KimodoLoader →
+// KimodoTextToPose → optional RaySomaxBake), pinned to committed
+// goldens in tests/golden/ — recorded while the kit's twin existed and
+// the oracle compared them byte-for-byte. Creation order IS node-id
+// order (the
 // recipe law). No filename_prefix node (the NPZ and baked GLB
 // write themselves into the output dir — runId rides the door,
 // un-graphed).

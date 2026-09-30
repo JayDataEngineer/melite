@@ -1,9 +1,10 @@
 // actions.ts — the family's offered actions (the atom vocabulary,
 // stroke 3): the sfx action the sfx card binds. The DECL's
 // lane_inputs are the ONE facts door (model_path — the audiocore
-// load key); the segment factory is the legacy sfxT1 verbatim on
-// the kit's OWN calibrated pins and loaders (one owner; the lane
-// stays as the byte-oracle, proven in tests/action.spec.ts).
+// load key); the lane IS this file on the kit's OWN calibrated pins
+// and loaders (one owner), pinned to committed goldens in
+// tests/golden/ — recorded while the kit's twin existed and the oracle
+// compared them byte-for-byte.
 // Creation order IS node-id order (the recipe law). Keys the
 // segment never reads (checkpoint, vae, … the strip shape) ride
 // unvalidated.

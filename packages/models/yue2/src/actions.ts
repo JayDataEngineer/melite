@@ -2,8 +2,9 @@
 // stroke 3): the compose action the music card binds. The DECL's
 // lane_inputs are the ONE facts door (checkpoint — ONE file carries
 // model+clip+vae, the latent_node precedent); the segment factory is
-// the legacy yue2T1 verbatim — byte-identical graphs on the same
-// doc (proven in tests/action.spec.ts). Creation order IS node-id
+// the lane IS this file, pinned to committed goldens in tests/golden/
+// — the wire the port produced while the kit's twin still existed and
+// the oracle compared them byte-for-byte. Creation order IS node-id
 // order (the recipe law). Keys the segment never reads (unet, vae,
 // … the strip shape) ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
