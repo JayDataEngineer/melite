@@ -36,12 +36,10 @@ type SeatParams = {
  *  vendor's row gate refuses an empty Bone before it chooses a mode
  *  (fit_surgery.py:66-68 — "fit row needs Bone (which bone carries
  *  it)"; socket mode is chosen AFTER that check, not instead of it).
- *  A named bone belongs to the body being fitted, so it cannot be a
- *  constant here, and it cannot be a request initial either: the
- *  door's initialValidators admit photo/glb/bake_params only, so a
- *  row spelling `$bone` names a key no flow can declare. Until the
- *  seat grows a text initial, this verb refuses AT COMPOSE with the
- *  name of the missing seam — the lowest level that can answer. */
+ *  A named bone belongs to the body being fitted, so it is the
+ *  CALLER's value: the door's initial vocabulary carries a `text`
+ *  kind for a bare name, and the flow declares the bone REQUIRED, so
+ *  a request without one is refused at the door rather than here. */
 export const FIT_ROW = {
   model_name: "prop",
   align: "socket",

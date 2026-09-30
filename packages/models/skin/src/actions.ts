@@ -54,14 +54,13 @@ export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, nev
   laneIndependent: true,
   outputs: [{ name: "skin", kind: "mesh" }],
   // THE KNOBS ARE THE ACTION'S, NOT THE REQUEST'S (stroke-89: an
-  // estimation knob never joins the request schema; the flow's
-  // initialValidators admit only photo/glb/bake_params, so a knob
-  // spelled `$map_size` could never be linkable — the merged worker
-  // refused "carries $map_size — neither a FromStage-wired input nor
-  // a request initial"). The body rides as the request initial; the
-  // detail kind, the map size and the seed are the verb's own
-  // vocabulary, fixed in build below exactly as the anny estimator
-  // fixes conf_thresh and dist_thresh_nms.
+  // estimation knob never joins the request schema). A knob spelled
+  // `$map_size` would name a key the flow cannot declare as an
+  // initial, so the merged worker would refuse it by name. The body
+  // rides as the request initial; the detail kind, the map size and
+  // the seed are the verb's own vocabulary, fixed in build below
+  // exactly as the anny estimator fixes conf_thresh and
+  // dist_thresh_nms.
   params: [{ name: "body" }],
   facts: parseSkinFacts,
   build({ p, g }): OutputHandle {
