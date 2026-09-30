@@ -206,6 +206,48 @@ describe("publishOutputChannels (the declared-channel law)", () => {  it("first 
     );
     expect(out).toEqual({ hero: "/r/b.png", clip: "/r/a.mp4", other: "/r/c.glb" });
   });
+  // THE BOUND ARM'S KIND LAW: a binding says which node serves the
+  // channel, not that the node's artifact is of that kind. An action
+  // that returned its PROOF RENDERER published a PNG as a `mesh`
+  // channel this way, and every gate stayed green — the mistake was
+  // visible only in a live run's own assertion.
+  it("a BOUND node whose artifact is the wrong kind publishes nothing", () => {
+    // (outputs, artifacts, bindings, records) — the bound arm reads
+    // the RECORDS list, the unbound arm the paths.
+    const artifacts = ["/r/proof_0001_.png", "/r/skin_body_0001_.glb"];
+    const records = [
+      { nodeId: "RayRenderGLBViews.0", path: "/r/proof_0001_.png" },
+      { nodeId: "SkinApply.0", path: "/r/skin_body_0001_.glb" },
+    ];
+    // the renderer bound to a mesh channel: refused, and the mesh
+    // channel takes the artifact that IS a mesh
+    expect(
+      publishOutputChannels(
+        { skin: "mesh" },
+        artifacts,
+        { skin: "RayRenderGLBViews.0" },
+        records as never,
+      ),
+    ).toEqual({});
+    // the grafted body bound to the same channel: published
+    expect(
+      publishOutputChannels(
+        { skin: "mesh" },
+        artifacts,
+        { skin: "SkinApply.0" },
+        records as never,
+      ),
+    ).toEqual({ skin: "/r/skin_body_0001_.glb" });
+    // an image channel bound to the renderer is fine (kind agrees)
+    expect(
+      publishOutputChannels(
+        { proof: "image" },
+        artifacts,
+        { proof: "RayRenderGLBViews.0" },
+        records as never,
+      ),
+    ).toEqual({ proof: "/r/proof_0001_.png" });
+  });
   it("an artifact claimed once never republishes", () => {
     const out = publishOutputChannels(
       { one: "image", two: "image" },

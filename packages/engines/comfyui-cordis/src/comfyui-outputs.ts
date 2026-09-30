@@ -267,7 +267,21 @@ export function publishOutputChannels(
     const nodeId = bindings[channel];
     if (nodeId !== undefined) {
       const artifact = records.find((record) => record.nodeId === nodeId)
-      if (artifact !== undefined) {
+      // THE DECLARED CHANNEL'S KIND IS THE LAW HERE TOO: the
+      // binding says which node serves the channel, not that the
+      // node's artifact is of that kind. Without this check an
+      // action that returns its PROOF RENDERER published a PNG as a
+      // `mesh` channel and every gate stayed green — only a live
+      // run's own assertion caught it. A declared node whose
+      // artifact is the wrong kind publishes nothing here, and
+      // assertPublishedOutputChannels then names the channel.
+      const exts = CHANNEL_EXTS[String(kind)];
+      if (
+        artifact !== undefined &&
+        (exts === undefined ||
+          exts.some((extension: string): boolean =>
+            artifact.path.toLowerCase().endsWith(extension)))
+      ) {
         published[channel] = artifact.path;
         claimed.add(artifact.path);
       }

@@ -34,16 +34,19 @@ describe("the draft-id grammar has one rule", () => {
       .toBe(OWNER);
   });
 
-  it("the one grammar admits the ids both doors must agree on (a sampling that would expose a wrong bound)", () => {
-    const samples = [
-      "a", "bench-main", "draft-6a96e487-704ce3fff6c0-1", "A_b-9",
-      "", " ", "bench main", "bench/main", "bench.main",
-      "x".repeat(96), "x".repeat(97), "x".repeat(200),
-      "café", "bench-🎬",
-    ];
-    for (const id of samples) {
-      expect(MIRROR.test(id), "the grammar's verdict for " + JSON.stringify(id.slice(0, 12)))
-        .toBe(OWNER.test(id));
+  it("the one grammar admits the ids both doors must agree on", () => {
+    // ABSOLUTE BOUNDS, NOT A SELF-COMPARISON (the census's M16
+    // lesson, applied here): with the mirror gone there is one
+    // grammar, so comparing it with itself proves nothing. Each
+    // sample states what the rule must do.
+    const admitted = ["a", "bench-main", "draft-6a96e487-704ce3fff6c0-1", "A_b-9", "x".repeat(96)];
+    for (const id of admitted) {
+      expect(MIRROR.test(id), "must admit " + JSON.stringify(id.slice(0, 12))).toBe(true);
+    }
+    const refused = ["", " ", "bench main", "bench/main", "bench.main", "x".repeat(97),
+      "x".repeat(200), "caf\u00e9", "bench-\ud83c\udfac"];
+    for (const id of refused) {
+      expect(MIRROR.test(id), "must refuse " + JSON.stringify(id.slice(0, 12))).toBe(false);
     }
   });
 

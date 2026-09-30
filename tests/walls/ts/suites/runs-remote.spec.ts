@@ -712,9 +712,10 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   );
   // 2. a single-stage registry flow serves at BOTH arms (the
   //    skill's wire law): validate compiles it through the SAME
-  //    inline arm — the wired registry's real pin carries FitRow,
-  //    so the compile is ok (the cardGate wire, 2026-09-13; the
-  //    old wall pinned the null-registry gap — 0 pinned classes).
+  //    inline arm — the wired registry's real pin carries this
+  //    flow's classes, so the compile is ok (the cardGate wire,
+  //    2026-09-13; the old wall pinned the null-registry gap —
+  //    0 pinned classes).
   const skinApply = (await runs.validate({ flow: "skin-apply" }, sig)) as {
     ok?: boolean;
   };
