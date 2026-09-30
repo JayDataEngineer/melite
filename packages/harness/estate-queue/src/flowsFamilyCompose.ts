@@ -25,23 +25,45 @@ import type { RegistryFlow, RegistryStage } from "./flowsData.ts";
 export type FamilyDeclRow = { readonly id: string };
 export type FamilyModelsSeat = { allDecls(): readonly FamilyDeclRow[] };
 
-/** The live family declarations, or [] when the families seat is
- * absent (an unmounted context, an unbooted host). A flow with NO
- * family stage never reads this; a flow WITH one refuses LOUD on
- * the empty seat inside composeOne — the voice names the absent
- * seat, never a silent skip.
+/** How the family seat answered, which is three different facts:
+ *  `seated` (the table holds families), `bare` (the owner is mounted
+ *  and the table holds none — a lane that mounted the catalog
+ *  provider without the family plugins), and `absent` (no seat at
+ *  all: an unmounted context whose singleton never booted). The
+ *  refusal must name which one it is — a family that is merely
+ *  unregistered is a different defect from a lane with no table.
+ *  A flow with NO family stage never reads this. */
+export type FamilySeatState = "seated" | "bare" | "absent";
+
+/** The live family declarations, and how the seat answered. A flow
+ *  WITH a family stage refuses LOUD on an unanswering seat inside
+ *  composeOne, in the seat's own voice.
  * @param modelsSeat the context's models service when mounted
  *  (the injectable read); the booted singleton otherwise
- * @returns the family declarations, or [] when no seat exists */
-export function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): readonly FamilyDeclRow[] {
+ * @returns the declarations (empty on an unanswering seat) and the
+ *  state that produced them */
+export function liveFamilySeat(
+  modelsSeat?: FamilyModelsSeat | null,
+): { readonly decls: readonly FamilyDeclRow[]; readonly state: FamilySeatState } {
   if (modelsSeat !== undefined && modelsSeat !== null) {
-    return modelsSeat.allDecls();
+    const decls = modelsSeat.allDecls();
+    return { decls, state: decls.length === 0 ? "bare" : "seated" };
   }
   try {
-    return modelsService().allDecls();
+    const decls = modelsService().allDecls();
+    return { decls, state: decls.length === 0 ? "bare" : "seated" };
   } catch {
-    return [];
+    return { decls: [], state: "absent" };
   }
+}
+
+/** The live family declarations, for the callers that only need the
+ *  rows. A refusal composed from these alone cannot tell an absent
+ *  seat from an unregistered family — use {@link liveFamilySeat}.
+ * @param modelsSeat the context's models service when mounted
+ * @returns the family declarations, or [] when no seat answers */
+export function liveFamilyDecls(modelsSeat?: FamilyModelsSeat | null): readonly FamilyDeclRow[] {
+  return liveFamilySeat(modelsSeat).decls;
 }
 
 /** One family stage's resolved form: the workflow envelope plus the
@@ -50,6 +72,7 @@ function composeOne(
   flowId: string,
   st: RegistryStage,
   decls: readonly FamilyDeclRow[],
+  seatState: FamilySeatState,
 ): RegistryStage {
   if (st.family === "") return st;
   // Either/or is the row contract (flowsData's RegistryStage): a
@@ -64,6 +87,26 @@ function composeOne(
   const decl = decls.find((d) => d.id === st.family);
   if (decl === undefined) {
     const registered = decls.map((d) => d.id).sort().join(", ") || "none";
+    const where = "flow '" + flowId + "' stage '" + st.id + "' naming family '" + st.family + "'";
+    // THE SEAT'S OWN VOICE PER CONDITION. An absent seat and a bare
+    // mount are environment facts and each has its own repair; only
+    // the third — a seated table without this family — is a
+    // registration fact. Collapsing all three into "no such family"
+    // named a typo where the lane had no table to ask.
+    if (seatState === "absent") {
+      throw new Error(
+        "[models] no ModelsService for " + where +
+        " — doors inject 'models' and pass ctx.models " +
+        "(the manifest's engine-model-catalog row provides at boot)",
+      );
+    }
+    if (seatState === "bare") {
+      throw new Error(
+        where + " — the models seat is mounted with ZERO families " +
+        "(registered: none): this lane mounted the bare catalog " +
+        "provider without the families row, so no family can resolve",
+      );
+    }
     throw new Error(
       "flow '" + flowId + "' stage '" + st.id + "' names family '" + st.family +
       "' — no such family in the models seat (registered: " + registered + ")",
@@ -159,17 +202,20 @@ function composeOne(
  * byte-identical (zero lookups, zero overhead).
  * @param flow the EXPANDED registry flow (fromFlow links resolved)
  * @param decls the families seat's declarations (allDecls())
+ * @param seatState how the seat answered, so a refusal names the
+ *  condition it found (see {@link liveFamilySeat})
  * @returns the flow with every family stage composed
- * @throws when a family is unregistered, an action undeclared, a
- *  param unadmitted, or a hand-written output contradicts the
- *  action's declaration */
+ * @throws when the seat cannot answer, a family is unregistered, an
+ *  action undeclared, a param unadmitted, or a hand-written output
+ *  contradicts the action's declaration */
 export function composeFamilyStages(
   flow: RegistryFlow,
   decls: readonly FamilyDeclRow[],
+  seatState: FamilySeatState = "seated",
 ): RegistryFlow {
   if (!flow.stages.some((st) => st.family !== "")) return flow;
   return {
     ...flow,
-    stages: flow.stages.map((st) => composeOne(flow.id, st, decls)),
+    stages: flow.stages.map((st) => composeOne(flow.id, st, decls, seatState)),
   };
 }

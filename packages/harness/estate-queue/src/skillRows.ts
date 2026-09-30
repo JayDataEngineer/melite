@@ -8,7 +8,7 @@ import { frontmatter, gateSkill } from "./skillFrontmatter.ts";
 import type { DocRow, SkillRow, StepRow } from "./skillPlane.ts";
 import { LaneWireError } from "./skillPlane.ts";
 import { expandRegistryFlow, getRegistryFlow, registryFlowNames, registrySkillBody } from "./flowsData.ts";
-import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
+import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 
 /** One registry headless-tool property, projected to the frozen
@@ -88,9 +88,11 @@ export function flowDecls(
     // Compose before projection (the doors' own order — stroke 4):
     // the family stages' derived outputs and edges render in the
     // served body only when the declarations compose first.
+    const seat = liveFamilySeat(modelsSeat);
     const expanded = composeFamilyStages(
       expandRegistryFlow(flow),
-      liveFamilyDecls(modelsSeat),
+      seat.decls,
+      seat.state,
     );
     const stages: { readonly id: string; readonly engine: string }[] =
       expanded.stages.map((s) => ({ id: s.id, engine: s.engine }));
@@ -446,8 +448,9 @@ export function registryBody(
   /* v8 ignore next -- callers pass live declaration ids (flowDecls):
      the miss never fires (2026-09-12) */
   if (decl === undefined) return null;
+  const seat = liveFamilySeat(modelsSeat);
   return registrySkillBody(
-    composeFamilyStages(expandRegistryFlow(decl), liveFamilyDecls(modelsSeat)),
+    composeFamilyStages(expandRegistryFlow(decl), seat.decls, seat.state),
   );
 }
 

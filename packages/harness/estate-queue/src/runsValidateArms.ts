@@ -6,7 +6,7 @@ import { RemoteError, remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import { RUNS_ERROR_CODES } from "./runsErrorCodes.ts";
 import { getRegistryFlow, registryFlowNames, expandRegistryFlow, registryFlowToInline, registryInitialsError } from "./flowsData.ts";
-import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
+import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { inlineArm, strictBody, findDanglingRefs, type FlowError } from "./runsValidate.ts";
@@ -94,12 +94,10 @@ export async function validate(
           // runsRegistry: an undeclared-inject property access
           // would throw cordis's reflect voice instead of
           // degrading to the booted singleton.
-          composedFlow = composeFamilyStages(
-            expanded,
-            liveFamilyDecls(
-              ctx.get("models") as FamilyModelsSeat | undefined,
-            ),
+          const seat = liveFamilySeat(
+            ctx.get("models") as FamilyModelsSeat | undefined,
           );
+          composedFlow = composeFamilyStages(expanded, seat.decls, seat.state);
         } catch (e) {
           throw new RemoteError(
             "runs/invalid-request",

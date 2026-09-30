@@ -86,7 +86,7 @@ describe("the runs door through the lane's models seat", () => {
     await ctx.fiber.dispose();
   });
 
-  it("a bare catalog mount leaves the seat empty and every family stage refuses (the gap, pinned)", async () => {
+  it("a BARE catalog mount is named as such — not as an unregistered family (the gap, pinned)", async () => {
     const { svc, ctx } = await laneSeat(modelsProvider as typeof modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
     assert.equal(seat.allDecls().length, 0);
@@ -95,9 +95,13 @@ describe("the runs door through the lane's models seat", () => {
     );
     assert.ok(err instanceof RemoteError);
     assert.equal((err as RemoteError).code, "runs/invalid-request");
+    // The seat's own condition, named: this lane mounted the catalog
+    // provider WITHOUT the families row, so the table is empty for a
+    // reason no registration can fix. "no such family" named a typo
+    // on a lane that never had the family in the first place.
     assert.match(
       (err as RemoteError).message,
-      /no such family in the models seat \(registered: none\)/,
+      /the models seat is mounted with ZERO families/,
     );
     await ctx.fiber.dispose();
   });

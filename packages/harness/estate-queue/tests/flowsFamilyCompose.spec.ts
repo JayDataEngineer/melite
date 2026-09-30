@@ -122,10 +122,24 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       () => composeFamilyStages(bad, decls),
       /flow 'anny-hmr' stage 'estimate' names family 'ghost' — no such family in the models seat \(registered: anny\)/,
     );
-    // the absent seat names itself honestly
+    // THE SEAT'S THREE CONDITIONS SPEAK FOR THEMSELVES: a bare mount
+    // (owner mounted, table empty) and an absent seat are environment
+    // facts with their own repairs; only a seated table missing the
+    // family is a registration fact. All three used to answer "no
+    // such family (registered: none)".
     assert.throws(
-      () => composeFamilyStages(bad, []),
-      /registered: none/,
+      () => composeFamilyStages(bad, [], "bare"),
+      /the models seat is mounted with ZERO families/,
+    );
+    assert.throws(
+      () => composeFamilyStages(bad, [], "absent"),
+      /\[models\] no ModelsService for flow 'anny-hmr' stage 'estimate' naming family 'ghost'/,
+    );
+    // a genuinely unregistered family on a seated table keeps the
+    // registration voice, with the table's real contents
+    assert.throws(
+      () => composeFamilyStages(bad, [], "seated"),
+      /no such family in the models seat \(registered: none\)/,
     );
   });
 

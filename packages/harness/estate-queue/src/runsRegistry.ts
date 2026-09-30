@@ -32,7 +32,7 @@ import {
   registryFlowToInline,
   registryInitialsError,
 } from "./flowsData.ts";
-import { composeFamilyStages, liveFamilyDecls } from "./flowsFamilyCompose.ts";
+import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
 import type { FamilyModelsSeat } from "./flowsFamilyCompose.ts";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { loadEndpointConfig } from "@melite/comfyui-cordis";
@@ -1029,12 +1029,10 @@ export class RunsRuntimeService extends Service {
         // an undeclared-inject property access would throw cordis's
         // reflect voice ("cannot get property 'models' without
         // inject") instead of degrading to the booted singleton.
-        composedFlow = composeFamilyStages(
-          expanded,
-          liveFamilyDecls(
-            this.ctx.get("models") as FamilyModelsSeat | undefined,
-          ),
+        const seat = liveFamilySeat(
+          this.ctx.get("models") as FamilyModelsSeat | undefined,
         );
+        composedFlow = composeFamilyStages(expanded, seat.decls, seat.state);
       } catch (e) {
         throw new RemoteError(
           "runs/invalid-request",
