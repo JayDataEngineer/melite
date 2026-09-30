@@ -59,6 +59,7 @@ export const FIT_ROW = {
  *  row) → the 4-view proof sheet. */
 export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   id: "seat",
+  inputs: [],
   laneIndependent: true,
   outputs: [{ name: "seat", kind: "mesh" }],
   // THE BODY AND THE PROP ARE THE REQUEST (both are files the caller
@@ -69,7 +70,12 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   // can declare, and the merged worker refuses it by name). The row's
   // twelve fields are the FitRow node's own declared defaults, named
   // here once so the declaration owns the verb's vocabulary.
-  params: [{ name: "body" }, { name: "prop" }, { name: "bone" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the three keys
+  // the verb reads, typed from the fit-seat flow row's own initial
+  // kinds — no fit card schema row survives (the 2026-09-16
+  // retirement), so the row's `glb`, `glb` and `text` validators are
+  // the door's own types.
+  params: [{ name: "body", type: "string" }, { name: "prop", type: "string" }, { name: "bone", type: "string" }],
   facts: parseFitFacts,
   build({ p, g }): OutputHandle {
     // THE BONE IS THE CALLER'S, NOT A CONSTANT (the verb's other

@@ -453,7 +453,7 @@ export class ComfyUIService extends Service {
    *  arm-weight gate (mirrors objectInfoNodes: null = fail-open). */
   private weightPresent: ((relativePath: string, name: string) => boolean) | null = null
   /** Autofill defaults map (class → input → default), derived
-   *  from the live node-definitions doc — comfy-script behavior. */
+   *  from the live node-definitions doc. */
   private pinDefaults: Record<string, Record<string, JsonValue>> = {}
 
   constructor(ctx: Context) {

@@ -43,8 +43,17 @@ export function parseSomaRigFacts(_raw: LaneInputsFacts): SomaRigFacts {
  *  applied through the autorig pack's export node. */
 export const rig: ComfyActionSpec<SomaRigParams, SomaRigFacts> = {
   id: "rig",
+  inputs: [],
   outputs: [{ name: "default", kind: "MESH" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the rig
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The auto lane's
+  // rows only: the mesh and the two KimodoExportFBX knobs.
+  params: [
+    { name: "mesh_glb", type: "string" },
+    { name: "preserve_texture", type: "boolean" },
+    { name: "decimate_ratio", type: "number", bounds: [0, 1] },
+  ],
   facts: parseSomaRigFacts,
   build({ p, g }) {
     const source = g.node("PrimitiveString", { value: p.mesh_glb }).out();

@@ -43,8 +43,20 @@ export function parseYue2Facts(raw: LaneInputsFacts): Yue2Facts {
  * SaveAudioAdvanced mp3 under <run>/music. */
 export const compose: ComfyActionSpec<Yue2Params, Yue2Facts> = {
   id: "compose",
+  inputs: [],
   outputs: [{ name: "audio", kind: "AUDIO" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the music
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The mode enum is
+  // the card's ABC-planning vocabulary.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "lyrics", type: "string" },
+    { name: "mode", type: "enum", options: ["full", "melody", "off"] },
+    { name: "duration", type: "number", bounds: [5, 360] },
+    { name: "n_diffusion_steps", type: "number", bounds: [1, 200] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseYue2Facts,
   build({ p, facts, g, runId }) {
     const seed = p.seed as number;

@@ -51,6 +51,7 @@ export const COAT_SEED = 20260906;
 
 export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, never>> = {
   id: "coat",
+  inputs: [],
   laneIndependent: true,
   outputs: [{ name: "skin", kind: "mesh" }],
   // THE KNOBS ARE THE ACTION'S, NOT THE REQUEST'S (stroke-89: an
@@ -61,7 +62,11 @@ export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, nev
   // the seed are the verb's own vocabulary, fixed in build below
   // exactly as the anny estimator fixes conf_thresh and
   // dist_thresh_nms.
-  params: [{ name: "body" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the one key the
+  // verb reads, typed from the skin-apply flow row's own initial kind
+  // — no skin card schema row survives (the 2026-09-16 retirement), so
+  // the row's `glb` validator is the door's own type.
+  params: [{ name: "body", type: "string" }],
   facts: parseSkinFacts,
   build({ p, g }): OutputHandle {
     // THE VERB'S FIXED VOCABULARY: the detail kind, the map size and

@@ -14,7 +14,7 @@
 // stays byte-identical.
 //
 // Node creation order follows the SERIALIZED id
-// order exactly — comfy-script assigns `<Class>.<index>` ids
+// order exactly — the reference renderers assign `<Class>.<index>` ids
 // depth-first post-order from the output list (saved, then
 // ctx_saved), so the per-class creation sequence below is pinned by
 // that walk (observed inversions, kept verbatim: t4r creates the fps
@@ -22,7 +22,7 @@
 // resizer BEFORE the geometry resizer).
 //
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
-// inputs exactly like comfy-script does; the compose strips
+// inputs exactly like the reference renderers do; the compose strips
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
 // the h3 family's own finalizeH3 (t4r, like the python's `if not is_t4r`,
 // strips nothing; the i2v dead-branch node marks the t4r family in
@@ -46,7 +46,7 @@ import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
 
-// inputs the t4 family templates OMIT whose pin defaults comfy-script
+// inputs the t4 family templates OMIT whose pin defaults the engine
 // would auto-fill at serialization — the strip set lives with the lane, in the
 // h3 family (models/h3/src/finalize.ts, re-homed family-side 2026-09-30)
 // (H3_T4_STRIP; the t4r branch carries all of these explicitly, so it

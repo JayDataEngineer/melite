@@ -46,8 +46,20 @@ export function parseMusicFacts(raw: LaneInputsFacts): MusicFacts {
  * VAEDecodeAudio, SaveAudioAdvanced mp3 under <run>/music. */
 export const compose: ComfyActionSpec<MusicParams, MusicFacts> = {
   id: "compose",
+  inputs: [],
   outputs: [{ name: "audio", kind: "AUDIO" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the music
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "lyrics", type: "string" },
+    { name: "duration", type: "number", bounds: [5, 360] },
+    { name: "guidance_scale", type: "number", bounds: [0.1, 10] },
+    { name: "lm_cfg_scale", type: "number", bounds: [0.1, 10] },
+    { name: "n_diffusion_steps", type: "number", bounds: [1, 200] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseMusicFacts,
   build({ p, facts, g, runId }) {
     const seed = p.seed as number;

@@ -34,8 +34,19 @@ export function parseTagFacts(_raw: LaneInputsFacts): TagFacts {
  * tag lists, SaveText under <run>/tags. */
 export const tag: ComfyActionSpec<TagParams, TagFacts> = {
   id: "tag",
+  inputs: [],
   outputs: [{ name: "text", kind: "TEXT" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the tagger
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The node takes no
+  // model input (a pack-local checkpoint), so no checkpoint key
+  // rides this arm.
+  params: [
+    { name: "input_image", type: "string" },
+    { name: "threshold", type: "number", bounds: [0, 1] },
+    { name: "add_tag", type: "string" },
+    { name: "remove_tag", type: "string" },
+  ],
   facts: parseTagFacts,
   build({ p, g, runId }) {
     const img = typeof p.input_image === "string" ? p.input_image : "";

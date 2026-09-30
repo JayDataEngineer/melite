@@ -157,6 +157,7 @@ describe("registerFamily (the metaclass gates)", () => {
     // throws on a row whose unet it does not serve.
     const door = {
       id: "probe",
+      inputs: [],
       outputs: [{ name: "image", kind: "IMAGE" }],
       params: [],
       facts: (raw: Record<string, unknown>): unknown => {

@@ -62,7 +62,7 @@ const runOne = (d) => {
   checked++;
   const include = ["src/**/*.ts", "src/**/*.tsx"];
   for (const t of tdirs) include.push(`${t}/**/*.ts`, `${t}/**/*.tsx`);
-  const cfg = join(d, ".tsconfig.test.json");
+  const cfg = join(d, `.tsconfig.test.${process.pid}.json`);
   // FLATTEN THE EXTENDS CHAIN and STRIP rootDir: `extends` cannot
   // un-set it, and any package-local rootDir TS6059s the foreign
   // sources specs legitimately import (repo tests/helpers, sibling
@@ -85,8 +85,11 @@ const runOne = (d) => {
   flat.compilerOptions.noEmit = true;
   flat.include = include;
   writeFileSync(cfg, JSON.stringify(flat));
-  const proc = spawnSync(process.execPath, [tsc, "--noEmit", "-p", ".tsconfig.test.json"], {
-    cwd: d, encoding: "utf8", timeout: 240_000,
+  const proc = spawnSync(process.execPath, [tsc, "--noEmit", "-p", cfg], {
+    // 480s: the wall runs this INSIDE the full fleet, where CPU
+    // contention tripled cold tsc times; a 240s cut marked loaded
+    // runs red with no error lines (status null under SIGTERM).
+    cwd: d, encoding: "utf8", timeout: 480_000,
   });
   rmSync(cfg, { force: true });
   const name = relative(root, d);

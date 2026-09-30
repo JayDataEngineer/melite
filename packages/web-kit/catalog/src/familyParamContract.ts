@@ -122,7 +122,7 @@ export function isFamilySchemaCachePopulated(): boolean {
  *    input_glb, source_glb, outfit_glb, hair_glb, motion_npz,
  *    prev_motion_artifact, lanpaint_mask), modifier bags (loras,
  *    controlnets, modifiers), renderer weight filenames
- *    (model_name, t5_name, vae_name — read by the co_script
+ *    (model_name, t5_name, vae_name — read by the
  *    renderers), export flags, detect_mode (mask_studio field),
  *    reference_audio / reference_text / rigged_path / npz_path
  *    (slot + renderer reads), service (envelope chrome the gateway

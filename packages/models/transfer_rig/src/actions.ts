@@ -31,8 +31,18 @@ export type TransferRigParams = Record<string, unknown>;
  * onto the clothed target). */
 export const transfer: ComfyActionSpec<TransferRigParams, Record<string, never>> = {
   id: "transfer",
+  inputs: [],
   outputs: [{ name: "glb", kind: "GLB" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the
+  // img-to-mesh card schema's own types and bounds — the family door
+  // judges defaults and variant presets against this row. Both keys
+  // are the card's bare path strings (required per-arm in compose,
+  // never numeric); the rig card's copy lane feeds the same pair
+  // (donor_glb → rigged_glb, mesh_glb → target_glb).
+  params: [
+    { name: "rigged_glb", type: "string" },
+    { name: "target_glb", type: "string" },
+  ],
   facts: parseTransferRigFacts,
   build({ p, g }) {
     // The family's own admission (moved verbatim from the card —

@@ -1,4 +1,4 @@
-// Tier 2 — the render-kit blocks (the compose/co_script/render_kit
+// Tier 2 — the render-kit blocks (the compose/render_kit
 // port). One place per multi-node consensus; cards call blocks,
 // never raw node chains, so lane facts stay single-sourced.
 import { GraphBuilder, OutputHandle } from '../graph.ts'

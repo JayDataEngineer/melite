@@ -7,6 +7,19 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, no namespaces. Row-shaped code wants neither.
 
+import type { ParamSpec } from "@melite/engine-contract/vocabulary";
+
+/** One input row of a node definition — the /object_info doc shape
+ *  the SDK client's getNodeDefs() returns: [kind, options] where
+ *  kind is a widget type ("INT", "FLOAT", "STRING", "BOOLEAN"), an
+ *  edge-type name ("MODEL", "IMAGE", …), or a combo option list;
+ *  the options record carries default/min/max when the row pins
+ *  them. */
+export type NodeDefRow = readonly [string | readonly string[], { min?: number; max?: number }]
+
+/** A node definition's input sections, keyed like the doc. */
+export type NodeDefInput = { required?: { [name: string]: NodeDefRow }; optional?: { [name: string]: NodeDefRow } }
+
 /** A wire endpoint: the output slot of an already-added node. */
 export class OutputHandle {
   readonly nodeId: string
@@ -51,7 +64,7 @@ export function stripEmptyAutofill(graph: PromptGraph, table: StripTable): Promp
   return graph
 }
 
-/** Derive comfy-script's autofill map from a live object_info
+/** Derive the pin autofill map from a live object_info
  *  snapshot: {class: {input: default}} for entries that carry a
  *  default (required + optional both consulted). */
 export function deriveDefaults(objectInfo: Record<string, any>): Record<string, Record<string, JsonValue>> {
@@ -101,7 +114,7 @@ export class GraphBuilder {
 
   /** Pin defaults (class → input → default value) from the live
    *  live node set. When present, unspecified inputs autofill
-   *  exactly like comfy-script does — cards whose renderer strips
+   *  from the pin defaults — cards whose renderer strips
    *  autofill ALSO strip in TS (the strip set is
    *  ported per card), so both planes converge byte-equal. */
   readonly defaults: Record<string, Record<string, JsonValue>>
@@ -140,4 +153,49 @@ export class GraphBuilder {
     }
     return out
   }
+}
+
+/** Emit a node definition's widget rows as ParamSpec rows — the
+ * node-def → write-plane conversion. Fed by the SDK client's
+ * runtime getNodeDefs() doc (the library owns the ComfyUI fetch in
+ * the engine package, this owns the schema conversion): INT/FLOAT
+ * → number with bounds when the row pins both ends, BOOLEAN →
+ * boolean, STRING → string, a combo list → enum with the row's own
+ * options. Edge-kind inputs (IMAGE, MODEL, LATENT, CONDITIONING,
+ * and every custom kind) are the graph's wire plane — they stay
+ * off the emitted surface, never params.
+ * @param def one node's input sections from the object_info doc
+ * @returns the widget rows as ParamSpec rows, doc order */
+export function deriveWidgetParams(
+  def: { input?: NodeDefInput },
+): ParamSpec[] {
+  const out: ParamSpec[] = []
+  const input = def.input ?? {}
+  for (const section of [input.required, input.optional]) {
+    if (!section) continue
+    for (const [name, slot] of Object.entries(section)) {
+      const kind = slot[0]
+      const opts = slot[1]
+      if (kind === "INT" || kind === "FLOAT") {
+        const min = typeof opts.min === "number" ? opts.min : undefined
+        const max = typeof opts.max === "number" ? opts.max : undefined
+        out.push(
+          min !== undefined && max !== undefined
+            ? { name, type: "number", bounds: [min, max] }
+            : { name, type: "number" },
+        )
+      } else if (kind === "BOOLEAN") {
+        out.push({ name, type: "boolean" })
+      } else if (kind === "STRING") {
+        out.push({ name, type: "string" })
+      } else if (
+        Array.isArray(kind) &&
+        kind.length > 0 &&
+        kind.every((n) => typeof n === "string")
+      ) {
+        out.push({ name, type: "enum", options: kind.slice() })
+      }
+    }
+  }
+  return out
 }

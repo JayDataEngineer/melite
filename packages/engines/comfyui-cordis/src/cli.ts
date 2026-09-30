@@ -77,7 +77,7 @@ async function main(): Promise<void> {
   }
 
   // The live node set: arms the EXTENSION-LAW gate AND supplies
-  // the comfy-script autofill defaults. Fetched from the engine
+  // the pin autofill defaults. Fetched from the engine
   // (endpoint config — QUEUE LANE LAW: no default host, no pin).
   ctx.comfyui.setObjectInfo(await liveObjectInfo(resolveEngineBaseUrl()))
   // THE ARM-WEIGHT READER (the silent-truncation law, 2026-10-09):

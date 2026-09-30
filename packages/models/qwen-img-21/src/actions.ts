@@ -12,6 +12,7 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -82,8 +83,24 @@ export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
  *  law) and matches the legacy lane arm exactly. */
 export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   id: "t2i",
+  inputs: [],
   outputs: [{ name: "image", kind: "IMAGE" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): types and
+  // bounds are the image-gen card schema's own — the family door
+  // judges defaults and variant presets against this row; the
+  // sampler/scheduler closed sets resolve from the ONE engine
+  // vocabulary, never hand-copied.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "negative_prompt", type: "string" },
+    { name: "width", type: "number", bounds: [256, 2048] },
+    { name: "height", type: "number", bounds: [256, 2048] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+    { name: "steps", type: "number", bounds: [1, 100] },
+    { name: "cfg", type: "number", bounds: [1, 20] },
+    { name: "sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+  ],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();

@@ -10,6 +10,9 @@
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { MESH_PIXAL_FOVS } from "@melite/comfyui-card-kit";
+import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from "@melite/comfyui-card-kit";
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 
 /** The closed facts shape the mesh segment reads (the lift chain's
  * five load keys, resolved from the row's lane_inputs). */
@@ -98,7 +101,7 @@ function admitMeshLift(p: Record<string, unknown>): void {
 }
 
 /** The dual guided unet + the two VAEs — the lift chain's shared
- * head. Creation order lands the comfy-script numbering: the SHAPE
+ * head. Creation order lands the reference renderers' numbering: the SHAPE
  * pair first (CFGOverride.0/RescaleCFG.0), then the STRUCT pair
  * (.1). */
 function loadLiftHeads(
@@ -287,8 +290,48 @@ function sharedLiftChain(
  * construction. */
 export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
   id: "mesh",
+  inputs: [],
   outputs: [{ name: "glb", kind: "GLB" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the
+  // img-to-mesh card schema's own types and bounds — the family
+  // door judges defaults and variant presets against this row.
+  // The closed sets (resolutions, bg modes, bake sizes) are the
+  // card-kit's ONE mesh vocabularies; the sampler/scheduler rows
+  // resolve from the ONE engine vocabulary.
+  params: [
+    { name: "input_image", type: "string" },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+    { name: "resolution", type: "enum", options: MESH_RESOLUTIONS },
+    { name: "steps", type: "number", bounds: [4, 60] },
+    { name: "cfg", type: "number", bounds: [1, 15] },
+    { name: "bg_removal", type: "enum", options: MESH_BG_MODES },
+    { name: "camera_fov", type: "enum", options: MESH_PIXAL_FOVS },
+    { name: "shape_steps", type: "number", bounds: [4, 60] },
+    { name: "shape_cfg", type: "number", bounds: [1, 15] },
+    { name: "shape_sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "shape_scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "tex1_steps", type: "number", bounds: [4, 60] },
+    { name: "tex1_cfg", type: "number", bounds: [1, 15] },
+    { name: "tex1_sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "tex1_scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "tex2_steps", type: "number", bounds: [4, 60] },
+    { name: "tex2_cfg", type: "number", bounds: [1, 15] },
+    { name: "tex2_sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "tex2_scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "struct_sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "struct_scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "remesh_resolution", type: "number", bounds: [128, 2048] },
+    { name: "decimate_faces", type: "number", bounds: [10000, 2000000] },
+    { name: "smooth_angle", type: "number", bounds: [0, 180] },
+    { name: "atlas_size", type: "enum", options: MESH_ATLAS_SIZES },
+    { name: "ao_size", type: "enum", options: MESH_AO_SIZES },
+    { name: "normal_size", type: "enum", options: MESH_NORMAL_SIZES },
+    { name: "sd3_shift", type: "number", bounds: [1, 10] },
+    { name: "rescale_struct", type: "number", bounds: [0.1, 1] },
+    { name: "rescale_shape", type: "number", bounds: [0.1, 1] },
+    { name: "override_struct", type: "number", bounds: [0, 1] },
+    { name: "override_shape", type: "number", bounds: [0, 1] },
+  ],
   facts: parseMeshFacts,
   build({ p, facts, g }) {
     admitMeshLift(p)

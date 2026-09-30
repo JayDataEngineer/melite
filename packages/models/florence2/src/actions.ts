@@ -8,7 +8,7 @@
 // same doc (proven in tests/action.spec.ts). Creation order IS
 // node-id order (the recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { taggerSaveText } from "@melite/comfyui-card-kit";
+import { taggerSaveText, TAGGER_CAPTION_TASKS } from "@melite/comfyui-card-kit";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the tag segment reads: nothing — the arm
@@ -34,8 +34,19 @@ export function parseTagFacts(_raw: LaneInputsFacts): TagFacts {
  * on the stated vision task, SaveText under <run>/tags. */
 export const tag: ComfyActionSpec<TagParams, TagFacts> = {
   id: "tag",
+  inputs: [],
   outputs: [{ name: "text", kind: "TEXT" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the tagger
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The closed task
+  // set resolves from the ONE kit vocabulary, never hand-copied;
+  // checkpoint is admitted (the variant rail stamps it), not
+  // rendered, and the family door judges the stamp as a string.
+  params: [
+    { name: "input_image", type: "string" },
+    { name: "checkpoint", type: "string" },
+    { name: "caption_task", type: "enum", options: TAGGER_CAPTION_TASKS },
+  ],
   facts: parseTagFacts,
   build({ p, g, runId }) {
     const img = typeof p.input_image === "string" ? p.input_image : "";

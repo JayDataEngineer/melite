@@ -20,6 +20,7 @@ import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, d
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 
 /** The closed facts shape the 2511 edit segment reads. */
 export type EditFacts = {
@@ -79,8 +80,33 @@ export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
  *  VAEEncode-of-source → KSampler → decode + save under <run>/edit. */
 export const edit: ComfyActionSpec<EditParams, EditFacts> = {
   id: "edit",
+  inputs: [],
   outputs: [{ name: "image", kind: "IMAGE" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the
+  // image-edit card schema's own types and bounds — the family
+  // door judges defaults and variant presets against this row;
+  // the closed sets resolve from the ONE engine vocabulary. The
+  // lanpaint_* knobs are mod-owned (the advanced tier —
+  // mods/lanpaint registers them) and ride the mod plane, not
+  // this surface.
+  params: [
+    { name: "input_images", type: "image_list" },
+    { name: "image1", type: "string" },
+    { name: "image2", type: "string" },
+    { name: "image3", type: "string" },
+    { name: "reference_images", type: "image_list" },
+    { name: "prompt", type: "string" },
+    { name: "negative_prompt", type: "string" },
+    { name: "width", type: "number" },
+    { name: "height", type: "number" },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+    { name: "steps", type: "number", bounds: [1, 50] },
+    { name: "cfg", type: "number", bounds: [0.1, 10] },
+    { name: "sampler", type: "enum", options: SAMPLER_OPTIONS },
+    { name: "scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "use_stock_nodes", type: "boolean" },
+    { name: "double_reference", type: "boolean" },
+  ],
   facts: parseEditFacts,
   build({ p, facts, model, g, runId }) {
     const seed = p.seed as number;

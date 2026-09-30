@@ -1,5 +1,5 @@
-// Tier 2.5 — the emit kit (docs/design/one-contract-compose.md §2,
-// "absorb comfy-script into the card kit"; operator order 2026-09-07:
+// Tier 2.5 — the emit kit (docs/design/one-contract-compose.md §2;
+// operator order 2026-09-07:
 // "MOST OF THIS [REDACTED 2026-11-05] JUST RIDES DEFAULTS AND A FEW COMFYUI NODES
 // SLAPPED TOGETHER").
 //
@@ -96,3 +96,4 @@ export {
 // lanes.spec.ts names the StripTable type off the kit face (the lanes'
 // strip tables are StripTable-typed) — re-exported as a type, erased at runtime.
 export type { StripTable } from './graph.ts'
+export { deriveWidgetParams } from './graph.ts'

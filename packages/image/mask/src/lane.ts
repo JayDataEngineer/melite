@@ -91,6 +91,7 @@ export type EntryTune = EntryTuneShape
  *  their bbox models — the detector proposes, SAM2 refines). */
 export const mask: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
   id: "select",
+  inputs: [],
   outputs: [{ name: "default", kind: "MASK" }],
   params: [],
   facts: parseMaskLaneFacts,

@@ -39,8 +39,16 @@ describe("the h3 film action's facts door", () => {
 
   it("the film action declares the seed sentinel (GATE S) and the video output", () => {
     expect(film.id).toBe("film");
+    expect(film.inputs).toEqual([]);
     expect(film.outputs).toEqual([{ name: "video", kind: "VIDEO" }]);
-    expect(film.params).toEqual([{ name: "seed", rule: "seed-sentinel" }]);
+    // THE DECLARED SURFACE (phase 2): the full write plane — the
+    // seed row keeps the sentinel rule, the timeline's own JSON row
+    // params stay off it (their validators own them).
+    const seedRow = film.params.find((row) => row.name === "seed");
+    expect(seedRow).toEqual({ name: "seed", type: "number", rule: "seed-sentinel" });
+    expect(film.params.length).toBeGreaterThan(40);
+    expect(film.params.find((row) => row.name === "steps")).toEqual({ name: "steps", type: "number", bounds: [4, 30] });
+    expect(film.params.find((row) => row.name === "sla_enabled")).toEqual({ name: "sla_enabled", type: "boolean" });
     expect(film.facts).toBe(parseH3Facts);
   });
 });

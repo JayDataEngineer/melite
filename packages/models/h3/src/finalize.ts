@@ -1,7 +1,7 @@
 // finalize.ts — the h3 family's OWN t4 strip pass (`if not is_t4r`),
 // re-homed family-side (the kit-arm retirement, 2026-09-30). The
 // strip is this family's serialization law: the t4 templates OMIT
-// these pin defaults, so comfy-script would auto-fill them at
+// these pin defaults, so the engine would auto-fill them at
 // serialization, and the t4r branch carries all of them explicitly
 // (it never strips). It lived in the card kit as `finalizeH3` while
 // the lane itself moved here; a finalize pass with no lane beside it

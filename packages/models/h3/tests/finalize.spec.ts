@@ -1,7 +1,7 @@
 // @melite/models-h3 — THE T4 STRIP PASS, at its new home (the
 // kit-arm retirement, 2026-09-30). The strip is this family's
 // serialization law: the t4 templates omit these pin defaults, so
-// comfy-script would auto-fill them at serialization, and the t4r
+// the engine would auto-fill them at serialization, and the t4r
 // branch carries all of them explicitly and strips nothing. The cases
 // moved here with the function.
 import { describe, it } from "vitest";

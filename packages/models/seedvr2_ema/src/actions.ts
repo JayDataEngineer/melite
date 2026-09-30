@@ -42,8 +42,19 @@ export function parseUpscaleFacts(raw: LaneInputsFacts): UpscaleFacts {
  * SaveImage under <run>/gen. */
 export const upscale: ComfyActionSpec<UpscaleParams, UpscaleFacts> = {
   id: "upscale",
+  inputs: [],
   outputs: [{ name: "image", kind: "IMAGE" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the
+  // upscale-tools card schema's own types and bounds — the
+  // family door judges defaults and variant presets against this
+  // row.
+  params: [
+    { name: "input_image", type: "string" },
+    { name: "resolution", type: "number", bounds: [256, 2160] },
+    { name: "max_resolution", type: "number", bounds: [512, 4096] },
+    { name: "batch_size", type: "number", bounds: [1, 16] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseUpscaleFacts,
   build({ p, facts, g, runId }) {
     const seed = p.seed as number;

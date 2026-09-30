@@ -4,8 +4,8 @@
 // model.id inside compose — the dispatch stays HERE (bespoke), the
 // arms ride @melite/comfyui-card-kit.
 //
-// NUMBERING LAW : the renderers
-// renderers ride comfy-script, whose api_format() assigns
+// NUMBERING LAW : the reference renderers
+// assign
 // `<Class>.<index>` ids in POST-ORDER DFS from the output node —
 // NOT python creation order. The one visible flip: the SHAPE guided
 // arm is numbered before the STRUCT arm (CFGOverride.0/.RescaleCFG.0
@@ -15,9 +15,9 @@
 // natural struct→shape→tex1→tex2 order; VAELoader shape→texture;
 // MeshSmoothNormals decimate→textured.
 //
-// AUTOFILL LAW: python strips only the empty autofills it overrides
+// AUTOFILL LAW: the reference strips only the empty autofills it overrides
 // (LoadImage.upload, KSampler.control_after_generate). Other
-// comfy-script pin autofills SURVIVE into the served graph and are emitted
+// pin autofills SURVIVE into the served graph and are emitted
 // here as literals: RemeshMesh band/fix_poles/project_back,
 // ImageCropToMask background/grow_mask, MoGeInference
 // apply_mask/batch_size/force_projection/fov_x_degrees. Everything

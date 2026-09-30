@@ -18,7 +18,7 @@ export type Family = (typeof FAMILIES)[number]
 
 export const wireList = normalizeDeclaredRefs
 
-const H3_RECOMMENDED_SAMPLERS = [
+export const H3_RECOMMENDED_SAMPLERS = [
   "euler", "euler_cfg_pp", "euler_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "heun",
   // THE TIER-1/2 WINNERS (arena + Comfy-Org's own t2v/i2v/r2v
   // templates; every name verified against the live engine's

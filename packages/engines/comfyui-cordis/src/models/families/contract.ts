@@ -686,8 +686,15 @@ export const ModelDecl: z<ModelDecl> = z.object({
  *  every engine's concrete ActionSpec with no cast. */
 export interface DeclaredAction {
   readonly id: string;
+  readonly inputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
   readonly outputs: ReadonlyArray<{ readonly name: string; readonly kind: string }>;
-  readonly params: ReadonlyArray<{ readonly name: string; readonly rule?: string }>;
+  readonly params: ReadonlyArray<{
+    readonly name: string;
+    readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+    readonly bounds?: readonly [number, number];
+    readonly options?: readonly string[];
+    readonly rule?: string;
+  }>;
   /** Present-only-when-true: the action's facts door reads
    *  NOTHING off a lane (weightless or estimator-class), so a flow
    *  row may name it — the flow plane composes against the

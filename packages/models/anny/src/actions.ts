@@ -9,7 +9,7 @@
 // (the recipe law). Keys the segment never reads ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import { ANNY_MORPH_LABELS, ANNY_MORPH_DEFAULT } from "@melite/comfyui-card-kit/morphs";
+import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from "@melite/comfyui-card-kit/morphs";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The served identity space's 11 dims, in its label order (the
@@ -24,6 +24,14 @@ const PHENOTYPE_DIMS = [
  * block), slot order IS the RayRenderGLBViews output order — the
  * studio composes the sheet client-side. */
 const VIEW_NAMES: readonly string[] = ['front', 'front_right', 'right', 'back_right', 'back', 'back_left', 'left', 'front_left']
+
+/** THE 254 MORPH ROWS OF THE DECLARED SURFACE — one row per served
+ * local-change label, at the served range. Both members are the ONE
+ * door-pinned sources (morphs.ts): a hand-copied 254-row block here
+ * would be a second truth drifting against the pin's wall. */
+const MORPH_PARAMS = ANNY_MORPH_LABELS.map(
+  (label) => ({ name: label, type: "number", bounds: ANNY_MORPH_RANGE }) as const,
+)
 
 /** Row guard: an inherent amount must be a positive finite number
  * (zero or negative is nonsense, never a silently clamped render —
@@ -55,8 +63,33 @@ export type AnnyParams = Record<string, unknown>;
  * turnaround sheet (the anny_t1 segment, family-owned). */
 export const compose: ComfyActionSpec<AnnyParams, Record<string, never>> = {
   id: "compose",
+  inputs: [],
   outputs: [{ name: "sheet", kind: "IMAGE" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the anny
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The 254 morph
+  // rows are the served labels at the served range (MORPH_PARAMS);
+  // the transparent enum is the card's background vocabulary.
+  params: [
+    { name: "body_glb", type: "string" },
+    { name: "gender", type: "number", bounds: [0, 1] },
+    { name: "age", type: "number", bounds: [0, 1] },
+    { name: "muscle", type: "number", bounds: [0, 1] },
+    { name: "weight", type: "number", bounds: [0, 1] },
+    { name: "height", type: "number", bounds: [0, 1] },
+    { name: "proportions", type: "number", bounds: [0, 1] },
+    { name: "cupsize", type: "number", bounds: [0, 1] },
+    { name: "firmness", type: "number", bounds: [0, 1] },
+    { name: "african", type: "number", bounds: [0, 1] },
+    { name: "asian", type: "number", bounds: [0, 1] },
+    { name: "caucasian", type: "number", bounds: [0, 1] },
+    ...MORPH_PARAMS,
+    { name: "resolution", type: "number", bounds: [256, 2048] },
+    { name: "framing", type: "number", bounds: [1, 3] },
+    { name: "focal_length", type: "number", bounds: [10, 400] },
+    { name: "samples", type: "number", bounds: [1, 4096] },
+    { name: "transparent", type: "enum", options: ["true", "false"] },
+  ],
   facts: parseAnnyFacts,
   build({ p, g }): OutputHandle {
     // THE BODY, three arms — a GLB is NEVER required (stroke 89):
@@ -118,9 +151,15 @@ export function parseEstimatorFacts(_raw: LaneInputsFacts): Record<string, never
  *  the family's own action declaration). */
 export const estimate: ComfyActionSpec<{ readonly photo: string }, Record<string, never>> = {
   id: "estimate",
+  inputs: [],
   laneIndependent: true,
   outputs: [{ name: "body", kind: "mesh" }],
-  params: [{ name: "photo" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the one photo
+  // the verb reads. No anny card schema row exists for it (the
+  // calibration knobs are FIXED in build below, never a bench
+  // surface), so the type is the anny-hmr flow row's own initial
+  // kind — its `photo` validator admits an image path.
+  params: [{ name: "photo", type: "string" }],
   facts: parseEstimatorFacts,
   build({ p, g }): OutputHandle {
     const load = g.node('LoadImage', { image: String(p.photo) })
@@ -148,9 +187,15 @@ export const estimate: ComfyActionSpec<{ readonly photo: string }, Record<string
  *  (SubActionMod law). */
 export const estimate_commercial: ComfyActionSpec<{ readonly photo: string }, Record<string, never>> = {
   id: "estimate_commercial",
+  inputs: [],
   laneIndependent: true,
   outputs: [{ name: "body", kind: "mesh" }],
-  params: [{ name: "photo" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the one photo
+  // the verb reads — no anny card schema row exists for it (the
+  // person index is FIXED at 0 in build below), so the type is the
+  // anny-hmr-commercial flow row's own initial kind: its `photo`
+  // validator admits an image path.
+  params: [{ name: "photo", type: "string" }],
   facts: parseEstimatorFacts,
   build({ p, g }): OutputHandle {
     const load = g.node('LoadImage', { image: String(p.photo) })
@@ -166,9 +211,15 @@ export const estimate_commercial: ComfyActionSpec<{ readonly photo: string }, Re
  *  initial gate; the action never re-parses what the door owns. */
 export const bake: ComfyActionSpec<{ readonly params_json: string }, Record<string, never>> = {
   id: "bake",
+  inputs: [],
   laneIndependent: true,
   outputs: [{ name: "body", kind: "mesh" }],
-  params: [{ name: "params_json" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the one json
+  // the verb reads. No anny card schema row exists for it (the 11
+  // dims and the local changes ride INSIDE the json, not beside it),
+  // so the type is the anny-params flow row's own initial kind — its
+  // `bake_params` validator admits the dialect string.
+  params: [{ name: "params_json", type: "string" }],
   facts: parseEstimatorFacts,
   build({ p, g }): OutputHandle {
     return g.node('AnnyParamsToGlb', { params_json: String(p.params_json) }).out(0)

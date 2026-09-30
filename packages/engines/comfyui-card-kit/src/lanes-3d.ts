@@ -13,7 +13,7 @@ import {
 // Body → assemble (CompositeCharacter / FitProp / SkinApply) → the
 // shared 8-view turnaround tail (blocks/poser-kit renderGLBViews).
 // The strip tables stay EMPTY so the pin's autofills ride
-// (comfy-script behavior via the GraphBuilder pin defaults).
+// (the GraphBuilder pin defaults own that behavior).
 
 /** (DESCOPE 2026-09-05 — moved verbatim from the anny card.) The
  *  table stays EMPTY, so the pin's hair/outfit "" autofills ride. */

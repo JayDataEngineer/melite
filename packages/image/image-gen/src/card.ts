@@ -46,7 +46,7 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl
 // THE IMAGE-GEN STRIP PASS (re-homed from the card kit, 2026-09-30 —
 // the kit-arm retirement): this card's finalize owns its own
 // serialization law. The t2i templates omit these pin defaults, so
-// comfy-script would auto-fill them at serialization; stripping an
+// the engine would auto-fill them at serialization; stripping an
 // empty value is what keeps the request byte-stable. The strip lived
 // in the kit while the lane moved to the families; a finalize pass
 // with no lane beside it is a second home, so it came here.

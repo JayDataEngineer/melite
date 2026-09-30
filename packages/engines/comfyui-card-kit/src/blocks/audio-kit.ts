@@ -1,6 +1,6 @@
-// Tier 2 — the audio render-kit blocks (the compose/co_script audio
+// Tier 2 — the audio render-kit blocks (the compose audio
 // lane port). The Audiocore lanes (tts / sfx) leave the
-// vendored pack's unspecified optional inputs to comfy-script's
+// vendored pack's unspecified optional inputs to the engine pin
 // AUTOFILL — no strip pass runs there, so the
 // graphs carry those default rows verbatim. These tables are the
 // lane-local calibration (they mirror the autofill-strip behavior):
@@ -10,7 +10,7 @@
 import { GraphBuilder, OutputHandle } from '../graph.ts'
 import type { ModelFacts, LaneInputsFacts } from '../facts.ts'
 
-/** The AudiocoreTTS optional-input defaults comfy-script autofills
+/** The AudiocoreTTS optional-input defaults the engine pin autofills
  *  (object_info pin). Renderer-passed inputs merge OVER these. */
 export const AUDIACORE_TTS_AUTOFILL = {
   duration_seconds: 10.0,
@@ -31,7 +31,7 @@ export const AUDIACORE_TTS_AUTOFILL = {
   voice_pca_strengths: '',
 } as const
 
-/** The AudiocoreVoiceStudio optional-input defaults comfy-script
+/** The AudiocoreVoiceStudio optional-input defaults the engine pin
  *  autofills (object_info pin). Renderer-passed inputs merge OVER
  *  these. */
 export const AUDIACORE_STUDIO_AUTOFILL = {

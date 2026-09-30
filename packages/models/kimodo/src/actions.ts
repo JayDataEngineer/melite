@@ -46,11 +46,29 @@ export function parseKimodoFacts(raw: LaneInputsFacts): KimodoFacts {
  * card). */
 export const compose: ComfyActionSpec<KimodoParams, KimodoFacts> = {
   id: "compose",
+  inputs: [],
   outputs: [
     { name: "motion_npz", kind: "MOTION" },
     { name: "animated_glb", kind: "GLB" },
   ],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the motion
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row. The cfg_type
+  // enum is the card's CFG-mode vocabulary.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "duration_sec", type: "number", bounds: [1, 30] },
+    { name: "num_samples", type: "number", bounds: [1, 4] },
+    { name: "num_transition_frames", type: "number", bounds: [0, 60] },
+    { name: "cfg_type", type: "enum", options: ["separated", "regular", "nocfg"] },
+    { name: "cfg_weight_a", type: "number", bounds: [0, 15] },
+    { name: "cfg_weight_b", type: "number", bounds: [0, 15] },
+    { name: "motion_npz", type: "string" },
+    { name: "motion_prompts", type: "string" },
+    { name: "motion_constraints", type: "string" },
+    { name: "preview_glb", type: "string" },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseKimodoFacts,
   build({ p, facts, g }) {
     const seed = p.seed as number

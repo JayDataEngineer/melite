@@ -38,8 +38,27 @@ export function parsePrepFacts(_raw: LaneInputsFacts): PrepFacts {
  * under <run>/input_prep. */
 export const prep: ComfyActionSpec<PrepParams, PrepFacts> = {
   id: "prep",
+  inputs: [],
   outputs: [{ name: "image", kind: "IMAGE" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the
+  // input-prep card schema's own types and bounds — the family
+  // door judges defaults and variant presets against this row. The
+  // segment reads the crop and scale rows as the crop/scale
+  // objects the card packs from these flat members; a value tier
+  // cannot name an object, so the surface declares the members the
+  // card's gate validates and packs. Each transform member's floor
+  // is -1 (the unset sentinel) and its ceiling is the card's — none.
+  params: [
+    { name: "source", type: "string" },
+    { name: "media_type", type: "enum", options: ["image", "audio"] },
+    { name: "crop_x", type: "number" },
+    { name: "crop_y", type: "number" },
+    { name: "crop_width", type: "number" },
+    { name: "crop_height", type: "number" },
+    { name: "scale_width", type: "number" },
+    { name: "scale_height", type: "number" },
+    { name: "scale_method", type: "string" },
+  ],
   facts: parsePrepFacts,
   build({ p, g, runId }) {
     const prefix = `${runId}/input_prep`;

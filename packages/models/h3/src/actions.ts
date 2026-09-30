@@ -24,8 +24,9 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
-import { FAMILIES, paramSchema, wireList } from './schema.ts'
+import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.ts'
 import type { Family } from './schema.ts'
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.ts'
 import type { FilmMixClip, FilmMixSpan } from './filmMix.ts'
 import {
@@ -1285,8 +1286,16 @@ function renderH3Window(
  * doc arrives gated + lifted from the card; the build owns the
  * lane admissions and both renderers, byte-identical to the card's
  * legacy fallback. */
+/** The sampler row the h3 schema itself serves: the ONE engine
+ * vocabulary read through the family's recommended subset (the
+ * schema's own filter law — a retyped list would be a second
+ * SSOT). */
+const H3_SAMPLER_OPTIONS: readonly string[] = SAMPLER_OPTIONS.filter((n) =>
+  (H3_RECOMMENDED_SAMPLERS as readonly string[]).includes(n));
+
 export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
   id: 'film',
+  inputs: [],
   outputs: [{ name: 'video', kind: 'VIDEO' }],
   // GATE S (the seed sentinel — the estate's one-mint law): the
   // schema's default is 42 and explicit seeds ride verbatim; an
@@ -1295,7 +1304,68 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
   // server — the M12 replayability contract, adopted with the
   // family port (the card's legacy else still passes -1 through;
   // the action oracle pins that one deliberate divergence).
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the h3 card
+  // schema's own types and bounds — the family door judges defaults
+  // and variant presets against this row. The sampler row resolves
+  // from the ONE engine vocabulary read through the family's
+  // recommended subset (the schema's own filter); the scheduler row
+  // reads the whole vocabulary. The timeline's own JSON row params
+  // (calls, audio_clips) ride the timeline contract's validators,
+  // not this surface; the per-window rows (k, noise_seed,
+  // fps_seconds) are internal. ref_image_size is the schema's
+  // const-or-WxH pattern tier — typed as its string spine.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "image", type: "string" },
+    { name: "last_frame", type: "string" },
+    { name: "ref_images", type: "image_list" },
+    { name: "ref_videos", type: "image_list" },
+    { name: "ref_audios", type: "image_list" },
+    { name: "duck_depth_db", type: "number", bounds: [-48, 0] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+    { name: "width", type: "number", bounds: [448, 1344] },
+    { name: "height", type: "number", bounds: [448, 768] },
+    { name: "length", type: "number", bounds: [22, 362] },
+    { name: "steps", type: "number", bounds: [4, 30] },
+    { name: "second_pass_enabled", type: "boolean" },
+    { name: "sharpen_enabled", type: "boolean" },
+    { name: "sharpen_strength", type: "number", bounds: [0, 1] },
+    { name: "sharpen_method", type: "enum", options: ["rcas", "adaptive_usm", "high_pass", "deconvolution"] },
+    { name: "sharpen_radius", type: "number", bounds: [0.5, 5] },
+    { name: "sharpen_threshold", type: "number", bounds: [0, 1] },
+    { name: "sharpen_iterations", type: "number", bounds: [1, 100] },
+    { name: "interpolate_enabled", type: "boolean" },
+    { name: "interp_model", type: "enum", options: ["film_net_fp16.safetensors", "rife47.pth"] },
+    { name: "interp_multiplier", type: "number", bounds: [2, 4] },
+    { name: "denoise", type: "number", bounds: [0, 1] },
+    { name: "sampler_name", type: "enum", options: H3_SAMPLER_OPTIONS },
+    { name: "sched_name", type: "enum", options: SCHEDULER_OPTIONS },
+    { name: "refine_lora", type: "string" },
+    { name: "refine_strength", type: "number", bounds: [0, 2] },
+    { name: "refine_steps", type: "number", bounds: [1, 10] },
+    { name: "attention_backend", type: "enum", options: ["comfy kitchen attention", "pytorch attention"] },
+    { name: "sr_switch", type: "boolean" },
+    { name: "sr_resolution", type: "number", bounds: [720, 2160] },
+    { name: "sr_model", type: "enum", options: ["seedvr2_ema_3b_fp16.safetensors", "seedvr2_ema_3b_fp8_e4m3fn.safetensors"] },
+    { name: "ref_image_size", type: "string" },
+    { name: "shift_video", type: "number", bounds: [1, 20] },
+    { name: "shift_audio", type: "number", bounds: [1, 10] },
+    { name: "sla_enabled", type: "boolean" },
+    { name: "sla_sparsity", type: "number", bounds: [0, 0.95] },
+    { name: "sla_block_size", type: "enum", options: ["32", "64", "128"] },
+    { name: "sla_min_seq_len", type: "number" },
+    { name: "sla_dense_last_steps", type: "number", bounds: [0, 10] },
+    { name: "sla_dense_steps", type: "string" },
+    { name: "sla_dense_backend", type: "enum", options: ["comfy_kitchen", "pytorch", "auto"] },
+    { name: "sla_reference_protection", type: "enum", options: ["Off", "Light", "Heavy Enforcement"] },
+    { name: "sla_protect_audio", type: "boolean" },
+    { name: "sla_stabilize_motion", type: "boolean" },
+    { name: "sla_disable_fp16_accum", type: "boolean" },
+    { name: "interp_switch", type: "boolean" },
+    { name: "sharpen_switch", type: "boolean" },
+    { name: "sla_switch", type: "boolean" },
+    { name: "image_name", type: "string" },
+  ],
   facts: parseH3Facts,
   build({ p: docIn, facts, g }): OutputHandle {
     const p = { ...(docIn as Record<string, unknown>) }

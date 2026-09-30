@@ -25,10 +25,11 @@ const model: ModelFacts = {
 
 const echo: ComfyActionSpec<EchoParams, { unet: string }> = {
   id: "echo",
+  inputs: [],
   outputs: [{ name: "image", kind: "IMAGE" }],
   // steps rides declared-but-unruled: the interpreter passes it
   // through untouched (only ruled params get managed-affair handling).
-  params: [{ name: "seed", rule: "seed-sentinel" }, { name: "steps" }],
+  params: [{ name: "seed", type: "number", rule: "seed-sentinel" }, { name: "steps", type: "number" }],
   facts: (raw) => {
     const unet = raw.unet;
     if (typeof unet !== "string") throw new Error("facts door: lane_inputs.unet must be a string");
@@ -84,8 +85,9 @@ describe("instantiateAction (the interpreter contract)", () => {
   it("the seed-sentinel rule on any param but 'seed' refuses loud", () => {
     const badRule: ComfyActionSpec<{ steps: number }, Record<string, never>> = {
       id: "bad-rule",
+      inputs: [],
       outputs: [],
-      params: [{ name: "steps", rule: "seed-sentinel" }],
+      params: [{ name: "steps", type: "number", rule: "seed-sentinel" }],
       facts: () => ({}),
       build: () => {
         throw new Error("unreachable: the rule refusal fires before build");

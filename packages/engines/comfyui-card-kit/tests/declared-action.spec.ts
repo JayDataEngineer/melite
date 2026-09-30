@@ -9,8 +9,9 @@ import { declaredAction, instantiateAction } from "../src/action.ts";
 
 const action = {
   id: "film",
+  inputs: [],
   outputs: [{ name: "video", kind: "VIDEO" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  params: [{ name: "seed", type: "number", rule: "seed-sentinel" }],
   facts: (raw: Record<string, unknown>) => raw,
   build: () => ({ node: 1, slot: 0 }) as never,
 } as const;

@@ -32,6 +32,7 @@ import { assertModUse } from "@melite/comfyui-card-kit/guard";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { GraphBuilder, NodeRef } from "@melite/comfyui-card-kit/graph";
+import { PRESET_SPEAKERS } from "@melite/models-qwen3-tts";
 
 /** The closed facts shape the tts segments read (model_path: the
  * audiocore load key — the ONE engine-general member this family
@@ -164,8 +165,29 @@ function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
  * design export), never a family-id switch. */
 export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
   id: "speak",
+  inputs: [],
   outputs: [{ name: "audio", kind: "AUDIO" }],
-  params: [],
+  // THE DECLARED SURFACE (the write plane, phase 2): the tts card
+  // schema's own types and bounds — the family door judges defaults
+  // and variant presets against this row. The voice enum is the
+  // family's own preset set (PRESET_SPEAKERS above); the seed mints
+  // INSIDE build (the voice-lock law — one mint seat, the build's),
+  // so it declares plain, not sentinel-ruled.
+  params: [
+    { name: "text", type: "string" },
+    { name: "voice", type: "enum", options: PRESET_SPEAKERS },
+    { name: "style_instruction", type: "string" },
+    { name: "design_prompt", type: "string" },
+    { name: "ref_audio", type: "string" },
+    { name: "ref_text", type: "string" },
+    { name: "voice_name", type: "string" },
+    { name: "temperature", type: "number", bounds: [0.05, 2] },
+    { name: "top_p", type: "number", bounds: [0, 1] },
+    { name: "top_k", type: "number", bounds: [0, 1000] },
+    { name: "speed", type: "number", bounds: [0.5, 2] },
+    { name: "repetition_penalty", type: "number", bounds: [0.8, 2] },
+    { name: "seed", type: "number" },
+  ],
   facts: parseTtsFacts,
   build({ p, model, g, runId }) {
     const lane = laneTopologyOf(model).synth_lane;
@@ -209,8 +231,29 @@ function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBu
  * (admission stays on the card). */
 export const exportAction: ComfyActionSpec<TtsParams, TtsFacts> = {
   id: "export",
+  inputs: [],
   outputs: [{ name: "qvoice", kind: "AUDIO" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the tts card
+  // schema's own types and bounds — the family door judges defaults
+  // and variant presets against this row. The voice enum is the
+  // family's own preset set (PRESET_SPEAKERS above); the seed mints
+  // INSIDE build (the voice-lock law — one mint seat, the build's),
+  // so it declares plain, not sentinel-ruled.
+  params: [
+    { name: "text", type: "string" },
+    { name: "voice", type: "enum", options: PRESET_SPEAKERS },
+    { name: "style_instruction", type: "string" },
+    { name: "design_prompt", type: "string" },
+    { name: "ref_audio", type: "string" },
+    { name: "ref_text", type: "string" },
+    { name: "voice_name", type: "string" },
+    { name: "temperature", type: "number", bounds: [0.05, 2] },
+    { name: "top_p", type: "number", bounds: [0, 1] },
+    { name: "top_k", type: "number", bounds: [0, 1000] },
+    { name: "speed", type: "number", bounds: [0.5, 2] },
+    { name: "repetition_penalty", type: "number", bounds: [0.8, 2] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseTtsFacts,
   build({ p, model, g, runId }) {
     return exportSegment(p, model, g, runId).out();

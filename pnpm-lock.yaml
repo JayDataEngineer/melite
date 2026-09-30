@@ -2042,6 +2042,9 @@ importers:
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis
+      '@melite/models-qwen3-tts':
+        specifier: workspace:*
+        version: link:../qwen3-tts
     devDependencies:
       '@types/node':
         specifier: ^22.20.0

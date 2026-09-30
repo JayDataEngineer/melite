@@ -44,8 +44,18 @@ export function parseSfxFacts(raw: LaneInputsFacts): SfxFacts {
  * prompt with the autofill pin, SaveAudio under <run>/sfx. */
 export const sfx: ComfyActionSpec<SfxParams, SfxFacts> = {
   id: "sfx",
+  inputs: [],
   outputs: [{ name: "audio", kind: "AUDIO" }],
-  params: [{ name: "seed", rule: "seed-sentinel" }],
+  // THE DECLARED SURFACE (the write plane, phase 2): the sfx
+  // card schema's own types and bounds — the family door judges
+  // defaults and variant presets against this row.
+  params: [
+    { name: "prompt", type: "string" },
+    { name: "duration", type: "number", bounds: [0.5, 300] },
+    { name: "guidance_scale", type: "number", bounds: [0, 20] },
+    { name: "n_diffusion_steps", type: "number", bounds: [1, 500] },
+    { name: "seed", type: "number", rule: "seed-sentinel" },
+  ],
   facts: parseSfxFacts,
   build({ p, model, g, runId }) {
     const seed = p.seed as number;

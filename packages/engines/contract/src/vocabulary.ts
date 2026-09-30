@@ -16,23 +16,34 @@ export interface PortSpec<K extends string = string> {
   readonly kind: K;
 }
 
-/** A declared parameter of an action. `rule` names a managed affair
- *  the instantiator executes before the segment factory runs:
+/** A declared parameter of an action — the write plane's unit. The
+ *  declared surface is data: `type` names the value tier, `bounds`
+ *  the numeric envelope, `options` the enum's closed set (engine
+ *  vocabularies land here), and `rule` names a managed affair the
+ *  instantiator executes before the segment factory runs:
  *  "seed-sentinel" is GATE S — the param is the seed, -1 means
  *  random, and the one minter resolves it so every node sharing the
- *  seed shares the minted value. */
+ *  seed shares the minted value. A variant preset pinning a param
+ *  the surface does not offer, or a value outside the envelope,
+ *  refuses at the family door. */
 export interface ParamSpec {
   readonly name: string;
+  readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+  readonly bounds?: readonly [number, number];
+  readonly options?: readonly string[];
   readonly rule?: "seed-sentinel";
 }
 
 /** The action shell the atom declares: what it offers upward — the
- *  boundary output ports, the declared params, and the segment
- *  factory behind them. The engine instance widens `build`'s context
- *  (the typed facts, the engine's builder) and its return (the
- *  engine's terminal handle); cards compose actions, never nodes. */
+ *  boundary input ports it accepts, the boundary output ports, the
+ *  declared params, and the segment factory behind them. The engine
+ *  instance widens `build`'s context (the typed facts, the engine's
+ *  builder) and its return (the engine's terminal handle); cards
+ *  compose actions, never nodes. A self-contained action (its own
+ *  loaders inside the segment) declares `inputs: []`. */
 export interface ActionSpec<C, R> {
   readonly id: string;
+  readonly inputs: readonly PortSpec[];
   readonly outputs: readonly PortSpec[];
   readonly params: readonly ParamSpec[];
   /** Present-only-when-true: the action reads nothing off a
