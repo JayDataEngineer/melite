@@ -1,0 +1,47 @@
+{
+  "LoadAudiocoreModel.0": {
+    "class_type": "LoadAudiocoreModel",
+    "inputs": {
+      "family": "qwen3_tts",
+      "model_path": "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+      "extras": ""
+    }
+  },
+  "AudiocoreTTS.0": {
+    "class_type": "AudiocoreTTS",
+    "inputs": {
+      "duration_seconds": 10,
+      "guidance_scale": 5,
+      "instruct": "",
+      "language": "",
+      "num_inference_steps": 50,
+      "reference_audio": "/m/r.wav",
+      "reference_text": "the words",
+      "repetition_penalty": 1.05,
+      "speaker_name": "",
+      "speed": 1,
+      "top_k": 0,
+      "top_p": 0.9,
+      "voice": "",
+      "voice_file": "",
+      "voice_pca_strengths": "",
+      "model": [
+        "LoadAudiocoreModel.0",
+        0
+      ],
+      "prompt": "bare clone",
+      "mode": "clone",
+      "seed": 12
+    }
+  },
+  "SaveAudio.0": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "AudiocoreTTS.0",
+        0
+      ],
+      "filename_prefix": "probe-clone-min/tts"
+    }
+  }
+}

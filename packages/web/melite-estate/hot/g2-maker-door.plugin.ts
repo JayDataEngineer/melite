@@ -24,7 +24,8 @@
 // not a replacement for a stable card/model package.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { loadCardDefs, refreshCardDefs, theService } from '@melite/comfyui-cordis'
 
 const schema = z.object({
@@ -66,9 +67,18 @@ export async function apply(ctx: Context): Promise<void> {
         if (!doc.prompt || !(doc.prompt as string).trim()) {
           throw new Error("required param 'prompt' missing or empty on the hot-g2-door card")
         }
-        imageT2I(doc, model, g, runId)
+        // THE DECLARED SEGMENT (the atom vocabulary): the t2i lane is
+        // the krea-2 family's own declared action — the card kit's
+        // imageT2I twin is deleted with the kit-arm retirement. The
+        // served-form boarding below stays 'moss' (an orphan family no
+        // packaged card claims, so this demo door never fights one for
+        // its form spec); the COMPOSED segment has one home either way.
+        instantiateAction(declaredAction(krea2Decl, 't2i'), doc, model, g, runId)
       },
-      finalize: finalizeImageGen,
+      // NO finalize pass: the image-gen strip belongs to the image-gen card
+      // (it moved there with the kit-arm retirement), and a hot door
+      // registering its own card does not inherit another card's
+      // serialization law.
     })
     // THE RE-PROJECTION (#39): the served defs table is a boot
     // snapshot by design; this rebuilds it from the live singleton

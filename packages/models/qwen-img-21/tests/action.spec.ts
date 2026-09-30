@@ -1,14 +1,15 @@
-// The atom's own proof (the stroke-1 pilot): the t2i action's
-// serialized prompt is BYTE-IDENTICAL to the legacy lane arm on the
-// same resolved facts — the card's route change moves no wire — and
-// the facts door refuses closed-set drift LOUD (an unknown encoder
-// class never silently routes to a stock lane). The interpreter's
-// own contract walls live in card-kit's tests/action.spec.ts.
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// imageT2I still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The interpreter's own contract walls live
+// in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { imageT2I, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { t2i, parseT2IFacts } from "../src/actions.ts";
 
@@ -42,22 +43,22 @@ const PARAMS = {
 const seedOf = (g: GraphBuilder): unknown =>
   (g.toJSON() as Record<string, { inputs: Record<string, unknown> }>)["KSampler.0"]?.inputs.seed;
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the t2i action — byte-stability (the pilot's compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane arm (the plain path)", () => {
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden arm (the plain path)", () => {
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-t-f241fab97f"), graphOf(action), "the composed prompt is the committed golden arm (the plain path)");
   });
 
-  it("byte equality holds on the sampling-shift arm (the AuraFlow wrap)", () => {
+  it("the golden holds on the sampling-shift arm (the AuraFlow wrap)", () => {
     const shifted: ModelFacts = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, sampling_shift: 3 } };
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, shifted, legacy, "probe-shift");
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, shifted, action, "probe-shift");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-sampling-shift-arm-the-auraflow-wrap"), graphOf(action), "the golden holds on the sampling-shift arm (the AuraFlow wrap)");
     assert.ok(
       Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "ModelSamplingAuraFlow"),
       "the shift arm wraps the unet",
@@ -78,11 +79,9 @@ describe("the t2i action — byte-stability (the pilot's compatibility law)", ()
 
   it("an absent negative_prompt composes the empty string — and stays byte-equal to the legacy arm", () => {
     const { negative_prompt: _drop, ...noNeg } = PARAMS;
-    const legacy = new GraphBuilder({});
-    imageT2I(noNeg, FACTS, legacy, "probe-noneg");
     const action = new GraphBuilder({});
     instantiateAction(t2i, noNeg, FACTS, action, "probe-noneg");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("an-absent-negative-prompt-composes-the-empty-stri-471d834b76"), graphOf(action), "an absent negative_prompt composes the empty string — and stays byte-equal to the legacy arm");
     const enc = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
       (n) => n.class_type === "TextEncodeQwenImage21",
     )!;

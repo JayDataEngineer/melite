@@ -1,16 +1,16 @@
-// The atom's own proof (the atom vocabulary, stroke 2): the t2i
-// action's serialized prompt is BYTE-IDENTICAL to the legacy
-// imageT2I stock arm on the same resolved facts — z-image is the
-// family that EXERCISES the arm's variance: the default row's
-// shift 3 (the AuraFlow wrap is part of its graph) and the fired
-// controlnet stack (the ZImageFunControlnet seam). The ip-adapter
-// gate refuses through instantiateAction. The interpreter's own
-// contract walls live in card-kit's tests/action.spec.ts.
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// imageT2I still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The ip-adapter gate refuses through
+// instantiateAction. The interpreter's own contract walls live in card-kit's
+// tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { imageT2I, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { t2i, parseT2IFacts } from "../src/actions.ts";
 
@@ -46,20 +46,22 @@ const PARAMS = {
   scheduler: "simple",
 };
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the t2i action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane arm (the default row wraps AuraFlow)", () => {
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden arm (the default row wraps AuraFlow)", () => {
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-t-15abd457f5"), graphOf(action), "the composed prompt is the committed golden arm (the default row wraps AuraFlow)");
     const wrap = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
       (n) => n.class_type === "ModelSamplingAuraFlow",
     )!;
     assert.equal(wrap.inputs?.shift, 3, "the default row's shift 3 rides");
   });
 
-  it("byte equality holds on the FIRED controlnets arm (the mod plane's stack, advanced-parameter vocabulary)", () => {
+  it("the golden holds on the FIRED controlnets arm (the mod plane's stack, advanced-parameter vocabulary)", () => {
     // The fired shape from the mod plane's own law: a stated entry
     // with type + weight file + conditioning artifact, full
     // schedule (start 0, end 1 — the node carries no start/end
@@ -69,27 +71,23 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
       ...PARAMS,
       controlnets: [{ type: "depth", model: "z_image_depth.safetensors", artifact: "asset:1", strength: 1.0 }],
     };
-    const legacy = new GraphBuilder({});
-    imageT2I(fired, FACTS, legacy, "probe-cn");
     const action = new GraphBuilder({});
     instantiateAction(t2i, fired, FACTS, action, "probe-cn");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-fired-controlnets-arm-the-00f323b7d4"), graphOf(action), "the golden holds on the FIRED controlnets arm (the mod plane's stack, advanced-parameter vocabulary)");
     assert.ok(
       Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "ZImageFunControlnet"),
       "the fired entry stacks the z-image controlnet node",
     );
   });
 
-  it("byte equality holds on the shift-INERT arm (a 0 row composes no AuraFlow node)", () => {
+  it("the golden holds on the shift-INERT arm (a 0 row composes no AuraFlow node)", () => {
     // z-image's own row spells 3 (the wrap rides by default); this
     // arm pins the inert half — 0 is present-and-falsy, the wrap
     // never builds, and the legacy arm agrees byte-for-byte.
     const inert: ModelFacts = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, sampling_shift: 0 } };
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, inert, legacy, "probe-inert");
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, inert, action, "probe-inert");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-shift-inert-arm-a-0-row-c-d3350bbf83"), graphOf(action), "the golden holds on the shift-INERT arm (a 0 row composes no AuraFlow node)");
     assert.ok(
       !Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "ModelSamplingAuraFlow"),
       "shift 0 builds no wrap",

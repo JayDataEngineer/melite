@@ -1,0 +1,149 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_2.1_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_8b_int8_convrot.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_2.1_vae_bf16.safetensors"
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/anchor.png",
+      "upload": "image"
+    }
+  },
+  "QwenImage21Cache.0": {
+    "class_type": "QwenImage21Cache",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "device": "auto",
+      "dtype": "default"
+    }
+  },
+  "TextEncodeQwenImage21.0": {
+    "class_type": "TextEncodeQwenImage21",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "make the hallway blue",
+      "negative_prompt": "blur",
+      "resolution": 1024,
+      "images.image_1": [
+        "LoadImage.0",
+        0
+      ]
+    }
+  },
+  "LoadImageMask.0": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "input/region.png",
+      "channel": "alpha"
+    }
+  },
+  "GrowMask.0": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "LoadImageMask.0",
+        0
+      ],
+      "expand": 72,
+      "tapered_corners": true
+    }
+  },
+  "MaskToSEGS.0": {
+    "class_type": "MaskToSEGS",
+    "inputs": {
+      "mask": [
+        "GrowMask.0",
+        0
+      ],
+      "combined": true,
+      "crop_factor": 3,
+      "bbox_fill": false,
+      "drop_size": 10,
+      "contour_fill": false
+    }
+  },
+  "DetailerForEach.0": {
+    "class_type": "DetailerForEach",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "segs": [
+        "MaskToSEGS.0",
+        0
+      ],
+      "model": [
+        "QwenImage21Cache.0",
+        0
+      ],
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 7,
+      "steps": 25,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "TextEncodeQwenImage21.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImage21.0",
+        1
+      ],
+      "denoise": 0.4,
+      "feather": 8,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "wildcard": "",
+      "cycle": 1
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "DetailerForEach.0",
+        0
+      ],
+      "filename_prefix": "probe-region/edit"
+    }
+  }
+}

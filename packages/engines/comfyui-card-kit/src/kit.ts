@@ -46,13 +46,9 @@ export {
   type ImpactProvision,
 } from './impact.ts'
 export {
-  IMAGE_GEN_STRIP,
-  finalizeImageGen,
-  imageT2I,
   IMAGE_EDIT_STRIP,
   finalizeImageEdit,
   refuseImageEditFiring,
-  imageEdit,
   editRefs,
   orderedInputImages,
   editImageCap,
@@ -63,12 +59,7 @@ export {
   laneScheduler,
 } from './lanes-image.ts'
 export type { TensorRef } from './lanes-image.ts'
-export {
-  VIDEO_NEGATIVE_FALLBACK,
-  H3_T4_STRIP,
-  finalizeH3,
-} from './lanes-video.ts'
-export { ttsT1, ttsSpeakT1, ttsCloneT1, ttsUseT1, ttsDesignT1, qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
+export { qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
   finalizeAnny,
@@ -76,10 +67,7 @@ export {
   finalizeMotion,
   rigSomaArm,
   rigSpeciesArm,
-  trellisArm,
-  pixalArm,
   transferRigArm,
-  admitMeshLift,
   MESH_RESOLUTIONS,
   MESH_BG_MODES,
   MESH_PIXAL_FOVS,

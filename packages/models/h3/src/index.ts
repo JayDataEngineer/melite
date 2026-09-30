@@ -472,3 +472,5 @@ export const family: Plugin = {
     ctx.effect(() => ctx.models.registerFamily(DECL));
   },
 };
+
+export { finalizeH3, H3_T4_STRIP } from "./finalize.ts"

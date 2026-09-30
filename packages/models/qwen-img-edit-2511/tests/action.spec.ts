@@ -1,16 +1,15 @@
-// The atom's own proof (the atom vocabulary, stroke 3): the edit
-// action's serialized prompt is BYTE-IDENTICAL to the legacy
-// imageEdit 2511 arm on the same resolved facts — the card's binding
-// change moves no wire — the variant merge (lightning's re-spelled
-// unet) parses green at the door, the lanpaint and crop_stitch arms
-// carry their native tails, and the never-lie/node-shape/ceiling
-// refusals stay in the lane's voice. The interpreter's own contract
-// walls live in card-kit's tests/action.spec.ts.
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// imageEdit still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The interpreter's own contract walls live
+// in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { imageEdit, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { edit, parseEditFacts } from "../src/actions.ts";
 
@@ -42,26 +41,26 @@ const PARAMS = {
   scheduler: "simple",
 };
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the edit action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane arm (the plain VAEEncode-of-source path)", () => {
-    const legacy = new GraphBuilder({});
-    imageEdit(PARAMS, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden arm (the plain VAEEncode-of-source path)", () => {
     const action = new GraphBuilder({});
     instantiateAction(edit, PARAMS, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-t-0efa4cf18f"), graphOf(action), "the composed prompt is the committed golden arm (the plain VAEEncode-of-source path)");
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
     assert.ok(nodes.filter((n) => n.class_type === "TextEncodeQwenImageEditPlus").length === 2, "the pos/neg encoder pair rides");
     assert.ok(nodes.some((n) => n.class_type === "VAEEncode"), "the edit rides the source's own resolution");
     assert.ok(nodes.some((n) => n.class_type === "ModelSamplingAuraFlow"), "the fixed 1.0 shift wraps the unet");
   });
 
-  it("byte equality holds with references — the stock node's native image2/image3 optionals", () => {
+  it("the golden holds with references — the stock node's native image2/image3 optionals", () => {
     const p = { ...PARAMS, input_images: ["input/anchor.png", "input/r1.png", "input/r2.png"] };
-    const legacy = new GraphBuilder({});
-    imageEdit(p, FACTS, legacy, "probe-refs");
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-refs");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-with-references-the-stock-node-s-21e914dca7"), graphOf(action), "the golden holds with references — the stock node's native image2/image3 optionals");
     const enc = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
       (n) => n.class_type === "TextEncodeQwenImageEditPlus",
     )!;
@@ -74,18 +73,16 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(!("image2" in (enc2.inputs ?? {})), "a blank ref contributes no input at all (byte-stable plain graphs)");
   });
 
-  it("byte equality holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)", () => {
+  it("the golden holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)", () => {
     const p = {
       ...PARAMS,
       input_mask: "input/region.png",
       lanpaint_prompt_mode: "positive",
       lanpaint_num_steps: 30,
     };
-    const legacy = new GraphBuilder({});
-    imageEdit(p, FACTS, legacy, "probe-lp");
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-lp");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-lanpaint-arm-mask-prep-la-4ed34f1f78"), graphOf(action), "the golden holds on the lanpaint arm (mask prep → LanPaint sampler → decode → save)");
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
     assert.ok(nodes.some((n) => n.class_type === "LanPaint_ImageEncode"), "the lanpaint latent rides");
     const sampler = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
@@ -97,22 +94,20 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(nodes.some((n) => n.class_type === "VAEDecode") === false, "no plain decode on this arm");
   });
 
-  it("byte equality holds on the crop_stitch arm (the region detailer tail)", () => {
+  it("the golden holds on the crop_stitch arm (the region detailer tail)", () => {
     const p = {
       ...PARAMS,
       mask: [{ mask_mode: "crop_stitch", input_mask: "input/region.png", mask_denoise: 0.4, mask_detector: "person" }],
     };
-    const legacy = new GraphBuilder({});
-    imageEdit(p, FACTS, legacy, "probe-region");
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-region");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-crop-stitch-arm-the-regio-31708a99e6"), graphOf(action), "the golden holds on the crop_stitch arm (the region detailer tail)");
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
     assert.ok(nodes.some((n) => n.class_type === "SAMLoader") === false, "the detector rides the Impact provider, not SAMLoader");
     assert.ok(nodes.some((n) => n.class_type === "DetailerForEach"), "the region detailer rides");
   });
 
-  it("byte equality holds on the lightning variant's MERGED view (the variant override rides)", () => {
+  it("the golden holds on the lightning variant's MERGED view (the variant override rides)", () => {
     // The resolved row for the lightning route is the family row ⊕
     // the variant's own lane_inputs (the recipe↔weights law — the
     // re-spelled unet rides WITH its recipe).
@@ -126,11 +121,9 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     };
     const facts = parseEditFacts(merged.lane_inputs);
     assert.equal(facts.unet, "qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors");
-    const legacy = new GraphBuilder({});
-    imageEdit({ ...PARAMS, steps: 4, cfg: 1 }, merged, legacy, "probe-lw");
     const action = new GraphBuilder({});
     instantiateAction(edit, { ...PARAMS, steps: 4, cfg: 1 }, merged, action, "probe-lw");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-lightning-variant-s-merge-cec1f25ab9"), graphOf(action), "the golden holds on the lightning variant's MERGED view (the variant override rides)");
     const unet = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
       (n) => n.class_type === "UNETLoader",
     )!;
@@ -166,17 +159,15 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     );
   });
 
-  it("byte equality holds when a flat key WINS over the bag (explicit flat keys override the region row)", () => {
+  it("the golden holds when a flat key WINS over the bag (explicit flat keys override the region row)", () => {
     const p = {
       ...PARAMS,
       input_mask: "input/flat-mask.png",
       mask: [{ mask_mode: "crop_stitch", input_mask: "input/bag-mask.png", mask_denoise: 0.4 }],
     };
-    const legacy = new GraphBuilder({});
-    imageEdit(p, FACTS, legacy, "probe-flatwins");
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-flatwins");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-when-a-flat-key-wins-over-the-ba-49740cfd1d"), graphOf(action), "the golden holds when a flat key WINS over the bag (explicit flat keys override the region row)");
     const graph = action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>;
     const flatRides = Object.values(graph).some((n) => Object.values(n.inputs ?? {}).includes("input/flat-mask.png"));
     const bagRides = Object.values(graph).some((n) => Object.values(n.inputs ?? {}).includes("input/bag-mask.png"));
@@ -184,17 +175,15 @@ describe("the edit action — byte-stability (the compatibility law)", () => {
     assert.ok(!bagRides, "the bag's own mask path rides nowhere");
   });
 
-  it("byte equality holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)", () => {
+  it("the golden holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)", () => {
     const p = {
       ...PARAMS,
       input_mask: "$region",
       mask: [{ mask_grow: 0, mask_invert: true }],
     };
-    const legacy = new GraphBuilder({});
-    imageEdit(p, FACTS, legacy, "probe-spell");
     const action = new GraphBuilder({});
     instantiateAction(edit, p, FACTS, action, "probe-spell");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-lanpaint-spell-arm-a-spel-d798fc2b90"), graphOf(action), "the golden holds on the lanpaint spell arm (a spelled mask rides verbatim; grow 0 skips GrowMask; invert rides)");
     const graph = action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
     const nodes = Object.values(graph);
     assert.ok(!nodes.some((n) => n.class_type === "LoadImageMask"), "a spelled mask rides verbatim — no mask load");

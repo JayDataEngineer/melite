@@ -8,7 +8,9 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { pixalArm, admitMeshLift, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
+import { join } from "node:path";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { DECL } from "../src/index.ts";
 import { mesh, parseMeshFacts } from "../src/actions.ts";
@@ -62,12 +64,7 @@ const PARAMS = {
   override_shape: 0.769,
 };
 
-/** The card's legacy fallback body (the oracle the action must
- * match byte-for-byte). */
-function legacyPixal(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder): void {
-  admitMeshLift(p, model);
-  pixalArm(g, p, model);
-}
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
 
 const nodesOf = (g: GraphBuilder, cls: string): Array<Record<string, unknown>> =>
   Object.values(g.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>).filter(
@@ -75,43 +72,37 @@ const nodesOf = (g: GraphBuilder, cls: string): Array<Record<string, unknown>> =
   );
 
 describe("the pixal3d mesh action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy arm (fov auto — the MoGe pass infers the camera; bg auto — birefnet cuts)", () => {
-    const legacy = new GraphBuilder({});
-    legacyPixal({ ...PARAMS }, FACTS, legacy);
+  it("the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; bg auto — birefnet cuts)", () => {
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS }, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-fov-auto-the-mog"), action.toJSON(), "the composed prompt is the committed golden (fov auto — the MoGe pass infers the camera; bg auto — birefnet cuts)");
     assert.equal(nodesOf(action, "LoadMoGeModel").length, 1, "the MoGe weight literal rides the auto branch");
     assert.equal(nodesOf(action, "RemoveBackground").length, 1, "birefnet cuts the background");
     assert.equal(nodesOf(action, "Save3DAdvanced").length, 1, "the textured glb persists");
     const save = nodesOf(action, "Save3DAdvanced")[0] as { inputs: { filename_prefix: string } };
-    assert.equal(save.inputs.filename_prefix, "pixal3d", "the family prefix is a constant, unstamped by run");
-  });
+    assert.equal(save.inputs.filename_prefix, "pixal3d", "the family prefix is a constant, unstamped by run");  });
 
-  it("byte equality holds on the vouched-camera branch (fov 60 — MoGe skipped) with bg off (no cut)", () => {
+  it("the golden holds on the vouched-camera branch (fov 60 — MoGe skipped) with bg off (no cut)", () => {
+
     const p = { ...PARAMS, seed: 7, camera_fov: "60", bg_removal: "off" };
-    const legacy = new GraphBuilder({});
-    legacyPixal({ ...p }, FACTS, legacy);
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...p }, FACTS, action, "probe-fov");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-vouched-camera-branch-fov-60-moge-sk"), action.toJSON(), "the golden holds on the vouched-camera branch (fov 60 — MoGe skipped) with bg off (no cut)");
     assert.equal(nodesOf(action, "MoGeInference").length, 0, "a literal degree skips the depth pass");
     assert.equal(nodesOf(action, "RemoveBackground").length, 0, "bg off feeds the image straight to conditioning");
     const cond = nodesOf(action, "Pixal3DConditioning")[0] as { inputs: { camera_angle_x: number } };
-    assert.equal(cond.inputs.camera_angle_x, 60, "the operator-vouched degree rides verbatim");
-  });
+    assert.equal(cond.inputs.camera_angle_x, 60, "the operator-vouched degree rides verbatim");  });
 
-  it("byte equality holds on a wired-tensor anchor ('$spell' — the image IS an upstream stage's output)", () => {
+  it("the golden holds on a wired-tensor anchor ('$spell' — the image IS an upstream stage's output)", () => {
+
     const p = { ...PARAMS, input_image: "$spell.img" };
-    const legacy = new GraphBuilder({});
-    legacyPixal({ ...p }, FACTS, legacy);
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...p }, FACTS, action, "probe-spell");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
-    assert.equal(nodesOf(action, "LoadImage").length, 0, "a spelled tensor never builds a loader");
-  });
+    assertGraphGolden(golden("the-golden-holds-on-a-wired-tensor-anchor-spell-the-image-is"), action.toJSON(), "the golden holds on a wired-tensor anchor ('$spell' — the image IS an upstream stage's output)");
+    assert.equal(nodesOf(action, "LoadImage").length, 0, "a spelled tensor never builds a loader");  });
 
   it("GATE S — seed -1 mints ONCE per compose and feeds every sampler the same take", () => {
+
     const a = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS, seed: -1 }, FACTS, a, "probe-mint");
     const seeds = nodesOf(a, "KSampler").map((n) => (n as { inputs: { seed: number } }).inputs.seed);
@@ -119,19 +110,19 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     assert.notEqual(seeds[0], -1, "the sentinel minted a concrete seed");
     const b = new GraphBuilder({});
     instantiateAction(mesh, { ...PARAMS, seed: -1 }, FACTS, b, "probe-mint-b");
-    assert.notEqual(seeds[0], (nodesOf(b, "KSampler")[0] as { inputs: { seed: number } }).inputs.seed, "two -1 runs differ");
-  });
+    assert.notEqual(seeds[0], (nodesOf(b, "KSampler")[0] as { inputs: { seed: number } }).inputs.seed, "two -1 runs differ");  });
 
   it("the facts door refuses a missing load key field-named (never loads an empty directory)", () => {
+
     const broken = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, unet: "" } };
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
       /pixal3d mesh: lane_inputs\.unet = "" — a non-empty string is required/,
     );
-    assert.equal(parseMeshFacts(FACTS.lane_inputs as never).unet, "pixal3d_int8_convrot.safetensors", "the DECL's own row parses clean");
-  });
+    assert.equal(parseMeshFacts(FACTS.lane_inputs as never).unet, "pixal3d_int8_convrot.safetensors", "the DECL's own row parses clean");  });
 
   it("the family's admission slice refuses every closed-set drift loud (image, resolution, bg, bake sizes)", () => {
+
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, input_image: "  " }, FACTS, new GraphBuilder({}), "probe-img"),
       /required param 'input_image' \(Source image\) missing on the img-to-mesh card/,
@@ -151,21 +142,19 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, atlas_size: "8192" }, FACTS, new GraphBuilder({}), "probe-atlas"),
       /atlas_size "8192" is not one of 2048\|4096 — the bake-size table is closed/,
-    );
-  });
+    );  });
 
-  it("byte equality holds with the bg key absent (the admission's coercion — auto default; the arm reads the raw doc, so the cut rides)", () => {
+  it("the golden holds with the bg key absent (the admission's coercion — auto default; the arm reads the raw doc, so the cut rides)", () => {
+
     const p = { ...PARAMS };
     delete (p as Record<string, unknown>).bg_removal;
-    const legacy = new GraphBuilder({});
-    legacyPixal({ ...p }, FACTS, legacy);
     const action = new GraphBuilder({});
     instantiateAction(mesh, { ...p }, FACTS, action, "probe-coerce");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
-    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "absent bg coerces to auto — the cut rides");
-  });
+    assertGraphGolden(golden("the-golden-holds-with-the-bg-key-absent-the-admission-s-coer"), action.toJSON(), "the golden holds with the bg key absent (the admission's coercion — auto default; the arm reads the raw doc, so the cut rides)");
+    assert.equal(nodesOf(action, "RemoveBackground").length, 1, "absent bg coerces to auto — the cut rides");  });
 
   it("an absent camera_fov validates as auto (the coercion arm) while a later closed-set drift still refuses", () => {
+
     // the compose-door cascade always supplies camera_fov from the
     // row defaults — absence reaches admission only, whose coercion
     // reads auto; the arm below never composes a NaN degree.
@@ -173,13 +162,12 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     assert.throws(
       () => instantiateAction(mesh, { ...p }, FACTS, new GraphBuilder({}), "probe-coerce-fov"),
       /atlas_size "8192" is not one of 2048\|4096 — the bake-size table is closed/,
-    );
-  });
+    );  });
 
   it("the family's admission slice refuses a camera_fov outside the closed set (never in the schema)", () => {
+
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS, camera_fov: "45" }, FACTS, new GraphBuilder({}), "probe-fov-bad"),
       /camera_fov "45" is not one of auto\|35\|49\.13\|60\|75\|90 — pixal3d either lets MoGe infer \('auto'\) or the operator vouches a literal degree/,
-    );
-  });
+    );  });
 });

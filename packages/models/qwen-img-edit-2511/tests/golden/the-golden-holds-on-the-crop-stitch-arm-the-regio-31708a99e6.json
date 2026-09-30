@@ -1,0 +1,156 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/anchor.png",
+      "upload": "image"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.0": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "make the hallway blue"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.1": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "blur"
+    }
+  },
+  "ModelSamplingAuraFlow.0": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "shift": 1
+    }
+  },
+  "UltralyticsDetectorProvider.0": {
+    "class_type": "UltralyticsDetectorProvider",
+    "inputs": {
+      "model_name": "segm/person_yolov8m-seg.pt"
+    }
+  },
+  "SegmDetectorSEGS.0": {
+    "class_type": "SegmDetectorSEGS",
+    "inputs": {
+      "segm_detector": [
+        "UltralyticsDetectorProvider.0",
+        1
+      ],
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "threshold": 0.5,
+      "dilation": 72,
+      "crop_factor": 3,
+      "drop_size": 10,
+      "labels": "all"
+    }
+  },
+  "DetailerForEach.0": {
+    "class_type": "DetailerForEach",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "segs": [
+        "SegmDetectorSEGS.0",
+        0
+      ],
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 7,
+      "steps": 20,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "TextEncodeQwenImageEditPlus.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImageEditPlus.1",
+        0
+      ],
+      "denoise": 0.4,
+      "feather": 8,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "wildcard": "",
+      "cycle": 1
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "DetailerForEach.0",
+        0
+      ],
+      "filename_prefix": "probe-region/edit"
+    }
+  }
+}

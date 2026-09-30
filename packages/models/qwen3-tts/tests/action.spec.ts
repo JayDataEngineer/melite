@@ -1,19 +1,19 @@
-// The atom's own proof (the atom vocabulary, stroke 3): the speak +
-// export actions' serialized prompts are BYTE-IDENTICAL to the
-// legacy ttsT1 / ttsDesignT1 on the same doc — the card's binding
-// change moves no wire. The DECL's lane_inputs are the facts door
-// (model_path — the audiocore load key; synth_lane — the lane
-// branch DATA). THE VOICE-LOCK LAW: `speak` deliberately declares
-// NO seed-sentinel — the qvoice use-branch derives the studio seed
-// from the artifact path when unstated, so a pre-mint would drift
-// timbre on every reuse (the lock is proven below: two composes,
-// one seed). `export` declares the sentinel (single mint, no lock
-// to preserve).
+// The atom's own proof (the atom vocabulary, stroke 3): the speak + export
+// actions' serialized prompts are BYTE-IDENTICAL to the legacy ttsT1 /
+// ttsDesignT1 on the same doc — the card's binding change moves no wire. The
+// DECL's lane_inputs are the facts door (model_path — the audiocore load
+// key; synth_lane — the lane branch DATA). THE VOICE-LOCK LAW: `speak`
+// deliberately declares NO seed-sentinel — the qvoice use-branch derives the
+// studio seed from the artifact path when unstated, so a pre-mint would
+// drift timbre on every reuse (the lock is proven below: two composes, one
+// seed). `export` declares the sentinel (single mint, no lock to preserve).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { ttsT1, ttsDesignT1, instantiateAction, voiceLockSeed } from "@melite/comfyui-card-kit";
+import { instantiateAction, voiceLockSeed } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { speak, exportAction, parseTtsFacts } from "../src/actions.ts";
 
@@ -54,13 +54,15 @@ const nodeOf = (g: GraphBuilder, classType: string): { inputs: Record<string, un
     (n) => n.class_type === classType,
   );
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the qwen3-tts speak + export actions — byte-stability (the compatibility law)", () => {
   it("the speak action's serialized prompt is identical to the legacy lane (persona lane, explicit seed)", () => {
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...PARAMS, voice: "vivian" }, FACTS, legacy, "probe");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...PARAMS, voice: "vivian" }, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-speak-action-s-serialized-prompt-is-identical-822e73d04d"), graphOf(action), "the speak action's serialized prompt is identical to the legacy lane (persona lane, explicit seed)");
     const synth = nodeOf(action, "AudiocoreTTS")!;
     assert.equal(synth.inputs.seed, 42, "the explicit seed rides verbatim");
     assert.equal(synth.inputs.voice, "vivian", "the model's default persona fills the unstated doc voice");
@@ -69,11 +71,9 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
 
   it("the speak action rides the Base variant's resolved row (synth_lane DATA branches, never a family-id switch)", () => {
     const p = { ...PARAMS, ref_audio: "/m/ref.wav", ref_text: "the reference words" };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, CLONE_FACTS, legacy, "probe-clone");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, CLONE_FACTS, action, "probe-clone");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-speak-action-rides-the-base-variant-s-resolve-1dff565338"), graphOf(action), "the speak action rides the Base variant's resolved row (synth_lane DATA branches, never a family-id switch)");
     const synth = nodeOf(action, "AudiocoreTTS")!;
     assert.equal(synth.inputs.reference_audio, "/m/ref.wav", "the clone reference rides");
   });
@@ -93,20 +93,16 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
 
   it("the use-branch byte-identity holds with an explicit seed (the lock passes a stated seed through)", () => {
     const p = { ...PARAMS, qvoice: [{ qvoice: "/m/voices/narrator.qvoice" }] };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, FACTS, legacy, "probe-use");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, FACTS, action, "probe-use");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-use-branch-byte-identity-holds-with-an-explic-16052027a0"), graphOf(action), "the use-branch byte-identity holds with an explicit seed (the lock passes a stated seed through)");
     assert.equal(nodeOf(action, "AudiocoreVoiceStudio")!.inputs.seed, 42, "a stated seed wins over the lock");
   });
 
-  it("the export action's serialized prompt is identical to the legacy design lane (explicit seed)", () => {
-    const legacy = new GraphBuilder({});
-    ttsDesignT1({ ...EXPORT_PARAMS }, FACTS, legacy, "probe-export");
+  it("the export action composes the design lane (voice design creates a new voice — it exports a persona)", () => {
     const action = new GraphBuilder({});
     instantiateAction(exportAction, { ...EXPORT_PARAMS }, FACTS, action, "probe-export");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-export-action-composes-the-design-lane"), action.toJSON(), "the export action composes the design lane");
     const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
     assert.equal(studio.inputs.mode, "export_lite", "the export mode rides");
     assert.equal(studio.inputs.name, "radio-host", "the Design mod's name rides");
@@ -115,14 +111,12 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
   });
 
 
-  it("byte equality holds on the MINIMAL doc (bare words + seed — every optional spread arm absent)", () => {
+  it("the golden holds on the MINIMAL doc (bare words + seed — every optional spread arm absent)", () => {
     const minimalFacts: ModelFacts = { ...FACTS, defaults: {} };
     const p = { text: "bare words", seed: 11 };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, minimalFacts, legacy, "probe-min");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, minimalFacts, action, "probe-min");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-minimal-doc-bare-words-se-5dbc723a17"), graphOf(action), "the golden holds on the MINIMAL doc (bare words + seed — every optional spread arm absent)");
     const synth = nodeOf(action, "AudiocoreTTS")!;
     assert.equal(synth.inputs.mode, "tts", "the absent defaults fall to the lane's own mode");
     assert.equal(synth.inputs.top_k, 0, "an unstated optional leaves the vendor autofill's own default (no override key)");
@@ -134,33 +128,27 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
       lane_inputs: { ...FACTS.lane_inputs, model_path: "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged", synth_lane: "design" },
     };
     const p = { ...PARAMS, voice_name: "radio-host", design_prompt: "a gritty, deep male radio host" };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, designFacts, legacy, "probe-speak-design");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, designFacts, action, "probe-speak-design");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-speak-action-routes-a-design-resolved-row-to-919b4f74a1"), graphOf(action), "the speak action routes a design-resolved row to the export segment (the lane branch DATA, byte-identical)");
     const studio = nodeOf(action, "AudiocoreVoiceStudio")!;
     assert.equal(studio.inputs.mode, "export_lite", "a design-resolved row IS the export segment, whichever family owns it");
   });
 
-  it("byte equality holds on the clone lane's MINIMAL doc (reference pair + seed only)", () => {
+  it("the golden holds on the clone lane's MINIMAL doc (reference pair + seed only)", () => {
     const minimalClone: ModelFacts = { ...CLONE_FACTS, defaults: {} };
     const p = { text: "bare clone", seed: 12, ref_audio: "/m/r.wav", ref_text: "the words" };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, minimalClone, legacy, "probe-clone-min");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, minimalClone, action, "probe-clone-min");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-clone-lane-s-minimal-doc-45c2bfe077"), graphOf(action), "the golden holds on the clone lane's MINIMAL doc (reference pair + seed only)");
     assert.equal(nodeOf(action, "AudiocoreTTS")!.inputs.top_k, 0, "an unstated optional leaves the vendor autofill's own default (no override key)");
   });
 
   it("THE QVOICE CARRY on the clone lane — a stated embedding performs through the studio, byte-identical", () => {
     const p = { ...PARAMS, ref_audio: "/m/r.wav", ref_text: "the words", qvoice: [{ qvoice: "/m/voices/narrator.qvoice" }] };
-    const legacy = new GraphBuilder({});
-    ttsT1({ ...p }, CLONE_FACTS, legacy, "probe-clone-carry");
     const action = new GraphBuilder({});
     instantiateAction(speak, { ...p }, CLONE_FACTS, action, "probe-clone-carry");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-qvoice-carry-on-the-clone-lane-a-stated-embed-690c561951"), graphOf(action), "THE QVOICE CARRY on the clone lane — a stated embedding performs through the studio, byte-identical");
     assert.ok(nodeOf(action, "AudiocoreVoiceStudio"), "the carry rides the studio, never the cloner");
     assert.ok(!nodeOf(action, "AudiocoreTTS"), "a stated embedding performs nothing through the synth node");
   });

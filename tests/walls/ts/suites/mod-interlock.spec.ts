@@ -37,6 +37,16 @@ import z from "../../../../packages/engines/comfyui-cordis/src/_z.ts"; // re-exp
 import { loadCardDefs, theService } from "../../../../packages/engines/comfyui-cordis/src/index.ts";
 import { loadFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+// THE LANES ARE FAMILY-OWNED (the kit-arm retirement, 2026-09-30): the
+// consumption gate walks the composed graph of the segment under test,
+// and those segments are the families' declared actions now — the kit's
+// arm twins are deleted, so the wall composes through the same actions
+// the cards dispatch.
+import { instantiateAction } from "../../../../packages/engines/comfyui-card-kit/src/action.ts";
+// the firing GATE stays kit admission (the lane it guards is family-owned now)
+import { refuseImageEditFiring } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
+import { t2i as zImageT2i } from "../../../../packages/models/z-image/src/actions.ts";
+import { speak as qwenSpeak } from "../../../../packages/models/qwen3-tts/src/actions.ts";
 
 
 /** Registry reads for the derivation (facts.ts renders through injected reads). */
@@ -330,7 +340,6 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
   // z-image boards loras + controlnet since the restoration — the
   // refusal atom is the z-image row with its boarding retracted
   // (the qvoice leg's counterfactual shape).
-  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
     new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
@@ -343,11 +352,11 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
 
   // z-image boards loras — the mutation fires (LoraLoader in graph)
   const gb = new GraphBuilder({});
-  kit.imageT2I(smuggled, zim, gb, "wall");
+  instantiateAction(zImageT2i, smuggled, zim, gb, "wall");
   assert.ok(JSON.stringify(gb.toJSON()).includes("LoraLoaderModelOnly"), "boarding atom must fire the mutation");
   // the retracted atom refuses, naming atom + pack
   assert.throws(
-    () => kit.imageT2I(smuggled, bare, new GraphBuilder({}), "wall"),
+    () => instantiateAction(zImageT2i, smuggled, bare, new GraphBuilder(), "wall"),
     (err: unknown): boolean =>
       err instanceof Error &&
       String(err.message).includes("model 'z-image' does not board the 'loras' pack"),
@@ -362,19 +371,19 @@ test("THE CONSUMPTION GATE (paper §3.2.2): a smuggled mutation on a non-boardin
     strength: 1.0,
   };
   const wired = new GraphBuilder({});
-  kit.imageT2I({ ...base, controlnets: [cn] }, zim, wired, "wall");
+  instantiateAction(zImageT2i, { ...base, controlnets: [cn] }, zim, wired, "wall");
   const graph = JSON.stringify(wired.toJSON());
   assert.ok(graph.includes("ZImageFunControlnet"), "boarding atom must fire the controlnet node");
   assert.ok(graph.includes("ModelPatchLoader"), "boarding atom must load the union patch");
   assert.throws(
-    () => kit.imageT2I({ ...base, controlnets: [cn] }, bare, new GraphBuilder({}), "wall"),
+    () => instantiateAction(zImageT2i, { ...base, controlnets: [cn] }, bare, new GraphBuilder(), "wall"),
     (err: unknown): boolean =>
       err instanceof Error &&
       String(err.message).includes("model 'z-image' does not board the 'controlnet' pack"),
   );
   // empty picks = no mutation = no gate (both planes pass through)
-  kit.imageT2I(base, bare, new GraphBuilder({}), "wall");
-  kit.imageT2I(base, zim, new GraphBuilder({}), "wall");
+  instantiateAction(zImageT2i, base, bare, new GraphBuilder(), "wall");
+  instantiateAction(zImageT2i, base, zim, new GraphBuilder(), "wall");
 });
 
 test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding atoms", async () => {
@@ -382,7 +391,6 @@ test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding
   // studio's clone pipeline — the second z-image-class site
   // (ungated composition). Counterfactual shape: the qwen row with
   // its boarding retracted must refuse, naming atom + pack.
-  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   const { GraphBuilder } = await import("../../../../packages/engines/comfyui-cordis/src/index.ts");
   const facts = loadFacts(
     new URL("../../../../packages/engines/comfyui-cordis/data/model-facts.json", import.meta.url).pathname,
@@ -392,22 +400,22 @@ test("THE CONSUMPTION GATE, qvoice leg: a stated artifact fires only on boarding
   const base = { text: "hi", voice: "", style_instruction: "", temperature: 0.7, seed: 1, qvoice: "" };
   // flat legacy path smuggle
   assert.throws(
-    () => kit.ttsT1({ ...base, qvoice: "stolen.wav" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
+    () => instantiateAction(qwenSpeak, { ...base, qvoice: "stolen.wav" }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
     (err: unknown): boolean =>
       err instanceof Error &&
       String(err.message).includes("model 'qwen3-tts' does not board the 'qvoice' pack"),
   );
   // bag smuggle (the surface's real form)
   assert.throws(
-    () => kit.ttsT1({ ...base, qvoice: [{ qvoice: "stolen.qvoice" }] }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
+    () => instantiateAction(qwenSpeak, { ...base, qvoice: [{ qvoice: "stolen.qvoice" }] }, { ...qwen, mods: [] }, new GraphBuilder({}), "wall"),
     /does not board the 'qvoice' pack/,
   );
   // boarding atom, stated artifact → fires into the studio
   const gb = new GraphBuilder({});
-  kit.ttsT1({ ...base, qvoice: [{ qvoice: "maria.qvoice" }] }, qwen, gb, "wall");
+  instantiateAction(qwenSpeak, { ...base, qvoice: [{ qvoice: "maria.qvoice" }] }, qwen, gb, "wall");
   assert.ok(JSON.stringify(gb.toJSON()).includes("maria.qvoice"), "boarding atom must fire the artifact");
   // blank knobs = no mutation = no gate
-  kit.ttsT1(base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
+  instantiateAction(qwenSpeak, base, { ...qwen, mods: [] }, new GraphBuilder({}), "wall");
 });
 
 test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses LOUD on the image-edit lane", async () => {
@@ -418,7 +426,6 @@ test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses
   // bags, and the unbuilt chains. Everything the arm wires rides
   // inert through the gate (never a silent plain run that drops a
   // stated knob — the law that never changed).
-  const kit = await import("../../../../packages/engines/comfyui-card-kit/src/kit.ts");
   // the refused remainder refuses field-named
   for (const [key, val] of [
     ["lanpaint_enabled", true],
@@ -431,7 +438,7 @@ test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses
     ["mask_threshold", 1],
   ] as Array<[string, unknown]>) {
     assert.throws(
-      () => kit.refuseImageEditFiring({ [key]: val }),
+      () => refuseImageEditFiring({ [key]: val }),
       (err: unknown): boolean => err instanceof Error && String(err.message).includes(`'${key}' fires on the image-edit card`),
     );
   }
@@ -448,10 +455,10 @@ test("THE REVIVED LANPAINT, refused remainder: what the arm cannot carry refuses
     { mask_invert: true },
     { lanpaint_enabled: true, input_mask: "region.png" },
   ] as Array<Record<string, unknown>>) {
-    kit.refuseImageEditFiring(params);
+    refuseImageEditFiring(params);
   }
   // lane promises ride inert (the stock plain-edit run)
-  kit.refuseImageEditFiring({});
+  refuseImageEditFiring({});
 });
 
 test("THE REFUSED FATE, ip_adapter leg: stated entries refuse LOUD on the image-gen lane (the ray receipt)", async () => {

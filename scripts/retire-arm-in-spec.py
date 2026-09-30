@@ -8,19 +8,27 @@ composes through BOTH arms and compares them, which is exactly the
 oracle shape the kit-arm retirement removes.  Anything else fails loudly
 rather than guessing.
 """
+import hashlib
 import re
 import sys
 import pathlib
 
 def slug(title: str) -> str:
-    """The golden's file name.  A truncated slug is a COLLISION waiting
-    to happen (two titles agreeing for 60 chars map to one file, and a
-    later refresh silently overwrites the earlier one), so a title that
-    would truncate is rejected outright rather than shortened."""
+    """The golden's file name — UNIQUE BY CONSTRUCTION.
+
+    A truncated slug is a collision waiting to happen: two titles that
+    agree for the cut map to one file, and a later refresh silently
+    overwrites the earlier golden, leaving a test asserting against
+    another test's graph.  So a long name keeps a readable head and
+    gains a digest of the FULL title — two titles that differ anywhere
+    can never collide, and the name stays legible in a diff.
+    """
     s = re.sub(r"[^a-z0-9]+", "-", title.lower()).strip("-")
-    if len(s) > 60:
-        raise SystemExit(f"golden name too long ({len(s)} chars) for '{title[:70]}' — shorten the test title")
-    return s
+    if len(s) <= 60:
+        return s
+    digest = hashlib.sha1(title.encode("utf-8")).hexdigest()[:10]
+    return f"{s[:49].rstrip('-')}-{digest}"
+
 
 def transform(path: str, arm: str, recorded_first: bool = False) -> None:
     p = pathlib.Path(path)
@@ -91,8 +99,10 @@ const graphOf = (g: GraphBuilder): Record<string, {{ class_type: string; inputs:
     while i < len(lines):
         line = lines[i]
         m = re.match(r'\s*it\("(.+?)", \(\) => \{', line)
-        if m and any(arm + "(" in l for l in lines[i:i+12]):
-            # find the test's extent
+        if m:
+            # the test's extent FIRST: a long fixture (a merged facts row,
+            # say) can push the arm call far past any fixed lookahead, and a
+            # window that misses it silently leaves a live twin behind.
             depth = 0
             j = i
             while True:
@@ -101,12 +111,18 @@ const graphOf = (g: GraphBuilder): Record<string, {{ class_type: string; inputs:
                     break
                 j += 1
             block = lines[i:j+1]
+            if not any(arm + "(" in l for l in block):
+                out.append(line)
+                i += 1
+                continue
             title = re.sub(r"^the action's serialized prompt is identical to the legacy (lane|" + arm + r" arm)\b",
                            "the composed prompt is the committed golden", m.group(1))
             title = re.sub(r"^byte equality holds\b", "the golden holds", title)
             run = None
             for l in block:
-                mr = re.search(r'instantiateAction\([^,]+,\s*[^,]+,\s*[^,]+,\s*\w+,\s*"([^"]+)"\)', l)
+                # the run id is the LAST string on the call line (the params
+                # argument may be an object spread full of commas)
+                mr = re.search(r'instantiateAction\(.*"([^"]+)"\)\s*;?\s*$', l)
                 if mr:
                     run = mr.group(1)
                     break

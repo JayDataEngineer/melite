@@ -24,7 +24,7 @@
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
 // inputs exactly like comfy-script does; the compose strips
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
-// @melite/comfyui-card-kit's finalizeH3 (t4r, like the python's `if not is_t4r`,
+// the h3 family's own finalizeH3 (t4r, like the python's `if not is_t4r`,
 // strips nothing; the i2v dead-branch node marks the t4r family in
 // the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
@@ -39,14 +39,16 @@ import {
 } from '@melite/models-h3/schema'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
-import { declaredAction, finalizeH3, instantiateAction } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { finalizeH3 } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
 
 // inputs the t4 family templates OMIT whose pin defaults comfy-script
-// would auto-fill at serialization — the strip set lives in the card kit (finalizeH3)
+// would auto-fill at serialization — the strip set lives with the lane, in the
+// h3 family (models/h3/src/finalize.ts, re-homed family-side 2026-09-30)
 // (H3_T4_STRIP; the t4r branch carries all of these explicitly, so it
 // never strips).
 

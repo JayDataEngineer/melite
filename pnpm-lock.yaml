@@ -2886,6 +2886,9 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
+      '@melite/models-krea-2':
+        specifier: workspace:*
+        version: link:../../models/krea-2
     devDependencies:
       '@melite/card-base':
         specifier: workspace:*

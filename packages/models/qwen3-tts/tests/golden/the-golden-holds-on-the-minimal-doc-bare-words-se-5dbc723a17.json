@@ -1,0 +1,47 @@
+{
+  "LoadAudiocoreModel.0": {
+    "class_type": "LoadAudiocoreModel",
+    "inputs": {
+      "family": "qwen3_tts",
+      "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "extras": ""
+    }
+  },
+  "AudiocoreTTS.0": {
+    "class_type": "AudiocoreTTS",
+    "inputs": {
+      "duration_seconds": 10,
+      "guidance_scale": 5,
+      "instruct": "",
+      "language": "",
+      "num_inference_steps": 50,
+      "reference_audio": "",
+      "reference_text": "",
+      "repetition_penalty": 1.05,
+      "speaker_name": "",
+      "speed": 1,
+      "top_k": 0,
+      "top_p": 0.9,
+      "voice": "",
+      "voice_file": "",
+      "voice_pca_strengths": "",
+      "model": [
+        "LoadAudiocoreModel.0",
+        0
+      ],
+      "prompt": "bare words",
+      "mode": "tts",
+      "seed": 11
+    }
+  },
+  "SaveAudio.0": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "AudiocoreTTS.0",
+        0
+      ],
+      "filename_prefix": "probe-min/tts"
+    }
+  }
+}

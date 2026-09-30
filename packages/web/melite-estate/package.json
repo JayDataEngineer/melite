@@ -29,7 +29,8 @@
     "@melite/estate-models": "workspace:*",
     "@melite/estate-provisioning": "workspace:*",
     "@melite/estate-queue": "workspace:*",
-    "@melite/estate-runs": "workspace:*"
+    "@melite/estate-runs": "workspace:*",
+    "@melite/models-krea-2": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

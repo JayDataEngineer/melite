@@ -1,0 +1,197 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/anchor.png",
+      "upload": "image"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.0": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "make the hallway blue"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.1": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "blur"
+    }
+  },
+  "ModelSamplingAuraFlow.0": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "shift": 1
+    }
+  },
+  "LoadImageMask.0": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "input/region.png",
+      "channel": "alpha"
+    }
+  },
+  "GrowMask.0": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "LoadImageMask.0",
+        0
+      ],
+      "expand": 8,
+      "tapered_corners": true
+    }
+  },
+  "FeatherMask.0": {
+    "class_type": "FeatherMask",
+    "inputs": {
+      "mask": [
+        "GrowMask.0",
+        0
+      ],
+      "left": 8,
+      "top": 8,
+      "right": 8,
+      "bottom": 8
+    }
+  },
+  "LanPaint_ImageEncode.0": {
+    "class_type": "LanPaint_ImageEncode",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "mask": [
+        "FeatherMask.0",
+        0
+      ]
+    }
+  },
+  "LanPaint_KSamplerAdvanced.0": {
+    "class_type": "LanPaint_KSamplerAdvanced",
+    "inputs": {
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "add_noise": "enable",
+      "noise_seed": 7,
+      "steps": 30,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "TextEncodeQwenImageEditPlus.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImageEditPlus.1",
+        0
+      ],
+      "latent_image": [
+        "LanPaint_ImageEncode.0",
+        0
+      ],
+      "start_at_step": 0,
+      "end_at_step": 10000,
+      "return_with_leftover_noise": "disable",
+      "LanPaint_NumSteps": 5,
+      "LanPaint_Lambda": 0.5,
+      "LanPaint_StepSize": 1,
+      "LanPaint_Beta": 1,
+      "LanPaint_Friction": 15,
+      "LanPaint_EarlyStop": 1,
+      "LanPaint_InnerThreshold": 0,
+      "LanPaint_InnerPatience": 1,
+      "LanPaint_MinStepFrac": 1,
+      "LanPaint_PromptMode": "Prompt First",
+      "LanPaint_Info": "LanPaint KSampler Adv.",
+      "Inpainting_mode": "🖼️ Image Inpainting"
+    }
+  },
+  "LanPaint_ImageDecode.0": {
+    "class_type": "LanPaint_ImageDecode",
+    "inputs": {
+      "samples": [
+        "LanPaint_KSamplerAdvanced.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "mask": [
+        "FeatherMask.0",
+        0
+      ],
+      "blend_overlap": 9
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "LanPaint_ImageDecode.0",
+        0
+      ],
+      "filename_prefix": "probe-lp/edit"
+    }
+  }
+}

@@ -26,7 +26,8 @@
 // real gates, never a real run.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { imageT2I, finalizeImageGen } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { refreshCardDefs, theService } from '@melite/comfyui-cordis'
 
 const schema = z.object({
@@ -60,9 +61,8 @@ export function apply(ctx: Context): void {
         if (!doc.prompt || !(doc.prompt as string).trim()) {
           throw new Error("required param 'prompt' missing or empty on the hot-sketch card")
         }
-        imageT2I(doc, model, g, runId)
+        instantiateAction(declaredAction(krea2Decl, 't2i'), doc, model, g, runId)
       },
-      finalize: finalizeImageGen,
     })
     // THE RE-PROJECTION (#39): the served defs table is a boot
     // snapshot by design; this rebuilds it from the live singleton

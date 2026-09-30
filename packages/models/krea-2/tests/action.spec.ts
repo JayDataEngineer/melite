@@ -1,16 +1,15 @@
-// The atom's own proof (the atom vocabulary, stroke 2): the t2i
-// action's serialized prompt is BYTE-IDENTICAL to the legacy
-// imageT2I stock arm on the same resolved facts — the card's route
-// change moves no wire — the raw route's merged view parses green
-// at the door, and the mod-plane gates REFUSE loud through
-// instantiateAction (krea-2 boards loras only: a controlnets bag
-// refuses at compose, never silently drops). The interpreter's own
-// contract walls live in card-kit's tests/action.spec.ts.
+// the wire is pinned to a COMMITTED GOLDEN — recorded while the kit's legacy
+// imageT2I still existed and this spec compared the two arms byte-for-byte.
+// That arm is deleted (the families own their lanes now), so the golden
+// carries the compatibility law. The interpreter's own contract walls live
+// in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { imageT2I, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { t2i, parseT2IFacts } from "../src/actions.ts";
 
@@ -45,13 +44,15 @@ const PARAMS = {
   scheduler: "simple",
 };
 
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const graphOf = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
+  g.toJSON() as never;
+
 describe("the t2i action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane arm (the stock path, shift 0)", () => {
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, FACTS, legacy, "probe");
+  it("the composed prompt is the committed golden arm (the stock path, shift 0)", () => {
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-composed-prompt-is-the-committed-golden-arm-t-af27e43a92"), graphOf(action), "the composed prompt is the committed golden arm (the stock path, shift 0)");
     const nodes = Object.values(action.toJSON() as Record<string, { class_type?: string }>);
     assert.ok(
       !nodes.some((n) => n.class_type === "ModelSamplingAuraFlow"),
@@ -63,7 +64,7 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     );
   });
 
-  it("byte equality holds on the raw route's MERGED view (the variant override rides)", () => {
+  it("the golden holds on the raw route's MERGED view (the variant override rides)", () => {
     // The exporter rule: the resolved row for 'krea-2-raw' is the
     // family row ⊕ the variant's own lane_inputs (the raw lane
     // truth — the wrong-weights break's fix). The door reads the
@@ -79,26 +80,22 @@ describe("the t2i action — byte-stability (the compatibility law)", () => {
     };
     const facts = parseT2IFacts(merged.lane_inputs);
     assert.equal(facts.unet, "krea2_raw_int8_convrot.safetensors");
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, merged, legacy, "probe-raw");
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, merged, action, "probe-raw");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-raw-route-s-merged-view-t-fbfec6e92f"), graphOf(action), "the golden holds on the raw route's MERGED view (the variant override rides)");
     const unet = Object.values(action.toJSON() as Record<string, { class_type?: string; inputs?: Record<string, unknown> }>).find(
       (n) => n.class_type === "UNETLoader",
     )!;
     assert.equal(unet.inputs?.unet_name, "krea2_raw_int8_convrot.safetensors");
   });
 
-  it("byte equality holds on the sampling-shift arm (the AuraFlow wrap)", () => {
+  it("the golden holds on the sampling-shift arm (the AuraFlow wrap)", () => {
     // krea-2's own row spells 0 (inert); this arm pins the wrap the
     // shared matrix CAN declare (the door admits any number).
     const shifted: ModelFacts = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, sampling_shift: 3 } };
-    const legacy = new GraphBuilder({});
-    imageT2I(PARAMS, shifted, legacy, "probe-shift");
     const action = new GraphBuilder({});
     instantiateAction(t2i, PARAMS, shifted, action, "probe-shift");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    assertGraphGolden(golden("the-golden-holds-on-the-sampling-shift-arm-the-auraflow-wrap"), graphOf(action), "the golden holds on the sampling-shift arm (the AuraFlow wrap)");
     assert.ok(
       Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "ModelSamplingAuraFlow"),
       "the shift arm wraps the unet",

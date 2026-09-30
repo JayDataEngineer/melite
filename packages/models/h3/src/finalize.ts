@@ -1,10 +1,13 @@
-import { stripAutofill } from './graph.ts'
-import type { PromptGraph, StripTable } from './graph.ts'
-
-/** A REAL negative always rides the encode (empty text hits the fp8
- *  umt5 meta-tensor path server-side — moved verbatim from the
- *  video-gen card). */
-export const VIDEO_NEGATIVE_FALLBACK = 'low quality, blurry, jitter, distorted limbs, watermark'
+// finalize.ts — the h3 family's OWN t4 strip pass (`if not is_t4r`),
+// re-homed family-side (the kit-arm retirement, 2026-09-30). The
+// strip is this family's serialization law: the t4 templates OMIT
+// these pin defaults, so comfy-script would auto-fill them at
+// serialization, and the t4r branch carries all of them explicitly
+// (it never strips). It lived in the card kit as `finalizeH3` while
+// the lane itself moved here; a finalize pass with no lane beside it
+// is a second home, so it came too.
+import { stripAutofill } from "@melite/comfyui-card-kit/graph";
+import type { PromptGraph, StripTable } from "@melite/comfyui-card-kit/graph";
 
 /** H3-only video lanes (2026-09-21, operator order — "there is no
  *  wan-vace, there is only H3 in timeline studio"): the wan-vace
@@ -24,9 +27,9 @@ export const H3_T4_STRIP: StripTable = {
     'offload_device', 'prepend_frames', 'temporal_overlap'],
 }
 
-/** The t4-family strip pass (`if not is_t4r`). The i2v
- *  dead-branch node exists ONLY on t4r — the serialized graph's
- *  family marker — so the strip stays stateless per compose. */
+/** The t4-family strip pass (`if not is_t4r`). The i2v dead-branch
+ *  node exists ONLY on t4r — the serialized graph's family marker —
+ *  so the strip stays stateless per compose. */
 export function finalizeH3(graph: PromptGraph): PromptGraph {
   if ('MiniMaxH3ImageToVideo.0' in graph) return graph   // t4r strips nothing
   return stripAutofill(graph, H3_T4_STRIP)

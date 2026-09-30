@@ -6,7 +6,6 @@
 // ControlNet spec's shape (gate + chain) or dies with the refusal.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { imageT2I } from "../src/kit.ts";
 import { GraphBuilder } from "../src/graph.ts";
 import { refuseIPAdapterFiring, PACK_FATE } from "../src/mods/guard.ts";
 
@@ -61,24 +60,9 @@ describe("refuseIPAdapterFiring (the refused fate, boarding-first)", () => {
   });
 });
 
-describe("the lane gate (imageT2I refuses before any node renders)", () => {
-  it("a stated bag refuses inside the compose lane — never a silent plain run", () => {
-    const g = new GraphBuilder({});
-    assert.throws(
-      () => imageT2I(
-        { prompt: "x", negative_prompt: "", width: 512, height: 512, seed: 1, steps: 8, cfg: 1, sampler: "euler", scheduler: "simple", ip_adapters: [{ kind: "style", weight: 1 }] },
-        FACTS, g, "probe-ipa",
-      ),
-      (err: unknown): boolean =>
-        err instanceof Error && err.message.includes("no executable IP-Adapter lane"),
-    );
-  });
-  it("no bag = the plain path is byte-stable (the gate never fires)", () => {
-    const g = new GraphBuilder({});
-    const out = imageT2I(
-      { prompt: "x", negative_prompt: "", width: 512, height: 512, seed: 1, steps: 8, cfg: 1, sampler: "euler", scheduler: "simple" },
-      FACTS, g, "probe-plain",
-    );
-    assert.ok(out, "the plain run renders");
-  });
-});
+// THE LANE GATE MOVED (the kit-arm retirement, 2026-09-30): a stated
+// IP-Adapter bag refuses inside the t2i lane, and the lane is now the
+// families' own declared actions — the gate case lives in
+// packages/models/z-image/tests/ip-adapter-gate.spec.ts (the row this
+// wall used), and refuseIPAdapterFiring's own boarding-first law stays
+// here because the guard is kit admission.

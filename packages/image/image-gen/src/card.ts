@@ -9,7 +9,9 @@
 // client stamps as macros.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, finalizeImageGen, instantiateAction } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { stripAutofill } from '@melite/comfyui-card-kit/graph'
+import type { PromptGraph, StripTable } from '@melite/comfyui-card-kit/graph'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
@@ -41,6 +43,23 @@ export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl
  *  for the every-address wall: each served facts row's OWNING
  *  family must hold a row here — a boarded-but-unbound family
  *  refuses loud at the dispatch, never a silent miss. */
+// THE IMAGE-GEN STRIP PASS (re-homed from the card kit, 2026-09-30 —
+// the kit-arm retirement): this card's finalize owns its own
+// serialization law. The t2i templates omit these pin defaults, so
+// comfy-script would auto-fill them at serialization; stripping an
+// empty value is what keeps the request byte-stable. The strip lived
+// in the kit while the lane moved to the families; a finalize pass
+// with no lane beside it is a second home, so it came here.
+export const IMAGE_GEN_STRIP: StripTable = {
+  CLIPLoader: ['device'],
+  KSampler: ['control_after_generate'],
+}
+
+/** The card's autofill strip (the t2i family's pin defaults never ride). */
+export function finalizeImageGen(graph: PromptGraph): PromptGraph {
+  return stripAutofill(graph, IMAGE_GEN_STRIP)
+}
+
 export const ACTION_BINDINGS: Record<string, (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void> = {
   [krea2Decl.id]: (p, model, g, runId) => {
     instantiateAction(declaredAction(krea2Decl, 't2i'), p, model, g, runId)

@@ -1,0 +1,164 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/anchor.png",
+      "upload": "image"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.0": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "make the hallway blue"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.1": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "blur"
+    }
+  },
+  "ModelSamplingAuraFlow.0": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "shift": 1
+    }
+  },
+  "LoadImageMask.0": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "input/flat-mask.png",
+      "channel": "alpha"
+    }
+  },
+  "GrowMask.0": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "LoadImageMask.0",
+        0
+      ],
+      "expand": 72,
+      "tapered_corners": true
+    }
+  },
+  "MaskToSEGS.0": {
+    "class_type": "MaskToSEGS",
+    "inputs": {
+      "mask": [
+        "GrowMask.0",
+        0
+      ],
+      "combined": true,
+      "crop_factor": 3,
+      "bbox_fill": false,
+      "drop_size": 10,
+      "contour_fill": false
+    }
+  },
+  "DetailerForEach.0": {
+    "class_type": "DetailerForEach",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "segs": [
+        "MaskToSEGS.0",
+        0
+      ],
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "guide_size": 512,
+      "guide_size_for": true,
+      "max_size": 1024,
+      "seed": 7,
+      "steps": 20,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "TextEncodeQwenImageEditPlus.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImageEditPlus.1",
+        0
+      ],
+      "denoise": 0.4,
+      "feather": 8,
+      "noise_mask": true,
+      "force_inpaint": true,
+      "wildcard": "",
+      "cycle": 1
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "DetailerForEach.0",
+        0
+      ],
+      "filename_prefix": "probe-flatwins/edit"
+    }
+  }
+}

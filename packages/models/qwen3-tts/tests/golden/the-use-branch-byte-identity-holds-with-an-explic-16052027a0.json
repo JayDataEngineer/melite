@@ -1,0 +1,44 @@
+{
+  "LoadAudiocoreModel.0": {
+    "class_type": "LoadAudiocoreModel",
+    "inputs": {
+      "family": "qwen3_tts",
+      "model_path": "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+      "extras": "{\"variant\":\"customvoice\"}"
+    }
+  },
+  "AudiocoreVoiceStudio.0": {
+    "class_type": "AudiocoreVoiceStudio",
+    "inputs": {
+      "emotion": "",
+      "language": "",
+      "name": "",
+      "qvoice_path": "/m/voices/narrator.qvoice",
+      "repetition_penalty": 1.05,
+      "sample_text": "",
+      "seed": 42,
+      "speed": 1,
+      "temperature": 0.8,
+      "text": "the words to speak",
+      "top_k": 50,
+      "top_p": 1,
+      "voices_dir": "",
+      "model": [
+        "LoadAudiocoreModel.0",
+        0
+      ],
+      "mode": "generate",
+      "instruct": ""
+    }
+  },
+  "SaveAudio.0": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "AudiocoreVoiceStudio.0",
+        0
+      ],
+      "filename_prefix": "probe-use/tts"
+    }
+  }
+}

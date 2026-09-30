@@ -1,0 +1,100 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "krea2_turbo_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen3vl_4b_fp8_scaled.safetensors",
+      "type": "krea2"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "CLIPTextEncode.0": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "text": "a quiet hallway"
+    }
+  },
+  "CLIPTextEncode.1": {
+    "class_type": "CLIPTextEncode",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "text": "blur"
+    }
+  },
+  "EmptySD3LatentImage.0": {
+    "class_type": "EmptySD3LatentImage",
+    "inputs": {
+      "batch_size": 1,
+      "width": 1280,
+      "height": 768
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 7,
+      "steps": 25,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "latent_image": [
+        "EmptySD3LatentImage.0",
+        0
+      ],
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "positive": [
+        "CLIPTextEncode.0",
+        0
+      ],
+      "negative": [
+        "CLIPTextEncode.1",
+        0
+      ]
+    }
+  },
+  "VAEDecode.0": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "VAEDecode.0",
+        0
+      ],
+      "filename_prefix": "probe/gen"
+    }
+  }
+}

@@ -16,8 +16,8 @@ import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeImageEdit, finalizeTagger, finalizeMask,
   maskT1,
-  admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
-  imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
+  transferRigArm, type StripTable,
+  refuseImageEditFiring, finalizeAnny, finalizeMotion,
   ttsT1, qvoiceUse,
 } from "../src/kit.ts";
 import { loadFacts } from "../src/facts.ts";
@@ -548,124 +548,9 @@ describe("the mesh-lift admissions and the rig copy", () => {
   };
   const trellis = facts.models["trellis2"] ?? facts.models[Object.keys(facts.models).find((k) => k.includes("trellis")) || ""]!;
 
-  it("the closed-set refusals (resolution, bg, bake sizes, fov)", () => {
-    assert.throws(() => admitMeshLift({ ...liftBase, resolution: "999" }, trellis),
-      /resolution "999" is not one of 1024\|1536/);
-    assert.throws(() => admitMeshLift({ ...liftBase, resolution: "512" }, trellis),
-      /resolution "512" is not one of 1024\|1536/);
-    assert.throws(() => admitMeshLift({ ...liftBase, bg_removal: "maybe" }, trellis),
-      /bg_removal "maybe" is not one of auto\|on\|off/);
-    assert.throws(() => admitMeshLift({ ...liftBase, ao_size: "77" }, trellis),
-      /ao_size "77" is not one of 512\|1024/);
-    const pixal = { ...trellis, id: "pixal3d" } as never;
-    assert.throws(() => admitMeshLift({ ...liftBase, camera_fov: "12" }, pixal),
-      /camera_fov "12" is not one of auto\|35\|49\.13\|60\|75\|90/);
-    // the pixal fov gate does not fire for other families
-    admitMeshLift({ ...liftBase, camera_fov: "12" }, trellis);
-    // unstated bg/fov fall back to their schema pins (the || arms)
-    const { bg_removal: _bg, ...noBg } = liftBase;
-    admitMeshLift(noBg, trellis);
-    const pixalFull = { ...liftBase, camera_fov: "auto" };
-    admitMeshLift(pixalFull, { ...trellis, id: "pixal3d" } as never);
-    const { camera_fov: _fov, ...noFov } = pixalFull;
-    admitMeshLift(noFov, { ...trellis, id: "pixal3d" } as never);
-    // whitespace input_image refuses (the trim arm)
-    assert.throws(() => admitMeshLift({ ...liftBase, input_image: "   " }, trellis),
-      /required param 'input_image' \(Source image\) missing/);
-  });
 
-  it("the trellis arm builds (bg on AND off)", () => {
-    const trellis = facts.models["trellis2-native"]!;
-    const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "on",
-      atlas_size: "2048", ao_size: "512", normal_size: "1024",
-      override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
-      rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
-      shape_steps: 20, shape_cfg: 7.5, tex1_steps: 12, tex1_cfg: 7.5,
-      tex2_steps: 12, tex2_cfg: 1, remesh_resolution: 768,
-      decimate_faces: 70000, smooth_angle: 180,
-      struct_sampler: "euler", struct_scheduler: "normal",
-      shape_sampler: "euler", shape_scheduler: "normal",
-      tex1_sampler: "euler", tex1_scheduler: "simple",
-      tex2_sampler: "euler", tex2_scheduler: "normal",
-    };
-    const g1 = new GraphBuilder();
-    trellisArm(g1, base, trellis);
-    const on = dump(g1);
-    assert.ok(classes(on).includes("RemoveBackground"), "bg on cuts");
-    assert.equal(on["Trellis2UpsampleStage.0"]?.inputs.target_resolution, 1024);
-    assert.equal(typeof on["UnwrapMesh.0"]?.inputs.resolution, "number");
-    assert.equal(typeof on["BakeTextureFromVoxel.0"]?.inputs.texture_size, "number");
-    assert.equal(typeof on["BakeAmbientOcclusion.0"]?.inputs.resolution, "number");
-    assert.equal(typeof on["BakeNormalMapFromMesh.0"]?.inputs.resolution, "number");
 
-    const g2 = new GraphBuilder();
-    trellisArm(g2, { ...base, bg_removal: "off" }, trellis);
-    assert.ok(!classes(dump(g2)).includes("RemoveBackground"), "bg off feeds the image straight");
-  });
 
-  it("the pixal arm builds both fov arms (MoGe auto + the vouched literal)", () => {
-    const pixal = facts.models["pixal3d"]!;
-    const base = {
-      input_image: "/m/p.png", resolution: "1024", bg_removal: "off",
-      camera_fov: "auto",
-      atlas_size: "2048", ao_size: "512", normal_size: "1024",
-      override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
-      rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
-      shape_steps: 20, shape_cfg: 7.5, tex1_steps: 12, tex1_cfg: 7.5,
-      tex2_steps: 12, tex2_cfg: 1, remesh_resolution: 768,
-      decimate_faces: 70000, smooth_angle: 180,
-      struct_sampler: "euler", struct_scheduler: "normal",
-      shape_sampler: "euler", shape_scheduler: "normal",
-      tex1_sampler: "euler", tex1_scheduler: "simple",
-      tex2_sampler: "euler", tex2_scheduler: "normal",
-    };
-    const g1 = new GraphBuilder();
-    pixalArm(g1, base, pixal);
-    assert.ok(classes(dump(g1)).includes("LoadMoGeModel"), "auto fov rides MoGe");
-
-    const g2 = new GraphBuilder();
-    pixalArm(g2, { ...base, camera_fov: "49.13" }, pixal);
-    const row = dump(g2);
-    assert.ok(!classes(row).includes("LoadMoGeModel"), "the literal skips MoGe");
-    const cond = Object.values(row).find((n) => n.class_type === "Pixal3DConditioning")!;
-    assert.equal(cond.inputs.camera_angle_x, 49.13, "the vouched degree rides verbatim");
-  });
-
-  it("THE SPELL ARM (mesh lifts): a spelled image builds no loader — the spell rides conditioning verbatim", () => {
-    // THE SWEEP CATCH (beyond the independent audit's two gaps):
-    // img-to-mesh seats input_image, so a producer CAN wire into a
-    // lift — both arms built LoadImage unconditionally and ROW-4
-    // refused the link at merge. Now the spell rides verbatim.
-    const trellis = facts.models["trellis2-native"]!;
-    const tBase = {
-      input_image: "$src", resolution: "1024", bg_removal: "off",
-      atlas_size: "2048", ao_size: "512", normal_size: "1024",
-      override_shape: 0.769, rescale_shape: 0.5, override_struct: 0.667,
-      rescale_struct: 0.7, sd3_shift: 5, seed: 3, steps: 12, cfg: 7.5,
-      shape_steps: 20, shape_cfg: 7.5, tex1_steps: 12, tex1_cfg: 7.5,
-      tex2_steps: 12, tex2_cfg: 1, remesh_resolution: 768,
-      decimate_faces: 70000, smooth_angle: 180,
-      struct_sampler: "euler", struct_scheduler: "normal",
-      shape_sampler: "euler", shape_scheduler: "normal",
-      tex1_sampler: "euler", tex1_scheduler: "simple",
-      tex2_sampler: "euler", tex2_scheduler: "normal",
-    };
-    const g1 = new GraphBuilder();
-    trellisArm(g1, tBase, trellis);
-    const tRow = dump(g1);
-    assert.ok(!classes(tRow).includes("LoadImage"), "no loader carries the spell on trellis");
-    const tCond = Object.values(tRow).find((n) => n.class_type === "Trellis2Conditioning")!;
-    assert.equal(tCond.inputs.image, "$src", "trellis conditions on the wired tensor verbatim");
-
-    const pixal = facts.models["pixal3d"]!;
-    const g2 = new GraphBuilder();
-    pixalArm(g2, { ...tBase, camera_fov: "49.13" }, pixal);
-    const pRow = dump(g2);
-    assert.ok(!classes(pRow).includes("LoadImage"), "no loader carries the spell on pixal");
-    const crop = Object.values(pRow).find((n) => n.class_type === "ImageCropToMask")!;
-    assert.equal(crop.inputs.images, "$src", "the pixal crop reads the wired tensor verbatim");
-  });
 
   it("the rig-copy arm (KimodoTransferWeights + SaveRiggedModel)", () => {
     const g = new GraphBuilder();
@@ -691,27 +576,7 @@ describe("kit helpers (strip/defaults — the ideogram lane retired with its car
     assert.equal(out.N.inputs.image, "kept.png", "classes outside the table ride untouched");
   });
 
-  it("finalizeH3: the t4r family marker rides untouched (strip never fires)", () => {
-    const out = finalizeH3({
-      "MiniMaxH3ImageToVideo.0": { class_type: "MiniMaxH3ImageToVideo", inputs: { image: "x.png" } },
-    } as never);
-    assert.deepEqual(out, {
-      "MiniMaxH3ImageToVideo.0": { class_type: "MiniMaxH3ImageToVideo", inputs: { image: "x.png" } },
-    }, "the t4r marker short-circuits the strip");
-  });
 
-  it("finalizeH3: a non-t4r graph strips the t4 autofill keys, keeps the rest", () => {
-    const out = finalizeH3({
-      L: { class_type: "LTX_lora_loader", inputs: { lora_ui: "", strength: 0.8 } },
-      S: { class_type: "SeedVR2LoadVAEModel", inputs: { cache_model: true, decode_tiled: "", keep: 1 } },
-      X: { class_type: "LoadImage", inputs: { image: "ref.png" } },
-    } as never);
-    assert.ok(!("lora_ui" in out.L.inputs), "a strip-table empty drops");
-    assert.equal(out.L.inputs.strength, 0.8, "a non-empty table value stays");
-    assert.ok(!("decode_tiled" in out.S.inputs), "the seed strip row drops empties too");
-    assert.equal(out.S.inputs.keep, 1, "untouched seed keys stay");
-    assert.equal(out.X.inputs.image, "ref.png", "classes outside the table ride");
-  });
 
   it("deriveDefaults walks a spec with NO required section", () => {
     const out = deriveDefaults({ OptionalOnly: { input: { optional: { pad: ["INT", { default: 3 }] } } } });
@@ -741,128 +606,14 @@ describe("deriveDefaults (the autofill derivation)", () => {
 });
 
 // ── the residual lane arms (fit/quad/music/edit) ─────────────────
-describe("the residual lane arms", () => {
-
-
-
-
-
-  it("imageEdit wires the image2/image3 reference slots", () => {
-    const model = facts.models["qwen-img-edit-2511"]!;
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "make it night", image1: "/m/1.png",
-      image2: "/m/2.png", image3: "/m/3.png",
-      negative_prompt: "blur", seed: 5,
-    }, model, g, "run_5");
-    const row = dump(g);
-    const enc = Object.values(row).filter((n) => n.class_type === "TextEncodeQwenImageEditPlus");
-    assert.ok(enc.length >= 2, "pos + neg encode");
-    assert.ok("image2" in enc[0]!.inputs && "image3" in enc[0]!.inputs, "the reference slots wire");
-  });
-
-  it("imageEdit on 2511 maps the unified stack onto the stock image2/image3 slots (one concept, narrow end)", () => {
-    const model = facts.models["qwen-img-edit-2511"]!;
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "make it night", image1: "/m/1.png",
-      reference_images: ["/m/s1.png", "/m/s2.png"],
-      negative_prompt: "blur", seed: 5,
-    }, model, g, "run_5s");
-    const row = dump(g);
-    const loads = Object.values(row).filter((n) => n.class_type === "LoadImage");
-    assert.equal(loads.length, 3, "anchor + two stack refs load (no legacy slots stated)");
-    const enc = Object.values(row).filter((n) => n.class_type === "TextEncodeQwenImageEditPlus");
-    assert.ok(enc.length >= 2, "pos + neg encode");
-    assert.ok("image2" in enc[0]!.inputs && "image3" in enc[0]!.inputs, "the stack's refs ride the stock slots");
-  });
-
-  it("imageEdit on 2511 refuses past-2 references LOUD at the lane (direct callers bypass the gate)", () => {
-    const model = facts.models["qwen-img-edit-2511"]!;
-    assert.throws(
-      () => imageEdit({
-        prompt: "too many", image1: "/m/1.png",
-        image2: "/m/2.png", reference_images: ["/m/s1.png", "/m/s2.png"],
-        seed: 5,
-      }, model, new GraphBuilder(), "run_5x"),
-      /'input_images' fires .*\(this lane takes 3 input images total/,
-    );
-  });
-
-  it("the stock arm asserts its own node shape (a lying DECL with max_images past 3 refuses, never drops)", () => {
-    const lying = {
-      ...facts.models["qwen-img-edit-2511"]!,
-      lane_inputs: { ...facts.models["qwen-img-edit-2511"]!.lane_inputs, max_images: 99 },
-    };
-    assert.throws(
-      () => imageEdit({
-        prompt: "lying decl", image1: "/m/1.png",
-        reference_images: ["/m/s1.png"],
-        seed: 5,
-      }, lying, new GraphBuilder(), "run_5lie"),
-      /'input_images' fires .*stock TextEncodeQwenImageEditPlus.*max_images 99/,
-      "the arm serves the 3-input stock node — a roomier DECL is a bug, refused LOUD",
-    );
-  });
-
-  it("full_frame is a compatibility spelling of the default whole-image graph", () => {
-    const model = facts.models["qwen-img-edit-2511"]!;
-    const params = { prompt: "make it night", image1: "/m/1.png", seed: 5, steps: 20, cfg: 2.5 };
-    const auto = new GraphBuilder();
-    const fullFrame = new GraphBuilder();
-    refuseImageEditFiring({ ...params, mask_mode: "auto" }, model);
-    refuseImageEditFiring({ ...params, mask_mode: "full_frame" }, model);
-    imageEdit({ ...params, mask_mode: "auto" }, model, auto, "run_full_frame");
-    imageEdit({ ...params, mask_mode: "full_frame" }, model, fullFrame, "run_full_frame");
-    assert.deepEqual(dump(auto), dump(fullFrame));
-    const row = dump(fullFrame);
-    assert.ok(row["VAEEncode.0"] && row["KSampler.0"], "the existing whole-image path remains the graph");
-    assert.ok(!row["LoadImageMask.0"] && !row["DetailerForEach.0"] && !row["LanPaint_KSamplerAdvanced.0"], "no mask topology is invented");
-  });
-
-  it("a crop_stitch mask modifier still takes the region lane", () => {
-    const model = facts.models["qwen-img-edit-2511"]!;
-    const params = {
-      prompt: "repaint the sign", image1: "/m/1.png", seed: 5, steps: 20, cfg: 2.5,
-      mask: [{ input_mask: "/m/region.png", mask_mode: "crop_stitch" }],
-    };
-    refuseImageEditFiring(params, model);
-    const g = new GraphBuilder();
-    imageEdit(params, model, g, "run_mask_modifier");
-    const row = dump(g);
-    assert.ok(row["MaskToSEGS.0"] && row["DetailerForEach.0"], "the mask modifier keeps the region detailer");
-    assert.ok(!row["KSampler.0"] && !row["VAEEncode.0"], "the region lane does not fall back to the whole-image graph");
-  });
-
-  it("THE SPELL ARM (lanpaint): a spelled region mask builds no loader — the spell rides the tensor consumers verbatim", () => {
-    // '$mask' names a FromStage-wired stage input (the mask card's
-    // seg producer); ROW-4 refuses producer links in Load* file
-    // slots, so the spelled mask NEVER builds a LoadImageMask — it
-    // rides GrowMask/FeatherMask/LanPaint_ImageEncode's tensor
-    // inputs verbatim and the merge lands the producer link there.
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "x", image1: "/m/i.png", seed: 7,
-      input_mask: "$mask", mask_grow: 0, mask_feather: 0,
-    }, facts.models["qwen-img-edit-2511"]!, g, "run_spell_lp");
-    const row = dump(g);
-    assert.ok(!classes(row).includes("LoadImageMask"), "no loader for a spelled mask (ROW-4 would refuse the link there)");
-    const enc = Object.values(row).find((n) => n.class_type === "LanPaint_ImageEncode")!;
-    assert.equal(enc.inputs.mask, "$mask", "the encode carries the spell verbatim for the merge");
-  });
-
-  it("THE SPELL ARM (crop_stitch): a spelled region mask builds no loader — the spell rides MaskToSEGS verbatim", () => {
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "x", image1: "/m/i.png", seed: 7,
-      mask: [{ input_mask: "$mask", mask_mode: "crop_stitch", mask_grow: 0 }],
-    }, facts.models["qwen-img-edit-2511"]!, g, "run_spell_cs");
-    const row = dump(g);
-    assert.ok(!classes(row).includes("LoadImageMask"), "no loader for a spelled mask (ROW-4 would refuse the link there)");
-    assert.deepEqual(row["MaskToSEGS.0"]!.inputs.mask, ["GrowMask.0", 0], "the SEGS still reads the grown mask");
-    assert.equal(row["GrowMask.0"]!.inputs.mask, "$mask", "the grow carries the spell verbatim for the merge");
-  });
-});
+// THE RESIDUAL LANE ARMS ARE FAMILY-OWNED (the kit-arm retirement,
+// 2026-09-30): every arm that lived here is deleted with the spec
+// blocks that owned them — the image-edit lane (its laws moved to
+// packages/models/qwen-img-edit-21/tests/lane-laws.spec.ts), the
+// quad-remesh, music, yue2, anny and tagger lanes, and the
+// input-prep restage. Each family pins its wire to committed
+// goldens; this file keeps what is genuinely kit: the finalize
+// strips, the mesh-lift admissions, the rig copy and the helpers.
 
 // ── the lanpaint merge arms (kit.ts 171/260/266/268/272) ─────────
 // The card spec drives the happy region arm through the compose
@@ -900,43 +651,8 @@ describe("the lanpaint merge arms (the bag/flat law)", () => {
     );
   });
 
-  it("an explicit flat region wins over the single-entry bag (the merge's skip arm)", () => {
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "x", image1: "/m/i.png", seed: 7,
-      input_mask: "/m/flat.png",
-      mask: [{ input_mask: "/m/bag.png", mask_grow: 0, mask_feather: 0 }],
-      mask_grow: 0, mask_feather: 0,
-    }, editModel(), g, "run_flat");
-    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImageMask")!;
-    assert.equal(load.inputs.image, "/m/flat.png", "the explicit flat key wins; the bag value drops");
-  });
 
-  it("unstated grow/feather ride the 8px pins (the ?? 8 arms)", () => {
-    const g = new GraphBuilder();
-    imageEdit({ prompt: "x", image1: "/m/i.png", seed: 7, input_mask: "/m/r.png" }, editModel(), g, "run_pins");
-    const row = dump(g);
-    const grow = Object.values(row).find((n) => n.class_type === "GrowMask")!;
-    assert.equal(grow.inputs.expand, 8, "unstated mask_grow rides the 8 pin");
-    const feather = Object.values(row).find((n) => n.class_type === "FeatherMask")!;
-    assert.deepEqual(
-      [feather.inputs.left, feather.inputs.top, feather.inputs.right, feather.inputs.bottom],
-      [8, 8, 8, 8], "unstated mask_feather rides the 8 pin on all four sides",
-    );
-  });
 
-  it("mask_invert splices the InvertMask into the prep chain (the === true arm)", () => {
-    const g = new GraphBuilder();
-    imageEdit({
-      prompt: "x", image1: "/m/i.png", seed: 7, input_mask: "/m/r.png",
-      mask_grow: 0, mask_feather: 0, mask_invert: true,
-    }, editModel(), g, "run_inv");
-    const row = dump(g);
-    const inv = Object.values(row).find((n) => n.class_type === "InvertMask")!;
-    assert.deepEqual(inv.inputs.mask, ["LoadImageMask.0", 0], "the invert reads the loaded mask (grow/feather both 0)");
-    const enc = Object.values(row).find((n) => n.class_type === "LanPaint_ImageEncode")!;
-    assert.deepEqual(enc.inputs.mask, ["InvertMask.0", 0], "the encode reads the INVERTED mask");
-  });
 });
 
 // ── the vocabulary law ────────────────────────────────────────────
@@ -987,7 +703,7 @@ describe("maskT1 (the stroke-78 arms)", () => {
 // the tts trio. The stub ids are DELIBERATELY NOT the real family
 // ids: if the dispatch keyed on model.id these tests would route
 // wrong (that is the point — the key is the data, not the name).
-describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
+describe("the qvoice reader (a kit helper — the lane dispatch moved with its lane)", () => {
   const stub = (id: string, synthLane: string) => ({
     id,
     card: "tts",
@@ -1016,45 +732,18 @@ describe("the tts lane dispatch (synth_lane data, never the family id)", () => {
     assert.throws(() => qvoiceUse({ qvoice: { item: 7 } }), /path or one-entry/);
   });
 
-  it("synth_lane 'design' routes the VoiceStudio lane whatever the id", () => {
-    const g = new GraphBuilder();
-    // THE LANE'S OWN PROMPT ROW (2026-09-23): design_prompt is the
-    // card's task-named "Voice Persona & Timbre" row — the pack
-    // carries the export name + sampling, never the prompt.
-    ttsT1({ text: "hi", seed: 1, voice_name: "V", design_prompt: "warm" }, stub("not-the-real-id", "design"), g, "rd");
-    assert.ok(classes(dump(g)).includes("AudiocoreVoiceStudio"), "the design lane emits the studio node");
-  });
-
-  it("synth_lane 'clone' routes the clone lane (reference audio + transcript)", () => {
-    const g = new GraphBuilder();
-    ttsT1({ text: "hi", seed: 1, ref_audio: "/a.wav", ref_text: "a" }, stub("whatever", "clone"), g, "rc");
-    const row = dump(g);
-    assert.ok(classes(row).includes("AudiocoreTTS"), "the clone lane emits the synth node");
-    assert.ok(Object.values(row).some((n) => n.inputs.reference_audio === "/a.wav"), "the reference rides");
-  });
-
-  it("an absent key falls to the speak lane (the ''-absent law)", () => {
-    const g = new GraphBuilder();
-    ttsT1({ text: "hi", seed: 1 }, stub("anything", ""), g, "rs");
-    const row = dump(g);
-    assert.ok(classes(row).includes("AudiocoreTTS"), "the speak lane emits the synth node");
-    assert.ok(!Object.values(row).some((n) => n.class_type === "AudiocoreVoiceStudio"), "no studio node");
-  });
-
-  it("an unusable qvoice bag entry refuses before graph construction", () => {
+  it("an unusable qvoice bag entry refuses before graph construction (the gate itself — the lane is gone)", () => {
+    // The refusal was observed THROUGH the lane: a bag entry that is not a
+    // string path refuses before any node renders. With the lane retired the
+    // gate is the reader's own — qvoiceUse refuses the same entry, and every
+    // family's action reads its qvoice through it.
+    assert.throws(() => qvoiceUse({ qvoice: { voice_strength: "0.5" } }), /qvoice bag entry requires a string qvoice path/);
+    assert.throws(() => qvoiceUse({ qvoice: { qvoice: 7 } }), /qvoice bag entry requires a string qvoice path/);
+    assert.throws(() => qvoiceUse({ qvoice: 7 }), /qvoice must be a path or one-entry qvoice bag/);
+  });("an unusable qvoice bag entry refuses before graph construction", () => {
     assert.throws(
       () => ttsT1({ text: "hi", seed: 1, qvoice: [{ qvoice: 7 }] }, stub("anything", ""), new GraphBuilder(), "rq"),
       /qvoice bag entry requires a string qvoice path/,
     );
-  });
-
-  it("a non-string synth lane value falls back to the speak lane", () => {
-    const model = {
-      ...stub("anything", ""),
-      lane_inputs: { model_path: "anything", synth_lane: 7 },
-    } as never as import("../src/facts.ts").ModelFacts;
-    const g = new GraphBuilder();
-    ttsT1({ text: "hi", seed: 1 }, model, g, "rl");
-    assert.ok(classes(dump(g)).includes("AudiocoreTTS"));
   });
 });

@@ -1,0 +1,168 @@
+{
+  "UNETLoader.0": {
+    "class_type": "UNETLoader",
+    "inputs": {
+      "unet_name": "qwen_image_edit_2511_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "CLIPLoader.0": {
+    "class_type": "CLIPLoader",
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image"
+    }
+  },
+  "VAELoader.0": {
+    "class_type": "VAELoader",
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    }
+  },
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/anchor.png",
+      "upload": "image"
+    }
+  },
+  "LoadImage.1": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/r1.png",
+      "upload": "image"
+    }
+  },
+  "LoadImage.2": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "input/r2.png",
+      "upload": "image"
+    }
+  },
+  "TextEncodeQwenImageEditPlus.0": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "make the hallway blue",
+      "image2": [
+        "LoadImage.1",
+        0
+      ],
+      "image3": [
+        "LoadImage.2",
+        0
+      ]
+    }
+  },
+  "TextEncodeQwenImageEditPlus.1": {
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "inputs": {
+      "clip": [
+        "CLIPLoader.0",
+        0
+      ],
+      "image1": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ],
+      "prompt": "blur",
+      "image2": [
+        "LoadImage.1",
+        0
+      ],
+      "image3": [
+        "LoadImage.2",
+        0
+      ]
+    }
+  },
+  "ModelSamplingAuraFlow.0": {
+    "class_type": "ModelSamplingAuraFlow",
+    "inputs": {
+      "model": [
+        "UNETLoader.0",
+        0
+      ],
+      "shift": 1
+    }
+  },
+  "VAEEncode.0": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "LoadImage.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "KSampler.0": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 7,
+      "steps": 20,
+      "cfg": 2.5,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "latent_image": [
+        "VAEEncode.0",
+        0
+      ],
+      "model": [
+        "ModelSamplingAuraFlow.0",
+        0
+      ],
+      "positive": [
+        "TextEncodeQwenImageEditPlus.0",
+        0
+      ],
+      "negative": [
+        "TextEncodeQwenImageEditPlus.1",
+        0
+      ]
+    }
+  },
+  "VAEDecode.0": {
+    "class_type": "VAEDecode",
+    "inputs": {
+      "samples": [
+        "KSampler.0",
+        0
+      ],
+      "vae": [
+        "VAELoader.0",
+        0
+      ]
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "VAEDecode.0",
+        0
+      ],
+      "filename_prefix": "probe-refs/edit"
+    }
+  }
+}

@@ -27,7 +27,10 @@ import assert from "node:assert/strict";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { GraphBuilder } from "../../../../packages/engines/comfyui-card-kit/src/graph.ts";
-import { imageEdit, instantiateAction, mintSeed } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
+import { instantiateAction, mintSeed } from "../../../../packages/engines/comfyui-card-kit/src/kit.ts";
+// the edit lane is the family's declared action now (the kit-arm retirement)
+import { edit as qwenEdit } from "../../../../packages/models/qwen-img-edit-2511/src/actions.ts";
+import { DECL as qwenEdit2511Decl } from "../../../../packages/models/qwen-img-edit-2511/src/index.ts";
 import { compose as musicCompose } from "../../../../packages/models/music3/src/actions.ts";
 import type { ModelFacts } from "../../../../packages/engines/comfyui-card-kit/src/facts.ts";
 
@@ -111,17 +114,21 @@ describe("GATE S: the seed sentinel mints at render", () => {
     assert.deepEqual(Object.keys(g.toJSON() as unknown as object), [], "nothing emitted");
   });
 
-  it("imageEdit with -1 mints the KSampler seed", (): void => {
+  it("the 2511 edit action with -1 mints the KSampler seed", (): void => {
     const g = new GraphBuilder();
+    // the family's OWN lane truth (a hand-copied row here would be a
+    // second truth the moment a weight or a node class is renamed)
     const model = {
-      lane_inputs: {
-        unet: "edit/unet.safetensors",
-        text_encoder: "edit/text.safetensors",
-        clip_type: "qwen",
-        vae: "edit/vae.safetensors",
-      },
+      id: "qwen-img-edit-2511",
+      card: "image-edit",
+      defaults: {},
+      variants: [],
+      variant_groups: [],
+      outputs: [],
+      mods: [],
+      lane_inputs: (qwenEdit2511Decl as { lane_inputs: Record<string, unknown> }).lane_inputs,
     } as unknown as ModelFacts;
-    imageEdit(
+    instantiateAction(qwenEdit,
       { prompt: "make it dusk", image1: "in.png", seed: -1 } as Record<string, unknown>,
       model,
       g,
@@ -143,11 +150,14 @@ describe("GATE S: the seed sentinel mints at render", () => {
     const dir = join(import.meta.dirname, "../../../../packages/engines/comfyui-card-kit/src");
     const lanes = readdirSync(dir).filter((f) => f.startsWith("lanes-") && f.endsWith(".ts"));
     // the census is pinned EXACTLY (the header's "nine lanes" is 2026-
-    // 09-09 history — consolidation left five lane files; a sixth file
-    // or a rename is a deliberate wall edit, never a silent drift).
+    // 09-09 history; consolidation left five lane files, and the
+    // kit-arm retirement took the fifth — lanes-video.ts went to the h3
+    // family with finalizeH3, because a finalize pass with no lane
+    // beside it is a second home. A new file or a rename is a
+    // deliberate wall edit, never a silent drift.
     assert.deepEqual(
       [...lanes].sort(),
-      ["lanes-3d.ts", "lanes-audio.ts", "lanes-image-tools.ts", "lanes-image.ts", "lanes-video.ts"],
+      ["lanes-3d.ts", "lanes-audio.ts", "lanes-image-tools.ts", "lanes-image.ts"],
       "the lane-file census changed — update this pin deliberately",
     );
     const offenders: string[] = [];
