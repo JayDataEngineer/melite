@@ -276,27 +276,17 @@ export const CHARACTER: RegistryFlow = {
         seed: 42,
       },
     }),
+    // THE SAME TWO VERBS, THEIR FILE INPUTS ONLY (stroke-89's law,
+    // as the standalone rows): the coat and the seat take the body and
+    // the prop; the coat's detail kind/map size/seed and the seat's
+    // fit row are each verb's own vocabulary inside the action, so
+    // this flow wires files and nothing else.
     linkedStage("skin-apply", "coat", "coat", {
       body: fromStage("rig", "body"),
-      kind: initial("kind"),
-      map_size: initial("map_size"),
-      seed: initial("seed"),
     }),
     linkedStage("fit-seat", "seat", "seat", {
       body: fromStage("coat", "skin"),
       prop: fromStage("garment", "garment"),
-      model_name: initial("model_name"),
-      bone: initial("bone"),
-      align: initial("align"),
-      position: initial("position"),
-      rotation: initial("rotation"),
-      fit_ratio: initial("fit_ratio"),
-      fit_ref_bone: initial("fit_ref_bone"),
-      fit_ref_bone2: initial("fit_ref_bone2"),
-      seat_ratio: initial("seat_ratio"),
-      finger_bone: initial("finger_bone"),
-      thumb_bone: initial("thumb_bone"),
-      target_width: initial("target_width"),
     }),
   ],
   initialValidators: { starter_image: "photo", garment_image_1: "photo" },
@@ -314,38 +304,16 @@ export const FIT_SEAT: RegistryFlow = {
       id: "seat",
       engine: CARD_PLANE_ENGINE,
       description: "FitRow (knobs -> meld row) -> FitProp (graft) -> proof views",
-      inputs: {
-        body: initial("body"),
-        prop: initial("prop"),
-        model_name: initial("model_name"),
-        bone: initial("bone"),
-        align: initial("align"),
-        position: initial("position"),
-        rotation: initial("rotation"),
-        fit_ratio: initial("fit_ratio"),
-        fit_ref_bone: initial("fit_ref_bone"),
-        fit_ref_bone2: initial("fit_ref_bone2"),
-        seat_ratio: initial("seat_ratio"),
-        finger_bone: initial("finger_bone"),
-        thumb_bone: initial("thumb_bone"),
-        target_width: initial("target_width"),
-      },
-      expected: {
-        body: "mesh",
-        prop: "mesh",
-        model_name: "text",
-        bone: "text",
-        align: "text",
-        position: "text",
-        rotation: "text",
-        fit_ratio: "num",
-        fit_ref_bone: "text",
-        fit_ref_bone2: "text",
-        seat_ratio: "num",
-        finger_bone: "text",
-        thumb_bone: "text",
-        target_width: "num",
-      },
+      // THE STAGE'S INPUTS ARE ITS FILES: the fit row's twelve knobs
+      // are the verb's own vocabulary inside the action (stroke-89),
+      // never request initials — the flow admits glb/photo/bake_params
+      // only, so a knob input here could never be gate-validated.
+      inputs: { body: initial("body"), prop: initial("prop") },
+      // THE EXPECTED CHANNELS ARE ITS FILES: the fit row's twelve
+      // knobs are the verb's own vocabulary inside the action, so
+      // they are neither wired inputs nor expected channels here —
+      // a typed-but-unwired channel is the door's own refusal.
+      expected: { body: "mesh", prop: "mesh" },
       // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
       // vocabulary, stroke 4): the fit-seat verb's nodes compose
       // from the fit family's DECL — every knob rides verbatim, the
@@ -355,22 +323,14 @@ export const FIT_SEAT: RegistryFlow = {
       // the sanctioned seam, not a revival).
       family: "fit",
       action: "seat",
-      params: {
-        body: "$body",
-        prop: "$prop",
-        model_name: "$model_name",
-        bone: "$bone",
-        align: "$align",
-        position: "$position",
-        rotation: "$rotation",
-        fit_ratio: "$fit_ratio",
-        fit_ref_bone: "$fit_ref_bone",
-        fit_ref_bone2: "$fit_ref_bone2",
-        seat_ratio: "$seat_ratio",
-        finger_bone: "$finger_bone",
-        thumb_bone: "$thumb_bone",
-        target_width: "$target_width",
-      },
+      // THE TWO FILES ARE THE REQUEST (body + prop, both gate-checked
+      // as glb below); THE FIT ROW IS THE VERB'S (stroke-89's law,
+      // and the door's own type: initialValidators admit
+      // photo/glb/bake_params only, so a stage spelling `$fit_ratio`
+      // names a key no flow can declare — the merged worker refused it
+      // by name). The row's twelve fields are the FitRow node's
+      // declared defaults, fixed inside the action.
+      params: { body: "$body", prop: "$prop" },
     }),
   ],
   initialValidators: { body: "glb", prop: "glb" },
@@ -582,13 +542,8 @@ export const SKIN_APPLY: RegistryFlow = {
       engine: CARD_PLANE_ENGINE,
       description:
         "SkinPack (maps) -> SkinSidecar (sidecar) -> SkinApply (graft) -> proof views",
-      inputs: {
-        body: initial("body"),
-        kind: initial("kind"),
-        map_size: initial("map_size"),
-        seed: initial("seed"),
-      },
-      expected: { body: "mesh", kind: "text", map_size: "num", seed: "num" },
+      inputs: { body: initial("body") },
+      expected: { body: "mesh" },
       // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
       // vocabulary, stroke 4): the apply-skin verb's nodes compose
       // from the skin family's DECL — every knob rides verbatim, the
@@ -598,12 +553,14 @@ export const SKIN_APPLY: RegistryFlow = {
       // the sanctioned seam, not a revival).
       family: "skin",
       action: "coat",
-      params: {
-        body: "$body",
-        kind: "$kind",
-        map_size: "$map_size",
-        seed: "$seed",
-      },
+      // THE BODY IS THE ONLY REQUEST KNOB (stroke-89's law, and the
+      // door's own type: initialValidators admit photo/glb/bake_params
+      // only, so a stage spelling `$map_size` names a key the flow can
+      // never declare — the merged worker refused it by name). The
+      // detail kind, map size and seed are the verb's fixed vocabulary
+      // inside the action, exactly as the anny estimator fixes
+      // conf_thresh and dist_thresh_nms.
+      params: { body: "$body" },
     }),
   ],
   initialValidators: { body: "glb" },

@@ -21,25 +21,31 @@ export function parseFitFacts(_raw: LaneInputsFacts): Record<string, never> {
   return {}
 }
 
-/** Every fit knob rides VERBATIM — a $-ref passes through
- *  untyped-by-design (the inline compile and the merged worker own
- *  resolution, exactly as the retired hand literal's refs rode). */
+/** The seat verb's request: the two files the caller names. */
 type SeatParams = {
   readonly body: string;
   readonly prop: string;
-  readonly model_name: string;
-  readonly bone: string;
-  readonly align: string;
-  readonly position: string;
-  readonly rotation: string;
-  readonly fit_ratio: string | number;
-  readonly fit_ref_bone: string;
-  readonly fit_ref_bone2: string;
-  readonly seat_ratio: string | number;
-  readonly finger_bone: string;
-  readonly thumb_bone: string;
-  readonly target_width: string | number;
 };
+
+/** THE FIT ROW — the FitRow node's own declared defaults, verbatim
+ *  (vendor/comfyui_extensions/melter-poser-nodes/fit_nodes.py:105).
+ *  A fit verb with no named bone is a socket fit on a default row;
+ *  naming a bone or a grip alignment is the Blender/MCP lane's door
+ *  (the skills plane), not this flow's request schema. */
+export const FIT_ROW = {
+  model_name: "prop",
+  bone: "",
+  align: "socket",
+  position: "0,0,0",
+  rotation: "0,0,0",
+  fit_ratio: 0.0,
+  fit_ref_bone: "",
+  fit_ref_bone2: "",
+  seat_ratio: 0.22,
+  finger_bone: "",
+  thumb_bone: "",
+  target_width: 0.0,
+} as const;
 
 /** The seat action (the flow 'fit-seat' the meld chips drive):
  *  FitRow (the analytic fit row) → FitProp (body ∪ prop under the
@@ -48,38 +54,18 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   id: "seat",
   laneIndependent: true,
   outputs: [{ name: "seat", kind: "mesh" }],
-  params: [
-    { name: "body" },
-    { name: "prop" },
-    { name: "model_name" },
-    { name: "bone" },
-    { name: "align" },
-    { name: "position" },
-    { name: "rotation" },
-    { name: "fit_ratio" },
-    { name: "fit_ref_bone" },
-    { name: "fit_ref_bone2" },
-    { name: "seat_ratio" },
-    { name: "finger_bone" },
-    { name: "thumb_bone" },
-    { name: "target_width" },
-  ],
+  // THE BODY AND THE PROP ARE THE REQUEST (both are files the caller
+  // names, both gate-validated by the flow's initialValidators); THE
+  // FIT ROW IS THE VERB'S (stroke-89's law: a knob never joins the
+  // request schema, and the door's own type admits only photo/glb/
+  // bake_params — a stage spelling `$fit_ratio` names a key no flow
+  // can declare, and the merged worker refuses it by name). The row's
+  // twelve fields are the FitRow node's own declared defaults, named
+  // here once so the declaration owns the verb's vocabulary.
+  params: [{ name: "body" }, { name: "prop" }],
   facts: parseFitFacts,
   build({ p, g }): OutputHandle {
-    const row = g.node("FitRow", {
-      model_name: p.model_name,
-      bone: p.bone,
-      align: p.align,
-      position: p.position,
-      rotation: p.rotation,
-      fit_ratio: p.fit_ratio,
-      fit_ref_bone: p.fit_ref_bone,
-      fit_ref_bone2: p.fit_ref_bone2,
-      seat_ratio: p.seat_ratio,
-      finger_bone: p.finger_bone,
-      thumb_bone: p.thumb_bone,
-      target_width: p.target_width,
-    });
+    const row = g.node("FitRow", { ...FIT_ROW });
     const seatNode = g.node("FitProp", {
       body_glb_path: p.body,
       prop_glb_path: p.prop,

@@ -45,21 +45,11 @@ describe("the fit model plugin (the whole model, one package)", () => {
     const ref = (k: string): string => `$${k}`;
     const out = seat.build({
       p: {
+        // THE TWO FILES RIDE AS $-refs; the fit row is the verb's own
+        // vocabulary (stroke-89), so no knob is a request param and
+        // none can name a key the flow cannot declare.
         body: ref("body"),
-        prop: ref("prop"),
-        model_name: ref("model_name"),
-        bone: ref("bone"),
-        align: ref("align"),
-        position: ref("position"),
-        rotation: ref("rotation"),
-        fit_ratio: ref("fit_ratio"),
-        fit_ref_bone: ref("fit_ref_bone"),
-        fit_ref_bone2: ref("fit_ref_bone2"),
-        seat_ratio: ref("seat_ratio"),
-        finger_bone: ref("finger_bone"),
-        thumb_bone: ref("thumb_bone"),
-        target_width: ref("target_width"),
-      },
+        prop: ref("prop"),},
       facts: seat.facts({}),
       model: {
         id: "fit",
@@ -76,21 +66,25 @@ describe("the fit model plugin (the whole model, one package)", () => {
     });
     assert.equal(out.nodeId, "RayRenderGLBViews.0");
     assert.deepEqual(g.toJSON(), {
+      // THE FIT ROW IS THE VERB'S OWN VOCABULARY (stroke-89): the
+      // FitRow node's declared defaults, verbatim — not $-refs, which
+      // the door can never link (its initialValidators admit
+      // photo/glb/bake_params only).
       "FitRow.0": {
         class_type: "FitRow",
         inputs: {
-          model_name: "$model_name",
-          bone: "$bone",
-          align: "$align",
-          position: "$position",
-          rotation: "$rotation",
-          fit_ratio: "$fit_ratio",
-          fit_ref_bone: "$fit_ref_bone",
-          fit_ref_bone2: "$fit_ref_bone2",
-          seat_ratio: "$seat_ratio",
-          finger_bone: "$finger_bone",
-          thumb_bone: "$thumb_bone",
-          target_width: "$target_width",
+          model_name: "prop",
+          bone: "",
+          align: "socket",
+          position: "0,0,0",
+          rotation: "0,0,0",
+          fit_ratio: 0.0,
+          fit_ref_bone: "",
+          fit_ref_bone2: "",
+          seat_ratio: 0.22,
+          finger_bone: "",
+          thumb_bone: "",
+          target_width: 0.0,
         },
       },
       "FitProp.0": {

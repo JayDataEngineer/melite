@@ -40,10 +40,15 @@ describe("the skin model plugin (the whole model, one package)", () => {
     assert.deepEqual(coat.outputs, [{ name: "skin", kind: "mesh" }]);
   });
 
-  it("the coat composes the meld graph with $-refs riding verbatim", () => {
+  // THE KNOBS ARE THE VERB'S (stroke-89): only the body rides as a
+  // $-ref. The detail kind, map size and seed are the action's own
+  // fixed vocabulary — a flow's initialValidators admit only
+  // photo/glb/bake_params, so a knob spelled `$map_size` could never
+  // be linkable and the merged worker refused it by name.
+  it("the coat composes the meld graph with the body $-ref riding verbatim", () => {
     const g = new GraphBuilder();
     const out = coat.build({
-      p: { body: "$body", kind: "$kind", map_size: "$map_size", seed: "$seed" },
+      p: { body: "$body" },
       facts: coat.facts({}),
       model: {
         id: "skin",
@@ -60,10 +65,16 @@ describe("the skin model plugin (the whole model, one package)", () => {
     });
     assert.equal(out.nodeId, "RayRenderGLBViews.0");
     assert.deepEqual(g.toJSON(), {
-      "SkinPack.0": { class_type: "SkinPack", inputs: { size: "$map_size", seed: "$seed" } },
+      // THE COAT'S KNOBS ARE THE VERB'S OWN VOCABULARY (stroke-89):
+      // the SkinPack/SkinSidecar nodes' declared defaults, verbatim —
+      // the engine refuses anything else by name (seed is INT min 0;
+      // kind is a combo of the meld kinds). A $-ref here could never
+      // link: the door's initialValidators admit photo/glb/bake_params
+      // only, so the merged worker refused "carries $map_size".
+      "SkinPack.0": { class_type: "SkinPack", inputs: { size: 512, seed: 20260906 } },
       "SkinSidecar.0": {
         class_type: "SkinSidecar",
-        inputs: { kind: "$kind", size: "$map_size", seed: "$seed" },
+        inputs: { kind: "keeper", size: 512, seed: 20260906 },
       },
       "SaveImage.0": {
         class_type: "SaveImage",

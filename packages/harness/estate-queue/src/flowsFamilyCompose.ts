@@ -17,7 +17,9 @@
 // already owns; a contradicting hand-write refuses LOUD).
 import { declaredAction, instantiateAction } from "@melite/comfyui-card-kit";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { modelsService } from "@melite/comfyui-cordis";
+import type { EngineJson } from "@melite/comfyui-cordis";
 import type { RegistryFlow, RegistryStage } from "./flowsData.ts";
 
 /** The families seat's read shape (structural — the models
@@ -171,7 +173,7 @@ function composeOne(
   // and the action's facts parser is the gate, refusing nothing
   // here by design.
   const g = new GraphBuilder();
-  instantiateAction(
+  const handle: OutputHandle = instantiateAction(
     action,
     st.params as Record<string, unknown>,
     {
@@ -188,12 +190,29 @@ function composeOne(
     g,
     "",
   );
+  // THE PRODUCER IS THE ACTION'S OWN HANDLE (the multi-save law).
+  // The merge resolves a stage's channels to producer nodes two ways:
+  // a declared output_nodes row, or — failing that — a single Save
+  // node, which refuses outright when the graph saves more than once.
+  // An action that writes several artifacts (the turnaround sheet, the
+  // albedo/normal/sidecar trio) hit that refusal every time, because
+  // the composition declared no producer at all. The handle build()
+  // returns IS the producer for the action's FIRST declared output,
+  // named by the action's own declaration — never guessed from node
+  // order. The declared path wins in the merge, so single-save
+  // actions keep their behavior: they also declare, and declaration
+  // won there too.
+  const producer: Record<string, EngineJson> = {};
+  const firstOutput = action.outputs[0];
+  if (firstOutput !== undefined) {
+    producer[firstOutput.name] = handle.nodeId;
+  }
   return {
     ...st,
     family: "",
     action: "",
     outputs: derived,
-    params: { workflow: g.toJSON() },
+    params: { workflow: g.toJSON(), output_nodes: producer },
   };
 }
 

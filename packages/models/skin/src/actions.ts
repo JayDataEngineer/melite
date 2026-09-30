@@ -45,26 +45,43 @@ export interface CoatParams {
   readonly seed: string | number;
 }
 
-export const coat: ComfyActionSpec<CoatParams, Record<string, never>> = {
+/** THE VERB'S FIXED VOCABULARY — the SkinPack/SkinSidecar nodes' own
+ *  declared defaults, not an invention here. The engine refuses
+ *  anything else by name: seed is INT min 0 (the -1 random sentinel
+ *  belongs to the CARD compose's mint, never to a raw graph — the
+ *  node says so in its own refusal), and kind is a combo of the 20
+ *  meld kinds. A 1024 map and a "scars" kind were plausible guesses
+ *  that the engine rejected; the node's default is the truth. */
+export const COAT_KIND = "keeper";
+export const COAT_MAP_SIZE = 512;
+export const COAT_SEED = 20260906;
+
+export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, never>> = {
   id: "coat",
   laneIndependent: true,
   outputs: [{ name: "skin", kind: "mesh" }],
-  params: [
-    { name: "body" },
-    { name: "kind" },
-    { name: "map_size" },
-    { name: "seed" },
-  ],
+  // THE KNOBS ARE THE ACTION'S, NOT THE REQUEST'S (stroke-89: an
+  // estimation knob never joins the request schema; the flow's
+  // initialValidators admit only photo/glb/bake_params, so a knob
+  // spelled `$map_size` could never be linkable — the merged worker
+  // refused "carries $map_size — neither a FromStage-wired input nor
+  // a request initial"). The body rides as the request initial; the
+  // detail kind, the map size and the seed are the verb's own
+  // vocabulary, fixed in build below exactly as the anny estimator
+  // fixes conf_thresh and dist_thresh_nms.
+  params: [{ name: "body" }],
   facts: parseSkinFacts,
   build({ p, g }): OutputHandle {
+    // THE VERB'S FIXED VOCABULARY: the detail kind, the map size and
+    // the seed (the sentinel's -1 mints a fresh one at render).
     const pack = g.node("SkinPack", {
-      size: p.map_size,
-      seed: p.seed,
+      size: COAT_MAP_SIZE,
+      seed: COAT_SEED,
     });
     const scar = g.node("SkinSidecar", {
-      kind: p.kind,
-      size: p.map_size,
-      seed: p.seed,
+      kind: COAT_KIND,
+      size: COAT_MAP_SIZE,
+      seed: COAT_SEED,
     });
     g.node("SaveImage", {
       images: pack.out(0),
