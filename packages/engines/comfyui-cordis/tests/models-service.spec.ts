@@ -703,6 +703,18 @@ describe("assertAddressesServe (the satisfaction gate, pure)", () => {
 });
 
 describe("bootModels (the transactional boot)", () => {
+  it("two CONCURRENT first boots share ONE boot (the in-flight memo)", async () => {
+    // This file's FIRST bootModels call, by construction: the pair
+    // overlaps before settle. The estate carries two boot sites
+    // (the models plugin's apply and the card registry's prime)
+    // that can overlap the same way on a cold process; the
+    // in-flight memo pins them to one Context, one family load,
+    // one service instance.
+    const pair = await Promise.all([bootModels(), bootModels()]);
+    assert.equal(pair[0], pair[1], "both arms answer the SAME instance");
+    assert.ok(pair[0] !== undefined && pair[0].familyCount() > 10, "the families land through the shared boot");
+  }, 240000);
+
   it("boots the whole registry once, then serves the singleton", async () => {
     const svc = await bootModels();
     assert.ok(svc.familyCount() > 10, "the families land");

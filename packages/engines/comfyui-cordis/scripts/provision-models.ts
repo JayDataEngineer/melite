@@ -9,6 +9,7 @@ import {
   VerifiedArtifactWriter,
 } from "@melite/estate-provisioning";
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
+import { cascadeInit } from "../src/models/models.ts";
 import { DEFAULT_CONFIG, DRY, die, info, warn } from "./provision-shared.ts";
 import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.ts";
 
@@ -43,9 +44,8 @@ export async function catalogProvisions(): Promise<Array<{ family: string; row: 
   // rows (the engine's provisionsByFamily — DECL provisions + card-
   // owned provisions; the model.py cell/provision walks died with
   // the py plane and the frozen catalog re-home died with the blob).
-  // ROADMAP-47: the boot no longer fires at import — callers of the
+  // The boot never fires at import (ledger li-cq): callers of the
   // sync singleton readers await the shared entry first.
-  const { cascadeInit } = await import("../src/models/models.ts");
   await cascadeInit();
   const defs = await loadCardDefs();
   const byFamily = await provisionsByFamily(defs);

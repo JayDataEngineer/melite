@@ -23,5 +23,9 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
   it("cascadeInit stays exported (the shared once-per-process boot entry)", async () => {
     const mod = await import("../src/models/models.ts");
     assert.equal(typeof mod.cascadeInit, "function");
+    // the memo arm: the second call rides the SAME promise (one
+    // boot per module registry, however many callers ask)
+    assert.equal(mod.cascadeInit(), mod.cascadeInit());
+    await mod.cascadeInit();
   });
 });

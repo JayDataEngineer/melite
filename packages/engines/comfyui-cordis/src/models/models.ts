@@ -9,24 +9,17 @@
 // frozen registry stays DATA; every read below routes through the
 // booted service.
 //
-// li-m (2026-10-10, the operator's boot brick — ROOT CUT): the
-// import-time `await cascadeInit` is GONE. A top-level await on
-// the whole models boot rides the package ROOT — every card,
-// door, and queue that imports this package hung on ONE stalled
-// family composition (live proof: 3088 boots that printed nothing
-// for minutes, zero pending I/O — a promise that never settles;
-// cordis doctrine: composition happens in apply, never at import).
-// ROADMAP-47 (2026-10-11) finished the cut: NOTHING fires at
-// import either — the eager unawaited bootModels() floated the
-// 47-family dynamic import past vitest's per-file environment
-// teardown, and the rotating EnvironmentTeardownError rejections
-// failed green fleets (exit 1 with zero failed tests).
-// `cascadeInit()` fires the boot on FIRST CALL and memoizes;
-// callers that read the sync singleton below await it (or
-// bootModels) first — the estate's cardsRegistry awaits the SAME
-// boot (cardsRegistry.ts, the composition seat). The lane seat
-// (modelsFamiliesProvider) is a SEPARATE table in the estate's
-// context — see service.ts.
+// THE BOOT LAW (ledger li-m + li-cq): NOTHING waits at import and
+// NOTHING fires at import — importing this module is side-effect
+// free, so it can neither hang an importer (composition happens
+// in apply, never at import) nor float a boot past a test
+// environment's teardown. `cascadeInit()` is the call-fired
+// entry: it boots on first call and memoizes; a failed boot
+// clears the memo so the next call re-boots. Callers that read
+// the sync singletons below await it (or bootModels) first — the
+// estate's cardsRegistry awaits the SAME boot (cardsRegistry.ts,
+// the composition seat). The lane seat (modelsFamiliesProvider)
+// is a SEPARATE table in the estate's context — see service.ts.
 
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
@@ -39,11 +32,18 @@ export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModel
 let cascadePromise: Promise<void> | null = null;
 
 /** The shared once-per-process boot entry: fires bootModels() on
- * first call, memoizes, never at import (li-m + ROADMAP-47).
+ * first call, memoizes, never at import. A REJECTED boot clears
+ * the memo — the next call re-boots (bootModels' own retry law).
  *
  * @returns a promise that settles when the booted table is served. */
 export function cascadeInit(): Promise<void> {
-  cascadePromise ??= bootModels().then((): void => undefined);
+  cascadePromise ??= bootModels().then(
+    (): void => undefined,
+    (err: unknown): Promise<void> => {
+      cascadePromise = null;
+      throw err;
+    },
+  );
   return cascadePromise;
 }
 
