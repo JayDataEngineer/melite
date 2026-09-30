@@ -14,7 +14,7 @@
 // features.modifiers come from svc.modCatalog("loras", family) —
 // the family-owned rows in packages/models/<family>/mods/loras.ts
 // composed server-side. NO second spelling, no remote fetch.
-import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations'
+import { laneContractOf as sharedLaneContractOf, type SamplerEnvelope } from '@melite/contracts/laneRelations'
 import {
   buildCatalog,
   CARD_KINDS,
@@ -147,7 +147,7 @@ function variantRow(
     route?: string
     hint?: string
     engine?: string
-    sampler_envelope?: { steps: number[]; cfg: number[] }
+    sampler_envelope?: SamplerEnvelope
   },
   declEngine: string,
 ): Record<string, unknown> {

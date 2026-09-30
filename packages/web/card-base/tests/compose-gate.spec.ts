@@ -106,6 +106,15 @@ describe('THE MIRROR LAW: clause 2 — the quant cell (owned by the stated varia
       'card_compose: unknown quant "q-ghost" for model "krea-2" variant "turbo" (known: q-fp8)',
     )
   })
+  test('a variant that declares NO cells says so — the (known:) tail never lies (the convergence)', () => {
+    // the door's empty-cells arm: before the voices converged this
+    // seat printed "(known: )" — an empty list the operator cannot
+    // act on. The door's tail is the mirror's tail.
+    const v = composeValidate(spec, { variant: 'raw', quant: 'q-ghost' })
+    expect(v[0]!.message).toBe(
+      'card_compose: unknown quant "q-ghost" for model "krea-2" variant "raw" (the variant declares no cells)',
+    )
+  })
   test('a quant owned by ANOTHER variant is a ghost here (the chain: variant filters quant)', () => {
     expect(composeValidate(spec, { variant: 'turbo', quant: 'q-fp8' })).toEqual([])
     // raw owns no cells — a stated quant against it is unknown

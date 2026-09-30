@@ -294,7 +294,7 @@ export function prepareCardParams(
       );
     }
     const sel: VariantSelection = selectCardVariant(mid, famRow, body, phase);
-    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel);
+    const stamped: Record<string, unknown> = stampCardOverlay(body, famRow, decl, sel, phase);
     return {
       mid,
       fam,

@@ -21,6 +21,7 @@
 // schemastery's default export is BOTH the z facade and the
 // Schema resolver (the same object — service.ts takes it as `Schema`)
 import z from "@deepseek-ai/schemastery";
+import type { SamplerEnvelope } from "@melite/contracts/laneRelations";
 import * as contractNs from "./contract.ts";
 
 /** THE CONTRACT'S SCHEMA INSTANCE (exported so a wall drives THIS
@@ -164,7 +165,7 @@ export interface VariantRow {
    *  Written [min, max] — envelopeRefusal validates the pair at
    *  enforcement (this z's tuples loosen to arrays, so the pair
    *  lives as a 2-number array on the wire). */
-  sampler_envelope?: { steps: number[]; cfg: number[] };
+  sampler_envelope?: SamplerEnvelope;
   /** The variant's LANE INPUT stamps (the intercept over the
    *  model's base lane_inputs — e.g. the base checkpoint's
    *  model_path; merged base ← variant at the derived read). */

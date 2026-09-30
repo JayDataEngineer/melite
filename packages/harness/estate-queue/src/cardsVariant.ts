@@ -2,7 +2,9 @@
 // overlay + params lift. Extracted from cardsRegistry: the pure
 // coordinate math of {model:} resolution.
 import type { CardDeclRow, ModelFactsRow, VariantCellRow, VariantRow } from "./cardsFacts.ts";
-import { CardArmError, EnvelopeRefusal } from "./cardsArmError.ts";
+import { samplerEnvelopeCure } from "@melite/contracts/laneRelations";
+import { EnvelopeRefusal, phaseRefusal } from "./cardsArmError.ts";
+import { judgeSamplerEnvelope, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { CARD_ENVELOPE_KEYS } from "./cardsRegistry.ts";
 
 // ── R1 variant/quant selection + route-lens stamp overlay ──────────
@@ -65,22 +67,16 @@ export function selectCardVariant(
     c.hide_from_dropdown === true && c.route === mid
   ));
   if (hiddenRoute !== undefined || hiddenCellRoute) {
-    throw new CardArmError(
-      400,
-      "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
+    throw phaseRefusal(
+      phase,
+      "model " + JSON.stringify(mid) +
         " is not offered (the variant route is hidden from the dropdown)",
-      "card_compose",
     );
   }
   const configured: VariantRow[] = offered.filter((v) => v.group !== "Recipe");
   const pool: VariantRow[] = configured.length > 0 ? configured : offered;
   if (pool.length === 0 && variants.length > 0) {
-    throw new CardArmError(
-      400,
-      "card_compose phase " + phase + ": model " + JSON.stringify(mid) +
-        " has no offered variants",
-      "card_compose",
-    );
+    throw phaseRefusal(phase, "model " + JSON.stringify(mid) + " has no offered variants");
   }
   const rawVariant: unknown = body["variant"];
   const rawQuant: unknown = body["quant"];
@@ -89,40 +85,32 @@ export function selectCardVariant(
     variant = pool[0];
   } else {
     if (typeof rawVariant !== "string") {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": variant must be a string (got " +
+      throw phaseRefusal(
+        phase,
+        "variant must be a string (got " +
           (Array.isArray(rawVariant) ? "list" : typeof rawVariant) + ")",
-        "card_compose",
       );
     }
     const requested = variants.find((v) => v.id === rawVariant || v.route === rawVariant);
     if (requested?.hide_from_dropdown === true) {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": variant " + JSON.stringify(rawVariant) +
+      throw phaseRefusal(
+        phase,
+        "variant " + JSON.stringify(rawVariant) +
           " is not offered for model " + JSON.stringify(mid),
-        "card_compose",
       );
     }
     variant = offered.find((v) => v.id === rawVariant || v.route === rawVariant);
     if (variant === undefined) {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": unknown variant " + JSON.stringify(rawVariant) +
-          " for model " + JSON.stringify(mid) + " (known: " + knownVariantIds(famRow).join(", ") + ")",
-        "card_compose",
-      );
+      throw phaseRefusal(phase, unknownVariantVoice(rawVariant, mid, knownVariantIds(famRow)));
     }
   }
   let quant = "";
   if (rawQuant !== undefined && rawQuant !== null) {
     if (typeof rawQuant !== "string") {
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": quant must be a string (got " +
+      throw phaseRefusal(
+        phase,
+        "quant must be a string (got " +
           (Array.isArray(rawQuant) ? "list" : typeof rawQuant) + ")",
-        "card_compose",
       );
     }
     const cells: VariantCellRow[] = variant !== undefined
@@ -130,14 +118,9 @@ export function selectCardVariant(
       : [];
     const hit: VariantCellRow | undefined = cells.find((c) => c.quant === rawQuant);
     if (hit === undefined) {
-      const known: string = cells.map((c) => c.quant).join(", ");
-      throw new CardArmError(
-        400,
-        "card_compose phase " + phase + ": unknown quant " + JSON.stringify(rawQuant) +
-          " for model " + JSON.stringify(mid) + " variant " +
-          JSON.stringify(variant !== undefined ? variant.id : "") +
-          (known !== "" ? " (known: " + known + ")" : " (the variant declares no cells)"),
-        "card_compose",
+      throw phaseRefusal(
+        phase,
+        unknownQuantVoice(rawQuant, mid, variant !== undefined ? variant.id : "", cells.map((c) => c.quant)),
       );
     }
     quant = hit.quant;
@@ -171,32 +154,29 @@ export function selectCardVariant(
  *  negotiated. Inside the envelope is caller agency; an unstated
  *  knob never refuses (the rail's stamps own it); a variant with no
  *  envelope declares nothing (opt-in per route). */
-export function envelopeRefusal(
+function envelopeRefusal(
   body: Record<string, unknown>,
-  _decl: CardDeclRow,
   sel: VariantSelection,
+  phase: string,
 ): void {
-  if (sel.samplerEnvelope === null) return;
-  for (const knob of ["steps", "cfg"] as const) {
-    const bound = sel.samplerEnvelope[knob];
-    if (bound === undefined) continue;
-    const stated = body[knob];
-    if (typeof stated !== "number" || !Number.isFinite(stated)) continue;
-    const [lo, hi] = bound;
-    if (stated >= lo && stated <= hi) continue;
-    const married = sel.resolverDefaults[knob] ?? "";
-    throw new EnvelopeRefusal(
-      400,
-      "card_compose: stated " + knob + " " + String(stated) +
-        " is OUTSIDE the route envelope for variant \"" + sel.variantId + "\"" +
-        (sel.variantRoute !== "" ? " (route " + sel.variantRoute + ")" : "") +
-        " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]" +
-        (married !== "" ? " and the lane is married to " + knob + " " + String(married) : "") +
-        ". The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route." +
-        " (Read the family lane: melite_skill_read model:<family>.)",
-      "card_compose",
-    );
-  }
+  // THE ONE JUDGE (the voice audit, 2026-10-11): the body composes
+  // in @melite/contracts beside the lane judges; the door adds what
+  // its seat knows — the phase-consistent frame, the marriage
+  // clause, the lane-read tail.
+  const off = judgeSamplerEnvelope(body, sel.samplerEnvelope, {
+    id: sel.variantId,
+    route: sel.variantRoute,
+  });
+  if (off === null) return;
+  const married = sel.resolverDefaults[off.knob] ?? "";
+  throw new EnvelopeRefusal(
+    400,
+    "card_compose phase " + phase + ": " + off.voice +
+      (married !== "" ? " and the lane is married to " + off.knob + " " + String(married) : "") +
+      ". " + samplerEnvelopeCure() +
+      " (Read the family lane: melite_skill_read model:<family>.)",
+    "card_compose",
+  );
 }
 
 export function stampCardOverlay(
@@ -204,8 +184,9 @@ export function stampCardOverlay(
   famRow: ModelFactsRow,
   decl: CardDeclRow,
   sel: VariantSelection,
+  phase: string,
 ): Record<string, unknown> {
-  envelopeRefusal(body, decl, sel);
+  envelopeRefusal(body, sel, phase);
   const stamps: Record<string, unknown> = { ...(famRow.defaults ?? {}) };
   for (const [k, v] of Object.entries(sel.resolverDefaults)) stamps[k] = v;
   const names: Set<string> = new Set(decl.schemaNames);

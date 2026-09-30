@@ -113,9 +113,14 @@ import {
   judgeLaneSurface,
   laneBoundsOf,
   laneSurfaceOf,
+  judgeSamplerEnvelope,
+  samplerEnvelopeCure,
+  unknownQuantVoice,
+  unknownVariantVoice,
   type LaneBounds,
   type LaneRelations,
   type LaneViolation,
+  type SamplerEnvelope,
 } from '@melite/contracts/laneRelations'
 
 /** One DERIVED form field (fieldsOfEnvelope's output — the client's
@@ -346,7 +351,7 @@ export interface VariantRow {
    *  row 3): the DECL's sampler_envelope — [min,max] for steps and
    *  cfg, the domain the bench judges. Null when the variant
    * declares none (the family's own domain rides). */
-  sampler_envelope?: { steps: number[]; cfg: number[] } | null
+  sampler_envelope?: SamplerEnvelope | null
   quant?: string | null
   vram_peak_gb?: number | null
   owner?: string
@@ -1514,9 +1519,7 @@ export function composeValidate(
     offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant)
     if (offered === undefined) {
       out.push({
-        message: 'card_compose: unknown variant ' + JSON.stringify(rawVariant)
-          + ' for model ' + JSON.stringify(spec.model ?? '')
-          + ' (known: ' + pool.map((r) => r.id).join(', ') + ')',
+        message: 'card_compose: ' + unknownVariantVoice(rawVariant, spec.model ?? '', pool.map((r) => r.id)),
       })
       return out
     }
@@ -1538,9 +1541,7 @@ export function composeValidate(
       )
       if (!cells.some((c) => c.quant === rawQuant)) {
         out.push({
-          message: 'card_compose: unknown quant ' + JSON.stringify(rawQuant)
-            + ' for model ' + JSON.stringify(spec.model ?? '') + ' variant ' + JSON.stringify(offered.id)
-            + ' (known: ' + cells.map((c) => c.quant).join(', ') + ')',
+          message: 'card_compose: ' + unknownQuantVoice(rawQuant, spec.model ?? '', offered.id, cells.map((c) => c.quant).filter((q): q is string => typeof q === 'string')),
         })
       }
     }
@@ -1551,23 +1552,21 @@ export function composeValidate(
     // body BEFORE the overlay stamps (stampCardOverlay calls
     // envelopeRefusal first) — so only EXPLICIT numeric knobs count,
     // never composed defaults.
-    const env = offered.sampler_envelope ?? null
-    if (env !== null) {
-      for (const knob of ['steps', 'cfg'] as const) {
-        const bound = env[knob]
-        if (bound === undefined) continue
-        const stated = doc[knob]
-        if (typeof stated !== 'number' || !Number.isFinite(stated)) continue
-        const [lo, hi] = bound
-        if (stated >= lo && stated <= hi) continue
-        out.push({
-          message: 'card_compose: stated ' + knob + ' ' + String(stated)
-            + ' is OUTSIDE the route envelope for variant ' + JSON.stringify(offered.id)
-            + (offered.route !== '' ? ' (route ' + offered.route + ')' : '')
-            + ' — the declared envelope is [' + String(lo) + ', ' + String(hi) + ']'
-            + '. The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.',
-        })
-      }
+    // THE ONE JUDGE (the voice audit, 2026-10-11): the body
+    // composes in @melite/contracts — the door's envelopeRefusal
+    // asks the same judge, so the mirror and the door can no
+    // longer spell two truths. The client's frame stays phase-less
+    // (the press-side lint never knows the door's phase); the
+    // door adds the marriage clause + lane-read tail it owns.
+    const off = judgeSamplerEnvelope(doc, offered.sampler_envelope ?? null, {
+      id: offered.id,
+      route: offered.route,
+    })
+    if (off !== null) {
+      out.push({
+        message: 'card_compose: ' + off.voice
+          + '. ' + samplerEnvelopeCure(),
+      })
     }
   }
   return out

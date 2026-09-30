@@ -20,6 +20,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unknownVariantVoice } from '@melite/contracts/laneRelations'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { schemaEnvelope } from '../src/client/spec-form.tsx'
@@ -151,7 +152,9 @@ test('a healthy row never renders an error face (absent ≡ clean)', async () =>
 // pressing Run in the drill on a stage the estate refuses writes the
 // row FAILED with the reason — the open drill's failure face reads
 // the why where the Run was pressed, not just the tab top.
-const TURBO_REFUSAL = "card_compose phase 1: unknown variant 'turbo' for model 'anima' (known: standard, default)"
+// the door's own voice, built from its one home (the judge
+// spells the quoting; this fixture never re-spells it)
+const TURBO_REFUSAL = 'card_compose phase 1: ' + unknownVariantVoice('turbo', 'anima', ['standard', 'default'])
 
 test('a normalized bench stage error mounts the tab error and rescue', async () => {
   stubWire()
@@ -257,5 +260,5 @@ test('a refused start lands on the row — the open drill reads the why', async 
   await user.click(within(drill).getByRole('button', { name: 'Run stage' }))
   // the refusal lands IN the drill — the full compose text
   const drillErr = await screen.findByTestId('drill-run-error', undefined, { timeout: 4000 })
-  expect(drillErr.textContent).toContain("unknown variant 'turbo'")
+  expect(drillErr.textContent).toContain(unknownVariantVoice('turbo', 'anima', ['standard', 'default']))
 })

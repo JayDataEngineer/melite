@@ -9,6 +9,7 @@
 import { expandEstateDoors } from '../expansion.ts'
 import { MODIFIER_PACKS } from '../discovery.ts'
 import { registryModel, theService } from '@melite/comfyui-cordis'
+import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
@@ -292,23 +293,19 @@ export function meliteLoad(
             }
             return words
           }
-          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds; sampler_envelope?: { steps?: number[]; cfg?: number[] } | null }>; bounds?: LaneBounds }> | undefined
+          const sigLanes = sig.lanes as Record<string, { base?: unknown; relations?: LaneRel; variants?: Record<string, { params?: unknown[]; relations?: LaneRel; bounds?: LaneBounds; sampler_envelope?: Partial<SamplerEnvelope> | null }>; bounds?: LaneBounds }> | undefined
           if (sigLanes !== null && sigLanes !== undefined && typeof sigLanes === 'object') {
             for (const [fam, lane] of Object.entries(sigLanes)) {
               const base = Array.isArray(lane?.base) ? lane.base.filter((f): f is string => typeof f === 'string') : []
               const adds = Object.entries(lane?.variants ?? {})
                 .map(([v, row]) => {
                   const params = Array.isArray(row?.params) ? row.params.join(', ') : ''
+                  // the variant's SAMPLER DOMAIN rides the line as
+                  // its bounds span (the DECL audit's gap 2 — the
+                  // lane contract merges sampler_envelope into
+                  // bounds, so one spelling speaks the domain; an
+                  // agent composing from this bundle reads it here)
                   const vlaws = lawWords(row?.relations, row?.bounds)
-                  // the variant's SAMPLER DOMAIN rides the line too
-                  // (the DECL audit's gap 2: krea-2's turbo lives in
-                  // [4,8] steps / [1,2] cfg and the bench refuses
-                  // anything else — an agent told nothing learns that
-                  // domain by refusal)
-                  const env = (row as { sampler_envelope?: { steps?: number[]; cfg?: number[] } | null }).sampler_envelope
-                  if (env !== undefined && env !== null) {
-                    vlaws.push('sampler(' + String(env.steps?.join('–') ?? '..') + ' steps, ' + String(env.cfg?.join('–') ?? '..') + ' cfg)')
-                  }
                   let line = v + (params !== '' ? ' +' + params : '')
                   if (vlaws.length > 0) line += ' [' + vlaws.join(', ') + ']'
                   return line

@@ -29,7 +29,7 @@ import { ASSET_RUNS_PREFIX, MEDIA_RUNS_PREFIX } from "./runsSourceEcho.ts";
 /** The one-prefix question: which estate route (if any) does this
  * string carry? Both spellings are the same trees (the media
  * route is the newer first-class face — runsSourceEcho's law). */
-export function artifactPrefixOf(raw: string): string | null {
+function artifactPrefixOf(raw: string): string | null {
   if (raw.startsWith(ASSET_RUNS_PREFIX)) return ASSET_RUNS_PREFIX;
   if (raw.startsWith(MEDIA_RUNS_PREFIX)) return MEDIA_RUNS_PREFIX;
   return null;

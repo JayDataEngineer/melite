@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { DECL as KREA } from "@melite/models-krea-2";
+import type { SamplerEnvelope } from "@melite/contracts/laneRelations";
 import { KREA_ROWS } from "@melite/models-krea-2/mods/loras";
 
 const doc = readFileSync(
@@ -43,7 +44,7 @@ describe("krea-2's entrance doc (the lane truth, drift-walled to the DECL)", () 
 
   it("names BOTH ROUTE ENVELOPES — the compose-side guard's declared bounds", () => {
     for (const v of KREA.variants.filter((r) => r.group === "Variant")) {
-      const env = (v as { sampler_envelope?: { steps?: number[]; cfg?: number[] } }).sampler_envelope;
+      const env = (v as { sampler_envelope?: SamplerEnvelope }).sampler_envelope;
       assert.ok(env !== undefined, `variant ${v.id} declares an envelope`);
       assert.ok(doc.includes(`[${env.steps?.join(", ")}]`), `the doc names ${v.id}'s steps envelope verbatim`);
       assert.ok(doc.includes(`[${env.cfg?.join(", ")}]`), `the doc names ${v.id}'s cfg envelope verbatim`);

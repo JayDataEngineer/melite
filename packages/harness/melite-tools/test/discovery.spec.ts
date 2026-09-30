@@ -5,6 +5,7 @@
 // door arms.
 import "../../../../tests/helpers/boot-models.ts";
 import { agentFormDoc } from '@melite/engine-agent'
+import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
 import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -394,7 +395,7 @@ describe('live door arms', () => {
     // about, so the composing agent learned [4,8] by refusal. The
     // row carries it now (null for absent, the row's own law).
     const spec = (await formSpecSweep('image-gen')) as Record<string, unknown>
-    const rows = spec['variants'] as Array<{ id: string; group: string; sampler_envelope?: { steps: number[]; cfg: number[] } | null }>
+    const rows = spec['variants'] as Array<{ id: string; group: string; sampler_envelope?: SamplerEnvelope | null }>
     const turbo = rows.find((r) => r.id === 'turbo')
     assert.ok(turbo, 'the turbo variant row serves')
     assert.deepEqual(turbo!.sampler_envelope, { steps: [4, 8], cfg: [1, 2] })

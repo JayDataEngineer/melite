@@ -28,7 +28,7 @@ export interface FactsReads {
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
 
-import type { LaneRelations } from '@melite/contracts/laneRelations'
+import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,
  *  the four-agent contract audit's top finding: this interface was a
@@ -133,7 +133,7 @@ export interface ModelVariantFacts {
   // schema declares `z.array(z.number())` (families/contract.ts) and
   // the floor mirrors `number[]`; this twin alone claimed a 2-TUPLE,
   // so a reader asking whether `steps: [4]` is legal got two answers.
-  sampler_envelope?: { steps?: number[]; cfg?: number[] } | null
+  sampler_envelope?: Partial<SamplerEnvelope> | null
   defaults: Record<string, unknown>
   /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
    *  the params this variant accepts IN ADDITION to the family
@@ -275,10 +275,7 @@ function deriveRow(
       // asking "is steps: [4] legal" a second answer; normalizeEnvelope
       // reads unknown and length-checks at runtime, so it accepts the
       // array either way.
-      sampler_envelope: ((v.sampler_envelope ?? null) as {
-        steps?: number[];
-        cfg?: number[];
-      } | null),
+      sampler_envelope: (v.sampler_envelope ?? null) as Partial<SamplerEnvelope> | null,
       defaults: (v.wire_defaults ?? {}) as Record<string, unknown>,
       // THE LANE SURFACE + RELATIONS (2026-10-10, the fix shape):
       // carried VERBATIM from the DECL variant — present only where

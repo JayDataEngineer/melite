@@ -5,7 +5,7 @@
 import { join } from "node:path";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-cordis";
-import type { LaneRelations } from "@melite/contracts/laneRelations";
+import type { LaneRelations, SamplerEnvelope } from "@melite/contracts/laneRelations";
 
 // ── frozen data paths (facts + pin snapshot) ───────────────────────
 // (Stroke 2a, DSH-AS-LANGUAGE LAW: the module-level caches that used
@@ -34,10 +34,7 @@ export interface VariantRow {
    *  2-tuple, so the same envelope read as two different types on two
    *  seats. The normalizer that produces it reads `unknown` and
    *  yields the pair — the tuple bought nothing. */
-  readonly sampler_envelope?: {
-    steps?: readonly number[];
-    cfg?: readonly number[];
-  } | null;
+  readonly sampler_envelope?: Readonly<Partial<SamplerEnvelope>> | null;
   /** THE LANE SURFACE (2026-10-10, the YOU_ARE_A_LIAR fix shape):
    *  this variant's accepted params IN ADDITION to the family base.
    *  Present only where the DECL declares it. */
@@ -143,4 +140,3 @@ export function deriveDecls(
   }
   return out;
 }
-

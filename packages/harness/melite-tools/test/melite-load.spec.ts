@@ -260,7 +260,9 @@ describe('melite_load render — the loaded line', () => {
                 variants: {
                   turbo: {
                     params: ['steps'],
-                    sampler_envelope: { steps: [4, 8], cfg: [1, 2] },
+                    // the producer's shape (the lane contract merges
+                    // sampler_envelope into bounds — one spelling)
+                    bounds: { steps: { min: 4, max: 8 }, cfg: { min: 1, max: 2 } },
                   },
                 },
               },
@@ -273,8 +275,8 @@ describe('melite_load render — the loaded line', () => {
     const lane = text.split('\n').find((l) => l.startsWith('lane krea-2:')) ?? ''
     assert.ok(lane.includes('requires(realism → strength)'), 'the requires word speaks: ' + lane)
     assert.ok(
-      lane.includes('sampler(4–8 steps, 1–2 cfg)'),
-      'the variant sampler domain speaks: ' + lane,
+      lane.includes('bounds(steps 4…8, cfg 1…2)'),
+      'the variant sampler domain speaks through its bounds span: ' + lane,
     )
   })
 
