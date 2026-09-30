@@ -84,7 +84,14 @@ export const STAGE_KEYS_SORTED: readonly string[] = [...WIRE_STAGE_KEYS].sort();
 // validate+start compose identical params). The id REs below stay here (flow-construction semantics,
 // not envelope admission).
 
-export const FLOW_ID_RE: RegExp = /^[a-z_][a-z0-9_-]*$/;
+// THE STAGE/FLOW ID SHAPE LIVES IN runsGates.ts (the admission
+// gate's own copy — five doors import it from there). It was
+// declared here too, byte-identical, and the start door's flow arms
+// now test it before asking the registry — so two homes meant two
+// answers to "is this a legal id", and a drift would admit on one
+// door what the other refuses. Re-exported, not redeclared: one
+// literal, one identity.
+export { FLOW_ID_RE } from "./runsGates.ts";
 
 /** needCardRegistry (start-door-verbatim): the LOUD
  *  miswire when the card registry is absent — a card= stage

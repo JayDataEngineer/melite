@@ -537,9 +537,20 @@ export class RunsRuntimeService extends Service {
           // runtime; tsc had never run over this file).
           const refusal = cardRefusal(e);
           const p = refusal.payload as { error: string; code: string };
-          throw new RemoteError("runs/invalid-request",
+          // THE CARD ARM'S CLASSIFICATION, KEPT (one voice per
+          // refusal): this arm used to collapse every card code into
+          // runs/invalid-request while the card arm preserved it
+          // through cardRefusal, so the same `lane_input_missing` —
+          // the one carrying the provision fetch URL — was a
+          // different code depending on which arm composed it. The
+          // stage name rides in the message; the classification is
+          // the card plane's own.
+          const mapped: RemoteError = toRemoteError(refusal);
+          throw new RemoteError(
+            mapped.code,
             "bench stage " + JSON.stringify(id) + ": " + p.error,
-            { loc: "stages" });
+            { loc: "stages" },
+          );
         }
         throw e;
       }

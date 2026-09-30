@@ -607,6 +607,33 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
 
+  it("RULE 4d · the stage/flow id shape is declared ONCE in the tree", () => {
+    // The start door's flow arms test FLOW_ID_RE before asking the
+    // registry, so the regex is the admission law for every flow name
+    // and every stage id. It was declared byte-identically in two
+    // files (runsGates.ts and runsValidateShared.ts) and five doors
+    // import it — two homes means a drift would admit on one door
+    // exactly what another refuses. One DECLARATION, anywhere; a
+    // re-export is not a declaration.
+    const declarations: string[] = [];
+    for (const f of SOURCES) {
+      const code = codeOf(read(f));
+      if (/\b(?:const|let|var)\s+FLOW_ID_RE\s*(?::[^=]+)?=/.test(code)) {
+        declarations.push(f);
+      }
+    }
+    expect(
+      declarations,
+      "FLOW_ID_RE is the flow-name admission law and must be declared exactly once: " +
+        declarations.join(", "),
+    ).toHaveLength(1);
+    // and the re-export spelling is what a second home must use
+    const reExporters = SOURCES.filter((f) =>
+      /export\s*\{[^}]*\bFLOW_ID_RE\b[^}]*\}\s*from/.test(codeOf(read(f))),
+    );
+    expect(reExporters.length, "the declaration's consumers re-export rather than redeclare").toBeGreaterThan(0);
+  });
+
   it("RULE 4c · every self-named family is in the contract's list", async () => {
     // A-C1 (the wall audit): this rule once regexed facts.ts for
     // `card: "…"` literals — a shape facts.ts does not carry — so

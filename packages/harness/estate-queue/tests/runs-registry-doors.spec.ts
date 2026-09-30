@@ -504,6 +504,50 @@ describe("validate", () => {
   // the run exists for. The door now BECOMES the bench run: the body
   // restages onto flow_inline with the bench's own stages, and the
   // wires ride as stage inputs.
+  it("THE CARD PLANE'S CLASSIFICATION survives the bench arm (one voice per refusal)", async () => {
+    // The bench arm used to collapse every card refusal into
+    // runs/invalid-request while the card arm preserved the code, so
+    // the same lane_input_missing — the one carrying the provision
+    // fetch URL — arrived under a different code depending on which
+    // arm composed it. The stage name rides the message; the
+    // classification is the card plane's own.
+    const s = seat(
+      {
+        modelFacts: (): unknown => ({ m1: {} }),
+        resolveCardFamily: (): unknown => "m1",
+        modelMids: (): unknown => new Set<string>(),
+        overlayCardParams: async (): Promise<unknown> => ({}),
+        phase1Card: async (): Promise<unknown> => {
+          throw new CardArmError(
+            400,
+            "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
+            "lane_input_missing",
+          );
+        },
+      },
+      {
+        // a WIRED bench (a cross-link) is what the door restages into
+        // the bench-composed arm; a single unwired stage would take
+        // the card arm and prove nothing about this classification.
+        stages: [
+          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: "image-gen" }, sig()),
+    );
+    assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code, not a generic collapse");
+    assert.match(err.message, /bench stage "s_0"/);
+    assert.match(err.message, /fetch it: https:\/\/example\/x/);
+  });
+
   it("THE WIRED-BENCH LAW: a single-card start on a WIRED bench becomes the bench run — never a refusal, never a discarded wire", async () => {
     const s = modelDoorSeat(
       { SaveImage: { class_type: "SaveImage", inputs: {} } },
