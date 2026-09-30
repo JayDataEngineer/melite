@@ -123,7 +123,6 @@ describe("registerFamily (the metaclass gates)", () => {
           quant: "int8",
           artifact: {
             source_url: "https://host/d/krea2_raw_int8_convrot.safetensors",
-            filename: "krea2_raw_int8_convrot.safetensors",
           },
         })],
       }],
@@ -143,7 +142,6 @@ describe("registerFamily (the metaclass gates)", () => {
           quant: "int8",
           artifact: {
             source_url: "https://host/d/krea2_raw_int8_convrot.safetensors",
-            filename: "krea2_raw_int8_convrot.safetensors",
           },
         })],
       }],

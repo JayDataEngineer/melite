@@ -146,6 +146,10 @@ describe("resolveArtifactFile (the artifact rim)", () => {
       /refuses traversal/,
     );
   });
+  it("an empty ref refuses; an absolute path outside the root refuses", () => {
+    assert.throws(() => resolveArtifactFile("  ", ROOT), /empty artifact ref/);
+    assert.throws(() => resolveArtifactFile("/etc/passwd", ROOT), /escapes the output root/);
+  });
   it("a missing run segment refuses malformed", () => {
     assert.throws(
       () => resolveArtifactFile("/v1/assets/runs/", ROOT),

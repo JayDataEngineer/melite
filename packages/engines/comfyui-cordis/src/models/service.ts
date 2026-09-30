@@ -125,10 +125,11 @@ function validateDecl(decl: ModelDecl): void {
       const art = c.artifact;
       if (art === undefined || art === null) continue;
       // CellArtifact carries no filename field — the download's
-      // name is the source_url's last path segment (the downloader
-      // writes dest_root/dest_sub + that basename).
-      const fn = art.source_url.split("/").pop();
-      if (fn === undefined || fn === "") continue;
+      // name is the source_url's last path segment, the same name
+      // the catalog's relative_path rule lands under
+      // models/<dest_sub>.
+      const fn = art.source_url.split("/").pop() ?? "";
+      if (fn === "") continue;
       if (!loads.has(fn)) {
         throw new ModelError(
           `${decl.id}/${v.id}: cell downloads '${fn}' but no lane_input loads it ` +

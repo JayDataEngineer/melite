@@ -469,7 +469,7 @@ describe("validate", () => {
         modelFacts: (): unknown => ({ m1: {} }),
         resolveCardFamily: (): unknown => "m1",
         modelMids: (): unknown => new Set<string>(),
-          phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
+        phase1Card: async (): Promise<unknown> => ({ skeleton: "edit", card: "image-edit" }),
         phase2Card: async (): Promise<unknown> => ({
           graph,
           outputs: {},
@@ -526,7 +526,7 @@ describe("validate", () => {
         modelFacts: (): unknown => ({ m1: {} }),
         resolveCardFamily: (): unknown => "m1",
         modelMids: (): unknown => new Set<string>(),
-          phase1Card: async (): Promise<unknown> => {
+        phase1Card: async (): Promise<unknown> => {
           throw new CardArmError(
             400,
             "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
@@ -676,8 +676,9 @@ describe("status + stop", () => {
       pipeline: "flow_inline",
       graphRows: [],
       outputNodes: [],
+      initials: {},
       ...over,
-    } as RunRecord;
+    };
     (s.core.runs as Map<string, RunRecord>).set(row.runId, row);
     return row.runId;
   };

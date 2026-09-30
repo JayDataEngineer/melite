@@ -57,8 +57,6 @@ export function sweepOutputRoots(): string[] {
 export function resolveArtifactFile(ref: string, outRoot: string): string {
   // (refLocations yields non-empty strings only — ref is always a string here.)
   const raw: string = String(ref).trim();
-  /* v8 ignore next -- the empty fence never fires (refLocations
-     yields prefix-strings only): kept as the rim's contract (2026-09-12) */
   if (raw === "") throw new Error("empty artifact ref (nothing to resolve)");
   if (raw.includes("..")) throw new Error("artifact ref refuses traversal: " + JSON.stringify(raw));
   const prefix: string | null = artifactPrefixOf(raw);
@@ -90,8 +88,6 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   const absCand: string = resolve(cand);
   const absRoot: string = resolve(outRoot);
   const relToRoot: string = relative(absRoot, absCand);
-  /* v8 ignore next -- the traversal fence above pre-empts every ".."
-     (a lexical escape needs one): the check never fires (2026-09-12) */
   if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
     throw new Error("artifact ref escapes the output root: " + JSON.stringify(raw));
   }
