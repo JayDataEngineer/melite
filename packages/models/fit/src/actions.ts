@@ -74,12 +74,16 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
   build({ p, g }): OutputHandle {
     // THE BONE IS THE CALLER'S, NOT A CONSTANT (the verb's other
     // fields are the node's declared defaults; a bone names a bone
-    // in the body being fitted, which no constant can know). The
-    // vendor's row gate refuses an empty one before it picks a mode
-    // (fit_surgery.py:66-69), and the flow's initial gate refuses
-    // an absent or empty initial before a run registers — so the
-    // engine's own refusal is unreachable, and a caller that cannot
-    // name a bone never reaches it.
+    // in the body being fitted, which no constant can know).
+    //
+    // WHERE EACH CHECK LIVES: the door owns the bone's SHAPE (a bare
+    // name, via the text initial kind) and its PRESENCE (the flow
+    // declares it required, so a request without one never
+    // registers); the engine owns whether the name EXISTS in the
+    // body handed to it — the vendor resolves it against a SOMAX
+    // body (mixamorig bones, fit_nodes.py:26). So a request can
+    // pass every door check and still earn the engine's own verdict
+    // on the bone, which is the right owner for it.
     const bone: unknown = p.bone;
     if (typeof bone !== "string" || bone.trim() === "") {
       throw new Error(
