@@ -17,14 +17,10 @@ export const DECL: ModelDecl = {
   "description": "DWPose whole-body pose detection (preprocessor for pose-guided generation).",
   "engine": "comfyui",
   "unoffered": true,
-  "defaults": {
-    "cfg": 1,
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 1,
-    "sampler": "euler"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "genre": "other",
   "variants": [
     {

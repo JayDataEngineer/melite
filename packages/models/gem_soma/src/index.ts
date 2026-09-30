@@ -18,14 +18,10 @@ export const DECL: ModelDecl = {
   "description": "GEM-X SOMA pose estimation and retargeting.",
   "engine": "comfyui",
   "unoffered": true,
-  "defaults": {
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 25,
-    "sampler": "euler",
-    "cfg": 7
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // t2i transcription block (scheduler/width/height/steps/sampler/cfg)
+  // composed nothing on this mesh family; the SOMA lane owns its own
+  // sampler truth.
   "source": {
     "type": "",
     "repo_id": "nvidia/soma-x",

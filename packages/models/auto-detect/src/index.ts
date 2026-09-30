@@ -16,13 +16,10 @@ export const DECL: ModelDecl = {
   "label": "Auto Detect",
   "description": "Auto Detect — automatically selects the best model and conditioning for a given input.",
   "unoffered": true,
-  "defaults": {
-    "output_mode": "segm",
-    "detect_mode": "face",
-    "detection_threshold": 0.35,
-    "sam_dilation": 0,
-    "sam_threshold": 0.93
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "genre": "image",
   "variants": [
     {

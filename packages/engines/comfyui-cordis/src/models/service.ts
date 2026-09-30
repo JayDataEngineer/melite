@@ -51,6 +51,7 @@ import {
   type ModelDecl,
   type VariantRow,
 } from "./families/contract.ts";
+import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.ts";
 
@@ -179,6 +180,27 @@ function validateDecl(decl: ModelDecl): void {
       }
     }
   }
+  // THE DECLARED-PLANE DOOR (the atom vocabulary's family door,
+  // the stroke the write-plane sweep opened): every write-plane
+  // row — the family's defaults, each variant's resolver/wire
+  // defaults, each cell's resolver defaults — is judged against
+  // the union of the declared actions' ParamSpec rows. The surface
+  // is the actions' own declaration, never the card's z-schema.
+  const writeRows: WriteRow[] = [];
+  const pushRow = (where: string, values: Record<string, unknown> | undefined | null): void => {
+    if (values !== undefined && values !== null && Object.keys(values).length > 0) {
+      writeRows.push({ where, values });
+    }
+  };
+  pushRow("defaults", decl.defaults);
+  for (const v of decl.variants) {
+    pushRow(`variant ${String(v.id)} resolver_defaults`, v.resolver_defaults);
+    pushRow(`variant ${String(v.id)} wire_defaults`, v.wire_defaults);
+    for (const c of v.cells) {
+      pushRow(`cell ${String(v.id)}/${String(c.quant)} resolver_defaults`, c.resolver_defaults);
+    }
+  }
+  validateWriteRowsAgainstActions(String(decl.id), writeRows, decl.actions ?? []);
   // SCHEMA LEG runs AFTER the predicates (wall law: the refusal
   // TEXTS are the contract — a corrupt id/genre must keep refusing
   // with the words, not a schemastery ValidationError). Strict

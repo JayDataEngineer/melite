@@ -17,12 +17,10 @@ export const DECL: ModelDecl = {
   "label": "anyCreature",
   "description": "Text → game-ready 3D creature (JSON spec → skinned GLB)",
   "engine": "anycreature",
-  "defaults": {
-    "smooth_angle": 50,
-    "build": "default",
-    "ao": true,
-    "role": "npc"
-  },
+  // No defaults: the declared-plane door's first catch (2026-10-12) —
+  // smooth_angle is the img-to-mesh card's row (families: pixal3d +
+  // trellis2-native, never this one) and build/ao/role had no reader
+  // anywhere. Four dead keys, killed.
   "genre": "3d",
   "variants": [
     {

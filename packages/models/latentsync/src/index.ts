@@ -17,14 +17,10 @@ export const DECL: ModelDecl = {
   "description": "LatentSync — local-only lip-sync that aligns mouth shapes to audio in a video.",
   "engine": "comfyui",
   "unoffered": true,
-  "defaults": {
-    "scheduler": "simple",
-    "width": 1024,
-    "height": 1024,
-    "steps": 25,
-    "sampler": "euler",
-    "cfg": 1
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "genre": "other",
   "variants": [
     {

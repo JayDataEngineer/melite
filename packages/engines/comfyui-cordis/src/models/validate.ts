@@ -186,3 +186,118 @@ export function validateRegistryAgainstCards(
   }
   return checked;
 }
+
+/** Reserved row coordinates — the write-plane keys that name ROW
+ *  state, never action params: the route re-point (`model`), the
+ *  variant pick (`variant`), the tts form selector (`voice`, the
+ *  qvoice law), and the run mode (`mode`). Per-family resolution
+ *  stays with the family's own surface: yue2's `mode` IS a param
+ *  because yue2 declares it; a family that declares one of these
+ *  names as a param row owns it and the row's own judge runs. */
+export const RESERVED_ROW_COORDS: readonly string[] = [...ENGINE_TRUTH, "voice"];
+
+/** Mod-plane keys — the mod marriage's own stamps (the realism
+ *  rows' lora stacks), judged by the mod interlock, not by any
+ *  action's param surface: a wire stamp of `loras` is the pack
+ *  marriage the interlock owns (discovery serves it verbatim as
+ *  the row's macro payload). */
+export const MOD_PLANE_KEYS: readonly string[] = ["loras"];
+
+/** The minimum a declared action contributes to the door: its id
+ *  and its ParamSpec rows (DeclaredAction erasure owns the full
+ *  shape; this is the judge's own read). */
+export interface DeclaredSurface {
+  readonly id: string;
+  readonly params: ReadonlyArray<{
+    readonly name: string;
+    readonly type: "number" | "string" | "boolean" | "enum" | "image_list";
+    readonly bounds?: readonly [number, number];
+    readonly options?: readonly string[];
+  }>;
+}
+
+/** One write-plane row the door judges (where names the DECL site
+ *  for the refusal text). */
+export interface WriteRow {
+  readonly where: string;
+  readonly values: Record<string, unknown>;
+}
+
+/**
+ * THE DECLARED-PLANE DOOR (the atom vocabulary's family door, the
+ * stroke the write-plane sweep opened): every default, variant
+ * preset, and resolver cell is judged against the union of the
+ * family's declared action ParamSpec rows — the surface the
+ * actions themselves declare, never the card's z-schema.
+ *
+ * - a reserved row coordinate skips (row state, not a param);
+ * - a key no declared action offers REFUSES;
+ * - a number outside declared bounds REFUSES;
+ * - a string off a declared enum REFUSES;
+ * - a value of the wrong declared type REFUSES.
+ *
+ * @param declId the family id, for the refusal texts
+ * @param rows the write-plane rows (defaults, variants, cells)
+ * @param actions the family's declared actions
+ * @returns the checked (where, key) pairs for the caller's log
+ */
+export function validateWriteRowsAgainstActions(
+  declId: string,
+  rows: readonly WriteRow[],
+  actions: readonly DeclaredSurface[],
+): string[] {
+  const surface = new Map<string, DeclaredSurface["params"][number]>();
+  for (const a of actions) {
+    for (const p of a.params) {
+      if (!surface.has(p.name)) surface.set(p.name, p);
+    }
+  }
+  const checked: string[] = [];
+  for (const row of rows) {
+    for (const [key, value] of Object.entries(row.values)) {
+      if (RESERVED_ROW_COORDS.includes(key)) continue;
+      if (MOD_PLANE_KEYS.includes(key)) continue;
+      // NULL is the unset stamp (the voicedesign meld law): it
+      // writes nothing, so there is no value to judge.
+      if (value === null) continue;
+      const spec = surface.get(key);
+      if (spec === undefined) {
+        throw new ModelError(
+          `${declId} ${row.where}: '${key}' is refused — no declared action offers it ` +
+            `(the declared-plane door: the write plane is the actions' own surface; ` +
+            `add the param row or fix the row)`,
+        );
+      }
+      if (spec.type === "number") {
+        if (typeof value !== "number") {
+          throw new ModelError(
+            `${declId} ${row.where}: '${key}' declares number but carries ${typeof value}`,
+          );
+        }
+        if (spec.bounds && (value < spec.bounds[0] || value > spec.bounds[1])) {
+          throw new ModelError(
+            `${declId} ${row.where}: '${key}' carries ${String(value)}, outside the declared bounds [${String(spec.bounds[0])}, ${String(spec.bounds[1])}]`,
+          );
+        }
+      } else if (spec.type === "enum") {
+        if (typeof value !== "string" || !(spec.options ?? []).includes(value)) {
+          throw new ModelError(
+            `${declId} ${row.where}: '${key}' carries '${String(value)}', off the declared options`,
+          );
+        }
+      } else if (spec.type === "string" || spec.type === "image_list") {
+        if (spec.type === "image_list" ? !Array.isArray(value) : typeof value !== "string") {
+          throw new ModelError(
+            `${declId} ${row.where}: '${key}' declares ${spec.type} but carries ${typeof value}`,
+          );
+        }
+      } else if (typeof value !== "boolean") {
+        throw new ModelError(
+          `${declId} ${row.where}: '${key}' declares boolean but carries ${typeof value}`,
+        );
+      }
+      checked.push(`${row.where}:${key}`);
+    }
+  }
+  return checked;
+}

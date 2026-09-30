@@ -36,9 +36,9 @@ export const DECL: ModelDecl = {
   "label": "ACE-Step 1.5",
   "description": "ACE-Step 1.5 music generation",
   "engine": "audio_cpp",
-  "defaults": {
-    "backend": "cuda"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the engine lane owns its own backend choice.
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/audio.cpp-gguf",
@@ -102,10 +102,10 @@ export const DECL: ModelDecl = {
       "description": "the finetune",
       "group": "Variant",
       "route": "ace-step-sft",
-      "resolver_defaults": {
-        "duration": 120,
-        "sample_rate": 44100
-      },
+      // No resolver_defaults: the declared-plane door's catch
+      // (2026-10-12) — the actionless family declares no write
+      // plane, and duration/sample_rate had no estate reader (the
+      // engine lane owns both).
       "cells": [
         {
           "source": {
@@ -123,10 +123,10 @@ export const DECL: ModelDecl = {
       "description": "the audio.cpp flagship",
       "group": "Variant",
       "route": "ace-step-xl",
-      "resolver_defaults": {
-        "duration": 120,
-        "sample_rate": 44100
-      },
+      // No resolver_defaults: the declared-plane door's catch
+      // (2026-10-12) — the actionless family declares no write
+      // plane, and duration/sample_rate had no estate reader (the
+      // engine lane owns both).
       "cells": [
         {
           "source": {

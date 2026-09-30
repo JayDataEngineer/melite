@@ -16,13 +16,9 @@ export const DECL: ModelDecl = {
   "label": "SOMAX",
   "description": "TRELLIS → SOMA weight transfer — image to SOMAX rigged GLB with anatomically correct SOMA-77 skeleton weights.",
   "unoffered": true,
-  "defaults": {
-    "filename_prefix": "KimodoAnimated",
-    "file_format": "glb",
-    "decimate_ratio": 0.2,
-    "preserve_texture": true,
-    "in_place": true
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // filename_prefix/file_format/decimate_ratio/preserve_texture/in_place had no reader on this actionless family.
   "source": {
     "type": "",
     "repo_id": "nvidia/soma-x",

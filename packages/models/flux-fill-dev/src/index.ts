@@ -16,29 +16,10 @@ export const DECL: ModelDecl = {
   "label": "Inpaint",
   "description": "Dual-engine masked region inpainting — FLUX.1-Fill (dedicated fill arch) or LanPaint on any base model.",
   "unoffered": true,
-  "defaults": {
-    "inpaint_context_pad": 64,
-    "inpaint_detail": "crop+stitch",
-    "inpaint_edge_extend": 0,
-    "inpaint_target_size": 1024,
-    "outpaint_bottom": 0,
-    "outpaint_left": 0,
-    "outpaint_overlap": 16,
-    "outpaint_right": 0,
-    "outpaint_top": 0,
-    "refine_denoise": 0.4,
-    "mode": "replace",
-    "steps": 20,
-    "cfg": 1,
-    "guidance": 30,
-    "sampler": "euler",
-    "scheduler": "normal",
-    "seed": 42,
-    "mask_grow": 8,
-    "mask_feather": 8,
-    "mask_threshold": 0,
-    "mask_invert": false
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "genre": "image",
   "variants": [
     {

@@ -27,9 +27,9 @@ export const DECL: ModelDecl = {
   "label": "MOSS",
   "description": "MOSS text-to-speech — Nano, VoiceGenerator, and Local Transformer",
   "engine": "audio_cpp",
-  "defaults": {
-    "backend": "cuda"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the engine lane owns its own backend choice.
   "source": {
     "type": "huggingface",
     "repo_id": "audio-cpp/audio.cpp-gguf",

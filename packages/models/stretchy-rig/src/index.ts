@@ -16,10 +16,10 @@ export const DECL: ModelDecl = {
   "label": "Stretchy Rig",
   "description": "Stretchy Studio auto-rig — DWPose TensorRT whole-body keypoints for 2D character animation.",
   "unoffered": true,
-  "defaults": {
-    "yolox_precision": "fp16",
-    "dwpose_precision": "fp32"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "genre": "other",
   "variants": [
     {

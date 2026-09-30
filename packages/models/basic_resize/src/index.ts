@@ -15,11 +15,9 @@ export const DECL: ModelDecl = {
   "label": "Basic Resize",
   "description": ">-",
   "unoffered": true,
-  "defaults": {
-    "resize_method": "lanczos",
-    "resize_scale": 0.5,
-    "filename_prefix": "scaled"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // resize_method/resize_scale/filename_prefix had no card field on this actionless family (the run router owns the prefix).
   "genre": "image",
   "variants": [
     {

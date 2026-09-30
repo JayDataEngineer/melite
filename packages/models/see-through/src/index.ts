@@ -16,13 +16,10 @@ export const DECL: ModelDecl = {
   "label": "See-Through",
   "description": "See-Through anime layer decomposition — splits an image into character, clothing, and background layers.",
   "unoffered": true,
-  "defaults": {
-    "resolution": 1280,
-    "resolution_depth": 768,
-    "inference_steps": 30,
-    "tblr_split": false,
-    "seed": 42
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the transcription keys composed nothing (no card names them for
+  // this family; the run router and engine lane own their truths).
   "source": {
     "type": "",
     "repo_id": "layerdifforg/seethroughv0.0.2_layerdiff3d",

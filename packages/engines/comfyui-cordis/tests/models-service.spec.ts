@@ -36,8 +36,12 @@ const clone = (over: Record<string, unknown> = {}): ModelDecl => {
   // function members, and synthetic lane_inputs shapes ({base:"b"})
   // are not the door's truth — the real doors ride the real
   // bootModels() below + each family's own action spec; the
-  // admission gate gets its own arm with a synthetic door.
-  const { actions: _door, ...base } = KREA;
+  // admission gate gets its own arm with a synthetic door. The
+  // DEFAULTS drop with them: the declared-plane door judges every
+  // write row against the declared actions, and a doorless clone
+  // declares no surface (krea's real defaults are judged by krea's
+  // real actions at the family's own registration).
+  const { actions: _door, defaults: _defaults, ...base } = KREA;
   return structuredClone({ ...base, variants: [{ ...variant() }], ...over }) as unknown as ModelDecl;
 };
 
@@ -54,6 +58,17 @@ const variant = (over: Record<string, unknown> = {}): Record<string, unknown> =>
 });
 
 const fresh = (): ModelsService => new ModelsService(new Context());
+
+/** A minimal declared surface for the merge-mechanics fixtures:
+ * names become number rows, so the declared-plane door can judge
+ * the a/b/c/x writes these tests stage. */
+type ProbeAction = NonNullable<ModelDecl["actions"]>[number];
+
+const surf = (names: readonly string[]): ProbeAction => ({
+  id: "surface", inputs: [], outputs: [],
+  params: names.map((n) => ({ name: n, type: "number" })),
+  facts: (): unknown => ({}), build: (): unknown => ({}),
+});
 
 describe("modelsService (the boot gate)", () => {
   it("refuses before the boot settles", () => {
@@ -117,7 +132,7 @@ describe("registerFamily (the metaclass gates)", () => {
       variants: [{
         ...variant(),
         id: "raw",
-        resolver_defaults: { model: "krea-2-raw", steps: 52, cfg: 3.5 },
+        resolver_defaults: { model: "krea-2-raw" },
         lane_inputs: {},
         cells: [cell({
           quant: "int8",
@@ -136,7 +151,7 @@ describe("registerFamily (the metaclass gates)", () => {
       variants: [{
         ...variant(),
         id: "raw",
-        resolver_defaults: { model: "krea-2-raw", steps: 52, cfg: 3.5 },
+        resolver_defaults: { model: "krea-2-raw" },
         lane_inputs: { unet: "krea2_raw_int8_convrot.safetensors" },
         cells: [cell({
           quant: "int8",
@@ -365,11 +380,13 @@ describe("registryModel + getModel (the two planes)", () => {
 
   it("a NULL stamp unsets the inherited default (the voicedesign meld)", () => {
     const svc = fresh();
-    svc.registerFamily(clone({
+    const d = clone({
       id: "synth-a",
       defaults: { a: 1, b: 2 },
       variants: [{ ...variant({ route: "r", resolver_defaults: { b: null, c: 3 } }) }],
-    }));
+    });
+    d.actions = [surf(["a", "b", "c"])];
+    svc.registerFamily(d);
     assert.deepEqual(svc.getModel("r").defaults, { a: 1, c: 3 });
   });
 
@@ -389,11 +406,13 @@ describe("registryModel + getModel (the two planes)", () => {
 
   it("a cell-less variant address resolves sourceless (no cell half to compose)", () => {
     const svc = fresh();
-    svc.registerFamily(clone({
+    const cellless = clone({
       id: "synth-a",
       defaults: undefined,
       variants: [{ ...variant({ route: "r", resolver_defaults: { x: 1 }, cells: [] }) }],
-    }));
+    });
+    cellless.actions = [surf(["x"])];
+    svc.registerFamily(cellless);
     const view = svc.getModel("r");
     assert.deepEqual(view.defaults, { x: 1 }, "absent atom defaults union the variant intercept alone");
     assert.equal(view.source, undefined);
@@ -455,7 +474,9 @@ describe("variantOf + cellOf (the coordinates)", () => {
 describe("mergedDefaults + cascade (the inherency primitive)", () => {
   it("bare reads copy the family defaults (absent ≡ {})", () => {
     const svc = fresh();
-    svc.registerFamily(clone({ id: "synth-a", defaults: { a: 1 } }));
+    const withA = clone({ id: "synth-a", defaults: { a: 1 } });
+    withA.actions = [surf(["a"])];
+    svc.registerFamily(withA);
     assert.deepEqual(svc.mergedDefaults("synth-a"), { a: 1 });
     const bare = fresh();
     bare.registerFamily(clone({ id: "synth-a", defaults: undefined }));
@@ -464,11 +485,13 @@ describe("mergedDefaults + cascade (the inherency primitive)", () => {
 
   it("one coordinate at a time (variant-only, quant-only)", () => {
     const svc = fresh();
-    svc.registerFamily(clone({
+    const casc = clone({
       id: "synth-a",
       defaults: { a: 1 },
       variants: [{ ...variant({ id: "v", resolver_defaults: { b: 2 }, cells: [cell({ quant: "q8" })] }) }],
-    }));
+    });
+    casc.actions = [surf(["a", "b"])];
+    svc.registerFamily(casc);
     assert.deepEqual(svc.mergedDefaults("synth-a", "v"), { a: 1, b: 2 });
     assert.deepEqual(svc.mergedDefaults("synth-a", undefined, "q8"), { a: 1, b: 2 });
   });
@@ -497,14 +520,16 @@ describe("mergedDefaults + cascade (the inherency primitive)", () => {
 
   it("coordinates merge base ← variant ← cell (root-closer wins)", () => {
     const svc = fresh();
-    svc.registerFamily(clone({
+    const three = clone({
       id: "synth-a",
       defaults: { a: 1, b: 1, c: 1 },
       variants: [{ ...variant({
         id: "v", resolver_defaults: { b: 2 },
         cells: [cell({ quant: "q8", resolver_defaults: { c: 3 } })],
       }) }],
-    }));
+    });
+    three.actions = [surf(["a", "b", "c"])];
+    svc.registerFamily(three);
     assert.deepEqual(svc.mergedDefaults("synth-a", "v", "q8"), { a: 1, b: 2, c: 3 });
   });
 

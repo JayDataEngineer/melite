@@ -34,7 +34,13 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
       "node node_modules/vitest/vitest.mjs run --project node",
     );
     expect(walls, "the fleet must write to a file, never a closing pipe").toMatch(
-      /> \/tmp\/hook-walls\.log 2>&1/,
+      // /var/tmp, not /tmp: this box's /tmp janitor killed the log
+      // between redirect and tail twice (2026-10-12); the repo-local
+      // .scratch is the one tree the janitor provably never touches.
+      /> \.scratch\/hook-walls\.log 2>&1/,
+    );
+    expect(walls, "the hook's temp tree rides the janitor-free /var/tmp").toMatch(
+      /TMPDIR=\/var\/tmp\/melite-hook/,
     );
     expect(walls, "vitest's exit code must reach lefthook verbatim").toContain(
       "exit $code",

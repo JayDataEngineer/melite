@@ -29,7 +29,21 @@ pre-commit:
       # brain default and estate.spec expects the mcp row's own config,
       # so an ambient route/engines var flips two walls red on a green
       # tree. The hook scrubs both exactly as `pnpm run test` does.
-      run: env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE node node_modules/vitest/vitest.mjs run --project node > /tmp/hook-walls.log 2>&1; code=$?; tail -n 4 /tmp/hook-walls.log; exit $code
+      # THE /tmp JANITOR FIX (2026-10-12): this box's /tmp is swept
+      # by an aggressive janitor while the fleet runs — the log file
+      # vanished between redirect and tail twice (tail ENOENT, exit 1,
+      # a green tree bounced), and vite's ssr transform cache under
+      # /tmp died the same death mid-fleet (293 suites ENOENT on
+      # `await import` in one hook run while the bare command exited
+      # 0 minutes earlier). Both the log AND the run's temp tree ride
+      # /var/tmp/melite-hook, which the janitor never touches (a
+      # buildah dir from May survives there) and whose tmpfiles age
+      # policy (30d) cannot age out files minted this run. Never
+      # point this INSIDE the repo: Node's nearest-package.json rule
+      # makes the commission-supervisor stub's CommonJS `require`
+      # die under the repo's "type": "module" reach — verified
+      # deterministically before choosing /var/tmp.
+      run: mkdir -p /var/tmp/melite-hook && env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE TMPDIR=/var/tmp/melite-hook node node_modules/vitest/vitest.mjs run --project node > .scratch/hook-walls.log 2>&1; code=$?; tail -n 4 .scratch/hook-walls.log; exit $code
 
     - name: final-newline (staged text)
       run: node tools/hook-final-newline.mjs {staged_files}

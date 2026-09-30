@@ -16,16 +16,9 @@ export const DECL: ModelDecl = {
   "label": "Trellis (Native)",
   "description": "Native trellis.cpp GGML engine — image to UV-textured GLB with the C++ postprocess (weld, fill, DC remesh, CuMesh QEM, xatlas, trilinear PBR bake). 50s per asset on the 4090; no confetti.",
   "unoffered": true,
-  "defaults": {
-    "resolution": "1024",
-    "quant": "q8",
-    "bg_removal": "auto",
-    "band": 0,
-    "texture_size": 2048,
-    "webp_quality": 90,
-    "filename_prefix": "trelliscpp",
-    "seed": 42
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the node-doc transcription block had no reader on this actionless family.
   "source": {
     "type": "",
     "repo_id": "ilintar/trellis2-gguf",

@@ -68,6 +68,9 @@ export const compose: ComfyActionSpec<KimodoParams, KimodoFacts> = {
     { name: "motion_constraints", type: "string" },
     { name: "preview_glb", type: "string" },
     { name: "seed", type: "number", rule: "seed-sentinel" },
+    // The DiT step count the variant wire stamps ride (turbo rows stamp
+    // 10, the flagship 200; the node doc caps the plane at 500).
+    { name: "diffusion_steps", type: "number", bounds: [1, 500] },
   ],
   facts: parseKimodoFacts,
   build({ p, facts, g }) {

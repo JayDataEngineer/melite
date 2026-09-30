@@ -16,14 +16,9 @@ export const DECL: ModelDecl = {
   "label": "Step1X-3D Texture",
   "description": "Diffusion-based 3D texture synthesis — 1 reference image → 6 multi-view images via SDXL ig2mv flow → baked onto UV atlas. Fills ALL surfaces (no coverage gaps unlike camera projection). 3.5B model, ~15s on 4090.",
   "unoffered": true,
-  "defaults": {
-    "preset": "standard",
-    "texture_size": 2048,
-    "render_size": 2048,
-    "remove_bg": false,
-    "seed": 2025,
-    "filename_prefix": "step1x_texture"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the node-doc transcription block had no reader on this actionless family.
   "genre": "3d",
   "variants": [
     {

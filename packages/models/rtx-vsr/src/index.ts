@@ -16,24 +16,9 @@ export const DECL: ModelDecl = {
   "label": "Video Upscale",
   "description": ">-",
   "unoffered": true,
-  "defaults": {
-    "batch_size": 5,
-    "cfg": 4,
-    "color_match_enabled": true,
-    "denoise": 0.3,
-    "dit_model": "seedvr2_ema_3b_fp16.safetensors",
-    "filename_prefix": "upscaled_video",
-    "fps": 24,
-    "seed": 0,
-    "steps": 20,
-    "upscaler_model": "4xNomos2_hq_dat2.pth",
-    "vae_model": "ema_vae_fp16.safetensors",
-    "mode": "rtx_vsr",
-    "rtx_two_pass": true,
-    "rtx_mode": "vsr",
-    "target_resolution": 1080,
-    "rtx_strength": 0.6
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the node-doc transcription block had no reader on this actionless family (the card owns the real knobs; mode is reserved).
   "genre": "video",
   "variants": [
     {

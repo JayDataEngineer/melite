@@ -16,25 +16,11 @@ export const DECL: ModelDecl = {
   "label": "UltraShape Mesh Refine",
   "description": "Image-guided coarse-mesh refinement (UltraShape 1.0 DiT) — carves sharp limb separation + hard-surface edges into blobby TRELLIS output using the SAME guide image the mesh was generated from. The pre-rig cleanup step: run BEFORE SOMAX so proximity-based weight transfer can't glue arm vertices to torso bones.",
   "unoffered": true,
-  "defaults": {
-    "box_v": 1,
-    "mc_level": 0,
-    "normalize_scale": 0.99,
-    "num_latents": 32768,
-    "num_sharp_points": 204800,
-    "num_uniform_points": 204800,
-    "preset": "standard",
-    "dtype": "bfloat16",
-    "low_vram": false,
-    "steps": 50,
-    "guidance_scale": 5,
-    "octree_resolution": 384,
-    "num_chunks": 8000,
-    "remove_bg": false,
-    "seed": 42,
-    "file_format": "glb",
-    "filename_prefix": "ultrashape_refined"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the 16 node-input keys this block carried had no reader on the
+  // estate plane (a frozen transcription of the engine node doc;
+  // the live node defs own that truth now).
   "genre": "3d",
   "variants": [
     {

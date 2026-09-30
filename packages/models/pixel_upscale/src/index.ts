@@ -15,22 +15,9 @@ export const DECL: ModelDecl = {
   "label": "Pixel Upscaler",
   "description": ">-",
   "unoffered": true,
-  "defaults": {
-    "batch_size": 5,
-    "cfg": 7.5,
-    "denoise": 0.4,
-    "detection_threshold": 0.35,
-    "downscale_first": 1,
-    "filename_prefix": "upscaled",
-    "guide_size": 512,
-    "inpaint_region": "free",
-    "max_size": 1024,
-    "resolution": 2048,
-    "seed": 0,
-    "steps": 50,
-    "target_scale": 4,
-    "mode": "upscale"
-  },
+  // No defaults: the declared-plane door's catch (2026-10-12) — the
+  // family declares no actions, so it declares no write plane, and
+  // the node-doc transcription block had no reader on this actionless family (mode is a reserved coordinate; the card owns the real knobs).
   "genre": "image",
   "variants": [
     {
