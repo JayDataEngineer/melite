@@ -28,7 +28,6 @@ import {
   loadCardDefs,
   modelIds,
   theService,
-  modelsService,
   emitModifierKinds,
   declaredDefaults,
 } from '@melite/comfyui-cordis'
@@ -1051,13 +1050,6 @@ export async function formSpecArm(
     return buildEngine()
   }
   const defs = await loadCardDefs()
-  // THE SEAT BEFORE THE NAME: a mounted-table question answered in
-  // the table's own voice. Without this the door's null collapsed
-  // "the table never booted" into "does not resolve (unknown,
-  // unoffered, or retired)" — a 404 naming the model as retired when
-  // the lane had no table to ask. The refusal propagates and the door
-  // renders it 500, exactly as it does for every other engine seat.
-  modelsService()
   const res = resolveSpecKey(model, defs, boardedMap(defs))
   if (res === null) return null
   return specBody(theService(), defs, res)

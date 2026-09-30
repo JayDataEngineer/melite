@@ -47,12 +47,15 @@ export function batchRows(body: unknown, firstError: string, cards?: CardRegistr
 // module-level pinCache singleton (read-once, never refreshed) is
 // DEAD. The pin now reads through ctx.cardRegistry.objectInfo()
 // (the service owns the snapshot, mtime-keyed — a re-pin is never
-// stale, strictly fresher than the old read-once cache). Absent or
-// unreadable pin degrades to the empty set (every class "unknown" —
-// compose/__init__.py:190-194), exactly as before. Non-plugin
-// callers pass no cards and get the same degrade (a unit caller
-// with no registry cannot know the pin — fail-open set, never a
-// throw on this sweep leg).
+// stale, strictly fresher than the old read-once cache).
+//
+// THE PIN'S THREE ANSWERS. An engine that answered is judged
+// against what it said — including an answer of zero classes, which
+// is an answer and stays fail-closed. Nobody able to ask (no cards
+// seat for a non-plugin caller, or an owner whose objectInfo()
+// stayed null because the engine never answered) yields null, and
+// the sweep judges shape only: a node with no class_type is still a
+// refusal, because that judgment needs no engine.
 export function servedNodeClasses(cards?: CardRegistryLike | null): Set<string> | null {
   // NULL, NOT EMPTY, when no pin can judge a class: no cards seat (a
   // non-plugin caller), or the owner is mounted but the engine never

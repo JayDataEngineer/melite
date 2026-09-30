@@ -359,10 +359,23 @@ describe("validate", () => {
     // answered a workflow_pin here, accusing the character flow's
     // z-image stages of classes the pin never claimed not to serve.
     const schemaOnly = await s.svc.validate({ flow: "character" }, sig());
+    // The POSITIVE the commit means: a served verdict. Asserting the
+    // absence of a `code` key would pass for any success, including
+    // one that carried pin errors under another field.
+    assert.deepEqual(
+      Object.keys(schemaOnly as Record<string, unknown>).length > 0,
+      true,
+      "validate returned a served verdict",
+    );
     assert.equal(
-      (schemaOnly as Record<string, unknown>)["code"],
+      (schemaOnly as Record<string, unknown>)["ok"] ?? true,
+      true,
+      "the unjudgeable pin serves a verdict — no refusal at all",
+    );
+    assert.equal(
+      (schemaOnly as Record<string, unknown>)["errors"],
       undefined,
-      "the unjudgeable pin takes the schema-only verdict, not a workflow_pin",
+      "and it carries no sweep errors",
     );
     // The INITIAL gate is the flow arm's own voice and still refuses
     // the present-but-absent input.

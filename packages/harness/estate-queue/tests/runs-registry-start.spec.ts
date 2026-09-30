@@ -472,10 +472,17 @@ describe("start model arm", () => {
         s.svc.start({ draft_id: "d1", test: false, flow }, sig()),
       );
       assert.equal(err.code, "runs/invalid-request");
-      assert.match(err.message, /is not a legal identifier/);
+      // The refusal NAMES what the caller sent. Naming the coerced
+      // "" instead was half the original defect: the operator who
+      // sent `flow: 42` learned nothing from the message.
+      assert.match(err.message, new RegExp("flow id " + JSON.stringify(flow).replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + " is not a legal identifier"));
       const verr = await remote(() => s.svc.validate({ flow }, sig()));
       assert.equal(verr.code, "runs/invalid-request");
-      assert.match(verr.message, /is not a legal identifier/);
+      assert.equal(
+        verr.message,
+        err.message,
+        "start and validate speak the same refusal for the same value",
+      );
     }
     // A legal-but-unregistered name still gets the PRESENCE voice.
     const unknown = await remote(() =>

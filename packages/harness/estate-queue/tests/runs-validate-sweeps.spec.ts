@@ -71,6 +71,19 @@ describe("servedNodeClasses (the pin's state, not an empty set)", () => {
     const cards = { objectInfo: () => ({ KSampler: {}, VAE: {} }) };
     expect(servedNodeClasses(cards as never)).toEqual(new Set(["KSampler", "VAE"]));
   });
+
+  it("an engine that ANSWERED with zero classes still refuses (fail-closed stays closed)", () => {
+    // The direction that must NOT reopen: an empty roster is an
+    // answer, so a real engine serving nothing refuses every class.
+    // Collapsing this into the unjudgeable null would let a genuinely
+    // empty engine pass every workflow.
+    const rows = validateWorkflow(
+      { workflow: { "1": { class_type: "KSampler" } } },
+      { objectInfo: () => ({}) } as never,
+    );
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatch(/\(0 known classes\)/);
+  });
 });
 
 describe("validateWorkflow (the pin verdicts)", () => {

@@ -52,14 +52,16 @@ export async function validate(
         // door's law): expand the registry flow live and compile it
         // through the SAME inline arm — no second validator. Unknown
         // names keep the door's own voice.
-        const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+        const raw: unknown = body["flow"];
+        const name: string = typeof raw === "string" ? raw : "";
         // The start arm's order, verbatim: admission (the id's shape)
         // before presence (is it registered). One voice for an
         // illegal name, whichever door answers.
         if (!FLOW_ID_RE.test(name)) {
           throw new RemoteError(
             "runs/invalid-request",
-            "flow id " + JSON.stringify(name) + " is not a legal identifier",
+            // The RAW value, named — the start arm's voice verbatim.
+            "flow id " + JSON.stringify(raw) + " is not a legal identifier",
             { loc: "flow" },
           );
         }

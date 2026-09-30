@@ -962,7 +962,8 @@ export class RunsRuntimeService extends Service {
       // registration, the merged worker — runs untouched. Multi-stage
       // and card= shapes refuse at those EXISTING gates with their
       // preview_scope voices (never silent).
-      const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+      const raw: unknown = body["flow"];
+      const name: string = typeof raw === "string" ? raw : "";
       // ADMISSION BEFORE PRESENCE (the {model} arm's own order): a
       // name that cannot be a flow id is refused as a shape failure,
       // never answered as an unknown flow. Without this, `flow: 42`
@@ -972,7 +973,10 @@ export class RunsRuntimeService extends Service {
       if (!FLOW_ID_RE.test(name)) {
         throw new RemoteError(
           "runs/invalid-request",
-          "flow id " + JSON.stringify(name) + " is not a legal identifier",
+          // The RAW value, not the coerced name: `flow: 42` must
+          // read "flow id 42 …" — the empty string the coercion
+          // produced named nothing, which was half the old defect.
+          "flow id " + JSON.stringify(raw) + " is not a legal identifier",
           { loc: "flow" },
         );
       }

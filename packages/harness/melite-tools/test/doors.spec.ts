@@ -224,6 +224,7 @@ afterEach(async () => {
   }
 })
 
+
 async function inputDir(): Promise<string> {
   const dir = path.join(resolveRepoRoot(), 'data', 'input')
   await fs.mkdir(dir, { recursive: true })

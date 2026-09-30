@@ -280,19 +280,28 @@ describe("loadCard", () => {
   };
 
   it("an unknown card answers in the LOAD door's voice, never the engine's bootstrap voice", () => {
-    // Admission before the dependency: the referent is checked first,
-    // so a missing card never surfaces as "models service not
-    // booted" on a lane whose singleton has not settled. The seat
-    // read here is the one that throws.
-    const exploding = {
-      get allDecls(): never {
-        throw new Error("models service not booted — await bootModels() first");
-      },
-    } as unknown as never;
+    // The ORDER, pinned by making the two failures mutually
+    // exclusive: a seat whose every read throws (the bootstrap
+    // refusal) must lose to the card's own refusal for a name that
+    // does not exist, and win for a name that does. Both seat reads
+    // are reached through the SAME accessor the function uses, so
+    // the fixture is the one the code actually takes.
+    const bootstrap = () => {
+      throw new Error("models service not booted — await bootModels() first");
+    };
+    const exploding = { allDecls: bootstrap, checkModelPresent: bootstrap, checkModelPathPresent: bootstrap, resolveCatalogArtifact: bootstrap } as unknown as never;
+    // unknown card: the card's refusal, never the dependency's
     assert.throws(
       () => loadCard(REPO, cards as never, exploding, "ghost-card"),
       /disclose: unknown card 'ghost-card'/,
-      "the card's own refusal, not the dependency's",
+      "the referent is admitted before the dependency is read",
+    );
+    // known card: the dependency's refusal still surfaces (the order
+    // swap must not swallow a real bootstrap failure)
+    assert.throws(
+      () => loadCard(REPO, cards as never, exploding, "anny"),
+      /models service not booted/,
+      "a seated card reaches the dependency and hears its refusal",
     );
   });
 

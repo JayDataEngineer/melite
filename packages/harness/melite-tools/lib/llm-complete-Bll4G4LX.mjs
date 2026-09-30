@@ -1,5 +1,5 @@
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, modelsService, owningAtom, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
+import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, owningAtom, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
 import { laneContractOf } from "@melite/contracts/laneRelations";
 import { execFileSync } from "node:child_process";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
@@ -925,7 +925,6 @@ async function formSpecArm(model, engineDocs) {
 	const buildEngine = engineDocs?.get(model);
 	if (buildEngine !== void 0) return buildEngine();
 	const defs = await loadCardDefs();
-	modelsService();
 	const res = resolveSpecKey(model, defs, boardedMap(defs));
 	if (res === null) return null;
 	return specBody(theService(), defs, res);
