@@ -473,74 +473,13 @@ describe("maskT1 (the selection lane's arms)", () => {
 });
 
 // ── the tagger dispatch (four arms + the no-arm refusal) ──────────
-describe("taggerLane (the four-family dispatch)", () => {
-  const arms: Array<[string, RegExp, Record<string, unknown>, string, string]> = [
-    // family, node, arm params, loader class, expected model wire value
-    ["wd14", /WD14Tagger\|pysssss/, { input_image: "/m/p.png", checkpoint: "c", threshold: 0.35 }, "WD14Tagger|pysssss", "c"],
-    ["joytag", /CXH_JoyTag/, { input_image: "/m/p.png", threshold: 0.2 }, "CXH_JoyTag", ""],
-    ["florence2", /DownloadAndLoadFlorence2Model/, { input_image: "/m/p.png", checkpoint: "f" }, "DownloadAndLoadFlorence2Model", "f"],
-    ["joycaption", /JJC_JoyCaption/, { input_image: "/m/p.png", checkpoint: "j" }, "JJC_DownloadAndLoadJoyCaptionModel", "j"],
-  ];
-  for (const [family, node, params, loader, wired] of arms) {
-    it(`the ${family} arm rides its family node`, () => {
-      const model = facts.models[family]!;
-      assert.ok(model, `the ${family} facts row serves`);
-      const g = new GraphBuilder();
-      taggerLane(params, model, g, "run_1");
-      const row = dump(g);
-      assert.ok(classes(row).some((c) => node.test(c)), `the ${family} node rides`);
-      if (wired !== "") {
-        const loaderNode = Object.values(row).find((n) => n.class_type === loader)!;
-        assert.equal(loaderNode.inputs.model, wired, `the ${family} arm wires the rail-stamped checkpoint`);
-      }
-    });
-  }
-
-  it("an unknown family refuses with the known list", () => {
-    assert.throws(
-      () => taggerLane({ input_image: "x" }, { ...facts.models["wd14"]!, id: "nope" }, new GraphBuilder(), "r"),
-      /tagger model 'nope' has no arm \(known families: florence2, joycaption, joytag, wd14\)/,
-    );
-  });
-
-  it("a non-string input_image walks as the empty string", () => {
-    const g = new GraphBuilder();
-    taggerLane({ input_image: 5 }, facts.models["wd14"]!, g, "run_2");
-    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
-    assert.equal(load.inputs.image, "");
-  });
-
-  it("THE SPELL ARM (all four arms): a spelled image builds no loader — the spell rides the interrogator verbatim", () => {
-    // Same gap family as maskT1 above: the tagger card seats
-    // input_image, so a producer CAN wire in — every arm bypasses
-    // its LoadImage for the spell now. One wall walks all four
-    // arms (the dispatch is data, so the law is data-wide too).
-    const probes: Array<[string, string]> = [
-      ["wd14", "WD14Tagger|pysssss"],
-      ["joytag", "CXH_JoyTag"],
-      ["florence2", "Florence2Run"],
-      ["joycaption", "JJC_JoyCaption"],
-    ];
-    for (const [family, node] of probes) {
-      const g = new GraphBuilder();
-      taggerLane(
-        { input_image: "$src", checkpoint: "c", threshold: 0.35 },
-        facts.models[family]!, g, `run_spell_${family}`,
-      );
-      const row = dump(g);
-      assert.ok(!classes(row).includes("LoadImage"), `no loader carries the spell on ${family}`);
-      const interrogator = Object.values(row).find((n) => n.class_type === node)!;
-      assert.equal(interrogator.inputs.image, "$src", `${family} reads the wired tensor verbatim`);
-    }
-  });
-
-  it("a file image keeps its loader on every arm", () => {
-    const g = new GraphBuilder();
-    taggerLane({ input_image: "/m/p.png", checkpoint: "c", threshold: 0.35 }, facts.models["wd14"]!, g, "run_path");
-    const load = Object.values(dump(g)).find((n) => n.class_type === "LoadImage")!;
-    assert.equal(load.inputs.image, "/m/p.png", "paths keep the LoadImage disk handoff");
-  });
-});
+// THE TAGGER LANE IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30):
+// the four tagger families compose their own arms in their declared
+// actions, each pinned to a committed golden (packages/models/*/tests/
+// golden/). The dispatch and its four arm bodies are deleted with the
+// spec that owned them; the per-family laws (the node, the rail-stamped
+// checkpoint, the wired spell, the file loader, the blank/non-string
+// refusals) live in each family's own action spec.
 
 describe("upscaleLane (the spelled anchor)", () => {
   const base = { seed: 7, resolution: 1080, max_resolution: 2160, batch_size: 4 };

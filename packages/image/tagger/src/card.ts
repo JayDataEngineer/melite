@@ -1,8 +1,11 @@
 // Tier 3 — the tagger card (the wd14_t1 / joytag_t1 / florence2_t1 /
 // joycaption_t1 renderer ports; the image prompt-inversion card).
-// Decl + admission + family dispatch — the four arms live in
-// @melite/comfyui-card-kit (TAGGER_ARMS); the lane is weightless, every wire value
-// comes from params.
+// Decl + admission + family dispatch — the four arms live in their
+// OWN families' declared actions (packages/models/{wd14,joytag,
+// florence2,joycaption}/src/actions.ts, each pinned to a committed
+// golden); the kit keeps only the shared SaveText tail and the
+// caption vocabularies this card serves. The lane is weightless,
+// every wire value comes from params.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, finalizeTagger, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, instantiateAction } from '@melite/comfyui-card-kit'

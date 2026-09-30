@@ -102,8 +102,6 @@ export {
   TAGGER_CAPTION_TYPES,
   TAGGER_CAPTION_LENGTHS,
   TAGGER_EXTRA_OPTIONS,
-  TAGGER_ARMS,
-  taggerLane,
   taggerSaveText,
 } from './lanes-image-tools.ts'
 // the audio render blocks (the atom-vocabulary stroke 3: family

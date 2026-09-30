@@ -1,0 +1,25 @@
+{
+  "WD14Tagger|pysssss.0": {
+    "class_type": "WD14Tagger|pysssss",
+    "inputs": {
+      "image": "$stage1",
+      "model": "wd-v1-4-moat-tagger-v2",
+      "threshold": 0.35,
+      "character_threshold": 0.85,
+      "replace_underscore": false,
+      "trailing_comma": false,
+      "exclude_tags": "ugly"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "text": [
+        "WD14Tagger|pysssss.0",
+        0
+      ],
+      "filename_prefix": "probe-spell/tags",
+      "format": "txt"
+    }
+  }
+}

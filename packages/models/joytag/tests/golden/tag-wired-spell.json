@@ -1,0 +1,22 @@
+{
+  "CXH_JoyTag.0": {
+    "class_type": "CXH_JoyTag",
+    "inputs": {
+      "image": "$stage1",
+      "THRESHOLD": 0.35,
+      "addTag": "masterpiece",
+      "removeTag": "bad-hands"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "text": [
+        "CXH_JoyTag.0",
+        0
+      ],
+      "filename_prefix": "probe-spell/tags",
+      "format": "txt"
+    }
+  }
+}

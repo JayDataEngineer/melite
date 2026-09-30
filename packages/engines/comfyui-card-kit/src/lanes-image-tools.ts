@@ -692,105 +692,12 @@ export function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: stri
   return g.node('SaveText', { text, filename_prefix: prefix, format: 'txt' })
 }
 
-/** wd14_t1 — the WD14 booru interrogator (the canary arm; moved
- *  verbatim from the tagger card). */
-function wd14Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  // THE SPELLED ANCHOR (same law — every arm bypasses the loader
-  // for a wired image; the tagger dispatch admits the spell).
-  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
-  const tags = g.node('WD14Tagger|pysssss', {
-    image: src,
-    model: p.checkpoint,
-    threshold: p.threshold,
-    character_threshold: p.character_threshold,
-    replace_underscore: p.replace_underscore,
-    trailing_comma: p.trailing_comma,
-    exclude_tags: p.exclude_tags,
-  })
-  taggerSaveText(g, tags.out(0), prefix)
-}
-
-/** joytag_t1 — the JoyTag booru tagger (moved verbatim from the
- *  tagger card). */
-function joytagArm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
-  const tags = g.node('CXH_JoyTag', {
-    image: src,
-    THRESHOLD: p.threshold,
-    addTag: p.add_tag,
-    removeTag: p.remove_tag,
-  })
-  taggerSaveText(g, tags.out(0), prefix)
-}
-
-/** florence2_t1 — the Florence-2 captioner (moved verbatim from the
- *  tagger card). The weights arrive on the SHARED `checkpoint` key —
- *  stamped by the variant rail (resolver_defaults) or the family
- *  default, admitted by the card, never a schema knob. */
-function florence2Arm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
-  const fl2 = g.node('DownloadAndLoadFlorence2Model', {
-    model: p.checkpoint,
-    precision: 'fp16',
-  })
-  const run = g.node('Florence2Run', {
-    image: src,
-    florence2_model: fl2.out(),
-    text_input: '',
-    task: p.caption_task,
-    fill_mask: true,
-  })
-  taggerSaveText(g, run.out(2), prefix)
-}
-
-/** joycaption_t1 — the JoyCaption VLM (moved verbatim from the
- *  tagger card). Same shared `checkpoint` key — the family default
- *  stamps beta-one; custom repo ids / local paths ride explicit
- *  params (API/bare bodies), upstream takes free text. */
-function joycaptionArm(p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string): void {
-  const src: TensorRef = isSpell(img) ? img : g.node('LoadImage', { image: img }).out()
-  const predictor = g.node('JJC_DownloadAndLoadJoyCaptionModel', {
-    model: p.checkpoint,
-    memory_mode: 'Default',
-    keep_loaded: false,
-  })
-  const caption = g.node('JJC_JoyCaption', {
-    model: predictor.out(),
-    image: src,
-    caption_type: p.caption_type,
-    caption_length: p.caption_length,
-    extra_option1: p.extra_option,
-    extra_option2: '',
-    extra_option3: '',
-    extra_option4: '',
-    extra_option5: '',
-    person_name: '',
-    max_new_tokens: 512,
-    temperature: 0.6,
-    top_p: 0.9,
-    top_k: 0,
-  })
-  taggerSaveText(g, caption.out(1), prefix)
-}
-
-// family → arm (the _ARMS board dict — the model id IS the
-// family; dispatch is data, never a switch statement per lane).
-export const TAGGER_ARMS: Record<string, (p: Record<string, unknown>, g: GraphBuilder, img: string, prefix: string) => void> = {
-  wd14: wd14Arm,
-  joytag: joytagArm,
-  florence2: florence2Arm,
-  joycaption: joycaptionArm,
-}
-
-/** The tagger dispatch — arm lookup + run-scoped prefix (the card
- *  keeps the input_image admission + family requires; moved from the
- *  tagger card's compose tail). */
-export function taggerLane(p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string): void {
-  const img = typeof p.input_image === 'string' ? p.input_image : ''
-  const arm = TAGGER_ARMS[model.id]
-  if (!arm) {
-    throw new Error(`tagger model '${model.id}' has no arm (known families: ${Object.keys(TAGGER_ARMS).sort().join(', ')})`)
-  }
-  // compose stamps the prefix — <run>/tags (never a user knob).
-  arm(p, g, img, `${runId}/tags`)
-}
+// THE TAGGER LANE IS FAMILY-OWNED (the kit-arm retirement, 2026-09-30):
+// the four tagger families compose their own arms in their declared
+// actions (wd14, joytag, florence2, joycaption — packages/models/*/
+// src/actions.ts), each pinned to a committed golden in its own
+// tests/golden/. This dispatch and its four arm bodies are deleted;
+// the families are the only home of the lane. taggerSaveText (the
+// consensus SaveText tail every arm shares) and the caption
+// vocabularies above stay — they are vocabulary and a graph helper,
+// not a lane.

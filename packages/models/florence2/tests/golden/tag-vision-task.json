@@ -1,0 +1,42 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "DownloadAndLoadFlorence2Model.0": {
+    "class_type": "DownloadAndLoadFlorence2Model",
+    "inputs": {
+      "model": "FLUX.1-Florence2-large",
+      "precision": "fp16"
+    }
+  },
+  "Florence2Run.0": {
+    "class_type": "Florence2Run",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "florence2_model": [
+        "DownloadAndLoadFlorence2Model.0",
+        0
+      ],
+      "text_input": "",
+      "task": "more_detailed_caption",
+      "fill_mask": true
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "text": [
+        "Florence2Run.0",
+        2
+      ],
+      "filename_prefix": "probe/tags",
+      "format": "txt"
+    }
+  }
+}

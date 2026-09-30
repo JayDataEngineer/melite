@@ -1,16 +1,18 @@
 // The atom's own proof (the atom vocabulary, stroke 3): the tag
-// action's serialized prompt is BYTE-IDENTICAL to the legacy
-// taggerLane florence2 arm on the same doc — the card's binding
-// change moves no wire. The lane is weightless (the facts door is
-// vacuous); the checkpoint rides the variant rail's stamped param
-// (upstream downloads on first run); the wired spell bypasses the
-// loader. The interpreter's own contract walls live in card-kit's
-// tests/action.spec.ts.
+// action composes the family's own lane, and its serialized prompt is
+// pinned to a COMMITTED GOLDEN — the wire the port produced while the
+// kit's legacy taggerLane still existed and this spec compared the
+// two arms byte-for-byte. That arm is deleted (the families own their
+// lanes now), so the golden carries the compatibility law. The lane is
+// weightless (the facts door is vacuous); the checkpoint rides the variant rail's stamped param (upstream downloads on first run); the wired spell bypasses the loader. The interpreter's
+// own contract walls live in card-kit's tests/action.spec.ts.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
-import { taggerLane, instantiateAction } from "@melite/comfyui-card-kit";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+import { join } from "node:path";
 import { DECL } from "../src/index.ts";
 import { tag, parseTagFacts } from "../src/actions.ts";
 
@@ -34,14 +36,18 @@ const PARAMS = {
   caption_task: "more_detailed_caption",
 };
 
+
+const golden = (name: string): string => join(import.meta.dirname, "golden", `${name}.json`);
+const compose = (p: Record<string, unknown>, runId: string): Record<string, { class_type: string; inputs: Record<string, unknown> }> => {
+  const g = new GraphBuilder({});
+  instantiateAction(tag, p, FACTS, g, runId);
+  return g.toJSON() as never;
+};
+
 describe("the tag action — byte-stability (the compatibility law)", () => {
-  it("the action's serialized prompt is identical to the legacy lane arm (the vision task)", () => {
-    const legacy = new GraphBuilder({});
-    taggerLane(PARAMS, FACTS, legacy, "probe");
-    const action = new GraphBuilder({});
-    instantiateAction(tag, PARAMS, FACTS, action, "probe");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
-    const graph = action.toJSON() as Record<string, { class_type: string; inputs: Record<string, unknown> }>;
+  it("the composed prompt is the committed golden (the vision task)", () => {
+    const graph = compose(PARAMS, "probe");
+    assertGraphGolden(golden("tag-vision-task"), graph, "the vision task");
     const loader = Object.values(graph).find((n) => n.class_type === "DownloadAndLoadFlorence2Model")!;
     assert.equal(loader.inputs.model, "FLUX.1-Florence2-large", "the stamped checkpoint rides");
     assert.equal(loader.inputs.precision, "fp16", "the fixed precision rides");
@@ -51,26 +57,23 @@ describe("the tag action — byte-stability (the compatibility law)", () => {
     assert.equal(save.inputs.filename_prefix, "probe/tags", "compose stamps the run prefix");
   });
 
-  it("byte equality holds with a re-stated task (the live task vocabulary)", () => {
-    const p = { ...PARAMS, caption_task: "ocr_with_region" };
-    const legacy = new GraphBuilder({});
-    taggerLane(p, FACTS, legacy, "probe-task");
-    const action = new GraphBuilder({});
-    instantiateAction(tag, p, FACTS, action, "probe-task");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+  it("a re-stated task holds its golden (the live task vocabulary)", () => {
+    assertGraphGolden(golden("tag-vision-task-ocr"), compose({ ...PARAMS, caption_task: "ocr_with_region" }, "probe-task"), "the re-stated task");
   });
 
-  it("byte equality holds on the wired spell (a '$name' image rides verbatim, no loader)", () => {
+  it("the wired spell holds the golden (a '$name' image rides verbatim, no loader)", () => {
     const p = { ...PARAMS, input_image: "$stage1" };
-    const legacy = new GraphBuilder({});
-    taggerLane(p, FACTS, legacy, "probe-spell");
-    const action = new GraphBuilder({});
-    instantiateAction(tag, p, FACTS, action, "probe-spell");
-    assert.deepEqual(action.toJSON(), legacy.toJSON());
+    const graph = compose(p, "probe-spell");
+    assertGraphGolden(golden("tag-wired-spell"), graph, "the wired spell");
     assert.ok(
-      !Object.values(action.toJSON() as Record<string, { class_type?: string }>).some((n) => n.class_type === "LoadImage"),
+      !Object.values(graph).some((n) => n.class_type === "LoadImage"),
       "the spell IS the tensor — no loader builds",
     );
+  });
+
+  it("a file image keeps its loader (the disk handoff)", () => {
+    const load = Object.values(compose(PARAMS, "probe-path")).find((n) => n.class_type === "LoadImage")!;
+    assert.equal(load.inputs.image, PARAMS.input_image, "the file path reaches the loader verbatim");
   });
 
   it("a blank input_image refuses — the card's own voice (direct action callers)", () => {

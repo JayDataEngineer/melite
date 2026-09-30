@@ -1,0 +1,52 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "JJC_DownloadAndLoadJoyCaptionModel.0": {
+    "class_type": "JJC_DownloadAndLoadJoyCaptionModel",
+    "inputs": {
+      "model": "cupcat/joycaption-beta-one",
+      "memory_mode": "Default",
+      "keep_loaded": false
+    }
+  },
+  "JJC_JoyCaption.0": {
+    "class_type": "JJC_JoyCaption",
+    "inputs": {
+      "model": [
+        "JJC_DownloadAndLoadJoyCaptionModel.0",
+        0
+      ],
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "caption_type": "Descriptive",
+      "caption_length": "medium-length",
+      "extra_option1": "",
+      "extra_option2": "",
+      "extra_option3": "",
+      "extra_option4": "",
+      "extra_option5": "",
+      "person_name": "",
+      "max_new_tokens": 512,
+      "temperature": 0.6,
+      "top_p": 0.9,
+      "top_k": 0
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "text": [
+        "JJC_JoyCaption.0",
+        1
+      ],
+      "filename_prefix": "probe/tags",
+      "format": "txt"
+    }
+  }
+}

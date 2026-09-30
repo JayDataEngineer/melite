@@ -197,10 +197,9 @@ describe("THE EVERY-ADDRESS WALL — every served address composes its own decla
   });
 
   it("THE BINDING COMPLETENESS: the bindings cover every legacy arm key (dispatch is total, never partial)", () => {
-    // The legacy lane dispatches by model.id over TAGGER_ARMS; the
-    // bindings dispatch by family — every arm the lane could ever
-    // compose must be bound, or an address silently rides the
-    // legacy lane while its siblings compose the declared segment.
+    // The bindings dispatch by family; every family that could ever
+    // compose must be bound, or an address refuses loud at the
+    // dispatch while its siblings compose the declared segment.
     const armKeys = Object.keys(OWN_CLASS);
     for (const key of armKeys) {
       assert.ok(key in ACTION_BINDINGS, `family '${key}' holds no ACTION_BINDINGS row`);

@@ -1,0 +1,31 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "CXH_JoyTag.0": {
+    "class_type": "CXH_JoyTag",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "THRESHOLD": 0.35,
+      "addTag": "masterpiece",
+      "removeTag": "bad-hands"
+    }
+  },
+  "SaveText.0": {
+    "class_type": "SaveText",
+    "inputs": {
+      "text": [
+        "CXH_JoyTag.0",
+        0
+      ],
+      "filename_prefix": "probe/tags",
+      "format": "txt"
+    }
+  }
+}
