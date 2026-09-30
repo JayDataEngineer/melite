@@ -15,7 +15,7 @@ import { tmpdir } from "node:os";
 import { GraphBuilder } from "../src/graph.ts";
 import {
   finalizeImageEdit, finalizeTagger, finalizeMask,
- inputPrepLane, maskT1, taggerLane, upscaleLane,
+  maskT1, upscaleLane,
   annyLane,
   admitMeshLift, transferRigArm, trellisArm, pixalArm, type StripTable,
   quadRemeshLane, musicT1, yue2T1, imageEdit, refuseImageEditFiring, finalizeAnny, finalizeMotion, finalizeH3,
@@ -505,51 +505,11 @@ describe("upscaleLane (the spelled anchor)", () => {
 });
 
 // ── the input-prep row gates ──────────────────────────────────────
-describe("inputPrepLane (the row gates)", () => {
-  it("the audio arm saves through LoadAudio", () => {
-    const g = new GraphBuilder();
-    inputPrepLane({ media_type: "audio", source: "/m/a.wav" }, g, "run_1");
-    const row = dump(g);
-    assert.ok(classes(row).includes("LoadAudio"));
-    assert.ok(classes(row).includes("SaveAudio"));
-  });
-
-  it("a good crop + scale chain (method default and explicit)", () => {
-    const g1 = new GraphBuilder();
-    inputPrepLane({ source: "/m/p.png", crop: { x: 1, y: 2, width: 3, height: 4 } }, g1, "run_2");
-    const crop = Object.values(dump(g1)).find((n) => n.class_type === "ImageCrop")!;
-    assert.deepEqual([crop.inputs.x, crop.inputs.width], [1, 3]);
-
-    const g2 = new GraphBuilder();
-    inputPrepLane({
-      source: "/m/p.png", crop: { x: 0, y: 0, width: 10, height: 10 },
-      scale: { width: 20, height: 30 }, // method unstated → lanczos
-    }, g2, "run_3");
-    const scale = Object.values(dump(g2)).find((n) => n.class_type === "ImageScale")!;
-    assert.equal(scale.inputs.upscale_method, "lanczos");
-
-    const g3 = new GraphBuilder();
-    inputPrepLane({
-      source: "/m/p.png",
-      scale: { width: 20, height: 30, method: "nearest-exact" },
-    }, g3, "run_4");
-    assert.equal(
-      Object.values(dump(g3)).find((n) => n.class_type === "ImageScale")!.inputs.upscale_method,
-      "nearest-exact",
-    );
-  });
-
-  it("malformed rows refuse loud (crop member + scale numbers)", () => {
-    assert.throws(
-      () => inputPrepLane({ source: "p", crop: { x: "a", y: 0, width: 1, height: 1 } }, new GraphBuilder(), "r"),
-      /crop row refused on the input-prep card: 'x' must be a number \(got "a"\)/,
-    );
-    assert.throws(
-      () => inputPrepLane({ source: "p", scale: { width: 1 } }, new GraphBuilder(), "r"),
-      /scale row refused on the input-prep card: 'width'\/'height' must be numbers/,
-    );
-  });
-});
+// THE INPUT-PREP LANE IS FAMILY-OWNED (the kit-arm retirement,
+// 2026-09-30): the input family composes its own restage lane,
+// pinned to committed goldens (packages/models/input/tests/
+// golden/) — the audio restage, the crop row, the scale row and
+// their refusal voices all live in that family's action spec now.
 
 // ── the finalize strips (autofill removal) ────────────────────────
 describe("the finalize strips", () => {

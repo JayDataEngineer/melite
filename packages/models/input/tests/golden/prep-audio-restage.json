@@ -1,0 +1,18 @@
+{
+  "LoadAudio.0": {
+    "class_type": "LoadAudio",
+    "inputs": {
+      "audio": "/m/a.wav"
+    }
+  },
+  "SaveAudio.0": {
+    "class_type": "SaveAudio",
+    "inputs": {
+      "audio": [
+        "LoadAudio.0",
+        0
+      ],
+      "filename_prefix": "probe-audio/input_prep"
+    }
+  }
+}

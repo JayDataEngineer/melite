@@ -1,0 +1,18 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "LoadImage.0",
+        0
+      ],
+      "filename_prefix": "probe/input_prep"
+    }
+  }
+}

@@ -94,7 +94,6 @@ export {
 export {
   maskT1,
   upscaleLane,
-  inputPrepLane,
   TAGGER_STRIP,
   finalizeTagger,
   finalizeMask,

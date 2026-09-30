@@ -1,0 +1,31 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "ImageScale.0": {
+    "class_type": "ImageScale",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "upscale_method": "bilinear",
+      "width": 1024,
+      "height": 768,
+      "crop": "disabled"
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "ImageScale.0",
+        0
+      ],
+      "filename_prefix": "probe-scale/input_prep"
+    }
+  }
+}

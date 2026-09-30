@@ -547,41 +547,14 @@ export function upscaleLane(p: Record<string, unknown>, model: ModelFacts, g: Gr
   g.node('SaveImage', { images: up, filename_prefix: `${runId}/gen` })
 }
 
-interface CropRow { x: number; y: number; width: number; height: number }
-interface ScaleRow { width: number; height: number; method?: string }
 
-/** The input_prep block — the staged-source transform lane (moved
- *  verbatim from the input-prep card; the source admission stays on
- *  the card). No model ever loads (weightless lane). */
-export function inputPrepLane(p: Record<string, unknown>, g: GraphBuilder, runId: string): void {
-  const prefix = `${runId}/input_prep`     // the arm's "%s/input_prep" % run_id
-
-  if (p.media_type === 'audio') {
-    const loaded = g.node('LoadAudio', { audio: p.source as string })
-    g.node('SaveAudio', { audio: loaded.out(), filename_prefix: prefix })
-    return
-  }
-
-  let img: OutputHandle = g.node('LoadImage', { image: p.source as string }).out(0)
-  const crop = p.crop as CropRow | undefined
-  if (crop) {
-    for (const k of ['x', 'y', 'width', 'height'] as const) {
-      if (typeof crop[k] !== 'number') {
-        throw new Error(`crop row refused on the input-prep card: '${k}' must be a number (got ${JSON.stringify(crop[k])})`)
-      }
-    }
-    img = g.node('ImageCrop', { image: img, x: crop.x, y: crop.y, width: crop.width, height: crop.height }).out(0)
-  }
-  const scale = p.scale as ScaleRow | undefined
-  if (scale) {
-    if (typeof scale.width !== 'number' || typeof scale.height !== 'number') {
-      throw new Error(`scale row refused on the input-prep card: 'width'/'height' must be numbers (got ${JSON.stringify(scale)})`)
-    }
-    const method = typeof scale.method === 'string' ? scale.method : 'lanczos'
-    img = g.node('ImageScale', { image: img, upscale_method: method, width: scale.width, height: scale.height, crop: 'disabled' }).out(0)
-  }
-  g.node('SaveImage', { images: img, filename_prefix: prefix })
-}
+// THE INPUT-PREP LANE IS FAMILY-OWNED (the kit-arm retirement,
+// 2026-09-30): the input family composes its own restage lane in its
+// declared action (packages/models/input/src/actions.ts, pinned to
+// committed goldens in that family's tests/golden/). This arm and
+// its row shapes are deleted; the family is the only home of the
+// lane. The CropRow/ScaleRow types go with it — the action declares
+// the row shape it reads.
 
 // ── archetype IV: the tagger family ─────────────────────────────────
 // Four arms, one card: each arm's node creation order mirrors its

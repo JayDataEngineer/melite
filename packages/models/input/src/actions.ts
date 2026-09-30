@@ -2,10 +2,11 @@
 // stroke 3): the prep action the input-prep card binds. The lane is
 // WEIGHTLESS — no model ever loads — so the facts door is vacuous
 // (nothing to parse, nothing to drift). The segment factory is the
-// legacy inputPrepLane verbatim (the staged-source transform:
-// passthrough audio, crop/scale images — the source admission stays
-// on the card) — byte-identical graphs on the same doc (proven in
-// tests/action.spec.ts). Creation order IS node-id order (the
+// lane IS this file (the staged-source transform: passthrough audio,
+// crop/scale images — the source admission stays on the card). Its
+// graphs are pinned to committed goldens in tests/golden/ — the wire
+// the port produced while the kit's twin still existed and the oracle
+// compared them byte-for-byte. Creation order IS node-id order (the
 // recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";

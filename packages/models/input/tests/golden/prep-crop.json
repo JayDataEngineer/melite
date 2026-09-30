@@ -1,0 +1,31 @@
+{
+  "LoadImage.0": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "/m/i.png"
+    }
+  },
+  "ImageCrop.0": {
+    "class_type": "ImageCrop",
+    "inputs": {
+      "image": [
+        "LoadImage.0",
+        0
+      ],
+      "x": 10,
+      "y": 20,
+      "width": 512,
+      "height": 768
+    }
+  },
+  "SaveImage.0": {
+    "class_type": "SaveImage",
+    "inputs": {
+      "images": [
+        "ImageCrop.0",
+        0
+      ],
+      "filename_prefix": "probe-crop/input_prep"
+    }
+  }
+}
