@@ -10,7 +10,7 @@
 // default owns the floor — this module never sets one).
 
 /** The sampling group's canonical name — cards with card-specific
- *  sampling atoms (ideogram4's mu/std, the tts design entry's voice knobs)
+ *  sampling atoms (a diffusion card's own mu/std, the tts design entry's voice knobs)
  *  join the group through this, never a retyped string. */
 export const SAMPLING_GROUP = 'sampling'
 
@@ -30,8 +30,9 @@ const SAMPLING_WTYPES: Partial<Record<SamplingKind, 'number' | 'select'>> = {
 } as const
 
 export interface SamplingExtraOpts {
-  /** order override — ideogram4's mu/std sit at 2/3, so its sampler
-   *  rides 4. Default: the kind's canonical order above. */
+  /** order override — a card that interleaves its own sampling
+   *  atoms past the canonical steps/cfg/sampler/scheduler order.
+   *  Default: the kind's canonical order above. */
   order?: number
   /** card-owned tooltip (the range rule: prose stays per-card). */
   tooltip?: string

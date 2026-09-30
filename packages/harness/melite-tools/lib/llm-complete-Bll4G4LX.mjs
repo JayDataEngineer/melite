@@ -1,4 +1,6 @@
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { CARD_KINDS, buildCatalog, declaredDefaults, emitModifierKinds, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, loadCardDefs, modelIds, owningAtom, registryModel, resolveRepoRoot, theService } from "@melite/comfyui-cordis";
+import { laneContractOf } from "@melite/contracts/laneRelations";
 import { execFileSync } from "node:child_process";
 import { createUserMessage } from "@deepseek-ai/dsh-llm";
 //#region src/estate.ts
@@ -64,7 +66,7 @@ async function trySeats(ctx, method, path, body, signal) {
 			intent,
 			stages: [{
 				id: "s_0",
-				engine: "comfyui",
+				engine: CARD_PLANE_ENGINE,
 				params
 			}],
 			overwrite: true
@@ -101,7 +103,7 @@ async function trySeats(ctx, method, path, body, signal) {
 		return seats.benchRemote.get(decodeURIComponent(m[1]), signal);
 	}
 	if (method === "POST") {
-		const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|rewire|undo)$/.exec(path);
+		const arm = /^\/v1\/bench\/([^/?]+)\/(patch|add_stage|remove_stage|clear|rewire|undo)$/.exec(path);
 		if (arm !== null) {
 			if (seats.benchRemote === void 0) return void 0;
 			if (body === void 0 || typeof body !== "object" || body === null) throw new Error(`bench ${arm[2]} needs a JSON body`);
@@ -111,6 +113,7 @@ async function trySeats(ctx, method, path, body, signal) {
 				case "patch": return seats.benchRemote.patch(session, doc, signal);
 				case "add_stage": return seats.benchRemote.addStage(session, doc, signal);
 				case "remove_stage": return seats.benchRemote.removeStage(session, doc, signal);
+				case "clear": return seats.benchRemote.clear(session, doc, signal);
 				case "rewire": return seats.benchRemote.rewire(session, doc, signal);
 				case "undo": return seats.benchRemote.undo(session, doc, signal);
 			}
@@ -378,6 +381,7 @@ function variantRow(v, declEngine) {
 		route: v.route ?? "",
 		hint: v.hint ?? null,
 		engine: v.engine ?? declEngine,
+		sampler_envelope: v.sampler_envelope ?? null,
 		quant: null,
 		vram_peak_gb: null,
 		owner: ""
@@ -398,18 +402,6 @@ function capQuant(quant) {
 *  judgeLaneRelations, the same calls the bench-write door uses.
 *  Served ONLY when the family declares a base surface (the
 *  spread at the call site gates it). */
-function laneContractOf(decl) {
-	return {
-		base: [...decl.params ?? []],
-		...decl.relations !== void 0 ? { relations: decl.relations } : {},
-		...decl.bounds !== void 0 ? { bounds: decl.bounds } : {},
-		variants: Object.fromEntries((decl.variants ?? []).filter((v) => v.params !== void 0 || v.relations !== void 0 || v.bounds !== void 0).map((v) => [v.id, {
-			...v.params !== void 0 ? { params: [...v.params] } : {},
-			...v.relations !== void 0 ? { relations: v.relations } : {},
-			...v.bounds !== void 0 ? { bounds: v.bounds } : {}
-		}]))
-	};
-}
 function specVariants(decl, key, service, primary) {
 	const rows = [];
 	const seen = /* @__PURE__ */ new Set();
@@ -419,7 +411,8 @@ function specVariants(decl, key, service, primary) {
 		rows.push(variantRow(v, declEngine));
 		seen.add(v.id);
 		for (const c of v.cells ?? []) {
-			if (!c.quant || c.hide_from_dropdown === true) continue;
+			if (c.hide_from_dropdown === true) continue;
+			if (!c.quant) throw new Error(`${decl.id}/${v.id}: a cell needs a quant (refused at the spec's birth — an axis row without its coordinate must never serve)`);
 			if (!c.route) continue;
 			if (c.route !== key && c.route !== service && !primary) continue;
 			const id = seen.has(c.quant) ? `${v.id}__${c.quant}` : c.quant;
@@ -715,7 +708,7 @@ function specBody(svc, defs, res) {
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : [],
-		...decl !== null && decl.params !== void 0 && decl.params.length > 0 ? { lanes: laneContractOf(decl) } : {},
+		...decl !== null && (decl.params !== void 0 || decl.relations !== void 0 || decl.bounds !== void 0 || (decl.variants ?? []).some((v) => v.params !== void 0 || v.relations !== void 0 || v.bounds !== void 0 || v.sampler_envelope !== void 0)) ? { lanes: laneContractOf(decl) } : {},
 		packs: svc.packPresence(def.requiresByFamily?.[key] ?? def.requires ?? []),
 		families: (def.boarded ?? []).map((fam) => ({
 			id: fam,

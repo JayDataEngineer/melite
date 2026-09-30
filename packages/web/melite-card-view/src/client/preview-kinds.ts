@@ -32,8 +32,8 @@ export function previewKindFor(url: string): 'video' | 'image' | 'audio' | 'mesh
  *  the fallback: when no spec is in hand (a flow row without card
  *  identity), or when the declaration names a non-previewable kind
  *  (text/seg) whose artifacts may still carry a renderable url —
- *  mask-studio declares 'seg' and its artifact IS a png; the sniff
- *  keeps its gallery alive. Declared-previewable ALWAYS wins: an
+ *  mask declares 'seg' and its artifact IS a png; the sniff keeps
+ *  its gallery alive. Declared-previewable ALWAYS wins: an
  *  audio card previews audio even before artifacts land (the empty
  *  state names the kind), a mesh card rides the raw-three stage. */
 const PREVIEWABLE_KINDS: ReadonlySet<string> = new Set(['video', 'image', 'audio', 'mesh'])

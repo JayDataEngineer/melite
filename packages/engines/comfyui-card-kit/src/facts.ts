@@ -7,8 +7,7 @@
 //
 // The slices file keeps ONLY what the registry cannot carry:
 // per-card outputs/requires_by_family, the
-// row roster, extension_node_types, and the mask-studio whole row
-// (unoffered, no DECL — card-owned, stays frozen).
+// row roster and extension_node_types.
 
 import { readFileSync } from 'node:fs'
 

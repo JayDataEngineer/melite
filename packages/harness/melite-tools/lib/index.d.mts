@@ -4,7 +4,7 @@ import "@deepseek-ai/dsh-attachment";
 import "@deepseek-ai/dsh-llm";
 import "@melite/estate-call";
 import { JsonValue } from "@deepseek-ai/dsh-util-values";
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.3/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.5/node_modules/@deepseek-ai/cosmokit/lib/types/misc.d.ts
 /** String/symbol keyed dictionary type. */
 type Dict<T = any, K extends string | symbol = string> = { [key in K]: T; };
 /** Wrap a value in `Promise`, preserving the resolved type of existing promises. */
@@ -89,7 +89,7 @@ declare namespace StandardSchemaV1 {
   type InferOutput<Schema extends StandardTypedV1> = StandardTypedV1.InferOutput<Schema>;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/utils.d.ts
 /** Ordered collection of disposable values with O(1) deletion by value. */
 declare class DisposableList<T extends WeakKey> {
   private sn;
@@ -122,7 +122,7 @@ declare const symbols: {
   resolveConfig: typeof Service.resolveConfig;
 };
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/registry.d.ts
 /**
  * Service dependency declaration accepted by plugins and the `@Inject`
  * decorator.
@@ -314,7 +314,7 @@ declare class RegistryService {
   plugin(plugin: Plugin, config?: any, getOuterStack?: () => string[]): Fiber & PromiseLike<Fiber>;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/reflect.d.ts
 declare module './context.ts' {
   interface Context {
     /**
@@ -498,7 +498,7 @@ declare class ReflectService {
   bind<T extends Function>(callback: T): T;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/fiber.d.ts
 declare module './context.ts' {
   interface Context extends Pick<Fiber, 'effect'> {
     /** The fiber (plugin runtime instance) that owns this context. */
@@ -653,13 +653,13 @@ declare class Fiber {
    *
    * @param config — the new raw config; validated before anything restarts.
    * @param noSave — hint for persistence hooks not to write the change back.
-   * @returns the update waterfall result; the default restart returns a promise.
-   * @throws when validation, an update listener, or the restarted plugin fails.
+   * @returns nothing; the restart runs behind the `internal/update` waterfall.
+   * @throws {ValidationError} when the new config fails validation.
    */
-  update(config: any, noSave?: boolean): void | Promise<void>;
+  update(config: any, noSave?: boolean): void;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/events.d.ts
 /** Extract the parameter tuple from a function type. */
 type Parameters<F> = F extends ((...args: infer P) => any) ? P : never;
 /** Extract the return type from a function type. */
@@ -879,7 +879,7 @@ interface Events {
   /** Interception hook for a service binding (no core producer). */
   'internal/service'(this: Context, name: string, value: any): void;
   /** Waterfall: a fiber config update is being applied; skip `next()` to veto. */
-  'internal/update'(this: Fiber, config: any, noSave: boolean, next: () => void | Promise<void>): void | Promise<void>;
+  'internal/update'(this: Fiber, config: any, noSave: boolean, next: () => void): void;
   /** Waterfall: a service is being read through the context proxy. */
   'internal/get'(ctx: Context, name: string, error: Error, next: () => any): any;
   /** Waterfall: a service is being written through the context proxy. */
@@ -890,7 +890,7 @@ interface Events {
   'internal/dispatch'(mode: DispatchMode, name: string, args: any[], thisArg: any): void;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/logger.d.ts
 declare module './context.ts' {
   interface Intercept {
     logger: LoggerService.Intercept;
@@ -978,7 +978,7 @@ declare class LoggerService {
   [symbols.invoke](name?: string): Logger;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/context.d.ts
 /**
  * Public shape of a Cordis context.
  *
@@ -1073,7 +1073,7 @@ declare class Context {
   intercept(name: string, config: any): this;
 }
 //#endregion
-//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.2_@deepseek-ai+cordis-plugin-loader@1.0.3/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts
+//#region ../../../node_modules/.pnpm/@deepseek-ai+cordis@4.0.4_@deepseek-ai+cordis-plugin-include@1.0.9_@deepseek-ai+cordis-plugin-loader@1.0.5/node_modules/@deepseek-ai/cordis/lib/types/service.d.ts
 /**
  * Base class for services that expose a named API on `ctx`.
  *

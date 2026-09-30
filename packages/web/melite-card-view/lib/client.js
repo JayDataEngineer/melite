@@ -57469,8 +57469,8 @@ void main() {
 		*  the fallback: when no spec is in hand (a flow row without card
 		*  identity), or when the declaration names a non-previewable kind
 		*  (text/seg) whose artifacts may still carry a renderable url —
-		*  mask-studio declares 'seg' and its artifact IS a png; the sniff
-		*  keeps its gallery alive. Declared-previewable ALWAYS wins: an
+		*  mask declares 'seg' and its artifact IS a png; the sniff keeps
+		*  its gallery alive. Declared-previewable ALWAYS wins: an
 		*  audio card previews audio even before artifacts land (the empty
 		*  state names the kind), a mesh card rides the raw-three stage. */
 		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
@@ -62092,4 +62092,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c679781c06353d13c77274eabc09fcd9086a8e97";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ccb83e625d87be6b8539c505184ecfcb9f53a1e8";

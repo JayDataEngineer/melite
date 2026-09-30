@@ -963,6 +963,19 @@ export class RunsRuntimeService extends Service {
       // and card= shapes refuse at those EXISTING gates with their
       // preview_scope voices (never silent).
       const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+      // ADMISSION BEFORE PRESENCE (the {model} arm's own order): a
+      // name that cannot be a flow id is refused as a shape failure,
+      // never answered as an unknown flow. Without this, `flow: 42`
+      // produced "no flow named  in the registry" — the offending
+      // value named nowhere — and an illegal spelling got the
+      // presence voice from two different doors.
+      if (!FLOW_ID_RE.test(name)) {
+        throw new RemoteError(
+          "runs/invalid-request",
+          "flow id " + JSON.stringify(name) + " is not a legal identifier",
+          { loc: "flow" },
+        );
+      }
       const decl = getRegistryFlow(name);
       if (decl === undefined) {
         // The door's unknown-name voice (rendered invalid_request —

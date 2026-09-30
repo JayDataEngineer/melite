@@ -167,7 +167,7 @@ describe('melite_load render — the loaded line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
+      'loaded card c — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
       + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'skills: 1 — read one with melite_skill_read: s1\n'
@@ -301,7 +301,7 @@ describe('melite_load render — the loaded line', () => {
     ) as Array<{ text?: string }>
     assert.equal(
       parts.map((p) => p?.text ?? '').join('\n'),
-      'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
+      'loaded card c — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press\n'
       + 'weights: 0/1 boarded checkpoints present on this machine (provisioning is the estate\'s business — compose the card)\n'
       + 'params: prompt*, seed (* required)\n'
       + 'signature model: fam-x\n'
@@ -322,7 +322,7 @@ describe('melite_load render — the loaded line', () => {
         bundle: { kind: 'card', name: 'c', signature: { params_schema: { properties: null } } },
       } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded card c — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded card c — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 
   test('a bundless value renders the header alone', () => {
@@ -331,13 +331,13 @@ describe('melite_load render — the loaded line', () => {
       { name: 'c', inference_type: 'card' },
       { name: 'c', inference_type: 'card' } as never,
     ) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 
   test('a nullish value still renders the header line', () => {
     const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
     const parts = tool.output.render({ name: 'c', inference_type: 'card' }, null as never) as Array<{ text?: string }>
-    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
+    assert.equal(parts.map((p) => p?.text ?? '').join('\n'), 'loaded ? ? — compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press')
   })
 })
 

@@ -88,8 +88,8 @@ export function resolveSpecKey(
   const def = defs.get(key)
   if (def !== undefined && !isFamilyKey(key)) {
     // A card-id alias key (?model=tts): the card's envelope for its
-    // default family (boarded[0] ?? the card itself — mask-studio
-    // boards nothing and IS its own service).
+    // default family (boarded[0] ?? the card itself — rig and mask
+    // board nothing and ARE their own service).
     const boardedFams = def.boarded ?? []
     const service = boardedFams.length > 0 ? boardedFams[0] : key
     return { card: key, service, model: service }

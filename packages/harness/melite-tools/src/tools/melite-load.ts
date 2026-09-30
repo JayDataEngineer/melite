@@ -137,9 +137,16 @@ export function meliteLoad(
         // flow and keeps editing it as asked; runs start at the
         // user's Run press. Headless keeps the old line — it owns
         // the verb.
+        // The hint follows the BUNDLE's own kind: a flow loaded in
+        // browser mode is not benchable as a whole — its card stages
+        // may be benched, its family.action stages compose when the
+        // flow runs. Telling a flow's reader to add_stage sent
+        // makers hunting a door that refuses (the honest split).
         const next = opts.headless === true
           ? 'open with melite_flow'
-          : 'compose it with melite_construct (add_stage) — the flow state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press'
+          : str(b.kind) === 'flow'
+            ? 'it is a flow, not a card — drive it through the run doors; its card stages may also be benched with melite_construct (add_stage), and its family.action stages compose when the flow runs'
+            : 'compose it with melite_construct (add_stage) — the bench state is live in the user\'s cards tab; keep editing it there; runs start at the user\'s Run press'
         const out: string[] = [`loaded ${str(b.kind) || '?'} ${str(b.name) || '?'} — ${next}`]
         // THE CARD ABSTRACTION LAW (operator 2026-09-21): during
         // inference the agent interfaces with the CARD, never the

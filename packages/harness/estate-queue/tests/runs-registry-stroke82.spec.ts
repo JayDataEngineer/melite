@@ -276,7 +276,7 @@ describe("stroke-82 pre-seam splice refusal", () => {
 
 // 5. Initials threading pin: the merged executeFlow seam's 4th arg.
 describe("stroke-82 initials threading", () => {
-  it("the worker threads {} initials into executeFlow", async () => {
+  it("a doc naming no registry flow threads {} initials into executeFlow", async () => {
     const s = seat();
     const engine = engineSeat(s);
     let seen: unknown = "unreached";
@@ -286,9 +286,11 @@ describe("stroke-82 initials threading", () => {
     };
     const row = await settleWait(s, (await s.svc.start(wfBody82(), sig())).run_id);
     assert.equal(row.status, "completed");
-    // CURRENT LAW: the gateway passes no initials at execute time —
-    // present initials refuse at compile time upstream
-    // (registryInitialsError), so the worker always threads {}.
+    // The worker threads the run's request initials — the values the
+    // start door extracted for the flow's declared initialValidators.
+    // This fixture's doc names no registry flow (id "x"), so it owns
+    // no declared initials and the record is empty; the lane-seat pin
+    // covers the populated case end to end.
     assert.deepEqual(seen, {});
   });
 });

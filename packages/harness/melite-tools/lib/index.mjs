@@ -1,12 +1,12 @@
-import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C0itnDPA.mjs";
+import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-Bll4G4LX.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
+import { CARD_PLANE_ENGINE, RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, benchSessionOf, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
-import { RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
 import { normalizeJsonArrayParams } from "@melite/estate-call/cardTool";
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { loadCardDefs, registryModel, theService } from "@melite/comfyui-cordis";
@@ -328,11 +328,11 @@ function runStatus(request) {
 const DEFAULT_BENCH = "main";
 function benchKeyOfExec(exec) {
 	const id = exec.agent?.id;
-	return typeof id === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(id) ? id : DEFAULT_BENCH;
+	return benchSessionOf(typeof id === "string" ? id : void 0);
 }
 function benchKeyOf(a) {
 	const k = a["bench"];
-	return typeof k === "string" && /^[A-Za-z0-9_-]{1,64}$/.test(k) ? k : DEFAULT_BENCH;
+	return benchSessionOf(typeof k === "string" ? k : void 0);
 }
 /** Refusal formatting shared by every verb (the remote's RemoteError
 *  first — code + message, the CAS detail rides details.current_rev —
@@ -566,11 +566,11 @@ function meliteConstruct(request, opts = {}) {
 	};
 	const def = defineTool({
 		name: "melite_construct",
-		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs {checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION'S SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to \"try\" a shape; refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card's declared ports, never files: inputs {image1: {stage: \"s_0\", output: \"default\"}} AND params {image1: \"$image1\"} — the $spell consumes the channel, the queue resolves it at run time; to chain the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card's ports — state expected only to override, outputs only for custom channels) | remove_stage {stage} | rewire {stage, input, from?} (from is {stage, output} | {initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
+		description: "Author THE shared bench — one working flow the user sees live in the cards tab and edits alongside you. " + (opts.headless === true ? "This never executes (melite_flow runs what is here; the user presses Run). " : "You compose the flow and edit its state here, live with the user — runs start at the user's Run press, never yours. ") + "Verbs: read (the state — always start here; a stage that has run carries last_run {run_id, status, artifacts} — null + runs {checked, total, matched} when the draft has no run in the window; view a run_id with melite_view, chain it with {stage, output}) | load (replace stages wholesale — DESTRUCTIVE on THE CONVERSATION'S SHARED BENCH: this is the bench the user watches in their cards tab, and overwrite:true replaces whatever was there — load a throwaway TEST/scratch flow only when replacing is the intent, never to \"try\" a shape; refused on a non-empty bench unless overwrite:true confirms it; prefer add_stage to grow the bench) | patch {stage, params} | add_stage {card, params?, inputs?, expected?, outputs?} (inputs wire PRIOR STAGES through the card's declared ports, never files: inputs {image1: {stage: \"s_0\", output: \"default\"}} AND params {image1: \"$image1\"} — the $spell consumes the channel, the queue resolves it at run time; to chain the last generation, bind its stage, never hunt its artifact on disk; kinds derive from the card's ports — state expected only to override, outputs only for custom channels) | remove_stage {stage} | clear (EVERY stage out in one rev; undo restores all — the cure when the bench itself is the wound) | rewire {stage, input, from?} (from is {stage, output} | {initial} — same law: stage bindings, never paths) | undo {n?, author?} | validate (compile check, no GPU). Mutations take expect_rev from your last read — a moved bench refuses 409 with current_rev; re-read, re-apply. No ids anywhere: the bench is the one shared state.",
 		parameters: {
 			verb: {
 				type: "string",
-				description: "read | load | patch | add_stage | remove_stage | rewire | undo | validate."
+				description: "read | load | patch | add_stage | remove_stage | clear | rewire | undo | validate."
 			},
 			stage: {
 				type: "string",
@@ -808,6 +808,13 @@ function meliteConstruct(request, opts = {}) {
 						stage: r.stage
 					});
 				}
+				if (verb === "clear") {
+					const r = await postBenchVerb(request, bench, "clear", { expect_rev: a.expect_rev }, signal);
+					return out({
+						rev: r.rev,
+						cleared: r.cleared
+					});
+				}
 				if (verb === "rewire") {
 					const r = await postBenchVerb(request, bench, "rewire", {
 						stage: a.stage,
@@ -837,7 +844,7 @@ function meliteConstruct(request, opts = {}) {
 					verb,
 					bench,
 					ok: false,
-					error: "unknown verb — want read|load|patch|add_stage|remove_stage|rewire|undo|validate",
+					error: "unknown verb — want read|load|patch|add_stage|remove_stage|clear|rewire|undo|validate",
 					error_kind: "args"
 				});
 			} catch (e) {
@@ -1206,7 +1213,12 @@ async function runSingle(request, a, signal) {
 	if (typeof a.prompt === "string" && a.prompt !== "") bag["prompt"] = a.prompt;
 	const defs = await loadCardDefs();
 	const resolved = resolveSpecKey(card, defs, boardedMap(defs));
-	const cardDef = resolved === null ? void 0 : defs.get(resolved.card);
+	if (resolved === null) return {
+		mode: "card",
+		target: card,
+		error: `unknown card '${card}' — name a registered card or family (melite_discover lists them); nothing was written to the bench`
+	};
+	const cardDef = defs.get(resolved.card);
 	const normalizedBag = normalizeJsonArrayParams(bag, cardDef?.jsonArrayParams);
 	const intent = card.length > 80 ? card.slice(0, 77) + "…" : card;
 	let draftId;
@@ -1217,7 +1229,7 @@ async function runSingle(request, a, signal) {
 			stages: [{
 				id: "s_0",
 				card,
-				engine: "comfyui",
+				engine: CARD_PLANE_ENGINE,
 				params: normalizedBag
 			}]
 		}, signal);
@@ -1296,7 +1308,7 @@ async function runTemplate(request, a, signal) {
 			intent: flow,
 			stages: [{
 				id: "s_0",
-				engine: "comfyui",
+				engine: CARD_PLANE_ENGINE,
 				ref_flow: flow,
 				params: {}
 			}]
@@ -2263,7 +2275,7 @@ function meliteLoad(request, opts = {}) {
 				}];
 				const b = v?.bundle ?? {};
 				const str = (x) => typeof x === "string" ? x : "";
-				const next = opts.headless === true ? "open with melite_flow" : "compose it with melite_construct (add_stage) — the flow state is live in the user's cards tab; keep editing it there; runs start at the user's Run press";
+				const next = opts.headless === true ? "open with melite_flow" : str(b.kind) === "flow" ? "it is a flow, not a card — drive it through the run doors; its card stages may also be benched with melite_construct (add_stage), and its family.action stages compose when the flow runs" : "compose it with melite_construct (add_stage) — the bench state is live in the user's cards tab; keep editing it there; runs start at the user's Run press";
 				const out = [`loaded ${str(b.kind) || "?"} ${str(b.name) || "?"} — ${next}`];
 				const hints = Array.isArray(b.model_hints) ? b.model_hints : [];
 				if (hints.length > 0) {
@@ -2293,21 +2305,39 @@ function meliteLoad(request, opts = {}) {
 						const keyed = packSeats.filter((p) => p.param_key !== p.kind);
 						if (keyed.length > 0) out.push("mod param_keys: " + keyed.map((p) => p.kind + " → " + p.param_key + " (entries: {" + p.fields.join(", ") + "})").join("; "));
 					}
+					const lawWords = (rel, bounds) => {
+						const words = [];
+						for (const r of rel?.requires ?? []) {
+							const needs = Array.isArray(r?.needs) ? r.needs : [];
+							words.push("requires(" + String(r?.field) + " → " + needs.join(", ") + ")");
+						}
+						for (const t of rel?.together ?? []) if (Array.isArray(t?.fields)) words.push("together(" + t.fields.join(" × ") + ")");
+						for (const c of rel?.conflicts ?? []) words.push("conflicts(" + String(c?.a) + " × " + String(c?.b) + ")");
+						for (const e of rel?.either_or ?? []) if (Array.isArray(e?.groups)) words.push("either_or(" + e.groups.map((g) => "(" + g.join(" × ") + ")").join(" | ") + ")");
+						for (const r of rel?.required ?? []) {
+							if (!Array.isArray(r?.fields) || r.fields.length === 0) continue;
+							words.push(r.any_of === true ? "required-one-of(" + r.fields.join(" | ") + ")" : "required(" + r.fields.join(", ") + ")");
+						}
+						for (const m of rel?.at_most_one ?? []) if (Array.isArray(m?.fields) && m.fields.length > 0) words.push("at_most_one(" + m.fields.join(" | ") + ")");
+						if (bounds !== null && bounds !== void 0 && typeof bounds === "object") {
+							const spans = Object.entries(bounds).map(([k, bb]) => k + " " + String(bb?.min ?? "..") + "…" + String(bb?.max ?? ".."));
+							if (spans.length > 0) words.push("bounds(" + spans.join(", ") + ")");
+						}
+						return words;
+					};
 					const sigLanes = sig.lanes;
 					if (sigLanes !== null && sigLanes !== void 0 && typeof sigLanes === "object") for (const [fam, lane] of Object.entries(sigLanes)) {
 						const base = Array.isArray(lane?.base) ? lane.base.filter((f) => typeof f === "string") : [];
-						const adds = Object.entries(lane?.variants ?? {}).map(([v, row]) => v + " +" + (Array.isArray(row?.params) ? row.params.join(", ") : "")).filter((line) => !line.endsWith(" +"));
-						const words = [];
-						for (const t of lane?.relations?.together ?? []) if (Array.isArray(t?.fields)) words.push("together(" + t.fields.join(" × ") + ")");
-						for (const c of lane?.relations?.conflicts ?? []) words.push("conflicts(" + String(c?.a) + " × " + String(c?.b) + ")");
-						for (const e of lane?.relations?.either_or ?? []) if (Array.isArray(e?.groups)) words.push("either_or(" + e.groups.map((g) => "(" + g.join(" × ") + ")").join(" | ") + ")");
-						if (Array.isArray(lane?.relations?.required)) words.push("required(" + lane.relations.required.join(", ") + ")");
-						if (Array.isArray(lane?.relations?.at_most_one)) words.push("at_most_one(" + lane.relations.at_most_one.join(" | ") + ")");
-						const lawBounds = lane?.bounds;
-						if (lawBounds !== null && lawBounds !== void 0 && typeof lawBounds === "object") {
-							const spans = Object.entries(lawBounds).map(([k, bb]) => k + " " + String(bb?.min ?? "..") + "…" + String(bb?.max ?? ".."));
-							if (spans.length > 0) words.push("bounds(" + spans.join(", ") + ")");
-						}
+						const adds = Object.entries(lane?.variants ?? {}).map(([v, row]) => {
+							const params = Array.isArray(row?.params) ? row.params.join(", ") : "";
+							const vlaws = lawWords(row?.relations, row?.bounds);
+							const env = row.sampler_envelope;
+							if (env !== void 0 && env !== null) vlaws.push("sampler(" + String(env.steps?.join("–") ?? "..") + " steps, " + String(env.cfg?.join("–") ?? "..") + " cfg)");
+							let line = v + (params !== "" ? " +" + params : "");
+							if (vlaws.length > 0) line += " [" + vlaws.join(", ") + "]";
+							return line;
+						}).filter((line) => line !== "");
+						const words = lawWords(lane?.relations, lane?.bounds);
 						out.push("lane " + fam + ": " + (base.length > 0 ? "base " + base.join(", ") : "no declared base") + (adds.length > 0 ? "; variants: " + adds.join("; ") : "") + (words.length > 0 ? "; laws: " + words.join(", ") : "") + " — a field outside this lane REFUSES at the bench door (add_stage/patch), named, with the cure");
 					}
 					const model = str(sig.model);

@@ -53,6 +53,16 @@ export async function validate(
         // through the SAME inline arm — no second validator. Unknown
         // names keep the door's own voice.
         const name: string = typeof body["flow"] === "string" ? body["flow"] : "";
+        // The start arm's order, verbatim: admission (the id's shape)
+        // before presence (is it registered). One voice for an
+        // illegal name, whichever door answers.
+        if (!FLOW_ID_RE.test(name)) {
+          throw new RemoteError(
+            "runs/invalid-request",
+            "flow id " + JSON.stringify(name) + " is not a legal identifier",
+            { loc: "flow" },
+          );
+        }
         const decl = getRegistryFlow(name);
         if (decl === undefined) {
           throw new RemoteError(

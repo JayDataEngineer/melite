@@ -460,14 +460,28 @@ describe("start model arm", () => {
     );
   });
 
-  it("non-string flow names miss the registry (start + validate)", async () => {
+  it("an illegal flow name is ADMITTED before presence, in one voice (start + validate)", async () => {
+    // The door's own order (the {model} arm's precedent): a value
+    // that cannot be a flow id is a shape failure, refused as such.
+    // The registry lookup used to answer first, so `flow: 5` read
+    // "no flow named  in the registry" — the offending value named
+    // nowhere.
     const s = seat();
-    const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, flow: 5 }, sig()),
+    for (const flow of [5, "Image-Upscale", ""]) {
+      const err = await remote(() =>
+        s.svc.start({ draft_id: "d1", test: false, flow }, sig()),
+      );
+      assert.equal(err.code, "runs/invalid-request");
+      assert.match(err.message, /is not a legal identifier/);
+      const verr = await remote(() => s.svc.validate({ flow }, sig()));
+      assert.equal(verr.code, "runs/invalid-request");
+      assert.match(verr.message, /is not a legal identifier/);
+    }
+    // A legal-but-unregistered name still gets the PRESENCE voice.
+    const unknown = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, flow: "ghost" }, sig()),
     );
-    assert.match(err.message, /no flow named  in the registry/);
-    const verr = await remote(() => s.svc.validate({ flow: 5 }, sig()));
-    assert.match(verr.message, /no flow named  in the registry/);
+    assert.match(unknown.message, /no flow named ghost in the registry/);
   });
 
   it("phase-2 compose failures refuse; success registers the card door and settles", async () => {

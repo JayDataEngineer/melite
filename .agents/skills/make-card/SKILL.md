@@ -29,13 +29,13 @@ packages/<genre>/<card>/
                    # (step 4) + "typecheck": "tsc --noEmit" (the
                    # battery gates every package that owns the script,
                    # the day it declares it).
-  tsconfig.json    # copy from a sibling card package (mask-studio is
+  tsconfig.json    # copy from a sibling card package (mask is
                    # the reference: types:["node"], per-program ambient)
   tsdown.config.ts # ONLY when a studio ships: the shared clientBundle
                    # preset (step 4)
   src/index.ts     # the HOST marker: export name/inject/apply, apply
                    # is empty — the card rides ./card, the studio rides
-                   # the client face (copy from mask-studio)
+                   # the client face (copy from mask)
   src/card.ts      # THE registration plugin (shape below)
   src/client/index.ts    # ONLY when a studio ships: the adapter (step 4)
   src/ui/studio/   # ONLY when a studio ships: the studio body files
@@ -46,7 +46,7 @@ packages/<genre>/<card>/
                    # studio ships (dom lane)
 ```
 
-`src/card.ts` — the shape (copy from `packages/image/ideogram4/src/card.ts`):
+`src/card.ts` — the shape (copy from `packages/3d/rig/src/card.ts`):
 
 ```ts
 import type { Context } from '@deepseek-ai/cordis'
@@ -90,7 +90,7 @@ Laws the walls check (do not learn these by failing them):
 `packages/engines/comfyui-cordis/src/cardDefs.ts` → the
 `cardPackages` array. One row per card. Packages with a client face
 mount their registration via the `./card` subpath
-(`'@melite/image-mask-studio/card'` — the host `.` is the marker);
+(`'@melite/image-mask/card'` — the host `.` is the marker);
 packages whose card.ts IS the main ride the bare specifier
 (`'@melite/audio-music'`). This table is the ONLY card composition
 (loadCardDefs' cache-boot AND the compose door's fresh-Context boot
@@ -101,7 +101,7 @@ both ride it). A card lands by adding its package + one row.
 No studio → the card renders as a schema form (lawful; most cards do).
 
 A studio ships as TWO faces of the same package (the dual-face law,
-2026-09-12; mask-studio is the reference):
+2026-09-12; mask is the reference):
 
 - **`src/ui/studio/component.tsx`** (+ per-seam body files) — the
   studio body. Consumed RELATIVELY by the client face.

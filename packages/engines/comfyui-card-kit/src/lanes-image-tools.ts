@@ -18,7 +18,7 @@ const isSpell = (s: string): boolean => s.startsWith('$')
 
 // ── the mask selection lane ─────────────────────────────────────────
 // RT-DETR proposes, SAM3 refines; loaders are lazy (reachability —
-// see the mask-studio card header, kept there).
+// see packages/image/mask/src/lane.ts, kept there).
 
 type BboxDict = { x: number; y: number; width: number; height: number }
 
