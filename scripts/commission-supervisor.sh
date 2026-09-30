@@ -27,6 +27,11 @@
 # Knobs (tests stub the binary + zero the backoff):
 #   SUPERVISOR_DSH_BIN       (default /home/user/.local/bin/dsh)
 #   SUPERVISOR_PROFILE       (default headless)
+#   SUPERVISOR_DSH_PATCH     optional --patch overlay path, passed to
+#                             the launcher before the prompt (machine-
+#                             local provider rows compose with the
+#                             repo-rendered estate rows — apply.sh's
+#                             own call-time overlay shape; empty = off)
 #   SUPERVISOR_STATE_ROOT    (default the repo root)
 #   SUPERVISOR_MAX_ATTEMPTS  (default 3)
 #   SUPERVISOR_BACKOFF_S     (default 60)
@@ -52,6 +57,8 @@ PROMPT_FILE="${1:?usage: commission-supervisor.sh <launch-prompt-file> [out-pref
 OUT_PREFIX="${2:-/tmp/commission}"
 DSH_BIN="${SUPERVISOR_DSH_BIN:-/home/user/.local/bin/dsh}"
 PROFILE="${SUPERVISOR_PROFILE:-headless}"
+PATCH_ARGS=()
+[ -n "${SUPERVISOR_DSH_PATCH:-}" ] && PATCH_ARGS+=(--patch "${SUPERVISOR_DSH_PATCH}")
 STATE_ROOT="${SUPERVISOR_STATE_ROOT:-$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)}"
 LOCK_WAIT_S="${SUPERVISOR_LOCK_WAIT_S:-1800}"
 # THE GLOB LAW'S CLOCK ZERO: any transcript minted from NOW on is
@@ -198,7 +205,7 @@ while :; do
   # THE TURN-WAIT: never launch a maker into a lock its sibling owns
   wait_for_queue_lock
   MELITE_HEADLESS=1 MELITE_STATE_ROOT="${STATE_ROOT}" \
-    node "${DSH_BIN}" --profile "${PROFILE}" "$(cat "${PROMPT_FILE}")" \
+    node "${DSH_BIN}" --profile "${PROFILE}" ${PATCH_ARGS[@]+"${PATCH_ARGS[@]}"} "$(cat "${PROMPT_FILE}")" \
     >"${LOG}" 2>&1
   CODE=$?
 

@@ -89,7 +89,7 @@ function stage(arms: Arm[]): { dir: string, prompt: string, prefix: string } {
   return { dir, prompt, prefix: join(dir, 'commission') }
 }
 
-function run(dir: string, prompt: string, prefix: string): number {
+function run(dir: string, prompt: string, prefix: string, extra: Record<string, string> = {}): number {
   try {
     execFileSync('bash', [SCRIPT, prompt, prefix], {
       env: {
@@ -97,6 +97,7 @@ function run(dir: string, prompt: string, prefix: string): number {
         SUPERVISOR_DSH_BIN: join(dir, 'seq.js'),
         SUPERVISOR_BACKOFF_S: '0',
         SUPERVISOR_MAX_ATTEMPTS: '3',
+        ...extra,
         SUPERVISOR_DONE_MARKER: join(dir, 'transcript.md'),
         // THE TURN-WAIT MUST NEVER SEE THE OPERATOR'S REAL QUEUE
         // (2026-09-26). `wait_for_queue_lock` polls
@@ -232,6 +233,29 @@ describe('commission-supervisor.sh — the transient-vs-quota law (§25 answered
     assert.equal(run(dir, prompt, prefix), 0)
     assert.equal(attemptLogs(prefix).length, 1)
     assert.ok(!existsSync(prefix + '-resume.token.md'))
+  })
+
+  it('SUPERVISOR_DSH_PATCH rides the launch argv as --patch <path> before the prompt, and the empty knob launches bare (2026-10-12 wall)', () => {
+    const { dir, prompt, prefix } = stage(['ok'])
+    // the stub must tell us what the supervisor ACTUALLY launched with:
+    // argv recorded, then the ok arm plays — transcript only on the
+    // recorded shape, so a silent argv change fails the receipt assert.
+    writeFileSync(join(dir, 'seq.js'),
+      'require("node:fs").writeFileSync(__dirname + "/argv.txt", process.argv.join("\\n"));\n'
+      + stubFor('ok'))
+    const patch = join(dir, 'llm.patch.yml')
+    writeFileSync(patch, '# provider rows\n')
+    assert.equal(run(dir, prompt, prefix, { SUPERVISOR_DSH_PATCH: patch }), 0)
+    const argv = readFileSync(join(dir, 'argv.txt'), 'utf8').split('\n')
+    assert.ok(argv.includes('--patch'), '--patch flag in argv: ' + argv.join(' '))
+    assert.ok(argv.includes(patch), 'patch path in argv: ' + argv.join(' '))
+    assert.ok(argv.indexOf('--patch') < argv.indexOf(readFileSync(prompt, 'utf8').trim()), '--patch rides before the prompt')
+    // and the empty knob never invents a flag
+    writeFileSync(join(dir, 'seq-index'), '0')
+    writeFileSync(join(dir, 'argv.txt'), '')
+    assert.equal(run(dir, prompt, prefix), 0)
+    const bare = readFileSync(join(dir, 'argv.txt'), 'utf8').split('\n')
+    assert.ok(!bare.includes('--patch'), 'no --patch without the knob')
   })
 })
 
