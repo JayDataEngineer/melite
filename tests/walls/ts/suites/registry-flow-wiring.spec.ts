@@ -130,14 +130,19 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // graph shrink silently — the wall would judge less and say green).
     expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(56);
     expect(names.length, "the registry flows judged, exact").toBe(13);
-    expect(nodes, "the nodes judged, exact").toBe(82);
-    // the dotted sub-keys, exactly: three today, all the remesh
-    // combo's sign_mode sub-values. A fourth is a deliberate edit.
+    // (the atom vocabulary, stroke 3 — the flow-system stroke): the
+    // five second-truth stages (character img/gimg/garment,
+    // body-to-somax rig, kimodo-native t2m) name cards now — their
+    // nodes compose family-side and this wall no longer judges them.
+    // The 17 that remain are the two sole-truth classes the ledger
+    // records (li-ck): the anny estimator chains + verbatim bake, and
+    // the meld flows whose cards were retired 2026-09-16.
+    expect(nodes, "the nodes judged, exact").toBe(17);
+    // the dotted sub-keys: the remesh combo's sign_mode sub-values
+    // died with the garment literal (the pixal3d mesh action owns
+    // that node now). Zero is the current truth — a dotted sub-key
+    // reappearing on a hand graph is a deliberate edit.
     expect([...new Set(dottedKeys)].sort(), "the dotted widget sub-keys the graphs use, exactly")
-      .toEqual([
-        "RemeshMesh.sign_mode.drop_enclosed_components",
-        "RemeshMesh.sign_mode.drop_inverted_components",
-        "RemeshMesh.sign_mode.qef",
-      ]);
+      .toEqual([]);
   });
 });

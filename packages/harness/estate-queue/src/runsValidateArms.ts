@@ -171,7 +171,18 @@ export async function validate(
       // presence) composes against the CARD name — the arm is live
       const mid: string = typeof params["model"] === "string"
         ? params["model"] : String(st["card"]);
-      const body: Record<string, unknown> = { ...params, model: mid };
+      // A MODEL-LESS CARD STAGE (stroke 3: the registry's rig hop)
+      // rides with NO model key at all: an injected one would hit
+      // the board check ("model 'rig' is not offered by card 'rig'",
+      // boards: none) before prepareCardParams ever resolved the
+      // familyless card-unit arm — which needs mid alone, not a
+      // body.model. admitStageModel passes an absent model; the
+      // compose names the family through the card's own selector
+      // (the rig card's mode knob).
+      const body: Record<string, unknown> =
+        params["model"] === undefined
+          ? { ...params }
+          : { ...params, model: mid };
       try {
         await (seat as unknown as {
           phase1Card(body: Record<string, unknown>, mid: string): Promise<unknown>;

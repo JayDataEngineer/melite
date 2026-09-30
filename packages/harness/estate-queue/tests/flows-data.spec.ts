@@ -211,10 +211,15 @@ describe("registryFlowToInline", () => {
     const kimodo = registryFlowToInline(getRegistryFlow("kimodo-native")!) as {
       stages: Array<Record<string, unknown>>;
     };
+    // (the atom vocabulary, stroke 3): the t2m stage is a motion card
+    // stage now — the card's flowOutputBindings own the motion_npz
+    // channel (card_io), and output_nodes died with the hand-wired
+    // literal it annotated
     assert.deepEqual(kimodo.stages[0]!["outputs"], { motion_npz: "data" });
-    assert.deepEqual(
-      (kimodo.stages[0]!["params"] as Record<string, unknown>)["output_nodes"],
-      { motion_npz: "2" },
+    assert.equal(kimodo.stages[0]!["card"], "motion");
+    assert.deepEqual(kimodo.stages[0]!["card_io"], { motion_npz: "data" });
+    assert.ok(
+      !("output_nodes" in (kimodo.stages[0]!["params"] as Record<string, unknown>)),
     );
     const annyInline = registryFlowToInline(getRegistryFlow("anny-hmr")!) as {
       stages: Array<Record<string, unknown>>;

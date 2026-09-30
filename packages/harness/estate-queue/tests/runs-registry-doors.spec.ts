@@ -63,12 +63,76 @@ const seat = (
     // inline compile (the cardGate wire, 2026-09-13): the pin
     // sweep reads objectInfo (null = the fail-open empty pin set,
     // the door's absent-pin degrade) and card= stages read
-    // defsSync (no card stages ride this rig's flows).
+    // defsSync.
+    //
+    // CARD STAGES RIDE THESE FLOWS NOW (the atom vocabulary, stroke 3
+    // — the flow-system stroke): the character flow's z-image stages,
+    // garment stage, and rig hop (body-to-somax) used to hand-wire
+    // their graphs and are now card= stages, so the structural fake
+    // serves those cards and their family rows. The fake stays
+    // structural — no engine, no facts file, no compose.
     objectInfo: (): unknown => null,
-    defsSync: (): unknown => new Map(),
-    modelFacts: (): unknown => {
-      throw new Error("no facts");
-    },
+    defsSync: (): unknown =>
+      new Map([
+        [
+          "image-gen",
+          {
+            id: "image-gen",
+            boarded: ["krea-2", "z-image", "anima", "qwen-img-21"],
+            flowKinds: { inputs: {}, outputs: { default: "image" }, requiresModel: true },
+            // the card gate walks the card's own schema over the
+            // stage params (the wire-coercion seat); the structural
+            // fake admits the body verbatim — the real card's schema
+            // is exercised by the card's own suite, not here
+            schema: (v: unknown): unknown => v,
+          },
+        ],
+        [
+          "img-to-mesh",
+          {
+            id: "img-to-mesh",
+            boarded: ["pixal3d", "trellis2-native"],
+            flowKinds: { inputs: { input_image: "image" }, outputs: { default: "mesh" }, requiresModel: true },
+            schema: (v: unknown): unknown => v,
+          },
+        ],
+        [
+          "rig",
+          {
+            id: "rig",
+            boarded: [],
+            // top-level requiresModel (the cardGate's read — pure-tool
+            // cards skip the {model:} demand)
+            requiresModel: false,
+            flowKinds: { inputs: { mesh_glb: "mesh" }, outputs: { default: "mesh" }, requiresModel: false },
+            schema: (v: unknown): unknown => v,
+          },
+        ],
+      ]),
+    modelFacts: (): unknown => ({
+      "z-image": {
+        id: "z-image",
+        family: "z-image",
+        card: "image-gen",
+        defaults: {},
+        lane_inputs: {},
+        variants: [],
+        variant_groups: [],
+        outputs: [],
+        mods: [],
+      },
+      pixal3d: {
+        id: "pixal3d",
+        family: "pixal3d",
+        card: "img-to-mesh",
+        defaults: {},
+        lane_inputs: {},
+        variants: [],
+        variant_groups: [],
+        outputs: [],
+        mods: [],
+      },
+    }),
     resolveCardFamily: (mid: unknown): unknown => mid,
     modelMids: (): unknown => new Set<string>(),
     // the card-aware resolve voice (2026-10-08): the decls table

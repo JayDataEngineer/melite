@@ -4,8 +4,7 @@
 // types, the helpers, and the assembled REGISTRY.
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import type { RegistryFlow } from "./flowsData.ts";
-import { plainStage, initial, zImageWorkflow, linkedStage, fromStage } from "./flowsData.ts";
-import { GARMENT_WORKFLOW } from "./flowsGarmentWorkflow.ts";
+import { plainStage, initial, linkedStage, fromStage } from "./flowsData.ts";
 
 export const ANNY_HMR: RegistryFlow = {
   id: "anny-hmr",
@@ -190,30 +189,27 @@ export const BODY_TO_SOMAX: RegistryFlow = {
     plainStage({
       id: "rig",
       engine: CARD_PLANE_ENGINE,
+      card: "rig",
       description:
         "SOMA-77 template weight transfer (barycentric, the autorig pack's " +
-        "baked function via KimodoExportFBX standalone-rig mode)",
+        "baked function) via the rig card's auto mode — the gem_soma " +
+        "family's declared rig action composes the KimodoExportFBX segment",
       inputs: { glb: initial("glb") },
       expected: { glb: "mesh" },
       outputs: { body: "mesh" },
+      cardIo: { body: "mesh" },
+      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3): this
+      // stage hand-wired the KimodoExportFBX node in the flow plane —
+      // a second copy of the gem_soma rig lane. It names the card +
+      // mode; the family's declared action composes the graph.
+      // (out_dir/timeout_s are RAW-stage knobs — a card stage's
+      // params are card-admitted knobs only; the compose door owns
+      // the run dir and the card's own contract the timeout.)
       params: {
-        out_dir: "./output",
-        timeout_s: 600,
-        workflow: {
-          rig: {
-            class_type: "KimodoExportFBX",
-            inputs: {
-              rigged_path: "",
-              source_glb: "$glb",
-              file_format: "glb",
-              npz_path: "",
-              fps: 30,
-              in_place: true,
-              decimate_ratio: 0.0,
-              preserve_texture: true,
-            },
-          },
-        },
+        mesh_glb: "$glb",
+        mode: "auto",
+        preserve_texture: true,
+        decimate_ratio: 0,
       },
     }),
   ],
@@ -232,30 +228,46 @@ export const CHARACTER: RegistryFlow = {
     plainStage({
       id: "img",
       engine: CARD_PLANE_ENGINE,
+      card: "image-gen",
       description:
-        "z-image character sheet (skipped when the operator brings starter_image)",
+        "z-image character sheet via the image-gen card (skipped when the " +
+        "operator brings starter_image)",
       inputs: { character_prompt: initial("character_prompt") },
       expected: { character_prompt: "text" },
       outputs: { photo: "image" },
+      cardIo: { photo: "image" },
+      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3 — the
+      // flow-system stroke): this stage used to hand-wire the z-image
+      // graph node by node in the flow plane — a second copy of the
+      // lane, drifting the moment a weight or a node default moved.
+      // It now names the card and the family; the family's declared
+      // t2i action composes the graph, exactly as the bench does.
       params: {
-        out_dir: "./output",
-        timeout_s: 900,
-        workflow: zImageWorkflow("$character_prompt", 20260906, "character_img"),
+        model: "z-image",
+        prompt: "$character_prompt",
+        seed: 20260906,
+        width: 1024,
+        height: 1024,
       },
       skipWhen: { initial: "starter_image", when: "present" },
     }),
     plainStage({
       id: "gimg",
       engine: CARD_PLANE_ENGINE,
+      card: "image-gen",
       description:
-        "z-image garment sheet (skipped when the operator brings garment_image_1)",
+        "z-image garment sheet via the image-gen card (skipped when the " +
+        "operator brings garment_image_1)",
       inputs: { garment_prompt: initial("garment_prompt") },
       expected: { garment_prompt: "text" },
       outputs: { gimg: "image" },
+      cardIo: { gimg: "image" },
       params: {
-        out_dir: "./output",
-        timeout_s: 900,
-        workflow: zImageWorkflow("$garment_prompt", 20260907, "character_gimg"),
+        model: "z-image",
+        prompt: "$garment_prompt",
+        seed: 20260907,
+        width: 1024,
+        height: 1024,
       },
       skipWhen: { initial: "garment_image_1", when: "present" },
     }),
@@ -268,16 +280,25 @@ export const CHARACTER: RegistryFlow = {
     plainStage({
       id: "garment",
       engine: CARD_PLANE_ENGINE,
+      card: "img-to-mesh",
       description:
         "pixal3d garment lift incl. the remesh tail (step e folded — GetMeshInfo " +
-        "-> RemeshMesh -> DecimateMesh ride in-chain)",
+        "-> RemeshMesh -> DecimateMesh ride in-chain) via the img-to-mesh card — " +
+        "the pixal3d family's declared mesh action",
       inputs: { garment_image: fromStage("gimg", "gimg") },
       expected: { garment_image: "image" },
       outputs: { garment: "mesh" },
+      cardIo: { garment: "mesh" },
+      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3): the
+      // pinned GARMENT_WORKFLOW literal was a stale snapshot of the
+      // pixal3d mesh lane (it drifted the moment a weight or a node
+      // default moved). The family's declared action composes the
+      // graph; the official calibrations (768 remesh, 4096 atlas)
+      // ride the card schema's own defaults.
       params: {
-        out_dir: "./output",
-        timeout_s: 3600,
-        workflow: GARMENT_WORKFLOW,
+        model: "pixal3d",
+        input_image: "$garment_image",
+        seed: 42,
       },
     }),
     linkedStage("skin-apply", "coat", "coat", {
@@ -501,31 +522,25 @@ export const KIMODO_NATIVE: RegistryFlow = {
     plainStage({
       id: "t2m",
       engine: CARD_PLANE_ENGINE,
-      description: "Kimodo text-to-pose via live ComfyUI nodes",
+      card: "motion",
+      description: "Kimodo text-to-pose via the motion card (the kimodo family's declared compose action)",
       inputs: { prompt: initial("prompt") },
-      expected: { prompt: "text" },
+      // (the derivation law): the motion card's flowKinds.inputs
+      // declares prompt: text — the kind derives, no hand mirror
       outputs: { motion_npz: "data" },
+      cardIo: { motion_npz: "data" },
+      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3):
+      // this stage hand-wired the KimodoLoader + KimodoTextToPose
+      // nodes — a second copy of the kimodo compose lane. The
+      // family's declared action composes the graph; output_nodes
+      // died with the literal (the card's flowOutputBindings own the
+      // motion_npz channel).
       params: {
-        output_nodes: { motion_npz: "2" },
-        out_dir: "./output",
-        timeout_s: 1800,
-        workflow: {
-          "1": {
-            class_type: "KimodoLoader",
-            inputs: { model_name: "Kimodo-SOMA-RP-v1.1" },
-          },
-          "2": {
-            class_type: "KimodoTextToPose",
-            inputs: {
-              model: ["1", 0],
-              prompt: "$prompt",
-              seed: 42,
-              duration_sec: 3,
-              diffusion_steps: 25,
-              num_samples: 1,
-            },
-          },
-        },
+        prompt: "$prompt",
+        seed: 42,
+        duration_sec: 3,
+        diffusion_steps: 25,
+        num_samples: 1,
       },
     }),
   ],
