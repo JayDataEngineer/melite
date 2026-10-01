@@ -240,12 +240,51 @@ describe("GATE S: the seed sentinel mints at render", () => {
     // would refuse the ref at compose. A carve member must still
     // spell the rationale in its source (the marker sentence below);
     // every other file obeys the generic law.
+/**
+ * Strip comments with a string-aware scan: a `//` or `/* ... *​/'
+ * inside a string literal is string content, not a comment; code
+ * mentions survive, comment mentions die. The scan tracks ', ", `
+ * (with \\ escapes); template interpolations are read as string
+ * content — a mention inside ${...} is prose to this wall, and no
+ * family interpolates the factory.
+ */
+function stripComments(src: string): string {
+  let out = "";
+  let i = 0;
+  let quote: string | null = null;
+  while (i < src.length) {
+    const c = src[i];
+    if (quote) {
+      out += c;
+      if (c === "\\") { out += src[i + 1] ?? ""; i += 2; continue; }
+      if (c === quote) quote = null;
+      i += 1;
+      continue;
+    }
+    if (c === '"' || c === "'" || c === "`") { quote = c; out += c; i += 1; continue; }
+    if (c === "/" && src[i + 1] === "/") {
+      while (i < src.length && src[i] !== "\n") i += 1;
+      continue;
+    }
+    if (c === "/" && src[i + 1] === "*") {
+      i += 2;
+      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) i += 1;
+      i += 2;
+      continue;
+    }
+    out += c;
+    i += 1;
+  }
+  return out;
+}
+
     const channelCarve = ["skin/src/actions.ts"];
     const carveRationaleMisses: string[] = [];
     for (const f of actionFiles) {
       const src = readFileSync(join(modelsDir, f), "utf8");
       if (src.includes("Math.random")) actionOffenders.push(f);
-      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"') && !src.includes("diffusionParamRows(")) {
+      const code = stripComments(src);
+      if (/\bseed\b/.test(code) && !code.includes('"seed-sentinel"') && !code.includes("diffusionParamRows(")) {
         if (channelCarve.includes(f)) {
           if (!src.includes("held by the channel instead of the mint")) {
             carveRationaleMisses.push(f);
