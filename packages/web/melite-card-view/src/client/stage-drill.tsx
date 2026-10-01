@@ -591,6 +591,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
               + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
               + 'The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land.'
             : null)
+        }).catch((e: unknown) => {
+          // the sweep write is fire-and-forget; the verb's outer
+          // catch cannot see it — the NO-SILENT-REJECT law holds
+          // here too: the rejection renders its face.
+          setWriteFace('THE ENHANCE DID NOT LAND — ' + (e instanceof Error ? e.message : 'the write was refused'))
         })
       }
       // the note counts what the PATCH carries (the second audit's
