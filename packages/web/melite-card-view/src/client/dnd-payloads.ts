@@ -3,10 +3,9 @@
 
 
 
-/** The OLD system's drag contract, VERBATIM (2026-08-08/08-22 era,
- *  recovered from d13560be^ packages/web-kit): capability tiles carry
- *  a fully-resolved card; asset tiles carry {url, type}. One drop
- *  target, two contracts, no ambiguity — the MIME pair is the law. */
+/** The drag contract: capability tiles carry a fully-resolved card;
+ *  asset tiles carry {url, type}. One drop target, two contracts, no
+ *  ambiguity — the MIME pair is the law. */
 export { ASSET_DRAG_MIME, parseAssetDrop, type AssetDropPayload } from '@melite/card-base/client'
 
 export const CAPABILITY_DRAG_MIME = 'application/tech-noir-capability'

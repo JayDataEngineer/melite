@@ -242,7 +242,7 @@ test('uploadInputFile: an unreadable drop REFUSES (never an empty upload)', asyn
   try {
     useFake({})
     await expect(uploadInputFile(new File(['x'], 'a.png', { type: 'image/png' })))
-      .rejects.toThrow(/could not read the dropped file/)
+      .rejects.toThrow(/read failed/)
   } finally {
     globalThis.FileReader = RealReader
   }

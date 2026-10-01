@@ -9,19 +9,17 @@
  * states with the same roles and the same "Preview unavailable"
  * signal.
  *
- * The store is typed structurally ({posters, setPoster} behind
- * getState) so lanes keep their own cache hooks without importing
- * any state library here.
+ * The store is typed structurally (the cache record + its write, behind
+ * getState) so a surface brings its own cache module.
  */
 import { useEffect, useState } from "react"
-import { AlertTriangle } from "./ui-icons"
-import { Skeleton } from "./skeleton"
+import { AlertTriangle, Skeleton } from "@melite/card-base/client"
 import styles from "./poster-shell.module.css"
 
 export interface PosterStoreLike {
   getState: () => {
-    posters: Record<string, string>
-    setPoster: (url: string, dataUrl: string) => void
+    images: Record<string, string>
+    setImage: (key: string, dataUrl: string) => void
   }
 }
 
@@ -35,7 +33,7 @@ export function usePosterDataUrl(
 
   useEffect(() => {
     let cancelled = false
-    const cached = store.getState().posters[url]
+    const cached = store.getState().images[url]
     if (cached) {
       setSrc(cached)
       return
@@ -47,7 +45,7 @@ export function usePosterDataUrl(
         // keyed by url, reuse on every subsequent open instead of
         // re-rendering. Best-effort: a quota error is caught inside
         // the store and leaves the in-memory copy serving.
-        store.getState().setPoster(url, dataUrl)
+        store.getState().setImage(url, dataUrl)
         setSrc(dataUrl)
       })
       .catch(() => {

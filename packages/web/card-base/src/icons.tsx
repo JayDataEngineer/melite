@@ -17,6 +17,8 @@
  * Reached through the `/client` door (`@melite/card-base/client`).
  */
 import type { CSSProperties, SVGProps } from "react"
+import { cn } from './chrome.ts'
+import css from './card.module.css'
 
 export interface IconProps extends SVGProps<SVGSVGElement> {
   className?: string
@@ -186,9 +188,11 @@ export function Move({ className, style, ...rest }: IconProps) {
   )
 }
 
+/** The circular-arrow glyph, spinning by construction (the Loader2
+ *  contract: callers size and tint it, never animate it). */
 export function Loader2({ className, style, ...rest }: IconProps) {
   return (
-    <Svg className={className} style={style} {...rest}>
+    <Svg className={cn(css.iconSpin, className)} style={style} {...rest}>
       <path d="M21 12a9 9 0 1 1-6.219-8.56" />
     </Svg>
   )
@@ -456,6 +460,61 @@ export function Frame({ className, style, ...rest }: IconProps) {
       <path d="M22 18H2" />
       <path d="M6 2v20" />
       <path d="M18 2v20" />
+    </Svg>
+  )
+}
+
+export function Volume2({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+      <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+    </Svg>
+  )
+}
+
+export function VolumeX({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+      <line x1="22" x2="16" y1="9" y2="15" />
+      <line x1="16" x2="22" y1="9" y2="15" />
+    </Svg>
+  )
+}
+
+export function Maximize({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M21 8V5a2 2 0 0 0-2-2h-3" />
+      <path d="M3 16v3a2 2 0 0 0 2 2h3" />
+      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+    </Svg>
+  )
+}
+
+export function Minimize2({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <path d="M4 14h6v6" />
+      <path d="M20 10h-6V4" />
+      <path d="m14 10 7-7" />
+      <path d="m3 21 7-7" />
+    </Svg>
+  )
+}
+
+export function Dices({ className, style, ...rest }: IconProps) {
+  return (
+    <Svg className={className} style={style} {...rest}>
+      <rect width="12" height="12" x="2" y="10" rx="2" ry="2" />
+      <path d="m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" />
+      <path d="M6 18h.01" />
+      <path d="M10 14h.01" />
+      <path d="M15 6h.01" />
+      <path d="M18 9h.01" />
     </Svg>
   )
 }

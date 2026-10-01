@@ -15,11 +15,11 @@
  * The previous "applied" slice was removed - the workflow is now
  * save-then-load rather than apply-to-scene.
  *
- * Persistence follows the same manual localStorage pattern as enhancement.ts
- * and timeline.ts (no zustand/middleware).
+ * The library is persisted by its own load/persist pair (v1→v2 migration
+ * lives there), not by the store engine's own persistence.
  */
 import type { Character, } from "@melite/contracts"
-import { useSyncExternalStore } from "react"
+import { createClientStore, type GetState, type SetState } from "@melite/catalog/clientStore"
 
 export interface SavedCharacter extends Character {
   id: string
@@ -133,143 +133,78 @@ function uid(): string {
   return `bc_${_nextId++}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`
 }
 
-// ── Native store (DSH ships no state library — no zustand) ─────────────────
-// Module-level state + listener set + useSyncExternalStore hook. Shallow-
-// merge setState preserves the old call sites: useBodyStudio(selector) and
-// useBodyStudio.getState(). Actions are stable module functions, so selector
-// snapshots stay referentially stable between mutations.
-const _listeners = new Set<() => void>()
+// ── The store ─────────────────────────────────────────────────────────────
+// One module-level store: `useBodyStudio(selector)` inside React, the
+// `getState()` statics from module context. Actions are stable module
+// functions, so selector snapshots stay referentially stable between
+// mutations.
+const _actions = (set: SetState<BodyStudioState>, get: GetState<BodyStudioState>): Omit<BodyStudioState, "editing" | "library"> => ({
 
-function _subscribe(listener: () => void): () => void {
-  _listeners.add(listener)
-  return () => {
-    _listeners.delete(listener)
-  }
-}
+  setEditing: (c) => {
+    set({ editing: c })
+  },
 
-function _notify(): void {
-  _listeners.forEach((l) => l())
-}
+  patchEditing: (patch) => {
+    set((s) => ({ editing: { ...s.editing, ...patch } }))
+  },
 
-type _Patch =
-  | Partial<BodyStudioState>
-  | ((s: BodyStudioState) => Partial<BodyStudioState>)
+  resetEditing: () => {
+    set({ editing: { ...DEFAULT_CHARACTER } })
+  },
 
-function _setState(patch: _Patch, replace?: boolean): void {
-  const p =
-    typeof patch === "function"
-      ? (patch as (s: BodyStudioState) => Partial<BodyStudioState>)(_state)
-      : patch
-  if (replace === true) {
-    _state = p as BodyStudioState
-  } else {
-    _state = { ..._state, ...p }
-  }
-  _notify()
-}
+  saveToLibrary: (name, thumbnail) => {
+    const trimmed = name.trim()
+    const cur = get()
+    const character: SavedCharacter = {
+      id: uid(),
+      name: trimmed || `Character ${cur.library.length + 1}`,
+      createdAt: Date.now(),
+      identityModel: cur.editing.identityModel,
+      coeffs: cur.editing.coeffs ? [...cur.editing.coeffs] : null,
+      localChanges: cur.editing.localChanges
+        ? { ...cur.editing.localChanges }
+        : null,
+      customTargets: cur.editing.customTargets
+        ? { ...cur.editing.customTargets }
+        : null,
+      ...(thumbnail ? { thumbnail } : {}),
+    }
+    const library = [...cur.library, character]
+    persistLibrary(library)
+    set({ library })
+    return character
+  },
 
-function _getState(): BodyStudioState {
-  return _state
-}
+  loadFromLibrary: (id) => {
+    const found = get().library.find((c) => c.id === id)
+    if (!found) return
+    set({
+      editing: {
+        identityModel: found.identityModel,
+        coeffs: found.coeffs ? [...found.coeffs] : null,
+        localChanges: found.localChanges ? { ...found.localChanges } : null,
+        customTargets: found.customTargets ? { ...found.customTargets } : null,
+      },
+    })
+  },
 
-function _setEditing(c: Character): void {
-  _setState({ editing: c })
-}
+  deleteFromLibrary: (id) => {
+    const library = get().library.filter((c) => c.id !== id)
+    persistLibrary(library)
+    set({ library })
+  },
 
-function _patchEditing(patch: Partial<Character>): void {
-  _setState((s) => ({ editing: { ...s.editing, ...patch } }))
-}
+  renameInLibrary: (id, name) => {
+    const library = get().library.map((c) =>
+      c.id === id ? { ...c, name: name.trim() || c.name } : c,
+    )
+    persistLibrary(library)
+    set({ library })
+  },
+})
 
-function _resetEditing(): void {
-  _setState({ editing: { ...DEFAULT_CHARACTER } })
-}
-
-function _saveToLibrary(name: string, thumbnail?: string): SavedCharacter {
-  const trimmed = name.trim()
-  const cur = _getState()
-  const character: SavedCharacter = {
-    id: uid(),
-    name: trimmed || `Character ${cur.library.length + 1}`,
-    createdAt: Date.now(),
-    identityModel: cur.editing.identityModel,
-    coeffs: cur.editing.coeffs ? [...cur.editing.coeffs] : null,
-    localChanges: cur.editing.localChanges
-      ? { ...cur.editing.localChanges }
-      : null,
-    customTargets: cur.editing.customTargets
-      ? { ...cur.editing.customTargets }
-      : null,
-    ...(thumbnail ? { thumbnail } : {}),
-  }
-  const library = [...cur.library, character]
-  persistLibrary(library)
-  _setState({ library })
-  return character
-}
-
-function _loadFromLibrary(id: string): void {
-  const found = _getState().library.find((c) => c.id === id)
-  if (!found) return
-  _setState({
-    editing: {
-      identityModel: found.identityModel,
-      coeffs: found.coeffs ? [...found.coeffs] : null,
-      localChanges: found.localChanges ? { ...found.localChanges } : null,
-      customTargets: found.customTargets ? { ...found.customTargets } : null,
-    },
-  })
-}
-
-function _deleteFromLibrary(id: string): void {
-  const library = _getState().library.filter((c) => c.id !== id)
-  persistLibrary(library)
-  _setState({ library })
-}
-
-function _renameInLibrary(id: string, name: string): void {
-  const library = _getState().library.map((c) =>
-    c.id === id ? { ...c, name: name.trim() || c.name } : c,
-  )
-  persistLibrary(library)
-  _setState({ library })
-}
-
-let _state: BodyStudioState = {
+export const useBodyStudio = createClientStore<BodyStudioState>((set, get) => ({
+  ..._actions(set, get),
   editing: { ...DEFAULT_CHARACTER },
   library: loadPersisted().library,
-
-  setEditing: _setEditing,
-
-  patchEditing: _patchEditing,
-
-  resetEditing: _resetEditing,
-
-  saveToLibrary: _saveToLibrary,
-
-  loadFromLibrary: _loadFromLibrary,
-
-  deleteFromLibrary: _deleteFromLibrary,
-
-  renameInLibrary: _renameInLibrary,
-}
-
-const _initialState: BodyStudioState = _state
-
-function _useBodyStudioHook(): BodyStudioState
-function _useBodyStudioHook<T>(selector: (s: BodyStudioState) => T): T
-function _useBodyStudioHook<T>(
-  selector?: (s: BodyStudioState) => T,
-): T | BodyStudioState {
-  const getSnapshot = selector
-    ? () => selector(_getState())
-    : () => _getState() as unknown as T
-  return useSyncExternalStore(_subscribe, getSnapshot)
-}
-
-export const useBodyStudio = Object.assign(_useBodyStudioHook, {
-  getState: _getState,
-  setState: _setState,
-  subscribe: _subscribe,
-  getInitialState: (): BodyStudioState => _initialState,
-  destroy: (): void => {},
-})
+}))

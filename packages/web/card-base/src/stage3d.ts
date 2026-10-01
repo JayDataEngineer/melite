@@ -24,6 +24,19 @@
 import * as THREE from "three"
 import { OrbitControls } from "three/addons/controls/OrbitControls.js"
 
+/** THE 3D STAGE COLOUR (the one owner). The void every raw-three
+ *  viewport clears behind its scene, and the light counterpart the
+ *  pose stage flips to. Every renderer/background that paints this
+ *  stage reads these constants — a stage colour edited in one place
+ *  lands at every stage.
+ *
+ *  The CSS channel is the `--melite-stage-bg` custom property:
+ *  ViewportFrame sets it from STAGE_BACKGROUND_DARK on the frame
+ *  element, and the sheets that tint the frame and the overlays on
+ *  it read that property, so no stylesheet restates the hex. */
+export const STAGE_BACKGROUND_DARK = "#0e0e1a"
+export const STAGE_BACKGROUND_LIGHT = "#e4e4f0"
+
 /** Interactive handlers for a pickable object subtree. */
 export interface StagePick {
   click?: (point: THREE.Vector3, ev: MouseEvent | PointerEvent) => void

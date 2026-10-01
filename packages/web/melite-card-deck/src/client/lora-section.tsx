@@ -19,6 +19,7 @@
  * fetch ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S ALL BUILT IN").
  */
 import * as React from 'react'
+import { readAsDataURL } from '@melite/formats/readFile'
 import { postManage } from './assets-tab.tsx'
 
 /** The manage plane's own envelope shape (the sidebar's, restated
@@ -113,12 +114,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
     setBusy(true)
     setRefusal(null)
     try {
-      const dataUrl: string = await new Promise((resolve, reject) => {
-        const r = new FileReader()
-        r.onload = () => { resolve(String(r.result)) }
-        r.onerror = () => { reject(new Error('could not read the chosen file')) }
-        r.readAsDataURL(file)
-      })
+      const dataUrl: string = await readAsDataURL(file)
       await postManage('lora_install', {
         filename: file.name,
         data: dataUrl,

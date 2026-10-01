@@ -21,8 +21,8 @@ import {
   deformFrame, loadGlbSkin, loadMotionNpz, loadSomaSkin, NotSomaxGlbError,
   precomputeDeformedVertsChunked, type MotionNpz, type SomaSkin,
 } from "@melite/formats"
-import { useMotionThumbStore } from "./kit"
-import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL } from '@melite/card-base/client'
+import { useMotionImageStore } from "@melite-plugin/motion/ui/viewers/motionImageStore"
+import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL, STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
 import { MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
 import type { ThreeCtx } from "./MotionExportDialog"
 import type { ToastFn } from "./useMotionStage"
@@ -268,11 +268,11 @@ export function useMotionMedia({
 
   // ── Tile thumbnail capture ──────────────────────────────────────────────
   // Motion outputs are NPZ (not viewable as an <img>). When the mesh renders
-  // in this drilldown, capture a canvas screenshot and stash it in the
-  // motion-thumb store so the COLLAPSED tile can show a visual preview
-  // instead of a broken-image icon. The store persists to localStorage and
+  // in this drilldown, capture a canvas screenshot and stash it in the motion
+  // render-snapshot cache so the COLLAPSED tile can show a visual preview
+  // instead of a broken-image icon. The cache persists to localStorage and
   // has zero impact on the flow cacheKey or run params.
-  const setThumb = useMotionThumbStore((s) => s.setThumbnail)
+  const setThumb = useMotionImageStore((s) => s.setImage)
   const thumbCapturedForUrl = useRef<string | null>(null)
   useEffect(() => {
     if (!npzUrl || !npz || !allVertsM) return
@@ -303,7 +303,7 @@ export function useMotionMedia({
     return () => cancelIdleCallback(idleId)
   }, [npz, allVertsM, npzUrl, stage.id, setThumb, threeCtxRef])
 
-  // ── Stage background image (option b): replace the dark #0e0e1a void
+  // ── Stage background image (option b): replace the dark stage void
   // behind the mannequin with a user image. SAME multi-source pattern as
   // the image input subcards (InputCardEditor / MaskStudioEditor):
   //   • file picker (the Background button's hidden native input — DSH
@@ -403,7 +403,7 @@ export function useMotionMedia({
       bgTexRef.current = tex
       ctx.scene.background = tex
     } else {
-      ctx.scene.background = new THREE.Color("#0e0e1a")
+      ctx.scene.background = new THREE.Color(STAGE_BACKGROUND_DARK)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bgImage, npzUrl, allVertsM, threeCtxRef])

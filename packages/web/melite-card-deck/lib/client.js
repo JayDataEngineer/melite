@@ -133,6 +133,23 @@ window.__ModuleLoader__.load({
 			"wrapText": "ZRfIha_wrapText"
 		};
 		//#endregion
+		//#region ../../web-kit/formats/src/readFile.ts
+		/**
+		* readFile — THE one read path for every slot-shaped attach, ported
+		* native from the retired kit's SlotSquare (2026-09-12, the kit
+		* retirement). A plain FileReader promise — no UI dependency owns a
+		* file read.
+		*/
+		/** Read a File / Blob and resolve its data: URL. */
+		function readAsDataURL(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
+				reader.readAsDataURL(file);
+			});
+		}
+		//#endregion
 		//#region src/client/lora-section.tsx
 		/**
 		* lora-section.tsx — THE LORA BLOCK for the ComfyUI Manager sidebar
@@ -208,16 +225,7 @@ window.__ModuleLoader__.load({
 				setBusy(true);
 				setRefusal(null);
 				try {
-					const dataUrl = await new Promise((resolve, reject) => {
-						const r = new FileReader();
-						r.onload = () => {
-							resolve(String(r.result));
-						};
-						r.onerror = () => {
-							reject(/* @__PURE__ */ new Error("could not read the chosen file"));
-						};
-						r.readAsDataURL(file);
-					});
+					const dataUrl = await readAsDataURL(file);
 					await postManage("lora_install", {
 						filename: file.name,
 						data: dataUrl,
@@ -2099,4 +2107,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8d06ed0dfdb08d616b9be832ffe12907a5c0e194";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a43b2f18dd480b9407ee45964d756ced177a71c3";

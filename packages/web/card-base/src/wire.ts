@@ -6,6 +6,7 @@
  * and the one upload door.
  */
 import type { CatalogCard, FormSpecDoc } from './spec.ts'
+import { readAsDataURL } from '@melite/formats/readFile'
 
 /** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
  *  own error text when present). */
@@ -157,12 +158,7 @@ export async function uploadInputFile(file: File): Promise<{ name: string; file:
   if (isAudio) {
     throw new Error('audio uploads have no door yet \u2014 the uploads door boards png / jpeg / webp / glb only')
   }
-  const dataUrl: string = await new Promise((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => { resolve(String(r.result)) }
-    r.onerror = () => { reject(new Error('could not read the dropped file')) }
-    r.readAsDataURL(file)
-  })
+  const dataUrl: string = await readAsDataURL(file)
   const res = await fetch('/v1/uploads', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },

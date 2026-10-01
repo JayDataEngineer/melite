@@ -53,7 +53,7 @@
 }
 .axesPair > * { min-width: 0; }
 .specGroupTitle {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.04em;
@@ -66,7 +66,7 @@
   gap: 6px;
 }
 .specFieldKey {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 12px;
   /* STROKE 84 (the operator's row law): the key line is a HEADER
    * seat — the seed's dice makes its line 20px tall with the label
@@ -80,7 +80,7 @@
 }
 .specRequired { color: var(--dsw-alias-state-critical, #e5484d); }
 .specHint {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
 }
 /* THE LANE WARN STRIP (2026-10-10, the YOU_ARE_A_LIAR fix shape 4:
@@ -114,13 +114,13 @@
   width: 12px;
   height: 12px;
   margin-left: 5px;
-  border: 1px solid var(--dsw-alias-label-secondary, #61666b);
+  border: 1px solid var(--dsw-alias-label-secondary);
   border-radius: 50%;
   font-size: 9px;
   font-style: italic;
   font-family: Georgia, 'Times New Roman', serif;
   line-height: 1;
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   cursor: help;
   vertical-align: middle;
   user-select: none;
@@ -145,32 +145,37 @@
   padding: 0;
   border: none;
   background: none;
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   opacity: 0.65;
 }
 .specDice:hover { opacity: 1; }
 .specDiceOn { color: var(--dsw-alias-accent-primary, #4a7dbd); opacity: 1; }
 
-/* THE POPUP FACE (hour 24 stroke 13: the operator caught white-on-
- * white — `color: inherit` is light text on the dark theme, and the
- * browser's dropdown popup defaults to a white list: every option
- * invisible until highlighted). The option rows pin a LIGHT popup
- * with dark text — deterministic on every theme (the closed select
- * keeps the card's own inherited face).
- * STROKE 84: Canvas/CanvasText system colors (they follow the
- * select's own color-scheme — UA chrome no DSW token can paint;
- * the earlier var(--dsw-alias-*) form RE-INTRODUCED theme variance
- * and white-on-white returned on the dark theme). ONE LAW at every
- * select site: this exact pair + color-scheme: light. */
-.specSelect option {
+/* ══ THE POPUP FACE — THE ONE OWNER ══════════════════════════
+ * `color: inherit` is light text on the dark theme while the
+ * browser's dropdown popup defaults to a white list, so every option
+ * reads invisible until highlighted. Option rows pin a LIGHT popup
+ * with dark text: deterministic on every theme, and the closed select
+ * keeps the card's own inherited face. Canvas/CanvasText are the
+ * popup's own system colors — UA chrome no DSH token can paint — and
+ * they follow the select's own color-scheme: light.
+ *
+ * THE RULE IS ELEMENT-SCOPED AND WRITTEN ONCE HERE, in card-base (the
+ * sheet every card loads), because a per-stylesheet copy drifted
+ * already: a copied skin carried the closed face and not this one, and
+ * every studio dropdown regressed to invisible options. A select that
+ * wants this popup pairs it with color-scheme: light; no stylesheet
+ * restates the pair. */
+select option {
   background: Canvas;
   color: CanvasText;
 }
+
 .specSelect { color-scheme: light; }
 .specSelect {
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
   color: inherit;
   font: inherit;
@@ -185,15 +190,15 @@
 }
 .specSlider { flex: 1 1 0%; }
 .specSliderValue {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
   font-size: 12px;
   min-width: 4ch;
   text-align: right;
 }
 .specTextarea {
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.1));
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 6px;
   color: inherit;
   font: inherit;
@@ -205,34 +210,34 @@
 .squareWrap { align-items: center; display: flex; flex-direction: column; gap: 4px; width: 84px; }
 .squareOff { opacity: 0.5; pointer-events: none; }
 .squareBox {
-  align-items: center; border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
+  align-items: center; border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 8px; cursor: pointer; display: flex; height: 80px; justify-content: center;
-  overflow: hidden; position: relative; transition: border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  overflow: hidden; position: relative; transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out);
   width: 80px;
 }
-.squareOver { border-color: var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.28)); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1, rgba(0, 0, 0, 0.08)); }
+.squareOver { border-color: var(--dsw-alias-border-l3); box-shadow: 0 0 0 2px var(--dsw-alias-border-l1); }
 .squareThumb { height: 100%; object-fit: cover; width: 100%; }
 /* THE MESH THUMB (primitive ③, 2026-09-21): the inline mini GLB
    viewport, absolutely filling the same 80px square the image thumb
    fills — the mesh atom lives INSIDE the one square grammar. */
 .squareMesh { inset: 0; pointer-events: none; position: absolute; }
-.squareGlyph { color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); }
+.squareGlyph { color: var(--dsw-alias-label-tertiary); }
 .squareEmptyIcon { align-items: center; display: flex; }
 .squareActions { align-items: flex-end; display: flex; inset: 0; justify-content: flex-end; padding: 4px; pointer-events: none; position: absolute; }
 .squareActions > * { pointer-events: auto; }
 .squarePick {
-  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
-  border-radius: 999px; color: var(--dsw-alias-label-primary, #0f1115); cursor: pointer; display: flex; height: 22px;
+  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; height: 22px;
   justify-content: center; left: 4px; padding: 0; position: absolute; top: 4px; width: 22px;
 }
-.squareBadge { color: var(--dsw-alias-label-secondary, #61666b); font-size: 10px; line-height: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.squareBadge { color: var(--dsw-alias-label-secondary); font-size: 10px; line-height: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .squareX {
-  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2, rgba(0, 0, 0, 0.14));
-  border-radius: 999px; color: var(--dsw-alias-label-primary, #0f1115); cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
+  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
   padding: 0 4px; position: absolute; right: 4px; top: 4px;
 }
-.squareLabel { color: var(--dsw-alias-label-primary, #0f1115); font-size: 11px; line-height: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
-.squareMetric { color: var(--dsw-alias-label-tertiary, rgba(0, 0, 0, 0.45)); font-size: 10px; line-height: 17px; }
+.squareLabel { color: var(--dsw-alias-label-primary); font-size: 11px; line-height: 17px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; width: 100%; }
+.squareMetric { color: var(--dsw-alias-label-tertiary); font-size: 10px; line-height: 17px; }
 .squareFileInput { display: none; }
 
 /* ── the mod system (moved from the view — core, 2026-09-12) ────────── */
@@ -249,15 +254,15 @@
 .modTileSteps { font-size: 9px; opacity: .55; font-variant-numeric: tabular-nums; }
 .modAddSquare {
   align-items: center; background: transparent;
-  border: 1px dashed var(--dsw-alias-border-l3, rgba(0, 0, 0, 0.28)); border-radius: 8px;
+  border: 1px dashed var(--dsw-alias-border-l3); border-radius: 8px;
   cursor: pointer; display: flex; height: 64px; justify-content: center; opacity: .7;
-  transition: border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
-    background-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   width: 64px;
 }
 .modAddSquare:hover {
-  background: var(--dsw-alias-interactive-bg-hover, rgba(0, 0, 0, 0.05));
-  border-color: var(--dsw-alias-border-l4, rgba(0, 0, 0, 0.4));
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l4);
   opacity: 1;
 }
 .tileDragging { opacity: .5; }
@@ -276,8 +281,8 @@
  * a detector-owned vocabulary — modTile's own token pattern (the
  * color law: aliases with fallbacks, no literals). */
 .specChips { display: flex; flex-wrap: wrap; gap: 4px; }
-.specChip { font-size: 11px; line-height: 1.2; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l2, rgba(128,128,128,.3)); border-radius: 999px; background: var(--dsw-alias-bg-base, transparent); color: var(--dsw-alias-label-secondary, inherit); cursor: pointer; }
-.specChipOn { border-color: var(--dsw-alias-accent, rgba(128,128,128,.6)); background: var(--dsw-alias-bg-elevated, rgba(128,128,128,.12)); color: var(--dsw-alias-label-primary, inherit); font-weight: 600; }
+.specChip { font-size: 11px; line-height: 1.2; padding: 4px 8px; border: 1px solid var(--dsw-alias-border-l2); border-radius: 999px; background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-secondary); cursor: pointer; }
+.specChipOn { border-color: var(--dsw-alias-accent, rgba(128,128,128,.6)); background: var(--dsw-alias-bg-elevated, rgba(128,128,128,.12)); color: var(--dsw-alias-label-primary); font-weight: 600; }
 
 .modLeafModal { width: min(760px, calc(100vw - 32px)); max-height: min(80vh, 760px); overflow-y: auto; }
 
@@ -295,11 +300,7 @@
 .modLeafActions { display: flex; gap: 8px; }
 .modField { display: flex; flex-direction: column; gap: 4px; font-size: 11px; }
 .modSelect { padding: 6px 8px; border: 1px solid var(--border, rgba(128,128,128,.3)); border-radius: 6px; background: var(--bg-elevated, rgba(128,128,128,.06)); color: inherit; font-size: 12px; }
-/* STROKE 84 (the operator's 5th white-on-white report — the lora
- * picker): the mod leaf's selects never carried the popup-face law.
- * Same one law as .specSelect above. */
 .modSelect { color-scheme: light; }
-.modSelect option { background: Canvas; color: CanvasText; }
 .modLeafError { margin: 0; font-size: 11px; color: #e06c5f; }
 
 /* THE PICKER MODAL (2026-09-13, the source-row stroke) — the default
@@ -330,8 +331,8 @@
   gap: 10px;
   padding: 6px;
   text-align: left;
-  transition: border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
-    background-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   width: 100%;
 }
 
@@ -521,14 +522,14 @@
   color: inherit;
   padding: 3px 10px;
   border-radius: 999px;
-  border: 1px solid var(--dsw-alias-border-l2, rgba(128, 128, 128, 0.35));
+  border: 1px solid var(--dsw-alias-border-l2);
 }
 .groupTab:hover {
   background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.08));
 }
 .groupTabActive {
   background: var(--dsw-alias-bg-module, rgba(128, 128, 128, 0.18));
-  border-color: var(--dsw-alias-border-l3, rgba(128, 128, 128, 0.55));
+  border-color: var(--dsw-alias-border-l3);
 }
 
 /* ── THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted VERBATIM from
@@ -638,6 +639,16 @@
 
 .skeleton {
   border-radius: 6px;
-  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 22%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);
   animation: panePulse 1.6s ease-in-out infinite;
+}
+
+/* The Loader2 contract: the circular-arrow glyph spins by
+   construction — callers size and tint it, never animate it. */
+@keyframes iconSpin {
+  to { transform: rotate(360deg); }
+}
+
+.iconSpin {
+  animation: iconSpin 1s linear infinite;
 }

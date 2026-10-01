@@ -45,7 +45,10 @@ export type FlowEventsHandle = {
   done: () => boolean
 }
 
-const TERMINAL = new Set(["completed", "failed", "stopped", "unknown"])
+// THE TERMINAL SET IS THE CONTRACT'S (2026-10-13): five seats
+// spelled this privately and disagreed about `unknown` and `error`.
+import { isTerminalStatus } from '@melite/contracts/stageView'
+const TERMINAL = { has: (s: string) => isTerminalStatus(s) }
 const BACKOFF_BASE_MS = 500
 const BACKOFF_CAP_MS = 5_000
 

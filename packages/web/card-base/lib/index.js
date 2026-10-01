@@ -3,6 +3,7 @@ import { extraOf } from "@melite/contracts/extraKeys";
 import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, judgeSamplerEnvelope, laneBoundsOf, laneSurfaceOf, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, StateDot, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
+import { readAsDataURL, readAsDataURL as readAsDataURL$1 } from "@melite/formats/readFile";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Fragment as Fragment$1, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { mediaVocab } from "@melite/contracts/mediaKinds";
@@ -839,10 +840,13 @@ function composeCandidateDoc(held, user, frame) {
 //#endregion
 //#region src/chrome.ts
 /**
-* Card chrome primitives — the ONE joiner + the ONE file reader
-* (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
-* clsx-cn, and the four identical readAsDataURL copies collapsed
-* here). DOM-free, no CSS, no atoms — safe for node and browser.
+* Card chrome primitives — the ONE joiner + the card-base face of the
+* ONE file reader (founded 2026-09-12, debt extermination: anny/ideo
+* cx, motion/h3 clsx-cn). DOM-free, no CSS, no atoms — safe for node
+* and browser.
+*
+* `readAsDataURL` is @melite/formats' implementation, re-served here
+* so cards reach one door; @melite/formats/readFile.ts owns the body.
 *
 * Reached through the `/client` door (`@melite/card-base/client`).
 */
@@ -854,15 +858,6 @@ function cx(...parts) {
 /** The merging joiner (clsx — objects/arrays/conditionals). */
 function cn(...inputs) {
 	return clsx(...inputs);
-}
-/** Blob → data URL (FileReader promise). */
-function readAsDataURL(file) {
-	return new Promise((resolve, reject) => {
-		const reader = new FileReader();
-		reader.onload = () => resolve(reader.result);
-		reader.onerror = () => reject(reader.error ?? /* @__PURE__ */ new Error("read failed"));
-		reader.readAsDataURL(file);
-	});
 }
 /** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
 *  under which an upstream asset rides a drop payload — a JSON blob
@@ -901,6 +896,7 @@ var card_module_default = {
 	"groupTab": "VMoOIq_groupTab",
 	"groupTabActive": "VMoOIq_groupTabActive",
 	"groupTabs": "VMoOIq_groupTabs",
+	"iconSpin": "VMoOIq_iconSpin",
 	"inputRail": "VMoOIq_inputRail",
 	"laneWarn": "VMoOIq_laneWarn",
 	"modAddSquare": "VMoOIq_modAddSquare",
@@ -1004,12 +1000,20 @@ var card_module_default = {
 };
 //#endregion
 //#region src/layout.tsx
-function Tip({ tip, children }) {
+/** The estate's tooltip anchor: the DSH Tooltip atom over a REAL
+*  layout box (a display:contents or fragment child measures a zero
+*  rect and pins the bubble to the viewport corner).
+* @param props.tip - bubble text; absent renders the child bare.
+* @param props.shortcut - keyboard shortcut, appended to the bubble text.
+* @param props.side - bubble placement, default 'top'.
+* @param props.delayDuration - hover delay in ms, default 300.
+* @param props.children - the single anchor element. */
+function Tip({ tip, shortcut, side = "top", delayDuration = 300, children }) {
 	if (tip === void 0) return children;
 	return /* @__PURE__ */ jsx(Tooltip, {
-		label: tip,
-		side: "top",
-		delayMs: 300,
+		label: shortcut ? `${tip} (${shortcut})` : tip,
+		side: side === "left" ? "right" : side,
+		delayMs: delayDuration,
 		children: /* @__PURE__ */ jsx("span", {
 			className: card_module_default.tipAnchor,
 			children
@@ -1300,9 +1304,11 @@ function Move({ className, style, ...rest }) {
 		]
 	});
 }
+/** The circular-arrow glyph, spinning by construction (the Loader2
+*  contract: callers size and tint it, never animate it). */
 function Loader2({ className, style, ...rest }) {
 	return /* @__PURE__ */ jsx(Svg, {
-		className,
+		className: cn(card_module_default.iconSpin, className),
 		style,
 		...rest,
 		children: /* @__PURE__ */ jsx("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" })
@@ -1665,6 +1671,88 @@ function Frame({ className, style, ...rest }) {
 		]
 	});
 }
+function Volume2({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+			/* @__PURE__ */ jsx("path", { d: "M15.54 8.46a5 5 0 0 1 0 7.07" }),
+			/* @__PURE__ */ jsx("path", { d: "M19.07 4.93a10 10 0 0 1 0 14.14" })
+		]
+	});
+}
+function VolumeX({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("polygon", { points: "11 5 6 9 2 9 2 15 6 15 11 19 11 5" }),
+			/* @__PURE__ */ jsx("line", {
+				x1: "22",
+				x2: "16",
+				y1: "9",
+				y2: "15"
+			}),
+			/* @__PURE__ */ jsx("line", {
+				x1: "16",
+				x2: "22",
+				y1: "9",
+				y2: "15"
+			})
+		]
+	});
+}
+function Maximize({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("path", { d: "M8 3H5a2 2 0 0 0-2 2v3" }),
+			/* @__PURE__ */ jsx("path", { d: "M21 8V5a2 2 0 0 0-2-2h-3" }),
+			/* @__PURE__ */ jsx("path", { d: "M3 16v3a2 2 0 0 0 2 2h3" }),
+			/* @__PURE__ */ jsx("path", { d: "M16 21h3a2 2 0 0 0 2-2v-3" })
+		]
+	});
+}
+function Minimize2({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("path", { d: "M4 14h6v6" }),
+			/* @__PURE__ */ jsx("path", { d: "M20 10h-6V4" }),
+			/* @__PURE__ */ jsx("path", { d: "m14 10 7-7" }),
+			/* @__PURE__ */ jsx("path", { d: "m3 21 7-7" })
+		]
+	});
+}
+function Dices({ className, style, ...rest }) {
+	return /* @__PURE__ */ jsxs(Svg, {
+		className,
+		style,
+		...rest,
+		children: [
+			/* @__PURE__ */ jsx("rect", {
+				width: "12",
+				height: "12",
+				x: "2",
+				y: "10",
+				rx: "2",
+				ry: "2"
+			}),
+			/* @__PURE__ */ jsx("path", { d: "m17.92 14 3.5-3.5a2.24 2.24 0 0 0 0-3l-5-4.92a2.24 2.24 0 0 0-3 0L10 6" }),
+			/* @__PURE__ */ jsx("path", { d: "M6 18h.01" }),
+			/* @__PURE__ */ jsx("path", { d: "M10 14h.01" }),
+			/* @__PURE__ */ jsx("path", { d: "M15 6h.01" }),
+			/* @__PURE__ */ jsx("path", { d: "M18 9h.01" })
+		]
+	});
+}
 function Square({ className, style, ...rest }) {
 	return /* @__PURE__ */ jsx(Svg, {
 		className,
@@ -1746,6 +1834,18 @@ function PlayAlt({ className, style, ...rest }) {
 * as a click (the 350ms threshold). Gizmo subtrees (TransformControls)
 * are excluded from picking — r3f did this implicitly.
 */
+/** THE 3D STAGE COLOUR (the one owner). The void every raw-three
+*  viewport clears behind its scene, and the light counterpart the
+*  pose stage flips to. Every renderer/background that paints this
+*  stage reads these constants — a stage colour edited in one place
+*  lands at every stage.
+*
+*  The CSS channel is the `--melite-stage-bg` custom property:
+*  ViewportFrame sets it from STAGE_BACKGROUND_DARK on the frame
+*  element, and the sheets that tint the frame and the overlays on
+*  it read that property, so no stylesheet restates the hex. */
+const STAGE_BACKGROUND_DARK = "#0e0e1a";
+const STAGE_BACKGROUND_LIGHT = "#e4e4f0";
 /** The r3f pointer-events analogue lives on userData.pick (see header). */
 function findPickCarrier(o) {
 	let cur = o;
@@ -2473,20 +2573,6 @@ function isImageUrl(value) {
 function isMeshUrl(value) {
 	return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
 }
-/** Read a File/Blob and resolve its data: URL — the ONE read path for
-*  every slot-shaped attach (the old law, single definition). */
-function readAsDataUrl(file) {
-	return new Promise((resolve, reject) => {
-		const r = new FileReader();
-		r.onload = () => {
-			resolve(String(r.result));
-		};
-		r.onerror = () => {
-			reject(r.error ?? /* @__PURE__ */ new Error("read failed"));
-		};
-		r.readAsDataURL(file);
-	});
-}
 const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 const MESH_SQUARE_ACCEPT = ".glb,.gltf";
 function InputSquare(props) {
@@ -2795,16 +2881,7 @@ async function uploadInputFile(file) {
 	const isMesh = file.type === "model/gltf-binary" || file.type === "model/gltf+json" || file.type === "application/octet-stream" && glbName;
 	if (!isImage && !isAudio && !isMesh) throw new Error("Input cards don’t accept " + (file.type !== "" ? file.type : "that file") + " — drop an image, audio, or .glb/.gltf file");
 	if (isAudio) throw new Error("audio uploads have no door yet — the uploads door boards png / jpeg / webp / glb only");
-	const dataUrl = await new Promise((resolve, reject) => {
-		const r = new FileReader();
-		r.onload = () => {
-			resolve(String(r.result));
-		};
-		r.onerror = () => {
-			reject(/* @__PURE__ */ new Error("could not read the dropped file"));
-		};
-		r.readAsDataURL(file);
-	});
+	const dataUrl = await readAsDataURL$1(file);
 	const res = await fetch("/v1/uploads", {
 		method: "POST",
 		headers: { "content-type": "application/json" },
@@ -2870,7 +2947,7 @@ function useSquareProvider(onEdit, wire) {
 			return;
 		}
 		try {
-			const dataUrl = await readAsDataUrl(file);
+			const dataUrl = await readAsDataURL(file);
 			if (f.type !== "mesh") setMirror((m) => ({
 				...m,
 				[f.name]: dataUrl
@@ -5650,6 +5727,15 @@ function subscribe(listener) {
 function getSnapshot() {
 	return entries;
 }
+/** How long a toast of a severity holds before it dismisses, in ms.
+*  THE ONE OWNER of that number: the store arms its dismissal timer
+*  from it (the lifetime holds without a viewport mounted) and the
+*  renderer face passes it to the DSH Toast as `holdMs`, so a
+*  duration is spelled once. Errors persist long enough for the
+*  operator to read what broke; success and info clear quickly. */
+function toastHoldMs(type) {
+	return type === "error" ? 15e3 : 5e3;
+}
 function addToast(type, message, _action) {
 	const id = nextId++;
 	entries = [...entries, {
@@ -5662,7 +5748,7 @@ function addToast(type, message, _action) {
 	emit();
 	setTimeout(() => {
 		removeToast(id);
-	}, type === "error" ? 15e3 : 5e3);
+	}, toastHoldMs(type));
 }
 function removeToast(id) {
 	if (!entries.some((t) => t.id === id)) return;
@@ -5754,7 +5840,7 @@ function ToastViewport() {
 	if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
 	return /* @__PURE__ */ jsx(Fragment, { children: toasts.map((t) => /* @__PURE__ */ jsx(Toast, {
 		text: t.message,
-		holdMs: t.type === "error" ? 15e3 : 5e3,
+		holdMs: toastHoldMs(t.type),
 		onDone: () => removeToast(t.id)
 	}, t.id)) });
 }
@@ -6295,11 +6381,15 @@ var viewportChrome_module_default = {
 };
 //#endregion
 //#region src/viewportChrome.tsx
-function ViewportFrame({ children, label, empty, className, ...props }) {
+function ViewportFrame({ children, label, empty, className, style, ...props }) {
 	return /* @__PURE__ */ jsxs("div", {
 		"data-slot": "viewport-frame",
 		"aria-label": label,
 		className: cx(viewportChrome_module_default.frame, className),
+		style: {
+			"--melite-stage-bg": STAGE_BACKGROUND_DARK,
+			...style
+		},
 		...props,
 		children: [children, empty]
 	});
@@ -6721,4 +6811,4 @@ async function fetchMediaLibrary(kind, signal) {
 	return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 }
 //#endregion
-export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, MeshStagePreview, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, WirePickerModal, X, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataUrl, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, variantGroupsContract, variantRows };

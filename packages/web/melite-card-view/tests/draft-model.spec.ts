@@ -9,6 +9,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   cardRows, coerceEdit, editPatch, fetchDraft, foldFrame, paramFields, patchStageParams, runFinished,
 } from "../src/client/draft.ts";
+import { TERMINAL_RUN_STATUSES } from "@melite/contracts/stageView";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
 
@@ -145,8 +146,22 @@ describe("door narrowing — named refusals, malformed docs", () => {
     expect(message).toContain("stage not found");
   });
 
-  test("runFinished pins the estate TERMINAL set (FlowEvents, verbatim)", () => {
-    for (const s of ["completed", "failed", "stopped", "unknown"]) expect(runFinished(s)).toBe(true);
-    for (const s of ["running", "queued", "error"]) expect(runFinished(s)).toBe(false);
+  test("runFinished reads THE terminal set (@melite/contracts, not a private copy)", () => {
+    // The five seats each spelled this privately and disagreed: this
+    // one treated `error` as live while a sibling treated `unknown`
+    // as terminal, so a run in either word never stopped a poller
+    // here. `error` is the run record's own failure stamp
+    // (melite-run-wire records the boundary audit's H1: the reader
+    // that omitted it polled forever). The pin now reads the
+    // contract's set, so the vocabulary has ONE home.
+    for (const s of ["completed", "failed", "stopped", "error", "unknown"]) {
+      expect(runFinished(s), `${s} is terminal`).toBe(true);
+    }
+    for (const s of ["running", "queued", "pending", ""]) {
+      expect(runFinished(s), `${s} is live`).toBe(false);
+    }
+    expect([...TERMINAL_RUN_STATUSES].sort()).toEqual(
+      ["completed", "error", "failed", "stopped", "unknown"],
+    );
   });
 });

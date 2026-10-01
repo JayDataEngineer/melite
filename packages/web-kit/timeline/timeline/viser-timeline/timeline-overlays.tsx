@@ -3,7 +3,7 @@
 
 import { useEffect } from "react";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
-import { Tip } from "../tip";
+import { Tip } from "@melite/card-base/client";
 import css from "../timeline.module.css";
 import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
 import { DEFAULT_PROMPT_COLOR } from "./styles";

@@ -26,7 +26,6 @@
  */
 import { useRef, useMemo, useState, useEffect, memo } from "react"
 import type React from "react"
-import { Loader2 } from "../../../ui-icons"
 import styles from "./PoseViewer3D.module.css"
 import * as THREE from "three"
 import type { MotionAzimuth } from "@melite/formats"
@@ -43,7 +42,7 @@ import {
   type ReferenceMeshSpec,
   type CameraFraming as Framing,
 } from "./poseStage"
-import type { StageLayers } from '@melite/card-base/client'
+import { Loader2, type StageLayers } from '@melite/card-base/client'
 
 export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage"
 export { framedCameraPos }
@@ -289,11 +288,12 @@ function PoseViewer3DImpl({
     setRefBundle({ ...bundle })
     ;(async () => {
       try {
-        const mesh = await fetchBindMesh(
-          referenceMesh.identityModel ?? "anny",
-          referenceMesh.identityCoeffs, referenceMesh.localChanges,
-          referenceMesh.customTargets,
-        )
+        const mesh = await fetchBindMesh({
+          identityModel: referenceMesh.identityModel ?? "anny",
+          identityCoeffs: referenceMesh.identityCoeffs,
+          localChanges: referenceMesh.localChanges,
+          customTargets: referenceMesh.customTargets,
+        })
         if (!cancelled) setRefBundle((b) => (b !== null && b.spec === referenceMesh ? { ...b, meshData: mesh } : b))
       } catch (e) {
         console.error("ReferenceMesh bind fetch failed:", e)
@@ -355,7 +355,7 @@ function PoseViewer3DImpl({
     setMeshLoading(true)
     setMeshError(null)
     const timer = setTimeout(() => {
-      fetchBindMesh(identityModel, identityCoeffs, localChanges, customTargets)
+      fetchBindMesh({ identityModel, identityCoeffs, localChanges, customTargets })
         .then((d) => { if (!cancel) { setMeshData(d); setMeshLoading(false) } })
         .catch((e) => { if (!cancel) { setMeshError((e as Error).message); setMeshLoading(false) } })
     }, 60) // 60 ms debounce — coalesce rapid slider drags into one fetch

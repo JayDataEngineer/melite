@@ -20,7 +20,7 @@
 import * as THREE from "three"
 import { loadMotionNpz } from "@melite/formats"
 import { loadSomaSkin, deformFrame } from "@melite/formats"
-import { useMotionPosterStore } from "./motionPosterStore"
+import { useMotionImageStore } from "./motionImageStore"
 import { snapshotSceneToJpeg } from "@melite/formats/renderSnapshot"
 import { PosterShell, usePosterDataUrl } from "../../../poster-shell"
 
@@ -34,7 +34,7 @@ interface MotionPosterProps {
 export function MotionPoster({ url, className }: MotionPosterProps) {
   const { src, error } = usePosterDataUrl(
     url,
-    useMotionPosterStore,
+    useMotionImageStore,
     async (isCancelled) => {
       const motion = await loadMotionNpz(url)
       if (isCancelled()) return null

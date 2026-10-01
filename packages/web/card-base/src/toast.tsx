@@ -15,7 +15,7 @@
  */
 import { useEffect, useRef, useSyncExternalStore } from "react"
 import { Toast } from "@deepseek-ai/dsh-client-ui-primitives"
-import { removeToast, subscribe, getSnapshot } from "./toastStore.ts"
+import { removeToast, subscribe, getSnapshot, toastHoldMs } from "./toastStore.ts"
 
 export * from "./toastStore.ts"
 
@@ -72,7 +72,7 @@ export function ToastViewport() {
         <Toast
           key={t.id}
           text={t.message}
-          holdMs={t.type === "error" ? 15_000 : 5_000}
+          holdMs={toastHoldMs(t.type)}
           onDone={() => removeToast(t.id)}
         />
       ))}

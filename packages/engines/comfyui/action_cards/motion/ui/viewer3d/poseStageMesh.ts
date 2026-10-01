@@ -33,57 +33,16 @@ export function buildGeometry(meshData: SkinMeshData): THREE.BufferGeometry {
   geo.computeBoundingSphere()
   return geo
 }
-
-// ── API: the per-identity bind-mesh fetch + cache (verbatim) ──────────────
-// All meshes share SOMA's 18056-vertex layout but have DIFFERENT face
-// triangulations, so we cache per model and refetch when the user switches
-// mesh (soma / mhr / anny). Shaped variants (coeffs / detail morphs /
-// custom .target blends) get their own cache entries.
-const _meshCache: Map<string, SkinMeshData> = new Map()
-
-export async function fetchBindMesh(
-  identityModel: string = "anny",
-  identityCoeffs?: number[] | null,
-  localChanges?: Record<string, number> | null,
-  customTargets?: Record<string, number> | null,
-): Promise<SkinMeshData> {
-  const key = identityModel || "anny"
-  const coeffsSig = identityCoeffs && identityCoeffs.length > 0
-    ? identityCoeffs.map(v => v.toFixed(1)).join(",")
-    : null
-  const lcEntries = localChanges && Object.keys(localChanges).length > 0
-    ? Object.entries(localChanges)
-        .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
-        .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
-    : null
-  const ctEntries = customTargets && Object.keys(customTargets).length > 0
-    ? Object.entries(customTargets)
-        .sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0)
-        .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
-    : null
-  const cacheKey = [key, coeffsSig, lcEntries, ctEntries].filter(Boolean).join("|")
-  const cached = _meshCache.get(cacheKey)
-  if (cached) return cached
-
-  let data: SkinMeshData
-  if (coeffsSig || lcEntries || ctEntries) {
-    const res = await apiFetch("/v1/poser/mesh", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        identity_model: key,
-        ...(coeffsSig ? { identity_coeffs: identityCoeffs } : {}),
-        ...(lcEntries ? { local_changes: localChanges } : {}),
-        ...(ctEntries ? { custom_targets: customTargets } : {}),
-      }),
-    })
-    if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`)
-    data = (await res.json()) as SkinMeshData
-  } else {
-    const res = await apiFetch(`/v1/poser/mesh?identity_model=${encodeURIComponent(key)}`)
-    if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`)
-    data = (await res.json()) as SkinMeshData
-  }
-  _meshCache.set(cacheKey, data)
-  return data
-}
+// ── API: the per-identity bind-mesh fetch + cache ─────────────────────────
+// THE SHARED MODULE OWNS IT (2026-10-13, the card-UI duplication audit).
+// This file carried a second copy of fetchBindMesh, and it was not merely
+// a twin: the shared copy always sends `custom_targets` for Anny POSTs
+// (a missing field means "preserve previous state" to the backend — the
+// "slider at 0 shows ~50%" bug), while the copy here sent the field only
+// when it had entries, so a slider dragged to 0 left the old weight
+// active. It also kept a SECOND mesh cache, so a shape previewed in Body
+// Studio was a network hit here, and it folded no previewPose into its
+// cache key. Body Studio has imported the shared module since the
+// 2026-09-05 dedup; Pose Studio's viewer now does the same, and the two
+// studios share one cache. The implementation lives nowhere else.
+export { fetchBindMesh } from "@melite/formats/poserSkin"

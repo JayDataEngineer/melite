@@ -11,8 +11,7 @@
       "default": "./lib/client.js"
     },
     "./spec": "./src/spec.ts",
-    "./package.json": "./package.json",
-    "./preview": "./src/preview.tsx"
+    "./package.json": "./package.json"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": ">=0.2.0-rc.1 <0.3.0",

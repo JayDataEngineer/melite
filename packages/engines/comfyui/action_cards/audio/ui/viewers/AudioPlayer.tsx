@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import WaveSurfer from "wavesurfer.js"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Play, Pause } from "../../../ui-icons"
+import { Pause, Play } from "@melite/card-base/client"
 import styles from "./AudioPlayer.module.css"
 
 function fmtTime(s: number): string {

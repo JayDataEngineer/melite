@@ -12,7 +12,7 @@
   overflow: hidden;
   border-radius: 12px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  background: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  background: var(--dsw-alias-bg-module-platform);
   box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.45);
 }
 
@@ -44,19 +44,19 @@
 
 .frameChip {
   border-radius: 4px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 60%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 60%, transparent);
   padding: 2px 6px;
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 .closeBtn {
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .closeBtn:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 .body {
@@ -83,7 +83,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .secHead {
@@ -128,7 +128,7 @@
 
 .scopeBtnIdle:hover {
   border-color: var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
 }
 
 .scopeBtnRow {
@@ -151,7 +151,7 @@
 
 .scopeDesc {
   font-size: 9px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 /* Live-framing panel. */
@@ -177,12 +177,12 @@
 .liveHelp {
   font-size: 10px;
   line-height: 1.375;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);
   margin: 0;
 }
 
 .liveHelpStrong {
-  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 90%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 90%, transparent);
 }
 
 .fieldGrid {
@@ -202,7 +202,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 /* Typed px inputs — layout rides the DSH Input, which owns the box. */
@@ -219,11 +219,11 @@
   gap: 8px;
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);
 }
 
 .outDim {
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 .outVal {
@@ -240,12 +240,12 @@
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
   padding: 4px 8px;
   font-size: 10px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
 .presetBtn:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* "pick at least one" — the amber nudge, on the danger token. */
@@ -283,7 +283,7 @@
 
 .modeCardIdle:hover {
   border-color: var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
 }
 
 /* Scrubber row. */
@@ -294,7 +294,7 @@
 }
 
 .scrubPlay {
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease;
 }
 
@@ -305,19 +305,19 @@
 .scrubCount {
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 .stepBtn {
   border-radius: 4px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
   padding: 4px;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease;
 }
 
 .stepBtn:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 .stepBtn:disabled { opacity: 0.3; }
@@ -356,7 +356,7 @@
 
 .bgBtnIdle:hover {
   border-color: var(--dsw-alias-border, #e2e4e9);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
 }
 
 /* Summary + footer. */
@@ -366,7 +366,7 @@
   gap: 4px;
   border-radius: 8px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 30%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   padding: 8px 12px;
 }
 
@@ -375,7 +375,7 @@
   align-items: center;
   gap: 6px;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 .foot {
@@ -395,11 +395,11 @@
   padding: 0 12px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .footGhost:hover {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
 }
 
 /* Primary export — the brand fill (DSH primary carries the same). */
@@ -413,7 +413,7 @@
   padding: 0 12px;
   font-size: 12px;
   font-weight: 500;
-  color: var(--dsw-alias-bg-module-platform, #f5f6f7);
+  color: var(--dsw-alias-bg-module-platform);
 }
 
 .footPrimary:disabled {

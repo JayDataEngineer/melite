@@ -6,6 +6,7 @@
   "types": "./viewers/index.ts",
   "exports": {
     "./ui/viewers": "./viewers/index.ts",
+    "./ui/viewers/motionImageStore": "./viewers/motionImageStore.ts",
     "./package.json": "./package.json",
     "./ui/viewer3d": "./viewer3d/index.ts"
   },

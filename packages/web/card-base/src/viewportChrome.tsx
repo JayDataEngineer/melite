@@ -7,8 +7,9 @@
  * same seams — selection + per-asset errors are the STAGE's surface;
  * anchors, badges and in-card action buttons dock on these.
  */
-import type { ComponentProps, ReactElement, ReactNode } from "react"
+import type { CSSProperties, ComponentProps, ReactElement, ReactNode } from "react"
 import { cx } from "./chrome.ts"
+import { STAGE_BACKGROUND_DARK } from "./stage3d.ts"
 import styles from "./viewportChrome.module.css"
 
 export interface ViewportFrameProps extends ComponentProps<"div"> {
@@ -18,12 +19,17 @@ export interface ViewportFrameProps extends ComponentProps<"div"> {
   empty?: ReactNode
 }
 
-export function ViewportFrame({ children, label, empty, className, ...props }: ViewportFrameProps): ReactElement {
+export function ViewportFrame({ children, label, empty, className, style, ...props }: ViewportFrameProps): ReactElement {
   return (
     <div
       data-slot="viewport-frame"
       aria-label={label}
       className={cx(styles.frame, className)}
+      // The stage colour reaches CSS through this property (the sheets
+      // never spell the hex); a caller's own properties still win.
+      // React's CSSProperties declares no custom-property index, so
+      // writing one needs the cast.
+      style={{ "--melite-stage-bg": STAGE_BACKGROUND_DARK, ...style } as CSSProperties}
       {...props}
     >
       {children}

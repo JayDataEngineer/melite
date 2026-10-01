@@ -12,6 +12,7 @@ import { benchSessionKey, restoreRunToBench } from './cards-resource.ts'
 import type { CardsDraftValue, CardsRunValue, BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
+import { STAGE_DOT } from './bench-row.ts'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -152,11 +153,12 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     // count — zero rows is an empty list, never a special paragraph.
     h('ol', { className: css.tileGrid }, run.stages.map((s) => {
           const thumb = s.url !== undefined ? mediaUrl(run.runId, s.url) : null
-          const dot: 'done' | 'ongoing' | 'error' | 'warning' | null
-            = s.status === 'done' ? 'done'
-            : s.status === 'running' ? 'ongoing'
-            : s.status === 'failed' ? 'error'
-            : s.status === 'queued' || s.status === 'pending' ? 'warning' : null
+          // THE SAME MAP (2026-10-13): this seat used to fold the
+          // status words into a dot inline, and its set omitted
+          // 'completed' — the word the estate actually settles with —
+          // so a settled stage rendered NO dot here while the bench
+          // tile showed one. bench-row owns the fold; both seats read it.
+          const dot = STAGE_DOT[s.status] ?? null
           const face = thumb !== null
             ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer', className: css.tileImgLink },
                 h('img', { className: css.tileImg, src: thumb, alt: s.id, loading: 'lazy' }))

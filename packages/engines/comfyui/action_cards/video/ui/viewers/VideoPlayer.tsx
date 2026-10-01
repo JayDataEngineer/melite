@@ -4,9 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { ScrubInput } from "../../../form-fields"
 import {
-  Play, Pause, Volume2, VolumeX, Maximize, Minimize2,
-  RotateCcw, RotateCw,
-} from "../../../ui-icons"
+  Maximize, Minimize2, Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX,
+} from "@melite/card-base/client"
 import styles from "./VideoPlayer.module.css"
 
 function fmtTime(s: number): string {

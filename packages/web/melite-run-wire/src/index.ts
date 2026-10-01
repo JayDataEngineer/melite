@@ -70,23 +70,16 @@ export interface RunStatusRow {
   error?: string
 }
 
-/** The terminal statuses — the runs seat's own vocabulary (the settle
- *  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
-export const TERMINAL_RUN_STATUSES: readonly string[] = [
-  'completed',
-  'failed',
-  'stopped',
-  // 'error' is the run-record's own failure stamp (the queue writes
-  // it on a registration that could not start). The run card
-  // already treated it as terminal; this reader did not, so a
-  // run in that state was polled FOREVER (the boundary audit's H1).
-  // One vocabulary, both readers.
-  'error',
-];
-
-export function isTerminalRun(status: string): boolean {
-  return TERMINAL_RUN_STATUSES.includes(status)
-}
+// THE TERMINAL VOCABULARY IS THE CONTRACT'S (2026-10-13, the card-UI
+// duplication audit): five seats spelled "is this run finished?" with
+// their own sets, and they disagreed — one treated `unknown` as
+// terminal and `error` as live, another the reverse, so a run in
+// either word never stopped a poller on one plane. `@melite/contracts`
+// stageView is the one owner (the estate's own RunStatus plus the two
+// wire-only words: `error` is the run record's failure stamp, `unknown`
+// is a schema value). These names stay so existing importers ride the
+// same truth.
+export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES } from '@melite/contracts/stageView' 
 
 /** The ONE media-url rewrite (readRunStatus + the file-era list
  *  fallback share it): bare run-relative names ride the estate's

@@ -177,7 +177,7 @@
   overscroll-behavior: contain;
 }
 .historyTitle {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
 }
 .historyTile {

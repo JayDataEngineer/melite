@@ -90,17 +90,28 @@ test('every option rule paints Canvas/CanvasText (no token, no literal)', () => 
   expect(offenders, `option rules off the law:\n${offenders.join('\n')}`).toEqual([])
 })
 
-test('every select-styling css module carries the popup law', () => {
-  const offenders: string[] = []
+test('the popup law has ONE owner, and every select site pins the scheme', () => {
+  // THE OWNER (2026-10-13, the card-UI duplication audit): four
+  // modules each carried a copy of the option rule, and the h3 copy
+  // had ALREADY drifted — its own header records a studio-wide
+  // regression when a copied skin omitted the rule. So the rule now
+  // lives ONCE, element-scoped, in card-base (the one sheet every
+  // card loads): element selectors are the only kind that survives
+  // the per-file lightningcss CSS-modules hash, so one declaration
+  // covers every select in the document. What stays per-site is the
+  // half that is genuinely per-site — `color-scheme: light`.
+  const owners: string[] = []
+  const missingScheme: string[] = []
   for (const file of cssModules) {
     const css = bare(readFileSync(file, 'utf8'))
+    const hasOptionLaw = (css.match(OPTION_DECL) ?? []).some((r) => r.includes('background: Canvas'))
+    if (hasOptionLaw) owners.push(file)
     if (!stylesSelect(css)) continue
     if (!css.includes('color-scheme: light')) {
-      offenders.push(`${file}: styles a select but pins no color-scheme: light`)
-    }
-    if (!(css.match(OPTION_DECL) ?? []).some((r) => r.includes('background: Canvas'))) {
-      offenders.push(`${file}: styles a select but no Canvas option rule`)
+      missingScheme.push(`${file}: styles a select but pins no color-scheme: light`)
     }
   }
-  expect(offenders, `select sites missing the law:\n${offenders.join('\n')}`).toEqual([])
+  expect(owners.length, `the option rule must be declared exactly ONCE (found ${owners.length}: ${owners.join(', ')})`).toBe(1)
+  expect(owners[0] ?? '').toContain('packages/web/card-base/')
+  expect(missingScheme, `select sites missing the scheme:\n${missingScheme.join('\n')}`).toEqual([])
 })

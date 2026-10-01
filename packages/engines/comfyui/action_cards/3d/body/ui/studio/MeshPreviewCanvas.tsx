@@ -21,8 +21,7 @@
  * lights/shadows/grid/orbit with identical parameters.
  */
 import { useEffect, useMemo, useRef, useState } from "react"
-import { mountStage3D } from "@melite/card-base/client"
-import { Skeleton } from "../../../../skeleton"
+import { mountStage3D, Skeleton } from "@melite/card-base/client"
 import styles from "./MeshPreviewCanvas.module.css"
 import * as THREE from "three"
 import {

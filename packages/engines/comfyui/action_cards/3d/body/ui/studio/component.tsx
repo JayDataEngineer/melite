@@ -34,8 +34,7 @@ import { BODY_PRESETS } from "@melite/formats"
 // the action_cards-local studio-shell is buried — card-base owns the
 // shell and the viewport chrome now; this studio's declaration reads
 // the same seams it always did.
-import { StudioShell, defineShellDeclaration } from '@melite/card-base/client'
-import { ViewportFrame } from '@melite/card-base/client'
+import { StudioShell, Tip, ViewportFrame, defineShellDeclaration } from '@melite/card-base/client'
 import styles from "./component.module.css"
 
 /** THE SHELL RIDE, as data (row 5 stroke 4) — declared for the
@@ -47,7 +46,6 @@ export const shellDeclaration = defineShellDeclaration({
   params: { slots: [] },
 })
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Tip } from "../../../../form-fields"
 import type { CardStage } from "@melite/contracts"
 interface BodyCardEditorProps {
   stage: CardStage

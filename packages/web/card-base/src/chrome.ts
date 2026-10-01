@@ -1,8 +1,11 @@
 /**
- * Card chrome primitives — the ONE joiner + the ONE file reader
- * (founded 2026-09-12, debt extermination: anny/ideo cx, motion/h3
- * clsx-cn, and the four identical readAsDataURL copies collapsed
- * here). DOM-free, no CSS, no atoms — safe for node and browser.
+ * Card chrome primitives — the ONE joiner + the card-base face of the
+ * ONE file reader (founded 2026-09-12, debt extermination: anny/ideo
+ * cx, motion/h3 clsx-cn). DOM-free, no CSS, no atoms — safe for node
+ * and browser.
+ *
+ * `readAsDataURL` is @melite/formats' implementation, re-served here
+ * so cards reach one door; @melite/formats/readFile.ts owns the body.
  *
  * Reached through the `/client` door (`@melite/card-base/client`).
  */
@@ -19,15 +22,8 @@ export function cn(...inputs: ClassValue[]): string {
   return clsx(...inputs)
 }
 
-/** Blob → data URL (FileReader promise). */
-export function readAsDataURL(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"))
-    reader.readAsDataURL(file)
-  })
-}
+/** Blob → data URL (the shared FileReader promise, @melite/formats). */
+export { readAsDataURL } from '@melite/formats/readFile'
 
 /** THE ESTATE'S DRAG CONTRACT (2026-09-18, exterminated): the MIME
  *  under which an upstream asset rides a drop payload — a JSON blob

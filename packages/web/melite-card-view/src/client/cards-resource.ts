@@ -210,6 +210,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // stays for this module's callers, but there is no second producer
 // to drift.
 import { benchSessionOf } from '@melite/contracts/benchStage'
+import { isTerminalStatus, statusOf } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
 /** The bench address for one session key. */
@@ -299,11 +300,14 @@ export function deriveCardForRow(
  *  a verdict this client cannot render becomes a terminal one it
  *  can, never an unknown word stamped onto a row. */
 export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'stopped' {
-  if (verdict === 'live' || verdict === 'running' || verdict === 'queued') return 'running'
-  // 'succeeded' rides too — the statusView fold already knew it
-  if (verdict === 'completed' || verdict === 'success' || verdict === 'succeeded' || verdict === 'done') return 'done'
-  // gone, stopped, failed, error, unknown, and anything a future
-  // file era invents: terminal, and never "still running"
+  // ONE CLASSIFIER (2026-10-13): this seat and the run view used to
+  // fold the same words privately and disagree — 'cached' rendered
+  // `done` here and a failure-looking `stopped` there, and an unknown
+  // word meant "running" in one and "stopped" in the other. The
+  // contract's fold answers for both.
+  const folded = statusOf(verdict)
+  if (folded === 'running' || folded === 'queued') return 'running'
+  if (folded === 'done' || folded === 'cached' || folded === 'skipped' || folded === 'reused') return 'done'
   return 'stopped'
 }
 
@@ -1114,7 +1118,7 @@ export function openCardsResource(
  *  'failed'. A settled run ends the stream; the hydrated/polled value
  *  stays as the last ok frame. */
 function isTerminal(status: string): boolean {
-  return status === 'completed' || status === 'failed' || status === 'stopped'
+  return isTerminalStatus(status)
 }
 
 /** The live tail (the honest degrade): poll `runs/status` and yield a

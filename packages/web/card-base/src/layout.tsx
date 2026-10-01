@@ -15,10 +15,32 @@ import css from './card.module.css'
 
 // ── Tip — DSH Tooltip over a layout-invisible anchor ────────────────
 
-export function Tip({ tip, children }: { tip?: string; children: ReactElement }): ReactElement {
+/** The bubble's side relative to the anchor. 'left' has no DSH
+ *  counterpart and seats the bubble on the right instead. */
+export type TipSide = 'top' | 'bottom' | 'left' | 'right'
+
+/** The estate's tooltip anchor: the DSH Tooltip atom over a REAL
+ *  layout box (a display:contents or fragment child measures a zero
+ *  rect and pins the bubble to the viewport corner).
+ * @param props.tip - bubble text; absent renders the child bare.
+ * @param props.shortcut - keyboard shortcut, appended to the bubble text.
+ * @param props.side - bubble placement, default 'top'.
+ * @param props.delayDuration - hover delay in ms, default 300.
+ * @param props.children - the single anchor element. */
+export function Tip({ tip, shortcut, side = 'top', delayDuration = 300, children }: {
+  tip?: string
+  shortcut?: string
+  side?: TipSide
+  delayDuration?: number
+  children: ReactElement
+}): ReactElement {
   if (tip === undefined) return children
   return (
-    <Tooltip label={tip} side="top" delayMs={300}>
+    <Tooltip
+      label={shortcut ? `${tip} (${shortcut})` : tip}
+      side={side === 'left' ? 'right' : side}
+      delayMs={delayDuration}
+    >
       <span className={css.tipAnchor}>{children}</span>
     </Tooltip>
   )

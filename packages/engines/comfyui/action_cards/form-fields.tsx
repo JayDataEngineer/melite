@@ -1,16 +1,11 @@
 /**
  * form-fields — DSH-pure replacements for the kit form primitives
  * the action_cards viewers used (kit NumberField, scrub-input,
- * label, tabs, collapsible, scroll-area, tip).
+ * label, tabs, collapsible, scroll-area).
  *
  * Mapping (kit → DSH):
- *   Tip         → the DSH Tooltip atom (same {tip, shortcut, side,
- *                 delayDuration, className, withArrow, children} API;
- *                 shortcut appends to the label — the DSH bubble is
- *                 text-only; side 'left' falls back to 'right', the
- *                 one side DSH has no counterpart for; className /
- *                 withArrow are accepted-but-ignored, no call site
- *                 in this package sets them).
+ *   Tip         → @melite/card-base/client (the ONE estate Tip, on the
+ *                 DSH Tooltip atom).
  *   Label       → native <label> passthrough (same data-slot).
  *   ScrubInput  → native <input type="range"> (the kit WAS a native
  *                 range input owning the invisibility contract — this
@@ -31,45 +26,9 @@
  *                 passthrough onto the root).
  */
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react"
-import type { ReactElement, ReactNode } from "react"
-import { Tooltip } from "@deepseek-ai/dsh-client-ui-primitives"
-import type { TooltipSide } from "@deepseek-ai/dsh-client-ui-primitives"
+import type { ReactNode } from "react"
+import { Tip } from "@melite/card-base/client"
 import styles from "./form-fields.module.css"
-
-// ── Tip ─────────────────────────────────────────────────────────
-
-type TipSide = "top" | "bottom" | "left" | "right"
-
-interface TipProps {
-  tip?: string
-  shortcut?: string
-  side?: TipSide
-  delayDuration?: number
-  className?: string
-  withArrow?: boolean
-  children: ReactElement<any>
-}
-
-const toTooltipSide = (side: TipSide): TooltipSide =>
-  side === "left" ? "right" : side
-
-export function Tip({
-  tip,
-  shortcut,
-  side = "top",
-  delayDuration = 300,
-  className: _className,
-  withArrow: _withArrow,
-  children,
-}: TipProps) {
-  if (tip === undefined) return children
-  const label = shortcut ? `${tip} (${shortcut})` : tip
-  return (
-    <Tooltip label={label} side={toTooltipSide(side)} delayMs={delayDuration}>
-      {children}
-    </Tooltip>
-  )
-}
 
 // ── Label ───────────────────────────────────────────────────────
 

@@ -42,7 +42,7 @@
 }
 
 .VMoOIq_specGroupTitle {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   letter-spacing: .04em;
   text-transform: uppercase;
   margin: 0 0 2px;
@@ -57,7 +57,7 @@
 }
 
 .VMoOIq_specFieldKey {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   align-items: center;
   min-height: 20px;
   font-size: 12px;
@@ -69,7 +69,7 @@
 }
 
 .VMoOIq_specHint {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
 }
 
@@ -88,10 +88,10 @@
 }
 
 .VMoOIq_specInfo {
-  border: 1px solid var(--dsw-alias-label-secondary, #61666b);
+  border: 1px solid var(--dsw-alias-label-secondary);
   width: 12px;
   height: 12px;
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   cursor: help;
   vertical-align: middle;
   user-select: none;
@@ -117,7 +117,7 @@
 .VMoOIq_specDice {
   width: 20px;
   height: 20px;
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   opacity: .65;
   background: none;
@@ -137,15 +137,15 @@
   opacity: 1;
 }
 
-.VMoOIq_specSelect option {
+select option {
   color: canvastext;
   background: canvas;
 }
 
 .VMoOIq_specSelect {
   color-scheme: light;
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: .5px solid var(--dsw-alias-border-l2, #0000001a);
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: .5px solid var(--dsw-alias-border-l2);
   color: inherit;
   font: inherit;
   border-radius: 6px;
@@ -165,7 +165,7 @@
 }
 
 .VMoOIq_specSliderValue {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-family: var(--dsw-alias-font-mono, ui-monospace, monospace);
   text-align: right;
   min-width: 4ch;
@@ -173,8 +173,8 @@
 }
 
 .VMoOIq_specTextarea {
-  background: var(--dsw-alias-interactive-bg-hover, #2631480f);
-  border: .5px solid var(--dsw-alias-border-l2, #0000001a);
+  background: var(--dsw-alias-interactive-bg-hover);
+  border: .5px solid var(--dsw-alias-border-l2);
   color: inherit;
   font: inherit;
   resize: vertical;
@@ -198,10 +198,10 @@
 }
 
 .VMoOIq_squareBox {
-  border: .5px solid var(--dsw-alias-border-l2, #00000024);
+  border: .5px solid var(--dsw-alias-border-l2);
   cursor: pointer;
   height: 80px;
-  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out);
   border-radius: 8px;
   justify-content: center;
   align-items: center;
@@ -212,8 +212,8 @@
 }
 
 .VMoOIq_squareOver {
-  border-color: var(--dsw-alias-border-l3, #00000047);
-  box-shadow: 0 0 0 2px var(--dsw-alias-border-l1, #00000014);
+  border-color: var(--dsw-alias-border-l3);
+  box-shadow: 0 0 0 2px var(--dsw-alias-border-l1);
 }
 
 .VMoOIq_squareThumb {
@@ -229,7 +229,7 @@
 }
 
 .VMoOIq_squareGlyph {
-  color: var(--dsw-alias-label-tertiary, #00000073);
+  color: var(--dsw-alias-label-tertiary);
 }
 
 .VMoOIq_squareEmptyIcon {
@@ -253,8 +253,8 @@
 
 .VMoOIq_squarePick {
   background: var(--dsw-alias-bg-module, #fff);
-  border: .5px solid var(--dsw-alias-border-l2, #00000024);
-  color: var(--dsw-alias-label-primary, #0f1115);
+  border: .5px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
   cursor: pointer;
   border-radius: 999px;
   justify-content: center;
@@ -269,7 +269,7 @@
 }
 
 .VMoOIq_squareBadge {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   text-overflow: ellipsis;
   white-space: nowrap;
   max-width: 100%;
@@ -280,8 +280,8 @@
 
 .VMoOIq_squareX {
   background: var(--dsw-alias-bg-module, #fff);
-  border: .5px solid var(--dsw-alias-border-l2, #00000024);
-  color: var(--dsw-alias-label-primary, #0f1115);
+  border: .5px solid var(--dsw-alias-border-l2);
+  color: var(--dsw-alias-label-primary);
   cursor: pointer;
   border-radius: 999px;
   align-items: center;
@@ -295,7 +295,7 @@
 }
 
 .VMoOIq_squareLabel {
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
@@ -305,7 +305,7 @@
 }
 
 .VMoOIq_squareMetric {
-  color: var(--dsw-alias-label-tertiary, #00000073);
+  color: var(--dsw-alias-label-tertiary);
   font-size: 10px;
   line-height: 17px;
 }
@@ -391,12 +391,12 @@
 }
 
 .VMoOIq_modAddSquare {
-  border: 1px dashed var(--dsw-alias-border-l3, #00000047);
+  border: 1px dashed var(--dsw-alias-border-l3);
   cursor: pointer;
   opacity: .7;
   height: 64px;
-  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease),
-    background-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   background: none;
   border-radius: 8px;
   justify-content: center;
@@ -406,8 +406,8 @@
 }
 
 .VMoOIq_modAddSquare:hover {
-  background: var(--dsw-alias-interactive-bg-hover, #0000000d);
-  border-color: var(--dsw-alias-border-l4, #0006);
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-border-l4);
   opacity: 1;
 }
 
@@ -431,9 +431,9 @@
 }
 
 .VMoOIq_specChip {
-  border: 1px solid var(--dsw-alias-border-l2, #8080804d);
-  background: var(--dsw-alias-bg-base, transparent);
-  color: var(--dsw-alias-label-secondary, inherit);
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-bg-base);
+  color: var(--dsw-alias-label-secondary);
   cursor: pointer;
   border-radius: 999px;
   padding: 4px 8px;
@@ -444,7 +444,7 @@
 .VMoOIq_specChipOn {
   border-color: var(--dsw-alias-accent, #80808099);
   background: var(--dsw-alias-bg-elevated, #8080801f);
-  color: var(--dsw-alias-label-primary, inherit);
+  color: var(--dsw-alias-label-primary);
   font-weight: 600;
 }
 
@@ -513,11 +513,6 @@
   font-size: 12px;
 }
 
-.VMoOIq_modSelect option {
-  color: canvastext;
-  background: canvas;
-}
-
 .VMoOIq_modLeafError {
   color: #e06c5f;
   margin: 0;
@@ -544,8 +539,8 @@
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
   text-align: left;
-  transition: border-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease),
-    background-color var(--ds-transition-duration, .12s) var(--ds-ease-in-out, ease);
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out),
+    background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   background: none;
   border-radius: 6px;
   align-items: center;
@@ -808,7 +803,7 @@
   cursor: pointer;
   font: inherit;
   color: inherit;
-  border: 1px solid var(--dsw-alias-border-l2, #80808059);
+  border: 1px solid var(--dsw-alias-border-l2);
   border-radius: 999px;
   padding: 3px 10px;
 }
@@ -819,7 +814,7 @@
 
 .VMoOIq_groupTabActive {
   background: var(--dsw-alias-bg-module, #8080802e);
-  border-color: var(--dsw-alias-border-l3, #8080808c);
+  border-color: var(--dsw-alias-border-l3);
 }
 
 .VMoOIq_tipAnchor {
@@ -959,9 +954,19 @@
 }
 
 .VMoOIq_skeleton {
-  background: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 22%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-label-secondary) 22%, transparent);
   border-radius: 6px;
   animation: 1.6s ease-in-out infinite VMoOIq_panePulse;
+}
+
+@keyframes VMoOIq_iconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.VMoOIq_iconSpin {
+  animation: 1s linear infinite VMoOIq_iconSpin;
 }
 .yvIe7G_stagePreview {
   flex-direction: column;
@@ -1123,7 +1128,7 @@
 }
 
 .yvIe7G_historyTitle {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   font-size: 11px;
 }
 
@@ -1359,7 +1364,7 @@
 .DKBqVW_railTitle {
   text-transform: uppercase;
   letter-spacing: .14em;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
   margin: 0;
   font-size: 10px;
   font-weight: 600;
@@ -1378,7 +1383,7 @@
 }
 
 .jKGmwq_groupNote {
-  color: var(--dsw-alias-label-secondary, #61666b);
+  color: var(--dsw-alias-label-secondary);
   margin: 0 0 10px;
   font-size: 12px;
   line-height: 20px;
@@ -1407,7 +1412,7 @@
 }
 .bzm3cW_frame {
   border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: #0e0e1a;
+  background: var(--melite-stage-bg);
   border-radius: 8px;
   flex: 1;
   min-height: 340px;
@@ -1475,8 +1480,8 @@
 .bzm3cW_badge {
   pointer-events: none;
   border: 1px solid var(--dsw-alias-border, #e2e4e9);
+  background: color-mix(in srgb, var(--melite-stage-bg) 90%, transparent);
   backdrop-filter: blur(4px);
-  background: #0e0e1ae6;
   border-radius: 6px;
   width: 112px;
   margin: 0;
@@ -1494,7 +1499,7 @@
   text-align: center;
   text-transform: uppercase;
   letter-spacing: .12em;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
   padding: 2px 6px;
   font-size: 8px;
   font-weight: 500;

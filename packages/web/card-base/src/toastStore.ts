@@ -54,19 +54,30 @@ export function getSnapshot(): ToastEntry[] {
   return entries
 }
 
+/** How long a toast of a severity holds before it dismisses, in ms.
+ *  THE ONE OWNER of that number: the store arms its dismissal timer
+ *  from it (the lifetime holds without a viewport mounted) and the
+ *  renderer face passes it to the DSH Toast as `holdMs`, so a
+ *  duration is spelled once. Errors persist long enough for the
+ *  operator to read what broke; success and info clear quickly. */
+export function toastHoldMs(type: ToastType): number {
+  return type === "error" ? 15_000 : 5_000
+}
+
 function addToast(type: ToastType, message: string, _action?: ToastAction): void {
   void _action // accepted, not renderable — see the header law
-  // Errors persist 15s (the operator must SEE them); success/info
-  // auto-dismiss at 5s — the kit store's durations, verbatim.
   const id = nextId++
   entries = [...entries, { id, type, message }]
   if (type === "error") console.error("[toast]", message)
   else console.info("[toast]", message)
   emit()
-  const duration = type === "error" ? 15_000 : 5_000
+  // The lifetime is the store's alone: a pushed toast dismisses on
+  // this clock whether or not a viewport is mounted to fade it. The
+  // Toast's own hold+FADE timer lands later and calls the same
+  // idempotent removeToast, so it never shortens this one.
   setTimeout(() => {
     removeToast(id)
-  }, duration)
+  }, toastHoldMs(type))
 }
 
 export function removeToast(id: number): void {

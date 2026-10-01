@@ -51,6 +51,7 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_api_gateway_client = require("@deepseek-ai/dsh-api-gateway/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let react_dom = require("react-dom");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		//#region ../../../node_modules/.pnpm/zod@4.5.4/node_modules/zod/v4/core/util.js
 		function getEnumValues(entries) {
 			const numericValues = Object.values(entries).filter((v) => typeof v === "number");
@@ -6869,8 +6870,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		};
 		//#endregion
 		//#region \0dsh-css:melite-card-view/src/client/card.module.css.mjs
-		const css$3 = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.vYZV7a_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_paramsCol,.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;display:flex}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.vYZV7a_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.vYZV7a_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), border-color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.vYZV7a_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.vYZV7a_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{color-scheme:light}.vYZV7a_drillLlm option{color:canvastext;background:canvas}.vYZV7a_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.vYZV7a_drillProgress>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1)), background-color var(--ds-transition-duration,.2s) var(--ds-ease-in-out,cubic-bezier(.4, 0, .2, 1));font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.vYZV7a_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.vYZV7a_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease), color var(--ds-transition-duration,.12s) var(--ds-ease-in-out,ease);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.vYZV7a_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.vYZV7a_tileInner:hover .vYZV7a_tileIconBtn,.vYZV7a_tileIconBtn:focus-visible{opacity:1}.vYZV7a_tileIconBtn:disabled{cursor:default}.vYZV7a_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.vYZV7a_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.vYZV7a_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.vYZV7a_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.vYZV7a_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.vYZV7a_tileSpin>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes vYZV7a_tileSpinTurn{to{transform:rotate(360deg)}}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.vYZV7a_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.vYZV7a_drill [class*=_title_]{font-size:18px;font-weight:800}.vYZV7a_pickerCardLabel{font-size:12px;font-weight:500}.vYZV7a_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) vYZV7a_zoom-in;display:flex;overflow:hidden}@keyframes vYZV7a_zoom-in{0%{opacity:0;transform:scale(.92)}}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.vYZV7a_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.vYZV7a_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.vYZV7a_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.vYZV7a_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.vYZV7a_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.vYZV7a_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.vYZV7a_previewClickable{cursor:pointer}.vYZV7a_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.vYZV7a_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.vYZV7a_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.vYZV7a_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.vYZV7a_rescueBtn,.vYZV7a_rescueRun{cursor:pointer;font-size:12px}.vYZV7a_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.vYZV7a_zoomBuild{color:var(--dsh-alias-label-tertiary);opacity:.55;flex:none;font-size:10px}";
-		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@1602f424";
+		const css$3 = ".vYZV7a_card{flex-direction:column;min-width:0;margin:4px 0;font-size:12px;line-height:1.45;display:flex}.vYZV7a_load{color:var(--dsw-alias-label-secondary);padding:2px 0}.vYZV7a_head{align-items:center;gap:8px;min-width:0;display:flex}.vYZV7a_model{text-overflow:ellipsis;white-space:nowrap;min-width:0;font-weight:600;overflow:hidden}.vYZV7a_state{corner-shape:round;border-radius:999px;flex:none;margin-left:auto;padding:1px 8px}.vYZV7a_state[data-state=completed]{color:var(--dsw-alias-state-success-primary)}.vYZV7a_state[data-state=running],.vYZV7a_state[data-state=queued],.vYZV7a_state[data-state=pending],.vYZV7a_state[data-state=starting],.vYZV7a_state[data-state=draft]{color:var(--dsw-alias-state-warn-primary)}.vYZV7a_state[data-state=failed],.vYZV7a_state[data-state=error],.vYZV7a_state[data-state=stopped],.vYZV7a_state[data-state=interrupted]{color:var(--dsw-alias-state-error-primary)}.vYZV7a_prompt{color:var(--dsw-alias-label-secondary);-webkit-line-clamp:2;-webkit-box-orient:vertical;display:-webkit-box;overflow:hidden}.vYZV7a_row{color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border:none;border-radius:6px;align-items:center;gap:8px;width:100%;min-width:0;padding:4px 6px;display:flex}.vYZV7a_row:hover{background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_row:focus-visible{outline:1px solid var(--dsw-alias-state-business-primary);outline-offset:-1px}.vYZV7a_thumb{object-fit:cover;border-radius:4px;flex:none;width:34px;height:34px}.vYZV7a_rowTitle{text-overflow:ellipsis;white-space:nowrap;flex:none;max-width:40%;font-weight:600;overflow:hidden}.vYZV7a_drill{width:92vw;max-width:min(860px,92vw)}.vYZV7a_paramsCol,.vYZV7a_params{flex-direction:column;gap:8px;min-width:0;display:flex}.vYZV7a_field{flex-direction:column;gap:3px;min-width:0;display:flex}.vYZV7a_fieldKey{color:var(--dsw-alias-label-secondary);font-size:11px}.vYZV7a_outputs{flex-direction:column;align-items:center;gap:10px;min-width:0;display:flex}.vYZV7a_reportList{flex-direction:column;gap:8px;width:100%;min-width:0;display:flex}.vYZV7a_outputImg{object-fit:contain;border-radius:8px;max-width:100%;max-height:46vh}.vYZV7a_runRow{justify-content:flex-end;align-items:center;gap:10px;width:100%;display:flex}.vYZV7a_runError{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;font-size:11px}.vYZV7a_drillRunRow{background:var(--dsw-alias-bg-base);border-top:1px solid var(--dsw-alias-border-l2);z-index:1;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;padding:10px 0 4px;display:flex;position:sticky;bottom:0}.vYZV7a_drillRunBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;height:36px;transition:color var(--ds-transition-duration) var(--ds-ease-in-out), border-color var(--ds-transition-duration) var(--ds-ease-in-out);border-radius:8px;justify-content:center;align-items:center;gap:8px;padding:0 16px;font-size:13px;font-weight:600;display:inline-flex}.vYZV7a_drillRunBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillRunBtn:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;border-radius:8px;max-width:220px;height:36px;padding:0 8px;font-size:13px;font-weight:600}.vYZV7a_drillLlm:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillLlm{color-scheme:light}.vYZV7a_drillLlm:focus-visible{border-color:var(--dsw-alias-brand-primary);color:var(--dsw-alias-brand-primary)}.vYZV7a_drillProgress{color:var(--dsw-alias-label-secondary);font-variant-numeric:tabular-nums;align-items:center;gap:6px;font-size:11px;display:inline-flex}.vYZV7a_drillProgress>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_state[data-state=legacy]{color:var(--dsw-alias-label-secondary)}.vYZV7a_cardsBench{flex-direction:column;gap:8px;padding:12px 14px 18px;display:flex}.vYZV7a_benchHead{justify-content:space-between;align-items:center;gap:8px;display:flex}.vYZV7a_revTag{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_runBtn,.vYZV7a_back,.vYZV7a_restore{border:.5px solid var(--dsw-alias-border-l2);color:inherit;cursor:pointer;font:inherit;background:0 0;border-radius:6px;padding:2px 10px;font-size:12px}.vYZV7a_runBtn:hover:not(:disabled),.vYZV7a_back:hover,.vYZV7a_restore:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_runBtn:disabled,.vYZV7a_restore:disabled{cursor:default;opacity:.45}.vYZV7a_runView{flex-direction:column;gap:8px;display:flex}.vYZV7a_runHead{align-items:baseline;gap:8px;display:flex}.vYZV7a_runId{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;font-weight:600}.vYZV7a_runStatus{border:.5px solid var(--dsw-alias-border-l2);corner-shape:round;color:var(--dsw-alias-label-secondary);border-radius:999px;padding:0 8px;font-size:11px}.vYZV7a_runActions{gap:8px;display:flex}.vYZV7a_mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;overflow-x:auto}.vYZV7a_tileGrid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:0;padding:0;list-style:none;display:grid}.vYZV7a_tile{margin:0;padding:0;display:block}.vYZV7a_tileInner{border:.5px solid var(--dsw-alias-border-l2);cursor:pointer;transition:border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);font:inherit;text-align:left;background:0 0;border-radius:10px;flex-direction:column;align-items:stretch;width:100%;padding:0;display:flex;overflow:hidden}.vYZV7a_tileInner:hover{border-color:var(--dsw-alias-state-business-primary);background:var(--dsw-alias-interactive-bg-hover)}.vYZV7a_tilePreview{aspect-ratio:1;flex:1;width:100%;min-height:0;margin:0;display:block;position:relative}.vYZV7a_tileImg,.vYZV7a_tileImgLink{width:100%;height:100%;display:block}.vYZV7a_tileImg{object-fit:cover}.vYZV7a_tileVideoImg{object-fit:contain;width:100%;height:100%;display:block}.vYZV7a_audioBars{box-sizing:border-box;justify-content:center;align-items:flex-end;gap:2px;width:100%;height:100%;padding:18% 12%;display:flex}.vYZV7a_audioBar{background:var(--dsw-alias-state-business-primary);opacity:.85;border-radius:1px;flex:1;max-width:6px}.vYZV7a_kindFace{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-label-secondary);flex-direction:column;justify-content:center;align-items:center;gap:4px;width:100%;height:100%;display:flex}.vYZV7a_kindInitial{font-size:28px;font-weight:700;line-height:1}.vYZV7a_kindName{text-overflow:ellipsis;white-space:nowrap;padding:0 6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;overflow:hidden}.vYZV7a_tileDot{position:absolute;bottom:6px;right:6px}.vYZV7a_tileIconBtn{background:color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);border:1px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary);cursor:pointer;opacity:0;height:24px;transition:opacity var(--ds-transition-duration) var(--ds-ease-in-out), color var(--ds-transition-duration) var(--ds-ease-in-out);z-index:2;border-radius:999px;justify-content:center;align-items:center;width:24px;padding:0;display:inline-flex;position:absolute}.vYZV7a_tileIconBtn:hover{border-color:var(--dsw-alias-border-l4);color:var(--dsw-alias-label-primary)}.vYZV7a_tileInner:hover .vYZV7a_tileIconBtn,.vYZV7a_tileIconBtn:focus-visible{opacity:1}.vYZV7a_tileIconBtn:disabled{cursor:default}.vYZV7a_tileTrash{color:var(--dsw-alias-label-tertiary);top:6px;right:6px}.vYZV7a_tileTrash:hover{color:var(--dsw-alias-state-error-primary)}.vYZV7a_tileRunBtn{color:var(--dsw-alias-label-secondary);bottom:6px;right:6px}.vYZV7a_tileRunBtn:hover{color:var(--dsw-alias-brand-primary)}.vYZV7a_tileSpin{color:var(--dsw-alias-brand-primary);z-index:2;align-items:center;display:inline-flex;position:absolute;bottom:6px;left:6px}.vYZV7a_tileSpin>svg{animation:1s linear infinite vYZV7a_tileSpinTurn}.vYZV7a_tilePct{font-variant-numeric:tabular-nums;margin-left:4px;font-size:11px}@keyframes vYZV7a_tileSpinTurn{to{transform:rotate(360deg)}}.vYZV7a_tileCaption{border-top:.5px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;gap:2px;padding:6px 8px;display:flex}.vYZV7a_tileTitle{text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600;line-height:20px;overflow:hidden}.vYZV7a_tileMeta{color:var(--dsw-alias-label-secondary);align-items:center;gap:6px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:17px;display:flex;overflow:hidden}.vYZV7a_tilePrompt{text-overflow:ellipsis;white-space:nowrap;flex:1;overflow:hidden}.vYZV7a_tileAdd .vYZV7a_tileInner{border-style:dashed}.vYZV7a_addFace{color:var(--dsw-alias-label-secondary);justify-content:center;align-items:center;font-size:34px;font-weight:300;display:flex}.vYZV7a_picker{flex-direction:column;gap:10px;max-height:60vh;margin-top:-6px;display:flex;overflow-y:auto}.vYZV7a_pickerGenre{flex-direction:column;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:6px;display:grid}.vYZV7a_pickerGenreTitle{letter-spacing:.08em;text-transform:uppercase;color:var(--dsw-alias-label-primary);grid-column:1/-1;margin:12px 0 10px;font-size:15px;font-weight:700}.vYZV7a_drill [class*=_title_]{font-size:18px;font-weight:800}.vYZV7a_pickerCardLabel{font-size:12px;font-weight:500}.vYZV7a_pickerCard{box-sizing:border-box;border:.5px solid var(--dsw-alias-border-l2);width:100%;min-height:44px;color:inherit;cursor:pointer;font:inherit;text-align:left;background:0 0;border-radius:8px;justify-content:flex-start;align-items:baseline;gap:8px;width:100%;padding:8px 10px;display:flex}.vYZV7a_pickerCard:hover{background:var(--dsw-alias-interactive-bg-hover);border-color:var(--dsw-alias-state-business-primary)}.vYZV7a_pickerCardLabel{white-space:nowrap;font-size:13px;font-weight:600}.vYZV7a_tileShared{display:block;position:relative}.vYZV7a_zoomOverlay{background:var(--dsw-alias-bg-overlay);z-index:80;flex-direction:column;display:flex;position:fixed;inset:0}.vYZV7a_zoomScroll{flex:1;min-height:0;overflow-y:auto}.vYZV7a_zoomInner{box-sizing:border-box;justify-content:center;align-items:center;width:100%;max-width:100%;min-height:100%;margin:0 auto;padding:24px;display:flex}.vYZV7a_tileDragOver{outline:2px dashed var(--dsw-alias-brand-primary);outline-offset:-2px}.vYZV7a_zoomCard{background:var(--dsw-alias-bg-layer-1);box-shadow:0 0 0 .5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);color:var(--dsw-alias-label-primary);border:0;border-radius:14px;flex-direction:column;min-height:320px;max-height:86vh;animation:.18s cubic-bezier(.2,.9,.3,1) vYZV7a_zoom-in;display:flex;overflow:hidden}@keyframes vYZV7a_zoom-in{0%{opacity:0;transform:scale(.92)}}.vYZV7a_zoomBar{border-bottom:.5px solid var(--dsw-alias-border-l2);flex:none;justify-content:space-between;align-items:center;gap:8px;padding:10px 14px;display:flex}.vYZV7a_zoomWebhook{color:var(--dsw-alias-label-secondary);align-items:center;gap:8px;width:100%;min-height:0;padding:2px 0;font-size:12px;display:flex}.vYZV7a_zoomMeter{background:var(--dsw-alias-border-l2);border-radius:999px;flex:auto;height:3px;overflow:hidden}.vYZV7a_zoomMeterFill{background:var(--dsw-alias-fill-brand-primary);height:100%;transition:width .24s;display:block}.vYZV7a_zoomTitle{flex:auto;font-size:13px;font-weight:600;line-height:20px}.vYZV7a_zoomDetail{overflow-anchor:none;min-height:0;padding:14px;display:block;overflow-y:auto}.vYZV7a_zoomBody{flex-direction:column;flex:1;min-height:0;display:flex;overflow:hidden}.vYZV7a_zoomSkeleton{flex-direction:column;flex:1;gap:10px;min-height:0;padding:16px;display:flex}.vYZV7a_skLine{will-change:background-position;background:linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);background-color:var(--dsw-alias-interactive-bg-hover);background-size:200% 100%;border-radius:6px;height:12px;animation:1s linear infinite both vYZV7a_zoomShimmer}.vYZV7a_skWide{width:60%}.vYZV7a_skShort{flex:1;height:28px}.vYZV7a_skBlock{border-radius:10px;height:120px}.vYZV7a_skRow{gap:10px;display:flex}@keyframes vYZV7a_zoomShimmer{0%{background-position:150% 0}to{background-position:-100% 0}}@keyframes vYZV7a_tilePop{0%{opacity:0;transform:scale(.96)translateY(6px)}60%{opacity:1;transform:scale(1.015)translateY(0)}to{opacity:1;transform:scale(1)translateY(0)}}.vYZV7a_tileEnter{animation:.26s cubic-bezier(.2,.8,.3,1) both vYZV7a_tilePop}.vYZV7a_tileDragging{opacity:.55;z-index:2}.vYZV7a_wiredMark{color:var(--dsw-alias-state-business-primary);font-size:10px}.vYZV7a_capOver{background:var(--dsw-alias-interactive-bg-hover);outline:1px dashed var(--dsw-alias-state-business-primary);outline-offset:4px}.vYZV7a_cancelBtn{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);cursor:pointer;background:0 0;border-radius:8px;padding:5px 12px;font-size:12px}.vYZV7a_cancelBtn:disabled{cursor:default;opacity:.6}.vYZV7a_groupBar{align-items:center;gap:8px;display:flex}.vYZV7a_checkCircle{border:1.5px solid var(--dsw-alias-label-secondary);corner-shape:round;color:var(--dsw-alias-bg-module);z-index:3;border-radius:999px;justify-content:center;align-items:center;width:20px;height:20px;font-size:11px;display:flex;position:absolute;top:8px;left:8px}.vYZV7a_checkOn{background:var(--dsw-alias-state-business-primary);border-color:var(--dsw-alias-state-business-primary)}[data-selected=on]{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_groupNote{color:var(--dsw-alias-label-secondary);margin:0 0 10px;font-size:12px;line-height:20px}.vYZV7a_memberList{margin:0 0 12px;padding:0;list-style:none}.vYZV7a_memberRow{border-bottom:1px solid var(--dsw-alias-interactive-bg-hover);align-items:baseline;gap:8px;padding:6px 2px;display:flex}.vYZV7a_memberIdx{color:var(--dsw-alias-label-secondary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px}.vYZV7a_memberName{font-size:13px}@media (prefers-reduced-motion:reduce){.vYZV7a_tileEnter,.vYZV7a_skLine,.vYZV7a_skBlock{animation-duration:.01ms;animation-iteration-count:1}}@media (width<=900px){.vYZV7a_studioSplit{grid-template-columns:1fr}}.vYZV7a_outputsPreview{flex-direction:column;flex:1;min-width:280px;min-height:220px;display:flex;overflow:hidden}.vYZV7a_outputsHint{color:var(--dsw-alias-label-dimmed);border:1px dashed var(--dsw-alias-border-l2);border-radius:6px;flex:1;justify-content:center;align-items:center;font-size:11px;display:flex}.vYZV7a_previewClickable{cursor:pointer}.vYZV7a_previewClickable:focus-visible{outline:2px solid var(--dsw-alias-state-business-primary);outline-offset:2px}.vYZV7a_enhanceRow{flex:none;align-items:center;gap:8px;padding:2px 0;display:flex}.vYZV7a_enhanceNote{color:var(--dsw-alias-text-tertiary);font-size:12px}.vYZV7a_rescue{border:1px solid var(--dsw-alias-border-secondary);border-radius:6px;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 8px;display:flex}.vYZV7a_rescueNote{color:var(--dsh-alias-text-secondary,var(--dsw-alias-text-secondary));overflow-wrap:anywhere;margin:0;font-size:12px}.vYZV7a_rescueBtn,.vYZV7a_rescueRun{cursor:pointer;font-size:12px}.vYZV7a_rescueErr{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.vYZV7a_zoomBuild{color:var(--dsh-alias-label-tertiary);opacity:.55;flex:none;font-size:10px}";
+		const tagId$3 = "@melite-plugin/dsh-card-view/card.module.css@3e34d9a";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-view";
@@ -7216,19 +7217,198 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
+		//#region ../../web-kit/contracts/src/stageView.ts
+		function recordOf(value) {
+			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
+		}
+		function nonEmptyString(value) {
+			return typeof value === "string" && value !== "" ? value : "";
+		}
+		function stringsOf(value) {
+			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
+		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
+		function statusOf(value) {
+			switch (value.toLowerCase()) {
+				case "done":
+				case "completed":
+				case "succeeded":
+				case "success": return "done";
+				case "failed":
+				case "error": return "error";
+				case "running":
+				case "live": return "running";
+				case "queued": return "queued";
+				case "stale": return "stale";
+				case "cached": return "cached";
+				case "skipped": return "skipped";
+				case "reused": return "reused";
+				default: return "pending";
+			}
+		}
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus(value) {
+			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function galleryOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const gallery = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const name = nonEmptyString(row["name"]);
+				const url = nonEmptyString(row["url"]);
+				return name !== "" && url !== "" ? [{
+					name,
+					url
+				}] : [];
+			});
+			return gallery.length > 0 ? gallery : void 0;
+		}
+		function previewsOf(value) {
+			if (!Array.isArray(value)) return void 0;
+			const previews = value.flatMap((entry) => {
+				const row = recordOf(entry);
+				const label = nonEmptyString(row["label"]);
+				const artifact = nonEmptyString(row["artifact"]);
+				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
+				return label !== "" && artifact !== "" ? [{
+					label,
+					url,
+					artifact
+				}] : [];
+			});
+			return previews.length > 0 ? previews : void 0;
+		}
+		function cardResultFromRecord(value) {
+			const result = recordOf(value);
+			const artifacts = {};
+			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
+				const clean = nonEmptyString(url);
+				if (clean !== "") artifacts[name] = clean;
+			}
+			const assetUrls = stringsOf(result["assetUrls"]);
+			const metadata = recordOf(result["metadata"]);
+			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
+			return {
+				artifacts,
+				assetUrls,
+				metadata,
+				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
+				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
+				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
+			};
+		}
+		function inputBindingsOf(value) {
+			const bindings = [];
+			for (const [slot, raw] of Object.entries(recordOf(value))) {
+				const ref = recordOf(raw);
+				const stage = nonEmptyString(ref["stage"]);
+				if (stage !== "") {
+					const output = nonEmptyString(ref["output"]);
+					bindings.push({
+						slot,
+						source: output === "" ? { stage } : {
+							stage,
+							output
+						}
+					});
+				} else if (typeof ref["initial"] === "string") bindings.push({
+					slot,
+					source: { initial: true }
+				});
+			}
+			return bindings;
+		}
+		function projectStageView(owner, options = {}) {
+			const row = owner.row;
+			const resolved = recordOf(row["resolved"]);
+			const rowParams = recordOf(row["params"]);
+			const params = owner.effective?.params ?? rowParams;
+			const card = nonEmptyString(row["card"]) || owner.cardName;
+			const kind = options.kind ?? (card || "stage");
+			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
+			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
+			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
+			const inputBindings = inputBindingsOf(row["inputs"]);
+			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
+			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
+			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
+			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
+			const result = cardResultFromRecord(row["result"]);
+			const harvested = options.result === void 0 ? result : options.result(row, result);
+			const resultRecord = recordOf(row["result"]);
+			const metadata = recordOf(harvested?.metadata);
+			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
+			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
+			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
+			return {
+				id: owner.stageId,
+				title: nonEmptyString(row["title"]) || card || owner.stageId,
+				kind,
+				service,
+				model,
+				...options.genre === void 0 ? {} : { genre: options.genre },
+				...tags === void 0 ? {} : { tags },
+				params,
+				...inputSlots.length === 0 ? {} : { inputSlots },
+				...inputBindings.length === 0 ? {} : { inputBindings },
+				inputs,
+				...inputOutputs.length === 0 ? {} : { inputOutputs },
+				inputIndices,
+				result: harvested,
+				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
+				status: statusOf(owner.runStatus),
+				...error === "" ? {} : { error },
+				runId,
+				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
+			};
+		}
+		function projectUpstreamStages(owner, options = {}) {
+			return owner.upstream.map((upstream) => ({
+				id: upstream.id,
+				title: upstream.title,
+				kind: options.kind ?? "image",
+				service: options.service ?? "",
+				genre: options.genre ?? "image",
+				params: {},
+				inputs: [],
+				inputIndices: [],
+				result: {
+					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
+					assetUrls: upstream.url === "" ? [] : [upstream.url],
+					metadata: {}
+				},
+				status: "done"
+			}));
+		}
+		var TERMINAL_RUN_STATUSES;
+		var init_stageView = __esmMin((() => {
+			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"error",
+				"unknown"
+			]);
+		}));
+		//#endregion
 		//#region ../melite-run-wire/src/index.ts
 		init_benchStage();
-		/** The terminal statuses — the runs seat's own vocabulary (the settle
-		*  path stamps 'completed' or 'failed'; runs/stop stamps 'stopped'). */
-		const TERMINAL_RUN_STATUSES = [
-			"completed",
-			"failed",
-			"stopped",
-			"error"
-		];
-		function isTerminalRun(status) {
-			return TERMINAL_RUN_STATUSES.includes(status);
-		}
+		init_stageView();
 		/** The ONE media-url rewrite (readRunStatus + the file-era list
 		*  fallback share it): bare run-relative names ride the estate's
 		*  media route (/melite-media/runs/<runId>/<rel>); urls that already
@@ -7286,6 +7466,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region src/client/draft.ts
+		init_stageView();
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
 			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId), "drafts/get");
@@ -7619,7 +7800,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* (the poll's stop condition must match the stream's, or a dropped
 		* socket polls forever / an unknown run stops early). */
 		function runFinished(status) {
-			return status === "completed" || status === "failed" || status === "stopped" || status === "unknown";
+			return isTerminalStatus(status);
 		}
 		function rowStatus(live, doc) {
 			const s = live ?? doc ?? "ready";
@@ -7790,6 +7971,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region src/client/cards-resource.ts
 		init_benchStage();
+		init_stageView();
 		const tailDelay = (ms) => new Promise((resolve) => {
 			setTimeout(resolve, ms);
 		});
@@ -7868,8 +8050,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  a verdict this client cannot render becomes a terminal one it
 		*  can, never an unknown word stamped onto a row. */
 		function tileStatusFromVerdict(verdict) {
-			if (verdict === "live" || verdict === "running" || verdict === "queued") return "running";
-			if (verdict === "completed" || verdict === "success" || verdict === "succeeded" || verdict === "done") return "done";
+			const folded = statusOf(verdict);
+			if (folded === "running" || folded === "queued") return "running";
+			if (folded === "done" || folded === "cached" || folded === "skipped" || folded === "reused") return "done";
 			return "stopped";
 		}
 		function readBench(doc, sessionKey) {
@@ -8110,7 +8293,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					continue;
 				}
 				transportFails = 0;
-				if (!isTerminalRun(row.status)) {
+				if (!isTerminalStatus(row.status)) {
 					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
 					const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
 					const p = stage?.progress;
@@ -8451,7 +8634,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  'failed'. A settled run ends the stream; the hydrated/polled value
 		*  stays as the last ok frame. */
 		function isTerminal(status) {
-			return status === "completed" || status === "failed" || status === "stopped";
+			return isTerminalStatus(status);
 		}
 		/** The live tail (the honest degrade): poll `runs/status` and yield a
 		*  value ONLY when the row moved (no frame spam) until the run turns
@@ -9617,6 +9800,90 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
@@ -9675,7 +9942,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}));
 		}
 		function _notify() {
-			for (const fn of _listeners$3) try {
+			for (const fn of _listeners$1) try {
 				fn();
 			} catch (e) {
 				console.warn("[modelCatalog] listener error:", e);
@@ -9684,9 +9951,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** Subscribe to catalog readiness. Called when _cache transitions from
 		* null → populated. Returns an unsubscribe fn. */
 		function onCatalogReady(fn) {
-			_listeners$3.add(fn);
+			_listeners$1.add(fn);
 			return () => {
-				_listeners$3.delete(fn);
+				_listeners$1.delete(fn);
 			};
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -10311,7 +10578,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
+		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$1;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
@@ -10331,7 +10598,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			_inflight$2 = null;
 			_loaded = false;
 			_bgRetryTimer = null;
-			_listeners$3 = /* @__PURE__ */ new Set();
+			_listeners$1 = /* @__PURE__ */ new Set();
 			/* v8 ignore next -- module warm-load runs only in browser builds, where
 			* MODE is "production"/"development"; under vitest MODE is always "test",
 			* so the taken arm is unreachable here (2026-09-12). */
@@ -10340,44 +10607,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
-		* outage that produced it, so the operator should also see WHEN it fired.
-		* 24h local time, seconds resolution. */
+		*  outage that produced it, so the operator should also see WHEN it fired.
+		*  24h local time, seconds resolution. */
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
-		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
-		* (for CatalogContractError reporting) — a static import would be circular. */
+		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
 			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
 		}
-		function _subscribe$1(listener) {
-			_listeners$2.add(listener);
-			return () => {
-				_listeners$2.delete(listener);
-			};
-		}
-		function _setState$1(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state$1) : patch;
-			if (replace === true) _state$1 = p;
-			else _state$1 = {
-				..._state$1,
-				...p
-			};
-			_listeners$2.forEach((l) => l());
-		}
-		function _getState$1() {
-			return _state$1;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-		function _useCatalogContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
-		}
-		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
+		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
 			IDLE = {
 				state: "idle",
@@ -10385,13 +10628,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				error: null
 			};
 			_lastToastedOutage = null;
-			_listeners$2 = /* @__PURE__ */ new Set();
-			_state$1 = {
+			useCatalogContractStore = createClientStore((set, get) => ({
 				record: IDLE,
 				reportOk: () => {
-					const wasOutage = useCatalogContractStore.getState().record.state === "error";
+					const wasOutage = get().record.state === "error";
 					_lastToastedOutage = null;
-					_setState$1({ record: {
+					set({ record: {
 						state: "loaded",
 						violations: [],
 						error: null
@@ -10400,7 +10642,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
-					_setState$1({ record: {
+					set({ record: {
 						state: "violation",
 						violations,
 						error: null
@@ -10414,7 +10656,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				reportError: (message) => {
 					const clean = message.trim();
 					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
-					_setState$1({ record: {
+					set({ record: {
 						state: "error",
 						violations: [],
 						error: clean
@@ -10428,17 +10670,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				},
 				clear: () => {
 					_lastToastedOutage = null;
-					_setState$1({ record: IDLE });
+					set({ record: IDLE });
 				}
-			};
-			_initialState$1 = _state$1;
-			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
-				getState: _getState$1,
-				setState: _setState$1,
-				subscribe: _subscribe$1,
-				getInitialState: () => _initialState$1,
-				destroy: () => {}
-			});
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContract.ts
@@ -10527,8 +10761,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
-		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
-		* whole protocol layer; the store only needs it on click. */
+		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
@@ -10548,36 +10782,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: () => repoll(v.runId)
 			});
 		}
-		function _subscribe(listener) {
-			_listeners$1.add(listener);
-			return () => {
-				_listeners$1.delete(listener);
-			};
-		}
-		function _setState(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state) : patch;
-			if (replace === true) _state = p;
-			else _state = {
-				..._state,
-				...p
-			};
-			_listeners$1.forEach((l) => l());
-		}
-		function _getState() {
-			return _state;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
-		function _useRunStatusContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
-		}
-		var _listeners$1, _state, _initialState, useRunStatusContractStore;
+		var useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
-			_listeners$1 = /* @__PURE__ */ new Set();
-			_state = {
+			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
 					console.error("[runStatusContract] status channel violation:", runId, violations);
@@ -10586,7 +10795,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						runId,
 						violations
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
 				reportError: (runId, message) => {
@@ -10596,19 +10805,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						runId,
 						message
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
-				clear: () => _setState({ verdict: null })
-			};
-			_initialState = _state;
-			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
-				getState: _getState,
-				setState: _setState,
-				subscribe: _subscribe,
-				getInitialState: () => _initialState,
-				destroy: () => {}
-			});
+				clear: () => set({ verdict: null })
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/extraKeys.ts
@@ -11722,164 +11923,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region ../../web-kit/contracts/src/stagePreview.ts
 		var init_stagePreview = __esmMin((() => {}));
 		//#endregion
-		//#region ../../web-kit/contracts/src/stageView.ts
-		function recordOf(value) {
-			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
-		}
-		function nonEmptyString(value) {
-			return typeof value === "string" && value !== "" ? value : "";
-		}
-		function stringsOf(value) {
-			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
-		}
-		function statusOf(value) {
-			switch (value.toLowerCase()) {
-				case "done":
-				case "completed":
-				case "succeeded": return "done";
-				case "failed":
-				case "error": return "error";
-				case "running": return "running";
-				case "queued": return "queued";
-				case "stale": return "stale";
-				case "cached": return "cached";
-				case "skipped": return "skipped";
-				case "reused": return "reused";
-				default: return "pending";
-			}
-		}
-		function galleryOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const gallery = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const name = nonEmptyString(row["name"]);
-				const url = nonEmptyString(row["url"]);
-				return name !== "" && url !== "" ? [{
-					name,
-					url
-				}] : [];
-			});
-			return gallery.length > 0 ? gallery : void 0;
-		}
-		function previewsOf(value) {
-			if (!Array.isArray(value)) return void 0;
-			const previews = value.flatMap((entry) => {
-				const row = recordOf(entry);
-				const label = nonEmptyString(row["label"]);
-				const artifact = nonEmptyString(row["artifact"]);
-				const url = row["url"] === null || typeof row["url"] === "string" ? row["url"] : null;
-				return label !== "" && artifact !== "" ? [{
-					label,
-					url,
-					artifact
-				}] : [];
-			});
-			return previews.length > 0 ? previews : void 0;
-		}
-		function cardResultFromRecord(value) {
-			const result = recordOf(value);
-			const artifacts = {};
-			for (const [name, url] of Object.entries(recordOf(result["artifacts"]))) {
-				const clean = nonEmptyString(url);
-				if (clean !== "") artifacts[name] = clean;
-			}
-			const assetUrls = stringsOf(result["assetUrls"]);
-			const metadata = recordOf(result["metadata"]);
-			if (Object.keys(artifacts).length === 0 && assetUrls.length === 0) return null;
-			return {
-				artifacts,
-				assetUrls,
-				metadata,
-				...typeof result["durationSec"] === "number" ? { durationSec: result["durationSec"] } : {},
-				...galleryOf(result["gallery"]) === void 0 ? {} : { gallery: galleryOf(result["gallery"]) },
-				...previewsOf(result["motionPreviews"]) === void 0 ? {} : { motionPreviews: previewsOf(result["motionPreviews"]) }
-			};
-		}
-		function inputBindingsOf(value) {
-			const bindings = [];
-			for (const [slot, raw] of Object.entries(recordOf(value))) {
-				const ref = recordOf(raw);
-				const stage = nonEmptyString(ref["stage"]);
-				if (stage !== "") {
-					const output = nonEmptyString(ref["output"]);
-					bindings.push({
-						slot,
-						source: output === "" ? { stage } : {
-							stage,
-							output
-						}
-					});
-				} else if (typeof ref["initial"] === "string") bindings.push({
-					slot,
-					source: { initial: true }
-				});
-			}
-			return bindings;
-		}
-		function projectStageView(owner, options = {}) {
-			const row = owner.row;
-			const resolved = recordOf(row["resolved"]);
-			const rowParams = recordOf(row["params"]);
-			const params = owner.effective?.params ?? rowParams;
-			const card = nonEmptyString(row["card"]) || owner.cardName;
-			const kind = options.kind ?? (card || "stage");
-			const service = options.service ?? (nonEmptyString(row["service"]) || kind);
-			const model = nonEmptyString(owner.effective?.model) || nonEmptyString(resolved["model"]) || nonEmptyString(row["model"]) || nonEmptyString(params["model"]) || service;
-			const inputSlots = (owner.effective?.inputSlots ?? []).filter((slot) => typeof slot === "string" && slot !== "");
-			const inputBindings = inputBindingsOf(row["inputs"]);
-			const inputs = inputBindings.flatMap((binding) => "stage" in binding.source ? [binding.source.stage] : []);
-			const inputOutputs = inputBindings.map((binding) => "stage" in binding.source ? binding.source.output ?? null : null);
-			const priorStageIds = owner.priorStageIds ?? owner.upstream.map((stage) => stage.id);
-			const inputIndices = inputs.map((id) => priorStageIds.indexOf(id));
-			const result = cardResultFromRecord(row["result"]);
-			const harvested = options.result === void 0 ? result : options.result(row, result);
-			const resultRecord = recordOf(row["result"]);
-			const metadata = recordOf(harvested?.metadata);
-			const error = nonEmptyString(row["error"]) || nonEmptyString(resultRecord["error"]) || nonEmptyString(metadata["error"]);
-			const runId = owner.runId || nonEmptyString(row["runId"]) || nonEmptyString(resultRecord["runId"]) || nonEmptyString(resultRecord["run_id"]) || nonEmptyString(metadata["runId"]) || null;
-			const tags = Array.isArray(row["tags"]) ? row["tags"].filter((tag) => tag === "ai_generated") : void 0;
-			return {
-				id: owner.stageId,
-				title: nonEmptyString(row["title"]) || card || owner.stageId,
-				kind,
-				service,
-				model,
-				...options.genre === void 0 ? {} : { genre: options.genre },
-				...tags === void 0 ? {} : { tags },
-				params,
-				...inputSlots.length === 0 ? {} : { inputSlots },
-				...inputBindings.length === 0 ? {} : { inputBindings },
-				inputs,
-				...inputOutputs.length === 0 ? {} : { inputOutputs },
-				inputIndices,
-				result: harvested,
-				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
-				status: statusOf(owner.runStatus),
-				...error === "" ? {} : { error },
-				runId,
-				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
-			};
-		}
-		function projectUpstreamStages(owner, options = {}) {
-			return owner.upstream.map((upstream) => ({
-				id: upstream.id,
-				title: upstream.title,
-				kind: options.kind ?? "image",
-				service: options.service ?? "",
-				genre: options.genre ?? "image",
-				params: {},
-				inputs: [],
-				inputIndices: [],
-				result: {
-					artifacts: upstream.title === "" ? {} : { [upstream.title]: upstream.url },
-					assetUrls: upstream.url === "" ? [] : [upstream.url],
-					metadata: {}
-				},
-				status: "done"
-			}));
-		}
-		var init_stageView = __esmMin((() => {}));
-		//#endregion
 		//#region ../../web-kit/contracts/src/studio.ts
 		var init_studio = __esmMin((() => {}));
 		//#endregion
@@ -12047,6 +12090,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -12070,6 +12114,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isProvenance: () => isProvenance,
+			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
@@ -12105,6 +12150,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			samplerEnvelopeCure: () => samplerEnvelopeCure,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
+			statusOf: () => statusOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
@@ -13010,12 +13056,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
 		var init_FlowEvents = __esmMin((() => {
-			TERMINAL = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"unknown"
-			]);
+			init_stageView();
+			TERMINAL = { has: (s) => isTerminalStatus(s) };
 			BACKOFF_BASE_MS = 500;
 			BACKOFF_CAP_MS = 5e3;
 		}));
@@ -13146,25 +13188,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				serverSyncEnabled = true;
 			} catch {}
 		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
-		function useTagMapHook() {
-			return (0, react.useSyncExternalStore)((l) => {
-				tagMapListeners.add(l);
-				return () => {
-					tagMapListeners.delete(l);
-				};
-			}, tagMapGetState);
-		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap.getState().map[key] ?? [];
 		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
 		var init_tagMap = __esmMin((() => {
+			init_clientStore();
 			init_api();
 			TagColor = {
 				brand: "brand",
@@ -13211,29 +13242,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			serverSyncEnabled = false;
 			syncTimer = null;
 			initial = loadPersisted();
-			tagMapListeners = /* @__PURE__ */ new Set();
-			notifyTagMap = () => {
-				for (const l of tagMapListeners) l();
-			};
-			tagMapSetState = (patch) => {
-				const p = typeof patch === "function" ? patch(tagMapState) : patch;
-				tagMapState = {
-					...tagMapState,
-					...p
-				};
-				notifyTagMap();
-			};
-			tagMapGetState = () => tagMapState;
-			useTagMap = Object.assign(useTagMapHook, {
-				getState: tagMapGetState,
-				setState: tagMapSetState,
-				subscribe: (l) => {
-					tagMapListeners.add(l);
-					return () => {
-						tagMapListeners.delete(l);
-					};
-				}
-			});
 			tagMapActions = (set, get) => ({
 				createTag: (name, color) => {
 					const trimmed = name.trim();
@@ -13364,11 +13372,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				tagsOf: (key) => get().map[key] ?? [],
 				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 			});
-			tagMapState = {
-				...tagMapActions(tagMapSetState, tagMapGetState),
+			useTagMap = createClientStore((set, get) => ({
+				...tagMapActions(set, get),
 				tags: initial.tags,
 				map: initial.map
-			};
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
@@ -44185,7 +44193,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: onRestore
 			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, run.stages.map((s) => {
 				const thumb = s.url !== void 0 ? toRunMediaUrl(run.runId, s.url) : null;
-				const dot = s.status === "done" ? "done" : s.status === "running" ? "ongoing" : s.status === "failed" ? "error" : s.status === "queued" || s.status === "pending" ? "warning" : null;
+				const dot = STAGE_DOT[s.status] ?? null;
 				const face = thumb !== null ? (0, react.createElement)("a", {
 					href: thumb,
 					target: "_blank",
@@ -44755,4 +44763,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c49effea4ddca7508b0691a1d105ddc5f1f69ee4";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3b146bf2f850049819eb22517bae3ccba825651d";

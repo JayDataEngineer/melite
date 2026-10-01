@@ -95,16 +95,29 @@ function stringsOf(value: unknown): string[] {
     : []
 }
 
-function statusOf(value: string): CardStatus {
+/** THE STATUS FOLD — the one owner of "what does this raw status word
+ *  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+ *  the same words privately and disagreed — 'cached' rendered as `done`
+ *  in one and a failure-looking `stopped` in another, and a stage the
+ *  estate settles as 'completed' matched no branch at all in one of
+ *  them). Every seat asks THIS. */
+export function statusOf(value: string): CardStatus {
   switch (value.toLowerCase()) {
     case 'done':
     case 'completed':
     case 'succeeded':
+    // the FILE-ERA words a pre-lifecycle sidecar carries. The fold is
+    // the ONE classifier, so it must know every word a seat can be
+    // handed — collapsing a seat onto it while it was still missing
+    // these is how 'success' silently became 'running' (the tile map
+    // used to know them; the observer's tests caught the loss).
+    case 'success':
       return 'done'
     case 'failed':
     case 'error':
       return 'error'
     case 'running':
+    case 'live':
       return 'running'
     case 'queued':
       return 'queued'
@@ -120,6 +133,27 @@ function statusOf(value: string): CardStatus {
       return 'pending'
   }
 }
+
+/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+ *  this run finished?"), which five seats also spelled privately with
+ *  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+ *  live, the other the reverse, so a run in either word never stopped
+ *  a poller on one plane. The estate's own vocabulary is the node
+ *  truth (`RunStatus = queued|running|completed|failed|stopped|
+ *  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+ *  additionally ride the wire (melite-run-wire documents `error` as
+ *  the run record's own failure stamp; runStatusContract lists
+ *  `unknown` as a schema value), so both belong on the terminal side
+ *  here. */
+export function isTerminalStatus(value: string): boolean {
+  return TERMINAL_RUN_STATUSES.has(value.toLowerCase())
+}
+
+/** The terminal word set, exported so a seat that needs to SHOW it
+ *  (a poll's stop condition, a doc) reads the same list. */
+export const TERMINAL_RUN_STATUSES: ReadonlySet<string> = new Set([
+  'completed', 'failed', 'stopped', 'error', 'unknown',
+])
 
 function galleryOf(value: unknown): CardResult['gallery'] {
   if (!Array.isArray(value)) return undefined

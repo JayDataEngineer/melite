@@ -48,6 +48,7 @@ window.__ModuleLoader__.load({
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		//#region src/client/apply-guard.ts
 		/**
 		* Apply guard: a duplicated client injection (module factory executed twice in
@@ -28333,6 +28334,90 @@ window.__ModuleLoader__.load({
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
@@ -28391,7 +28476,7 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		function _notify() {
-			for (const fn of _listeners$3) try {
+			for (const fn of _listeners$1) try {
 				fn();
 			} catch (e) {
 				console.warn("[modelCatalog] listener error:", e);
@@ -28400,9 +28485,9 @@ window.__ModuleLoader__.load({
 		/** Subscribe to catalog readiness. Called when _cache transitions from
 		* null → populated. Returns an unsubscribe fn. */
 		function onCatalogReady(fn) {
-			_listeners$3.add(fn);
+			_listeners$1.add(fn);
 			return () => {
-				_listeners$3.delete(fn);
+				_listeners$1.delete(fn);
 			};
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -29027,7 +29112,7 @@ window.__ModuleLoader__.load({
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
+		var CARD_GENRES, _cache$2, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$1;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
@@ -29047,7 +29132,7 @@ window.__ModuleLoader__.load({
 			_inflight$2 = null;
 			_loaded = false;
 			_bgRetryTimer = null;
-			_listeners$3 = /* @__PURE__ */ new Set();
+			_listeners$1 = /* @__PURE__ */ new Set();
 			/* v8 ignore next -- module warm-load runs only in browser builds, where
 			* MODE is "production"/"development"; under vitest MODE is always "test",
 			* so the taken arm is unreachable here (2026-09-12). */
@@ -29056,44 +29141,20 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
-		* outage that produced it, so the operator should also see WHEN it fired.
-		* 24h local time, seconds resolution. */
+		*  outage that produced it, so the operator should also see WHEN it fired.
+		*  24h local time, seconds resolution. */
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
-		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
-		* (for CatalogContractError reporting) — a static import would be circular. */
+		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
 			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
 		}
-		function _subscribe$1(listener) {
-			_listeners$2.add(listener);
-			return () => {
-				_listeners$2.delete(listener);
-			};
-		}
-		function _setState$1(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state$1) : patch;
-			if (replace === true) _state$1 = p;
-			else _state$1 = {
-				..._state$1,
-				...p
-			};
-			_listeners$2.forEach((l) => l());
-		}
-		function _getState$1() {
-			return _state$1;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-		function _useCatalogContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
-		}
-		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
+		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
 			IDLE = {
 				state: "idle",
@@ -29101,13 +29162,12 @@ window.__ModuleLoader__.load({
 				error: null
 			};
 			_lastToastedOutage = null;
-			_listeners$2 = /* @__PURE__ */ new Set();
-			_state$1 = {
+			useCatalogContractStore = createClientStore((set, get) => ({
 				record: IDLE,
 				reportOk: () => {
-					const wasOutage = useCatalogContractStore.getState().record.state === "error";
+					const wasOutage = get().record.state === "error";
 					_lastToastedOutage = null;
-					_setState$1({ record: {
+					set({ record: {
 						state: "loaded",
 						violations: [],
 						error: null
@@ -29116,7 +29176,7 @@ window.__ModuleLoader__.load({
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
-					_setState$1({ record: {
+					set({ record: {
 						state: "violation",
 						violations,
 						error: null
@@ -29130,7 +29190,7 @@ window.__ModuleLoader__.load({
 				reportError: (message) => {
 					const clean = message.trim();
 					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
-					_setState$1({ record: {
+					set({ record: {
 						state: "error",
 						violations: [],
 						error: clean
@@ -29144,17 +29204,9 @@ window.__ModuleLoader__.load({
 				},
 				clear: () => {
 					_lastToastedOutage = null;
-					_setState$1({ record: IDLE });
+					set({ record: IDLE });
 				}
-			};
-			_initialState$1 = _state$1;
-			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
-				getState: _getState$1,
-				setState: _setState$1,
-				subscribe: _subscribe$1,
-				getInitialState: () => _initialState$1,
-				destroy: () => {}
-			});
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContract.ts
@@ -29243,8 +29295,8 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
-		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
-		* whole protocol layer; the store only needs it on click. */
+		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
@@ -29264,36 +29316,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		function _subscribe(listener) {
-			_listeners$1.add(listener);
-			return () => {
-				_listeners$1.delete(listener);
-			};
-		}
-		function _setState(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state) : patch;
-			if (replace === true) _state = p;
-			else _state = {
-				..._state,
-				...p
-			};
-			_listeners$1.forEach((l) => l());
-		}
-		function _getState() {
-			return _state;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
-		function _useRunStatusContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
-		}
-		var _listeners$1, _state, _initialState, useRunStatusContractStore;
+		var useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
-			_listeners$1 = /* @__PURE__ */ new Set();
-			_state = {
+			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
 					console.error("[runStatusContract] status channel violation:", runId, violations);
@@ -29302,7 +29329,7 @@ window.__ModuleLoader__.load({
 						runId,
 						violations
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
 				reportError: (runId, message) => {
@@ -29312,19 +29339,11 @@ window.__ModuleLoader__.load({
 						runId,
 						message
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
-				clear: () => _setState({ verdict: null })
-			};
-			_initialState = _state;
-			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
-				getState: _getState,
-				setState: _setState,
-				subscribe: _subscribe,
-				getInitialState: () => _initialState,
-				destroy: () => {}
-			});
+				clear: () => set({ verdict: null })
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/extraKeys.ts
@@ -30448,14 +30467,22 @@ window.__ModuleLoader__.load({
 		function stringsOf(value) {
 			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
 		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
 		function statusOf(value) {
 			switch (value.toLowerCase()) {
 				case "done":
 				case "completed":
-				case "succeeded": return "done";
+				case "succeeded":
+				case "success": return "done";
 				case "failed":
 				case "error": return "error";
-				case "running": return "running";
+				case "running":
+				case "live": return "running";
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -30463,6 +30490,20 @@ window.__ModuleLoader__.load({
 				case "reused": return "reused";
 				default: return "pending";
 			}
+		}
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus(value) {
+			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -30594,7 +30635,16 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var init_stageView = __esmMin((() => {}));
+		var TERMINAL_RUN_STATUSES;
+		var init_stageView = __esmMin((() => {
+			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"error",
+				"unknown"
+			]);
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/studio.ts
 		var init_studio = __esmMin((() => {}));
@@ -30763,6 +30813,7 @@ window.__ModuleLoader__.load({
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -30786,6 +30837,7 @@ window.__ModuleLoader__.load({
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isProvenance: () => isProvenance,
+			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
@@ -30821,6 +30873,7 @@ window.__ModuleLoader__.load({
 			samplerEnvelopeCure: () => samplerEnvelopeCure,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
+			statusOf: () => statusOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
@@ -31726,12 +31779,8 @@ window.__ModuleLoader__.load({
 		}
 		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
 		var init_FlowEvents = __esmMin((() => {
-			TERMINAL = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"unknown"
-			]);
+			init_stageView();
+			TERMINAL = { has: (s) => isTerminalStatus(s) };
 			BACKOFF_BASE_MS = 500;
 			BACKOFF_CAP_MS = 5e3;
 		}));
@@ -31862,25 +31911,14 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled = true;
 			} catch {}
 		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
-		function useTagMapHook() {
-			return (0, react.useSyncExternalStore)((l) => {
-				tagMapListeners.add(l);
-				return () => {
-					tagMapListeners.delete(l);
-				};
-			}, tagMapGetState);
-		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap.getState().map[key] ?? [];
 		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
 		var init_tagMap = __esmMin((() => {
+			init_clientStore();
 			init_api();
 			TagColor = {
 				brand: "brand",
@@ -31927,29 +31965,6 @@ window.__ModuleLoader__.load({
 			serverSyncEnabled = false;
 			syncTimer = null;
 			initial = loadPersisted();
-			tagMapListeners = /* @__PURE__ */ new Set();
-			notifyTagMap = () => {
-				for (const l of tagMapListeners) l();
-			};
-			tagMapSetState = (patch) => {
-				const p = typeof patch === "function" ? patch(tagMapState) : patch;
-				tagMapState = {
-					...tagMapState,
-					...p
-				};
-				notifyTagMap();
-			};
-			tagMapGetState = () => tagMapState;
-			useTagMap = Object.assign(useTagMapHook, {
-				getState: tagMapGetState,
-				setState: tagMapSetState,
-				subscribe: (l) => {
-					tagMapListeners.add(l);
-					return () => {
-						tagMapListeners.delete(l);
-					};
-				}
-			});
 			tagMapActions = (set, get) => ({
 				createTag: (name, color) => {
 					const trimmed = name.trim();
@@ -32080,11 +32095,11 @@ window.__ModuleLoader__.load({
 				tagsOf: (key) => get().map[key] ?? [],
 				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 			});
-			tagMapState = {
-				...tagMapActions(tagMapSetState, tagMapGetState),
+			useTagMap = createClientStore((set, get) => ({
+				...tagMapActions(set, get),
 				tags: initial.tags,
 				map: initial.map
-			};
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
@@ -33934,4 +33949,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8b7891008164c9c9f20265a63b550387b97ef146";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e16f2b8806e0fb42dc96eca2fdd53e0160412cad";

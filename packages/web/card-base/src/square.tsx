@@ -73,16 +73,10 @@ export function isMeshUrl(value: string): boolean {
   return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
 }
 
-/** Read a File/Blob and resolve its data: URL — the ONE read path for
- *  every slot-shaped attach (the old law, single definition). */
-export function readAsDataUrl(file: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader()
-    r.onload = () => { resolve(String(r.result)) }
-    r.onerror = () => { reject(r.error ?? new Error('read failed')) }
-    r.readAsDataURL(file)
-  })
-}
+/** THE ONE read path for every slot-shaped attach — the shared
+ *  @melite/formats reader, served under this package's lower-case
+ *  spelling for square.tsx's existing consumers. */
+export { readAsDataURL as readAsDataUrl } from './chrome.ts'
 
 export interface InputSquareVerbs {
   /** a) THE PICKER — the slot IS the wire: opens the menu of the

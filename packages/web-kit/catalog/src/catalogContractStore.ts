@@ -21,29 +21,29 @@
 // every attempt, and each report used to push a fresh toast (the reported
 // "spammed every 5 seconds"). See the latch below reportError.
 
-import { useSyncExternalStore } from "react"
 import type { CatalogViolation } from "./catalogContract"
+import { createClientStore } from "./clientStore"
 import { contractToast } from "./contractToast"
 
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error"
 
 export interface CatalogContractRecord {
- state: CatalogContractState
- violations: CatalogViolation[]
- /** Fetch-failure message (state === "error"). */
- error: string | null
+  state: CatalogContractState
+  violations: CatalogViolation[]
+  /** Fetch-failure message (state === "error"). */
+  error: string | null
 }
 
 interface CatalogContractStoreState {
- record: CatalogContractRecord
- /** The catalog funnel reported a contract-clean load. */
- reportOk: () => void
- /** The catalog funnel refused to ingest a malformed catalog. */
- reportViolation: (violations: CatalogViolation[]) => void
- /** The catalog funnel's fetch itself failed. */
- reportError: (message: string) => void
- /** Reset to idle (teardown / tests). */
- clear: () => void
+  record: CatalogContractRecord
+  /** The catalog funnel reported a contract-clean load. */
+  reportOk: () => void
+  /** The catalog funnel refused to ingest a malformed catalog. */
+  reportViolation: (violations: CatalogViolation[]) => void
+  /** The catalog funnel's fetch itself failed. */
+  reportError: (message: string) => void
+  /** Reset to idle (teardown / tests). */
+  clear: () => void
 }
 
 const IDLE: CatalogContractRecord = { state: "idle", violations: [], error: null }
@@ -60,15 +60,15 @@ const IDLE: CatalogContractRecord = { state: "idle", violations: [], error: null
 let _lastToastedOutage: string | null = null
 
 /** Wall-clock stamp for error surfaces — a once-only toast may outlive the
- * outage that produced it, so the operator should also see WHEN it fired.
- * 24h local time, seconds resolution. */
+ *  outage that produced it, so the operator should also see WHEN it fired.
+ *  24h local time, seconds resolution. */
 function _stamp(): string {
- return new Date().toLocaleTimeString([], { hour12: false })
+  return new Date().toLocaleTimeString([], { hour12: false })
 }
 
 /** Retry = force re-fetch the catalog (bypasses the TTL cache), which
- * re-validates + re-reports. Lazy import: modelCatalog imports THIS store
- * (for CatalogContractError reporting) — a static import would be circular. */
+ *  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+ *  (for CatalogContractError reporting) — a static import would be circular. */
 function retryCatalog(): void {
   import("./modelCatalog")
     .then(({ loadCatalog }) => loadCatalog({ force: true }))
@@ -77,125 +77,61 @@ function retryCatalog(): void {
     })
 }
 
-// ── Native store (DSH ships no state library — no zustand) ─────────────────
-// Module-level record + listener set + useSyncExternalStore hook. The toast
-// latch (_lastToastedOutage) and retry wiring above are unchanged; the action
-// bodies below are verbatim apart from set() → _setState().
-const _listeners = new Set<() => void>()
+export const useCatalogContractStore = createClientStore<CatalogContractStoreState>(
+  (set, get) => ({
+    record: IDLE,
 
-function _subscribe(listener: () => void): () => void {
-  _listeners.add(listener)
-  return () => {
-    _listeners.delete(listener)
-  }
-}
+    reportOk: () => {
+      // Read BEFORE the write — the error→ok transition decides the recovery
+      // toast.
+      const wasOutage = get().record.state === "error"
+      _lastToastedOutage = null // re-arm: the next outage is a NEW event
+      set({ record: { state: "loaded", violations: [], error: null } })
+      // Close the loop the once-only error opened: the outage announced itself
+      // with ONE toast, so its end also gets exactly one (info, 5s
+      // auto-dismiss). Only for error→ok — a violation clearing means a
+      // backend deploy landed; the sidebar repopulating is signal enough
+      // there.
+      if (wasOutage) {
+        contractToast("info", `Catalog back online (at ${_stamp()}).`)
+      }
+    },
 
-type _Patch =
-  | Partial<CatalogContractStoreState>
-  | ((s: CatalogContractStoreState) => Partial<CatalogContractStoreState>)
+    reportViolation: (violations) => {
+      console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations)
+      set({ record: { state: "violation", violations, error: null } })
+      const first = violations[0]
+      const msg = first
+        ? first.kind && first.kind !== "catalog"
+          ? `${first.kind}: ${first.message}`
+          : first.message
+        : "the catalog response did not match the expected shape"
+      contractToast(
+        "error",
+        `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`,
+        { label: "Retry", onClick: retryCatalog },
+      )
+    },
 
-function _setState(patch: _Patch, replace?: boolean): void {
-  const p =
-    typeof patch === "function"
-      ? (patch as (s: CatalogContractStoreState) => Partial<CatalogContractStoreState>)(_state)
-      : patch
-  if (replace === true) {
-    _state = p as CatalogContractStoreState
-  } else {
-    _state = { ..._state, ...p }
-  }
-  _listeners.forEach((l) => l())
-}
+    reportError: (message) => {
+      // Trim: fetch-layer messages can carry trailing whitespace, which used
+      // to render as "502 Bad Gateway . Retry".
+      const clean = message.trim()
+      console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean)
+      // The record is per-attempt truth — always updated, never latched.
+      set({ record: { state: "error", violations: [], error: clean } })
+      if (clean === _lastToastedOutage) return // same ongoing outage — no re-toast
+      _lastToastedOutage = clean
+      contractToast(
+        "error",
+        `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`,
+        { label: "Retry", onClick: retryCatalog },
+      )
+    },
 
-function _getState(): CatalogContractStoreState {
-  return _state
-}
-
-const _seed: CatalogContractStoreState = ({
- record: IDLE,
-
- reportOk: () => {
-  // Read BEFORE _setState() — the error→ok transition decides the recovery toast.
-  // The store const is assigned by call time (this closure only runs later).
-  const wasOutage =
-   useCatalogContractStore.getState().record.state === "error"
-  _lastToastedOutage = null // re-arm: the next outage is a NEW event
-  _setState({ record: { state: "loaded", violations: [], error: null } })
-  // Close the loop the once-only error opened: the outage announced itself
-  // with ONE toast, so its end also gets exactly one (info, 5s auto-dismiss).
-  // Only for error→ok — a violation clearing means a backend deploy landed;
-  // the sidebar repopulating is signal enough there.
-  if (wasOutage) {
-   contractToast("info", `Catalog back online (at ${_stamp()}).`)
-  }
- },
-
- reportViolation: (violations) => {
-  console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations)
-  _setState({ record: { state: "violation", violations, error: null } })
-  const first = violations[0]
-  const msg = first
-   ? first.kind && first.kind !== "catalog"
-     ? `${first.kind}: ${first.message}`
-     : first.message
-   : "the catalog response did not match the expected shape"
-  contractToast(
-   "error",
-   `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`,
-   { label: "Retry", onClick: retryCatalog },
-  )
- },
-
- reportError: (message) => {
-  // Trim: fetch-layer messages can carry trailing whitespace, which used
-  // to render as "502 Bad Gateway . Retry".
-  const clean = message.trim()
-  console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean)
-  // The record is per-attempt truth — always updated, never latched.
-  _setState({ record: { state: "error", violations: [], error: clean } })
-  if (clean === _lastToastedOutage) return // same ongoing outage — no re-toast
-  _lastToastedOutage = clean
-  contractToast(
-   "error",
-   `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`,
-   { label: "Retry", onClick: retryCatalog },
-  )
- },
-
- clear: () => {
-  _lastToastedOutage = null
-  _setState({ record: IDLE })
- },
-})
-
-let _state: CatalogContractStoreState = _seed
-
-const _initialState: CatalogContractStoreState = _state
-
-function _useCatalogContractStoreHook(): CatalogContractStoreState
-function _useCatalogContractStoreHook<T>(
-  selector: (s: CatalogContractStoreState) => T,
-): T
-/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
- * for useSyncExternalStore (dom-project territory, like the slots seam's
- * useVersion). The selector contract is pinned node-side through
- * getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-function _useCatalogContractStoreHook<T>(
-  selector?: (s: CatalogContractStoreState) => T,
-): T | CatalogContractStoreState {
-  const getSnapshot = selector
-    ? () => selector(_getState())
-    : () => _getState() as unknown as T
-  return useSyncExternalStore(_subscribe, getSnapshot)
-}
-
-export const useCatalogContractStore = Object.assign(
-  _useCatalogContractStoreHook,
-  {
-    getState: _getState,
-    setState: _setState,
-    subscribe: _subscribe,
-    getInitialState: (): CatalogContractStoreState => _initialState,
-    destroy: (): void => {},
-  },
+    clear: () => {
+      _lastToastedOutage = null
+      set({ record: IDLE })
+    },
+  }),
 )

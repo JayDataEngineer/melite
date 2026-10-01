@@ -183,8 +183,8 @@
   height: 36px;
   justify-content: center;
   padding: 0 16px;
-  transition: color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
-    border-color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  transition: color var(--ds-transition-duration) var(--ds-ease-in-out),
+    border-color var(--ds-transition-duration) var(--ds-ease-in-out);
 }
 .drillRunBtn:hover {
   border-color: var(--dsw-alias-border-l4);
@@ -215,11 +215,10 @@
   border-color: var(--dsw-alias-border-l4);
   color: var(--dsw-alias-brand-primary);
 }
-/* stroke 84: this select's popup never carried the law (the comment
- * above claimed the specForm rule covered it — it covers only the
- * .specSelect class). Same one law. */
+/* The popup face is card-base's one element-scoped law (its
+ * card.module.css owns it); this select pairs it with the light
+ * color-scheme the popup's system colors follow. */
 .drillLlm { color-scheme: light; }
-.drillLlm option { background: Canvas; color: CanvasText; }
 .drillLlm:focus-visible {
   border-color: var(--dsw-alias-brand-primary);
   color: var(--dsw-alias-brand-primary);
@@ -339,7 +338,7 @@
   display: flex;
   /* the old motion cadence: colors ease, geometry never (layout is
      the morph's own — framer owns transforms) */
-  transition: border-color var(--ds-transition-duration, 0.2s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1)), background-color var(--ds-transition-duration, 0.2s) var(--ds-ease-in-out, cubic-bezier(0.4, 0, 0.2, 1));
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);
   flex-direction: column;
   font: inherit;
   overflow: hidden;
@@ -459,8 +458,8 @@
   opacity: 0;
   padding: 0;
   position: absolute;
-  transition: opacity var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease),
-    color var(--ds-transition-duration, 120ms) var(--ds-ease-in-out, ease);
+  transition: opacity var(--ds-transition-duration) var(--ds-ease-in-out),
+    color var(--ds-transition-duration) var(--ds-ease-in-out);
   width: 24px;
   z-index: 2;
 }
@@ -648,18 +647,6 @@
   font-weight: 600;
   white-space: nowrap;
 }
-
-/* THE POPUP FACE (hour 24 stroke 13: the operator caught white-on-
- * white — `color: inherit` is light text on the dark theme, and the
- * browser's dropdown popup defaults to a white list: every option
- * invisible until highlighted). The option rows pin a LIGHT popup
- * with dark text — deterministic on every theme (the closed select
- * keeps the card's own inherited face).
- * STROKE 84: the tokenified var(--dsw-alias-*) form RE-INTRODUCED
- * theme variance (white-on-white returned on the dark theme — the
- * popup is UA chrome no DSW token reliably paints). Canvas/CanvasText
- * follow the select's own color-scheme: light. ONE LAW at every
- * select site in this file. */
 
 /* ══ THE SHARED-ELEMENT ZOOM (2026-09-11, the old tree's signature) ══ */
 

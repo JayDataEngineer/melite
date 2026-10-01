@@ -106,6 +106,6 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
   margin: 0;
 }

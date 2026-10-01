@@ -92,7 +92,7 @@ afterEach(() => {
 
 const MIME = 'application/tech-noir-asset'
 
-const THUMB_KEY = 'motion-card-thumbnails'
+const THUMB_KEY = 'motion-images'
 
 function makeCtx() {
   return {

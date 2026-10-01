@@ -58,6 +58,7 @@ export type { FlowEventFrame }
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, type DraftsNamespace } from '@melite/card-base/client'
+import { isTerminalStatus } from '@melite/contracts/stageView'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's
@@ -624,7 +625,7 @@ export async function runStatus(runId: string): Promise<RunStatusDoc> {
  * (the poll's stop condition must match the stream's, or a dropped
  * socket polls forever / an unknown run stops early). */
 export function runFinished(status: string): boolean {
-  return status === 'completed' || status === 'failed' || status === 'stopped' || status === 'unknown'
+  return isTerminalStatus(status)
 }
 
 /** One card row in the chat tile: the stage distilled for listing. */

@@ -30,6 +30,7 @@ import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
+import { isTerminalStatus } from '@melite/contracts/stageView'
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
@@ -422,7 +423,7 @@ async function observeAndAttribute(
       continue
     }
     const status = typeof doc['status'] === 'string' ? doc['status'] as string : 'unknown'
-    if (status === 'completed' || status === 'failed' || status === 'stopped' || status === 'unknown') {
+    if (isTerminalStatus(status)) {
       const stages = Array.isArray(doc['stages'])
         ? (doc['stages'] as unknown[]).filter((s): s is Record<string, unknown> =>
             typeof s === 'object' && s !== null) : []

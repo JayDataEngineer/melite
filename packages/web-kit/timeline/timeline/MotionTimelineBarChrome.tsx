@@ -9,7 +9,7 @@ import { Film, ListMusic, Mic, Music, Upload, X, Zap, ZoomIn, ZoomOut } from "./
 import { clsx as cn } from "clsx"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { AUDIO_CARDS_H, AUDIO_H, GUTTER_W, LANE_H, RULER_H, ZOOM_STEP, fmtTimecode, rgb } from "./MotionTimelineBarLayout"
-import { Tip } from "./tip"
+import { Tip } from "@melite/card-base/client"
 import css from "./timeline.module.css"
 import type * as React from "react"
 import type { TimelineTrack } from "./viser-timeline/types"

@@ -28,7 +28,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 40%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);
 }
 
 .railGroupLabelMt {
@@ -39,7 +39,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 40%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);
 }
 
 .contents { display: contents; }
@@ -73,8 +73,8 @@
 
 .railBtnIdle {
   border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
+  color: var(--dsw-alias-label-secondary);
 }
 
 .railBtnIdle:hover {
@@ -147,11 +147,11 @@
   gap: 6px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
   padding: 0 6px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
@@ -170,11 +170,11 @@
   gap: 6px;
   border-radius: 6px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 50%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 30%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);
   padding: 0 6px;
   font-size: 10px;
   font-weight: 500;
-  color: var(--dsw-alias-label-secondary, #5b6470);
+  color: var(--dsw-alias-label-secondary);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
@@ -218,7 +218,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 4px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 90%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);
 }
 
 .wireBtn:hover {
@@ -230,7 +230,7 @@
 }
 
 .wireBtnOff {
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 /* ── stage ── */
@@ -283,7 +283,7 @@
 
 .dropVeilLabel {
   border-radius: 6px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);
   padding: 6px 12px;
   font-size: 11px;
   font-weight: 500;
@@ -297,7 +297,7 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 .skelAvatar {
@@ -325,8 +325,8 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  background: rgb(14 14 26 / 0.6);
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  background: color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 /* Warning mark on the error veil — the amber tint, on danger. */
@@ -345,7 +345,7 @@
   gap: 4px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 60%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);
   padding: 4px;
   box-shadow: 0 8px 28px -12px rgb(0 0 0 / 0.45);
   backdrop-filter: blur(4px);
@@ -358,12 +358,12 @@
   align-items: center;
   justify-content: center;
   border-radius: 999px;
-  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 80%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
 .camBtn:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   color: var(--dsw-alias-accent, #3b82f6);
 }
 
@@ -390,11 +390,11 @@
 }
 
 .frameBtnIdle {
-  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 55%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);
 }
 
 .frameBtnIdle:hover {
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);
   color: var(--dsw-alias-accent, #3b82f6);
 }
 
@@ -446,7 +446,7 @@
 .rectHint {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--dsw-alias-accent, #3b82f6) 30%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 80%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);
   padding: 4px 12px;
   font-size: 10px;
   color: var(--dsw-alias-accent, #3b82f6);
@@ -463,7 +463,7 @@
 .transportHead {
   flex-wrap: wrap;
   border-color: color-mix(in srgb, var(--dsw-alias-border, #e2e4e9) 40%, transparent);
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 20%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);
   padding: 6px 12px;
 }
 
@@ -476,7 +476,7 @@
   justify-content: center;
   border-radius: 999px;
   background: color-mix(in srgb, #ffffff 10%, transparent);
-  color: var(--dsw-alias-label-primary, #0f1115);
+  color: var(--dsw-alias-label-primary);
   transition: color 120ms ease, background-color 120ms ease, border-color 120ms ease;
 }
 
@@ -503,14 +503,14 @@
 .timeText {
   font-family: ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 80%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);
 }
 
 .noMotion {
   display: flex;
   align-items: center;
   gap: 4px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 .fpsChip {
@@ -521,7 +521,7 @@
   padding: 2px 6px;
   font-family: ui-monospace, monospace;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-primary, #0f1115) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
 }
 
 @media (min-width: 640px) {
@@ -540,7 +540,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.025em;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 70%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);
 }
 
 .addCardBtn {
@@ -573,7 +573,7 @@
   gap: 6px;
   padding: 24px 12px;
   font-size: 11px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 .editHintBar {
@@ -581,10 +581,10 @@
   flex-shrink: 0;
   align-items: flex-start;
   gap: 8px;
-  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform, #f5f6f7) 20%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);
   padding: 8px 12px;
   font-size: 10px;
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 60%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);
 }
 
 /* IK-hint mark — the amber tint, on the danger token. */
@@ -597,7 +597,7 @@
 }
 
 .editHintStrong {
-  color: color-mix(in srgb, var(--dsw-alias-label-secondary, #5b6470) 80%, transparent);
+  color: color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);
 }
 
 /* ── icons ── */

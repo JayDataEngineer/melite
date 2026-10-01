@@ -45,6 +45,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
+		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
@@ -363,6 +364,90 @@ window.__ModuleLoader__.load({
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
@@ -421,7 +506,7 @@ window.__ModuleLoader__.load({
 			}));
 		}
 		function _notify() {
-			for (const fn of _listeners$3) try {
+			for (const fn of _listeners$1) try {
 				fn();
 			} catch (e) {
 				console.warn("[modelCatalog] listener error:", e);
@@ -430,9 +515,9 @@ window.__ModuleLoader__.load({
 		/** Subscribe to catalog readiness. Called when _cache transitions from
 		* null → populated. Returns an unsubscribe fn. */
 		function onCatalogReady(fn) {
-			_listeners$3.add(fn);
+			_listeners$1.add(fn);
 			return () => {
-				_listeners$3.delete(fn);
+				_listeners$1.delete(fn);
 			};
 		}
 		/** True after the catalog has been successfully loaded at least once. */
@@ -1057,7 +1142,7 @@ window.__ModuleLoader__.load({
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$3;
+		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$1;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
@@ -1077,7 +1162,7 @@ window.__ModuleLoader__.load({
 			_inflight$2 = null;
 			_loaded = false;
 			_bgRetryTimer = null;
-			_listeners$3 = /* @__PURE__ */ new Set();
+			_listeners$1 = /* @__PURE__ */ new Set();
 			/* v8 ignore next -- module warm-load runs only in browser builds, where
 			* MODE is "production"/"development"; under vitest MODE is always "test",
 			* so the taken arm is unreachable here (2026-09-12). */
@@ -1086,44 +1171,20 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/catalog/src/catalogContractStore.ts
 		/** Wall-clock stamp for error surfaces — a once-only toast may outlive the
-		* outage that produced it, so the operator should also see WHEN it fired.
-		* 24h local time, seconds resolution. */
+		*  outage that produced it, so the operator should also see WHEN it fired.
+		*  24h local time, seconds resolution. */
 		function _stamp() {
 			return (/* @__PURE__ */ new Date()).toLocaleTimeString([], { hour12: false });
 		}
 		/** Retry = force re-fetch the catalog (bypasses the TTL cache), which
-		* re-validates + re-reports. Lazy import: modelCatalog imports THIS store
-		* (for CatalogContractError reporting) — a static import would be circular. */
+		*  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
+		*  (for CatalogContractError reporting) — a static import would be circular. */
 		function retryCatalog() {
 			Promise.resolve().then(() => (init_modelCatalog(), modelCatalog_exports)).then(({ loadCatalog }) => loadCatalog({ force: true })).catch(() => {});
 		}
-		function _subscribe$1(listener) {
-			_listeners$2.add(listener);
-			return () => {
-				_listeners$2.delete(listener);
-			};
-		}
-		function _setState$1(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state$1) : patch;
-			if (replace === true) _state$1 = p;
-			else _state$1 = {
-				..._state$1,
-				...p
-			};
-			_listeners$2.forEach((l) => l());
-		}
-		function _getState$1() {
-			return _state$1;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in catalog-contract-store.spec.ts. (2026-09-12) */
-		function _useCatalogContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe$1, selector ? () => selector(_getState$1()) : () => _getState$1());
-		}
-		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
+		var IDLE, _lastToastedOutage, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
 			IDLE = {
 				state: "idle",
@@ -1131,13 +1192,12 @@ window.__ModuleLoader__.load({
 				error: null
 			};
 			_lastToastedOutage = null;
-			_listeners$2 = /* @__PURE__ */ new Set();
-			_state$1 = {
+			useCatalogContractStore = createClientStore((set, get) => ({
 				record: IDLE,
 				reportOk: () => {
-					const wasOutage = useCatalogContractStore.getState().record.state === "error";
+					const wasOutage = get().record.state === "error";
 					_lastToastedOutage = null;
-					_setState$1({ record: {
+					set({ record: {
 						state: "loaded",
 						violations: [],
 						error: null
@@ -1146,7 +1206,7 @@ window.__ModuleLoader__.load({
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
-					_setState$1({ record: {
+					set({ record: {
 						state: "violation",
 						violations,
 						error: null
@@ -1160,7 +1220,7 @@ window.__ModuleLoader__.load({
 				reportError: (message) => {
 					const clean = message.trim();
 					console.error(`[catalogContract] catalog fetch failed (at ${_stamp()}):`, clean);
-					_setState$1({ record: {
+					set({ record: {
 						state: "error",
 						violations: [],
 						error: clean
@@ -1174,17 +1234,9 @@ window.__ModuleLoader__.load({
 				},
 				clear: () => {
 					_lastToastedOutage = null;
-					_setState$1({ record: IDLE });
+					set({ record: IDLE });
 				}
-			};
-			_initialState$1 = _state$1;
-			useCatalogContractStore = Object.assign(_useCatalogContractStoreHook, {
-				getState: _getState$1,
-				setState: _setState$1,
-				subscribe: _subscribe$1,
-				getInitialState: () => _initialState$1,
-				destroy: () => {}
-			});
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContract.ts
@@ -1273,8 +1325,8 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/catalog/src/runStatusContractStore.ts
 		/** Re-poll the run — the toast's Retry action. Recovered → clear; still
-		* bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
-		* whole protocol layer; the store only needs it on click. */
+		*  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
+		*  whole protocol layer; the store only needs it on click. */
 		function repoll(runId) {
 			Promise.resolve().then(() => (init_FlowProtocol(), FlowProtocol_exports)).then(({ pollFlowRun }) => pollFlowRun(runId, void 0, {
 				maxWaitMs: 3e4,
@@ -1294,36 +1346,11 @@ window.__ModuleLoader__.load({
 				onClick: () => repoll(v.runId)
 			});
 		}
-		function _subscribe(listener) {
-			_listeners$1.add(listener);
-			return () => {
-				_listeners$1.delete(listener);
-			};
-		}
-		function _setState(patch, replace) {
-			const p = typeof patch === "function" ? patch(_state) : patch;
-			if (replace === true) _state = p;
-			else _state = {
-				..._state,
-				...p
-			};
-			_listeners$1.forEach((l) => l());
-		}
-		function _getState() {
-			return _state;
-		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in run-status-contract-store.spec.ts. (2026-09-12) */
-		function _useRunStatusContractStoreHook(selector) {
-			return (0, react.useSyncExternalStore)(_subscribe, selector ? () => selector(_getState()) : () => _getState());
-		}
-		var _listeners$1, _state, _initialState, useRunStatusContractStore;
+		var useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
+			init_clientStore();
 			init_contractToast();
-			_listeners$1 = /* @__PURE__ */ new Set();
-			_state = {
+			useRunStatusContractStore = createClientStore((set) => ({
 				verdict: null,
 				reportViolation: (runId, violations) => {
 					console.error("[runStatusContract] status channel violation:", runId, violations);
@@ -1332,7 +1359,7 @@ window.__ModuleLoader__.load({
 						runId,
 						violations
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
 				reportError: (runId, message) => {
@@ -1342,19 +1369,11 @@ window.__ModuleLoader__.load({
 						runId,
 						message
 					};
-					_setState({ verdict });
+					set({ verdict });
 					toastVerdict(verdict);
 				},
-				clear: () => _setState({ verdict: null })
-			};
-			_initialState = _state;
-			useRunStatusContractStore = Object.assign(_useRunStatusContractStoreHook, {
-				getState: _getState,
-				setState: _setState,
-				subscribe: _subscribe,
-				getInitialState: () => _initialState,
-				destroy: () => {}
-			});
+				clear: () => set({ verdict: null })
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/extraKeys.ts
@@ -2478,14 +2497,22 @@ window.__ModuleLoader__.load({
 		function stringsOf(value) {
 			return Array.isArray(value) ? value.filter((entry) => typeof entry === "string" && entry !== "") : [];
 		}
+		/** THE STATUS FOLD — the one owner of "what does this raw status word
+		*  mean" (2026-10-13, the card-UI duplication audit: five seats folded
+		*  the same words privately and disagreed — 'cached' rendered as `done`
+		*  in one and a failure-looking `stopped` in another, and a stage the
+		*  estate settles as 'completed' matched no branch at all in one of
+		*  them). Every seat asks THIS. */
 		function statusOf(value) {
 			switch (value.toLowerCase()) {
 				case "done":
 				case "completed":
-				case "succeeded": return "done";
+				case "succeeded":
+				case "success": return "done";
 				case "failed":
 				case "error": return "error";
-				case "running": return "running";
+				case "running":
+				case "live": return "running";
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -2493,6 +2520,20 @@ window.__ModuleLoader__.load({
 				case "reused": return "reused";
 				default: return "pending";
 			}
+		}
+		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
+		*  this run finished?"), which five seats also spelled privately with
+		*  DISAGREEMENT: one set treated `unknown` as terminal and `error` as
+		*  live, the other the reverse, so a run in either word never stopped
+		*  a poller on one plane. The estate's own vocabulary is the node
+		*  truth (`RunStatus = queued|running|completed|failed|stopped|
+		*  stopping`, estate-queue/src/runsTypes.ts); `error` and `unknown`
+		*  additionally ride the wire (melite-run-wire documents `error` as
+		*  the run record's own failure stamp; runStatusContract lists
+		*  `unknown` as a schema value), so both belong on the terminal side
+		*  here. */
+		function isTerminalStatus(value) {
+			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -2624,7 +2665,16 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var init_stageView = __esmMin((() => {}));
+		var TERMINAL_RUN_STATUSES;
+		var init_stageView = __esmMin((() => {
+			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"completed",
+				"failed",
+				"stopped",
+				"error",
+				"unknown"
+			]);
+		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/studio.ts
 		var init_studio = __esmMin((() => {}));
@@ -3016,6 +3066,7 @@ window.__ModuleLoader__.load({
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
 			STAGE_PATCH_KEYS: () => STAGE_PATCH_KEYS,
+			TERMINAL_RUN_STATUSES: () => TERMINAL_RUN_STATUSES,
 			TRACK_COLORS: () => TRACK_COLORS,
 			WIRE_STAGE_KEYS: () => WIRE_STAGE_KEYS,
 			WTYPE_SEATS: () => WTYPE_SEATS,
@@ -3039,6 +3090,7 @@ window.__ModuleLoader__.load({
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
 			isProvenance: () => isProvenance,
+			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
@@ -3074,6 +3126,7 @@ window.__ModuleLoader__.load({
 			samplerEnvelopeCure: () => samplerEnvelopeCure,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
+			statusOf: () => statusOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
@@ -3979,12 +4032,8 @@ window.__ModuleLoader__.load({
 		}
 		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
 		var init_FlowEvents = __esmMin((() => {
-			TERMINAL = /* @__PURE__ */ new Set([
-				"completed",
-				"failed",
-				"stopped",
-				"unknown"
-			]);
+			init_stageView();
+			TERMINAL = { has: (s) => isTerminalStatus(s) };
 			BACKOFF_BASE_MS = 500;
 			BACKOFF_CAP_MS = 5e3;
 		}));
@@ -4047,7 +4096,7 @@ window.__ModuleLoader__.load({
 				map: {}
 			};
 			try {
-				const raw = localStorage.getItem(STORAGE_KEY);
+				const raw = localStorage.getItem(STORAGE_KEY$1);
 				if (!raw) return {
 					tags: {},
 					map: {}
@@ -4069,7 +4118,7 @@ window.__ModuleLoader__.load({
 		*/
 		function scheduleSync(data) {
 			try {
-				localStorage.setItem(STORAGE_KEY, JSON.stringify({
+				localStorage.setItem(STORAGE_KEY$1, JSON.stringify({
 					tags: data.tags,
 					map: data.map
 				}));
@@ -4115,25 +4164,14 @@ window.__ModuleLoader__.load({
 				serverSyncEnabled = true;
 			} catch {}
 		}
-		/* v8 ignore next -- React-tree wiring: invoking the hook needs a renderer
-		* for useSyncExternalStore (dom-project territory, like the slots seam's
-		* useVersion). The selector contract is pinned node-side through
-		* getState/subscribe in tag-map.spec.ts. (2026-09-12) */
-		function useTagMapHook() {
-			return (0, react.useSyncExternalStore)((l) => {
-				tagMapListeners.add(l);
-				return () => {
-					tagMapListeners.delete(l);
-				};
-			}, tagMapGetState);
-		}
 		/** Read tagsOf without a React subscription. The useListFilter accessor uses
 		*  this so the filter flow doesn't need to re-subscribe on every item. */
 		function tagsOf(key) {
 			return useTagMap.getState().map[key] ?? [];
 		}
-		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapListeners, tagMapState, notifyTagMap, tagMapSetState, tagMapGetState, useTagMap, tagMapActions;
+		var TagColor, TAG_COLOR_VALUES, TAG_COLOR_META, STORAGE_KEY$1, SYNC_DEBOUNCE_MS, serverSyncEnabled, syncTimer, initial, tagMapActions, useTagMap;
 		var init_tagMap = __esmMin((() => {
+			init_clientStore();
 			init_api();
 			TagColor = {
 				brand: "brand",
@@ -4175,34 +4213,11 @@ window.__ModuleLoader__.load({
 					pill: "border-cyan-500/30 bg-cyan-500/10 text-cyan-400"
 				}
 			};
-			STORAGE_KEY = "melite:tag-map:v1";
+			STORAGE_KEY$1 = "melite:tag-map:v1";
 			SYNC_DEBOUNCE_MS = 500;
 			serverSyncEnabled = false;
 			syncTimer = null;
 			initial = loadPersisted();
-			tagMapListeners = /* @__PURE__ */ new Set();
-			notifyTagMap = () => {
-				for (const l of tagMapListeners) l();
-			};
-			tagMapSetState = (patch) => {
-				const p = typeof patch === "function" ? patch(tagMapState) : patch;
-				tagMapState = {
-					...tagMapState,
-					...p
-				};
-				notifyTagMap();
-			};
-			tagMapGetState = () => tagMapState;
-			useTagMap = Object.assign(useTagMapHook, {
-				getState: tagMapGetState,
-				setState: tagMapSetState,
-				subscribe: (l) => {
-					tagMapListeners.add(l);
-					return () => {
-						tagMapListeners.delete(l);
-					};
-				}
-			});
 			tagMapActions = (set, get) => ({
 				createTag: (name, color) => {
 					const trimmed = name.trim();
@@ -4333,11 +4348,11 @@ window.__ModuleLoader__.load({
 				tagsOf: (key) => get().map[key] ?? [],
 				hasTag: (key, tagId) => (get().map[key] ?? []).includes(tagId)
 			});
-			tagMapState = {
-				...tagMapActions(tagMapSetState, tagMapGetState),
+			useTagMap = createClientStore((set, get) => ({
+				...tagMapActions(set, get),
 				tags: initial.tags,
 				map: initial.map
-			};
+			}));
 		}));
 		//#endregion
 		//#region ../../web-kit/formats/src/npz.ts
@@ -31518,13 +31533,13 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/component.module.css.mjs
 		init_src$2();
-		const css$4 = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);color:var(--dsw-alias-label-secondary,#5b6470)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);background:#0e0e1a99;flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary,#0f1115);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
-		const tagId$4 = "@melite/motion-motion/component.module.css@c15e8a96";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$4) + "]") === null) {
+		const css$3 = "@keyframes U-ygCG_motionSpin{to{transform:rotate(360deg)}}.U-ygCG_shellPad{gap:8px;padding:12px 16px}.U-ygCG_railGrid{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 45%, transparent);grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;padding:10px 12px;display:grid}.U-ygCG_railGroupLabel{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_railGroupLabelMt{text-transform:uppercase;letter-spacing:.14em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 40%, transparent);grid-column:span 2;margin-top:4px;padding:0 4px 2px;font-size:9px;font-weight:600}.U-ygCG_contents{display:contents}.U-ygCG_railBtn{border:1px solid #0000;border-radius:6px;justify-content:center;align-items:center;gap:6px;width:100%;height:32px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_railBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);color:var(--dsw-alias-label-secondary)}.U-ygCG_railBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_railBtnEditActive{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 15%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_stampBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 20%, transparent);width:100%;height:32px;color:var(--dsw-alias-danger,#dc2626);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_stampBtn:hover{background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 30%, transparent)}.U-ygCG_stampBtn:disabled{opacity:.5}.U-ygCG_reposeBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);width:100%;height:32px;color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_reposeBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_reposeBtn:disabled{opacity:.5}.U-ygCG_railBtnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_railBtnDanger:hover{border-color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 50%, transparent);color:var(--dsw-alias-danger,#dc2626)}.U-ygCG_bgBtnIdle{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent);width:100%;height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;justify-content:center;align-items:center;gap:6px;padding:0 6px;font-size:10px;font-weight:500;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_bgBtnIdle:hover{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_hiddenInput{display:none}.U-ygCG_bodySquareWrap{grid-column:span 2;justify-content:center;padding:4px 0;display:flex}.U-ygCG_bodyNotice{border:1px solid color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 10%, transparent);color:var(--dsw-alias-danger,#dc2626);border-radius:4px;grid-column:span 2;padding:4px 6px;font-size:9px;line-height:1.6}.U-ygCG_bodyEmptyIcon{width:20px;height:20px;color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent)}.U-ygCG_wireBtn{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 90%, transparent);border-radius:4px;justify-content:center;align-items:center;width:20px;height:20px;display:flex}.U-ygCG_wireBtn:hover,.U-ygCG_wireBtnOn{color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_wireBtnOff{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent)}.U-ygCG_centerRow{flex:1;gap:8px;min-height:0;display:flex}.U-ygCG_stageFrame{min-width:0;transition:color .12s,background-color .12s,border-color .12s}.U-ygCG_stageFrameDrag{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 80%, transparent);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 40%, transparent)}.U-ygCG_ovBg{z-index:0}.U-ygCG_ovCam{z-index:30}.U-ygCG_ovDrop{pointer-events:none;z-index:20}.U-ygCG_ovRect{pointer-events:none;z-index:40}.U-ygCG_bgImg{pointer-events:none;object-fit:cover;width:100%;height:100%}.U-ygCG_dropVeil{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);backdrop-filter:blur(1px);justify-content:center;align-items:center;width:100%;height:100%;display:flex}.U-ygCG_dropVeilLabel{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:6px;padding:6px 12px;font-size:11px;font-weight:500}.U-ygCG_stageLoading{height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_skelAvatar{border-radius:999px;width:96px;height:96px}.U-ygCG_skelAvatarSm{border-radius:999px;width:80px;height:80px}.U-ygCG_skelLine{width:112px;height:12px}.U-ygCG_stageVeil{background:color-mix(in srgb, var(--melite-stage-bg) 60%, transparent);width:100%;height:100%;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-direction:column;justify-content:center;align-items:center;gap:8px;display:flex}.U-ygCG_warnIcon{width:24px;height:24px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent)}.U-ygCG_veilText{font-size:12px}.U-ygCG_camPill{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);backdrop-filter:blur(4px);border-radius:999px;align-items:center;gap:4px;padding:4px;display:flex;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_camBtn{width:28px;height:28px;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);border-radius:999px;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_camBtn:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_camDivider{background:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);width:1px;height:16px;margin:0 2px}.U-ygCG_frameBtn{border-radius:999px;justify-content:center;align-items:center;width:28px;height:28px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_frameBtnActive{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_frameBtnIdle{color:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent)}.U-ygCG_frameBtnIdle:hover{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.U-ygCG_exportRect{pointer-events:auto;cursor:move;touch-action:none;border:2px solid var(--dsw-alias-accent,#3b82f6);position:absolute}.U-ygCG_cornerHandle{background:var(--dsw-alias-accent,#3b82f6);border:2px solid #fff;border-radius:999px;width:12px;height:12px;position:absolute}.U-ygCG_cornerNW{cursor:nwse-resize;top:-6px;left:-6px}.U-ygCG_cornerNE{cursor:nesw-resize;top:-6px;right:-6px}.U-ygCG_cornerSW{cursor:nesw-resize;bottom:-6px;left:-6px}.U-ygCG_cornerSE{cursor:nwse-resize;bottom:-6px;right:-6px}.U-ygCG_crossV{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:1px;height:12px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_crossH{pointer-events:none;background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);width:12px;height:1px;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%)}.U-ygCG_rectHint{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 80%, transparent);color:var(--dsw-alias-accent,#3b82f6);backdrop-filter:blur(4px);border-radius:999px;padding:4px 12px;font-size:10px;box-shadow:0 8px 28px -12px #00000073}.U-ygCG_timelineShell{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);border-radius:8px}.U-ygCG_transportHead{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);flex-wrap:wrap;padding:6px 12px}.U-ygCG_playBtn{width:32px;height:32px;color:var(--dsw-alias-label-primary);background:#ffffff1a;border-radius:999px;flex-shrink:0;justify-content:center;align-items:center;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_playBtn:hover{background:#fff3}.U-ygCG_playBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_playIcon{width:14px;height:14px;margin-left:2px}.U-ygCG_timeWrap{flex-shrink:0;font-size:11px}.U-ygCG_timeText{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);font-family:ui-monospace,monospace}.U-ygCG_noMotion{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);align-items:center;gap:4px;display:flex}.U-ygCG_fpsChip{color:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);background:#ffffff1a;border-radius:4px;flex-shrink:0;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px;display:none}@media (width>=640px){.U-ygCG_fpsChip{display:block}}.U-ygCG_hintWrap{align-items:center;gap:8px;display:flex}.U-ygCG_hintTitle{text-transform:uppercase;letter-spacing:.025em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);flex-shrink:0;font-size:10px;font-weight:600}.U-ygCG_addCardBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 15%, transparent);color:var(--dsw-alias-accent,#3b82f6);border-radius:999px;align-items:center;gap:4px;padding:2px 10px;font-size:10px;font-weight:600;transition:color .12s,background-color .12s,border-color .12s;display:flex}.U-ygCG_addCardBtn:hover{background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 25%, transparent)}.U-ygCG_addCardBtn:disabled{cursor:not-allowed;opacity:.4}.U-ygCG_timelineEmpty{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);justify-content:center;align-items:center;gap:6px;padding:24px 12px;font-size:11px;display:flex}.U-ygCG_editHintBar{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 20%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);flex-shrink:0;align-items:flex-start;gap:8px;padding:8px 12px;font-size:10px;display:flex}.U-ygCG_editHintIcon{width:12px;height:12px;color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);flex-shrink:0;margin-top:2px}.U-ygCG_editHintStrong{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent)}.U-ygCG_i12{width:12px;height:12px}.U-ygCG_i14{width:14px;height:14px}.U-ygCG_spinIcon{width:14px;height:14px;animation:1s linear infinite U-ygCG_motionSpin}";
+		const tagId$3 = "@melite/motion-motion/component.module.css@5f6a56c4";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$4;
-			tag.textContent = css$4;
+			tag.dataset.pluginCss = tagId$3;
+			tag.textContent = css$3;
 			document.head.appendChild(tag);
 		}
 		var component_module_css_default = {
@@ -31601,76 +31616,14 @@ window.__ModuleLoader__.load({
 			"wireBtnOn": "U-ygCG_wireBtnOn"
 		};
 		//#endregion
-		//#region src/ui/studio/kit.tsx
-		const THUMB_STORAGE_KEY = "motion-card-thumbnails";
-		function loadThumbs() {
-			try {
-				const raw = localStorage.getItem(THUMB_STORAGE_KEY);
-				if (!raw) return {};
-				const parsed = JSON.parse(raw);
-				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
-			} catch {
-				return {};
-			}
-			return {};
-		}
-		let thumbState = loadThumbs();
-		const thumbListeners = /* @__PURE__ */ new Set();
-		function emitThumbs() {
-			thumbListeners.forEach((listener) => listener());
-		}
-		function subscribeThumbs(listener) {
-			thumbListeners.add(listener);
-			return () => {
-				thumbListeners.delete(listener);
-			};
-		}
-		function getThumbsSnapshot() {
-			return thumbState;
-		}
-		function persistThumbs() {
-			try {
-				localStorage.setItem(THUMB_STORAGE_KEY, JSON.stringify(thumbState));
-			} catch {
-				return;
-			}
-		}
-		function setThumbnail(stageId, dataUrl) {
-			thumbState = {
-				...thumbState,
-				[stageId]: dataUrl
-			};
-			persistThumbs();
-			emitThumbs();
-		}
-		function clearThumbnail(stageId) {
-			if (!(stageId in thumbState)) return;
-			const next = { ...thumbState };
-			delete next[stageId];
-			thumbState = next;
-			persistThumbs();
-			emitThumbs();
-		}
-		const thumbApi = {
-			setThumbnail,
-			clearThumbnail
-		};
-		function useMotionThumbStore(selector) {
-			const thumbnails = (0, react.useSyncExternalStore)(subscribeThumbs, getThumbsSnapshot, getThumbsSnapshot);
-			return selector({
-				...thumbApi,
-				thumbnails
-			});
-		}
-		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/motion/motion/src/ui/studio/export-dialog.module.css.mjs
-		const css$3 = ".B2YElW_panel{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:var(--dsw-alias-bg-module-platform,#f5f6f7);border-radius:12px;flex-direction:column;flex-shrink:0;width:min(340px,42vw);min-height:0;max-height:100%;display:flex;overflow:hidden;box-shadow:0 25px 50px -12px #00000073}.B2YElW_head{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:space-between;align-items:center;padding:12px 20px;display:flex}.B2YElW_headTitle{align-items:center;gap:8px;display:flex}.B2YElW_headIcon{width:16px;height:16px;color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_headText{font-size:14px;font-weight:500}.B2YElW_frameChip{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 60%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);border-radius:4px;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px}.B2YElW_closeBtn{color:var(--dsw-alias-label-secondary,#5b6470)}.B2YElW_closeBtn:hover{color:var(--dsw-alias-label-primary,#0f1115)}.B2YElW_body{flex-direction:column;flex:1;gap:16px;min-height:0;padding:20px;display:flex;overflow-y:auto}.B2YElW_stack2{flex-direction:column;gap:8px;display:flex}.B2YElW_secTitle{text-transform:uppercase;letter-spacing:.05em;color:var(--dsw-alias-label-secondary,#5b6470);align-items:center;gap:4px;font-size:10px;font-weight:600;display:flex}.B2YElW_secHead{justify-content:space-between;align-items:center;display:flex}.B2YElW_scopeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.B2YElW_scopeBtn{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:10px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.B2YElW_scopeBtn:disabled{cursor:not-allowed;opacity:.4}.B2YElW_scopeBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.B2YElW_scopeBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_scopeBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent)}.B2YElW_scopeBtnRow{align-items:center;gap:6px;display:flex}.B2YElW_scopeLabel{font-size:11px;font-weight:500}.B2YElW_scopeCheck{width:12px;height:12px;color:var(--dsw-alias-accent,#3b82f6);margin-left:auto}.B2YElW_scopeDesc{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);font-size:9px}.B2YElW_livePanel{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 4%, transparent);border-radius:8px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.B2YElW_livePanelHead{color:var(--dsw-alias-accent,#3b82f6);align-items:center;gap:6px;font-size:10px;font-weight:500;display:flex}.B2YElW_liveHelp{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent);margin:0;font-size:10px;line-height:1.375}.B2YElW_liveHelpStrong{color:color-mix(in srgb, var(--dsw-alias-label-primary,#0f1115) 90%, transparent)}.B2YElW_fieldGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.B2YElW_field{flex-direction:column;gap:2px;display:flex}.B2YElW_fieldLabel{text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent);font-size:9px;font-weight:600}.B2YElW_numInput{font-variant-numeric:tabular-nums;width:100%;font-family:ui-monospace,monospace;font-size:10px}.B2YElW_outRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 80%, transparent);align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:10px;display:flex}.B2YElW_outDim{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 60%, transparent)}.B2YElW_outVal{color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_presetRow{gap:6px;display:flex}.B2YElW_presetBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary,#5b6470);border-radius:4px;padding:4px 8px;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.B2YElW_presetBtn:hover{color:var(--dsw-alias-label-primary,#0f1115)}.B2YElW_modesWarn{color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);font-size:9px}.B2YElW_modeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.B2YElW_modeCard{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:2px;padding:8px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.B2YElW_modeCardActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.B2YElW_modeCardIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_modeCardIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent)}.B2YElW_scrubRow{align-items:center;gap:6px;display:flex}.B2YElW_scrubPlay{color:var(--dsw-alias-label-secondary,#5b6470);transition:color .12s}.B2YElW_scrubPlay:hover{color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_scrubCount{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);font-family:ui-monospace,monospace;font-size:10px}.B2YElW_stepBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary,#5b6470);border-radius:4px;padding:4px;transition:color .12s}.B2YElW_stepBtn:hover{color:var(--dsw-alias-label-primary,#0f1115)}.B2YElW_stepBtn:disabled{opacity:.3}.B2YElW_range{height:12px;accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.B2YElW_bgGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;display:grid}.B2YElW_bgBtn{border:1px solid #0000;border-radius:4px;padding:6px 0;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.B2YElW_bgBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_bgBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_bgBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 30%, transparent)}.B2YElW_summary{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform,#f5f6f7) 40%, transparent);border-radius:8px;flex-direction:column;gap:4px;padding:8px 12px;display:flex}.B2YElW_summaryRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary,#5b6470) 70%, transparent);align-items:center;gap:6px;font-size:10px;display:flex}.B2YElW_foot{border-top:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;display:flex}.B2YElW_footGhost{border:1px solid var(--dsw-alias-border,#e2e4e9);height:32px;color:var(--dsw-alias-label-secondary,#5b6470);border-radius:6px;padding:0 12px;font-size:12px;font-weight:500}.B2YElW_footGhost:hover{color:var(--dsw-alias-label-primary,#0f1115)}.B2YElW_footPrimary{background:var(--dsw-alias-accent,#3b82f6);height:32px;color:var(--dsw-alias-bg-module-platform,#f5f6f7);border-radius:6px;align-items:center;gap:6px;padding:0 12px;font-size:12px;font-weight:500;display:flex}.B2YElW_footPrimary:disabled{cursor:not-allowed;opacity:.5}.B2YElW_i12{width:12px;height:12px}.B2YElW_i14{width:14px;height:14px}.B2YElW_i16{width:16px;height:16px}";
-		const tagId$3 = "@melite/motion-motion/export-dialog.module.css@ae86decc";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$3) + "]") === null) {
+		const css$2 = ".B2YElW_panel{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 60%, transparent);background:var(--dsw-alias-bg-module-platform);border-radius:12px;flex-direction:column;flex-shrink:0;width:min(340px,42vw);min-height:0;max-height:100%;display:flex;overflow:hidden;box-shadow:0 25px 50px -12px #00000073}.B2YElW_head{border-bottom:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:space-between;align-items:center;padding:12px 20px;display:flex}.B2YElW_headTitle{align-items:center;gap:8px;display:flex}.B2YElW_headIcon{width:16px;height:16px;color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_headText{font-size:14px;font-weight:500}.B2YElW_frameChip{background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 60%, transparent);color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);border-radius:4px;padding:2px 6px;font-family:ui-monospace,monospace;font-size:10px}.B2YElW_closeBtn{color:var(--dsw-alias-label-secondary)}.B2YElW_closeBtn:hover{color:var(--dsw-alias-label-primary)}.B2YElW_body{flex-direction:column;flex:1;gap:16px;min-height:0;padding:20px;display:flex;overflow-y:auto}.B2YElW_stack2{flex-direction:column;gap:8px;display:flex}.B2YElW_secTitle{text-transform:uppercase;letter-spacing:.05em;color:var(--dsw-alias-label-secondary);align-items:center;gap:4px;font-size:10px;font-weight:600;display:flex}.B2YElW_secHead{justify-content:space-between;align-items:center;display:flex}.B2YElW_scopeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.B2YElW_scopeBtn{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:4px;width:100%;padding:10px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.B2YElW_scopeBtn:disabled{cursor:not-allowed;opacity:.4}.B2YElW_scopeBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.B2YElW_scopeBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_scopeBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.B2YElW_scopeBtnRow{align-items:center;gap:6px;display:flex}.B2YElW_scopeLabel{font-size:11px;font-weight:500}.B2YElW_scopeCheck{width:12px;height:12px;color:var(--dsw-alias-accent,#3b82f6);margin-left:auto}.B2YElW_scopeDesc{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px}.B2YElW_livePanel{border:1px solid color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 4%, transparent);border-radius:8px;flex-direction:column;gap:8px;padding:10px 12px;display:flex}.B2YElW_livePanelHead{color:var(--dsw-alias-accent,#3b82f6);align-items:center;gap:6px;font-size:10px;font-weight:500;display:flex}.B2YElW_liveHelp{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);margin:0;font-size:10px;line-height:1.375}.B2YElW_liveHelpStrong{color:color-mix(in srgb, var(--dsw-alias-label-primary) 90%, transparent)}.B2YElW_fieldGrid{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;display:grid}.B2YElW_field{flex-direction:column;gap:2px;display:flex}.B2YElW_fieldLabel{text-transform:uppercase;letter-spacing:.05em;color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent);font-size:9px;font-weight:600}.B2YElW_numInput{font-variant-numeric:tabular-nums;width:100%;font-family:ui-monospace,monospace;font-size:10px}.B2YElW_outRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 80%, transparent);align-items:center;gap:8px;font-family:ui-monospace,monospace;font-size:10px;display:flex}.B2YElW_outDim{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 60%, transparent)}.B2YElW_outVal{color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_presetRow{gap:6px;display:flex}.B2YElW_presetBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px 8px;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.B2YElW_presetBtn:hover{color:var(--dsw-alias-label-primary)}.B2YElW_modesWarn{color:color-mix(in srgb, var(--dsw-alias-danger,#dc2626) 70%, transparent);font-size:9px}.B2YElW_modeGrid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;display:grid}.B2YElW_modeCard{text-align:left;border:1px solid #0000;border-radius:8px;flex-direction:column;align-items:flex-start;gap:2px;padding:8px;transition:color .12s,background-color .12s,border-color .12s;display:flex}.B2YElW_modeCardActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent)}.B2YElW_modeCardIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_modeCardIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.B2YElW_scrubRow{align-items:center;gap:6px;display:flex}.B2YElW_scrubPlay{color:var(--dsw-alias-label-secondary);transition:color .12s}.B2YElW_scrubPlay:hover{color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_scrubCount{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);font-family:ui-monospace,monospace;font-size:10px}.B2YElW_stepBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);color:var(--dsw-alias-label-secondary);border-radius:4px;padding:4px;transition:color .12s}.B2YElW_stepBtn:hover{color:var(--dsw-alias-label-primary)}.B2YElW_stepBtn:disabled{opacity:.3}.B2YElW_range{height:12px;accent-color:var(--dsw-alias-accent,#3b82f6);flex:1}.B2YElW_bgGrid{grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;display:grid}.B2YElW_bgBtn{border:1px solid #0000;border-radius:4px;padding:6px 0;font-size:10px;transition:color .12s,background-color .12s,border-color .12s}.B2YElW_bgBtnActive{border-color:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 50%, transparent);background:color-mix(in srgb, var(--dsw-alias-accent,#3b82f6) 10%, transparent);color:var(--dsw-alias-accent,#3b82f6)}.B2YElW_bgBtnIdle{border-color:color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent)}.B2YElW_bgBtnIdle:hover{border-color:var(--dsw-alias-border,#e2e4e9);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 30%, transparent)}.B2YElW_summary{border:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 30%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-module-platform) 40%, transparent);border-radius:8px;flex-direction:column;gap:4px;padding:8px 12px;display:flex}.B2YElW_summaryRow{color:color-mix(in srgb, var(--dsw-alias-label-secondary) 70%, transparent);align-items:center;gap:6px;font-size:10px;display:flex}.B2YElW_foot{border-top:1px solid color-mix(in srgb, var(--dsw-alias-border,#e2e4e9) 40%, transparent);flex-shrink:0;justify-content:flex-end;align-items:center;gap:8px;padding:12px 20px;display:flex}.B2YElW_footGhost{border:1px solid var(--dsw-alias-border,#e2e4e9);height:32px;color:var(--dsw-alias-label-secondary);border-radius:6px;padding:0 12px;font-size:12px;font-weight:500}.B2YElW_footGhost:hover{color:var(--dsw-alias-label-primary)}.B2YElW_footPrimary{background:var(--dsw-alias-accent,#3b82f6);height:32px;color:var(--dsw-alias-bg-module-platform);border-radius:6px;align-items:center;gap:6px;padding:0 12px;font-size:12px;font-weight:500;display:flex}.B2YElW_footPrimary:disabled{cursor:not-allowed;opacity:.5}.B2YElW_i12{width:12px;height:12px}.B2YElW_i14{width:14px;height:14px}.B2YElW_i16{width:16px;height:16px}";
+		const tagId$2 = "@melite/motion-motion/export-dialog.module.css@1d0f6106";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$3;
-			tag.textContent = css$3;
+			tag.dataset.pluginCss = tagId$2;
+			tag.textContent = css$2;
 			document.head.appendChild(tag);
 		}
 		var export_dialog_module_css_default = {
@@ -32676,6 +32629,42 @@ window.__ModuleLoader__.load({
 			};
 		}
 		//#endregion
+		//#region ../../engines/comfyui/action_cards/motion/ui/viewers/motionImageStore.ts
+		init_clientStore();
+		const STORAGE_KEY = "motion-images";
+		function load() {
+			try {
+				const raw = localStorage.getItem(STORAGE_KEY);
+				if (!raw) return {};
+				const parsed = JSON.parse(raw);
+				if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
+			} catch {}
+			return {};
+		}
+		function persist(images) {
+			try {
+				localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
+			} catch {}
+		}
+		const useMotionImageStore = createClientStore((set, get) => ({
+			images: load(),
+			setImage: (key, dataUrl) => {
+				const images = {
+					...get().images,
+					[key]: dataUrl
+				};
+				persist(images);
+				set({ images });
+			},
+			clearImage: (key) => {
+				if (!(key in get().images)) return;
+				const images = { ...get().images };
+				delete images[key];
+				persist(images);
+				set({ images });
+			}
+		}));
+		//#endregion
 		//#region src/ui/studio/useMotionMedia.ts
 		/**
 		* useMotionMedia — the asset/media cluster moved verbatim from
@@ -32877,7 +32866,7 @@ window.__ModuleLoader__.load({
 				window.addEventListener("keydown", onKey);
 				return () => window.removeEventListener("keydown", onKey);
 			}, [npz, setPlaying]);
-			const setThumb = useMotionThumbStore((s) => s.setThumbnail);
+			const setThumb = useMotionImageStore((s) => s.setImage);
 			const thumbCapturedForUrl = (0, react.useRef)(null);
 			(0, react.useEffect)(() => {
 				if (!npzUrl || !npz || !allVertsM) return;
@@ -32967,7 +32956,7 @@ window.__ModuleLoader__.load({
 					tex.colorSpace = SRGBColorSpace;
 					bgTexRef.current = tex;
 					ctx.scene.background = tex;
-				} else ctx.scene.background = new Color("#0e0e1a");
+				} else ctx.scene.background = new Color(_melite_card_base_client.STAGE_BACKGROUND_DARK);
 			}, [
 				bgImage,
 				npzUrl,
@@ -33755,27 +33744,14 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region ../../web-kit/timeline/timeline/tip.tsx
-		const toTooltipSide = (side) => side === "left" ? "right" : side;
-		function Tip({ tip, shortcut, side = "top", delayDuration = 300, className: _className, withArrow: _withArrow, children }) {
-			if (tip === void 0) return children;
-			const label = shortcut ? `${tip} (${shortcut})` : tip;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Tooltip, {
-				label,
-				side: toTooltipSide(side),
-				delayMs: delayDuration,
-				children
-			});
-		}
-		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/web-kit/timeline/timeline/timeline.module.css.mjs
-		const css$2 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.E4_1PW_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.E4_1PW_uploadBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_audioCard{border-radius:6px;top:3px;bottom:3px}.E4_1PW_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.E4_1PW_audioCardIcon svg{width:13px;height:13px}.E4_1PW_audioCard .E4_1PW_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.E4_1PW_audioCard .E4_1PW_audioTime{margin-left:0}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
-		const tagId$2 = "@melite/motion-motion/timeline.module.css@c0351638";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$2) + "]") === null) {
+		const css$1 = ".E4_1PW_root{user-select:none;display:flex}.E4_1PW_gutter{border-right:1px solid var(--dsw-alias-border-l2);flex-direction:column;flex:none;display:flex}.E4_1PW_zoomRow{border-bottom:1px solid var(--dsw-alias-border-l2);justify-content:center;align-items:center;gap:2px;display:flex}.E4_1PW_zoomBtn{width:20px;height:20px;color:var(--dsw-alias-label-secondary);font-size:inherit;cursor:pointer;background:0 0;border:none;border-radius:4px;justify-content:center;align-items:center;padding:0;line-height:1;display:inline-flex}.E4_1PW_zoomBtn:hover{background:var(--dsw-alias-interactive-bg-hover);color:var(--dsw-alias-brand-primary)}.E4_1PW_zoomBtn svg{width:14px;height:14px}.E4_1PW_zoomPct{min-width:32px;height:auto;color:var(--dsw-alias-label-secondary);text-align:center;font-variant-numeric:tabular-nums;cursor:pointer;background:0 0;border:none;border-radius:4px;padding:0 2px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px}.E4_1PW_zoomPct:hover{color:var(--dsw-alias-brand-primary)}.E4_1PW_laneHead,.E4_1PW_laneHeadBeats{border-bottom:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneHead>svg,.E4_1PW_laneHeadBeats>svg{width:14px;height:14px;color:var(--dsw-alias-brand-primary);flex:none}.E4_1PW_laneHeadBeats>svg{color:var(--dsw-alias-brand-primary)}.E4_1PW_gutterLabel{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_audioHead{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_audioHead>svg{width:12px;height:12px;color:var(--dsw-alias-state-business-primary);flex:none}.E4_1PW_gutterLabelDim{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;font-weight:500;overflow:hidden}.E4_1PW_detachBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;margin-left:auto;padding:0;display:inline-flex}.E4_1PW_detachBtn:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_detachBtn svg{width:10px;height:10px}.E4_1PW_uploadBtn{width:16px;height:16px;color:var(--dsw-alias-label-tertiary);cursor:pointer;background:0 0;border:none;border-radius:4px;flex:none;justify-content:center;align-items:center;padding:0;display:inline-flex}.E4_1PW_uploadBtn:hover{background:color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);color:var(--dsw-alias-label-primary)}.E4_1PW_uploadBtn svg{width:10px;height:10px}.E4_1PW_laneRow{border-bottom:1px solid var(--dsw-alias-border-l1);align-items:center;gap:6px;padding:0 8px;display:flex}.E4_1PW_laneRow:last-child{border-bottom:0}.E4_1PW_laneDot{border-radius:9999px;flex:none;width:6px;height:6px}.E4_1PW_laneName{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);font-size:10px;overflow:hidden}.E4_1PW_contentWrap{flex:1;min-width:0;position:relative}.E4_1PW_scroller{scrollbar-width:thin;scrollbar-color:var(--dsw-alias-border-l3) transparent;height:100%;overflow:auto hidden}.E4_1PW_scroller::-webkit-scrollbar{height:8px}.E4_1PW_scroller::-webkit-scrollbar-track{background:0 0}.E4_1PW_scroller::-webkit-scrollbar-thumb{background:var(--dsw-alias-border-l2);border-radius:4px}.E4_1PW_content{position:relative}.E4_1PW_ruler{border-bottom:1px solid var(--dsw-alias-border-l2);cursor:ew-resize;touch-action:none;position:relative}.E4_1PW_tick{position:absolute;top:0;bottom:0}.E4_1PW_tickLine{background:var(--dsw-alias-border-l2);width:1px;height:100%}.E4_1PW_tickLabel{color:var(--dsw-alias-label-tertiary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;position:absolute;top:2px;left:4px}.E4_1PW_timecode{z-index:10;font-variant-numeric:tabular-nums;height:100%;color:var(--dsw-alias-brand-primary);align-items:center;padding-left:6px;padding-right:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:10px;line-height:1;display:flex;position:sticky;left:0}.E4_1PW_promptsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_canAdd{cursor:copy}.E4_1PW_emptyCenter{justify-content:center;align-items:center;display:flex;position:absolute;inset:0}.E4_1PW_emptyHint{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_promptClip{touch-action:none;cursor:grab;border:1px solid var(--dsw-alias-border-l2);border-radius:8px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_promptClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_clipSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);border-width:0}.E4_1PW_clipSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_clipMoving{z-index:30;cursor:grabbing;border:1px solid var(--dsw-alias-brand-primary);box-shadow:0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent), 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent)}.E4_1PW_edgeL{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:0;bottom:0;left:0}.E4_1PW_edgeL:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeDead{cursor:default;opacity:.35}.E4_1PW_edgeDead:hover{background:0 0}.E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_promptClip:hover .E4_1PW_gripPill{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_seamDot{z-index:35;border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:0;transform:translate(-50%,-50%)}.E4_1PW_edgeR{z-index:30;touch-action:none;cursor:ew-resize;justify-content:center;align-items:center;width:12px;display:flex;position:absolute;top:16px;bottom:0;right:0}.E4_1PW_edgeR:hover{background:var(--dsw-alias-interactive-bg-hover)}.E4_1PW_edgeWide{width:16px}.E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);border-radius:9999px;width:3px;height:20px}.E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillR{background:color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent)}.E4_1PW_promptClip:hover .E4_1PW_gripPillBright{background:color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent)}.E4_1PW_clipEditor{background:color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);height:24px;box-shadow:0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);pointer-events:auto;border:none;border-radius:4px;align-items:center;padding:0 6px;display:inline-flex;position:absolute;top:50%;left:8px;right:8px;transform:translateY(-50%)}.E4_1PW_clipEditor input{width:100%;min-width:0;height:100%;color:var(--dsw-alias-label-primary);background:0 0;border:none;outline:none;flex:1;padding:0;font-size:11px;line-height:1.5}.E4_1PW_clipEditor input::placeholder{color:var(--dsw-alias-label-tertiary)}.E4_1PW_previewWrap{z-index:10;pointer-events:none;position:absolute;inset:0;overflow:hidden}.E4_1PW_previewVideo{object-fit:cover;opacity:.6;width:100%;height:100%;position:absolute;inset:0}.E4_1PW_scrim{background:linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));position:absolute;inset:0}.E4_1PW_clipTextCol{z-index:20;flex-direction:column;gap:2px;padding:0 12px 6px;display:flex;position:absolute;bottom:0;left:0;right:0}.E4_1PW_clipTextStack{z-index:10;pointer-events:none;flex-direction:column;justify-content:center;gap:2px;padding:0 12px;display:flex;position:absolute;inset:0}.E4_1PW_clipTitle{text-overflow:ellipsis;white-space:nowrap;font-size:11px;font-weight:500;overflow:hidden}.E4_1PW_clipEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_clipDur{font-variant-numeric:tabular-nums;color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_knobDot{z-index:20;background:var(--dsw-alias-brand-primary);width:6px;height:6px;box-shadow:0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);pointer-events:none;border-radius:9999px;position:absolute;top:4px;right:6px}.E4_1PW_refAudioBadge{z-index:20;width:10px;height:10px;color:var(--dsw-alias-state-business-primary);pointer-events:none;position:absolute;top:12px;right:4px}.E4_1PW_refBadge{z-index:20;pointer-events:none;align-items:center;gap:1px;display:flex;position:absolute;top:22px;right:2px}.E4_1PW_refBadge svg{width:8px;height:8px;color:var(--dsw-alias-state-success-primary)}.E4_1PW_refCount{color:var(--dsw-alias-state-success-primary);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:8px;line-height:1}.E4_1PW_promptDelete{z-index:40;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:inline-flex;position:absolute;top:4px;right:4px}.E4_1PW_promptDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_promptClip:hover .E4_1PW_promptDelete{opacity:1}.E4_1PW_promptDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_beatsLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_beatsAdd{cursor:crosshair}.E4_1PW_beatsEmpty{align-items:center;padding-left:12px;display:flex;position:absolute;inset:0}.E4_1PW_hintLine{color:var(--dsw-alias-label-tertiary);font-size:10px}.E4_1PW_beatClip{border:1px solid var(--dsw-alias-border-l2);cursor:pointer;border-radius:6px;position:absolute;top:4px;bottom:4px;overflow:hidden}.E4_1PW_beatClip:hover{border-color:var(--dsw-alias-border-l4)}.E4_1PW_beatSelected{z-index:30;border-color:var(--dsw-alias-brand-primary);box-shadow:0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent)}.E4_1PW_beatSelected:hover{border-color:var(--dsw-alias-brand-primary)}.E4_1PW_beatLabel{color:var(--dsw-alias-label-secondary);pointer-events:none;align-items:center;padding:0 6px;font-size:10px;line-height:1.25;display:flex;position:absolute;inset:0}.E4_1PW_truncate{text-overflow:ellipsis;white-space:nowrap;overflow:hidden}.E4_1PW_beatEmpty{color:var(--dsw-alias-label-tertiary);font-style:italic}.E4_1PW_audioLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_audioClip{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);cursor:grab;touch-action:none;border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_audioClip:active{cursor:grabbing}.E4_1PW_audioCard{border-radius:6px;top:3px;bottom:3px}.E4_1PW_audioCardIcon{pointer-events:none;display:flex;position:absolute;top:50%;left:5px;transform:translateY(-50%)}.E4_1PW_audioCardIcon svg{width:13px;height:13px}.E4_1PW_audioCard .E4_1PW_audioClipLabel{flex-direction:column;justify-content:center;align-items:flex-start;gap:1px;font-size:10px;display:flex;left:23px;right:4px}.E4_1PW_audioCard .E4_1PW_audioTime{margin-left:0}.E4_1PW_gainFill{background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;position:absolute;bottom:0;left:0;right:0}.E4_1PW_audioClipLabel{text-overflow:ellipsis;white-space:nowrap;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));pointer-events:none;align-items:center;padding:0 4px;font-size:9px;line-height:1;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioName{text-overflow:ellipsis;white-space:nowrap;font-weight:500;overflow:hidden}.E4_1PW_audioTime{font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));flex:none;margin-left:4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}.E4_1PW_audioClipDelete{background:color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);width:14px;height:14px;color:var(--dsw-alias-label-tertiary);cursor:pointer;border:none;border-radius:0 0 0 4px;justify-content:center;align-items:center;padding:0;display:none;position:absolute;top:0;right:0}.E4_1PW_audioClipDelete:hover{background:var(--dsw-alias-state-error-primary);color:var(--dsw-alias-label-primary)}.E4_1PW_audioClip:hover .E4_1PW_audioClipDelete{display:flex}.E4_1PW_audioClipDelete svg{width:8px;height:8px}.E4_1PW_audioSlice{border:1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);border-radius:2px;position:absolute;top:2px;bottom:2px;overflow:hidden}.E4_1PW_sliceLabel{text-overflow:ellipsis;white-space:nowrap;font-variant-numeric:tabular-nums;color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));pointer-events:none;justify-content:center;align-items:center;padding:0 4px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:9px;display:flex;position:absolute;inset:0;overflow:hidden}.E4_1PW_audioDrop{border:1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);pointer-events:none;border-radius:4px;justify-content:center;align-items:center;display:flex;position:absolute;inset:2px 4px}.E4_1PW_dropHint{text-overflow:ellipsis;white-space:nowrap;color:var(--dsw-alias-label-tertiary);padding:0 8px;font-size:9px;overflow:hidden}.E4_1PW_kfLane{border-bottom:1px solid var(--dsw-alias-border-l1);position:relative}.E4_1PW_kfLane:last-child{border-bottom:0}.E4_1PW_laneHint{color:var(--dsw-alias-label-tertiary);pointer-events:none;align-items:center;padding-left:12px;font-size:10px;display:flex;position:absolute;inset:0}.E4_1PW_kfWrap{position:absolute;top:0;bottom:0}.E4_1PW_kfBtn{cursor:grab;background:0 0;border:none;justify-content:center;align-items:center;width:16px;height:16px;padding:0;display:flex;position:absolute;top:50%;left:0;transform:translate(-50%,-50%)}.E4_1PW_kfBtn:active{cursor:grabbing;transform:translate(-50%)}.E4_1PW_kfDiamond{width:10px;height:10px;box-shadow:0 0 0 1px var(--dsw-alias-border-l4);border:1px solid;display:block;transform:rotate(45deg)}.E4_1PW_kfMoving{transform:rotate(45deg)scale(1.25)}.E4_1PW_kfDelete{z-index:10;background:var(--dsw-alias-state-error-primary);opacity:0;cursor:pointer;border:none;border-radius:9999px;justify-content:center;align-items:center;width:14px;height:14px;padding:0;display:inline-flex;position:absolute;top:0;left:6px}.E4_1PW_kfDelete:hover{background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary))}.E4_1PW_kfWrap:hover .E4_1PW_kfDelete{opacity:1}.E4_1PW_kfDelete svg{width:8px;height:8px;color:var(--dsw-alias-label-primary)}.E4_1PW_playhead{z-index:40;pointer-events:none;position:absolute;top:0;bottom:0}.E4_1PW_playheadCap{border:1px solid var(--dsw-alias-border-l4);border-radius:9999px;width:8px;height:8px;position:absolute;top:0;left:50%;transform:translate(-50%)}.E4_1PW_miniBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);width:20px;height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0;font-size:13px;line-height:1;display:inline-flex}.E4_1PW_miniBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_miniFitBtn{border:1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);background:color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);height:20px;color:var(--dsw-alias-brand-primary);cursor:pointer;border-radius:6px;flex:none;justify-content:center;align-items:center;padding:0 6px;font-size:10px;font-weight:600;display:inline-flex}.E4_1PW_miniFitBtn:hover{background:color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent)}.E4_1PW_scrubBar{align-items:center;gap:8px;width:100%;display:flex}.E4_1PW_scrubToggle{cursor:pointer;background:0 0;border:none;flex:none;padding:4px 2px;font-size:11px;line-height:1}.E4_1PW_scrubTrack{cursor:pointer;touch-action:none;flex:1;min-width:0;height:18px;position:relative}.E4_1PW_scrubFill{background:var(--dsw-alias-interactive-bg-active);border-radius:2px;height:4px;position:absolute;top:7px;left:0}.E4_1PW_scrubHead{background:var(--dsw-alias-label-primary);border-radius:1px;width:2px;height:10px;margin-left:-1px;position:absolute;top:4px}.E4_1PW_scrubReadout{color:var(--dsw-alias-label-secondary);white-space:nowrap;flex:none;font-size:11px}";
+		const tagId$1 = "@melite/motion-motion/timeline.module.css@c0351638";
+		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$2;
-			tag.textContent = css$2;
+			tag.dataset.pluginCss = tagId$1;
+			tag.textContent = css$1;
 			document.head.appendChild(tag);
 		}
 		var timeline_module_css_default = {
@@ -33893,7 +33869,7 @@ window.__ModuleLoader__.load({
 						className: timeline_module_css_default.zoomRow,
 						style: { height: 28 },
 						children: [
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: "Zoom out (back toward fit)",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -33904,7 +33880,7 @@ window.__ModuleLoader__.load({
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(ZoomOut, {})
 								})
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: "Fit the whole motion in view",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -33921,7 +33897,7 @@ window.__ModuleLoader__.load({
 									children: [Math.round(effPpf / (basePpf ?? fitPpf) * 100), "%"]
 								})
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: "Zoom in — more pixels per frame (the bar scrolls horizontally)",
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -34040,7 +34016,7 @@ window.__ModuleLoader__.load({
 		/** The ruler: scrub surface, ticks, sticky timecode (bar line 947). */
 		function TimelineRuler(props) {
 			const { ticks, stepSec, fps, frameIdx, barBg, frameToPx, frameAt, seek, onPromptAdd } = props;
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 				tip: onPromptAdd ? "Click or drag to move the playhead — double-click to add a call at that frame" : "Click or drag to move the playhead",
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 					"data-testid": "motion-timeline-ruler",
@@ -34182,7 +34158,7 @@ window.__ModuleLoader__.load({
 					const previewUrl = previews?.[p.uuid];
 					const wPx = frameToPx(Math.max(1, p.end_frame - p.start_frame));
 					const clipTip = `${p.text || "(empty)"} — frames ${p.start_frame}–${p.end_frame} (${((p.end_frame - p.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nDrag body: move · Drag edges: resize · Double-click: edit · Click: select`;
-					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 						tip: clipTip,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							"data-prompt-clip": p.uuid,
@@ -34238,7 +34214,7 @@ window.__ModuleLoader__.load({
 									},
 									title: "extend — latent tail carries across this seam"
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: isLast ? "PULL to extend the motion — the timeline + duration grow as you drag" : "Drag to resize this card",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										"data-prompt-edge": "r",
@@ -34325,7 +34301,7 @@ window.__ModuleLoader__.load({
 										children: p.refImages
 									})]
 								}),
-								!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+								!isEditing && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 									tip: "Delete this prompt card",
 									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 										variant: "ghost",
@@ -34376,7 +34352,7 @@ window.__ModuleLoader__.load({
 					]);
 					const isSelected = selectedId === b.id;
 					const bW = frameToPx(Math.max(1, b.end_frame - b.start_frame));
-					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+					return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 						tip: `${b.text || "(empty)"} — frames ${b.start_frame}–${b.end_frame} (${((b.end_frame - b.start_frame) / Math.max(1, fps)).toFixed(1)}s)\n\nClick: edit in the call card`,
 						children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 							"data-beat-clip": b.id,
@@ -34431,7 +34407,7 @@ window.__ModuleLoader__.load({
 							return;
 						}
 						try {
-							const payload = JSON.parse(e.dataTransfer.getData("application/tech-noir-asset") || "null");
+							const payload = JSON.parse(e.dataTransfer.getData(_melite_card_base_client.ASSET_DRAG_MIME) || "null");
 							if (payload && typeof payload.url === "string") {
 								if (onAudioDropAt) onAudioDropAt(L.id, payload.url, f);
 								else onAudioDrop?.(L.id, payload.url);
@@ -34561,7 +34537,7 @@ window.__ModuleLoader__.load({
 						return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 							className: timeline_module_css_default.kfWrap,
 							style: { left: frameToPx(kf.frame) },
-							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+							children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: `${track.name} constraint @ frame ${kf.frame} — drag to move, click to jump, hover ✕ to delete`,
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -34585,7 +34561,7 @@ window.__ModuleLoader__.load({
 										}
 									})
 								})
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Tip, {
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Tip, {
 								tip: `Delete ${track.name} keyframe at frame ${kf.frame}`,
 								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -35634,42 +35610,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/ui-icons.module.css.mjs
-		const css$1 = "@keyframes mK8r1a_uiIconSpin{to{transform:rotate(360deg)}}.mK8r1a_spin{animation:1s linear infinite mK8r1a_uiIconSpin}";
-		const tagId$1 = "@melite/motion-motion/ui-icons.module.css@ce70639a";
-		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId$1) + "]") === null) {
-			const tag = document.createElement("style");
-			tag.dataset.plugin = "@melite/motion-motion";
-			tag.dataset.pluginCss = tagId$1;
-			tag.textContent = css$1;
-			document.head.appendChild(tag);
-		}
-		var ui_icons_module_css_default = {
-			"spin": "mK8r1a_spin",
-			"uiIconSpin": "mK8r1a_uiIconSpin"
-		};
-		//#endregion
-		//#region ../../engines/comfyui/action_cards/ui-icons.tsx
-		function Svg({ className, children }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("svg", {
-				viewBox: "0 0 24 24",
-				fill: "none",
-				stroke: "currentColor",
-				strokeWidth: 2,
-				strokeLinecap: "round",
-				strokeLinejoin: "round",
-				"aria-hidden": "true",
-				className,
-				children
-			});
-		}
-		function Loader2({ className }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className: className ? `${ui_icons_module_css_default.spin} ${className}` : ui_icons_module_css_default.spin,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 12a9 9 0 1 1-6.219-8.56" })
-			});
-		}
-		//#endregion
 		//#region \0dsh-css:/home/user/Documents/programs/active/inference.cpp/packages/engines/comfyui/action_cards/motion/ui/viewer3d/PoseViewer3D.module.css.mjs
 		const css = ".Xnnowa_loadingBox{background:var(--dsw-alias-bg-base);flex-direction:column;justify-content:center;align-items:center;gap:12px;display:flex}.Xnnowa_loadingIcon{width:32px;height:32px;color:color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent)}.Xnnowa_loadingLabel{color:color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);font-size:12px}.Xnnowa_errorBox{background:var(--dsw-alias-bg-base);color:color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);justify-content:center;align-items:center;font-size:12px;display:flex}";
 		const tagId = "@melite/motion-motion/PoseViewer3D.module.css@3cd59d93";
@@ -35847,9 +35787,54 @@ window.__ModuleLoader__.load({
 			], ty];
 		}
 		//#endregion
+		//#region ../../web-kit/formats/src/poserSkin.ts
+		init_src();
+		const _meshCache = /* @__PURE__ */ new Map();
+		async function fetchBindMesh(query = {}) {
+			const { identityModel, identityCoeffs, localChanges, previewPose, customTargets } = query;
+			const key = identityModel || "anny";
+			const coeffsSig = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : null;
+			const lcEntries = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const ctEntries = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : 1).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
+			const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null;
+			const cacheKey = [
+				key,
+				coeffsSig,
+				lcEntries,
+				ctEntries,
+				poseSig
+			].filter(Boolean).join("|");
+			const cached = _meshCache.get(cacheKey);
+			if (cached) return cached;
+			const posePayload = poseSig ? { preview_pose: poseSig } : {};
+			let data;
+			if (coeffsSig || lcEntries || ctEntries) {
+				const res = await apiFetch("/v1/poser/mesh", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						identity_model: key,
+						...posePayload,
+						...coeffsSig ? { identity_coeffs: identityCoeffs } : {},
+						...lcEntries ? { local_changes: localChanges } : {},
+						...key === "anny" ? { custom_targets: customTargets ?? {} } : {}
+					})
+				});
+				if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
+				data = await res.json();
+			} else {
+				const qs = new URLSearchParams({ identity_model: key });
+				if (poseSig) qs.set("preview_pose", poseSig);
+				const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
+				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
+				data = await res.json();
+			}
+			_meshCache.set(cacheKey, data);
+			return data;
+		}
+		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageMesh.ts
 		init_three_module();
-		init_src();
 		const FLOOR_LIFT_Y = .02;
 		/** Compute the Y-offset that places the mesh's lowest point at FLOOR_LIFT_Y. */
 		function computeMeshLiftY(meshData) {
@@ -35873,42 +35858,6 @@ window.__ModuleLoader__.load({
 			geo.computeVertexNormals();
 			geo.computeBoundingSphere();
 			return geo;
-		}
-		const _meshCache = /* @__PURE__ */ new Map();
-		async function fetchBindMesh(identityModel = "anny", identityCoeffs, localChanges, customTargets) {
-			const key = identityModel || "anny";
-			const coeffsSig = identityCoeffs && identityCoeffs.length > 0 ? identityCoeffs.map((v) => v.toFixed(1)).join(",") : null;
-			const lcEntries = localChanges && Object.keys(localChanges).length > 0 ? Object.entries(localChanges).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
-			const ctEntries = customTargets && Object.keys(customTargets).length > 0 ? Object.entries(customTargets).sort(([a], [b]) => a < b ? -1 : a > b ? 1 : 0).map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",") : null;
-			const cacheKey = [
-				key,
-				coeffsSig,
-				lcEntries,
-				ctEntries
-			].filter(Boolean).join("|");
-			const cached = _meshCache.get(cacheKey);
-			if (cached) return cached;
-			let data;
-			if (coeffsSig || lcEntries || ctEntries) {
-				const res = await apiFetch("/v1/poser/mesh", {
-					method: "POST",
-					headers: { "Content-Type": "application/json" },
-					body: JSON.stringify({
-						identity_model: key,
-						...coeffsSig ? { identity_coeffs: identityCoeffs } : {},
-						...lcEntries ? { local_changes: localChanges } : {},
-						...ctEntries ? { custom_targets: customTargets } : {}
-					})
-				});
-				if (!res.ok) throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
-				data = await res.json();
-			} else {
-				const res = await apiFetch(`/v1/poser/mesh?identity_model=${encodeURIComponent(key)}`);
-				if (!res.ok) throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
-				data = await res.json();
-			}
-			_meshCache.set(cacheKey, data);
-			return data;
 		}
 		//#endregion
 		//#region ../../engines/comfyui/action_cards/motion/ui/viewer3d/poseStageCarriers.ts
@@ -39230,7 +39179,12 @@ window.__ModuleLoader__.load({
 				});
 				(async () => {
 					try {
-						const mesh = await fetchBindMesh(referenceMesh.identityModel ?? "anny", referenceMesh.identityCoeffs, referenceMesh.localChanges, referenceMesh.customTargets);
+						const mesh = await fetchBindMesh({
+							identityModel: referenceMesh.identityModel ?? "anny",
+							identityCoeffs: referenceMesh.identityCoeffs,
+							localChanges: referenceMesh.localChanges,
+							customTargets: referenceMesh.customTargets
+						});
 						if (!cancelled) setRefBundle((b) => b !== null && b.spec === referenceMesh ? {
 							...b,
 							meshData: mesh
@@ -39281,7 +39235,12 @@ window.__ModuleLoader__.load({
 				setMeshLoading(true);
 				setMeshError(null);
 				const timer = setTimeout(() => {
-					fetchBindMesh(identityModel, identityCoeffs, localChanges, customTargets).then((d) => {
+					fetchBindMesh({
+						identityModel,
+						identityCoeffs,
+						localChanges,
+						customTargets
+					}).then((d) => {
 						if (!cancel) {
 							setMeshData(d);
 							setMeshLoading(false);
@@ -39459,7 +39418,7 @@ window.__ModuleLoader__.load({
 			if (meshLoading) return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 				className: PoseViewer3D_module_css_default.loadingBox,
 				style: { height },
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Loader2, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Loader2, { className: PoseViewer3D_module_css_default.loadingIcon }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: PoseViewer3D_module_css_default.loadingLabel,
 					children: "Loading mesh…"
 				})]
@@ -40307,4 +40266,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="927d3c37664b22d47c85eb9a6116f02942bb5f1a";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="2b9e40536c65b32c9dcf093e44078ac2384d9962";

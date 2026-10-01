@@ -20,10 +20,10 @@ import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import {
  Label, NumberField, ScrollArea,
  Collapsible, CollapsibleContent, CollapsibleTrigger,
- Tabs, TabsContent, Tip,
+ Tabs, TabsContent,
 } from "../../../../form-fields"
 import { RailTabs } from "../../../ui/railTabs"
-import { Dices, RotateCcw, ChevronDown, Loader2 } from "../../../../ui-icons"
+import { ChevronDown, Dices, Loader2, RotateCcw, Tip } from "@melite/card-base/client"
 import { fetchIdentitySpace, type IdentitySpace } from "./bodyMesh"
 import { useBodyStudio } from "./bodyStudio"
 import styles from "./BodyShapePanel.module.css"

@@ -5,7 +5,7 @@ import { createElement as h, useEffect } from 'react'
 
 import {
   PaneHeader, PaneShell, Skeleton, Tip, ViewportAnchor, ViewportFrame,
-  WirePickerModal, isImageUrl, useMotionThumbStore,
+  WirePickerModal, isImageUrl,
 } from '../src/ui/studio/kit.tsx'
 import { act, cleanup19, render19, waitForText } from './harness.tsx'
 
@@ -190,81 +190,5 @@ describe('WirePickerModal', () => {
   test('a null output matches the primary row', async () => {
     mountModal({ currentId: 'u1', currentOutput: null })
     await waitForText(/wired/)
-  })
-})
-
-describe('useMotionThumbStore', () => {
-  let api!: { setThumbnail: (id: string, url: string) => void; clearThumbnail: (id: string) => void }
-  function ApiGrab(): React.JSX.Element {
-    const setThumbnail = useMotionThumbStore((state) => state.setThumbnail)
-    const clearThumbnail = useMotionThumbStore((state) => state.clearThumbnail)
-    api = { setThumbnail, clearThumbnail }
-    return h('i', {})
-  }
-  function Probe({ id }: { id: string }): React.JSX.Element {
-    const thumb = useMotionThumbStore((state) => state.thumbnails[id] ?? 'none')
-    useEffect(() => {
-      api.setThumbnail(id, 'data:image/png;base64,AAA')
-    }, [id])
-    return h('i', { 'data-probe': id }, thumb)
-  }
-  async function mountProbe(id: string): Promise<{ container: HTMLElement }> {
-    const { container } = await render19(h('div', {}, h(ApiGrab, {}), h(Probe, { id })))
-    return { container }
-  }
-
-  test('set publishes; clear retracts; strangers stay none', async () => {
-    const { container } = await mountProbe('s1')
-    await vi.waitFor(() => {
-      expect(container.querySelector('[data-probe]')?.textContent).toBe('data:image/png;base64,AAA')
-    })
-    expect(localStorage.getItem('motion-card-thumbnails')).toContain('s1')
-    await act(async () => {
-      api.clearThumbnail('s1')
-    })
-    await vi.waitFor(() => {
-      expect(container.querySelector('[data-probe]')?.textContent).toBe('none')
-    })
-    await act(async () => {
-      api.clearThumbnail('ghost')
-    })
-  })
-
-  test('seeded storage shapes hydrate or fall back', async () => {
-    localStorage.setItem('motion-card-thumbnails', JSON.stringify({ s9: 'data:image/png;base64,AAA' }))
-    vi.resetModules()
-    const valid = await import('../src/ui/studio/kit.tsx')
-    function Seeded(): React.JSX.Element {
-      const thumb = valid.useMotionThumbStore((state) => state.thumbnails['s9'] ?? 'none')
-      return h('i', { 'data-seed': 's9' }, thumb)
-    }
-    const { container } = await render19(h(Seeded, {}))
-    expect(container.querySelector('[data-seed]')?.textContent).toBe('data:image/png;base64,AAA')
-    await cleanup19()
-    for (const seed of ['[1,2]', '"just"']) {
-      localStorage.setItem('motion-card-thumbnails', seed)
-      vi.resetModules()
-      const fresh = await import('../src/ui/studio/kit.tsx')
-      expect(fresh.isImageUrl('https://host/a.png')).toBe(true)
-    }
-  })
-
-  test('corrupt storage starts fresh', async () => {
-    localStorage.setItem('motion-card-thumbnails', 'garbage{')
-    vi.resetModules()
-    const fresh = await import('../src/ui/studio/kit.tsx')
-    expect(fresh.isImageUrl('https://host/a.png')).toBe(true)
-  })
-
-  test('quota failures stay in memory', async () => {
-    const real = localStorage.setItem.bind(localStorage)
-    vi.spyOn(localStorage, 'setItem').mockImplementation((key: string, value: string) => {
-      if (key === 'motion-card-thumbnails') throw new Error('quota')
-      real(key, value)
-    })
-    const { container } = await mountProbe('s2')
-    await vi.waitFor(() => {
-      expect(container.querySelector('[data-probe]')?.textContent).toBe('data:image/png;base64,AAA')
-    })
   })
 })

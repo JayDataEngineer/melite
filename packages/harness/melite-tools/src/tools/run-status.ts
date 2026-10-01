@@ -18,6 +18,7 @@ import type { JsonValue, ToolDefinition } from '../types.ts'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
 import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
+import { isTerminalStatus } from '@melite/contracts/stageView'
 
 const TIMEOUT_MS = 15_000
 
@@ -50,7 +51,7 @@ function sleepAbortable(ms: number, signal: AbortSignal): Promise<void> {
   })
 }
 
-const TERMINAL = new Set(['completed', 'error', 'stopped', 'failed'])
+const TERMINAL = { has: (s: string) => isTerminalStatus(s) }
 
 /** Canonical result — the typed mirror of output.schema (the music
  *  card's CardResult pattern: defineTool infers from the schema and

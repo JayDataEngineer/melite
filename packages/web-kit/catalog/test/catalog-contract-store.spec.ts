@@ -157,13 +157,19 @@ describe("subscribe / setState plumbing", () => {
 
   it("setState honors replace (and the store survives it)", () => {
     const saved = useCatalogContractStore.getState();
+    const replacement = { ...saved, record: { ...saved.record, error: "whole" } };
     let calls = 0;
     const unsub = useCatalogContractStore.subscribe(() => {
       calls++;
     });
-    useCatalogContractStore.setState(saved, true);
+    useCatalogContractStore.setState(replacement, true);
     assert.equal(calls, 1);
     assert.equal(typeof useCatalogContractStore.getState().reportOk, "function");
+    // Replacing with the very record already in place keeps the snapshot
+    // reference and notifies nobody (the platform store's parity rule, the
+    // one the timeline store already pinned).
+    useCatalogContractStore.setState(useCatalogContractStore.getState(), true);
+    assert.equal(calls, 1);
     unsub();
     useCatalogContractStore.getState().reportOk();
     assert.equal(record().state, "loaded");

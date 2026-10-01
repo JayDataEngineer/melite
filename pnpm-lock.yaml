@@ -2467,6 +2467,9 @@ importers:
 
   packages/web-kit/catalog:
     dependencies:
+      '@deepseek-ai/dsh-client-store':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite/contracts':
         specifier: workspace:*
         version: link:../contracts

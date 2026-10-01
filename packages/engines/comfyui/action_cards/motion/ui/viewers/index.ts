@@ -3,12 +3,12 @@
  * tenant library). Public surface: "@melite-plugin/motion/ui/viewers".
  *
  * MotionViewer (skinned playback canvas), MotionPoster (frame-12
- * static poster via @melite/formats skinning), and the poster cache
- * store — moved out of web/editor surfaces/assets 2026-08-21: NPZ
- * motion preview is motion domain; kernel AssetMedia consumes it
- * through the declared workspace edge.
+ * static poster via @melite/formats skinning), and the render-snapshot
+ * cache both motion surfaces read — moved out of web/editor
+ * surfaces/assets 2026-08-21: NPZ motion preview is motion domain; kernel
+ * AssetMedia consumes it through the declared workspace edge.
  */
 export * from "./MotionViewer";
 export { default as MotionViewer } from "./MotionViewer";
 export * from "./MotionPoster";
-export * from "./motionPosterStore";
+export * from "./motionImageStore";

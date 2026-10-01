@@ -6,11 +6,10 @@
  */
 import { Image, Mic, Music, X, Zap } from "./icons"
 import { clsx as cn } from "clsx"
-import { ASSET_DRAG_MIME } from "./dragMime"
+import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client'
 import { PROMPT_COLORS } from "./viser-timeline/styles"
 import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout"
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Tip } from "./tip"
 import css from "./timeline.module.css"
 import { useState } from "react"
 import type * as React from "react"

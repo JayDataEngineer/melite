@@ -1,4 +1,7 @@
-/* Anny viewport seams — frame, anchors, reference pin. */
+/* Anny viewport seams — frame, anchors, reference pin.
+ * .frame's background is --melite-stage-bg: the 3D stage colour
+ * owned by stage3d.ts (STAGE_BACKGROUND_DARK) and written onto the
+ * frame element by ViewportFrame. */
 
 .frame {
   position: relative;
@@ -7,7 +10,7 @@
   overflow: hidden;
   border-radius: 8px;
   border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: #0e0e1a;
+  background: var(--melite-stage-bg);
 }
 
 .dockTopRight { position: absolute; right: 8px; top: 8px; }
@@ -54,7 +57,7 @@
   overflow: hidden;
   border-radius: 6px;
   border: 1px solid var(--dsw-alias-border, #e2e4e9);
-  background: rgb(14 14 26 / 0.9);
+  background: color-mix(in srgb, var(--melite-stage-bg) 90%, transparent);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   backdrop-filter: blur(4px);
   margin: 0;
@@ -73,5 +76,5 @@
   font-weight: 500;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--dsw-alias-label-tertiary, #8a93a0);
+  color: var(--dsw-alias-label-tertiary);
 }

@@ -8,7 +8,13 @@ import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 /** Bench row run-status → the installed StateDot union (FlowCards'
  *  CardRowLine law: done|warning|ongoing|error — a stage that never
  *  ran shows NO dot, never a fake state). */
-const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
+// THE DOT MAP IS DERIVED (2026-10-13, the card-UI duplication audit):
+// this table and the inline ternary in draft-run-views.tsx were two
+// owners of the same question, and they already disagreed — a stopped,
+// error or unknown stage showed a dot here and NO dot there, which is
+// exactly the "looks idle forever" failure the table was written to
+// prevent. One fold (contracts' statusOf), one map, two seats.
+export const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
   queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', stopped: 'warning', ready: null,
   // the FILE-ERA words (the audit's H1): a pre-lifecycle sidecar can
   // carry them, and a stage whose dot is null looks idle forever. The
