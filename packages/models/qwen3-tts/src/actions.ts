@@ -30,6 +30,7 @@ import {
 } from "@melite/comfyui-card-kit";
 import { assertModUse } from "@melite/comfyui-card-kit/guard";
 import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import type { ParamSpec } from "@melite/engine-contract/vocabulary";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { GraphBuilder, NodeRef } from "@melite/comfyui-card-kit/graph";
 
@@ -185,7 +186,22 @@ export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
   // family's own preset set (PRESET_SPEAKERS above); the seed mints
   // INSIDE build (the voice-lock law — one mint seat, the build's),
   // so it declares plain, not sentinel-ruled.
-  params: [
+  params: ttsParamRows(false),
+  facts: parseTtsFacts,
+  build({ p, model, g, runId }) {
+    const lane = laneTopologyOf(model).synth_lane;
+    if (lane === "clone") return cloneSegment(p, model, g, runId).out();
+    return speakSegment(p, model, g, runId).out();
+  },
+};
+
+/** The 13-row surface both TTS actions declare. The seed row is the
+ * one seam: `speak` carries it PLAIN (the voice-lock law above — the
+ * mint sits inside build, branch-local, never sentinel-pre-minted);
+ * `export` carries the sentinel rule (its single mint has no lock to
+ * preserve). */
+function ttsParamRows(sentinelSeed: boolean): readonly ParamSpec[] {
+  return [
     { name: "text", type: "string" },
     { name: "voice", type: "enum", options: PRESET_SPEAKERS },
     { name: "style_instruction", type: "string" },
@@ -198,15 +214,11 @@ export const speak: ComfyActionSpec<TtsParams, TtsFacts> = {
     { name: "top_k", type: "number", bounds: [0, 1000] },
     { name: "speed", type: "number", bounds: [0.5, 2] },
     { name: "repetition_penalty", type: "number", bounds: [0.8, 2] },
-    { name: "seed", type: "number" },
-  ],
-  facts: parseTtsFacts,
-  build({ p, model, g, runId }) {
-    const lane = laneTopologyOf(model).synth_lane;
-    if (lane === "clone") return cloneSegment(p, model, g, runId).out();
-    return speakSegment(p, model, g, runId).out();
-  },
-};
+    sentinelSeed
+      ? { name: "seed", type: "number", rule: "seed-sentinel" }
+      : { name: "seed", type: "number" },
+  ];
+}
 
 /** The export segment: the studio's export_lite on the persona
  * description + the Design mod's name — the .qvoice persists into
@@ -250,21 +262,7 @@ export const exportAction: ComfyActionSpec<TtsParams, TtsFacts> = {
   // family's own preset set (PRESET_SPEAKERS above); the seed mints
   // INSIDE build (the voice-lock law — one mint seat, the build's),
   // so it declares plain, not sentinel-ruled.
-  params: [
-    { name: "text", type: "string" },
-    { name: "voice", type: "enum", options: PRESET_SPEAKERS },
-    { name: "style_instruction", type: "string" },
-    { name: "design_prompt", type: "string" },
-    { name: "ref_audio", type: "string" },
-    { name: "ref_text", type: "string" },
-    { name: "voice_name", type: "string" },
-    { name: "temperature", type: "number", bounds: [0.05, 2] },
-    { name: "top_p", type: "number", bounds: [0, 1] },
-    { name: "top_k", type: "number", bounds: [0, 1000] },
-    { name: "speed", type: "number", bounds: [0.5, 2] },
-    { name: "repetition_penalty", type: "number", bounds: [0.8, 2] },
-    { name: "seed", type: "number", rule: "seed-sentinel" },
-  ],
+  params: ttsParamRows(true),
   facts: parseTtsFacts,
   build({ p, model, g, runId }) {
     return exportSegment(p, model, g, runId).out();
