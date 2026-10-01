@@ -247,6 +247,37 @@ else
   exit 1
 fi
 
+# THE BUNDLE REPRO (cruft row 7, 2026-10-12): the committed lib/ of
+# melite-tools must rebuild byte-identical from a PRISTINE HEAD
+# worktree — the arm builds in its own git worktree (never this
+# live tree; the parallel-session law), so it certifies the COMMIT
+# the lane restarts onto, not the working tree's state. Before this
+# step the property had no automated caller: BUNDLE_REPRO was set
+# by nothing and the suite's single skipped test (the +1 in every
+# battery) was reachable only by a human typing the file's comment.
+# Cost: a hot store links in seconds; a cold one pays minutes once.
+# pnpm resolution mirrors the gate's own order (BUNDLE_REPRO_PNPM,
+# then npm_execpath, then PATH); this lane's pnpm lives outside PATH,
+# so the step names it explicitly the way TSC is named above.
+PNPM_BIN="$(command -v pnpm 2>/dev/null || true)"
+if [ -z "$PNPM_BIN" ] && [ -f "$HOME/.local/share/pnpm/pnpm" ]; then
+  PNPM_BIN="$HOME/.local/share/pnpm/pnpm"
+fi
+if [ -z "$PNPM_BIN" ]; then
+  bad "no pnpm resolvable for the bundle repro (looked on PATH and at ~/.local/share/pnpm/pnpm)"
+  exit 1
+fi
+say "BUNDLE REPRO (the committed bundle rebuilds byte-identical from pristine HEAD)"
+if (cd "$REPO" && \
+    BUNDLE_REPRO=1 BUNDLE_REPRO_PNPM="$PNPM_BIN" \
+    "$PNPM_BIN" exec vitest run packages/harness/melite-tools/test/bundle-repro.spec.ts >/tmp/ship-bundle-repro.log 2>&1); then
+  ok "bundle repro green (committed lib/ == pristine HEAD rebuild)"
+else
+  bad "the committed bundle does not rebuild from pristine HEAD:"
+  head -14 /tmp/ship-bundle-repro.log | sed 's/^/        /'
+  exit 1
+fi
+
 # ---------------------------------------------------------------- build
 # THE CONTENT STAMP (2026-10-10, the lane audit's P0-3): a string
 # receipt (grep a marker in the built lib) passes on ANY lib built

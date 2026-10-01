@@ -1,4 +1,4 @@
-import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-D49CXPK0.mjs";
+import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C-eFxl-G.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
@@ -121,7 +121,13 @@ const TIMEOUT_MS$3 = 15e3;
 const WAIT_MAX_S = 300;
 const WAIT_POLL_S = 5;
 /** Abortable sleep — resolves after ms, rejects immediately when
-* the caller's signal aborts (a cancelled wait never lingers). */
+* the caller's signal aborts (a cancelled wait never lingers).
+* Rejecting is this loop's contract: DSH's exported sleep
+* (references/deepseek-harness/packages/api/job-controller/src/
+* wake.ts:49) settles on abort by RESOLVING, and this poll has no
+* abort check around the await, so resolving would spin it to the
+* deadline. No Context reaches a tool body, so ctx.timeout is not a
+* seat here either. */
 function sleepAbortable(ms, signal) {
 	return new Promise((resolve, reject) => {
 		const t = setTimeout(() => {
@@ -161,7 +167,7 @@ function runStatus(request) {
 			},
 			wait_s: {
 				type: "number",
-				description: "Long-poll budget in seconds (0-300, default 0 = single read; clamped at execute). The tool re-fetches internally every 5s until the run is terminal — ONE result row instead of a sleep-and-repoll turn loop (efficiency review fix 5). On budget expiry the row carries wait_expired: true."
+				description: "Long-poll budget in seconds as a JSON number (300, not \"300\"; 0-300, default 0 = single read; clamped at execute). The tool re-fetches internally every 5s until the run is terminal — ONE result row instead of a sleep-and-repoll turn loop (efficiency review fix 5). On budget expiry the row carries wait_expired: true."
 			}
 		},
 		timeoutMs: 32e4,
@@ -370,15 +376,15 @@ async function readBench(request, bench, signal) {
 		throw e;
 	}
 }
-/** THE CAS VERDICT MATCHER (the GUI's withRebase law, verbatim —
-*  add-stage.ts's matcher law: match the REAL words, both door
-*  spellings: the bench door's 'bench <session> moved: rev is N,
-*  caller held M' and the drafts store's 'bench moved under the
-*  patch (expect_rev N, current M)' + the code arm). Dead matchers
-*  make dead rebases; dead rebases make stuck agents. */
+/** THE CAS VERDICT MATCHER (2026-10-12, the code law — the same
+*  cure the browser plane landed): the seats throw RemoteError and
+*  the protocol's own law is "discrimination is always by code,
+*  never by message text" — every CAS voice (bench verbs, ensure,
+*  drafts/patch) carries bench/cas-conflict. The substring arms
+*  died with their two dead-matcher incidents; estate.ts's own
+*  conflict() closure reads the code exactly this way. */
 function isCasConflict(e) {
-	const msg = e instanceof Error ? e.message : String(e);
-	return msg.includes("moved: rev is") || msg.includes("moved under the patch") || msg.includes("cas-conflict");
+	return e?.code === "bench/cas-conflict";
 }
 /** ONE-RETRY REBASE (the operator's stuck-agent cure, 2026-10-09:
 *  "I can't even change models in the cards — it breaks"): an
@@ -566,7 +572,18 @@ function meliteConstruct(request, opts = {}) {
 		parameters: {
 			verb: {
 				type: "string",
-				description: "read | load | patch | add_stage | remove_stage | clear | rewire | undo | validate."
+				enum: [
+					"read",
+					"load",
+					"patch",
+					"add_stage",
+					"remove_stage",
+					"clear",
+					"rewire",
+					"undo",
+					"validate"
+				],
+				description: "read (default when absent) | load | patch | add_stage | remove_stage | clear | rewire | undo | validate."
 			},
 			stage: {
 				type: "string",
@@ -606,14 +623,61 @@ function meliteConstruct(request, opts = {}) {
 			},
 			from: {
 				type: "object",
-				additionalProperties: true,
+				additionalProperties: false,
+				properties: {
+					stage: {
+						type: "string",
+						description: "The source stage id."
+					},
+					output: {
+						type: "string",
+						description: "The source stage's output name."
+					},
+					initial: {
+						type: "string",
+						description: "An operator-supplied initial key."
+					}
+				},
 				description: "rewire: {stage, output} | {initial}; absent clears the binding."
 			},
 			stages: {
 				type: "array",
 				items: {
 					type: "object",
-					additionalProperties: true
+					additionalProperties: false,
+					properties: {
+						id: {
+							type: "string",
+							description: "The stage id."
+						},
+						engine: {
+							type: "string",
+							description: "Engine id (default comfyui)."
+						},
+						card: {
+							type: "string",
+							description: "The card id (display + provenance hint)."
+						},
+						description: {
+							type: "string",
+							description: "What the stage produces."
+						},
+						params: {
+							type: "object",
+							additionalProperties: true,
+							description: "Stage params (open — the card/engine owns the keys)."
+						},
+						inputs: {
+							type: "object",
+							additionalProperties: true,
+							description: "{input: {stage, output} | {initial}} wiring."
+						},
+						outputs: {
+							type: "object",
+							additionalProperties: true,
+							description: "Custom output channels {name: Kind}."
+						}
+					}
 				},
 				description: "load: the full replacement [{id?, engine?, card?, params?, inputs?, outputs?}]."
 			},
@@ -1430,7 +1494,7 @@ function meliteFlow(request) {
 		parameters: {
 			bench: {
 				type: "boolean",
-				description: "BENCH mode: run THE shared bench exactly as it stands (what the user's Run press runs). Exclusive with card/flow/stages."
+				description: "BENCH mode: run THE shared bench exactly as it stands (what the user's Run press runs). A JSON boolean — true, never the string \"true\". Exclusive with card/flow/stages."
 			},
 			card: {
 				type: "string",
@@ -1448,7 +1512,37 @@ function meliteFlow(request) {
 				type: "array",
 				items: {
 					type: "object",
-					additionalProperties: true
+					additionalProperties: false,
+					properties: {
+						id: {
+							type: "string",
+							required: true,
+							description: "The stage id (connects and run rows name it)."
+						},
+						engine: {
+							type: "string",
+							required: true,
+							description: "The engine id (e.g. comfyui)."
+						},
+						card: {
+							type: "string",
+							description: "The card id the stage composes through — the card fold keeps it on the row so start's card gate fires (035 dead-route receipt)."
+						},
+						description: {
+							type: "string",
+							description: "What the stage produces."
+						},
+						params: {
+							type: "object",
+							additionalProperties: true,
+							description: "Engine node params (open — the engine owns the keys)."
+						},
+						outputs: {
+							type: "object",
+							additionalProperties: true,
+							description: "Output channels {name: kind}."
+						}
+					}
 				},
 				description: "AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow."
 			},
@@ -1456,7 +1550,23 @@ function meliteFlow(request) {
 				type: "array",
 				items: {
 					type: "object",
-					additionalProperties: true
+					additionalProperties: false,
+					properties: {
+						from: {
+							type: "string",
+							required: true,
+							description: "\"stage[.output]\" | \"initial.key\"."
+						},
+						to: {
+							type: "string",
+							required: true,
+							description: "\"stage.input\"."
+						},
+						kind: {
+							type: "string",
+							description: "The wire kind when it cannot be derived."
+						}
+					}
 				},
 				description: "AD-HOC mode: [{from: \"stage[.output]\" | \"initial.key\", to: \"stage.input\", kind?}]."
 			},
@@ -4196,36 +4306,6 @@ function ledgerTail(request) {
 	return def;
 }
 //#endregion
-//#region src/tools/arg-coerce.ts
-/** Coerce one flat args object against a compiled parameter schema's
-* properties. Never throws, never drops keys — a value that is not a
-* clean numeric string stays verbatim for the gate to refuse. */
-function coerceArgs(props, args) {
-	if (props === void 0 || typeof args !== "object" || args === null || Array.isArray(args)) return args;
-	const out = { ...args };
-	for (const [key, spec] of Object.entries(props)) {
-		const v = out[key];
-		if (v === void 0 || v === null) continue;
-		const t = spec?.type;
-		if (t === "number" && typeof v === "string") {
-			const n = Number(v);
-			if (v.trim() !== "" && Number.isFinite(n)) out[key] = n;
-		} else if (t === "boolean" && (v === "true" || v === "false")) out[key] = v === "true";
-	}
-	return out;
-}
-/** Wrap a built tool def: coerce numeric-string/boolean-string args
-* per the def's own compiled schema, then run the original execute
-* (which still validates everything else). The def is mutated in
-* place and returned — one spelling at the registration site. */
-function withArgCoercion(def) {
-	const props = def.parameters?.properties;
-	const orig = def.execute;
-	if (props === void 0 || typeof orig !== "function") return def;
-	def.execute = (args, exec) => orig(coerceArgs(props, args), exec);
-	return def;
-}
-//#endregion
 //#region src/index.ts
 /**
 * `@melite/harness-tools` — the estate's DSH tool surface.
@@ -4345,8 +4425,8 @@ async function apply(ctx, config = {}) {
 	});
 	if (headless) expandEstateDoors();
 	if (headless) {
-		c.tools.register(withArgCoercion(meliteFlow(request)));
-		c.tools.register(withArgCoercion(runStatus(request)));
+		c.tools.register(meliteFlow(request));
+		c.tools.register(runStatus(request));
 	}
 	if (cardTools) {
 		c.tools.register(buildMusicTool(call));

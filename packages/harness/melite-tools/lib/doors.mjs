@@ -1,4 +1,4 @@
-import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-D49CXPK0.mjs";
+import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-C-eFxl-G.mjs";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
@@ -597,6 +597,7 @@ function apply(c, config = {}) {
 						} catch {
 							return fail(400, { error: "body must be JSON" });
 						}
+						if (body === null || typeof body !== "object" || Array.isArray(body)) return fail(400, { error: `seat lane: POST ${path} needs a JSON object body (got ${body === null ? "null" : Array.isArray(body) ? "an array" : `a ${typeof body}`})` });
 						request(method, pathWithQuery, body, signal, 12e4).then((value) => ok(value)).catch(failEstate);
 					}).catch((error) => fail(400, { error: `body read failed: ${error instanceof Error ? error.message : String(error)}` }));
 					return;

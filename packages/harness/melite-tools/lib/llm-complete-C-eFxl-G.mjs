@@ -526,6 +526,75 @@ function optionTooltip(row, shared) {
 *  so a seat with no envelope is a brick by construction (the
 *  qvoice pack boards the DECL but the base lane's envelope is
 *  dropped by owner-scoping — the entry must drop with it). */
+/** THE ENVELOPE PREDICATE (schema-strictness fix 5, 2026-10-01):
+*  the serialized schemastery envelope arrives from the ENGINE plane
+*  as `unknown` (its toJSON), and the served contract types it.
+*  The envelope's two facts are checked here; the ref table's per-node
+*  facts ride the client's walker and the client's own wtype gate. */
+function isSchemaEnvelope(e) {
+	if (typeof e !== "object" || e === null || Array.isArray(e)) return false;
+	const env = e;
+	return typeof env.uid === "number" && typeof env.refs === "object" && env.refs !== null && !Array.isArray(env.refs);
+}
+/** The engine's own form doc (the engine-doc arm) narrowed to the
+*  served contract — same predicate, the form's own name checked. */
+/** One envelope off the engine's formSchemas — a malformed
+*  envelope refuses (the served contract is never a lie). */
+function servedEnvelope(e, card) {
+	if (e === null || e === void 0) return null;
+	if (!isSchemaEnvelope(e)) throw new Error(`form-spec: card '${card}' serialized a malformed schema envelope (uid number + refs object)`);
+	return e;
+}
+/** The absorbed mod envelopes, keyed by pack (the same check, per
+*  pack). */
+function servedModEnvelopes(mods, card) {
+	const out = {};
+	for (const [pack, env] of Object.entries(mods)) out[pack] = servedEnvelope(env, card);
+	return out;
+}
+function isFormSpecDoc(e) {
+	if (typeof e !== "object" || e === null) return false;
+	const doc = e;
+	if (typeof doc.form !== "string") return false;
+	if (doc.schema !== null && doc.schema !== void 0 && !isSchemaEnvelope(doc.schema)) return false;
+	return true;
+}
+/** THE SERVED-KIND NARROW (schema-strictness fix 5, 2026-10-01):
+*  the card-declared kind rows arrive from the ENGINE plane as loose
+*  records (the engine cannot name card-base's field rows), and the
+*  served contract types them. The three required keys are checked
+*  here, at the serve boundary — a malformed row refuses instead of
+*  riding as `Record<string, unknown>`. */
+function servedFields(rows, where) {
+	if (rows === void 0) return void 0;
+	return rows.map((row, i) => {
+		const name = row["name"];
+		const label = row["label"];
+		const type = row["type"];
+		if (typeof name !== "string" || typeof label !== "string" || typeof type !== "string") throw new Error(`form-spec: ${where} field ${i} must carry string name/label/type — ${JSON.stringify(row).slice(0, 120)}`);
+		return {
+			...row,
+			name,
+			label,
+			type
+		};
+	});
+}
+/** The pick-option narrow (the served kind's option rows: value +
+*  label are the two the leaf renders). */
+function servedOptions(rows, where) {
+	if (rows === void 0) return void 0;
+	return rows.map((row, i) => {
+		const value = row["value"];
+		const label = row["label"];
+		if (typeof value !== "string" || typeof label !== "string") throw new Error(`form-spec: ${where} option ${i} must carry string value/label — ${JSON.stringify(row).slice(0, 120)}`);
+		return {
+			...row,
+			value,
+			label
+		};
+	});
+}
 function specModifiers(svc, card, key, decl, def, enveloped) {
 	const out = [];
 	for (const m of decl?.mods ?? []) {
@@ -575,12 +644,18 @@ function specModifiers(svc, card, key, decl, def, enveloped) {
 		if (k.scalar_key !== void 0) entry.scalar_key = k.scalar_key;
 		if (k.max_stack !== void 0) entry.max_stack = k.max_stack;
 		if (k.category !== void 0) entry.category = k.category;
-		if (k.fields !== void 0) entry.fields = k.fields;
-		if (k.kindFields !== void 0) entry.kindFields = k.kindFields;
-		if (k.options !== void 0) entry.options = k.options;
+		const servedFieldsRow = servedFields(k.fields, `mod kind ${k.kind}`);
+		if (servedFieldsRow !== void 0) entry.fields = servedFieldsRow;
+		const servedKindFields = servedFields(k.kindFields, `mod kind ${k.kind} kindFields`);
+		if (servedKindFields !== void 0) entry.kindFields = servedKindFields;
+		const servedOptionsRow = servedOptions(k.options, `mod kind ${k.kind}`);
+		if (servedOptionsRow !== void 0) entry.options = servedOptionsRow;
 		if (k.leaf_face !== void 0) entry.leaf_face = k.leaf_face;
 		if (k.section !== void 0) entry.section = k.section;
-		if (k.requires !== void 0) entry.requires = k.requires;
+		if (k.requires !== void 0) {
+			if (!k.requires.every((r) => typeof r === "string")) throw new Error(`form-spec: mod kind ${k.kind} carries a non-string requires entry — ${JSON.stringify(k.requires).slice(0, 120)}`);
+			entry.requires = k.requires;
+		}
 		out.push(entry);
 	}
 	return out;
@@ -706,10 +781,10 @@ function specBody(svc, defs, res) {
 		label: ident.label,
 		layout: surface.layout === "studio" ? "studio" : null,
 		loader_info: null,
-		mod_schemas: schemas.mods,
+		mod_schemas: servedModEnvelopes(schemas.mods, res.card),
 		model: res.model,
 		outputs: def.flowKinds.outputs,
-		schema: schemas.schema,
+		schema: servedEnvelope(schemas.schema, res.card),
 		service: res.service,
 		size: surface.size === "huge" ? "huge" : null,
 		variants: decl ? specVariants(decl, key, res.service, primary) : [],
@@ -928,7 +1003,11 @@ async function kindsDoorArm() {
 *  does not resolve (the door 404s, same body as ever). */
 async function formSpecArm(model, engineDocs) {
 	const buildEngine = engineDocs?.get(model);
-	if (buildEngine !== void 0) return buildEngine();
+	if (buildEngine !== void 0) {
+		const engineDoc = buildEngine();
+		if (!isFormSpecDoc(engineDoc)) throw new Error(`form-spec: engine '${model}' built a form doc without a form name / malformed schema envelope`);
+		return engineDoc;
+	}
 	const defs = await loadCardDefs();
 	const res = resolveSpecKey(model, defs, boardedMap(defs));
 	if (res === null) return null;
