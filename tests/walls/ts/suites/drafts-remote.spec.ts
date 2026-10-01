@@ -670,28 +670,25 @@ test("unbooted storage: every open-wrapping arm refuses draft/store-failed|bench
       (): string | undefined => "NO-REFUSAL",
       (e: unknown): string | undefined => remoteErrorOf(e)?.code,
     );
-  assert.equal(await draftCode(ctx.draftsRemote.remoteExportList(sig)), "draft/store-failed");
-  assert.equal(await draftCode(ctx.draftsRemote.remoteExportGet("d_new", sig)), "draft/store-failed");
-  assert.equal(
-    await draftCode(ctx.draftsRemote.remoteExportPatch("d_new", "s_0", { runStatus: "running" }, null, sig)),
-    "draft/store-failed",
-  );
-  // validation precedes storage (the telemetry law's edge,
-  // 2026-10-08): an EMPTY body is shape-invalid and refuses
-  // draft/bad-patch without ever reaching the open — the arm's
-  // wrap is intact, there is simply no open to wrap
+  // six table-driven arms, one code each (cruft audit #13): the
+  // empty-body draft/bad-patch arm stays separate below — it
+  // asserts a DIFFERENT expectation (validation precedes storage,
+  // the telemetry law's edge, 2026-10-08: an EMPTY body is
+  // shape-invalid and refuses without ever reaching the open).
+  const refusals: Array<[Promise<unknown>, string]> = [
+    [ctx.draftsRemote.remoteExportList(sig), "draft/store-failed"],
+    [ctx.draftsRemote.remoteExportGet("d_new", sig), "draft/store-failed"],
+    [ctx.draftsRemote.remoteExportPatch("d_new", "s_0", { runStatus: "running" }, null, sig), "draft/store-failed"],
+    [ctx.benchRemote.remoteExportGet("s1", sig), "bench/store-failed"],
+    [ctx.benchRemote.remoteExportEnsure({ session: "s1" }, sig), "bench/store-failed"],
+    [ctx.benchRemote.remoteExportPatch("s1", { stage: "a" }, sig), "bench/store-failed"],
+  ];
+  for (const [call, code] of refusals) {
+    assert.equal(await draftCode(call), code);
+  }
   assert.equal(
     await draftCode(ctx.draftsRemote.remoteExportPatch("d_new", "s_0", {}, null, sig)),
     "draft/bad-patch",
-  );
-  assert.equal(await draftCode(ctx.benchRemote.remoteExportGet("s1", sig)), "bench/store-failed");
-  assert.equal(
-    await draftCode(ctx.benchRemote.remoteExportEnsure({ session: "s1" }, sig)),
-    "bench/store-failed",
-  );
-  assert.equal(
-    await draftCode(ctx.benchRemote.remoteExportPatch("s1", { stage: "a" }, sig)),
-    "bench/store-failed",
   );
 });
 
