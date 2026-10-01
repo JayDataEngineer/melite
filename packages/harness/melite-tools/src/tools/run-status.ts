@@ -36,7 +36,13 @@ const WAIT_MAX_S = 300
 const WAIT_POLL_S = 5
 
 /** Abortable sleep — resolves after ms, rejects immediately when
- * the caller's signal aborts (a cancelled wait never lingers). */
+ * the caller's signal aborts (a cancelled wait never lingers).
+ * Rejecting is this loop's contract: DSH's exported sleep
+ * (references/deepseek-harness/packages/api/job-controller/src/
+ * wake.ts:49) settles on abort by RESOLVING, and this poll has no
+ * abort check around the await, so resolving would spin it to the
+ * deadline. No Context reaches a tool body, so ctx.timeout is not a
+ * seat here either. */
 function sleepAbortable(ms: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
     const t = setTimeout(() => {

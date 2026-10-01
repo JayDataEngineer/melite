@@ -216,6 +216,12 @@ function parseQueueStatus(value: unknown, path: string): ManagerQueueStatus {
   };
 }
 
+/** The ComfyUI-Manager wait's abortable sleep — rejects on abort so a
+ * cancelled wait stops the poll (same law as DSH's resolve-on-abort
+ * sleep at references/deepseek-harness/packages/api/job-controller/
+ * src/wake.ts:49 is NOT: this poll has no abort check around the
+ * await, and the client is constructed directly, never holding a
+ * Context for ctx.timeout). */
 function sleep(milliseconds: number, signal?: AbortSignal): Promise<void> {
   if (signal?.aborted === true) {
     return Promise.reject(new ManagerClientError("cancelled", "ComfyUI-Manager wait was cancelled"));
