@@ -4,7 +4,7 @@
 // 2026-09-08).
 //
 // The four contracts (each maps to an operator law):
-//   1. core_is_generic         python/ must not import from packages/, vendor/, or references/
+//   1. core_is_generic         packages/gateway/core must not import into any vertical (packages/<vertical>/)
 //   2. plugins_are_independent  the three plugin groups (engines, harness, web) do not import each other
 //   3. vendor_packs_isolated   each vendor/comfyui_extensions/<pack> is its own repo
 //   4. references_is_study_only references/ is read-only -- no one imports it

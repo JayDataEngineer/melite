@@ -9,7 +9,8 @@ pre-commit:
     # into nothing — a gate that cannot fire is the same defect
     # class as a self-skipping wall. It reads source files and
     # regexes imports (~2s, executes nothing, no network), so it
-    # rides every commit unconditionally, unglobbed.
+    # carries no explicit glob — lefthook's default staged-file
+    # template fires it on every commit that stages anything.
     - name: arch-lint (estate boundaries)
       run: node tools/arch-lint.ts --quiet
 
