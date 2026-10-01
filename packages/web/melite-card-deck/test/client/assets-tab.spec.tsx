@@ -2,7 +2,27 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { ComfyManagerPanel } from '../../src/client/assets-tab'
+import { ComfyManagerPanel, seatManageNamespace } from '../../src/client/assets-tab'
+import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
+// The manage seat's refusal code (the envelope rides the details —
+// same declaration as the wire spec; type-only so this spec builds
+// without the seat's graph).
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'manage/refused': {
+      readonly action?: string
+      readonly status?: number
+      readonly code?: string
+      readonly state?: string
+      readonly next_action?: string
+      readonly operation_id?: string
+      readonly partial?: boolean
+      readonly restart_required?: boolean
+      readonly data?: unknown
+    }
+  }
+}
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 interface Canned {
   action?: string
@@ -70,35 +90,58 @@ const MODEL_HITS = [
   { name: 'WanVideo VACE LoRA', type: 'lora', base: 'WanVideo', filename: 'wanvace_lora.safetensors', installed: 'True' },
 ]
 
-function wireResponse(init: RequestInit | undefined, envelope: Canned): Response {
-  const frame = JSON.parse(String(init?.body)) as { rpcId?: string }
-  return new Response(JSON.stringify({
-    type: 'server-response',
-    rpcId: frame.rpcId,
-    result: { ok: true, value: envelope },
-  }), { status: 200, headers: { 'content-type': 'application/json' } })
+/** Fold a canned fixture into the seat's wire row. */
+function asRow(canned: Canned): ManageEnvelopeRow {
+  return {
+    action: canned.action ?? '',
+    ok: canned.ok ?? false,
+    detail: canned.detail ?? '',
+    ...(canned.data !== undefined ? { data: canned.data as ManageJsonValue } : {}),
+    ...(canned.status !== undefined ? { status: canned.status } : {}),
+    ...(canned.code !== undefined ? { code: canned.code } : {}),
+    ...(canned.state !== undefined ? { state: canned.state } : {}),
+    ...(canned.next_action !== undefined ? { next_action: canned.next_action } : {}),
+    ...(canned.operation_id !== undefined ? { operation_id: canned.operation_id } : {}),
+    ...(canned.partial !== undefined ? { partial: canned.partial } : {}),
+    ...(canned.restart_required !== undefined ? { restart_required: canned.restart_required } : {}),
+  }
 }
 
-function stubManageWire(routes: Record<string, Canned>): { calls: Array<Record<string, unknown>> } {
+/** Fold a canned refusal into the protocol's ONE failure face: the
+ *  thrown RemoteError carrying the envelope in details (the seat
+ *  contract — a refusal never rides an ok:false value). */
+function asRefusal(canned: Canned): RemoteResult<ManageEnvelopeRow> {
+  return {
+    ok: false,
+    error: new RemoteError('manage/refused', canned.detail ?? 'refused', {
+      action: canned.action ?? '',
+      status: canned.status ?? 500,
+      code: canned.code ?? 'manage/refused',
+      ...(canned.state !== undefined ? { state: canned.state } : {}),
+      ...(canned.next_action !== undefined ? { next_action: canned.next_action } : {}),
+      ...(canned.operation_id !== undefined ? { operation_id: canned.operation_id } : {}),
+      ...(canned.partial !== undefined ? { partial: canned.partial } : {}),
+      ...(canned.restart_required !== undefined ? { restart_required: canned.restart_required } : {}),
+      ...(canned.data !== undefined ? { data: canned.data } : {}),
+    }),
+  }
+}
+
+/** Seat ONE fake manage lane routing canned fixtures by action (the
+ *  apply seam — the deck's real apply seats ctx.remote.manage the
+ *  same way; the transport is never under test here). */
+function stubManageSeat(routes: Record<string, Canned>): { calls: Array<Record<string, unknown>> } {
   const calls: Array<Record<string, unknown>> = []
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as {
-      type?: string
-      rpcId?: string
-      method?: string
-      payload?: { args?: { doc?: Record<string, unknown> } }
-    }
-    if (frame.type !== 'client-request' || frame.method !== 'manage/act') throw new Error('stub: invalid manage frame')
-    const doc = frame.payload?.args?.doc ?? {}
-    calls.push(doc)
-    return wireResponse(init, routes[String(doc.action)] ?? {
-      action: String(doc.action),
-      ok: false,
-      code: 'manage/refused',
-      status: 500,
-      detail: 'unstubbed action ' + String(doc.action),
-    })
-  }))
+  seatManageNamespace({
+    act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+      calls.push({ ...doc })
+      const canned = routes[doc.action]
+      if (canned === undefined) {
+        return asRefusal({ action: doc.action, detail: `unstubbed action ${doc.action}` })
+      }
+      return canned.ok === false ? asRefusal(canned) : { ok: true, value: asRow(canned) }
+    },
+  })
   return { calls }
 }
 
@@ -114,10 +157,11 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  seatManageNamespace(undefined)
 })
 
 test('renders the real nested status payload and declared resource rows', async () => {
-  stubManageWire({ status: STATUS })
+  stubManageSeat({ status: STATUS })
   render(<ComfyManagerPanel />)
 
   expect((await screen.findByTestId('health-state')).textContent).toBe('Engine + manager reachable')
@@ -139,7 +183,7 @@ test('renders the real nested status payload and declared resource rows', async 
 })
 
 test('status refresh never creates or replaces a result', async () => {
-  const { calls } = stubManageWire({ status: STATUS })
+  const { calls } = stubManageSeat({ status: STATUS })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   await screen.findByText('http://127.0.0.1:18466')
@@ -152,7 +196,7 @@ test('status refresh never creates or replaces a result', async () => {
 })
 
 test('list output and later mutations have separate ownership', async () => {
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status: STATUS,
     list_extensions: { action: 'list_extensions', ok: true, detail: '3 installed pack(s)', data: PACKS },
     snapshot_list: { action: 'snapshot_list', ok: true, detail: '1 snapshot(s)', data: ['snap.json'] },
@@ -187,7 +231,7 @@ test('list output and later mutations have separate ownership', async () => {
 })
 
 test('search and log output is immediately visible and clearable', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: STATUS,
     search_models: { action: 'search_models', ok: true, detail: '2 hit(s)', data: MODEL_HITS },
     logs: { action: 'logs', ok: true, detail: '2 log line(s)', data: ['engine boot complete', 'queue idle'] },
@@ -222,7 +266,7 @@ test('search and log output is immediately visible and clearable', async () => {
 })
 
 test('endpoint_set owns its result and refreshes status afterward', async () => {
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status: STATUS,
     endpoint_set: {
       action: 'endpoint_set',
@@ -252,7 +296,7 @@ test('endpoint_set owns its result and refreshes status afterward', async () => 
 })
 
 test('partial and restart-required results show operation, flags, errors, and next action', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: STATUS,
     install_extension: {
       action: 'install_extension',

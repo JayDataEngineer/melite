@@ -113,10 +113,10 @@ const GALLERY_SPEC_TREES = [`${GALLERY}/tests/**/*.spec.{ts,tsx}`]
 // isolation supplies the single React). Riding `dom` would force the
 // card-view lane's React 19 aliases onto it (the dual-React trap — an element
 // built by 19 rendered by 18), so the deck gets its own universe like
-// the gallery. `${DECK}/tests/**` matches nothing today (no such dir);
-// it rides here so future deck specs land in the right universe.
+// the gallery. The deck's specs live under test/ (singular — the
+// item-8 verifier caught the old plural glob collecting nothing).
 const DECK_SPEC_TREES = [
-  `${DECK}/tests/**/*.spec.{ts,tsx}`,
+  `${DECK}/test/**/*.spec.{ts,tsx}`,
   `${DECK}/src/client/__tests__/**/*.spec.{ts,tsx}`,
 ]
 const DOM19_SPEC_TREES = DOM_SPEC_TREES.filter((t) => !GALLERY_SPEC_TREES.includes(t))

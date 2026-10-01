@@ -11,6 +11,11 @@ declare module '@deepseek-ai/dsh-typert-protocol' {
       readonly action?: string
       readonly status?: number
       readonly code?: string
+      readonly state?: string
+      readonly next_action?: string
+      readonly operation_id?: string
+      readonly partial?: boolean
+      readonly restart_required?: boolean
       readonly data?: unknown
     }
   }

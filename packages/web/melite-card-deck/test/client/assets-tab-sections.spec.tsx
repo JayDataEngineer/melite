@@ -2,7 +2,27 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { ComfyManagerPanel } from '../../src/client/assets-tab'
+import { ComfyManagerPanel, seatManageNamespace } from '../../src/client/assets-tab'
+import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
+// The manage seat's refusal code (the envelope rides the details —
+// same declaration as the wire spec; type-only so this spec builds
+// without the seat's graph).
+declare module '@deepseek-ai/dsh-typert-protocol' {
+  interface RemoteErrorDetailsMap {
+    'manage/refused': {
+      readonly action?: string
+      readonly status?: number
+      readonly code?: string
+      readonly state?: string
+      readonly next_action?: string
+      readonly operation_id?: string
+      readonly partial?: boolean
+      readonly restart_required?: boolean
+      readonly data?: unknown
+    }
+  }
+}
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 interface Canned {
   action?: string
@@ -80,34 +100,58 @@ const ENGINE_DOWN: Canned = {
   },
 }
 
-function wireResponse(init: RequestInit | undefined, envelope: Canned): Response {
-  const frame = JSON.parse(String(init?.body)) as { rpcId?: string }
-  return new Response(JSON.stringify({
-    type: 'server-response',
-    rpcId: frame.rpcId,
-    result: { ok: true, value: envelope },
-  }), { status: 200, headers: { 'content-type': 'application/json' } })
+/** Fold a canned fixture into the seat's wire row. */
+function asRow(canned: Canned): ManageEnvelopeRow {
+  return {
+    action: canned.action ?? '',
+    ok: canned.ok ?? false,
+    detail: canned.detail ?? '',
+    ...(canned.data !== undefined ? { data: canned.data as ManageJsonValue } : {}),
+    ...(canned.status !== undefined ? { status: canned.status } : {}),
+    ...(canned.code !== undefined ? { code: canned.code } : {}),
+    ...(canned.state !== undefined ? { state: canned.state } : {}),
+    ...(canned.next_action !== undefined ? { next_action: canned.next_action } : {}),
+    ...(canned.operation_id !== undefined ? { operation_id: canned.operation_id } : {}),
+    ...(canned.partial !== undefined ? { partial: canned.partial } : {}),
+    ...(canned.restart_required !== undefined ? { restart_required: canned.restart_required } : {}),
+  }
 }
 
-function stubManageWire(routes: Record<string, Canned>): { calls: Array<Record<string, unknown>> } {
+/** Fold a canned refusal into the protocol's ONE failure face: the
+ *  thrown RemoteError carrying the envelope in details (the seat
+ *  contract — a refusal never rides an ok:false value). */
+function asRefusal(canned: Canned): RemoteResult<ManageEnvelopeRow> {
+  return {
+    ok: false,
+    error: new RemoteError('manage/refused', canned.detail ?? 'refused', {
+      action: canned.action ?? '',
+      status: canned.status ?? 500,
+      code: canned.code ?? 'manage/refused',
+      ...(canned.state !== undefined ? { state: canned.state } : {}),
+      ...(canned.next_action !== undefined ? { next_action: canned.next_action } : {}),
+      ...(canned.operation_id !== undefined ? { operation_id: canned.operation_id } : {}),
+      ...(canned.partial !== undefined ? { partial: canned.partial } : {}),
+      ...(canned.restart_required !== undefined ? { restart_required: canned.restart_required } : {}),
+      ...(canned.data !== undefined ? { data: canned.data } : {}),
+    }),
+  }
+}
+
+/** Seat ONE fake manage lane routing canned fixtures by action (the
+ *  apply seam — the deck's real apply seats ctx.remote.manage the
+ *  same way; the transport is never under test here). */
+function stubManageSeat(routes: Record<string, Canned>): { calls: Array<Record<string, unknown>> } {
   const calls: Array<Record<string, unknown>> = []
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as {
-      type?: string
-      method?: string
-      payload?: { args?: { doc?: Record<string, unknown> } }
-    }
-    if (frame.type !== 'client-request' || frame.method !== 'manage/act') throw new Error('stub: invalid manage frame')
-    const doc = frame.payload?.args?.doc ?? {}
-    calls.push(doc)
-    return wireResponse(init, routes[String(doc.action)] ?? {
-      action: String(doc.action),
-      ok: false,
-      code: 'manage/refused',
-      status: 500,
-      detail: 'unstubbed action ' + String(doc.action),
-    })
-  }))
+  seatManageNamespace({
+    act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+      calls.push({ ...doc })
+      const canned = routes[doc.action]
+      if (canned === undefined) {
+        return asRefusal({ action: doc.action, detail: `unstubbed action ${doc.action}` })
+      }
+      return canned.ok === false ? asRefusal(canned) : { ok: true, value: asRow(canned) }
+    },
+  })
   return { calls }
 }
 
@@ -125,27 +169,24 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.useRealTimers()
+  seatManageNamespace(undefined)
 })
 
 test('loading is distinct and exposes aria-busy until status resolves', async () => {
-  const pending = deferred<Response>()
-  let requestInit: RequestInit | undefined
-  vi.stubGlobal('fetch', vi.fn((_input: unknown, init?: RequestInit) => {
-    requestInit = init
-    return pending.promise
-  }))
+  const pending = deferred<RemoteResult<ManageEnvelopeRow>>()
+  seatManageNamespace({ act: () => pending.promise })
   render(<ComfyManagerPanel />)
 
   expect(screen.getByTestId('health-state').textContent).toBe('Loading status')
   expect(screen.getByText('Checking engine and manager…')).toBeTruthy()
   expect(document.querySelector('[data-comfy-manager]')?.getAttribute('aria-busy')).toBe('true')
 
-  await act(async () => { pending.resolve(wireResponse(requestInit, UP)) })
+  await act(async () => { pending.resolve({ ok: true, value: asRow(UP) }) })
   expect((await screen.findByTestId('health-state')).textContent).toBe('Engine + manager reachable')
 })
 
 test('manager failure and engine failure remain distinct', async () => {
-  stubManageWire({ status: MANAGER_DOWN })
+  stubManageSeat({ status: MANAGER_DOWN })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   expect((await screen.findByTestId('health-state')).textContent).toBe('Manager failure')
@@ -153,7 +194,7 @@ test('manager failure and engine failure remain distinct', async () => {
   expect(screen.getByText(/Next: Refresh status/)).toBeTruthy()
   cleanup()
 
-  stubManageWire({ status: ENGINE_DOWN })
+  stubManageSeat({ status: ENGINE_DOWN })
   render(<ComfyManagerPanel />)
   expect((await screen.findByTestId('health-state')).textContent).toBe('Engine failure')
   expect(screen.getByText(/connection refused/)).toBeTruthy()
@@ -163,7 +204,7 @@ test('manager failure and engine failure remain distinct', async () => {
 })
 
 test('byo status suppresses estate lifecycle controls', async () => {
-  stubManageWire({ status: { ...UP, data: { ...(UP.data as Record<string, unknown>), routing: { mode: 'byo' } } } })
+  stubManageSeat({ status: { ...UP, data: { ...(UP.data as Record<string, unknown>), routing: { mode: 'byo' } } } })
   render(<ComfyManagerPanel />)
   expect((await screen.findByTestId('health-state')).textContent).toBe('Engine + manager reachable')
   expect(screen.getByText(/BYO endpoint selected/)).toBeTruthy()
@@ -174,12 +215,12 @@ test('byo status suppresses estate lifecycle controls', async () => {
 
 test('a failed refresh keeps the last status and marks it stale', async () => {
   let statusCalls = 0
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
+  seatManageNamespace({ act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+    if (doc.action !== 'status') return asRefusal({ action: doc.action, detail: 'unexpected' })
     statusCalls++
-    return statusCalls === 1
-      ? wireResponse(init, UP)
-      : wireResponse(init, { action: 'status', ok: false, code: 'manage/transport', detail: 'status socket reset' })
-  }))
+    if (statusCalls === 1) return { ok: true, value: asRow(UP) }
+    throw new Error('status socket reset')
+  } })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   await screen.findByText('http://engine:8188')
@@ -195,7 +236,7 @@ test('a failed refresh keeps the last status and marks it stale', async () => {
 test('healthy status ages from fresh to stale without a refresh error', async () => {
   vi.useFakeTimers()
   vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'))
-  stubManageWire({ status: UP })
+  stubManageSeat({ status: UP })
   render(<ComfyManagerPanel />)
   await act(async () => { await vi.advanceTimersByTimeAsync(0) })
   expect(screen.getByTestId('health-state').textContent).toBe('Engine + manager reachable')
@@ -211,34 +252,28 @@ test('healthy status ages from fresh to stale without a refresh error', async ()
 })
 
 test('a stale status response cannot overwrite a newer refresh or its mutation result', async () => {
-  const stale = deferred<Response>()
-  let staleInit: RequestInit | undefined
+  const stale = deferred<RemoteResult<ManageEnvelopeRow>>()
   let statusCalls = 0
   const calls: Array<Record<string, unknown>> = []
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as { payload?: { args?: { doc?: Record<string, unknown> } } }
-    const action = String(frame.payload?.args?.doc?.action)
-    calls.push(frame.payload?.args?.doc ?? {})
-    if (action === 'status') {
+  seatManageNamespace({ act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+    calls.push({ ...doc })
+    if (doc.action === 'status') {
       statusCalls++
-      if (statusCalls === 1) return wireResponse(init, UP)
-      if (statusCalls === 2) {
-        staleInit = init
-        return stale.promise
-      }
-      return wireResponse(init, {
+      if (statusCalls === 1) return { ok: true, value: asRow(UP) }
+      if (statusCalls === 2) return stale.promise
+      return { ok: true, value: asRow({
         action: 'status',
         ok: true,
         data: {
           ...(UP.data as Record<string, unknown>),
           endpoint: { reachable: true, url: 'http://new-engine:8188', comfyui_version: '10.0' },
         },
-      })
+      }) }
     }
-    if (action === 'snapshot_save') return wireResponse(init, { action, ok: true, detail: 'saved', data: { state: 'saved' } })
-    if (action === 'snapshot_list') return wireResponse(init, { action, ok: true, data: [] })
-    return wireResponse(init, { action, ok: false, code: 'manage/refused', detail: 'unexpected' })
-  }))
+    if (doc.action === 'snapshot_save') return { ok: true, value: asRow({ action: 'snapshot_save', ok: true, detail: 'saved', data: { state: 'saved' } }) }
+    if (doc.action === 'snapshot_list') return { ok: true, value: asRow({ action: 'snapshot_list', ok: true, data: [] }) }
+    return asRefusal({ action: doc.action, detail: 'unexpected' })
+  } })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   await screen.findByText('http://engine:8188')
@@ -249,7 +284,7 @@ test('a stale status response cannot overwrite a newer refresh or its mutation r
   expect(await screen.findByText('http://new-engine:8188')).toBeTruthy()
   expect(within(screen.getByTestId('mutation-result')).getByText('snapshot_save')).toBeTruthy()
 
-  await act(async () => { stale.resolve(wireResponse(staleInit, UP)) })
+  await act(async () => { stale.resolve({ ok: true, value: asRow(UP) }) })
   expect(screen.queryByText('http://engine:8188')).toBeNull()
   expect(screen.getByText('http://new-engine:8188')).toBeTruthy()
   expect(within(screen.getByTestId('mutation-result')).getByText('snapshot_save')).toBeTruthy()
@@ -257,19 +292,15 @@ test('a stale status response cannot overwrite a newer refresh or its mutation r
 })
 
 test('explicit actions serialize and conflicting controls disable', async () => {
-  const pending = deferred<Response>()
+  const pending = deferred<RemoteResult<ManageEnvelopeRow>>()
   const calls: Array<Record<string, unknown>> = []
-  let listInit: RequestInit | undefined
   let listCalls = 0
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as { payload?: { args?: { doc?: Record<string, unknown> } } }
-    const doc = frame.payload?.args?.doc ?? {}
-    calls.push(doc)
-    if (doc.action === 'status') return wireResponse(init, UP)
+  seatManageNamespace({ act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+    calls.push({ ...doc })
+    if (doc.action === 'status') return { ok: true, value: asRow(UP) }
     listCalls++
-    listInit = init
     return pending.promise
-  }))
+  } })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   await screen.findByText('http://engine:8188')
@@ -283,14 +314,14 @@ test('explicit actions serialize and conflicting controls disable', async () => 
   expect(calls.filter((call) => call.action === 'install_extension')).toHaveLength(0)
 
   await act(async () => {
-    pending.resolve(wireResponse(listInit, { action: 'list_extensions', ok: true, detail: 'done', data: [] }))
+    pending.resolve({ ok: true, value: asRow({ action: 'list_extensions', ok: true, detail: 'done', data: [] }) })
   })
   await screen.findByTestId('ext-list')
   expect(listCalls).toBe(1)
 })
 
 test('read output formats every row arm and object bodies without a disclosure', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: UP,
     search_models: {
       action: 'search_models',
@@ -327,7 +358,7 @@ test('read output formats every row arm and object bodies without a disclosure',
 })
 
 test('a refused read shows its code and detail in the result dock', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: UP,
     search_models: { action: 'search_models', ok: false, code: 'manage/refused', status: 409, detail: 'manager index is busy' },
   })
@@ -344,7 +375,7 @@ test('a refused read shows its code and detail in the result dock', async () => 
 })
 
 test('declared and operator-only URL install rails send exact bodies and preserve mutation ownership', async () => {
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status: UP,
     list_extensions: { action: 'list_extensions', ok: true, detail: '1', data: [{ name: 'x', version: '1' }] },
     install_extension: { action: 'install_extension', ok: true, detail: 'installed', data: { state: 'active', operation_id: 'op-a', items: [] } },
@@ -374,7 +405,7 @@ test('declared and operator-only URL install rails send exact bodies and preserv
 })
 
 test('model provisioning and raw download send minimal and full bodies', async () => {
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status: UP,
     download_model: { action: 'download_model', ok: true, detail: 'queued', data: { state: 'active', operation_id: 'op-d', items: [] } },
     provision_model: { action: 'provision_model', ok: true, detail: 'provisioned', data: { state: 'active', operation_id: 'op-p', items: [] } },
@@ -426,7 +457,7 @@ test('model changes replace dependent coordinates and unknown ids cannot dispatc
       ],
     },
   }
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status,
     provision_model: { action: 'provision_model', ok: true, detail: 'provisioned', data: { state: 'active', items: [] } },
   })
@@ -473,16 +504,14 @@ test('catalog withdrawal clears stale coordinates and keeps manual fallback edit
       comfyui_versions_detail: 'version catalog unavailable',
     },
   }
-  vi.stubGlobal('fetch', vi.fn(async (_input: unknown, init?: RequestInit): Promise<Response> => {
-    const frame = JSON.parse(String(init?.body)) as { payload?: { args?: { doc?: Record<string, unknown> } } }
-    const doc = frame.payload?.args?.doc ?? {}
-    calls.push(doc)
+  seatManageNamespace({ act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+    calls.push({ ...doc })
     if (doc.action === 'status') {
       statusCalls++
-      return wireResponse(init, statusCalls === 1 ? UP : fallbackStatus)
+      return { ok: true, value: asRow(statusCalls === 1 ? UP : fallbackStatus) }
     }
-    return wireResponse(init, { action: String(doc.action), ok: true, detail: 'done', data: { state: 'active', items: [] } })
-  }))
+    return { ok: true, value: asRow({ action: doc.action, ok: true, detail: 'done', data: { state: 'active', items: [] } }) }
+  } })
 
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
@@ -512,7 +541,7 @@ test('catalog withdrawal clears stale coordinates and keeps manual fallback edit
 })
 
 test('malformed catalog rows normalize into safe controls', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: {
       ...UP,
       data: {
@@ -537,7 +566,7 @@ test('malformed catalog rows normalize into safe controls', async () => {
 })
 
 test('initial status refusals and malformed success remain unavailable', async () => {
-  stubManageWire({ status: { action: 'status', ok: false, detail: 'initial unavailable' } })
+  stubManageSeat({ status: { action: 'status', ok: false, detail: 'initial unavailable' } })
   render(<ComfyManagerPanel />)
   expect((await screen.findByTestId('health-state')).textContent).toBe('Status unavailable')
   expect(screen.getByText('Refresh failed: initial unavailable')).toBeTruthy()
@@ -545,7 +574,7 @@ test('initial status refusals and malformed success remain unavailable', async (
   expect(screen.getByText('Lifecycle controls unlock after status loads.')).toBeTruthy()
   cleanup()
 
-  stubManageWire({ status: { action: 'status', ok: true, data: null } })
+  stubManageSeat({ status: { action: 'status', ok: true, data: null } })
   render(<ComfyManagerPanel />)
   expect((await screen.findByTestId('health-state')).textContent).toBe('Status unavailable')
   expect(screen.getByText('Refresh failed: status reply carried no status data')).toBeTruthy()
@@ -553,7 +582,7 @@ test('initial status refusals and malformed success remain unavailable', async (
 })
 
 test('logs clamp garbage and oversized tails', async () => {
-  const { calls } = stubManageWire({ status: UP, logs: { action: 'logs', ok: true, detail: 'lines', data: ['a'] } })
+  const { calls } = stubManageSeat({ status: UP, logs: { action: 'logs', ok: true, detail: 'lines', data: ['a'] } })
   const user = userEvent.setup()
   render(<ComfyManagerPanel />)
   await screen.findByText('http://engine:8188')
@@ -579,7 +608,7 @@ test('lifecycle controls are contextual, one-shot force is confirmed and reset, 
       active_runs: ['run-a'],
     },
   }
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status,
     restart: { action: 'restart', ok: true, detail: 'restarted', data: { next_action: 'status' } },
     stop: { action: 'stop', ok: true, detail: 'stopped', data: { next_action: 'launch' } },
@@ -628,7 +657,7 @@ test('lifecycle controls are contextual, one-shot force is confirmed and reset, 
 })
 
 test('snapshot force is scoped to restore and resets after use', async () => {
-  const { calls } = stubManageWire({
+  const { calls } = stubManageSeat({
     status: UP,
     snapshot_list: { action: 'snapshot_list', ok: true, detail: '1', data: ['s.json'] },
     snapshot_restore: { action: 'snapshot_restore', ok: true, detail: 'restored', data: { restart_required: true, next_action: 'restart' } },
@@ -648,7 +677,7 @@ test('snapshot force is scoped to restore and resets after use', async () => {
 })
 
 test('bare device rows retain the unknown VRAM face', async () => {
-  stubManageWire({
+  stubManageSeat({
     status: {
       action: 'status',
       ok: true,
