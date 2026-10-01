@@ -9787,20 +9787,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					for (const k of Object.keys(resolved)) resolved[k] = substitute(resolved[k]);
 				}
 			}
-			let doc = resolved;
+			let spec;
 			try {
-				const spec = await (0, _melite_card_base_client.fetchFormSpec)(card);
-				const selects = (0, _melite_card_base_client.fieldsOf)(spec).filter((f) => f.type === "select" && Array.isArray(f.options));
-				if (selects.length > 0) {
-					doc = { ...resolved };
-					for (const f of selects) {
-						const v = doc[f.name];
-						if (typeof v === "number") {
-							if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
-						}
+				spec = await (0, _melite_card_base_client.fetchFormSpec)(card);
+			} catch (e) {
+				return { refused: "the form-spec door for " + JSON.stringify(card) + " is unreachable (" + (e instanceof Error ? e.message : String(e)) + ") — the run refuses rather than compose unverified params" };
+			}
+			let doc = resolved;
+			const selects = (0, _melite_card_base_client.fieldsOf)(spec).filter((f) => f.type === "select" && Array.isArray(f.options));
+			if (selects.length > 0) {
+				doc = { ...resolved };
+				for (const f of selects) {
+					const v = doc[f.name];
+					if (typeof v === "number") {
+						if (f.options.map((o) => typeof o === "string" ? o : o.value).includes(String(v))) doc[f.name] = String(v);
 					}
 				}
-			} catch {}
+			}
 			return await (0, _melite_card_base_client.startCardRun)({
 				model,
 				params: doc,
@@ -44805,4 +44808,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="625191cd15632ebed22881dcbe9c24efcabcb27d";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3a2484ad126eca38542cd5be6122ef22d4cdf163";

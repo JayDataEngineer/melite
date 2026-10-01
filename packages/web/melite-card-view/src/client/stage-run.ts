@@ -165,21 +165,31 @@ export async function runCardStage(
   // row may hold the matching number — normalize through the spec
   // (only when the stringified value IS a declared option; anything
   // else rides verbatim and the door refuses honestly)
-  let doc = resolved
+  let spec: Awaited<ReturnType<typeof fetchFormSpec>>
   try {
-    const spec = await fetchFormSpec(card)
-    const selects = fieldsOf(spec).filter((f) => f.type === 'select' && Array.isArray(f.options))
-    if (selects.length > 0) {
-      doc = { ...resolved }
-      for (const f of selects) {
-        const v = doc[f.name]
-        if (typeof v === 'number') {
-          const opts = (f.options as Array<string | { value: string }>).map((o) => typeof o === 'string' ? o : o.value)
-          if (opts.includes(String(v))) doc[f.name] = String(v)
-        }
+    spec = await fetchFormSpec(card)
+  } catch (e) {
+    // THE DOWNED SPEC DOOR REFUSES (G10's stage-run half, 2026-10-12):
+    // riding params verbatim past an unreachable spec door composes
+    // against a surface this client never verified — the run stops
+    // spoken, naming the door's own failure, never a silent degrade.
+    return {
+      refused: 'the form-spec door for ' + JSON.stringify(card) + ' is unreachable ('
+        + (e instanceof Error ? e.message : String(e)) + ') — the run refuses rather than compose unverified params',
+    }
+  }
+  let doc = resolved
+  const selects = fieldsOf(spec).filter((f) => f.type === 'select' && Array.isArray(f.options))
+  if (selects.length > 0) {
+    doc = { ...resolved }
+    for (const f of selects) {
+      const v = doc[f.name]
+      if (typeof v === 'number') {
+        const opts = (f.options as Array<string | { value: string }>).map((o) => typeof o === 'string' ? o : o.value)
+        if (opts.includes(String(v))) doc[f.name] = String(v)
       }
     }
-  } catch { /* spec unavailable — params ride verbatim */ }
+  }
   return await startCardRun({ model, params: doc, draftId })
 }
 

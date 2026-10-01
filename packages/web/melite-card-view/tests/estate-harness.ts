@@ -19,8 +19,10 @@
  *    lingers (poll loops terminate); without runDocs it serves a
  *    live row that runs/stop flips to stopped;
  *  - patchFailures serve as OK-arm values carrying `reason` (the
- *    client's CAS matcher reads that text — the real door's
- *    cas-conflict voice);
+ *    door's written-answer refusals — delivered:false voices like
+ *    "draft not found"; the CAS verdict never rides here, it is an
+ *    error-branch RemoteError and belongs in `refusals` with
+ *    `code: 'bench/cas-conflict'`);
  *  - refusals serve REAL RemoteError failures on the error branch
  *    (runs/start compose refusals land verbatim through
  *    EstateRefusedError — never a paraphrase); wired on EVERY verb

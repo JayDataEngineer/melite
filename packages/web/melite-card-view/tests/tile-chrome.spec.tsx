@@ -14,6 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 import { mountEstateFakes } from './estate-harness.ts'
+import { schemaEnvelope } from '../src/client/spec-form.tsx'
 import { unbindEstateRemote } from '@melite/card-base/client'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
@@ -56,13 +57,18 @@ function stubWire(): { calls: Call[] } {
   const impl = async (url: unknown): Promise<Response> => {
     const path = String(url)
     if (path.includes('/v1/form-spec')) {
+      // THE HONEST DOOR SHAPE (G10's stage-run cure, 2026-10-12):
+      // the real /v1/form-spec answer carries a schema envelope —
+      // fetchFormSpec refuses a doc without one, and with the
+      // downed-door refusal landed, a bogus doc now refuses the run
+      // (the old silent catch rode params verbatim past it).
       const doc = {
         form: 'image-gen', genre: 'image', engine: 'comfyui',
-        fields: [
-          { name: 'prompt', label: 'Prompt', type: 'textarea' },
-          { name: 'steps', label: 'Steps', type: 'number', default: 8, min: 1, max: 150 },
-          { name: 'turbo', type: 'switch', default: false },
-        ],
+        schema: schemaEnvelope({
+          prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+          steps: { type: 'number', meta: { description: 'Steps', extra: { wtype: 'number', min: 1, max: 150, default: 8 } } },
+          turbo: { type: 'boolean', meta: { description: 'Turbo', extra: { wtype: 'boolean', default: false } } },
+        }),
       }
       return new Response(JSON.stringify(doc), { status: 200, headers: { 'content-type': 'application/json' } })
     }

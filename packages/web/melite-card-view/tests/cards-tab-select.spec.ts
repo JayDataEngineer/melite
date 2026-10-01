@@ -83,3 +83,30 @@ describe("runCardStage — object spelled select options", () => {
     expect(startDoc()["resolution"]).toBe(999);
   });
 });
+
+describe("runCardStage — the downed spec door refuses, never degrades", () => {
+  test("a form-spec door failure returns a spoken refusal and no run starts (G10's stage-run half)", async () => {
+    stubWire();
+    vi.stubGlobal("fetch", async (url: unknown): Promise<Response> => {
+      const path = String(url);
+      if (path === "/v1/model-catalog") {
+        return new Response(JSON.stringify({ cards: { "img-to-mesh": { families: ["trellis2-native"] } } }), {
+          status: 200, headers: { "content-type": "application/json" },
+        });
+      }
+      if (path.startsWith("/v1/form-spec")) {
+        return new Response("spec seat down", { status: 503 });
+      }
+      throw new Error("estate door on the fetch lane: " + path);
+    });
+    const res = await runCardStage("bench-main", stage({
+      id: "s_1", card: "img-to-mesh", params: { input_image: "x.png", resolution: 1024 },
+    }));
+    expect(res).toEqual({
+      refused: expect.stringContaining("form-spec door") as string,
+    } as { refused: string });
+    expect((res as { refused: string }).refused).toContain("img-to-mesh");
+    expect((res as { refused: string }).refused).toContain("503");
+    expect(calls.some((c) => c.method === "runs/start")).toBe(false);
+  });
+});
