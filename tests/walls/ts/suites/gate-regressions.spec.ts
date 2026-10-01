@@ -60,14 +60,16 @@ describe("THE REPO TIER (tools/ + tests/ typed by nothing)", () => {
     // spawnSync that runs the repo tier, keep the two log lines, and
     // the arm still passed with the plane dark. The arm is now
     // pinned by its FUNCTIONAL call shape: the repo tier's tsc runs
-    // through a spawnSync whose argv names the tracked config, and
-    // its failure branch increments the failure tally (the script
-    // exits non-zero on a red tier).
+    // through an awaited tsc call whose argv names the tracked
+    // config, and its failure branch increments the failure tally
+    // (the script exits non-zero on a red tier). The call went
+    // async with the pool fix (0141a7ea) — spawnSync became
+    // execFileP; the pin follows the call shape, not the spelling.
     const script = read("scripts/typecheck-tests.mjs");
     const call = script.match(
-      /spawnSync\(\s*process\.execPath\s*,\s*\[tsc\s*,\s*"--noEmit"\s*,\s*"-p"\s*,\s*"tsconfig\.repotier\.json"\]/,
+      /execFileP\(\s*process\.execPath\s*,\s*\[tsc\s*,\s*"--noEmit"\s*,\s*"-p"\s*,\s*"tsconfig\.repotier\.json"\]/,
     );
-    expect(call, "the repo tier runs through the tsc spawnSync naming tsconfig.repotier.json").not.toBeNull();
+    expect(call, "the repo tier runs through the awaited tsc call naming tsconfig.repotier.json").not.toBeNull();
     // and the failure branch of THAT call feeds the exit tally (a
     // run whose result is ignored would report green while dark)
     const after = script.slice((call?.index ?? 0) + (call?.[0].length ?? 0), (call?.index ?? 0) + 700);
