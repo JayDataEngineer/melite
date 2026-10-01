@@ -26,27 +26,11 @@ describe("the wd14 model plugin (the whole model, one package)", () => {
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
 
-  it("THE WEIGHTS RAIL: one variant per live WD14Tagger|pysssss model name, moat first", () => {
-    // live-pinned 2026-09-22 off the engine's object_info — the node
-    // refuses unknown names at queue time, the rail refuses them at
-    // selection time (unknown variant id). Eleven, no more, no less.
-    const LIVE = [
-      "wd-v1-4-moat-tagger-v2",
-      "wd-v1-4-convnext-tagger-v2",
-      "wd-v1-4-convnextv2-tagger-v2",
-      "wd-v1-4-vit-tagger-v2",
-      "wd-v1-4-swinv2-tagger-v2",
-      "wd-v1-4-convnext-tagger",
-      "wd-v1-4-vit-tagger",
-      "wd-convnext-tagger-v3",
-      "wd-swinv2-tagger-v3",
-      "wd-vit-tagger-v3",
-      "wd-eva02-large-tagger-v3",
-    ];
-    assert.deepEqual(
-      DECL.variants.map((v) => v.id), LIVE,
-      "the rail offers exactly the live closed set, moat first (the family default)",
-    );
+  it("THE WEIGHTS RAIL's plugin shape — stamps, cells, groups, default (the roster itself is the wall's)", () => {
+    // The engine-truth direction (exactly the live closed set, one
+    // variant per WD14Tagger|pysssss model name) is judged by the
+    // vocab-rails-subset wall against the tracked fixture — this
+    // spec pins only what DERIVES from the declaration itself.
     for (const v of DECL.variants) {
       assert.equal(v.group, "Variant", "weights variants ride the Variant picker, never Recipe");
       assert.deepEqual(
@@ -58,8 +42,8 @@ describe("the wd14 model plugin (the whole model, one package)", () => {
       assert.equal(cells[0]!.quant, "f32", "the ONNX lane is F32");
     }
     assert.equal(
-      (DECL.defaults as Record<string, unknown>)["checkpoint"], "wd-v1-4-moat-tagger-v2",
-      "the family default backstops bare bodies on moat",
+      (DECL.defaults as Record<string, unknown>)["checkpoint"], DECL.variants[0]!.id,
+      "the family default backstops bare bodies on the head variant (moat)",
     );
   });
 

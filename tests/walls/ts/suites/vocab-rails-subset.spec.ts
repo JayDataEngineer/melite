@@ -73,9 +73,13 @@ const JOINED_INVERTED: Joined[] = [
 // Only DECLs whose VARIANTS array stamps a checkpoint ride here
 // (yue2 and joycaption carry theirs in lane_inputs / the mods
 // manifest — a different mechanism, lawfully outside this rail).
-const JOINED_RAILS: { decl: string; join: string }[] = [
-  { decl: "wd14", join: "WD14Tagger|pysssss.model" },
-  { decl: "florence2", join: "DownloadAndLoadFlorence2Model.model" },
+// `exact` rails serve the engine's WHOLE roster — set-equality
+// both ways, the family's "one variant per live name" contract
+// (the engine-truth home; the family's own decl.spec pins only
+// derivable plugin shape).
+const JOINED_RAILS: { decl: string; join: string; exact?: boolean }[] = [
+  { decl: "wd14", join: "WD14Tagger|pysssss.model", exact: true },
+  { decl: "florence2", join: "DownloadAndLoadFlorence2Model.model", exact: true },
 ];
 
 const LOCAL: { site: string; values: () => readonly string[]; reason: string }[] = [
@@ -112,13 +116,17 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
       const dead = deadNames(combo ?? [], values);
       expect(dead, `the engine's ${join} combo offers names the card's ${site} literal no longer carries (${dead.join(", ")}) — the dropdown drifted past the card`).toEqual([]);
     }
-    for (const { decl, join } of JOINED_RAILS) {
+    for (const { decl, join, exact } of JOINED_RAILS) {
       const combo = fx[join];
       expect(combo, `the fixture carries ${join}`).toBeDefined();
       const stamps = railStamps(decl);
       expect(stamps.length, `${decl}'s rail stamps at least one checkpoint`).toBeGreaterThan(0);
       const dead = deadNames(stamps, combo ?? []);
       expect(dead, `${decl}'s rail stamps checkpoints the engine does not run (${dead.join(", ")}) — a variant the engine 400s at selection time (schema-bottomup G4)`).toEqual([]);
+      if (exact) {
+        const unserved = deadNames(combo ?? [], stamps);
+        expect(unserved, `${decl} is an exact rail but leaves the engine's names unserved (${unserved.join(", ")}) — one variant per live name, no more, no less`).toEqual([]);
+      }
     }
   });
 
@@ -158,6 +166,19 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     walk(join(process.cwd(), "packages"));
     const registered = JOINED.length + JOINED_INVERTED.length + LOCAL.length;
     expect(sites.length, `the registry carries ${registered} sites but packages/ declares ${sites.length} vocabulary( calls (${sites.map((s) => s.replace(join(process.cwd(), "packages") + "/", "")).join(", ")}) — map the new site: join it to an engine combo or declare it local with its reason`).toBe(registered);
+    // File grain, not just count: a registry entry re-pointed at a
+    // different file's site keeps the count but moves the hit.
+    const byFile: Record<string, number> = {};
+    for (const s of sites) byFile[s.replace(join(process.cwd(), "packages") + "/", "")] = (byFile[s.replace(join(process.cwd(), "packages") + "/", "")] ?? 0) + 1;
+    expect(byFile, "the per-file site census drifted — re-point the registry's sites (a count-only match can hide a swapped file)").toEqual({
+      "models/h3/src/schema.ts": 9,
+      "image/tagger/src/card.ts": 4,
+      "3d/anny/src/card.ts": 1,
+      "audio/music/src/card.ts": 1,
+      "audio/tts/src/card.ts": 1,
+      "image/input-prep/src/card.ts": 1,
+      "motion/motion/src/card.ts": 1,
+    });
 
     const stamping: string[] = [];
     for (const d of readdirSync(join(process.cwd(), "packages", "models"), { withFileTypes: true })) {

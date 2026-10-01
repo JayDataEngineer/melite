@@ -26,41 +26,30 @@ describe("the florence2 model plugin (the whole model, one package)", () => {
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
 
-  it("THE WEIGHTS RAIL: one variant per live loader model name, PromptGen-v2.0 large first", () => {
-    // live-pinned 2026-09-22 off DownloadAndLoadFlorence2Model's
-    // object_info combo. Fourteen, no more, no less. Ids are
-    // DECL-charset slugs (the variant-id law /^[a-z0-9_-]+$/);
-    // labels + resolver stamps carry the verbatim upstream names.
-    const LIVE: Array<[string, string]> = [
-      ["miaoshouai-florence-2-large-promptgen-v2-0", "MiaoshouAI/Florence-2-large-PromptGen-v2.0"],
-      ["miaoshouai-florence-2-base-promptgen-v2-0", "MiaoshouAI/Florence-2-base-PromptGen-v2.0"],
-      ["miaoshouai-florence-2-large-promptgen-v1-5", "MiaoshouAI/Florence-2-large-PromptGen-v1.5"],
-      ["miaoshouai-florence-2-base-promptgen-v1-5", "MiaoshouAI/Florence-2-base-PromptGen-v1.5"],
-      ["microsoft-florence-2-large", "microsoft/Florence-2-large"],
-      ["microsoft-florence-2-base", "microsoft/Florence-2-base"],
-      ["microsoft-florence-2-large-ft", "microsoft/Florence-2-large-ft"],
-      ["microsoft-florence-2-base-ft", "microsoft/Florence-2-base-ft"],
-      ["huggingfacem4-florence-2-docvqa", "HuggingFaceM4/Florence-2-DocVQA"],
-      ["thwri-cogflorence-2-1-large", "thwri/CogFlorence-2.1-Large"],
-      ["thwri-cogflorence-2-2-large", "thwri/CogFlorence-2.2-Large"],
-      ["gokaygokay-florence-2-sd3-captioner", "gokaygokay/Florence-2-SD3-Captioner"],
-      ["gokaygokay-florence-2-flux-large", "gokaygokay/Florence-2-Flux-Large"],
-      ["pjmixers-images-florence-2-base-castollux-v0-5", "PJMixers-Images/Florence-2-base-Castollux-v0.5"],
-    ];
-    assert.deepEqual(
-      DECL.variants.map((v) => v.id), LIVE.map(([id]) => id),
-      "the rail offers exactly the live closed set, the family default first",
-    );
-    DECL.variants.forEach((v, i) => {
-      assert.equal(v.label, LIVE[i]![1], `variant ${v.id} labels the verbatim upstream name`);
+  it("THE WEIGHTS RAIL's plugin shape — slugs, verbatim stamps, default (the roster itself is the wall's)", () => {
+    // The engine-truth direction (exactly the live closed set, one
+    // variant per DownloadAndLoadFlorence2Model model name) is
+    // judged by the vocab-rails-subset wall against the tracked
+    // fixture. This spec pins only what DERIVES from the
+    // declaration itself: the id-slug law (variant-id charset
+    // /^[a-z0-9_-]+$/, lowercase, '/' and '.' as dashes), the
+    // verbatim label==stamp pairing, and the family default.
+    const slug = (name: string) =>
+      name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    for (const v of DECL.variants) {
+      assert.equal(v.id, slug(v.label), `variant id ${v.id} is the slug of its verbatim upstream name`);
       assert.deepEqual(
-        (v as { resolver_defaults?: unknown }).resolver_defaults, { checkpoint: LIVE[i]![1] },
-        `variant ${v.id} stamps the verbatim name`,
+        (v as { resolver_defaults?: unknown }).resolver_defaults, { checkpoint: v.label },
+        `variant ${v.id} stamps the verbatim upstream name`,
       );
-    });
+    }
+    assert.ok(
+      DECL.variants[0]!.label.includes("PromptGen"),
+      "the family default (the head) is the PromptGen tuning — the moat first",
+    );
     assert.equal(
-      (DECL.defaults as Record<string, unknown>)["checkpoint"], "MiaoshouAI/Florence-2-large-PromptGen-v2.0",
-      "the family default backstops bare bodies",
+      (DECL.defaults as Record<string, unknown>)["checkpoint"], DECL.variants[0]!.label,
+      "the family default backstops bare bodies on the head variant",
     );
   });
 
