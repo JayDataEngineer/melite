@@ -204,16 +204,25 @@ say "TYPECHECK every package (the ReferenceError class)"
 # equivalent arm measured 30,578ms for 90 packages at this width).
 # Per-package logs land in a tmpdir; the reporting pass below stays
 # serial so failure output is byte-identical to the old loop's.
+# The list lives INSIDE TCDIR so the EXIT trap owns it too (the
+# verifier 3113ef3c caught three leaked /tmp/ship-tc.*.list files
+# from the first pool landing). The pipeline's status is GUARDED:
+# pipefail without set -e discards it, so a find that fails on an
+# unreadable packages/ or a grep that matches nothing would hand
+# xargs an empty list and the net would print green over nothing.
 TCDIR=$(mktemp -d /tmp/ship-tc.XXXXXX)
 trap 'rm -rf "$TCDIR"' EXIT
-find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' \
-  | grep '/packages/' | sort > "$TCDIR.list"
+if ! find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' \
+  | grep '/packages/' | sort > "$TCDIR/list"; then
+  bad "the typecheck discovery pipeline failed (unreadable packages/ tree or no tsconfig matched) — refusing to typecheck nothing"
+  exit 1
+fi
 xargs -r -P 8 -I '{}' bash -c '
   tsdir="$1"; log="$2/$(printf "%s" "$tsdir" | tr "/" "_").log"
   if (cd "$tsdir" && node "$3" --noEmit -p tsconfig.json >"$log" 2>&1); then
     : > "$log.ok"
   fi
-' _ '{}' "$TCDIR" "$TSC" < "$TCDIR.list"
+' _ '{}' "$TCDIR" "$TSC" < "$TCDIR/list"
 TCFAIL=0
 TCCOUNT=0
 while IFS= read -r tsdir; do
@@ -223,8 +232,12 @@ while IFS= read -r tsdir; do
     head -8 "$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_').log" | sed 's/^/        /'
     TCFAIL=1
   fi
-done < "$TCDIR.list"
+done < "$TCDIR/list"
 rm -rf "$TCDIR"
+if [ "$TCCOUNT" -eq 0 ]; then
+  bad "the typecheck net saw ZERO tsconfigs — the discovery fed it nothing; refusing to call that green"
+  exit 1
+fi
 if [ "$TCFAIL" -ne 0 ]; then
   bad "the typecheck net is red — a missing import is invisible to every behavioural door"
   exit 1

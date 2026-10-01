@@ -191,10 +191,15 @@ describe("requireText (the facts door's one string extractor)", () => {
     assert.equal(requireText({ unet: "x.safetensors" }, "unet", "fam act"), "x.safetensors");
   });
   it("refuses an absent key, a non-string, and an empty string, with the door's own label", () => {
-    for (const raw of [{}, { unet: 7 }, { unet: "" }]) {
+    const cases: [Record<string, unknown>, string][] = [
+      [{}, "undefined"],
+      [{ unet: 7 }, "7"],
+      [{ unet: "" }, '""'],
+    ];
+    for (const [raw, shown] of cases) {
       assert.throws(
         () => requireText(raw, "unet", "fam act"),
-        /fam act: lane_inputs\.unet = .* — a non-empty string is required/,
+        new RegExp("^Error: fam act: lane_inputs\\.unet = " + shown + " — a non-empty string is required$"),
       );
     }
   });
