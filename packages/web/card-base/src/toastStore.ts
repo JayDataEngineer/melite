@@ -148,11 +148,15 @@ export function acquireViewport(id: number): void {
   })
 }
 
-/** Release a viewport id's claim (unmount arm).
+/** Release a viewport id's claim (unmount arm). An id that was
+ *  never acquired is a no-op (the removeToast law): an unguarded
+ *  splice would read indexOf's -1 and drop the LAST live claim.
  *  @param id - the minted viewport id. */
 export function releaseViewport(id: number): void {
+  const index = viewportEngine.getSnapshot().indexOf(id)
+  if (index < 0) return
   viewportEngine.update((draft) => {
-    draft.splice(draft.indexOf(id), 1)
+    draft.splice(index, 1)
   })
 }
 

@@ -13,6 +13,7 @@
  * authority), and ducks the generated voice under the real clip.
  * Music-only clips (no window overlap) overlay clean, no lane.
  */
+import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import s from "./studio.module.css"
 import type { LayerA } from "./docModel"
 
@@ -70,7 +71,7 @@ export function RunRefsClips({
                 <option value="music">Music</option>
                 <option value="sfx">SFX</option>
               </select>
-              <input
+              <Input
                 className={s.laneText}
                 data-testid="tl-lane-text"
                 type="text"
@@ -82,15 +83,15 @@ export function RunRefsClips({
                 value={c.text ?? ""}
                 onChange={(e) => updateAudioClip(c.id, { text: e.target.value })}
               />
-              <button
-                type="button"
+              <Button
+                variant="ghost"
                 className={s.laneDelete}
                 data-testid="tl-lane-delete"
                 title="remove the clip"
                 onClick={() => deleteAudioClip(c.id)}
               >
                 ×
-              </button>
+              </Button>
             </div>
           )
         })}

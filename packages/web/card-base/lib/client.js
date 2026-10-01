@@ -48826,11 +48826,15 @@ void main() {
 				draft.push(id);
 			});
 		}
-		/** Release a viewport id's claim (unmount arm).
+		/** Release a viewport id's claim (unmount arm). An id that was
+		*  never acquired is a no-op (the removeToast law): an unguarded
+		*  splice would read indexOf's -1 and drop the LAST live claim.
 		*  @param id - the minted viewport id. */
 		function releaseViewport(id) {
+			const index = viewportEngine.getSnapshot().indexOf(id);
+			if (index < 0) return;
 			viewportEngine.update((draft) => {
-				draft.splice(draft.indexOf(id), 1);
+				draft.splice(index, 1);
 			});
 		}
 		/** The hook a viewport reads the live id set through — every
@@ -50141,4 +50145,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="464381dfbe6d048826b92e582f3f5da7e395bded";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="35d09732729348b376f00deee252bc7da51a5004";

@@ -48,11 +48,15 @@ function stringValue(value: unknown): string {
 }
 
 /** The readiness retry backoff (500ms, raced against the caller's
- *  abort signal). cordis 4.0.4 dropped `ctx.timeout`, whose fiber-
- *  scoped timer this replaces. Rides the exported SEAMS holder so
- *  the coverage rig overrides the sleep by name (ESM export
- *  bindings are frozen — an internal call can never be stubbed
- *  through the namespace; a property on a live object can). */
+ *  abort signal). cordis did NOT drop `ctx.timeout` — the vendored
+ *  cordis-plugin-timer supplies it and the manage row injects the
+ *  seat (estate-queue/src/manageRegistry.ts:89); this composition
+ *  does not seat it, so the port's retry rides a bare setTimeout —
+ *  owed: seat "timer" and ride the fiber-scoped primitive. Rides
+ *  the exported SEAMS holder so the coverage rig overrides the
+ *  sleep by name (ESM export bindings are frozen — an internal
+ *  call can never be stubbed through the namespace; a property on
+ *  a live object can). */
 export const SEAMS: { readinessBackoff(signal?: AbortSignal): Promise<void> } = {
   readinessBackoff(signal?: AbortSignal): Promise<void> {
     return new Promise<void>((resolve, reject) => {
