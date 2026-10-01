@@ -35,8 +35,6 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
   * A complete cordis application you should be mirroring: references/deepseek-harness
 * In code comments, make direct references with line numbers to the deepseek harness repo
 
-  
-
 ## Layer B: The Engine: Comfyui, MCP servers
 * Layer A exists to call Layer B. 
 * The current phase of the project is currently focused on Comfyui.
@@ -74,6 +72,13 @@ recipe: `docs/RUNBOOK-3088-AGENT.md`. Read it before any "run the loop /
 test the system / commission" task. Never hand-drive the estate doors as a
 substitute; never spawn 3080 subagents for it; never ask the operator for
 details the runbook already holds.
+
+# Subagents
+
+Subagents are critical for auditing, exploring, and findoing gaps
+The rule of thumb that should be emplyed is for them to write reports to: docs/audits/
+Subagents should also be sent to this folder to update the findings there, updating /verifying findings, track progress, closing out and deleting. This is a key task for subagents, to ensure that the docs/audits/ never drfit out of place
+
 
 # Hard Rules
 
