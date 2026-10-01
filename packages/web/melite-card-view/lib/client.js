@@ -8433,6 +8433,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			let lastAct = "";
 			let transportFails = 0;
 			const TRANSPORT_UNREACHABLE_AFTER = 10;
+			const TRANSPORT_BACKOFF_BASE_MS = 1500;
+			const TRANSPORT_BACKOFF_MAX_MS = 1e4;
 			while (signal?.aborted !== true) {
 				let row;
 				try {
@@ -8458,7 +8460,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						lastLive = "";
 						onTouched?.();
 					} catch {}
-					await sleep(Math.min(1500 * transportFails, 1e4));
+					await sleep(Math.min(TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1), TRANSPORT_BACKOFF_MAX_MS));
 					continue;
 				}
 				transportFails = 0;
@@ -44808,4 +44810,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3a2484ad126eca38542cd5be6122ef22d4cdf163";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="862f8bed0e7b09020d5dd89ff2711acc4fbbdd0e";

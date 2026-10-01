@@ -592,6 +592,9 @@ async function observeRunOutcomeRun(
     await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
     onTouched?.()
   } catch { /* bookkeeping */ }
+  // The abortable sleep is DSH's own internal shape (connection.ts's
+  // sleep(ms, signal): timer + once-abort listener — reference
+  // packages/client/connection/src/client/connection.ts:19).
   const sleep = (ms: number): Promise<void> =>
     new Promise((resolve) => {
       const t = setTimeout(resolve, ms)
@@ -609,8 +612,22 @@ async function observeRunOutcomeRun(
   // TRANSPORT_UNREACHABLE_AFTER consecutive failures, with backoff —
   // and the next successful poll corrects the face (lastLive is
   // blanked when the face lands, so the live patch always fires).
+  // THE POLICY (3.6's rationale, recorded — the DSH mirror): the
+  // backoff is ConnectionRecoveryConfig's shape (references/
+  // deepseek-harness/packages/client/connection/src/recovery-config.ts
+  // — base, growth factor, cap): exponential 1500*2^(n-1) capped at
+  // 10s, where DSH's own client rides 500*2^n capped at 10s; ours
+  // opens slower because each poll is a full estate door round-trip,
+  // not a carrier redial. The escalation threshold (10 consecutive
+  // transport failures) is the never-answers judgment: under it, a
+  // flap stays a live face (the under-threshold wall); past it, the
+  // tile says what is true — the transport is down. LOW-23's half
+  // stays owed: the health word rides runStatus until the stage row
+  // grows its own health channel (a product-surface decision).
   let transportFails = 0
   const TRANSPORT_UNREACHABLE_AFTER = 10
+  const TRANSPORT_BACKOFF_BASE_MS = 1500
+  const TRANSPORT_BACKOFF_MAX_MS = 10000
   while (signal?.aborted !== true) {
     let row: Awaited<ReturnType<typeof fetchRunStatus>>
     try {
@@ -641,7 +658,10 @@ async function observeRunOutcomeRun(
           onTouched?.()
         } catch { /* bookkeeping */ }
       }
-      await sleep(Math.min(1500 * transportFails, 10000)) // backoff — the estate returning is the cure
+      await sleep(Math.min(
+        TRANSPORT_BACKOFF_BASE_MS * 2 ** (transportFails - 1),
+        TRANSPORT_BACKOFF_MAX_MS,
+      )) // exponential backoff — the estate returning is the cure
       continue
     }
     transportFails = 0
