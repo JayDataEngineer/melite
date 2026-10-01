@@ -22,9 +22,9 @@
  * row outside the generic seam's grid grammar; the Width/Height
  * injects own geometry, one surface).
  */
-import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base"
-import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base'
-import { fetchMediaLibrary } from '@melite/card-base'
+import { CardForm, ControlRow, SpecAtom, useResolvedForm, type SquareWire } from "@melite/card-base/client"
+import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
+import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
 import type { LayerA, SetLayerAKey } from "./docModel"

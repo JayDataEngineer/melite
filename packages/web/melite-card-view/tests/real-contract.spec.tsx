@@ -16,7 +16,7 @@ import { createElement, useState } from 'react'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import fixture21 from './fixtures/image-edit-spec.json'
 import fixture2511 from './fixtures/image-edit-2511-spec.json'
-import { fieldsOf } from '@melite/card-base'
+import { fieldsOf } from '@melite/card-base/client'
 import {
   SpecForm,
   modOwnedFields,

@@ -8,7 +8,7 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
-import { AlertTriangle, PersonStanding, RotateCcw, RotateCw, User } from '@melite/card-base'
+import { AlertTriangle, PersonStanding, RotateCcw, RotateCw, User } from '@melite/card-base/client'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { CardStage } from "@melite/contracts"
 import type { MotionAzimuth, MotionNpz } from "@melite/formats"
@@ -17,8 +17,8 @@ import { stepAzimuth } from "@melite/formats"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
 import { Skeleton, Tip, ViewportAnchor, ViewportFrame } from "./kit"
-import { ASSET_DRAG_MIME } from '@melite/card-base'
-import { cn } from '@melite/card-base'
+import { ASSET_DRAG_MIME } from '@melite/card-base/client'
+import { cn } from '@melite/card-base/client'
 import s from "./component.module.css"
 import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog"
 

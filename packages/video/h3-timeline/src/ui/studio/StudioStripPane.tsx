@@ -6,10 +6,10 @@
 import { useRef } from "react"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
 import type { TimelineKeyframe, TimelinePrompt } from "@melite-plugin/timeline/ui/timeline"
-import { useSquareProvider } from '@melite/card-base'
-import type { SpecField } from '@melite/card-base'
-import { fetchMediaLibrary } from '@melite/card-base'
-import { PaneHeader, PaneShell } from "@melite/card-base"
+import { useSquareProvider } from '@melite/card-base/client'
+import type { SpecField } from '@melite/card-base/client'
+import { fetchMediaLibrary } from '@melite/card-base/client'
+import { PaneHeader, PaneShell } from "@melite/card-base/client"
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel"

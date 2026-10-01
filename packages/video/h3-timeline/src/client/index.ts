@@ -19,7 +19,8 @@
  */
 import { createElement as h } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { defineStageViewRegistration } from '@melite/card-base'
+import { setContractToastSink } from '@melite/catalog'
+import { defineStageViewRegistration, useToastStore } from '@melite/card-base/client'
 import {
   cardResultFromRecord,
   projectStageView,
@@ -30,6 +31,12 @@ import {
 import { VideoTimelineStudio } from '../ui/studio/component.tsx'
 import { refGenreOf } from '@melite/models-h3/timelineContract'
 
+// CONTRACT TOASTS — wire the inlined catalog contract stores to the
+// row's toast store (the one host that outlives every reporting
+// surface); verdicts surface from the same instance that renders them.
+setContractToastSink((type, message, action) => {
+  useToastStore.getState().addToast(type, message, action)
+})
 type H3HistoryRow = {
   runId?: string
   status?: string

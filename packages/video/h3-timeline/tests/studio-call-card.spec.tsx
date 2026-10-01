@@ -12,7 +12,7 @@ import { useState } from "react"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
-import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
+import { fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED WALK (hour 22): the fold's schema truth — the carrier's

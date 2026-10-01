@@ -4,7 +4,7 @@
 // in only when the declaration is absent or non-previewable.
 import { expect, test } from 'vitest'
 import { paramsDiffKeys, previewKindFor, previewReportsFor, primaryKindFor } from '../src/client/CardsTab.tsx'
-import type { FormSpecDoc } from '@melite/card-base'
+import type { FormSpecDoc } from '@melite/card-base/client'
 
 const spec = (outputs?: Record<string, string>): FormSpecDoc =>
   ({ form: 'x', fields: [], ...(outputs === undefined ? {} : { outputs }) }) as FormSpecDoc

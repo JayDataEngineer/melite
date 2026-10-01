@@ -5,7 +5,7 @@ window.__ModuleLoader__.load({
 		var exports = module.exports;
 		Object.defineProperty(exports, Symbol.toStringTag, { value: "Module" });
 		let react = require("react");
-		let _melite_card_base = require("@melite/card-base");
+		let _melite_card_base_client = require("@melite/card-base/client");
 		//#region src/client/index.ts
 		/**
 		* img-to-mesh-studio — the FIRST-PARTY cards.stage.view surface
@@ -20,7 +20,7 @@ window.__ModuleLoader__.load({
 		*/
 		/** The door's group truth (schema_groups, 2026-09-12 lane read):
 		*  input, generation — exposed; stage, mesh, bake, lab — folded. */
-		const SURFACE = (0, _melite_card_base.defineStudioDeclaration)({
+		const SURFACE = (0, _melite_card_base_client.defineStudioDeclaration)({
 			model: "img-to-mesh",
 			expose: ["input", "generation"],
 			folds: {
@@ -33,7 +33,7 @@ window.__ModuleLoader__.load({
 		});
 		/** The studio surface component — registered under key 'img-to-mesh'. */
 		function ImgToMeshStudio(props) {
-			return (0, react.createElement)(_melite_card_base.DeclarativeStudio, {
+			return (0, react.createElement)(_melite_card_base_client.DeclarativeStudio, {
 				declaration: SURFACE,
 				...props
 			});
@@ -42,7 +42,7 @@ window.__ModuleLoader__.load({
 		* module namespace IS the plugin: the loader consumes name/inject/apply). */
 		const name = "imgToMeshStudio";
 		const inject = ["slots"];
-		const apply = (0, _melite_card_base.defineStageViewRegistration)("img-to-mesh", ImgToMeshStudio);
+		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("img-to-mesh", ImgToMeshStudio);
 		//#endregion
 		exports.ImgToMeshStudio = ImgToMeshStudio;
 		exports.apply = apply;
@@ -53,4 +53,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c1c07e75fa5ab75e39ffefb27319faf5c6ffd531";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3c649905e26bce1e6cb976f96d77fe14ba5483d8";

@@ -5,14 +5,15 @@
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
 import { ensureCatalog, isCatalogLoaded } from "../src/modelCatalog.ts";
-import { useToastStore } from '@melite/card-base';
+import { setContractToastSink } from "../src/contractToast.ts";
 
 const realFetch = globalThis.fetch;
-const realAddToast = useToastStore.getState().addToast;
 afterEach(() => {
   globalThis.fetch = realFetch;
-  useToastStore.setState({ addToast: realAddToast });
 });
+
+// Toasts are not under test here — silence the contract seam.
+setContractToastSink(() => {});
 
 const json = (v: unknown, status = 200): Response =>
   new Response(JSON.stringify(v), { status });
@@ -25,7 +26,6 @@ const GOOD = {
 
 describe("ensureCatalog background retry", () => {
   it("fires the scheduled retry, which succeeds with no timer pending", async () => {
-    useToastStore.setState({ addToast: (() => {}) as typeof realAddToast });
     let calls = 0;
     let good = false;
     globalThis.fetch = (async () => {

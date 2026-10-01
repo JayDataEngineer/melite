@@ -24,7 +24,7 @@
  */
 
 import * as THREE from "three"
-import { mountStage3D, type Stage3D } from "@melite/card-base"
+import { mountStage3D, type Stage3D } from "@melite/card-base/client"
 import { CM_TO_M } from "./poseStageSkeleton"
 import { framedCameraPos } from "./poseStageCamera"
 import { computeMeshLiftY } from "./poseStageMesh"

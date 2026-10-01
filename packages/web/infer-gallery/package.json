@@ -20,7 +20,7 @@
       ],
       "platform": "web",
       "external": [
-        "@melite/card-base"
+        "@melite/card-base/client"
       ]
     }
   },
@@ -59,6 +59,7 @@
   },
   "dependencies": {
     "@melite/card-base": "workspace:*",
+    "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
     "three": "^0.184.0"

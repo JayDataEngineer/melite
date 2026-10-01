@@ -1,5 +1,5 @@
 import * as THREE from "three"
-import type { StageLayers } from '@melite/card-base'
+import type { StageLayers } from '@melite/card-base/client'
 
 // ── Types ─────────────────────────────────────────────────────────────────
 export interface SkinMeshData {

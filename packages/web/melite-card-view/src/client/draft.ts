@@ -57,7 +57,7 @@ import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
 export type { FlowEventFrame }
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
-import { estateRemote, unwrapRemote, type DraftsNamespace } from '@melite/card-base'
+import { estateRemote, unwrapRemote, type DraftsNamespace } from '@melite/card-base/client'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's

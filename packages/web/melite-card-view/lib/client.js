@@ -46,7 +46,7 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
-		let _melite_card_base = require("@melite/card-base");
+		let _melite_card_base_client = require("@melite/card-base/client");
 		require("@deepseek-ai/cordis");
 		let _deepseek_ai_dsh_api_gateway_client = require("@deepseek-ai/dsh-api-gateway/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
@@ -7288,7 +7288,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region src/client/draft.ts
 		/** The draft doc; throws the door's own named refusal on failure. */
 		async function fetchDraft(draftId) {
-			const doc = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().drafts.get(draftId), "drafts/get");
+			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId), "drafts/get");
 			if (typeof doc["draft_id"] !== "string" || !Array.isArray(doc["stages"])) throw new Error("drafts/get: not a draft doc");
 			return doc;
 		}
@@ -7321,8 +7321,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  word that the write landed — the ledger records it, a caller may
 		*  use it as its next CAS handle). */
 		async function patchOnce(draftId, stageId, patch, expectRev) {
-			const ns = (0, _melite_card_base.estateRemote)().drafts;
-			const row = await (0, _melite_card_base.unwrapRemote)(ns.patch(draftId, stageId, patch, expectRev ?? null), "drafts/patch");
+			const ns = (0, _melite_card_base_client.estateRemote)().drafts;
+			const row = await (0, _melite_card_base_client.unwrapRemote)(ns.patch(draftId, stageId, patch, expectRev ?? null), "drafts/patch");
 			if (row["delivered"] !== true) {
 				const reason = typeof row["reason"] === "string" ? row["reason"] : "undelivered";
 				throw new Error("drafts/patch: " + reason + " (draft " + draftId + ", stage " + stageId + ")");
@@ -7605,13 +7605,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		/** Start the run; returns the run_id or throws the door's named refusal. */
 		async function startDraft(draftId) {
-			const row = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().runs.start({ draft_id: draftId }), "runs/start");
+			const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.start({ draft_id: draftId }), "runs/start");
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
 		/** The run status (poll target). Throws on transport failure only. */
 		async function runStatus(runId) {
-			const doc = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().runs.status(runId), "runs/status");
+			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId), "runs/status");
 			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
@@ -7909,7 +7909,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		async function fetchBench(sessionKey, signal) {
 			const key = benchSessionOf(sessionKey);
 			try {
-				return readBench(await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench.get(key, signal), "bench/get"), key);
+				return readBench(await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(key, signal), "bench/get"), key);
 			} catch (e) {
 				if (isMissingBench(e)) return emptyBench(key);
 				throw e;
@@ -8062,7 +8062,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		async function observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched) {
 			try {
-				const startStatus = await (0, _melite_card_base.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running");
+				const startStatus = await (0, _melite_card_base_client.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running");
 				await patchStageOutcome(draftId, stageId, {
 					runStatus: startStatus === "queued" || startStatus === "pending" ? "queued" : "running",
 					result: { run_id: runId }
@@ -8084,10 +8084,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			while (signal?.aborted !== true) {
 				let row;
 				try {
-					row = await (0, _melite_card_base.fetchRunStatus)(runId, signal);
+					row = await (0, _melite_card_base_client.fetchRunStatus)(runId, signal);
 				} catch (e) {
-					if ((0, _melite_card_base.isEstateRefusal)(e)) {
-						const terminal = tileStatusFromVerdict(await (0, _melite_card_base.probeRunGone)(runId, signal));
+					if ((0, _melite_card_base_client.isEstateRefusal)(e)) {
+						const terminal = tileStatusFromVerdict(await (0, _melite_card_base_client.probeRunGone)(runId, signal));
 						try {
 							await patchStageOutcome(draftId, stageId, {
 								runStatus: terminal,
@@ -8171,7 +8171,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				hooks.armed?.add(key);
 				let verdict;
 				try {
-					verdict = await (0, _melite_card_base.probeRunGone)(runId, hooks.signal);
+					verdict = await (0, _melite_card_base_client.probeRunGone)(runId, hooks.signal);
 				} catch {
 					hooks.armed?.delete(key);
 					continue;
@@ -8264,7 +8264,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  refuses honestly. */
 		async function freshStageRow(draftId, stageId, signal) {
 			try {
-				const doc = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().drafts.get(draftId, signal), "drafts/get");
+				const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftId, signal), "drafts/get");
 				return deriveCardForRow(Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [], typeof doc["intent"] === "string" ? doc["intent"] : "").find((s) => s.id === stageId) ?? null;
 			} catch {
 				return null;
@@ -8297,7 +8297,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const key = benchSessionOf(sessionKey);
 			let draft;
 			try {
-				draft = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().drafts.get(run.draftId, signal), "drafts/get");
+				draft = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(run.draftId, signal), "drafts/get");
 			} catch (e) {
 				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -8306,7 +8306,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (stages.length === 0) throw new Error("the producing draft holds no stages — nothing to restore");
 			let bench;
 			try {
-				bench = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench.get(key, signal), "bench/get");
+				bench = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(key, signal), "bench/get");
 			} catch (e) {
 				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
 			}
@@ -8333,7 +8333,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const id = typeof st["id"] === "string" && st["id"] !== "" ? st["id"] : null;
 				if (id !== null) doc["id"] = id;
 				try {
-					const row = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench["add-stage"](key, doc, signal), "bench/add-stage");
+					const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench["add-stage"](key, doc, signal), "bench/add-stage");
 					if (typeof row["rev"] === "number") rev = row["rev"];
 					report.added += 1;
 				} catch (e) {
@@ -8342,7 +8342,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						const retry = { ...doc };
 						delete retry["id"];
 						try {
-							const row = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench["add-stage"](key, retry, signal), "bench/add-stage");
+							const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench["add-stage"](key, retry, signal), "bench/add-stage");
 							if (typeof row["rev"] === "number") rev = row["rev"];
 							report.added += 1;
 							report.notes.push(id + " was already on the bench — added under a fresh id");
@@ -8373,7 +8373,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (remote === void 0) {
 						let value;
 						try {
-							value = readBench(await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench.get(benchKey), "bench/get"), benchKey);
+							value = readBench(await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(benchKey), "bench/get"), benchKey);
 						} catch (e) {
 							if (!isMissingBench(e)) {
 								yield failure(address, e instanceof Error ? e.message : String(e));
@@ -8398,7 +8398,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (draftTarget !== null) {
 					let value;
 					try {
-						value = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
+						value = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
 					} catch (e) {
 						yield failure(address, e instanceof Error ? e.message : String(e));
 						return;
@@ -8414,7 +8414,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						if (ctx.signal.aborted) return;
 						let next;
 						try {
-							next = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
+							next = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
 						} catch {
 							continue;
 						}
@@ -8432,7 +8432,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				let value;
 				try {
-					value = readRun(runId, await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().runs.status(runId), "runs/status"));
+					value = readRun(runId, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId), "runs/status"));
 				} catch (e) {
 					yield failure(address, e instanceof Error ? e.message : String(e));
 					return;
@@ -8477,7 +8477,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (await sleep(1500) === "abort" || signal.aborted) return;
 				let row;
 				try {
-					row = await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().runs.status(runId, signal), "runs/status");
+					row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId, signal), "runs/status");
 				} catch {
 					continue;
 				}
@@ -8938,7 +8938,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* with the reply's detail line, refuses with its own name. */
 		async function runRescueCall(rescue, target) {
 			const provisionTarget = rescue.kind === "model" && rescue.target !== void 0 && rescue.target !== "" ? rescue.target : target;
-			const reply = rescue.kind === "extension" ? await (0, _melite_card_base.postManageAction)("install_extension", { nodes: [rescue.pack] }) : await (0, _melite_card_base.postManageAction)("provision_model", { model: provisionTarget });
+			const reply = rescue.kind === "extension" ? await (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [rescue.pack] }) : await (0, _melite_card_base_client.postManageAction)("provision_model", { model: provisionTarget });
 			if (!reply.ok) throw new Error(reply.detail ?? "manage refused");
 			const data = typeof reply.data === "object" && reply.data !== null && !Array.isArray(reply.data) ? reply.data : null;
 			const state = data !== null && typeof data["state"] === "string" ? data["state"] : "";
@@ -9013,7 +9013,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						onClick: () => {
 							setRestarting(true);
 							setNote(null);
-							(0, _melite_card_base.postManageAction)("restart", {}).then((reply) => {
+							(0, _melite_card_base_client.postManageAction)("restart", {}).then((reply) => {
 								if (!reply.ok) throw new Error(reply.detail ?? "restart refused");
 								setRestarting(false);
 								setRestarted(true);
@@ -9091,7 +9091,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const engineParams = { ...params };
 				if (brain !== "") engineParams["model"] = brain;
 				delete engineParams["brain"];
-				return await (0, _melite_card_base.startFlowInlineRun)({
+				return await (0, _melite_card_base_client.startFlowInlineRun)({
 					flowId: "mcp",
 					stages: [{
 						id: src.id,
@@ -9131,8 +9131,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			let doc = resolved;
 			try {
-				const spec = await (0, _melite_card_base.fetchFormSpec)(card);
-				const selects = (0, _melite_card_base.fieldsOf)(spec).filter((f) => f.type === "select" && Array.isArray(f.options));
+				const spec = await (0, _melite_card_base_client.fetchFormSpec)(card);
+				const selects = (0, _melite_card_base_client.fieldsOf)(spec).filter((f) => f.type === "select" && Array.isArray(f.options));
 				if (selects.length > 0) {
 					doc = { ...resolved };
 					for (const f of selects) {
@@ -9143,7 +9143,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 				}
 			} catch {}
-			return await (0, _melite_card_base.startCardRun)({
+			return await (0, _melite_card_base_client.startCardRun)({
 				model,
 				params: doc,
 				draftId
@@ -9223,7 +9223,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  then skipped; the original refusal stands as the honest answer). */
 		async function benchRev(sessionKey, signal) {
 			try {
-				const rev = (await (0, _melite_card_base.unwrapRemote)((0, _melite_card_base.estateRemote)().bench.get(sessionKey, signal), "bench/get")).rev;
+				const rev = (await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(sessionKey, signal), "bench/get")).rev;
 				return typeof rev === "number" ? rev : void 0;
 			} catch {
 				return;
@@ -9248,8 +9248,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  once-law died under a live second author, 2026-10-09). */
 		const BENCH_ATTEMPTS = 3;
 		async function withRebase(verb, doc, sessionKey, signal) {
-			const ns = (0, _melite_card_base.estateRemote)().bench;
-			const attempt = (expectRev) => (0, _melite_card_base.unwrapRemote)(ns[verb](sessionKey, {
+			const ns = (0, _melite_card_base_client.estateRemote)().bench;
+			const attempt = (expectRev) => (0, _melite_card_base_client.unwrapRemote)(ns[verb](sessionKey, {
 				...doc,
 				expect_rev: expectRev
 			}, signal), "bench/" + verb).then((row) => row);
@@ -9477,6 +9477,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			consecutiveFail = 0;
 			listeners = /* @__PURE__ */ new Set();
 			inflight = /* @__PURE__ */ new Map();
+		}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/contractToast.ts
+		/**
+		* Wire the toast pusher the contract stores report through.
+		* @param toast - the row's addToast (browser) or a test recorder.
+		*/
+		function setContractToastSink(toast) {
+			sink = toast;
+		}
+		/**
+		* Fire one contract toast through the wired sink.
+		* @param type - toast severity.
+		* @param message - the operator-facing text.
+		* @param action - optional Retry-style button.
+		* @throws when no sink is wired — an unwired verdict must surface,
+		*          not vanish.
+		*/
+		function contractToast(type, message, action) {
+			if (sink === null) throw new Error("contract toast sink unset — call setContractToastSink() from the owning client face before reporting");
+			sink(type, message, action);
+		}
+		var sink;
+		var init_contractToast = __esmMin((() => {
+			sink = null;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/catalogContract.ts
@@ -10353,6 +10378,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var IDLE, _lastToastedOutage, _listeners$2, _state$1, _initialState$1, useCatalogContractStore;
 		var init_catalogContractStore = __esmMin((() => {
+			init_contractToast();
 			IDLE = {
 				state: "idle",
 				violations: [],
@@ -10370,7 +10396,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						violations: [],
 						error: null
 					} });
-					if (wasOutage) _melite_card_base.useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`);
+					if (wasOutage) contractToast("info", `Catalog back online (at ${_stamp()}).`);
 				},
 				reportViolation: (violations) => {
 					console.error(`[catalogContract] catalog contract violation (at ${_stamp()}):`, violations);
@@ -10380,8 +10406,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						error: null
 					} });
 					const first = violations[0];
-					const msg = first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape";
-					_melite_card_base.useToastStore.getState().addToast("error", `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
+					contractToast("error", `Catalog contract violation — ${first ? first.kind && first.kind !== "catalog" ? `${first.kind}: ${first.message}` : first.message : "the catalog response did not match the expected shape"} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -10396,7 +10421,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} });
 					if (clean === _lastToastedOutage) return;
 					_lastToastedOutage = clean;
-					_melite_card_base.useToastStore.getState().addToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
+					contractToast("error", `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`, {
 						label: "Retry",
 						onClick: retryCatalog
 					});
@@ -10511,7 +10536,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			})).then(() => useRunStatusContractStore.getState().clear()).catch(() => {});
 		}
 		function toastVerdict(v) {
-			const toast = _melite_card_base.useToastStore.getState().addToast;
+			const toast = contractToast;
 			if (v.kind === "violation") {
 				const first = v.violations[0]?.message ?? "the status response did not match the expected shape";
 				toast("error", `Run ${v.runId}: ${v.violations.length} contract issue(s) — ${first}. Retry to re-check, or re-run the card.`, {
@@ -10550,6 +10575,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var _listeners$1, _state, _initialState, useRunStatusContractStore;
 		var init_runStatusContractStore = __esmMin((() => {
+			init_contractToast();
 			_listeners$1 = /* @__PURE__ */ new Set();
 			_state = {
 				verdict: null,
@@ -40310,6 +40336,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			computeMinMaxPeaks: () => computeMinMaxPeaks,
 			computeWaveformLODs: () => computeWaveformLODs,
 			connectComfyEvents: () => connectComfyEvents,
+			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
 			decodeAudioPeaks: () => decodeAudioPeaks,
 			deformSomaJoints: () => deformSomaJoints,
@@ -40405,6 +40432,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			saveScene: () => saveScene,
 			selectLOD: () => selectLOD,
 			setCardLlm: () => setCardLlm,
+			setContractToastSink: () => setContractToastSink,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
 			streamFlowEvents: () => streamFlowEvents,
@@ -40428,6 +40456,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		});
 		var init_src = __esmMin((() => {
 			init_api();
+			init_contractToast();
 			init_catalogContract();
 			init_catalogContractStore();
 			init_modelCatalog();
@@ -41044,7 +41073,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						onReorderOver(row.id);
 						return;
 					}
-					if (e.dataTransfer.types.includes(_melite_card_base.ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
+					if (e.dataTransfer.types.includes(_melite_card_base_client.ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files")) {
 						e.preventDefault();
 						e.stopPropagation();
 						e.dataTransfer.dropEffect = "copy";
@@ -41058,7 +41087,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						if (active !== "" && active !== row.id) onReorderDrop(active, row.id);
 						return;
 					}
-					const asset = (0, _melite_card_base.parseAssetDrop)(e.dataTransfer.types.includes(_melite_card_base.ASSET_DRAG_MIME) ? e.dataTransfer.getData(_melite_card_base.ASSET_DRAG_MIME) : "");
+					const asset = (0, _melite_card_base_client.parseAssetDrop)(e.dataTransfer.types.includes(_melite_card_base_client.ASSET_DRAG_MIME) ? e.dataTransfer.getData(_melite_card_base_client.ASSET_DRAG_MIME) : "");
 					if ((asset.url ?? "") !== "") {
 						e.preventDefault();
 						e.stopPropagation();
@@ -41104,7 +41133,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}) : (0, react.createElement)("span", {
 				className: card_module_css_default.kindFace,
 				"data-kind": row.kind
-			}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, (0, _melite_card_base.titleCaseId)(row.kind))), rowRunning(row) ? (0, react.createElement)("span", {
+			}, (0, react.createElement)("span", { className: card_module_css_default.kindInitial }, row.kind.slice(0, 1).toUpperCase()), (0, react.createElement)("span", { className: card_module_css_default.kindName }, (0, _melite_card_base_client.titleCaseId)(row.kind))), rowRunning(row) ? (0, react.createElement)("span", {
 				className: card_module_css_default.tileSpin,
 				"data-testid": "tile-spin",
 				role: "status",
@@ -41147,7 +41176,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
 				className: card_module_css_default.wiredMark,
 				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
@@ -41425,7 +41454,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				let root = null;
 				let cancelled = false;
 				let disposeEnv = null;
-				stage = (0, _melite_card_base.mountStage3D)(canvas, {
+				stage = (0, _melite_card_base_client.mountStage3D)(canvas, {
 					fov: 40,
 					toneMapping: 0,
 					onContextFailure: (msg) => {
@@ -42905,7 +42934,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the picker falls to the unfiltered list (never blocks a pick). */
 		let formsEdgeMetaPromise = null;
 		function loadFormsEdgeMeta() {
-			formsEdgeMetaPromise ??= (0, _melite_card_base.fetchFormsTable)().then((rows) => {
+			formsEdgeMetaPromise ??= (0, _melite_card_base_client.fetchFormsTable)().then((rows) => {
 				const out = {};
 				for (const [id, row] of Object.entries(rows)) out[id] = {
 					inputs: row.inputs,
@@ -42990,7 +43019,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the bench never receives a doc it would refuse. */
 		function composeGateRefusal(spec, held, user, frame) {
 			if (spec === null) return null;
-			const first = (0, _melite_card_base.composeValidate)(spec, (0, _melite_card_base.composeCandidateDoc)(held ?? {}, user, frame))[0];
+			const first = (0, _melite_card_base_client.composeValidate)(spec, (0, _melite_card_base_client.composeCandidateDoc)(held ?? {}, user, frame))[0];
 			if (first === void 0) return null;
 			return "THE COMPOSE GATE REFUSED — " + first.message + " — the write never left the studio. Fix the stated value, or pick a different route.";
 		}
@@ -43037,13 +43066,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLoaded(true);
 					return;
 				}
-				(0, _melite_card_base.fetchFormSpec)(family).then((doc) => {
+				(0, _melite_card_base_client.fetchFormSpec)(family).then((doc) => {
 					if (!alive) return;
 					setError(null);
 					setSpec(doc);
-					const seeded = (0, _melite_card_base.seedUser)(doc, freshOpen ? held : userRef.current);
+					const seeded = (0, _melite_card_base_client.seedUser)(doc, freshOpen ? held : userRef.current);
 					setUser(seeded);
-					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base.fieldsOf)(doc).map((f) => f.name)));
+					if (freshOpen) reconcileStageWriteFailures(bench.draftId, stage.id, held, seeded, new Set((0, _melite_card_base_client.fieldsOf)(doc).map((f) => f.name)));
 					setLoaded(true);
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
@@ -43084,7 +43113,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				others
 			]);
 			const onSet = (0, react.useCallback)((name, v) => {
-				if ((0, _melite_card_base.axisUnset)(name, v, spec)) {
+				if ((0, _melite_card_base_client.axisUnset)(name, v, spec)) {
 					setUser((m) => {
 						if (!Object.prototype.hasOwnProperty.call(m, name)) return m;
 						const next = {};
@@ -43107,7 +43136,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					[name]: v
 				}));
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
-				const shape2 = spec !== null ? (0, _melite_card_base.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
+				const shape2 = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") {
 					const refused = composeGateRefusal(spec, stage.params, user, { [name]: v });
@@ -43121,7 +43150,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 				}
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
-				const shape = spec !== null ? (0, _melite_card_base.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
+				const shape = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape === "image" || shape === "file" || shape === "mesh") {
 					const slotFrame = v === "" ? { [name]: null } : { [name]: v };
@@ -43144,7 +43173,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const onPick = (0, react.useCallback)((patch) => {
 				const landed = {};
 				const nulls = {};
-				for (const [k, v] of Object.entries(patch)) if ((0, _melite_card_base.axisUnset)(k, v, spec)) nulls[k] = null;
+				for (const [k, v] of Object.entries(patch)) if ((0, _melite_card_base_client.axisUnset)(k, v, spec)) nulls[k] = null;
 				else landed[k] = v;
 				setUser((m) => {
 					const next = { ...m };
@@ -43185,7 +43214,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					return next;
 				});
 				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
-				const shape = spec !== null ? (0, _melite_card_base.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
+				const shape = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape === "image" || shape === "file" || shape === "mesh") {
 					const refused = composeGateRefusal(spec, stage.params, user, { [name]: null });
@@ -43205,7 +43234,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				stage.id
 			]);
 			const servedBase = typeof stage.resolved === "object" && stage.resolved !== null && !Array.isArray(stage.resolved) ? stage.resolved : void 0;
-			const value = (0, _melite_card_base.resolveValue)(spec ?? { form: "" }, user, servedBase);
+			const value = (0, _melite_card_base_client.resolveValue)(spec ?? { form: "" }, user, servedBase);
 			const enhance = async () => {
 				/* v8 ignore next 4 -- zoom.tsx serializes enhance to one flight (probe 2026-09-19): re-entry never observes enhancing=true */
 				if (enhancing) {
@@ -43251,13 +43280,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} catch {}
 					if (!res.ok || typeof doc.error === "string") throw new Error(typeof doc.error === "string" ? doc.error : "enhance failed (" + res.status + (raw.length > 0 && raw.length < 200 ? ": " + raw : "") + ")");
 					const results = doc.results ?? {};
-					const declared = new Set(spec !== null ? (0, _melite_card_base.fieldsOf)(spec).map((f) => f.name) : []);
+					const declared = new Set(spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).map((f) => f.name) : []);
 					const sweptPatch = {};
-					const fieldByName = new Map(spec !== null ? (0, _melite_card_base.fieldsOf)(spec).map((f) => [f.name, f]) : []);
+					const fieldByName = new Map(spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).map((f) => [f.name, f]) : []);
 					for (const [field, r] of Object.entries(results)) {
 						if (typeof r?.positive !== "string" || r.positive === "") continue;
-						if (field === "prompt" || declared.has(field)) sweptPatch[field] = (0, _melite_card_base.coerceFieldEdit)(fieldByName.get(field), r.positive);
-						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = (0, _melite_card_base.coerceFieldEdit)(fieldByName.get("negative_prompt"), r.negative);
+						if (field === "prompt" || declared.has(field)) sweptPatch[field] = (0, _melite_card_base_client.coerceFieldEdit)(fieldByName.get(field), r.positive);
+						if (field === "prompt" && declared.has("negative_prompt") && typeof r.negative === "string" && r.negative !== "") sweptPatch["negative_prompt"] = (0, _melite_card_base_client.coerceFieldEdit)(fieldByName.get("negative_prompt"), r.negative);
 					}
 					setUser((m) => ({
 						...m,
@@ -43298,7 +43327,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const wire = {
 				candidates,
 				candidatesFor,
-				loadMedia: _melite_card_base.fetchMediaLibrary
+				loadMedia: _melite_card_base_client.fetchMediaLibrary
 			};
 			const run = async () => {
 				setError(null);
@@ -43419,15 +43448,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					...spec?.preview?.historyStrip === false ? { historyStrip: false } : {},
 					...spec?.preview?.figure !== void 0 ? { figure: {
 						identityModel: spec.preview.figure.identityModel,
-						...(0, _melite_card_base.figureCoeffsOf)(spec, value) !== null ? { identityCoeffs: (0, _melite_card_base.figureCoeffsOf)(spec, value) } : {},
-						...(0, _melite_card_base.figureLocalChangesOf)(spec, value) !== null ? { localChanges: (0, _melite_card_base.figureLocalChangesOf)(spec, value) } : {},
-						...(0, _melite_card_base.figureCameraOf)(spec, value)
+						...(0, _melite_card_base_client.figureCoeffsOf)(spec, value) !== null ? { identityCoeffs: (0, _melite_card_base_client.figureCoeffsOf)(spec, value) } : {},
+						...(0, _melite_card_base_client.figureLocalChangesOf)(spec, value) !== null ? { localChanges: (0, _melite_card_base_client.figureLocalChangesOf)(spec, value) } : {},
+						...(0, _melite_card_base_client.figureCameraOf)(spec, value)
 					} } : {}
 				};
 				return renderPreview(owner, kind === "video" && seamFilmUrl !== null ? (0, react.createElement)(FilmSeamPlayer, {
 					seam: filmSeamRef.current,
 					src: seamFilmUrl
-				}) : kind === "video" ? (0, react.createElement)(_melite_card_base.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base.MeshStagePreview, owner) : (0, react.createElement)(_melite_card_base.ImageStagePreview, owner));
+				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner));
 			};
 			const activity = typeof stage.activity === "string" ? stage.activity : "";
 			const progress = stage.progress ?? null;
@@ -43444,12 +43473,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"aria-label": "progress percent"
 			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
 			const seamFilmUrl = spec?.preview?.timeline === true ? previewArtifactsFor(stage).find((a) => primaryKindFor(spec, a.url) === "video")?.url ?? null : null;
-			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(_melite_card_base.StudioShell, {
+			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(_melite_card_base_client.StudioShell, {
 				bottom: seamFilmUrl !== null ? (0, react.createElement)(ScrollLockedDetail, { testid: "timeline-seam-bottom" }, (0, react.createElement)(FilmSeamBar, { seam: filmSeamRef.current })) : void 0,
 				params: (0, react.createElement)("div", { className: card_module_css_default.paramsCol }, enhanceNote !== null ? (0, react.createElement)("div", {
 					className: card_module_css_default.enhanceRow,
 					"data-testid": "enhance-note"
-				}, (0, react.createElement)("span", { className: enhanceNote.err ? card_module_css_default.runError : card_module_css_default.enhanceNote }, enhanceNote.text)) : null, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(_melite_card_base.CardForm, {
+				}, (0, react.createElement)("span", { className: enhanceNote.err ? card_module_css_default.runError : card_module_css_default.enhanceNote }, enhanceNote.text)) : null, (0, react.createElement)("div", { className: card_module_css_default.params }, !loaded ? (0, react.createElement)("div", { className: card_module_css_default.load }, "form…") : spec !== null ? (0, react.createElement)(_melite_card_base_client.CardForm, {
 					spec,
 					user,
 					base: servedBase,
@@ -43458,8 +43487,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					onUnset,
 					wire,
 					onPatch: onPatchParams,
-					onDownloadModel: (id) => (0, _melite_card_base.postManageAction)("provision_model", { model: id }).then((r) => r.ok),
-					onInstallPack: (id) => (0, _melite_card_base.postManageAction)("install_extension", { nodes: [id] }).then((r) => r.ok),
+					onDownloadModel: (id) => (0, _melite_card_base_client.postManageAction)("provision_model", { model: id }).then((r) => r.ok),
+					onInstallPack: (id) => (0, _melite_card_base_client.postManageAction)("install_extension", { nodes: [id] }).then((r) => r.ok),
 					paintFace: PaintLeafCanvas,
 					bboxFace: BboxLeafCanvas,
 					paintReference: "input_image"
@@ -43511,7 +43540,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					return reports.length > 0 ? (0, react.createElement)("div", {
 						className: card_module_css_default.reportList,
 						"data-testid": "stage-reports"
-					}, reports.map(({ name, report }) => (0, react.createElement)(_melite_card_base.ReportView, {
+					}, reports.map(({ name, report }) => (0, react.createElement)(_melite_card_base_client.ReportView, {
 						key: name,
 						name,
 						report
@@ -43579,7 +43608,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [addError, setAddError] = (0, react.useState)(null);
 			(0, react.useEffect)(() => {
 				let alive = true;
-				(0, _melite_card_base.fetchCardCatalog)().then((list) => {
+				(0, _melite_card_base_client.fetchCardCatalog)().then((list) => {
 					if (alive) setCards(list);
 				}).catch((e) => {
 					if (alive) setCatalogError(e instanceof Error ? e.message : "catalog unavailable");
@@ -43593,7 +43622,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				setBusyId(card.id);
 				setAddError(null);
 				const family = card.families[0] ?? card.id;
-				(0, _melite_card_base.fetchFormSpec)(family).then((doc) => add(card, doc), (e) => {
+				(0, _melite_card_base_client.fetchFormSpec)(family).then((doc) => add(card, doc), (e) => {
 					setBusyId(null);
 					setAddError(card.label + ": " + (e instanceof Error ? e.message : "form-spec unavailable"));
 				});
@@ -43605,7 +43634,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						author: "user",
 						expect_rev: bench.rev
 					};
-					const seeds = (0, _melite_card_base.seedUser)(spec, {});
+					const seeds = (0, _melite_card_base_client.seedUser)(spec, {});
 					if (Object.keys(seeds).length > 0) doc["params"] = { ...seeds };
 					await addStageWire(doc, sessionKey);
 					setBusyId(null);
@@ -43649,7 +43678,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}), catalogError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, catalogError) : null, addError !== null ? (0, react.createElement)("p", { className: card_module_css_default.runError }, addError) : null, cards === null && catalogError === null ? (0, react.createElement)("div", { className: card_module_css_default.load }, "cards…") : null, genres.map(([g, list]) => (0, react.createElement)("section", {
 				key: g,
 				className: card_module_css_default.pickerGenre
-			}, (0, react.createElement)("h4", { className: card_module_css_default.pickerGenreTitle }, (0, _melite_card_base.titleCaseId)(g)), list.map((c) => (0, react.createElement)("button", {
+			}, (0, react.createElement)("h4", { className: card_module_css_default.pickerGenreTitle }, (0, _melite_card_base_client.titleCaseId)(g)), list.map((c) => (0, react.createElement)("button", {
 				key: c.id,
 				type: "button",
 				className: card_module_css_default.pickerCard,
@@ -43764,7 +43793,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, [live, reload]);
 			const [capOver, setCapOver] = (0, react.useState)(false);
-			const dropInterested = (e) => e.dataTransfer.types.includes("application/tech-noir-capability") || e.dataTransfer.types.includes(_melite_card_base.ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files");
+			const dropInterested = (e) => e.dataTransfer.types.includes("application/tech-noir-capability") || e.dataTransfer.types.includes(_melite_card_base_client.ASSET_DRAG_MIME) || e.dataTransfer.types.includes("Files");
 			const onGridDragOver = (0, react.useCallback)((e) => {
 				if (!dropInterested(e)) return;
 				e.preventDefault();
@@ -43796,8 +43825,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 					return;
 				}
-				if (e.dataTransfer.types.includes(_melite_card_base.ASSET_DRAG_MIME)) {
-					const payload = (0, _melite_card_base.parseAssetDrop)(e.dataTransfer.getData(_melite_card_base.ASSET_DRAG_MIME));
+				if (e.dataTransfer.types.includes(_melite_card_base_client.ASSET_DRAG_MIME)) {
+					const payload = (0, _melite_card_base_client.parseAssetDrop)(e.dataTransfer.getData(_melite_card_base_client.ASSET_DRAG_MIME));
 					if ((payload.url ?? "") === "") return;
 					const t = payload.type ?? "";
 					if (!(t.startsWith("image/") || t.startsWith("audio/"))) {
@@ -43818,7 +43847,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (e.dataTransfer.files.length > 0) {
 					const file = e.dataTransfer.files[0];
 					if (file === void 0) return;
-					(0, _melite_card_base.uploadInputFile)(file).then(({ name }) => addStageWire({
+					(0, _melite_card_base_client.uploadInputFile)(file).then(({ name }) => addStageWire({
 						card: "input-prep",
 						params: { source: name },
 						expect_rev: live.rev
@@ -43895,11 +43924,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				/* v8 ignore next 3 -- attach targets are always live tile ids: SortableTile passes its own row.id from the same live.stages render (probe 2026-09-19); the dead-id arm is the stale-render fence */
 				if (row === void 0) return;
 				/* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
-				(0, _melite_card_base.fetchFormSpec)(String(row.card)).then((spec) => {
-					const field = (0, _melite_card_base.fieldsOf)(spec).find((f) => f.type === kind);
+				(0, _melite_card_base_client.fetchFormSpec)(String(row.card)).then((spec) => {
+					const field = (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.type === kind);
 					if (field === void 0) throw new Error("the " + String(row.card) + " card has no " + kind + " slot");
 					return field.name;
-				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base.uploadInputFile)(source).then(({ name }) => [field, name])).then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src })).then(() => {
+				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base_client.uploadInputFile)(source).then(({ name }) => [field, name])).then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src })).then(() => {
 					reload({ keepOpen: true });
 				}).catch((err) => {
 					setReloadError(err instanceof Error ? err.message : "attach refused");
@@ -44139,7 +44168,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (0, react.createElement)("section", {
 				className: card_module_css_default.runView,
 				"data-run-status": run.status
-			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, (0, _melite_card_base.titleCaseId)(run.status))), (0, react.createElement)("div", { className: card_module_css_default.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
+			}, (0, react.createElement)("header", { className: card_module_css_default.runHead }, (0, react.createElement)("span", { className: card_module_css_default.runId }, run.runId), (0, react.createElement)("span", { className: card_module_css_default.runStatus }, (0, _melite_card_base_client.titleCaseId)(run.status))), (0, react.createElement)("div", { className: card_module_css_default.runActions }, onBack !== void 0 ? (0, react.createElement)("button", {
 				className: card_module_css_default.back,
 				type: "button",
 				onClick: onBack
@@ -44279,7 +44308,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const draftId = snapshot.value.draftId;
 				if (draftId === "") return;
 				let alive = true;
-				(0, _melite_card_base.fetchLatestRunForDraft)(draftId).then((rid) => {
+				(0, _melite_card_base_client.fetchLatestRunForDraft)(draftId).then((rid) => {
 					if (alive && rid !== null) setLastRunId(rid);
 				}).catch(() => {});
 				return () => {
@@ -44416,7 +44445,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const onStopStage = (0, react.useCallback)((stage) => {
 				const rid = stageRuns[stage.id];
 				if (rid === void 0) return;
-				(0, _melite_card_base.stopRun)(rid).then(() => {
+				(0, _melite_card_base_client.stopRun)(rid).then(() => {
 					setLocalRunError(clearVerb("stop"));
 				}).catch((e) => {
 					setLocalRunError(verbClaim("stop", e instanceof Error ? e.message : "stop failed"));
@@ -44490,7 +44519,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
-				(0, _melite_card_base.stopRun)(runId).then(() => {
+				(0, _melite_card_base_client.stopRun)(runId).then(() => {
 					setLocalRunError(clearVerb("cancel"));
 				}).catch((e) => {
 					setLocalRunError(verbClaim("cancel", e instanceof Error ? e.message : "cancel failed"));
@@ -44516,7 +44545,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				error: runError,
 				stages: value.stages,
 				onRun
-			}) : null, (0, react.createElement)(_melite_card_base.ToastViewport), (0, react.createElement)(BenchView, {
+			}) : null, (0, react.createElement)(_melite_card_base_client.ToastViewport), (0, react.createElement)(BenchView, {
 				sessionKey: benchKey,
 				bench: value,
 				onRun,
@@ -44557,6 +44586,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		//#region src/client/index.ts
+		init_src();
+		setContractToastSink((type, message, action) => {
+			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
+		});
 		/** Every card tool that produces a draft — the card tile renders for ALL of them. */
 		const CARD_TOOLS = [
 			"melite_flow",
@@ -44620,7 +44653,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 			let benchNs;
 			try {
-				benchNs = (0, _melite_card_base.bindEstateRemoteFromRemote)({
+				benchNs = (0, _melite_card_base_client.bindEstateRemoteFromRemote)({
 					bench: ctx.get("remote.bench"),
 					drafts: ctx.get("remote.drafts"),
 					runs: ctx.get("remote.runs"),
@@ -44725,4 +44758,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="b652f424373e9e6c61cfd4220aeca1ad41000f2c";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8e95b4fc977f7b5a54def216c6bd9e81fb187cba";

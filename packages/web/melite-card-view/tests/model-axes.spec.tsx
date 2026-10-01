@@ -18,7 +18,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement, useState } from 'react'
-import { unbindEstateRemote } from '@melite/card-base'
+import { unbindEstateRemote } from '@melite/card-base/client'
 
 import {
   activeVariantId,

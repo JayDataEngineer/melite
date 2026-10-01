@@ -12,9 +12,10 @@
  * automatically"). Cards ship client halves only as TAKEOVERS —
  * claims into the seams.
  *
- * No cordis host apply — the package registers no node-side plugin
- * of its own; it mounts in a profile purely as the browser graph
- * row below.
+ * No cordis host apply of its own — the loader's row import applies
+ * the HOST marker at `exports['.']` (src/host.ts, which registers
+ * nothing); this barrel is the client surface behind the /client
+ * door.
  *
  * THE ONE-ROW LAW (operator order, 2026-10-01: "OUR CARD SHOULD NOT
  * DIFFER AT ALL FROM DSH-WEBVIEW... BOTH INTERFACES ON THE SAME
@@ -26,10 +27,12 @@
  * loader's require, manifest.ts:15-24); no consumer bundle may
  * inline a second compiled copy. The root below therefore carries
  * the full client-consumed surface — client-plane code imports the
- * BARE specifier only (the loader serves the package row, never a
- * subpath: stripClientSuffix strips only '/client'). Node-plane
- * consumers keep the subpaths (exports resolve them normally);
- * they avoid the root's css faces, which node cannot execute.
+ * '/client' specifier only (`@melite/card-base/client` — the
+ * DSH door: types resolve to src/client/index.ts, the browser
+ * require hits the row through stripClientSuffix, the tsdown
+ * external row matches the exact request). Node-plane consumers
+ * keep the subpaths (exports resolve them normally); they avoid
+ * this barrel's css faces, which node cannot execute.
  */
 export * from './spec.ts'
 export * from './layout.tsx'

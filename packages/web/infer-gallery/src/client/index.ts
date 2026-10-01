@@ -39,6 +39,16 @@ import type { ComponentType } from 'react'
 import { claimGalleryApply, releaseGalleryApply } from './apply-guard.ts'
 import { MediaPanel, MediaTabIcon } from './MediaPanel.tsx'
 
+import { setContractToastSink } from '@melite/catalog'
+import { useToastStore } from '@melite/card-base/client'
+
+// CONTRACT TOASTS — wire the inlined catalog contract stores to the
+// row's toast store (the one host that outlives every reporting
+// surface); verdicts surface from the same instance that renders them.
+setContractToastSink((type, message, action) => {
+  useToastStore.getState().addToast(type, message, action)
+})
+
 /** The tab type's identity (the id its body registers under — the
  *  deleted package's contract spelling, restored). */
 const MEDIA_TAB_ID = 'infer-media:media'

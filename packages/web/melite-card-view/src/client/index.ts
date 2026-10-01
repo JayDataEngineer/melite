@@ -51,9 +51,19 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base'
+import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base/client'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
+
+import { setContractToastSink } from '@melite/catalog'
+import { useToastStore } from '@melite/card-base/client'
+
+// CONTRACT TOASTS — wire the inlined catalog contract stores to the
+// row's toast store (the one host that outlives every reporting
+// surface); verdicts surface from the same instance that renders them.
+setContractToastSink((type, message, action) => {
+  useToastStore.getState().addToast(type, message, action)
+})
 
 // Type-only local spelling of the Tool-owned keyed view slot (the same shape
 // dsh-client-ui-tool declares) so this package registers without depending on

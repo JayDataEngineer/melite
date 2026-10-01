@@ -9,7 +9,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from '@melite/card-base';
+import { unbindEstateRemote } from '@melite/card-base/client';
 import { BenchView } from "../src/client/bench-view.tsx";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";

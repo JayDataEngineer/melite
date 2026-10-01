@@ -15,4 +15,4 @@ export {
   InputSquare,
   type InputSquareVerbs,
   type InputSquareProps,
-} from '@melite/card-base'
+} from '@melite/card-base/client'

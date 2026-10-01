@@ -4,15 +4,15 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { OverlayKnob, SectionLabel, SpecAtom, Tip } from "@melite/card-base"
-import { cn } from '@melite/card-base'
-import { ChevronDown, X } from '@melite/card-base'
+import { OverlayKnob, SectionLabel, SpecAtom, Tip } from "@melite/card-base/client"
+import { cn } from '@melite/card-base/client'
+import { ChevronDown, X } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { DocCall } from "./docModel"
 import type { GuideKind } from "./docModel"
-import { readAsDataURL } from '@melite/card-base'
-import { SourceRow } from '@melite/card-base'
+import { readAsDataURL } from '@melite/card-base/client'
+import { SourceRow } from '@melite/card-base/client'
 import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
 import { CallCardPrompt } from "./CallCardPrompt"
 import { REF_UPLOAD_SPEC, declaredShortName } from "./refUtils"

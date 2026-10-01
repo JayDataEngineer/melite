@@ -49,8 +49,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import { useToastStore } from '@melite/card-base'
-import { useResolvedForm } from "@melite/card-base"
+import { useToastStore } from '@melite/card-base/client'
+import { useResolvedForm } from "@melite/card-base/client"
 import type { MotionAzimuth, MotionNpz } from "@melite/formats"
 import { precomputeDeformedVerts, vertsToB64 } from "@melite/formats"
 import type { SomaSkin } from "@melite/formats"
@@ -59,7 +59,7 @@ import type {
   TimelineInterval, TimelineKeyframe, TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
 import type { MotionConstraint } from "@melite/formats/motionConstraints"
-import { StudioShell, defineShellDeclaration } from '@melite/card-base'
+import { StudioShell, defineShellDeclaration } from '@melite/card-base/client'
 import s from "./component.module.css"
 import {
   DEFAULT_STAGE_RECT,

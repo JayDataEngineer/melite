@@ -17,7 +17,7 @@
 import { fireEvent, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import * as THREE from 'three'
-import { useToastStore } from '@melite/card-base'
+import { useToastStore } from '@melite/card-base/client'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
 import { resetStudio, stubLoads, mountEditor } from './helpers.ts'

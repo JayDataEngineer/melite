@@ -1,7 +1,7 @@
 /** forms-edge-meta.ts — the /v1/forms edge-meta session cache
  * (extracted from CardsTab.tsx hour 15: one seam, one file). */
 
-import { fetchFormsTable } from '@melite/card-base'
+import { fetchFormsTable } from '@melite/card-base/client'
 
 /** The /v1/forms edge-meta cache (card id → declared input/output
  *  kinds) — ONE fetch per browser session; the picker's kind

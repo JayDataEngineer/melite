@@ -20,7 +20,7 @@
 
 import { useSyncExternalStore } from "react"
 import type { RunStatusViolation } from "./runStatusContract"
-import { useToastStore } from '@melite/card-base'
+import { contractToast } from "./contractToast"
 
 export type RunStatusVerdict =
  | { kind: "violation"; runId: string; violations: RunStatusViolation[] }
@@ -42,7 +42,7 @@ function repoll(runId: string): void {
 }
 
 function toastVerdict(v: RunStatusVerdict): void {
-  const toast = useToastStore.getState().addToast
+  const toast = contractToast
   if (v.kind === "violation") {
     const first = v.violations[0]?.message ?? "the status response did not match the expected shape"
     toast(

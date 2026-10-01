@@ -16,7 +16,7 @@ import {
   DeclarativeStudio,
   defineStageViewRegistration,
   defineStudioDeclaration,
-} from '@melite/card-base'
+} from '@melite/card-base/client'
 
 /** The door's group truth (schema_groups, 2026-09-12 lane read):
  *  input, generation — exposed; stage, mesh, bake, lab — folded. */

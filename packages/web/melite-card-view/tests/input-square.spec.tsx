@@ -11,9 +11,9 @@ import { createElement, useRef } from 'react'
 
 import { InputSquare, isImageUrl, readAsDataUrl } from '../src/client/input-square.tsx'
 import { schemaEnvelope, SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
-import { estateRemote, unwrapRemote } from '@melite/card-base'
+import { estateRemote, unwrapRemote } from '@melite/card-base/client'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base'
+import { unbindEstateRemote } from '@melite/card-base/client'
 
 afterEach(() => {
   cleanup()

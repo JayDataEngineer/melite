@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { TransformControls } from "three/addons/controls/TransformControls.js"
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
-import type { Stage3D } from "@melite/card-base"
+import type { Stage3D } from "@melite/card-base/client"
 import { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton"
 import type { JointMoveEvent } from "./poseStageTypes"
 

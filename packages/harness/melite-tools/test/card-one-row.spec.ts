@@ -6,8 +6,11 @@
 // No other client bundle may inline a second compiled copy (the
 // img-to-mesh zoom screen carried TWO css-module hashes of the same
 // specField class, and a card-base fix landed only in the cards that
-// happened to rebuild). Always pinned: pure fs over the committed
-// tree, no binaries, no network.
+// happened to rebuild). The door is the /client specifier — the
+// DSH convention dsh-api-gateway set (types at the src face, the
+// browser require served by the row through stripClientSuffix, the
+// tsdown external row matching the exact request). Always pinned:
+// pure fs over the committed tree, no binaries, no network.
 //
 // RUN: pnpm exec vitest run test/card-one-row.spec.ts
 // (from packages/harness/melite-tools).
@@ -20,7 +23,8 @@ import { fileURLToPath } from 'node:url'
 
 const REPO = join(dirname(fileURLToPath(import.meta.url)), '../../../..')
 const PACKAGES = join(REPO, 'packages')
-const ROW = '@melite/card-base'
+const ROW_ID = '@melite/card-base'
+const ROW_DOOR = '@melite/card-base/client'
 const ROW_DIR = join(REPO, 'packages/web/card-base')
 
 /** Walk packages/<genre>/<pkg> directories (two levels, the genre
@@ -70,6 +74,11 @@ function externalList(manifest: Record<string, unknown>): string[] {
   return Array.isArray(ext) ? ext.filter((e): e is string => typeof e === 'string') : []
 }
 
+/** One spec-line match for either quote style (import … from '<spec>'). */
+function importHits(code: string, spec: string): boolean {
+  return code.includes(`from '${spec}'`) || code.includes(`from "${spec}"`)
+}
+
 describe('card-one-row walls (always pinned, pure fs over the committed tree)', () => {
   test('THE ONE ROW: only card-base\'s own bundle may compile the atoms; every consumer requires the row', () => {
     const problems: string[] = []
@@ -84,8 +93,8 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
       if (pdir === ROW_DIR) {
         // The row itself: it must REGISTER under its own id (the
         // loader wrapper) — not be a naked library build.
-        if (!code.includes(`id: "${ROW}"`)) {
-          problems.push(`${rel}: the row bundle does not register as "${ROW}" — rebuild with the client preset`)
+        if (!code.includes(`id: "${ROW_ID}"`)) {
+          problems.push(`${rel}: the row bundle does not register as "${ROW_ID}" — rebuild with the client preset`)
         }
         continue
       }
@@ -100,11 +109,11 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
       }
       const region = code.match(/\/\/\s*#region\s+\S*card-base\/src\//)
       if (region !== null) {
-        problems.push(`${rel}: inlines card-base source (${region[0].trim()}) — add "${ROW}" to dsh.client.external and rebuild`)
+        problems.push(`${rel}: inlines card-base source (${region[0].trim()}) — add "${ROW_DOOR}" to dsh.client.external and rebuild`)
       }
-      const requires = code.match(new RegExp(`require\\("${ROW}"\\)`, 'g'))
+      const requires = code.includes(`require("${ROW_DOOR}")`)
       // deck ships a built client WITHOUT using the row — the require
-      // is owed only by actual users (src imports the row).
+      // is owed only by actual users (src imports the door).
       let usesRow = false
       const walk = (dir: string): void => {
         if (!existsSync(dir) || usesRow) return
@@ -113,13 +122,13 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
           const full = join(dir, entry.name)
           if (entry.isDirectory()) { walk(full); continue }
           if (!/\.(ts|tsx)$/.test(entry.name)) continue
-          if (readFileSync(full, 'utf8').includes(`from '${ROW}'`) || readFileSync(full, 'utf8').includes(`from "${ROW}"`)) usesRow = true
+          if (importHits(readFileSync(full, 'utf8'), ROW_DOOR)) usesRow = true
         }
       }
       walk(join(pdir, 'src'))
-      if (usesRow && requires === null) {
+      if (usesRow && !requires) {
         const src = JSON.stringify(manifest['name'] ?? rel)
-        problems.push(`${rel}: src uses ${ROW} but the bundle never requires it — add "${ROW}" to dsh.client.external and rebuild (${src})`)
+        problems.push(`${rel}: src uses ${ROW_DOOR} but the bundle never requires it — add "${ROW_DOOR}" to dsh.client.external and rebuild (${src})`)
       }
     }
     assert.deepEqual(problems, [], problems.join('\n'))
@@ -131,9 +140,8 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
       const manifest = readManifest(pdir)
       if (manifest === null || !shipsBuiltClient(manifest)) continue
       const ext = externalList(manifest)
-      // Does this package's src reach the row at all? (Both quote
-      // styles; subpaths count too — they must not exist, next wall.)
-      let srcs: string[] = []
+      // Does this package's src reach the row's door at all?
+      let srcs = 0
       const walk = (dir: string): void => {
         if (!existsSync(dir)) return
         for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -141,19 +149,19 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
           const full = join(dir, entry.name)
           if (entry.isDirectory()) { walk(full); continue }
           if (!/\.(ts|tsx)$/.test(entry.name)) continue
-          if (readFileSync(full, 'utf8').includes(`from '${ROW}'`) || readFileSync(full, 'utf8').includes(`from "${ROW}"`)) srcs.push(full)
+          if (importHits(readFileSync(full, 'utf8'), ROW_DOOR)) srcs += 1
         }
       }
       walk(join(pdir, 'src'))
-      if (srcs.length === 0) continue
-      if (!ext.includes(ROW)) {
-        problems.push(`${relative(REPO, pdir)}: src imports ${ROW} but dsh.client.external lacks it — the next rebuild silently inlines a second copy of the atoms`)
+      if (srcs === 0) continue
+      if (!ext.includes(ROW_DOOR)) {
+        problems.push(`${relative(REPO, pdir)}: src imports ${ROW_DOOR} but dsh.client.external lacks it — the next rebuild silently inlines a second copy of the atoms`)
       }
     }
     assert.deepEqual(problems, [], problems.join('\n'))
   })
 
-  test('client-plane source imports the BARE specifier only (the loader serves the package row, never a subpath)', () => {
+  test('client-plane source imports the /client door only (the loader serves the package row; bare and other subpaths miss it)', () => {
     const problems: string[] = []
     for (const pdir of packageDirs()) {
       if (pdir === ROW_DIR) continue
@@ -165,11 +173,14 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
           if (entry.isDirectory()) { walk(full); continue }
           if (!/\.(ts|tsx)$/.test(entry.name)) continue
           const code = readFileSync(full, 'utf8')
-          // strip comments — doc comments cite subpaths as examples
+          // strip comments — doc comments cite specifiers as examples
           const bare = code.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '')
-          const hit = bare.match(new RegExp(`from ['"]${ROW}/[a-zA-Z0-9_-]+['"]`))
+          const hit = bare.match(new RegExp(`from ['"]${ROW_ID}(?:/[a-zA-Z0-9_-]+)?['"]`))
           if (hit !== null) {
-            problems.push(`${relative(REPO, full)}: ${hit[0]} — stripClientSuffix strips only "/client"; a subpath require misses the module table. Import the bare "${ROW}" (its root re-exports the face)`)
+            const what = hit[0].endsWith('/client\'') || hit[0].endsWith('/client"') ? '' : ' — stripClientSuffix strips only "/client"; any other require misses the module table'
+            if (what !== '') {
+              problems.push(`${relative(REPO, full)}: ${hit[0]}${what}. Import "${ROW_DOOR}" (its types face re-exports the full surface)`)
+            }
           }
         }
       }

@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "./src/host.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./lib/client.js",
+    ".": "./src/host.ts",
+    "./client": {
+      "types": "./src/client/index.ts",
+      "default": "./lib/client.js"
+    },
     "./slots": "./src/slots.ts",
     "./spec": "./src/spec.ts",
     "./form": "./src/form.tsx",
@@ -54,6 +58,7 @@
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
     "@melite-plugin/melite-run-wire": "workspace:*",
+    "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
     "@melite/estate-media": "workspace:*",

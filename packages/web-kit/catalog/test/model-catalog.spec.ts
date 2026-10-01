@@ -43,11 +43,10 @@ import {
   variantsForRoute,
 } from "../src/modelCatalog.ts";
 import type { Catalog, FamilyEntry } from "../src/modelCatalog.ts";
+import { setContractToastSink } from "../src/contractToast.ts";
 import { useCatalogContractStore } from "../src/catalogContractStore.ts";
-import { useToastStore } from '@melite/card-base';
 
 const realFetch = globalThis.fetch;
-const realAddToast = useToastStore.getState().addToast;
 const realNow = Date.now;
 beforeEach(() => {
   // The contract store toasts once per outage message (latch) — reset so
@@ -56,16 +55,13 @@ beforeEach(() => {
 });
 afterEach(() => {
   globalThis.fetch = realFetch;
-  useToastStore.setState({ addToast: realAddToast });
   Date.now = realNow;
 });
 
 const captureToasts = (): { type: string; message: string }[] => {
   const out: { type: string; message: string }[] = [];
-  useToastStore.setState({
-    addToast: ((type: string, message: string) => {
-      out.push({ type, message });
-    }) as typeof realAddToast,
+  setContractToastSink((type, message) => {
+    out.push({ type, message });
   });
   return out;
 };

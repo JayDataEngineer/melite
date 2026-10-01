@@ -1,7 +1,7 @@
 // cards-resource.ts — the uploads door's client verb now lives in
 // the base (@melite/card-base/wire — the construction law's upload
 // half); re-exported here for the view's import paths.
-export { uploadInputFile } from '@melite/card-base'
+export { uploadInputFile } from '@melite/card-base/client'
 
 /**
  * The `cards` resource protocol — the cards tab's live values.
@@ -52,8 +52,8 @@ import {
   fetchRunStatus,
   fetchRunTerminal,
   probeRunGone,
-} from '@melite/card-base'
-import { estateRemote, isEstateRefusal, unwrapRemote, type BenchNamespace } from '@melite/card-base'
+} from '@melite/card-base/client'
+import { estateRemote, isEstateRefusal, unwrapRemote, type BenchNamespace } from '@melite/card-base/client'
 export type { BenchNamespace }
 import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
@@ -371,7 +371,7 @@ export async function fetchBench(sessionKey: string, signal?: AbortSignal): Prom
 /** media/list — the runs-tree library (moved beside the bind it
  *  rides: @melite/card-base/media-library — re-exported here so the
  *  tab's existing import keeps working). */
-export { fetchMediaLibrary } from '@melite/card-base'
+export { fetchMediaLibrary } from '@melite/card-base/client'
 
 // ── THE BENCH SPOTLIGHT (stroke 42, the operator's law 2026-09-14:
 // "AI CONVERSATION AND HUMAN SHARE 1 FLOW — there is no other flow

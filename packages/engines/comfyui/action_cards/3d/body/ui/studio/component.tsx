@@ -34,8 +34,8 @@ import { BODY_PRESETS } from "@melite/formats"
 // the action_cards-local studio-shell is buried — card-base owns the
 // shell and the viewport chrome now; this studio's declaration reads
 // the same seams it always did.
-import { StudioShell, defineShellDeclaration } from '@melite/card-base'
-import { ViewportFrame } from '@melite/card-base'
+import { StudioShell, defineShellDeclaration } from '@melite/card-base/client'
+import { ViewportFrame } from '@melite/card-base/client'
 import styles from "./component.module.css"
 
 /** THE SHELL RIDE, as data (row 5 stroke 4) — declared for the

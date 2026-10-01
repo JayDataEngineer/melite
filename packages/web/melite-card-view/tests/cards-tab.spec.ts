@@ -22,7 +22,7 @@ import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageView, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from '@melite/card-base';
+import { unbindEstateRemote } from '@melite/card-base/client';
 
 function stage(over: Partial<BenchStageView> & { id: string }): BenchStageView {
   return { engine: "comfyui", ...over };

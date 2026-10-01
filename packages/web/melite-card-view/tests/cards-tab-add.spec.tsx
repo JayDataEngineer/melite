@@ -13,7 +13,7 @@ import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from '@melite/card-base';
+import { unbindEstateRemote } from '@melite/card-base/client';
 
 interface Call { method: string; args: Record<string, unknown> }
 

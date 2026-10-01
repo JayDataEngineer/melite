@@ -4,30 +4,26 @@
 // the ui store's addToast (no sonner at spec runtime).
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
+import { setContractToastSink } from "../src/contractToast.ts";
 import { useRunStatusContractStore } from "../src/runStatusContractStore.ts";
 import type { RunStatusVerdict } from "../src/runStatusContractStore.ts";
-import { useToastStore } from '@melite/card-base';
 import type { RunStatusViolation } from "../src/runStatusContract.ts";
 
 const realFetch = globalThis.fetch;
-const realAddToast = useToastStore.getState().addToast;
 
 type Captured = { type: string; message: string; action?: { label: string; onClick: () => void } };
 let captured: Captured[] = [];
 
 afterEach(() => {
   globalThis.fetch = realFetch;
-  useToastStore.setState({ addToast: realAddToast });
   useRunStatusContractStore.getState().clear();
   captured = [];
 });
 
 const captureToasts = (): void => {
   captured = [];
-  useToastStore.setState({
-    addToast: ((type: string, message: string, action?: Captured["action"]) => {
-      captured.push({ type, message, action });
-    }) as typeof realAddToast,
+  setContractToastSink((type, message, action) => {
+    captured.push({ type, message, action });
   });
 };
 

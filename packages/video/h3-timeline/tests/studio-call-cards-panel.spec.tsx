@@ -10,7 +10,7 @@ import assert from "node:assert/strict"
 import { fireEvent, render, screen } from "@testing-library/react"
 import { CallCardsPanel } from "../src/ui/studio/CallCardsPanel.tsx"
 import type { DocCall, DocKeyframe } from "../src/ui/studio/docModel.ts"
-import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
+import { fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 
 // THE SERVED WALK (hour 22): the fold's schema truth, keyed by wire name.

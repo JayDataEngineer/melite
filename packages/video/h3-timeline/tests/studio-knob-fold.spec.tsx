@@ -12,7 +12,7 @@ import { describe, it } from "vitest"
 import assert from "node:assert/strict"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
-import { OverlayKnob, fieldsOfEnvelope, type SpecField } from "@melite/card-base"
+import { OverlayKnob, fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
 import { carrier } from "../src/card.ts"
 import { KNOB_ORDER } from "../src/ui/studio/docModel.ts"
 

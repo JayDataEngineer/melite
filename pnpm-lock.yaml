@@ -2467,9 +2467,6 @@ importers:
 
   packages/web-kit/catalog:
     dependencies:
-      '@melite/card-base':
-        specifier: workspace:*
-        version: link:../../web/card-base
       '@melite/contracts':
         specifier: workspace:*
         version: link:../contracts
@@ -2581,6 +2578,9 @@ importers:
       '@melite-plugin/melite-run-wire':
         specifier: workspace:*
         version: link:../melite-run-wire
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -2633,6 +2633,9 @@ importers:
       '@melite/card-base':
         specifier: workspace:*
         version: link:../card-base
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts

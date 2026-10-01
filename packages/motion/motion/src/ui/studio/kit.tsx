@@ -1,15 +1,15 @@
 import { useSyncExternalStore } from "react"
-import { Tip } from "@melite/card-base"
+import { Tip } from "@melite/card-base/client"
 
 export {
   isImageUrl, PaneHeader, PaneShell, Skeleton, Tip, WirePickerModal,
-} from "@melite/card-base"
-export type { WirePickerModalProps, PaneHeaderVariant } from "@melite/card-base"
-export { ASSET_DRAG_MIME } from '@melite/card-base'
-export { ViewportAnchor, ViewportFrame } from '@melite/card-base'
+} from "@melite/card-base/client"
+export type { WirePickerModalProps, PaneHeaderVariant } from "@melite/card-base/client"
+export { ASSET_DRAG_MIME } from '@melite/card-base/client'
+export { ViewportAnchor, ViewportFrame } from '@melite/card-base/client'
 export type {
   ViewportAnchorDock, ViewportAnchorProps, ViewportFrameProps,
-} from '@melite/card-base'
+} from '@melite/card-base/client'
 
 const THUMB_STORAGE_KEY = "motion-card-thumbnails"
 

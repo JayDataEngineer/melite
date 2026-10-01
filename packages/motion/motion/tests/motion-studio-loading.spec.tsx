@@ -12,7 +12,7 @@
  */
 import { fireEvent } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { useToastStore } from '@melite/card-base'
+import { useToastStore } from '@melite/card-base/client'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
 import { resetStudio, mounted, mkStage, stubLoads, mountEditor } from './helpers.ts'

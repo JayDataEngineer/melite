@@ -4,7 +4,6 @@
   "type": "module",
   "main": "./src/index.ts",
   "dependencies": {
-    "@melite/card-base": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
     "react": "^19.3.0"

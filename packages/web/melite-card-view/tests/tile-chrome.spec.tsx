@@ -14,7 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base'
+import { unbindEstateRemote } from '@melite/card-base/client'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'

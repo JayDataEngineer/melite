@@ -10,7 +10,7 @@
  * Standard no-act mounting (vi.waitFor polls, resetStudio() after).
  */
 import { afterEach, describe, expect, test, vi } from 'vitest'
-import { useToastStore } from '@melite/card-base'
+import { useToastStore } from '@melite/card-base/client'
 import { mounted, resetStudio, stubLoads, mountEditor } from './helpers.ts'
 
 function unmountAll(): void {

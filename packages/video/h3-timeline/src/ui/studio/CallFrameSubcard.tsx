@@ -17,10 +17,10 @@
  */
 import { useState } from "react"
 import { Input, Switch } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SpecAtom } from "@melite/card-base"
-import { cn, readAsDataURL } from '@melite/card-base'
-import { SourceRow } from '@melite/card-base'
-import { fetchMediaLibrary } from '@melite/card-base'
+import { SpecAtom } from "@melite/card-base/client"
+import { cn, readAsDataURL } from '@melite/card-base/client'
+import { SourceRow } from '@melite/card-base/client'
+import { fetchMediaLibrary } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import type { LinkArtifact } from "./refUtils"
 

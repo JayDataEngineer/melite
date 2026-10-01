@@ -2,6 +2,7 @@
  * the catalog contract (+ its once-per-outage store), input-slot
  * vocabulary, modelCatalog. The wire client the app and plugins share. */
 export * from "./api"
+export * from "./contractToast"
 export * from "./catalogContract"
 export * from "./catalogContractStore"
 export * from "./modelCatalog"

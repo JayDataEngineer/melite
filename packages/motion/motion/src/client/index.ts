@@ -20,8 +20,8 @@
  */
 import { createElement as h } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
-import { runCompiledGeneration } from '@melite/catalog'
-import { defineStageViewRegistration } from '@melite/card-base'
+import { runCompiledGeneration, setContractToastSink } from '@melite/catalog'
+import { defineStageViewRegistration, useToastStore } from '@melite/card-base/client'
 import {
   projectStageView,
   projectUpstreamStages,
@@ -30,6 +30,12 @@ import {
 } from '@melite/contracts'
 import { MotionCardEditor } from '../ui/studio/component.tsx'
 
+// CONTRACT TOASTS — wire the inlined catalog contract stores to the
+// row's toast store (the one host that outlives every reporting
+// surface); verdicts surface from the same instance that renders them.
+setContractToastSink((type, message, action) => {
+  useToastStore.getState().addToast(type, message, action)
+})
 /** The built-in registration (the ui-tool law, verbatim — the module
  * namespace IS the plugin: the loader consumes name/inject/apply). */
 export const name = 'motionStudio'

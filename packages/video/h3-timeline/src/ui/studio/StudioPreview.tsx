@@ -6,10 +6,10 @@
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
 import { refGenreOf } from '@melite/models-h3/timelineContract'
-import { EmptyState, PaneHeader } from "@melite/card-base"
+import { EmptyState, PaneHeader } from "@melite/card-base/client"
 import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
-import { Clapperboard } from '@melite/card-base'
+import { Clapperboard } from '@melite/card-base/client'
 import s from "./studio.module.css"
 
 type HistRow = { runId?: string; status?: string; at?: number; durationSec?: number; video: string }

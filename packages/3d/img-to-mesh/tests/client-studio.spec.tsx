@@ -15,7 +15,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
 import { apply as imgToMeshApply, ImgToMeshStudio } from '../src/client/index.ts'
-import { schemaEnvelope } from '@melite/card-base'
+import { schemaEnvelope } from '@melite/card-base/client'
 
 const SPEC = {
   form: 'img-to-mesh',

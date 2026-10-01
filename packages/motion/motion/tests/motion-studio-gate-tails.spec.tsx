@@ -17,7 +17,7 @@ import { fireEvent, getByTestId, getByText, queryByText } from '@testing-library
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import * as THREE from 'three'
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js'
-import { useToastStore } from '@melite/card-base'
+import { useToastStore } from '@melite/card-base/client'
 import { waitForText } from './harness.tsx'
 import { MOTION_URL } from './fixtures.ts'
 import { resetStudio, mounted, stubLoads, mountEditor } from './helpers.ts'

@@ -14,7 +14,7 @@ import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
 import { ACTION_BINDINGS } from "../src/card.ts";
 import { resolveCardFlowOutputs } from "@melite/comfyui-cordis/service";
-import { fieldsOf, type FormSpecDoc, type SchemaEnvelope } from "@melite/card-base";
+import { fieldsOf, type FormSpecDoc, type SchemaEnvelope } from "@melite/card-base/client";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";

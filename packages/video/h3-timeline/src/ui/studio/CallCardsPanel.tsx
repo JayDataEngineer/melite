@@ -4,9 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { SpecAtom, Tip, type SpecField } from "@melite/card-base"
-import { cn } from '@melite/card-base'
-import { ChevronLeft } from '@melite/card-base'
+import { SpecAtom, Tip, type SpecField } from "@melite/card-base/client"
+import { cn } from '@melite/card-base/client'
+import { ChevronLeft } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel"

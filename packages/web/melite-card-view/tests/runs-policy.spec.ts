@@ -22,8 +22,8 @@
 import { afterEach, expect, test } from "vitest";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import type { RemoteResult } from "@deepseek-ai/dsh-typert-protocol";
-import { bindEstateRemote, estateRemote, unbindEstateRemote, unwrapRemote } from '@melite/card-base';
-import { fetchMediaLibrary } from '@melite/card-base';
+import { bindEstateRemote, estateRemote, unbindEstateRemote, unwrapRemote } from '@melite/card-base/client';
+import { fetchMediaLibrary } from '@melite/card-base/client';
 import {
   fetchLatestRunForDraft,
   fetchListRow,
@@ -35,7 +35,7 @@ import {
   startCardRun,
   startFlowInlineRun,
   stopRun,
-} from '@melite/card-base';
+} from '@melite/card-base/client';
 import { mountEstateFakes } from "./estate-harness.ts";
 
 afterEach(() => {

@@ -8,7 +8,7 @@
 // until terminal (pollRunFrames' law, already pinned in the run-wire
 // package; here the bench tail gets its own pins).
 import { describe, expect, test, vi, afterEach } from 'vitest'
-import { unbindEstateRemote } from '@melite/card-base'
+import { unbindEstateRemote } from '@melite/card-base/client'
 import { mountEstateFakes } from './estate-harness.ts'
 import { benchAddressOf, benchSessionOfAddress, observeRunOutcome, openCardsResource, readBench } from '../src/client/cards-resource.ts'
 // The gateway's client face resolves to the tests/fixtures stand-in

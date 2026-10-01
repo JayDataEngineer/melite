@@ -23,7 +23,7 @@
  * mid-run. Same seat, same vocabulary, later gate.
  */
 
-import { postManageAction } from '@melite/card-base'
+import { postManageAction } from '@melite/card-base/client'
 
 /** What a failed run can offer to fix. `extension` names a pack id
  * (from the missing-extension refusal's own text); `model` names a

@@ -380,7 +380,7 @@ describe("serializeLayerA (Layer A → persisted shape)", () => {
 // green because JSON drops undefined before the walk. ──
 describe("the blank-steps chain (hydrate → resolve, #35)", () => {
   it("a fully-undefined LayerA inherits the served defaults", async () => {
-    const { resolveValueLayered } = await import("@melite/card-base")
+    const { resolveValueLayered } = await import("@melite/card-base/client")
     const layerA = hydrateLayerA({})
     assert.equal(layerA.steps, undefined, "the hydrate materializes unset steps as own-undefined (the poisoned input)")
     const spec = {
@@ -395,7 +395,7 @@ describe("the blank-steps chain (hydrate → resolve, #35)", () => {
     assert.equal(resolved["denoise"], 1, "denoise renders the served default — never blank")
   })
   it("the pre-fetch arm never blanks a held base through materialized undefined", async () => {
-    const { resolveValueLayered } = await import("@melite/card-base")
+    const { resolveValueLayered } = await import("@melite/card-base/client")
     const layerA = hydrateLayerA({ seed: 7 })
     const pre = resolveValueLayered(null, { steps: 8 }, layerA as never) as Record<string, unknown>
     assert.equal(pre["steps"], 8, "the synchronous face holds base until the spec lands")
@@ -411,7 +411,7 @@ describe("the blank-steps chain (hydrate → resolve, #35)", () => {
 // value — nothing can drift. ──
 describe("the marriage chain (bag rides → steps mirrors compose, #36)", () => {
   it("an id-only bag (the recipe's pure selection) resolves steps from the served catalog", async () => {
-    const { resolveValue } = await import("@melite/card-base")
+    const { resolveValue } = await import("@melite/card-base/client")
     const spec = {
       model_defaults: { steps: 12 },
       schema: { uid: 0, refs: {

@@ -10,7 +10,7 @@ import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
-import { schemaEnvelope } from "@melite/card-base"
+import { schemaEnvelope } from "@melite/card-base/client"
 
 function envelope(): unknown {
   const num = (description: string, dflt: number, meta2: Record<string, unknown> = {}) => ({

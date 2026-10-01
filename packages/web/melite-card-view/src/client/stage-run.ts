@@ -5,7 +5,7 @@
 
 import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
-import { startCardRun, startFlowInlineRun } from '@melite/card-base'
+import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'

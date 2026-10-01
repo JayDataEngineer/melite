@@ -16,8 +16,8 @@ import { CallCard } from "../src/ui/studio/CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
 import { callsToPrompts } from "../src/ui/studio/docCalls.ts"
 import type { DocCall } from "../src/ui/studio/docModel.ts"
-import { fieldsOfEnvelope, type SpecField } from "@melite/card-base"
-import { ASSET_DRAG_MIME } from '@melite/card-base'
+import { fieldsOfEnvelope, type SpecField } from "@melite/card-base/client"
+import { ASSET_DRAG_MIME } from '@melite/card-base/client'
 import { carrier } from "../src/card.ts"
 
 const REAL_ENV = (carrier as unknown as { toJSON(): unknown }).toJSON()

@@ -16,7 +16,7 @@ import { loadCardDefs } from "@melite/comfyui-cordis";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
-import { fieldsOfEnvelope } from "@melite/card-base";
+import { fieldsOfEnvelope } from "@melite/card-base/client";
 import {
   getModel, registryIds, registryModel,
 } from "../../../engines/comfyui-cordis/src/models/models.ts";

@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { TransformControls } from "three/addons/controls/TransformControls.js"
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
-import { makeLabelSprite, type Stage3D } from "@melite/card-base"
+import { makeLabelSprite, type Stage3D } from "@melite/card-base/client"
 import { CM_TO_M } from "./poseStageSkeleton"
 import type { AltSampleDecoded, LightingOrb, SkinMeshData } from "./poseStageTypes"
 

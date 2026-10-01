@@ -47,7 +47,7 @@
  */
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
-import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base'
+import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 // The generated namespace row types (type-only — the fakes serve
 // intentionally-partial rows against them, cast at each verb below).
 import type {

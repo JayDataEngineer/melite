@@ -7,7 +7,7 @@
  *  recovered from d13560be^ packages/web-kit): capability tiles carry
  *  a fully-resolved card; asset tiles carry {url, type}. One drop
  *  target, two contracts, no ambiguity — the MIME pair is the law. */
-export { ASSET_DRAG_MIME, parseAssetDrop, type AssetDropPayload } from '@melite/card-base'
+export { ASSET_DRAG_MIME, parseAssetDrop, type AssetDropPayload } from '@melite/card-base/client'
 
 export const CAPABILITY_DRAG_MIME = 'application/tech-noir-capability'
 /** The tile-reorder drag's MIME (native HTML5 sortable — DSH ships no

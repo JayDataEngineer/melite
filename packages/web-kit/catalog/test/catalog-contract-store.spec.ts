@@ -7,14 +7,15 @@ const { toasts, loadCatalogMock } = vi.hoisted(() => ({
   toasts: [] as Array<{ type: string; message: string; action?: { label: string; onClick: () => void } }>,
   loadCatalogMock: vi.fn(),
 }));
-vi.mock("@melite/card-base/toast-store", () => ({
-  useToastStore: { getState: () => ({ addToast: (type: string, message: string, action?: { label: string; onClick: () => void }) => {
-    toasts.push({ type, message, action });
-  } }) },
-}));
 vi.mock("../src/modelCatalog.ts", () => ({ loadCatalog: loadCatalogMock }));
 
+import { setContractToastSink } from "../src/contractToast.ts";
 import { useCatalogContractStore } from "../src/catalogContractStore.ts";
+
+// Toasts fire through the contract seam — record them the same way.
+setContractToastSink((type, message, action) => {
+  toasts.push({ type, message, action });
+});
 import type { CatalogContractRecord } from "../src/catalogContractStore.ts";
 
 const err = console.error;

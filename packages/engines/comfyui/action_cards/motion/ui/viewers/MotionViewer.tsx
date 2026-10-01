@@ -37,7 +37,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
-import { mountStage3D, type Stage3D } from "@melite/card-base"
+import { mountStage3D, type Stage3D } from "@melite/card-base/client"
 import { Play, Pause, AlertTriangle } from "../../../ui-icons"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { ScrubInput, Tip } from "../../../form-fields"

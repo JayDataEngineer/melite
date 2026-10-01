@@ -23,7 +23,7 @@
 
 import { useSyncExternalStore } from "react"
 import type { CatalogViolation } from "./catalogContract"
-import { useToastStore } from '@melite/card-base'
+import { contractToast } from "./contractToast"
 
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error"
 
@@ -126,7 +126,7 @@ const _seed: CatalogContractStoreState = ({
   // Only for error→ok — a violation clearing means a backend deploy landed;
   // the sidebar repopulating is signal enough there.
   if (wasOutage) {
-   useToastStore.getState().addToast("info", `Catalog back online (at ${_stamp()}).`)
+   contractToast("info", `Catalog back online (at ${_stamp()}).`)
   }
  },
 
@@ -139,7 +139,7 @@ const _seed: CatalogContractStoreState = ({
      ? `${first.kind}: ${first.message}`
      : first.message
    : "the catalog response did not match the expected shape"
-  useToastStore.getState().addToast(
+  contractToast(
    "error",
    `Catalog contract violation — ${msg} (at ${_stamp()}). Some models may be missing. Retry re-fetches the catalog.`,
    { label: "Retry", onClick: retryCatalog },
@@ -155,7 +155,7 @@ const _seed: CatalogContractStoreState = ({
   _setState({ record: { state: "error", violations: [], error: clean } })
   if (clean === _lastToastedOutage) return // same ongoing outage — no re-toast
   _lastToastedOutage = clean
-  useToastStore.getState().addToast(
+  contractToast(
    "error",
    `Catalog unavailable — ${clean} (at ${_stamp()}). Retry re-fetches the catalog.`,
    { label: "Retry", onClick: retryCatalog },

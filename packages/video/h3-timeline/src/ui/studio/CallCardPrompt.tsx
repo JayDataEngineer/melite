@@ -4,7 +4,7 @@
  * prompt segments, NO prompt beats — text mode only, forever.)
  */
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { cn } from '@melite/card-base'
+import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
 import type { DocCall } from "./docModel"
 
