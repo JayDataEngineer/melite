@@ -73,13 +73,39 @@ if [ "${UNIT_OVERRIDE:-0}" = "1" ] || [ "${ORIGIN_OVERRIDE:-0}" = "1" ]; then
   fi
 fi
 
-# The five packages whose runtime entry is ./lib (docs/deployment/build.md).
-COMPILED=(
-  packages/estate/drafts
-  packages/estate/manage
-  packages/estate/media
-  packages/estate/runs
-)
+# THE NODE-HALF ROSTER IS DERIVED, NEVER HAND-LISTED (2026-10-13, the
+# DSH-ship audit: "A hand list is exactly the list that rots"). A
+# package belongs here iff the host imports it FROM lib/ — the rule is
+# its own manifest: `main`, else `exports['.'].default`/`types`, must
+# resolve into `./lib/`. Adding a compiled estate package is a manifest
+# edit; the roster follows. (It reproduces the old four by hand.)
+derive_compiled() {
+  node -e '
+    const { readdirSync, readFileSync, existsSync } = require("node:fs");
+    const { join } = require("node:path");
+    const out = [];
+    const walk = (dir) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (!e.isDirectory() || e.name === "node_modules" || e.name === "lib" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        if (existsSync(join(p, "package.json"))) {
+          let m = {};
+          try { m = JSON.parse(readFileSync(join(p, "package.json"), "utf8")); } catch {}
+          let entry = m.main;
+          const dot = m.exports && m.exports["."];
+          if (!entry && dot && typeof dot === "object") entry = dot.default || dot.types;
+          if (!entry && typeof dot === "string") entry = dot;
+          if (entry && entry.startsWith("./lib/")) out.push(p);
+        }
+        walk(p);
+      }
+    };
+    walk("packages");
+    console.log(out.sort().join(" "));
+  '
+}
+COMPILED=($(derive_compiled))
+[ "${#COMPILED[@]}" -gt 0 ] || { bad "no lib-entry package found — the node-half roster derivation returned nothing"; exit 1; }
 
 # THE CLIENT BUNDLES (operator, 2026-10-10: the STALE TAB
 # regression). The browser runs `lib/client.js` from these packages,
@@ -337,10 +363,37 @@ fi
 verify_stamps || exit 1
 
 # -------------------------------------------------------------- restart
+# THE RESTART IS FOR THE NODE HALF ONLY (2026-10-13, the DSH-ship
+# audit). DSH mounts `@deepseek-ai/dsh-client-hmr` on the lane: it
+# stat-polls every graph row's client bundle every 500ms and pushes
+# `rebuilt` frames over the /plugins/events SSE channel, so a rebuilt
+# client bundle reaches the operator's open tab with NO restart (proved
+# on the live lane: a `tsdown` run on infer-gallery emitted
+# `{"type":"rebuilt","id":"@melite-plugin/dsh-gallery"}`). Node half is
+# different — the running host imported and cached its modules at boot,
+# so a changed node-half package still needs the restart.
+#
+# A ship therefore restarts only when a node-half source changed since
+# the last shipped marker. A UI-only ship rebuilds the bundles, the SSE
+# carries them to the browser, and the host is left running.
+node_src_hash() {
+  for p in "${COMPILED[@]}"; do printf '%s %s\n' "$p" "$(stamp_src "$p")"; done | sha256sum | cut -c1-16
+}
+SHIPPED_MARKER="$REPO/.scratch/ship-node-half.stamp"
+shipped_before="$(cat "$SHIPPED_MARKER" 2>/dev/null || echo none)"
+node_now="$(node_src_hash)"
+node_changed=1
+if [ "$shipped_before" = "$node_now" ]; then node_changed=0; fi
 if [ "$CHECK_ONLY" -eq 0 ]; then
-  say "RESTART $UNIT"
-  systemctl --user restart "$UNIT" || { bad "restart failed"; exit 1; }
-  ok "restart issued"
+  if [ "$node_changed" -eq 1 ]; then
+    say "RESTART $UNIT (the node half changed since the last ship)"
+    systemctl --user restart "$UNIT" || { bad "restart failed"; exit 1; }
+    ok "restart issued"
+  else
+    ok "node half unchanged — no restart; dsh-client-hmr carries the rebuilt bundles to the browser (SSE rebuilt frames)"
+  fi
+  mkdir -p "$(dirname "$SHIPPED_MARKER")"
+  printf '%s' "$node_now" > "$SHIPPED_MARKER"
 fi
 
 # ----------------------------------------------------------------- wait

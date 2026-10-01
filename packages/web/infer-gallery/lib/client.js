@@ -25655,7 +25655,7 @@ window.__ModuleLoader__.load({
 		* an imperative scene in an effect, NO @react-three — r3f's bundled
 		* react-reconciler version-skews against the seeded React internals and
 		* crashes at boot. And ONE substrate: this mounts the estate's shared
-		* stage core (`@melite/card-base/stage3d`, the same module every card
+		* stage core (`@melite/card-base/client`, the same module every card
 		* viewport mounts) and loads through the estate's ONE GLB parse policy
 		* (`@melite/formats/glbLoad` — the single DRACO-configured GLTFLoader
 		* and the single autoFit normalization). It is a VIEWER, not a second
@@ -33934,4 +33934,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d2f3e5cb92b19e7cba1dddd89d49d32b35e91803";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8b7891008164c9c9f20265a63b550387b97ef146";

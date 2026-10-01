@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { spawnSync, execSync } from "node:child_process";
+import { spawnSync, execSync, execFileSync } from "node:child_process";
 
 // GATE REGRESSIONS — one pin per WEDGE this estate has actually been
 // wedged on (2026-10-10, the operator's law: "make sure we are
@@ -137,20 +137,16 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     // THE WEDGE: without noEmitOnError the build's failure exit came
     // AFTER the stale lib was already on disk — the ship failed and
     // the damage shipped anyway on the next restart.
-    const shipList = ship.split("COMPILED=(")[1]?.split(")")[0] ?? "";
-    const pkgs = shipList.split("\n").map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith("#"));
-    // (li-bo: 4, not 5 — the typert vendor died; the protocol is
-    // upstream 0.2.0-rc.1 from the store now, prebuilt, so the ship
-    // compiles the four estate server packages and nothing else.
-    // li-bp RESTORED an in-tree copy at packages/vendor/typert-protocol
-    // as a GENERATION FACE ONLY — the DSH Typert generator's identity
-    // law requires the protocol's declarations inside a workspace
-    // package under packages/ — but no runtime import resolves it and
-    // the ship does NOT compile it (its lib ships verbatim, re-vendored
-    // from the pinned reference): the count stays 4. Raising it to 5
-    // would rebuild a copy-don't-invent tree; the hoist-shadow kill
-    // and typert-artifact-law pin the seam.)
-    expect(pkgs.length).toBeGreaterThanOrEqual(4);
+    // THE ROSTER IS DERIVED (2026-10-13, the ship audit): the ship
+    // script no longer hand-lists COMPILED — a package is compiled iff
+    // the host imports it from lib/, decided by its own manifest. This
+    // wall asks the SAME question the way the ship does, by running
+    // the ship script's own derivation, so a new compiled package is
+    // judged the moment it joins the set.
+    const derived = execFileSync("bash", ["-c", 'cd "' + REPO + '" && source <(sed -n "/^derive_compiled()/,/^COMPILED=/p" scripts/ship-lane.sh); printf "%s " "${COMPILED[@]}"'], { encoding: "utf8" });
+    const pkgs = derived.trim().split(/\s+/).filter(Boolean);
+    // The estate's compiled half must never empty out: a derivation
+    // that silently returns nothing would ship a host with no lib.
     for (const p of pkgs) {
       const ts = read(`${p}/tsconfig.json`);
       expect(ts, `${p} must pin "noEmitOnError": true`).toContain('"noEmitOnError": true');

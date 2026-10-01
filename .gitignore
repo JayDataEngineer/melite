@@ -197,3 +197,4 @@ packages/*/*/lib/.src-stamp
 tmp/*
 !tmp/oracle-death-import-trace.md
 !tmp/oracle-death-wall-inventory.md
+data/runtime/real-install-tarballs/

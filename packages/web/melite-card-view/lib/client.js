@@ -41380,7 +41380,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* an imperative scene in an effect, NO @react-three — r3f's bundled
 		* react-reconciler version-skews against the seeded React internals and
 		* crashes at boot. And ONE substrate: this mounts the estate's shared
-		* stage core (`@melite/card-base/stage3d`, the same module every card
+		* stage core (`@melite/card-base/client`, the same module every card
 		* viewport mounts) and loads through the estate's ONE GLB parse policy
 		* (`@melite/formats/glbLoad` — the single DRACO-configured GLTFLoader
 		* and the single autoFit normalization). It is a VIEWER, not a second
@@ -44755,4 +44755,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15baaa8ac3296aa6c587f3bd6882787c9d884e15";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c49effea4ddca7508b0691a1d105ddc5f1f69ee4";
