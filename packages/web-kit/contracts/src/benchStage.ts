@@ -362,6 +362,20 @@ export function benchSessionOf(id: string | undefined): string {
   return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 }
 
+/** The prefix the mint writes and the strip removes — the one
+ *  spelling of "bench-", beside the grammar that validates it. */
+export const BENCH_DRAFT_PREFIX_RE = /^bench-/;
+
+/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+ *  duplication audit). The grammar moved to this floor and the DECISION
+ *  beside it, but the mint stayed behind in six seats spelling
+ *  `"bench-" + session` — one of which stripped the prefix and added
+ *  it straight back. An address has one grammar, one sanitize, and now
+ *  one mint. */
+export function benchDraftIdOf(session: string): string {
+  return "bench-" + session;
+}
+
 /** The run-relative tail of an absolute artifact path, or undefined
  * when the path carries no run directory — e.g.
  * "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →

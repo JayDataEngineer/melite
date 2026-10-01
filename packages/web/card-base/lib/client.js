@@ -2908,6 +2908,15 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
 		/** The run-relative tail of an absolute artifact path, or undefined
 		* when the path carries no run directory — e.g.
 		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -2959,7 +2968,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -3008,11 +3017,13 @@ window.__ModuleLoader__.load({
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
@@ -3049,6 +3060,7 @@ window.__ModuleLoader__.load({
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -50173,4 +50185,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6edb18a2c7bbea5e2702a6fab1166f941b0aa77d";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="75ac50690fa20b3bef31ebcf08a468c4f8cfabe3";

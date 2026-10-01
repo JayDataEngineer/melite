@@ -77,6 +77,7 @@ import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "./kit"
 import { cn } from '@melite/card-base/client'
 import s from "./export-dialog.module.css"
+import { STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
 
 export type ThreeCtx = {
  gl: THREE.WebGLRenderer
@@ -97,7 +98,7 @@ const BACKGROUNDS = [
  { label: "Transparent", value: "transparent" },
  { label: "Black", value: "#000000" },
  { label: "White", value: "#ffffff" },
- { label: "Dark", value: "#0e0e1a" },
+ { label: "Dark", value: STAGE_BACKGROUND_DARK },
 ]
 
 type ExportScope = "single" | "batch" | "downloads"
@@ -454,7 +455,7 @@ export function MotionExportDialog({
  const opBg = bg === "preserve"
  ? (() => {
  const s = threeCtxRef.current?.scene.background
- return s instanceof THREE.Color ? `#${s.getHexString()}` : "#0e0e1a"
+ return s instanceof THREE.Color ? `#${s.getHexString()}` : STAGE_BACKGROUND_DARK
  })()
  : (bg as string | "transparent")
  const ow = outW

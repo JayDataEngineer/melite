@@ -41,6 +41,7 @@ import {
 } from "./poseStageOverlays"
 import { createReferenceCarrier } from "./poseStageReference"
 import type { CameraFraming, PoseStageProps } from "./poseStageTypes"
+import { STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT } from '@melite/card-base/client'
 
 export { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton"
 export { cameraPosFor, framedCameraPos } from "./poseStageCamera"
@@ -112,7 +113,7 @@ export function mountPoseStage(
 
   const scene = stage.scene
   const dark = opts.darkMode
-  stage.renderer.setClearColor(new THREE.Color(dark ? "#0e0e1a" : "#e4e4f0"))
+  stage.renderer.setClearColor(new THREE.Color(dark ? STAGE_BACKGROUND_DARK : STAGE_BACKGROUND_LIGHT))
 
   // ── Light rig (the orbs-vs-default switch is applied in update) ──────
   const ambient = new THREE.AmbientLight(0xffffff, 0.45)
@@ -360,7 +361,7 @@ export function mountPoseStage(
     setDarkMode(dark: boolean): void {
       if (dark !== darkCur) {
         darkCur = dark
-        stage.renderer.setClearColor(new THREE.Color(dark ? "#0e0e1a" : "#e4e4f0"))
+        stage.renderer.setClearColor(new THREE.Color(dark ? STAGE_BACKGROUND_DARK : STAGE_BACKGROUND_LIGHT))
       }
     },
     dispose(): void {

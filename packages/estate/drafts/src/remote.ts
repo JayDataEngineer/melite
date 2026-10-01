@@ -36,6 +36,7 @@ import {
   undoBench,
   ungroupBench,
 } from "./bench.js";
+import { benchDraftIdOf } from "@melite/contracts/benchStage";
 import type {
   BenchEnsureRow,
   BenchGetRow,
@@ -1029,7 +1030,7 @@ export class BenchRemoteService extends TypertRemoteService {
           error.code === "bench/not-found"
         ) {
           row = {
-            draft_id: "bench-" + sessionKey,
+            draft_id: benchDraftIdOf(sessionKey),
             session: sessionKey,
             rev: 0,
             intent: "",

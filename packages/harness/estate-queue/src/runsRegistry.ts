@@ -62,6 +62,7 @@ import type { RunRecord } from "./runsTypes.ts";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.ts";
 import { engineFilmName } from "./filmLead.ts";
 import { validate as validateArm, modelValidateArm } from "./runsValidateArms.ts";
+import { BENCH_DRAFT_PREFIX_RE, benchDraftIdOf } from '@melite/contracts/benchStage'
 
 // CROSS-COPY LAW (the estate's documented topology): the engine
 // package resolves the registry cordis instance; this package's
@@ -710,7 +711,9 @@ export class RunsRuntimeService extends Service {
         body = {
           ...rest,
           flow_inline: {
-            id: "bench-" + String(checked.draftId).replace(/^bench-/, ""),
+            // THE MINT (benchDraftIdOf): this seat used to strip the prefix
+            // and add it straight back — one address, two spellings.
+            id: benchDraftIdOf(String(checked.draftId).replace(BENCH_DRAFT_PREFIX_RE, "")),
             stages: composed,
           },
         };

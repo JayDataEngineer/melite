@@ -6,7 +6,7 @@
  */
 
 /** stage.params key for the Motion Card background image (option b). A user
- *  image rendered behind the mannequin in place of the dark #0e0e1a stage.
+ *  image rendered behind the mannequin in place of the dark stage (STAGE_BACKGROUND_DARK).
  *  UI-only — never sent to ComfyUI (registered in compile.ts's
  *  _KNOWN_NON_SIG_PARAMS so it's stripped before the run). Holds either a
  *  data: URL (file picker) or an asset URL (e.g. a scene-flow output). */

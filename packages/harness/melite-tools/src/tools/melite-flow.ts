@@ -31,6 +31,7 @@ import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
 import { isTerminalStatus } from '@melite/contracts/stageView'
+import { benchDraftIdOf } from '@melite/contracts/benchStage';
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
  *  params may name `model` explicitly; otherwise the card id
@@ -307,7 +308,7 @@ async function runBench(
   a: { test?: boolean; bench: string },
   signal: AbortSignal,
 ): Promise<Record<string, unknown>> {
-  const empty = { mode: 'bench', target: `bench-${a.bench}`, error: 'the bench is empty — construct stages first (melite_construct)' }
+  const empty = { mode: 'bench', target: benchDraftIdOf(a.bench), error: 'the bench is empty — construct stages first (melite_construct)' }
   let b: Record<string, unknown>
   try {
     b = await request( 'GET', `/v1/bench/${a.bench}`, undefined, signal, 15_000) as Record<string, unknown>
@@ -322,8 +323,8 @@ async function runBench(
         typeof s === 'object' && s !== null && typeof (s as Record<string, unknown>)['id'] === 'string')
     : []
   if (rows.length === 0) return empty
-  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : `bench-${a.bench}`
-  const target = `bench-${a.bench} @ rev ${String(b['rev'] ?? '?')}`
+  const draftId = typeof b['draft_id'] === 'string' ? b['draft_id'] as string : benchDraftIdOf(a.bench)
+  const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b['rev'] ?? '?')}`
   const pass: Array<Record<string, unknown>> = []
   for (const row of rows) {
     const stageId = row['id'] as string
@@ -966,7 +967,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
           // mapping was dead here and mislabeled bench failures as
           // adhoc/pipeline — the refusal rides bench's own mode/target
           // (a real mislabel, fixed minimally).
-          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode: 'bench', target: `bench-${bench}` });
+          return jsonClean<FlowResult>({ error: re.message || 'remote refused', mode: 'bench', target: benchDraftIdOf(bench) });
         }
         throw e;
       }

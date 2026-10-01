@@ -2928,6 +2928,15 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
 		/** The run-relative tail of an absolute artifact path, or undefined
 		* when the path carries no run directory — e.g.
 		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -2979,7 +2988,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -3028,11 +3037,13 @@ window.__ModuleLoader__.load({
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
@@ -3069,6 +3080,7 @@ window.__ModuleLoader__.load({
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -31766,7 +31778,7 @@ window.__ModuleLoader__.load({
 			},
 			{
 				label: "Dark",
-				value: "#0e0e1a"
+				value: _melite_card_base_client.STAGE_BACKGROUND_DARK
 			}
 		];
 		const RENDER_MODES = [
@@ -32034,7 +32046,7 @@ window.__ModuleLoader__.load({
 				const bg = BACKGROUNDS[bgIdx].value;
 				const opBg = bg === "preserve" ? (() => {
 					const s = threeCtxRef.current?.scene.background;
-					return s instanceof Color ? `#${s.getHexString()}` : "#0e0e1a";
+					return s instanceof Color ? `#${s.getHexString()}` : _melite_card_base_client.STAGE_BACKGROUND_DARK;
 				})() : bg;
 				const ow = outW;
 				const oh = outH;
@@ -32474,7 +32486,7 @@ window.__ModuleLoader__.load({
 		*  `component.tsx` re-exports them so the original path keeps its surface.
 		*/
 		/** stage.params key for the Motion Card background image (option b). A user
-		*  image rendered behind the mannequin in place of the dark #0e0e1a stage.
+		*  image rendered behind the mannequin in place of the dark stage (STAGE_BACKGROUND_DARK).
 		*  UI-only — never sent to ComfyUI (registered in compile.ts's
 		*  _KNOWN_NON_SIG_PARAMS so it's stripped before the run). Holds either a
 		*  data: URL (file picker) or an asset URL (e.g. a scene-flow output). */
@@ -38950,7 +38962,7 @@ window.__ModuleLoader__.load({
 			opts.onCanvasReady?.(canvas);
 			const scene = stage.scene;
 			const dark = opts.darkMode;
-			stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
+			stage.renderer.setClearColor(new Color(dark ? _melite_card_base_client.STAGE_BACKGROUND_DARK : _melite_card_base_client.STAGE_BACKGROUND_LIGHT));
 			const ambient = new AmbientLight(16777215, .45);
 			scene.add(ambient);
 			const key = new DirectionalLight(16777215, 1);
@@ -39152,7 +39164,7 @@ window.__ModuleLoader__.load({
 				setDarkMode(dark) {
 					if (dark !== darkCur) {
 						darkCur = dark;
-						stage.renderer.setClearColor(new Color(dark ? "#0e0e1a" : "#e4e4f0"));
+						stage.renderer.setClearColor(new Color(dark ? _melite_card_base_client.STAGE_BACKGROUND_DARK : _melite_card_base_client.STAGE_BACKGROUND_LIGHT));
 					}
 				},
 				dispose() {
@@ -40344,4 +40356,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6de23c07c0a9b4803f739846642b3903a05d7e33";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="30d2289d49c795593a033424a071f604445fcf51";

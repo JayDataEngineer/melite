@@ -28,6 +28,7 @@ import {
   fetchBindMesh, buildGeometry, type SkinMeshData, type PreviewPose,
 } from "./bodyMesh"
 import type { Character } from "@melite/contracts"
+import { STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
 
 /** Build the bind-mesh geometry (positions + V×3 face indices, smooth
  *  normals) — the PreviewMesh body, verbatim. */
@@ -167,7 +168,7 @@ export function MeshPreviewCanvas({
     if (stage === null) return
     const renderer = stage.renderer
     const scene = stage.scene
-    renderer.setClearColor(new THREE.Color("#0e0e1a"))
+    renderer.setClearColor(new THREE.Color(STAGE_BACKGROUND_DARK))
     scene.add(new THREE.AmbientLight(0xffffff, 0.45))
     const key = new THREE.DirectionalLight(0xffffff, 1.0)
     key.position.set(5, 8, 5)
