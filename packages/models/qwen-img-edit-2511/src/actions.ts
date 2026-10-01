@@ -20,7 +20,7 @@ import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, d
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
-import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
+import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the 2511 edit segment reads. */
 export type EditFacts = {
@@ -95,15 +95,7 @@ export const edit: ComfyActionSpec<EditParams, EditFacts> = {
     { name: "image2", type: "string" },
     { name: "image3", type: "string" },
     { name: "reference_images", type: "image_list" },
-    { name: "prompt", type: "string" },
-    { name: "negative_prompt", type: "string" },
-    { name: "width", type: "number" },
-    { name: "height", type: "number" },
-    { name: "seed", type: "number", rule: "seed-sentinel" },
-    { name: "steps", type: "number", bounds: [1, 50] },
-    { name: "cfg", type: "number", bounds: [0.1, 10] },
-    { name: "sampler", type: "enum", options: SAMPLER_OPTIONS },
-    { name: "scheduler", type: "enum", options: SCHEDULER_OPTIONS },
+    ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS),
     { name: "use_stock_nodes", type: "boolean" },
     { name: "double_reference", type: "boolean" },
   ],

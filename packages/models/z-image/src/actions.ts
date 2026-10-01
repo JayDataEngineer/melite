@@ -18,7 +18,7 @@ import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
-import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
+import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the t2i segment reads. `latent_node` is
  *  the latent class as a TYPE: this action builds the SD3-shaped
@@ -93,17 +93,7 @@ export const t2i: ComfyActionSpec<T2IParams, T2IFacts> = {
   // card schema's own types and bounds — the family door judges
   // defaults and variant presets against this row; the closed sets
   // resolve from the ONE engine vocabulary, never hand-copied.
-  params: [
-    { name: "prompt", type: "string" },
-    { name: "negative_prompt", type: "string" },
-    { name: "width", type: "number", bounds: [256, 2048] },
-    { name: "height", type: "number", bounds: [256, 2048] },
-    { name: "seed", type: "number", rule: "seed-sentinel" },
-    { name: "steps", type: "number", bounds: [1, 100] },
-    { name: "cfg", type: "number", bounds: [1, 20] },
-    { name: "sampler", type: "enum", options: SAMPLER_OPTIONS },
-    { name: "scheduler", type: "enum", options: SCHEDULER_OPTIONS },
-  ],
+  params: [...diffusionParamRows()],
   facts: parseT2IFacts,
   build({ p, facts, model, g, runId }) {
     let unet: OutputHandle = g.node("UNETLoader", { unet_name: facts.unet, weight_dtype: "default" }).out();
