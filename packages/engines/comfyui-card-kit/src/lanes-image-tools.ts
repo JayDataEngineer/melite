@@ -143,7 +143,7 @@ export const TAGGER_EXTRA_OPTIONS = [
   'Include information about whether there is a watermark or not.',
   'Include information on the image\'s composition style, such as leading lines, rule of thirds, or symmetry.',
   'Include whether the image is sfw, suggestive, or nsfw.',
-  'Mention whether the image depicts an extreme close-up, close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.',
+  'Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.',
   'ONLY describe the most important elements of the image.',
   'Specify the depth of field and whether the background is in focus or blurred.',
   'Use vulgar slang and profanity, such as (but not limited to) "[REDACTED 2026-11-05]," "[REDACTED 2026-11-05]," "[REDACTED 2026-11-05]," etc.',

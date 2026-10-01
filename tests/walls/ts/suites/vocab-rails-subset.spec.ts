@@ -1,0 +1,180 @@
+import { describe, it, expect } from "vitest";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/vocab.ts";
+import { TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/lanes-image-tools.ts";
+import { PRESET_SPEAKERS } from "../../../../packages/models/qwen3-tts/src/actions.ts";
+
+// THE VOCAB-RAILS SUBSET WALL (schema-gate-inventory fix 3, 2026-10-12):
+// the engine-subset wall judged ONLY the kit's sampler/scheduler
+// pair; every hand-written `vocabulary([...])` literal and every
+// DECL variant rail that stamps a checkpoint name passed every
+// gate in the repository (schema-bottomup G4: wd14's 11 and
+// florence2's 14 names "maintained by hand, tested by a second
+// hand-copy"). This wall gives each the SAME comparison: a literal
+// is either JOINED to an engine combo (literal ⊆ the tracked
+// fixture's value list — dead names 400 at the engine) or DECLARED
+// model-local in the registry below WITH its reason, and the
+// census arm turns red the moment a NEW vocabulary( site or a NEW
+// checkpoint-stamping DECL appears unmapped. The values are read
+// from source at run time (imported consts where exported, the
+// param-keyed line extracted from the card/schema file where
+// inline) — the test itself carries NO second copy of any list.
+const FIXTURE = new URL("../../fixtures/pinned-combos.min.json", import.meta.url);
+const LIVE = join(process.cwd(), "data", "tmp", "object_info_prod.json");
+
+const pkg = (...p: string) => join(process.cwd(), "packages", ...p);
+
+/** One inline `param: vocabulary([...])` site — extracted from its
+ *  source line at run time (the file is the SSOT, never this
+ *  table). */
+function inlineVocab(file: string, param: string): string[] {
+  const text = readFileSync(pkg(...file.split("/")), "utf8");
+  const m = new RegExp(param + "\\s*:\\s*vocabulary\\(\\[([^\\]]*)\\]").exec(text);
+  if (!m) throw new Error("vocab-rails: no vocabulary site for " + param + " in " + file);
+  return [...m[1].matchAll(/'([^']+)'|"([^"]+)"/g)].map((x) => x[1] ?? x[2]);
+}
+
+/** Every checkpoint name a DECL's variant rail stamps — scoped to
+ *  the "variants": [ ... ] array (the top-level defaults block may
+ *  lawfully repeat the family default; it is not the rail). */
+function railStamps(decl: string): string[] {
+  const text = readFileSync(pkg("models", decl, "src", "index.ts"), "utf8");
+  const start = text.indexOf('"variants":');
+  const end = text.indexOf('"variant_groups":', start);
+  const rail = text.slice(start, end === -1 ? undefined : end);
+  return [...rail.matchAll(/"checkpoint":\s*"([^"]+)"/g)].map((m) => m[1]);
+}
+
+// ── THE REGISTRY — every vocabulary( site in packages/ and every
+// checkpoint-stamping DECL, each JOINED (engine combo bounds it)
+// or LOCAL (the engine doc is silent; the reason states whose
+// vocabulary it is). A new site fails the census below until it
+// lands in one of these two tables. ──
+type Joined = { site: string; join: string; values: readonly string[] };
+
+const JOINED: Joined[] = [
+  { site: "h3:sampler_name", join: "KSampler.sampler_name", values: SAMPLER_OPTIONS },
+  { site: "h3:sched_name", join: "KSampler.scheduler", values: SCHEDULER_OPTIONS },
+  { site: "tagger:caption_task", join: "Florence2Run.task", values: TAGGER_CAPTION_TASKS },
+  { site: "tagger:caption_type", join: "JJC_JoyCaption.caption_type", values: TAGGER_CAPTION_TYPES },
+  { site: "tagger:caption_length", join: "JJC_JoyCaption.caption_length", values: TAGGER_CAPTION_LENGTHS },
+  { site: "motion:cfg_type", join: "KimodoTextToPose.cfg_type", values: inlineVocab("motion/motion/src/card.ts", "cfg_type") },
+];
+
+// Inverted join — the engine combo (the dropdown the node's UI
+// offers) must stay a subset of the card's fuller literal (the
+// API accepts more than the combo lists; the card's leading ""
+// sentinel and full instruction list are deliberate).
+const JOINED_INVERTED: Joined[] = [
+  { site: "tagger:extra_option", join: "JJC_JoyCaption.extra_option1", values: TAGGER_EXTRA_OPTIONS },
+];
+
+// Only DECLs whose VARIANTS array stamps a checkpoint ride here
+// (yue2 and joycaption carry theirs in lane_inputs / the mods
+// manifest — a different mechanism, lawfully outside this rail).
+const JOINED_RAILS: { decl: string; join: string }[] = [
+  { decl: "wd14", join: "WD14Tagger|pysssss.model" },
+  { decl: "florence2", join: "DownloadAndLoadFlorence2Model.model" },
+];
+
+const LOCAL: { site: string; values: () => readonly string[]; reason: string }[] = [
+  { site: "tts:voice", values: () => PRESET_SPEAKERS, reason: "the model's own built-in CustomVoice roster (the engine node declares no speaker combo)" },
+  { site: "music:mode", values: () => inlineVocab("audio/music/src/card.ts", "mode"), reason: "the MMAudio lane's prompt-side mode toggle (no engine combo declares it)" },
+  { site: "anny:transparent", values: () => inlineVocab("3d/anny/src/card.ts", "transparent"), reason: "wire-string toggle under the loose anny law (str(x) != 'false' — the vendor step-doc, not an engine combo)" },
+  { site: "input-prep:media_type", values: () => inlineVocab("image/input-prep/src/card.ts", "media_type"), reason: "card-local media-kind toggle" },
+  { site: "h3:attention_backend", values: () => inlineVocab("models/h3/src/schema.ts", "attention_backend"), reason: "the h3 family's own model vocabulary (its kitchen's attention modes)" },
+  { site: "h3:interp_model", values: () => inlineVocab("models/h3/src/schema.ts", "interp_model"), reason: "the h3 family's bundled interp weights (provisioned files, not engine combos)" },
+  { site: "h3:sr_model", values: () => inlineVocab("models/h3/src/schema.ts", "sr_model"), reason: "the h3 family's bundled restoration weights (provisioned files)" },
+  { site: "h3:sla_block_size", values: () => inlineVocab("models/h3/src/schema.ts", "sla_block_size"), reason: "the h3 family's own SLA block sizes" },
+  { site: "h3:sla_dense_backend", values: () => inlineVocab("models/h3/src/schema.ts", "sla_dense_backend"), reason: "the h3 family's own dense backend picker" },
+  { site: "h3:sla_reference_protection", values: () => inlineVocab("models/h3/src/schema.ts", "sla_reference_protection"), reason: "the h3 family's own protection levels" },
+  { site: "h3:sharpen_method", values: () => inlineVocab("models/h3/src/schema.ts", "sharpen_method"), reason: "the h3 family's own sharpener kernels" },
+];
+
+const LOCAL_RAILS: string[] = [];
+
+const deadNames = (served: readonly string[], engine: readonly string[]) =>
+  served.filter((n) => !engine.includes(n));
+
+describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-joined or declared local", () => {
+  it("every joined vocabulary and rail names only what the tracked engine fixture runs, unconditionally", () => {
+    const fx = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, string[]>;
+    for (const { site, join, values } of JOINED) {
+      const combo = fx[join];
+      expect(combo, `the fixture carries ${join} (${site}'s pinned combo)`).toBeDefined();
+      const dead = deadNames(values, combo ?? []);
+      expect(dead, `${site} serves names ${join} does not (${dead.join(", ")}) — a dead name in every menu, a 400 at the engine on every pick`).toEqual([]);
+    }
+    for (const { site, join, values } of JOINED_INVERTED) {
+      const combo = fx[join];
+      expect(combo, `the fixture carries ${join}`).toBeDefined();
+      const dead = deadNames(combo ?? [], values);
+      expect(dead, `the engine's ${join} combo offers names the card's ${site} literal no longer carries (${dead.join(", ")}) — the dropdown drifted past the card`).toEqual([]);
+    }
+    for (const { decl, join } of JOINED_RAILS) {
+      const combo = fx[join];
+      expect(combo, `the fixture carries ${join}`).toBeDefined();
+      const stamps = railStamps(decl);
+      expect(stamps.length, `${decl}'s rail stamps at least one checkpoint`).toBeGreaterThan(0);
+      const dead = deadNames(stamps, combo ?? []);
+      expect(dead, `${decl}'s rail stamps checkpoints the engine does not run (${dead.join(", ")}) — a variant the engine 400s at selection time (schema-bottomup G4)`).toEqual([]);
+    }
+  });
+
+  it("the live cache, wherever it exists, agrees with the tracked fixture (drift contract)", (ctx) => {
+    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
+    // (ctx.skip); the floor above already judged the fixture.
+    if (!existsSync(LIVE)) {
+      ctx.skip(true);
+      return;
+    }
+    const doc = JSON.parse(readFileSync(LIVE, "utf8")) as Record<string, { input?: { required?: Record<string, unknown>; optional?: Record<string, unknown> } }>;
+    const fx = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, string[]>;
+    for (const key of Object.keys(fx)) {
+      const [cls, inp] = [key.slice(0, key.lastIndexOf(".")), key.slice(key.lastIndexOf(".") + 1)];
+      const def = doc[cls]?.input;
+      const spec = (def?.required?.[inp] ?? def?.optional?.[inp]) as unknown as [string[]] | undefined;
+      const live = spec?.[0];
+      expect(live, `the cache's ${key} combo is present`).toBeDefined();
+      expect([...(live ?? [])].sort(), `the fixture's ${key} roster drifted from the live cache (re-project pinned-combos.min.json)`).toEqual([...fx[key]].sort());
+    }
+  });
+
+  it("the census: every vocabulary( site and checkpoint-stamping DECL is registered — a new one turns this red", () => {
+    const sites: string[] = [];
+    const walk = (dir: string) => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        if (e.isDirectory()) { walk(p); continue; }
+        if (!/\.tsx?$/.test(e.name) || p.includes(join("packages", "engines", "comfyui-cordis", "tests"))) continue;
+        if (/\/test[ss]?\//.test(p)) continue;
+        const text = readFileSync(p, "utf8");
+        const hits = text.match(/vocabulary\(\[/g);
+        if (hits) for (let i = 0; i < hits.length; i++) sites.push(p);
+      }
+    };
+    walk(join(process.cwd(), "packages"));
+    const registered = JOINED.length + JOINED_INVERTED.length + LOCAL.length;
+    expect(sites.length, `the registry carries ${registered} sites but packages/ declares ${sites.length} vocabulary( calls (${sites.map((s) => s.replace(join(process.cwd(), "packages") + "/", "")).join(", ")}) — map the new site: join it to an engine combo or declare it local with its reason`).toBe(registered);
+
+    const stamping: string[] = [];
+    for (const d of readdirSync(join(process.cwd(), "packages", "models"), { withFileTypes: true })) {
+      if (!d.isDirectory() || d.name === "node_modules") continue;
+      if (railStamps(d.name).length > 0) stamping.push(d.name);
+    }
+    expect([...stamping].sort(), "the checkpoint-stamping DECL roster changed — register the new rail (join it to an engine combo or declare it provision-side)").toEqual([...JOINED_RAILS.map((r) => r.decl), ...LOCAL_RAILS].sort());
+  });
+
+  it("every registry entry is non-empty and duplicate-free (a broken edit cannot serve a hollow menu)", () => {
+    for (const { site, values } of [...JOINED, ...JOINED_INVERTED, ...LOCAL.map((l) => ({ site: l.site, values: l.values() }))]) {
+      expect(values.length, `${site} is empty`).toBeGreaterThan(0);
+      expect(new Set(values).size, `${site} carries duplicates`).toBe(values.length);
+    }
+    for (const decl of [...JOINED_RAILS.map((r) => r.decl), ...LOCAL_RAILS]) {
+      const stamps = railStamps(decl);
+      expect(new Set(stamps).size, `${decl}'s rail stamps a checkpoint twice`).toBe(stamps.length);
+    }
+  });
+});
