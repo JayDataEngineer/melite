@@ -1381,10 +1381,15 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
     assert.deepEqual(crimes, [], 'the recorded graph wires inputs the tracked engine doc does not declare (fixture drift — re-project it from a refreshed cache)')
   });
 
-  it("every landed run's graph satisfies the input law (the 5,415-node receipt)", (ctx) => {
+  it("every landed run's graph satisfies the input law (the runs-corpus receipt)", (ctx) => {
     // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
     // (ctx.skip — the runner counts it skipped, never passed); the
     // seed arm above already judged the law without either cache.
+    // The runs tree is UNTRACKED (gitignored) — on a fresh clone
+    // the directory itself is absent, so its existence rides the
+    // same guard (the 9122e524 verifier's ENOENT finding: a
+    // readdir before the guard would FAIL the arm, not skip it).
+    if (!existsSync('data/runs/output')) { ctx.skip(true); return }
     const files = readdirSync('data/runs/output', { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => join('data/runs/output', e.name, '_flow.json'))
