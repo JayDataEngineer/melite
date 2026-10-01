@@ -48707,6 +48707,7 @@ void main() {
 			});
 			while (signal?.aborted !== true) {
 				let row;
+				let readFailed = false;
 				try {
 					row = await fetchRunStatus(runId, signal);
 				} catch (e) {
@@ -48724,13 +48725,14 @@ void main() {
 						draftId: null,
 						stages: []
 					};
+					readFailed = true;
 				}
 				const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
 				if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
 					opts.onUrl(stage.url);
 					return;
 				}
-				if (isTerminalStatus(row.status)) return;
+				if (!readFailed && isTerminalStatus(row.status)) return;
 				if (await sleep(interval) === "abort") return;
 			}
 		}
@@ -50176,4 +50178,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="fe8feddaff4b817818969ae9b976daba29a45fc3";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1c4e2090ef2e376bf9649a2859b33c30e2351103";

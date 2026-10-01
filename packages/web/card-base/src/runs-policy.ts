@@ -263,6 +263,7 @@ export async function pollRunStageUrl(
     })
   while (signal?.aborted !== true) {
     let row: RunStatusRow
+    let readFailed = false
     try {
       row = await fetchRunStatus(runId, signal)
     } catch (e: unknown) {
@@ -278,7 +279,16 @@ export async function pollRunStageUrl(
           // next cadence, so the poll stays alive (fall through)
         }
       }
-      row = { runId, status: 'unknown', draftId: null, stages: [] } // next poll may recover
+      // THE READ FAILED, NOT THE RUN (2026-10-13): this used to
+      // smuggle the failure through the run-status vocabulary as
+      // 'unknown', which the ONE terminal set spells as terminal —
+      // so unifying the set turned "the answer may land next
+      // cadence" into "give up", and a transport blip swallowed the
+      // url. The sentinel is now structural: the row is empty AND
+      // the read is marked failed, so the terminal judgement (which
+      // owns the run vocabulary) is simply not asked.
+      row = { runId, status: 'unknown', draftId: null, stages: [] }
+      readFailed = true // next poll may recover
     }
     const stage = row.stages.find((s) => s.id === stageId)
       ?? (row.stages.length === 1 ? row.stages[0] : undefined)
@@ -286,7 +296,9 @@ export async function pollRunStageUrl(
       opts.onUrl(stage.url)
       return
     }
-    if (isTerminalRun(row.status)) return
+    // A failed READ never settles the poll (the answer may land next
+    // cadence); only a real status does.
+    if (!readFailed && isTerminalRun(row.status)) return
     const woke = await sleep(interval)
     if (woke === 'abort') return
   }

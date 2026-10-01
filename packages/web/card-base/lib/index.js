@@ -5272,6 +5272,7 @@ async function pollRunStageUrl(runId, stageId, opts, signal) {
 	});
 	while (signal?.aborted !== true) {
 		let row;
+		let readFailed = false;
 		try {
 			row = await fetchRunStatus(runId, signal);
 		} catch (e) {
@@ -5289,13 +5290,14 @@ async function pollRunStageUrl(runId, stageId, opts, signal) {
 				draftId: null,
 				stages: []
 			};
+			readFailed = true;
 		}
 		const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
 		if (stage !== void 0 && typeof stage.url === "string" && stage.url !== "") {
 			opts.onUrl(stage.url);
 			return;
 		}
-		if (isTerminalRun(row.status)) return;
+		if (!readFailed && isTerminalRun(row.status)) return;
 		if (await sleep(interval) === "abort") return;
 	}
 }
