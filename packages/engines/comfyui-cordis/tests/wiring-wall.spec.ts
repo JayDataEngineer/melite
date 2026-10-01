@@ -196,6 +196,25 @@ describe("the malformed-shape refusals (the audit's two fail-opens, closed)", ()
     );
   });
 
+  it("a null/bare node row REFUSES as malformed-graph (the third fail-open, closed)", () => {
+    const { nodes, inputs } = armed();
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": null, "2": { class_type: "KSampler" } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "malformed-graph"
+        && /node '1' as a bare null/.test(e.message),
+    );
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": "KSampler" }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "malformed-graph"
+        && /node '1' as a bare KSampler/.test(e.message),
+    );
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": ["KSampler"] }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "malformed-graph"
+        && /node '1' as a bare array/.test(e.message),
+    );
+  });
+
   it("an ABSENT inputs row stands down (nothing wired, nothing to judge)", () => {
     const { nodes, inputs } = armed();
     assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: "KSampler" } });

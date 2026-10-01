@@ -44,11 +44,13 @@
 // THE VALUE GATE (the strictness audit's T2, 2026-10-12): the doc
 // carries VALUES, not names alone — a declared input's combo enum
 // and numeric bounds are judged at every seat, in the declaring
-// door's voice, naming the allowed set. Two carve-outs keep the
+// door's voice, naming the allowed set. Three carve-outs keep the
 // wall honest: connection references (an array value is another
-// node's output) and staged-artifact strings (the upload walk
+// node's output), staged-artifact strings (the upload walk
 // rewrites them to server names after every seat — see
-// isStagedArtifactRef). A malformed graph or inputs row refuses
+// isStagedArtifactRef), and $-prefixed merge-seam spells (the run
+// seat walks pre-splice rows; rewriteSpells resolves them before
+// the engine). A malformed graph, node row, or inputs row refuses
 // here; the wall never stands down on the one shape it exists to
 // judge.
 
@@ -263,7 +265,13 @@ export function assertWiringAgainst(
       `card '${cardId}' built no addressable graph — a graph is an object keyed by node id (refused at the wiring wall, never at the engine)`)
   }
   for (const [id, node] of Object.entries(graph as Record<string, unknown>)) {
-    if (node === null || typeof node !== 'object') continue
+    // A null/bare node row refuses named (the third T2 fail-open,
+    // closed with the audit's two): a node is an object carrying
+    // class_type — never a bare value riding under an id.
+    if (node === null || typeof node !== 'object' || Array.isArray(node)) {
+      throw new ComposeRefusal('malformed-graph',
+        `card '${cardId}' built node '${id}' as a bare ${Array.isArray(node) ? 'array' : String(node)} — a node is an object carrying class_type (refused at the wiring wall, never at the engine)`)
+    }
     const row = node as { class_type?: unknown; inputs?: unknown }
     const ct = row.class_type
     if (typeof ct !== 'string' || ct === '') {
