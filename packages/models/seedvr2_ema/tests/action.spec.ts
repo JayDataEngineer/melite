@@ -94,11 +94,11 @@ describe("the upscale action — byte-stability (the compatibility law)", () => 
   it("the facts door refuses a missing weight field-named, never composes an empty filename", () => {
     assert.throws(
       () => parseUpscaleFacts({ vae: "ema_vae_fp16.safetensors" }),
-      /seedvr2_ema upscale: lane_inputs\.unet = undefined — a non-empty string is required/,
+      /^Error: seedvr2_ema upscale: lane_inputs\.unet = undefined — a non-empty string is required$/
     );
     assert.throws(
       () => parseUpscaleFacts({ unet: "seedvr2_ema_3b_fp16.safetensors", vae: "" }),
-      /seedvr2_ema upscale: lane_inputs\.vae = "" — a non-empty string is required/,
+      /^Error: seedvr2_ema upscale: lane_inputs\.vae = "" — a non-empty string is required$/
     );
     // the DECL's own lane_inputs parse clean (the admission gate's
         // proof — registration runs this same parse).

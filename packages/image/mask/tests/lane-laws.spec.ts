@@ -497,16 +497,19 @@ describe("the mask lane (the stroke-78 arms — moved from the kit wall with the
   // composes — a tool card's weights are a declaration, so a drifted
   // or missing one must not reach a loader with an empty name.
   it("a missing or empty pin refuses at the facts door (never a loader with an empty name)", () => {
+    // The regexes are anchored end to end (the M2b residual closed,
+    // 2026-10-12): the label prefix and the full template are pinned,
+    // so a clause grown onto the helper's message fails here.
     for (const key of ["checkpoint", "unet", "sam2"] as const) {
       const missing: Record<string, unknown> = { ...MASK_PINS };
       delete missing[key];
       assert.throws(
         () => instantiateAction(maskLane, { ...maskBase }, { ...FACTS, lane_inputs: missing } as ModelFacts, new GraphBuilder(), "r_pin"),
-        new RegExp(`lane_inputs\\.${key} = undefined — a non-empty string is required`),
+        new RegExp(`^Error: mask select: lane_inputs\\.${key} = undefined — a non-empty string is required$`),
       );
       assert.throws(
         () => instantiateAction(maskLane, { ...maskBase }, { ...FACTS, lane_inputs: { ...MASK_PINS, [key]: "" } } as ModelFacts, new GraphBuilder(), "r_pin"),
-        new RegExp(`lane_inputs\\.${key} = "" — a non-empty string is required`),
+        new RegExp(`^Error: mask select: lane_inputs\\.${key} = "" — a non-empty string is required$`),
       );
     }
   });

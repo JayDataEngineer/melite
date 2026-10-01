@@ -90,11 +90,11 @@ describe("the yue2 compose action — byte-stability (the compatibility law)", (
   it("the facts door refuses a missing checkpoint field-named, never composes an empty filename", () => {
     assert.throws(
       () => parseYue2Facts({ checkpoint: "" }),
-      /yue2 compose: lane_inputs\.checkpoint = "" — a non-empty string is required/,
+      /^Error: yue2 compose: lane_inputs\.checkpoint = "" — a non-empty string is required$/
     );
     assert.throws(
       () => parseYue2Facts({ unet: "yue2.safetensors" }),
-      /yue2 compose: lane_inputs\.checkpoint = undefined — a non-empty string is required/,
+      /^Error: yue2 compose: lane_inputs\.checkpoint = undefined — a non-empty string is required$/
     );
     // the DECL's own lane_inputs parse clean (the admission gate's
     // proof — registration runs this same parse).

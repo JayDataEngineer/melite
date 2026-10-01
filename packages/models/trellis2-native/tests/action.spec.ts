@@ -118,7 +118,7 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
     const broken = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, texture_vae: "" } };
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
-      /trellis2-native mesh: lane_inputs\.texture_vae = "" — a non-empty string is required/,
+      /^Error: trellis2-native mesh: lane_inputs\.texture_vae = "" — a non-empty string is required$/
     );
     assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_L_naf_fp32.safetensors", "the DECL's own row parses clean");  });
 

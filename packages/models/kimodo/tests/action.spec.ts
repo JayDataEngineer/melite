@@ -98,7 +98,7 @@ describe("the kimodo compose action — byte-stability (the compatibility law)",
     const broken = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, model_path: "" } };
     assert.throws(
       () => instantiateAction(compose, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
-      /kimodo compose: lane_inputs\.model_path = "" — a non-empty string is required/,
+      /^Error: kimodo compose: lane_inputs\.model_path = "" — a non-empty string is required$/
     );
     assert.equal(parseKimodoFacts(FACTS.lane_inputs as never).model_path, "Kimodo-SOMA-RP-v1.1", "the DECL's own row parses clean");
   });

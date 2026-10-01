@@ -176,7 +176,7 @@ describe("the qwen3-tts speak + export actions — byte-stability (the compatibi
   it("the facts door refuses field-named, the topology refuses unknown variants, and the DECL's own rows parse clean", () => {
     assert.throws(
       () => parseTtsFacts({}),
-      /qwen3-tts-voicedesign speak: lane_inputs\.model_path = undefined — a non-empty string is required/,
+      /^Error: qwen3-tts-voicedesign speak: lane_inputs\.model_path = undefined — a non-empty string is required$/
     );
     // the DECL's family row parses clean (the admission gate's
     // proof — registration runs this same parse).

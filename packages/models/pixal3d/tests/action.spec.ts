@@ -117,7 +117,7 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     const broken = { ...FACTS, lane_inputs: { ...FACTS.lane_inputs, unet: "" } };
     assert.throws(
       () => instantiateAction(mesh, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
-      /pixal3d mesh: lane_inputs\.unet = "" — a non-empty string is required/,
+      /^Error: pixal3d mesh: lane_inputs\.unet = "" — a non-empty string is required$/
     );
     assert.equal(parseMeshFacts(FACTS.lane_inputs as never).unet, "pixal3d_int8_convrot.safetensors", "the DECL's own row parses clean");  });
 

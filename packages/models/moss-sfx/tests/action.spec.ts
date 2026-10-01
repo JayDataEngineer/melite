@@ -81,11 +81,11 @@ describe("the moss-sfx sfx action — byte-stability (the compatibility law)", (
   it("the facts door refuses a missing model_path field-named, never composes an empty load row", () => {
     assert.throws(
       () => parseSfxFacts({ model_path: "" }),
-      /moss-sfx sfx: lane_inputs\.model_path = "" — a non-empty string is required/,
+      /^Error: moss-sfx sfx: lane_inputs\.model_path = "" — a non-empty string is required$/
     );
     assert.throws(
       () => parseSfxFacts({ family: "moss_sfx_v2" }),
-      /moss-sfx sfx: lane_inputs\.model_path = undefined — a non-empty string is required/,
+      /^Error: moss-sfx sfx: lane_inputs\.model_path = undefined — a non-empty string is required$/
     );
     // the DECL's own lane_inputs parse clean (the admission gate's
     // proof — registration runs this same parse).

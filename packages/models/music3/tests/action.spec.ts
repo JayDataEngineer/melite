@@ -83,11 +83,11 @@ describe("the music3 compose action — byte-stability (the compatibility law)",
   it("the facts door refuses a missing weight field-named, never composes an empty filename", () => {
     assert.throws(
       () => parseMusicFacts({ unet: "dit.safetensors", text_encoder: "te.safetensors", clip_type: "minimax", vae: "" }),
-      /music3 compose: lane_inputs\.vae = "" — a non-empty string is required/,
+      /^Error: music3 compose: lane_inputs\.vae = "" — a non-empty string is required$/
     );
     assert.throws(
       () => parseMusicFacts({ text_encoder: "te.safetensors", clip_type: "minimax", vae: "dav.safetensors" }),
-      /music3 compose: lane_inputs\.unet = undefined — a non-empty string is required/,
+      /^Error: music3 compose: lane_inputs\.unet = undefined — a non-empty string is required$/
     );
     // the DECL's own lane_inputs parse clean (the admission gate's
     // proof — registration runs this same parse).
