@@ -17,6 +17,7 @@
 import { describe, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
+import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { meliteConstruct, projectStages } from '../src/tools/melite-construct.ts'
 import type { EstateRequest } from '../src/estate.ts'
 import { fakeExec } from './fake-exec.ts'
@@ -471,15 +472,42 @@ describe('melite_construct mutations — every verb', () => {
   })
 
   test('an unknown verb refuses with the vocabulary', async () => {
-    const { seen, request } = mockRequest(() => ({ rev: 1 }))
+    // The refusal moved to the schema boundary (the strictness
+    // audit's fix 8): the verb is a literal enum now, so
+    // validateArgs fires BEFORE execute with the same vocabulary —
+    // ToolArgsError instead of the execute-side unknown-verb row.
+    const { request } = mockRequest(() => ({ rev: 1 }))
     const tool = meliteConstruct(request)
-    const out = await tool.execute({ verb: 'bogus' }, exec()) as Record<string, unknown>
-    assert.equal(out.verb, 'bogus')
-    assert.equal(out.bench, 'main')
-    assert.equal(out.ok, false)
-    assert.ok(String(out.error).includes('unknown verb'), String(out.error))
-    assert.equal(out.error_kind, 'args')
-    assert.equal(seen.length, 0)
+    await assert.rejects(
+      tool.execute({ verb: 'bogus' }, exec()),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message,
+          /"verb" must be one of \["read","load","patch","add_stage","remove_stage","clear","rewire","undo","validate"\]/)
+        return true
+      },
+    )
+  })
+
+  test('rewire from-rows and load stage-rows refuse undeclared keys at the wrapper gate (fix 8)', async () => {
+    const { request } = mockRequest(() => ({ rev: 1 }))
+    const tool = meliteConstruct(request)
+    await assert.rejects(
+      tool.execute({ verb: 'rewire', stage: 's', input: 'image', from: { stage: 'a', output: 'image', zeta: 1 } }, exec()),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"from\.zeta" is not a declared property/)
+        return true
+      },
+    )
+    await assert.rejects(
+      tool.execute({ verb: 'load', stages: [{ id: 's1', boardd: 'x' }], overwrite: true, expect_rev: 1 }, exec()),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"stages\[0\]\.boardd" is not a declared property/)
+        return true
+      },
+    )
   })
 })
 

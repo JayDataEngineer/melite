@@ -379,7 +379,8 @@ export function meliteConstruct(
     parameters: {
       verb: {
         type: 'string',
-        description: 'read | load | patch | add_stage | remove_stage | clear | rewire | undo | validate.',
+        enum: ['read', 'load', 'patch', 'add_stage', 'remove_stage', 'clear', 'rewire', 'undo', 'validate'],
+        description: 'read (default when absent) | load | patch | add_stage | remove_stage | clear | rewire | undo | validate.',
       },
       stage: { type: 'string', description: 'patch/remove_stage/rewire: the stage id.' },
       card: { type: 'string', description: 'add_stage: the card id (display + provenance hint).' },
@@ -407,11 +408,30 @@ export function meliteConstruct(
       },
       input: { type: 'string', description: 'rewire: the input name to bind.' },
       from: {
-        type: 'object', additionalProperties: true,
+        type: 'object',
+        additionalProperties: false,
+        properties: {
+          stage: { type: 'string', description: 'The source stage id.' },
+          output: { type: 'string', description: 'The source stage\'s output name.' },
+          initial: { type: 'string', description: 'An operator-supplied initial key.' },
+        },
         description: 'rewire: {stage, output} | {initial}; absent clears the binding.',
       },
       stages: {
-        type: 'array', items: { type: 'object', additionalProperties: true },
+        type: 'array',
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            id: { type: 'string', description: 'The stage id.' },
+            engine: { type: 'string', description: 'Engine id (default comfyui).' },
+            card: { type: 'string', description: 'The card id (display + provenance hint).' },
+            description: { type: 'string', description: 'What the stage produces.' },
+            params: { type: 'object', additionalProperties: true, description: 'Stage params (open — the card/engine owns the keys).' },
+            inputs: { type: 'object', additionalProperties: true, description: '{input: {stage, output} | {initial}} wiring.' },
+            outputs: { type: 'object', additionalProperties: true, description: 'Custom output channels {name: Kind}.' },
+          },
+        },
         description: 'load: the full replacement [{id?, engine?, card?, params?, inputs?, outputs?}].',
       },
       intent: { type: 'string', description: 'load: what this bench produces.' },

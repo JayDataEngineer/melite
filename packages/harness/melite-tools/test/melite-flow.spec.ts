@@ -824,6 +824,66 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.equal(seen.calls.length, 0)
   })
 
+  // THE ROW CONTRACT (the strictness audit's fix 8): stage and
+  // connect rows were additionalProperties blobs — a typo'd row key
+  // rode silent into the fold. The rows are declared now: validateArgs
+  // refuses an undeclared key, a stage row missing id/engine, and a
+  // connect missing from/to BEFORE execute, with the key named.
+  // Cross-mode exactly-one stays in execute — the implicit object
+  // root grammar carries per-property annotations only (no root
+  // oneOf); the two-compositions test above pins that refusal.
+  test('stage rows refuse undeclared keys, missing id/engine at the wrapper gate', async () => {
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
+    await assert.rejects(
+      tool.execute({ stages: [{ id: 's1', engine: 'comfyui', boardd: 1 }] } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"stages\[0\]\.boardd" is not a declared property/)
+        return true
+      },
+    )
+    await assert.rejects(
+      tool.execute({ stages: [{ engine: 'comfyui' }] } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /missing required property "stages\[0\]\.id"/)
+        return true
+      },
+    )
+    await assert.rejects(
+      tool.execute({ stages: [{ id: 's1' }] } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /missing required property "stages\[0\]\.engine"/)
+        return true
+      },
+    )
+    assert.equal(seen.calls.length, 0)
+  })
+
+  test('connect rows refuse missing from/to and undeclared keys at the wrapper gate', async () => {
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
+    await assert.rejects(
+      tool.execute({ stages: [{ id: 's1', engine: 'comfyui' }], connects: [{ to: 's1.image' }] } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /missing required property "connects\[0\]\.from"/)
+        return true
+      },
+    )
+    await assert.rejects(
+      tool.execute({ stages: [{ id: 's1', engine: 'comfyui' }], connects: [{ from: 's1', to: 's2.image', zeta: 1 }] } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"connects\[0\]\.zeta" is not a declared property/)
+        return true
+      },
+    )
+    assert.equal(seen.calls.length, 0)
+  })
+
   test('empty stages refuse (non-empty rows only)', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)

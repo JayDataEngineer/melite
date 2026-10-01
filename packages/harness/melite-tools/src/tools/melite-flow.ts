@@ -759,8 +759,13 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       + 'bench\'s doc-backed draft_id (CARD BIRTH LAW) — it rides the value as the chat tile handle, never an '
       + 'agent arg. Returns {run_id, draft_id}; poll with run_status. One active run machine-wide.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
-    // (no type/properties wrapper) — every composition arm is
-    // optional (exactly-one is enforced in execute, never the schema).
+    // (no type/properties wrapper) — every composition arm stays
+    // optional because exactly-one cross-property exclusivity is not
+    // expressible in this grammar (per-property annotations only);
+    // execute owns that refusal. What the schema CAN own, it does:
+    // stage rows refuse an undeclared key or a missing id/engine,
+    // connect rows a missing from/to — validateArgs fires these
+    // before execute runs.
     parameters: {
       bench: {
         type: 'boolean',
@@ -780,12 +785,31 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
       },
       stages: {
         type: 'array',
-        items: { type: 'object', additionalProperties: true },
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            id: { type: 'string', required: true, description: 'The stage id (connects and run rows name it).' },
+            engine: { type: 'string', required: true, description: 'The engine id (e.g. comfyui).' },
+            card: { type: 'string', description: 'The card id the stage composes through — the card fold keeps it on the row so start\'s card gate fires (035 dead-route receipt).' },
+            description: { type: 'string', description: 'What the stage produces.' },
+            params: { type: 'object', additionalProperties: true, description: 'Engine node params (open — the engine owns the keys).' },
+            outputs: { type: 'object', additionalProperties: true, description: 'Output channels {name: kind}.' },
+          },
+        },
         description: 'AD-HOC mode: [{id, engine, description?, params?, outputs?: {name: kind}}]. Exclusive with card/flow.',
       },
       connects: {
         type: 'array',
-        items: { type: 'object', additionalProperties: true },
+        items: {
+          type: 'object',
+          additionalProperties: false,
+          properties: {
+            from: { type: 'string', required: true, description: '"stage[.output]" | "initial.key".' },
+            to: { type: 'string', required: true, description: '"stage.input".' },
+            kind: { type: 'string', description: 'The wire kind when it cannot be derived.' },
+          },
+        },
         description: 'AD-HOC mode: [{from: "stage[.output]" | "initial.key", to: "stage.input", kind?}].',
       },
       prompt: {

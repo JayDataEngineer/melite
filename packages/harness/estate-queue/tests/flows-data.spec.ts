@@ -10,6 +10,7 @@ import {
   expandRegistryFlow,
   linkedStage,
   getRegistryFlow,
+  plainStage,
   registerRegistryFlow,
   registryFlowNames,
   registryFlowToInline,
@@ -19,6 +20,7 @@ import {
   registrySkillBody,
 } from "../src/flowsData.ts";
 import type { RegistryFlow } from "../src/flowsData.ts";
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import { composeFamilyStages } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 
@@ -137,6 +139,71 @@ describe("registry", () => {
       assert.ok(registrySkillBody(getRegistryFlow("live-linker")!).includes(linked.id),
         "the rendered skill body names the linked stage");
     });
+  });
+
+  // THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8): a
+  // stage naming neither card nor family+action on the card-plane
+  // engine is the retired authoring shape — it refuses at
+  // expansion, named, never serves. The engine-verb plane (craft,
+  // agent — stages the runs door drives by engine alone) stays
+  // legal: craft-loop and agent-spawn are the live proof (the
+  // thirteen-flow expansion walks them clean).
+  it("a card-plane stage naming neither card nor family+action refuses at expansion, named", () => {
+    const base = getRegistryFlow("fit-seat")!;
+    const flow: RegistryFlow = {
+      ...base,
+      id: "raw-workflow-probe",
+      stages: [plainStage({
+        id: "raw",
+        engine: CARD_PLANE_ENGINE,
+        description: "the retired shape",
+        inputs: {},
+        params: { workflow: {} },
+      })],
+    };
+    assert.throws(
+      () => expandRegistryFlow(flow),
+      /raw-workflow-probe stage raw names neither card nor family\+action on engine comfyui .* retired/,
+    );
+  });
+
+  it("a family stage without an action refuses at expansion, named", () => {
+    const base = getRegistryFlow("fit-seat")!;
+    const flow: RegistryFlow = {
+      ...base,
+      id: "family-no-action-probe",
+      stages: [plainStage({
+        id: "half",
+        engine: CARD_PLANE_ENGINE,
+        family: "anny",
+        description: "the family plane needs both halves",
+        inputs: {},
+        params: {},
+      })],
+    };
+    assert.throws(
+      () => expandRegistryFlow(flow),
+      /family-no-action-probe stage half declares family anny with no action/,
+    );
+  });
+
+  it("an engine-verb stage (no card, no family) expands clean — craft/agent ride the runs door", () => {
+    const base = getRegistryFlow("fit-seat")!;
+    const flow: RegistryFlow = {
+      ...base,
+      id: "engine-verb-probe",
+      stages: [plainStage({
+        id: "verb",
+        engine: "craft",
+        description: "an engine the runs door drives directly",
+        inputs: {},
+        outputs: { default: "image" },
+        params: {},
+      })],
+    };
+    const expanded = expandRegistryFlow(flow);
+    assert.equal(expanded.stages[0]!.id, "verb");
+    assert.equal(expanded.stages[0]!.engine, "craft");
   });
 
   it("expansion resolves from_flow links (single-hop) and copies rows", () => {

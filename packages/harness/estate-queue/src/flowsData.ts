@@ -17,7 +17,7 @@
 // rides this registry), no fallbacks, no hardcodes.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
-import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
+import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
 import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
@@ -54,11 +54,14 @@ export interface RegistryFromFlow {
 }
 
 /** One authoring-stage row (the Stage(...) fields, JSON-shaped).
- * A stage names EITHER a card (card ≠ "" — the card plane's
- * dispatch) OR a family action (family + action ≠ "" — the
- * family's DECL composes the nodes at expansion; flowsFamilyCompose
- * owns that interpreter). Both empty = a raw workflow stage (the
- * retired authoring shape — the census judges it). */
+ * A stage is composed by exactly one of three planes: a card
+ * (card ≠ "" — the card plane's dispatch), a family action
+ * (family + action ≠ "" — the family's DECL composes the nodes at
+ * expansion; flowsFamilyCompose owns that interpreter), or an
+ * engine verb (engine ≠ the card-plane engine — craft/agent
+ * stages the runs door drives directly). A card-plane-engine
+ * stage naming neither card nor family action is the retired
+ * raw-workflow shape: expandRegistryFlow refuses it, named. */
 export interface RegistryStage {
   readonly id: string;
   readonly engine: string;
@@ -316,7 +319,33 @@ export function getRegistryFlow(name: string): RegistryFlow | undefined {
 export function expandRegistryFlow(flow: RegistryFlow): RegistryFlow {
   const stages: RegistryStage[] = flow.stages.map(
     (st: RegistryStage): RegistryStage => {
-      if (st.fromFlow === null) return st;
+      if (st.fromFlow === null) {
+        // THE RAW-WORKFLOW REFUSAL (the strictness audit's fix 8,
+        // corrected against the dispatch truth): a stage is composed
+        // by exactly one of three planes — the card plane (card),
+        // the family plane (family AND action), or an engine verb
+        // (any engine but the card-plane one — craft/agent stages
+        // ride the runs door directly). A card-plane-engine stage
+        // naming no card and no family action is the retired
+        // raw-workflow authoring shape: it used to ride params-only
+        // to the engine and die there ("carries no inline
+        // workflow"); it refuses LOUD here, named, never serves.
+        if (st.family !== "" && st.action === "") {
+          throw new Error(
+            "[flows_registry] flow " + flow.id + " stage " + st.id +
+              " declares family " + st.family + " with no action — the family plane needs both (refused at expansion)",
+          );
+        }
+        if (st.card === "" && st.family === "" && st.action === "") {
+          if (st.engine !== CARD_PLANE_ENGINE) return st; // engine-verb stage — legal
+          throw new Error(
+            "[flows_registry] flow " + flow.id + " stage " + st.id +
+              " names neither card nor family+action on engine " + st.engine +
+              " — the raw-workflow authoring shape is retired (refused at expansion, never served)",
+          );
+        }
+        return st;
+      }
       const link: RegistryFromFlow = st.fromFlow;
       // THE LIVE SEAT, not the boot literal (the G1 seat-gap finding,
       // 2026-09-28): link resolution read REGISTRY directly, so a
