@@ -22,7 +22,10 @@
 import { readdirSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { spawnSync } from "node:child_process";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+
+const execFileP = promisify(execFile);
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const tsc = join(root, "node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc");
@@ -44,21 +47,24 @@ walk(join(root, "packages"), 0);
 /** The RESOLVED config, tsc's own reading (handles comments,
  *  extends chains, and URL strings in values — hand-rolled
  *  JSONC-stripping eats strings and lies). */
-const flattenConfig = (dir) => {
-  const proc = spawnSync(process.execPath, [tsc, "--showConfig", "-p", "tsconfig.json"], {
-    cwd: dir, encoding: "utf8", timeout: 120_000,
-  });
-  if (proc.status !== 0) throw new Error(`showConfig failed in ${dir}: ${proc.stderr}`);
-  return JSON.parse(proc.stdout);
+const flattenConfig = async (dir) => {
+  try {
+    const { stdout } = await execFileP(process.execPath, [tsc, "--showConfig", "-p", "tsconfig.json"], {
+      cwd: dir, encoding: "utf8", timeout: 120_000, maxBuffer: 32 * 1024 * 1024,
+    });
+    return JSON.parse(stdout);
+  } catch (err) {
+    throw new Error(`showConfig failed in ${dir}: ${err.stderr ?? err.message}`);
+  }
 };
 
 let failed = 0;
 let checked = 0;
 const pool = Number(process.env.TC_POOL ?? 8);
 const queue = [...dirs];
-const runOne = (d) => {
+const runOne = async (d) => {
   const tdirs = ["test", "tests"].filter((t) => existsSync(join(d, t)));
-  if (tdirs.length === 0) return Promise.resolve();
+  if (tdirs.length === 0) return;
   checked++;
   const include = ["src/**/*.ts", "src/**/*.tsx"];
   for (const t of tdirs) include.push(`${t}/**/*.ts`, `${t}/**/*.tsx`);
@@ -68,7 +74,7 @@ const runOne = (d) => {
   // sources specs legitimately import (repo tests/helpers, sibling
   // packages). The package's own config keeps its emit contract;
   // this tier never emits.
-  const flat = flattenConfig(d);
+  const flat = await flattenConfig(d);
   // A COMPILED package (it EMITS to lib) keeps rootDir: "." for its
   // test tier. Its specs import its own package face (NodeNext
   // forbids extensionless relative paths, and `.ts` specifiers are
@@ -85,18 +91,27 @@ const runOne = (d) => {
   flat.compilerOptions.noEmit = true;
   flat.include = include;
   writeFileSync(cfg, JSON.stringify(flat));
-  const proc = spawnSync(process.execPath, [tsc, "--noEmit", "-p", cfg], {
+  // try/finally, not tail-rm: a killed or timed-out run must not
+  // leave the synthesized config in the package dir (it once
+  // leaked .tsconfig.test.<pid>.json for every worker to see).
+  let proc;
+  try {
     // 480s: the wall runs this INSIDE the full fleet, where CPU
     // contention tripled cold tsc times; a 240s cut marked loaded
     // runs red with no error lines (status null under SIGTERM).
-    cwd: d, encoding: "utf8", timeout: 480_000,
-  });
-  rmSync(cfg, { force: true });
+    proc = await execFileP(process.execPath, [tsc, "--noEmit", "-p", cfg], {
+      cwd: d, encoding: "utf8", timeout: 480_000, maxBuffer: 32 * 1024 * 1024,
+    }).catch((err) => err); // execFile throws on nonzero exit; the judge reads it below
+  } finally {
+    rmSync(cfg, { force: true });
+  }
+  const status = proc instanceof Error ? (proc.code ?? null) : 0;
   const name = relative(root, d);
-  if (proc.status !== 0) {
+  if (status !== 0) {
     failed++;
     console.log(`✗ ${name}`);
-    const lines = (proc.stdout + proc.stderr).split("\n").filter((l) => l.includes("error TS"));
+    const out = proc instanceof Error ? `${proc.stdout ?? ""}${proc.stderr ?? ""}` : proc.stdout;
+    const lines = out.split("\n").filter((l) => l.includes("error TS"));
     for (const l of lines.slice(0, 6)) console.log(`  ${l}`);
     if (lines.length > 6) console.log(`  … ${lines.length} errors`);
   } else {
@@ -120,13 +135,15 @@ await Promise.all(workers);
 // (tsconfig.repotier.json, root-relative, the same canonical-paths
 // borrowing the walls plane uses), run after the package loop.
 {
-  const proc = spawnSync(process.execPath, [tsc, "--noEmit", "-p", "tsconfig.repotier.json"], {
-    cwd: root, encoding: "utf8", timeout: 240_000,
-  });
-  if (proc.status !== 0) {
+  const proc = await execFileP(process.execPath, [tsc, "--noEmit", "-p", "tsconfig.repotier.json"], {
+    cwd: root, encoding: "utf8", timeout: 240_000, maxBuffer: 32 * 1024 * 1024,
+  }).catch((err) => err);
+  const status = proc instanceof Error ? (proc.code ?? null) : 0;
+  if (status !== 0) {
     failed++;
     console.log("✗ repo tier (tools/ + tests/*.ts + tests/e2e)");
-    const lines = (proc.stdout + proc.stderr).split("\n").filter((l) => l.includes("error TS"));
+    const out = proc instanceof Error ? `${proc.stdout ?? ""}${proc.stderr ?? ""}` : proc.stdout;
+    const lines = out.split("\n").filter((l) => l.includes("error TS"));
     for (const l of lines.slice(0, 6)) console.log(`  ${l}`);
     if (lines.length > 6) console.log(`  … ${lines.length} errors`);
   } else {
