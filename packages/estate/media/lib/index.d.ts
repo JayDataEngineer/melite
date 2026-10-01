@@ -32,22 +32,6 @@ export declare const LEGACY_MEDIA_PREFIX = "/v1/assets/runs";
 declare const mediaPrefixOf: typeof runMediaPrefixOf;
 declare const canonicalMediaUrl: typeof canonicalRunMediaUrl;
 export { mediaPrefixOf, canonicalMediaUrl };
-/** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
- * the loader's /plugins URL is immutable-cached on the plugin LIST,
- * not the bytes — rebuilt card bundles never reach a browser that
- * cached the URL. This route serves the CURRENT sha1 of every card
- * package's lib/client.js (stamp line stripped — the same law the
- * build bakes), no-store, so the cards tab can compare its baked
- * stamp against disk truth and face a stale tab. */
-export declare const CARD_BUILD_PREFIX = "/melite-media/card-build";
-/** The stamps the route serves: package dir name → sha1 of its
- *  lib/client.js. Card packages nest by genre (web/, video/, …),
- *  so the walk covers both depths and keys by the LEAF name (the
- *  package id the client names as its own). */
-export declare function cardBuildStamps(root: string): Record<string, string>;
-/** The repo root this plugin serves from (walks up from its own file
- * to the directory that owns packages/ + the workspace manifest). */
-export declare function repoRootOf(start: string): string | null;
 export declare function apply(ctx: Context): void;
 /** The client seam's one truth: build the same-origin media URL for
  *  one run-relative artifact name. A name that already rides a URL
