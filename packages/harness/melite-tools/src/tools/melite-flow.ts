@@ -769,7 +769,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
     parameters: {
       bench: {
         type: 'boolean',
-        description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). Exclusive with card/flow/stages.',
+        description: 'BENCH mode: run THE shared bench exactly as it stands (what the user\'s Run press runs). A JSON boolean — true, never the string "true". Exclusive with card/flow/stages.',
       },
       card: {
         type: 'string',

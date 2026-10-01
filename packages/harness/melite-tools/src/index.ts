@@ -55,7 +55,6 @@ import { meliteRead } from './tools/melite-read.ts'
 import { skillIndex } from './tools/skill-index.ts'
 import { skillRead } from './tools/skill-read.ts'
 import { ledgerTail } from './tools/ledger-tail.ts'
-import { withArgCoercion } from './tools/arg-coerce.ts'
 import type { ToolDefinition } from './types.ts'
 import { harnessEnhance, resolveHarnessRoutes, matchHarnessRoute, routeName } from './llm-complete.ts'
 
@@ -259,12 +258,16 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // HEADLESS run doors — the delegated operator (QUEUE LANE LAW: the
   // queue's own registration door, models named explicitly, never a
   // hand-assembled graph).
+  // (2026-10-01: the withArgCoercion valve that wrapped these two
+  // registrations is DELETED — it rewrote args AFTER the session log
+  // wrote them, breaking Model-visible⟺logged. The late-arrival
+  // semantics live where the log can see them: run_status's execute
+  // Numbers wait_s itself, melite_flow's wireBool reads test, and a
+  // string 'true' on bench refuses NAMED (the modes===0 arm) — the
+  // handroll audit's ranked item 1.)
   if (headless) {
-    // THE COERCION VALVE (efficiency fix 3): numeric-string args
-    // coerce BEFORE the validation gate — the 4× timeoutMs lesson
-    // never repeats on a melite face.
-    c.tools.register(withArgCoercion(meliteFlow(request)))
-    c.tools.register(withArgCoercion(runStatus(request)))
+    c.tools.register(meliteFlow(request))
+    c.tools.register(runStatus(request))
   }
 
   // (2026-09-12: the readDefaultLlm copy that lived here is deleted —

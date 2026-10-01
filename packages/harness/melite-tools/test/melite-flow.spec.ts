@@ -815,6 +815,26 @@ describe('melite_flow guards — the exactly-one law + the wrapper gate', () => 
     assert.equal(seen.calls.length, 0)
   })
 
+  // THE STRING-BOOLEAN TRAP (the arg-coerce valve's deletion,
+  // 2026-10-01): the valve rewrote bench:"true" → true AFTER the
+  // session log wrote it — executed args the log could not
+  // reconstruct. The gate's own type refusal is the voice now,
+  // named, before any estate call; the description teaches the
+  // spelling beforehand.
+  test('a string "true" on bench refuses at the gate, named (never a post-log rewrite)', async () => {
+    const seen = mockFetch([okBench, okValidate])
+    const tool = meliteFlow(seen.request)
+    await assert.rejects(
+      tool.execute({ bench: 'true' } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"bench" must be a boolean/)
+        return true
+      },
+    )
+    assert.equal(seen.calls.length, 0)
+  })
+
   test('schema violations throw at the wrapper gate (presence contract)', async () => {
     const seen = mockFetch([okBench, okValidate])
     const tool = meliteFlow(seen.request)

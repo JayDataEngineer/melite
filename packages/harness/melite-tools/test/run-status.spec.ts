@@ -14,7 +14,6 @@ import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { runStatus } from '../src/tools/run-status.ts'
-import { withArgCoercion, coerceArgs } from '../src/tools/arg-coerce.ts'
 import type { EstateRequest } from '../src/estate.ts'
 import { fakeExec } from './fake-exec.ts'
 
@@ -200,13 +199,24 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     assert.ok(seen.calls.length >= 2)          // fetch → sleep-past-deadline → fetch
   })
 
-  test('a numeric-string wait_s coerces (the 4× timeoutMs lesson, fix 3)', async () => {
+  test('a numeric-string wait_s refuses at the gate, named (the arg-coerce valve is deleted, 2026-10-01)', async () => {
     const seen = mockRequest(() => ({ run_id: 'r', status: 'completed' }))
-    // the registration-site wrap (index.ts) — the valve BEFORE the gate
-    const tool = withArgCoercion(runStatus(seen.request))
-    const out = await tool.execute({ runId: 'r', wait_s: '0' }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
-    assert.equal(out.status, 'completed')
-    assert.equal(seen.calls.length, 1)
+    // The valve coerced "300" → 300 AFTER the session log wrote it —
+    // executed args the log could not reconstruct. Deleted (the
+    // handroll audit's ranked item 1): the gate's own type refusal is
+    // the voice now, and the description teaches the spelling
+    // beforehand. Execute's Number arm stays as depth for non-tool
+    // callers; through the tool, a string never reaches it.
+    const tool = runStatus(seen.request)
+    await assert.rejects(
+      tool.execute({ runId: 'r', wait_s: '0' } as never, fakeExec(AbortSignal.timeout(2000))),
+      (e: unknown) => {
+        assert.ok(e instanceof ToolArgsError)
+        assert.match((e as ToolArgsError).message, /"wait_s" must be a number/)
+        return true
+      },
+    )
+    assert.equal(seen.calls.length, 0)
   })
 
   test('a cancelled wait rejects through the sleep (no lingering fetch)', async () => {
@@ -280,38 +290,6 @@ describe('run_status execute — THE WAIT PRIMITIVE (efficiency fix 5)', () => {
     assert.deepEqual(out.planned_stages, [{ id: 'h3-film', engine: 'comfyui' }])
     assert.equal(out.card, 'h3-timeline')
     assert.equal(out.run_age_s, 42)
-  })
-})
-
-describe('coerceArgs — the numeric-string valve (fix 3)', () => {
-  const props = { wait_s: { type: 'number' }, deep: { type: 'boolean' }, s: { type: 'string' } }
-  test('numeric strings coerce; boolean strings coerce; garbage stays for the gate', () => {
-    const out = coerceArgs(props, { wait_s: '300', deep: 'true', s: 'keep' }) as Record<string, unknown>
-    assert.equal(out.wait_s, 300)
-    assert.equal(out.deep, true)
-    assert.equal(out.s, 'keep')
-    const bad = coerceArgs(props, { wait_s: 'soon' }) as Record<string, unknown>
-    assert.equal(bad.wait_s, 'soon')
-    const empty = coerceArgs(props, { wait_s: '' }) as Record<string, unknown>
-    assert.equal(empty.wait_s, '')
-    // a boolean slot given a non-'true'/'false' string rides verbatim
-    // (the || else arm) — the gate still owns it
-    const boolGarbage = coerceArgs(props, { deep: 'yes' }) as Record<string, unknown>
-    assert.equal(boolGarbage.deep, 'yes')
-    const boolFalse = coerceArgs(props, { deep: 'false' }) as Record<string, unknown>
-    assert.equal(boolFalse.deep, false)
-  })
-  test('withArgCoercion passes through defs it cannot wrap (the early-return arm)', () => {
-    const bare = { name: 'x' }
-    assert.equal(withArgCoercion(bare as never), bare)
-    const noExecute = { parameters: { properties: { wait_s: { type: 'number' } } } }
-    assert.equal(withArgCoercion(noExecute as never), noExecute)
-  })
-  test('non-objects and schema-less defs ride untouched', () => {
-    const obj = { a: '1' }
-    assert.equal(coerceArgs(undefined, obj), obj)
-    assert.equal(coerceArgs(props, null), null)
-    assert.equal(coerceArgs(props, 'x'), 'x')
   })
 })
 

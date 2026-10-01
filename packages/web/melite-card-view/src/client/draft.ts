@@ -52,9 +52,8 @@ export interface RunStatusDoc {
   stages?: RunStageStatus[]
 }
 
-/** The events-bus frame — the run-event stream's wire type, verbatim
- * from the retired @melite/catalog FlowEvents client (its only
- * production consumer was this re-export). `stage` frames are
+/** The events-bus frame — the run-event stream's wire type.
+ * `stage` frames are
  * idempotent patches onto the run the 700ms poll owns; `run` frames
  * with a terminal status end the stream. */
 export type FlowProgress = { value: number; max: number; node?: string }
@@ -635,9 +634,9 @@ export async function runStatus(runId: string): Promise<RunStatusDoc> {
   return doc as unknown as RunStatusDoc
 }
 
-/** The terminal set — @melite/catalog FlowEvents' TERMINAL, verbatim
- * (the poll's stop condition must match the stream's, or a dropped
- * socket polls forever / an unknown run stops early). */
+/** The terminal statuses — the poll's stop condition must match the
+ * stream's, or a dropped socket polls forever / an unknown run stops
+ * early. */
 export function runFinished(status: string): boolean {
   return isTerminalStatus(status)
 }
@@ -694,9 +693,8 @@ export function cardRows(doc: DraftDoc, live?: RunStatusDoc | null): CardRow[] {
   })
 }
 
-/** Fold one events-bus frame onto the live status doc — the idempotent
- *  patch (FlowEvents.ts contract: "every frame is an idempotent patch
- *  onto the same store the poll writes"). Stage frames patch
+/** Fold one events-bus frame onto the live status doc — an idempotent
+ *  patch onto the same store the poll writes. Stage frames patch
  *  positionally by index; terminal run frames set the run status. */
 export function foldFrame(prev: RunStatusDoc | null, runId: string, frame: FlowEventFrame): RunStatusDoc {
   if (frame.type === 'stage') {

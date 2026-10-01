@@ -7839,9 +7839,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
 			return doc;
 		}
-		/** The terminal set — @melite/catalog FlowEvents' TERMINAL, verbatim
-		* (the poll's stop condition must match the stream's, or a dropped
-		* socket polls forever / an unknown run stops early). */
+		/** The terminal statuses — the poll's stop condition must match the
+		* stream's, or a dropped socket polls forever / an unknown run stops
+		* early. */
 		function runFinished(status) {
 			return isTerminalStatus(status);
 		}
@@ -13337,87 +13337,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			init_runStatusContractStore();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
-		var init_FlowEvents = __esmMin((() => {
-			init_stageView();
-			TERMINAL = { has: (s) => isTerminalStatus(s) };
-			BACKOFF_BASE_MS = 500;
-			BACKOFF_CAP_MS = 5e3;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/tagMap.ts
@@ -40265,86 +40184,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			];
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/comfyEvents.ts
-		/**
-		* Open a ComfyUI websocket and forward parsed events to `onEvent`.
-		* `onStatus` fires with `true`/`false` on connect/disconnect.
-		*/
-		function connectComfyEvents(url, onEvent, onStatus) {
-			if (typeof WebSocket === "undefined") return {
-				connected: false,
-				close() {}
-			};
-			let ws = null;
-			let closed = false;
-			let retry = null;
-			let connected = false;
-			const scheduleRetry = () => {
-				if (closed) return;
-				if (retry) clearTimeout(retry);
-				retry = setTimeout(open, RETRY_MS);
-			};
-			function open() {
-				/* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
-				if (closed) return;
-				try {
-					ws = new WebSocket(url);
-				} catch (err) {
-					console.warn("[comfy-events] websocket open failed:", err);
-					scheduleRetry();
-					return;
-				}
-				ws.onopen = () => {
-					connected = true;
-					onStatus?.(true);
-				};
-				ws.onclose = () => {
-					connected = false;
-					onStatus?.(false);
-					scheduleRetry();
-				};
-				ws.onerror = () => {
-					try {
-						ws?.close();
-					} catch {}
-				};
-				ws.onmessage = (ev) => {
-					if (typeof ev.data !== "string") return;
-					try {
-						const msg = JSON.parse(ev.data);
-						onEvent({
-							type: msg.type ?? "raw",
-							data: msg.data ?? {},
-							raw: ev.data
-						});
-					} catch {
-						onEvent({
-							type: "raw",
-							data: {},
-							raw: ev.data
-						});
-					}
-				};
-			}
-			open();
-			return {
-				get connected() {
-					return connected;
-				},
-				close() {
-					closed = true;
-					if (retry) clearTimeout(retry);
-					try {
-						ws?.close();
-					} catch {}
-				}
-			};
-		}
-		var RETRY_MS;
-		var init_comfyEvents = __esmMin((() => {
-			RETRY_MS = 3e3;
-		}));
-		//#endregion
 		//#region ../../web-kit/catalog/src/enhance.ts
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
@@ -40708,7 +40547,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			composeVariantRoute: () => composeVariantRoute,
 			computeMinMaxPeaks: () => computeMinMaxPeaks,
 			computeWaveformLODs: () => computeWaveformLODs,
-			connectComfyEvents: () => connectComfyEvents,
 			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
 			decodeAudioPeaks: () => decodeAudioPeaks,
@@ -40808,7 +40646,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			setContractToastSink: () => setContractToastSink,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
-			streamFlowEvents: () => streamFlowEvents,
 			studioOf: () => studioOf,
 			submitTextToPose: () => submitTextToPose,
 			subscribeForms: () => subscribeForms,
@@ -40834,7 +40671,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			init_catalogContractStore();
 			init_modelCatalog();
 			init_FlowProtocol();
-			init_FlowEvents();
 			init_familyParamContract();
 			init_tagMap();
 			init_runStatusContractStore();
@@ -40842,7 +40678,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			init_text_to_pose();
 			init_serviceForms();
 			init_waveform_peaks();
-			init_comfyEvents();
 			init_cardBirth();
 			init_enhance();
 			init_cardLlm();
@@ -44850,4 +44685,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ed86145f1550842240c04a73f609c699430e1e70";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ff383fdba28b96fb5d19214c32f4bc6617d2f059";

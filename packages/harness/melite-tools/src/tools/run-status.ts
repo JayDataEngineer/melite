@@ -117,7 +117,7 @@ export function runStatus(request: EstateRequest): ToolDefinition {
       wait_s: {
         type: 'number',
         description:
-          'Long-poll budget in seconds (0-300, default 0 = single read; clamped at execute). '
+          'Long-poll budget in seconds as a JSON number (300, not "300"; 0-300, default 0 = single read; clamped at execute). '
           + 'The tool re-fetches internally every 5s until the run is terminal — '
           + 'ONE result row instead of a sleep-and-repoll turn loop (efficiency '
           + 'review fix 5). On budget expiry the row carries wait_expired: true.',
