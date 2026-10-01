@@ -90,11 +90,16 @@ export function runCardModel(props: ToolCallViewProps): RowModel {
 interface GalleryState {
   status: string | null
   artifacts: readonly string[]
+  /** 404 structural sentinel (LOW-2's cure, status-vocabulary audit):
+   * "no such run at the gateway" rides its OWN field — the status
+   * channel carries wire words only, never a forged one ('unknown'
+   * is a real terminal word the wire may send; a 404 is not it). */
+  gone: boolean
 }
 
 /** Poll the same-origin run proxy until the run settles; collect artifacts. */
 export function useRunGallery(runId: string | null): GalleryState {
-  const [state, setState] = useState<GalleryState>({ status: null, artifacts: [] })
+  const [state, setState] = useState<GalleryState>({ status: null, artifacts: [], gone: false })
   useEffect(() => {
     if (runId === null) return
     const controller = new AbortController()
@@ -112,11 +117,15 @@ export function useRunGallery(runId: string | null): GalleryState {
           const artifacts = Array.isArray(body.artifacts) ? body.artifacts.filter(
             (a): a is string => typeof a === 'string' && a !== '',
           ) : []
-          if (!stopped) setState({ status, artifacts })
+          if (!stopped) setState({ status, artifacts, gone: false })
           if (status === null || TERMINAL.has(status)) return
         } else {
-          // 404 unknown run: stop polling, keep the last known state.
-          if (!stopped) setState((s) => ({ ...s, status: 'unknown' }))
+          // 404 — no such run at the gateway: stop polling, keep the
+          // last known state, raise the structural gone flag (the
+          // badge word 'gone' is the estate's no-such-run vocabulary
+          // — probeRunGone's word — and rides its own field, never
+          // the status channel a wire word could collide with).
+          if (!stopped) setState((s) => ({ ...s, gone: true }))
           return
         }
       } catch { /* transient — retry below */ }
@@ -146,7 +155,7 @@ const DOT: Record<RowState, Parameters<typeof StateDot>[0]['state']> = {
 export function RunCardRow(props: ToolCallViewProps): JSX.Element {
   const model = runCardModel(props)
   const gallery = useRunGallery(model.state === 'running' ? null : model.runId)
-  const badge = gallery.status ?? model.state
+  const badge = gallery.gone ? 'gone' : gallery.status ?? model.state
   return (
     <div data-melite-run-card style={{
       border: '1px solid rgba(128,128,128,0.35)',

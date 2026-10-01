@@ -8,7 +8,7 @@
  *           narrows to null, never throws);
  *   live  — with a run id the row polls the same-origin run proxy
  *           until the run settles (terminal statuses stop the poll,
- *           404 parks the badge at unknown, transient failures retry);
+ *           404 parks the badge at the structural gone word, transient failures retry);
  *   claim — the toolview claim rides ctx.effect + slots.inject with
  *           the card's wire tool name as the key.
  *
@@ -153,11 +153,14 @@ describe('RunCardRow — the gallery poll', () => {
     expect(view.container.querySelectorAll('img')).toHaveLength(1)
   })
 
-  it('an unknown run parks the badge at unknown and keeps the row', async () => {
+  it('a 404 parks the badge at gone — the structural word, never a forged wire status', async () => {
     vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => new Response('nope', { status: 404 })))
     const view = render(createElement(RunCardRow, settledRun()))
-    expect(await view.findByText('unknown')).toBeTruthy()
+    expect(await view.findByText('gone')).toBeTruthy()
     expect(view.container.querySelector('img')).toBeNull()
+    // the status channel stays clean: no wire word was fabricated
+    // ('unknown' is a REAL terminal word — a 404 must not forge it).
+    expect(view.container.textContent).not.toContain('unknown')
   })
 
   it('a transient failure retries, a running status repolls, completion lands', async () => {
