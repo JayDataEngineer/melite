@@ -137,6 +137,20 @@ function useHistoryHero(props: PreviewOwnerProps, opts?: { heroIndex?: (src: Pre
     ? history[picked]
     : null
   const source = entry ?? flat
+  // THE SELF-PICK LAW (the operator's bug, 2026-10-01: the badge
+  // read "Not current — earlier generation" after switching back
+  // to the right one): a pick whose url-set IS the current
+  // generation's is a view of the CURRENT hero, not an earlier
+  // one — no staleness exists to warn about, and a badge claiming
+  // one is a false alarm the operator cannot dismiss by picking
+  // correctly. With no live artifacts the newest archive is the
+  // closest thing to current (the between-runs law above), so
+  // picking THAT entry is likewise not stale; only an older
+  // archive badges. The pick itself (the toggle, the pressed
+  // mark) is untouched — only the false warning goes.
+  const currentSet = props.artifacts.length > 0 ? props.artifacts : history[0]
+  const viewingHistory = entry !== null
+    && (currentSet === undefined || keyOf(entry) !== keyOf(currentSet))
   // THE HERO INDEX (2026-09-22, the operator's catch b): "the
   // preview only shows of the three clips one clip" — a film run's
   // artifacts arrive in SAVE ORDER (windows first, the composed
@@ -149,10 +163,11 @@ function useHistoryHero(props: PreviewOwnerProps, opts?: { heroIndex?: (src: Pre
   return {
     hero: source[heroIdx],
     rest: [...source.slice(0, heroIdx), ...source.slice(heroIdx + 1)].slice(0, 12),
-    viewingHistory: entry !== null,
+    viewingHistory,
     // ('' and undefined both mean no note — the owner builder sends
-    // empty slots to keep historyNotes index-aligned with history)
-    note: entry === null ? undefined : ((props.historyNotes ?? [])[picked] || undefined),
+    // empty slots to keep historyNotes index-aligned with history;
+    // a self-pick carries no note — it is not stale)
+    note: !viewingHistory ? undefined : ((props.historyNotes ?? [])[picked] || undefined),
     picked: entry !== null ? picked : -1,
     promote,
     returnToCurrent,
