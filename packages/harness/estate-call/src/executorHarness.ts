@@ -306,6 +306,9 @@ export function registerExecutorBattery(cfg: BatteryConfig): ExecutorHarness {
     });
 
     it("the prose names the driving field (the card's own input)", () => {
+      // rawInput rides the source's own presentCall return — the lib's
+      // ToolCallView does not declare it (never asserted absent: the
+      // prose IS the pin).
       const card = tool().presentCall?.(goodArgs) as unknown as { rawInput?: unknown };
       assert.match(String(card?.rawInput), cfg.drivingField);
     });

@@ -12,7 +12,7 @@ import * as pkg from "../src/index.ts";
 import { TOOL_NAME, buildMusicTool as FACE } from "../src/tool.ts";
 import { registerExecutorBattery } from "@melite/estate-call/executorHarness";
 
-registerExecutorBattery({
+const harness = registerExecutorBattery({
   makeTool: FACE,
   goodArgs: { prompt: "a funky guitar loop" },
   defaultModel: "music3",
@@ -40,7 +40,7 @@ describe("the index face: apply takes the services it finds", () => {
     const ctx = new Context();
     await ctx.plugin(ComfyUIService as never, undefined as never);
     const svc = ctx.get("comfyui") as unknown as { cardIds(): string[] };
-    pkg.apply(ctx, { call: () => Promise.resolve({}) } as never);
+    pkg.apply(ctx, { call: harness.seam } as never);
     assert.ok(svc.cardIds().includes("music"), "the card registered");
   });
 
@@ -48,14 +48,14 @@ describe("the index face: apply takes the services it finds", () => {
     const ctx = new Context();
     await ctx.plugin(StubToolsService as never, undefined as never);
     const stub = ctx.get("tools") as unknown as StubToolsService;
-    pkg.apply(ctx, { call: () => Promise.resolve({}) } as never);
+    pkg.apply(ctx, { call: harness.seam } as never);
     assert.equal(stub.registered.length, 1);
     assert.equal(stub.registered[0]!.name, TOOL_NAME);
   });
 
   it("NEITHER service → apply is a no-op (the standalone host)", async () => {
     const ctx = new Context();
-    pkg.apply(ctx, { call: () => Promise.resolve({}) } as never);
+    pkg.apply(ctx, { call: harness.seam } as never);
     assert.ok(true, "no throw — both probes undefined");
   });
 });

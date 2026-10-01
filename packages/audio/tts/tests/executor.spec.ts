@@ -27,10 +27,8 @@ const harness = registerExecutorBattery({
 
 describe("the tts variant rows (the enum's route addresses)", () => {
   it("the Base variant's address and the family name both ride the closed enum", () => {
-    // qwen3-tts-base is the Base VARIANT's route address, not a
-    // family — it rides because the tool enum offers variant
-    // addresses (the drafts door resolves route mids; the clone
-    // lane stays agent-reachable after the fold)
+    // the Base variant's address rides the closed enum (agents name
+    // no matrix variant — the route is the clone lane's name)
     const explicit = harness.tool().presentCall?.({ ...harness.goodArgs, model: "qwen3-tts-base" }) as unknown as { rawInput?: unknown };
     assert.match(String(explicit?.rawInput), /model=qwen3-tts-base/);
     const bigger = harness.tool().presentCall?.({ ...harness.goodArgs, model: "qwen3-tts-voicedesign" }) as unknown as { rawInput?: unknown };
