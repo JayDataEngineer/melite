@@ -87,14 +87,14 @@ describe("pinned git validation", () => {
     const cause = new Error("cause");
     assert.equal(new PinnedGitError("git-failed", "failed", cause).cause, cause);
     assert.equal(new PinnedGitError("invalid-request", "plain").cause, undefined);
-    assert.throws(() => new PinnedGitExtensionProvider({ customNodesRoot: " " }), (error: unknown) => error instanceof PinnedGitError && error.code === "invalid-request");
+    assert.throws(() => new PinnedGitExtensionProvider({ customNodesRoot: " ", runner: fakeRunner().runner }), (error: unknown) => error instanceof PinnedGitError && error.code === "invalid-request");
     for (const commandTimeoutMs of [0, -1, 1.5]) {
       assert.throws(
-        () => new PinnedGitExtensionProvider({ customNodesRoot: root(), commandTimeoutMs }),
+        () => new PinnedGitExtensionProvider({ customNodesRoot: root(), commandTimeoutMs, runner: fakeRunner().runner }),
         (error: unknown) => error instanceof PinnedGitError && error.code === "invalid-request",
       );
     }
-    const provider = new PinnedGitExtensionProvider({ customNodesRoot: root() });
+    const provider = new PinnedGitExtensionProvider({ customNodesRoot: root(), runner: fakeRunner().runner });
     assert.equal(provider.commandTimeoutMs, 120_000);
   });
 

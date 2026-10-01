@@ -175,7 +175,8 @@ describe('dispatch — mount order is load order', () => {
     // (below) instead of leaving a half-mounted lane.
     expect(ctx.plugins.filter((p) => p.name === 'comfyui-models-families')).toHaveLength(1)
     expect(ctx.plugins[0]?.name).toBe('comfyui-models-families')
-    expect(ctx.plugins[1]?.name).toBe('engine-contract')
+    expect(ctx.plugins[1]?.name).toBe('LocalSubprocessRuntime')
+    expect(ctx.plugins[2]?.name).toBe('engine-contract')
   })
 
   it('a family refusal fails the estate boot before any other row mounts', async () => {

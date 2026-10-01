@@ -1,4 +1,4 @@
-import { execFile } from "node:child_process";
+import type { SubprocessRuntime } from "@deepseek-ai/dsh-subprocess";
 import { randomUUID } from "node:crypto";
 import { lstat, mkdir, realpath, rename, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
@@ -48,7 +48,10 @@ export interface GitExtensionPostInstallContext {
 
 export interface PinnedGitExtensionProviderOptions {
   readonly customNodesRoot: string;
-  readonly runner?: GitCommandRunner;
+  /** The git runner — required (no silent default): the estate
+   *  composition seats SubprocessGitCommandRunner on the subprocess
+   *  seat; tests seat a fake or the real provider. */
+  readonly runner: GitCommandRunner;
   readonly commandTimeoutMs?: number;
   readonly postInstall?: (
     context: GitExtensionPostInstallContext,
@@ -57,6 +60,9 @@ export interface PinnedGitExtensionProviderOptions {
 
 const DEFAULT_COMMAND_TIMEOUT_MS = 120_000;
 const DEFAULT_GIT_OUTPUT_BYTES = 1024 * 1024;
+/** TERM-to-KILL room for a git child the caller aborted: git removes its
+ *  lockfiles on TERM, so the grace is part of the abort contract. */
+const GIT_TERMINATE_GRACE_MS = 5_000;
 const SAFE_ID = /^[A-Za-z0-9._-]+$/u;
 
 function errorMessage(error: unknown): string {
@@ -67,14 +73,19 @@ function signalAborted(signal: AbortSignal | undefined): boolean {
   return signal?.aborted === true;
 }
 
-function output(value: string | Buffer): string {
-  return typeof value === "string" ? value : value.toString("utf8");
-}
-
-export class NodeGitCommandRunner implements GitCommandRunner {
+/** Git runner on the DSH subprocess seat: provider-managed process ranges,
+ *  credential-scrubbed child environment, and collected output bounded by
+ *  the same byte cap the execFile wrapper used to enforce (the seat's
+ *  collect-mode tail keeps the DIAGNOSTIC tail; a 1 MiB git stdout is
+ *  already pathological). Rejects on any non-zero exit or signal death —
+ *  the provider's runGit owns the PinnedGitError fold. */
+export class SubprocessGitCommandRunner implements GitCommandRunner {
   readonly maxOutputBytes: number;
 
-  constructor(maxOutputBytes = DEFAULT_GIT_OUTPUT_BYTES) {
+  constructor(
+    private readonly runtime: SubprocessRuntime,
+    maxOutputBytes = DEFAULT_GIT_OUTPUT_BYTES,
+  ) {
     if (!Number.isSafeInteger(maxOutputBytes) || maxOutputBytes <= 0) {
       throw new PinnedGitError("invalid-request", "Git output bound must be a positive integer");
     }
@@ -82,26 +93,27 @@ export class NodeGitCommandRunner implements GitCommandRunner {
   }
 
   async run(args: readonly string[], options: GitCommandOptions = {}): Promise<GitCommandResult> {
-    return await new Promise((resolvePromise, rejectPromise) => {
-      execFile(
-        "git",
-        [...args],
-        {
-          ...(options.cwd === undefined ? {} : { cwd: options.cwd }),
-          encoding: "utf8",
-          maxBuffer: this.maxOutputBytes,
-          signal: options.signal,
-          windowsHide: true,
-        },
-        (error, stdout, stderr) => {
-          if (error !== null) {
-            rejectPromise(error);
-            return;
-          }
-          resolvePromise({ stdout: output(stdout), stderr: output(stderr) });
-        },
-      );
+    const handle = this.runtime.spawn({
+      argv: ["git", ...args],
+      cwd: options.cwd ?? process.cwd(),
+      stdio: {
+        stdin: "ignore",
+        stdout: { maxBytes: this.maxOutputBytes },
+        stderr: { maxBytes: this.maxOutputBytes },
+      },
+      graceMs: GIT_TERMINATE_GRACE_MS,
+      ...(options.signal === undefined ? {} : { signal: options.signal }),
     });
+    const outcome = await handle.done;
+    const stdout = handle.collected.stdout?.readFrom(0).text ?? "";
+    const stderr = handle.collected.stderr?.readFrom(0).text ?? "";
+    if (outcome.exitCode !== 0) {
+      const how = outcome.exitCode === null
+        ? `died on ${outcome.signal ?? "an unknown signal"}`
+        : `exited with code ${String(outcome.exitCode)}`;
+      throw new Error(`git ${how}${stderr === "" ? "" : `: ${stderr.trim()}`}`);
+    }
+    return { stdout, stderr };
   }
 }
 
@@ -206,7 +218,7 @@ export class PinnedGitExtensionProvider implements ManagerPort, PinnedGitExtensi
     if (!Number.isSafeInteger(this.commandTimeoutMs) || this.commandTimeoutMs <= 0) {
       throw new PinnedGitError("invalid-request", "Git command timeout must be a positive integer");
     }
-    this.runner = options.runner ?? new NodeGitCommandRunner();
+    this.runner = options.runner;
     this.postInstall = options.postInstall;
   }
 

@@ -24,6 +24,9 @@ import type { Plugin } from "@deepseek-ai/cordis";
 // registers zero families and every family stage refuses
 // "registered: none" (the 3088 commission's catch, 2026-10-10).
 import modelsFamiliesProvider from "@melite/comfyui-cordis/catalog-registry";
+// The subprocess seat's provider (the row below rides it — see the
+// rows comment).
+import LocalSubprocessRuntime from "@deepseek-ai/dsh-subprocess-local";
 import comfyuiHost from "@melite/comfyui-cordis/comfyui-host";
 // The wiring doc service: engine state the compose, run, and
 // adapter seats share. Mounted BEFORE the host and the engines
@@ -114,6 +117,13 @@ import provisioningComposition from "./provisioning.ts";
 // behavior belonged to a seat we were never given.
 
 const rows: readonly Plugin[] = [
+  // The subprocess seat first: the DSH local provider (managed
+  // ranges, scrubbed child env, bounded collected output). The git
+  // runner of the provisions path rides it — the Layer C installer
+  // is ours, so its child processes go through the harness
+  // primitive, never an owned execFile wrapper (handroll audit row
+  // 4.6).
+  LocalSubprocessRuntime,
   // The engines seat BEFORE every adapter + consumer (mount order
   // is load order — the adapters' inject gates on it).
   enginesContract,

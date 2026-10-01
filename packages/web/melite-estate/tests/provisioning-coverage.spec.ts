@@ -6,13 +6,18 @@ import { createServer, type Server } from "node:http";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { Context, type Plugin } from "@deepseek-ai/cordis";
+import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
+import type {
+  SubprocessHandle,
+  SubprocessSpawnSpec,
+  SubprocessTerminalEnvironment,
+  SubprocessTerminalHandle,
+  SubprocessTerminalSpawnSpec,
+} from "@deepseek-ai/dsh-subprocess";
 import { ComfyUiManagerHttpClient, type ProvisionPlanItem } from "@melite/estate-provisioning";
 
-const execFileMock = vi.hoisted(() => vi.fn());
 const sdkClientMock = vi.hoisted(() => vi.fn());
 
-vi.mock("node:child_process", () => ({ execFile: execFileMock }));
 vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@melite/comfyui-cordis")>();
   return {
@@ -172,6 +177,49 @@ function startServer(state: ServerState, prefix: string): Promise<string> {
   }));
 }
 
+/** The git runner's seat, faked: every git call exits 0, `init`
+ *  creates the directory the real git would make, and `rev-parse`
+ *  answers a 40-char commit — the same answers the old execFile
+ *  mock gave (the pinned-install flow rides them). */
+class FakeGitSubprocess extends Service {
+  static inject = [] as const;
+
+  constructor(ctx: Context) {
+    super(ctx, "subprocess");
+  }
+
+  spawn(spec: SubprocessSpawnSpec): SubprocessHandle {
+    const argv = spec.argv;
+    if (argv[0] === "git" && argv[1] === "init" && argv[3] !== undefined) {
+      mkdirSync(argv[3], { recursive: true });
+    }
+    const stdout = argv.includes("rev-parse") ? "a".repeat(40) : "";
+    const reader = (text: string) => ({ readFrom: () => ({ text, nextOffset: text.length, lossy: false }) });
+    return {
+      stdin: undefined,
+      stdout: undefined,
+      stderr: undefined,
+      control: undefined,
+      collected: { stdout: reader(stdout), stderr: reader("") },
+      done: Promise.resolve({ exitCode: 0, signal: null }),
+      terminate: () => undefined,
+      waitForExit: async () => true,
+    } satisfies SubprocessHandle;
+  }
+
+  resolveExecutable(): Promise<string> {
+    throw new Error("not needed by the git runner");
+  }
+
+  terminalEnvironment(): Promise<SubprocessTerminalEnvironment> {
+    throw new Error("not needed by the git runner");
+  }
+
+  spawnTerminal(_spec: SubprocessTerminalSpawnSpec): Promise<SubprocessTerminalHandle> {
+    throw new Error("not needed by the git runner");
+  }
+}
+
 async function mount(options: {
   readonly endpoint?: Record<string, unknown>;
   readonly facts?: Record<string, unknown>;
@@ -218,6 +266,7 @@ async function mount(options: {
   // never 60s real.
   const { SEAMS } = await import("../src/provisioning.ts");
   SEAMS.readinessBackoff = async (): Promise<void> => {};
+  new FakeGitSubprocess(ctx);
   const plugin: Plugin.Object = options.plugin ?? composition;
   plugin.apply(ctx, undefined);
   return { ctx, root, state, endpoint };
@@ -236,12 +285,6 @@ beforeEach(() => {
     saved[key] = process.env[key];
     delete process.env[key];
   }
-  execFileMock.mockReset();
-  execFileMock.mockImplementation((_file: string, args: string[], _options: unknown, callback: (error: Error | null, stdout: string, stderr: string) => void): void => {
-    if (args[0] === "init") mkdirSync(args[2] as string, { recursive: true });
-    const stdout = args.includes("rev-parse") ? "a".repeat(40) : "";
-    callback(null, stdout, "");
-  });
 });
 
 afterEach(async () => {

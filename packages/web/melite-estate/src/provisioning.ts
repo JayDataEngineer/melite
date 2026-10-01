@@ -5,6 +5,7 @@ import {
   ComfyUiManagerProvider,
   FileOperationStore,
   PinnedGitExtensionProvider,
+  SubprocessGitCommandRunner,
   VerifiedArtifactWriter,
   ProvisioningService,
   postManagerPip,
@@ -237,7 +238,7 @@ function cardProvisions(cards: CardService, id: string): ProvisionRow[] {
   return [...(def.provisions ?? [])];
 }
 
-function lazyManager(): ManagerPort {
+function lazyManager(ctx: Context): ManagerPort {
   let provider: ComfyUiManagerProvider | undefined;
   const get = (): ComfyUiManagerProvider => {
     if (provider !== undefined) return provider;
@@ -249,6 +250,7 @@ function lazyManager(): ManagerPort {
       queueTimeoutMs: 300_000,
     });
     const git = new PinnedGitExtensionProvider({
+      runner: new SubprocessGitCommandRunner(ctx.subprocess),
       customNodesRoot: join(runtimeModelsRoot(resolveRepoRoot()).replace(/\/models$/u, ""), "custom_nodes"),
       postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
         await postManagerPip(client, requirements, signal);
@@ -413,7 +415,7 @@ function provisioningConfig(ctx: Context): ProvisioningConfig {
   return {
     declaration: declarationPort(ctx),
     ...(storeRoot === undefined ? {} : { storeRoot, artifactWriter: new VerifiedArtifactWriter(storeRoot) }),
-    manager: lazyManager(),
+    manager: lazyManager(ctx),
     inspector: lazyInspector(),
     lifecycle: lifecyclePort(ctx),
     operationStore: new FileOperationStore(operationRoot),
