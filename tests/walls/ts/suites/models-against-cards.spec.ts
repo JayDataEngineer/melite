@@ -975,3 +975,73 @@ describe("THE BOUNDS-SANITY WALL (every declared numeric row is real, surfaced, 
     }
   });
 });
+
+describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every shared name)", () => {
+  // F3 (the atom-vocabulary audit): every knob's bounds live in BOTH
+  // the card z.object and the family's action ParamSpec rows, hand-
+  // kept in sync — a card-only change had zero walls. The join is
+  // the card's `boarded` list (the card selects families; admits is
+  // the model-admission list, a different thing) over every action
+  // param row whose name is a field of the boarding card. A side a
+  // plane does not declare reads as unbounded: undefined card min
+  // and a missing bounds[0] both normalize to -MAX, undefined max
+  // to +MAX (the grammar's bounds is a closed tuple, so "no
+  // ceiling" is expressed as MAX_SAFE_INTEGER — the value the card
+  // schema serves for any finite input above its floor).
+  const MAX = Number.MAX_SAFE_INTEGER;
+  const norm = (min: number | undefined, max: number | undefined): readonly [number, number] =>
+    [min ?? -MAX, max ?? MAX];
+
+  it("every shared name's numeric bounds and enum options agree on both planes", async () => {
+    await loadCardDefs();
+    const defs = await loadCardDefs();
+    const domains = new Map<string, ReturnType<typeof fieldDomains>>();
+    for (const [id, def] of defs) {
+      const carrier = (def as { schemaCarrier?: unknown }).schemaCarrier ?? (def as { schema?: unknown }).schema;
+      const dict = (carrier as { dict?: Record<string, never> } | undefined)?.dict;
+      if (dict === undefined) continue;
+      domains.set(id, fieldDomains(dict));
+    }
+    let pairs = 0;
+    let cards = 0;
+    const offenders: string[] = [];
+    for (const [cardId, def] of defs) {
+      const dom = domains.get(cardId);
+      const boarded = (def as { boarded?: readonly string[] }).boarded;
+      if (dom === undefined || boarded === undefined || boarded.length === 0) continue;
+      cards++;
+      for (const fam of boarded) {
+        let decl;
+        try { decl = getModel(fam); } catch { continue; } // pattern boardings (ctx_*) are not family DECLs
+        for (const action of decl.actions ?? []) {
+          for (const row of action.params) {
+            const d = dom.get(row.name);
+            if (d === undefined) continue; // not a shared name (lane-typed inputs stay family-owned)
+            pairs++;
+            if (row.type === "number") {
+              const want = norm(d.min, d.max);
+              const got = norm(row.bounds?.[0], row.bounds?.[1]);
+              if (want[0] !== got[0] || want[1] !== got[1]) {
+                offenders.push(`${cardId}/${fam}/${action.id} ${row.name}: card [${want[0]}, ${want[1]}] vs action [${got[0]}, ${got[1]}]`);
+              }
+            }
+            if (row.type === "enum" && row.options !== undefined) {
+              const want = [...(d.options ?? [])].sort().join("\u0000");
+              const got = [...row.options].sort().join("\u0000");
+              if (want !== got) {
+                offenders.push(`${cardId}/${fam}/${action.id} ${row.name}: enum options differ (card ${d.options?.length ?? 0} vs action ${row.options.length})`);
+              }
+            }
+          }
+        }
+      }
+    }
+    // The census pin: an accidental join-break (boarded renamed,
+    // domains hollowed) must fail LOUD, not pass vacuous. Update
+    // these numbers deliberately when a card boards a new family or
+    // a family joins a card's surface.
+    assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
+    assert.equal(pairs, 617, "the shared-name pair census changed — update this pin deliberately");
+    assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
+  });
+});

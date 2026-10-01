@@ -1359,7 +1359,7 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
     { name: "sla_enabled", type: "boolean" },
     { name: "sla_sparsity", type: "number", bounds: [0, 0.95] },
     { name: "sla_block_size", type: "enum", options: ["32", "64", "128"] },
-    { name: "sla_min_seq_len", type: "number" },
+    { name: "sla_min_seq_len", type: "number", bounds: [512, Number.MAX_SAFE_INTEGER] },
     { name: "sla_dense_last_steps", type: "number", bounds: [0, 10] },
     { name: "sla_dense_steps", type: "string" },
     { name: "sla_dense_backend", type: "enum", options: ["comfy_kitchen", "pytorch", "auto"] },
