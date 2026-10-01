@@ -45,5 +45,8 @@ rig, no second process.
   DECLs, catalog, cascade, and golden pins.
 - `suites/card-kinds-chain.spec.ts`, `suites/form-spec-parity.spec.ts`,
   `suites/params-spec-fidelity.spec.ts`, `suites/mod-interlock.spec.ts`,
-  `suites/engine-supervisor.spec.ts`, `suites/s4-client-deps.spec.ts` —
-  the card/model/engine contract walls.
+  `suites/s4-client-deps.spec.ts` —
+  the card/model/engine contract walls. (The supervisor wall died at
+  the 2026-10-12 dedupe: every law moved home to
+  comfyui-cordis/tests/supervisor.spec.ts and the mockless
+  comfyui-host-repoint.spec.ts — docs/audits/supervisor-duplicate-map-2026-10-12.md.)
