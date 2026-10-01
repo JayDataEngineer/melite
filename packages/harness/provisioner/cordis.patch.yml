@@ -111,22 +111,6 @@
     - id: card-studio-motion
       name: '@melite/motion-motion'
 
-    # THE ONE-ROW LAW (operator order, 2026-10-01: "THERE IS ONE WITH
-    # SEAMS, LOOK AT HOW DSH DOES UI"): @melite/card-base mounts as
-    # the ONE graph row behind every card studio — the mirror of
-    # DSH's platform-seed ui atoms (getStaticModules,
-    # dsh-client-web/src/seed.ts). The browser graph's dsh.client
-    # scan needs this bare-root entry so lib/client.js registers as
-    # a module-table row; card clients reach it via
-    # dsh.client.external requires (one compiled instance, one
-    # css-module hash). The package has no node-side apply — the
-    # row exists for the browser graph alone. BEFORE this row, each
-    # card bundle inlined its own compiled copy of the atoms (two
-    # css hashes of the same specField on one screen in the
-    # img-to-mesh zoom) and a card-base fix landed only in the
-    # cards that happened to rebuild.
-    - id: card-studio-atoms
-      name: '@melite/card-base'
 
     # infer-card-deck: NO row here (channel law, 2026-09-09) — the
     # dsh-card-deck package self-registers (ray-card-deck, its own

@@ -49,6 +49,17 @@
     # motion-studio rows in their own bundles).
     - id: card-studio-img-to-mesh
       name: '@melite/3d-img-to-mesh'
+    # THE ONE-ROW LAW (operator order, 2026-10-01: "THERE IS ONE WITH
+    # SEAMS, LOOK AT HOW DSH DOES UI"): @melite/card-base mounts as the
+    # ONE graph row behind every card studio — the mirror of DSH's
+    # platform-seed ui atoms (getStaticModules, dsh-client-web
+    # /src/seed.ts). The browser graph's dsh.client scan needs this
+    # bare-root entry so lib/client.js registers as a module-table row;
+    # card clients reach it via dsh.client.external requires (one
+    # compiled instance, one css-module hash). No node-side apply —
+    # the row exists for the browser graph alone.
+    - id: card-studio-atoms
+      name: '@melite/card-base'
 
 - id: melite-estate
   config:
