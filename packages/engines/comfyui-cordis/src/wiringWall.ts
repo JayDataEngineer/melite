@@ -40,16 +40,71 @@
 // undefined and the wall stands down — the standing law, now
 // Cordis's own `undefined when not (yet) provided` semantics
 // instead of a hand-rolled null.
+//
+// THE VALUE GATE (the strictness audit's T2, 2026-10-12): the doc
+// carries VALUES, not names alone — a declared input's combo enum
+// and numeric bounds are judged at every seat, in the declaring
+// door's voice, naming the allowed set. Two carve-outs keep the
+// wall honest: connection references (an array value is another
+// node's output) and staged-artifact strings (the upload walk
+// rewrites them to server names after every seat — see
+// isStagedArtifactRef). A malformed graph or inputs row refuses
+// here; the wall never stands down on the one shape it exists to
+// judge.
 
 import { Service, type Context, type Plugin } from '@deepseek-ai/cordis'
+import { UPLOAD_EXTS } from './comfyui-upload.ts'
 import { ComposeRefusal } from './errors.ts'
 
+/** One input's declared facts off `/object_info` — the doc carries
+ *  VALUES, not names alone (the strictness audit's T2): the
+ *  required flag, the declared type name (`INT`, `FLOAT`,
+ *  `STRING`, `BOOLEAN`, or a connection type), the combo enum when
+ *  the input is a combo, and the numeric bounds when the
+ *  declaration states them. A names-only consumer reads nothing
+ *  but the key. */
+export interface WiringInputSpec {
+  readonly required: boolean
+  readonly type?: string
+  readonly enum?: ReadonlyArray<string | number | boolean>
+  readonly min?: number
+  readonly max?: number
+}
+
 /** The engine's declared-node census, derived from /object_info:
- *  node names and, per node, its DECLARED input names (required ∪
- *  optional — the doc's own truth). */
+ *  node names and, per node, its DECLARED inputs (required ∪
+ *  optional — the doc's own truth, value facts attached). */
 export interface WiringDoc {
   readonly nodes: ReadonlySet<string>
-  readonly inputs: ReadonlyMap<string, ReadonlySet<string>> | undefined
+  readonly inputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> | undefined
+}
+
+function isPrimitive(v: unknown): v is string | number | boolean {
+  const t = typeof v
+  return t === 'string' || t === 'number' || t === 'boolean'
+}
+
+/** One `/object_info` input tuple → its value facts. The tuple's
+ *  first element is the combo enum (an array) or the type name (a
+ *  string); an object second element carries `min`/`max` for
+ *  numerics. Any other shape contributes the required flag alone —
+ *  the wall judges only what the declaration actually says. */
+function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec {
+  if (Array.isArray(spec) && spec.length > 0) {
+    const head: unknown = spec[0]
+    if (Array.isArray(head)) {
+      return { required, enum: head.filter(isPrimitive) }
+    }
+    if (typeof head === 'string') {
+      const detail = spec.length > 1 && typeof spec[1] === 'object' && spec[1] !== null && !Array.isArray(spec[1])
+        ? (spec[1] as Record<string, unknown>)
+        : undefined
+      const bound = (k: string): number | undefined =>
+        typeof detail?.[k] === 'number' ? (detail[k] as number) : undefined
+      return { required, type: head, min: bound('min'), max: bound('max') }
+    }
+  }
+  return { required }
 }
 
 /** Derive the census from a raw /object_info body — ONE derivation
@@ -59,16 +114,19 @@ export interface WiringDoc {
  *  input gate — never a guessed refusal. */
 export function deriveWiringDoc(
   objectInfo: Record<string, unknown>,
-): { nodes: Set<string>; inputs: Map<string, Set<string>> } {
-  const inputs = new Map<string, Set<string>>()
+): { nodes: Set<string>; inputs: Map<string, Map<string, WiringInputSpec>> } {
+  const inputs = new Map<string, Map<string, WiringInputSpec>>()
   for (const [name, def] of Object.entries(objectInfo)) {
-    inputs.set(
-      name,
-      new Set([
-        ...Object.keys((def as any)?.input?.required ?? {}),
-        ...Object.keys((def as any)?.input?.optional ?? {}),
-      ]),
-    )
+    const decl = (def as { input?: { required?: unknown; optional?: unknown } } | null)?.input
+    const perNode = new Map<string, WiringInputSpec>()
+    for (const group of [['required', true], ['optional', false]] as const) {
+      const rows = decl?.[group[0]]
+      if (typeof rows !== 'object' || rows === null) continue
+      for (const key of Object.keys(rows)) {
+        perNode.set(key, parseInputSpec((rows as Record<string, unknown>)[key], group[1]))
+      }
+    }
+    inputs.set(name, perNode)
   }
   return { nodes: new Set(Object.keys(objectInfo)), inputs }
 }
@@ -90,7 +148,10 @@ export class ComfyUIWiringService extends Service {
   }
 
   /** Arm the wall (a doc-owner, when /object_info lands). */
-  arm(nodes: ReadonlySet<string>, inputs?: ReadonlyMap<string, ReadonlySet<string>> | null): void {
+  arm(
+    nodes: ReadonlySet<string>,
+    inputs?: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> | null,
+  ): void {
     this.doc = { nodes, inputs: inputs ?? undefined }
   }
 
@@ -123,14 +184,84 @@ export const comfyuiWiringProvider: Plugin = {
   },
 }
 
+const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:/i
+
+/** Whether a string value is a STAGED-ARTIFACT REFERENCE — a URL
+ *  scheme (data:, http:, https:, the asset routes' references) or
+ *  a path ending in one of the upload walk's stageable
+ *  extensions. The upload walk rewrites exactly these values to
+ *  server-side names AFTER every walk seat (uploadReferenced runs
+ *  inside execute), so a combo enum can never honestly judge
+ *  them — the carve-out mirrors comfyui-upload's table (ONE owner
+ *  of the extension list). */
+function isStagedArtifactRef(v: string): boolean {
+  if (SCHEME_PREFIX.test(v)) return true
+  const lower = v.toLowerCase()
+  return UPLOAD_EXTS.some((e) => lower.endsWith(e))
+}
+
+/** Render an enum for a refusal — every value named, capped at
+ *  twenty with the remainder counted (a model list can run to
+ *  hundreds; the refusal still says how many). */
+function fmtEnum(values: ReadonlyArray<string | number | boolean>): string {
+  const shown = values.slice(0, 20).map((v) => JSON.stringify(v)).join(', ')
+  const head = `${values.length} values (${shown}`
+  return values.length > 20 ? `${head} … +${values.length - 20} more)` : `${head})`
+}
+
+/** THE VALUE GATE (the strictness audit's T2: a names-only wall
+ *  judged nothing a graph actually SAID). A declared input's
+ *  primitive value is judged against the facts its own declaration
+ *  carries: a combo enum by membership, a numeric by its declared
+ *  bounds. Three values never reach judgment: connection
+ *  references (an array — the value is another node's output,
+ *  judged by the link seam), staged-artifact strings (the upload
+ *  walk's carve-out above), and $-prefixed merge-seam spells (the
+ *  run seat walks pre-splice rows; rewriteSpells turns every
+ *  spell into a link tuple or a request initial before the engine
+ *  — a spell is never an enum member by construction). */
+function judgeValue(
+  cardId: string,
+  id: string,
+  ct: string,
+  key: string,
+  value: unknown,
+  spec: WiringInputSpec,
+): void {
+  if (!isPrimitive(value)) return
+  if (typeof value === 'string' && (value.startsWith('$') || isStagedArtifactRef(value))) return
+  if (spec.enum !== undefined && !spec.enum.includes(value)) {
+    throw new ComposeRefusal('bad-value',
+      `card '${cardId}' wired '${ct}.${key}' = ${JSON.stringify(value)} (as '${id}') — the input allows ${fmtEnum(spec.enum)}; the card's compose is stale against the engine build`)
+  }
+  if (typeof value === 'number') {
+    const bound = spec.min !== undefined && value < spec.min
+      ? `below its declared min ${spec.min}`
+      : spec.max !== undefined && value > spec.max
+        ? `above its declared max ${spec.max}`
+        : ''
+    if (bound !== '') {
+      throw new ComposeRefusal('bad-value',
+        `card '${cardId}' wired '${ct}.${key}' = ${value} (as '${id}') — the input is ${spec.type ?? 'a number'} and the value is ${bound}; the card's compose is stale against the engine build`)
+    }
+  }
+}
+
 export function assertWiringAgainst(
   nodes: ReadonlySet<string> | null,
-  declaredInputs: ReadonlyMap<string, ReadonlySet<string>> | null | undefined,
+  declaredInputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> | null | undefined,
   cardId: string,
   graph: unknown,
 ): void {
   if (nodes === null) return
-  if (graph === null || typeof graph !== 'object') return
+  // A malformed graph REFUSES (the strictness audit's T2 fail-open:
+  // standing the wall down on the one shape it exists to judge).
+  // The engine's graph is an object keyed by node id — never an
+  // array, never a bare value.
+  if (graph === null || typeof graph !== 'object' || Array.isArray(graph)) {
+    throw new ComposeRefusal('malformed-graph',
+      `card '${cardId}' built no addressable graph — a graph is an object keyed by node id (refused at the wiring wall, never at the engine)`)
+  }
   for (const [id, node] of Object.entries(graph as Record<string, unknown>)) {
     if (node === null || typeof node !== 'object') continue
     const row = node as { class_type?: unknown; inputs?: unknown }
@@ -146,9 +277,19 @@ export function assertWiringAgainst(
     const declared = declaredInputs?.get(ct)
     if (declared === undefined) continue // names-only doc: the input gate waits
     const inputs = row.inputs
-    if (inputs === null || typeof inputs !== 'object') continue
-    for (const key of Object.keys(inputs as Record<string, unknown>)) {
-      if (declared.has(key)) continue
+    if (inputs === undefined) continue // nothing wired: nothing to judge
+    // A present-but-malformed inputs row REFUSES (the audit's
+    // second fail-open): a node's inputs are a key→value object.
+    if (inputs === null || typeof inputs !== 'object' || Array.isArray(inputs)) {
+      throw new ComposeRefusal('malformed-graph',
+        `card '${cardId}' wired node '${id}' (${ct}) with a non-object inputs row — a node's inputs are a key-to-value object (refused at the wiring wall, never at the engine)`)
+    }
+    for (const [key, value] of Object.entries(inputs as Record<string, unknown>)) {
+      const spec = declared.get(key)
+      if (spec !== undefined) {
+        judgeValue(cardId, id, ct, key, value, spec)
+        continue
+      }
       // A DOTTED WIDGET SUB-KEY IS A DECLARED INPUT (the shipped-graph
       // receipt, 2026-10-10): ComfyUI's /object_info declares a
       // widget by its top-level name and the graph addresses its

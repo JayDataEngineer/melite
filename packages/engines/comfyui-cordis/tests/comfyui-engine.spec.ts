@@ -15,7 +15,7 @@ import type {
 import comfyuiHostProvider from "../src/entries/comfyui-host.ts";
 import comfyuiWiring from "../src/entries/comfyui-wiring.ts";
 import comfyuiEngine from "../src/entries/comfyui-engine.ts";
-import { ComfyUIWiringService } from "../src/wiringWall.ts";
+import { ComfyUIWiringService, type WiringInputSpec } from "../src/wiringWall.ts";
 import type { ComfyUIHostService, FlowResult } from "../src/comfyui.ts";
 
 /** Boot the real composition rows (contract + host + adapter) with
@@ -283,8 +283,14 @@ describe("the adapter's post-splice wiring walk (production's submit path)", () 
   it("an undeclared INPUT on a declared class refuses with the input gate's voice", async () => {
     const flow = vi.fn(async (): Promise<FlowResult> => ({ stages: {}, promptId: "p" }));
     const { seat, wiring } = await boot(flow);
-    const declared = new Map<string, Set<string>>();
-    declared.set("EmptyLatentImage", new Set(["width", "height"]));
+    const declared = new Map<string, ReadonlyMap<string, WiringInputSpec>>();
+    declared.set(
+      "EmptyLatentImage",
+      new Map([
+        ["width", { required: true }],
+        ["height", { required: true }],
+      ]),
+    );
     wiring.arm(new Set(["EmptyLatentImage"]), declared);
     const row = stageRow();
     // splice carries params.workflow verbatim — smuggle an input

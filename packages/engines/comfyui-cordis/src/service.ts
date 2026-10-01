@@ -6,7 +6,7 @@
 import Schema from '@deepseek-ai/schemastery'
 import { validateDeclaredMods } from './mods-schema.ts'
 import { ComposeRefusal } from './errors.ts'
-import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc } from './wiringWall.ts'
+import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc, type WiringInputSpec } from './wiringWall.ts'
 export { ComposeRefusal } from './errors.ts';
 import { Context, Service } from '@deepseek-ai/cordis'
 import { GraphBuilder, deriveDefaults } from '@melite/comfyui-card-kit/graph'
@@ -445,10 +445,12 @@ export class ComfyUIService extends Service {
    *  went unwalked). Null before the doc lands; the wall stands down. */
   objectInfoNodes: Set<string> | null = null
   /** The wiring doc's DECLARED inputs per node (required ∪
-   *  optional) — compose's final wall (assertWiring) walks every
-   *  built graph against it. Null = names-only snapshot (the node
-   *  gate stands, the input gate waits — never a guessed refusal). */
-  objectInfoInputs: Map<string, Set<string>> | null = null
+   *  optional, value facts attached) — compose's final wall
+   *  (assertWiring) walks every built graph against it: input
+   *  names, combo enums, numeric bounds. Null = names-only
+   *  snapshot (the node gate stands, the input gate waits — never
+   *  a guessed refusal). */
+  objectInfoInputs: Map<string, Map<string, WiringInputSpec>> | null = null
   /** Models-tree presence reader — set before compose to arm the
    *  arm-weight gate (mirrors objectInfoNodes: null = fail-open). */
   private weightPresent: ((relativePath: string, name: string) => boolean) | null = null
@@ -1046,9 +1048,10 @@ export class ComfyUIService extends Service {
    *  it). Walks the built graph: every node's class_type must live
    *  in the doc; every input name must be one the node DECLARES
    *  (when the full doc is held — a names-only snapshot skips the
-   *  input gate). Unarmed (no doc) the wall stands down, the
-   *  existing law. Values are never judged here (types are the
-   *  schema's own wall); this is the NAME wall. */
+   *  input gate); a declared input's combo enum and numeric bounds
+   *  are judged (staged-artifact references and connection arrays
+   *  are carved out — wiringWall's value gate owns that law).
+   *  Unarmed (no doc) the wall stands down, the existing law. */
   /** The card-compose seat's wall (the one owner is wiringWall.ts —
    *  the host calls the same function for the merge and splice
    *  seams, so every graph reaching the engine is walked). */
