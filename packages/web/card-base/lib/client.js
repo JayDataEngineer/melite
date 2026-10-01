@@ -46075,9 +46075,14 @@ void main() {
 		* failures so policy code (the gone-verdict, the poll, the CAS
 		* rebase) can discriminate. */
 		var EstateRefusedError = class extends Error {
-			constructor(message) {
+			/** The door's stable refusal code when the failure carried one
+			*  (the RemoteError discriminator; policy code matches this,
+			*  never message text). */
+			code;
+			constructor(message, code) {
 				super(message);
 				this.name = "EstateRefusedError";
+				this.code = code;
 			}
 		};
 		let bound;
@@ -46178,7 +46183,28 @@ void main() {
 			if (settled.ok === true) return settled.value;
 			const { error } = settled;
 			const failure = error;
-			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused", typeof failure === "object" && failure !== null && typeof failure.code === "string" ? failure.code : void 0);
+		}
+		/** The door's stable CAS refusal code (bench verbs, bench ensure,
+		*  drafts/patch — every voice that means "the bench moved under
+		*  you; re-read and re-apply"). */
+		const CAS_CONFLICT_CODE = "bench/cas-conflict";
+		/** True when the throw is the door's CAS verdict (stale or missing
+		*  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
+		*  other refusal (admission, unknown stage, store failure) throws
+		*  through untouched: retrying those would be a fallback.
+		*
+		*  THE CODE IS THE VOICE (2026-10-12): the protocol's own law is
+		*  "discrimination is always by code, never by instanceof" — and
+		*  never by message text. Two dead-matcher incidents (2026-09-15,
+		*  2026-10-09) were substring law: each new door phrasing
+		*  ('bench main moved: rev is…', 'bench moved under the patch…')
+		*  slipped past the arms and the rebase went dead in production.
+		*  unwrapRemote forwards the RemoteError code, and every CAS
+		*  refusal carries bench/cas-conflict, so this matches the one
+		*  stable truth. */
+		function isCasConflict(error) {
+			return error instanceof EstateRefusedError && error.code === "bench/cas-conflict";
 		}
 		/** Refusal discrimination for policy code (the CAS rebase, the
 		* gone-verdict, the poll's file-era arms). */
@@ -49939,6 +49965,7 @@ void main() {
 		exports.Box = Box;
 		exports.Brush = Brush;
 		exports.CARD_SLOTS = CARD_SLOTS;
+		exports.CAS_CONFLICT_CODE = CAS_CONFLICT_CODE;
 		exports.Camera = Camera;
 		exports.CardForm = CardForm;
 		exports.Check = Check;
@@ -50079,6 +50106,7 @@ void main() {
 		exports.heatColor = heatColor;
 		exports.inject = inject;
 		exports.inputEdgeOf = inputEdgeOf;
+		exports.isCasConflict = isCasConflict;
 		exports.isEstateRefusal = isEstateRefusal;
 		exports.isHybridKind = isHybridKind;
 		exports.isImageUrl = isImageUrl;
@@ -50145,4 +50173,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="35d09732729348b376f00deee252bc7da51a5004";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4ef56be64ef5c88a6231bfb041070d44eb6d6734";

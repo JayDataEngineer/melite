@@ -35,7 +35,7 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
     const fakes = mountEstateFakes({
       // attempt 1 with the held rev refuses (the door's own voice);
       // the re-read serves the fresh truth (rev 429).
-      refusals: [{ method: 'bench/add-stage', message: 'bench main moved: rev is 429, caller held 35' }],
+      refusals: [{ method: 'bench/add-stage', message: 'bench main moved: rev is 429, caller held 35' , code: 'bench/cas-conflict' }],
       benchDoc: { rev: 429, stages: [{ id: 's_0' }], log: [] },
     })
     try {
@@ -58,9 +58,9 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
   test('conflicts on EVERY attempt throw loud — bounded, never a blind write, never a loop', async () => {
     const fakes = mountEstateFakes({
       refusals: [
-        { method: 'bench/remove-stage', message: 'bench main moved: rev is 430, caller held 429' },
-        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' },
-        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' },
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 430, caller held 429' , code: 'bench/cas-conflict' },
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' , code: 'bench/cas-conflict' },
+        { method: 'bench/remove-stage', message: 'bench main moved: rev is 431, caller held 430' , code: 'bench/cas-conflict' },
       ],
       benchDoc: { rev: 430, stages: [{ id: 's_1' }], log: [] },
     })
@@ -74,7 +74,7 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
 
   test("THE THIRD VOICE (2026-10-09): 'moved under the patch' rebases the bench verbs too — the arm lives on every matcher", async () => {
     const fakes = mountEstateFakes({
-      refusals: [{ method: 'bench/remove-stage', message: 'bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply' }],
+      refusals: [{ method: 'bench/remove-stage', message: 'bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply' , code: 'bench/cas-conflict' }],
       benchDoc: { rev: 5, stages: [{ id: 's_1' }], log: [] },
     })
     try {
@@ -104,7 +104,7 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
 
   test('a dead re-read leaves the original refusal standing', async () => {
     const fakes = mountEstateFakes({
-      refusals: [{ method: 'bench/remove-stage', message: 'bench main moved: rev is 429, caller held 35' }],
+      refusals: [{ method: 'bench/remove-stage', message: 'bench main moved: rev is 429, caller held 35' , code: 'bench/cas-conflict' }],
       throws: [{ method: 'bench/get', message: 'network gone' }],
     })
     try {

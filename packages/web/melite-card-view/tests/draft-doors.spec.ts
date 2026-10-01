@@ -84,7 +84,7 @@ describe("patchStageParams — the CAS dance arms", () => {
   test("the 'cas-conflict' voice rebases too (the matcher's second arm)", async () => {
     const fakes = wire({
       draftBenchRev: 10,
-      refusals: [{ method: "drafts/patch", message: "bench/cas-conflict: stale expect_rev" }],
+      refusals: [{ method: "drafts/patch", message: "bench/cas-conflict: stale expect_rev" , code: 'bench/cas-conflict' }],
     });
     await patchStageParams("d", "s_0", { steps: 3 }, 7);
     expect(fakes.calls.filter((c) => c.method === "drafts/patch")).toHaveLength(2);
@@ -93,7 +93,7 @@ describe("patchStageParams — the CAS dance arms", () => {
   test("the 'moved: rev is' voice rebases (the server's real words)", async () => {
     const fakes = wire({
       draftBenchRev: 429,
-      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" }],
+      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" , code: 'bench/cas-conflict' }],
     });
     await patchStageParams("d", "s_0", { steps: 3 }, 35);
     expect(fakes.calls[fakes.calls.length - 1]?.args).toMatchObject({ expectRev: 429 });
@@ -114,7 +114,7 @@ describe("patchStageParams — the CAS dance arms", () => {
     // pins the exact sentence forever: lose the arm, lose the build.
     const fakes = wire({
       draftBenchRev: 5,
-      refusals: [{ method: "drafts/patch", message: "bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply" }],
+      refusals: [{ method: "drafts/patch", message: "bench moved under the patch (expect_rev 4, current 5) — re-read and re-apply" , code: 'bench/cas-conflict' }],
     });
     await patchStageParams("d", "s_0", { prompt: "x" }, 4);
     const patches = fakes.calls.filter((c) => c.method === "drafts/patch");
@@ -125,9 +125,9 @@ describe("patchStageParams — the CAS dance arms", () => {
     wire({
       draftBenchRev: 430,
       refusals: [
-        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
-        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
-        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" },
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" , code: 'bench/cas-conflict' },
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" , code: 'bench/cas-conflict' },
+        { method: "drafts/patch", message: "bench main moved: rev is 431, caller held 430" , code: 'bench/cas-conflict' },
       ],
     });
     await expect(patchStageParams("d", "s_0", { steps: 3 }, 429))
@@ -140,8 +140,8 @@ describe("patchStageParams — the CAS dance arms", () => {
     const fakes = wire({
       draftBenchRev: 430,
       refusals: [
-        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429" },
-        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429", onCall: 2 },
+        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429" , code: 'bench/cas-conflict' },
+        { method: "drafts/patch", message: "bench main moved: rev is 430, caller held 429", onCall: 2, code: 'bench/cas-conflict' },
       ],
     });
     await patchStageParams("d", "s_0", { steps: 3 }, 429);
@@ -151,7 +151,7 @@ describe("patchStageParams — the CAS dance arms", () => {
   });
   test("a dead re-read leaves the original refusal standing", async () => {
     wire({
-      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" }],
+      refusals: [{ method: "drafts/patch", message: "bench main moved: rev is 429, caller held 35" , code: 'bench/cas-conflict' }],
       // the re-read dies: the ORIGINAL refusal is the honest answer
       throws: [{ method: "drafts/get", message: "network gone" }],
     });

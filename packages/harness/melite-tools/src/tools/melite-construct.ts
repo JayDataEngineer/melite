@@ -119,19 +119,15 @@ async function readBench(
   }
 }
 
-/** THE CAS VERDICT MATCHER (the GUI's withRebase law, verbatim —
- *  add-stage.ts's matcher law: match the REAL words, both door
- *  spellings: the bench door's 'bench <session> moved: rev is N,
- *  caller held M' and the drafts store's 'bench moved under the
- *  patch (expect_rev N, current M)' + the code arm). Dead matchers
- *  make dead rebases; dead rebases make stuck agents. */
+/** THE CAS VERDICT MATCHER (2026-10-12, the code law — the same
+ *  cure the browser plane landed): the seats throw RemoteError and
+ *  the protocol's own law is "discrimination is always by code,
+ *  never by message text" — every CAS voice (bench verbs, ensure,
+ *  drafts/patch) carries bench/cas-conflict. The substring arms
+ *  died with their two dead-matcher incidents; estate.ts's own
+ *  conflict() closure reads the code exactly this way. */
 function isCasConflict(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e)
-  return (
-    msg.includes('moved: rev is') ||
-    msg.includes('moved under the patch') ||
-    msg.includes('cas-conflict')
-  )
+  return (e as { code?: unknown })?.code === 'bench/cas-conflict'
 }
 
 /** ONE-RETRY REBASE (the operator's stuck-agent cure, 2026-10-09:

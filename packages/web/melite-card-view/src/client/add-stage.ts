@@ -22,7 +22,7 @@
  * against fresh truth. The stuck is structurally impossible: a
  * moved bench costs one silent rebase, never a bricked tab.
  */
-import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-base/client'
+import { estateRemote, unwrapRemote, type BenchNamespace, isCasConflict } from '@melite/card-base/client'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 // THE SESSIONKEY LAW (stroke 81, the operator's burn): no verb may
@@ -54,21 +54,6 @@ async function benchRev(sessionKey: string, signal?: AbortSignal): Promise<numbe
   }
 }
 
-/** True when the throw is the door's CAS verdict (stale expect_rev).
- *  The server's own voice: "bench <session> moved: rev is N, caller
- *  held M" (bench.ts casCheck; the drafts store's older arm says
- *  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
- *  REAL words — the first cut matched 'bench moved' against 'bench
- *  MAIN moved' and matched nothing; dead matchers make dead
- *  rebases, and dead rebases make stuck tabs. THE THIRD VOICE
- *  (2026-10-09, the run-refusal burn): the drafts/patch door says
- *  "moved under the patch" — an arm per DOOR VOICE, all three. */
-function isCasConflict(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e)
-  return msg.includes('moved: rev is')
-    || msg.includes('moved under the patch')
-    || msg.includes('cas-conflict')
-}
 
 /** One typed bench verb with the rebase dance: try the held rev; on
  *  the door's cas-conflict re-read the rev (the SAME session) and

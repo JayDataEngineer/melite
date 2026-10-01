@@ -70,7 +70,7 @@ export type FlowEventFrame =
     }
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
-import { estateRemote, unwrapRemote, parseNumericInput, type DraftsNamespace } from '@melite/card-base/client'
+import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
 import { isTerminalStatus, statusOf, type CardStatus } from '@melite/contracts/stageView'
 
 /** The media URL seam — the run-wire package's ONE rewrite
@@ -104,29 +104,6 @@ export async function fetchDraftRev(draftId: string): Promise<number | null> {
   }
 }
 
-/** True when the throw is the door's CAS verdict (stale or missing
- *  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
- *  other refusal (admission, unknown stage, store failure) throws
- *  through untouched: retrying those would be a fallback. */
-function isCasConflict(e: unknown): boolean {
-  const msg = e instanceof Error ? e.message : String(e)
-  // THE MATCHER LAW (2026-09-15): the server's real voice is
-  // "bench <session> moved: rev is N, caller held M" — 'bench moved'
-  // matched NOTHING against 'bench main moved' (a dead matcher made
-  // this rebase dead code; the operator's tab stuck on it).
-  // THE THIRD VOICE (2026-10-09, the operator's run refusal): the
-  // drafts/patch door refuses "bench moved under the patch
-  // (expect_rev N, current M)" — NEITHER earlier arm matched it
-  // ('rev is' absent; the cas-conflict CODE never rides the message
-  // — unwrapRemote forwards message only), so this rebase was dead
-  // code for the ONE door the drill uses and every param write
-  // under a moved bench refused the run. A matcher arm per DOOR
-  // VOICE, all three, forever: a new door voice is a bug, not a
-  // feature.
-  return msg.includes('moved: rev is')
-    || msg.includes('moved under the patch')
-    || msg.includes('cas-conflict')
-}
 
 /** One drafts/patch round trip; throws the door's named refusal. The
  *  generated signature is (draftId, stageId, patch, expectRev:

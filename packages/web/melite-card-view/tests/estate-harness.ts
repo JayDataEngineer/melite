@@ -46,7 +46,7 @@
  *    bench agrees after each).
  */
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import type { RemoteErrorCode, RemoteFailure, RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 // The generated namespace row types (type-only — the fakes serve
 // intentionally-partial rows against them, cast at each verb below).
@@ -73,6 +73,10 @@ export interface EstateCall {
 export interface EstateRefusal {
   method: string
   message: string
+  /** The door's refusal CODE (the RemoteResult error branch's own
+   *  discriminator; policy code matches codes, never message
+   *  text). Unset = gateway/bad-request (an unnamed refusal). */
+  code?: string
   /** 1-based call index this refusal fires on (the Nth call to the
    *  method). Unset = the FIRST matching call (legacy shape) — set
    *  it to script success-then-refusal sequences on one verb. */
@@ -209,13 +213,17 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
   /** Reads the CURRENT call index (no tick — takeThrow already
    *  advanced the clock for this verb call; every verb runs the
    *  throw queue before the refusal queue). */
-  const takeRefusal = (method: string): { ok: false; error: RemoteError<'gateway/bad-request'> } | undefined => {
+  const takeRefusal = (method: string): { ok: false; error: RemoteFailure } | undefined => {
     const index = callCounts.get(method) ?? 1
     let hit = refusalQueue.findIndex((refusal) => refusal.method === method && refusal.onCall === index)
     if (hit === -1) hit = refusalQueue.findIndex((refusal) => refusal.method === method && refusal.onCall === undefined)
     if (hit === -1) return undefined
     const refusal = refusalQueue.splice(hit, 1)[0]!
-    return { ok: false, error: new RemoteError('gateway/bad-request', refusal.message, {}) }
+    // The code rides the error branch the way the door's own throw
+    // does (the protocol's structural law: cross-owner codes reach a
+    // consumer's compilation unmerged, so the constructor takes the
+    // widened key — remoteErrorOf does the same cast at the seam).
+    return { ok: false, error: new RemoteError(refusal.code as RemoteErrorCode, refusal.message, {} as never) as RemoteFailure }
   }
 
   const applyDraftPatch = (stageId: string, patch: Record<string, unknown>): string[] => {

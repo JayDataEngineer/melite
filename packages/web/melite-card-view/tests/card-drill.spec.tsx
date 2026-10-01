@@ -15,7 +15,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
-import { mountEstateFakes } from './estate-harness.ts'
+import { mountEstateFakes, type EstateRefusal } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/client'
 import { resetStageWrites } from '../src/client/draft.ts'
 import { createElement } from 'react'
@@ -63,6 +63,9 @@ interface StubOpts {
   /** Queue of drafts/patch answers served INSTEAD of success (the CAS
    *  walls burn one conflict, then the door succeeds). */
   patchFailures?: Array<Record<string, unknown>>
+  /** Queue of error-branch refusals served on the verb (the door's
+   *  RemoteError voice, code included — the CAS wall's real shape). */
+  refusals?: EstateRefusal[]
   /** The bench-block rev drafts/get serves (default 7). */
   draftBenchRev?: number
 }
@@ -77,6 +80,7 @@ function stubWire(opts?: StubOpts): { calls: Call[] } {
     draftBenchRev: opts?.draftBenchRev,
     runDocs: opts?.runDocs,
     patchFailures: opts?.patchFailures,
+    refusals: opts?.refusals,
   })
   const impl = async (url: unknown): Promise<Response> => {
     const path = String(url)
@@ -799,7 +803,7 @@ test('the run-outcome write carries a numeric expect_rev (never revless)', async
 
 test('a CAS-conflicted write re-reads the rev and re-applies once — the run still starts', async () => {
   const { calls } = stubWire({
-    patchFailures: [{ draftId: 'bench-s1', stageId: 's_0', delivered: false, reason: 'bench/cas-conflict: bench moved: rev is 8, caller held 7' }],
+    refusals: [{ method: 'drafts/patch', message: 'bench moved under the patch (expect_rev 7, current 8) — re-read and re-apply', code: 'bench/cas-conflict' }],
     draftBenchRev: 8,
   })
   const user = userEvent.setup()

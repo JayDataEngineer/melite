@@ -62,9 +62,14 @@ export type ManageNamespace = ClientRemote['manage']
  * failures so policy code (the gone-verdict, the poll, the CAS
  * rebase) can discriminate. */
 export class EstateRefusedError extends Error {
-  constructor(message: string) {
+  /** The door's stable refusal code when the failure carried one
+   *  (the RemoteError discriminator; policy code matches this,
+   *  never message text). */
+  readonly code?: string
+  constructor(message: string, code?: string) {
     super(message)
     this.name = 'EstateRefusedError'
+    this.code = code
   }
 }
 
@@ -201,7 +206,33 @@ export async function unwrapRemote<T>(
     && typeof (failure as { message?: unknown }).message === 'string'
     && (failure as { message: string }).message !== ''
     ? (failure as { message: string }).message : voice + ': refused'
-  throw new EstateRefusedError(message)
+  const code = typeof failure === 'object' && failure !== null
+    && typeof (failure as { code?: unknown }).code === 'string'
+    ? (failure as { code: string }).code : undefined
+  throw new EstateRefusedError(message, code)
+}
+
+/** The door's stable CAS refusal code (bench verbs, bench ensure,
+ *  drafts/patch — every voice that means "the bench moved under
+ *  you; re-read and re-apply"). */
+export const CAS_CONFLICT_CODE = 'bench/cas-conflict'
+
+/** True when the throw is the door's CAS verdict (stale or missing
+ *  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
+ *  other refusal (admission, unknown stage, store failure) throws
+ *  through untouched: retrying those would be a fallback.
+ *
+ *  THE CODE IS THE VOICE (2026-10-12): the protocol's own law is
+ *  "discrimination is always by code, never by instanceof" — and
+ *  never by message text. Two dead-matcher incidents (2026-09-15,
+ *  2026-10-09) were substring law: each new door phrasing
+ *  ('bench main moved: rev is…', 'bench moved under the patch…')
+ *  slipped past the arms and the rebase went dead in production.
+ *  unwrapRemote forwards the RemoteError code, and every CAS
+ *  refusal carries bench/cas-conflict, so this matches the one
+ *  stable truth. */
+export function isCasConflict(error: unknown): boolean {
+  return error instanceof EstateRefusedError && error.code === CAS_CONFLICT_CODE
 }
 
 /** Refusal discrimination for policy code (the CAS rebase, the

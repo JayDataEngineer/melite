@@ -2797,9 +2797,14 @@ function WirePickerModal({ slot, priorStages, currentId, currentOutput, onPick, 
 * failures so policy code (the gone-verdict, the poll, the CAS
 * rebase) can discriminate. */
 var EstateRefusedError = class extends Error {
-	constructor(message) {
+	/** The door's stable refusal code when the failure carried one
+	*  (the RemoteError discriminator; policy code matches this,
+	*  never message text). */
+	code;
+	constructor(message, code) {
 		super(message);
 		this.name = "EstateRefusedError";
+		this.code = code;
 	}
 };
 let bound;
@@ -2900,7 +2905,28 @@ async function unwrapRemote(result, voice) {
 	if (settled.ok === true) return settled.value;
 	const { error } = settled;
 	const failure = error;
-	throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+	throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused", typeof failure === "object" && failure !== null && typeof failure.code === "string" ? failure.code : void 0);
+}
+/** The door's stable CAS refusal code (bench verbs, bench ensure,
+*  drafts/patch — every voice that means "the bench moved under
+*  you; re-read and re-apply"). */
+const CAS_CONFLICT_CODE = "bench/cas-conflict";
+/** True when the throw is the door's CAS verdict (stale or missing
+*  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
+*  other refusal (admission, unknown stage, store failure) throws
+*  through untouched: retrying those would be a fallback.
+*
+*  THE CODE IS THE VOICE (2026-10-12): the protocol's own law is
+*  "discrimination is always by code, never by instanceof" — and
+*  never by message text. Two dead-matcher incidents (2026-09-15,
+*  2026-10-09) were substring law: each new door phrasing
+*  ('bench main moved: rev is…', 'bench moved under the patch…')
+*  slipped past the arms and the rebase went dead in production.
+*  unwrapRemote forwards the RemoteError code, and every CAS
+*  refusal carries bench/cas-conflict, so this matches the one
+*  stable truth. */
+function isCasConflict(error) {
+	return error instanceof EstateRefusedError && error.code === "bench/cas-conflict";
 }
 /** Refusal discrimination for policy code (the CAS rebase, the
 * gone-verdict, the poll's file-era arms). */
@@ -6862,4 +6888,4 @@ async function fetchMediaLibrary(kind, signal) {
 	return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 }
 //#endregion
-export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, acquireViewport, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, manageRemote, mintViewportId, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, parseNumericInput, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, releaseViewport, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, useViewportIds, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, CAS_CONFLICT_CODE, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, acquireViewport, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isCasConflict, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, manageRemote, mintViewportId, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, parseNumericInput, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, releaseViewport, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, useViewportIds, variantGroupsContract, variantRows };

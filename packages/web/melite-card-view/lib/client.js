@@ -7663,14 +7663,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return null;
 			}
 		}
-		/** True when the throw is the door's CAS verdict (stale or missing
-		*  expect_rev) — the ONLY refusal a rebase-and-retry may answer. Any
-		*  other refusal (admission, unknown stage, store failure) throws
-		*  through untouched: retrying those would be a fallback. */
-		function isCasConflict$1(e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("moved under the patch") || msg.includes("cas-conflict");
-		}
 		/** One drafts/patch round trip; throws the door's named refusal. The
 		*  generated signature is (draftId, stageId, patch, expectRev:
 		*  number | null) — the open local patch shape rides as the wire's
@@ -7912,7 +7904,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			for (let i = 0; i < PATCH_ATTEMPTS; i++) try {
 				return await patchOnce(draftId, stageId, patch, rev);
 			} catch (e) {
-				if (!isCasConflict$1(e)) throw e;
+				if (!(0, _melite_card_base_client.isCasConflict)(e)) throw e;
 				last = e;
 				const fresh = await fetchDraftRev(draftId) ?? void 0;
 				if (fresh === void 0) throw e;
@@ -9898,19 +9890,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return;
 			}
 		}
-		/** True when the throw is the door's CAS verdict (stale expect_rev).
-		*  The server's own voice: "bench <session> moved: rev is N, caller
-		*  held M" (bench.ts casCheck; the drafts store's older arm says
-		*  "bench moved: rev is…"). THE MATCHER LAW (2026-09-15): match the
-		*  REAL words — the first cut matched 'bench moved' against 'bench
-		*  MAIN moved' and matched nothing; dead matchers make dead
-		*  rebases, and dead rebases make stuck tabs. THE THIRD VOICE
-		*  (2026-10-09, the run-refusal burn): the drafts/patch door says
-		*  "moved under the patch" — an arm per DOOR VOICE, all three. */
-		function isCasConflict(e) {
-			const msg = e instanceof Error ? e.message : String(e);
-			return msg.includes("moved: rev is") || msg.includes("moved under the patch") || msg.includes("cas-conflict");
-		}
 		/** One typed bench verb with the rebase dance: try the held rev; on
 		*  the door's cas-conflict re-read the rev (the SAME session) and
 		*  re-apply — bounded (3 tries, a fresh rev between each; the
@@ -9929,7 +9908,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			for (let i = 0; i < BENCH_ATTEMPTS; i++) try {
 				return await attempt(rev);
 			} catch (e) {
-				if (!isCasConflict(e)) throw e;
+				if (!(0, _melite_card_base_client.isCasConflict)(e)) throw e;
 				last = e;
 				const fresh = await benchRev(sessionKey, signal);
 				if (fresh === void 0) throw e;
@@ -44826,4 +44805,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4767d14354980c932f5167aa088c3537df746c99";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="625191cd15632ebed22881dcbe9c24efcabcb27d";

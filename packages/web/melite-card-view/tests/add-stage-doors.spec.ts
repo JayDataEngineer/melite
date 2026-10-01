@@ -101,7 +101,7 @@ describe("the unwired verbs — reorder / group / ungroup", () => {
 
   test("every verb rebases once on a CAS refusal (the stuck cure is per-verb)", async () => {
     const fakes = mountEstateFakes({
-      refusals: [{ method: "bench/reorder", message: "bench main moved: rev is 100, caller held 3" }],
+      refusals: [{ method: "bench/reorder", message: "bench main moved: rev is 100, caller held 3" , code: 'bench/cas-conflict' }],
       benchDoc: { rev: 100, stages: [{ id: "s_0" }], log: [] },
     });
     try {
@@ -131,7 +131,7 @@ describe("the rebase arms — no rev, bad rev, foreign throws", () => {
 
   test("a non-numeric re-read rev leaves the original refusal standing", async () => {
     const fakes = mountEstateFakes({
-      refusals: [{ method: "bench/ungroup", message: "bench main moved: rev is 429, caller held 35" }],
+      refusals: [{ method: "bench/ungroup", message: "bench main moved: rev is 429, caller held 35" , code: 'bench/cas-conflict' }],
       benchDoc: { rev: "not-a-number", stages: [{ id: "g_1" }], log: [] },
     });
     try {
