@@ -35,7 +35,7 @@ headless maker uses `melite_flow` and `run_status` for its delegated run.
 - One span grid, uniform across every window shape: the first call and
   any `transition: "cut"` call author a `22+17k` span (56, 73, 90, 107 …)
   inside `[22,362]`; a carried call authors a `17k` span (17, 34, 51 …)
-  because its 22 frames come from the generation head. Off-grid spans
+  because its 22-frame overlap comes from the generation head. Off-grid spans
   are refused at admission and again at the compose carrier, with the
   nearest legal frame named.
 - Do not send `context`, seam-keyframe, `bed_audio`, sampler/backend internals,

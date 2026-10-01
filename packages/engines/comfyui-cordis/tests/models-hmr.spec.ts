@@ -14,7 +14,7 @@
  * cleanup, and re-registers.
  *
  * Covering apply() also holds the per-file 100% coverage gate on all
- * 48 packages/models family index files (the DECL line runs on import;
+ * 47 packages/models family index files (the DECL line runs on import;
  * the apply line runs here).
  */
 import { describe, it } from 'vitest'
