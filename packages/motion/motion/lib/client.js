@@ -1758,6 +1758,78 @@ window.__ModuleLoader__.load({
 			}
 			return out;
 		}
+		/** The variant rail's unknown-variant refusal body — the one
+		*  spelling, composed by the door (cardsVariant) and the client
+		*  mirror (card-base composeValidate) alike; the FRAME rides the
+		*  caller (`card_compose phase N:` at the door, the phase-less
+		*  `card_compose:` on the client).
+		*
+		* @param stated the variant the caller stated, verbatim.
+		* @param model the model id the variant pool belongs to.
+		* @param known the offered variant ids, door order.
+		* @returns the refusal body, frame-free. */
+		function unknownVariantVoice(stated, model, known) {
+			return "unknown variant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " (known: " + known.join(", ") + ")";
+		}
+		/** The variant rail's unknown-quant refusal body — same contract as
+		*  {@link unknownVariantVoice}: one spelling, frame at the caller.
+		*
+		* @param stated the quant the caller stated, verbatim.
+		* @param model the model id the cells belong to.
+		* @param variant the variant whose cells were searched.
+		* @param known the variant's offered quants, door order; empty
+		*  yields the declares-no-cells tail.
+		* @returns the refusal body, frame-free. */
+		function unknownQuantVoice(stated, model, variant, known) {
+			return "unknown quant " + JSON.stringify(stated) + " for model " + JSON.stringify(model) + " variant " + JSON.stringify(variant) + (known.length > 0 ? " (known: " + known.join(", ") + ")" : " (the variant declares no cells)");
+		}
+		/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
+		*  six hand-mirrored spellings, two frames): a stated numeric
+		*  steps/cfg outside the selected variant's closed envelope is the
+		*  one refusal — the door (cardsVariant's envelopeRefusal) and the
+		*  client mirror (card-base composeValidate clause 3) both ask this
+		*  judge, never a divergent copy. The skips ride verbatim: a null
+		*  envelope, an absent bound, a non-numeric or non-finite statement
+		*  never refuse; a stated value inside the closed interval is
+		*  caller agency. The married clause and the lane-read tail are the
+		*  DOOR's own decorations — callers append what their seat knows.
+		*
+		* @param stated the caller's raw body — only numeric steps/cfg ride.
+		* @param envelope the selected variant's declared envelope, null
+		*  when the variant declares none; each bound is the closed
+		*  [min, max] pair the DECL law writes.
+		* @param variant the selected variant's id and route.
+		* @returns the first offending knob with its composed voice, or
+		*  null when every stated value sits inside. */
+		function judgeSamplerEnvelope(stated, envelope, variant) {
+			if (envelope === null) return null;
+			for (const knob of ["steps", "cfg"]) {
+				const bound = envelope[knob];
+				if (bound === void 0) continue;
+				const value = stated[knob];
+				if (typeof value !== "number" || !Number.isFinite(value)) continue;
+				const [lo, hi] = bound;
+				if (value >= lo && value <= hi) continue;
+				return {
+					knob,
+					stated: value,
+					lo,
+					hi,
+					voice: "stated " + knob + " " + String(value) + " is OUTSIDE the route envelope for variant " + JSON.stringify(variant.id) + (variant.route !== void 0 && variant.route !== "" ? " (route " + variant.route + ")" : "") + " — the declared envelope is [" + String(lo) + ", " + String(hi) + "]"
+				};
+			}
+			return null;
+		}
+		/** The envelope refusal's CURE — the sentence that tells the
+		*  operator what to do about it. Both seats append it verbatim
+		*  after the judge's voice (the door interleaves its marriage
+		*  clause between); the cure is one spelling because it is the
+		*  half the operator reads.
+		*
+		* @returns the cure sentence, unpunctuated at both ends. */
+		function samplerEnvelopeCure() {
+			return "The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.";
+		}
 		/** One family's declared lane surface + laws, verbatim. Absent
 		*  members stay absent (the absent-equals-empty law: nothing is
 		*  invented, and a family that declares nothing yields an empty
@@ -3053,6 +3125,7 @@ window.__ModuleLoader__.load({
 			judgeLaneBounds: () => judgeLaneBounds,
 			judgeLaneRelations: () => judgeLaneRelations,
 			judgeLaneSurface: () => judgeLaneSurface,
+			judgeSamplerEnvelope: () => judgeSamplerEnvelope,
 			kindForId: () => kindForId,
 			kindSpecOf: () => kindSpecOf,
 			laneBlank: () => laneBlank,
@@ -3081,13 +3154,16 @@ window.__ModuleLoader__.load({
 			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
+			samplerEnvelopeCure: () => samplerEnvelopeCure,
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
 			subcardId: () => subcardId,
-			subcardsFromParams: () => subcardsFromParams
+			subcardsFromParams: () => subcardsFromParams,
+			unknownQuantVoice: () => unknownQuantVoice,
+			unknownVariantVoice: () => unknownVariantVoice
 		});
 		var init_src$2 = __esmMin((() => {
 			init_extraKeys();
@@ -57012,4 +57088,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="d9e289dcf306e0ed70708c925b65df1faa371dc1";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6116ef899a0588ae17c497775b693bf00a79ca6c";
