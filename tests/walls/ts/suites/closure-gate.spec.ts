@@ -40,8 +40,8 @@ const SOURCES = SRC_ROOTS.flatMap((r) => walk(r));
 // SOURCES NON-EMPTINESS IS THE WALL'S OWN WALL (the walls audit's
 // row 2, 2026-10-10): every rule below iterates SOURCES — a renamed
 // root or a widened skip rule empties the list and every loop goes
-// vacuously green. The floor is pinned near the real count (615 at
-// the pin); a tree that shrinks by a third has lost roots, and a
+// vacuously green. The floor is pinned near the real count (655 at
+// the pin, refreshed 2026-10-12); a tree that shrinks by a third has lost roots, and a
 // wall that iterates nothing proves nothing.
 // A-M12 (the wall audit, 2026-09-28): the floor sat at 400 against
 // a real tree of ~615 — a tree that lost a THIRD of its roots still
@@ -52,7 +52,11 @@ expect(SOURCES.length >= 550,
   `SOURCES must walk the tree (got ${String(SOURCES.length)} files from ${SRC_ROOTS.join(", ")} — a renamed root or a widened skip rule emptied the gate)`).toBe(true);
 expect(SOURCES.some((f) => f.includes("/src/")), "the walk reaches src trees").toBe(true);
 
-const read = (f: string): string => readFileSync(f, "utf8");
+// ONE READ PER FILE (cruft audit #12): the 19 rules below each
+// re-read and re-stripped the same tree — 12,445 reads / ~109 MiB
+// per run. The Map memoizes path -> comment-stripped code; every
+// rule reads through it.
+const CODE_CACHE = new Map<string, string>();
 /** code lines only — a comment may NAME a token (the walls read the
  *  names), a string literal or a retyped const is the duplication. */
 const codeOf = (src: string): string =>
@@ -64,15 +68,25 @@ const codeOf = (src: string): string =>
     .filter((l) => !l.trim().startsWith("//") && !l.trim().startsWith("*") && !l.trim().startsWith("/*"))
     .join("\n");
 
+/** memoized stripped code — one read + one strip per file per run */
+function readCode(f: string): string {
+  let code = CODE_CACHE.get(f);
+  if (code === undefined) {
+    code = codeOf(readFileSync(f, "utf8"));
+    CODE_CACHE.set(f, code);
+  }
+  return code;
+}
+
 describe("THE CLOSURE GATE — every detail under a contract", () => {
   it("RULE 1 · one document, one writer: no bench-stage defaults outside the contract", () => {
     // the writer: the bench normalizer. Any other place that FILLS a
     // stage row's derived fields is a second writer
     const offenders: string[] = [];
     for (const f of SOURCES) {
-      const src = read(f);
+      const code = readCode(f);
       if (f.includes("benchStage.ts") || f.includes("/bench.ts")) continue;
-      if (/=\s*\{\s*default:\s*["']image["']\s*\}/.test(codeOf(src))) {
+      if (/=\s*\{\s*default:\s*["']image["']\s*\}/.test(code)) {
         offenders.push(f + " — a stage row's outputs default outside the contract");
       }
     }
@@ -83,7 +97,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       if (f.includes("benchStage.ts")) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // ANY mention of either spelling in CODE — the records audit
       // caught a template literal the old quote-adjacent regex could
       // not see (`/melite-media/runs/${...}`), and a legacy path
@@ -143,7 +157,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     for (const f of SOURCES) {
       if (!WRITERS.some((w) => f.includes(w))) continue;
       scanned.push(f);
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/["']comfyui["']/.test(code)) {
         offenders.push(f + " — a stage-row writer spells the engine; take stageEngineOf/CARD_PLANE_ENGINE");
       }
@@ -169,7 +183,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const spellers: string[] = [];
     for (const f of SOURCES) {
       if (CARVE.some((c) => f.includes(c))) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/engine\s*:\s*["']comfyui["']/.test(code)) spellers.push(f);
     }
     expect(spellers, `the engine literal is spelled only in the carve (spellers: ${spellers.join(", ")})`).toEqual([]);
@@ -182,7 +196,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // A-L18 (the wall audit, 2026-09-28): the pattern named two
       // shapes (`spec.engine ??` and `(spec.engine`) — a third
       // spelling (`spec.engine ||`, a ternary, an Object.assign)
@@ -201,7 +215,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
   });
 
   it("RULE 4 · no write-only persisted column: the facts file carries only read keys", () => {
-    const factsSrc = read("packages/engines/comfyui-card-kit/src/facts.ts");
+    const factsSrc = readFileSync("packages/engines/comfyui-card-kit/src/facts.ts", "utf8");
     // every key the frozen file's rows carry is READ by the derivation
     // TOP-LEVEL members of the row type only (a nested relation row
     // like `conflicts` is not a column)
@@ -271,7 +285,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
       // the contracts package's card.ts is the WIRE TYPE module, not
       // an engine card — it boards nothing by design
       if (f === "packages/web-kit/contracts/src/card.ts") continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       const arrays = [...code.matchAll(/(?:const BOARDED[^=]*=\s*|boarded:\s*)(\[[^\]]*\])/g)].map((m) => m[1]!);
       if (arrays.length === 0) {
         offenders.push(`${f} — neither a const BOARDED array nor an inline boarded: literal — the card shape changed`);
@@ -324,7 +338,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
       if (f === "packages/web-kit/contracts/src/card.ts") continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // string-scan the bindings literal: the type annotation may
       // itself carry braces (tts's slot record), so anchor at the
       // assignment's `= {` and close at the first `}` at column 0
@@ -402,7 +416,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     for (const f of SOURCES) {
       // the owner itself is where `laneSampler(p)` legitimately lives;
       // the ban is on a SECOND writer of the default, wherever it sits
-      const code = codeOf(read(f));
+      const code = readCode(f);
       judged += 1;
       if (/p\.sampler\s*(\|\||\?\?)/.test(code)) {
         offenders.push(`${f} — writes a second sampler default (p.sampler || / ??)`);
@@ -414,7 +428,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     expect(judged, "no source was judged — the census rotted").toBeGreaterThan(50);
     expect(offenders, offenders.join("\n")).toEqual([]);
     // and the named owner still answers, in its own file
-    const owner = codeOf(read("packages/engines/comfyui-card-kit/src/lanes-image.ts"));
+    const owner = readCode("packages/engines/comfyui-card-kit/src/lanes-image.ts");
     expect(owner).toContain("laneSampler(p)");
   });
 
@@ -432,7 +446,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const offenders: string[] = [];
     let owners = 0;
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       const isDeclaration = /export const RESTORED_PROVENANCE_SPELLING = "restored"/.test(code);
       const literal = isDeclaration
         || /provenance['"]?\]?\s*[:=]\s*['"]restored['"]|['"]restored['"]\s*===|!==\s*['"]restored['"]/.test(code);
@@ -464,7 +478,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const offenders: string[] = [];
     // the card planes: every card's declared schema
     for (const f of SOURCES.filter((p) => /\/card\.ts$/.test(p))) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       for (const m of code.matchAll(/^\s{2,}([a-z_][a-z0-9_]*)\??:\s*z\./gm)) {
         const name = m[1]!;
         if (COORDINATES.has(name)) offenders.push(f + " declares the knob '" + name + "' — that name is an ENVELOPE coordinate and would be eaten at compose");
@@ -491,7 +505,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const owners: string[] = [];
     const offenders: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // the MCP tool-address grammar is a DIFFERENT address (a tool
       // name, not a bench key) and keeps its own copy — named here so
       // the ban is honest about what it does and does not cover.
@@ -517,7 +531,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       if (f.includes("web-kit/contracts/src/benchStage.ts")) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/const\s+STAGE_PATCH_KEYS\s*[:=]/.test(code)) {
         offenders.push(f + " — the stage-patch key list is the contract's; import it");
       }
@@ -533,10 +547,10 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // import satisfies toContain and the reader keeps its own
     // copy). The import must be a CALL SITE, and the reader's own
     // judgement must move with the contract's rule.
-    const gallery = codeOf(read("packages/web/infer-gallery/src/index.ts"));
+    const gallery = readCode("packages/web/infer-gallery/src/index.ts");
     expect(gallery, "the gallery CALLS crossRootOrder (an import alone proves nothing)").toMatch(/crossRootOrder\s*\(/);
     expect(gallery, "the gallery CALLS servableLeaf").toMatch(/servableLeaf\s*\(/);
-    const media = codeOf(read("packages/estate/media/src/index.ts"));
+    const media = readCode("packages/estate/media/src/index.ts");
     expect(media, "the media reader CALLS servableLeaf").toMatch(/servableLeaf\s*\(/);
   });
 
@@ -558,7 +572,7 @@ describe("THE CLOSURE GATE — every detail under a contract", () => {
     // own copy against the same shapes).
     const STALE = STALE_TAB_VOCABULARY;
     for (const f of SOURCES.filter((p) => p.includes("/web/") && /client/.test(p))) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       for (const re of STALE) {
         if (re.test(code)) offenders.push(f + " matches " + String(re) + " — a client claims the tab is stale (the bench is live)");
       }
@@ -587,7 +601,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       if (!/\/card\.ts$/.test(f)) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // a schema member named params: (not a description, not a
       // hand-built object key in unrelated logic)
       // A-L22 (the wall audit, 2026-09-28): the ban named two
@@ -617,7 +631,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // re-export is not a declaration.
     const declarations: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/\b(?:const|let|var)\s+FLOW_ID_RE\s*(?::[^=]+)?=/.test(code)) {
         declarations.push(f);
       }
@@ -633,7 +647,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // JSDoc claimed the re-export that had not happened.
     const draftDecls: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/\b(?:const|let|var)\s+DRAFT_ID_RE\s*(?::[^=]+)?=/.test(code)) {
         draftDecls.push(f);
       }
@@ -648,7 +662,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // construct tool carried one for months).
     const inline: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/\^\[a-z_\]\[a-z0-9_-\]\*\$\/\.test/.test(code)) {
         inline.push(f);
       }
@@ -660,7 +674,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     ).toEqual([]);
     // and the re-export spelling is what a second home must use
     const reExporters = SOURCES.filter((f) =>
-      /export\s*\{[^}]*\bFLOW_ID_RE\b[^}]*\}\s*from/.test(codeOf(read(f))),
+      /export\s*\{[^}]*\bFLOW_ID_RE\b[^}]*\}\s*from/.test(readCode(f)),
     );
     expect(reExporters.length, "the declaration's consumers re-export rather than redeclare").toBeGreaterThan(0);
   });
@@ -704,7 +718,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // read as absent in one seat and present in another
     const offenders: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (f.includes("laneRelations.ts")) continue;
       // A-L20 (the wall audit, 2026-09-28): three hand-rolled blank
       // spellings were named and a fourth (`const isBlank = (v: any)
@@ -741,7 +755,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // (a row stating it resolves), and every member is either
     // required or omittable (the minimal-row table, RULE 8).
     const { SCHEMA } = await import("../../../../packages/engines/comfyui-cordis/src/models/families/contract.ts");
-    const src = read("packages/engines/comfyui-cordis/src/models/families/contract.ts");
+    const src = readFileSync("packages/engines/comfyui-cordis/src/models/families/contract.ts", "utf8");
     expect(src).toContain("export const ModelDecl: z<ModelDecl>");
     expect(src).not.toMatch(/RUNTIME schema and the TS interface stay separate truths/);
     // the interface's own members, read from its declaration
@@ -801,7 +815,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     const offenders: string[] = [];
     for (const f of SOURCES) {
       if (f.includes("mediaKinds.ts")) continue;
-      const code = codeOf(read(f));
+      const code = readCode(f);
       if (/function segmentOk\(|const segmentOk\s*=/.test(code)) {
         offenders.push(f + " — a private segment grammar; import segmentConfined from @melite/contracts/mediaKinds");
       }
@@ -870,7 +884,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // other line of every file is judged.
     const OWNER_DECL = /export const ENGINE_TRUTH[^\n]*/g;
     for (const f of SOURCES) {
-      const code = codeOf(read(f)).replace(OWNER_DECL, "");
+      const code = readCode(f).replace(OWNER_DECL, "");
       // any array literal naming two of the three engine-truth words
       // beside each other is a second spelling
       const hits = [...code.matchAll(/\[\s*"([a-z_]+)"\s*,\s*"([a-z_]+)"[^\]]*\]/g)]
@@ -891,7 +905,7 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     // (storage) / BenchStageView (presentation).
     const offenders: string[] = [];
     for (const f of SOURCES) {
-      const code = codeOf(read(f));
+      const code = readCode(f);
       // A-L21 (the wall audit, 2026-09-28): the ban named ONE
       // class spelling — a `declare global` StageRow or a class
       // StageRow walked past the interface/type scan. The law is by
