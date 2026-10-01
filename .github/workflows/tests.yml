@@ -37,6 +37,26 @@ jobs:
       - name: Unit
         run: pnpm run test
 
+  # THE BOUNDARY LINT SEAT (schema-gate-inventory fix 5, 2026-10-12):
+  # `pnpm run lint` (tools/arch-lint.ts — the four estate boundary
+  # contracts) was declared in package.json but wired into nothing;
+  # boundaries do not vary by OS, so one ubuntu seat suffices.
+  arch-lint:
+    name: arch-lint (estate boundaries)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Boundary contracts
+        run: pnpm run lint
+
   coverage:
     name: coverage gate (per-file 100%)
     runs-on: ubuntu-latest

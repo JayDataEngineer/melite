@@ -4,6 +4,15 @@
 
 pre-commit:
   jobs:
+    # THE BOUNDARY LINT (schema-gate-inventory fix 5, 2026-10-12):
+    # `pnpm run lint` (tools/arch-lint.ts) was declared but wired
+    # into nothing — a gate that cannot fire is the same defect
+    # class as a self-skipping wall. It reads source files and
+    # regexes imports (~2s, executes nothing, no network), so it
+    # rides every commit unconditionally, unglobbed.
+    - name: arch-lint (estate boundaries)
+      run: node tools/arch-lint.ts --quiet
+
     # THE UNIT PLANE IS THE GATE (walls' successor, 2026-09-11 — the
     # run.mjs orchestrator died with the vitest migration): any staged
     # change that can move a wall (estate TS or the suites themselves)

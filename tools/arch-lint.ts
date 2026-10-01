@@ -9,11 +9,16 @@
 //   3. vendor_packs_isolated   each vendor/comfyui_extensions/<pack> is its own repo
 //   4. references_is_study_only references/ is read-only -- no one imports it
 //
-// Same-in/same-out on today's tree: contract logic is UNCHANGED,
-// including the top-group names the STRUCTURE STAGE 1 rename left
-// behind ("py"/"plugins" match nothing — those two contracts are
-// vacuous until the walls lane re-truths them; re-truthing is a
-// design act, not a port act).
+// Re-truthed 2026-10-12 (schema-gate-inventory fix 5): the port
+// shipped contracts 1 and 2 UNFIREABLE — the matchers read
+// mod.split("/")[0] against group names topGroup can never return,
+// and the group lookup answered the PACKAGE segment, never the
+// group. A real packages/web -> packages/engines relative crossing
+// passed clean. Both matchers now read the resolved target's
+// vertical (verticalOf) and the importer's group (pluginGroup);
+// both directions proven by synthetic-crossing probes (web ->
+// engines fires plugins_are_independent, gateway/core -> web fires
+// core_is_generic), and the clean tree reads all four OK.
 //
 // Python imports are collected by line regex (import x / from x
 // import — the old tool used ast; the shapes below cover the
@@ -127,12 +132,16 @@ function topGroup(abs: string): string | null {
   return null;
 }
 
-function pluginsSubgroup(abs: string): string | null {
+// The plugin GROUP a repo path sits under (packages/<group>/...),
+// or null. The 2026-09-10 port answered parts[1] — the PACKAGE
+// segment ("melite-estate"), never the group ("web") — which with
+// the dead matcher algebra made contract 2 unfireable twice over.
+function pluginGroup(abs: string): string | null {
   const rel = relative(join(REPO, "packages"), abs);
   if (rel.startsWith("..")) return null;
   const parts = rel.split(sep);
   if (parts.length < 2) return null;
-  return parts[1];
+  return parts[0];
 }
 
 function vendorPack(abs: string): string | null {
@@ -151,53 +160,60 @@ function vendorPack(abs: string): string | null {
 const VERTICAL_GROUPS: readonly string[] = ["engines", "models", "web",
   "web-kit", "harness", "3d", "audio", "image", "motion", "video"];
 
+/** The plugin groups contract 2 judges (header law: engines,
+ *  harness, web do not import each other by relative crossing). */
+const PLUGIN_GROUPS: ReadonlySet<string> = new Set(["engines",
+  "harness", "web"]);
+
 function underGatewayCore(abs: string): boolean {
   const rel = relative(join(REPO, "packages", "gateway", "core"), abs);
   return rel !== "" && !rel.startsWith("..");
+}
+
+// The vertical a repo path sits under (packages/<vertical>/...), or
+// null. Relative-import rows carry mod "packages/<relative>" — the
+// vertical is the SECOND segment of the resolved target, never the
+// mod's head (the 2026-09-10 re-truth fixed the comments but left
+// the matchers reading split("/")[0] against group names topGroup
+// can never return, so both contracts were structurally vacuous —
+// a real packages/web → packages/engines crossing passed clean).
+function verticalOf(abs: string): string | null {
+  const rel = relative(join(REPO, "packages"), abs);
+  if (rel.startsWith("..")) return null;
+  const seg = rel.split(sep)[0] ?? "";
+  return VERTICAL_GROUPS.includes(seg) ? seg : null;
 }
 
 function contractCoreIsGeneric(rows: ImportRow[]): ImportRow[] {
   const out: ImportRow[] = [];
   for (const r of rows) {
     if (!underGatewayCore(resolve(r.path))) continue;
-    if (r.mod.endsWith("/<relative>")) {
-      const top = r.mod.split("/")[0];
-      if (top !== "gateway" && VERTICAL_GROUPS.includes(top)) {
-        out.push({ path: r.path, line: r.line,
-          mod: "core is generic: relative import lands in packages/" + top });
-      }
+    if (r.resolved === undefined) continue;
+    const v = verticalOf(r.resolved);
+    if (v !== null) {
+      out.push({ path: r.path, line: r.line,
+        mod: "core is generic: relative import lands in packages/" + v });
     }
   }
   return out;
 }
 
 function contractPluginsAreIndependent(rows: ImportRow[]): ImportRow[] {
-  const groupToId: Record<string, string> = { engines: "comfyui",
-    harness: "dsh", web: "editor" };
   const out: ImportRow[] = [];
-  // Re-truthed 2026-09-10 (ledger row 37): gated on the dead "plugins"
-  // top-group (never true post-reorg — topGroup only answers
-  // py/packages/vendor/references). The law is unchanged: a package
-  // under packages/<group>/ imports another group by its public
-  // @melite/* name, never by relative crossing.
+  // The law is unchanged: a package under packages/<group>/ imports
+  // another group by its public @melite/* name, never by relative
+  // crossing (bare specifiers are the legal crossing — skipped).
   for (const r of rows) {
-    if (topGroup(resolve(r.path)) !== "packages") continue;
-    if (r.mod.startsWith("@melite/")) continue;
-    if (r.mod.endsWith("/<relative>")) {
-      const other = r.mod.split("/")[0];
-      if (other === "web") continue;
+    const mine = pluginGroup(resolve(r.path));
+    if (mine === null || !PLUGIN_GROUPS.has(mine)) continue;
+    if (r.resolved === undefined) continue;
+    const other = verticalOf(r.resolved);
+    if (other === null || !PLUGIN_GROUPS.has(other) || other === mine) {
+      continue;
     }
-    if (r.mod.endsWith("/<relative>")) {
-      const other = r.mod.split("/")[0];
-      if (other in groupToId) {
-        const mine = pluginsSubgroup(resolve(r.path));
-        if (mine && mine !== other) {
-          out.push({ path: r.path, line: r.line,
-            mod: "plugins are independent: relative import into " +
-              "packages/" + other + "/ from packages/" + mine + "/" });
-        }
-      }
-    }
+    out.push({ path: r.path, line: r.line,
+      mod: "plugins are independent: relative import into " +
+        "packages/" + other + "/ from packages/" + mine + "/" });
   }
   return out;
 }
@@ -236,7 +252,7 @@ function contractReferencesIsStudyOnly(rows: ImportRow[]): ImportRow[] {
 const CONTRACTS: ReadonlyArray<readonly [string, string,
   (rows: ImportRow[]) => ImportRow[]]> = [
   ["core_is_generic",
-    "python/ is generic -- the gateway names no lane, no engine",
+    "packages/gateway/core is generic -- it names no vertical",
     contractCoreIsGeneric],
   ["plugins_are_independent",
     "the three plugin groups (engines, harness, web) do not import each other",
