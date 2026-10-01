@@ -13,55 +13,68 @@ import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines
 // (an upstream rename, a pack uninstall) and the generated file
 // still offers the dead name — every card menu carries it, every
 // pick 400s at the engine, and the "loud git diff" never happens
-// because nobody regenerated. This wall closes that gap against the
-// production /object_info snapshot when the clone carries one (the
-// same self-skip contract as registry-flow-wiring): every name the
-// kit serves must exist in the engine the lane actually runs. The
-// live read belongs to the lane run (test:lane); this is the
-// repo-side floor under it.
+// because nobody regenerated. This wall closes that gap: every name
+// the kit serves must exist in the engine the lane actually runs.
+//
+// THE FIXTURE IS THE FLOOR (schema-gate-inventory fix 1, 2026-10):
+// the wall used to read only the UNTRACKED production cache
+// (data/tmp/object_info_prod.json, refreshed by fetching
+// /object_info from the CONFIGURED engine endpoint —
+// curl -s http://127.0.0.1:8188/object_info > data/tmp/object_info_prod.json)
+// and self-skip without it, so a fresh clone judged nothing. The
+// tracked value fixture (tests/walls/fixtures/ksampler-vocab.min.json
+// — KSampler's two combo lists, the projection of the same cache)
+// is now judged UNCONDITIONALLY, and the live cache is a BONUS arm
+// held against the fixture wherever the cache exists (the drift
+// contract registry-flow-wiring.spec.ts pioneered). The cache's
+// first refresh under this wall (2026-10-10) caught it a sampler
+// stale: the vocab carried cfgpp_ud10_ab from a live regen while
+// the September cache predated the pack — exactly the regen gap the
+// wall exists for, found on its first run.
+const FIXTURE = new URL("../../fixtures/ksampler-vocab.min.json", import.meta.url);
+const LIVE = join(process.cwd(), "data", "tmp", "object_info_prod.json");
 
-// The snapshot is an UNTRACKED CACHE (data/tmp), refreshed by
-// fetching /object_info from the CONFIGURED engine endpoint — the
-// same source the regen door reads (127.0.0.1:8188 on this clone;
-// curl -s http://127.0.0.1:8188/object_info > data/tmp/object_info_prod.json).
-// Its first refresh under this wall (2026-10-10) caught the cache a
-// sampler stale: the vocab carried cfgpp_ud10_ab from a live regen
-// while the September cache predated the pack — exactly the regen
-// gap the wall exists for, found on its first run.
-const DOC = join(process.cwd(), "data", "tmp", "object_info_prod.json");
+type VocabFixture = { sampler_name: string[]; scheduler: string[] };
+type ObjectInfo = { KSampler?: { input?: { required?: Record<string, unknown> } } };
 
-type ObjectInfo = {
-  KSampler?: { input?: { required?: Record<string, unknown> } };
-};
+const deadNames = (served: string[], engine: string[]) =>
+  served.filter((n) => !engine.includes(n));
 
 describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the engine runs", () => {
-  it("every served sampler/scheduler exists in the production /object_info", (ctx) => {
-    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
-    // (ctx.skip — the runner counts it skipped, never passed), so a
-    // clone without the cache cannot read green on this wall.
-    if (!existsSync(DOC)) {
-      ctx.skip(true);
-      return;
-    }
-    const doc = JSON.parse(readFileSync(DOC, "utf8")) as ObjectInfo;
-    const req = doc.KSampler?.input?.required ?? {};
-    const samplerList = (req["sampler_name"] as unknown as [string[]] | undefined)?.[0];
-    const schedulerList = (req["scheduler"] as unknown as [string[]] | undefined)?.[0];
-    expect(samplerList, "the snapshot's KSampler carries sampler_name").toBeDefined();
-    expect(schedulerList, "the snapshot's KSampler carries scheduler").toBeDefined();
-    const engineSamplers = new Set(samplerList ?? []);
-    const engineSchedulers = new Set(schedulerList ?? []);
+  it("every served sampler/scheduler exists in the tracked engine fixture, unconditionally", () => {
+    const vocab = JSON.parse(readFileSync(FIXTURE, "utf8")) as VocabFixture;
+    expect(vocab.sampler_name, "the fixture carries the sampler roster").toBeDefined();
+    expect(vocab.scheduler, "the fixture carries the scheduler roster").toBeDefined();
 
-    const deadSamplers = SAMPLER_OPTIONS.filter((n) => !engineSamplers.has(n));
-    const deadSchedulers = SCHEDULER_OPTIONS.filter((n) => !engineSchedulers.has(n));
+    const deadSamplers = deadNames(SAMPLER_OPTIONS, vocab.sampler_name);
+    const deadSchedulers = deadNames(SCHEDULER_OPTIONS, vocab.scheduler);
     expect(
       deadSamplers,
-      `the kit serves sampler names the production engine does not run (${deadSamplers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts); every card menu carries the dead name and every pick 400s at the engine`,
+      `the kit serves sampler names the fixture's engine does not run (${deadSamplers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts) AND the fixture (re-project KSampler from the refreshed cache); every card menu carries the dead name and every pick 400s at the engine`,
     ).toEqual([]);
     expect(
       deadSchedulers,
-      `the kit serves scheduler names the production engine does not run (${deadSchedulers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts)`,
+      `the kit serves scheduler names the fixture's engine does not run (${deadSchedulers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts) AND the fixture`,
     ).toEqual([]);
+  });
+
+  it("the live cache, wherever it exists, agrees with the tracked fixture (drift contract)", (ctx) => {
+    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
+    // (ctx.skip — the runner counts it skipped, never passed), and
+    // the floor above already judged the fixture without it.
+    if (!existsSync(LIVE)) {
+      ctx.skip(true);
+      return;
+    }
+    const doc = JSON.parse(readFileSync(LIVE, "utf8")) as ObjectInfo;
+    const req = doc.KSampler?.input?.required ?? {};
+    const samplerList = (req["sampler_name"] as unknown as [string[]] | undefined)?.[0];
+    const schedulerList = (req["scheduler"] as unknown as [string[]] | undefined)?.[0];
+    expect(samplerList, "the cache's KSampler carries sampler_name").toBeDefined();
+    expect(schedulerList, "the cache's KSampler carries scheduler").toBeDefined();
+    const vocab = JSON.parse(readFileSync(FIXTURE, "utf8")) as VocabFixture;
+    expect([...(samplerList ?? [])].sort(), "the fixture's sampler roster drifted from the live cache (re-project it)").toEqual([...vocab.sampler_name].sort());
+    expect([...(schedulerList ?? [])].sort(), "the fixture's scheduler roster drifted from the live cache (re-project it)").toEqual([...vocab.scheduler].sort());
   });
 
   it("the vocabularies are non-empty and duplicate-free (a broken regen cannot serve a hollow menu)", () => {

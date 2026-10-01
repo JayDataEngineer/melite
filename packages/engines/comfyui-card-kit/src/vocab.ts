@@ -18,6 +18,17 @@
 // serve time" resolved nowhere — is the defect class this design
 // removes).
 //
+// TWO ENDPOINTS FEED ONE ARRAY (schema-gate-inventory fix 2,
+// 2026-10): regen-vocab.ts reads the SDK's getSamplers()/
+// getSchedulers(), while the engine's /object_info carries the same
+// rosters as KSampler's combo lists — two engine faces over one
+// truth, reconciled nowhere at run time. Their only join is the
+// engine-subset wall (tests/walls/ts/suites/
+// vocab-engine-subset.spec.ts): served ⊆ KSampler combos, judged
+// unconditionally against the tracked fixture and, where the
+// untracked cache exists, against the cache too. A regen from one
+// leg can drift past the other — the wall is the alarm.
+//
 // Consumers: cards' schemas (sampler/scheduler knobs), the
 // cross-validation domains (fieldDomains reads union meta.list),
 // the emitters (options off the same meta).

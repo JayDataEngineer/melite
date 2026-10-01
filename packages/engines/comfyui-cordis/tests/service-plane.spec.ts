@@ -1320,6 +1320,18 @@ const oi = (inputs: Record<string, unknown>): Record<string, unknown> => ({
 describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () => {
   const DOC = 'data/tmp/object_info_prod.json';
   const docPresent = existsSync(DOC);
+  // THE FIXTURE IS THE FLOOR (schema-gate-inventory fix 1, 2026-10):
+  // this wall used to read only the UNTRACKED production cache and
+  // SILENTLY return without it — a fresh clone judged nothing while
+  // reading green. The tracked compact key-set fixture
+  // (tests/walls/fixtures/shipped-graph-doc.min.json, the {r,o}
+  // projection of the seed flow's classes — registry-flow-wiring
+  // pioneered the shape for its own corpus) and one REAL landed
+  // graph (shipped-graph-seed.flow.json, verbatim _flow.json from a
+  // recorded run) are judged UNCONDITIONALLY below; the live cache
+  // and the full data/runs corpus stay the bonus arms.
+  const FIXTURE_DOC = 'tests/walls/fixtures/shipped-graph-doc.min.json';
+  const SEED_FLOW = 'tests/walls/fixtures/shipped-graph-seed.flow.json';
 
   const declaredOf = (doc: Record<string, any>, ct: string): Set<string> | null => {
     const d = doc[ct];
@@ -1328,26 +1340,61 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
     return new Set([...Object.keys(inp.required ?? {}), ...Object.keys(inp.optional ?? {})]);
   };
 
-  it("every landed run's graph satisfies the input law (the 5,415-node receipt)", () => {
-    if (!docPresent) { console.log('no production object_info snapshot on this clone — shipped-graph wall skipped'); return }
-    const doc: Record<string, any> = JSON.parse(readFileSync(DOC, 'utf8'));
+  // The compact fixture's {r,o} rows project into the full-doc shape
+  // declaredOf reads, so both corpora judge through the same law.
+  const fixtureDoc = (): Record<string, any> => {
+    const min = JSON.parse(readFileSync(FIXTURE_DOC, 'utf8')) as Record<string, { r?: string[]; o?: string[] }>;
+    const out: Record<string, any> = {};
+    for (const [ct, row] of Object.entries(min)) {
+      const wrap = (keys: string[] | undefined) =>
+        keys === undefined ? {} : Object.fromEntries(keys.map((k) => [k, ['*']]));
+      out[ct] = { input: { required: wrap(row.r), optional: wrap(row.o) } };
+    }
+    return out;
+  };
+
+  const walk = (o: unknown): Array<{ ct: string; inputs: Record<string, unknown> }> => {
+    if (Array.isArray(o)) return o.flatMap(walk);
+    if (o === null || typeof o !== 'object') return [];
+    const rec = o as Record<string, unknown>;
+    if (typeof rec.class_type === 'string' && rec.inputs !== null && typeof rec.inputs === 'object' && !Array.isArray(rec.inputs)) {
+      return [{ ct: rec.class_type, inputs: rec.inputs as Record<string, unknown> }]
+    }
+    return Object.values(rec).flatMap(walk);
+  };
+
+  it("a real recorded graph satisfies the input law against the tracked key-set fixture, unconditionally", () => {
+    const doc = fixtureDoc();
+    const nodes = walk(JSON.parse(readFileSync(SEED_FLOW, 'utf8')));
+    assert.ok(nodes.length > 0, 'the seed graph carries nodes');
+    const crimes: string[] = [];
+    for (const node of nodes) {
+      const declared = declaredOf(doc, node.ct);
+      if (declared === null) continue // a class the fixture does not carry — the live doc owns that judgment
+      for (const key of Object.keys(node.inputs)) {
+        if (declared.has(key)) continue
+        if (declared.has(key.split('.')[0] ?? key)) continue // a dotted widget sub-key of a declared input
+        if (WIDGET_SERIALIZATION.has(key)) continue
+        crimes.push(node.ct + '.' + key)
+      }
+    }
+    assert.deepEqual(crimes, [], 'the recorded graph wires inputs the tracked engine doc does not declare (fixture drift — re-project it from a refreshed cache)')
+  });
+
+  it("every landed run's graph satisfies the input law (the 5,415-node receipt)", (ctx) => {
+    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
+    // (ctx.skip — the runner counts it skipped, never passed); the
+    // seed arm above already judged the law without either cache.
     const files = readdirSync('data/runs/output', { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => join('data/runs/output', e.name, '_flow.json'))
       .filter((f) => existsSync(f));
+    if (!docPresent || files.length === 0) { ctx.skip(true); return }
+    const doc: Record<string, any> = JSON.parse(readFileSync(DOC, 'utf8'));
     const crimes: string[] = [];
     const stale: string[] = [];
     const corrupt: string[] = [];
     let nodes = 0;
-    const walk = (o: unknown): Array<{ ct: string; inputs: Record<string, unknown> }> => {
-      if (Array.isArray(o)) return o.flatMap(walk);
-      if (o === null || typeof o !== 'object') return [];
-      const rec = o as Record<string, unknown>;
-      if (typeof rec.class_type === 'string' && rec.inputs !== null && typeof rec.inputs === 'object' && !Array.isArray(rec.inputs)) {
-        return [{ ct: rec.class_type, inputs: rec.inputs as Record<string, unknown> }]
-      }
-      return Object.values(rec).flatMap(walk);
-    };
     for (const f of files) {
       let d: unknown;
       // THE SILENT SKIP (wall audit M22): a corrupt _flow.json used
