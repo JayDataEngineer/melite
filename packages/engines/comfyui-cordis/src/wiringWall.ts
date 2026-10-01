@@ -193,13 +193,25 @@ const SCHEME_PREFIX = /^[a-z][a-z0-9+.-]*:/i
  *  a path ending in one of the upload walk's stageable
  *  extensions. The upload walk rewrites exactly these values to
  *  server-side names AFTER every walk seat (uploadReferenced runs
- *  inside execute), so a combo enum can never honestly judge
- *  them — the carve-out mirrors comfyui-upload's table (ONE owner
- *  of the extension list). */
+ *  inside execute), and a rewritten value is always a FILENAME
+ *  STRING — so the carve-out in judgeValue applies only where a
+ *  filename can legally land: an enum carrying string members
+ *  (the dynamic upload combos) or an input with no enum at all.
+ *  On a numeric-or-boolean-only enum the artifact shape still
+ *  judges (T2's residual, 2026-10-12: a stale compose that wired
+ *  a filename into a mode picker used to escape). The extension
+ *  table mirrors comfyui-upload's (ONE owner of the list). */
 function isStagedArtifactRef(v: string): boolean {
   if (SCHEME_PREFIX.test(v)) return true
   const lower = v.toLowerCase()
   return UPLOAD_EXTS.some((e) => lower.endsWith(e))
+}
+
+/** Whether a rewritten staged artifact could legally land in this
+ *  input: no enum (nothing to judge), or string members present
+ *  (the dynamic upload combos accept new filenames by design). */
+function canReceiveStagedArtifact(spec: WiringInputSpec): boolean {
+  return spec.enum === undefined || spec.enum.some((m) => typeof m === 'string')
 }
 
 /** Render an enum for a refusal — every value named, capped at
@@ -217,8 +229,9 @@ function fmtEnum(values: ReadonlyArray<string | number | boolean>): string {
  *  carries: a combo enum by membership, a numeric by its declared
  *  bounds. Three values never reach judgment: connection
  *  references (an array — the value is another node's output,
- *  judged by the link seam), staged-artifact strings (the upload
- *  walk's carve-out above), and $-prefixed merge-seam spells (the
+ *  judged by the link seam), staged-artifact strings where a
+ *  rewritten filename could legally land (the upload walk's
+ *  carve-out above), and $-prefixed merge-seam spells (the
  *  run seat walks pre-splice rows; rewriteSpells turns every
  *  spell into a link tuple or a request initial before the engine
  *  — a spell is never an enum member by construction). */
@@ -231,7 +244,7 @@ function judgeValue(
   spec: WiringInputSpec,
 ): void {
   if (!isPrimitive(value)) return
-  if (typeof value === 'string' && (value.startsWith('$') || isStagedArtifactRef(value))) return
+  if (typeof value === 'string' && (value.startsWith('$') || (isStagedArtifactRef(value) && canReceiveStagedArtifact(spec)))) return
   if (spec.enum !== undefined && !spec.enum.includes(value)) {
     throw new ComposeRefusal('bad-value',
       `card '${cardId}' wired '${ct}.${key}' = ${JSON.stringify(value)} (as '${id}') — the input allows ${fmtEnum(spec.enum)}; the card's compose is stale against the engine build`)

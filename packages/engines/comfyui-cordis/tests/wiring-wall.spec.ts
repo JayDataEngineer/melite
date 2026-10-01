@@ -134,6 +134,34 @@ describe("THE VALUE GATE (the audit's T2)", () => {
     );
   });
 
+  it("an artifact-shaped string on a numeric-only enum still judges (T2's residual: a filename can never land there)", () => {
+    // The upload walk rewrites to a FILENAME STRING — an enum with
+    // no string members can never legally receive one, so the
+    // carve-out does not apply and the stale value refuses loud
+    // (the old wall let a filename-shaped escape into a mode
+    // picker pass silently).
+    const inputs = new Map<string, ReadonlyMap<string, WiringInputSpec>>([
+      ["ModeNode", new Map([["mode", { required: true, enum: [0, 1, 2] }]])],
+    ]);
+    const nodes = new Set(["ModeNode"]);
+    const wired = (mode: string): unknown =>
+      ({ "1": { class_type: "ModeNode", inputs: { mode } } });
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", wired("r2.png")),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value" && /3 values/.test(e.message),
+    );
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", wired("data:image/png;base64,AAAA")),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value",
+    );
+    // the same enum with a string member added reopens the carve-out
+    // (a dynamic upload combo is exactly this shape)
+    const mixed = new Map<string, ReadonlyMap<string, WiringInputSpec>>([
+      ["ModeNode", new Map([["mode", { required: true, enum: [0, 1, "upload.png"] }]])],
+    ]);
+    assertWiringAgainst(nodes, mixed, "c1", wired("r2.png"));
+  });
+
   it("a connection reference array never judges (the value is another node's output)", () => {
     const { nodes, inputs } = armed();
     assertWiringAgainst(nodes, inputs, "c1", ks({ model: ["3", 0], latent_image: ["2", 0] }));
