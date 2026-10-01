@@ -52,9 +52,23 @@ export interface RunStatusDoc {
   stages?: RunStageStatus[]
 }
 
-/** The events-bus frame — @melite/catalog's FlowEventFrame, verbatim. */
-import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
-export type { FlowEventFrame }
+/** The events-bus frame — the run-event stream's wire type, verbatim
+ * from the retired @melite/catalog FlowEvents client (its only
+ * production consumer was this re-export). `stage` frames are
+ * idempotent patches onto the run the 700ms poll owns; `run` frames
+ * with a terminal status end the stream. */
+export type FlowProgress = { value: number; max: number; node?: string }
+export type FlowEventFrame =
+  | { type: 'run'; status: string }
+  | {
+      type: 'stage'
+      stage: string
+      index?: number
+      status?: string
+      progress?: FlowProgress
+      activity?: string
+      error?: string
+    }
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, type DraftsNamespace } from '@melite/card-base/client'

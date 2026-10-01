@@ -10,8 +10,6 @@ describe("catalog barrel", () => {
       "apiFetch", "apiJson", "externalUrl", "getBackendState", "onBackendState", "urlToDataUrl",
       // catalogContractStore.ts (mine)
       "useCatalogContractStore",
-      // comfyEvents.ts (mine)
-      "connectComfyEvents",
       // enhance.ts (mine)
       "enhancePrompt", "agentEnhance", "fetchEnhanceRoutes", "isEmbedded",
       "parsePickerAria", "readPickerModel", "resolvePickerRoute",
@@ -19,8 +17,6 @@ describe("catalog barrel", () => {
       "loadFamilySchemas", "getFamilySchema", "isFamilySchemaCachePopulated",
       "coerceParamsToSchema", "validateParamsAgainstSchema",
       "validateModifierEntries", "assertParamsMatchFamilySchema",
-      // FlowEvents.ts (mine)
-      "streamFlowEvents",
       // FlowProtocol.ts (mine)
       "describeErrorBody", "collectStageUrls", "sanitizeRevivedResult",
       "collectNamedArtifacts", "pollFlowRun", "runCompiledGeneration",
