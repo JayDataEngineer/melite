@@ -81,9 +81,14 @@ describe("autoFitToHeight", () => {
   it("scales the largest dimension to the target with feet on y=0", () => {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(2, 4, 1));
     const box = autoFitToHeight(mesh);
-    assert.ok(Math.abs(mesh.scale.x - 1.8 / 4) < 1e-9);
+    // THE DEFAULT IS ONE VALUE (2026-10-13): the two copies of this
+    // algorithm disagreed — 1.8 here, 1.6 in the card-base glb-stage —
+    // so the same mesh framed in a card stage and framed in the
+    // gallery came out at different heights. 1.6 is the de-facto law:
+    // every explicit call site already passed it.
+    assert.ok(Math.abs(mesh.scale.x - 1.6 / 4) < 1e-9);
     // Box min.y was −2 → lifted to 0.
-    assert.ok(Math.abs(mesh.position.y - 2 * (1.8 / 4)) < 1e-9);
+    assert.ok(Math.abs(mesh.position.y - 2 * (1.6 / 4)) < 1e-9);
     // X/Z centered (-0 is zero here).
     assert.ok(Math.abs(mesh.position.x) < 1e-9);
     assert.ok(Math.abs(mesh.position.z) < 1e-9);

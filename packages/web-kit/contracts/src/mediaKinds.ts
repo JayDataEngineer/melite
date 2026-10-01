@@ -85,6 +85,21 @@ export function mediaKindOf(name: string): MediaKind | undefined {
   return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
 }
 
+/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+ *  (2026-10-13, the card-UI duplication audit: five seats carried
+ *  their own model regex and they had already drifted — one matched
+ *  a query or fragment, two matched only a bare extension, so the
+ *  same ".glb?v=2" classified as a model in one seat and as nothing
+ *  in another. A new extension in the vocabulary reaches every seat
+ *  through THIS.) Query and fragment are stripped before the
+ *  vocabulary answers, and the glTF data-URI forms are recognised
+ *  because a data URI has no extension. */
+export function isModelUrl(value: string): boolean {
+  if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true
+  const withoutQuery = value.split(/[?#]/, 1)[0] ?? value
+  return mediaKindOf(withoutQuery) === "model";
+}
+
 /** Does this name carry any media kind at all? (the hero filters'
  * ONE spelling — never a private extension regex again) */
 export function isMediaArtifactName(name: string): boolean {

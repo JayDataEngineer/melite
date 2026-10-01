@@ -32,6 +32,7 @@ import * as THREE from 'three'
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
 import { mountStage3D, type Stage3D } from '@melite/card-base/client'
 import { autoFitToHeight, loadGLB } from '@melite/formats/glbLoad'
+import { isModelUrl } from '@melite/contracts/mediaKinds'
 
 import { artifactNameOf, artifactPathOfUrl } from './artifact-ops.ts'
 import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens'
@@ -56,10 +57,13 @@ export const artifactNameFor = artifactNameOf
 export function unsupportedCopy(url: string): string | null {
   const fromQuery = artifactPathOfUrl(url)
   const path = fromQuery ?? url.split('?')[0] ?? ''
-  if (/\.gltf$/i.test(path)) {
+  if (path.toLowerCase().endsWith(".gltf")) {
     return '3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.'
   }
-  if (!/\.(glb|gltf)$/i.test(path)) {
+  // THE VOCABULARY ANSWERS (2026-10-13): this seat carried its own
+  // model regex; a .glb?v=2 classified here and as nothing in the
+  // square, because the two seats' regexes disagreed on the query.
+  if (!isModelUrl(path)) {
     return `3D view unavailable — "${path.split('/').pop() ?? url}" is not a .glb/.gltf artifact.`
   }
   return null

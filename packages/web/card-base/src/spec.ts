@@ -730,11 +730,25 @@ function projectDict(
  * STUDIOS' blank-inherits law lives one door up, at their own edit
  * verb (useResolvedForm) — each face owns its blank semantics.
  * PURE. */
+/** THE NUMERIC PARSE, shared by both blank laws (2026-10-13, the card-UI
+ *  duplication audit): a finite parse is a number, anything else is
+ *  NOT one. The blank SEMANTICS then differ by seat and stay there —
+ *  this file rides an unparseable value VERBATIM (never a silent 0),
+ *  while the drill modal keeps the prior value (a typed "x" must
+ *  never reach a number param). One parse, two named laws; the two
+ *  copies of the parse itself are gone. */
+export function parseNumericInput(v: string): number | undefined {
+  if (v.trim() === "") return undefined
+  const n = Number(v)
+  return Number.isFinite(n) ? n : undefined
+}
+
 export function coerceFieldEdit(f: SpecField | undefined, v: unknown): unknown {
   if (v === undefined) return undefined
   if (f !== undefined && (f.type === 'number' || f.type === 'seed' || f.type === 'slider')
-      && typeof v === 'string' && v.trim() !== '' && Number.isFinite(Number(v))) {
-    return Number(v)
+      && typeof v === 'string') {
+    const n = parseNumericInput(v)
+    if (n !== undefined) return n
   }
   return v
 }

@@ -22,6 +22,7 @@ import {
   precomputeDeformedVertsChunked, type MotionNpz, type SomaSkin,
 } from "@melite/formats"
 import { useMotionImageStore } from "@melite-plugin/motion/ui/viewers/motionImageStore"
+import { isModelUrl } from '@melite/contracts/mediaKinds'
 import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL, STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
 import { MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
 import type { ThreeCtx } from "./MotionExportDialog"
@@ -110,7 +111,7 @@ export function useMotionMedia({
       [...Object.values(bodyWiredUpstream.result.artifacts ?? {}),
       ...bodyWiredUpstream.result.assetUrls].find(
         (u): u is string =>
-          typeof u === "string" && /\.(glb|gltf)(\?|#|$)/i.test(u),
+          typeof u === "string" && isModelUrl(u),
       ) ?? null
     )
     : null
@@ -360,7 +361,10 @@ export function useMotionMedia({
     }
     const file = e.dataTransfer.files?.[0]
     if (!file) return
-    const isGlbFile = /\.(?:glb|gltf)$/i.test(file.name) || file.type === "model/gltf-binary"
+    // THE VOCABULARY ANSWERS (2026-10-13): this file carried three
+    // model regexes in three dialects, and a dropped ".glb?v=2" passed
+    // here and failed in the square. @melite/contracts is the one.
+    const isGlbFile = isModelUrl(file.name) || file.type === "model/gltf-binary"
     if (isGlbFile) {
       void readAsDataURL(file).then(attachBody)
       return
@@ -372,7 +376,7 @@ export function useMotionMedia({
   // attach uses). Validates the extension FIRST — a dropped .png is a bg
   // candidate, not a body.
   const handleBodyFile = useCallback((file: File) => {
-    if (!/\.(?:glb|gltf)$/i.test(file.name) && file.type !== "model/gltf-binary") {
+    if (!isModelUrl(file.name) && file.type !== "model/gltf-binary") {
       toast("error", "Preview body must be a .glb or .gltf (SOMAX-rigged character).")
       return
     }

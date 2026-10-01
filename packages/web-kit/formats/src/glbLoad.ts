@@ -81,9 +81,9 @@ export function loadGLB(url: string): Promise<GLTF> {
  * that reconciles them, so the poster tile, the dialog viewer, and
  * the stage floor all frame the mesh identically.
  */
-export function autoFitToHeight(
+export function fitObjectToHeight(
   root: THREE.Object3D,
-  targetHeight = 1.8,
+  targetHeight = 1.6,
 ): THREE.Box3 {
   const box = new THREE.Box3().setFromObject(root)
   const size = box.getSize(new THREE.Vector3())
@@ -96,3 +96,10 @@ export function autoFitToHeight(
   root.position.y = -box.min.y * scale
   return box
 }
+
+/** The historical spelling (the card-base glb-stage's name for the
+ *  same algorithm). The default is ONE value: the two copies said
+ *  1.8 and 1.6, so the same mesh framed in a card stage and framed
+ *  in the gallery came out at different heights. 1.6 is the de-facto
+ *  law — every explicit call site already passed it. */
+export { fitObjectToHeight as autoFitToHeight }

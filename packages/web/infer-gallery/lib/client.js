@@ -25507,7 +25507,7 @@ window.__ModuleLoader__.load({
 		* that reconciles them, so the poster tile, the dialog viewer, and
 		* the stage floor all frame the mesh identically.
 		*/
-		function autoFitToHeight(root, targetHeight = 1.8) {
+		function fitObjectToHeight(root, targetHeight = 1.6) {
 			const box = new Box3().setFromObject(root);
 			const size = box.getSize(new Vector3());
 			const center = box.getCenter(new Vector3());
@@ -25529,8 +25529,94 @@ window.__ModuleLoader__.load({
 			base = {}.env?.BASE_URL ?? "/";
 		}));
 		//#endregion
-		//#region src/client/artifact-ops.ts
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
 		init_glbLoad();
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp",
+					"avif"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov",
+					"m4v",
+					"avi"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
+		}
+		const KIND_BY_EXT = (() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+		*  (2026-10-13, the card-UI duplication audit: five seats carried
+		*  their own model regex and they had already drifted — one matched
+		*  a query or fragment, two matched only a bare extension, so the
+		*  same ".glb?v=2" classified as a model in one seat and as nothing
+		*  in another. A new extension in the vocabulary reaches every seat
+		*  through THIS.) Query and fragment are stripped before the
+		*  vocabulary answers, and the glTF data-URI forms are recognised
+		*  because a data URI has no extension. */
+		function isModelUrl(value) {
+			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+		}
+		//#endregion
+		//#region src/client/artifact-ops.ts
 		/**
 		* artifact-ops — the modal's delete + rename wires (the media
 		* sidebar's popup modal on media stuff).
@@ -25675,8 +25761,8 @@ window.__ModuleLoader__.load({
 		*  the case rather than letting the fetch fail as a decode error. */
 		function unsupportedCopy(url) {
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
-			if (/\.gltf$/i.test(path)) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
-			if (!/\.(glb|gltf)$/i.test(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
+			if (!isModelUrl(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -25763,7 +25849,7 @@ window.__ModuleLoader__.load({
 						return;
 					}
 					root = gltf.scene;
-					autoFitToHeight(gltf.scene, 1.6);
+					fitObjectToHeight(gltf.scene, 1.6);
 					stage?.scene.add(gltf.scene);
 					if (stage !== null) frameCamera(stage, gltf.scene);
 					setLoading(false);
@@ -26451,7 +26537,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -26461,13 +26547,6 @@ window.__ModuleLoader__.load({
 				"resultParams",
 				"runStatus",
 				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
 			];
 			RESTORE_STRIP_KEYS = [
 				"result",
@@ -26611,79 +26690,6 @@ window.__ModuleLoader__.load({
 					params: isRecord(params) ? params : {}
 				}
 			};
-		}
-		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
-		/** The estate media-kind vocabulary (typed DATA — see header). */
-		function mediaVocab() {
-			return {
-				image: [
-					"png",
-					"jpg",
-					"jpeg",
-					"webp",
-					"gif",
-					"svg",
-					"bmp",
-					"avif"
-				],
-				audio: [
-					"wav",
-					"flac",
-					"mp3",
-					"ogg",
-					"m4a",
-					"aac"
-				],
-				video: [
-					"mp4",
-					"webm",
-					"mkv",
-					"mov",
-					"m4v",
-					"avi"
-				],
-				model: ["glb", "gltf"],
-				galleryImage: [
-					"png",
-					"jpg",
-					"jpeg",
-					"webp",
-					"gif"
-				],
-				galleryAudio: [
-					"wav",
-					"flac",
-					"ogg",
-					"mp3"
-				],
-				galleryVideo: [
-					"mp4",
-					"webm",
-					"mov"
-				],
-				galleryModel: ["glb", "gltf"],
-				maxListedImages: 3
-			};
-		}
-		const KIND_BY_EXT = (() => {
-			const table = {};
-			const vocab = mediaVocab();
-			[
-				"video",
-				"image",
-				"audio",
-				"model"
-			].forEach((kind) => {
-				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
-			});
-			return table;
-		})();
-		/** The media kind a filename carries, or undefined for non-media. */
-		function mediaKindOf(name) {
-			const dot = name.lastIndexOf(".");
-			if (dot < 0 || dot === name.length - 1) return void 0;
-			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
 		}
 		//#endregion
 		//#region src/client/bench-load.ts
@@ -30808,7 +30814,6 @@ window.__ModuleLoader__.load({
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -33949,4 +33954,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e16f2b8806e0fb42dc96eca2fdd53e0160412cad";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15ebb0446c80a665e8bda57f038bd1cf1e1c2eb4";

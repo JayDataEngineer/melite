@@ -111,15 +111,6 @@ export const BIRTH_STRIP_KEYS: readonly string[] = [
   "resolved",
 ];
 
-/** The RUN-MEMORY LIST every strip is drawn from, named once. */
-export const RUN_MEMORY_STRIP_KEYS: readonly string[] = [
-  "result",
-  "runStatus",
-  "resolved",
-  "history",
-  "resultParams",
-];
-
 /** What a RESTORE strips before re-stamping the stage that actually
  *  ran (the gallery's law — a bench never shows another run's
  *  outputs). */

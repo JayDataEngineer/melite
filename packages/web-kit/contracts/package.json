@@ -15,7 +15,6 @@
     "./character": "./src/character.ts",
     "./enhanceTypes": "./src/enhanceTypes.ts",
     "./extraKeys": "./src/extraKeys.ts",
-    "./formSpec": "./src/formSpec.ts",
     "./laneRelations": "./src/laneRelations.ts",
     "./loraTypes": "./src/loraTypes.ts",
     "./mediaKinds": "./src/mediaKinds.ts",

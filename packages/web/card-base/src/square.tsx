@@ -29,7 +29,7 @@
  * file field ever again.
  */
 import { createElement as h, useRef, useState, type DragEvent, type ReactNode } from 'react'
-import { mediaVocab } from '@melite/contracts/mediaKinds'
+import { isModelUrl, mediaVocab } from '@melite/contracts/mediaKinds'
 import { IconPlusOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { GlbStagePreview } from './glb-stage.tsx'
 import { ASSET_DRAG_MIME, parseAssetDrop } from './chrome.ts'
@@ -70,7 +70,10 @@ export function isImageUrl(value: string): boolean {
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
 export function isMeshUrl(value: string): boolean {
-  return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value)
+  // THE CONTRACT OWNS THIS (2026-10-13): four seats carried their
+  // own model regex and had already drifted on query/fragment
+  // handling. The vocabulary in @melite/contracts answers for all.
+  return isModelUrl(value)
 }
 
 /** THE ONE read path for every slot-shaped attach — the shared

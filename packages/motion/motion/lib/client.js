@@ -2979,7 +2979,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -2989,13 +2989,6 @@ window.__ModuleLoader__.load({
 				"resultParams",
 				"runStatus",
 				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
 			];
 			RESTORE_STRIP_KEYS = [
 				"result",
@@ -3061,7 +3054,6 @@ window.__ModuleLoader__.load({
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -32665,6 +32657,92 @@ window.__ModuleLoader__.load({
 			}
 		}));
 		//#endregion
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp",
+					"avif"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov",
+					"m4v",
+					"avi"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
+		}
+		const KIND_BY_EXT = (() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+		*  (2026-10-13, the card-UI duplication audit: five seats carried
+		*  their own model regex and they had already drifted — one matched
+		*  a query or fragment, two matched only a bare extension, so the
+		*  same ".glb?v=2" classified as a model in one seat and as nothing
+		*  in another. A new extension in the vocabulary reaches every seat
+		*  through THIS.) Query and fragment are stripped before the
+		*  vocabulary answers, and the glTF data-URI forms are recognised
+		*  because a data URI has no extension. */
+		function isModelUrl(value) {
+			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+		}
+		//#endregion
 		//#region src/ui/studio/useMotionMedia.ts
 		/**
 		* useMotionMedia — the asset/media cluster moved verbatim from
@@ -32713,7 +32791,7 @@ window.__ModuleLoader__.load({
 			]);
 			const bodyWiredUpstream = bodyWiredId ? upstreams.find((u) => u.id === bodyWiredId) : void 0;
 			const bodyWired = !!bodyWiredUpstream;
-			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && /\.(glb|gltf)(\?|#|$)/i.test(u)) ?? null : null;
+			const bodyWiredUrl = bodyWiredUpstream?.result ? [...Object.values(bodyWiredUpstream.result.artifacts ?? {}), ...bodyWiredUpstream.result.assetUrls].find((u) => typeof u === "string" && isModelUrl(u)) ?? null : null;
 			const bodySrc = bodyWired ? bodyWiredUrl ?? "" : bodyGlb ?? "";
 			(0, react.useEffect)(() => {
 				const v = stage.params?.[MOTION_PREVIEW_GLB_PARAM];
@@ -32924,7 +33002,7 @@ window.__ModuleLoader__.load({
 				}
 				const file = e.dataTransfer.files?.[0];
 				if (!file) return;
-				if (/\.(?:glb|gltf)$/i.test(file.name) || file.type === "model/gltf-binary") {
+				if (isModelUrl(file.name) || file.type === "model/gltf-binary") {
 					(0, _melite_card_base_client.readAsDataURL)(file).then(attachBody);
 					return;
 				}
@@ -32936,7 +33014,7 @@ window.__ModuleLoader__.load({
 				setBgDragOver
 			]);
 			const handleBodyFile = (0, react.useCallback)((file) => {
-				if (!/\.(?:glb|gltf)$/i.test(file.name) && file.type !== "model/gltf-binary") {
+				if (!isModelUrl(file.name) && file.type !== "model/gltf-binary") {
 					toast("error", "Preview body must be a .glb or .gltf (SOMAX-rigged character).");
 					return;
 				}
@@ -40266,4 +40344,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="2b9e40536c65b32c9dcf093e44078ac2384d9962";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6de23c07c0a9b4803f739846642b3903a05d7e33";

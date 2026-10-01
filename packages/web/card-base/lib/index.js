@@ -6,7 +6,8 @@ import { clsx } from "clsx";
 import { readAsDataURL, readAsDataURL as readAsDataURL$1 } from "@melite/formats/readFile";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
 import { Fragment as Fragment$1, createContext, createElement, useCallback, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { mediaVocab } from "@melite/contracts/mediaKinds";
+import { isModelUrl, mediaVocab } from "@melite/contracts/mediaKinds";
+import { fitObjectToHeight } from "@melite/formats/glbLoad";
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
@@ -291,9 +292,24 @@ function projectDict(env, dict, family) {
 * STUDIOS' blank-inherits law lives one door up, at their own edit
 * verb (useResolvedForm) — each face owns its blank semantics.
 * PURE. */
+/** THE NUMERIC PARSE, shared by both blank laws (2026-10-13, the card-UI
+*  duplication audit): a finite parse is a number, anything else is
+*  NOT one. The blank SEMANTICS then differ by seat and stay there —
+*  this file rides an unparseable value VERBATIM (never a silent 0),
+*  while the drill modal keeps the prior value (a typed "x" must
+*  never reach a number param). One parse, two named laws; the two
+*  copies of the parse itself are gone. */
+function parseNumericInput(v) {
+	if (v.trim() === "") return void 0;
+	const n = Number(v);
+	return Number.isFinite(n) ? n : void 0;
+}
 function coerceFieldEdit(f, v) {
 	if (v === void 0) return void 0;
-	if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+	if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string") {
+		const n = parseNumericInput(v);
+		if (n !== void 0) return n;
+	}
 	return v;
 }
 /** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
@@ -2113,31 +2129,18 @@ function meshAssetUrl(value) {
 	const match = /^data\/input\/([^?#]+)$/i.exec(value);
 	return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 }
-/** Normalize a loaded scene to a known viewing size — the
-*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
-*  dimension to targetHeight, feet on y=0. Mutates the root in place.
-*  (Meshes arrive at wildly different scales; this is the ONE place
-*  that reconciles them so every viewport frames identically.) */
+/** Normalize a loaded scene to a known viewing size — the fit law:
+*  center X/Z, scale the largest dimension to targetHeight, feet on
+*  y=0, mutating the root in place. The ALGORITHM lives in
+*  @melite/formats (fitObjectToHeight); this adapts the return shape
+*  its callers read. Meshes arrive at wildly different scales, and
+*  the one rule is that every viewport frames them identically. */
 function autoFitToHeight(root, targetHeight = 1.6) {
+	fitObjectToHeight(root, targetHeight);
 	const box = new THREE.Box3().setFromObject(root);
-	const size = new THREE.Vector3();
-	box.getSize(size);
-	const largest = Math.max(size.x, size.y, size.z);
-	if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
-	root.updateMatrixWorld(true);
-	const box2 = new THREE.Box3().setFromObject(root);
-	const center = new THREE.Vector3();
-	box2.getCenter(center);
-	root.position.x -= center.x;
-	root.position.z -= center.z;
-	root.position.y -= box2.min.y;
-	root.updateMatrixWorld(true);
-	const box3 = new THREE.Box3().setFromObject(root);
-	const size3 = new THREE.Vector3();
-	box3.getSize(size3);
 	return {
-		box: box3,
-		height: size3.y
+		box,
+		height: box.getSize(new THREE.Vector3()).y
 	};
 }
 /** The imperative three scene — BUILT ON THE SHARED STAGE CORE
@@ -2571,7 +2574,7 @@ function isImageUrl(value) {
 *  square with the inline GLB thumb (the mini GlbStagePreview), the
 *  same square grammar as images: never a bespoke mesh picker. */
 function isMeshUrl(value) {
-	return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+	return isModelUrl(value);
 }
 const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 const MESH_SQUARE_ACCEPT = ".glb,.gltf";
@@ -6811,4 +6814,4 @@ async function fetchMediaLibrary(kind, signal) {
 	return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 }
 //#endregion
-export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, parseNumericInput, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, variantGroupsContract, variantRows };

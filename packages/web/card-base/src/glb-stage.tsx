@@ -21,6 +21,7 @@
  * interaction surface; studio chrome (anchors, badges, in-card
  * actions like anny's HMR fit-body) docks AROUND it, never inside.
  */
+import { fitObjectToHeight } from '@melite/formats/glbLoad'
 import { createElement as h, useEffect, useRef, useState } from 'react'
 import * as THREE from 'three'
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js'
@@ -68,29 +69,25 @@ export interface StageAsset {
   scale?: number
 }
 
-/** Normalize a loaded scene to a known viewing size — the
- *  autoFitToHeight law, verbatim port: center X/Z, scale the largest
- *  dimension to targetHeight, feet on y=0. Mutates the root in place.
- *  (Meshes arrive at wildly different scales; this is the ONE place
- *  that reconciles them so every viewport frames identically.) */
+/** Normalize a loaded scene to a known viewing size — the fit law:
+ *  center X/Z, scale the largest dimension to targetHeight, feet on
+ *  y=0, mutating the root in place. The ALGORITHM lives in
+ *  @melite/formats (fitObjectToHeight); this adapts the return shape
+ *  its callers read. Meshes arrive at wildly different scales, and
+ *  the one rule is that every viewport frames them identically. */
 export function autoFitToHeight(root: THREE.Object3D, targetHeight = 1.6): { box: THREE.Box3; height: number } {
+  // THE ONE IMPLEMENTATION (2026-10-13, the card-UI duplication audit):
+  // this seat carried a second autoFit whose DEFAULT differed (1.6 vs
+  // the formats copy's 1.8), so a mesh framed in a card stage and the
+  // same mesh framed in the gallery were framed to different heights.
+  // @melite/formats owns the algorithm; this adapts the return shape
+  // its callers read.
+  fitObjectToHeight(root, targetHeight)
+  // This seat's callers read the box AFTER the fit (the formats copy
+  // returns the pre-normalization box, which is its own contract); the
+  // stage measures again here so the two stay interchangeable.
   const box = new THREE.Box3().setFromObject(root)
-  const size = new THREE.Vector3()
-  box.getSize(size)
-  const largest = Math.max(size.x, size.y, size.z)
-  if (largest > 0) root.scale.multiplyScalar(targetHeight / largest)
-  root.updateMatrixWorld(true)
-  const box2 = new THREE.Box3().setFromObject(root)
-  const center = new THREE.Vector3()
-  box2.getCenter(center)
-  root.position.x -= center.x
-  root.position.z -= center.z
-  root.position.y -= box2.min.y
-  root.updateMatrixWorld(true)
-  const box3 = new THREE.Box3().setFromObject(root)
-  const size3 = new THREE.Vector3()
-  box3.getSize(size3)
-  return { box: box3, height: size3.y }
+  return { box, height: box.getSize(new THREE.Vector3()).y }
 }
 
 /** The imperative three scene — BUILT ON THE SHARED STAGE CORE

@@ -2959,7 +2959,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -2969,13 +2969,6 @@ window.__ModuleLoader__.load({
 				"resultParams",
 				"runStatus",
 				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
 			];
 			RESTORE_STRIP_KEYS = [
 				"result",
@@ -3041,7 +3034,6 @@ window.__ModuleLoader__.load({
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -40515,7 +40507,33 @@ void main() {
 				}
 			};
 		}));
+		//#endregion
+		//#region ../../web-kit/formats/src/glbLoad.ts
+		/**
+		* Normalize a loaded scene to a known viewing size: center X/Z, scale
+		* the largest dimension to `targetHeight`, feet on y=0. Mutates the
+		* root IN PLACE (scale + position) and returns the computed box.
+		*
+		* The shared normalization every viewer applies — TRELLIS props,
+		* SOMAX/Anny characters, and composite uploads arrive at wildly
+		* different scales (cm, m, 100× unit boxes); this is the one place
+		* that reconciles them, so the poster tile, the dialog viewer, and
+		* the stage floor all frame the mesh identically.
+		*/
+		function fitObjectToHeight(root, targetHeight = 1.6) {
+			const box = new Box3().setFromObject(root);
+			const size = box.getSize(new Vector3());
+			const center = box.getCenter(new Vector3());
+			const maxDim = Math.max(size.x, size.y, size.z);
+			const scale = maxDim > 0 ? targetHeight / maxDim : 1;
+			root.scale.setScalar(scale);
+			root.position.x = -center.x * scale;
+			root.position.z = -center.z * scale;
+			root.position.y = -box.min.y * scale;
+			return box;
+		}
 		var init_glbLoad = __esmMin((() => {
+			init_three_module();
 			({}).env?.BASE_URL;
 		}));
 		//#endregion
@@ -42445,9 +42463,24 @@ void main() {
 		* STUDIOS' blank-inherits law lives one door up, at their own edit
 		* verb (useResolvedForm) — each face owns its blank semantics.
 		* PURE. */
+		/** THE NUMERIC PARSE, shared by both blank laws (2026-10-13, the card-UI
+		*  duplication audit): a finite parse is a number, anything else is
+		*  NOT one. The blank SEMANTICS then differ by seat and stay there —
+		*  this file rides an unparseable value VERBATIM (never a silent 0),
+		*  while the drill modal keeps the prior value (a typed "x" must
+		*  never reach a number param). One parse, two named laws; the two
+		*  copies of the parse itself are gone. */
+		function parseNumericInput(v) {
+			if (v.trim() === "") return void 0;
+			const n = Number(v);
+			return Number.isFinite(n) ? n : void 0;
+		}
 		function coerceFieldEdit(f, v) {
 			if (v === void 0) return void 0;
-			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string" && v.trim() !== "" && Number.isFinite(Number(v))) return Number(v);
+			if (f !== void 0 && (f.type === "number" || f.type === "seed" || f.type === "slider") && typeof v === "string") {
+				const n = parseNumericInput(v);
+				if (n !== void 0) return n;
+			}
 			return v;
 		}
 		/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
@@ -44042,7 +44075,7 @@ void main() {
 				maxListedImages: 3
 			};
 		}
-		(() => {
+		const KIND_BY_EXT = (() => {
 			const table = {};
 			const vocab = mediaVocab();
 			[
@@ -44055,6 +44088,25 @@ void main() {
 			});
 			return table;
 		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+		*  (2026-10-13, the card-UI duplication audit: five seats carried
+		*  their own model regex and they had already drifted — one matched
+		*  a query or fragment, two matched only a bare extension, so the
+		*  same ".glb?v=2" classified as a model in one seat and as nothing
+		*  in another. A new extension in the vocabulary reaches every seat
+		*  through THIS.) Query and fragment are stripped before the
+		*  vocabulary answers, and the glTF data-URI forms are recognised
+		*  because a data URI has no extension. */
+		function isModelUrl(value) {
+			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+		}
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/examples/jsm/controls/OrbitControls.js
 		init_three_module();
@@ -45419,29 +45471,7 @@ void main() {
 		};
 		//#endregion
 		//#region src/glb-stage.tsx
-		/**
-		* glb-stage.tsx — THE MESH PREVIEW (the preview seam's mesh-kind
-		* claim, hour 14 2026-09-13). Grown from img-to-mesh's GlbViewport
-		* (the raw-three substrate, verbatim) + the old @melite-plugin/3d
-		* Stage's multi-asset contract (assets/selection/per-asset errors —
-		* the four props anny's assembly actually uses; drop-placement
-		* gizmos and mixers stay unported until a consumer ports them, the
-		* promotion law).
-		*
-		* SUBSTRATE LAW (verbatim, the 2026-09-12 boot-crash lesson): RAW
-		* three.js — imperative scene in a useEffect, NO @react-three. r3f's
-		* bundled react-reconciler reads the seeded React 19 internals by
-		* minified single-letter fields and a version-skew throws at boot
-		* ("reading 'S' of undefined"). three is a pure leaf library: no
-		* React entanglement, mounts like any imperative canvas lib.
-		*
-		* THE PREVIEW-PORT INTERACTION LAW (the operator's catch, hour 14:
-		* "Anny and Trellis are close to the same, but the way they interact
-		* with the preview port is different"): ONE stage component serves
-		* both — selection + per-asset errors are the stage's own uniform
-		* interaction surface; studio chrome (anchors, badges, in-card
-		* actions like anny's HMR fit-body) docks AROUND it, never inside.
-		*/
+		init_glbLoad();
 		init_three_module();
 		init_GLTFLoader();
 		init_DRACOLoader();
@@ -45462,31 +45492,18 @@ void main() {
 			const match = /^data\/input\/([^?#]+)$/i.exec(value);
 			return match === null ? value : `/v1/assets/inputs/${encodeURIComponent(match[1] ?? "")}`;
 		}
-		/** Normalize a loaded scene to a known viewing size — the
-		*  autoFitToHeight law, verbatim port: center X/Z, scale the largest
-		*  dimension to targetHeight, feet on y=0. Mutates the root in place.
-		*  (Meshes arrive at wildly different scales; this is the ONE place
-		*  that reconciles them so every viewport frames identically.) */
+		/** Normalize a loaded scene to a known viewing size — the fit law:
+		*  center X/Z, scale the largest dimension to targetHeight, feet on
+		*  y=0, mutating the root in place. The ALGORITHM lives in
+		*  @melite/formats (fitObjectToHeight); this adapts the return shape
+		*  its callers read. Meshes arrive at wildly different scales, and
+		*  the one rule is that every viewport frames them identically. */
 		function autoFitToHeight(root, targetHeight = 1.6) {
+			fitObjectToHeight(root, targetHeight);
 			const box = new Box3().setFromObject(root);
-			const size = new Vector3();
-			box.getSize(size);
-			const largest = Math.max(size.x, size.y, size.z);
-			if (largest > 0) root.scale.multiplyScalar(targetHeight / largest);
-			root.updateMatrixWorld(true);
-			const box2 = new Box3().setFromObject(root);
-			const center = new Vector3();
-			box2.getCenter(center);
-			root.position.x -= center.x;
-			root.position.z -= center.z;
-			root.position.y -= box2.min.y;
-			root.updateMatrixWorld(true);
-			const box3 = new Box3().setFromObject(root);
-			const size3 = new Vector3();
-			box3.getSize(size3);
 			return {
-				box: box3,
-				height: size3.y
+				box,
+				height: box.getSize(new Vector3()).y
 			};
 		}
 		/** The imperative three scene — BUILT ON THE SHARED STAGE CORE
@@ -45920,7 +45937,7 @@ void main() {
 		*  square with the inline GLB thumb (the mini GlbStagePreview), the
 		*  same square grammar as images: never a bespoke mesh picker. */
 		function isMeshUrl(value) {
-			return /^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value) || /\.(?:glb|gltf)(?:[?#]|$)/i.test(value);
+			return isModelUrl(value);
 		}
 		const DEFAULT_SQUARE_ACCEPT = "image/png,image/jpeg,image/webp";
 		const MESH_SQUARE_ACCEPT = ".glb,.gltf";
@@ -50112,6 +50129,7 @@ void main() {
 		exports.name = name;
 		exports.optionKeyOf = optionKeyOf;
 		exports.parseAssetDrop = parseAssetDrop;
+		exports.parseNumericInput = parseNumericInput;
 		exports.pollRunStageUrl = pollRunStageUrl;
 		exports.postManageAction = postManageAction;
 		exports.previewCellIdOf = previewCellIdOf;
@@ -50155,4 +50173,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15f6f7956d1114f11f2ed4c5429ce1d1ca9690f8";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6edb18a2c7bbea5e2702a6fab1166f941b0aa77d";
