@@ -133,12 +133,13 @@ CLIENT_BUNDLES=(
   # requires it through the loader's module table.
   packages/web/card-base
 )
-while IFS= read -r cand; do
-  case " ${CLIENT_BUNDLES[*]} " in
-    *" $cand "*) ;;
-    *) CLIENT_BUNDLES+=("$cand") ;;
-  esac
-done < <(python3 - "$REPO" <<'PYEOF'
+CLILIST=$(mktemp /tmp/ship-cli.XXXXXX)
+# Guard class of the typecheck nets (verifier b9cf8fc1 finding 1, 2026-10-12):
+# a python3 that dies on an unreadable packages/ tree would hand the loop
+# nothing and the hard-coded list would stand silently as if discovered.
+# Zero DISCOVERIES is a valid state (the list is additive); a dead
+# discovery is not — it exits loud. No count assertion here on purpose.
+if ! python3 - "$REPO" > "$CLILIST" <<'PYEOF'
 # THE DISCOVERY IS THE EXPORT MAP, NOT A NAME LIST: a package whose
 # ./client export resolves to ./lib/client.js is a BUILT bundle the
 # browser fetches — it must be built and stamped. A ./client export
@@ -166,7 +167,18 @@ for genre in sorted(os.listdir(os.path.join(root, "packages"))):
         if isinstance(target, str) and target.replace("./", "") == "lib/client.js":
             print(os.path.relpath(pdir, root))
 PYEOF
-)
+then
+  rm -f "$CLILIST"
+  bad "the client-bundle discovery died (unreadable packages/ tree) — refusing to ship a silent fallback list"
+  exit 1
+fi
+while IFS= read -r cand; do
+  case " ${CLIENT_BUNDLES[*]} " in
+    *" $cand "*) ;;
+    *) CLIENT_BUNDLES+=("$cand") ;;
+  esac
+done < "$CLILIST"
+rm -f "$CLILIST"
 say "the client bundles (discovered from the ./client exports): ${CLIENT_BUNDLES[*]}"
 
 # ------------------------------------------------------- the gates
@@ -401,14 +413,31 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # this tree's, and a stale-shaped consumer is red.
   say "TYPECHECK AGAINST THE EMITTED LIBS (the pre-build net judged stale .d.ts files)"
   POSTFAIL=0
+  # Same guard class as the pre-build net above: a find that fails on an
+  # unreadable packages/ would hand the loop nothing and print green over
+  # no typechecks (verifier b9cf8fc1 finding 1, 2026-10-12).
+  POSTDIR=$(mktemp -d /tmp/ship-posttc.XXXXXX)
+  trap 'rm -rf "$TCDIR" "$POSTDIR"' EXIT
+  if ! find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' \
+    | grep '/packages/' | sort > "$POSTDIR/list"; then
+    bad "the post-emit discovery pipeline failed (unreadable packages/ tree or no tsconfig matched) — refusing to typecheck nothing"
+    exit 1
+  fi
+  POSTCOUNT=0
   while IFS= read -r tsdir; do
     case "$tsdir" in */packages/*) ;; *) continue ;; esac
-    if ! (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-posttc.log 2>&1); then
+    POSTCOUNT=$((POSTCOUNT + 1))
+    if ! (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >"$POSTDIR/post.log" 2>&1); then
       bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — red against the JUST-BUILT libs:"
-      head -8 /tmp/ship-posttc.log | sed 's/^/        /'
+      head -8 "$POSTDIR/post.log" | sed 's/^/        /'
       POSTFAIL=1
     fi
-  done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
+  done < "$POSTDIR/list"
+  rm -rf "$POSTDIR"
+  if [ "$POSTCOUNT" -eq 0 ]; then
+    bad "the post-emit net saw ZERO tsconfigs — the discovery fed it nothing; refusing to call that green"
+    exit 1
+  fi
   if [ "$POSTFAIL" -ne 0 ]; then
     bad "the post-emit net is red — the build produced types the tree does not consume"
     exit 1

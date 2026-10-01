@@ -91,7 +91,9 @@ async function pool<T>(items: string[], worker: (item: string) => Promise<T>, wi
 // top of the ship playbook's direct step. When
 // MELITE_TIER_DELEGATED=1 the wall skips and the owning surface
 // runs the same implementation itself; in CI that owner is the
-// dedicated tier job in .github/workflows/tests.yml. A plain local
+// `typecheck` job (tests.yml :52-66, no env), and the delegating
+// seats are the unit (:33-34) and coverage (:94-95) jobs, which
+// set the env. A plain local
 // `pnpm run test` sets no env and keeps the wall — the suite stays
 // self-sufficient where the tier has no other owner.
 const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
