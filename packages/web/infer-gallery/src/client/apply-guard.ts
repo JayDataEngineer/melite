@@ -1,17 +1,17 @@
 /**
- * Apply guard: a duplicated client injection (module factory executed twice in
- * one page lifetime) would otherwise register a second sidebar entry and
- * overlay. First application wins; later calls become no-ops. The claim is
- * released when the owning fiber unloads, so a rebuilt bundle can claim again.
+ * apply-guard — THIS PLUGIN'S single-mount claim. The guard itself is
+ * one implementation in @melite/contracts (createApplyGuard); this
+ * module exists so the gallery's claim is its OWN module instance (a
+ * shared boolean would make the gallery's apply refuse the deck's).
  */
-let claimed = false
+import { createApplyGuard } from '@melite/contracts/applyGuard'
+
+const guard = createApplyGuard('melite-plugin/dsh-gallery')
 
 export function claimGalleryApply(): boolean {
-  if (claimed) return false
-  claimed = true
-  return true
+  return guard.claim()
 }
 
 export function releaseGalleryApply(): void {
-  claimed = false
+  guard.release()
 }

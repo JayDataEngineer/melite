@@ -31,7 +31,8 @@
     "./timelineTypes": "./src/timelineTypes.ts",
     "./vocab": "./src/vocab.ts",
     "./wire": "./src/wire.ts",
-    "./benchStage": "./src/benchStage.ts"
+    "./benchStage": "./src/benchStage.ts",
+    "./applyGuard": "./src/applyGuard.ts"
   },
   "version": "0.1.0",
   "types": "./src/index.ts",

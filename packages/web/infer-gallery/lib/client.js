@@ -49,21 +49,37 @@ window.__ModuleLoader__.load({
 		let _melite_card_base_client = require("@melite/card-base/client");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		let _deepseek_ai_dsh_client_store = require("@deepseek-ai/dsh-client-store");
+		//#region ../../web-kit/contracts/src/applyGuard.ts
+		function createApplyGuard(label, opts = {}) {
+			let claimed = false;
+			return {
+				claim() {
+					if (claimed) {
+						if (opts.warnOnRefusal === true) console.warn(`[${label}] apply called twice — second mount skipped`);
+						return false;
+					}
+					claimed = true;
+					return true;
+				},
+				release() {
+					claimed = false;
+				}
+			};
+		}
+		//#endregion
 		//#region src/client/apply-guard.ts
 		/**
-		* Apply guard: a duplicated client injection (module factory executed twice in
-		* one page lifetime) would otherwise register a second sidebar entry and
-		* overlay. First application wins; later calls become no-ops. The claim is
-		* released when the owning fiber unloads, so a rebuilt bundle can claim again.
+		* apply-guard — THIS PLUGIN'S single-mount claim. The guard itself is
+		* one implementation in @melite/contracts (createApplyGuard); this
+		* module exists so the gallery's claim is its OWN module instance (a
+		* shared boolean would make the gallery's apply refuse the deck's).
 		*/
-		let claimed = false;
+		const guard = createApplyGuard("melite-plugin/dsh-gallery");
 		function claimGalleryApply() {
-			if (claimed) return false;
-			claimed = true;
-			return true;
+			return guard.claim();
 		}
 		function releaseGalleryApply() {
-			claimed = false;
+			guard.release();
 		}
 		//#endregion
 		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
@@ -26486,6 +26502,15 @@ window.__ModuleLoader__.load({
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
 		/** The run-relative tail of an absolute artifact path, or undefined
 		* when the path carries no run directory — e.g.
 		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -26537,7 +26562,7 @@ window.__ModuleLoader__.load({
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -26586,6 +26611,7 @@ window.__ModuleLoader__.load({
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
@@ -30793,6 +30819,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
@@ -30829,6 +30856,7 @@ window.__ModuleLoader__.load({
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -33954,4 +33982,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15ebb0446c80a665e8bda57f038bd1cf1e1c2eb4";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="317a8dea95f399cc200d6f3c2e4812f6a9d6fb7a";

@@ -6313,15 +6313,6 @@ function PoserFigureStage({ identityModel, identityCoeffs, localChanges, framing
 }
 //#endregion
 //#region src/report-view.tsx
-/** report-view.tsx — THE REPORT ATOM (ROADMAP 11e, primitive ①):
-* the default face for a result row's machine-readable verdicts.
-* A run may write named `reports` (kind 'report' — the contract's
-* BenchReport) beside its media; the result row claims ONE default
-* atom per entry and THIS is it: the DSH StateDot semantic (pass →
-* done, warn → warning, fail → error) + the status word, the title
-* (or the entry's own name), the check chips, and the key-value
-* rows. The agent loop reads the same object the row renders — the
-* machine-readable gate and its human face are ONE shape. */
 /** The report status vocabulary → the DSH dot's own states (the
 *  semantic set StateDot ships: done/warning/error — no invented
 *  colors, no hand-rolled dots). TOTAL over the contract's union —

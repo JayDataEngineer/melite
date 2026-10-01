@@ -29,23 +29,37 @@ window.__ModuleLoader__.load({
 		let react = require("react");
 		react = __toESM(react, 1);
 		let react_jsx_runtime = require("react/jsx-runtime");
+		//#region ../../web-kit/contracts/src/applyGuard.ts
+		function createApplyGuard(label, opts = {}) {
+			let claimed = false;
+			return {
+				claim() {
+					if (claimed) {
+						if (opts.warnOnRefusal === true) console.warn(`[${label}] apply called twice — second mount skipped`);
+						return false;
+					}
+					claimed = true;
+					return true;
+				},
+				release() {
+					claimed = false;
+				}
+			};
+		}
+		//#endregion
 		//#region src/client/apply-guard.ts
 		/**
-		* apply-guard — single-mount claim (module singleton). A duplicated client
-		* injection would mount a second sidebar entry + overlay; the claim makes
-		* the second apply a logged no-op.
+		* apply-guard — THIS PLUGIN'S single-mount claim. The guard itself is
+		* one implementation in @melite/contracts (createApplyGuard); this
+		* module exists so the deck's claim is its OWN module instance (a
+		* shared boolean would make the deck's apply refuse the gallery's).
 		*/
-		let claimed = false;
+		const guard = createApplyGuard("melite-card-deck", { warnOnRefusal: true });
 		function claimDeckApply() {
-			if (claimed) {
-				console.warn("[melite-card-deck] apply called twice — second mount skipped");
-				return false;
-			}
-			claimed = true;
-			return true;
+			return guard.claim();
 		}
 		function releaseDeckApply() {
-			claimed = false;
+			guard.release();
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-deck/src/client/assets.module.css.mjs
@@ -2107,4 +2121,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="a43b2f18dd480b9407ee45964d756ced177a71c3";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6ec8db9c1390b36c6ffab050c0289b00098945b8";

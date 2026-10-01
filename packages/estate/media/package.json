@@ -28,7 +28,8 @@
   },
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
-    "@melite/contracts": "workspace:*"
+    "@melite/contracts": "workspace:*",
+    "zod": "4.5.4"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

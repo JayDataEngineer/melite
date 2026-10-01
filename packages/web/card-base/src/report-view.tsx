@@ -7,6 +7,7 @@
  * (or the entry's own name), the check chips, and the key-value
  * rows. The agent loop reads the same object the row renders — the
  * machine-readable gate and its human face are ONE shape. */
+import type { BenchReport } from '@melite/contracts/benchResult'
 import { createElement as h } from 'react'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './preview.module.css'
@@ -22,13 +23,7 @@ const DOT_OF = { pass: 'done', warn: 'warning', fail: 'error' } as const
  *  section). The card claims this by kind in the result row — the
  *  base owns the DEFAULT, a studio may claim over it (the
  *  claim-over-default law every preview kind rides). */
-export function ReportView(props: { name: string, report: {
-  kind: 'report'
-  status: 'pass' | 'fail' | 'warn'
-  title?: string
-  chips?: string[]
-  rows?: Record<string, string | number | boolean>
-} }): ReturnType<typeof h> {
+export function ReportView(props: { name: string, report: BenchReport }): ReturnType<typeof h> {
   const { name, report } = props
   const dot = DOT_OF[report.status]
   const chips = report.chips ?? []

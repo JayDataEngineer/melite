@@ -47,6 +47,7 @@
     "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
   },
   "dependencies": {
+    "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*"
   }
 }

@@ -7107,6 +7107,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function benchSessionOf(id) {
 			return typeof id === "string" && SESSION_RE.test(id) ? id : "main";
 		}
+		/** The MINT — the inverse of benchSessionOf (2026-10-13, the card-UI
+		*  duplication audit). The grammar moved to this floor and the DECISION
+		*  beside it, but the mint stayed behind in six seats spelling
+		*  `"bench-" + session` — one of which stripped the prefix and added
+		*  it straight back. An address has one grammar, one sanitize, and now
+		*  one mint. */
+		function benchDraftIdOf(session) {
+			return "bench-" + session;
+		}
 		/** The run-relative tail of an absolute artifact path, or undefined
 		* when the path carries no run directory — e.g.
 		* "/data/runs/output/run-4f2a1c-ab12/tts/line.flac" →
@@ -7158,7 +7167,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (SELF_NAMED_FAMILIES.has(card)) return;
 			delete bag["model"];
 		}
-		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RUN_MEMORY_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, SELF_NAMED_FAMILIES;
+		var CARD_PLANE_ENGINE, RUN_MEDIA_PREFIX, LEGACY_RUN_MEDIA_PREFIX, BIRTH_STRIP_KEYS, RESTORE_STRIP_KEYS, LOAD_CARRY_KEYS, STAGE_PATCH_KEYS, WIRE_STAGE_KEYS, RESTORED_PROVENANCE_SPELLING, SESSION_RE, BENCH_DRAFT_RE, RUN_ID_RE, BENCH_DRAFT_PREFIX_RE, SELF_NAMED_FAMILIES;
 		var init_benchStage = __esmMin((() => {
 			CARD_PLANE_ENGINE = "comfyui";
 			RUN_MEDIA_PREFIX = "/melite-media/runs";
@@ -7168,13 +7177,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"resultParams",
 				"runStatus",
 				"resolved"
-			];
-			RUN_MEMORY_STRIP_KEYS = [
-				"result",
-				"runStatus",
-				"resolved",
-				"history",
-				"resultParams"
 			];
 			RESTORE_STRIP_KEYS = [
 				"result",
@@ -7214,6 +7216,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			SESSION_RE = /^[A-Za-z0-9_-]{1,64}$/;
 			BENCH_DRAFT_RE = /^bench-([A-Za-z0-9_-]{1,64})$/;
 			RUN_ID_RE = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
+			BENCH_DRAFT_PREFIX_RE = /^bench-/;
 			SELF_NAMED_FAMILIES = /* @__PURE__ */ new Set(["anny", "h3-timeline"]);
 		}));
 		//#endregion
@@ -12064,6 +12067,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#endregion
 		//#region ../../web-kit/contracts/src/index.ts
 		var src_exports$1 = /* @__PURE__ */ __exportAll({
+			BENCH_DRAFT_PREFIX_RE: () => BENCH_DRAFT_PREFIX_RE,
 			BENCH_DRAFT_RE: () => BENCH_DRAFT_RE,
 			BIRTH_STRIP_KEYS: () => BIRTH_STRIP_KEYS,
 			CARD_PLANE_ENGINE: () => CARD_PLANE_ENGINE,
@@ -12085,7 +12089,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
-			RUN_MEMORY_STRIP_KEYS: () => RUN_MEMORY_STRIP_KEYS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -12101,6 +12104,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			applySubcardDrop: () => applySubcardDrop,
 			artifactFileName: () => artifactFileName,
 			bag: () => bag,
+			benchDraftIdOf: () => benchDraftIdOf,
 			benchResultDefects: () => benchResultDefects,
 			benchSessionOf: () => benchSessionOf,
 			canonicalRunMediaUrl: () => canonicalRunMediaUrl,
@@ -38813,7 +38817,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* that reconciles them, so the poster tile, the dialog viewer, and
 		* the stage floor all frame the mesh identically.
 		*/
-		function autoFitToHeight(root, targetHeight = 1.8) {
+		function fitObjectToHeight(root, targetHeight = 1.6) {
 			const box = new Box3().setFromObject(root);
 			const size = box.getSize(new Vector3());
 			const center = box.getCenter(new Vector3());
@@ -40816,6 +40820,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (dot < 0 || dot === name.length - 1) return void 0;
 			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
 		}
+		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+		*  (2026-10-13, the card-UI duplication audit: five seats carried
+		*  their own model regex and they had already drifted — one matched
+		*  a query or fragment, two matched only a bare extension, so the
+		*  same ".glb?v=2" classified as a model in one seat and as nothing
+		*  in another. A new extension in the vocabulary reaches every seat
+		*  through THIS.) Query and fragment are stripped before the
+		*  vocabulary answers, and the glTF data-URI forms are recognised
+		*  because a data URI has no extension. */
+		function isModelUrl(value) {
+			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+		}
 		//#endregion
 		//#region src/client/preview-kinds.ts
 		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
@@ -41408,8 +41425,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  the case rather than letting the fetch fail as a decode error. */
 		function unsupportedCopy(url) {
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
-			if (/\.gltf$/i.test(path)) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
-			if (!/\.(glb|gltf)$/i.test(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
+			if (!isModelUrl(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -41496,7 +41513,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						return;
 					}
 					root = gltf.scene;
-					autoFitToHeight(gltf.scene, 1.6);
+					fitObjectToHeight(gltf.scene, 1.6);
 					stage?.scene.add(gltf.scene);
 					if (stage !== null) frameCamera(stage, gltf.scene);
 					setLoading(false);
@@ -44763,4 +44780,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="3b146bf2f850049819eb22517bae3ccba825651d";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4bcdbe913562746f6628f84b091038d5b161a7c6";

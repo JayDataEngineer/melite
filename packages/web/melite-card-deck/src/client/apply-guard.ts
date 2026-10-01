@@ -1,19 +1,17 @@
 /**
- * apply-guard — single-mount claim (module singleton). A duplicated client
- * injection would mount a second sidebar entry + overlay; the claim makes
- * the second apply a logged no-op.
+ * apply-guard — THIS PLUGIN'S single-mount claim. The guard itself is
+ * one implementation in @melite/contracts (createApplyGuard); this
+ * module exists so the deck's claim is its OWN module instance (a
+ * shared boolean would make the deck's apply refuse the gallery's).
  */
-let claimed = false
+import { createApplyGuard } from '@melite/contracts/applyGuard'
+
+const guard = createApplyGuard('melite-card-deck', { warnOnRefusal: true })
 
 export function claimDeckApply(): boolean {
-  if (claimed) {
-    console.warn('[melite-card-deck] apply called twice — second mount skipped')
-    return false
-  }
-  claimed = true
-  return true
+  return guard.claim()
 }
 
 export function releaseDeckApply(): void {
-  claimed = false
+  guard.release()
 }
