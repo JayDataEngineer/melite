@@ -2,7 +2,8 @@
 import { describe, expect, test } from 'vitest'
 import { runCompiledGeneration } from '@melite/catalog'
 
-import { apply, inject, motionUpstreamStages, name } from '../src/client/index.ts'
+import { apply, inject, name } from '../src/client/index.ts'
+import { motionUpstreamStages } from '../src/client/upstream.ts'
 
 describe('motion client adapter', () => {
   test('upstreams are limited to host-declared prior stages', () => {

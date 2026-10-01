@@ -1453,7 +1453,10 @@ window.__ModuleLoader__.load({
 		*  faces read keys off the result, never off a bare record. */
 		function extraOf(node) {
 			const raw = node?.meta?.["extra"];
-			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
 		}
 		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
 		var init_extraKeys = __esmMin((() => {
@@ -2511,8 +2514,13 @@ window.__ModuleLoader__.load({
 				case "success": return "done";
 				case "failed":
 				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
 				case "running":
 				case "live": return "running";
+				case "pending":
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -2534,6 +2542,9 @@ window.__ModuleLoader__.load({
 		*  here. */
 		function isTerminalStatus(value) {
 			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -2665,14 +2676,44 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
 				"failed",
 				"stopped",
 				"error",
-				"unknown"
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
+			]);
+			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
+				"done",
+				"completed",
+				"succeeded",
+				"success",
+				"failed",
+				"error",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"stopping",
+				"running",
+				"live",
+				"pending",
+				"queued",
+				"stale",
+				"cached",
+				"skipped",
+				"reused"
 			]);
 		}));
 		//#endregion
@@ -3065,6 +3106,7 @@ window.__ModuleLoader__.load({
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -3093,6 +3135,7 @@ window.__ModuleLoader__.load({
 			healRunMediaPaths: () => healRunMediaPaths,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
 			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
@@ -3959,87 +4002,6 @@ window.__ModuleLoader__.load({
 			init_runStatusContractStore();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
-		var init_FlowEvents = __esmMin((() => {
-			init_stageView();
-			TERMINAL = { has: (s) => isTerminalStatus(s) };
-			BACKOFF_BASE_MS = 500;
-			BACKOFF_CAP_MS = 5e3;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/tagMap.ts
@@ -30957,86 +30919,6 @@ window.__ModuleLoader__.load({
 			];
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/comfyEvents.ts
-		/**
-		* Open a ComfyUI websocket and forward parsed events to `onEvent`.
-		* `onStatus` fires with `true`/`false` on connect/disconnect.
-		*/
-		function connectComfyEvents(url, onEvent, onStatus) {
-			if (typeof WebSocket === "undefined") return {
-				connected: false,
-				close() {}
-			};
-			let ws = null;
-			let closed = false;
-			let retry = null;
-			let connected = false;
-			const scheduleRetry = () => {
-				if (closed) return;
-				if (retry) clearTimeout(retry);
-				retry = setTimeout(open, RETRY_MS);
-			};
-			function open() {
-				/* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
-				if (closed) return;
-				try {
-					ws = new WebSocket(url);
-				} catch (err) {
-					console.warn("[comfy-events] websocket open failed:", err);
-					scheduleRetry();
-					return;
-				}
-				ws.onopen = () => {
-					connected = true;
-					onStatus?.(true);
-				};
-				ws.onclose = () => {
-					connected = false;
-					onStatus?.(false);
-					scheduleRetry();
-				};
-				ws.onerror = () => {
-					try {
-						ws?.close();
-					} catch {}
-				};
-				ws.onmessage = (ev) => {
-					if (typeof ev.data !== "string") return;
-					try {
-						const msg = JSON.parse(ev.data);
-						onEvent({
-							type: msg.type ?? "raw",
-							data: msg.data ?? {},
-							raw: ev.data
-						});
-					} catch {
-						onEvent({
-							type: "raw",
-							data: {},
-							raw: ev.data
-						});
-					}
-				};
-			}
-			open();
-			return {
-				get connected() {
-					return connected;
-				},
-				close() {
-					closed = true;
-					if (retry) clearTimeout(retry);
-					try {
-						ws?.close();
-					} catch {}
-				}
-			};
-		}
-		var RETRY_MS;
-		var init_comfyEvents = __esmMin((() => {
-			RETRY_MS = 3e3;
-		}));
-		//#endregion
 		//#region ../../web-kit/catalog/src/enhance.ts
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
@@ -31257,14 +31139,19 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only status "done" runs count —
-		*  running / interrupted / stopped runs haven't produced anything yet.
-		*  Runs with no families field (pre-provenance sidecars) or a family-less
-		*  brick contribute nothing (backward compatible by construction). */
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				if (run.status !== "done") continue;
+				const folded = statusOf(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;
 				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
@@ -31295,7 +31182,9 @@ window.__ModuleLoader__.load({
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {}));
+		var init_familyProvenance = __esmMin((() => {
+			init_stageView();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/uploadToEstate.ts
 		function readUploadFile(file) {
@@ -31393,7 +31282,6 @@ window.__ModuleLoader__.load({
 			composeVariantRoute: () => composeVariantRoute,
 			computeMinMaxPeaks: () => computeMinMaxPeaks,
 			computeWaveformLODs: () => computeWaveformLODs,
-			connectComfyEvents: () => connectComfyEvents,
 			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
 			decodeAudioPeaks: () => decodeAudioPeaks,
@@ -31493,7 +31381,6 @@ window.__ModuleLoader__.load({
 			setContractToastSink: () => setContractToastSink,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
-			streamFlowEvents: () => streamFlowEvents,
 			studioOf: () => studioOf,
 			submitTextToPose: () => submitTextToPose,
 			subscribeForms: () => subscribeForms,
@@ -31519,7 +31406,6 @@ window.__ModuleLoader__.load({
 			init_catalogContractStore();
 			init_modelCatalog();
 			init_FlowProtocol();
-			init_FlowEvents();
 			init_familyParamContract();
 			init_tagMap();
 			init_runStatusContractStore();
@@ -31527,7 +31413,6 @@ window.__ModuleLoader__.load({
 			init_text_to_pose();
 			init_serviceForms();
 			init_waveform_peaks();
-			init_comfyEvents();
 			init_cardBirth();
 			init_enhance();
 			init_cardLlm();
@@ -33654,50 +33539,6 @@ window.__ModuleLoader__.load({
 				].filter(Boolean).join(" ")
 			};
 		}
-		function Film({ className, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("film", className),
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						width: "18",
-						height: "18",
-						x: "3",
-						y: "3",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 12h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 16.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 7.5h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16.5h4" })
-				]
-			});
-		}
-		function Image$1({ className, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("image", className),
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						width: "18",
-						height: "18",
-						x: "3",
-						y: "3",
-						rx: "2",
-						ry: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "9",
-						cy: "9",
-						r: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" })
-				]
-			});
-		}
 		function ListMusic({ className, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
 				...base("list-music", className),
@@ -33732,26 +33573,6 @@ window.__ModuleLoader__.load({
 						r: "3"
 					})
 				]
-			});
-		}
-		/** (2026-09-22, the lane-picker law) the gutter's add-door glyph —
-		*  same stroke vocabulary, lucide upload path data. */
-		function Upload({ className, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("upload", className),
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m17 8-5-5-5 5" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v12" })
-				]
-			});
-		}
-		function X$1({ className, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("svg", {
-				...base("x", className),
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M18 6 6 18" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 6 12 12" })]
 			});
 		}
 		function ZoomIn({ className, ...rest }) {
@@ -34003,7 +33824,7 @@ window.__ModuleLoader__.load({
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 						className: timeline_module_css_default.laneHead,
 						style: { height: promptsHeight },
-						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+						children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Film, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 							className: timeline_module_css_default.gutterLabel,
 							children: promptsLabel
 						})]
@@ -34042,7 +33863,7 @@ window.__ModuleLoader__.load({
 									onClick: (e) => {
 										L.onUpload?.(e.currentTarget);
 									},
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Upload, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Upload, { "aria-hidden": true })
 								}),
 								(L.stem || (L.clips?.length ?? 0) > 0) && onAudioDetach && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									variant: "ghost",
@@ -34050,7 +33871,7 @@ window.__ModuleLoader__.load({
 									onClick: () => onAudioDetach(L.id),
 									"aria-label": `Detach ${L.label}`,
 									className: timeline_module_css_default.detachBtn,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
 								})
 							]
 						}, L.id);
@@ -34386,7 +34207,7 @@ window.__ModuleLoader__.load({
 									"data-testid": "tl-ref-badge",
 									className: timeline_module_css_default.refBadge,
 									title: `${p.refImages} reference image${p.refImages === 1 ? "" : "s"} (guide + extras)`,
-									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Image$1, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
+									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.Image, { "aria-hidden": true }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: timeline_module_css_default.refCount,
 										children: p.refImages
 									})]
@@ -34403,7 +34224,7 @@ window.__ModuleLoader__.load({
 										},
 										"aria-label": "Delete this prompt card",
 										className: timeline_module_css_default.promptDelete,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, {})
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
 									})
 								})
 							]
@@ -34566,7 +34387,7 @@ window.__ModuleLoader__.load({
 										onAudioClipDelete(L.id, c.id);
 									},
 									className: timeline_module_css_default.audioClipDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, { "aria-hidden": true })
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, { "aria-hidden": true })
 								})
 							]
 						}, c.id);
@@ -34663,7 +34484,7 @@ window.__ModuleLoader__.load({
 									},
 									"aria-label": `Delete ${track.name} keyframe at frame ${kf.frame}`,
 									className: timeline_module_css_default.kfDelete,
-									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(X$1, {})
+									children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_melite_card_base_client.X, {})
 								})
 							})]
 						}, kf.uuid);
@@ -40294,6 +40115,22 @@ window.__ModuleLoader__.load({
 			params: { slots: [] }
 		});
 		//#endregion
+		//#region src/client/upstream.ts
+		/**
+		* motionUpstreamStages — the studio's upstream projection, INTERNAL
+		* to the plugin (the export-discipline law, card-view-vs-dsh-web
+		* audit: a UI plugin exports no values beyond what cordis loading
+		* needs; pure helpers stay internal, testable from this module).
+		*/
+		/** The bench's upstream rows filtered to the host-declared prior
+		* stages (priorStageIds absent = every upstream, the host's own
+		* law).
+		* @param props the owner props' upstream pair */
+		function motionUpstreamStages(props) {
+			const priorIds = props.priorStageIds === void 0 ? null : new Set(props.priorStageIds);
+			return projectUpstreamStages(props).filter((upstream) => priorIds === null || priorIds.has(upstream.id));
+		}
+		//#endregion
 		//#region src/client/index.ts
 		/**
 		* motion client entry — the card package's OWN cards.stage.view
@@ -40316,6 +40153,7 @@ window.__ModuleLoader__.load({
 		* partial merge); the run rides the host drill's own Run row.
 		*/
 		init_src();
+		init_src$2();
 		setContractToastSink((type, message, action) => {
 			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
 		});
@@ -40324,10 +40162,6 @@ window.__ModuleLoader__.load({
 		const name = "motionStudio";
 		const inject = ["slots"];
 		const apply = (0, _melite_card_base_client.defineStageViewRegistration)("motion", MotionStudio, () => ({ runCompiledGeneration }));
-		function motionUpstreamStages(props) {
-			const priorIds = props.priorStageIds === void 0 ? null : new Set(props.priorStageIds);
-			return projectUpstreamStages(props).filter((upstream) => priorIds === null || priorIds.has(upstream.id));
-		}
 		/** The motion surface — registered under key 'motion'. The ADAPTER:
 		* the tenant mounted verbatim, one translate layer, zero paraphrase.
 		* onWireSlot stays OMITTED (the tenant's own contract: omitting
@@ -40349,11 +40183,10 @@ window.__ModuleLoader__.load({
 		exports.MotionStudio = MotionStudio;
 		exports.apply = apply;
 		exports.inject = inject;
-		exports.motionUpstreamStages = motionUpstreamStages;
 		exports.name = name;
 		return module.exports;
 	}
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="30d2289d49c795593a033424a071f604445fcf51";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1ed30d0b329e7a0cb0e505444e7617d3638d5d38";

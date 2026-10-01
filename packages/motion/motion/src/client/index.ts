@@ -24,11 +24,10 @@ import { runCompiledGeneration, setContractToastSink } from '@melite/catalog'
 import { defineStageViewRegistration, useToastStore } from '@melite/card-base/client'
 import {
   projectStageView,
-  projectUpstreamStages,
-  type CardStage,
   type StageViewOwnerProps,
 } from '@melite/contracts'
 import { MotionCardEditor } from '../ui/studio/component.tsx'
+import { motionUpstreamStages } from './upstream.ts'
 
 // CONTRACT TOASTS — wire the inlined catalog contract stores to the
 // row's toast store (the one host that outlives every reporting
@@ -51,17 +50,6 @@ export const apply = defineStageViewRegistration(
   MotionStudio,
   () => ({ runCompiledGeneration }),
 )
-
-export function motionUpstreamStages(
-  props: Pick<StageViewOwnerProps, 'upstream' | 'priorStageIds'>,
-): CardStage[] {
-  const priorIds = props.priorStageIds === undefined
-    ? null
-    : new Set(props.priorStageIds)
-  return projectUpstreamStages(props).filter(
-    (upstream) => priorIds === null || priorIds.has(upstream.id),
-  )
-}
 
 /** The motion surface — registered under key 'motion'. The ADAPTER:
  * the tenant mounted verbatim, one translate layer, zero paraphrase.
