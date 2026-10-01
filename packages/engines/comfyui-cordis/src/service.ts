@@ -5,6 +5,7 @@
 // graph is emitted (never an assumed install).
 import Schema from '@deepseek-ai/schemastery'
 import { validateDeclaredMods } from './mods-schema.ts'
+import { validateCardDefinition } from './card-definition-schema.ts'
 import { ComposeRefusal } from './errors.ts'
 import { assertWiringAgainst, ComfyUIWiringService, deriveWiringDoc, type WiringInputSpec } from './wiringWall.ts'
 export { ComposeRefusal } from './errors.ts';
@@ -472,6 +473,12 @@ export class ComfyUIService extends Service {
     if (this.cards.has(def.id)) {
       throw new ComposeRefusal('duplicate-card', `card '${def.id}' registered twice — one card, one plugin`)
     }
+    // THE ENVELOPE SCHEMA GATE (the strictness audit's T1, mirroring
+    // models/service.ts's DECL resolve): a strict schemastery pass —
+    // a carried key the interface never declares (a typo'd boardd)
+    // refuses LOUD here, named, never boots silent. The semantic
+    // doors below own every nested law; this gate owns the envelope.
+    validateCardDefinition(def)
     assertFlowContract(def)
     // THE ENVELOPE LAW GATE (2026-10-10, the gap-3 closure): every
     // card — built-in OR hot plugin — passes the same vocabulary,
