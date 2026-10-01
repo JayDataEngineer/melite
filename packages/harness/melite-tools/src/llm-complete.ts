@@ -142,6 +142,14 @@ export async function harnessCompleteOnRoute(
     ...(req.temperature !== undefined && Number.isFinite(req.temperature) ? { temperature: req.temperature } : {}),
     signal,
   }
+  // The text join is a DELIBERATE hand-roll, not an oversight (the
+  // audit's 4.5 record, 2026-10-12): dsh-llm's BlockAssembler is the
+  // canonical assembler, but its contract defaults a finish-less
+  // stream to {kind:'stop'} and owns block semantics, while this
+  // door's tests pin the OPPOSITE teeth — malformed deltas
+  // (non-string text, unknown chunk types) are ignored, and a
+  // stream with no terminal finish THROWS. Porting would trade
+  // those pinned loud refusals for the assembler's quiet defaults.
   let text = ''
   let finish: { kind: string; failure?: { message: string; code?: string } } | null = null
   for await (const chunk of llm.stream(options)) {

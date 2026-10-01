@@ -271,6 +271,15 @@ export const agentLoopExecutor = (
               reason?: unknown;
             };
             seen[c.type] = (seen[c.type] ?? 0) + 1;
+            // The delta/block-end joins are a DELIBERATE hand-roll (the
+            // audit's 4.5 record, 2026-10-12): dsh-llm's BlockAssembler
+            // is the canonical assembler, but this loop is a census +
+            // dispatch shape, not pure assembly — it counts every chunk
+            // type (`seen`), reads the FinishReason OBJECT inline (the
+            // craft stroke-58 law below), and tolerates malformed blocks
+            // where the assembler's blocks() THROWS on an unknown open
+            // block. The engine survives misbehaving adapters by record;
+            // porting would move that decision into the dependency.
             if (c.type === "text-delta" && typeof c.text === "string") text += c.text;
             else if (c.type === "block-end" && c.block?.type === "text" && typeof c.block.text === "string") {
               text += c.block.text;
