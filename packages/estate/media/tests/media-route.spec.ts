@@ -152,7 +152,7 @@ async function mountWeb(
     ctx.provide("queue", stateRoots === undefined ? { stateRoot } : { stateRoot, stateRoots });
   }
   await ctx.plugin({ name: "t-probe", apply: mediaApply } as unknown as Plugin);
-  // THREE prefix rows (the alias law, operator 2026-10-10: no
+  // TWO prefix rows (the alias law, operator 2026-10-10: no
   // breakage, ever): the live runs route, the LEGACY /v1/assets
   // spelling of the same handler — every stored bench, archive and
   // run row keeps resolving.
@@ -1163,9 +1163,3 @@ describe("the byte route across roots (the §23 manifest, degenerate shapes)", (
     assert.deepEqual([seen.status, seen.body.toString()], [200, "REAL"]);
   });
 });
-
-// ── THE DEPLOY HANDSHAKE (2026-09-23, the stale-tab root rot):
-//    the loader's /plugins URL is immutable-cached on the plugin
-//    LIST — rebuilt bundles ride the SAME URL and never reach a
-//    browser that cached it. The stamps route serves disk truth;
-//    these walls pin its law end to end. ──────────────────────────

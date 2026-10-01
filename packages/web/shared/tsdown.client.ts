@@ -13,7 +13,7 @@
  * shell's seed table in `./web-platform.ts`.
  */
 import { readFile } from 'node:fs/promises'
-import { existsSync, realpathSync, readFileSync } from 'node:fs'
+import { existsSync, realpathSync, readFileSync, writeFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -286,6 +286,28 @@ function clientConfig(id: string, entry: string): UserConfig {
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
     plugins: [{
+      // THE TRAILING-NEWLINE LAW (the repo convention: a file ends
+      // with exactly one trailing newline). Rolldown appends the
+      // sourcemap comment AFTER renderChunk, so the guarantee
+      // belongs on the WRITTEN file: until 2026-10-12 the stamp
+      // plugin's own trailing newline supplied it, and with the
+      // stamp deleted seven tracked bundles ended mid-token. It
+      // lives HERE, in the build, so no bundle regresses by
+      // omission.
+      name: 'dsh-client-trailing-newline',
+      writeBundle(options, bundle) {
+        const dir = (options as { dir?: string }).dir ?? 'lib'
+        for (const chunk of Object.values(bundle)) {
+          if (chunk.type !== 'chunk') continue
+          // fileName is relative to the OUTPUT dir (lib/).
+          const file = resolvePath(process.cwd(), dir, chunk.fileName)
+          if (!existsSync(file)) continue
+          const code = readFileSync(file, 'utf8')
+          if (code.endsWith('\n')) continue
+          writeFileSync(file, code + '\n')
+        }
+      },
+    }, {
       // SINGLE-FILE LAW (the rolldown-native hook — the tsdown
       // config key proved unreliable to pass through): no secondary
       // chunks, ever; every dynamic import inlines into client.js.

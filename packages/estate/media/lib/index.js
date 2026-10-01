@@ -79,13 +79,6 @@ export const LEGACY_MEDIA_PREFIX = LEGACY_RUN_MEDIA_PREFIX;
 const mediaPrefixOf = runMediaPrefixOf;
 const canonicalMediaUrl = canonicalRunMediaUrl;
 export { mediaPrefixOf, canonicalMediaUrl };
-/** THE DEPLOY HANDSHAKE ROUTE (2026-09-23, the stale-tab root rot):
- * the loader's /plugins URL is immutable-cached on the plugin LIST,
- * not the bytes — rebuilt card bundles never reach a browser that
- * cached the URL. This route serves the CURRENT sha1 of every card
- * package's lib/client.js (stamp line stripped — the same law the
- * build bakes), no-store, so the cards tab can compare its baked
- * stamp against disk truth and face a stale tab. */
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
 const RUN_ID = RUN_ID_RE;
 /** One confined relative segment AFTER percent-decoding: THE
