@@ -118,6 +118,30 @@ const runOne = async (d) => {
     console.log(`✓ ${name}`);
   }
 };
+// SWEEP STALE SYNTHESIZED CONFIGS before any worker writes one: a
+// SIGKILL'd run (the one leak finally cannot cure) leaves
+// .tsconfig.test.<pid>.json behind, and the next run's tsc reads
+// the dead configs as project members — 14-red cross-contamination
+// measured live (2026-10-12, a killed probe's debris). Nothing
+// legitimate exists before this run starts: every survivor is
+// debris from a dead pid.
+const deadPid = (name) => {
+  const pid = Number(name.slice(".tsconfig.test.".length).replace(/\.json$/, ""));
+  if (!Number.isInteger(pid) || pid <= 0) return true;
+  try {
+    process.kill(pid, 0); // throws ESRCH for a dead pid
+    return false; // a LIVE sibling tier run owns it — leave it
+  } catch (err) {
+    return err.code === "ESRCH";
+  }
+};
+for (const d of dirs) {
+  for (const e of readdirSync(d, { withFileTypes: true })) {
+    if (e.isFile() && e.name.startsWith(".tsconfig.test.") && deadPid(e.name)) {
+      rmSync(join(d, e.name), { force: true });
+    }
+  }
+}
 // bounded pool — same shape as the wall (one tsc per core, no fork bomb)
 const workers = Array.from({ length: Math.min(pool, queue.length) }, async () => {
   for (;;) {
