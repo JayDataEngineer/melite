@@ -28,17 +28,6 @@ export interface FactsReads {
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
 
-/** The facts door's ONE string extractor (the attainment audit's
- *  F4: ten hand copies across eight families, already diverged
- *  into three shapes — two of them casting the very values their
- *  own loop had just proved). The label names the refusing door
- *  (family + action) so the message stays the caller's own; the
- *  wording is pinned by the families' refusal assertions.
- * @param raw the resolved lane_inputs (family ⊕ variant)
- * @param key the facts key the door requires
- * @param label the refusing door's name (family + action), message-prefixed
- * @returns the non-empty string at key
- * @throws Error when the key is absent, not a string, or empty */
 /** The lane facts' ONE typed string reader (the attainment audit's
  *  F7, 2026-10-12): lane_inputs is Record<string, unknown> by
  *  declaration, and the region law at lanes-image.ts reads
@@ -53,6 +42,17 @@ export function laneStringOf(raw: LaneInputsFacts, key: string): string | undefi
   return typeof value === 'string' && value !== '' ? value : undefined
 }
 
+/** The facts door's ONE string extractor (the attainment audit's
+ *  F4: ten hand copies across eight families, already diverged
+ *  into three shapes — two of them casting the very values their
+ *  own loop had just proved). The label names the refusing door
+ *  (family + action) so the message stays the caller's own; the
+ *  wording is pinned by the families' refusal assertions.
+ * @param raw the resolved lane_inputs (family ⊕ variant)
+ * @param key the facts key the door requires
+ * @param label the refusing door's name (family + action), message-prefixed
+ * @returns the non-empty string at key
+ * @throws Error when the key is absent, not a string, or empty */
 export function requireText(raw: LaneInputsFacts, key: string, label: string): string {
   const value = raw[key]
   if (typeof value !== 'string' || value === '') {

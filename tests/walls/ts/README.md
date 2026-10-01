@@ -43,9 +43,7 @@ rig, no second process.
   remote and serial queue service.
 - `suites/models-*.spec.ts`, `suites/families-*.spec.ts` — the model
   DECLs, catalog, cascade, and golden pins.
-- `suites/card-kinds-chain.spec.ts`, `suites/form-spec-parity.spec.ts`,
-  `suites/params-spec-fidelity.spec.ts`, `suites/mod-interlock.spec.ts`,
-  `suites/s4-client-deps.spec.ts` —
+- `suites/mod-interlock.spec.ts`, `suites/s4-client-deps.spec.ts` —
   the card/model/engine contract walls. (The supervisor wall died at
   the 2026-10-12 dedupe: every law moved home to
   comfyui-cordis/tests/supervisor.spec.ts and the mockless
