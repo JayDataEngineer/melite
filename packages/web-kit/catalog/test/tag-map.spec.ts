@@ -237,14 +237,20 @@ describe("debounced server PUT", () => {
     const realRandom = Math.random;
     Math.random = () => 0;
     try {
+      let putAttempts = 0;
       globalThis.fetch = (async () => {
+        putAttempts += 1;
         throw new Error("server down");
       }) as typeof fetch;
       useTagMap.getState().createTag("Doomed");
-      // 750ms = SYNC_DEBOUNCE_MS (500) + margin: exactly one debounced
-      // PUT must fire (and be caught) to prove the failed sync keeps
-      // the optimistic tag — the old 4500ms waited for nine.
+      // 750ms = SYNC_DEBOUNCE_MS (500) + margin. The wait is
+      // LOAD-BEARING: the debounced PUT must have FIRED and failed
+      // by the check (putAttempts >= 1) — at 0ms the store write
+      // alone would pass the tag assertion, so the counter is what
+      // proves the failed sync (not the store) kept the tag. The
+      // old 4500ms waited for nine cycles.
       await new Promise((r) => setTimeout(r, 750));
+      assert.ok(putAttempts >= 1, "the debounced PUT fired (and failed) before the check");
       assert.ok("doomed" in state().tags);
     } finally {
       Math.random = realRandom;

@@ -52,10 +52,12 @@ expect(SOURCES.length >= 550,
   `SOURCES must walk the tree (got ${String(SOURCES.length)} files from ${SRC_ROOTS.join(", ")} — a renamed root or a widened skip rule emptied the gate)`).toBe(true);
 expect(SOURCES.some((f) => f.includes("/src/")), "the walk reaches src trees").toBe(true);
 
-// ONE READ PER FILE (cruft audit #12): the 19 rules below each
-// re-read and re-stripped the same tree — 12,445 reads / ~109 MiB
-// per run. The Map memoizes path -> comment-stripped code; every
-// rule reads through it.
+// ONE READ PER FILE (cruft audit #12, numbers measured by the
+// small-cures verifier's instrumented copies): the rules below
+// each re-read and re-stripped the same tree — 9,951 reads /
+// 87.9 MiB per run pre-cure, now 655 cached reads + 2 raw. The
+// Map memoizes path -> comment-stripped code; every rule reads
+// through it.
 const CODE_CACHE = new Map<string, string>();
 /** code lines only — a comment may NAME a token (the walls read the
  *  names), a string literal or a retyped const is the duplication. */
