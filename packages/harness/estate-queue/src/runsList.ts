@@ -333,6 +333,9 @@ export function runDirHasMedia(runDir: string): boolean {
 // row gate admits "model" alongside the triple.
 
 const RUN_ID_RE: RegExp = /^run-[A-Za-z0-9_.@-]+$/;
+// NOT runsTypes.ts's exported RUN_STATUSES: this set mirrors
+// run_wire.py's list-side vocabulary (adds success/unknown, drops
+// queued/stopping — the C-contract fold runsRegistry owns).
 const RUN_STATUS: ReadonlySet<string> = new Set([
   "running",
   "completed",

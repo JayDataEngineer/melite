@@ -25,6 +25,7 @@ export { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 export type { PromptGraph, NodeRef, NodeInputs, JsonValue } from "@melite/comfyui-card-kit/graph";
 export { ComfyUIService, ComposeRefusal, resolveCardFlowOutputs } from "./service.ts";
 export type { CardDefinition, CardFlowOutputBinding, DeclaredModifierKind } from "./service.ts";
+export { gatedResolve } from "./admission.ts";
 export { loadFacts } from "@melite/comfyui-card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';

@@ -6,7 +6,7 @@ import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { loadCardDefs } from "@melite/comfyui-cordis";
+import { loadCardDefs, ComposeRefusal } from "@melite/comfyui-cordis";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
@@ -73,6 +73,20 @@ describe("the image-gen compose gate", () => {
     const doc = def.schema({ prompt: "a cat", loras: [{ name: "x.safetensors" }] }) as Record<string, unknown>;
     assert.deepEqual(doc.loras, [{ name: "x.safetensors" }],
       "the gated doc carries the undeclared loras bag through to the composer");
+  });
+
+  it("T6 STRICT RESOLVE: a typo'd key refuses 'unknown-param' at compose, named — never renders", () => {
+    const model = facts.models[def.boarded[0]!]!;
+    // the drift pin: `promptt` is not a knob and not a rider — the
+    // old walk merged it silently (the second empty box); the gated
+    // resolve refuses LOUD, naming the key and the card.
+    assert.throws(
+      () => def.compose({ prompt: "a cat", promptt: "a cat" }, model, new GraphBuilder(), "r_typo"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-param"
+        && /promptt/.test(e.message) && /image-gen/.test(e.message),
+    );
+    // the rider passes: the loras bag composes (the mod plane rides)
+    def.compose({ prompt: "a cat", loras: [{ name: "x.safetensors", strength: 0.5 }] }, model, new GraphBuilder(), "r_lora");
   });
 });
 

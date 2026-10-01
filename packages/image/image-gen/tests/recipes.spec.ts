@@ -21,6 +21,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIService } from "@melite/comfyui-cordis/service";
+import { ComposeRefusal } from "@melite/comfyui-cordis/service";
 import type { FactsFile } from "@melite/comfyui-card-kit/facts";
 import { DECL as krea2Decl } from "@melite/models-krea-2";
 import { registerCard } from "../src/card.ts";
@@ -67,12 +68,17 @@ describe("the card-recipe layer is dead (stroke 34)", () => {
     await ctx.fiber.dispose();
   });
 
-  it("a stray recipe key is INERT at the engine (admission refuses it at the estate)", async () => {
+  it("a stray recipe key REFUSES at compose (T6: admission is the engine's door too)", async () => {
     const { svc, ctx } = await boot();
-    // Schemastery passes unknown keys through; compose ignores what
-    // no layer consumes — the graph builds on the declared surface
-    const graph = svc.compose("image-gen", "krea-2", { prompt: "a cat", recipe: "fast_draft" }, "run-2");
-    assert.ok(graphText(graph).includes('"steps":8'), "no overlay ever fires — steps stay the family default");
+    // The recipe layer is dead and its key is declared nowhere — the
+    // T6 strict resolve changed the old inert pass-through into a
+    // loud refusal: a key no layer consumes never composes (the CLI
+    // door already refused it; the run seat now matches). The
+    // no-overlay law is unchanged and proven by the sibling tests.
+    assert.throws(
+      () => svc.compose("image-gen", "krea-2", { prompt: "a cat", recipe: "fast_draft" }, "run-2"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-param" && /recipe/.test(e.message),
+    );
     await ctx.fiber.dispose();
   });
 

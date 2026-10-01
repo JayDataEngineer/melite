@@ -17,6 +17,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS } from '@melite/comfyui-card-kit/vocab'
 import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { gatedResolve } from '@melite/comfyui-cordis'
 import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
@@ -108,6 +109,13 @@ export const identity = {
   ],
 }
 
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+
 /** Register the card face into the engine registry. The service
  *  arrives as a parameter (index.ts probed it — comfyui is an
  *  optional dependency, not an injected one). */
@@ -133,7 +141,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       outputs: { default: 'image' },
       requiresModel: true,
     },
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -141,8 +149,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // width=9999 draft refuses LOUD here, never composes), fills
       // defaults, and passes mod-plane keys (loras bags, admits)
       // through verbatim — nothing drops. The composer's reads below
-      // are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      // are reads of the GATED doc. The T6 strict resolve: every key
+      // that is neither a declared knob nor a rider (the loras bag
+      // and the model stamp the family defaults carry are this
+      // card's riders — no admits, no studio writes on the boarded
+      // image families) refuses 'unknown-param', named — a typo'd
+      // `promptt` never composes, never renders.
+      const doc = gatedResolve('image-gen', schemaFn, ['loras', 'model'], p)
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-gen card (what the picture IS)")
       }
