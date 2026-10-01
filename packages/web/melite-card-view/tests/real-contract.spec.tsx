@@ -16,7 +16,7 @@ import { createElement, useState } from 'react'
 import { render, screen, fireEvent, act } from '@testing-library/react'
 import fixture21 from './fixtures/image-edit-spec.json'
 import fixture2511 from './fixtures/image-edit-2511-spec.json'
-import { fieldsOf } from '@melite/card-base/client'
+import { assertFormSpecDoc, fieldsOf } from '@melite/card-base/client'
 import {
   SpecForm,
   modOwnedFields,
@@ -24,12 +24,29 @@ import {
   type SpecValues,
 } from '../src/client/spec-form.tsx'
 
-// THE WELDED CONTRACTS, seated as the form's spec docs (both
-// boarded families — the host's RE-SERVE LAW: a model pick
-// refetches the family's own matrix, so the visibility grammar
-// rides the SERVED doc, never a stale one)
-const REAL21 = fixture21 as unknown as FormSpecDoc
-const REAL2511 = fixture2511 as unknown as FormSpecDoc
+// THE WELDED CONTRACTS, seated through the SAME boundary judgment
+// the live fetch applies (audit #48's cure: the double cast is dead
+// — a fixture that drifts from the served shape is REFUSED here,
+// by the wire gate's own refusal, not seated by an `as unknown as`
+// sidestep). Both boarded families ride the host's RE-SERVE LAW: a
+// model pick refetches the family's own matrix, so the visibility
+// grammar rides the SERVED doc, never a stale one.
+const REAL21 = assertFormSpecDoc(fixture21, 'image-edit')
+const REAL2511 = assertFormSpecDoc(fixture2511, 'image-edit-2511')
+
+describe('the boundary judgment refuses what the cast used to seat', () => {
+  test('a doc without a schema envelope is refused', () => {
+    expect(() => assertFormSpecDoc({ fields: [] }, 'cast-only')).toThrow('form-spec: no schema envelope')
+  })
+  test('a foreign wtype is refused, named with its ref and the set home', () => {
+    const liar = {
+      schema: { uid: 1, refs: { n1: { meta: { extra: { wtype: 'switch' } } } } },
+    }
+    expect(() => assertFormSpecDoc(liar, 'cast-only')).toThrow(
+      "schema ref n1: wtype 'switch' is not in WTYPE_SET",
+    )
+  })
+})
 
 describe('THE REAL image-edit CONTRACT drives the real form', () => {
   test('fieldsOf derives the full declared surface off the real envelope (max_stack, wtype, zones, the one list)', () => {

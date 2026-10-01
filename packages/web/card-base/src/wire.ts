@@ -90,22 +90,26 @@ export async function fetchCardCatalog(signal?: AbortSignal): Promise<CatalogCar
   return out.sort((a, b) => a.label.localeCompare(b.label))
 }
 
-/** /v1/form-spec?model=<family> — the card family's emission (the
- *  serialized schema envelope + model defaults + the declared edges
- *  + the mod kinds and their envelopes). */
-export async function fetchFormSpec(model: string, signal?: AbortSignal): Promise<FormSpecDoc> {
-  const doc = await v1Get<FormSpecDoc>('/v1/form-spec?model=' + encodeURIComponent(model), signal)
-  const env = doc['schema']
+/** The form-spec boundary judgment (one home — audit #48's cure):
+ * refuses a doc without a schema envelope and walks every envelope's
+ * refs for a wtype outside WTYPE_SET (strictness fix 5, 2026-10-01 —
+ * LAW 8's missing side: the write-side bag guard refuses foreign
+ * spellings at the declaration; THIS is the boundary the served doc
+ * crosses, and a foreign wtype renders the silent plain-text
+ * fallback, so here it refuses, naming the field and the set's home).
+ * Exported so a test seating a fixture crosses the SAME judgment the
+ * live fetch does — no `as unknown as` sidestep can outlive it.
+ * @param doc the served doc (or a fixture standing in for one)
+ * @param model names the doc in the refusal
+ * @returns the doc, narrowed, when every judgment passes
+ * @throws Error naming the first structural failure */
+export function assertFormSpecDoc(doc: unknown, model: string): FormSpecDoc {
+  const env = (doc as FormSpecDoc)['schema']
   if (env !== null && (typeof env !== 'object'
       || typeof (env as { uid?: unknown }).uid !== 'number'
       || typeof (env as { refs?: unknown }).refs !== 'object')) {
     throw new Error('form-spec: no schema envelope')
   }
-  // THE WTYPE WIRE GATE (strictness fix 5, 2026-10-01 — LAW 8's
-  // missing side): the write-side bag guard refuses foreign spellings
-  // at the declaration, but this fetch is the BOUNDARY the served doc
-  // crosses. A wtype outside WTYPE_SET renders the silent plain-text
-  // fallback; here it refuses, naming the field and the set's home.
   const wtypeErrors: string[] = []
   const judgeEnvelope = (e: unknown, surface: string): void => {
     if (e === null || e === undefined || typeof e !== 'object') return
@@ -121,12 +125,22 @@ export async function fetchFormSpec(model: string, signal?: AbortSignal): Promis
       }
     }
   }
-  judgeEnvelope(doc['schema'], 'schema')
-  for (const [pack, env2] of Object.entries(doc['mod_schemas'] ?? {})) judgeEnvelope(env2, `mod:${pack}`)
+  judgeEnvelope((doc as FormSpecDoc)['schema'], 'schema')
+  for (const [pack, env2] of Object.entries((doc as FormSpecDoc)['mod_schemas'] ?? {})) {
+    judgeEnvelope(env2, `mod:${pack}`)
+  }
   if (wtypeErrors.length > 0) {
     throw new Error(`form-spec ${model}: ${wtypeErrors.join('; ')}`)
   }
-  return doc
+  return doc as FormSpecDoc
+}
+
+/** /v1/form-spec?model=<family> — the card family's emission (the
+ *  serialized schema envelope + model defaults + the declared edges
+ *  + the mod kinds and their envelopes). */
+export async function fetchFormSpec(model: string, signal?: AbortSignal): Promise<FormSpecDoc> {
+  const doc = await v1Get<unknown>('/v1/form-spec?model=' + encodeURIComponent(model), signal)
+  return assertFormSpecDoc(doc, model)
 }
 
 /** One /v1/forms row — the card META table (label/genre/sidebar plus

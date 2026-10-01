@@ -46289,11 +46289,20 @@ void main() {
 			}
 			return out.sort((a, b) => a.label.localeCompare(b.label));
 		}
-		/** /v1/form-spec?model=<family> — the card family's emission (the
-		*  serialized schema envelope + model defaults + the declared edges
-		*  + the mod kinds and their envelopes). */
-		async function fetchFormSpec(model, signal) {
-			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
+		/** The form-spec boundary judgment (one home — audit #48's cure):
+		* refuses a doc without a schema envelope and walks every envelope's
+		* refs for a wtype outside WTYPE_SET (strictness fix 5, 2026-10-01 —
+		* LAW 8's missing side: the write-side bag guard refuses foreign
+		* spellings at the declaration; THIS is the boundary the served doc
+		* crosses, and a foreign wtype renders the silent plain-text
+		* fallback, so here it refuses, naming the field and the set's home).
+		* Exported so a test seating a fixture crosses the SAME judgment the
+		* live fetch does — no `as unknown as` sidestep can outlive it.
+		* @param doc the served doc (or a fixture standing in for one)
+		* @param model names the doc in the refusal
+		* @returns the doc, narrowed, when every judgment passes
+		* @throws Error naming the first structural failure */
+		function assertFormSpecDoc(doc, model) {
 			const env = doc["schema"];
 			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
 			const wtypeErrors = [];
@@ -46313,6 +46322,12 @@ void main() {
 			for (const [pack, env2] of Object.entries(doc["mod_schemas"] ?? {})) judgeEnvelope(env2, `mod:${pack}`);
 			if (wtypeErrors.length > 0) throw new Error(`form-spec ${model}: ${wtypeErrors.join("; ")}`);
 			return doc;
+		}
+		/** /v1/form-spec?model=<family> — the card family's emission (the
+		*  serialized schema envelope + model defaults + the declared edges
+		*  + the mod kinds and their envelopes). */
+		async function fetchFormSpec(model, signal) {
+			return assertFormSpecDoc(await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal), model);
 		}
 		/** /v1/forms — every card's meta row (the edge emission included). */
 		async function fetchFormsTable(signal) {
@@ -50063,6 +50078,7 @@ void main() {
 		exports.applyWeightsHeat = applyWeightsHeat;
 		exports.applyWireframe = applyWireframe;
 		exports.armEstateRemoteLazyBind = armEstateRemoteLazyBind;
+		exports.assertFormSpecDoc = assertFormSpecDoc;
 		exports.autoFitToHeight = autoFitToHeight;
 		exports.axisGroups = axisGroups;
 		exports.axisKey = axisKey;
@@ -50173,4 +50189,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4ef56be64ef5c88a6231bfb041070d44eb6d6734";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="c3bca245921586bbab063ae3d96fd5e5db3d7cae";
