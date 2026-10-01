@@ -9,7 +9,9 @@
 // surface now lives in ONE factory (comfyui-card-kit's
 // paramRows.ts) and this wall holds it there: every family's
 // declared rows must EQUAL the factory's output for that family's
-// bounds, so a hand-retyped row — even a byte-correct copy — fails.
+// bounds, so any row that drifts from the shared surface fails at
+// the family's own name (a byte-correct copy passes — it is the
+// same array — and is dead weight the factory deletes at review).
 //
 // The wall also pins the served order (prompt pair, size pair,
 // managed seed, sampler knobs) and the narrowing the edit families
@@ -54,7 +56,7 @@ describe("the shared diffusion param surface (one home)", () => {
       assert.deepEqual(
         action.params,
         T2I_ROWS,
-        `${family}'s t2i action must spread the shared rows — a hand-typed row fails here even when byte-correct`,
+        `${family}'s t2i action must spread the shared rows — a row drifted from the factory fails here at the family's name`,
       );
     }
   });
