@@ -539,7 +539,12 @@ export function meliteConstruct(
       // the body reads the fresh binding only, the caller's object
       // is never touched.
       const a = { ...unwrapItemArrays(args) } as Record<string, unknown>
-      const verb = typeof a.verb === 'string' ? a.verb : ''
+      // Absent verb normalizes to the documented default 'read'
+      // (T11's residual, 2026-10-12: the description says "read
+      // (default when absent)", so the echo says 'read' too — the
+      // old '' echo contradicted the declared contract; an explicit
+      // '' refuses at the wrapper gate's enum, never reaching here).
+      const verb = typeof a.verb === 'string' ? a.verb : 'read'
       // The conversation wins (the one-flow law rides the agent's own
       // session); an explicit bench key applies only to unattributed
       // seats (headless, scripts) that carry no agent.
@@ -549,7 +554,7 @@ export function meliteConstruct(
       const out = (payload: Record<string, unknown>): ConstructResult =>
         jsonClean<ConstructResult>({ verb, bench, ok: true, ...payload })
       try {
-        if (verb === 'read' || verb === '') {
+        if (verb === 'read') {
           const b = await readBench(request, bench, signal)
           const enriched = await withLastRun(request, b, signal)
           return out({

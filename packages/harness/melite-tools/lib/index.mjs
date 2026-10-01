@@ -784,7 +784,7 @@ function meliteConstruct(request, opts = {}) {
 		},
 		async execute(args, exec) {
 			const a = { ...unwrapItemArrays(args) };
-			const verb = typeof a.verb === "string" ? a.verb : "";
+			const verb = typeof a.verb === "string" ? a.verb : "read";
 			const agentBench = benchKeyOfExec(exec);
 			const bench = agentBench !== "main" ? agentBench : benchKeyOf(a);
 			const signal = exec.signal;
@@ -795,7 +795,7 @@ function meliteConstruct(request, opts = {}) {
 				...payload
 			});
 			try {
-				if (verb === "read" || verb === "") {
+				if (verb === "read") {
 					const b = await readBench(request, bench, signal);
 					const enriched = await withLastRun(request, b, signal);
 					return out({

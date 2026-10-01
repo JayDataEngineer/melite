@@ -159,7 +159,10 @@ describe('melite_construct read — freshness first', () => {
     })
     const tool = meliteConstruct(request)
     const out = await tool.execute({}, exec()) as Record<string, unknown>
-    assert.equal(out.verb, '')
+    // The echo carries the documented default by name (T11's residual
+    // cured, 2026-10-12): the description says "read (default when
+    // absent)", so the echo is 'read', not the old contradicted ''.
+    assert.equal(out.verb, 'read')
     assert.equal(out.rev, 4)
   })
 
