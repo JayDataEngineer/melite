@@ -18,7 +18,6 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/estate-call": "workspace:*",
     "@melite/models-moss-sfx": "workspace:*"
   },
   "devDependencies": {

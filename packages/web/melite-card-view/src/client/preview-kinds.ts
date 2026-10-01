@@ -3,7 +3,7 @@
  * hour 15). */
 
 import type { FormSpecDoc } from './spec-form.tsx'
-import { mediaKindOf } from '../../../../web-kit/contracts/src/mediaKinds.ts'
+import { mediaKindOf } from '@melite/contracts/mediaKinds'
 
 /** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
  *  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH

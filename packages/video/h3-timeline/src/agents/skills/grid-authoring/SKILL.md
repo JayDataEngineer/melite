@@ -7,7 +7,7 @@ genre: video
 # H3 grid authoring
 
 The source of truth for the grid is
-`packages/video/h3-timeline/src/timelineContract.ts` and the card's
+`packages/models/h3/src/timelineContract.ts` and the card's
 `schema()` implementation. Do not infer additional refusal rules from this
 short guide.
 

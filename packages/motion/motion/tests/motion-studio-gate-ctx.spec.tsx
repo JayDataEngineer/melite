@@ -74,7 +74,7 @@ const readCtl = vi.hoisted(() => ({
   fn: null as null | ((f: Blob) => Promise<string>),
 }))
 
-vi.mock('@melite/card-base/chrome', async (importOriginal) => {
+vi.mock('@melite/card-base/client', async (importOriginal) => {
   const mod = await importOriginal<Record<string, unknown>>()
   const real = mod.readAsDataURL as (f: Blob) => Promise<string>
   return {

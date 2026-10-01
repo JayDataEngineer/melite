@@ -12,7 +12,7 @@ renderer.
 - `skills/video-timeline/` — timeline-specific composition guidance
 - `skills/grid-authoring/` — span/grid authoring details
 
-The executable sources are `../card.ts`, `../timelineContract.ts`, and the
+The executable sources are `../card.ts`, `@melite/h3`'s timelineContract (packages/models/h3/src/timelineContract.ts), and the
 shared card kit. If prose disagrees with those files, the source wins and the
 skill needs correction.
 

@@ -188,4 +188,31 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
     }
     assert.deepEqual(problems, [], problems.join('\n'))
   })
+
+  test('the door resolves: a src import of the door obliges a built client face (a phantom require loads nothing)', () => {
+    const problems: string[] = []
+    for (const pdir of packageDirs()) {
+      const manifest = readManifest(pdir)
+      if (manifest === null) continue
+      const walk = (dir: string): void => {
+        if (!existsSync(dir) || problems.length > 0) return
+        for (const entry of readdirSync(dir, { withFileTypes: true })) {
+          if (entry.name === 'node_modules' || entry.name === 'lib') continue
+          const full = join(dir, entry.name)
+          if (entry.isDirectory()) { walk(full); continue }
+          if (!/\.(ts|tsx)$/.test(entry.name)) continue
+          if (!importHits(readFileSync(full, 'utf8'), ROW_DOOR)) continue
+          // This src file requires the row — the package must ship
+          // the browser face the loader serves (exports['./client']
+          // → lib/client.js), or the browser require has no target.
+          if (!shipsBuiltClient(manifest)) {
+            problems.push(`${relative(REPO, pdir)}: src imports ${ROW_DOOR} but the package ships no built client face — add exports['./client'] (tsdown.client preset) or import the node-plane face`)
+          }
+          return
+        }
+      }
+      walk(join(pdir, 'src'))
+    }
+    assert.deepEqual(problems, [], problems.join('\n'))
+  })
 })

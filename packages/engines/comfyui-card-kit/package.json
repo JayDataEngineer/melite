@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The compose kit — the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
+  "description": "The compose kit \u2014 the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "main": "./src/kit.ts",
   "exports": {
     ".": "./src/kit.ts",
@@ -20,7 +20,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/contracts": "workspace:*",
     "@melite/engine-contract": "workspace:*"

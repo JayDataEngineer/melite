@@ -44610,8 +44610,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"sprite_sheet",
 			"h3_timeline"
 		];
-		/** @deprecated use CARD_TOOLS — kept for back-compat imports */
-		const FLOW_START_TOOL = CARD_TOOLS[0];
 		/** The tab type's identity (the key its body registers under). */
 		const CARDS_TAB_ID = "@melite-plugin/dsh-card-view";
 		/** Required services (fiber inject waiting — the registries must be up
@@ -44750,7 +44748,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		//#endregion
 		exports.CARD_TOOLS = CARD_TOOLS;
-		exports.FLOW_START_TOOL = FLOW_START_TOOL;
 		exports.apply = apply;
 		exports.inject = inject;
 		return module.exports;
@@ -44758,4 +44755,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="8e95b4fc977f7b5a54def216c6bd9e81fb187cba";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="15baaa8ac3296aa6c587f3bd6882787c9d884e15";

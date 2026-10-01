@@ -4,7 +4,7 @@
  * clsx-cn, and the four identical readAsDataURL copies collapsed
  * here). DOM-free, no CSS, no atoms — safe for node and browser.
  *
- * Per-seam subpath: `@melite/card-base/chrome`.
+ * Reached through the `/client` door (`@melite/card-base/client`).
  */
 import { clsx, type ClassValue } from "clsx"
 

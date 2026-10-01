@@ -42999,7 +42999,7 @@ void main() {
 		* clsx-cn, and the four identical readAsDataURL copies collapsed
 		* here). DOM-free, no CSS, no atoms — safe for node and browser.
 		*
-		* Per-seam subpath: `@melite/card-base/chrome`.
+		* Reached through the `/client` door (`@melite/card-base/client`).
 		*/
 		/** Plain classnames joiner (no conflicting utilities to merge —
 		*  plain join is exact). */
@@ -43310,14 +43310,6 @@ void main() {
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 9 6 6 6-6" })
 			});
 		}
-		function ChevronUp({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m18 15-6-6-6 6" })
-			});
-		}
 		function ChevronLeft({ className, style, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
 				className,
@@ -43544,120 +43536,6 @@ void main() {
 				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" })]
 			});
 		}
-		function Grid3x3({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "3",
-						y: "3",
-						width: "18",
-						height: "18",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 9h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 15h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 3v18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 3v18" })
-				]
-			});
-		}
-		function Magnet({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 8 4 4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m12 15 4 4" })
-				]
-			});
-		}
-		function Maximize2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 3h6v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 3-7 7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 21 7-7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 21H3v-6" })
-				]
-			});
-		}
-		function Wand2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m14 7 3 3" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 6v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 14v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 8h4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 16h4" })
-				]
-			});
-		}
-		function Code2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m16 18 6-6-6-6" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m8 6-6 6 6 6" })]
-			});
-		}
-		function RectangleHorizontal({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "2",
-					y: "6",
-					width: "20",
-					height: "12",
-					rx: "2"
-				})
-			});
-		}
-		function RectangleVertical({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "6",
-					y: "2",
-					width: "12",
-					height: "20",
-					rx: "2"
-				})
-			});
-		}
-		function ClipboardCopy({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						x: "8",
-						y: "2",
-						width: "8",
-						height: "4",
-						rx: "1"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 14 2 2 4-4" })
-				]
-			});
-		}
 		function Image$1({ className, style, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
 				className,
@@ -43688,34 +43566,6 @@ void main() {
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" })]
 			});
 		}
-		function Eraser({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M22 21H7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m5 11 9 9" })
-				]
-			});
-		}
-		function ScanFace({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 7V5a2 2 0 0 1 2-2h2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3h2a2 2 0 0 1 2 2v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 17v2a2 2 0 0 1-2 2h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 21H5a2 2 0 0 1-2-2v-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 14s1.5 2 4 2 4-2 4-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 9h.01" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 9h.01" })
-				]
-			});
-		}
 		function Focus({ className, style, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
 				className,
@@ -43744,65 +43594,6 @@ void main() {
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15v6h-6" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m9 9-6-6" }),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m3 9V3h6" })
-				]
-			});
-		}
-		function BoxSelect({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 3H3v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 3H7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 3h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 3h-2v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 9v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 15v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 21h-2v-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M15 21h-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 21H7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 21v-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 15v-2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 9V7" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9 3h2" })
-				]
-			});
-		}
-		function Hourglass({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 22h14" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M5 2h14" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" })
-				]
-			});
-		}
-		function ImageUp({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-						width: "18",
-						height: "18",
-						x: "3",
-						y: "3",
-						rx: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("circle", {
-						cx: "9",
-						cy: "9",
-						r: "2"
-					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m14 17 2-2 2 2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M16 15v4" })
 				]
 			});
 		}
@@ -44052,35 +43843,6 @@ void main() {
 				})
 			});
 		}
-		/** Ideo's inset-square variant (16×16 at 4,4 — the aspect presets). */
-		function SquareSmall({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Svg, {
-				className,
-				style,
-				...rest,
-				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("rect", {
-					x: "4",
-					y: "4",
-					width: "16",
-					height: "16",
-					rx: "2"
-				})
-			});
-		}
-		function Trash2({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 6h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 11v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 11v6" })
-				]
-			});
-		}
 		function Eye({ className, style, ...rest }) {
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
 				className,
@@ -44099,29 +43861,6 @@ void main() {
 				style,
 				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "m6 3 14 9-14 9V3z" })
-			});
-		}
-		function Sparkles({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8L4.3 10.7l5.8-1.9L12 3z" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 3l.7 2.1 2.1.7-2.1.7L19 8.6l-.7-2.1-2.1-.7 2.1-.7L19 3z" })]
-			});
-		}
-		/** Mask's trash lid variant (straight handle bar). */
-		function Trash2Alt({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M3 6h18" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M10 11v6" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M14 11v6" })
-				]
 			});
 		}
 		/** Motion's simplified eye variant. */
@@ -44144,28 +43883,6 @@ void main() {
 				style,
 				...rest,
 				children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M6 4l14 8-14 8V4z" })
-			});
-		}
-		/** Ideo's sun-rays sparkle variant. */
-		function SunSparkle({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 3v3m0 12v3M5.6 5.6l2.2 2.2m8.4 8.4 2.2 2.2M3 12h3m12 0h3M5.6 18.4l2.2-2.2m8.4-8.4 2.2-2.2" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M12 8.5 13.7 12l3.8 1.5-3.8 1.5L12 18.5 10.3 15l-3.8-1.5L10.3 12 12 8.5Z" })]
-			});
-		}
-		/** Mask's wand sparkle variant. */
-		function WandSparkles({ className, style, ...rest }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Svg, {
-				className,
-				style,
-				...rest,
-				children: [
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M9.94 15.5a2 2 0 0 0-1.44-1.44L2 12l6.5-2.06a2 2 0 0 0 1.44-1.44L12 2l2.06 6.5a2 2 0 0 0 1.44 1.44L22 12l-6.5 2.06a2 2 0 0 0-1.44 1.44L12 22l-2.06-6.5z" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M19 3v4" }),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("path", { d: "M21 5h-4" })
-				]
 			});
 		}
 		//#endregion
@@ -48957,39 +48674,12 @@ void main() {
 		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
 		* store is the system, the viewport is its face.
 		*
-		* History: founded 2026-09-12 (the ideo/motion copies collapsed
-		* here). Stroke 36: the shell mounts the viewport — chrome is
-		* shell-owned. Stroke 37: the LAST two private stores died —
-		* web-kit/catalog's (whose toasts NEVER rendered: pushed from module
-		* context with no viewport anywhere, console-only) and
-		* mask-studio's (whose drop-errors never rendered either). Their
-		* pushers migrated here verbatim via the static surface.
-		*
-		* ONE API, two faces (the zustand-classic dual shape):
-		*   - hook:      useToastStore((s) => s.addToast)   — inside React
-		*   - statics:   useToastStore.getState().addToast(type, msg)
-		*                useToastStore.getState().toasts
-		*                useToastStore.subscribe(l) / .setState(patch)
-		*                — module-level pushers (contract stores, import
-		*                hooks) and test reset.
-		*
-		* Rendering: the DSH Toast atom (presentational banner — the atom is
-		* the surface, this module is the system). ToastViewport claims
-		* rendering: the FIRST live viewport renders, every other mounted
-		* viewport renders nothing, and ownership re-broadcasts when owners
-		* unmount — so the shell, the cards console, or any future seat may
-		* mount one and the document still renders toasts exactly once.
-		*
-		* Timing law (verbatim from the kit): errors persist 15s (the
-		* operator must SEE them), success/info auto-dismiss at 5s. Errors
-		* also console.error so nothing is silent even with no viewport.
-		*
-		* The third addToast argument (action {label, onClick}) is ACCEPTED
-		* and ignored: the DSH Toast atom owns the surface and ships no
-		* action chrome — the kit store dropped it the same way. When the
-		* atom grows an action prop, store and render it here.
-		*
-		* Per-seam subpath: `@melite/card-base/toast-store`.
+		* One store for the whole system: pusher modules call the
+		* `getState()`/`subscribe()`/`setState()` statics from module context,
+		* React seats use the hook selector. The last two private stores (in
+		* web-kit/catalog and mask-studio) are gone; their pushers now ride
+		* the `contractToast` seam in @melite/catalog, wired by each browser
+		* entry to this store.
 		*/
 		let nextId = 1;
 		let entries = [];
@@ -49059,8 +48749,8 @@ void main() {
 		/**
 		* ToastViewport — THE RENDERER FACE of the one toast system
 		* (stroke 37). The store lives in ./toastStore.ts (node-safe, no
-		* atom); this file re-exports it so UI users keep the single
-		* `@melite/card-base/toast` import — and mounts the viewport.
+		* atom); this file re-exports it so UI users keep one import —
+		* `@melite/card-base/client` — and mounts the viewport.
 		*
 		* THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
 		* studio shell, the cards console — and the document still renders
@@ -49069,7 +48759,7 @@ void main() {
 		* re-broadcasts when owners unmount. No studio wires it, no studio
 		* can forget it, no seat can duplicate it.
 		*
-		* Per-seam subpath: `@melite/card-base/toast`.
+		* Reached through the `/client` door (`@melite/card-base/client`).
 		*/
 		const liveViewportIds = /* @__PURE__ */ new Set();
 		let viewportEpoch = 0;
@@ -50153,6 +49843,11 @@ void main() {
 		//#endregion
 		//#region src/client/index.ts
 		init_src();
+		const name = "@melite/card-base";
+		const inject = [];
+		/** No client-side effects: the row exists for the browser graph —
+		*  its atoms reach every card through the loader's require. */
+		function apply(_ctx) {}
 		setContractToastSink((type, message, action) => {
 			useToastStore.getState().addToast(type, message, action);
 		});
@@ -50162,7 +49857,6 @@ void main() {
 		exports.AudioLines = AudioLines;
 		exports.AudioStagePreview = AudioStagePreview;
 		exports.Box = Box;
-		exports.BoxSelect = BoxSelect;
 		exports.Brush = Brush;
 		exports.CARD_SLOTS = CARD_SLOTS;
 		exports.Camera = Camera;
@@ -50171,10 +49865,7 @@ void main() {
 		exports.ChevronDown = ChevronDown;
 		exports.ChevronLeft = ChevronLeft;
 		exports.ChevronRight = ChevronRight;
-		exports.ChevronUp = ChevronUp;
 		exports.Clapperboard = Clapperboard;
-		exports.ClipboardCopy = ClipboardCopy;
-		exports.Code2 = Code2;
 		exports.ControlRow = ControlRow;
 		exports.Copy = Copy;
 		exports.Crop = Crop;
@@ -50182,7 +49873,6 @@ void main() {
 		exports.DeclarativeStudio = DeclarativeStudio;
 		exports.Download = Download;
 		exports.EmptyState = EmptyState;
-		exports.Eraser = Eraser;
 		exports.EstateRefusedError = EstateRefusedError;
 		exports.Expand = Expand;
 		exports.Eye = Eye;
@@ -50193,21 +49883,16 @@ void main() {
 		exports.Focus = Focus;
 		exports.Frame = Frame;
 		exports.GlbStagePreview = GlbStagePreview;
-		exports.Grid3x3 = Grid3x3;
 		exports.Hand = Hand;
-		exports.Hourglass = Hourglass;
 		exports.Image = Image$1;
 		exports.ImagePlus = ImagePlus;
 		exports.ImageStagePreview = ImageStagePreview;
-		exports.ImageUp = ImageUp;
 		exports.Info = Info;
 		exports.InputSquare = InputSquare;
 		exports.Layers = Layers;
 		exports.Link2 = Link2;
 		exports.Loader2 = Loader2;
 		exports.MESH_SQUARE_ACCEPT = MESH_SQUARE_ACCEPT;
-		exports.Magnet = Magnet;
-		exports.Maximize2 = Maximize2;
 		exports.MeshStagePreview = MeshStagePreview;
 		exports.ModelAxes = ModelAxes;
 		exports.ModifiersSection = ModifiersSection;
@@ -50225,35 +49910,27 @@ void main() {
 		exports.PoserFigureStage = PoserFigureStage;
 		exports.RailSection = RailSection;
 		exports.RecipePills = RecipePills;
-		exports.RectangleHorizontal = RectangleHorizontal;
-		exports.RectangleVertical = RectangleVertical;
 		exports.ReferenceImageBadge = ReferenceImageBadge;
 		exports.RefreshCw = RefreshCw;
 		exports.ReportView = ReportView;
 		exports.RotateCcw = RotateCcw;
 		exports.RotateCw = RotateCw;
-		exports.ScanFace = ScanFace;
 		exports.SectionLabel = SectionLabel;
 		exports.SeedDice = SeedDice;
 		exports.Skeleton = Skeleton;
 		exports.SourceRow = SourceRow;
-		exports.Sparkles = Sparkles;
 		exports.SpecAtom = SpecAtom;
 		exports.SpecFieldRow = SpecFieldRow;
 		exports.SpecPanel = SpecPanel;
 		exports.SpecSliderAtom = SpecSliderAtom;
 		exports.Square = Square;
-		exports.SquareSmall = SquareSmall;
 		exports.StudioRail = StudioRail;
 		exports.StudioShell = StudioShell;
 		exports.StudioShellErrorLine = StudioShellErrorLine;
-		exports.SunSparkle = SunSparkle;
 		exports.TURNTABLE_SPEED = TURNTABLE_SPEED;
 		exports.Target = Target;
 		exports.Tip = Tip;
 		exports.ToastViewport = ToastViewport;
-		exports.Trash2 = Trash2;
-		exports.Trash2Alt = Trash2Alt;
 		exports.TriStateAtom = TriStateAtom;
 		exports.TriangleAlert = TriangleAlert;
 		exports.Type = Type;
@@ -50262,13 +49939,12 @@ void main() {
 		exports.VideoStagePreview = VideoStagePreview;
 		exports.ViewportAnchor = ViewportAnchor;
 		exports.ViewportFrame = ViewportFrame;
-		exports.Wand2 = Wand2;
-		exports.WandSparkles = WandSparkles;
 		exports.WirePickerModal = WirePickerModal;
 		exports.X = X;
 		exports.activeRecipeId = activeRecipeId;
 		exports.activeRowId = activeRowId;
 		exports.activeVariantId = activeVariantId;
+		exports.apply = apply;
 		exports.applyWeightsHeat = applyWeightsHeat;
 		exports.applyWireframe = applyWireframe;
 		exports.armEstateRemoteLazyBind = armEstateRemoteLazyBind;
@@ -50313,6 +49989,7 @@ void main() {
 		exports.getSnapshot = getSnapshot;
 		exports.groupFields = groupFields;
 		exports.heatColor = heatColor;
+		exports.inject = inject;
 		exports.inputEdgeOf = inputEdgeOf;
 		exports.isEstateRefusal = isEstateRefusal;
 		exports.isHybridKind = isHybridKind;
@@ -50329,6 +50006,7 @@ void main() {
 		exports.modelChoices = modelChoices;
 		exports.modelSwitchPatch = modelSwitchPatch;
 		exports.mountStage3D = mountStage3D;
+		exports.name = name;
 		exports.optionKeyOf = optionKeyOf;
 		exports.parseAssetDrop = parseAssetDrop;
 		exports.pollRunStageUrl = pollRunStageUrl;
@@ -50373,4 +50051,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e4be3a21ed2f2ec9b2acb34ebd8aba9820087b2e";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="29e168da92335dc6af3f1f2af526f3730fc49045";

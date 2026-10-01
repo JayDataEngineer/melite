@@ -6,8 +6,8 @@
  * same declaration shape, DSH-token styling. The rail still projects
  * through the shell-provided slot when one exists.
  *
- * Per-seam subpath: `@melite/card-base/shell` (shell body, rail
- * section, declaration door). Styling rides `./shell.module.css`
+ * Reached through the `/client` door (`@melite/card-base/client`):
+ * shell body, rail section, declaration door. Styling rides `./shell.module.css`
  * (the anny rule set — the superset; the kits' shellErrors look
  * unified here: same border/bg, danger-ink text, reset rows,
  * aligned icon).

@@ -48,8 +48,8 @@ afterEach(() => {
   vi.resetModules()
 })
 
-async function loadEntry(): Promise<typeof import('../index.ts')> {
-  return await import('../index.ts')
+async function loadEntry(): Promise<typeof import('../../src/client/index.ts')> {
+  return await import('../../src/client/index.ts')
 }
 
 describe('the deck client entry', () => {
@@ -69,7 +69,7 @@ describe('the deck client entry', () => {
     // the slot so a rebuilt bundle can claim again.
     expect(disposers.length).toBeGreaterThan(0)
     ;(disposers[0] as () => void)()
-    const guard = await import('../apply-guard.ts')
+    const guard = await import('../../src/client/apply-guard.ts')
     expect(guard.claimDeckApply()).toBe(true)
   })
 

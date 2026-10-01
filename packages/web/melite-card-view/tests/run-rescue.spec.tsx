@@ -16,7 +16,7 @@ import { afterEach, expect, test, vi } from 'vitest'
 import { RunRescue } from '../src/client/run-rescue.tsx'
 
 const wire = vi.hoisted(() => ({ postManageAction: vi.fn() }))
-vi.mock('@melite/card-base/wire', () => wire)
+vi.mock('@melite/card-base/client', () => wire)
 
 const STAGES = [{ params: { model: 'h3-timeline', prompt: 'x' } }]
 

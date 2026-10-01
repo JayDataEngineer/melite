@@ -32,9 +32,6 @@
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-settings": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
-    "@melite-plugin/3d": "workspace:*",
-    "@melite-plugin/motion": "workspace:*",
-    "@melite-plugin/timeline": "workspace:*",
     "@melite/3d-anny": "workspace:*",
     "@melite/3d-img-to-mesh": "workspace:*",
     "@melite/3d-quad-remesh": "workspace:*",
@@ -45,8 +42,6 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/engine-contract": "workspace:*",
-    "@melite/estate-provisioning": "workspace:*",
-    "@melite/formats": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/image-image-gen": "workspace:*",
     "@melite/image-input-prep": "workspace:*",
@@ -102,9 +97,7 @@
     "@melite/models-z-image": "workspace:*",
     "@melite/motion-motion": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",
-    "@stable-canvas/comfyui-client": "^1.5.9",
-    "lucide-react": "*",
-    "react": "^19.3.0"
+    "@stable-canvas/comfyui-client": "^1.5.9"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

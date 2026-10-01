@@ -7,39 +7,12 @@
  * door. The renderer half lives in ./toast.tsx (ToastViewport); the
  * store is the system, the viewport is its face.
  *
- * History: founded 2026-09-12 (the ideo/motion copies collapsed
- * here). Stroke 36: the shell mounts the viewport — chrome is
- * shell-owned. Stroke 37: the LAST two private stores died —
- * web-kit/catalog's (whose toasts NEVER rendered: pushed from module
- * context with no viewport anywhere, console-only) and
- * mask-studio's (whose drop-errors never rendered either). Their
- * pushers migrated here verbatim via the static surface.
- *
- * ONE API, two faces (the zustand-classic dual shape):
- *   - hook:      useToastStore((s) => s.addToast)   — inside React
- *   - statics:   useToastStore.getState().addToast(type, msg)
- *                useToastStore.getState().toasts
- *                useToastStore.subscribe(l) / .setState(patch)
- *                — module-level pushers (contract stores, import
- *                hooks) and test reset.
- *
- * Rendering: the DSH Toast atom (presentational banner — the atom is
- * the surface, this module is the system). ToastViewport claims
- * rendering: the FIRST live viewport renders, every other mounted
- * viewport renders nothing, and ownership re-broadcasts when owners
- * unmount — so the shell, the cards console, or any future seat may
- * mount one and the document still renders toasts exactly once.
- *
- * Timing law (verbatim from the kit): errors persist 15s (the
- * operator must SEE them), success/info auto-dismiss at 5s. Errors
- * also console.error so nothing is silent even with no viewport.
- *
- * The third addToast argument (action {label, onClick}) is ACCEPTED
- * and ignored: the DSH Toast atom owns the surface and ships no
- * action chrome — the kit store dropped it the same way. When the
- * atom grows an action prop, store and render it here.
- *
- * Per-seam subpath: `@melite/card-base/toast-store`.
+ * One store for the whole system: pusher modules call the
+ * `getState()`/`subscribe()`/`setState()` statics from module context,
+ * React seats use the hook selector. The last two private stores (in
+ * web-kit/catalog and mask-studio) are gone; their pushers now ride
+ * the `contractToast` seam in @melite/catalog, wired by each browser
+ * entry to this store.
  */
 import { useSyncExternalStore } from "react"
 

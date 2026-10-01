@@ -28,7 +28,6 @@
     "@melite/contracts": "workspace:*",
     "@melite/estate-call": "workspace:*",
     "@melite/models-h3": "workspace:*",
-    "clsx": "*",
     "react": "^19.3.0"
   },
   "devDependencies": {

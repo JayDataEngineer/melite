@@ -16,6 +16,18 @@
  * subpath require would miss the table; stripClientSuffix strips
  * only '/client', the DSH convention dsh-api-gateway set).
  *
+ * THE ROW IDENTITY (the dual-face law, both planes). The lane
+ * composition declares this package as a cordis plugin row
+ * (`card-studio-atoms` in profile/cordis.patch.yml), and the shell
+ * registers EVERY boot row on both planes — `loader.import` →
+ * `unwrapExports` → `registry.plugin`, which refuses a namespace
+ * without `apply`. So the browser face carries the same marker the
+ * host face carries at `exports['.']` (src/host.ts): name, inject,
+ * apply. A row that is a plugin node-side and a plain module in the
+ * browser dies the WHOLE client plugin graph with "invalid plugin,
+ * expect function or object with an apply method" — the failure
+ * paints an empty shell, not a missing card.
+ *
  * CONTRACT TOASTS (the row is the one host that outlives every
  * reporting surface): the catalog contract stores inline into
  * every client bundle that reaches @melite/formats, and each copy
@@ -23,8 +35,16 @@
  * the row's own toast store, so verdicts surface from the same
  * instance that renders them.
  */
+import type { Context } from '@deepseek-ai/cordis'
 import { setContractToastSink } from '@melite/catalog'
 import { useToastStore } from '../index.ts'
+
+export const name = '@melite/card-base'
+export const inject: string[] = []
+
+/** No client-side effects: the row exists for the browser graph —
+ *  its atoms reach every card through the loader's require. */
+export function apply(_ctx: Context): void {}
 
 setContractToastSink((type, message, action) => {
   useToastStore.getState().addToast(type, message, action)

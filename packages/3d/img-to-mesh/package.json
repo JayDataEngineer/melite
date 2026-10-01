@@ -21,15 +21,12 @@
     "@melite-plugin/3d": "workspace:*",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/card-base": "workspace:*",
-    "@melite/catalog": "workspace:*",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/estate-call": "workspace:*",
     "@melite/models-pixal3d": "workspace:*",
     "@melite/models-transfer_rig": "workspace:*",
     "@melite/models-trellis2-native": "workspace:*",
-    "clsx": "*",
     "react": "^19.3.0"
   },
   "devDependencies": {

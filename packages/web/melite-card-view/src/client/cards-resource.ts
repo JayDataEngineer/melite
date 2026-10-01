@@ -1,5 +1,5 @@
 // cards-resource.ts — the uploads door's client verb now lives in
-// the base (@melite/card-base/wire — the construction law's upload
+// the base (@melite/card-base/client — the construction law's upload
 // half); re-exported here for the view's import paths.
 export { uploadInputFile } from '@melite/card-base/client'
 
@@ -209,7 +209,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // tool). The contract floor owns the decision now; the local name
 // stays for this module's callers, but there is no second producer
 // to drift.
-import { benchSessionOf } from '../../../../web-kit/contracts/src/benchStage.ts'
+import { benchSessionOf } from '@melite/contracts/benchStage'
 export { benchSessionOf as benchSessionKey }
 
 /** The bench address for one session key. */
@@ -369,7 +369,7 @@ export async function fetchBench(sessionKey: string, signal?: AbortSignal): Prom
 }
 
 /** media/list — the runs-tree library (moved beside the bind it
- *  rides: @melite/card-base/media-library — re-exported here so the
+ *  rides: @melite/card-base/client — re-exported here so the
  *  tab's existing import keeps working). */
 export { fetchMediaLibrary } from '@melite/card-base/client'
 

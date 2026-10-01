@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { ComponentType } from 'react'
 
-import { ComfyManagerPanel, registerAssetsTab } from '../assets-tab.tsx'
+import { ComfyManagerPanel, registerAssetsTab } from '../../src/client/assets-tab.tsx'
 
 interface TabDef {
   id: string

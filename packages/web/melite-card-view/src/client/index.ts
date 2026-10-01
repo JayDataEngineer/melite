@@ -51,12 +51,11 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base/client'
+import { bindEstateRemoteFromRemote, useToastStore, type EstateNamespaces } from '@melite/card-base/client'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 
 import { setContractToastSink } from '@melite/catalog'
-import { useToastStore } from '@melite/card-base/client'
 
 // CONTRACT TOASTS — wire the inlined catalog contract stores to the
 // row's toast store (the one host that outlives every reporting
@@ -105,9 +104,6 @@ export const CARD_TOOLS = [
   // h3_timeline chat run rendered the generic tool card, no rows.
   'h3_timeline',
 ]
-/** @deprecated use CARD_TOOLS — kept for back-compat imports */
-export const FLOW_START_TOOL = CARD_TOOLS[0]
-
 /** The tab type's identity (the key its body registers under). */
 const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 

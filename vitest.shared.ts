@@ -96,10 +96,10 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   // module-table registration the shell serves); the row's `types`
   // condition already resolves typecheck to src. Vitest resolves
   // defaults, so every test-plane import of the /client specifier
-  // maps to the package's src barrel — the same singleton law the
-  // rows below enforce — instead of executing the registration
-  // bundle outside a browser.
-  '@melite/card-base/client': path.join(import.meta.dirname, 'packages/web/card-base/src/index.ts'),
+  // maps to the package's src client face — the same file the types
+  // condition names, so typecheck and runtime resolve ONE graph, and
+  // the row's own sink wiring executes under test.
+  '@melite/card-base/client': path.join(import.meta.dirname, 'packages/web/card-base/src/client/index.ts'),
   '@melite-plugin/dsh-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
   '@melite-plugin/melite-run-wire': path.join(import.meta.dirname, 'packages/web/melite-run-wire/src/index.ts'),
   // the drafts REMOTE subpath — MUST sit BEFORE the parent row

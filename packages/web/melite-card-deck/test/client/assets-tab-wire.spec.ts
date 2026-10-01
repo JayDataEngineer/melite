@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { postManage } from '../assets-tab.tsx'
+import { postManage } from '../../src/client/assets-tab.tsx'
 
 interface Frame {
   type?: string

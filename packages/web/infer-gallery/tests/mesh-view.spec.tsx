@@ -29,7 +29,7 @@ const scene = new THREE.Scene()
 const loadGLB = vi.fn()
 const autoFitToHeight = vi.fn()
 
-vi.mock('@melite/card-base/stage3d', () => ({
+vi.mock('@melite/card-base/client', () => ({
   mountStage3D: (...args: unknown[]) => mountStage3D(...args),
 }))
 vi.mock('@melite/formats/glbLoad', () => ({

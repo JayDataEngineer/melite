@@ -1,8 +1,8 @@
 /**
  * ToastViewport — THE RENDERER FACE of the one toast system
  * (stroke 37). The store lives in ./toastStore.ts (node-safe, no
- * atom); this file re-exports it so UI users keep the single
- * `@melite/card-base/toast` import — and mounts the viewport.
+ * atom); this file re-exports it so UI users keep one import —
+ * `@melite/card-base/client` — and mounts the viewport.
  *
  * THE MOUNT-CLAIM LAW: the viewport may mount at every seat — the
  * studio shell, the cards console — and the document still renders
@@ -11,7 +11,7 @@
  * re-broadcasts when owners unmount. No studio wires it, no studio
  * can forget it, no seat can duplicate it.
  *
- * Per-seam subpath: `@melite/card-base/toast`.
+ * Reached through the `/client` door (`@melite/card-base/client`).
  */
 import { useEffect, useRef, useSyncExternalStore } from "react"
 import { Toast } from "@deepseek-ai/dsh-client-ui-primitives"

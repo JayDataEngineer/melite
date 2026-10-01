@@ -14,7 +14,7 @@
  * card's look changes; ideo's unused Square is dropped, mask's
  * lucide Square survives. TriangleAlert aliases AlertTriangle.
  *
- * Per-seam subpath: `@melite/card-base/icons`.
+ * Reached through the `/client` door (`@melite/card-base/client`).
  */
 import type { CSSProperties, SVGProps } from "react"
 
@@ -64,14 +64,6 @@ export function ChevronDown({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>
       <path d="m6 9 6 6 6-6" />
-    </Svg>
-  )
-}
-
-export function ChevronUp({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="m18 15-6-6-6 6" />
     </Svg>
   )
 }
@@ -253,87 +245,6 @@ export function Copy({ className, style, ...rest }: IconProps) {
   )
 }
 
-export function Grid3x3({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9h18" />
-      <path d="M3 15h18" />
-      <path d="M9 3v18" />
-      <path d="M15 3v18" />
-    </Svg>
-  )
-}
-
-export function Magnet({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="m6 15-4-4 6.75-6.77a7.79 7.79 0 0 1 11 11L13 22l-4-4 6.39-6.36a2.14 2.14 0 0 0-3-3L6 15" />
-      <path d="m5 8 4 4" />
-      <path d="m12 15 4 4" />
-    </Svg>
-  )
-}
-
-export function Maximize2({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M15 3h6v6" />
-      <path d="m21 3-7 7" />
-      <path d="m3 21 7-7" />
-      <path d="M9 21H3v-6" />
-    </Svg>
-  )
-}
-
-export function Wand2({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="m21.64 3.64-1.28-1.28a1.21 1.21 0 0 0-1.72 0L2.36 18.64a1.21 1.21 0 0 0 0 1.72l1.28 1.28a1.2 1.2 0 0 0 1.72 0L21.64 5.36a1.2 1.2 0 0 0 0-1.72Z" />
-      <path d="m14 7 3 3" />
-      <path d="M5 6v4" />
-      <path d="M19 14v4" />
-      <path d="M3 8h4" />
-      <path d="M17 16h4" />
-    </Svg>
-  )
-}
-
-export function Code2({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="m16 18 6-6-6-6" />
-      <path d="m8 6-6 6 6 6" />
-    </Svg>
-  )
-}
-
-export function RectangleHorizontal({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect x="2" y="6" width="20" height="12" rx="2" />
-    </Svg>
-  )
-}
-
-export function RectangleVertical({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect x="6" y="2" width="12" height="20" rx="2" />
-    </Svg>
-  )
-}
-
-export function ClipboardCopy({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect x="8" y="2" width="8" height="4" rx="1" />
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
-      <path d="m9 14 2 2 4-4" />
-    </Svg>
-  )
-}
-
 export function Image({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>
@@ -349,30 +260,6 @@ export function Brush({ className, style, ...rest }: IconProps) {
     <Svg className={className} style={style} {...rest}>
       <path d="m9.06 11.9 8.07-8.06a2.85 2.85 0 1 1 4.03 4.03l-8.06 8.08" />
       <path d="M7.07 14.94c-1.66 0-3 1.35-3 3.02 0 1.33-2.5 1.52-2 2.02 1.08 1.1 2.49 2.02 4 2.02 2.2 0 4-1.8 4-4.04a3.01 3.01 0 0 0-3-3.02z" />
-    </Svg>
-  )
-}
-
-export function Eraser({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" />
-      <path d="M22 21H7" />
-      <path d="m5 11 9 9" />
-    </Svg>
-  )
-}
-
-export function ScanFace({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M3 7V5a2 2 0 0 1 2-2h2" />
-      <path d="M17 3h2a2 2 0 0 1 2 2v2" />
-      <path d="M21 17v2a2 2 0 0 1-2 2h-2" />
-      <path d="M7 21H5a2 2 0 0 1-2-2v-2" />
-      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
-      <path d="M9 9h.01" />
-      <path d="M15 9h.01" />
     </Svg>
   )
 }
@@ -396,49 +283,6 @@ export function Expand({ className, style, ...rest }: IconProps) {
       <path d="m21 15v6h-6" />
       <path d="m9 9-6-6" />
       <path d="m3 9V3h6" />
-    </Svg>
-  )
-}
-
-export function BoxSelect({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M5 3H3v2" />
-      <path d="M9 3H7" />
-      <path d="M17 3h-2" />
-      <path d="M21 3h-2v2" />
-      <path d="M21 9v2" />
-      <path d="M21 15v2" />
-      <path d="M21 21h-2v-2" />
-      <path d="M15 21h-2" />
-      <path d="M9 21H7" />
-      <path d="M3 21v-2" />
-      <path d="M3 15v-2" />
-      <path d="M3 9V7" />
-      <path d="M9 3h2" />
-    </Svg>
-  )
-}
-
-export function Hourglass({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M5 22h14" />
-      <path d="M5 2h14" />
-      <path d="M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22" />
-      <path d="M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2" />
-    </Svg>
-  )
-}
-
-export function ImageUp({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect width="18" height="18" x="3" y="3" rx="2" />
-      <circle cx="9" cy="9" r="2" />
-      <path d="m21 15-3.1-3.1a2 2 0 0 0-2.8 0L6 21" />
-      <path d="m14 17 2-2 2 2" />
-      <path d="M16 15v4" />
     </Svg>
   )
 }
@@ -626,27 +470,6 @@ export function Square({ className, style, ...rest }: IconProps) {
   )
 }
 
-/** Ideo's inset-square variant (16×16 at 4,4 — the aspect presets). */
-export function SquareSmall({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <rect x="4" y="4" width="16" height="16" rx="2" />
-    </Svg>
-  )
-}
-
-export function Trash2({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M3 6h18" />
-      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
-    </Svg>
-  )
-}
-
 export function Eye({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>
@@ -660,30 +483,6 @@ export function Play({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>
       <path d="m6 3 14 9-14 9V3z" />
-    </Svg>
-  )
-}
-
-export function Sparkles({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8L4.3 10.7l5.8-1.9L12 3z" />
-      <path d="M19 3l.7 2.1 2.1.7-2.1.7L19 8.6l-.7-2.1-2.1-.7 2.1-.7L19 3z" />
-    </Svg>
-  )
-}
-
-/* ── variant drawings (distinct looks, distinct names) ────────── */
-
-/** Mask's trash lid variant (straight handle bar). */
-export function Trash2Alt({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M3 6h18" />
-      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-      <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-      <path d="M10 11v6" />
-      <path d="M14 11v6" />
     </Svg>
   )
 }
@@ -703,27 +502,6 @@ export function PlayAlt({ className, style, ...rest }: IconProps) {
   return (
     <Svg className={className} style={style} {...rest}>
       <path d="M6 4l14 8-14 8V4z" />
-    </Svg>
-  )
-}
-
-/** Ideo's sun-rays sparkle variant. */
-export function SunSparkle({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M12 3v3m0 12v3M5.6 5.6l2.2 2.2m8.4 8.4 2.2 2.2M3 12h3m12 0h3M5.6 18.4l2.2-2.2m8.4-8.4 2.2-2.2" />
-      <path d="M12 8.5 13.7 12l3.8 1.5-3.8 1.5L12 18.5 10.3 15l-3.8-1.5L10.3 12 12 8.5Z" />
-    </Svg>
-  )
-}
-
-/** Mask's wand sparkle variant. */
-export function WandSparkles({ className, style, ...rest }: IconProps) {
-  return (
-    <Svg className={className} style={style} {...rest}>
-      <path d="M9.94 15.5a2 2 0 0 0-1.44-1.44L2 12l6.5-2.06a2 2 0 0 0 1.44-1.44L12 2l2.06 6.5a2 2 0 0 0 1.44 1.44L22 12l-6.5 2.06a2 2 0 0 0-1.44 1.44L12 22l-2.06-6.5z" />
-      <path d="M19 3v4" />
-      <path d="M21 5h-4" />
     </Svg>
   )
 }

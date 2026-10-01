@@ -458,9 +458,9 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
 }
 
 /** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
- *  law: NO @react-three in any client bundle). Re-exported here so
- *  the preview seam stays ONE subpath: import { GlbStagePreview }
- *  from '@melite/card-base/preview'. */
+ *  law: NO @react-three in any client bundle). Re-exported here so the
+ *  preview seam stays ONE module: import { GlbStagePreview } from
+ *  '@melite/card-base/client'. */
 export { GlbStagePreview, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.tsx'
 export { ReportView } from './report-view.tsx'
 export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.tsx'

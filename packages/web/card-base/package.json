@@ -10,31 +10,17 @@
       "types": "./src/client/index.ts",
       "default": "./lib/client.js"
     },
-    "./slots": "./src/slots.ts",
     "./spec": "./src/spec.ts",
-    "./form": "./src/form.tsx",
-    "./square": "./src/square.tsx",
-    "./wire": "./src/wire.ts",
     "./package.json": "./package.json",
-    "./mods": "./src/mods.tsx",
-    "./shell": "./src/shell.tsx",
-    "./wirePicker": "./src/wirePicker.tsx",
-    "./icons": "./src/icons.tsx",
-    "./chrome": "./src/chrome.ts",
-    "./toast": "./src/toast.tsx",
-    "./preview": "./src/preview.tsx",
-    "./stage3d": "./src/stage3d.ts",
-    "./toast-store": "./src/toastStore.ts",
-    "./estate-remote": "./src/estate-remote.ts",
-    "./runs-policy": "./src/runs-policy.ts",
-    "./media-library": "./src/media-library.ts"
+    "./preview": "./src/preview.tsx"
   },
   "peerDependencies": {
     "@deepseek-ai/dsh-client-ui-slots": ">=0.2.0-rc.1 <0.3.0",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "react": "^19.2.6"
+    "react": "^19.2.6",
+    "@deepseek-ai/cordis": "workspace:*"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/dsh-client-ui-slots": {
@@ -42,13 +28,13 @@
     }
   },
   "devDependencies": {
-    "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.1",
     "@types/node": "^22.20.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.184.1",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@deepseek-ai/cordis": "workspace:*"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

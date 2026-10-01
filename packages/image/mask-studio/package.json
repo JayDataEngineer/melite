@@ -2,7 +2,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "the mask-studio carrier, DEMOTED (CONTRACT D — the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
+  "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
   "exports": {
     "./package.json": "./package.json",
     "./paint-canvas": "./src/ui/PaintLeafCanvas.tsx",
@@ -14,15 +14,7 @@
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
-    "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
-    "@deepseek-ai/schemastery": "^3.18.4",
-    "@melite/card-base": "workspace:*",
-    "@melite/comfyui-card-kit": "workspace:*",
-    "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "@melite/estate-call": "workspace:*",
-    "@melite/formats": "workspace:*",
-    "clsx": "*",
     "react": "^19.3.0"
   },
   "devDependencies": {

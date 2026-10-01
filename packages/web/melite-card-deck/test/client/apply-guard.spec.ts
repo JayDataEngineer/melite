@@ -6,8 +6,8 @@
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-async function loadGuard(): Promise<typeof import('../apply-guard.ts')> {
-  return await import('../apply-guard.ts')
+async function loadGuard(): Promise<typeof import('../../src/client/apply-guard.ts')> {
+  return await import('../../src/client/apply-guard.ts')
 }
 
 afterEach(() => {

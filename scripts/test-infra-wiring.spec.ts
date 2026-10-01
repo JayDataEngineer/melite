@@ -87,7 +87,15 @@ describe('vitest tier wiring', () => {
           assert.ok(
             artifact !== undefined
               ? (target as string).endsWith(artifact)
-              : (target as string).endsWith('/src/index.ts'),
+              : // The SOURCE plane is the law (a codegen Typert key above
+                // is the only built-artifact exception): any face entry
+                // under a package's src/ counts — the /client door keys
+                // resolve to their own types face (src/client/index.ts),
+                // which is source, not an artifact.
+                (target as string).includes('/packages/') &&
+                (target as string).includes('/src/') &&
+                (target as string).endsWith('.ts') &&
+                ! (target as string).includes('/lib/'),
             `${file}: facade key ${key} must resolve to ${artifact ?? 'src'}, got ${target}`,
           )
         }

@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor, within } from '@testing-library/react
 import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 
-import { ComfyManagerPanel } from '../assets-tab'
+import { ComfyManagerPanel } from '../../src/client/assets-tab'
 
 interface Canned {
   action?: string
