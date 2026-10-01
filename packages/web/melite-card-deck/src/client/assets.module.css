@@ -224,37 +224,10 @@
   word-break: break-word;
 }
 
-.btn {
-  min-width: 0;
-  max-width: 100%;
-  background: var(--dsw-alias-bg-layer-2);
-  border: 1px solid var(--dsw-alias-border-l2);
-  color: inherit;
-  border-radius: 7px;
-  padding: 5px 9px;
-  font-size: 12px;
-  line-height: 1.3;
-  text-align: center;
-  overflow-wrap: anywhere;
-  cursor: pointer;
-}
-
-.btn:hover:not(:disabled) {
-  background: var(--dsw-alias-interactive-bg-hover);
-}
-
-.btn:disabled {
-  opacity: .45;
-  cursor: default;
-}
-
-.btnPrimary {
-  border-color: var(--dsw-alias-state-business-primary);
-  color: var(--dsw-alias-state-business-primary);
-}
-
+/* The danger treatment rides Button's className passthrough over the
+ * borderless ghost variant, so it carries its own border. */
 .btnDanger {
-  border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);
   color: var(--dsw-alias-state-error-primary);
 }
 
@@ -589,19 +562,6 @@
 
 .snapshotRow > .wrapText {
   flex: 1 1 150px;
-}
-
-.checkRow {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  font-size: 11px;
-  cursor: pointer;
-}
-
-.checkRow input {
-  flex: 0 0 auto;
-  margin-top: 2px;
 }
 
 .lifecycleActions {

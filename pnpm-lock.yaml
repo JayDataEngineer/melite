@@ -2664,6 +2664,9 @@ importers:
       '@deepseek-ai/dsh':
         specifier: '>=0.2.0-rc.1 <0.3.0'
         version: 0.2.0-rc.1(6993605508a484e8995f37b6ffd49e6c)
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts

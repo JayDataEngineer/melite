@@ -28,6 +28,7 @@ window.__ModuleLoader__.load({
 		//#endregion
 		let react = require("react");
 		react = __toESM(react, 1);
+		let _deepseek_ai_dsh_client_ui_primitives = require("@deepseek-ai/dsh-client-ui-primitives");
 		let react_jsx_runtime = require("react/jsx-runtime");
 		//#region ../../web-kit/contracts/src/applyGuard.ts
 		function createApplyGuard(label, opts = {}) {
@@ -63,8 +64,8 @@ window.__ModuleLoader__.load({
 		}
 		//#endregion
 		//#region \0dsh-css:melite-card-deck/src/client/assets.module.css.mjs
-		const css = ".ZRfIha_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.ZRfIha_root,.ZRfIha_root *{box-sizing:border-box}.ZRfIha_head,.ZRfIha_healthTop,.ZRfIha_resultHead,.ZRfIha_resultRecordHead,.ZRfIha_nextRow,.ZRfIha_resourceMain,.ZRfIha_resultItem,.ZRfIha_resourceItem,.ZRfIha_lifecycleActions,.ZRfIha_checkRow,.ZRfIha_device{min-width:0}.ZRfIha_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.ZRfIha_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.ZRfIha_sub,.ZRfIha_freshness,.ZRfIha_resultKind,.ZRfIha_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.ZRfIha_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.ZRfIha_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.ZRfIha_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.ZRfIha_healthPanel{gap:7px}.ZRfIha_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.ZRfIha_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.ZRfIha_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.ZRfIha_healthLabel{overflow-wrap:anywhere;font-size:13px}.ZRfIha_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.ZRfIha_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.ZRfIha_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.ZRfIha_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.ZRfIha_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.ZRfIha_row>label{flex:150px;min-width:0;max-width:100%}.ZRfIha_field{flex-direction:column;gap:3px;min-width:0;display:flex}.ZRfIha_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.ZRfIha_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.ZRfIha_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.ZRfIha_mono,.ZRfIha_hash{font-family:ui-monospace,monospace;font-size:11px}.ZRfIha_wrapText,.ZRfIha_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.ZRfIha_btn{background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l2);min-width:0;max-width:100%;color:inherit;text-align:center;overflow-wrap:anywhere;cursor:pointer;border-radius:7px;padding:5px 9px;font-size:12px;line-height:1.3}.ZRfIha_btn:hover:not(:disabled){background:var(--dsw-alias-interactive-bg-hover)}.ZRfIha_btn:disabled{opacity:.45;cursor:default}.ZRfIha_btnPrimary{border-color:var(--dsw-alias-state-business-primary);color:var(--dsw-alias-state-business-primary)}.ZRfIha_btnDanger{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_dot{border-radius:50%;flex:none;width:9px;height:9px}.ZRfIha_dotOk{background:var(--dsw-alias-state-business-primary);}.ZRfIha_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.ZRfIha_dotBad{background:var(--dsw-alias-state-error-primary);}.ZRfIha_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.ZRfIha_deviceList{flex-direction:column;gap:5px;display:flex}.ZRfIha_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.ZRfIha_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.ZRfIha_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.ZRfIha_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.ZRfIha_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.ZRfIha_advanced[open]{flex-direction:column;gap:8px;display:flex}.ZRfIha_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.ZRfIha_operatorNote,.ZRfIha_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_dangerNote,.ZRfIha_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.ZRfIha_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.ZRfIha_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.ZRfIha_resultRecord+.ZRfIha_resultRecord{margin-top:7px}.ZRfIha_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.ZRfIha_resultAction,.ZRfIha_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.ZRfIha_resultKind{margin-left:auto}.ZRfIha_resultOk,.ZRfIha_resultWarn,.ZRfIha_resultBad,.ZRfIha_stateOk,.ZRfIha_stateWarn,.ZRfIha_stateBad,.ZRfIha_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.ZRfIha_resultOk,.ZRfIha_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.ZRfIha_resultWarn,.ZRfIha_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.ZRfIha_resultBad,.ZRfIha_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.ZRfIha_resultMeta>span,.ZRfIha_resultFlags>span{overflow-wrap:anywhere;min-width:0}.ZRfIha_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.ZRfIha_resultItem,.ZRfIha_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.ZRfIha_resultItem+.ZRfIha_resultItem,.ZRfIha_resourceItem+.ZRfIha_resourceItem{margin-top:4px}.ZRfIha_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.ZRfIha_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.ZRfIha_resourceList,.ZRfIha_resourceItems,.ZRfIha_list{min-width:0;margin:0;padding:0;list-style:none}.ZRfIha_resourceList,.ZRfIha_list{flex-direction:column;gap:5px;display:flex}.ZRfIha_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.ZRfIha_resourceMain{flex-wrap:wrap;align-items:center;gap:5px 8px;display:flex}.ZRfIha_resourceRow>.ZRfIha_sub{margin-top:4px}.ZRfIha_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.ZRfIha_resourceItem{padding:4px 5px}.ZRfIha_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.ZRfIha_snapshotRow>.ZRfIha_wrapText{flex:150px}.ZRfIha_checkRow{cursor:pointer;align-items:flex-start;gap:6px;font-size:11px;display:flex}.ZRfIha_checkRow input{flex:none;margin-top:2px}.ZRfIha_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.ZRfIha_root{gap:8px;padding:8px}.ZRfIha_section{padding:8px}.ZRfIha_healthGrid,.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:minmax(0,1fr)}.ZRfIha_row>label,.ZRfIha_healthCopy{flex-basis:100%}.ZRfIha_device{grid-template-columns:minmax(0,1fr)}.ZRfIha_bar{grid-row:2}.ZRfIha_resultKind{width:100%;margin-left:0}}";
-		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@60319980";
+		const css = ".ZRfIha_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.ZRfIha_root,.ZRfIha_root *{box-sizing:border-box}.ZRfIha_head,.ZRfIha_healthTop,.ZRfIha_resultHead,.ZRfIha_resultRecordHead,.ZRfIha_nextRow,.ZRfIha_resourceMain,.ZRfIha_resultItem,.ZRfIha_resourceItem,.ZRfIha_lifecycleActions,.ZRfIha_checkRow,.ZRfIha_device{min-width:0}.ZRfIha_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.ZRfIha_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.ZRfIha_sub,.ZRfIha_freshness,.ZRfIha_resultKind,.ZRfIha_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.ZRfIha_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.ZRfIha_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.ZRfIha_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.ZRfIha_healthPanel{gap:7px}.ZRfIha_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.ZRfIha_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.ZRfIha_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.ZRfIha_healthLabel{overflow-wrap:anywhere;font-size:13px}.ZRfIha_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.ZRfIha_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.ZRfIha_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.ZRfIha_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.ZRfIha_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.ZRfIha_row>label{flex:150px;min-width:0;max-width:100%}.ZRfIha_field{flex-direction:column;gap:3px;min-width:0;display:flex}.ZRfIha_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.ZRfIha_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.ZRfIha_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.ZRfIha_mono,.ZRfIha_hash{font-family:ui-monospace,monospace;font-size:11px}.ZRfIha_wrapText,.ZRfIha_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.ZRfIha_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_dot{border-radius:50%;flex:none;width:9px;height:9px}.ZRfIha_dotOk{background:var(--dsw-alias-state-business-primary);}.ZRfIha_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.ZRfIha_dotBad{background:var(--dsw-alias-state-error-primary);}.ZRfIha_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.ZRfIha_deviceList{flex-direction:column;gap:5px;display:flex}.ZRfIha_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.ZRfIha_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.ZRfIha_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.ZRfIha_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.ZRfIha_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.ZRfIha_advanced[open]{flex-direction:column;gap:8px;display:flex}.ZRfIha_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.ZRfIha_operatorNote,.ZRfIha_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_dangerNote,.ZRfIha_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.ZRfIha_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.ZRfIha_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.ZRfIha_resultRecord+.ZRfIha_resultRecord{margin-top:7px}.ZRfIha_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.ZRfIha_resultAction,.ZRfIha_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.ZRfIha_resultKind{margin-left:auto}.ZRfIha_resultOk,.ZRfIha_resultWarn,.ZRfIha_resultBad,.ZRfIha_stateOk,.ZRfIha_stateWarn,.ZRfIha_stateBad,.ZRfIha_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.ZRfIha_resultOk,.ZRfIha_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.ZRfIha_resultWarn,.ZRfIha_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.ZRfIha_resultBad,.ZRfIha_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.ZRfIha_resultMeta>span,.ZRfIha_resultFlags>span{overflow-wrap:anywhere;min-width:0}.ZRfIha_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.ZRfIha_resultItem,.ZRfIha_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.ZRfIha_resultItem+.ZRfIha_resultItem,.ZRfIha_resourceItem+.ZRfIha_resourceItem{margin-top:4px}.ZRfIha_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.ZRfIha_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.ZRfIha_resourceList,.ZRfIha_resourceItems,.ZRfIha_list{min-width:0;margin:0;padding:0;list-style:none}.ZRfIha_resourceList,.ZRfIha_list{flex-direction:column;gap:5px;display:flex}.ZRfIha_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.ZRfIha_resourceMain{flex-wrap:wrap;align-items:center;gap:5px 8px;display:flex}.ZRfIha_resourceRow>.ZRfIha_sub{margin-top:4px}.ZRfIha_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.ZRfIha_resourceItem{padding:4px 5px}.ZRfIha_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.ZRfIha_snapshotRow>.ZRfIha_wrapText{flex:150px}.ZRfIha_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.ZRfIha_root{gap:8px;padding:8px}.ZRfIha_section{padding:8px}.ZRfIha_healthGrid,.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:minmax(0,1fr)}.ZRfIha_row>label,.ZRfIha_healthCopy{flex-basis:100%}.ZRfIha_device{grid-template-columns:minmax(0,1fr)}.ZRfIha_bar{grid-row:2}.ZRfIha_resultKind{width:100%;margin-left:0}}";
+		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@d320200e";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-deck";
@@ -76,9 +77,7 @@ window.__ModuleLoader__.load({
 			"advanced": "ZRfIha_advanced",
 			"bar": "ZRfIha_bar",
 			"barFill": "ZRfIha_barFill",
-			"btn": "ZRfIha_btn",
 			"btnDanger": "ZRfIha_btnDanger",
-			"btnPrimary": "ZRfIha_btnPrimary",
 			"checkRow": "ZRfIha_checkRow",
 			"count": "ZRfIha_count",
 			"dangerNote": "ZRfIha_dangerNote",
@@ -665,8 +664,8 @@ window.__ModuleLoader__.load({
 				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 					className: assets_module_css_default.fieldLabel,
 					children: label
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-					className: assets_module_css_default.input + (mono === true ? " " + assets_module_css_default.mono : ""),
+				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+					className: mono === true ? assets_module_css_default.mono : void 0,
 					value,
 					placeholder,
 					onChange: (event) => {
@@ -684,8 +683,8 @@ window.__ModuleLoader__.load({
 						className: assets_module_css_default.fieldLabel,
 						children: label
 					}),
-					/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-						className: assets_module_css_default.input + (mono === true ? " " + assets_module_css_default.mono : ""),
+					/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Input, {
+						className: mono === true ? assets_module_css_default.mono : void 0,
 						type: "search",
 						list: listId,
 						value,
@@ -725,33 +724,6 @@ window.__ModuleLoader__.load({
 						children: option.label
 					}, option.value))]
 				})]
-			});
-		}
-		function Btn({ children, onClick, busy, primary, danger, disabled }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
-				type: "button",
-				className: [
-					assets_module_css_default.btn,
-					primary === true ? " " + assets_module_css_default.btnPrimary : "",
-					danger === true ? " " + assets_module_css_default.btnDanger : ""
-				].join(""),
-				disabled: disabled === true || busy === true,
-				"aria-busy": busy === true,
-				onClick,
-				children: [busy === true ? "… " : "", children]
-			});
-		}
-		function ForceToggle({ checked, label, onChange, disabled }) {
-			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("label", {
-				className: assets_module_css_default.checkRow,
-				children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("input", {
-					type: "checkbox",
-					checked,
-					disabled,
-					onChange: (event) => {
-						onChange(event.target.checked);
-					}
-				}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", { children: label })]
 			});
 		}
 		function resultLabel(reply, state) {
@@ -845,7 +817,7 @@ window.__ModuleLoader__.load({
 					}),
 					nextAction !== "" && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 						className: assets_module_css_default.nextRow,
-						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Btn, {
+						children: /* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 							disabled: locked,
 							onClick: () => {
 								onFollow(nextAction);
@@ -1204,10 +1176,10 @@ window.__ModuleLoader__.load({
 											children: healthLabel(kind)
 										})]
 									}),
-									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-										busy: statusLoading,
-										disabled: locked,
-										primary: true,
+									/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										"aria-busy": statusLoading,
+										disabled: locked || statusLoading,
+										variant: "primary",
 										onClick: () => {
 											fetchStatus();
 										},
@@ -1289,7 +1261,7 @@ window.__ModuleLoader__.load({
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.nextRow,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(Btn, {
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsxs)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									disabled: locked,
 									onClick: () => {
 										followNext(statusNextAction);
@@ -1352,9 +1324,9 @@ window.__ModuleLoader__.load({
 										placeholder: "http://127.0.0.1:8188",
 										mono: true,
 										onChange: setEpUrl
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-										busy: busy === "endpoint_set",
-										disabled: locked || epUrl.trim() === "",
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										"aria-busy": busy === "endpoint_set",
+										disabled: locked || epUrl.trim() === "" || busy === "endpoint_set",
 										onClick: () => {
 											run("endpoint_set", { url: epUrl.trim() });
 										},
@@ -1375,7 +1347,7 @@ window.__ModuleLoader__.load({
 								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("h3", {
 									className: assets_module_css_default.sectionTitle,
 									children: "Result dock"
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
 									onClick: () => {
 										setMutationResult(null);
 										setReadResult(null);
@@ -1512,9 +1484,9 @@ window.__ModuleLoader__.load({
 									value: extFilter,
 									placeholder: "kj, moge…",
 									onChange: setExtFilter
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "list_extensions",
-									disabled: locked,
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "list_extensions",
+									disabled: locked || busy === "list_extensions",
 									onClick: () => {
 										loadExtensions();
 									},
@@ -1543,9 +1515,9 @@ window.__ModuleLoader__.load({
 									placeholder: "ComfyUI-KJNodes, ComfyUI-VideoHelperSuite",
 									mono: true,
 									onChange: setExtIds
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "install_extension",
-									disabled: locked || extIds.trim() === "",
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "install_extension",
+									disabled: locked || extIds.trim() === "" || busy === "install_extension",
 									onClick: () => {
 										const nodes = extIds.split(",").map((value) => value.trim()).filter((value) => value !== "");
 										confirmRun("install_extension", "Install declared extension pack(s) " + nodes.join(", ") + " through the manager rail?", {
@@ -1578,9 +1550,9 @@ window.__ModuleLoader__.load({
 											placeholder: "https://github.com/…",
 											mono: true,
 											onChange: setExtUrl
-										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-											busy: busy === "install_extension_url",
-											disabled: locked || extUrl.trim() === "",
+										}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											"aria-busy": busy === "install_extension_url",
+											disabled: locked || extUrl.trim() === "" || busy === "install_extension_url",
 											onClick: () => {
 												const url = extUrl.trim();
 												confirmRun("install_extension_url", "Install extension from operator-vetted URL " + url + "?", {
@@ -1612,9 +1584,9 @@ window.__ModuleLoader__.load({
 									value: modelQuery,
 									placeholder: "sdxl, wan…",
 									onChange: setModelQuery
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "search_models",
-									disabled: locked || modelQuery.trim() === "",
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "search_models",
+									disabled: locked || modelQuery.trim() === "" || busy === "search_models",
 									onClick: () => {
 										run("search_models", { query: modelQuery.trim() });
 									},
@@ -1669,9 +1641,9 @@ window.__ModuleLoader__.load({
 												disabled: selectedVariant === void 0 || quantOptions.length === 0,
 												onChange: setProvQuant
 											})] }),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-												busy: busy === "provision_model",
-												disabled: locked || provModel.trim() === "" || modelOptions.length > 0 && selectedModel === void 0,
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												"aria-busy": busy === "provision_model",
+												disabled: busy === "provision_model" || locked || provModel.trim() === "" || modelOptions.length > 0 && selectedModel === void 0,
 												onClick: () => {
 													const payload = { model: provModel.trim() };
 													if (provVariant.trim() !== "") payload.variant = provVariant.trim();
@@ -1724,9 +1696,9 @@ window.__ModuleLoader__.load({
 												mono: true,
 												onChange: setDlName
 											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-												busy: busy === "download_model",
-												disabled: locked || dlUrl.trim() === "",
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												"aria-busy": busy === "download_model",
+												disabled: locked || dlUrl.trim() === "" || busy === "download_model",
 												onClick: () => {
 													const payload = { url: dlUrl.trim() };
 													if (dlPath.trim() !== "") payload.relative_path = dlPath.trim();
@@ -1755,17 +1727,17 @@ window.__ModuleLoader__.load({
 							}),
 							/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 								className: assets_module_css_default.row,
-								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "snapshot_list",
-									disabled: locked,
+								children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "snapshot_list",
+									disabled: locked || busy === "snapshot_list",
 									onClick: () => {
 										loadSnapshots();
 									},
 									children: "List snapshots"
-								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "snapshot_save",
-									disabled: locked,
-									primary: true,
+								}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "snapshot_save",
+									disabled: locked || busy === "snapshot_save",
+									variant: "primary",
 									onClick: () => {
 										confirmRun("snapshot_save", "Save an environment snapshot (ComfyUI + packs + dependencies)?", { after: () => {
 											loadSnapshots(false);
@@ -1782,10 +1754,10 @@ window.__ModuleLoader__.load({
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 										className: assets_module_css_default.wrapText,
 										children: snapshot
-									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-										danger: true,
-										busy: busy === "snapshot_restore",
-										disabled: locked,
+									}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+										className: assets_module_css_default.btnDanger,
+										"aria-busy": busy === "snapshot_restore",
+										disabled: locked || busy === "snapshot_restore",
 										onClick: () => {
 											const force = restoreForce;
 											confirmRun("snapshot_restore", "Restore snapshot " + snapshot + "? This rewrites extensions and dependencies." + forceSentence(force), {
@@ -1808,7 +1780,8 @@ window.__ModuleLoader__.load({
 									children: "no snapshots — save one before switch/update"
 								})]
 							}),
-							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ForceToggle, {
+							/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Checkbox, {
+								className: assets_module_css_default.checkRow,
 								checked: restoreForce,
 								label: "Force the next snapshot restore",
 								disabled: locked,
@@ -1829,9 +1802,9 @@ window.__ModuleLoader__.load({
 								value: logTail,
 								onChange: setLogTail,
 								mono: true
-							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-								busy: busy === "logs",
-								disabled: locked,
+							}), /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+								"aria-busy": busy === "logs",
+								disabled: locked || busy === "logs",
 								onClick: () => {
 									run("logs", { tail: Math.max(1, Math.min(Number.parseInt(logTail, 10) || 200, 2e3)) });
 								},
@@ -1855,10 +1828,10 @@ window.__ModuleLoader__.load({
 								/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {
 									className: assets_module_css_default.lifecycleActions,
 									children: [
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-											busy: busy === "restart",
-											disabled: locked,
-											danger: true,
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											"aria-busy": busy === "restart",
+											disabled: locked || busy === "restart",
+											className: assets_module_css_default.btnDanger,
 											onClick: () => {
 												const force = lifecycleForce;
 												confirmRun("restart", "Restart the ComfyUI server?" + forceSentence(force), {
@@ -1870,10 +1843,10 @@ window.__ModuleLoader__.load({
 											},
 											children: "Restart"
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-											busy: busy === "stop",
-											disabled: locked,
-											danger: true,
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											"aria-busy": busy === "stop",
+											disabled: locked || busy === "stop",
+											className: assets_module_css_default.btnDanger,
 											onClick: () => {
 												const force = lifecycleForce;
 												confirmRun("stop", "Stop the ComfyUI server?" + forceSentence(force), {
@@ -1885,9 +1858,9 @@ window.__ModuleLoader__.load({
 											},
 											children: "Stop"
 										}),
-										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-											busy: busy === "free",
-											disabled: locked,
+										/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											"aria-busy": busy === "free",
+											disabled: locked || busy === "free",
 											onClick: () => {
 												const force = lifecycleForce;
 												confirmRun("free", "Ask ComfyUI to free memory on its next worker iteration?" + forceSentence(force), {
@@ -1901,7 +1874,8 @@ window.__ModuleLoader__.load({
 										})
 									]
 								}),
-								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(ForceToggle, {
+								/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Checkbox, {
+									className: assets_module_css_default.checkRow,
 									checked: lifecycleForce,
 									label: "Force the next guarded lifecycle action",
 									disabled: locked,
@@ -1912,10 +1886,10 @@ window.__ModuleLoader__.load({
 									id: "manage-update",
 									children: [/* @__PURE__ */ (0, react_jsx_runtime.jsx)("summary", { children: "Advanced update" }), /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 										className: assets_module_css_default.row,
-										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-											busy: busy === "update",
-											disabled: locked,
-											danger: true,
+										children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+											"aria-busy": busy === "update",
+											disabled: locked || busy === "update",
+											className: assets_module_css_default.btnDanger,
 											onClick: () => {
 												const force = lifecycleForce;
 												confirmRun("update", "Update ComfyUI through the built-in manager?" + forceSentence(force), {
@@ -1958,10 +1932,10 @@ window.__ModuleLoader__.load({
 												className: assets_module_css_default.warningNote,
 												children: ["Version catalog: ", status.comfyui_versions_detail]
 											}),
-											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-												busy: busy === "switch_version",
-												disabled: locked || swVersion.trim() === "",
-												danger: true,
+											/* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+												"aria-busy": busy === "switch_version",
+												disabled: locked || swVersion.trim() === "" || busy === "switch_version",
+												className: assets_module_css_default.btnDanger,
 												onClick: () => {
 													const force = lifecycleForce;
 													confirmRun("switch_version", "Switch ComfyUI to " + swVersion.trim() + "?" + forceSentence(force), {
@@ -1987,10 +1961,10 @@ window.__ModuleLoader__.load({
 								children: "BYO endpoint selected. Estate lifecycle controls are unavailable; use Endpoint settings to choose the managed engine."
 							}) : /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 								className: assets_module_css_default.lifecycleActions,
-								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(Btn, {
-									busy: busy === "launch",
-									disabled: locked,
-									primary: true,
+								children: /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+									"aria-busy": busy === "launch",
+									disabled: locked || busy === "launch",
+									variant: "primary",
 									onClick: () => {
 										confirmRun("launch", "Launch the ComfyUI server?");
 									},
@@ -2105,4 +2079,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="450f8d2dac75dda68cd2eb20f34f1aa545d8c2fa";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="895dd3a811187e18712cf926861ff70318f8c2fd";

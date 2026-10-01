@@ -37,6 +37,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import css from './assets.module.css'
 import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import { Button, Checkbox, Input } from '@deepseek-ai/dsh-client-ui-primitives'
 
 interface ManageReply {
   action?: string
@@ -528,11 +529,13 @@ interface FieldProps {
 }
 
 function Field({ label, value, placeholder, mono, onChange }: FieldProps): React.ReactElement {
+  // The label row is this tab's layout; the control is the DSH atom
+  // (Input passes native attributes through; mono rides className).
   return (
     <label className={css.field}>
       <span className={css.fieldLabel}>{label}</span>
-      <input
-        className={css.input + (mono === true ? ' ' + css.mono : '')}
+      <Input
+        className={mono === true ? css.mono : undefined}
         value={value}
         placeholder={placeholder}
         onChange={(event) => { onChange(event.target.value) }}
@@ -553,8 +556,8 @@ function SearchField({ label, value, options, placeholder, mono = false, onChang
   return (
     <label className={css.field}>
       <span className={css.fieldLabel}>{label}</span>
-      <input
-        className={css.input + (mono === true ? ' ' + css.mono : '')}
+      <Input
+        className={mono === true ? css.mono : undefined}
         type="search"
         list={listId}
         value={value}
@@ -583,47 +586,6 @@ function SelectField({ label, value, options, placeholder, disabled = false, onC
         <option value="">{placeholder}</option>
         {options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
       </select>
-    </label>
-  )
-}
-
-interface BtnProps {
-  children: React.ReactNode
-  onClick(): void
-  busy?: boolean
-  primary?: boolean
-  danger?: boolean
-  disabled?: boolean
-}
-
-function Btn({ children, onClick, busy, primary, danger, disabled }: BtnProps): React.ReactElement {
-  return (
-    <button
-      type="button"
-      className={[
-        css.btn,
-        primary === true ? ' ' + css.btnPrimary : '',
-        danger === true ? ' ' + css.btnDanger : '',
-      ].join('')}
-      disabled={disabled === true || busy === true}
-      aria-busy={busy === true}
-      onClick={onClick}
-    >
-      {busy === true ? '… ' : ''}{children}
-    </button>
-  )
-}
-
-function ForceToggle({ checked, label, onChange, disabled }: {
-  checked: boolean
-  label: string
-  onChange(value: boolean): void
-  disabled: boolean
-}): React.ReactElement {
-  return (
-    <label className={css.checkRow}>
-      <input type="checkbox" checked={checked} disabled={disabled} onChange={(event) => { onChange(event.target.checked) }} />
-      <span>{label}</span>
     </label>
   )
 }
@@ -677,7 +639,7 @@ function ResultRecordView({ record, kind, now, locked, onFollow }: {
       )}
       {nextAction !== '' && (
         <div className={css.nextRow}>
-          <Btn disabled={locked} onClick={() => { onFollow(nextAction) }}>Next: {ACTION_LABELS[nextAction] ?? nextAction}</Btn>
+          <Button disabled={locked} onClick={() => { onFollow(nextAction) }}>Next: {ACTION_LABELS[nextAction] ?? nextAction}</Button>
         </div>
       )}
       {provision !== null && (
@@ -982,7 +944,7 @@ export function ComfyManagerPanel(): React.ReactElement {
             <h3 className={css.healthTitle}>Health</h3>
             <strong className={css.healthLabel} data-testid="health-state">{healthLabel(kind)}</strong>
           </div>
-          <Btn busy={statusLoading} disabled={locked} primary onClick={() => { void fetchStatus() }}>Refresh</Btn>
+          <Button aria-busy={statusLoading} disabled={locked || (statusLoading)} variant="primary" onClick={() => { void fetchStatus() }}>Refresh</Button>
         </div>
         {statusError !== '' && <p className={status === null ? css.dangerNote : css.warningNote}>Refresh failed: {statusError}{status === null ? '' : ' · showing the last confirmed status'}</p>}
         {statusLoading && status !== null && <p className={css.sub}>Refreshing · showing the last confirmed status</p>}
@@ -1029,7 +991,7 @@ export function ComfyManagerPanel(): React.ReactElement {
           </div>
         </dl>
         <div className={css.nextRow}>
-          <Btn disabled={locked} onClick={() => { followNext(statusNextAction) }}>Next: {ACTION_LABELS[statusNextAction] ?? statusNextAction}</Btn>
+          <Button disabled={locked} onClick={() => { followNext(statusNextAction) }}>Next: {ACTION_LABELS[statusNextAction] ?? statusNextAction}</Button>
           {statusReceivedAt !== null && (
             <span className={css.freshness}>
               Updated <time dateTime={new Date(statusReceivedAt).toISOString()}>{receivedLabel(statusReceivedAt)}</time> · {freshness(statusReceivedAt, now)}
@@ -1056,7 +1018,7 @@ export function ComfyManagerPanel(): React.ReactElement {
           <summary>Endpoint settings</summary>
           <div className={css.row}>
             <Field label="server url" value={epUrl} placeholder="http://127.0.0.1:8188" mono onChange={setEpUrl} />
-            <Btn busy={busy === 'endpoint_set'} disabled={locked || epUrl.trim() === ''} onClick={() => { void run('endpoint_set', { url: epUrl.trim() }) }}>Set</Btn>
+            <Button aria-busy={busy === 'endpoint_set'} disabled={locked || epUrl.trim() === '' || busy === 'endpoint_set'} onClick={() => { void run('endpoint_set', { url: epUrl.trim() }) }}>Set</Button>
           </div>
         </details>
       </section>
@@ -1065,7 +1027,7 @@ export function ComfyManagerPanel(): React.ReactElement {
         <section className={css.section + ' ' + css.resultDock} data-testid="manage-result" aria-live="polite" aria-busy={locked}>
           <div className={css.resultHead}>
             <h3 className={css.sectionTitle}>Result dock</h3>
-            <Btn onClick={() => { setMutationResult(null); setReadResult(null) }}>Clear result</Btn>
+            <Button onClick={() => { setMutationResult(null); setReadResult(null) }}>Clear result</Button>
           </div>
           {mutationResult !== null && <ResultRecordView record={mutationResult} kind="mutation" now={now} locked={locked} onFollow={followNext} />}
           {visibleRead && <ResultRecordView record={readResult} kind="output" now={now} locked={locked} onFollow={followNext} />}
@@ -1126,7 +1088,7 @@ export function ComfyManagerPanel(): React.ReactElement {
         <h3 className={css.sectionTitle}>Extensions</h3>
         <div className={css.row}>
           <Field label="filter installed" value={extFilter} placeholder="kj, moge…" onChange={setExtFilter} />
-          <Btn busy={busy === 'list_extensions'} disabled={locked} onClick={() => { void loadExtensions() }}>Installed packs</Btn>
+          <Button aria-busy={busy === 'list_extensions'} disabled={locked || busy === 'list_extensions'} onClick={() => { void loadExtensions() }}>Installed packs</Button>
         </div>
         {extRows !== null && (
           <ul className={css.list} data-testid="ext-list">
@@ -1138,9 +1100,9 @@ export function ComfyManagerPanel(): React.ReactElement {
         )}
         <div className={css.row}>
           <Field label="declared registry ids" value={extIds} placeholder="ComfyUI-KJNodes, ComfyUI-VideoHelperSuite" mono onChange={setExtIds} />
-          <Btn
-            busy={busy === 'install_extension'}
-            disabled={locked || extIds.trim() === ''}
+          <Button
+            aria-busy={busy === 'install_extension'}
+            disabled={locked || extIds.trim() === '' || busy === 'install_extension'}
             onClick={() => {
               const nodes = extIds.split(',').map((value) => value.trim()).filter((value) => value !== '')
               confirmRun('install_extension', 'Install declared extension pack(s) ' + nodes.join(', ') + ' through the manager rail?', {
@@ -1148,16 +1110,16 @@ export function ComfyManagerPanel(): React.ReactElement {
                 after: () => { if (extRows !== null) void loadExtensions(false) },
               })
             }}
-          >Install</Btn>
+          >Install</Button>
         </div>
         <details className={css.advanced} id="manage-install_extension_url">
           <summary><span className={css.operatorBadge}>Operator only · raw URL</span> Install extension from URL</summary>
           <p className={css.operatorNote}>This bypasses the declared registry ids. Use only for an operator-vetted source.</p>
           <div className={css.row}>
             <Field label="git URL (ComfyUI-Manager)" value={extUrl} placeholder="https://github.com/…" mono onChange={setExtUrl} />
-            <Btn
-              busy={busy === 'install_extension_url'}
-              disabled={locked || extUrl.trim() === ''}
+            <Button
+              aria-busy={busy === 'install_extension_url'}
+              disabled={locked || extUrl.trim() === '' || busy === 'install_extension_url'}
               onClick={() => {
                 const url = extUrl.trim()
                 confirmRun('install_extension_url', 'Install extension from operator-vetted URL ' + url + '?', {
@@ -1165,7 +1127,7 @@ export function ComfyManagerPanel(): React.ReactElement {
                   after: () => { if (extRows !== null) void loadExtensions(false) },
                 })
               }}
-            >Install from URL</Btn>
+            >Install from URL</Button>
           </div>
         </details>
       </section>
@@ -1174,7 +1136,7 @@ export function ComfyManagerPanel(): React.ReactElement {
         <h3 className={css.sectionTitle}>Models</h3>
         <div className={css.row}>
           <Field label="search Manager external index" value={modelQuery} placeholder="sdxl, wan…" onChange={setModelQuery} />
-          <Btn busy={busy === 'search_models'} disabled={locked || modelQuery.trim() === ''} onClick={() => { void run('search_models', { query: modelQuery.trim() }) }}>Search</Btn>
+          <Button aria-busy={busy === 'search_models'} disabled={locked || modelQuery.trim() === '' || busy === 'search_models'} onClick={() => { void run('search_models', { query: modelQuery.trim() }) }}>Search</Button>
         </div>
         <details className={css.advanced} id="manage-provision_model">
           <summary>Provision a declared model</summary>
@@ -1212,16 +1174,16 @@ export function ComfyManagerPanel(): React.ReactElement {
                 />
               </>
             )}
-            <Btn
-              busy={busy === 'provision_model'}
-              disabled={locked || provModel.trim() === '' || (modelOptions.length > 0 && selectedModel === undefined)}
+            <Button
+              aria-busy={busy === 'provision_model'}
+              disabled={busy === 'provision_model' || locked || provModel.trim() === '' || (modelOptions.length > 0 && selectedModel === undefined)}
               onClick={() => {
                 const payload: Record<string, ManageJsonValue> = { model: provModel.trim() }
                 if (provVariant.trim() !== '') payload.variant = provVariant.trim()
                 if (provQuant.trim() !== '') payload.quant = provQuant.trim()
                 confirmRun('provision_model', 'Provision declared model ' + provModel.trim() + ' from the catalog?', { payload })
               }}
-            >Provision</Btn>
+            >Provision</Button>
           </div>
           {status?.model_options_detail !== undefined && <p className={css.warningNote}>Model catalog: {status.model_options_detail}</p>}
         </details>
@@ -1232,16 +1194,16 @@ export function ComfyManagerPanel(): React.ReactElement {
             <Field label="download URL (Manager)" value={dlUrl} placeholder="https://…/model.safetensors" mono onChange={setDlUrl} />
             <Field label="relative path" value={dlPath} placeholder="models/checkpoints" mono onChange={setDlPath} />
             <Field label="filename" value={dlName} placeholder="model.safetensors" mono onChange={setDlName} />
-            <Btn
-              busy={busy === 'download_model'}
-              disabled={locked || dlUrl.trim() === ''}
+            <Button
+              aria-busy={busy === 'download_model'}
+              disabled={locked || dlUrl.trim() === '' || busy === 'download_model'}
               onClick={() => {
                 const payload: Record<string, ManageJsonValue> = { url: dlUrl.trim() }
                 if (dlPath.trim() !== '') payload.relative_path = dlPath.trim()
                 if (dlName.trim() !== '') payload.filename = dlName.trim()
                 confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload })
               }}
-            >Download</Btn>
+            >Download</Button>
           </div>
         </details>
       </section>
@@ -1250,22 +1212,22 @@ export function ComfyManagerPanel(): React.ReactElement {
         <h3 className={css.sectionTitle}>Snapshots</h3>
         <p className={css.sub}>Save before update or version switch. Restore needs restart and uses its own one-shot force control.</p>
         <div className={css.row}>
-          <Btn busy={busy === 'snapshot_list'} disabled={locked} onClick={() => { void loadSnapshots() }}>List snapshots</Btn>
-          <Btn busy={busy === 'snapshot_save'} disabled={locked} primary onClick={() => {
+          <Button aria-busy={busy === 'snapshot_list'} disabled={locked || busy === 'snapshot_list'} onClick={() => { void loadSnapshots() }}>List snapshots</Button>
+          <Button aria-busy={busy === 'snapshot_save'} disabled={locked || busy === 'snapshot_save'} variant="primary" onClick={() => {
             confirmRun('snapshot_save', 'Save an environment snapshot (ComfyUI + packs + dependencies)?', {
               after: () => { void loadSnapshots(false) },
             })
-          }}>Save snapshot</Btn>
+          }}>Save snapshot</Button>
         </div>
         {snapRows !== null && (
           <ul className={css.list} data-testid="snap-list">
             {snapRows.map((snapshot) => (
               <li className={css.listRow + ' ' + css.snapshotRow} key={snapshot}>
                 <span className={css.wrapText}>{snapshot}</span>
-                <Btn
-                  danger
-                  busy={busy === 'snapshot_restore'}
-                  disabled={locked}
+                <Button
+                  className={css.btnDanger}
+                  aria-busy={busy === 'snapshot_restore'}
+                  disabled={locked || busy === 'snapshot_restore'}
                   onClick={() => {
                     const force = restoreForce
                     confirmRun('snapshot_restore', 'Restore snapshot ' + snapshot + '? This rewrites extensions and dependencies.' + forceSentence(force), {
@@ -1274,23 +1236,23 @@ export function ComfyManagerPanel(): React.ReactElement {
                       after: () => { void loadSnapshots(false) },
                     })
                   }}
-                >Restore</Btn>
+                >Restore</Button>
               </li>
             ))}
             {snapRows.length === 0 && <li className={css.listRow}>no snapshots — save one before switch/update</li>}
           </ul>
         )}
-        <ForceToggle checked={restoreForce} label="Force the next snapshot restore" disabled={locked} onChange={setRestoreForce} />
+        <Checkbox className={css.checkRow} checked={restoreForce} label="Force the next snapshot restore" disabled={locked} onChange={setRestoreForce} />
       </section>
 
       <section className={css.section} id="manage-logs">
         <h3 className={css.sectionTitle}>Logs</h3>
         <div className={css.row}>
           <Field label="tail lines" value={logTail} onChange={setLogTail} mono />
-          <Btn busy={busy === 'logs'} disabled={locked} onClick={() => {
+          <Button aria-busy={busy === 'logs'} disabled={locked || busy === 'logs'} onClick={() => {
             const tail = Math.max(1, Math.min(Number.parseInt(logTail, 10) || 200, 2_000))
             void run('logs', { tail })
-          }}>View logs</Btn>
+          }}>View logs</Button>
         </div>
       </section>
 
@@ -1300,39 +1262,39 @@ export function ComfyManagerPanel(): React.ReactElement {
         {up && !byo ? (
           <>
             <div className={css.lifecycleActions}>
-              <Btn busy={busy === 'restart'} disabled={locked} danger onClick={() => {
+              <Button aria-busy={busy === 'restart'} disabled={locked || busy === 'restart'} className={css.btnDanger} onClick={() => {
                 const force = lifecycleForce
                 confirmRun('restart', 'Restart the ComfyUI server?' + forceSentence(force), {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Restart</Btn>
-              <Btn busy={busy === 'stop'} disabled={locked} danger onClick={() => {
+              }}>Restart</Button>
+              <Button aria-busy={busy === 'stop'} disabled={locked || busy === 'stop'} className={css.btnDanger} onClick={() => {
                 const force = lifecycleForce
                 confirmRun('stop', 'Stop the ComfyUI server?' + forceSentence(force), {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Stop</Btn>
-              <Btn busy={busy === 'free'} disabled={locked} onClick={() => {
+              }}>Stop</Button>
+              <Button aria-busy={busy === 'free'} disabled={locked || busy === 'free'} onClick={() => {
                 const force = lifecycleForce
                 confirmRun('free', 'Ask ComfyUI to free memory on its next worker iteration?' + forceSentence(force), {
                   payload: { force },
                   onUse: () => { setLifecycleForce(false) },
                 })
-              }}>Free VRAM</Btn>
+              }}>Free VRAM</Button>
             </div>
-            <ForceToggle checked={lifecycleForce} label="Force the next guarded lifecycle action" disabled={locked} onChange={setLifecycleForce} />
+            <Checkbox className={css.checkRow} checked={lifecycleForce} label="Force the next guarded lifecycle action" disabled={locked} onChange={setLifecycleForce} />
             <details className={css.advanced} id="manage-update">
               <summary>Advanced update</summary>
               <div className={css.row}>
-                <Btn busy={busy === 'update'} disabled={locked} danger onClick={() => {
+                <Button aria-busy={busy === 'update'} disabled={locked || busy === 'update'} className={css.btnDanger} onClick={() => {
                   const force = lifecycleForce
                   confirmRun('update', 'Update ComfyUI through the built-in manager?' + forceSentence(force), {
                     payload: { target: 'comfy', force },
                     onUse: () => { setLifecycleForce(false) },
                   })
-                }}>Update ComfyUI</Btn>
+                }}>Update ComfyUI</Button>
               </div>
             </details>
             <details className={css.advanced} id="manage-switch_version">
@@ -1350,10 +1312,10 @@ export function ComfyManagerPanel(): React.ReactElement {
                   />
                 )}
                 {status?.comfyui_versions_detail !== undefined && <p className={css.warningNote}>Version catalog: {status.comfyui_versions_detail}</p>}
-                <Btn
-                  busy={busy === 'switch_version'}
-                  disabled={locked || swVersion.trim() === ''}
-                  danger
+                <Button
+                  aria-busy={busy === 'switch_version'}
+                  disabled={locked || swVersion.trim() === '' || busy === 'switch_version'}
+                  className={css.btnDanger}
                   onClick={() => {
                     const force = lifecycleForce
                     confirmRun('switch_version', 'Switch ComfyUI to ' + swVersion.trim() + '?' + forceSentence(force), {
@@ -1361,7 +1323,7 @@ export function ComfyManagerPanel(): React.ReactElement {
                       onUse: () => { setLifecycleForce(false) },
                     })
                   }}
-                >Switch</Btn>
+                >Switch</Button>
               </div>
             </details>
           </>
@@ -1371,7 +1333,7 @@ export function ComfyManagerPanel(): React.ReactElement {
            <p className={css.sub}>BYO endpoint selected. Estate lifecycle controls are unavailable; use Endpoint settings to choose the managed engine.</p>
          ) : (
            <div className={css.lifecycleActions}>
-             <Btn busy={busy === 'launch'} disabled={locked} primary onClick={() => { confirmRun('launch', 'Launch the ComfyUI server?') }}>Launch</Btn>
+             <Button aria-busy={busy === 'launch'} disabled={locked || busy === 'launch'} variant="primary" onClick={() => { confirmRun('launch', 'Launch the ComfyUI server?') }}>Launch</Button>
            </div>
          )}
       </section>

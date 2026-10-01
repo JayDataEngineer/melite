@@ -85,6 +85,7 @@ describe("S4a — the real DSH client set is the estate's dependency", () => {
       "packages/video/h3-timeline",
       "packages/web-kit/timeline",
       "packages/web/card-base",
+      "packages/web/melite-card-deck", // item 8: the last UI-bearing package joins the atoms train
       "packages/web/melite-card-view",
     ], `the atoms hosts are the derived set (saw ${String(ATOM_HOSTS.length)}: ${ATOM_HOSTS.join(", ")})`);
     for (const host of ATOM_HOSTS) {
