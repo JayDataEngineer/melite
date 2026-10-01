@@ -259,10 +259,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
   // the view re-reads it.
   //
   // So: no banner, no probe, no claim. The bench is the server's
-  // document and this tab is a reader of it. The lane still SERVES
-  // its card-build stamps (a diagnostic for the lane, never a
-  // verdict about the operator's edits); nothing in this tab asserts
-  // staleness ever again.
+  // document and this tab is a reader of it; nothing in this tab
+  // asserts staleness ever again. The pipeline itself (build-side
+  // stamp append + the /melite-media/card-build route) was deleted
+  // 2026-10-12 — a stamp with no reader is cruft (handroll audit
+  // 3.3); this tombstone keeps the false alarm's lesson.
   // THE OUTCOME WATCH (the attribution half): one controller per tab
   //  life — every stage run's observer rides it, unmount ends the
   //  watches (a completed patch is idempotent; an interrupted one is

@@ -594,7 +594,7 @@ async function observeRunOutcomeRun(
   } catch { /* bookkeeping */ }
   // The abortable sleep is DSH's own internal shape (connection.ts's
   // sleep(ms, signal): timer + once-abort listener — reference
-  // packages/client/connection/src/client/connection.ts:19).
+  // packages/client/connection/src/client/connection.ts:23).
   const sleep = (ms: number): Promise<void> =>
     new Promise((resolve) => {
       const t = setTimeout(resolve, ms)
@@ -616,9 +616,10 @@ async function observeRunOutcomeRun(
   // backoff is ConnectionRecoveryConfig's shape (references/
   // deepseek-harness/packages/client/connection/src/recovery-config.ts
   // — base, growth factor, cap): exponential 1500*2^(n-1) capped at
-  // 10s, where DSH's own client rides 500*2^n capped at 10s; ours
-  // opens slower because each poll is a full estate door round-trip,
-  // not a carrier redial. The escalation threshold (10 consecutive
+  // 10s — the SAME exponent DSH's backoffCap rides (connection.ts's
+  // backoffBaseMs * backoffFactor ** (attempt-1)); ours opens slower
+  // by base alone (1500 vs 500): each poll is a full estate door
+  // round-trip, not a carrier redial (DSH also jitters 50-100%). The escalation threshold (10 consecutive
   // transport failures) is the never-answers judgment: under it, a
   // flap stays a live face (the under-threshold wall); past it, the
   // tile says what is true — the transport is down. LOW-23's half

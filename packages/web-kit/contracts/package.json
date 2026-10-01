@@ -10,7 +10,6 @@
     "./benchSnapshot": "./src/benchSnapshot.ts",
     "./benchResult": "./src/benchResult.ts",
     "./browserStorage": "./src/browserStorage.ts",
-    "./buildStamp": "./src/buildStamp.ts",
     "./card": "./src/card.ts",
     "./character": "./src/character.ts",
     "./enhanceTypes": "./src/enhanceTypes.ts",

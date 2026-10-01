@@ -26,7 +26,6 @@ import type { Context } from "@deepseek-ai/cordis";
 import { Remote, RemoteError, TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
 import { contentTypeForArtifact, mediaVocab, segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 import { parseRangeHeader } from "@melite/contracts/mediaRange";
-import { stampOf } from "@melite/contracts/buildStamp";
 import {
   LEGACY_RUN_MEDIA_PREFIX,
   RUN_MEDIA_PREFIX,
@@ -34,9 +33,8 @@ import {
   canonicalRunMediaUrl,
   RUN_ID_RE,
 } from "@melite/contracts/benchStage";
-import { readdirSync, readFileSync, existsSync } from "node:fs";
-import { dirname as dirnamePath, join as joinPath } from "node:path";
-import { fileURLToPath } from "node:url";
+import { readdirSync } from "node:fs";
+import { join as joinPath } from "node:path";
 // Type-only: pulls the webServer service declaration onto Context.
 import type {} from "@deepseek-ai/dsh-host-webserver";
 
@@ -113,52 +111,6 @@ export { mediaPrefixOf, canonicalMediaUrl };
  * package's lib/client.js (stamp line stripped — the same law the
  * build bakes), no-store, so the cards tab can compare its baked
  * stamp against disk truth and face a stale tab. */
-export const CARD_BUILD_PREFIX = "/melite-media/card-build";
-
-/** The stamps the route serves: package dir name → sha1 of its
- *  lib/client.js. Card packages nest by genre (web/, video/, …),
- *  so the walk covers both depths and keys by the LEAF name (the
- *  package id the client names as its own). */
-export function cardBuildStamps(root: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  const dirs: Array<{ name: string; path: string }> = [];
-  try {
-    for (const entry of readdirSync(joinPath(root, "packages"), { withFileTypes: true })) {
-      if (!entry.isDirectory()) continue;
-      const path = joinPath(root, "packages", entry.name);
-      dirs.push({ name: entry.name, path });
-      for (const nested of readdirSync(path, { withFileTypes: true })) {
-        if (nested.isDirectory()) dirs.push({ name: nested.name, path: joinPath(path, nested.name) });
-      }
-    }
-  } catch {
-    return out;
-  }
-  for (const dir of dirs) {
-    try {
-      const code = readFileSync(joinPath(dir.path, "lib", "client.js"), "utf8");
-      out[dir.name] = stampOf(code);
-    } catch {
-      /* no client bundle in this package — not a handshake member */
-    }
-  }
-  return out;
-}
-
-/** The repo root this plugin serves from (walks up from its own file
- * to the directory that owns packages/ + the workspace manifest). */
-export function repoRootOf(start: string): string | null {
-  let dir = dirnamePath(start);
-  for (let i = 0; i < 8; i += 1) {
-    if (existsSync(joinPath(dir, "pnpm-workspace.yaml"))) return dir;
-    const next = dirnamePath(dir);
-    if (next === dir) return null;
-    dir = next;
-  }
-  return null;
-}
-
-
 /** The run-dir basename grammar (run-<hex>-<hex>, the mint law). */
 const RUN_ID = RUN_ID_RE;
 
@@ -429,32 +381,7 @@ export function apply(ctx: Context): void {
     ),
   );
 
-  // THE DEPLOY HANDSHAKE ROUTE: current disk stamps, no-store. The
-  // repo root resolves from THIS file at boot (src or lib depth
-  // agnostic — the walker finds the workspace manifest); a miss
-  // serves {} (the client treats an absent own-entry as no verdict,
-  // never a false alarm).
-  ctx.effect(() =>
-    webServer.register({
-      kind: "prefix",
-      path: CARD_BUILD_PREFIX,
-      handler: (req, res) => {
-        if (req.method !== "GET" && req.method !== "HEAD") {
-          res.writeHead(405, { "content-type": "application/json", allow: "GET, HEAD", "cache-control": "no-store" });
-          res.end('{"error":"media/method-not-allowed"}');
-          return;
-        }
-        const root = repoRootOf(fileURLToPath(import.meta.url));
-        const stamps = root === null ? {} : cardBuildStamps(root);
-        res.writeHead(200, { "content-type": "application/json; charset=utf-8", "cache-control": "no-store" });
-        res.end(JSON.stringify({ stamps }));
-      },
-    }),
-    "estate-media: card build stamp route",
-  );
-
   ctx.logger.info("estate-media: serving %s/* from the runs output tree", MEDIA_PREFIX);
-  ctx.logger.info("estate-media: serving %s (the deploy handshake)", CARD_BUILD_PREFIX);
 }
 
 /** The client seam's one truth: build the same-origin media URL for

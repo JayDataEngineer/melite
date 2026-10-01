@@ -13,7 +13,7 @@
  * shell's seed table in `./web-platform.ts`.
  */
 import { readFile } from 'node:fs/promises'
-import { existsSync, realpathSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, realpathSync, readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { basename, dirname, isAbsolute, relative, resolve as resolvePath, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -22,7 +22,6 @@ import type { UserConfig } from 'tsdown'
 // (packages/web/shared has no node_modules), so workspace links are
 // unresolvable from here — the repo-internal source path is the one
 // spelling both node and bun resolve.
-import { stampLine, stampOf, unstamped } from '../../web-kit/contracts/src/buildStamp.ts'
 import { transform } from 'lightningcss'
 import { PLATFORM_MODULES } from './web-platform.ts'
 
@@ -287,37 +286,6 @@ function clientConfig(id: string, entry: string): UserConfig {
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
     plugins: [{
-      // THE DEPLOY HANDSHAKE STAMP (2026-09-23, the stale-tab root
-      // rot): the loader's /plugins URL is keyed by the plugin LIST
-      // under a year-immutable cache — rebuilt bytes ride the SAME
-      // URL, so every browser that ever cached it runs the museum
-      // forever. Every client bundle therefore appends its own
-      // content stamp (sha1 of the code, stamp line stripped — see
-      // @melite/contracts/buildStamp); the lane serves the current
-      // disk stamps on /melite-media/card-build and the cards tab
-      // renders an unmissable face on mismatch. The stamp is pure
-      // bookkeeping: appended AFTER the code, hashing the prefix, so
-      // it never perturbs its own value.
-      name: 'dsh-client-build-stamp',
-      // WRITE-TIME LAW: rolldown appends the sourcemap comment and
-      // tsdown may finalize bytes AFTER generateBundle — hashing the
-      // in-memory chunk proved wrong by exactly those post-passes.
-      // The stamp therefore hashes the WRITTEN FILE byte-for-byte
-      // (read back, strip any stamp, append fresh) — the same bytes
-      // the route hashes on disk, one verdict, provable by diff.
-      writeBundle(options, bundle) {
-        for (const chunk of Object.values(bundle)) {
-          if (chunk.type !== 'chunk') continue
-          // fileName is relative to the OUTPUT dir (lib/), not cwd —
-          // resolving against cwd silently skipped every file.
-          const dir = (options as { dir?: string }).dir ?? 'lib'
-          const file = resolvePath(process.cwd(), dir, chunk.fileName)
-          if (!existsSync(file)) continue
-          const code = unstamped(readFileSync(file, 'utf8'))
-          writeFileSync(file, code + stampLine(stampOf(code)))
-        }
-      },
-    }, {
       // SINGLE-FILE LAW (the rolldown-native hook — the tsdown
       // config key proved unreliable to pass through): no secondary
       // chunks, ever; every dynamic import inlines into client.js.
