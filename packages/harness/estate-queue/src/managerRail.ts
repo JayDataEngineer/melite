@@ -12,6 +12,7 @@
 // them the vendor refuses with its own 403s and this rail
 // surfaces them verbatim, never works around a security answer.
 import type { ManageCtx } from "./managePlane.ts";
+import { deadline, timeoutOf } from "@deepseek-ai/dsh-timeout";
 
 /** Thrown on any non-2xx manager answer or transport failure. The
  *  handler maps status → the estate envelope (403 security, 404
@@ -64,30 +65,21 @@ export interface CallOpts {
  *  answers — 200s are json on every route we ride, refusal bodies
  *  may be either; parse defensively). */
 async function call(base: string, path: string, opts: CallOpts): Promise<unknown> {
-  const ctrl = new AbortController();
-  const caller = opts.ctx.signal;
-  let timedOut = false;
-  const onCallerAbort = (): void => {
-    ctrl.abort(caller?.reason);
-  };
-  if (caller?.aborted === true) onCallerAbort();
-  else caller?.addEventListener("abort", onCallerAbort, { once: true });
-  const t = opts.ctx.timeout((): void => {
-    timedOut = true;
-    ctrl.abort();
-  }, opts.timeoutMs);
+  // The fuse is dsh-timeout's deadline (AbortSignal.any + a TimeoutReason
+  // the classification below reads back); the 504/abort voices are ours.
+  const dl = deadline(opts.ctx.signal, opts.timeoutMs, "MANAGER_API");
   try {
     const r = await fetch(base + path, {
       method: opts.method,
       headers: opts.body !== undefined ? { "content-type": "application/json" } : undefined,
       body: opts.body !== undefined ? JSON.stringify(opts.body) : undefined,
-      signal: ctrl.signal,
+      signal: dl.signal,
     });
     const text: string = await r.text();
-    if (caller?.aborted === true) {
+    if (opts.ctx.signal?.aborted === true) {
       throw new DOMException("The operation was aborted", "AbortError");
     }
-    if (timedOut) throw new ManagerApiError(504, "manager request timed out");
+    if (timeoutOf(dl.signal, "MANAGER_API")) throw new ManagerApiError(504, "manager request timed out");
     if (!(r.status >= 200 && r.status < 300)) {
       throw new ManagerApiError(r.status, text);
     }
@@ -98,15 +90,15 @@ async function call(base: string, path: string, opts: CallOpts): Promise<unknown
       return text;
     }
   } catch (e) {
-    if (caller?.aborted === true) {
-      throw caller.reason instanceof Error ? caller.reason : new DOMException("The operation was aborted", "AbortError");
+    if (opts.ctx.signal?.aborted === true) {
+      const reason = opts.ctx.signal.reason;
+      throw reason instanceof Error ? reason : new DOMException("The operation was aborted", "AbortError");
     }
-    if (timedOut) throw new ManagerApiError(504, "manager request timed out");
+    if (timeoutOf(dl.signal, "MANAGER_API")) throw new ManagerApiError(504, "manager request timed out");
     if (e instanceof ManagerApiError) throw e;
     throw planeUnavailable(base, e instanceof Error ? e.message : String(e));
   } finally {
-    caller?.removeEventListener("abort", onCallerAbort);
-    t();
+    dl[Symbol.dispose]();
   }
 }
 

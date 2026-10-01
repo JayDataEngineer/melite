@@ -243,14 +243,17 @@ describe("manage cancellation and rail coverage", () => {
       /late-abort/,
     );
 
-    globalThis.fetch = (async () => ({ status: 200, text: async () => "{}" })) as unknown as typeof fetch;
-    const [timedCode, timedEnvelope] = await run(
-      { action: "list_extensions" },
-      { timeout: (callback: () => void) => {
-        callback();
-        return () => {};
-      } },
-    );
+    globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
+      if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      });
+    }) as unknown as typeof fetch;
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingTimed = run({ action: "list_extensions" });
+    await vi.advanceTimersByTimeAsync(300_000);
+    const [timedCode, timedEnvelope] = await pendingTimed;
+    vi.useRealTimers();
     assert.equal(timedCode, 504);
     assert.match(timedEnvelope.detail, /timed out/);
 
@@ -883,17 +886,19 @@ describe("manage status projections", () => {
     const [, plainEnvelope] = await run({ action: "status" }, { provisioning: plain });
     assert.equal((plainEnvelope.data as { resources_detail: string }).resources_detail, "reconcile plain");
 
-    const completed = { ...provisioning, reconcile: async () => [] } as unknown as ProvisioningServiceDefinition;
-    const [timeoutCode, timeoutEnvelope] = await run(
-      { action: "status" },
-      {
-        provisioning: completed,
-        timeout: (callback: () => void) => {
-          callback();
-          return () => {};
-        },
-      },
-    );
+    const hangOnSignal = (signal: AbortSignal): Promise<never> =>
+      new Promise((_resolve, reject) => {
+        signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+      });
+    const completed = {
+      ...provisioning,
+      reconcile: async (_scope: unknown, signal: AbortSignal) => await hangOnSignal(signal),
+    } as unknown as ProvisioningServiceDefinition;
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingTimeout = run({ action: "status" }, { provisioning: completed });
+    await vi.advanceTimersByTimeAsync(1_500);
+    const [timeoutCode, timeoutEnvelope] = await pendingTimeout;
+    vi.useRealTimers();
     assert.equal(timeoutCode, 200);
     assert.match((timeoutEnvelope.data as { resources_detail: string }).resources_detail, /timed out/);
 
@@ -901,19 +906,14 @@ describe("manage status projections", () => {
       ...provisioning,
       reconcile: async (_scope: unknown, signal: AbortSignal) => {
         if (signal.aborted) throw new Error("reconcile aborted");
-        return [];
+        return await hangOnSignal(signal);
       },
     } as unknown as ProvisioningServiceDefinition;
-    const [, rejected] = await run(
-      { action: "status" },
-      {
-        provisioning: rejecting,
-        timeout: (callback: () => void) => {
-          callback();
-          return () => {};
-        },
-      },
-    );
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingRejected = run({ action: "status" }, { provisioning: rejecting });
+    await vi.advanceTimersByTimeAsync(1_500);
+    const [, rejected] = await pendingRejected;
+    vi.useRealTimers();
     assert.match((rejected.data as { resources_detail: string }).resources_detail, /timed out/);
 
     const controller = new AbortController();
@@ -942,24 +942,18 @@ describe("manage provisioning and snapshot coverage", () => {
     assert.equal(plainCode, 500);
     assert.match((plainEnvelope.data as { misses: string[] }).misses[0] ?? "", /ensure-plain/);
 
-    let timeoutCallback: (() => void) | undefined;
     const internalPlan = {
       ...provisioning,
-      plan: () => new Promise<ProvisionPlan>((_resolve, reject) => {
-        queueMicrotask(() => timeoutCallback?.());
-        queueMicrotask(() => reject(new Error("internal abort")));
-      }),
+      plan: () => new Promise<ProvisionPlan>(() => {}),
     } as unknown as ProvisioningServiceDefinition;
-    const [internalCode, internalEnvelope] = await run(
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingInternal = run(
       { action: "install_extension", nodes: [declared.id] },
-      {
-        provisioning: internalPlan,
-        timeout: (callback: () => void) => {
-          timeoutCallback = callback;
-          return () => {};
-        },
-      },
+      { provisioning: internalPlan },
     );
+    await vi.advanceTimersByTimeAsync(300_000);
+    const [internalCode, internalEnvelope] = await pendingInternal;
+    vi.useRealTimers();
     assert.equal(internalCode, 504);
     assert.match(internalEnvelope.detail, /timed out/);
 
@@ -1031,24 +1025,18 @@ describe("manage provisioning and snapshot coverage", () => {
       /family abort/,
     );
 
-    let firstTimeout: (() => void) | undefined;
     const internalFamily = {
       ...provisioning,
-      plan: () => new Promise<ProvisionPlan>((_resolve, reject) => {
-        queueMicrotask(() => firstTimeout?.());
-        queueMicrotask(() => reject(new Error("family internal")));
-      }),
+      plan: () => new Promise<ProvisionPlan>(() => {}),
     } as unknown as ProvisioningServiceDefinition;
-    const [internalCode, internalEnvelope] = await run(
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingInternal = run(
       { action: "provision_model", model: model.id },
-      {
-        provisioning: internalFamily,
-        timeout: (callback: () => void) => {
-          firstTimeout = callback;
-          return () => {};
-        },
-      },
+      { provisioning: internalFamily },
     );
+    await vi.advanceTimersByTimeAsync(300_000);
+    const [internalCode, internalEnvelope] = await pendingInternal;
+    vi.useRealTimers();
     assert.equal(internalCode, 504);
     assert.equal(internalEnvelope.state, "timeout");
 
@@ -1079,27 +1067,21 @@ describe("manage provisioning and snapshot coverage", () => {
     assert.equal(plainCode, 404);
     assert.equal(plainEnvelope.detail, "card plain");
 
-    let timeoutCallback: (() => void) | undefined;
     const second = {
       ...provisioning,
       plan: (ref: ResourceRef) => {
         if (ref.kind === "model" && ref.owner === "family") return Promise.reject(new Error("family missing"));
-        return new Promise<ProvisionPlan>((_resolve, reject) => {
-          queueMicrotask(() => timeoutCallback?.());
-          queueMicrotask(() => reject(new Error("card abort")));
-        });
+        return new Promise<ProvisionPlan>(() => {});
       },
     } as unknown as ProvisioningServiceDefinition;
-    const [secondCode, secondEnvelope] = await run(
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingSecond = run(
       { action: "provision_model", model: model.id },
-      {
-        provisioning: second,
-        timeout: (callback: () => void) => {
-          timeoutCallback = callback;
-          return () => {};
-        },
-      },
+      { provisioning: second },
     );
+    await vi.advanceTimersByTimeAsync(300_000);
+    const [secondCode, secondEnvelope] = await pendingSecond;
+    vi.useRealTimers();
     assert.equal(secondCode, 504);
     assert.equal(secondEnvelope.state, "timeout");
   });
@@ -1234,13 +1216,17 @@ describe("manage provisioning and snapshot coverage", () => {
       if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
       return json({ system: {} });
     }) as typeof fetch;
-    const [code, envelope] = await run(
-      { action: "endpoint_set", url: "http://new:8188" },
-      { timeout: (callback: () => void) => {
-        callback();
-        return () => {};
-      } },
-    );
+    globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
+      if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      });
+    }) as typeof fetch;
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    const pendingProbe = run({ action: "endpoint_set", url: "http://new:8188" });
+    await vi.advanceTimersByTimeAsync(5_000);
+    const [code, envelope] = await pendingProbe;
+    vi.useRealTimers();
     assert.equal(code, 504);
     assert.equal(envelope.state, "timeout");
 

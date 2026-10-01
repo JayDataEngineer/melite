@@ -5,7 +5,8 @@
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "lib": [
-      "ES2022"
+      "ES2022",
+      "ESNext.Disposable"
     ],
     "strict": true,
     "noEmit": true,

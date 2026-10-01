@@ -19,6 +19,8 @@
 // LOAD (windows/frames/geometry — exact, off the doc) against live
 // FREE, so the pressure comparison is real on both sides.
 
+import { deadline } from "@deepseek-ai/dsh-timeout";
+
 /** The admitted film load — exact off the doc, never estimated. */
 export interface FilmLoad {
   windows: number;

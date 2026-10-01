@@ -2,7 +2,7 @@
 // the parse law, the lifecycle guard, every handler's happy + refusal
 // arms, and the envelope mapping. Fetch is routed per test, systemctl
 // / journalctl ride a tmpbin, state roots are temp dirs.
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -34,7 +34,6 @@ const text = (v: string, status = 200): Response =>
 
 // ── harness ─────────────────────────────────────────────────────────
 let ROOT = "";
-const seenTimeouts: number[] = [];
 type ModelRef = Extract<ResourceRef, { kind: "model" }>;
 type ExtensionRef = Extract<ResourceRef, { kind: "extension" }>;
 type ExtensionItem = Extract<ProvisionPlanItem, { kind: "extension" }>;
@@ -230,7 +229,6 @@ const CTX = (over: Record<string, unknown> = {}): ManageCtx =>
      models: { allDecls: () => [] } as unknown as ManageCtx["models"],
     provisioning: fakeProvisioning,
      timeout: (cb: () => void, ms: number): (() => void) => {
-       seenTimeouts.push(ms);
        const timer = setTimeout(cb, ms);
        return () => { clearTimeout(timer); };
      },
@@ -937,7 +935,34 @@ describe("hDownloadModel", () => {
         relativePath: "ckpt",
         filename: "f.bin",
       }]);
-      assert.ok(seenTimeouts.includes(850 * 1000));
+      // The download bound is the railMs clamp (timeout_seconds 9999
+      // caps at 850s): a hanging external acquire outlives 849_999ms
+      // of advanced fake time and answers the 504 timeout voice at
+      // exactly 850_000ms.
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      const hungExternal: ExternalProvisionRequest[] = [];
+      const hungCtx = CTX({
+        provisioning: {
+          ...fakeProvisioning,
+          acquireExternal: (request: ExternalProvisionRequest, _opts: unknown, signal: AbortSignal) => {
+            hungExternal.push(request);
+            return new Promise<ProvisionResult>((_resolve, reject) => {
+              signal.addEventListener("abort", () => reject(signal.reason), { once: true });
+            });
+          },
+        },
+      });
+      const pendingClamp = manage(
+        { action: "download_model", url: "http://h/dir/f.bin", relative_path: "models/ckpt", timeout_seconds: 9999 },
+        hungCtx,
+      );
+      await vi.advanceTimersByTimeAsync(849_999);
+      assert.equal(hungExternal.length, 1);
+      await vi.advanceTimersByTimeAsync(1);
+      const [clampCode, clampEnvelope] = await pendingClamp;
+      vi.useRealTimers();
+      assert.equal(clampCode, 504);
+      assert.match(clampEnvelope.detail, /timed out/);
     } finally {
       rmRoot();
     }
@@ -1143,12 +1168,15 @@ describe("hRestart", () => {
        assert.match(e5.detail, /management plane unavailable/);
        route((_url, init) => {
          if (init?.signal?.aborted) return Promise.reject(new DOMException("aborted", "AbortError"));
-         return new Promise<Response>(() => {});
+         return new Promise<Response>((_resolve, reject) => {
+           init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+         });
        });
-       const [cTimeout, eTimeout] = await manage(
-         { action: "restart", force: true },
-         CTX({ timeout: (cb: () => void) => { cb(); return () => {}; } }),
-       );
+       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+       const pendingTimeout = manage({ action: "restart", force: true });
+       await vi.advanceTimersByTimeAsync(10_000);
+       const [cTimeout, eTimeout] = await pendingTimeout;
+       vi.useRealTimers();
        assert.equal(cTimeout, 504);
        assert.match(eTimeout.detail, /timed out/);
        const [, e6] = await manage({ action: "restart", force: true }, CTX({ endpoint: () => ({}) }));

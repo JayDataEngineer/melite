@@ -3,11 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port — the runs remote exposes the lanes over this seat.",
+  "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",
   "main": "./src/index.ts",
   "dependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
+    "@deepseek-ai/dsh-timeout": "0.2.0-rc.1",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",

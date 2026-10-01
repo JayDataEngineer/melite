@@ -2,7 +2,7 @@
 // base law (trailing slashes, non-string urls), the 503 template,
 // and the one call (JSON in/out, text fallback, refusal + transport
 // mapping, the timeout cancel always released).
-import { describe, it, afterEach } from "vitest";
+import { describe, it, afterEach, vi } from "vitest";
 import assert from "node:assert/strict";
 import {
   ManagerApiError,
@@ -24,18 +24,6 @@ const CTX = (url: unknown): ManageCtx =>
     timeout: (_cb: () => void, _ms: number): (() => void) => () => {},
   }) as unknown as ManageCtx;
 const seen: Array<{ url: unknown; init: RequestInit | undefined }> = [];
-const CANCELLED: boolean[] = [];
-const ctxWithCancel = (url: unknown): ManageCtx =>
-  ({
-    endpoint: () => ({ url }),
-    timeout: (_cb: () => void, _ms: number): (() => void) => {
-      let done = false;
-      return () => {
-        done = true;
-        CANCELLED.push(done);
-      };
-    },
-  }) as unknown as ManageCtx;
 const mockFetch = (status: number, text: string): void => {
   seen.length = 0;
   globalThis.fetch = (async (url: unknown, init: RequestInit | undefined) => {
@@ -101,19 +89,17 @@ describe("managerGet", () => {
   });
 
   it("an internal timeout maps to a manager timeout", async () => {
+    // The fuse is the dsh-timeout deadline's own timer (timeoutMs: 5
+    // real ms): the fetch hangs until its signal aborts, so the
+    // deadline wins and the classification below maps it to the 504.
     globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
       if (init?.signal?.aborted) throw new DOMException("aborted", "AbortError");
-      return { status: 200, text: async () => "{}" } as unknown as Response;
+      return await new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")), { once: true });
+      });
     }) as typeof fetch;
-    const aborting = {
-      endpoint: () => ({ url: "http://h" }),
-      timeout: (cb: () => void, _ms: number): (() => void) => {
-        cb();
-        return () => {};
-      },
-    } as unknown as ManageCtx;
     await assert.rejects(
-      managerGet("http://h", "/r", { timeoutMs: 5, ctx: aborting }),
+      managerGet("http://h", "/r", { timeoutMs: 5, ctx: CTX(1) }),
       /manager request timed out/,
     );
   });
@@ -143,13 +129,20 @@ describe("managerGet", () => {
     assert.equal(requestSignal?.aborted, true);
   });
 
-  it("GET sends no body headers; the cancel always releases", async () => {
-    CANCELLED.length = 0;
-    mockFetch(200, "{}");
-    await managerGet("http://h", "/r", { timeoutMs: 5, ctx: ctxWithCancel(1) });
-    assert.equal(seen[0]?.init?.body, undefined);
-    assert.equal(seen[0]?.init?.headers, undefined);
-    assert.deepEqual(CANCELLED, [true]);
+  it("GET sends no body headers; the deadline timer always releases", async () => {
+    // The fuse timer is dsh-timeout's; its dispose-once clear is the
+    // release. With fake timers a live setTimeout left behind by a
+    // completed call would keep the count above zero.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    try {
+      mockFetch(200, "{}");
+      await managerGet("http://h", "/r", { timeoutMs: 5_000, ctx: CTX(1) });
+      assert.equal(seen[0]?.init?.body, undefined);
+      assert.equal(seen[0]?.init?.headers, undefined);
+      assert.equal(vi.getTimerCount(), 0);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 

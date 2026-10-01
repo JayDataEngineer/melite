@@ -5,6 +5,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import type { ManageCtx } from "./managePlane.ts";
 import { sweepOutputRoots } from "./cardsDangling.ts";
+import { deadline } from "@deepseek-ai/dsh-timeout";
 
 // ── runs / security / probe (TS-native) ────────────────────────────
 const STATUS_RE = /"status"\s*:\s*"([a-z]+)"/;
@@ -90,22 +91,16 @@ interface EndpointView {
 }
 
 /** The endpoint config's OWN server, probed live (/system_stats).
- *  The 5s abort rides the timer service seat (ManageCtx.timeout —
- *  the cordis-plugin-timer seam): the returned disposer is both the
- *  early clear and the disposal guarantee, no bare setTimeout
- *  (deep-audit finding #7, 2026-09-10). */
+ *  The 5s fuse is dsh-timeout's deadline — the caller signal and
+ *  the timer fuse into one signal with dispose-once cleanup (the
+ *  disposal guarantee the timer service seat used to carry). */
 export async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
   const cfg = mctx.endpoint();
   const url = typeof cfg["url"] === "string" ? (cfg["url"] as string).replace(/\/+$/, "") : "";
   if (url === "") return { reachable: false, reason: "no url in endpoint config" };
-  const ctrl = new AbortController();
-  const caller = mctx.signal;
-  const onCallerAbort = (): void => ctrl.abort(caller?.reason);
-  if (caller?.aborted === true) onCallerAbort();
-  else caller?.addEventListener("abort", onCallerAbort, { once: true });
-  const t = mctx.timeout((): void => ctrl.abort(), 5000);
+  const dl = deadline(mctx.signal, 5000, "MANAGE_PROBE");
   try {
-    const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
+    const r = await fetch(url + "/system_stats", { signal: dl.signal });
     const stats = (await r.json()) as Record<string, unknown>;
     const sysinfo = (stats["system"] ?? {}) as Record<string, unknown>;
     const devices = ((stats["devices"] ?? []) as Array<Record<string, unknown>>).slice(0, 4).map((d) => ({
@@ -115,12 +110,12 @@ export async function probeEndpoint(mctx: ManageCtx): Promise<EndpointView> {
     }));
     return { reachable: true, url, comfyui_version: sysinfo["comfyui_version"], devices };
   } catch (e) {
-    if (caller?.aborted === true) {
-      throw caller.reason instanceof Error ? caller.reason : new DOMException("The operation was aborted", "AbortError");
+    if (mctx.signal?.aborted === true) {
+      const reason = mctx.signal.reason;
+      throw reason instanceof Error ? reason : new DOMException("The operation was aborted", "AbortError");
     }
     return { reachable: false, url, reason: String(e).slice(0, 120) };
   } finally {
-    caller?.removeEventListener("abort", onCallerAbort);
-    t();
+    dl[Symbol.dispose]();
   }
 }

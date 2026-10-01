@@ -38,6 +38,7 @@ import type {
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.ts";
 import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.ts";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.ts";
+import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 
 const execFileAsync = promisify(execFile);
 
@@ -700,19 +701,16 @@ async function withManageTimeout<T>(
   boundMs: number = railMs(req),
 ): Promise<T> {
   throwIfAborted(ctx.signal);
-  const controller = new AbortController();
-  const deadline = Date.now() + boundMs;
-  let timedOut = false;
-  const onAbort = (): void => controller.abort(ctx.signal?.reason);
-  ctx.signal?.addEventListener("abort", onAbort, { once: true });
-  const cancel = ctx.timeout((): void => {
-    timedOut = true;
-    controller.abort();
-  }, boundMs);
+  // The fuse is dsh-timeout's deadline (the caller signal and the
+  // timer fuse into one signal; TimeoutReason carries the win); the
+  // 504 voice and its state payload are ours.
+  const dl = deadlineOf(ctx.signal, boundMs, "MANAGE_OP");
+  const boundAt = Date.now() + boundMs;
+  const timedOut = (): boolean => timeoutOf(dl.signal, "MANAGE_OP") !== undefined;
   try {
-    const value = await work(controller.signal);
+    const value = await work(dl.signal);
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
-    if (timedOut || Date.now() >= deadline) {
+    if (timedOut() || Date.now() >= boundAt) {
       throw new Refused(504, "manage operation timed out", {
         state: "timeout",
         next_action: "status",
@@ -721,7 +719,7 @@ async function withManageTimeout<T>(
     return value;
   } catch (error: unknown) {
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
-    if (timedOut || controller.signal.aborted) {
+    if (timedOut() || dl.signal.aborted) {
       throw new Refused(504, "manage operation timed out", {
         state: "timeout",
         next_action: "status",
@@ -729,8 +727,7 @@ async function withManageTimeout<T>(
     }
     throw error;
   } finally {
-    ctx.signal?.removeEventListener("abort", onAbort);
-    cancel();
+    dl[Symbol.dispose]();
   }
 }
 
@@ -1183,22 +1180,15 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   }
   // Probe the candidate BEFORE writing (no unreachable URL ever
   // lands in the config; the old URL keeps serving on refusal).
-  const ctrl = new AbortController();
-  const onAbort = (): void => ctrl.abort(ctx.signal?.reason);
-  let timedOut = false;
-  ctx.signal?.addEventListener("abort", onAbort, { once: true });
-  const clear = ctx.timeout((): void => {
-    timedOut = true;
-    ctrl.abort();
-  }, 5000);
+  const dl = deadlineOf(ctx.signal, 5000, "ENDPOINT_SET_PROBE");
   let stats: Record<string, unknown>;
   try {
-    const r = await fetch(url + "/system_stats", { signal: ctrl.signal });
+    const r = await fetch(url + "/system_stats", { signal: dl.signal });
     if (!r.ok) throw new Error("HTTP " + String(r.status));
     stats = (await r.json()) as Record<string, unknown>;
   } catch (e: unknown) {
     if (signalIsAborted(ctx.signal)) throw abortReason(ctx.signal);
-    if (timedOut) {
+    if (timeoutOf(dl.signal, "ENDPOINT_SET_PROBE")) {
       throw new Refused(504, "endpoint_set probe timed out — the endpoint is unchanged", {
         state: "timeout",
         next_action: "endpoint_set",
@@ -1210,8 +1200,7 @@ async function hEndpointSet(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
         (e instanceof Error ? e.message : String(e)) + ") — the endpoint is unchanged",
     );
   } finally {
-    ctx.signal?.removeEventListener("abort", onAbort);
-    clear();
+    dl[Symbol.dispose]();
   }
   throwIfAborted(ctx.signal);
   const cfgPath = endpointConfigPath();
