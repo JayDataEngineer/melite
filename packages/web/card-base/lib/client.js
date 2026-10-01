@@ -46066,6 +46066,123 @@ void main() {
 			});
 		}
 		//#endregion
+		//#region src/estate-remote.ts
+		/** The estate's domain refusal ({ok:false} answers): the message
+		* rides verbatim; the class separates DOMAIN verdicts from transport
+		* failures so policy code (the gone-verdict, the poll, the CAS
+		* rebase) can discriminate. */
+		var EstateRefusedError = class extends Error {
+			constructor(message) {
+				super(message);
+				this.name = "EstateRefusedError";
+			}
+		};
+		let bound;
+		/** The armed lazy source (see armEstateRemoteLazyBind): the studio
+		*  bind's order-proof wake, plain JS — no cordis fiber. */
+		let lazySource;
+		/** Capture the namespaces (the mounter's direct bind — or a test's
+		*  honest fake). Idempotent; the last bind wins. */
+		function bindEstateRemote(namespaces) {
+			bound = namespaces;
+		}
+		/** Drop the bind (tests isolate between cases; also disarms the lazy
+		*  source so the next case starts from the honest unbound state). */
+		function unbindEstateRemote() {
+			bound = void 0;
+			lazySource = void 0;
+		}
+		/** Arm the lazy bind (the studio bundles' order-proof wake): the
+		*  factory captures a plain getter reading the namespaces through
+		*  the inject-free reflect seam (ctx.get — cordis' own type doc:
+		*  "Read a service from the store without the inject requirement").
+		*  No cordis fiber, no inject list, no epoch — a getter cannot be
+		*  parked dormant, refused by a proxy, or poisoned into a parent
+		*  fiber's inject set (the four receipts that killed every fiber
+		*  binder). The FIRST verb pulls it (estateRemote, below); if the
+		*  namespaces still do not exist the loud refusal below speaks. */
+		function armEstateRemoteLazyBind(source) {
+			lazySource = source;
+		}
+		/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
+		*  MOUTH: the first verb after the mounts land pulls the armed
+		*  getter once (order-proof — by first use, the mounter has long
+		*  booted); a verb before the mounts (or on a host without the
+		*  estate plugin) meets the loud wiring refusal, never a hang and
+		*  never a silent fallback. */
+		function estateRemote() {
+			if (bound === void 0 && lazySource !== void 0) try {
+				bindEstateRemoteFromRemote(lazySource());
+			} catch {}
+			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+			return bound;
+		}
+		/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
+		*  receipt): the client-bundle preset inlines card-base into every
+		*  consumer bundle, so this module's `bound` singleton exists PER
+		*  BUNDLE — the from-media outage's second layer. Every attempt to
+		*  bind through a RUNTIME child fiber died on cordis' own machinery
+		*  (dotted-only injects: the proxy refuses `child.remote`; parent-
+		*  only: the fiber starts INACTIVE; both: the runner's own inspect
+		*  sync breaks). The harness never binds this way. Its consumers —
+		*  product-analytics, ui-settings, ui-model-selection — declare
+		*  STATIC plugin injects with BOTH levels (`['remote',
+		*  'remote.productAnalytics']`), the loader waits for the mounted
+		*  namespaces before their apply runs, and they read
+		*  `ctx.remote.<namespace>` directly. That is this bind:
+		*
+		*  - a CONSUMING studio declares `export const inject = ['slots',
+		*    'remote', 'remote.bench', 'remote.drafts', 'remote.runs',
+		*    'remote.media']` on its client entry — the loader guarantees
+		*    the namespaces exist when its apply runs;
+		*  - the MOUNTER (card-view) injects only the parent 'remote' (the
+		*    dotted names on the mounter would wait on its own $mount — the
+		*    2026-09-15 deadlock) and binds directly after its mounts;
+		*  - both call THIS function, the one spelling of the bind, loud on
+		*    any absent namespace (a mis-injected entry is a wiring bug,
+		*    never a silent hole).
+		*
+		*  THE WALL pins every studio entry's inject list; the singleton
+		*  throw stays the runtime guard. */
+		function bindEstateRemoteFromRemote(remote) {
+			const { bench, drafts, runs, media, manage } = remote;
+			if (bench === void 0 || drafts === void 0 || runs === void 0 || media === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
+			const namespaces = {
+				bench,
+				drafts,
+				runs,
+				media,
+				...manage === void 0 ? {} : { manage }
+			};
+			bindEstateRemote(namespaces);
+			return namespaces;
+		}
+		/** The manage namespace — LOUD when the mounter did not bind it (a
+		*  caller that manages on a host without the manage contribution
+		*  meets the wiring refusal, never a silent fallback to a
+		*  hand-rolled lane). */
+		function manageRemote() {
+			const ns = estateRemote().manage;
+			if (ns === void 0) throw new Error("manage remote not mounted — the manage verbs ride ctx.remote (the manage contribution must mount before any call)");
+			return ns;
+		}
+		/** Await one namespace method's RemoteResult and unwrap it: the
+		*  value on ok, the estate's refusal text (verbatim) on the error
+		*  branch. Accepts the promise directly so call sites stay one
+		*  expression. */
+		async function unwrapRemote(result, voice) {
+			const settled = await result;
+			if (settled.ok === true) return settled.value;
+			const { error } = settled;
+			const failure = error;
+			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
+		}
+		/** Refusal discrimination for policy code (the CAS rebase, the
+		* gone-verdict, the poll's file-era arms). */
+		function isEstateRefusal(error) {
+			return error instanceof EstateRefusedError;
+		}
+		//#endregion
 		//#region src/wire.ts
 		init_extraKeys();
 		init_readFile();
@@ -46080,59 +46197,49 @@ void main() {
 			}
 			return body;
 		}
-		/** Correlation id for one client-request frame (the reference caller
-		* uses a random uuid per call; crypto.randomUUID is the browser
-		* standard — the deck's assets tab owns the older copy; this is the
-		* card chrome's seat). */
-		function nextRpcId() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
-		}
-		/** POST one manage action over the `manage` remote's wire door —
-		* same-origin /api/manage/act carrying the documented client-request
-		* frame (api-gateway.md). The single argument is `doc` (the
-		* adapter's parameter name — the wire field rides it verbatim).
-		* THE DOWNLOAD PROMPT's arm (no-silent-drop law, stroke 18): a
-		* boarded-but-not-downloaded model is OFFERED — the surfaces prompt
-		* the user, the click lands here as provision_model (the manager
-		* queues the download; present files are skipped). A refusal is a
-		* DOMAIN outcome: the envelope carries it (ok:false + detail) — the
-		* caller renders the truth, never a throw past the surface. */
+		/** POST one manage action through the MOUNTED `manage` remote —
+		* ctx.remote's generated namespace (the typert contribution card-view
+		* mounts; the api-gateway law reserves transport, RPC ids, response
+		* envelopes, and cancellation to the Connection, and the zod codecs
+		* on both ends own frame validation). The single argument is `doc`
+		* (the action plus its JSON params — the dispatcher validates the
+		* params per action). THE DOWNLOAD PROMPT's arm (no-silent-drop law,
+		* stroke 18): a boarded-but-not-downloaded model is OFFERED — the
+		* surfaces prompt the user, the click lands here as provision_model
+		* (the manager queues the download; present files are skipped). A
+		* refusal is a DOMAIN outcome: the seat throws manage/refused, the
+		* Connection folds it into the RemoteResult error branch, and the
+		* envelope carries it (ok:false + detail) — the caller renders the
+		* truth, never a throw past the surface. Transport failures (an
+		* unmounted lane, a dead connection) still throw LOUD — never a
+		* silent ok:false.
+		* @param action - the manage action name (the doc's action field).
+		* @param payload - the action's JSON params (spread over the doc).
+		* @param signal - caller cancellation, threaded to the Connection.
+		* @returns the envelope reply: ok true with detail/data, or ok false
+		* with the refusal's text. */
 		async function postManageAction(action, payload, signal) {
-			const response = await fetch("/api/manage/act", {
-				method: "POST",
-				headers: { "content-type": "application/json" },
-				body: JSON.stringify({
-					type: "client-request",
-					rpcId: nextRpcId(),
-					method: "manage/act",
-					payload: { args: { doc: {
-						action,
-						...payload
-					} } }
-				}),
-				...signal === void 0 ? {} : { signal }
-			});
-			const body = await response.json().catch(() => null);
-			const row = typeof body === "object" && body !== null ? Reflect.get(body, "result") : void 0;
-			const inner = typeof row === "object" && row !== null ? row : {};
-			if (!response.ok) return {
-				ok: false,
-				detail: typeof inner["message"] === "string" ? inner["message"] : "manage/" + action + ": HTTP " + String(response.status)
+			const doc = {
+				action,
+				...payload
 			};
-			if (inner["ok"] === false) {
-				const err = inner["error"];
-				return {
+			const settled = await manageRemote().act(doc, signal);
+			if (settled.ok === true) {
+				const row = settled.value;
+				if (row.ok !== true) return {
 					ok: false,
-					detail: typeof err?.["message"] === "string" ? err["message"] : "manage/" + action + " refused"
+					detail: row.detail
+				};
+				return {
+					ok: true,
+					detail: row.detail,
+					data: row.data
 				};
 			}
-			const value = inner["value"];
+			const failure = settled.error;
 			return {
-				ok: true,
-				detail: typeof value?.["detail"] === "string" ? value["detail"] : void 0,
-				data: value?.["data"]
+				ok: false,
+				detail: typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : "manage/" + action + " refused"
 			};
 		}
 		/** /v1/model-catalog → the cards section (the picker's ONE surface —
@@ -48183,113 +48290,6 @@ void main() {
 			}, (0, react.createElement)("span", { className: card_module_css_default.modTileLabel }, props.label), props.strength !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileStrength }, props.strength.toFixed(2)) : null, props.steps !== void 0 ? (0, react.createElement)("span", { className: card_module_css_default.modTileSteps }, `${String(props.steps)} steps`) : null);
 		}
 		//#endregion
-		//#region src/estate-remote.ts
-		/** The estate's domain refusal ({ok:false} answers): the message
-		* rides verbatim; the class separates DOMAIN verdicts from transport
-		* failures so policy code (the gone-verdict, the poll, the CAS
-		* rebase) can discriminate. */
-		var EstateRefusedError = class extends Error {
-			constructor(message) {
-				super(message);
-				this.name = "EstateRefusedError";
-			}
-		};
-		let bound;
-		/** The armed lazy source (see armEstateRemoteLazyBind): the studio
-		*  bind's order-proof wake, plain JS — no cordis fiber. */
-		let lazySource;
-		/** Capture the namespaces (the mounter's direct bind — or a test's
-		*  honest fake). Idempotent; the last bind wins. */
-		function bindEstateRemote(namespaces) {
-			bound = namespaces;
-		}
-		/** Drop the bind (tests isolate between cases; also disarms the lazy
-		*  source so the next case starts from the honest unbound state). */
-		function unbindEstateRemote() {
-			bound = void 0;
-			lazySource = void 0;
-		}
-		/** Arm the lazy bind (the studio bundles' order-proof wake): the
-		*  factory captures a plain getter reading the namespaces through
-		*  the inject-free reflect seam (ctx.get — cordis' own type doc:
-		*  "Read a service from the store without the inject requirement").
-		*  No cordis fiber, no inject list, no epoch — a getter cannot be
-		*  parked dormant, refused by a proxy, or poisoned into a parent
-		*  fiber's inject set (the four receipts that killed every fiber
-		*  binder). The FIRST verb pulls it (estateRemote, below); if the
-		*  namespaces still do not exist the loud refusal below speaks. */
-		function armEstateRemoteLazyBind(source) {
-			lazySource = source;
-		}
-		/** The bound namespaces — LOUD when unbound, and the LAZY BIND'S
-		*  MOUTH: the first verb after the mounts land pulls the armed
-		*  getter once (order-proof — by first use, the mounter has long
-		*  booted); a verb before the mounts (or on a host without the
-		*  estate plugin) meets the loud wiring refusal, never a hang and
-		*  never a silent fallback. */
-		function estateRemote() {
-			if (bound === void 0 && lazySource !== void 0) try {
-				bindEstateRemoteFromRemote(lazySource());
-			} catch {}
-			if (bound === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
-			return bound;
-		}
-		/** THE BIND SEAM, HARNESS-SHAPED (2026-09-29, the fourth lane
-		*  receipt): the client-bundle preset inlines card-base into every
-		*  consumer bundle, so this module's `bound` singleton exists PER
-		*  BUNDLE — the from-media outage's second layer. Every attempt to
-		*  bind through a RUNTIME child fiber died on cordis' own machinery
-		*  (dotted-only injects: the proxy refuses `child.remote`; parent-
-		*  only: the fiber starts INACTIVE; both: the runner's own inspect
-		*  sync breaks). The harness never binds this way. Its consumers —
-		*  product-analytics, ui-settings, ui-model-selection — declare
-		*  STATIC plugin injects with BOTH levels (`['remote',
-		*  'remote.productAnalytics']`), the loader waits for the mounted
-		*  namespaces before their apply runs, and they read
-		*  `ctx.remote.<namespace>` directly. That is this bind:
-		*
-		*  - a CONSUMING studio declares `export const inject = ['slots',
-		*    'remote', 'remote.bench', 'remote.drafts', 'remote.runs',
-		*    'remote.media']` on its client entry — the loader guarantees
-		*    the namespaces exist when its apply runs;
-		*  - the MOUNTER (card-view) injects only the parent 'remote' (the
-		*    dotted names on the mounter would wait on its own $mount — the
-		*    2026-09-15 deadlock) and binds directly after its mounts;
-		*  - both call THIS function, the one spelling of the bind, loud on
-		*    any absent namespace (a mis-injected entry is a wiring bug,
-		*    never a silent hole).
-		*
-		*  THE WALL pins every studio entry's inject list; the singleton
-		*  throw stays the runtime guard. */
-		function bindEstateRemoteFromRemote(remote) {
-			const { bench, drafts, runs, media } = remote;
-			if (bench === void 0 || drafts === void 0 || runs === void 0 || media === void 0) throw new Error("estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)");
-			const namespaces = {
-				bench,
-				drafts,
-				runs,
-				media
-			};
-			bindEstateRemote(namespaces);
-			return namespaces;
-		}
-		/** Await one namespace method's RemoteResult and unwrap it: the
-		*  value on ok, the estate's refusal text (verbatim) on the error
-		*  branch. Accepts the promise directly so call sites stay one
-		*  expression. */
-		async function unwrapRemote(result, voice) {
-			const settled = await result;
-			if (settled.ok === true) return settled.value;
-			const { error } = settled;
-			const failure = error;
-			throw new EstateRefusedError(typeof failure === "object" && failure !== null && typeof failure.message === "string" && failure.message !== "" ? failure.message : voice + ": refused");
-		}
-		/** Refusal discrimination for policy code (the CAS rebase, the
-		* gone-verdict, the poll's file-era arms). */
-		function isEstateRefusal(error) {
-			return error instanceof EstateRefusedError;
-		}
-		//#endregion
 		//#region src/slots.ts
 		function defineStageViewRegistration(key, view, inject) {
 			return (ctx) => {
@@ -50083,6 +50083,7 @@ void main() {
 		exports.laneSurfaceFor = laneSurfaceFor;
 		exports.laneViolations = laneViolations;
 		exports.makeLabelSprite = makeLabelSprite;
+		exports.manageRemote = manageRemote;
 		exports.mintViewportId = mintViewportId;
 		exports.modOwnedFields = modOwnedFields;
 		exports.modelChoices = modelChoices;
@@ -50137,4 +50138,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="904826380a99216b081abd5c47e11bdef82c0a9e";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="54bf92f6f80d083374ddc7ab411bba9fb0e89979";

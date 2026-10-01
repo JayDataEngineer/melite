@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 interface FakeCtx {
   effect(fn: () => unknown, name?: string): unknown
+  remote: { manage: { act(): Promise<never> } }
   sidebarRightTabs: { register(def: unknown): () => void }
   slots: {
     inject(name: string, declare: () => unknown): unknown
@@ -20,6 +21,11 @@ function fakeCtx(): { ctx: FakeCtx; effects: Array<() => unknown>; disposers: un
   const disposers: unknown[] = []
   const tabs: unknown[] = []
   const ctx: FakeCtx = {
+    remote: {
+      // The seated manage lane (never called by these tests — the
+      // entry only seats it).
+      manage: { act: (): Promise<never> => new Promise(() => {}) },
+    },
     effect(fn) {
       effects.push(fn)
       disposers.push(fn())
@@ -53,10 +59,11 @@ async function loadEntry(): Promise<typeof import('../../src/client/index.ts')> 
 }
 
 describe('the deck client entry', () => {
-  it('inject waits on the slot seat + the tab registry', async () => {
+  it('inject waits on the slot seat, the tab registry, and the manage lane', async () => {
     const mod = await loadEntry()
     expect(mod.inject).toContain('slots')
     expect(mod.inject).toContain('sidebarRightTabs')
+    expect(mod.inject).toContain('remote.manage')
   })
 
   it('apply registers the comfy-manager tab type and releases the claim on unload', async () => {

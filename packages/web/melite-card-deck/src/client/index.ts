@@ -21,16 +21,28 @@
  */
 import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import { claimDeckApply, releaseDeckApply } from './apply-guard.ts'
-import { registerAssetsTab } from './assets-tab.tsx'
+import { registerAssetsTab, seatManageNamespace } from './assets-tab.tsx'
+import type {} from '@melite/estate-manage/remote'
+// The gateway client's remote service seat (ctx.remote + the mounted
+// namespace faces; the deck's manifest already injects the connection
+// that provides it).
+import type {} from '@deepseek-ai/dsh-api-gateway/client'
 
 /** 'slots' (seat declarations) + the native right-sidebar tab registry
  *  (ui-sidebar-right, the web profile's own subsystem) — hosts the
- *  tabs. No transport inject: the panel carries its own wire caller. */
-export const inject = ['slots', 'sidebarRightTabs']
+ *  tabs — + the mounted estate remotes: the manage namespace carries
+ *  the panel's transport (the loader guarantees it exists when apply
+ *  runs; the mounter is @melite-plugin/dsh-card-view's client, which
+ *  mounts every estate contribution). */
+export const inject = ['slots', 'sidebarRightTabs', 'remote', 'remote.manage']
 
 export function apply(ctx: ClientContext): void {
   if (!claimDeckApply()) return
   ctx.effect(() => releaseDeckApply, 'melite-card-deck: apply claim')
+
+  // The manage lane (typed by the declaration merge above; structural
+  // seat — the panel bundle carries no transport of its own).
+  seatManageNamespace(ctx.remote.manage)
 
   // The native tab (comfy management — NOT cards). Logged, never
   // thrown (shell law).

@@ -5990,7 +5990,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			"patched": union([_undefined(), array(string())]).optional(),
 			"rev": union([_undefined(), number()]).optional()
 		});
-		const TYPERT_REMOTE$2 = {
+		const TYPERT_REMOTE$3 = {
 			package: "@melite/estate-drafts",
 			descriptors: [
 				{
@@ -6671,7 +6671,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			array(lazy(() => JsonValueRemoteCodec$schema3())),
 			record(string(), lazy(() => JsonValueRemoteCodec$schema3())).readonly()
 		])).readonly();
-		const TYPERT_REMOTE$1 = {
+		const TYPERT_REMOTE$2 = {
 			package: "@melite/estate-runs",
 			descriptors: [
 				{
@@ -6836,7 +6836,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"served_from": string().readonly()
 			}))
 		});
-		const TYPERT_REMOTE = {
+		const TYPERT_REMOTE$1 = {
 			package: "@melite/estate-media",
 			descriptors: [{
 				id: "@melite/estate-media#media/list",
@@ -6864,6 +6864,140 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				sourceLocation: {
 					"file": "packages/estate/media/src/index.ts",
 					"line": 601,
+					"column": 9
+				}
+			}]
+		};
+		//#endregion
+		//#region ../../estate/manage/lib/typert.remote-client.js
+		let ManageJsonValueRemoteCodec$schema$value;
+		const ManageJsonValueRemoteCodec$schema = () => ManageJsonValueRemoteCodec$schema$value ??= union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => ManageJsonValueRemoteCodec$schema())),
+			record(string(), lazy(() => ManageJsonValueRemoteCodec$schema())).readonly()
+		]);
+		let ManageJsonValueRemoteCodec$schema2$value;
+		const ManageJsonValueRemoteCodec$schema2 = () => ManageJsonValueRemoteCodec$schema2$value ??= union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => ManageJsonValueRemoteCodec$schema2())),
+			record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+		]);
+		let _melite_estate_manage_manage_act_parameter_0$schema$value;
+		const _melite_estate_manage_manage_act_parameter_0$schema = () => _melite_estate_manage_manage_act_parameter_0$schema$value ??= intersection(object({ "action": string().readonly() }), record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => ManageJsonValueRemoteCodec$schema())),
+			record(string(), lazy(() => ManageJsonValueRemoteCodec$schema())).readonly()
+		])).readonly());
+		let _melite_estate_manage_manage_act_result$schema$value;
+		const _melite_estate_manage_manage_act_result$schema = () => _melite_estate_manage_manage_act_result$schema$value ??= object({
+			"action": string().readonly(),
+			"ok": boolean().readonly(),
+			"detail": string().readonly(),
+			"data": union([
+				_undefined(),
+				literal(null),
+				string(),
+				number(),
+				literal(false),
+				literal(true),
+				array(union([
+					literal(null),
+					string(),
+					number(),
+					literal(false),
+					literal(true),
+					array(lazy(() => ManageJsonValueRemoteCodec$schema2())),
+					record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+				])),
+				record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+			]).readonly().optional(),
+			"status": union([_undefined(), number()]).readonly().optional(),
+			"code": union([_undefined(), string()]).readonly().optional(),
+			"state": union([_undefined(), string()]).readonly().optional(),
+			"next_action": union([_undefined(), string()]).readonly().optional(),
+			"operation_id": union([_undefined(), string()]).readonly().optional(),
+			"operations": union([_undefined(), array(union([
+				literal(null),
+				string(),
+				number(),
+				literal(false),
+				literal(true),
+				array(lazy(() => ManageJsonValueRemoteCodec$schema2())),
+				record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+			]))]).readonly().optional(),
+			"items": union([_undefined(), array(union([
+				literal(null),
+				string(),
+				number(),
+				literal(false),
+				literal(true),
+				array(lazy(() => ManageJsonValueRemoteCodec$schema2())),
+				record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+			]))]).readonly().optional(),
+			"rows": union([_undefined(), array(union([
+				literal(null),
+				string(),
+				number(),
+				literal(false),
+				literal(true),
+				array(lazy(() => ManageJsonValueRemoteCodec$schema2())),
+				record(string(), lazy(() => ManageJsonValueRemoteCodec$schema2())).readonly()
+			]))]).readonly().optional(),
+			"requested": union([_undefined(), array(string())]).readonly().optional(),
+			"succeeded": union([_undefined(), array(string())]).readonly().optional(),
+			"missed": union([_undefined(), array(string())]).readonly().optional(),
+			"misses": union([_undefined(), array(string())]).readonly().optional(),
+			"partial": union([
+				_undefined(),
+				literal(false),
+				literal(true)
+			]).readonly().optional(),
+			"restart_required": union([
+				_undefined(),
+				literal(false),
+				literal(true)
+			]).readonly().optional()
+		});
+		const TYPERT_REMOTE = {
+			package: "@melite/estate-manage",
+			descriptors: [{
+				id: "@melite/estate-manage#manage/act",
+				service: "manageRemote",
+				namespace: "manage",
+				method: "act",
+				implementation: "remoteExportAct",
+				invocation: { kind: "direct" },
+				parameters: [{
+					name: "doc",
+					wire: "doc",
+					source: "json",
+					codec: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-manage/types#ManageActDoc",
+						create: _melite_estate_manage_manage_act_parameter_0$schema
+					}
+				}],
+				cancellation: { parameter: "signal" },
+				result: {
+					mode: "strict",
+					typeSymbol: "@melite/estate-manage/types#ManageEnvelopeRow",
+					create: _melite_estate_manage_manage_act_result$schema
+				},
+				sourceLocation: {
+					"file": "packages/estate/manage/src/index.ts",
+					"line": 57,
 					"column": 9
 				}
 			}]
@@ -44562,22 +44696,28 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*/
 		async function apply(ctx) {
 			try {
-				const dispose = await ctx.remote.$mount(TYPERT_REMOTE$2);
+				const dispose = await ctx.remote.$mount(TYPERT_REMOTE$3);
 				ctx.effect(() => dispose, "melite-card-view: estate remote contribution");
 			} catch (error) {
 				console.error("[melite-card-view] estate remote contribution failed to mount:", error);
 			}
 			try {
-				const disposeRuns = await ctx.remote.$mount(TYPERT_REMOTE$1);
+				const disposeRuns = await ctx.remote.$mount(TYPERT_REMOTE$2);
 				ctx.effect(() => disposeRuns, "melite-card-view: runs remote contribution");
 			} catch (error) {
 				console.error("[melite-card-view] runs remote contribution failed to mount:", error);
 			}
 			try {
-				const disposeMedia = await ctx.remote.$mount(TYPERT_REMOTE);
+				const disposeMedia = await ctx.remote.$mount(TYPERT_REMOTE$1);
 				ctx.effect(() => disposeMedia, "melite-card-view: media remote contribution");
 			} catch (error) {
 				console.error("[melite-card-view] media remote contribution failed to mount:", error);
+			}
+			try {
+				const disposeManage = await ctx.remote.$mount(TYPERT_REMOTE);
+				ctx.effect(() => disposeManage, "melite-card-view: manage remote contribution");
+			} catch (error) {
+				console.error("[melite-card-view] manage remote contribution failed to mount:", error);
 			}
 			let benchNs;
 			try {
@@ -44585,7 +44725,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					bench: ctx.get("remote.bench"),
 					drafts: ctx.get("remote.drafts"),
 					runs: ctx.get("remote.runs"),
-					media: ctx.get("remote.media")
+					media: ctx.get("remote.media"),
+					manage: ctx.get("remote.manage")
 				}).bench;
 			} catch (error) {
 				console.error("[melite-card-view] estate direct bind failed:", error);
@@ -44685,4 +44826,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ff383fdba28b96fb5d19214c32f4bc6617d2f059";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4767d14354980c932f5167aa088c3537df746c99";

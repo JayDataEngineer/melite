@@ -327,8 +327,12 @@ window.__ModuleLoader__.load({
 		* Transport history (kill ledger): the tab's calls died with the
 		* gateway app (this plugin's /v1/manage proxy, then a ctx.remote.lane
 		* shape that never mounted client-side — "remote.lane is not a
-		* function", 2026-09-10). The wire frame below is the DSH-native
-		* replacement: no proxy, no gateway vocabulary, one fetch.
+		* function", 2026-09-10), then rode a hand-rolled fetch frame
+		* (2026-09-10 to 2026-10-01). Today the panel rides the MOUNTED
+		* `manage` Typert namespace (@melite/estate-manage's generated
+		* client, seated by the deck's apply): the Connection owns
+		* transport, RPC ids, and frame validation; this panel owns the
+		* envelope's reply mapping and its voices.
 		*
 		* Siblings' fate (NO LEGACY): Ray Media deleted with the media plugin
 		* (5cbb5bcc — DSH's own media system owns that surface); Ray Flows
@@ -376,6 +380,12 @@ window.__ModuleLoader__.load({
 		}
 		function stringOr(value, fallback = "") {
 			return typeof value === "string" ? value : fallback;
+		}
+		/** A refusal voice must carry words: an empty message names the wire's
+		*  own refusal rather than rendering a blank line (the card-base
+		*  manage lane's law). */
+		function nonEmptyOr(value, fallback) {
+			return typeof value === "string" && value !== "" ? value : fallback;
 		}
 		function modelCatalog(value) {
 			if (!Array.isArray(value)) return [];
@@ -460,79 +470,46 @@ window.__ModuleLoader__.load({
 			if (Array.isArray(misses)) fields.misses = misses.filter((item) => typeof item === "string");
 			return fields;
 		}
-		function nextRpcId() {
-			const cryptoApi = globalThis.crypto;
-			if (cryptoApi?.randomUUID !== void 0) return cryptoApi.randomUUID();
-			return "rpc-" + Math.random().toString(36).slice(2) + "-" + Date.now().toString(36);
+		/** The seated manage namespace (the deck's apply seats it off its
+		*  'remote.manage' inject — the loader guarantees the namespace
+		*  exists when apply runs; a panel that renders without it refuses
+		*  loud, never silent). */
+		let seatedManage;
+		/** Seat the manage namespace (called once by the deck's apply;
+		*  `undefined` unseats — the loud-refusal arm a panel render without
+		*  the contribution meets). */
+		function seatManageNamespace(lane) {
+			seatedManage = lane;
 		}
 		async function postManage(action, payload, signal) {
-			const rpcId = nextRpcId();
+			const lane = seatedManage;
+			if (lane === void 0) throw new Error("manage remote not mounted — the manage contribution must mount before any call");
+			const doc = {
+				action,
+				...payload
+			};
 			try {
-				const response = await fetch("/api/manage/act", {
-					method: "POST",
-					headers: { "content-type": "application/json" },
-					body: JSON.stringify({
-						type: "client-request",
-						rpcId,
-						method: "manage/act",
-						payload: { args: { doc: {
-							action,
-							...payload
-						} } }
-					}),
-					...signal === void 0 ? {} : { signal }
-				});
-				if (!response.ok) return {
-					action,
-					ok: false,
-					code: "manage/http",
-					status: response.status,
-					detail: "manage wire: HTTP " + String(response.status)
-				};
-				const body = await response.json();
-				if (typeof body !== "object" || body === null || Reflect.get(body, "type") !== "server-response" || Reflect.get(body, "rpcId") !== rpcId) return {
-					action,
-					ok: false,
-					code: "manage/wire",
-					detail: "manage wire: malformed response frame"
-				};
-				const result = Reflect.get(body, "result");
-				if (typeof result !== "object" || result === null) return {
-					action,
-					ok: false,
-					code: "manage/wire",
-					detail: "manage wire: malformed result"
-				};
-				if (Reflect.get(result, "ok") === true) {
-					const envelope = recordOf(Reflect.get(result, "value"));
-					if (envelope === null) return {
-						action,
-						ok: false,
-						code: "manage/wire",
-						detail: "manage wire: malformed envelope"
-					};
-					const data = envelope["data"];
+				const settled = await lane.act(doc, signal);
+				if (settled.ok === true) {
+					const row = settled.value;
+					const envelope = recordOf(row) ?? {};
+					const data = row.data;
 					return {
-						action: stringOr(envelope["action"], action),
-						ok: envelope["ok"] === true,
-						detail: stringOr(envelope["detail"]),
+						action: row.action,
+						ok: row.ok,
+						detail: stringOr(row.detail),
 						data,
 						...replyFields(envelope, data)
 					};
 				}
-				const errorRecord = recordOf(Reflect.get(result, "error"));
-				if (errorRecord === null) return {
-					action,
-					ok: false,
-					code: "manage/wire",
-					detail: "manage wire: refused without an error frame"
-				};
+				const failure = settled.error;
+				const errorRecord = recordOf(failure) ?? {};
 				const details = recordOf(errorRecord["details"]) ?? {};
 				const data = details["data"];
 				return {
 					action: stringOr(details["action"], action),
 					ok: false,
-					detail: stringOr(errorRecord["message"], "manage wire: refused"),
+					detail: nonEmptyOr(errorRecord["message"], "manage wire: refused"),
 					data,
 					...replyFields(details, data),
 					code: stringOr(details["code"], stringOr(errorRecord["code"], "manage/refused"))
@@ -2102,11 +2079,20 @@ window.__ModuleLoader__.load({
 		//#region src/client/index.ts
 		/** 'slots' (seat declarations) + the native right-sidebar tab registry
 		*  (ui-sidebar-right, the web profile's own subsystem) — hosts the
-		*  tabs. No transport inject: the panel carries its own wire caller. */
-		const inject = ["slots", "sidebarRightTabs"];
+		*  tabs — + the mounted estate remotes: the manage namespace carries
+		*  the panel's transport (the loader guarantees it exists when apply
+		*  runs; the mounter is @melite-plugin/dsh-card-view's client, which
+		*  mounts every estate contribution). */
+		const inject = [
+			"slots",
+			"sidebarRightTabs",
+			"remote",
+			"remote.manage"
+		];
 		function apply(ctx) {
 			if (!claimDeckApply()) return;
 			ctx.effect(() => releaseDeckApply, "melite-card-deck: apply claim");
+			seatManageNamespace(ctx.remote.manage);
 			try {
 				registerAssetsTab(ctx);
 			} catch (error) {
@@ -2121,4 +2107,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="6ec8db9c1390b36c6ffab050c0289b00098945b8";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e0357a6f3d178c8ad34c6c44e687534a3eb06261";

@@ -16,9 +16,12 @@
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
+    "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-connection": "0.2.0-rc.1",
     "@deepseek-ai/dsh-host-frontend-static": "0.2.0-rc.1",
     "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
+    "@melite/estate-manage": "workspace:*",
     "@playwright/test": "^1.62.1",
     "@testing-library/react": "^16.3.3",
     "@testing-library/user-event": "^14.6.7",

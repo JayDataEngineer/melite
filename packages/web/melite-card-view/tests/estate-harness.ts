@@ -133,6 +133,10 @@ export interface EstateFakesOptions {
   listRows?: Array<Record<string, unknown>>
   startDocs?: Array<Record<string, unknown>>
   mediaItems?: Array<Record<string, unknown>>
+  /** Scripted manage/act answers, served per call in doc order (the
+   *  envelope row the seat resolves; unset = {ok:true, detail:
+   *  'queued'} — the download-prompt arm's default truth). */
+  manageDocs?: Array<Record<string, unknown>>
 }
 
 export interface EstateFakes {
@@ -446,6 +450,18 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         const items = opts.mediaItems ?? []
         // Scripted media rows are test-authored verbatim rows (same law).
         return ok({ count: items.length, items: items as unknown as MediaListRow[] })
+      },
+    },
+    // The manage lane (the download-prompt verbs' door): the fifth
+    // namespace, bound like the other four — every call records
+    // {method:'manage/act', args:{doc}} so call-order and doc-shape
+    // walls read one stream.
+    manage: {
+      act: async (doc: { action: string }, signal?: AbortSignal) => {
+        void signal
+        calls.push({ method: 'manage/act', args: { doc } })
+        const scripted = opts.manageDocs?.shift?.() ?? {}
+        return ok({ action: doc.action, ok: true, detail: 'queued', ...scripted })
       },
     },
   })

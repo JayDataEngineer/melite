@@ -34,7 +34,7 @@ import { fileURLToPath } from "node:url";
 // The mutations each assertion kills are named inline.
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "../../../..");
-const ESTATE_PACKAGES = ["drafts", "runs", "media"] as const;
+const ESTATE_PACKAGES = ["drafts", "runs", "media", "manage"] as const;
 
 /** The registry client's own law (dsh-typert-registry@0.2.0-rc.1
  * lib/client.js validateCodec), mirrored verbatim: this is the exact

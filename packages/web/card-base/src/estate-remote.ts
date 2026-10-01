@@ -39,6 +39,7 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import type {} from '@melite/estate-drafts/remote'
 import type {} from '@melite/estate-runs/remote'
 import type {} from '@melite/estate-media/remote'
+import type {} from '@melite/estate-manage/remote'
 
 /** The bench namespace (bench/get, add-stage, remove-stage, reorder,
  * group, ungroup, patch, rewire, undo, ensure, subscribe). */
@@ -49,6 +50,12 @@ export type DraftsNamespace = ClientRemote['drafts']
 export type RunsNamespace = ClientRemote['runs']
 /** The media namespace (media/list). */
 export type MediaNamespace = ClientRemote['media']
+/** The manage namespace (manage/act — the management plane's one
+ * door; the deck's assets tab and the card chrome's manage verbs
+ * ride it). Bound by the mounter; OPTIONAL at the four-namespace
+ * bind (studios that never manage keep their inject lists) and loud
+ * through manageRemote() when absent. */
+export type ManageNamespace = ClientRemote['manage']
 
 /** The estate's domain refusal ({ok:false} answers): the message
  * rides verbatim; the class separates DOMAIN verdicts from transport
@@ -68,6 +75,7 @@ export interface EstateNamespaces {
   drafts: DraftsNamespace
   runs: RunsNamespace
   media: MediaNamespace
+  manage?: ManageNamespace
 }
 
 let bound: EstateNamespaces | undefined
@@ -151,13 +159,25 @@ export function estateRemote(): EstateNamespaces {
  *  THE WALL pins every studio entry's inject list; the singleton
  *  throw stays the runtime guard. */
 export function bindEstateRemoteFromRemote(remote: Partial<EstateNamespaces>): EstateNamespaces {
-  const { bench, drafts, runs, media } = remote
+  const { bench, drafts, runs, media, manage } = remote
   if (bench === undefined || drafts === undefined || runs === undefined || media === undefined) {
     throw new Error('estate remote not mounted — the verbs ride ctx.remote (the TYPERT_REMOTE contributions must mount before any call)')
   }
-  const namespaces: EstateNamespaces = { bench, drafts, runs, media }
+  const namespaces: EstateNamespaces = { bench, drafts, runs, media, ...(manage === undefined ? {} : { manage }) }
   bindEstateRemote(namespaces)
   return namespaces
+}
+
+/** The manage namespace — LOUD when the mounter did not bind it (a
+ *  caller that manages on a host without the manage contribution
+ *  meets the wiring refusal, never a silent fallback to a
+ *  hand-rolled lane). */
+export function manageRemote(): ManageNamespace {
+  const ns = estateRemote().manage
+  if (ns === undefined) {
+    throw new Error('manage remote not mounted — the manage verbs ride ctx.remote (the manage contribution must mount before any call)')
+  }
+  return ns
 }
 
 /** Await one namespace method's RemoteResult and unwrap it: the

@@ -75,6 +75,7 @@
     "@melite-plugin/timeline": "workspace:*",
     "@melite/card-base": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@melite/video-h3-timeline": "workspace:*",

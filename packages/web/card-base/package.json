@@ -47,6 +47,7 @@
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/estate-drafts": "workspace:*",
+    "@melite/estate-manage": "workspace:*",
     "@melite/estate-media": "workspace:*",
     "@melite/estate-runs": "workspace:*",
     "@melite/formats": "workspace:*",

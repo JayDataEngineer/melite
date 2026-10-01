@@ -23,18 +23,9 @@ import {
   Remote,
   TypertRemoteService,
 } from "@deepseek-ai/dsh-typert-protocol";
+import type { ManageActDoc, ManageEnvelopeRow } from "./types.ts";
 
-/** The manage seat's answer: the SSOT envelope ({action, ok, detail,
- *  data} — a refusal never happens here; the seat THROWS
- *  manage/refused carrying the same envelope in RemoteError
- *  details). */
-interface ManageEnvelopeRow {
-  readonly action: string;
-  readonly ok: boolean;
-  readonly detail: string;
-  readonly data?: unknown;
-}
-
+export type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from "./types.ts";
 
 /** The manage seat's adapter-facing surface (structural — the
  *  implementation is ManageService in @melite/estate-queue; the
@@ -64,7 +55,7 @@ export class ManageRemoteService extends TypertRemoteService {
    *  action rides the doc; the seat dispatches). */
   @Remote("act")
   async remoteExportAct(
-    doc: unknown,
+    doc: ManageActDoc,
     signal: AbortSignal,
   ): Promise<ManageEnvelopeRow> {
     return await this.ctx.manage.act(doc, signal);

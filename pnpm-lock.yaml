@@ -849,7 +849,13 @@ importers:
       '@melite/estate-queue':
         specifier: workspace:*
         version: link:../../harness/estate-queue
+      zod:
+        specifier: 4.5.4
+        version: 4.5.4
     devDependencies:
+      '@deepseek-ai/dsh-typert-generator':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.1
@@ -2512,6 +2518,9 @@ importers:
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
+      '@melite/estate-manage':
+        specifier: workspace:*
+        version: link:../../estate/manage
       '@melite/estate-media':
         specifier: workspace:*
         version: link:../../estate/media
@@ -2653,6 +2662,9 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.4
         version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@deepseek-ai/dsh-api-gateway':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-client-connection@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))))
       '@deepseek-ai/dsh-client-connection':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)))
@@ -2662,6 +2674,12 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
+      '@melite/estate-manage':
+        specifier: workspace:*
+        version: link:../../estate/manage
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -2725,6 +2743,9 @@ importers:
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
+      '@melite/estate-manage':
+        specifier: workspace:*
+        version: link:../../estate/manage
       '@melite/estate-media':
         specifier: workspace:*
         version: link:../../estate/media

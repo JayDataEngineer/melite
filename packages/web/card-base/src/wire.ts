@@ -8,6 +8,8 @@
 import type { CatalogCard, FormSpecDoc } from './spec.ts'
 import { WTYPE_SET } from '@melite/contracts/extraKeys'
 import { readAsDataURL } from '@melite/formats/readFile'
+import { manageRemote } from './estate-remote.ts'
+import type { ManageActDoc, ManageJsonValue } from '@melite/estate-manage/types'
 
 /** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
  *  own error text when present). */
@@ -21,70 +23,51 @@ async function v1Get<T>(path: string, signal?: AbortSignal): Promise<T> {
   return body as T
 }
 
-/** Correlation id for one client-request frame (the reference caller
- * uses a random uuid per call; crypto.randomUUID is the browser
- * standard — the deck's assets tab owns the older copy; this is the
- * card chrome's seat). */
-function nextRpcId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto
-  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
-  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
-}
-
 export interface ManageActionReply {
   ok: boolean
   detail?: string
-  data?: unknown
+  data?: ManageJsonValue
 }
 
-/** POST one manage action over the `manage` remote's wire door —
- * same-origin /api/manage/act carrying the documented client-request
- * frame (api-gateway.md). The single argument is `doc` (the
- * adapter's parameter name — the wire field rides it verbatim).
- * THE DOWNLOAD PROMPT's arm (no-silent-drop law, stroke 18): a
- * boarded-but-not-downloaded model is OFFERED — the surfaces prompt
- * the user, the click lands here as provision_model (the manager
- * queues the download; present files are skipped). A refusal is a
- * DOMAIN outcome: the envelope carries it (ok:false + detail) — the
- * caller renders the truth, never a throw past the surface. */
+/** POST one manage action through the MOUNTED `manage` remote —
+ * ctx.remote's generated namespace (the typert contribution card-view
+ * mounts; the api-gateway law reserves transport, RPC ids, response
+ * envelopes, and cancellation to the Connection, and the zod codecs
+ * on both ends own frame validation). The single argument is `doc`
+ * (the action plus its JSON params — the dispatcher validates the
+ * params per action). THE DOWNLOAD PROMPT's arm (no-silent-drop law,
+ * stroke 18): a boarded-but-not-downloaded model is OFFERED — the
+ * surfaces prompt the user, the click lands here as provision_model
+ * (the manager queues the download; present files are skipped). A
+ * refusal is a DOMAIN outcome: the seat throws manage/refused, the
+ * Connection folds it into the RemoteResult error branch, and the
+ * envelope carries it (ok:false + detail) — the caller renders the
+ * truth, never a throw past the surface. Transport failures (an
+ * unmounted lane, a dead connection) still throw LOUD — never a
+ * silent ok:false.
+ * @param action - the manage action name (the doc's action field).
+ * @param payload - the action's JSON params (spread over the doc).
+ * @param signal - caller cancellation, threaded to the Connection.
+ * @returns the envelope reply: ok true with detail/data, or ok false
+ * with the refusal's text. */
 export async function postManageAction(
   action: string,
-  payload: Record<string, unknown>,
+  payload: Record<string, ManageJsonValue>,
   signal?: AbortSignal,
 ): Promise<ManageActionReply> {
-  const response = await fetch('/api/manage/act', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      type: 'client-request',
-      rpcId: nextRpcId(),
-      method: 'manage/act',
-      payload: { args: { doc: { action, ...payload } } },
-    }),
-    ...(signal === undefined ? {} : { signal }),
-  })
-  const body: unknown = await response.json().catch(() => null)
-  const row = typeof body === 'object' && body !== null
-    ? Reflect.get(body, 'result') as unknown : undefined
-  const inner = typeof row === 'object' && row !== null ? row as Record<string, unknown> : {}
-  if (!response.ok) {
-    return {
-      ok: false,
-      detail: typeof inner['message'] === 'string' ? inner['message'] : 'manage/' + action + ': HTTP ' + String(response.status),
-    }
+  const doc: ManageActDoc = { action, ...payload }
+  const settled = await manageRemote().act(doc, signal)
+  if (settled.ok === true) {
+    const row = settled.value
+    if (row.ok !== true) return { ok: false, detail: row.detail }
+    return { ok: true, detail: row.detail, data: row.data }
   }
-  // the typert result envelope: {ok, value} | {ok:false, error}
-  const okRaw = inner['ok']
-  if (okRaw === false) {
-    const err = inner['error'] as Record<string, unknown> | undefined
-    return { ok: false, detail: typeof err?.['message'] === 'string' ? err['message'] : 'manage/' + action + ' refused' }
-  }
-  const value = inner['value'] as Record<string, unknown> | undefined
-  return {
-    ok: true,
-    detail: typeof value?.['detail'] === 'string' ? value['detail'] : undefined,
-    data: value?.['data'],
-  }
+  const failure: unknown = settled.error
+  const message = typeof failure === 'object' && failure !== null
+    && typeof (failure as { message?: unknown }).message === 'string'
+    && (failure as { message: string }).message !== ''
+    ? (failure as { message: string }).message : 'manage/' + action + ' refused'
+  return { ok: false, detail: message }
 }
 
 /** /v1/model-catalog → the cards section (the picker's ONE surface —

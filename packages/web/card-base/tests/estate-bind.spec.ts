@@ -32,6 +32,7 @@ import {
   armEstateRemoteLazyBind,
   bindEstateRemoteFromRemote,
   estateRemote,
+  manageRemote,
   unbindEstateRemote,
   type EstateNamespaces,
 } from '../src/estate-remote.ts'
@@ -138,6 +139,17 @@ test('SOURCE LAW: the runtime child-fiber binder stays dead — no ctx.plugin es
   expect(source.includes('bindEstateRemoteFor'), 'the runtime fiber binder must not return').toBe(false)
   expect(source.includes('ensureEstateRemote'), 'the fiber-based lazy kick must not return').toBe(false)
   expect(source.includes('ctx.plugin'), 'estate-remote must not touch the cordis plugin primitive').toBe(false)
+})
+
+test('THE MANAGE LANE: optional at the bind, loud at the verb (studios keep four-inject lists)', () => {
+  const four = namespaces()
+  bindEstateRemoteFromRemote(four)
+  expect(estateRemote().manage).toBeUndefined()
+  expect(() => manageRemote()).toThrow('manage contribution must mount')
+
+  const manage = { act: (): null => null } as unknown as EstateNamespaces['manage']
+  bindEstateRemoteFromRemote({ ...four, manage })
+  expect(manageRemote()).toBe(manage)
 })
 
 test('SOURCE LAW: slots.ts arms the lazy getter over ctx.get, never a fiber or a static inject', () => {

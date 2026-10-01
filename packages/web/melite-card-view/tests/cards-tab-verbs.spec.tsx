@@ -3,9 +3,8 @@
 // installment 3g): the tile trash (remove + refusal voice), the slot
 // patch currency on bench and draft drills (ok / refusal / thrown),
 // the draft run verb (start + refusal carry), and the picker close.
-// Estate verbs ride mountEstateFakes (the one-lane seam); fetch
-// answers ONLY the /v1 discovery doors + the /api/manage/act
-// non-estate door.
+// Estate verbs ride mountEstateFakes (the one-lane seam, manage
+// included); fetch answers ONLY the /v1 discovery doors.
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
@@ -35,9 +34,7 @@ const slot: {
     onPatch: (patch: Record<string, unknown>) => void;
     onRun: () => void;
   };
-  manageResults: boolean[];
-  manageCalls: Array<Record<string, unknown>>;
-} = { claim: false, owner: null, manageResults: [], manageCalls: [] };
+} = { claim: false, owner: null };
 
 function SlotFace(): React.ReactElement {
   return h("div", null,
@@ -69,20 +66,11 @@ function stubDoors(estateOpts: Parameters<typeof mountEstateFakes>[0] = {}): voi
   fakes = estate;
   posted = estate.calls;
   slot.owner = null;
-  slot.manageResults = [];
-  slot.manageCalls = [];
   specCtl.specPacks = false;
   specCtl.specAbsentFamily = false;
   specCtl.specFields = null;
   vi.stubGlobal("fetch", async (url: unknown, init?: RequestInit): Promise<Response> => {
     const path = String(url);
-    if (path === "/api/manage/act") {
-      const frame = JSON.parse(String(init?.body)) as { payload: { args: { doc: Record<string, unknown> } } };
-      slot.manageCalls.push(frame.payload.args.doc);
-      return new Response(JSON.stringify({ result: { ok: true, value: {} } }), {
-        status: 200, headers: { "content-type": "application/json" },
-      });
-    }
     if (path.includes("/v1/form-spec")) {
       const refs: Record<string, unknown> = {};
       const order: string[] = [];
@@ -313,7 +301,7 @@ describe("the slot manage verbs — provision and pack ride the manage door", ()
     const dl = await screen.findByText("Download Image Gen", {}, { timeout: 5000 });
     fireEvent.click(dl);
     await waitFor(() => {
-      expect(slot.manageCalls).toEqual([{ action: "provision_model", model: "image-gen" }]);
+      expect(fakes?.calls.filter((c) => c.method === "manage/act").map((c) => c.args["doc"])).toEqual([{ action: "provision_model", model: "image-gen" }]);
     }, { timeout: 5000 });
     expect(await screen.findByText(/Download queued/, {}, { timeout: 5000 })).toBeTruthy();
   });
@@ -323,7 +311,7 @@ describe("the slot manage verbs — provision and pack ride the manage door", ()
     const inst = await screen.findByRole("button", { name: /Install/, }, { timeout: 5000 });
     fireEvent.click(inst);
     await waitFor(() => {
-      expect(slot.manageCalls).toEqual([{ action: "install_extension", nodes: ["p-1"] }]);
+      expect(fakes?.calls.filter((c) => c.method === "manage/act").map((c) => c.args["doc"])).toEqual([{ action: "install_extension", nodes: ["p-1"] }]);
     }, { timeout: 5000 });
   });
 });

@@ -48,6 +48,7 @@ import type {} from '@deepseek-ai/dsh-api-gateway/client'
 import { TYPERT_REMOTE } from '@melite/estate-drafts/remote'
 import { TYPERT_REMOTE as RUNS_TYPERT_REMOTE } from '@melite/estate-runs/remote'
 import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remote'
+import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
@@ -151,6 +152,15 @@ export async function apply(ctx: ClientContext): Promise<void> {
   } catch (error) {
     console.error('[melite-card-view] media remote contribution failed to mount:', error)
   }
+  // The manage contribution (the management plane's one door — the
+  // deck's assets tab and the card chrome's manage verbs ride its
+  // namespace; hand-rolled manage/act frames are dead).
+  try {
+    const disposeManage = await ctx.remote.$mount(MANAGE_TYPERT_REMOTE)
+    ctx.effect(() => disposeManage, 'melite-card-view: manage remote contribution')
+  } catch (error) {
+    console.error('[melite-card-view] manage remote contribution failed to mount:', error)
+  }
 
   // DOUBLE-APPLY LAW (client contract): registration conflicts fail at
   // load — "do not work around it; the conflict is the design
@@ -193,6 +203,7 @@ export async function apply(ctx: ClientContext): Promise<void> {
       drafts: ctx.get('remote.drafts') as EstateNamespaces['drafts'] | undefined,
       runs: ctx.get('remote.runs') as EstateNamespaces['runs'] | undefined,
       media: ctx.get('remote.media') as EstateNamespaces['media'] | undefined,
+      manage: ctx.get('remote.manage') as EstateNamespaces['manage'] | undefined,
     }).bench
   } catch (error) {
     console.error('[melite-card-view] estate direct bind failed:', error)

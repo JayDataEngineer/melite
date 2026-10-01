@@ -42,6 +42,7 @@
     { "path": "packages/estate/drafts" },
     { "path": "packages/estate/runs" },
     { "path": "packages/estate/media" },
+    { "path": "packages/estate/manage" },
     { "path": "packages/harness/estate-queue" }
   ]
 }

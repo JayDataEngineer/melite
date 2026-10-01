@@ -111,6 +111,7 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   // map serves at runtime.
   '@melite/estate-drafts/remote': path.join(import.meta.dirname, 'packages/estate/drafts/lib/typert.remote-client.js'),
   '@melite/estate-drafts': path.join(import.meta.dirname, 'packages/estate/drafts/src/index.ts'),
+  '@melite/estate-manage/remote': path.join(import.meta.dirname, 'packages/estate/manage/lib/typert.remote-client.js'),
   '@melite/estate-manage': path.join(import.meta.dirname, 'packages/estate/manage/src/index.ts'),
   // the media + runs REMOTE subpaths — the same built-truth law as
   // the drafts row above (the generated Typert clients; each MUST

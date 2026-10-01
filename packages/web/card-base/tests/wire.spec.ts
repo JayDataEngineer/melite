@@ -14,6 +14,25 @@ import {
   postManageAction,
   uploadInputFile,
 } from '../src/wire.ts'
+import { bindEstateRemoteFromRemote, unbindEstateRemote, type EstateNamespaces } from '../src/estate-remote.ts'
+import type { ManageActDoc, ManageEnvelopeRow } from '@melite/estate-manage/types'
+import { RemoteError, type RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+
+/** Bind the singleton with ONLY the manage lane under test live (the
+ *  other four namespaces are present for the bind law but never
+ *  touched by the manage verbs — same honest-shape casts the
+ *  estate-bind spec uses for its identity-law fakes). */
+function bindManageLane(
+  act: (doc: ManageActDoc, signal?: AbortSignal) => Promise<RemoteResult<ManageEnvelopeRow>>,
+): void {
+  bindEstateRemoteFromRemote({
+    bench: { list: (): null => null } as unknown as EstateNamespaces['bench'],
+    drafts: { get: (): null => null } as unknown as EstateNamespaces['drafts'],
+    runs: { list: (): null => null } as unknown as EstateNamespaces['runs'],
+    media: { list: (): null => null } as unknown as EstateNamespaces['media'],
+    manage: { act },
+  })
+}
 
 /** One canned door: method + path → Response. Records every call. */
 function installFetchFake(routes: Record<string, (init?: RequestInit) => Response>): {
@@ -37,6 +56,7 @@ const json = (body: unknown, status = 200): Response =>
 
 let restoreFetch: (() => void) | null = null
 afterEach(() => {
+  unbindEstateRemote()
   resetFake()
 })
 
@@ -143,69 +163,57 @@ test('fetchFormsTable: the meta table rides verbatim (the picker kind-matches of
   expect(await fetchFormsTable()).toEqual({ txt2img: { label: 'T', genre: 'image', order: 1 } })
 })
 
-test('postManageAction: the client-request frame rides the manage door (action + payload verbatim)', async () => {
-  const calls = useFake({
-    '/api/manage/act': () => json({ result: { ok: true, value: { detail: 'queued', data: { id: 1 } } } }),
+test('postManageAction: the doc rides the mounted manage namespace (action + payload verbatim)', async () => {
+  const docs: ManageActDoc[] = []
+  bindManageLane(async (doc) => {
+    docs.push(doc)
+    return { ok: true, value: { action: doc.action, ok: true, detail: 'queued', data: { id: 1 } } }
   })
   const reply = await postManageAction('provision_model', { model: 'krea-2' })
   expect(reply).toEqual({ ok: true, detail: 'queued', data: { id: 1 } })
-  const sent = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>
-  expect(sent).toMatchObject({
-    type: 'client-request',
-    method: 'manage/act',
-    payload: { args: { doc: { action: 'provision_model', model: 'krea-2' } } },
-  })
-  expect(typeof sent['rpcId']).toBe('string')
-  expect((sent['rpcId'] as string).length).toBeGreaterThan(0)
+  expect(docs).toEqual([{ action: 'provision_model', model: 'krea-2' }])
 })
 
-test('postManageAction: a bare ok rides detail-less (never an invented detail)', async () => {
-  useFake({ '/api/manage/act': () => json({ result: { ok: true, value: {} } }) })
-  expect(await postManageAction('a', {})).toEqual({ ok: true, detail: undefined, data: undefined })
+test('postManageAction: detail rides verbatim (an empty detail stays empty, never invented)', async () => {
+  bindManageLane(async () => ({ ok: true, value: { action: 'a', ok: true, detail: '' } }))
+  expect(await postManageAction('a', {})).toEqual({ ok: true, detail: '', data: undefined })
 })
 
-test('postManageAction: an HTTP refusal is a DOMAIN outcome (ok:false + the door text)', async () => {
-  useFake({ '/api/manage/act': () => json({ result: { message: 'engine is down' } }, 500) })
+test('postManageAction: an envelope refusal on the resolve branch is a DOMAIN outcome', async () => {
+  bindManageLane(async (doc) => ({ ok: true, value: { action: doc.action, ok: false, detail: 'engine is down' } }))
   expect(await postManageAction('provision_model', {})).toEqual({ ok: false, detail: 'engine is down' })
 })
 
-test('postManageAction: a textless HTTP refusal names the action + status', async () => {
-  useFake({ '/api/manage/act': () => json({ result: {} }, 500) })
-  expect(await postManageAction('provision_model', {})).toEqual({
-    ok: false, detail: 'manage/provision_model: HTTP 500',
-  })
-})
-
-test('postManageAction: a typert refusal rides its message; a messageless one names the action', async () => {
-  useFake({ '/api/manage/act': () => json({ result: { ok: false, error: { message: 'pack refused' } } }) })
+test('postManageAction: the RemoteResult error branch rides its message; a messageless one names the action', async () => {
+  bindManageLane(async () => ({ ok: false, error: new RemoteError('gateway/bad-request', 'pack refused', {}) }))
   expect(await postManageAction('install_pack', {})).toEqual({ ok: false, detail: 'pack refused' })
-  resetFake()
-  useFake({ '/api/manage/act': () => json({ result: { ok: false, error: {} } }) })
+  bindManageLane(async () => ({ ok: false, error: new RemoteError('gateway/bad-request', '', {}) }))
   expect(await postManageAction('install_pack', {})).toEqual({ ok: false, detail: 'manage/install_pack refused' })
 })
 
-test('postManageAction: a bodyless ok still resolves ok (never a throw on an empty door)', async () => {
-  useFake({ '/api/manage/act': () => new Response('not json', { status: 200 }) })
-  expect(await postManageAction('a', {})).toEqual({ ok: true, detail: undefined, data: undefined })
-})
-test('postManageAction: the signal forwards past the surface', async () => {
-  const calls = useFake({ '/api/manage/act': () => json({ result: { ok: true } }) })
+test('postManageAction: the signal forwards past the surface to the namespace', async () => {
+  let seen: AbortSignal | undefined
+  bindManageLane(async (_doc, signal) => {
+    seen = signal
+    return { ok: true, value: { action: 'a', ok: true, detail: '' } }
+  })
   const ctl = new AbortController()
   await postManageAction('a', {}, ctl.signal)
-  expect((calls[0]!.init as RequestInit).signal).toBe(ctl.signal)
+  expect(seen).toBe(ctl.signal)
 })
 
-test('THE RPC ID: without randomUUID the frame still correlates (the rpc- backstop)', async () => {
-  const calls = useFake({ '/api/manage/act': () => json({ result: { ok: true } }) })
-  const descriptor = Object.getOwnPropertyDescriptor(globalThis, 'crypto')
-  Object.defineProperty(globalThis, 'crypto', { value: {}, configurable: true })
-  try {
-    await postManageAction('a', {})
-  } finally {
-    if (descriptor !== undefined) Object.defineProperty(globalThis, 'crypto', descriptor)
-  }
-  const sent = JSON.parse(String(calls[0]!.init?.body)) as Record<string, unknown>
-  expect(String(sent['rpcId']).startsWith('rpc-')).toBe(true)
+test('postManageAction: an unmounted lane refuses LOUD (never a silent ok:false)', async () => {
+  unbindEstateRemote()
+  await expect(postManageAction('a', {})).rejects.toThrow(/estate remote not mounted/)
+  bindManageLane(async () => ({ ok: true, value: { action: 'a', ok: true, detail: '' } }))
+  unbindEstateRemote()
+  bindEstateRemoteFromRemote({
+    bench: { list: (): null => null } as unknown as EstateNamespaces['bench'],
+    drafts: { get: (): null => null } as unknown as EstateNamespaces['drafts'],
+    runs: { list: (): null => null } as unknown as EstateNamespaces['runs'],
+    media: { list: (): null => null } as unknown as EstateNamespaces['media'],
+  })
+  await expect(postManageAction('a', {})).rejects.toThrow(/manage remote not mounted/)
 })
 
 test('uploadInputFile: the estate path rides the param (never the bare name)', async () => {

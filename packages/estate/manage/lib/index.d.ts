@@ -1,15 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-/** The manage seat's answer: the SSOT envelope ({action, ok, detail,
- *  data} — a refusal never happens here; the seat THROWS
- *  manage/refused carrying the same envelope in RemoteError
- *  details). */
-interface ManageEnvelopeRow {
-    readonly action: string;
-    readonly ok: boolean;
-    readonly detail: string;
-    readonly data?: unknown;
-}
+import type { ManageActDoc, ManageEnvelopeRow } from "./types.ts";
+export type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from "./types.ts";
 /** The manage seat's adapter-facing surface (structural — the
  *  implementation is ManageService in @melite/estate-queue; the
  *  wall pins the delegation byte-for-byte). */
@@ -30,7 +22,7 @@ export declare class ManageRemoteService extends TypertRemoteService {
     constructor(ctx: Context);
     /** Endpoint `manage/act` — the whole management plane (the
      *  action rides the doc; the seat dispatches). */
-    remoteExportAct(doc: unknown, signal: AbortSignal): Promise<ManageEnvelopeRow>;
+    remoteExportAct(doc: ManageActDoc, signal: AbortSignal): Promise<ManageEnvelopeRow>;
 }
 /** The manage remote row (the estate mounts it after the seat). */
 export declare const manageRemotePlugin: {
@@ -38,5 +30,4 @@ export declare const manageRemotePlugin: {
     inject: readonly ["manage"];
     apply(ctx: Context): void;
 };
-export {};
 //# sourceMappingURL=index.d.ts.map

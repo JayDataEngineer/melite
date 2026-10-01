@@ -187,6 +187,7 @@ describe("apply() — the happy path registers both planes", () => {
         "melite-card-view: estate remote contribution",
         "melite-card-view: runs remote contribution",
         "melite-card-view: media remote contribution",
+        "melite-card-view: manage remote contribution",
         "melite-card-view: cards tab type",
         "melite-card-view: cards resource provider",
         "melite-card-view: bench spotlight",
@@ -236,15 +237,15 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
     fake.failMount = true;
     try {
       await apply(fake.ctx as never);
-      // all three contributions fail on the dead mount — each logs,
+      // all four contributions fail on the dead mount — each logs,
       // none throws (the boot survives) — and the reflect-seam bind
       // meets its own loud refusal (the namespaces never landed) plus
-      // the spotlight's honest degrade: five logged errors, every
+      // the spotlight's honest degrade: six logged errors, every
       // seat intact (li-bp)
-      expect(fake.errors).toHaveLength(5);
+      expect(fake.errors).toHaveLength(6);
       expect(fake.errors[0]!.join(" ")).toContain("estate remote contribution failed to mount");
-      expect(fake.errors[3]!.join(" ")).toContain("estate direct bind failed");
-      expect(fake.errors[4]!.join(" ")).toContain("bench spotlight off");
+      expect(fake.errors[4]!.join(" ")).toContain("estate direct bind failed");
+      expect(fake.errors[5]!.join(" ")).toContain("bench spotlight off");
       expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
       expect(fake.regs.providers).toHaveLength(1);
     } finally {

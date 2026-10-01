@@ -23,8 +23,12 @@
  * Transport history (kill ledger): the tab's calls died with the
  * gateway app (this plugin's /v1/manage proxy, then a ctx.remote.lane
  * shape that never mounted client-side — "remote.lane is not a
- * function", 2026-09-10). The wire frame below is the DSH-native
- * replacement: no proxy, no gateway vocabulary, one fetch.
+ * function", 2026-09-10), then rode a hand-rolled fetch frame
+ * (2026-09-10 to 2026-10-01). Today the panel rides the MOUNTED
+ * `manage` Typert namespace (@melite/estate-manage's generated
+ * client, seated by the deck's apply): the Connection owns
+ * transport, RPC ids, and frame validation; this panel owns the
+ * envelope's reply mapping and its voices.
  *
  * Siblings' fate (NO LEGACY): Ray Media deleted with the media plugin
  * (5cbb5bcc — DSH's own media system owns that surface); Ray Flows
@@ -33,6 +37,8 @@
 import * as React from 'react'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
 import css from './assets.module.css'
+import type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from '@melite/estate-manage/types'
+import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 interface ManageReply {
   action?: string
@@ -202,6 +208,13 @@ function stringOr(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback
 }
 
+/** A refusal voice must carry words: an empty message names the wire's
+ *  own refusal rather than rendering a blank line (the card-base
+ *  manage lane's law). */
+function nonEmptyOr(value: unknown, fallback: string): string {
+  return typeof value === 'string' && value !== '' ? value : fallback
+}
+
 function modelCatalog(value: unknown): ModelOption[] {
   if (!Array.isArray(value)) return []
   return value.flatMap((row) => {
@@ -286,10 +299,24 @@ function replyFields(envelope: Record<string, unknown>, data: unknown): Partial<
   return fields
 }
 
-function nextRpcId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto
-  if (cryptoApi?.randomUUID !== undefined) return cryptoApi.randomUUID()
-  return 'rpc-' + Math.random().toString(36).slice(2) + '-' + Date.now().toString(36)
+/** The manage lane's face (the generated namespace's one method —
+ *  structural so this panel never imports the remote package at
+ *  runtime). */
+export interface ManageLane {
+  readonly act: (doc: ManageActDoc, signal?: AbortSignal) => Promise<RemoteResult<ManageEnvelopeRow>>
+}
+
+/** The seated manage namespace (the deck's apply seats it off its
+ *  'remote.manage' inject — the loader guarantees the namespace
+ *  exists when apply runs; a panel that renders without it refuses
+ *  loud, never silent). */
+let seatedManage: ManageLane | undefined
+
+/** Seat the manage namespace (called once by the deck's apply;
+ *  `undefined` unseats — the loud-refusal arm a panel render without
+ *  the contribution meets). */
+export function seatManageNamespace(lane: ManageLane | undefined): void {
+  seatedManage = lane
 }
 
 // THE LORA BLOCK (the operator's 2026-09-26 order: custom LoRAs belong
@@ -297,63 +324,37 @@ function nextRpcId(): string {
 // speaks the manage plane's own two doors (`lora_list`, `lora_install`).
 import LoraBlock from './lora-section.tsx'
 
-export async function postManage(action: string, payload: Record<string, unknown>, signal?: AbortSignal): Promise<ManageReply> {
-  const rpcId = nextRpcId()
+export async function postManage(action: string, payload: Record<string, ManageJsonValue>, signal?: AbortSignal): Promise<ManageReply> {
+  const lane = seatedManage
+  if (lane === undefined) {
+    throw new Error('manage remote not mounted — the manage contribution must mount before any call')
+  }
+  const doc: ManageActDoc = { action, ...payload }
   try {
-    const response = await fetch('/api/manage/act', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        type: 'client-request',
-        rpcId,
-        method: 'manage/act',
-        payload: { args: { doc: { action, ...payload } } },
-      }),
-      ...(signal === undefined ? {} : { signal }),
-    })
-    if (!response.ok) {
+    const settled = await lane.act(doc, signal)
+    if (settled.ok === true) {
+      const row = settled.value
+      const envelope = recordOf(row) ?? {}
+      const data = row.data
       return {
-        action,
-        ok: false,
-        code: 'manage/http',
-        status: response.status,
-        detail: 'manage wire: HTTP ' + String(response.status),
-      }
-    }
-    const body: unknown = await response.json()
-    if (typeof body !== 'object' || body === null || Reflect.get(body, 'type') !== 'server-response' || Reflect.get(body, 'rpcId') !== rpcId) {
-      return { action, ok: false, code: 'manage/wire', detail: 'manage wire: malformed response frame' }
-    }
-    const result: unknown = Reflect.get(body, 'result')
-    if (typeof result !== 'object' || result === null) {
-      return { action, ok: false, code: 'manage/wire', detail: 'manage wire: malformed result' }
-    }
-    if (Reflect.get(result, 'ok') === true) {
-      const value: unknown = Reflect.get(result, 'value')
-      const envelope = recordOf(value)
-      if (envelope === null) {
-        return { action, ok: false, code: 'manage/wire', detail: 'manage wire: malformed envelope' }
-      }
-      const data = envelope['data']
-      return {
-        action: stringOr(envelope['action'], action),
-        ok: envelope['ok'] === true,
-        detail: stringOr(envelope['detail']),
+        action: row.action,
+        ok: row.ok,
+        detail: stringOr(row.detail),
         data,
         ...replyFields(envelope, data),
       }
     }
-    const error: unknown = Reflect.get(result, 'error')
-    const errorRecord = recordOf(error)
-    if (errorRecord === null) {
-      return { action, ok: false, code: 'manage/wire', detail: 'manage wire: refused without an error frame' }
-    }
+    // The protocol's ONE failure face: the thrown RemoteError folded
+    // into the RemoteResult error branch — its message rides verbatim,
+    // its details carry the refusal envelope (manage/refused's law).
+    const failure: unknown = settled.error
+    const errorRecord = recordOf(failure) ?? {}
     const details = recordOf(errorRecord['details']) ?? {}
     const data = details['data']
     return {
       action: stringOr(details['action'], action),
       ok: false,
-      detail: stringOr(errorRecord['message'], 'manage wire: refused'),
+      detail: nonEmptyOr(errorRecord['message'], 'manage wire: refused'),
       data,
       ...replyFields(details, data),
       code: stringOr(details['code'], stringOr(errorRecord['code'], 'manage/refused')),
@@ -719,7 +720,7 @@ function ResultRecordView({ record, kind, now, locked, onFollow }: {
 }
 
 interface ConfirmRunOptions {
-  payload?: Record<string, unknown>
+  payload?: Record<string, ManageJsonValue>
   after?(): void
   onUse?(): void
 }
@@ -836,7 +837,7 @@ export function ComfyManagerPanel(): React.ReactElement {
     return () => { window.clearInterval(timer) }
   }, [])
 
-  const run = useCallback(async (action: string, payload: Record<string, unknown> = {}, recordOutput = true): Promise<ManageReply | null> => {
+  const run = useCallback(async (action: string, payload: Record<string, ManageJsonValue> = {}, recordOutput = true): Promise<ManageReply | null> => {
     if (dispatchingRef.current) return null
     dispatchingRef.current = true
     const request = ++dispatchSequenceRef.current
@@ -1217,7 +1218,7 @@ export function ComfyManagerPanel(): React.ReactElement {
               busy={busy === 'provision_model'}
               disabled={locked || provModel.trim() === '' || (modelOptions.length > 0 && selectedModel === undefined)}
               onClick={() => {
-                const payload: Record<string, unknown> = { model: provModel.trim() }
+                const payload: Record<string, ManageJsonValue> = { model: provModel.trim() }
                 if (provVariant.trim() !== '') payload.variant = provVariant.trim()
                 if (provQuant.trim() !== '') payload.quant = provQuant.trim()
                 confirmRun('provision_model', 'Provision declared model ' + provModel.trim() + ' from the catalog?', { payload })
@@ -1237,7 +1238,7 @@ export function ComfyManagerPanel(): React.ReactElement {
               busy={busy === 'download_model'}
               disabled={locked || dlUrl.trim() === ''}
               onClick={() => {
-                const payload: Record<string, unknown> = { url: dlUrl.trim() }
+                const payload: Record<string, ManageJsonValue> = { url: dlUrl.trim() }
                 if (dlPath.trim() !== '') payload.relative_path = dlPath.trim()
                 if (dlName.trim() !== '') payload.filename = dlName.trim()
                 confirmRun('download_model', 'Queue operator-vetted download of ' + (dlName.trim() || dlUrl.trim()) + '?', { payload })
