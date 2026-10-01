@@ -90,6 +90,10 @@ export interface H3Facts {
 export function parseH3Facts(raw: unknown): H3Facts {
   const lane = (raw ?? {}) as Record<string, unknown>
   const unet = lane.unet
+  // CARVE (F4 verification D5): stricter than requireText on purpose —
+  // this lane refuses whitespace-only unets (trim), the kit helper
+  // refuses only ''. Consolidating onto the helper would silently
+  // relax this law.
   if (typeof unet !== 'string' || unet.trim() === '') {
     throw new Error(`h3 film: lane_inputs.unet = ${JSON.stringify(unet)} — a non-empty string is required`)
   }

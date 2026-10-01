@@ -13,7 +13,7 @@
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { NodeInputs, NodeRef, OutputHandle } from '@melite/comfyui-card-kit/graph'
-import type { LaneInputsFacts } from '@melite/comfyui-card-kit/facts'
+import { requireText, type LaneInputsFacts } from '@melite/comfyui-card-kit/facts'
 import { impactDetector } from '@melite/comfyui-card-kit/impact'
 
 /** the wired-tensor law (the mask lane's own spell handling): a '$name'
@@ -49,14 +49,11 @@ export type MaskLaneParams = Record<string, unknown>
  *  @param raw the resolved lane_inputs (the card's own pins)
  *  @returns the three pins the lane reads */
 export function parseMaskLaneFacts(raw: LaneInputsFacts): MaskLaneFacts {
-  const need: Array<keyof MaskLaneFacts> = ['checkpoint', 'unet', 'sam2'];
-  for (const key of need) {
-    const value = raw[key];
-    if (typeof value !== 'string' || value === '') {
-      throw new Error(`mask select: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required (the tool card declares its own detector pins)`);
-    }
-  }
-  return { checkpoint: raw.checkpoint as string, unet: raw.unet as string, sam2: raw.sam2 as string };
+  return {
+    checkpoint: requireText(raw, 'checkpoint', 'mask select'),
+    unet: requireText(raw, 'unet', 'mask select'),
+    sam2: requireText(raw, 'sam2', 'mask select'),
+  };
 }
 
 export interface EntryTuneShape {

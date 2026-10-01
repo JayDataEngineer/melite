@@ -13,7 +13,7 @@ import {
   AUDIACORE_TTS_AUTOFILL,
   loadAudiocore,
 } from "@melite/comfyui-card-kit";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the sfx segment reads. */
 export type SfxFacts = {
@@ -32,11 +32,7 @@ export type SfxParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseSfxFacts(raw: LaneInputsFacts): SfxFacts {
-  const value = raw.model_path;
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`moss-sfx sfx: lane_inputs.model_path = ${JSON.stringify(value)} — a non-empty string is required`);
-  }
-  return { model_path: value };
+  return { model_path: requireText(raw, "model_path", "moss-sfx sfx") };
 }
 
 /** The sfx action: MOSS-SoundEffect — LoadAudiocoreModel on the

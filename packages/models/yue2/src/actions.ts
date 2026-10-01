@@ -9,7 +9,7 @@
 // order (the recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the compose segment reads. */
 export type Yue2Facts = {
@@ -28,11 +28,7 @@ export type Yue2Params = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseYue2Facts(raw: LaneInputsFacts): Yue2Facts {
-  const value = raw.checkpoint;
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`yue2 compose: lane_inputs.checkpoint = ${JSON.stringify(value)} — a non-empty string is required`);
-  }
-  return { checkpoint: value };
+  return { checkpoint: requireText(raw, "checkpoint", "yue2 compose") };
 }
 
 /** The compose action: YuE2-3B — CheckpointLoaderSimple on the

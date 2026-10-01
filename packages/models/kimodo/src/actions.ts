@@ -10,7 +10,7 @@
 // write themselves into the output dir — runId rides the door,
 // un-graphed).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 // fps is LANE-INTERNAL (MotionT1Doc default 30.0 — moved verbatim
 // from the lane).
@@ -34,11 +34,7 @@ export type KimodoParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseKimodoFacts(raw: LaneInputsFacts): KimodoFacts {
-  const value = raw.model_path;
-  if (typeof value !== "string" || value === "") {
-    throw new Error(`kimodo compose: lane_inputs.model_path = ${JSON.stringify(value)} — a non-empty string is required`);
-  }
-  return { model_path: value };
+  return { model_path: requireText(raw, "model_path", "kimodo compose") };
 }
 
 /** The compose action: the motion_t1 block — Kimodo checkpoint

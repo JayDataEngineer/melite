@@ -29,7 +29,7 @@ import {
   voiceLockSeed,
 } from "@melite/comfyui-card-kit";
 import { assertModUse } from "@melite/comfyui-card-kit/guard";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import type { GraphBuilder, NodeRef } from "@melite/comfyui-card-kit/graph";
 import { PRESET_SPEAKERS } from "@melite/models-qwen3-tts";
@@ -81,11 +81,7 @@ export function laneTopologyOf(model: ModelFacts): TtsLaneTopology {
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factories read */
 export function parseTtsFacts(raw: LaneInputsFacts): TtsFacts {
-  const path = raw.model_path;
-  if (typeof path !== "string" || path === "") {
-    throw new Error(`qwen3-tts-voicedesign speak: lane_inputs.model_path = ${JSON.stringify(path)} — a non-empty string is required`);
-  }
-  return { model_path: path };
+  return { model_path: requireText(raw, "model_path", "qwen3-tts-voicedesign speak") };
 }
 
 /** The speak segment: a stated .qvoice performs the text through
