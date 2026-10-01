@@ -198,19 +198,33 @@ fi
 # subsumes noEmit, but the net runs before the builds and the build
 # order no longer carries the judgment).
 say "TYPECHECK every package (the ReferenceError class)"
+# The net runs at width 8 (cruft row 8, 2026-10-12): one xargs pool
+# over the same dynamic discovery, one tsc --noEmit per package —
+# the serial loop paid the full serial CPU (minutes; the walls'
+# equivalent arm measured 30,578ms for 90 packages at this width).
+# Per-package logs land in a tmpdir; the reporting pass below stays
+# serial so failure output is byte-identical to the old loop's.
+TCDIR=$(mktemp -d /tmp/ship-tc.XXXXXX)
+trap 'rm -rf "$TCDIR"' EXIT
+find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' \
+  | grep '/packages/' | sort > "$TCDIR.list"
+xargs -r -P 8 -I '{}' bash -c '
+  tsdir="$1"; log="$2/$(printf "%s" "$tsdir" | tr "/" "_").log"
+  if (cd "$tsdir" && node "$3" --noEmit -p tsconfig.json >"$log" 2>&1); then
+    : > "$log.ok"
+  fi
+' _ '{}' "$TCDIR" "$TSC" < "$TCDIR.list"
 TCFAIL=0
 TCCOUNT=0
 while IFS= read -r tsdir; do
-  case "$tsdir" in */packages/*) ;; *) continue ;; esac
   TCCOUNT=$((TCCOUNT + 1))
-  if (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >/tmp/ship-tc.log 2>&1); then
-    :
-  else
+  if [ ! -f "$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_').log.ok" ]; then
     bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — typecheck failed:"
-    head -8 /tmp/ship-tc.log | sed 's/^/        /'
+    head -8 "$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_').log" | sed 's/^/        /'
     TCFAIL=1
   fi
-done < <(find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -printf '%h\n' | sort)
+done < "$TCDIR.list"
+rm -rf "$TCDIR"
 if [ "$TCFAIL" -ne 0 ]; then
   bad "the typecheck net is red — a missing import is invisible to every behavioural door"
   exit 1
