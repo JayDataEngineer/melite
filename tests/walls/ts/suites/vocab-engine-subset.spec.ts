@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/vocab.ts";
 
 // THE ENGINE-SUBSET WALL (Part VIII's owed wall, the cheap tier —
@@ -22,20 +21,21 @@ import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines
 // /object_info from the CONFIGURED engine endpoint —
 // curl -s http://127.0.0.1:8188/object_info > data/tmp/object_info_prod.json)
 // and self-skip without it, so a fresh clone judged nothing. The
-// tracked value fixture (tests/walls/fixtures/ksampler-vocab.min.json
-// — KSampler's two combo lists, the projection of the same cache)
-// is now judged UNCONDITIONALLY, and the live cache is a BONUS arm
-// held against the fixture wherever the cache exists (the drift
-// contract registry-flow-wiring.spec.ts pioneered). The cache's
-// first refresh under this wall (2026-10-10) caught it a sampler
-// stale: the vocab carried cfgpp_ud10_ab from a live regen while
-// the September cache predated the pack — exactly the regen gap the
-// wall exists for, found on its first run.
-const FIXTURE = new URL("../../fixtures/ksampler-vocab.min.json", import.meta.url);
-const LIVE = join(process.cwd(), "data", "tmp", "object_info_prod.json");
+// tracked value fixture (KSampler's two combo lists, the
+// projection of the same cache, held in pinned-combos.min.json)
+// is now judged UNCONDITIONALLY. The cache's first refresh under
+// this wall (2026-10-10) caught a sampler stale: the vocab carried
+// cfgpp_ud10_ab from a live regen while the September cache
+// predated the pack — exactly the regen gap the wall exists for,
+// found on its first run.
+// ksampler-vocab.min.json is GONE (cruft audit #9): its two rosters
+// duplicated pinned-combos.min.json's dotted keys byte for byte, and
+// the live-cache drift arm below it was subsumed by
+// vocab-rails-subset.spec.ts:133-150 (both KSampler keys + eight
+// more). This floor now reads the one tracked engine truth.
+const FIXTURE = new URL("../../fixtures/pinned-combos.min.json", import.meta.url);
 
-type VocabFixture = { sampler_name: string[]; scheduler: string[] };
-type ObjectInfo = { KSampler?: { input?: { required?: Record<string, unknown> } } };
+type VocabFixture = Record<string, string[]>;
 
 const deadNames = (served: string[], engine: string[]) =>
   served.filter((n) => !engine.includes(n));
@@ -43,11 +43,13 @@ const deadNames = (served: string[], engine: string[]) =>
 describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the engine runs", () => {
   it("every served sampler/scheduler exists in the tracked engine fixture, unconditionally", () => {
     const vocab = JSON.parse(readFileSync(FIXTURE, "utf8")) as VocabFixture;
-    expect(vocab.sampler_name, "the fixture carries the sampler roster").toBeDefined();
-    expect(vocab.scheduler, "the fixture carries the scheduler roster").toBeDefined();
+    const samplers = vocab["KSampler.sampler_name"] ?? [];
+    const schedulers = vocab["KSampler.scheduler"] ?? [];
+    expect(samplers.length, "the fixture carries the sampler roster").toBeGreaterThan(0);
+    expect(schedulers.length, "the fixture carries the scheduler roster").toBeGreaterThan(0);
 
-    const deadSamplers = deadNames(SAMPLER_OPTIONS, vocab.sampler_name);
-    const deadSchedulers = deadNames(SCHEDULER_OPTIONS, vocab.scheduler);
+    const deadSamplers = deadNames(SAMPLER_OPTIONS, samplers);
+    const deadSchedulers = deadNames(SCHEDULER_OPTIONS, schedulers);
     expect(
       deadSamplers,
       `the kit serves sampler names the fixture's engine does not run (${deadSamplers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts) AND the fixture (re-project KSampler from the refreshed cache); every card menu carries the dead name and every pick 400s at the engine`,
@@ -56,25 +58,6 @@ describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the e
       deadSchedulers,
       `the kit serves scheduler names the fixture's engine does not run (${deadSchedulers.join(", ")}) — regenerate the vocab (packages/engines/comfyui-cordis/scripts/regen-vocab.ts) AND the fixture`,
     ).toEqual([]);
-  });
-
-  it("the live cache, wherever it exists, agrees with the tracked fixture (drift contract)", (ctx) => {
-    // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
-    // (ctx.skip — the runner counts it skipped, never passed), and
-    // the floor above already judged the fixture without it.
-    if (!existsSync(LIVE)) {
-      ctx.skip(true);
-      return;
-    }
-    const doc = JSON.parse(readFileSync(LIVE, "utf8")) as ObjectInfo;
-    const req = doc.KSampler?.input?.required ?? {};
-    const samplerList = (req["sampler_name"] as unknown as [string[]] | undefined)?.[0];
-    const schedulerList = (req["scheduler"] as unknown as [string[]] | undefined)?.[0];
-    expect(samplerList, "the cache's KSampler carries sampler_name").toBeDefined();
-    expect(schedulerList, "the cache's KSampler carries scheduler").toBeDefined();
-    const vocab = JSON.parse(readFileSync(FIXTURE, "utf8")) as VocabFixture;
-    expect([...(samplerList ?? [])].sort(), "the fixture's sampler roster drifted from the live cache (re-project it)").toEqual([...vocab.sampler_name].sort());
-    expect([...(schedulerList ?? [])].sort(), "the fixture's scheduler roster drifted from the live cache (re-project it)").toEqual([...vocab.scheduler].sort());
   });
 
   it("the vocabularies are non-empty and duplicate-free (a broken regen cannot serve a hollow menu)", () => {
