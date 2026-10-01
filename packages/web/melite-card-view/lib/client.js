@@ -43347,6 +43347,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
 							const st = stageWriteState(bench.draftId, stage.id);
 							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
+						}).catch((e) => {
+							setWriteFace("THE ENHANCE DID NOT LAND — " + (e instanceof Error ? e.message : "the write was refused"));
 						});
 					}
 					const swept = Object.keys(sweptPatch).length;
