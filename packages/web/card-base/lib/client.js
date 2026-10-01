@@ -61,15 +61,15 @@ window.__ModuleLoader__.load({
 		}
 		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
 		function onBackendState(cb) {
-			listeners$1.add(cb);
+			listeners.add(cb);
 			return () => {
-				listeners$1.delete(cb);
+				listeners.delete(cb);
 			};
 		}
 		function setState(next) {
 			if (next === state) return;
 			state = next;
-			for (const cb of listeners$1) try {
+			for (const cb of listeners) try {
 				cb(next);
 			} catch {}
 		}
@@ -186,7 +186,7 @@ window.__ModuleLoader__.load({
 				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
 			}
 		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners$1, inflight;
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
 		var init_api = __esmMin((() => {
 			init_readFile();
 			MAX_RETRIES = 4;
@@ -202,7 +202,7 @@ window.__ModuleLoader__.load({
 			]);
 			state = "online";
 			consecutiveFail = 0;
-			listeners$1 = /* @__PURE__ */ new Set();
+			listeners = /* @__PURE__ */ new Set();
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
@@ -3982,87 +3982,6 @@ window.__ModuleLoader__.load({
 			init_runStatusContractStore();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
-		}));
-		//#endregion
-		//#region ../../web-kit/catalog/src/FlowEvents.ts
-		/**
-		* Open the events stream for one run. Returns immediately; frames land
-		* in `onEvent`. Auto-reconnects with capped backoff until a terminal
-		* `run` frame, an explicit close, or `signal` aborts.
-		*/
-		function streamFlowEvents(runId, onEvent, opts = {}) {
-			let ws = null;
-			let terminal = false;
-			let closed = false;
-			let attempt = 0;
-			let timer = null;
-			const cleanup = () => {
-				if (timer) clearTimeout(timer);
-				timer = null;
-				if (ws) {
-					ws.onmessage = null;
-					ws.onclose = null;
-					ws.onerror = null;
-					try {
-						ws.close();
-					} catch {}
-					ws = null;
-				}
-			};
-			const finish = () => {
-				terminal = true;
-				cleanup();
-			};
-			const connect = () => {
-				/* v8 ignore next -- defensive: close()/finish() always clear the pending reconnect timer, so connect() can never run after close or a terminal frame (2026-09-12) */
-				if (closed || terminal) return;
-				if (typeof WebSocket === "undefined") return;
-				const proto = typeof location !== "undefined" && location.protocol === "https:" ? "wss" : "ws";
-				const host = typeof location !== "undefined" ? location.host : "";
-				try {
-					ws = new WebSocket(`${proto}://${host}/v1/flows/events?run_id=${encodeURIComponent(runId)}`);
-				} catch {
-					return;
-				}
-				ws.onmessage = (ev) => {
-					if (closed || terminal) return;
-					attempt = 0;
-					let frame = null;
-					try {
-						frame = JSON.parse(String(ev.data));
-					} catch {
-						return;
-					}
-					if (!frame || typeof frame !== "object" || typeof frame.type !== "string") return;
-					onEvent(frame);
-					if (frame.type === "run" && TERMINAL.has(String(frame.status))) finish();
-				};
-				ws.onclose = () => {
-					if (closed || terminal) return;
-					const wait = Math.min(BACKOFF_CAP_MS, BACKOFF_BASE_MS * 2 ** attempt++);
-					timer = setTimeout(connect, wait);
-				};
-				ws.onerror = () => {};
-			};
-			connect();
-			if (opts.signal) opts.signal.addEventListener("abort", () => {
-				closed = true;
-				cleanup();
-			}, { once: true });
-			return {
-				close: () => {
-					closed = true;
-					cleanup();
-				},
-				done: () => terminal
-			};
-		}
-		var TERMINAL, BACKOFF_BASE_MS, BACKOFF_CAP_MS;
-		var init_FlowEvents = __esmMin((() => {
-			init_stageView();
-			TERMINAL = { has: (s) => isTerminalStatus(s) };
-			BACKOFF_BASE_MS = 500;
-			BACKOFF_CAP_MS = 5e3;
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/tagMap.ts
@@ -41664,86 +41583,6 @@ void main() {
 			];
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/comfyEvents.ts
-		/**
-		* Open a ComfyUI websocket and forward parsed events to `onEvent`.
-		* `onStatus` fires with `true`/`false` on connect/disconnect.
-		*/
-		function connectComfyEvents(url, onEvent, onStatus) {
-			if (typeof WebSocket === "undefined") return {
-				connected: false,
-				close() {}
-			};
-			let ws = null;
-			let closed = false;
-			let retry = null;
-			let connected = false;
-			const scheduleRetry = () => {
-				if (closed) return;
-				if (retry) clearTimeout(retry);
-				retry = setTimeout(open, RETRY_MS);
-			};
-			function open() {
-				/* v8 ignore next -- defensive: close() always clears the pending retry timer, so open() can never run after close (2026-09-12) */
-				if (closed) return;
-				try {
-					ws = new WebSocket(url);
-				} catch (err) {
-					console.warn("[comfy-events] websocket open failed:", err);
-					scheduleRetry();
-					return;
-				}
-				ws.onopen = () => {
-					connected = true;
-					onStatus?.(true);
-				};
-				ws.onclose = () => {
-					connected = false;
-					onStatus?.(false);
-					scheduleRetry();
-				};
-				ws.onerror = () => {
-					try {
-						ws?.close();
-					} catch {}
-				};
-				ws.onmessage = (ev) => {
-					if (typeof ev.data !== "string") return;
-					try {
-						const msg = JSON.parse(ev.data);
-						onEvent({
-							type: msg.type ?? "raw",
-							data: msg.data ?? {},
-							raw: ev.data
-						});
-					} catch {
-						onEvent({
-							type: "raw",
-							data: {},
-							raw: ev.data
-						});
-					}
-				};
-			}
-			open();
-			return {
-				get connected() {
-					return connected;
-				},
-				close() {
-					closed = true;
-					if (retry) clearTimeout(retry);
-					try {
-						ws?.close();
-					} catch {}
-				}
-			};
-		}
-		var RETRY_MS;
-		var init_comfyEvents = __esmMin((() => {
-			RETRY_MS = 3e3;
-		}));
-		//#endregion
 		//#region ../../web-kit/catalog/src/enhance.ts
 		/**
 		* The card's model picker source (2026-09-06): the LIVE route list
@@ -42107,7 +41946,6 @@ void main() {
 			composeVariantRoute: () => composeVariantRoute,
 			computeMinMaxPeaks: () => computeMinMaxPeaks,
 			computeWaveformLODs: () => computeWaveformLODs,
-			connectComfyEvents: () => connectComfyEvents,
 			contractToast: () => contractToast,
 			controlnetTypesOf: () => controlnetTypesOf,
 			decodeAudioPeaks: () => decodeAudioPeaks,
@@ -42207,7 +42045,6 @@ void main() {
 			setContractToastSink: () => setContractToastSink,
 			setRequiredEmptyResolver: () => setRequiredEmptyResolver,
 			sliceFrameAsB64: () => sliceFrameAsB64,
-			streamFlowEvents: () => streamFlowEvents,
 			studioOf: () => studioOf,
 			submitTextToPose: () => submitTextToPose,
 			subscribeForms: () => subscribeForms,
@@ -42233,7 +42070,6 @@ void main() {
 			init_catalogContractStore();
 			init_modelCatalog();
 			init_FlowProtocol();
-			init_FlowEvents();
 			init_familyParamContract();
 			init_tagMap();
 			init_runStatusContractStore();
@@ -42241,7 +42077,6 @@ void main() {
 			init_text_to_pose();
 			init_serviceForms();
 			init_waveform_peaks();
-			init_comfyEvents();
 			init_cardBirth();
 			init_enhance();
 			init_cardLlm();
@@ -48883,34 +48718,36 @@ void main() {
 		//#region src/toastStore.ts
 		/**
 		* THE ONE TOAST STORE (node-safe half of the one toast system,
-		* stroke 37): module state + the dual API (hook selector for React,
-		* zustand-classic statics for module-level pushers and tests). NO
-		* atom imports — node-env suites (the catalog contract specs) import
-		* this half without dragging DSH UI primitives' .css through the
-		* door. The renderer half lives in ./toast.tsx (ToastViewport); the
-		* store is the system, the viewport is its face.
+		* stroke 37): the module state and the dual API (hook selector for
+		* React, zustand-classic statics for module-level pushers and
+		* tests) over the DSH platform engine `createSnapshotStore`
+		* (`@deepseek-ai/dsh-client-store` — zustand vanilla + immer,
+		* React-free by design; see its README Summary: "React-free
+		* observable and snapshot-store primitives"). The engine owns
+		* observation and publication; this module owns the record and
+		* the toast lifetime. The renderer half lives in ./toast.tsx
+		* (ToastViewport); the store is the system, the viewport is its
+		* face.
 		*
 		* One store for the whole system: pusher modules call the
-		* `getState()`/`subscribe()`/`setState()` statics from module context,
-		* React seats use the hook selector. The last two private stores (in
-		* web-kit/catalog and mask-studio) are gone; their pushers now ride
-		* the `contractToast` seam in @melite/catalog, wired by each browser
-		* entry to this store.
+		* `getState()`/`subscribe()`/`setState()` statics from module
+		* context, React seats use the hook selector. The last two private
+		* stores (in web-kit/catalog and mask-studio) are gone; their
+		* pushers now ride the `contractToast` seam in @melite/catalog,
+		* wired by each browser entry to this store.
+		*
+		* The mount-claim registry lives here too (the viewport ids and
+		* their epoch store): toast.tsx is a pure renderer that calls
+		* hooks, per the client component law — no subscription machinery
+		* in business components.
 		*/
+		const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)([]);
 		let nextId = 1;
-		let entries = [];
-		const listeners = /* @__PURE__ */ new Set();
-		function emit() {
-			listeners.forEach((l) => l());
-		}
 		function subscribe(listener) {
-			listeners.add(listener);
-			return () => {
-				listeners.delete(listener);
-			};
+			return engine.subscribe(() => listener());
 		}
 		function getSnapshot() {
-			return entries;
+			return engine.getSnapshot();
 		}
 		/** How long a toast of a severity holds before it dismisses, in ms.
 		*  THE ONE OWNER of that number: the store arms its dismissal timer
@@ -48923,35 +48760,37 @@ void main() {
 		}
 		function addToast(type, message, _action) {
 			const id = nextId++;
-			entries = [...entries, {
-				id,
-				type,
-				message
-			}];
+			engine.update((draft) => {
+				draft.push({
+					id,
+					type,
+					message
+				});
+			});
 			if (type === "error") console.error("[toast]", message);
 			else console.info("[toast]", message);
-			emit();
 			setTimeout(() => {
 				removeToast(id);
 			}, toastHoldMs(type));
 		}
 		function removeToast(id) {
-			if (!entries.some((t) => t.id === id)) return;
-			entries = entries.filter((t) => t.id !== id);
-			emit();
+			const index = engine.getSnapshot().findIndex((t) => t.id === id);
+			if (index < 0) return;
+			engine.update((draft) => {
+				draft.splice(index, 1);
+			});
 		}
 		let liveAddToast = addToast;
 		function getStore() {
 			return {
-				toasts: entries,
+				toasts: engine.getSnapshot(),
 				addToast: liveAddToast,
 				removeToast
 			};
 		}
 		function setStoreState(patch) {
 			if (patch.addToast !== void 0) liveAddToast = patch.addToast;
-			if (patch.toasts !== void 0) entries = patch.toasts;
-			emit();
+			engine.set(patch.toasts !== void 0 ? [...patch.toasts] : [...engine.getSnapshot()]);
 		}
 		/** The hook half — inside React: `useToastStore((s) => s.addToast)`.
 		*  The static half (getState/subscribe/setState) hangs off the same
@@ -48969,6 +48808,33 @@ void main() {
 			setState: setStoreState,
 			subscribe
 		});
+		const viewportEngine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)([]);
+		let nextViewportId = 1;
+		/** Mint the stable id for a viewport mount (one per mounted
+		*  component; the owner is the smallest live id).
+		*  @returns the minted id. */
+		function mintViewportId() {
+			return nextViewportId++;
+		}
+		/** Claim rendering rights for a viewport id (mount arm).
+		*  @param id - the minted viewport id. */
+		function acquireViewport(id) {
+			viewportEngine.update((draft) => {
+				draft.push(id);
+			});
+		}
+		/** Release a viewport id's claim (unmount arm).
+		*  @param id - the minted viewport id. */
+		function releaseViewport(id) {
+			viewportEngine.update((draft) => {
+				draft.splice(draft.indexOf(id), 1);
+			});
+		}
+		/** The hook a viewport reads the live id set through — every
+		*  acquire/release re-renders every mounted viewport. */
+		function useViewportIds() {
+			return (0, react.useSyncExternalStore)(viewportEngine.subscribe, viewportEngine.getSnapshot, viewportEngine.getSnapshot);
+		}
 		//#endregion
 		//#region src/toast.tsx
 		/**
@@ -48984,25 +48850,13 @@ void main() {
 		* re-broadcasts when owners unmount. No studio wires it, no studio
 		* can forget it, no seat can duplicate it.
 		*
+		* This file is a pure renderer: it holds no subscription
+		* machinery — the claim registry and both store hooks live in
+		* ./toastStore.ts (the client component law: business components
+		* contain no useSyncExternalStore, no manual subscribe wiring).
+		*
 		* Reached through the `/client` door (`@melite/card-base/client`).
 		*/
-		const liveViewportIds = /* @__PURE__ */ new Set();
-		let viewportEpoch = 0;
-		const viewportListeners = /* @__PURE__ */ new Set();
-		function emitViewportChange() {
-			viewportEpoch++;
-			viewportListeners.forEach((l) => l());
-		}
-		function subscribeViewport(l) {
-			viewportListeners.add(l);
-			return () => {
-				viewportListeners.delete(l);
-			};
-		}
-		function getViewportEpoch() {
-			return viewportEpoch;
-		}
-		let nextViewportId = 1;
 		/** Mount anywhere the system needs a renderer — the studio shell,
 		*  the cards console, any seat. The claim law guarantees exactly one
 		*  live renderer per document: the first-mounted viewport renders,
@@ -49010,19 +48864,17 @@ void main() {
 		*  entries through the DSH Toast atom (body-portaled banner, owner
 		*  unmounts onDone). */
 		function ToastViewport() {
-			const idRef = (0, react.useRef)(nextViewportId++);
+			const idRef = (0, react.useRef)(mintViewportId());
 			(0, react.useEffect)(() => {
 				const id = idRef.current;
-				liveViewportIds.add(id);
-				emitViewportChange();
+				acquireViewport(id);
 				return () => {
-					liveViewportIds.delete(id);
-					emitViewportChange();
+					releaseViewport(id);
 				};
 			}, []);
-			(0, react.useSyncExternalStore)(subscribeViewport, getViewportEpoch, getViewportEpoch);
-			const toasts = (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+			const ids = useViewportIds();
+			const toasts = useToastStore((s) => s.toasts);
+			if (!(ids.length === 0 || Math.min(...ids) === idRef.current) || toasts.length === 0) return null;
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsx)(react_jsx_runtime.Fragment, { children: toasts.map((t) => /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Toast, {
 				text: t.message,
 				holdMs: toastHoldMs(t.type),
@@ -50169,6 +50021,7 @@ void main() {
 		exports.VolumeX = VolumeX;
 		exports.WirePickerModal = WirePickerModal;
 		exports.X = X;
+		exports.acquireViewport = acquireViewport;
 		exports.activeRecipeId = activeRecipeId;
 		exports.activeRowId = activeRowId;
 		exports.activeVariantId = activeVariantId;
@@ -50230,6 +50083,7 @@ void main() {
 		exports.laneSurfaceFor = laneSurfaceFor;
 		exports.laneViolations = laneViolations;
 		exports.makeLabelSprite = makeLabelSprite;
+		exports.mintViewportId = mintViewportId;
 		exports.modOwnedFields = modOwnedFields;
 		exports.modelChoices = modelChoices;
 		exports.modelSwitchPatch = modelSwitchPatch;
@@ -50245,6 +50099,7 @@ void main() {
 		exports.quantRowsFor = quantRowsFor;
 		exports.readAsDataURL = readAsDataURL;
 		exports.readAsDataUrl = readAsDataURL;
+		exports.releaseViewport = releaseViewport;
 		exports.removeToast = removeToast;
 		exports.resetPickCellsForTests = resetPickCellsForTests;
 		exports.resolveFamilyKey = resolveFamilyKey;
@@ -50274,6 +50129,7 @@ void main() {
 		exports.useResolvedForm = useResolvedForm;
 		exports.useSquareProvider = useSquareProvider;
 		exports.useToastStore = useToastStore;
+		exports.useViewportIds = useViewportIds;
 		exports.variantGroupsContract = variantGroupsContract;
 		exports.variantRows = variantRows;
 		return module.exports;
@@ -50281,4 +50137,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="19a688a98ef0aa027eda2c9252ecaf760cd5f21e";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="904826380a99216b081abd5c47e11bdef82c0a9e";

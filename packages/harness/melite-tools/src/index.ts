@@ -263,8 +263,11 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // wrote them, breaking Model-visible⟺logged. The late-arrival
   // semantics live where the log can see them: run_status's execute
   // Numbers wait_s itself, melite_flow's wireBool reads test, and a
-  // string 'true' on bench refuses NAMED (the modes===0 arm) — the
-  // handroll audit's ranked item 1.)
+  // string 'true' on bench never reaches execute — the dsh-tools
+  // gate's ToolArgsError refuses it before the body runs (the
+  // handroll audit's ranked item 1; verifier-corrected 2026-10-01:
+  // the modes===0 arm returns a soft error object, it is not this
+  // refusal.)
   if (headless) {
     c.tools.register(meliteFlow(request))
     c.tools.register(runStatus(request))

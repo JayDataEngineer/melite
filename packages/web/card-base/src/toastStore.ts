@@ -1,20 +1,30 @@
 /**
  * THE ONE TOAST STORE (node-safe half of the one toast system,
- * stroke 37): module state + the dual API (hook selector for React,
- * zustand-classic statics for module-level pushers and tests). NO
- * atom imports — node-env suites (the catalog contract specs) import
- * this half without dragging DSH UI primitives' .css through the
- * door. The renderer half lives in ./toast.tsx (ToastViewport); the
- * store is the system, the viewport is its face.
+ * stroke 37): the module state and the dual API (hook selector for
+ * React, zustand-classic statics for module-level pushers and
+ * tests) over the DSH platform engine `createSnapshotStore`
+ * (`@deepseek-ai/dsh-client-store` — zustand vanilla + immer,
+ * React-free by design; see its README Summary: "React-free
+ * observable and snapshot-store primitives"). The engine owns
+ * observation and publication; this module owns the record and
+ * the toast lifetime. The renderer half lives in ./toast.tsx
+ * (ToastViewport); the store is the system, the viewport is its
+ * face.
  *
  * One store for the whole system: pusher modules call the
- * `getState()`/`subscribe()`/`setState()` statics from module context,
- * React seats use the hook selector. The last two private stores (in
- * web-kit/catalog and mask-studio) are gone; their pushers now ride
- * the `contractToast` seam in @melite/catalog, wired by each browser
- * entry to this store.
+ * `getState()`/`subscribe()`/`setState()` statics from module
+ * context, React seats use the hook selector. The last two private
+ * stores (in web-kit/catalog and mask-studio) are gone; their
+ * pushers now ride the `contractToast` seam in @melite/catalog,
+ * wired by each browser entry to this store.
+ *
+ * The mount-claim registry lives here too (the viewport ids and
+ * their epoch store): toast.tsx is a pure renderer that calls
+ * hooks, per the client component law — no subscription machinery
+ * in business components.
  */
 import { useSyncExternalStore } from "react"
+import { createSnapshotStore } from "@deepseek-ai/dsh-client-store"
 
 export type ToastType = "error" | "success" | "info"
 
@@ -35,23 +45,15 @@ export interface ToastStore {
   removeToast: (id: number) => void
 }
 
+const engine = createSnapshotStore<ToastEntry[]>([])
 let nextId = 1
-let entries: ToastEntry[] = []
-const listeners = new Set<() => void>()
-
-function emit() {
-  listeners.forEach((l) => l())
-}
 
 export function subscribe(listener: () => void): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
+  return engine.subscribe(() => listener())
 }
 
 export function getSnapshot(): ToastEntry[] {
-  return entries
+  return engine.getSnapshot()
 }
 
 /** How long a toast of a severity holds before it dismisses, in ms.
@@ -67,10 +69,11 @@ export function toastHoldMs(type: ToastType): number {
 function addToast(type: ToastType, message: string, _action?: ToastAction): void {
   void _action // accepted, not renderable — see the header law
   const id = nextId++
-  entries = [...entries, { id, type, message }]
+  engine.update((draft) => {
+    draft.push({ id, type, message })
+  })
   if (type === "error") console.error("[toast]", message)
   else console.info("[toast]", message)
-  emit()
   // The lifetime is the store's alone: a pushed toast dismisses on
   // this clock whether or not a viewport is mounted to fade it. The
   // Toast's own hold+FADE timer lands later and calls the same
@@ -81,9 +84,11 @@ function addToast(type: ToastType, message: string, _action?: ToastAction): void
 }
 
 export function removeToast(id: number): void {
-  if (!entries.some((t) => t.id === id)) return
-  entries = entries.filter((t) => t.id !== id)
-  emit()
+  const index = engine.getSnapshot().findIndex((t) => t.id === id)
+  if (index < 0) return
+  engine.update((draft) => {
+    draft.splice(index, 1)
+  })
 }
 
 // the patchable api field — the zustand-classic setState contract
@@ -91,13 +96,15 @@ export function removeToast(id: number): void {
 let liveAddToast: ToastStore["addToast"] = addToast
 
 function getStore(): ToastStore {
-  return { toasts: entries, addToast: liveAddToast, removeToast }
+  return { toasts: engine.getSnapshot(), addToast: liveAddToast, removeToast }
 }
 
 function setStoreState(patch: Partial<ToastStore>): void {
   if (patch.addToast !== undefined) liveAddToast = patch.addToast
-  if (patch.toasts !== undefined) entries = patch.toasts
-  emit()
+  // Publish a fresh array reference even when only addToast moved:
+  // the statics' contract is that every setState notifies (an
+  // empty patch emits), and the engine skips identical references.
+  engine.set(patch.toasts !== undefined ? [...patch.toasts] : [...engine.getSnapshot()])
 }
 
 /** The hook half — inside React: `useToastStore((s) => s.addToast)`.
@@ -115,3 +122,46 @@ export const useToastStore = Object.assign(
     subscribe,
   },
 )
+
+/* ── The mount-claim registry ──────────────────────────────────
+ * Live viewport ids; the smallest id renders. Every mount/unmount
+ * publishes a new id array through the engine so all mounted
+ * viewports re-read ownership (the epoch mechanism — one notify
+ * per change, no hand-rolled listener Set). The record stays a
+ * plain array: immer drafts those without the MapSet plugin this
+ * module graph never enables. */
+const viewportEngine = createSnapshotStore<number[]>([])
+let nextViewportId = 1
+
+/** Mint the stable id for a viewport mount (one per mounted
+ *  component; the owner is the smallest live id).
+ *  @returns the minted id. */
+export function mintViewportId(): number {
+  return nextViewportId++
+}
+
+/** Claim rendering rights for a viewport id (mount arm).
+ *  @param id - the minted viewport id. */
+export function acquireViewport(id: number): void {
+  viewportEngine.update((draft) => {
+    draft.push(id)
+  })
+}
+
+/** Release a viewport id's claim (unmount arm).
+ *  @param id - the minted viewport id. */
+export function releaseViewport(id: number): void {
+  viewportEngine.update((draft) => {
+    draft.splice(draft.indexOf(id), 1)
+  })
+}
+
+/** The hook a viewport reads the live id set through — every
+ *  acquire/release re-renders every mounted viewport. */
+export function useViewportIds(): readonly number[] {
+  return useSyncExternalStore(
+    viewportEngine.subscribe,
+    viewportEngine.getSnapshot,
+    viewportEngine.getSnapshot,
+  )
+}

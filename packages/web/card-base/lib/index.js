@@ -13,6 +13,7 @@ import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
 import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { isTerminalRun, listRowMediaUrl, readRunStatus } from "@melite-plugin/melite-run-wire";
+import { createSnapshotStore } from "@deepseek-ai/dsh-client-store";
 import { fetchBindMesh } from "@melite/formats/poserSkin";
 import { isLiveRunStatus } from "@melite/contracts/stageView";
 //#region \0rolldown/runtime.js
@@ -5753,34 +5754,36 @@ function StudioRail({ children }) {
 //#region src/toastStore.ts
 /**
 * THE ONE TOAST STORE (node-safe half of the one toast system,
-* stroke 37): module state + the dual API (hook selector for React,
-* zustand-classic statics for module-level pushers and tests). NO
-* atom imports — node-env suites (the catalog contract specs) import
-* this half without dragging DSH UI primitives' .css through the
-* door. The renderer half lives in ./toast.tsx (ToastViewport); the
-* store is the system, the viewport is its face.
+* stroke 37): the module state and the dual API (hook selector for
+* React, zustand-classic statics for module-level pushers and
+* tests) over the DSH platform engine `createSnapshotStore`
+* (`@deepseek-ai/dsh-client-store` — zustand vanilla + immer,
+* React-free by design; see its README Summary: "React-free
+* observable and snapshot-store primitives"). The engine owns
+* observation and publication; this module owns the record and
+* the toast lifetime. The renderer half lives in ./toast.tsx
+* (ToastViewport); the store is the system, the viewport is its
+* face.
 *
 * One store for the whole system: pusher modules call the
-* `getState()`/`subscribe()`/`setState()` statics from module context,
-* React seats use the hook selector. The last two private stores (in
-* web-kit/catalog and mask-studio) are gone; their pushers now ride
-* the `contractToast` seam in @melite/catalog, wired by each browser
-* entry to this store.
+* `getState()`/`subscribe()`/`setState()` statics from module
+* context, React seats use the hook selector. The last two private
+* stores (in web-kit/catalog and mask-studio) are gone; their
+* pushers now ride the `contractToast` seam in @melite/catalog,
+* wired by each browser entry to this store.
+*
+* The mount-claim registry lives here too (the viewport ids and
+* their epoch store): toast.tsx is a pure renderer that calls
+* hooks, per the client component law — no subscription machinery
+* in business components.
 */
+const engine = createSnapshotStore([]);
 let nextId = 1;
-let entries = [];
-const listeners = /* @__PURE__ */ new Set();
-function emit() {
-	listeners.forEach((l) => l());
-}
 function subscribe(listener) {
-	listeners.add(listener);
-	return () => {
-		listeners.delete(listener);
-	};
+	return engine.subscribe(() => listener());
 }
 function getSnapshot() {
-	return entries;
+	return engine.getSnapshot();
 }
 /** How long a toast of a severity holds before it dismisses, in ms.
 *  THE ONE OWNER of that number: the store arms its dismissal timer
@@ -5793,35 +5796,37 @@ function toastHoldMs(type) {
 }
 function addToast(type, message, _action) {
 	const id = nextId++;
-	entries = [...entries, {
-		id,
-		type,
-		message
-	}];
+	engine.update((draft) => {
+		draft.push({
+			id,
+			type,
+			message
+		});
+	});
 	if (type === "error") console.error("[toast]", message);
 	else console.info("[toast]", message);
-	emit();
 	setTimeout(() => {
 		removeToast(id);
 	}, toastHoldMs(type));
 }
 function removeToast(id) {
-	if (!entries.some((t) => t.id === id)) return;
-	entries = entries.filter((t) => t.id !== id);
-	emit();
+	const index = engine.getSnapshot().findIndex((t) => t.id === id);
+	if (index < 0) return;
+	engine.update((draft) => {
+		draft.splice(index, 1);
+	});
 }
 let liveAddToast = addToast;
 function getStore() {
 	return {
-		toasts: entries,
+		toasts: engine.getSnapshot(),
 		addToast: liveAddToast,
 		removeToast
 	};
 }
 function setStoreState(patch) {
 	if (patch.addToast !== void 0) liveAddToast = patch.addToast;
-	if (patch.toasts !== void 0) entries = patch.toasts;
-	emit();
+	engine.set(patch.toasts !== void 0 ? [...patch.toasts] : [...engine.getSnapshot()]);
 }
 /** The hook half — inside React: `useToastStore((s) => s.addToast)`.
 *  The static half (getState/subscribe/setState) hangs off the same
@@ -5839,6 +5844,33 @@ const useToastStore = Object.assign(function useToastStore(selector) {
 	setState: setStoreState,
 	subscribe
 });
+const viewportEngine = createSnapshotStore([]);
+let nextViewportId = 1;
+/** Mint the stable id for a viewport mount (one per mounted
+*  component; the owner is the smallest live id).
+*  @returns the minted id. */
+function mintViewportId() {
+	return nextViewportId++;
+}
+/** Claim rendering rights for a viewport id (mount arm).
+*  @param id - the minted viewport id. */
+function acquireViewport(id) {
+	viewportEngine.update((draft) => {
+		draft.push(id);
+	});
+}
+/** Release a viewport id's claim (unmount arm).
+*  @param id - the minted viewport id. */
+function releaseViewport(id) {
+	viewportEngine.update((draft) => {
+		draft.splice(draft.indexOf(id), 1);
+	});
+}
+/** The hook a viewport reads the live id set through — every
+*  acquire/release re-renders every mounted viewport. */
+function useViewportIds() {
+	return useSyncExternalStore(viewportEngine.subscribe, viewportEngine.getSnapshot, viewportEngine.getSnapshot);
+}
 //#endregion
 //#region src/toast.tsx
 /**
@@ -5854,25 +5886,13 @@ const useToastStore = Object.assign(function useToastStore(selector) {
 * re-broadcasts when owners unmount. No studio wires it, no studio
 * can forget it, no seat can duplicate it.
 *
+* This file is a pure renderer: it holds no subscription
+* machinery — the claim registry and both store hooks live in
+* ./toastStore.ts (the client component law: business components
+* contain no useSyncExternalStore, no manual subscribe wiring).
+*
 * Reached through the `/client` door (`@melite/card-base/client`).
 */
-const liveViewportIds = /* @__PURE__ */ new Set();
-let viewportEpoch = 0;
-const viewportListeners = /* @__PURE__ */ new Set();
-function emitViewportChange() {
-	viewportEpoch++;
-	viewportListeners.forEach((l) => l());
-}
-function subscribeViewport(l) {
-	viewportListeners.add(l);
-	return () => {
-		viewportListeners.delete(l);
-	};
-}
-function getViewportEpoch() {
-	return viewportEpoch;
-}
-let nextViewportId = 1;
 /** Mount anywhere the system needs a renderer — the studio shell,
 *  the cards console, any seat. The claim law guarantees exactly one
 *  live renderer per document: the first-mounted viewport renders,
@@ -5880,19 +5900,17 @@ let nextViewportId = 1;
 *  entries through the DSH Toast atom (body-portaled banner, owner
 *  unmounts onDone). */
 function ToastViewport() {
-	const idRef = useRef(nextViewportId++);
+	const idRef = useRef(mintViewportId());
 	useEffect(() => {
 		const id = idRef.current;
-		liveViewportIds.add(id);
-		emitViewportChange();
+		acquireViewport(id);
 		return () => {
-			liveViewportIds.delete(id);
-			emitViewportChange();
+			releaseViewport(id);
 		};
 	}, []);
-	useSyncExternalStore(subscribeViewport, getViewportEpoch, getViewportEpoch);
-	const toasts = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
-	if (!(liveViewportIds.size === 0 || Math.min(...liveViewportIds) === idRef.current) || toasts.length === 0) return null;
+	const ids = useViewportIds();
+	const toasts = useToastStore((s) => s.toasts);
+	if (!(ids.length === 0 || Math.min(...ids) === idRef.current) || toasts.length === 0) return null;
 	return /* @__PURE__ */ jsx(Fragment, { children: toasts.map((t) => /* @__PURE__ */ jsx(Toast, {
 		text: t.message,
 		holdMs: toastHoldMs(t.type),
@@ -6857,4 +6875,4 @@ async function fetchMediaLibrary(kind, signal) {
 	return Array.isArray(v.items) ? v.items.filter((it) => typeof it?.url === "string" && typeof it?.name === "string") : [];
 }
 //#endregion
-export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, parseNumericInput, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, variantGroupsContract, variantRows };
+export { ASSET_DRAG_MIME, AlertTriangle, AudioLines, AudioStagePreview, Box, Brush, CARD_SLOTS, Camera, CardForm, Check, ChevronDown, ChevronLeft, ChevronRight, Clapperboard, ControlRow, Copy, Crop, DEFAULT_SQUARE_ACCEPT, DeclarativeStudio, Dices, Download, EmptyState, EstateRefusedError, Expand, Eye, EyeAlt, EyeOff, FileBox, Film, Focus, Frame, GlbStagePreview, Hand, Image, ImagePlus, ImageStagePreview, Info, InputSquare, Layers, Link2, Loader2, MESH_SQUARE_ACCEPT, Maximize, MeshStagePreview, Minimize2, ModelAxes, ModifiersSection, Move, OverlayKnob, PackPrompt, Palette, PaneHeader, PaneShell, Pause, PersonStanding, Play, PlayAlt, Plus, PoserFigureStage, RailSection, RecipePills, ReferenceImageBadge, RefreshCw, ReportView, RotateCcw, RotateCw, STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT, SectionLabel, SeedDice, Skeleton, SourceRow, SpecAtom, SpecFieldRow, SpecPanel, SpecSliderAtom, Square, StudioRail, StudioShell, StudioShellErrorLine, TURNTABLE_SPEED, Target, Tip, ToastViewport, TriStateAtom, TriangleAlert, Type, Upload, User, VideoStagePreview, ViewportAnchor, ViewportFrame, Volume2, VolumeX, WirePickerModal, X, acquireViewport, activeRecipeId, activeRowId, activeVariantId, applyWeightsHeat, applyWireframe, armEstateRemoteLazyBind, autoFitToHeight, axisGroups, axisKey, axisPickPatch, axisStampOf, axisUnset, bindEstateRemote, bindEstateRemoteFromRemote, cn, coerceFieldEdit, composeCandidateDoc, composeUnset, composeValidate, composingRows, cx, defineShellDeclaration, defineStageViewRegistration, defineStudioDeclaration, entryFieldsOfEnvelope, estateRemote, fetchCardCatalog, fetchFormSpec, fetchFormsTable, fetchLatestRunForDraft, fetchListRow, fetchMediaLibrary, fetchRunStageUrl, fetchRunStatus, fetchRunTerminal, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, figureCameraOf, figureCoeffsOf, figureGeometry, figureLocalChangesOf, figureShapeSig, getSnapshot, groupFields, heatColor, inputEdgeOf, isEstateRefusal, isHybridKind, isImageUrl, isMeshUrl, isOptionKind, kindScalarFieldsOfEnvelope, laneBoundsFor, laneRelationsFor, laneSurfaceFor, laneViolations, makeLabelSprite, mintViewportId, modOwnedFields, modelChoices, modelSwitchPatch, mountStage3D, optionKeyOf, parseAssetDrop, parseNumericInput, pollRunStageUrl, postManageAction, previewCellIdOf, probeRunGone, quantRowsFor, readAsDataURL, readAsDataURL as readAsDataUrl, releaseViewport, removeToast, resetPickCellsForTests, resolveFamilyKey, resolveValue, resolveValueLayered, rowsFor, scalarKeyOf, schemaEnvelope, seedAxisValues, seedUser, skeletonHelperFor, slotLabelOf, specDefaults, startCardRun, startFlowInlineRun, stopRun, subscribe, titleCaseId, toastHoldMs, turntableTick, unbindEstateRemote, unsetFaceLabel, unsetFaceTip, unwrapRemote, uploadInputFile, useFormSpec, useResolvedForm, useSquareProvider, useToastStore, useViewportIds, variantGroupsContract, variantRows };
