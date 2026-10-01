@@ -102,16 +102,6 @@ export interface OperationStorePort {
   remove?(operationId: string): Promise<void>;
 }
 
-export interface ProvisionTransition {
-  readonly operationId: string;
-  readonly ref: ResourceRef;
-  readonly from: ProvisionState;
-  readonly to: ProvisionState;
-  readonly at: number;
-}
-
-export type ProvisionTransitionListener = (transition: ProvisionTransition) => void;
-
 export interface ProvisioningConfig {
   readonly declaration: DeclarationPort;
   readonly artifactWriter?: ArtifactWriterPort;
@@ -122,7 +112,6 @@ export interface ProvisioningConfig {
   readonly operationStore?: OperationStorePort;
   readonly writeGuard?: () => boolean;
   readonly operationIdFactory?: () => string;
-  readonly onTransition?: ProvisionTransitionListener;
 }
 
 export type ProvisioningServiceDefinition = {
@@ -147,7 +136,6 @@ export type ProvisioningServiceDefinition = {
   stateOf(ref: ResourceRef): ProvisionState;
   operationOf(ref: ResourceRef): ProvisionOperation | undefined;
   isLocked(ref: ResourceRef): boolean;
-  subscribe(listener: ProvisionTransitionListener): () => void;
 };
 
 export type ProvisioningPorts = {

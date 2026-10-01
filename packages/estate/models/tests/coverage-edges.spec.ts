@@ -83,7 +83,6 @@ function provisioning(value: ProvisionResult): ProvisioningServiceDefinition {
     stateOf: () => "unknown",
     operationOf: () => undefined,
     isLocked: () => false,
-    subscribe: () => () => undefined,
   };
 }
 

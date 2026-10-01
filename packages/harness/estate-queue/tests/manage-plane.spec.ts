@@ -214,7 +214,6 @@ const fakeProvisioning: FakeProvisioning = {
   stateOf: (): ProvisionState => "unknown",
   operationOf: () => undefined,
   isLocked: () => false,
-  subscribe: () => () => {},
 };
 
 afterEach(() => {

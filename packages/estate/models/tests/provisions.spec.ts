@@ -132,7 +132,6 @@ function fakeProvisioning(deps: Pick<DoorDeps, "storeRoot" | "provisions" | "fet
     stateOf: () => "unknown",
     operationOf: () => undefined,
     isLocked: () => false,
-    subscribe: () => () => undefined,
   };
 }
 

@@ -27,7 +27,6 @@ import type {
   ModelProvisionPlanItem,
   ProvisionPlan,
   ProvisionPlanItem,
-  ProvisionTransition,
   ResourceRef,
 } from "../src/index.ts";
 
@@ -396,16 +395,12 @@ describe("provisioning service", () => {
   test("records legal service state transitions and registers under provisioning", async () => {
     const store = root();
     const ref = modelRef();
-    const transitions: ProvisionTransition[] = [];
     const plan: ProvisionPlan = { ref, items: [modelItem()] };
     const ctx = new Context();
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
       manager: managerWriting(store),
-      onTransition: (transition): void => {
-        transitions.push(transition);
-      },
     });
     assert.equal(ctx.provisioning.name, "provisioning");
     assert.equal(typeof ctx.provisioning.ensure, "function");
@@ -413,8 +408,8 @@ describe("provisioning service", () => {
     assert.equal(result.state, "active");
     assert.equal(service.stateOf(ref), "active");
     assert.deepEqual(
-      transitions.map((transition) => transition.to),
-      ["acquiring", "verifying", "installed", "active"],
+      service.transitionsOf(ref),
+      ["unknown", "acquiring", "verifying", "installed", "active"],
     );
     assert.equal(service.operationOf(ref)?.outcome, "active");
   });

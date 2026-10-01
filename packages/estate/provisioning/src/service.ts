@@ -35,8 +35,6 @@ import type {
   OperationStorePort,
   ProvisioningConfig,
   ProvisioningServiceDefinition,
-  ProvisionTransition,
-  ProvisionTransitionListener,
 } from "./ports.ts";
 
 interface ResourceRecord {
@@ -315,7 +313,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   private readonly operationIdFactory: () => string;
   private readonly records = new Map<string, ResourceRecord>();
   private readonly locks = new Map<string, LockedOperation>();
-  private readonly listeners = new Set<ProvisionTransitionListener>();
 
   constructor(ctx: Context, config: ProvisioningConfig) {
     super(ctx, "provisioning");
@@ -336,7 +333,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       for (const operation of operations) operation.controller.abort();
       await Promise.allSettled(operations.map((operation) => operation.promise));
     }, "provisioning.lifecycle");
-    if (config.onTransition !== undefined) this.subscribe(config.onTransition);
   }
 
   stateOf(ref: ResourceRef): ProvisionState {
@@ -354,13 +350,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
 
   isLocked(ref: ResourceRef): boolean {
     return this.locks.has(resourceKey(ref));
-  }
-
-  subscribe(listener: ProvisionTransitionListener): () => void {
-    this.listeners.add(listener);
-    return this.ctx.effect(() => () => {
-      this.listeners.delete(listener);
-    }, "provisioning.transition");
   }
 
   async plan(ref: ResourceRef): Promise<ProvisionPlan> {
@@ -951,20 +940,6 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       };
     }
     if (previous !== next) {
-      const transition: ProvisionTransition = {
-        operationId: operationId ?? record.operation?.operationId ?? "none",
-        ref: copyRef(ref),
-        from: previous,
-        to: next,
-        at: Date.now(),
-      };
-      for (const listener of this.listeners) {
-        try {
-          listener(transition);
-        } catch (error: unknown) {
-          this.ctx.logger.error(error instanceof Error ? error : new Error(String(error)));
-        }
-      }
       this.persist(record);
     }
   }

@@ -582,14 +582,10 @@ describe("ProvisioningService public seams", () => {
       save: async (operation: unknown): Promise<void> => { saved.push(operation); throw new Error("save failed"); },
       remove: async (): Promise<void> => undefined,
     };
-    const transitions: string[] = [];
     const service = makeService(basicConfig(plan(ref, [modelItem()]), {
       artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
       operationStore: failingStore,
-      onTransition: (value) => { transitions.push(value.to); if (value.to === "active") throw new Error("listener"); },
     })).service;
-    const unsubscribe = service.subscribe(() => undefined);
-    unsubscribe();
     assert.equal((await service.ensure(ref)).state, "active");
     assert.equal(service.stateOf(ref), "active");
     assert.deepEqual(service.transitionsOf(ref), ["unknown", "acquiring", "active"]);
@@ -923,11 +919,6 @@ describe("ProvisioningService public seams", () => {
     await mutable.ensure(ref);
     fail = true;
     assert.equal((await mutable.inspect(ref)).state, "blocked");
-    const nonErrorListener = makeService(basicConfig(plan(ref, [modelItem()]), {
-      artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
-      onTransition: () => { throw "listener string"; },
-    })).service;
-    assert.equal((await nonErrorListener.ensure(ref)).state, "active");
     const nonErrorStore = makeService(basicConfig(plan(ref, [modelItem()]), {
       artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
       operationStore: { save: async () => { throw "store string"; }, load: async () => null },
@@ -1051,7 +1042,6 @@ describe("ProvisioningService public seams", () => {
         load: async () => null,
         save: async () => new Promise<void>((_resolve, reject) => { rejectSave = reject; }),
       },
-      onTransition: (transition) => { if (transition.to === "active") assert.equal(transition.operationId !== "none", true); },
     })).service;
     await service.ensure(ref);
     rejectSave(new Error("save failed"));

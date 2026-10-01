@@ -139,7 +139,6 @@ const provisioning: Provisioning = {
   stateOf: () => "unknown",
   operationOf: () => undefined,
   isLocked: () => false,
-  subscribe: () => () => {},
 };
 const models = { allDecls: () => [] } as unknown as ManageCtx["models"];
 const ctx = (over: Partial<ManageCtx> = {}): ManageCtx => ({
