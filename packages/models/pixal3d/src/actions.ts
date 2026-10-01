@@ -9,7 +9,7 @@
 // first, then the STRUCT pair).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import { MESH_PIXAL_FOVS } from "@melite/comfyui-card-kit";
 import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from "@melite/comfyui-card-kit";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
@@ -36,19 +36,12 @@ export type MeshParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseMeshFacts(raw: LaneInputsFacts): MeshFacts {
-  const need: Array<keyof MeshFacts> = ['unet', 'vae', 'texture_vae', 'clip_vision', 'background_removal']
-  for (const key of need) {
-    const value = raw[key]
-    if (typeof value !== 'string' || value === '') {
-      throw new Error(`pixal3d mesh: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`)
-    }
-  }
   return {
-    unet: raw.unet as string,
-    vae: raw.vae as string,
-    texture_vae: raw.texture_vae as string,
-    clip_vision: raw.clip_vision as string,
-    background_removal: raw.background_removal as string,
+    unet: requireText(raw, 'unet', 'pixal3d mesh'),
+    vae: requireText(raw, 'vae', 'pixal3d mesh'),
+    texture_vae: requireText(raw, 'texture_vae', 'pixal3d mesh'),
+    clip_vision: requireText(raw, 'clip_vision', 'pixal3d mesh'),
+    background_removal: requireText(raw, 'background_removal', 'pixal3d mesh'),
   }
 }
 

@@ -14,7 +14,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from "@melite/comfyui-card-kit";
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the t2i segment reads. `latent_node` is
@@ -52,13 +52,7 @@ export type T2IParams = {
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
-  const text = (key: string): string => {
-    const value = raw[key];
-    if (typeof value !== "string" || value === "") {
-      throw new Error(`krea-2 t2i: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
-    }
-    return value;
-  };
+  const text = (key: string): string => requireText(raw, key, "krea-2 t2i");
   const node = raw.latent_node;
   if (node !== "EmptySD3LatentImage") {
     throw new Error(

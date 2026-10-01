@@ -8,7 +8,7 @@
 // order (the recipe law). Keys the segment never reads (checkpoint,
 // texture_vae, … the strip shape) ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the compose segment reads. */
 export type MusicFacts = {
@@ -30,13 +30,7 @@ export type MusicParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseMusicFacts(raw: LaneInputsFacts): MusicFacts {
-  const text = (key: keyof MusicFacts): string => {
-    const value = raw[key];
-    if (typeof value !== "string" || value === "") {
-      throw new Error(`music3 compose: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
-    }
-    return value;
-  };
+  const text = (key: keyof MusicFacts): string => requireText(raw, key, "music3 compose");
   return { unet: text("unet"), text_encoder: text("text_encoder"), clip_type: text("clip_type"), vae: text("vae") };
 }
 

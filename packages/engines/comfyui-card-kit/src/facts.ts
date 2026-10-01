@@ -28,6 +28,25 @@ export interface FactsReads {
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
 
+/** The facts door's ONE string extractor (the attainment audit's
+ *  F4: ten hand copies across eight families, already diverged
+ *  into three shapes — two of them casting the very values their
+ *  own loop had just proved). The label names the refusing door
+ *  (family + action) so the message stays the caller's own; the
+ *  wording is pinned by the families' refusal assertions.
+ * @param raw the resolved lane_inputs (family ⊕ variant)
+ * @param key the facts key the door requires
+ * @param label the refusing door's name (family + action), message-prefixed
+ * @returns the non-empty string at key
+ * @throws Error when the key is absent, not a string, or empty */
+export function requireText(raw: LaneInputsFacts, key: string, label: string): string {
+  const value = raw[key]
+  if (typeof value !== 'string' || value === '') {
+    throw new Error(`${label}: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`)
+  }
+  return value
+}
+
 import type { LaneRelations, SamplerEnvelope } from '@melite/contracts/laneRelations'
 
 /** THE RELATION WORDS, wire twin — DERIVED, NOT SPELLED (2026-10-10,

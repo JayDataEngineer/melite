@@ -14,7 +14,7 @@ import { loadTextPair, decodeSave, stackLoras } from "@melite/comfyui-card-kit";
 import { fireLoras, refuseIPAdapterFiring } from "@melite/comfyui-card-kit/guard";
 import { diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the t2i segment reads. `text_encode_node`
  *  is the branch key as a TYPE: this action builds the 2.1 encoder
@@ -49,13 +49,7 @@ export type T2IParams = {
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseT2IFacts(raw: LaneInputsFacts): T2IFacts {
-  const text = (key: string): string => {
-    const value = raw[key];
-    if (typeof value !== "string" || value === "") {
-      throw new Error(`qwen-img-21 t2i: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
-    }
-    return value;
-  };
+  const text = (key: string): string => requireText(raw, key, "qwen-img-21 t2i");
   const node = raw.text_encode_node;
   if (node !== "TextEncodeQwenImage21") {
     throw new Error(

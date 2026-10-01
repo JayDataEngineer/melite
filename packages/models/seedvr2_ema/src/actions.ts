@@ -7,7 +7,7 @@
 // order IS node-id order (the recipe law). The lane_inputs keys this segment never reads
 // (checkpoint, texture_vae, … the strip shape) ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
 /** The closed facts shape the upscale segment reads. */
 export type UpscaleFacts = {
@@ -27,13 +27,7 @@ export type UpscaleParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseUpscaleFacts(raw: LaneInputsFacts): UpscaleFacts {
-  const text = (key: "unet" | "vae"): string => {
-    const value = raw[key];
-    if (typeof value !== "string" || value === "") {
-      throw new Error(`seedvr2_ema upscale: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
-    }
-    return value;
-  };
+  const text = (key: "unet" | "vae"): string => requireText(raw, key, "seedvr2_ema upscale");
   return { unet: text("unet"), vae: text("vae") };
 }
 

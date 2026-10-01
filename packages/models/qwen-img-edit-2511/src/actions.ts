@@ -19,7 +19,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import { loadTextPair, decodeSave, stackLoras, orderedInputImages, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, type TensorRef } from "@melite/comfyui-card-kit";
 import { fireLoras } from "@melite/comfyui-card-kit/guard";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import { EDIT_DIFFUSION_BOUNDS, diffusionParamRows } from "@melite/comfyui-card-kit/paramRows";
 
 /** The closed facts shape the 2511 edit segment reads. */
@@ -45,13 +45,7 @@ export type EditParams = Record<string, unknown>;
  *  @param raw the resolved lane_inputs (family ⊕ variant)
  *  @returns the typed facts the segment factory reads */
 export function parseEditFacts(raw: LaneInputsFacts): EditFacts {
-  const text = (key: string): string => {
-    const value = raw[key];
-    if (typeof value !== "string" || value === "") {
-      throw new Error(`qwen-img-edit-2511 edit: lane_inputs.${key} = ${JSON.stringify(value)} — a non-empty string is required`);
-    }
-    return value;
-  };
+  const text = (key: string): string => requireText(raw, key, "qwen-img-edit-2511 edit");
   const node = raw.text_encode_node;
   if (node !== "TextEncodeQwenImageEditPlus") {
     throw new Error(

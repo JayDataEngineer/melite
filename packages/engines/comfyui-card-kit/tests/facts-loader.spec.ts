@@ -9,7 +9,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { loadFacts } from "../src/facts.ts";
+import { loadFacts, requireText } from "../src/facts.ts";
 
 // TMP NOTE (stroke 13): this tree mints at MODULE scope (before any
 // test exists — onTestFinished can't own it); the global sweep
@@ -183,5 +183,19 @@ describe("loadFacts (the absent-arm slices)", () => {
     const facts = loadFacts(norows, reads);
     assert.deepEqual(facts.models, {});
     assert.deepEqual(facts.extension_node_types, {});
+  });
+});
+
+describe("requireText (the facts door's one string extractor)", () => {
+  it("returns the string at the key", () => {
+    assert.equal(requireText({ unet: "x.safetensors" }, "unet", "fam act"), "x.safetensors");
+  });
+  it("refuses an absent key, a non-string, and an empty string, with the door's own label", () => {
+    for (const raw of [{}, { unet: 7 }, { unet: "" }]) {
+      assert.throws(
+        () => requireText(raw, "unet", "fam act"),
+        /fam act: lane_inputs\.unet = .* — a non-empty string is required/,
+      );
+    }
   });
 });
