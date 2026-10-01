@@ -96,4 +96,3 @@ export {
 // lanes.spec.ts names the StripTable type off the kit face (the lanes'
 // strip tables are StripTable-typed) — re-exported as a type, erased at runtime.
 export type { StripTable } from './graph.ts'
-export { deriveWidgetParams } from './graph.ts'
