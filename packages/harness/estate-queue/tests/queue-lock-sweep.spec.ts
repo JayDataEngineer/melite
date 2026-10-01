@@ -238,6 +238,16 @@ describe("sweepSidecar (the deep resettle)", () => {
     assert.equal(r.touched, true);
     assert.equal(r.wasQueued, true);
   });
+  it("a stopping row resettles to stopped — the requested stop landed, never failed", () => {
+    const doc = { status: "stopping", stages: [{ status: "running" }, { status: "stopping" }] };
+    const r = sweepSidecar(doc, "server.restart");
+    assert.equal(doc["status"], "stopped");
+    const stages = doc["stages"] as { status: string }[];
+    assert.equal(stages[0]["status"], "failed");
+    assert.equal(stages[1]["status"], "stopped");
+    assert.equal(r.touched, true);
+    assert.equal(r.wasQueued, false);
+  });
   it("a settled doc rides untouched", () => {
     const doc = { status: "completed", stages: [{ status: "completed" }] };
     const r = sweepSidecar(doc, "server.restart");

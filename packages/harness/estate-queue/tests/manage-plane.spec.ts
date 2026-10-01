@@ -572,6 +572,11 @@ describe("lifecycle guard + orchestration", () => {
       route(() => json({}));
       const [, env] = await manage({ action: "restart" });
       assert.match(env.detail, /1 active run\(s\) \(run-a\)/);
+      // §5's live-set cure: a STOPPING run is live — the guard
+      // protects a stop-in-flight from restart teardown.
+      runFlow("run-b", "stopping");
+      const [, envS] = await manage({ action: "restart" });
+      assert.match(envS.detail, /2 active run\(s\) \(run-a, run-b\)/);
       const [, env2] = await manage({ action: "restart", force: 1 });
       assert.match(env2.detail, /active run/);
     } finally {

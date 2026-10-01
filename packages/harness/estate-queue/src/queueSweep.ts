@@ -38,6 +38,13 @@ export function sweepSidecar(
       if (rec["status"] === "running" || rec["status"] === "queued") {
         rec["status"] = "failed";
         touched = true;
+      } else if (rec["status"] === "stopping") {
+        // a stopping run at sweep time: the stop was requested and
+        // the dead host IS the stop landing — 'stopped' is the
+        // honest terminal, never 'failed' (the caller asked for
+        // this; §5's producer-side live sets, 2026-10-12).
+        rec["status"] = "stopped";
+        touched = true;
       }
       for (const v of Object.values(rec)) patch(v);
     }

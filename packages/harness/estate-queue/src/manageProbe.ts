@@ -51,7 +51,11 @@ export function activeRuns(): string[] {
         continue;
       }
       const m = STATUS_RE.exec(buf);
-      if (m && (m[1] === "running" || m[1] === "queued")) out.push(name);
+      // 'stopping' is LIVE (the registry's own set, runsRegistry's
+      // teardown + live-age laws): a stop was REQUESTED, the run is
+      // still writing — restart teardown must protect it like any
+      // active render (§5's producer-side live sets, 2026-10-12).
+      if (m && (m[1] === "running" || m[1] === "queued" || m[1] === "stopping")) out.push(name);
     }
   }
   return [...new Set(out)].sort();
