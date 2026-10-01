@@ -29,6 +29,19 @@ export type RunStatus =
   | "stopped"
   | "stopping";
 
+/** The run-status vocabulary as a runtime set — the type's twin, for
+ *  durable-boundary reads that judge an on-disk row's status (the
+ *  type alone cannot answer "is this sidecar's status one of
+ *  ours"). */
+export const RUN_STATUSES: ReadonlySet<string> = new Set<string>([
+  "queued",
+  "running",
+  "completed",
+  "failed",
+  "stopped",
+  "stopping",
+]);
+
 /** One stage row — key order mirrors submit's literal. */
 export interface RunStageRow {
   id: string;

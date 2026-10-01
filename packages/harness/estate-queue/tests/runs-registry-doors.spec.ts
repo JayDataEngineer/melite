@@ -783,6 +783,37 @@ describe("status + stop", () => {
     assert.deepEqual(got["artifacts"], ["run.png"]);
   });
 
+  it("disk fallback refuses a sidecar whose status is not ours (T3: the durable boundary judges it)", async () => {
+    // A hand-edited or foreign _flow.json serving "banana" as a run
+    // status is not a row we serve — the same verdict as
+    // unparseable (undefined), never a fabricated status, never a
+    // fold. The refusal names the roots it searched, so the
+    // operator sees which trees answered; every one of the six
+    // vocabulary spellings still serves from disk.
+    const s = seat();
+    const runId = "run-t3badst123456-00000001";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+      run_id: runId, status: "banana", draft_id: "d1",
+      stages: [{ id: "s1", status: "completed" }],
+      skipped_stages: [], artifacts: ["run.png"], error: "",
+    }));
+    const err = await remote(() => s.svc.status(runId, sig()));
+    assert.equal(err.code, "runs/unknown-run");
+    assert.match(err.message, /run-t3badst123456-00000001/);
+    for (const st of ["queued", "running", "completed", "failed", "stopped", "stopping"]) {
+      writeFileSync(join(dir, "_flow.json"), JSON.stringify({
+        run_id: runId, status: st, draft_id: "d1",
+        stages: [{ id: "s1", status: "completed" }],
+        skipped_stages: [], artifacts: ["run.png"], error: "",
+      }));
+      const got = await s.svc.status(runId, sig());
+      assert.equal(got["status"], st);
+      assert.equal(got["from_disk"], true);
+    }
+  });
+
   it("disk fallback reconstructs a film hero from legacy H3 artifacts", async () => {
     const s = seat();
     const runId = "run-f5h3disk123456-00000005";

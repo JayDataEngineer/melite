@@ -57,6 +57,7 @@ import {
   errText,
   runLogTail,
   settlePersist,
+  RUN_STATUSES,
 } from "./runsTypes.ts";
 import type { RunRecord } from "./runsTypes.ts";
 import { runOne, runEngine as runEngineOf } from "./runsExecute.ts";
@@ -1504,7 +1505,19 @@ export class RunsRuntimeService extends Service {
         try {
           const doc: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));
           if (typeof doc === "object" && doc !== null && !Array.isArray(doc)) {
-            return { row: doc as Record<string, unknown>, root };
+            const row: Record<string, unknown> = doc as Record<string, unknown>;
+            // T3's second residual (2026-10-12): the sidecar's
+            // run-level status rode out verbatim — a hand-edited or
+            // foreign _flow.json served "banana" as a run status.
+            // The durable boundary judges it: a status outside the
+            // six-value vocabulary means the row is not ours to
+            // serve, the same verdict as unparseable (undefined —
+            // never a fabricated status, never a fold). The writer
+            // only ever writes the six, so real sidecars pass.
+            if (typeof row["status"] !== "string" || !RUN_STATUSES.has(row["status"])) {
+              continue;
+            }
+            return { row, root };
           }
         } catch {
           /* absent/unreadable in this root — try the next */
