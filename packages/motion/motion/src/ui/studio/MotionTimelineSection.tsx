@@ -7,7 +7,7 @@
  * destructured props). Behavior is IDENTICAL.
  */
 import type * as React from "react"
-import { Info, Pause, PlayAlt as Play, Plus, RotateCw } from "@melite/card-base/icons"
+import { Info, Pause, PlayAlt as Play, Plus, RotateCw } from '@melite/card-base'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"

@@ -64,9 +64,9 @@
  * every logic line below the imports is verbatim from the monolith.
  */
 import type { CardStage } from "@melite/contracts"
-import { defineShellDeclaration, StudioShell } from "@melite/card-base/shell"
-import { ChevronDown, TriangleAlert } from "@melite/card-base/icons"
-import { cn } from "@melite/card-base/chrome"
+import { defineShellDeclaration, StudioShell } from '@melite/card-base'
+import { ChevronDown, TriangleAlert } from '@melite/card-base'
+import { cn } from '@melite/card-base'
 import { fieldsOf, useFormSpec, type SpecField } from "@melite/card-base"
 import { useMemo } from "react"
 import s from "./studio.module.css"

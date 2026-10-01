@@ -102,6 +102,10 @@ CLIENT_BUNDLES=(
   packages/web/melite-card-view
   packages/web/melite-card-deck
   packages/web/infer-gallery
+  # THE ONE-ROW LAW (operator order 2026-10-01): the card-base graph
+  # row — the studio atoms compile ONCE here; every card client
+  # requires it through the loader's module table.
+  packages/web/card-base
 )
 while IFS= read -r cand; do
   case " ${CLIENT_BUNDLES[*]} " in

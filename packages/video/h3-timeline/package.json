@@ -45,7 +45,10 @@
   "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
-      "platform": "web"
+      "platform": "web",
+      "external": [
+        "@melite/card-base"
+      ]
     },
     "bundle": {
       "patch": "./cordis.patch.yml"

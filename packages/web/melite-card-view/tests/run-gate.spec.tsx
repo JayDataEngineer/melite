@@ -23,7 +23,7 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unbindEstateRemote } from '@melite/card-base'
 import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'

@@ -30,7 +30,7 @@
  */
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { fieldsOfEnvelope } from "@melite/card-base/spec";
+import { fieldsOfEnvelope } from '@melite/card-base/spec';
 import { loadCardDefs } from "@melite/comfyui-cordis";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 

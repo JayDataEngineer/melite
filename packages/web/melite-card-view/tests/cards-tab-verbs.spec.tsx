@@ -12,7 +12,7 @@ import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { resetStageWrites } from "../src/client/draft.ts";
 
 interface Call { method: string; args: Record<string, unknown> }

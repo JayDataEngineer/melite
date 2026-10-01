@@ -18,7 +18,7 @@ import assert from "node:assert/strict"
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react"
 import { RunRecipeEngine } from "../src/ui/studio/RunRecipeEngine.tsx"
 import { schemaEnvelope } from "@melite/card-base"
-import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
+import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base'
 import type { LayerA } from "../src/ui/studio/docModel.ts"
 
 function envelope(): unknown {

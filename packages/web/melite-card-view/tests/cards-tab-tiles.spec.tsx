@@ -10,7 +10,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 

@@ -65,17 +65,17 @@ import * as THREE from "three"
 import {
  Download, X, Camera, FileBox, Box, Palette, Check,
  Layers, RotateCw, Film, ChevronLeft, ChevronRight, PlayAlt as Play, Pause, Crop,
- Frame,} from "@melite/card-base/icons"
+ Frame,} from '@melite/card-base'
 import {
  AZIMUTH_PRESETS, type MotionAzimuth, type MotionNpz,
  soma77ToCoco18, azimuthCameraPos,
 } from "@melite/formats"
 import { renderOpenPoseCanvas } from "@melite/formats"
 import { Input } from "@deepseek-ai/dsh-client-ui-primitives"
-import { useToastStore } from "@melite/card-base/toast"
+import { useToastStore } from '@melite/card-base'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { Tip } from "./kit"
-import { cn } from "@melite/card-base/chrome"
+import { cn } from '@melite/card-base'
 import s from "./export-dialog.module.css"
 
 export type ThreeCtx = {

@@ -22,7 +22,7 @@
  * against fresh truth. The stuck is structurally impossible: a
  * moved bench costs one silent rebase, never a bricked tab.
  */
-import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-base/estate-remote'
+import { estateRemote, unwrapRemote, type BenchNamespace } from '@melite/card-base'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 
 // THE SESSIONKEY LAW (stroke 81, the operator's burn): no verb may

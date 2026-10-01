@@ -16,13 +16,13 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 import type * as React from "react"
 import * as THREE from "three"
 import type { CardStage } from "@melite/contracts"
-import { isMeshUrl } from "@melite/card-base/square"
+import { isMeshUrl } from '@melite/card-base'
 import {
   deformFrame, loadGlbSkin, loadMotionNpz, loadSomaSkin, NotSomaxGlbError,
   precomputeDeformedVertsChunked, type MotionNpz, type SomaSkin,
 } from "@melite/formats"
 import { useMotionThumbStore } from "./kit"
-import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL } from "@melite/card-base/chrome"
+import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL } from '@melite/card-base'
 import { MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
 import type { ThreeCtx } from "./MotionExportDialog"
 import type { ToastFn } from "./useMotionStage"

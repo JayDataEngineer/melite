@@ -15,7 +15,7 @@ import * as THREE from 'three'
 import {
   DEFAULT_STAGE_RECT, MotionExportDialog, type StageRect,
 } from '../src/ui/studio/MotionExportDialog.tsx'
-import { useToastStore } from '@melite/card-base/toast'
+import { useToastStore } from '@melite/card-base'
 import { act, cleanup19, render19 } from './harness.tsx'
 
 const SHOT = 'data:image/png;base64,SHOT'

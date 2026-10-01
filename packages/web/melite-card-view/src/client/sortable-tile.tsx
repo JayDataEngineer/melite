@@ -4,7 +4,7 @@
 
 import { createElement as h } from 'react'
 import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
-import { titleCaseId } from '@melite/card-base/spec'
+import { titleCaseId } from '@melite/card-base'
 import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
 import { rowRunning, type CardRowLineTabRow } from './bench-row.ts'

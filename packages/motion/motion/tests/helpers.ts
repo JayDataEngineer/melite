@@ -10,7 +10,7 @@ import { createRoot, type Root } from 'react-dom/client'
 import type { CardStage } from '@melite/contracts'
 
 import { MotionCardEditor } from '../src/ui/studio/component.tsx'
-import { useToastStore } from '@melite/card-base/toast'
+import { useToastStore } from '@melite/card-base'
 import { schemaEnvelope } from '@melite/card-base'
 import { SKIN_URL, MOTION_URL, skinResponse, motionResponse } from './fixtures.ts'
 import { runCompiledGeneration } from '@melite/catalog'

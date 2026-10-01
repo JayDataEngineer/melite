@@ -16,7 +16,7 @@
  * fakes.calls entries {method, args}.
  */
 import { afterEach, expect, test, vi } from 'vitest'
-import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unbindEstateRemote } from '@melite/card-base'
 import { mountEstateFakes } from './estate-harness.ts'
 
 import { reconcileBenchRuns } from '../src/client/cards-resource.ts'

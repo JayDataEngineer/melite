@@ -13,7 +13,7 @@
 // voice, matched by the client's CAS matcher); the re-read serves
 // the CURRENT rev from benchDoc; transport deaths queue in `throws`.
 import { describe, expect, test, afterEach, vi } from 'vitest'
-import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unbindEstateRemote } from '@melite/card-base'
 import { mountEstateFakes } from './estate-harness.ts'
 import { addStageWire, removeStageWire } from '../src/client/add-stage.ts'
 

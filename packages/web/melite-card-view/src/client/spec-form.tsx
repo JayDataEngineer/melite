@@ -43,7 +43,7 @@ export {
   seedAxisValues,
   variantGroupsContract,
 } from '@melite/card-base'
-export { fetchCardCatalog, fetchFormSpec } from '@melite/card-base/wire'
+export { fetchCardCatalog, fetchFormSpec } from '@melite/card-base'
 export {
   type SquareHost,
   type SquareWire,
@@ -52,10 +52,10 @@ export {
   SpecAtom,
   ModelAxes,
   CardForm as SpecForm,
-} from '@melite/card-base/form'
+} from '@melite/card-base'
 
 // THE MOD SYSTEM — core (the base package owns it; every surface
 // renders it through the constructor, none wires it)
-export { ModifiersSection } from '@melite/card-base/mods'
-export type { ModifiersSectionProps } from '@melite/card-base/mods'
+export { ModifiersSection } from '@melite/card-base'
+export type { ModifiersSectionProps } from '@melite/card-base'
 export { modOwnedFields, isOptionKind } from '@melite/card-base'

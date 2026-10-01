@@ -18,7 +18,10 @@
       "inject": [
         "@deepseek-ai/dsh-client-connection"
       ],
-      "platform": "web"
+      "platform": "web",
+      "external": [
+        "@melite/card-base"
+      ]
     }
   },
   "scripts": {

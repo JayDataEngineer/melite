@@ -9,7 +9,7 @@
 // rejects). Call records are fakes.calls entries {method, args}
 // with the namespace positional params.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { mountEstateFakes } from "./estate-harness.ts";
 import {
   fetchBench,

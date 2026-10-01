@@ -12,15 +12,15 @@ import type * as React from "react"
 import {
   Download, EyeAlt as Eye, EyeOff, ImagePlus, Link2,
   Move, PersonStanding, RefreshCw, RotateCcw, Target, X,
-} from "@melite/card-base/icons"
+} from '@melite/card-base'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SpecPanel } from "@melite/card-base"
-import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from "@melite/card-base/square"
+import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base'
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
 import { Tip } from "./kit"
-import { cn } from "@melite/card-base/chrome"
+import { cn } from '@melite/card-base'
 import s from "./component.module.css"
 import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
 import type { ToastFn } from "./useMotionStage"

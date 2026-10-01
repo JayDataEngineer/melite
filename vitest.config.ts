@@ -181,6 +181,16 @@ export default defineConfig({
           // shared boot ONCE per worker, exactly like the estate's
           // cardsRegistry does at its compose seat.
           setupFiles: [PROXY_SETUP],
+          // THE ONE-ROW LAW: web-kit's client-plane stores (catalog
+          // contract stores) import the card-base ROOT, whose chrome
+          // face reaches dsh-client-ui-primitives' .module.css — the
+          // same inline the dom/deck projects carry, else node's raw
+          // require dies on the css extension.
+          server: {
+            deps: {
+              inline: [/@deepseek-ai\/dsh-client-ui-primitives/],
+            },
+          },
           include: [
             'packages/*/*/tests/**/*.spec.ts',
             // Singular test/ dirs (melite-tools, card-deck host-routes).

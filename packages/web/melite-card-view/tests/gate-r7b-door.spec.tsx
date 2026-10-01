@@ -15,7 +15,7 @@ import { AddCardDoor } from "../src/client/add-card-door.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 
 interface Call { method: string; args: Record<string, unknown> }
 

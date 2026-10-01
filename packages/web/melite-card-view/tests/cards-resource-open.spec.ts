@@ -19,7 +19,7 @@
 // differ between guard and entry; an aborted signal skips the loop
 // and never enters sleep.
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { mountEstateFakes } from "./estate-harness.ts";
 import type { EstateFakesOptions } from "./estate-harness.ts";
 import { openCardsResource } from "../src/client/cards-resource.ts";

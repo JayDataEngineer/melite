@@ -5,6 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./client": "./lib/client.js",
     "./slots": "./src/slots.ts",
     "./spec": "./src/spec.ts",
     "./form": "./src/form.tsx",
@@ -60,5 +61,13 @@
     "@melite/formats": "workspace:*",
     "clsx": "*",
     "three": "^0.184.0"
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "external": [
+        "@deepseek-ai/dsh-api-gateway/client"
+      ]
+    }
   }
 }

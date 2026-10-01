@@ -16,7 +16,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unbindEstateRemote } from '@melite/card-base'
 import { resetStageWrites } from '../src/client/draft.ts'
 import { createElement } from 'react'
 

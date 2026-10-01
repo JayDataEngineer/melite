@@ -20,7 +20,8 @@
       ],
       "platform": "web",
       "external": [
-        "@deepseek-ai/dsh-api-gateway/client"
+        "@deepseek-ai/dsh-api-gateway/client",
+        "@melite/card-base"
       ]
     }
   },

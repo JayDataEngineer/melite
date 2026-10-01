@@ -5,11 +5,11 @@ export {
   isImageUrl, PaneHeader, PaneShell, Skeleton, Tip, WirePickerModal,
 } from "@melite/card-base"
 export type { WirePickerModalProps, PaneHeaderVariant } from "@melite/card-base"
-export { ASSET_DRAG_MIME } from "@melite/card-base/chrome"
-export { ViewportAnchor, ViewportFrame } from "@melite/card-base/preview"
+export { ASSET_DRAG_MIME } from '@melite/card-base'
+export { ViewportAnchor, ViewportFrame } from '@melite/card-base'
 export type {
   ViewportAnchorDock, ViewportAnchorProps, ViewportFrameProps,
-} from "@melite/card-base/preview"
+} from '@melite/card-base'
 
 const THUMB_STORAGE_KEY = "motion-card-thumbnails"
 

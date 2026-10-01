@@ -5,7 +5,7 @@
 import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage'
 import { createElement as h, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Button, IconPlayOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
-import { titleCaseId } from '@melite/card-base/spec'
+import { titleCaseId } from '@melite/card-base'
 import css from './card.module.css'
 import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchFormSpec, fieldsOf } from './spec-form.tsx'

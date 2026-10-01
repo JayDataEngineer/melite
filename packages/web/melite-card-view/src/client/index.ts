@@ -51,7 +51,7 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
-import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base/estate-remote'
+import { bindEstateRemoteFromRemote, type EstateNamespaces } from '@melite/card-base'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
 

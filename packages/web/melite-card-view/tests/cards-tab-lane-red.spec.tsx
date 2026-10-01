@@ -15,7 +15,7 @@ import { CardsTab } from "../src/client/cards-tab-body.tsx";
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { resetStageWrites } from "../src/client/draft.ts";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { schemaEnvelope } from "../src/client/spec-form.tsx";
 
 // the 2.1 served shape (discovery's doc): the family's lanes row

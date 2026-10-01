@@ -13,7 +13,7 @@
  * onRun (never an automatic re-fire).
  */
 import { createElement as h, useState } from 'react'
-import { postManageAction } from '@melite/card-base/wire'
+import { postManageAction } from '@melite/card-base'
 import css from './card.module.css'
 import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue.ts'
 

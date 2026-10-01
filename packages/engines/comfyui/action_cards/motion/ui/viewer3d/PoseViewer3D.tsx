@@ -43,7 +43,7 @@ import {
   type ReferenceMeshSpec,
   type CameraFraming as Framing,
 } from "./poseStage"
-import type { StageLayers } from "@melite/card-base/preview"
+import type { StageLayers } from '@melite/card-base'
 
 export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage"
 export { framedCameraPos }

@@ -5,8 +5,8 @@
  */
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import { SpecAtom, Tip, type SpecField } from "@melite/card-base"
-import { cn } from "@melite/card-base/chrome"
-import { ChevronLeft } from "@melite/card-base/icons"
+import { cn } from '@melite/card-base'
+import { ChevronLeft } from '@melite/card-base'
 import s from "./studio.module.css"
 import { VIDEO_TIMELINE_TRACKS } from "./docModel"
 import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel"

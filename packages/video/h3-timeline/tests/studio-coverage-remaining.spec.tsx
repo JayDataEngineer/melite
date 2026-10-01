@@ -10,7 +10,7 @@ import { hydrateLayerA } from "../src/ui/studio/docHydrate.ts"
 import type { CardStage } from "@melite/contracts"
 import type { DocAudioClip, DocCall, LayerA } from "../src/ui/studio/docModel.ts"
 import type { TimelineSelection } from "../src/ui/studio/useViewSelection.ts"
-import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
+import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base'
 
 afterEach(() => {
   cleanup()

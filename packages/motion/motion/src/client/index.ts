@@ -21,7 +21,7 @@
 import { createElement as h } from 'react'
 import type {} from '@deepseek-ai/dsh-client-ui-renderer/client'
 import { runCompiledGeneration } from '@melite/catalog'
-import { defineStageViewRegistration } from '@melite/card-base/slots'
+import { defineStageViewRegistration } from '@melite/card-base'
 import {
   projectStageView,
   projectUpstreamStages,

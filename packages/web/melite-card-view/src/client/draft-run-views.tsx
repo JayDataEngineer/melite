@@ -6,7 +6,7 @@ import { Button, IconStopFillRegular, Pill, StateDot } from '@deepseek-ai/dsh-cl
 import type { StageViewOwnerProps } from './types.ts'
 import css from './card.module.css'
 import { useCallback } from 'react'
-import { titleCaseId } from '@melite/card-base/spec'
+import { titleCaseId } from '@melite/card-base'
 import { mediaUrl } from './draft.ts'
 import { benchSessionKey, restoreRunToBench } from './cards-resource.ts'
 import type { CardsDraftValue, CardsRunValue, BenchStageView, CardsBenchValue } from './cards-resource.ts'

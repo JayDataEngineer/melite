@@ -45,7 +45,10 @@
   "name": "@melite/3d-img-to-mesh",
   "dsh": {
     "client": {
-      "platform": "web"
+      "platform": "web",
+      "external": [
+        "@melite/card-base"
+      ]
     }
   }
 }

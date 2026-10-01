@@ -11,7 +11,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
 import { mountEstateFakes } from "./estate-harness.ts";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 
 interface Call { method: string; args: Record<string, unknown> }
 interface RunStage { id: string; status: string; url?: string }

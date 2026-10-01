@@ -10,7 +10,7 @@
 // {method, args} with the namespace positional params ({sessionKey,
 // doc}); the bench/get entry carries no doc.
 import { describe, expect, test, afterEach, vi } from "vitest";
-import { unbindEstateRemote } from "@melite/card-base/estate-remote";
+import { unbindEstateRemote } from '@melite/card-base';
 import { mountEstateFakes } from "./estate-harness.ts";
 import {
   addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire,

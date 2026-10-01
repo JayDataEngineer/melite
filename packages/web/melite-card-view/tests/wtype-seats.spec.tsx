@@ -13,7 +13,7 @@ import { render, screen } from '@testing-library/react'
 import { createElement, useState } from 'react'
 import { WTYPE_SEATS } from '@melite/contracts/extraKeys'
 import { SpecForm, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
-import type { SchemaRef } from '@melite/card-base/spec'
+import type { SchemaRef } from '@melite/card-base'
 
 // one minimal served doc per wtype: a single root field carrying
 // the wtype, options where the atom needs them

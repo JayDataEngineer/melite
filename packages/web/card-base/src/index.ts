@@ -12,9 +12,24 @@
  * automatically"). Cards ship client halves only as TAKEOVERS —
  * claims into the seams.
  *
- * This is a LIBRARY package, not a cordis plugin: no host apply, no
- * dsh.client manifest — the browser loads whatever the composition
- * (the card-view tab) imports from here.
+ * No cordis host apply — the package registers no node-side plugin
+ * of its own; it mounts in a profile purely as the browser graph
+ * row below.
+ *
+ * THE ONE-ROW LAW (operator order, 2026-10-01: "OUR CARD SHOULD NOT
+ * DIFFER AT ALL FROM DSH-WEBVIEW... BOTH INTERFACES ON THE SAME
+ * SYSTEM"): this package is ONE module-table graph row, the mirror
+ * of DSH's platform-seed ui atoms (getStaticModules,
+ * dsh-client-web/src/seed.ts — every bundle sees the same
+ * instance). The browser face compiles ONCE into lib/client.js and
+ * every card client REQUIRES it (`dsh.client.external` — the
+ * loader's require, manifest.ts:15-24); no consumer bundle may
+ * inline a second compiled copy. The root below therefore carries
+ * the full client-consumed surface — client-plane code imports the
+ * BARE specifier only (the loader serves the package row, never a
+ * subpath: stripClientSuffix strips only '/client'). Node-plane
+ * consumers keep the subpaths (exports resolve them normally);
+ * they avoid the root's css faces, which node cannot execute.
  */
 export * from './spec.ts'
 export * from './layout.tsx'
@@ -28,3 +43,12 @@ export * from './form.tsx'
 export * from './use-resolved.ts'
 export * from './stage3d.ts'
 export * from './studio.tsx'
+export * from './icons.tsx'
+export * from './chrome.ts'
+export * from './toast.tsx'
+export * from './toastStore.ts'
+export * from './preview.tsx'
+export * from './estate-remote.ts'
+export * from './runs-policy.ts'
+export * from './media-library.ts'
+export * from './shell.tsx'

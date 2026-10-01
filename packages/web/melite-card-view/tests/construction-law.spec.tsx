@@ -18,7 +18,7 @@ import { createElement } from 'react'
 import { CardForm, schemaEnvelope } from '@melite/card-base'
 import type { FormSpecDoc, SpecField } from '@melite/card-base'
 import { mountEstateFakes } from './estate-harness.ts'
-import { unbindEstateRemote } from '@melite/card-base/estate-remote'
+import { unbindEstateRemote } from '@melite/card-base'
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import type { CardsBenchValue } from '../src/client/CardsTab.tsx'
 

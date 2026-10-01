@@ -13,7 +13,7 @@
 import { describe, expect, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react"
-import { bindEstateRemote, unbindEstateRemote } from "@melite/card-base/estate-remote"
+import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base'
 import { FirstFrameSlot, SeamControls } from "../src/ui/studio/CallFrameSubcard.tsx"
 
 /** THE MEDIA BIND (the one-lane law): the slot's From-media rows
