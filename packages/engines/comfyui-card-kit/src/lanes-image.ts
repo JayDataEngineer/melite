@@ -2,6 +2,7 @@ import { laneBlank } from '@melite/contracts/laneRelations'
 import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
 import type { NodeRef, PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
+import { laneStringOf } from './facts.ts'
 import { loadTextPair, decodeSave, stackLoras, stackControlNets } from './blocks/render-kit.ts'
 import { fireLoras, fireControlNets, refuseIPAdapterFiring } from './mods/guard.ts'
 import { mintSeed } from './graph-helpers.ts'
@@ -197,7 +198,11 @@ export function refuseImageEditFiring(p: Record<string, unknown>, model?: ModelF
   // LANPAINT inline-inpaint arm (its sampler is that family's
   // flavor). auto+mask on 2.1 still refuses field-named — but the
   // voice now teaches the fix: state crop_stitch.
-  const lanpaintLane = model?.lane_inputs?.text_encode_node !== 'TextEncodeQwenImage21'
+  // F7 (2026-10-12): the lane pin reads through the facts door's
+  // typed reader — an absent, non-string, or empty
+  // text_encode_node is NOT the 2.1 lane (refuse), never an
+  // unchecked unknown slipping through the comparison.
+  const lanpaintLane = laneStringOf(model?.lane_inputs ?? {}, 'text_encode_node') !== 'TextEncodeQwenImage21'
   fire('input_mask', maskStated && effectiveMode === 'auto' && !lanpaintLane,
     'the lanpaint arm rides the 2511 lane only — for a region on this lane state mask_mode crop_stitch (the region detailer), or switch the model lane')
   // width/height are the plain 2.1 edit's TARGET-resolution knobs;

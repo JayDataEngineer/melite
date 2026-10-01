@@ -297,6 +297,36 @@ describe("the 2.1 edit lane — the lanpaint region never lies", () => {
         && err.message.includes("2511"),
     );
   });
+  it("an absent or non-string text_encode_node reads as NO 2.1 lane pin (F7: the typed reader judges garbage like absence — the lanpaint arm stays permitted, exactly as on the 2511 lane)", () => {
+    // the facts door's laneStringOf: absent, non-string, or empty
+    // text_encode_node is undefined — never 'TextEncodeQwenImage21'
+    // — so the firing gate treats a malformed pin like a 2511
+    // model: input_mask + auto rides the lanpaint arm rather than
+    // refusing. The 2.1-pin refusal is the :288 row above.
+    const garbage = {
+      id: DECL.id, card: "image-edit", defaults: {}, card_knobs: [], variants: [],
+      variant_groups: [], outputs: [], mods: [],
+      lane_inputs: { text_encode_node: 21, unet: "u.safetensors" },
+    } as unknown as ModelFacts;
+    const missing = {
+      id: DECL.id, card: "image-edit", defaults: {}, card_knobs: [], variants: [],
+      variant_groups: [], outputs: [], mods: [],
+      lane_inputs: { unet: "u.safetensors" },
+    } as unknown as ModelFacts;
+    const empty = {
+      id: DECL.id, card: "image-edit", defaults: {}, card_knobs: [], variants: [],
+      variant_groups: [], outputs: [], mods: [],
+      lane_inputs: { text_encode_node: "", unet: "u.safetensors" },
+    } as unknown as ModelFacts;
+    for (const facts of [garbage, missing, empty, FACTS_2511]) {
+      assert.doesNotThrow(() =>
+        refuseImageEditFiring(
+          { prompt: "fix the badge", image1: "in.png", input_mask: "mask.png", ...SOLVER21 },
+          facts,
+        ),
+      );
+    }
+  });
   it("a single-entry mask bag refuses the same (the bag's region counts as stated)", () => {
     const g = new GraphBuilder({});
     const paramsBag = { prompt: "fix the badge", image1: "in.png", mask: [{ input_mask: "mask.png" }], ...SOLVER21 };

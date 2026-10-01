@@ -39,6 +39,20 @@ export type LaneInputsFacts = Record<string, unknown>
  * @param label the refusing door's name (family + action), message-prefixed
  * @returns the non-empty string at key
  * @throws Error when the key is absent, not a string, or empty */
+/** The lane facts' ONE typed string reader (the attainment audit's
+ *  F7, 2026-10-12): lane_inputs is Record<string, unknown> by
+ *  declaration, and the region law at lanes-image.ts reads
+ *  text_encode_node through an unchecked unknown. Absent, non-string,
+ *  or empty read as undefined — a REFUSAL-grade absence, never a
+ *  silent default.
+ * @param raw the resolved lane_inputs (family + variant)
+ * @param key the facts key to read
+ * @returns the non-empty string at key, or undefined */
+export function laneStringOf(raw: LaneInputsFacts, key: string): string | undefined {
+  const value = raw[key]
+  return typeof value === 'string' && value !== '' ? value : undefined
+}
+
 export function requireText(raw: LaneInputsFacts, key: string, label: string): string {
   const value = raw[key]
   if (typeof value !== 'string' || value === '') {

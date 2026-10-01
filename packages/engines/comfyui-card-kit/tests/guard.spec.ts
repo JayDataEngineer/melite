@@ -7,6 +7,7 @@
 // LOUD refusals matched with /regex/.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { laneStringOf } from "../src/facts.ts";
 import {
   assertModUse,
   assertPackFate,
@@ -94,5 +95,18 @@ describe("assertPackFate (boot gate (d))", () => {
       () => assertPackFate("nope"),
       /pack 'nope' is boarded but has no fate in this plane/,
     );
+  });
+});
+
+describe("the facts door's typed string reader (F7: laneStringOf)", () => {
+  it("reads a non-empty string, and judges absent, non-string, and empty as undefined — never a silent default", () => {
+    const raw = { a: "keep", b: 21, c: "", d: null, e: undefined };
+    assert.equal(laneStringOf(raw, "a"), "keep");
+    assert.equal(laneStringOf(raw, "b"), undefined, "a non-string is undefined, not its stringified form");
+    assert.equal(laneStringOf(raw, "c"), undefined, "empty is undefined");
+    assert.equal(laneStringOf(raw, "d"), undefined);
+    assert.equal(laneStringOf(raw, "e"), undefined);
+    assert.equal(laneStringOf(raw, "absent"), undefined);
+    assert.equal(laneStringOf({}, "a"), undefined);
   });
 });
