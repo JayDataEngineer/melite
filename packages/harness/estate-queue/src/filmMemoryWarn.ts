@@ -87,18 +87,17 @@ export function filmMemoryWarn(load: FilmLoad, mem: EngineMem | null): string | 
 
 /** Live VRAM off the engine (primary device serves the film).
  *  Null on ANY failure (unreachable, unparseable, no devices) —
- *  the caller skips the warn, never fails admission. The abort
- *  timer is fenced and cleared (no timer seat on this path — the
- *  manage plane's seat does not reach the start door). */
+ *  the caller skips the warn, never fails admission. The fuse is
+ *  dsh-timeout's deadline (no timer seat on this path — the manage
+ *  plane's seat does not reach the start door). */
 export async function fetchEngineMem(
   baseUrl: string,
   fetchFn: typeof fetch = globalThis.fetch,
   timeoutMs = 5000,
 ): Promise<EngineMem | null> {
-  const ctrl = new AbortController();
-  const t = setTimeout((): void => ctrl.abort(), timeoutMs);
+  const dl = deadline(undefined, timeoutMs, "ENGINE_MEM");
   try {
-    const r = await fetchFn(baseUrl.replace(/\/+$/, '') + '/system_stats', { signal: ctrl.signal });
+    const r = await fetchFn(baseUrl.replace(/\/+$/, '') + '/system_stats', { signal: dl.signal });
     const stats = (await r.json()) as Record<string, unknown>;
     const devices = stats['devices'];
     if (!Array.isArray(devices) || devices.length === 0) return null;
@@ -110,6 +109,6 @@ export async function fetchEngineMem(
   } catch {
     return null;
   } finally {
-    clearTimeout(t);
+    dl[Symbol.dispose]();
   }
 }

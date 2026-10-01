@@ -383,14 +383,10 @@ export class ComfyUiManagerHttpClient {
       throw new ManagerClientError("cancelled", "ComfyUI-Manager request was cancelled", { method, path });
     }
     const timeoutMs = positiveInteger(options.timeoutMs, this.requestTimeoutMs, "request timeoutMs");
-    const controller = new AbortController();
-    let timedOut = false;
-    const onAbort = (): void => controller.abort(options.signal?.reason);
-    options.signal?.addEventListener("abort", onAbort, { once: true });
-    const timer = setTimeout(() => {
-      timedOut = true;
-      controller.abort();
-    }, timeoutMs);
+    // The fuse is dsh-timeout's deadline (AbortSignal.any + a TimeoutReason
+    // the classification below reads back); the cancelled/timeout/transport
+    // voices are ours.
+    const dl = deadline(options.signal, timeoutMs, "COMFY_MANAGER_REQUEST");
     try {
       let response: Response;
       try {
@@ -398,7 +394,7 @@ export class ComfyUiManagerHttpClient {
           method,
           headers: encodedBody === undefined ? undefined : { "content-type": options.bodyFormat === "text" ? "text/plain" : "application/json" },
           body: encodedBody,
-          signal: controller.signal,
+          signal: dl.signal,
         });
       } catch (error: unknown) {
         if (signalAborted(options.signal)) {
@@ -408,7 +404,7 @@ export class ComfyUiManagerHttpClient {
             cause: error,
           });
         }
-        if (timedOut) {
+        if (timeoutOf(dl.signal, "COMFY_MANAGER_REQUEST")) {
           throw new ManagerClientError(
             "request-timeout",
             `ComfyUI-Manager request exceeded ${String(timeoutMs)} ms`,
@@ -439,7 +435,7 @@ export class ComfyUiManagerHttpClient {
           cause: error,
         });
       }
-      if (timedOut) {
+      if (timeoutOf(dl.signal, "COMFY_MANAGER_REQUEST")) {
         throw new ManagerClientError(
           "request-timeout",
           `ComfyUI-Manager request exceeded ${String(timeoutMs)} ms`,
@@ -452,8 +448,7 @@ export class ComfyUiManagerHttpClient {
         { method, path, cause: error },
       );
     } finally {
-      clearTimeout(timer);
-      options.signal?.removeEventListener("abort", onAbort);
+      dl[Symbol.dispose]();
     }
   }
 }
