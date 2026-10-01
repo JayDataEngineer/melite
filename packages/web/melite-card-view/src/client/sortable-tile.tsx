@@ -9,12 +9,13 @@ import css from './card.module.css'
 import { CARD_DRAG_MIME, ASSET_DRAG_MIME, parseAssetDrop } from './dnd-payloads.ts'
 import { rowRunning, type CardRowLineTabRow } from './bench-row.ts'
 
-/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
- *  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
- *  bold title, service Pill, live StateDot, clipped prompt. ONE card
- *  system, both planes — the tab renders the SAME row the chat
- *  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
- *  .prompt classes below are the flow block's own). */
+/** THE CARD TILE — its own face, not the chat row's grammar: a
+ *  square preview cell (artifact thumb, video, audio bars, or the
+ *  kind-initial fallback) over a caption column (title, service,
+ *  upstream tag, clipped prompt). It reads the same folded
+ *  CardRowLineTabRow the chat plane distills — one vocabulary, two
+ *  faces; the running state is the spinner + progress pill, never a
+ *  StateDot. */
 /** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
  *  ported to the tab, DSH native: the visual card (INNER) is ONE flex
  *  column with exactly two flow children —
@@ -202,8 +203,10 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
             row.prompt !== null ? h('span', { className: css.tilePrompt }, row.prompt) : null,
           ),
           // THE FAILURE FACE: the run's own refusal text under the
-          // caption — a failed run never again reads as silence.
-          row.error !== null && row.status === 'failed'
+          // caption — a failed run never again reads as silence. The
+          // row's status is the folded CardStatus ('error' covers both
+          // the estate's 'failed' and the run record's 'error').
+          row.error !== null && row.status === 'error'
             ? h('span', { className: css.runError, 'data-testid': 'tile-run-error', title: row.error },
                 row.error.length > 140 ? row.error.slice(0, 140) + '…' : row.error)
             : null,

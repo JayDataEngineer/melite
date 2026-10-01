@@ -30,7 +30,7 @@ import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
-import { isTerminalStatus } from '@melite/contracts/stageView'
+import { isTerminalStatus, statusOf } from '@melite/contracts/stageView'
 import { benchDraftIdOf } from '@melite/contracts/benchStage';
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
@@ -329,9 +329,15 @@ async function runBench(
   for (const row of rows) {
     const stageId = row['id'] as string
     const card = typeof row['card'] === 'string' && row['card'] !== '' ? row['card'] as string : ''
-    if (row['runStatus'] === 'done') {
-      pass.push({ stage: stageId, card, skipped: 'done' })
-      continue
+    // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
+    // re-ran every stage the estate settles 'completed' and every
+    // cached/reused row.
+    {
+      const folded = statusOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
+      if (folded === 'done' || folded === 'cached' || folded === 'reused') {
+        pass.push({ stage: stageId, card, skipped: 'done' })
+        continue
+      }
     }
     if (card === '') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId,
@@ -419,7 +425,9 @@ async function observeAndAttribute(
       // must match the stream's — runFinished's law); transport
       // hiccups retry on cadence.
       const re = remoteErrorOf(e)
-      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: 'unknown', url: '', artifacts: [] }
+      // folded like every other arm of this poller: unknown-outcome
+      // is the 'stopped' CardStatus by the owner's contract
+      if (re !== null && re !== undefined && re.code === 'runs/unknown-run') return { status: statusOf('unknown'), url: '', artifacts: [] }
       await sleepAbort(1500, signal)
       continue
     }
@@ -478,14 +486,21 @@ async function observeAndAttribute(
       if (url !== '' && !assetUrls.includes(url)) assetUrls.unshift(url)
       if (Object.keys(artifacts).length > 0) result['artifacts'] = artifacts
       if (assetUrls.length > 0) result['assetUrls'] = assetUrls
-      const terminal = status === 'completed' ? 'done' : status
+      // THE FOLD (2026-10-01): the old ternary translated ONLY
+      // 'completed' and passed every other word verbatim, so cached,
+      // reused, skipped, stale and live landed on bench rows as words
+      // nothing translated. One fold classifies every word.
+      const terminal = statusOf(status)
       try {
         await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
           { runStatus: terminal, result }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping — the run's own outcome is the answer */ }
       return { status: terminal, url, artifacts: arts }
     }
-    const live = status === 'queued' || status === 'pending' ? 'queued' : 'running'
+    // the queue-feedback stamp, classified by the fold (queued or
+    // still-waiting stamps queued; 'live'/'stopping' stamp running)
+    const foldedLive = statusOf(status)
+    const live = foldedLive === 'queued' || foldedLive === 'pending' ? 'queued' : 'running'
     if (live !== lastLive) {
       lastLive = live
       try {

@@ -7244,8 +7244,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				case "success": return "done";
 				case "failed":
 				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
 				case "running":
 				case "live": return "running";
+				case "pending":
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -7267,6 +7272,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  here. */
 		function isTerminalStatus(value) {
 			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -7398,14 +7406,24 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
 				"failed",
 				"stopped",
 				"error",
-				"unknown"
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
 			]);
 		}));
 		//#endregion
@@ -7806,11 +7824,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return isTerminalStatus(status);
 		}
 		function rowStatus(live, doc) {
-			const s = live ?? doc ?? "ready";
-			if (s === "running" || s === "queued" || s === "pending") return s === "running" ? "running" : "queued";
-			if (s === "completed" || s === "done" || s === "cached" || s === "succeeded") return "done";
-			if (s === "failed" || s === "error") return "failed";
-			return "ready";
+			return statusOf(live ?? doc ?? "");
 		}
 		/** Distill the draft (+ optional live run status) into card rows. */
 		function cardRows(doc, live) {
@@ -7850,11 +7864,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			});
 			return fields;
 		}
-		/** Coerce an edited atom value back to the param's wire type. */
+		/** Coerce an edited atom value back to the param's wire type. The
+		*  numeric leg delegates to the spec owner's parseNumericInput —
+		*  an unparseable or emptied input keeps the field's current value
+		*  (the owner's own law; clearing the box is not a zero edit). */
 		function coerceEdit(field, next) {
 			if (field.atom === "number") {
-				const n = Number(next);
-				return Number.isFinite(n) ? n : field.value;
+				const n = (0, _melite_card_base_client.parseNumericInput)(next);
+				return n !== void 0 ? n : field.value;
 			}
 			return next;
 		}
@@ -8053,8 +8070,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  a verdict this client cannot render becomes a terminal one it
 		*  can, never an unknown word stamped onto a row. */
 		function tileStatusFromVerdict(verdict) {
+			if (verdict === "gone") return "stopped";
+			if (isLiveRunStatus(verdict)) return "running";
 			const folded = statusOf(verdict);
-			if (folded === "running" || folded === "queued") return "running";
 			if (folded === "done" || folded === "cached" || folded === "skipped" || folded === "reused") return "done";
 			return "stopped";
 		}
@@ -8248,9 +8266,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		async function observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched) {
 			try {
-				const startStatus = await (0, _melite_card_base_client.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running");
+				const foldedStart = statusOf(await (0, _melite_card_base_client.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running"));
 				await patchStageOutcome(draftId, stageId, {
-					runStatus: startStatus === "queued" || startStatus === "pending" ? "queued" : "running",
+					runStatus: foldedStart === "queued" || foldedStart === "pending" ? "queued" : "running",
 					result: { run_id: runId }
 				});
 				onTouched?.();
@@ -8297,7 +8315,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				transportFails = 0;
 				if (!isTerminalStatus(row.status)) {
-					const live = row.status === "queued" || row.status === "pending" ? "queued" : "running";
+					const foldedLive = statusOf(row.status);
+					const live = foldedLive === "queued" || foldedLive === "pending" ? "queued" : "running";
 					const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
 					const p = stage?.progress;
 					const pct = p !== void 0 && p.max > 0 ? Math.floor(100 * p.value / p.max) : null;
@@ -8348,7 +8367,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  bench refreshes). */
 		async function reconcileBenchRuns(bench, hooks = {}) {
 			for (const stage of bench.stages) {
-				if (stage.runStatus !== "running" && stage.runStatus !== "queued") continue;
+				if (!isLiveRunStatus(typeof stage.runStatus === "string" ? stage.runStatus : "")) continue;
 				const result = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
 				const runId = result !== null && typeof result["run_id"] === "string" ? result["run_id"] : "";
 				if (runId === "") continue;
@@ -8394,7 +8413,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* The primary `url` field may name a file that also lives in the
 		* map (it is the primary POINTER, not a second key). */
 		function terminalOutcomeOf(runId, status, stage, runError) {
-			const terminal = status === "completed" ? "done" : status === "failed" ? "failed" : "stopped";
+			const folded = statusOf(status);
+			const terminal = folded === "done" ? "done" : folded === "error" ? "failed" : "stopped";
 			const result = { run_id: runId };
 			const url = stage !== void 0 && typeof stage.url === "string" && stage.url !== "" ? stage.url : "";
 			if (url !== "") result["url"] = url;
@@ -8763,6 +8783,308 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 		}
 		//#endregion
+		//#region ../../web-kit/contracts/src/mediaKinds.ts
+		/** The estate media-kind vocabulary (typed DATA — see header). */
+		function mediaVocab() {
+			return {
+				image: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif",
+					"svg",
+					"bmp",
+					"avif"
+				],
+				audio: [
+					"wav",
+					"flac",
+					"mp3",
+					"ogg",
+					"m4a",
+					"aac"
+				],
+				video: [
+					"mp4",
+					"webm",
+					"mkv",
+					"mov",
+					"m4v",
+					"avi"
+				],
+				model: ["glb", "gltf"],
+				galleryImage: [
+					"png",
+					"jpg",
+					"jpeg",
+					"webp",
+					"gif"
+				],
+				galleryAudio: [
+					"wav",
+					"flac",
+					"ogg",
+					"mp3"
+				],
+				galleryVideo: [
+					"mp4",
+					"webm",
+					"mov"
+				],
+				galleryModel: ["glb", "gltf"],
+				maxListedImages: 3
+			};
+		}
+		const KIND_BY_EXT = (() => {
+			const table = {};
+			const vocab = mediaVocab();
+			[
+				"video",
+				"image",
+				"audio",
+				"model"
+			].forEach((kind) => {
+				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
+			});
+			return table;
+		})();
+		/** The media kind a filename carries, or undefined for non-media. */
+		function mediaKindOf(name) {
+			const dot = name.lastIndexOf(".");
+			if (dot < 0 || dot === name.length - 1) return void 0;
+			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
+		}
+		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
+		*  (2026-10-13, the card-UI duplication audit: five seats carried
+		*  their own model regex and they had already drifted — one matched
+		*  a query or fragment, two matched only a bare extension, so the
+		*  same ".glb?v=2" classified as a model in one seat and as nothing
+		*  in another. A new extension in the vocabulary reaches every seat
+		*  through THIS.) Query and fragment are stripped before the
+		*  vocabulary answers, and the glTF data-URI forms are recognised
+		*  because a data URI has no extension. */
+		function isModelUrl(value) {
+			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
+			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+		}
+		//#endregion
+		//#region src/client/preview-kinds.ts
+		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
+		*  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
+		*  PRIMITIVES"): one consult, keyed by media kind, the card-base
+		*  shared previews as the DEFAULTS. Every card's rendered output
+		*  previews through this — image cards get the shared image preview,
+		*  video cards the shared video one; a studio's own stage view is
+		*  its specialization (the claim-over-default law).
+		*
+		*  ONE CLASSIFIER (the li-ay stroke, 2026-10-11): this private
+		*  three-regex sniff was the FIFTH media vocabulary on the estate —
+		*  it carried avif but dropped svg/bmp (an .svg artifact got NO
+		*  preview) and missed mkv/avi/aac entirely. The contract's
+		*  mediaKindOf classifies now; this seat keeps only its own two
+		*  concerns — the query string a served url may carry, and the UI's
+		*  'mesh' spelling for the vocab's 'model' kind. */
+		function previewKindFor(url) {
+			const kind = mediaKindOf(url.split("?")[0]);
+			if (kind === void 0) return null;
+			return kind === "model" ? "mesh" : kind;
+		}
+		/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
+		*  primary output — the served form-spec's `outputs.default` — is
+		*  the preview's kind, never a url sniff. The sniff stays ONLY as
+		*  the fallback: when no spec is in hand (a flow row without card
+		*  identity), or when the declaration names a non-previewable kind
+		*  (text/seg) whose artifacts may still carry a renderable url —
+		*  mask declares 'seg' and its artifact IS a png; the sniff keeps
+		*  its gallery alive. Declared-previewable ALWAYS wins: an
+		*  audio card previews audio even before artifacts land (the empty
+		*  state names the kind), a mesh card rides the raw-three stage. */
+		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
+			"video",
+			"image",
+			"audio",
+			"mesh"
+		]);
+		function primaryKindFor(spec, url) {
+			const declared = spec?.outputs?.["default"];
+			if (typeof declared === "string" && PREVIEWABLE_KINDS.has(declared)) return declared;
+			return previewKindFor(url);
+		}
+		/** THE PARAMS CHIP (the output-component stroke — the operator's
+		*  law: old generations are tagged by the parameters that differ):
+		*  the comma-joined KEYS whose values differ between an archived
+		*  generation's params snapshot and the live params. undefined when
+		*  the snapshot is absent (an entry archived before the stroke) or
+		*  nothing differs — same params, same picture, no noise. */
+		function paramsDiffKeys(a, b) {
+			const ok = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+			if (!ok(a) || !ok(b)) return void 0;
+			const keys = /* @__PURE__ */ new Set([...Object.keys(a), ...Object.keys(b)]);
+			const diff = [];
+			for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k);
+			if (diff.length === 0) return void 0;
+			return diff.slice(0, 4).join(", ") + (diff.length > 4 ? "…" : "");
+		}
+		/** The stage row's preview artifacts, harvested from the estate's
+		*  result shape (artifacts name→url map first, the flat assetUrls
+		*  list second — the harvest law the h3 adapter states).
+		*  ONE FILE, ONE ARTIFACT (2026-09-20, the operator's catch: "two
+		*  rowsets under the preview image"): rows written before the
+		*  observer's de-stamp carry the same url under two keys (the
+		*  legacy 'video' stamp + the gallery name) — the harvest dedupes
+		*  BY URL so those rows render ONE artifact, and the legacy
+		*  'video' name never paints (retitled 'output'): the word
+		*  'video' on an image card is the phantom's face. */
+		function previewArtifactsFor(row) {
+			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
+			const out = [];
+			const seen = /* @__PURE__ */ new Set();
+			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
+			for (const [name, val] of Object.entries(arts)) {
+				if (name === "video") continue;
+				if (typeof val === "string" && val !== "" && !seen.has(val)) {
+					seen.add(val);
+					out.push({
+						name,
+						url: val
+					});
+				}
+			}
+			for (const [name, val] of Object.entries(arts)) {
+				if (name !== "video") continue;
+				if (typeof val === "string" && val !== "" && !seen.has(val)) {
+					seen.add(val);
+					out.push({
+						name: "output",
+						url: val
+					});
+				}
+			}
+			if (out.length === 0 && Array.isArray(result["assetUrls"])) {
+				for (const u of result["assetUrls"]) if (typeof u === "string" && u !== "") out.push({
+					name: "output",
+					url: u
+				});
+			}
+			if (out.length === 0 && typeof result["url"] === "string" && result["url"] !== "") out.push({
+				name: "output",
+				url: result["url"]
+			});
+			return out;
+		}
+		/** The stage row's REPORT harvest (ROADMAP 11e): the named
+		*  machine-readable verdicts a run writes beside its media — the
+		*  same object the agent loop gates on, rendered by the result
+		*  row's ONE default atom (card-base's ReportView, claimed by
+		*  kind). ONLY kind-'report' entries harvest; a degenerate value
+		*  (not an object) never renders — the contract's validator names
+		*  it at the writer, the reader just stays silent. */
+		function previewReportsFor(row) {
+			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
+			const raw = typeof result["reports"] === "object" && result["reports"] !== null && !Array.isArray(result["reports"]) ? result["reports"] : {};
+			const out = [];
+			for (const [name, val] of Object.entries(raw)) {
+				if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
+				const rep = val;
+				if (rep["kind"] !== "report") continue;
+				if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") continue;
+				out.push({
+					name,
+					report: {
+						kind: "report",
+						status: rep["status"],
+						...typeof rep["title"] === "string" && rep["title"] !== "" ? { title: rep["title"] } : {},
+						...Array.isArray(rep["chips"]) && rep["chips"].every((c) => typeof c === "string" && c !== "") ? { chips: rep["chips"] } : {},
+						...typeof rep["rows"] === "object" && rep["rows"] !== null && !Array.isArray(rep["rows"]) && Object.values(rep["rows"]).every((v) => typeof v === "string" || typeof v === "number" || typeof v === "boolean") ? { rows: rep["rows"] } : {}
+					}
+				});
+			}
+			return out;
+		}
+		//#endregion
+		//#region src/client/bench-row.ts
+		/** bench-row.ts — the bench stage distilled to the card row: the dot
+		* map, the row interface, the distillation, the card grouping
+		* (extracted from CardsTab.tsx hour 15). */
+		init_stageView();
+		/** CardStatus → the installed StateDot union (FlowCards' CardRowLine
+		*  law: done|warning|ongoing|error — a stage that never ran shows NO
+		*  dot, never a fake state). */
+		const STATUS_DOT = {
+			pending: null,
+			queued: "warning",
+			running: "ongoing",
+			done: "done",
+			error: "error",
+			stopped: "warning",
+			stale: null,
+			cached: "done",
+			skipped: null,
+			reused: "done"
+		};
+		/** The chrome's running truth: the row's FOLDED status (the observer
+		*  patches it terminal the moment the run lands). The folded live
+		*  pair is running|queued — the waiting face. Folded `pending` is
+		*  deliberately excluded: on the folded plane it is the
+		*  no-information home (never-ran, or a word the fold does not
+		*  know), and spinning on no information is a fake state. Raw
+		*  'pending' words never reach here folded-pending: the fold maps a
+		*  raw queued-for-start to 'queued'. Seats that judge RAW words use
+		*  the owner's isLiveRunStatus instead. */
+		function rowRunning(row) {
+			const s = row.status;
+			return s === "running" || s === "queued";
+		}
+		/** exported for the door-contract specs (the tile-face law). */
+		function benchRow(stage, bench) {
+			const isGroup = stage.card === "group";
+			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
+			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
+			const status = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
+			typeof stage.activity === "string" && stage.activity;
+			const progress = stage.progress ?? null;
+			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
+			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
+			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
+			const result = stage.result;
+			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
+			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
+			const face = previewKindFor(url);
+			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
+			const posterFromArtifacts = (() => {
+				if (face !== "mesh") return null;
+				for (const a of previewArtifactsFor(stage)) if (previewKindFor(a.url) === "image" && absolute(a.url)) return a.url;
+				return null;
+			})();
+			return {
+				id: stage.id,
+				kind: isGroup ? "group" : String(stage.card ?? "card"),
+				title: String(title),
+				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
+				status,
+				dot: STATUS_DOT[status],
+				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
+				/** the failure carry — the run's own refusal text, or null. */
+				error: failText !== "" ? failText : null,
+				progress: typeof result === "object" && result !== null && typeof Reflect.get(result, "progress") === "object" && Reflect.get(result, "progress") !== null ? Reflect.get(result, "progress") : null,
+				activity: typeof result === "object" && result !== null && typeof Reflect.get(result, "activity") === "string" ? Reflect.get(result, "activity") : "",
+				thumbUrl: face === "image" && absolute(url) ? url : posterFromArtifacts,
+				face,
+				videoUrl: face === "video" && absolute(url) ? url : null,
+				upstream: (() => {
+					const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : null;
+					const edge = inputs !== null && typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
+					const from = edge !== null && typeof edge["stage"] === "string" ? edge["stage"] : "";
+					if (from === "" || bench === void 0) return null;
+					const upstreamRow = bench.stages.find((s) => s.id === from);
+					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
+				})(),
+				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
+				stage
+			};
+		}
+		//#endregion
 		//#region src/client/FlowCards.tsx
 		/**
 		* The melite_flow toolview — THE ACTION CARDS, rendered NATIVE in the
@@ -8928,13 +9250,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  audio) when the shell face is installed; without a shell (unit
 		*  tests, headless harnesses) it falls back to the in-card drill. */
 		function CardRowLine({ row, onOpen }) {
-			const dot = {
-				queued: "warning",
-				running: "ongoing",
-				done: "done",
-				failed: "error",
-				ready: null
-			};
+			const dot = STATUS_DOT[row.status];
 			return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("button", {
 				type: "button",
 				className: card_module_css_default.row,
@@ -8953,7 +9269,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						children: row.title
 					}),
 					row.service !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Pill, { children: row.service }),
-					dot[row.status] !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot[row.status] }),
+					dot !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.StateDot, { state: dot }),
 					row.prompt !== null && /* @__PURE__ */ (0, react_jsx_runtime.jsx)("span", {
 						className: card_module_css_default.prompt,
 						children: row.prompt
@@ -9089,6 +9405,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* model file the presence mark believed present, an engine refusal
 		* mid-run. Same seat, same vocabulary, later gate.
 		*/
+		init_stageView();
 		/** Parse a failed run's reason for a rescueable miss. The
 		* missing-extension refusal names its pack verbatim
 		* ("card 'x' requires 'PACK' …"); a model miss names a weight file
@@ -9135,7 +9452,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		function terminalStageErrorOf(stages) {
 			for (const stage of stages) {
-				if (stage.runStatus !== "failed") continue;
+				if (statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
 				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
 				const error = Reflect.get(stage.result, "error");
 				if (typeof error === "string" && error !== "") return error;
@@ -9240,6 +9557,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* composing {model:} door (card stages) or the FLOW door (the
 		* generic MCP card — a standalone-subagent spawn), and the bench's
 		* sequential pass (extracted from CardsTab.tsx hour 15). */
+		init_stageView();
 		/** The generic MCP card's id (the ONE engine-served card the run
 		* press routes on — the subagent-spawn card, engine 'agent'). */
 		const MCP_CARD = "mcp";
@@ -9354,7 +9672,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					stoppedAt: null,
 					refused: null
 				};
-				if (stage.runStatus === "done") continue;
+				{
+					const folded = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
+					if (folded === "done" || folded === "cached" || folded === "reused") continue;
+				}
 				const res = await runCardStage(bench.draftId, stage);
 				if ("refused" in res) return {
 					ran,
@@ -12117,6 +12438,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			healRunMediaPaths: () => healRunMediaPaths,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
 			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
@@ -40211,14 +40533,19 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only status "done" runs count —
-		*  running / interrupted / stopped runs haven't produced anything yet.
-		*  Runs with no families field (pre-provenance sidecars) or a family-less
-		*  brick contribute nothing (backward compatible by construction). */
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				if (run.status !== "done") continue;
+				const folded = statusOf(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;
 				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
@@ -40249,7 +40576,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {}));
+		var init_familyProvenance = __esmMin((() => {
+			init_stageView();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/uploadToEstate.ts
 		function readUploadFile(file) {
@@ -40508,6 +40837,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*   card shorter than the area and scrolls one that is taller.
 		*/
 		init_src();
+		init_stageView();
 		/** How long the skeleton holds the box before the real detail swaps in. */
 		const ZOOM_SKELETON_MS = 500;
 		/** The zoomed card's bounded size — width caps at 760px, vh-bounded so
@@ -40601,12 +40931,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					window.removeEventListener("keydown", onKey);
 				};
 			}, [onClose]);
-			const live = props.running || typeof stage.runStatus === "string" && (stage.runStatus === "running" || stage.runStatus === "queued" || stage.runStatus === "pending");
+			const live = props.running || isLiveRunStatus(typeof stage.runStatus === "string" ? stage.runStatus : "");
 			const rec = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
 			const prog = rec !== null && typeof rec["progress"] === "object" && rec["progress"] !== null ? rec["progress"] : null;
 			const act = rec !== null && typeof rec["activity"] === "string" ? rec["activity"] : "";
 			const pct = prog !== null && prog.max > 0 ? Math.floor(100 * prog.value / prog.max) : null;
-			const failedText = typeof stage.runStatus === "string" && stage.runStatus === "failed" && typeof rec?.["error"] === "string" ? rec["error"] : null;
+			const failedText = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "") === "error" && typeof rec?.["error"] === "string" ? rec["error"] : null;
 			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
 			return (0, react.createElement)("div", {
 				className: card_module_css_default.zoomOverlay,
@@ -40748,311 +41078,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}
 		}
 		//#endregion
-		//#region ../../web-kit/contracts/src/mediaKinds.ts
-		/** The estate media-kind vocabulary (typed DATA — see header). */
-		function mediaVocab() {
-			return {
-				image: [
-					"png",
-					"jpg",
-					"jpeg",
-					"webp",
-					"gif",
-					"svg",
-					"bmp",
-					"avif"
-				],
-				audio: [
-					"wav",
-					"flac",
-					"mp3",
-					"ogg",
-					"m4a",
-					"aac"
-				],
-				video: [
-					"mp4",
-					"webm",
-					"mkv",
-					"mov",
-					"m4v",
-					"avi"
-				],
-				model: ["glb", "gltf"],
-				galleryImage: [
-					"png",
-					"jpg",
-					"jpeg",
-					"webp",
-					"gif"
-				],
-				galleryAudio: [
-					"wav",
-					"flac",
-					"ogg",
-					"mp3"
-				],
-				galleryVideo: [
-					"mp4",
-					"webm",
-					"mov"
-				],
-				galleryModel: ["glb", "gltf"],
-				maxListedImages: 3
-			};
-		}
-		const KIND_BY_EXT = (() => {
-			const table = {};
-			const vocab = mediaVocab();
-			[
-				"video",
-				"image",
-				"audio",
-				"model"
-			].forEach((kind) => {
-				for (const ext of vocab[kind]) if (table[ext] === void 0) table[ext] = kind;
-			});
-			return table;
-		})();
-		/** The media kind a filename carries, or undefined for non-media. */
-		function mediaKindOf(name) {
-			const dot = name.lastIndexOf(".");
-			if (dot < 0 || dot === name.length - 1) return void 0;
-			return KIND_BY_EXT[name.slice(dot + 1).toLowerCase()];
-		}
-		/** Is this a 3D-MODEL url or data-URI? THE ONE spelling
-		*  (2026-10-13, the card-UI duplication audit: five seats carried
-		*  their own model regex and they had already drifted — one matched
-		*  a query or fragment, two matched only a bare extension, so the
-		*  same ".glb?v=2" classified as a model in one seat and as nothing
-		*  in another. A new extension in the vocabulary reaches every seat
-		*  through THIS.) Query and fragment are stripped before the
-		*  vocabulary answers, and the glTF data-URI forms are recognised
-		*  because a data URI has no extension. */
-		function isModelUrl(value) {
-			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
-			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
-		}
-		//#endregion
-		//#region src/client/preview-kinds.ts
-		/** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
-		*  and the IMAGE PREVIEW of other cards go in a SLOT with SHARED DSH
-		*  PRIMITIVES"): one consult, keyed by media kind, the card-base
-		*  shared previews as the DEFAULTS. Every card's rendered output
-		*  previews through this — image cards get the shared image preview,
-		*  video cards the shared video one; a studio's own stage view is
-		*  its specialization (the claim-over-default law).
-		*
-		*  ONE CLASSIFIER (the li-ay stroke, 2026-10-11): this private
-		*  three-regex sniff was the FIFTH media vocabulary on the estate —
-		*  it carried avif but dropped svg/bmp (an .svg artifact got NO
-		*  preview) and missed mkv/avi/aac entirely. The contract's
-		*  mediaKindOf classifies now; this seat keeps only its own two
-		*  concerns — the query string a served url may carry, and the UI's
-		*  'mesh' spelling for the vocab's 'model' kind. */
-		function previewKindFor(url) {
-			const kind = mediaKindOf(url.split("?")[0]);
-			if (kind === void 0) return null;
-			return kind === "model" ? "mesh" : kind;
-		}
-		/** THE PRIMARY-OUTPUT RESOLUTION (2026-09-13): the card's DECLARED
-		*  primary output — the served form-spec's `outputs.default` — is
-		*  the preview's kind, never a url sniff. The sniff stays ONLY as
-		*  the fallback: when no spec is in hand (a flow row without card
-		*  identity), or when the declaration names a non-previewable kind
-		*  (text/seg) whose artifacts may still carry a renderable url —
-		*  mask declares 'seg' and its artifact IS a png; the sniff keeps
-		*  its gallery alive. Declared-previewable ALWAYS wins: an
-		*  audio card previews audio even before artifacts land (the empty
-		*  state names the kind), a mesh card rides the raw-three stage. */
-		const PREVIEWABLE_KINDS = /* @__PURE__ */ new Set([
-			"video",
-			"image",
-			"audio",
-			"mesh"
-		]);
-		function primaryKindFor(spec, url) {
-			const declared = spec?.outputs?.["default"];
-			if (typeof declared === "string" && PREVIEWABLE_KINDS.has(declared)) return declared;
-			return previewKindFor(url);
-		}
-		/** THE PARAMS CHIP (the output-component stroke — the operator's
-		*  law: old generations are tagged by the parameters that differ):
-		*  the comma-joined KEYS whose values differ between an archived
-		*  generation's params snapshot and the live params. undefined when
-		*  the snapshot is absent (an entry archived before the stroke) or
-		*  nothing differs — same params, same picture, no noise. */
-		function paramsDiffKeys(a, b) {
-			const ok = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
-			if (!ok(a) || !ok(b)) return void 0;
-			const keys = /* @__PURE__ */ new Set([...Object.keys(a), ...Object.keys(b)]);
-			const diff = [];
-			for (const k of keys) if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) diff.push(k);
-			if (diff.length === 0) return void 0;
-			return diff.slice(0, 4).join(", ") + (diff.length > 4 ? "…" : "");
-		}
-		/** The stage row's preview artifacts, harvested from the estate's
-		*  result shape (artifacts name→url map first, the flat assetUrls
-		*  list second — the harvest law the h3 adapter states).
-		*  ONE FILE, ONE ARTIFACT (2026-09-20, the operator's catch: "two
-		*  rowsets under the preview image"): rows written before the
-		*  observer's de-stamp carry the same url under two keys (the
-		*  legacy 'video' stamp + the gallery name) — the harvest dedupes
-		*  BY URL so those rows render ONE artifact, and the legacy
-		*  'video' name never paints (retitled 'output'): the word
-		*  'video' on an image card is the phantom's face. */
-		function previewArtifactsFor(row) {
-			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
-			const out = [];
-			const seen = /* @__PURE__ */ new Set();
-			const arts = typeof result["artifacts"] === "object" && result["artifacts"] !== null ? result["artifacts"] : {};
-			for (const [name, val] of Object.entries(arts)) {
-				if (name === "video") continue;
-				if (typeof val === "string" && val !== "" && !seen.has(val)) {
-					seen.add(val);
-					out.push({
-						name,
-						url: val
-					});
-				}
-			}
-			for (const [name, val] of Object.entries(arts)) {
-				if (name !== "video") continue;
-				if (typeof val === "string" && val !== "" && !seen.has(val)) {
-					seen.add(val);
-					out.push({
-						name: "output",
-						url: val
-					});
-				}
-			}
-			if (out.length === 0 && Array.isArray(result["assetUrls"])) {
-				for (const u of result["assetUrls"]) if (typeof u === "string" && u !== "") out.push({
-					name: "output",
-					url: u
-				});
-			}
-			if (out.length === 0 && typeof result["url"] === "string" && result["url"] !== "") out.push({
-				name: "output",
-				url: result["url"]
-			});
-			return out;
-		}
-		/** The stage row's REPORT harvest (ROADMAP 11e): the named
-		*  machine-readable verdicts a run writes beside its media — the
-		*  same object the agent loop gates on, rendered by the result
-		*  row's ONE default atom (card-base's ReportView, claimed by
-		*  kind). ONLY kind-'report' entries harvest; a degenerate value
-		*  (not an object) never renders — the contract's validator names
-		*  it at the writer, the reader just stays silent. */
-		function previewReportsFor(row) {
-			const result = typeof row["result"] === "object" && row["result"] !== null ? row["result"] : {};
-			const raw = typeof result["reports"] === "object" && result["reports"] !== null && !Array.isArray(result["reports"]) ? result["reports"] : {};
-			const out = [];
-			for (const [name, val] of Object.entries(raw)) {
-				if (typeof val !== "object" || val === null || Array.isArray(val)) continue;
-				const rep = val;
-				if (rep["kind"] !== "report") continue;
-				if (rep["status"] !== "pass" && rep["status"] !== "fail" && rep["status"] !== "warn") continue;
-				out.push({
-					name,
-					report: {
-						kind: "report",
-						status: rep["status"],
-						...typeof rep["title"] === "string" && rep["title"] !== "" ? { title: rep["title"] } : {},
-						...Array.isArray(rep["chips"]) && rep["chips"].every((c) => typeof c === "string" && c !== "") ? { chips: rep["chips"] } : {},
-						...typeof rep["rows"] === "object" && rep["rows"] !== null && !Array.isArray(rep["rows"]) && Object.values(rep["rows"]).every((v) => typeof v === "string" || typeof v === "number" || typeof v === "boolean") ? { rows: rep["rows"] } : {}
-					}
-				});
-			}
-			return out;
-		}
-		//#endregion
-		//#region src/client/bench-row.ts
-		/** bench-row.ts — the bench stage distilled to the card row: the dot
-		* map, the row interface, the distillation, the card grouping
-		* (extracted from CardsTab.tsx hour 15). */
-		/** Bench row run-status → the installed StateDot union (FlowCards'
-		*  CardRowLine law: done|warning|ongoing|error — a stage that never
-		*  ran shows NO dot, never a fake state). */
-		const STAGE_DOT = {
-			queued: "warning",
-			pending: "warning",
-			running: "ongoing",
-			done: "done",
-			failed: "error",
-			stopped: "warning",
-			ready: null,
-			success: "done",
-			succeeded: "done",
-			error: "error",
-			unknown: "warning",
-			stopping: "warning"
-		};
-		/** The chrome's running truth: the row's stamped status (the observer
-		*  patches it terminal the moment the run lands). */
-		function rowRunning(row) {
-			return row.status === "running" || row.status === "queued" || row.status === "pending";
-		}
-		/** exported for the door-contract specs (the tile-face law). */
-		function benchRow(stage, bench) {
-			const isGroup = stage.card === "group";
-			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
-			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
-			const status = typeof stage.runStatus === "string" && stage.runStatus !== "" ? stage.runStatus : "ready";
-			typeof stage.activity === "string" && stage.activity;
-			const progress = stage.progress ?? null;
-			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
-			const params = typeof stage.params === "object" && stage.params !== null ? stage.params : {};
-			const promptRaw = typeof params["prompt"] === "string" ? params["prompt"] : "";
-			const result = stage.result;
-			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
-			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
-			const face = previewKindFor(url);
-			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
-			const posterFromArtifacts = (() => {
-				if (face !== "mesh") return null;
-				for (const a of previewArtifactsFor(stage)) if (previewKindFor(a.url) === "image" && absolute(a.url)) return a.url;
-				return null;
-			})();
-			return {
-				id: stage.id,
-				kind: isGroup ? "group" : String(stage.card ?? "card"),
-				title: String(title),
-				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
-				status,
-				dot: STAGE_DOT[status] ?? null,
-				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
-				/** the failure carry — the run's own refusal text, or null. */
-				error: failText !== "" ? failText : null,
-				progress: typeof result === "object" && result !== null && typeof Reflect.get(result, "progress") === "object" && Reflect.get(result, "progress") !== null ? Reflect.get(result, "progress") : null,
-				activity: typeof result === "object" && result !== null && typeof Reflect.get(result, "activity") === "string" ? Reflect.get(result, "activity") : "",
-				thumbUrl: face === "image" && absolute(url) ? url : posterFromArtifacts,
-				face,
-				videoUrl: face === "video" && absolute(url) ? url : null,
-				upstream: (() => {
-					const inputs = typeof stage.inputs === "object" && stage.inputs !== null ? stage.inputs : null;
-					const edge = inputs !== null && typeof inputs["source"] === "object" && inputs["source"] !== null ? inputs["source"] : null;
-					const from = edge !== null && typeof edge["stage"] === "string" ? edge["stage"] : "";
-					if (from === "" || bench === void 0) return null;
-					const upstreamRow = bench.stages.find((s) => s.id === from);
-					return upstreamRow !== void 0 ? String(upstreamRow.card ?? upstreamRow.id) : null;
-				})(),
-				sourceAttached: Object.values(params).some((v) => typeof v === "string" && (v.startsWith("data/input/") || v.startsWith("/melite-media/") || v.startsWith("/v1/assets/"))),
-				stage
-			};
-		}
-		//#endregion
 		//#region src/client/sortable-tile.tsx
 		/** sortable-tile.tsx — the bench tile: the native-reorder wrapper, the
 		* chat-input chrome, the audio-bars face (extracted from CardsTab.tsx
 		* hour 15). */
-		/** THE CARD ROW — the chat plane's CardRowLine grammar VERBATIM
-		*  (f3026845, the 9-10 card system): [artifact thumb | kind Pill],
-		*  bold title, service Pill, live StateDot, clipped prompt. ONE card
-		*  system, both planes — the tab renders the SAME row the chat
-		*  renders, from the same stylesheet (the .row/.thumb/.rowTitle/
-		*  .prompt classes below are the flow block's own). */
+		/** THE CARD TILE — its own face, not the chat row's grammar: a
+		*  square preview cell (artifact thumb, video, audio bars, or the
+		*  kind-initial fallback) over a caption column (title, service,
+		*  upstream tag, clipped prompt). It reads the same folded
+		*  CardRowLineTabRow the chat plane distills — one vocabulary, two
+		*  faces; the running state is the spinner + progress pill, never a
+		*  StateDot. */
 		/** THE CARD TILE — the operator's CardTile law (flowCardTile.tsx)
 		*  ported to the tab, DSH native: the visual card (INNER) is ONE flex
 		*  column with exactly two flow children —
@@ -41201,7 +41237,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, " ⛓") : null, row.sourceAttached ? (0, react.createElement)("span", {
 				className: card_module_css_default.wiredMark,
 				title: "source attached"
-			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "failed" ? (0, react.createElement)("span", {
+			}, " 📎") : null), (0, react.createElement)("span", { className: card_module_css_default.tileMeta }, row.service !== null ? (0, _melite_card_base_client.titleCaseId)(row.service) : null, row.upstream !== null ? (0, react.createElement)(_deepseek_ai_dsh_client_ui_primitives.Tag, { tone: "quiet" }, "⟵ " + row.upstream) : null, row.prompt !== null ? (0, react.createElement)("span", { className: card_module_css_default.tilePrompt }, row.prompt) : null), row.error !== null && row.status === "error" ? (0, react.createElement)("span", {
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
@@ -44112,6 +44148,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		//#region src/client/draft-run-views.tsx
 		/** draft-run-views.tsx — the draft authoring face and the run's live
 		* status view (extracted from CardsTab.tsx hour 15). */
+		init_stageView();
 		/**
 		* THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
 		* old embed's law restored): one flow draft's stage on the authoring
@@ -44165,7 +44202,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [restoring, setRestoring] = (0, react.useState)(false);
 			const [note, setNote] = (0, react.useState)(null);
 			const [stopping, setStopping] = (0, react.useState)(false);
-			const live = run.status === "queued" || run.status === "pending" || run.status === "running";
+			const live = isLiveRunStatus(run.status);
 			/* v8 ignore next 3 -- the cancel button renders only when onStop is defined (line above — probe 2026-09-19): the undefined arm is a single-render-law contradiction; prod always passes onStop */
 			const onCancel = () => {
 				if (onStop === void 0) return;
@@ -44210,7 +44247,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: onRestore
 			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, run.stages.map((s) => {
 				const thumb = s.url !== void 0 ? toRunMediaUrl(run.runId, s.url) : null;
-				const dot = STAGE_DOT[s.status] ?? null;
+				const dot = STATUS_DOT[statusOf(s.status)];
 				const face = thumb !== null ? (0, react.createElement)("a", {
 					href: thumb,
 					target: "_blank",
@@ -44272,6 +44309,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		* hook. Local prop typings (the package's local-spelling pattern —
 		* see index.ts) keep this package off sibling runtime imports.
 		*/
+		init_stageView();
 		/** ADDRESS LAW (the `loading sidebar://cards…` hang, dead 2026-09-11):
 		*  the shell's navigation address is the SHELL's (guide clicks arrive
 		*  as the tab id's own address, not a cards address). An address that
@@ -44350,7 +44388,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const prev = terminalSeen.current;
 				terminalSeen.current = cur;
 				if (prev === null) return;
-				for (const [id, status] of cur) if (status === "done" && prev.get(id) !== "done") {
+				for (const [id, status] of cur) if (statusOf(status) === "done" && statusOf(prev.get(id) ?? "") !== "done") {
 					setLocalRunError((claim) => claim !== null && claim.kind === "start" && claim.rowLanded ? null : claim);
 					return;
 				}
@@ -44780,4 +44818,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="4bcdbe913562746f6628f84b091038d5b161a7c6";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="378431d78e386087eb836767f45fea52e6e2adf0";

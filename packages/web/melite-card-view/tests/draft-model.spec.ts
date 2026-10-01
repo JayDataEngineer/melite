@@ -41,9 +41,9 @@ const DOC: DraftDoc = {
 };
 
 describe("cardRows — status precedence and distillation", () => {
-  test("no live run: draft stage status, else ready", () => {
+  test("no live run: draft stage status, else pending (the no-information home)", () => {
     const rows = cardRows(DOC, null);
-    expect(rows.map((r) => r.status)).toEqual(["ready", "done"]);
+    expect(rows.map((r) => r.status)).toEqual(["pending", "done"]);
     expect(rows[0].thumbUrl).toBe(null);
     expect(rows[0].prompt).toBe("a green cone");
     expect(rows[0].service).toBe("krea-2");
@@ -154,14 +154,17 @@ describe("door narrowing — named refusals, malformed docs", () => {
     // (melite-run-wire records the boundary audit's H1: the reader
     // that omitted it polled forever). The pin now reads the
     // contract's set, so the vocabulary has ONE home.
-    for (const s of ["completed", "failed", "stopped", "error", "unknown"]) {
+    for (const s of ["completed", "failed", "stopped", "error", "unknown", "interrupted", "succeeded", "success"]) {
       expect(runFinished(s), `${s} is terminal`).toBe(true);
     }
-    for (const s of ["running", "queued", "pending", ""]) {
+    for (const s of ["running", "queued", "pending", "stopping", "live", ""]) {
       expect(runFinished(s), `${s} is live`).toBe(false);
     }
+    // The set grew with the fold's reconciliation (2026-10-01): the
+    // backend's interrupted/succeeded/success were terminal words the
+    // set did not know — a poller kept watching a dead run.
     expect([...TERMINAL_RUN_STATUSES].sort()).toEqual(
-      ["completed", "error", "failed", "stopped", "unknown"],
+      ["completed", "error", "failed", "interrupted", "stopped", "succeeded", "success", "unknown"],
     );
   });
 });

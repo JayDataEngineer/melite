@@ -14,6 +14,7 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { isTerminalRun, listRowMediaUrl, readRunStatus } from "@melite-plugin/melite-run-wire";
 import { fetchBindMesh } from "@melite/formats/poserSkin";
+import { isLiveRunStatus } from "@melite/contracts/stageView";
 //#region \0rolldown/runtime.js
 var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod), cb = null), mod.exports);
 var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
@@ -5172,7 +5173,7 @@ async function probeRunGone(runId, signal) {
 		const listed = await fetchListRow(runId, signal).catch(() => null);
 		if (listed === null) return "gone";
 		const status = listed["status"];
-		return typeof status === "string" && status !== "" ? status : "completed";
+		return typeof status === "string" && status !== "" ? status : "unknown";
 	}
 }
 /** The draft's newest run (runs/list adoption — the reload-proof
@@ -6660,7 +6661,7 @@ function VideoStagePreview(props) {
 	}, viewingHistory ? createElement(StaleBadge, {
 		note,
 		onReturn: returnToCurrent
-	}) : null, hero === void 0 ? createElement("div", { className: preview_module_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : createElement("video", {
+	}) : null, hero === void 0 ? createElement("div", { className: preview_module_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the film lands here" : "No render yet — run lands the film here") : createElement("video", {
 		className: preview_module_default.hero,
 		controls: true,
 		playsInline: true,
@@ -6715,7 +6716,7 @@ function ImageStagePreview(props) {
 		onLoad: () => {
 			setLoadedUrl(seatUrl);
 		}
-	}) : createElement("div", { className: preview_module_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? createElement("img", {
+	}) : createElement("div", { className: preview_module_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? createElement("img", {
 		key: "incoming-" + incoming,
 		className: preview_module_default.heroIncoming,
 		src: incoming,
@@ -6743,7 +6744,7 @@ function AudioStagePreview(props) {
 	}, viewingHistory ? createElement(StaleBadge, {
 		note,
 		onReturn: returnToCurrent
-	}) : null, hero === void 0 ? createElement("div", { className: preview_module_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : createElement("audio", {
+	}) : null, hero === void 0 ? createElement("div", { className: preview_module_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the track lands here" : "No render yet — run lands the track here") : createElement("audio", {
 		className: preview_module_default.heroAudio,
 		controls: true,
 		key: hero.url,
@@ -6776,7 +6777,7 @@ function MeshStagePreview(props) {
 			url: a.url,
 			name: a.name
 		})),
-		emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+		emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 	}) : props.figure !== void 0 ? createElement(PoserFigureStage, {
 		identityModel: props.figure.identityModel,
 		identityCoeffs: props.figure.identityCoeffs,
@@ -6786,7 +6787,7 @@ function MeshStagePreview(props) {
 		label: `poser-figure:${props.stageId}`
 	}) : createElement(GlbStagePreview, {
 		assets: [],
-		emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+		emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 	}), HistoryStrip(props, promote, "stage-output-history", picked));
 }
 //#endregion

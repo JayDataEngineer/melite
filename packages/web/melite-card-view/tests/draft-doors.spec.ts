@@ -233,21 +233,29 @@ describe("startDraft / runStatus — the run doors", () => {
 
 describe("cardRows — the full precedence + narrowing table", () => {
   const doc = (stages: DraftDoc["stages"]): DraftDoc => ({ draft_id: "d", stages });
-  test("pending → queued; cached/succeeded → done; error → failed; unknown → ready", () => {
+  test("the fold owns the word: named statuses keep their name; synonyms fold; unknown → pending", () => {
+    // pending keeps its name (the no-information home is pending now,
+    // never a fake 'queued' or the dead 'ready' sentinel); cached
+    // keeps its name (the dot map knows it); succeeded folds to done;
+    // error keeps its name; the estate's queued-for-start word folds
+    // to queued; a word nobody knows reads as pending.
     const rows = cardRows(doc([
       { id: "a", status: "pending" },
       { id: "b", status: "cached" },
       { id: "c", status: "succeeded" },
       { id: "d", status: "error" },
       { id: "e", status: "weird" },
+      { id: "f", status: "interrupted" },
+      { id: "g", status: "success" },
     ]));
-    expect(rows.map((r) => r.status)).toEqual(["queued", "done", "done", "failed", "ready"]);
+    expect(rows.map((r) => r.status)).toEqual(["queued", "cached", "done", "error", "pending", "stopped", "done"]);
   });
-  test("live pending → queued; live running → running; live queued → queued", () => {
+  test("live pending → queued (the waiting face); live running → running; live queued → queued; live stopping → running", () => {
     const live = (status: string): RunStatusDoc => ({ run_id: "r", status: "running", stages: [{ id: "x", status }] });
     expect(cardRows(doc([{ id: "a" }]), live("pending"))[0]?.status).toBe("queued");
     expect(cardRows(doc([{ id: "a" }]), live("running"))[0]?.status).toBe("running");
     expect(cardRows(doc([{ id: "a" }]), live("queued"))[0]?.status).toBe("queued");
+    expect(cardRows(doc([{ id: "a" }]), live("stopping"))[0]?.status).toBe("running");
   });
   test("non-string and empty prompts distill to null; missing params distill clean", () => {
     const rows = cardRows(doc([

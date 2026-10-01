@@ -18,6 +18,10 @@ import type {
   CardTag,
 } from './card.ts'
 
+/** Re-exported for the seats that judge status words through this
+ *  module (the vocabulary's owner route — see statusOf below). */
+export type { CardStatus } from './card.ts'
+
 export interface StageViewOwnerProps {
   /** Bench stage identity (stable across param edits). */
   stageId: string
@@ -116,9 +120,33 @@ export function statusOf(value: string): CardStatus {
     case 'failed':
     case 'error':
       return 'error'
+    // THE ESTATE'S OWN TERMINALS (the vocabulary audit, 2026-10-01):
+    // 'stopped' is a member of RunStatus (estate-queue/src/
+    // runsTypes.ts), 'interrupted' of the backend's RUN_STATUSES
+    // (catalog/src/runStatusContract.ts) — both previously fell to the
+    // default and folded to 'pending', so the fold's two halves
+    // DISAGREED (isTerminalStatus('stopped') was true while
+    // statusOf('stopped') said waiting). A deliberate or outside-force
+    // end is its own terminal: not a success, not the run's own
+    // failure. 'unknown' folds here too — terminal truth whose outcome
+    // is unreadable.
+    case 'stopped':
+    case 'interrupted':
+    case 'unknown':
+      return 'stopped'
+    // wind-down is live: the process is still ending
+    case 'stopping':
+      return 'running'
     case 'running':
     case 'live':
       return 'running'
+    // the estate's queued-for-start stage word (runsStart stamps every
+    // stage 'pending' at run creation) is LIVE — isLiveRunStatus says
+    // so — so the fold agrees: it renders the waiting face ('queued'),
+    // never the no-information home. Before this case the two halves
+    // of the owner disagreed on the same word: the reconciler armed a
+    // probe while the row showed never-ran (audit 185d8565's R1).
+    case 'pending':
     case 'queued':
       return 'queued'
     case 'stale':
@@ -150,10 +178,33 @@ export function isTerminalStatus(value: string): boolean {
 }
 
 /** The terminal word set, exported so a seat that needs to SHOW it
- *  (a poll's stop condition, a doc) reads the same list. */
+ *  (a poll's stop condition, a doc) reads the same list. Reconciled
+ *  with the backend's RUN_STATUSES (catalog/src/runStatusContract.ts)
+ *  2026-10-01: `interrupted` joined, and the file-era done words
+ *  (`succeeded`, `success`) became terminal — a poller handed either
+ *  previously ran to its ceiling. The card-plane words (done, cached,
+ *  reused, skipped, stale) stay out: runs are never stamped with
+ *  them; they describe artifacts, not run lifecycle. */
 export const TERMINAL_RUN_STATUSES: ReadonlySet<string> = new Set([
   'completed', 'failed', 'stopped', 'error', 'unknown',
+  'interrupted', 'succeeded', 'success',
 ])
+
+/** THE LIVE JUDGEMENT — the third question seats spelled privately
+ *  ({running,queued} in one file, {running,queued,pending} in another,
+ *  both omitting the wire's `live` and the estate's `stopping`): is
+ *  this word a run still in motion? LIVE words are the KNOWN live
+ *  vocabulary only — an unrecognized word is NOT live (spinning on a
+ *  word we cannot read is a fake state; every private set this
+ *  replaces already excluded strangers). Pollers that must keep
+ *  watching unknown words read !isTerminalStatus, not this. */
+const LIVE_RUN_STATUSES: ReadonlySet<string> = new Set([
+  'running', 'live', 'stopping', 'queued', 'pending',
+])
+
+export function isLiveRunStatus(value: string): boolean {
+  return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase())
+}
 
 function galleryOf(value: unknown): CardResult['gallery'] {
   if (!Array.isArray(value)) return undefined

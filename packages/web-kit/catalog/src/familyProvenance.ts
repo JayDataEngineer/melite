@@ -11,6 +11,7 @@
 // Pure module: fold + format. The fetch (who owns the runs payload) is the
 // caller's business — LibrarySidebar polls listRuns on mediaVersion bump.
 import type { MediaRun } from "@melite/contracts";
+import { statusOf } from "@melite/contracts/stageView";
 
 export interface FamilyProvenance {
   /** Completed runs that used this family. */
@@ -19,16 +20,21 @@ export interface FamilyProvenance {
   lastRunAt: number;
 }
 
-/** Fold runs into per-family provenance. Only status "done" runs count —
- *  running / interrupted / stopped runs haven't produced anything yet.
- *  Runs with no families field (pre-provenance sidecars) or a family-less
- *  brick contribute nothing (backward compatible by construction). */
+/** Fold runs into per-family provenance. Only runs that CARRY an
+ *  artifact count (the fold's done family: done, cached, reused —
+ *  the estate settles success as "completed", which the old raw
+ *  `!== "done"` compare never matched, so every real run's
+ *  provenance read "never"). Running / interrupted / stopped runs
+ *  haven't produced anything yet. Runs with no families field
+ *  (pre-provenance sidecars) or a family-less brick contribute
+ *  nothing (backward compatible by construction). */
 export function familyProvenance(
   runs: MediaRun[],
 ): Record<string, FamilyProvenance> {
   const out: Record<string, FamilyProvenance> = {};
   for (const run of runs) {
-    if (run.status !== "done") continue;
+    const folded = statusOf(run.status ?? "");
+    if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
     const fams = run.families ?? [];
     if (fams.length === 0) continue;
     // created_at is unix SECONDS on the server (st_mtime / time.time()).

@@ -41,7 +41,6 @@ import { terminalStageErrorOf } from './run-rescue.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm } from './spec-form.tsx'
-import { titleCaseId } from '@melite/card-base/client'
 import { fetchFormsTable, postManageAction } from '@melite/card-base/client'
 import { ToastViewport } from '@melite/card-base/client'
 import { StudioShell } from '@melite/card-base/client'
@@ -59,6 +58,7 @@ import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { startCardRun, stopRun } from '@melite/card-base/client'
+import { statusOf } from '@melite/contracts/stageView'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
@@ -229,7 +229,9 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     terminalSeen.current = cur
     if (prev === null) return // first frame: baseline, no claim to retire
     for (const [id, status] of cur) {
-      if (status === 'done' && prev.get(id) !== 'done') {
+      // the fold's done family retires the claim — a stage the estate
+      // settles 'completed' (or a cached/reused row) now lands too
+      if (statusOf(status) === 'done' && statusOf(prev.get(id) ?? '') !== 'done') {
         setLocalRunError((claim) =>
           claim !== null && claim.kind === 'start' && claim.rowLanded ? null : claim)
         return

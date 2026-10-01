@@ -57,8 +57,8 @@ import type { FlowEventFrame } from '@melite/catalog/FlowEvents'
 export type { FlowEventFrame }
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
-import { estateRemote, unwrapRemote, type DraftsNamespace } from '@melite/card-base/client'
-import { isTerminalStatus } from '@melite/contracts/stageView'
+import { estateRemote, unwrapRemote, parseNumericInput, type DraftsNamespace } from '@melite/card-base/client'
+import { isTerminalStatus, statusOf, type CardStatus } from '@melite/contracts/stageView'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's
@@ -635,17 +635,22 @@ export interface CardRow {
   kind: string
   service: string | null
   prompt: string | null
-  /** Status precedence: live run status > draft stage status > ready. */
-  status: 'queued' | 'running' | 'done' | 'failed' | 'ready'
+  /** Status precedence: live run status > draft stage status > never
+   *  ran. THE ONE VOCABULARY (2026-10-01): the private five-word union
+   *  (which dropped success/stopped/unknown/live/stale/skipped/reused
+   *  into a 'ready' that reads never-ran) is dead — the row carries
+   *  the fold's CardStatus. The estate's queued-for-start stage word
+   *  ('pending') folds to 'queued' — the waiting face — so a live
+   *  run's yet-to-start stages read waiting, not never-ran; the
+   *  'pending' home itself is unreachable from a real word (only ''
+   *  and words the fold does not know land there: no dot, not
+   *  running). */
+  status: CardStatus
   thumbUrl: string | null
 }
 
 function rowStatus(live: string | undefined, doc: string | undefined): CardRow['status'] {
-  const s = live ?? doc ?? 'ready'
-  if (s === 'running' || s === 'queued' || s === 'pending') return s === 'running' ? 'running' : 'queued'
-  if (s === 'completed' || s === 'done' || s === 'cached' || s === 'succeeded') return 'done'
-  if (s === 'failed' || s === 'error') return 'failed'
-  return 'ready'
+  return statusOf(live ?? doc ?? '')
 }
 
 /** Distill the draft (+ optional live run status) into card rows. */
@@ -715,11 +720,14 @@ export function paramFields(params: Record<string, unknown>): ParamField[] {
   return fields
 }
 
-/** Coerce an edited atom value back to the param's wire type. */
+/** Coerce an edited atom value back to the param's wire type. The
+ *  numeric leg delegates to the spec owner's parseNumericInput —
+ *  an unparseable or emptied input keeps the field's current value
+ *  (the owner's own law; clearing the box is not a zero edit). */
 export function coerceEdit(field: ParamField, next: string): string | number | boolean {
   if (field.atom === 'number') {
-    const n = Number(next)
-    return Number.isFinite(n) ? n : field.value
+    const n = parseNumericInput(next)
+    return n !== undefined ? n : field.value
   }
   return next
 }

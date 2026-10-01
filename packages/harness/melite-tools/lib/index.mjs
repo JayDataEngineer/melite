@@ -4,9 +4,10 @@ import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
 import { buildMotionTool } from "@melite/motion-motion/tool";
 import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
-import { CARD_PLANE_ENGINE, RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, benchSessionOf, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
+import { CARD_PLANE_ENGINE, RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, benchDraftIdOf, benchSessionOf, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
+import { isTerminalStatus, statusOf } from "@melite/contracts/stageView";
 import { normalizeJsonArrayParams } from "@melite/estate-call/cardTool";
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { FLOW_ID_RE, rootsManifest, searchedVoice } from "@melite/estate-queue";
@@ -138,12 +139,7 @@ function sleepAbortable(ms, signal) {
 		signal.addEventListener("abort", onAbort, { once: true });
 	});
 }
-const TERMINAL = /* @__PURE__ */ new Set([
-	"completed",
-	"error",
-	"stopped",
-	"failed"
-]);
+const TERMINAL = { has: (s) => isTerminalStatus(s) };
 function runStatus(request) {
 	const presentCall = (args) => {
 		const a = typeof args === "object" && args !== null ? args : {};
@@ -230,11 +226,11 @@ function runStatus(request) {
 				}];
 				const stages = v.stages ?? [];
 				const artifacts = v.artifacts ?? [];
-				const done = stages.filter((s) => s && s.status === "completed").length;
+				const done = stages.filter((s) => s && statusOf(typeof s.status === "string" ? s.status : "") === "done").length;
 				const total = stages.length;
 				const pos = typeof v.queue_position === "number" && v.queue_position > 0 ? " (queue #" + v.queue_position + ")" : "";
 				const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0 ? " · plan: " + v.planned_stages.length + " stage(s)" + (typeof v.card === "string" && v.card ? " (" + v.card + ")" : "") : "";
-				const terminal = v.status === "completed" || v.status === "failed" || v.status === "stopped";
+				const terminal = typeof v.status === "string" && isTerminalStatus(v.status);
 				const age = !terminal && typeof v.run_age_s === "number" ? " · age " + v.run_age_s + "s" : "";
 				const stageVoice = terminal && stages.length ? "\nstages: " + stages.map((s) => {
 					const row = s;
@@ -1000,7 +996,7 @@ async function loadBench(request, body, signal) {
 async function runBench(request, a, signal) {
 	const empty = {
 		mode: "bench",
-		target: `bench-${a.bench}`,
+		target: benchDraftIdOf(a.bench),
 		error: "the bench is empty — construct stages first (melite_construct)"
 	};
 	let b;
@@ -1012,19 +1008,22 @@ async function runBench(request, a, signal) {
 	}
 	const rows = Array.isArray(b["stages"]) ? b["stages"].filter((s) => typeof s === "object" && s !== null && typeof s["id"] === "string") : [];
 	if (rows.length === 0) return empty;
-	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : `bench-${a.bench}`;
-	const target = `bench-${a.bench} @ rev ${String(b["rev"] ?? "?")}`;
+	const draftId = typeof b["draft_id"] === "string" ? b["draft_id"] : benchDraftIdOf(a.bench);
+	const target = `${benchDraftIdOf(a.bench)} @ rev ${String(b["rev"] ?? "?")}`;
 	const pass = [];
 	for (const row of rows) {
 		const stageId = row["id"];
 		const card = typeof row["card"] === "string" && row["card"] !== "" ? row["card"] : "";
-		if (row["runStatus"] === "done") {
-			pass.push({
-				stage: stageId,
-				card,
-				skipped: "done"
-			});
-			continue;
+		{
+			const folded = statusOf(typeof row["runStatus"] === "string" ? row["runStatus"] : "");
+			if (folded === "done" || folded === "cached" || folded === "reused") {
+				pass.push({
+					stage: stageId,
+					card,
+					skipped: "done"
+				});
+				continue;
+			}
 		}
 		if (card === "") return {
 			mode: "bench",
@@ -1128,7 +1127,7 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 		} catch (e) {
 			const re = remoteErrorOf(e);
 			if (re !== null && re !== void 0 && re.code === "runs/unknown-run") return {
-				status: "unknown",
+				status: statusOf("unknown"),
 				url: "",
 				artifacts: []
 			};
@@ -1136,7 +1135,7 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 			continue;
 		}
 		const status = typeof doc["status"] === "string" ? doc["status"] : "unknown";
-		if (status === "completed" || status === "failed" || status === "stopped" || status === "unknown") {
+		if (isTerminalStatus(status)) {
 			const stages = Array.isArray(doc["stages"]) ? doc["stages"].filter((s) => typeof s === "object" && s !== null) : [];
 			const st = stages.find((s) => s["id"] === stageId) ?? (stages.length === 1 ? stages[0] : void 0);
 			const toMediaUrl = (value) => {
@@ -1173,7 +1172,7 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 			if (url !== "" && !assetUrls.includes(url)) assetUrls.unshift(url);
 			if (Object.keys(artifacts).length > 0) result["artifacts"] = artifacts;
 			if (assetUrls.length > 0) result["assetUrls"] = assetUrls;
-			const terminal = status === "completed" ? "done" : status;
+			const terminal = statusOf(status);
 			try {
 				await request("PATCH", `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`, {
 					runStatus: terminal,
@@ -1186,7 +1185,8 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 				artifacts: arts
 			};
 		}
-		const live = status === "queued" || status === "pending" ? "queued" : "running";
+		const foldedLive = statusOf(status);
+		const live = foldedLive === "queued" || foldedLive === "pending" ? "queued" : "running";
 		if (live !== lastLive) {
 			lastLive = live;
 			try {
@@ -1608,7 +1608,7 @@ function meliteFlow(request) {
 				if (re !== null && re !== void 0) return jsonClean({
 					error: re.message || "remote refused",
 					mode: "bench",
-					target: `bench-${bench}`
+					target: benchDraftIdOf(bench)
 				});
 				throw e;
 			}
@@ -2331,8 +2331,6 @@ function meliteLoad(request, opts = {}) {
 						const adds = Object.entries(lane?.variants ?? {}).map(([v, row]) => {
 							const params = Array.isArray(row?.params) ? row.params.join(", ") : "";
 							const vlaws = lawWords(row?.relations, row?.bounds);
-							const env = row.sampler_envelope;
-							if (env !== void 0 && env !== null) vlaws.push("sampler(" + String(env.steps?.join("–") ?? "..") + " steps, " + String(env.cfg?.join("–") ?? "..") + " cfg)");
 							let line = v + (params !== "" ? " +" + params : "");
 							if (vlaws.length > 0) line += " [" + vlaws.join(", ") + "]";
 							return line;

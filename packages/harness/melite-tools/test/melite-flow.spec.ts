@@ -997,13 +997,16 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
     assert.equal(out.stoppedAt, 's_0')
-    assert.equal(out.error, 'stage s_0 (image-gen) ended failed')
+    // 2026-10-01 vocab law: the stop prose rides the FOLDED CardStatus —
+    // raw 'failed' folds to 'error' at the owner (statusOf), so the
+    // message carries the one vocabulary every row already speaks.
+    assert.equal(out.error, 'stage s_0 (image-gen) ended error')
     assert.equal(out.run_id, 'rb9')
     // THE RENDER LAW (transcript-016): a stopped-mid-flow refusal PRINTS
     // the run id — the maker must never glob output/ to find a run it
     // already paid for (ten wasted calls before this pin).
     const rendered = tool.output!.render!({ bench: true } as never, asJson(out))
-    assert.match(asText(rendered[0]), /melite_flow REFUSED: stage s_0 \(image-gen\) ended failed — run rb9 \(poll with run_status\)/)
+    assert.match(asText(rendered[0]), /melite_flow REFUSED: stage s_0 \(image-gen\) ended error — run rb9 \(poll with run_status\)/)
     // a PRE-RUN refusal (no run started) renders without the run clause
     const preRun = tool.output!.render!({ bench: true } as never, { mode: 'bench', target: 'x', status: 'stopped', error: 'stage s_0 names no card' })
     assert.equal(asText(preRun[0]), 'melite_flow REFUSED: stage s_0 names no card')
@@ -1710,7 +1713,8 @@ describe('melite_flow bench — the degenerate-shape arms', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
-    assert.equal(out.error, 'stage s_0 (image-gen) ended unknown')
+    // folded: the classified unknown-outcome arm speaks the CardStatus
+    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped')
   })
 })
 
@@ -1828,7 +1832,7 @@ describe('melite_flow bench — the status distill arms', () => {
     assert.equal((out.pass as Array<Record<string, unknown>>)[0]!['url'], 'https://cdn.example/abs/clip.mp4')
   })
 
-  test('a non-string status field reads as unknown — terminal, the pass stops', async () => {
+  test('a non-string status field folds to stopped — terminal, the pass stops', async () => {
     const seen = mockFetch([
       (u: string) => {
         if (u === '/v1/bench/main') {
@@ -1839,7 +1843,8 @@ describe('melite_flow bench — the status distill arms', () => {
         if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rbq', status: 'queued' } }
         if (u.startsWith('/v1/flows/status/')) {
           // junk status AND junk stages shape — the distill's honest
-          // defaults (unknown status; the non-array arm drops to [])
+          // defaults (unknown status; the non-array arm drops to []),
+          // then the fold: unknown-outcome is the 'stopped' CardStatus
           return { status: 200, body: { status: 42, stages: 'not-an-array' } }
         }
         if (u === '/v1/bench/main/patch') return { status: 200, body: { rev: 4, stage: 's_0', patched: ['runStatus'] } }
@@ -1849,7 +1854,7 @@ describe('melite_flow bench — the status distill arms', () => {
     const tool = meliteFlow(seen.request)
     const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(8000))) as Record<string, unknown>
     assert.equal(out.status, 'stopped')
-    assert.equal(out.error, 'stage s_0 (image-gen) ended unknown')
+    assert.equal(out.error, 'stage s_0 (image-gen) ended stopped')
   })
 })
 

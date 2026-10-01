@@ -16,6 +16,7 @@ import { GlbStagePreview } from './glb-stage.tsx'
 import { PoserFigureStage } from './poser-figure.tsx'
 import { AudioLines, Box, Film } from './icons.tsx'
 import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
+import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
 
@@ -331,7 +332,7 @@ export function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
       ? h('div', { className: s.empty },
-          props.runStatus === 'running' ? 'rendering… the film lands here' : 'No render yet — run lands the film here')
+          isLiveRunStatus(props.runStatus) ? 'rendering… the film lands here' : 'No render yet — run lands the film here')
       : h('video', {
           className: s.hero, controls: true, playsInline: true, key: hero.url,
           src: hero.url, 'data-testid': 'stage-preview-video-hero',
@@ -381,7 +382,7 @@ export function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
           onLoad: () => { setLoadedUrl(seatUrl) },
         })
       : h('div', { className: s.empty },
-          props.runStatus === 'running' ? 'rendering… the image lands here' : 'No render yet — run lands the image here'),
+          isLiveRunStatus(props.runStatus) ? 'rendering… the image lands here' : 'No render yet — run lands the image here'),
     incoming !== null
       ? h('img', {
           key: 'incoming-' + incoming, className: s.heroIncoming, src: incoming, alt: '',
@@ -407,7 +408,7 @@ export function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h
     viewingHistory ? h(StaleBadge, { note, onReturn: returnToCurrent }) : null,
     hero === undefined
       ? h('div', { className: s.empty },
-          props.runStatus === 'running' ? 'rendering… the track lands here' : 'No render yet — run lands the track here')
+          isLiveRunStatus(props.runStatus) ? 'rendering… the track lands here' : 'No render yet — run lands the track here')
       : h('audio', {
           className: s.heroAudio, controls: true, key: hero.url,
           src: hero.url, 'data-testid': 'stage-preview-audio-hero',
@@ -438,7 +439,7 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
     active.length > 0
       ? h(GlbStagePreview, {
           assets: active.map((a, i) => ({ id: `${props.stageId}:${a.name || i}`, url: a.url, name: a.name })),
-          emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+          emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
         })
       : props.figure !== undefined
         ? h(PoserFigureStage, {
@@ -451,7 +452,7 @@ export function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>
           })
         : h(GlbStagePreview, {
             assets: [],
-            emptyHint: props.runStatus === 'running' ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
+            emptyHint: isLiveRunStatus(props.runStatus) ? 'rendering… the mesh lands here' : 'No render yet — run lands the mesh here',
           }),
     HistoryStrip(props, promote, 'stage-output-history', picked),
   )

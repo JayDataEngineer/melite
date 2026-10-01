@@ -12,7 +12,8 @@ import { benchSessionKey, restoreRunToBench } from './cards-resource.ts'
 import type { CardsDraftValue, CardsRunValue, BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
-import { STAGE_DOT } from './bench-row.ts'
+import { STATUS_DOT } from './bench-row.ts'
+import { isLiveRunStatus, statusOf } from '@melite/contracts/stageView'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -102,7 +103,9 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
   const [restoring, setRestoring] = useState(false)
   const [note, setNote] = useState<string | null>(null)
   const [stopping, setStopping] = useState(false)
-  const live = run.status === 'queued' || run.status === 'pending' || run.status === 'running'
+  // the owner's live judgement (was a private set that never knew the
+  // wire's `live` nor the estate's `stopping`)
+  const live = isLiveRunStatus(run.status)
   /* v8 ignore next 3 -- the cancel button renders only when onStop is defined (line above — probe 2026-09-19): the undefined arm is a single-render-law contradiction; prod always passes onStop */
   const onCancel = (): void => {
     if (onStop === undefined) return
@@ -153,12 +156,11 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     // count — zero rows is an empty list, never a special paragraph.
     h('ol', { className: css.tileGrid }, run.stages.map((s) => {
           const thumb = s.url !== undefined ? mediaUrl(run.runId, s.url) : null
-          // THE SAME MAP (2026-10-13): this seat used to fold the
-          // status words into a dot inline, and its set omitted
-          // 'completed' — the word the estate actually settles with —
-          // so a settled stage rendered NO dot here while the bench
-          // tile showed one. bench-row owns the fold; both seats read it.
-          const dot = STAGE_DOT[s.status] ?? null
+          // ONE MAP, ONE FOLD (2026-10-01): the raw word folds through
+          // statusOf, so 'completed' — the word the estate settles
+          // every finished stage with — lands on 'done' and shows its
+          // dot; the old raw-word table never knew it.
+          const dot = STATUS_DOT[statusOf(s.status)]
           const face = thumb !== null
             ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer', className: css.tileImgLink },
                 h('img', { className: css.tileImg, src: thumb, alt: s.id, loading: 'lazy' }))

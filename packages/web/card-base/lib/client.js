@@ -2491,8 +2491,13 @@ window.__ModuleLoader__.load({
 				case "success": return "done";
 				case "failed":
 				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
 				case "running":
 				case "live": return "running";
+				case "pending":
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -2514,6 +2519,9 @@ window.__ModuleLoader__.load({
 		*  here. */
 		function isTerminalStatus(value) {
 			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -2645,14 +2653,24 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
 				"failed",
 				"stopped",
 				"error",
-				"unknown"
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
 			]);
 		}));
 		//#endregion
@@ -3073,6 +3091,7 @@ window.__ModuleLoader__.load({
 			healRunMediaPaths: () => healRunMediaPaths,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
 			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
@@ -41921,14 +41940,19 @@ void main() {
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only status "done" runs count —
-		*  running / interrupted / stopped runs haven't produced anything yet.
-		*  Runs with no families field (pre-provenance sidecars) or a family-less
-		*  brick contribute nothing (backward compatible by construction). */
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				if (run.status !== "done") continue;
+				const folded = statusOf(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;
 				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
@@ -41959,7 +41983,9 @@ void main() {
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {}));
+		var init_familyProvenance = __esmMin((() => {
+			init_stageView();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/uploadToEstate.ts
 		function readUploadFile(file) {
@@ -48607,7 +48633,7 @@ void main() {
 				const listed = await fetchListRow(runId, signal).catch(() => null);
 				if (listed === null) return "gone";
 				const status = listed["status"];
-				return typeof status === "string" && status !== "" ? status : "completed";
+				return typeof status === "string" && status !== "" ? status : "unknown";
 			}
 		}
 		/** The draft's newest run (runs/list adoption — the reload-proof
@@ -49595,6 +49621,7 @@ void main() {
 		* to specialize — the h3 studio rides the shared VIDEO preview for
 		* its hero, exactly as an image-gen card rides the IMAGE one.
 		*/
+		init_stageView();
 		const pickCells = /* @__PURE__ */ new Map();
 		const PICK_CELL_CAP = 64;
 		function pickCellOf(id) {
@@ -49812,7 +49839,7 @@ void main() {
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the film lands here" : "No render yet — run lands the film here") : (0, react.createElement)("video", {
 				className: preview_module_css_default.hero,
 				controls: true,
 				playsInline: true,
@@ -49867,7 +49894,7 @@ void main() {
 				onLoad: () => {
 					setLoadedUrl(seatUrl);
 				}
-			}) : (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? (0, react.createElement)("img", {
+			}) : (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the image lands here" : "No render yet — run lands the image here"), incoming !== null ? (0, react.createElement)("img", {
 				key: "incoming-" + incoming,
 				className: preview_module_css_default.heroIncoming,
 				src: incoming,
@@ -49895,7 +49922,7 @@ void main() {
 			}, viewingHistory ? (0, react.createElement)(StaleBadge, {
 				note,
 				onReturn: returnToCurrent
-			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, props.runStatus === "running" ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
+			}) : null, hero === void 0 ? (0, react.createElement)("div", { className: preview_module_css_default.empty }, isLiveRunStatus(props.runStatus) ? "rendering… the track lands here" : "No render yet — run lands the track here") : (0, react.createElement)("audio", {
 				className: preview_module_css_default.heroAudio,
 				controls: true,
 				key: hero.url,
@@ -49928,7 +49955,7 @@ void main() {
 					url: a.url,
 					name: a.name
 				})),
-				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 			}) : props.figure !== void 0 ? (0, react.createElement)(PoserFigureStage, {
 				identityModel: props.figure.identityModel,
 				identityCoeffs: props.figure.identityCoeffs,
@@ -49938,7 +49965,7 @@ void main() {
 				label: `poser-figure:${props.stageId}`
 			}) : (0, react.createElement)(GlbStagePreview, {
 				assets: [],
-				emptyHint: props.runStatus === "running" ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
+				emptyHint: isLiveRunStatus(props.runStatus) ? "rendering… the mesh lands here" : "No render yet — run lands the mesh here"
 			}), HistoryStrip(props, promote, "stage-output-history", picked));
 		}
 		//#endregion
@@ -50178,4 +50205,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1c4e2090ef2e376bf9649a2859b33c30e2351103";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="84f123f6d7a99765b6cd6c0f61d32907d40bffc1";

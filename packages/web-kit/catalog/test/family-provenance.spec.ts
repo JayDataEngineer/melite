@@ -14,23 +14,29 @@ const run = (over: Record<string, unknown> = {}): MediaRun =>
   }) as unknown as MediaRun;
 
 describe("familyProvenance", () => {
-  it("counts only done runs, once per family per run", () => {
+  it("counts only artifact-carrying runs (the fold's done family), once per family per run", () => {
+    // The estate settles success as 'completed' and the cache stamps
+    // 'cached'/'reused' — all count (2026-10-01, the status fold).
+    // 'interrupted' folds to stopped and still excludes.
     const out = familyProvenance([
       run({ families: ["a", "a", "b"], created_at: 100 }),
       run({ status: "running", families: ["a"], created_at: 200 }),
       run({ status: "interrupted", families: ["b"], created_at: 300 }),
+      run({ status: "completed", families: ["a"], created_at: 800 }),
+      run({ status: "cached", families: ["c"], created_at: 150 }),
       run({ families: [], created_at: 400 }),
       run({ families: undefined, created_at: 500 }),
       run({ families: ["", "c"], created_at: 600 }),
       run({ families: ["a"], created_at: 700 }),
       run({ families: ["b"], created_at: "later" }),
     ]);
-    assert.equal(out["a"].count, 2);
-    assert.equal(out["a"].lastRunAt, 700_000);
+    assert.equal(out["a"].count, 3);
+    assert.equal(out["a"].lastRunAt, 800_000);
     assert.equal(out["b"].count, 2);
     // The string-created_at run contributes count but no timestamp bump.
     assert.equal(out["b"].lastRunAt, 100_000);
-    assert.equal(out["c"].count, 1);
+    assert.equal(out["c"].count, 2);
+    assert.equal(out["c"].lastRunAt, 600_000);
     assert.ok(!("running" in out));
     assert.ok(!("" in out));
   });

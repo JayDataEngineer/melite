@@ -202,19 +202,36 @@ test('projectStageView uses stage identity when the owner has no card name', () 
 })
 
 test('projectStageView maps every run status and result run identity', () => {
+  // the full fold table (2026-10-01, pending→queued same day): the
+  // estate's own words (completed/succeeded/success) fold to done;
+  // every failure word folds to error; every stopped word
+  // (stopped/interrupted/unknown) folds to stopped; wind-down
+  // (stopping) reads running; the estate's queued-for-start stage
+  // word (pending) reads queued — agreeing with isLiveRunStatus, its
+  // own live set — while the no-information words (the dead 'ready'
+  // sentinel, garbage, the empty word) alone read pending: never a
+  // dot, never a spinner.
   const statuses = [
     ['done', 'done'],
     ['completed', 'done'],
     ['succeeded', 'done'],
+    ['success', 'done'],
     ['failed', 'error'],
     ['error', 'error'],
     ['running', 'running'],
+    ['live', 'running'],
+    ['stopping', 'running'],
     ['queued', 'queued'],
+    ['pending', 'queued'],
+    ['stopped', 'stopped'],
+    ['interrupted', 'stopped'],
+    ['unknown', 'stopped'],
     ['stale', 'stale'],
     ['cached', 'cached'],
     ['skipped', 'skipped'],
     ['reused', 'reused'],
     ['ready', 'pending'],
+    ['gibberish', 'pending'],
   ] as const
   for (const [runStatus, expected] of statuses) {
     expect(projectStageView(owner({}, { runStatus })).status).toBe(expected)

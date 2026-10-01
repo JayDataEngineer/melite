@@ -210,7 +210,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // stays for this module's callers, but there is no second producer
 // to drift.
 import { benchSessionOf } from '@melite/contracts/benchStage'
-import { isTerminalStatus, statusOf } from '@melite/contracts/stageView'
+import { isTerminalStatus, isLiveRunStatus, statusOf } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
 /** The bench address for one session key. */
@@ -305,8 +305,16 @@ export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'st
   // `done` here and a failure-looking `stopped` there, and an unknown
   // word meant "running" in one and "stopped" in the other. The
   // contract's fold answers for both.
+  // 'gone' is the phantom cure's VERDICT word, never a status (the
+  // probe's union — audit E25): it must never feed the fold, which
+  // would read its fall-through as waiting. A listed live word (the
+  // probe returns the list's own status when the status door refuses)
+  // stamps running — the run is live per the list, and the reconcile
+  // stays armed to finish it. Unreadable words stamp stopped: the
+  // conservative terminal, never a fake spinner.
+  if (verdict === 'gone') return 'stopped'
+  if (isLiveRunStatus(verdict)) return 'running'
   const folded = statusOf(verdict)
-  if (folded === 'running' || folded === 'queued') return 'running'
   if (folded === 'done' || folded === 'cached' || folded === 'skipped' || folded === 'reused') return 'done'
   return 'stopped'
 }
@@ -577,7 +585,10 @@ async function observeRunOutcomeRun(
     // face survives exactly one poll interval before a real answer
     // (or the transport escalation below) corrects it.
     const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => 'running')
-    const first = startStatus === 'queued' || startStatus === 'pending' ? 'queued' : 'running'
+    // the queue-feedback stamp, classified by the fold: queued or
+    // still-waiting stamps queued; 'live'/'stopping' stamp running
+    const foldedStart = statusOf(startStatus)
+    const first = foldedStart === 'queued' || foldedStart === 'pending' ? 'queued' : 'running'
     await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
     onTouched?.()
   } catch { /* bookkeeping */ }
@@ -636,8 +647,11 @@ async function observeRunOutcomeRun(
     transportFails = 0
     if (!isTerminalRun(row.status)) {
       // the LIVE flip (queued → running): patch the tile the moment
-      // the estate picks the run up — never a stuck 'queued' face
-      const live = row.status === 'queued' || row.status === 'pending' ? 'queued' : 'running'
+      // the estate picks the run up — never a stuck 'queued' face.
+      // Classified by the fold: queued or still-waiting stamps queued;
+      // the wire's 'live' and the estate's 'stopping' stamp running.
+      const foldedLive = statusOf(row.status)
+      const live = foldedLive === 'queued' || foldedLive === 'pending' ? 'queued' : 'running'
       // THE PROGRESS FORWARD (2026-09-13, the operator's "forward
       // the comfyui progress webhooks like before"): the tap's live
       // fold rides the row — patched ONLY when the integer percent
@@ -711,7 +725,10 @@ export async function reconcileBenchRuns(
   hooks: { signal?: AbortSignal; onTouched?: () => void; armed?: Set<string> } = {},
 ): Promise<void> {
   for (const stage of bench.stages) {
-    if (stage.runStatus !== 'running' && stage.runStatus !== 'queued') continue
+    // the owner's live judgement (was a private {running,queued} set —
+    // a 'pending' or 'stopping' row whose run died was never reconciled
+    // and kept its phantom forever)
+    if (!isLiveRunStatus(typeof stage.runStatus === 'string' ? stage.runStatus : '')) continue
     const result = typeof stage.result === 'object' && stage.result !== null ? stage.result as Record<string, unknown> : null
     const runId = result !== null && typeof result['run_id'] === 'string' ? result['run_id'] as string : ''
     if (runId === '') continue
@@ -760,9 +777,15 @@ export function terminalOutcomeOf(
   stage: { url?: unknown, gallery?: unknown, error?: unknown } | undefined,
   runError: string | undefined,
 ): { result: Record<string, unknown>, terminal: 'done' | 'failed' | 'stopped' } {
-  const terminal: 'done' | 'failed' | 'stopped' = status === 'completed'
+  // THE OWNER DECIDES (2026-10-01): the old ternary knew only
+  // 'completed' and 'failed' — a file-era 'succeeded' stamped
+  // 'stopped' (a false stop on a good run) and an 'error' word never
+  // became a failure. The fold classifies; this seat only names the
+  // outcome stamp ('failed' stays the stamp word for a folded error).
+  const folded = statusOf(status)
+  const terminal: 'done' | 'failed' | 'stopped' = folded === 'done'
     ? 'done'
-    : status === 'failed' ? 'failed' : 'stopped'
+    : folded === 'error' ? 'failed' : 'stopped'
   const result: Record<string, unknown> = { run_id: runId }
   const url = stage !== undefined && typeof stage.url === 'string' && stage.url !== ''
     ? stage.url : ''

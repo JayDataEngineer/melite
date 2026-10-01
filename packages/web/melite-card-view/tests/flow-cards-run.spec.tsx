@@ -117,11 +117,16 @@ describe("the row faces — status precedence, service, prompt", () => {
     await screen.findByText("gen", {}, { timeout: 4000 });
     const rows = [...container.querySelectorAll("[data-stage]")];
     expect(rows.map((r) => [r.getAttribute("data-stage"), r.getAttribute("data-status")])).toEqual([
+      // the folded CardStatus rides the row verbatim (2026-10-01,
+      // pending→queued same day): named statuses keep their name (the
+      // dot map knows them all); the estate's queued-for-start word
+      // folds to queued (the waiting face, warning dot); the
+      // no-information home is pending — no dot, never a fake state.
       ["s_0", "running"], // live draft status rides (running)
-      ["s_1", "done"], // cached → done
-      ["s_2", "queued"], // pending → queued
-      ["s_3", "failed"], // error → failed
-      ["s_4", "ready"], // no status → ready (no dot, never a fake state)
+      ["s_1", "cached"], // cached keeps its name (its dot is done-colored)
+      ["s_2", "queued"], // pending folds to queued (the waiting dot)
+      ["s_3", "error"], // error keeps its name (the error dot)
+      ["s_4", "pending"], // no status → pending (no dot, never a fake state)
     ]);
   });
 

@@ -112,7 +112,12 @@ export async function probeRunGone(
     const listed = await fetchListRow(runId, signal).catch((): null => null)
     if (listed === null) return 'gone'
     const status = listed['status']
-    return typeof status === 'string' && status !== '' ? status : 'completed'
+    // A listed row with no status field is UNKNOWN, never 'completed'
+    // (2026-10-01, the vocabulary audit): the old fabrication reported
+    // success for a run whose outcome was simply unreadable — the same
+    // sentinel class the 'unknown' demotion below closed. 'unknown' is
+    // terminal and folds to 'stopped': an honest warning, not a lie.
+    return typeof status === 'string' && status !== '' ? status : 'unknown'
   }
 }
 

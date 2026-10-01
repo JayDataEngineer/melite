@@ -27,6 +27,8 @@
 // and NEVER won: every probe fell back to null, silently. The wall's
 // parameter-name pin is the contract; the arg key below matches it.
 
+import { isLiveRunStatus } from '@melite/contracts/stageView'
+
 /** Wire probe result: the wire row shape, or null when the channel is
  * absent (consumers fall back to fetch-era semantics). */
 export interface WireRunStatus {
@@ -77,7 +79,10 @@ export type PhantomVerdict = "live" | "gone" | "unknown"
 export function reconcilePhantomRun(row: WireRunStatus | null): PhantomVerdict {
   if (row === null) return "unknown"
   if (!row.known) return "gone"
-  if (row.status === "running" || row.status === "queued") return "live"
+  // The owner's live judgement (2026-10-01): the old hand-set knew
+  // running/queued only and declared a 'stopping' or 'pending' run
+  // gone — stamping a terminal over a run still winding down.
+  if (row.status !== null && isLiveRunStatus(row.status)) return "live"
   if (row.status === null) return "unknown"
   return "gone"
 }

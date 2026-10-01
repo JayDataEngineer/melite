@@ -4,22 +4,32 @@
 
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
+import { statusOf, type CardStatus } from '@melite/contracts/stageView'
 
-/** Bench row run-status → the installed StateDot union (FlowCards'
- *  CardRowLine law: done|warning|ongoing|error — a stage that never
- *  ran shows NO dot, never a fake state). */
-// THE DOT MAP IS DERIVED (2026-10-13, the card-UI duplication audit):
-// this table and the inline ternary in draft-run-views.tsx were two
-// owners of the same question, and they already disagreed — a stopped,
-// error or unknown stage showed a dot here and NO dot there, which is
-// exactly the "looks idle forever" failure the table was written to
-// prevent. One fold (contracts' statusOf), one map, two seats.
-export const STAGE_DOT: Record<string, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
-  queued: 'warning', pending: 'warning', running: 'ongoing', done: 'done', failed: 'error', stopped: 'warning', ready: null,
-  // the FILE-ERA words (the audit's H1): a pre-lifecycle sidecar can
-  // carry them, and a stage whose dot is null looks idle forever. The
-  // stamp above translates them, so these are the backstop.
-  success: 'done', succeeded: 'done', error: 'error', unknown: 'warning', stopping: 'warning',
+/** CardStatus → the installed StateDot union (FlowCards' CardRowLine
+ *  law: done|warning|ongoing|error — a stage that never ran shows NO
+ *  dot, never a fake state). */
+// THE DOT MAP IS FOLDED (2026-10-01, the vocabulary audit): the old
+// raw-word table carried NO 'completed' key while the estate settles
+// every finished stage to exactly that word — no dot on any settled
+// stage, the bug this table's comment claimed cured. Keyed by the
+// fold's own output (Record<CardStatus, …> — the compiler now refuses
+// a missing word), read through statusOf at both seats, so completed,
+// succeeded, success, interrupted and live arrive for free. 'pending'
+// shows no dot: it is the fold's home for no-information (never ran
+// or unrecognized), and a stage we know nothing about shows nothing.
+// cached and reused carry their artifact: a done dot, not a blank.
+export const STATUS_DOT: Record<CardStatus, 'done' | 'ongoing' | 'error' | 'warning' | null> = {
+  pending: null,
+  queued: 'warning',
+  running: 'ongoing',
+  done: 'done',
+  error: 'error',
+  stopped: 'warning',
+  stale: null,
+  cached: 'done',
+  skipped: null,
+  reused: 'done',
 }
 
 /** THE CATEGORIES: bench stages grouped by card (first-appearance
@@ -36,10 +46,18 @@ export function groupStagesByCard(stages: BenchStageView[]): Array<{ card: strin
   return groups
 }
 
-/** The chrome's running truth: the row's stamped status (the observer
- *  patches it terminal the moment the run lands). */
+/** The chrome's running truth: the row's FOLDED status (the observer
+ *  patches it terminal the moment the run lands). The folded live
+ *  pair is running|queued — the waiting face. Folded `pending` is
+ *  deliberately excluded: on the folded plane it is the
+ *  no-information home (never-ran, or a word the fold does not
+ *  know), and spinning on no information is a fake state. Raw
+ *  'pending' words never reach here folded-pending: the fold maps a
+ *  raw queued-for-start to 'queued'. Seats that judge RAW words use
+ *  the owner's isLiveRunStatus instead. */
 export function rowRunning(row: CardRowLineTabRow): boolean {
-  return row.status === 'running' || row.status === 'queued' || row.status === 'pending'
+  const s = row.status
+  return s === 'running' || s === 'queued'
 }
 
 /** The bench stage as a card row (the same distillation cardRows()
@@ -49,7 +67,10 @@ export interface CardRowLineTabRow {
   kind: string
   title: string
   service: string | null
-  status: string
+  /** THE FOLDED STATUS (2026-10-01): the one vocabulary, end to end —
+   *  raw words never ride a row. Consumers branch on CardStatus; the
+   *  raw word stays on stage.runStatus for the drill's wire truth. */
+  status: CardStatus
   dot: 'done' | 'ongoing' | 'error' | 'warning' | null
   prompt: string | null
   /** the failure carry — the run's own refusal text (rendered on the
@@ -77,7 +98,11 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   const title = isGroup
     ? 'Group (' + String(children) + ')'
     : (stage.title ?? stage.card ?? stage.id)
-  const status = typeof stage.runStatus === 'string' && stage.runStatus !== '' ? stage.runStatus : 'ready'
+  // THE FOLD AT THE SEAM (2026-10-01): 'ready' — a status word the
+  // estate never stamps, invented to mean "never ran" — is dead. The
+  // fold's pending home carries that meaning (no dot, not running),
+  // and every real word folds to its CardStatus exactly once, here.
+  const status = statusOf(typeof stage.runStatus === 'string' ? stage.runStatus : '')
   // THE WEBHOOK FEED (stroke 46b, the operator's order): the engine's
   // /ws progress tap folds activity + progress onto the stage rows —
   // the drill shows them LIVE (the tile keeps its percent pill).
@@ -117,7 +142,7 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
     title: String(title),
     service: typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : null,
     status,
-    dot: STAGE_DOT[status] ?? null,
+    dot: STATUS_DOT[status],
     prompt: promptRaw !== '' ? promptRaw.slice(0, 96) : null,
     /** the failure carry — the run's own refusal text, or null. */
     error: failText !== '' ? failText : null,

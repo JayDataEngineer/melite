@@ -24,6 +24,7 @@
  */
 
 import { postManageAction } from '@melite/card-base/client'
+import { statusOf } from '@melite/contracts/stageView'
 
 /** What a failed run can offer to fix. `extension` names a pack id
  * (from the missing-extension refusal's own text); `model` names a
@@ -93,7 +94,9 @@ export async function runRescueCall(rescue: Rescue, target: string): Promise<Res
 
 export function terminalStageErrorOf(stages: ReadonlyArray<{ runStatus?: unknown, result?: unknown }>): string | null {
   for (const stage of stages) {
-    if (stage.runStatus !== 'failed') continue
+    // the owner's failed judgement (was a raw 'failed' compare — an
+    // 'error'-worded row's refusal text never reached the rescue pane)
+    if (statusOf(typeof stage.runStatus === 'string' ? stage.runStatus : '') !== 'error') continue
     if (typeof stage.result !== 'object' || stage.result === null || Array.isArray(stage.result)) continue
     const error = Reflect.get(stage.result, 'error')
     if (typeof error === 'string' && error !== '') return error

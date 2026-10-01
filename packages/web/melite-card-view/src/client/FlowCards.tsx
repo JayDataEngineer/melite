@@ -55,6 +55,7 @@ import css from './card.module.css'
 import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { cardsDraftStageAddress } from './cards-resource.ts'
+import { STATUS_DOT } from './bench-row.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
   cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, runStatus, startDraft,
@@ -204,11 +205,12 @@ function useDraft(draftId: string | null): {
  *  audio) when the shell face is installed; without a shell (unit
  *  tests, headless harnesses) it falls back to the in-card drill. */
 function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
-  // installed StateDot union: done | warning | ongoing | error — a
-  // READY card (never run) shows no dot at all, not a fake state.
-  const dot: Record<CardRow['status'], 'done' | 'ongoing' | 'error' | 'warning' | null> = {
-    queued: 'warning', running: 'ongoing', done: 'done', failed: 'error', ready: null,
-  }
+  // ONE MAP, BOTH PLANES (2026-10-01): the dot is bench-row's
+  // STATUS_DOT over the folded CardStatus — the inline five-word map
+  // is gone, so the chat tile and the bench tile can no longer
+  // disagree. pending (never ran or unrecognized) shows no dot at all,
+  // never a fake state.
+  const dot = STATUS_DOT[row.status]
   return (
     <button type="button" className={css.row} onClick={onOpen} data-stage={row.stageId} data-status={row.status}>
       {row.thumbUrl !== null
@@ -216,7 +218,7 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
         : <Pill>{row.kind}</Pill>}
       <span className={css.rowTitle}>{row.title}</span>
       {row.service !== null && <Pill>{row.service}</Pill>}
-      {dot[row.status] !== null && <StateDot state={dot[row.status] as 'done' | 'ongoing' | 'error' | 'warning'} />}
+      {dot !== null && <StateDot state={dot} />}
       {row.prompt !== null && <span className={css.prompt}>{row.prompt}</span>}
     </button>
   )

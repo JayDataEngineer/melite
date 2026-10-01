@@ -55,6 +55,22 @@ describe("benchRow — the live carries", () => {
   });
 });
 
+describe("benchRow — the status fold and the dot (the 2026-10-01 law)", () => {
+  test("the estate's completed folds to a done dot (the leak the raw compare had)", () => {
+    expect(benchRow(stage({ id: "s_0", runStatus: "completed" })).dot).toBe("done");
+  });
+
+  test("every named status keeps its own dot; the no-information home carries none", () => {
+    expect(benchRow(stage({ id: "s_0", runStatus: "running" })).dot).toBe("ongoing");
+    expect(benchRow(stage({ id: "s_0", runStatus: "queued" })).dot).toBe("warning");
+    expect(benchRow(stage({ id: "s_0", runStatus: "failed" })).dot).toBe("error");
+    expect(benchRow(stage({ id: "s_0", runStatus: "interrupted" })).dot).toBe("warning");
+    expect(benchRow(stage({ id: "s_0", runStatus: "reused" })).dot).toBe("done");
+    expect(benchRow(stage({ id: "s_0" })).dot).toBeNull();
+    expect(benchRow(stage({ id: "s_0", runStatus: "gibberish" })).dot).toBeNull();
+  });
+});
+
 describe("benchRow — the upstream badge's resolution", () => {
   const parent = stage({ id: "s_0", card: "image-gen" });
 

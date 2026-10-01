@@ -2511,8 +2511,13 @@ window.__ModuleLoader__.load({
 				case "success": return "done";
 				case "failed":
 				case "error": return "error";
+				case "stopped":
+				case "interrupted":
+				case "unknown": return "stopped";
+				case "stopping": return "running";
 				case "running":
 				case "live": return "running";
+				case "pending":
 				case "queued": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
@@ -2534,6 +2539,9 @@ window.__ModuleLoader__.load({
 		*  here. */
 		function isTerminalStatus(value) {
 			return TERMINAL_RUN_STATUSES.has(value.toLowerCase());
+		}
+		function isLiveRunStatus(value) {
+			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -2665,14 +2673,24 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
 				"failed",
 				"stopped",
 				"error",
-				"unknown"
+				"unknown",
+				"interrupted",
+				"succeeded",
+				"success"
+			]);
+			LIVE_RUN_STATUSES = /* @__PURE__ */ new Set([
+				"running",
+				"live",
+				"stopping",
+				"queued",
+				"pending"
 			]);
 		}));
 		//#endregion
@@ -3093,6 +3111,7 @@ window.__ModuleLoader__.load({
 			healRunMediaPaths: () => healRunMediaPaths,
 			initBrowserStorage: () => initBrowserStorage,
 			isDataUrl: () => isDataUrl,
+			isLiveRunStatus: () => isLiveRunStatus,
 			isProvenance: () => isProvenance,
 			isTerminalStatus: () => isTerminalStatus,
 			judgeLaneBounds: () => judgeLaneBounds,
@@ -5861,14 +5880,19 @@ window.__ModuleLoader__.load({
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/familyProvenance.ts
-		/** Fold runs into per-family provenance. Only status "done" runs count —
-		*  running / interrupted / stopped runs haven't produced anything yet.
-		*  Runs with no families field (pre-provenance sidecars) or a family-less
-		*  brick contribute nothing (backward compatible by construction). */
+		/** Fold runs into per-family provenance. Only runs that CARRY an
+		*  artifact count (the fold's done family: done, cached, reused —
+		*  the estate settles success as "completed", which the old raw
+		*  `!== "done"` compare never matched, so every real run's
+		*  provenance read "never"). Running / interrupted / stopped runs
+		*  haven't produced anything yet. Runs with no families field
+		*  (pre-provenance sidecars) or a family-less brick contribute
+		*  nothing (backward compatible by construction). */
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				if (run.status !== "done") continue;
+				const folded = statusOf(run.status ?? "");
+				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;
 				const at = typeof run.created_at === "number" ? run.created_at * 1e3 : 0;
@@ -5899,7 +5923,9 @@ window.__ModuleLoader__.load({
 			if (diff < 6048e5) return `${Math.floor(diff / 864e5)}d ago`;
 			return new Date(at).toLocaleDateString();
 		}
-		var init_familyProvenance = __esmMin((() => {}));
+		var init_familyProvenance = __esmMin((() => {
+			init_stageView();
+		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/uploadToEstate.ts
 		function readUploadFile(file) {
@@ -8160,6 +8186,7 @@ window.__ModuleLoader__.load({
 		(0, react.createContext)({ useGui: (selector) => selector({ theme: { dark_mode: true } }) });
 		//#endregion
 		//#region src/ui/studio/StudioPreview.tsx
+		init_stageView();
 		function recordOf$1(value) {
 			return typeof value === "object" && value !== null && !Array.isArray(value) ? value : {};
 		}
@@ -8241,7 +8268,7 @@ window.__ModuleLoader__.load({
 								title: h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : ""),
 								className: studio_module_css_default.histChip,
 								children: [
-									h.status === "completed" ? "✓" : "×",
+									statusOf(h.status ?? "") === "done" ? "✓" : "×",
 									" ",
 									(h.runId ?? "run").replace(/^run-/, "").slice(0, 8),
 									" · ",
@@ -11493,6 +11520,7 @@ window.__ModuleLoader__.load({
 		* Run row.
 		*/
 		init_src();
+		init_stageView();
 		setContractToastSink((type, message, action) => {
 			_melite_card_base_client.useToastStore.getState().addToast(type, message, action);
 		});
@@ -11610,7 +11638,7 @@ window.__ModuleLoader__.load({
 				}
 			}, (0, react.createElement)(VideoTimelineStudio, {
 				stage,
-				running: props.runStatus === "running",
+				running: isLiveRunStatus(props.runStatus ?? ""),
 				onSave: props.onPatch,
 				upstreams: projectUpstreamStages(props)
 			}));
@@ -11625,4 +11653,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="25057a6db3ad2c6d0124adf3c2a98facb9145d29";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="339ce6de69d58ae8e22d10585edcf827631881b3";

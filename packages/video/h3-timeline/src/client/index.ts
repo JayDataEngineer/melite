@@ -28,6 +28,7 @@ import {
   type CardResult,
   type StageViewOwnerProps,
 } from '@melite/contracts'
+import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { VideoTimelineStudio } from '../ui/studio/component.tsx'
 import { refGenreOf } from '@melite/models-h3/timelineContract'
 
@@ -199,7 +200,7 @@ export function H3TimelineStudio(props: StageViewOwnerProps): ReturnType<typeof 
   return h('div', { 'data-testid': 'h3-studio-tenant', style: { height: '100%', minHeight: 0 } },
     h(VideoTimelineStudio, {
       stage,
-      running: props.runStatus === 'running',
+      running: isLiveRunStatus(props.runStatus ?? ''),
       onSave: props.onPatch,
       upstreams: projectUpstreamStages(props),
     }),

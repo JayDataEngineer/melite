@@ -243,7 +243,7 @@ test("probeRunGone: refused and absent from the list is gone", async () => {
   }
 });
 
-test("probeRunGone: refused but listed answers the list status, defaulting to completed", async () => {
+test("probeRunGone: refused but listed answers the list status, defaulting to unknown", async () => {
   const listed = mountEstateFakes({
     refusals: [{ method: "runs/status", message: "no such run" }],
     listRows: [{ run_id: "run-7", status: "failed" as const, artifacts: [] }],
@@ -258,7 +258,11 @@ test("probeRunGone: refused but listed answers the list status, defaulting to co
     listRows: [{ run_id: "run-8", artifacts: [] }],
   });
   try {
-    expect(await probeRunGone("run-8")).toBe("completed");
+    // THE NO-FABRICATION PIN (2026-10-01): a listed row with no status
+    // is unknown — never a manufactured 'completed' success over a run
+    // whose outcome was simply unreadable. 'unknown' is terminal and
+    // folds to 'stopped': an honest warning dot, not a green one.
+    expect(await probeRunGone("run-8")).toBe("unknown");
   } finally {
     unstatused.unmount();
   }

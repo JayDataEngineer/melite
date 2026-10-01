@@ -37,9 +37,12 @@ import type { Provenance } from "./vocab"
 
 // ── The unified view-model ────────────────────────────────────────────────
 
-/** One status vocabulary for every run source (agent, YAML bricks, assets). */
+/** One status vocabulary for every run source (agent, YAML bricks, assets).
+ * `stopped` is the deliberate-or-outside-force terminal: a stopped,
+ * interrupted, or unknown-outcome run folds there — terminal, but not a
+ * success and not the run's own failure. */
 export type CardStatus =
-  | "pending" | "running" | "queued" | "done" | "error"
+  | "pending" | "running" | "queued" | "done" | "error" | "stopped"
   | "stale" | "cached" | "skipped" | "reused"
   
 // CARD KINDS ARE OPEN SEAM VOCABULARY (2026-08-19, the cardSeam cut):

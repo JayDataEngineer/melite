@@ -16,6 +16,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
+import { statusOf } from '@melite/contracts/stageView'
 import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 import { isTerminalStatus } from '@melite/contracts/stageView'
@@ -159,7 +160,10 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         }
         const stages = v.stages ?? []
         const artifacts = v.artifacts ?? []
-        const done = stages.filter(s => s && s.status === 'completed').length
+        // the done count reads the owner's fold (2026-10-01, the vocab
+        // law): the raw === 'completed' compare silently read every
+        // file-era done word (succeeded, success) as not-yet-done.
+        const done = stages.filter(s => s && statusOf(typeof s.status === 'string' ? s.status : '') === 'done').length
         const total = stages.length
         const pos = typeof v.queue_position === 'number' && v.queue_position > 0
           ? ' (queue #' + v.queue_position + ')' : ''
@@ -176,8 +180,13 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // glob-output detour the efficiency law forbids. Terminal
         // rows render their artifact paths (up to 4, as served) and
         // per-stage status rows; live rows stay one-line (counts +
-        // plan + age — nothing to receipt yet).
-        const terminal = v.status === 'completed' || v.status === 'failed' || v.status === 'stopped'
+        // plan + age — nothing to receipt yet). THE OWNER DECIDES
+        // (2026-10-01): the hand-spelled triple below this comment
+        // kept 'error' and 'unknown' runs rendering "live · age Ns"
+        // forever in the file that already imports the owner — the
+        // exact disagreement the 2026-10-13 unification was written
+        // to kill.
+        const terminal = typeof v.status === 'string' && isTerminalStatus(v.status)
         // THE LIVE-AGE VOICE (§36.6's progress-UX): every live row —
         // planned OR staged — renders its age, the honest liveness
         // signal (a 10-minute h3 render reads "running · age 612s",
