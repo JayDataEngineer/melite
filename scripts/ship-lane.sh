@@ -423,10 +423,12 @@ if [ "$DO_BUILD" -eq 1 ]; then
     bad "the post-emit discovery pipeline failed (unreadable packages/ tree or no tsconfig matched) — refusing to typecheck nothing"
     exit 1
   fi
-  POSTCOUNT=0
+  # The pipeline guard above owns the empty case (grep's no-match rc
+  # under pipefail), and its grep '/packages/' means every list line
+  # is a packages dir — no case filter, no zero-count tripwire (the
+  # old POSTCOUNT=0 arm was unreachable for exactly that reason;
+  # verifier 30f43307 finding 2, 2026-10-12).
   while IFS= read -r tsdir; do
-    case "$tsdir" in */packages/*) ;; *) continue ;; esac
-    POSTCOUNT=$((POSTCOUNT + 1))
     if ! (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >"$POSTDIR/post.log" 2>&1); then
       bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — red against the JUST-BUILT libs:"
       head -8 "$POSTDIR/post.log" | sed 's/^/        /'
@@ -434,10 +436,6 @@ if [ "$DO_BUILD" -eq 1 ]; then
     fi
   done < "$POSTDIR/list"
   rm -rf "$POSTDIR"
-  if [ "$POSTCOUNT" -eq 0 ]; then
-    bad "the post-emit net saw ZERO tsconfigs — the discovery fed it nothing; refusing to call that green"
-    exit 1
-  fi
   if [ "$POSTFAIL" -ne 0 ]; then
     bad "the post-emit net is red — the build produced types the tree does not consume"
     exit 1
