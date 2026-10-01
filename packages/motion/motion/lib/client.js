@@ -40166,6 +40166,8 @@ window.__ModuleLoader__.load({
 		* the tenant mounted verbatim, one translate layer, zero paraphrase.
 		* onWireSlot stays OMITTED (the tenant's own contract: omitting
 		* hides the wire affordance — the bench slot has no wire door). */
+		/** Internal (export-discipline rule 1): the adapter is the plugin's
+		* own mount — only apply's registration consumes it. */
 		function MotionStudio(props) {
 			const stage = projectStageView(props, { genre: "motion" });
 			const upstreams = motionUpstreamStages(props);
@@ -40180,7 +40182,6 @@ window.__ModuleLoader__.load({
 			});
 		}
 		//#endregion
-		exports.MotionStudio = MotionStudio;
 		exports.apply = apply;
 		exports.inject = inject;
 		exports.name = name;
@@ -40189,4 +40190,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="1ed30d0b329e7a0cb0e505444e7617d3638d5d38";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ae989ed68d7e7aa9c62daaaa804c7db159627705";

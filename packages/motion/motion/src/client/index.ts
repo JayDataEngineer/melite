@@ -55,7 +55,9 @@ export const apply = defineStageViewRegistration(
  * the tenant mounted verbatim, one translate layer, zero paraphrase.
  * onWireSlot stays OMITTED (the tenant's own contract: omitting
  * hides the wire affordance — the bench slot has no wire door). */
-export function MotionStudio(props: StageViewOwnerProps & MotionStudioInjected): ReturnType<typeof h> {
+/** Internal (export-discipline rule 1): the adapter is the plugin's
+ * own mount — only apply's registration consumes it. */
+function MotionStudio(props: StageViewOwnerProps & MotionStudioInjected): ReturnType<typeof h> {
   const stage = projectStageView(props, { genre: 'motion' })
   const upstreams = motionUpstreamStages(props)
   return h(MotionCardEditor, {
