@@ -241,7 +241,10 @@ describe("debounced server PUT", () => {
         throw new Error("server down");
       }) as typeof fetch;
       useTagMap.getState().createTag("Doomed");
-      await new Promise((r) => setTimeout(r, 4500));
+      // 750ms = SYNC_DEBOUNCE_MS (500) + margin: exactly one debounced
+      // PUT must fire (and be caught) to prove the failed sync keeps
+      // the optimistic tag — the old 4500ms waited for nine.
+      await new Promise((r) => setTimeout(r, 750));
       assert.ok("doomed" in state().tags);
     } finally {
       Math.random = realRandom;
