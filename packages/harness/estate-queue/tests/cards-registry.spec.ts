@@ -228,7 +228,7 @@ describe("admitStageModel (the write-time gate)", () => {
     const fam = hit.boarded[0] as string;
     expect(svc.admitStageModel(hit.card, fam)).toEqual({ ok: true });
   });
-  it("an empty-board card with a model refuses with boards: none", () => {
+  it("an empty-board card with a model refuses with boards: none", async () => {
     for (const [card, d] of svc.defsSync().entries()) {
       if (d.boarded.length > 0) continue;
       const r = svc.admitStageModel(card, "any-family");

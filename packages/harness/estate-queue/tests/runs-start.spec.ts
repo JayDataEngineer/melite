@@ -21,10 +21,10 @@ import type { RunRecord } from "../src/runsTypes.ts";
 /** registerCompiledRun now returns a refusal union (the source-echo
  *  gate) — these walls register sourceless stages, so a refusal is
  *  itself the failure. */
-const mustRegister = (
+const mustRegister = async (
   args: Parameters<typeof registerCompiledRun>[0],
-): { run: RunRecord; queuePosition: number } => {
-  const out = registerCompiledRun(args);
+): Promise<{ run: RunRecord; queuePosition: number }> => {
+  const out = await registerCompiledRun(args);
   if ("payload" in out) throw new Error("unexpected refusal: " + JSON.stringify(out.payload));
   return out;
 };
@@ -315,7 +315,7 @@ describe("registerCompiledRun", () => {
     outputNodes: {},
     inputNames: {},
   } as unknown as CompiledStage;
-  it("registers UNDER THE CALLER'S RUN ID, routes the out root, and writes the durable pair", () => {
+  it("registers UNDER THE CALLER'S RUN ID, routes the out root, and writes the durable pair", async () => {
     const root = tmp();
     const seen: string[] = [];
     // THE RUN ID IS THE CALLER'S (the operator's live refusal,
@@ -327,7 +327,7 @@ describe("registerCompiledRun", () => {
     // that forgets one does not compile; the id the caller composed
     // its stages under is the id the run registers under.
     const runId = newRunId();
-    const { run, queuePosition } = mustRegister({
+    const { run, queuePosition } = await mustRegister({
       compiled: compiled([one]),
       testFlag: true,
       draftId: "d1",
@@ -359,10 +359,10 @@ describe("registerCompiledRun", () => {
     assert.equal(run.inputNames?.["s"], run.inputNames?.["s"]);
   });
 
-  it("the card door carries its identity (minted id, pipeline, request body)", () => {
+  it("the card door carries its identity (minted id, pipeline, request body)", async () => {
     const root = tmp();
     const body = { model: "m" };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -379,7 +379,7 @@ describe("registerCompiledRun", () => {
     assert.ok(existsSync(join(run.dir, "_flow.json")));
   });
 
-  it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with provenance restored", () => {
+  it("THE SNAPSHOT CONTRACT (the operator's order, 2026-09-26): the writer stamps a CONTRACTED stage list — junk rows drop with named warnings, the loadable row rides with provenance restored", async () => {
     // "the saving should 100% be a schemamaster contract, that way
     // we know 100% if it will load again": whatever the bench held,
     // what PERSISTS parses on the load side. A null and a scalar
@@ -393,7 +393,7 @@ describe("registerCompiledRun", () => {
     const root = tmp();
     const body = { model: "m" };
     const benchDoc = { stages: [null, "scalar", { id: "s", card: "c" }], intent: "mixed rows" };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -415,11 +415,11 @@ describe("registerCompiledRun", () => {
     );
   });
 
-  it("the card door stamps the snapshots (the wand restores from these, never the living bench)", () => {
+  it("the card door stamps the snapshots (the wand restores from these, never the living bench)", async () => {
     const root = tmp();
     const body = { model: "m" };
     const benchDoc = { stages: [{ id: "s", card: "c" }], intent: "the beach flow" };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -444,7 +444,7 @@ describe("registerCompiledRun", () => {
     });
   });
 
-  it("THE PROVENANCE HEAD (2026-09-25): a bench with a log rides its head on the snapshot; a log-less doc rides no fabricated label", () => {
+  it("THE PROVENANCE HEAD (2026-09-25): a bench with a log rides its head on the snapshot; a log-less doc rides no fabricated label", async () => {
     const root = tmp();
     const body = { model: "m" };
     // the bench's OWN log head — who wrote the bench the run was
@@ -455,7 +455,7 @@ describe("registerCompiledRun", () => {
       intent: "tts",
       log: [{ rev: 1, at: 1758841200, author: "tool", kind: "ensure", stage: "s_0", summary: "card birth" }],
     };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -468,7 +468,7 @@ describe("registerCompiledRun", () => {
     });
     // the log-less arm: the key rides ABSENT, never a guessed label
     const bare = { stages: [{ id: "s", card: "c" }], intent: "" };
-    const { run: run2 } = mustRegister({
+    const { run: run2 } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -479,7 +479,7 @@ describe("registerCompiledRun", () => {
     assert.equal("bench_head" in (run2.benchSnapshot as Record<string, unknown>), false);
   });
 
-  it("THE VARIANT AT BIRTH (commission 033's self-critique #5): the lane stamps the row, the queued sidecar, and the queued ledger row", () => {
+  it("THE VARIANT AT BIRTH (commission 033's self-critique #5): the lane stamps the row, the queued sidecar, and the queued ledger row", async () => {
     const root = tmp();
     // a film body (calls present): the ECHO queued-row arm carries
     // the variant too — both run.queued writers stamp the lane, and
@@ -490,7 +490,7 @@ describe("registerCompiledRun", () => {
       voice_name: "night-frequency",
       calls: [{ text: "one", start_frame: 0, end_frame: 124 }],
     };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([{ ...one, params: { text: "hi" } }]),
       testFlag: false,
       draftId: "d1",
@@ -509,10 +509,10 @@ describe("registerCompiledRun", () => {
     assert.match(ledger, /"variant":"customvoice"/);
   });
 
-  it("THE VARIANT AT BIRTH, NON-FILM ARM: a stageless-body registration stamps the lane on the else queued-row writer too", () => {
+  it("THE VARIANT AT BIRTH, NON-FILM ARM: a stageless-body registration stamps the lane on the else queued-row writer too", async () => {
     const root = tmp();
     const body = { model: "qwen3-tts", variant: "voicedesign", voice_name: "night-frequency" };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([{ ...one, params: { text: "hi" } }]),
       testFlag: false,
       draftId: "d1",
@@ -526,9 +526,9 @@ describe("registerCompiledRun", () => {
     assert.match(ledger, /"variant":"voicedesign"/);
   });
 
-  it("a variant-less registration stamps nothing (the lane is never guessed)", () => {
+  it("a variant-less registration stamps nothing (the lane is never guessed)", async () => {
     const root = tmp();
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -543,10 +543,10 @@ describe("registerCompiledRun", () => {
     assert.ok(!ledger.includes('"variant"'));
   });
 
-  it("an empty bench stamps no bench snapshot (the key stays absent, never null)", () => {
+  it("an empty bench stamps no bench snapshot (the key stays absent, never null)", async () => {
     const root = tmp();
     const doorBase = { runId: "run-nobench", pipeline: "m", cardId: "c", requestBody: {} };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -560,7 +560,7 @@ describe("registerCompiledRun", () => {
     assert.deepEqual(flow["card_snapshot"], { card: "c", params: {} });
     // a non-string intent stamps "" (the wand reads a string, never a guess)
     const stages = [{ id: "s" }];
-    const { run: run2 } = mustRegister({
+    const { run: run2 } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -578,7 +578,7 @@ describe("registerCompiledRun", () => {
   // bench revision the compose read — on the row, the queued sidecar,
   // and the ledger row. "What did ComfyUI get" is answered by the run
   // record itself, never by inference.
-  it("THE COMPOSE ECHO: a film start stamps the seam values + bench rev on the row, the sidecar, and the ledger", () => {
+  it("THE COMPOSE ECHO: a film start stamps the seam values + bench rev on the row, the sidecar, and the ledger", async () => {
     const root = tmp();
     const body = {
       model: "h3",
@@ -587,7 +587,7 @@ describe("registerCompiledRun", () => {
         { text: "two", start_frame: 124, end_frame: 243, transition: "cut" },
       ],
     };
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -611,9 +611,9 @@ describe("registerCompiledRun", () => {
     assert.equal(queued?.data["pipeline"], "m");
   });
 
-  it("a non-film start stamps no compose echo (the key stays absent, never null)", () => {
+  it("a non-film start stamps no compose echo (the key stays absent, never null)", async () => {
     const root = tmp();
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
       draftId: "d1",
@@ -626,11 +626,12 @@ describe("registerCompiledRun", () => {
     assert.equal("compose_echo" in flow, false);
   });
 
-  it("an unwritable state root throws LOUD (a refusal contract, never a silent skip)", () => {
-    // registerCompiledRun raw-throws the node fs Error (mkdirSync on
-    // the 555 root raises EACCES) — the caller (the start arm) folds
-    // it; pinning the loud shape here so a future silent-skip can
-    // never slip in. Root bypasses permission bits: skip there.
+  it("an unwritable state root throws LOUD (a refusal contract, never a silent skip)", async () => {
+    // registerCompiledRun raw-throws the node fs Error (the write's
+    // parent-dir mkdir on the 555 root raises EACCES) — the caller (the
+    // start arm) folds it; pinning the loud shape here so a future
+    // silent-skip can never slip in. Root bypasses permission bits:
+    // skip there.
     if (typeof process.geteuid === "function" && process.geteuid() === 0) {
       console.warn("unwritable-root wall skipped: running as root");
       return;
@@ -638,7 +639,7 @@ describe("registerCompiledRun", () => {
     const root = tmp();
     chmodSync(root, 0o555);
     try {
-      assert.throws(
+      await assert.rejects(
         () =>
           mustRegister({
             compiled: compiled([one]),

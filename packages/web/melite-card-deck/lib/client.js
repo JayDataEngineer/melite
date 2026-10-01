@@ -308,13 +308,11 @@ window.__ModuleLoader__.load({
 		*   ComfyUI Manager — a direct GUI on the estate's management plane.
 		*     Every button is ONE action of the manage-plane SSOT
 		*     (@melite/estate-queue's managePlane.ts — Cordis provisioning +
-		*     ComfyUI-Manager), reached over the `manage` Typert
-		*     remote: a same-origin POST /api/manage/act carrying the
-		*     client-request wire frame (the documented frame pair,
-		*     api-gateway.md — the sanctioned caller shape for plugins outside
-		*     the DSH web kernel; the host mounts the remote in the estate
-		*     composition). The vocabulary mirrors the comfy_manage agent tool
-		*     1:1. Progressive
+		*     ComfyUI-Manager), reached over the `manage` Typert remote
+		*     (MANAGE_TYPERT_REMOTE — the host binds it in the estate
+		*     composition; the deck seats the namespace card-base's
+		*     manageRemote() accessor hands back). The vocabulary mirrors the
+		*     comfy_manage agent tool 1:1. Progressive
 		*     disclosure: status is the cheap index and refreshes SILENTLY
 		*     after every mutating action (never through the result pane —
 		*     that pane belongs to the user's last explicit dispatch);
@@ -2107,4 +2105,4 @@ window.__ModuleLoader__.load({
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="e0357a6f3d178c8ad34c6c44e687534a3eb06261";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="450f8d2dac75dda68cd2eb20f34f1aa545d8c2fa";

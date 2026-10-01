@@ -6,7 +6,7 @@
 // enums, import type for types, .ts specifiers for relative imports.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { appendLedger, atomicWriteJson } from "./queueLock.ts";
+import { appendLedger, writeJsonAtomic } from "./queueLock.ts";
 // ── sweeps (sweep_sidecar 2253-2291, sidecar_status 2412-2470) ────
 
 export interface SweepResult {
@@ -72,11 +72,11 @@ export const READ_SWEEP_RUNNING_ERROR: string = "zombie swept at read time";
  *  queued sidecar is resurrected work, not a zombie). Swept BEFORE
  *  traffic, so the ledger never shows phantom actives. Returns the
  *  swept run ids in sorted order. */
-export function bootSweep(
+export async function bootSweep(
   stateRoot: string,
   liveRunIds: readonly string[] = [],
   nowS: number = Math.floor(Date.now() / 1000),
-): string[] {
+): Promise<string[]> {
   const swept: string[] = [];
   const live: Set<string> = new Set(liveRunIds);
   const outRoot: string = join(stateRoot, "output");
@@ -134,7 +134,7 @@ export function bootSweep(
       wasQueued ? BOOT_SWEEP_QUEUED_WHY : "",
     );
     if (!res.touched) continue;
-    atomicWriteJson(path, res.doc);
+    await writeJsonAtomic(path, res.doc);
     appendLedger(
       stateRoot,
       "run.swept",

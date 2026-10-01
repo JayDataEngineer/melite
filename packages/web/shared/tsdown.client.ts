@@ -45,8 +45,13 @@ const CSS_VIRTUAL_SUFFIX = '.mjs'
  * structural isDSHRemoteError marker, never instanceof (the class's own
  * docstring). Five shipped DSH client bundles (documentpreview, the api-*
  * faces, file-upload) inline it; our preset's list predated that.
+ *
+ * dsh-util-values (2026-10-12, card-base's activeRecipeId): a
+ * zero-dependency pure-function library (deepEqualJson and kin) with no
+ * runtime identity to share — upstream ships it under packages/util/
+ * precisely as the browser-safe utility tier the client rules name.
  */
-const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand|typert-protocol)(\/|$)/
+const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand|typert-protocol|util-values)(\/|$)/
 
 /** Generated descriptor/codec contribution with no shared runtime identity. */
 const GENERATED_REMOTE = /^@deepseek-ai\/dsh-[a-z0-9]+(?:-[a-z0-9]+)*\/remote$/

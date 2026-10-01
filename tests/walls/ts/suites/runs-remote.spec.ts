@@ -218,9 +218,20 @@ test("a valid start queues, the pump settles FAILED loud (no engine seat), the p
   // producing draft — the tab restores through it.
   assert.equal(status["draft_id"], "d_ok");
   // The settle persist: _flow.json sidecar + terminal ledger row.
+  // The in-memory row reaches terminal before the (async) settle
+  // persist commits — poll the sidecar, the persist's own commit
+  // point, instead of assuming the two are one step.
   const dir = join(root, "test-output", receipt.run_id);
-  assert.equal(existsSync(join(dir, "_flow.json")), true, "sidecar written");
-  const sidecar = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as { status: string };
+  const sidecarPath = join(dir, "_flow.json");
+  let sidecar = { status: "queued" };
+  for (let i = 0; i < 100; i++) {
+    if (existsSync(sidecarPath)) {
+      sidecar = JSON.parse(readFileSync(sidecarPath, "utf8")) as { status: string };
+      if (sidecar.status !== "queued") break;
+    }
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  assert.equal(existsSync(sidecarPath), true, "sidecar written");
   assert.equal(sidecar.status, "failed");
   const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
   assert.match(ledger, /run\.failed/);

@@ -13,9 +13,9 @@
  * retired with it: the wand is openResource, one call.
  *
  * What remains here is the ComfyUI Manager tab (assets-tab.tsx) —
- * the native manager over the `manage` Typert remote's wire door
- * (/api/manage/act; Ray Flows retired with the yaml spec library,
- * Ray Media deleted with the media plugin). Migrated 2026-09-10 off
+ * the native manager over the `manage` Typert remote (Ray Flows
+ * retired with the yaml spec library, Ray Media deleted with the
+ * media plugin). Migrated 2026-09-10 off
  * the retired dsh-better-sidebar registry onto ui-sidebar-right's
  * two-stage contract (type + keyed body).
  */

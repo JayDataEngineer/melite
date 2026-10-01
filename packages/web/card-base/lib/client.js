@@ -42084,6 +42084,27 @@ void main() {
 			init_uploadToEstate();
 		}));
 		//#endregion
+		//#region ../../../node_modules/.pnpm/@deepseek-ai+dsh-util-values@0.2.0-rc.1_@deepseek-ai+cordis@4.0.4/node_modules/@deepseek-ai/dsh-util-values/lib/index.js
+		/**
+		* Compare JSON-compatible values structurally.
+		* @param a - one JSON-compatible value.
+		* @param b - the other JSON-compatible value.
+		* @returns whether both values contain the same JSON data.
+		*/
+		function deepEqualJson(a, b) {
+			if (a === b) return true;
+			if (typeof a !== "object" || typeof b !== "object" || a === null || b === null) return false;
+			if (Array.isArray(a) || Array.isArray(b)) {
+				if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+				return a.every((entry, index) => deepEqualJson(entry, b[index]));
+			}
+			const left = a;
+			const right = b;
+			const keys = Object.keys(left);
+			if (keys.length !== Object.keys(right).length) return false;
+			return keys.every((key) => key in right && deepEqualJson(left[key], right[key]));
+		}
+		//#endregion
 		//#region src/spec.ts
 		init_extraKeys();
 		init_laneRelations();
@@ -42724,31 +42745,13 @@ void main() {
 				let holds = true;
 				for (const [k, v] of Object.entries(patch)) {
 					if (k === axisKey("Recipe")) continue;
-					if (!deepEqualHeld(values[k], v)) {
+					if (!deepEqualJson(values[k], v)) {
 						holds = false;
 						break;
 					}
 				}
 				if (holds && Object.keys(patch).length > 0) return row.id;
 			}
-		}
-		/** Deep equality over JSON-shaped held values (arrays compared
-		* element-wise -- the lora bag rows; primitives by Object.is). */
-		function deepEqualHeld(a, b) {
-			if (Object.is(a, b)) return true;
-			if (Array.isArray(a) && Array.isArray(b)) {
-				if (a.length !== b.length) return false;
-				for (let i = 0; i < a.length; i++) if (!deepEqualHeld(a[i], b[i])) return false;
-				return true;
-			}
-			if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
-				const ka = Object.keys(a);
-				const kb = Object.keys(b);
-				if (ka.length !== kb.length) return false;
-				for (const k of ka) if (!deepEqualHeld(a[k], b[k])) return false;
-				return true;
-			}
-			return false;
 		}
 		/** One group's active row under the owner chain (inner recursion of
 		*  activeVariantId — Variant resolves first, chained groups after). */
@@ -50138,4 +50141,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="54bf92f6f80d083374ddc7ab411bba9fb0e89979";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="464381dfbe6d048826b92e582f3f5da7e395bded";

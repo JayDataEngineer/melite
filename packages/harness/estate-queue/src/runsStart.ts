@@ -26,7 +26,7 @@ import {
   checkFlowInlineTop,
   checkFlowStage,
 } from "./runsGates.ts";
-import { appendLedger, atomicWriteJson, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies } from "./queue.ts";
+import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.ts";
 import type { QueueRefusal } from "./queue.ts";
 import { rootsManifest } from "./rootsManifest.ts";
 import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
@@ -402,7 +402,7 @@ export function unknownDraftRefusal(draftId: string): StartRefusal {
  *  out root on the test flag, build the rich run row. The caller
  *  (the remote) enqueues it on the queue core + kicks the pump.
  *  Returns the row and its queue position. */
-export function registerCompiledRun(args: {
+export async function registerCompiledRun(args: {
   compiled: { stages: CompiledStage[] };
   testFlag: boolean;
   draftId: string;
@@ -455,7 +455,7 @@ export function registerCompiledRun(args: {
      *  so the wand restores the whole flow, not just the ran card. */
     benchDoc?: Record<string, unknown>;
   };
-}): { run: RunRecord; queuePosition: number } | StartRefusal {
+}): Promise<{ run: RunRecord; queuePosition: number } | StartRefusal> {
   const { compiled, testFlag, draftId, stateRoot, enqueue, door } = args;
   // THE ONE RUN ID (see the type above): the caller's. There is no
   // second producer here, and there cannot be one without failing the
@@ -658,8 +658,8 @@ export function registerCompiledRun(args: {
     run.variant = regVariant;
     console.log(`[variant] run=${runId} draft=${draftId} variant=${regVariant}`);
   }
-  atomicWriteJson(join(dir, "_request.json"), requestBody);
-  atomicWriteJson(join(dir, "_flow.json"), sidecarDocFor(run));
+  await writeJsonAtomic(join(dir, "_request.json"), requestBody);
+  await writeJsonAtomic(join(dir, "_flow.json"), sidecarDocFor(run));
   if (echoCalls.length > 0) {
     appendLedger(stateRoot, "run.queued", {
       run_id: runId,

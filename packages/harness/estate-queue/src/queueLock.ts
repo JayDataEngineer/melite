@@ -9,12 +9,11 @@ import {
   mkdirSync,
   openSync,
   readFileSync,
-  renameSync,
   unlinkSync,
-  writeFileSync,
   writeSync,
   closeSync,
 } from "node:fs";
+import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import { join } from "node:path";
 // ── constants (cites inline) ──────────────────────────────────
 
@@ -221,9 +220,16 @@ export function appendLedger(
   }
 }
 
-/** Atomic write: tmp + rename, indent-2 JSON. */
-export function atomicWriteJson(filePath: string, obj: unknown): void {
+/** The permission bits the queue's own files carry — the lock file
+ *  opens at `0o644`, so its data files match it. */
+const QUEUE_FILE_MODE = 0o644;
+
+/** Atomic indent-2 JSON write — the atomicity is
+ *  `writeFileAtomic`'s (symlink-safe exclusive-create temp, mode
+ *  carried through the rename, parent directories created, temp
+ *  removed on failure); this adds only the JSON encoding the call
+ *  sites share. */
+export async function writeJsonAtomic(filePath: string, obj: unknown): Promise<void> {
   const text: string = JSON.stringify(obj, null, 2) ?? "null";
-  writeFileSync(filePath + ".tmp", text, "utf8");
-  renameSync(filePath + ".tmp", filePath);
+  await writeFileAtomic(filePath, text, { mode: QUEUE_FILE_MODE });
 }

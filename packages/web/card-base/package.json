@@ -43,6 +43,7 @@
     "@deepseek-ai/dsh-client-store": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
+    "@deepseek-ai/dsh-util-values": "0.2.0-rc.1",
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",

@@ -400,10 +400,10 @@ export class RunsRuntimeService extends Service {
         // LOUD, in place: the sidecar moves to failed with the
         // door's refusal text — a poison request can never haunt
         // the next boot as "queued" forever.
-        this.settleReplayRefusal(stateRoot, runId, errText(exc));
+        await this.settleReplayRefusal(stateRoot, runId, errText(exc));
       }
     }
-    bootSweep(stateRoot, revived);
+    await bootSweep(stateRoot, revived);
     if (revived.length > 0) this.kick();
     return revived;
   }
@@ -411,7 +411,7 @@ export class RunsRuntimeService extends Service {
   /** Settle a replay-refused resurrect id: rebuild the row's
    *  identity from its own sidecar (the stage faces ride verbatim)
    *  and persist failed through the canonical terminal writer. */
-  private settleReplayRefusal(stateRoot: string, runId: string, error: string): void {
+  private async settleReplayRefusal(stateRoot: string, runId: string, error: string): Promise<void> {
     const dir = join(outRootFor(stateRoot, false), runId);
     let pre: Record<string, unknown> = {};
     try {
@@ -468,7 +468,7 @@ export class RunsRuntimeService extends Service {
       // durable mirror; a re-plan re-registers through the door).
       initials: {},
     };
-    settlePersist(row, stateRoot);
+    await settlePersist(row, stateRoot);
   }
 
   /** The queue seat's registry (the FIFO SSOT). */
@@ -899,7 +899,7 @@ export class RunsRuntimeService extends Service {
         outputNodes: composed.outputNodes,
         inputNames: {},
       };
-      const reg = registerCompiledRun({
+      const reg = await registerCompiledRun({
         compiled: { stages: [cardStage] },
         testFlag: checked.testFlag,
         draftId: checked.draftId,
@@ -1163,7 +1163,7 @@ export class RunsRuntimeService extends Service {
       }
       }
     }
-    const reg = registerCompiledRun({
+    const reg = await registerCompiledRun({
       compiled,
       testFlag: checked.testFlag,
       draftId: checked.draftId,
@@ -1616,10 +1616,14 @@ export class RunsRuntimeService extends Service {
   }
 
   /** Terminal settle (queue core row + the settle persist). */
-  private settle(run: RunRecord): void {
-    const stateRoot = this.ctx.queue.stateRoot;
-    settlePersist(run, stateRoot);
-    this.core.releaseActive();
-    this.core.evictSettled();
+  private async settle(run: RunRecord): Promise<void> {
+    // Capture the queue seat before the first await: a settle that
+    // resumes after fiber dispose must not re-read the dead ctx
+    // injection (the persist still completes; the bookkeeping runs
+    // on the captured instance).
+    const queue = this.ctx.queue;
+    await settlePersist(run, queue.stateRoot);
+    queue.core.releaseActive();
+    queue.core.evictSettled();
   }
 }

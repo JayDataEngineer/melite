@@ -40,7 +40,7 @@ export function declaredPrimaryFirst(names: string[], stem: string | undefined):
   return [hero, ...names.filter((n): boolean => n !== hero)];
 }
 
-export type SettleFn = (run: RunRecord) => void;
+export type SettleFn = (run: RunRecord) => void | Promise<void>;
 
   /** One run through the merged path (door-verbatim: stages ->
    *  running + merged:true, splice rows, ONE executeFlow submit,
@@ -89,7 +89,7 @@ export type SettleFn = (run: RunRecord) => void;
         }
         run.status = "failed";
         run.error = text;
-        settle(run);
+        await settle(run);
         return;
       }
     }
@@ -126,7 +126,7 @@ export type SettleFn = (run: RunRecord) => void;
       }
       run.status = "failed";
       run.error = text;
-      settle(run);
+      await settle(run);
       return;
     }
     // THE WIRING FENCE (2026-10-10, the operator's law: ON SUBMIT
@@ -222,7 +222,7 @@ export type SettleFn = (run: RunRecord) => void;
           }
           run.status = "failed";
           run.error = text;
-          settle(run);
+          await settle(run);
           return;
         }
       }
@@ -368,7 +368,7 @@ export type SettleFn = (run: RunRecord) => void;
         delete stage["activity"];
       }
       run.status = run.stopFlag ? "stopped" : "completed";
-      settle(run);
+      await settle(run);
     } catch (exc: unknown) {
       const text: string = errText(exc);
       const stopped: boolean =
@@ -386,7 +386,7 @@ export type SettleFn = (run: RunRecord) => void;
       }
       run.status = stopped ? "stopped" : "failed";
       if (!stopped) run.error = text;
-      settle(run);
+      await settle(run);
     }
   }
 

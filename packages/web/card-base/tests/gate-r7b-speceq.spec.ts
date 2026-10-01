@@ -1,7 +1,7 @@
 // spec-matrix-adjacent pure-function harness (no DOM).
 // gate-r7b-speceq.spec.ts — GATE R7B (spec.ts dark arms): the
-// durable Recipe-axis skip in activeRecipeId (797) and every
-// deepEqualHeld arm (809-821), driven through the exported
+// durable Recipe-axis skip in activeRecipeId and every
+// deepEqualJson arm (@deepseek-ai/dsh-util-values), driven through the exported
 // activeRecipeId with recipe rows stamping arrays/objects/
 // primitives. Mirrors spec-matrix.spec.ts's doc/V fixtures.
 import { expect, test } from 'vitest'
@@ -52,49 +52,49 @@ test('THE RECIPE-AXIS SKIP: a patch carrying the durable key skips it (never com
   expect(activeRecipeId(spec, { steps: 999, recipe: 'r-x' })).toBeUndefined()
 })
 
-test('deepEqualHeld ARRAYS: a stamp-for-stamp bag matches (element recursion holds)', () => {
+test('deepEqualJson ARRAYS: a stamp-for-stamp bag matches (element recursion holds)', () => {
   const spec = doc([V('r-bag', 'Recipe', { label: 'Bag', defaults: { loras: BAG } })])
   expect(activeRecipeId(spec, { loras: [{ id: 'a', strength: 0.5 }] })).toBe('r-bag')
 })
 
-test('deepEqualHeld ARRAYS: length mismatch never matches', () => {
+test('deepEqualJson ARRAYS: length mismatch never matches', () => {
   const spec = doc([V('r-bag', 'Recipe', { label: 'Bag', defaults: { loras: BAG } })])
   expect(activeRecipeId(spec, { loras: [] })).toBeUndefined()
   expect(activeRecipeId(spec, { loras: [...BAG, { id: 'b', strength: 0.7 }] })).toBeUndefined()
 })
 
-test('deepEqualHeld ARRAYS: an element drifting off the stamp never matches', () => {
+test('deepEqualJson ARRAYS: an element drifting off the stamp never matches', () => {
   const spec = doc([V('r-bag', 'Recipe', { label: 'Bag', defaults: { loras: BAG } })])
   expect(activeRecipeId(spec, { loras: [{ id: 'a', strength: 0.9 }] })).toBeUndefined()
 })
 
-test('deepEqualHeld ARRAYS: array-vs-not-array never matches, either direction', () => {
+test('deepEqualJson ARRAYS: array-vs-not-array never matches, either direction', () => {
   const bag = doc([V('r-bag', 'Recipe', { label: 'Bag', defaults: { loras: BAG } })])
   expect(activeRecipeId(bag, { loras: 'nope' })).toBeUndefined()
   const prim = doc([V('r-prim', 'Recipe', { label: 'Prim', defaults: { steps: 7 } })])
   expect(activeRecipeId(prim, { steps: [7] })).toBeUndefined()
 })
 
-test('deepEqualHeld OBJECTS: null never equals a stamped object, either direction', () => {
+test('deepEqualJson OBJECTS: null never equals a stamped object, either direction', () => {
   const stamped = doc([V('r-cfg', 'Recipe', { label: 'Cfg', defaults: { cfg: CFG } })])
   expect(activeRecipeId(stamped, { cfg: null })).toBeUndefined()
   const nulled = doc([V('r-null', 'Recipe', { label: 'Null', defaults: { cfg: null } })])
   expect(activeRecipeId(nulled, { cfg: { a: 1 } })).toBeUndefined()
 })
 
-test('deepEqualHeld OBJECTS: a key-count drift never matches', () => {
+test('deepEqualJson OBJECTS: a key-count drift never matches', () => {
   const spec = doc([V('r-cfg', 'Recipe', { label: 'Cfg', defaults: { cfg: CFG } })])
   expect(activeRecipeId(spec, { cfg: { a: 1 } })).toBeUndefined()
   expect(activeRecipeId(spec, { cfg: { a: 1, b: 2, c: 3 } })).toBeUndefined()
 })
 
-test('deepEqualHeld OBJECTS: a per-key drift never matches; the full stamp does', () => {
+test('deepEqualJson OBJECTS: a per-key drift never matches; the full stamp does', () => {
   const spec = doc([V('r-cfg', 'Recipe', { label: 'Cfg', defaults: { cfg: CFG } })])
   expect(activeRecipeId(spec, { cfg: { a: 1, b: 999 } })).toBeUndefined()
   expect(activeRecipeId(spec, { cfg: { a: 1, b: 2 } })).toBe('r-cfg')
 })
 
-test('deepEqualHeld PRIMITIVES: the stamp matches, a moved knob does not', () => {
+test('deepEqualJson PRIMITIVES: the stamp matches, a moved knob does not', () => {
   const spec = doc([V('r-prim', 'Recipe', { label: 'Prim', defaults: { steps: 7 } })])
   expect(activeRecipeId(spec, { steps: 7 })).toBe('r-prim')
   expect(activeRecipeId(spec, { steps: 8 })).toBeUndefined()

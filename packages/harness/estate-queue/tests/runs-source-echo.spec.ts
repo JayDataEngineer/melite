@@ -55,16 +55,16 @@ const stageWith = (params: Record<string, EngineJson>): CompiledStage => ({
  *  are about the SOURCE gate, not the id seam, so the helper supplies
  *  a door when a caller does not — the id is still the caller's and
  *  the run registers under exactly it. */
-const mustRegister = (
+const mustRegister = async (
   args: Omit<Parameters<typeof registerCompiledRun>[0], "door"> & {
     door?: Parameters<typeof registerCompiledRun>[0]["door"];
   },
-): { run: RunRecord; queuePosition: number } => {
+): Promise<{ run: RunRecord; queuePosition: number }> => {
   const withDoor = {
     ...args,
     door: args.door ?? { runId: newRunId(), pipeline: "flow_inline", requestBody: {} },
   };
-  const out = registerCompiledRun(withDoor);
+  const out = await registerCompiledRun(withDoor);
   if ("payload" in out) throw new Error("expected registration, got refusal: " + JSON.stringify(out.payload));
   return out;
 };
@@ -288,10 +288,10 @@ describe("resolveSourceRefs", () => {
 });
 
 describe("registerCompiledRun (the source-echo gate)", () => {
-  it("a dead media source refuses at the door with its URL named — nothing registers", () => {
+  it("a dead media source refuses at the door with its URL named — nothing registers", async () => {
     const root = tmp();
     const seen: string[] = [];
-    const out = registerCompiledRun({
+    const out = await registerCompiledRun({
       compiled: { stages: [stageWith({ ref_images: ["/melite-media/runs/run-aaaa1111-bb22cc33/edit/gone.png"] })] },
       testFlag: false,
       draftId: "d1",
@@ -309,9 +309,9 @@ describe("registerCompiledRun (the source-echo gate)", () => {
     assert.deepEqual(seen, [], "nothing enqueued");
   });
 
-  it("live sources stamp the record (url + resolved file) and ride the sidecar", () => {
+  it("live sources stamp the record (url + resolved file) and ride the sidecar", async () => {
     const root = rooted("run-aaaa1111-bb22cc33", "edit/a.png");
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: {
         stages: [
           stageWith({
@@ -335,9 +335,9 @@ describe("registerCompiledRun (the source-echo gate)", () => {
     });
   });
 
-  it("sourceless runs register exactly as before (no stamp, no refusal)", () => {
+  it("sourceless runs register exactly as before (no stamp, no refusal)", async () => {
     const root = tmp();
-    const { run } = mustRegister({
+    const { run } = await mustRegister({
       compiled: { stages: [stageWith({ steps: 12 })] },
       testFlag: false,
       draftId: "d1",

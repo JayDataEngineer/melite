@@ -91,7 +91,7 @@ describe("index plugin rows", () => {
 });
 
 describe("resurrect adapters", () => {
-  it("the QueueRoots sweep adapter retires stale running claims (the hollow bootResurrect is retired with it)", () => {
+  it("the QueueRoots sweep adapter retires stale running claims (the hollow bootResurrect is retired with it)", async () => {
     // stroke 83: bootResurrect is GONE — the service's bootReconcile
     // replays _request.json through the start door (its walls live
     // in runs-registry.spec). The adapter file still owns the
@@ -113,7 +113,7 @@ describe("resurrect adapters", () => {
     const roots = { stateRoot: root, runsRoot: join(root, "output"), ledgerPath: join(root, "output", "_ledger.jsonl") };
     // the queued record is LIVE work (shielded); the stale running
     // claim sweeps.
-    const swept = bootSweep(roots, ["run-old"]);
+    const swept = await bootSweep(roots, ["run-old"]);
     assert.ok(swept.includes("run-stale"));
     assert.ok(!swept.includes("run-old"));
   });

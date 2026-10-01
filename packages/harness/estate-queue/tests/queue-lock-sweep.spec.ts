@@ -14,7 +14,7 @@ import {
   releaseLock,
   refuseStartLine,
   appendLedger,
-  atomicWriteJson,
+  writeJsonAtomic,
   resolveStateRoot,
   outRootFor,
   ledgerPathFor,
@@ -117,10 +117,10 @@ describe("the lock plane's tail arms", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
-  it("atomicWriteJson stringifies undefined to the literal null", () => {
+  it("writeJsonAtomic stringifies undefined to the literal null", async () => {
     const root = mkdtempSync(join(tmpdir(), "melite-lockaw-"));
     try {
-      atomicWriteJson(join(root, "doc.json"), undefined);
+      await writeJsonAtomic(join(root, "doc.json"), undefined);
       assert.equal(readFileSync(join(root, "doc.json"), "utf8"), "null");
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -185,40 +185,40 @@ describe("pipelineOf (the run's pipeline identity)", () => {
 });
 
 describe("bootSweep (the boot dispositions)", () => {
-  it("an absent output root sweeps nothing", () => {
-    assert.deepEqual(bootSweep(join(ROOT, "nope")), []);
+  it("an absent output root sweeps nothing", async () => {
+    assert.deepEqual(await bootSweep(join(ROOT, "nope")), []);
   });
-  it("a live run id is left alone; others resettle", () => {
+  it("a live run id is left alone; others resettle", async () => {
     const out = join(ROOT, "output");
     rmSync(out, { recursive: true, force: true });
     mkdirSync(join(out, "run-live"), { recursive: true });
     writeFileSync(join(out, "run-live", "_flow.json"), JSON.stringify({ status: "running" }));
     mkdirSync(join(out, "run-stale"), { recursive: true });
     writeFileSync(join(out, "run-stale", "_flow.json"), JSON.stringify({ status: "queued" }));
-    const swept = bootSweep(ROOT, ["run-live"]);
+    const swept = await bootSweep(ROOT, ["run-live"]);
     assert.deepEqual(swept, ["run-stale"]);
     const doc = JSON.parse(readFileSync(join(out, "run-stale", "_flow.json"), "utf8"));
     assert.equal(doc["status"], "failed");
   });
-  it("an unreadable _flow.json is ledgered unreadable, never silent", () => {
+  it("an unreadable _flow.json is ledgered unreadable, never silent", async () => {
     const out = join(ROOT, "output");
     rmSync(out, { recursive: true, force: true });
     mkdirSync(join(out, "run-bad"), { recursive: true });
     writeFileSync(join(out, "run-bad", "_flow.json"), "{nope");
     // ROW 28 law: the row is LEDGERED unreadable — not swept (the
     // disposition is the ledger row itself, the loop continues)
-    assert.deepEqual(bootSweep(ROOT), []);
+    assert.deepEqual(await bootSweep(ROOT), []);
     const ledger = readFileSync(join(ROOT, "output", "_ledger.jsonl"), "utf8");
     assert.match(ledger, /"state":"unreadable"/);
     assert.match(ledger, /parse failed/);
   });
-  it("a non-object _flow.json is ledgered unreadable too", () => {
+  it("a non-object _flow.json is ledgered unreadable too", async () => {
     const root2 = join(ROOT, "state2");
     const out = join(root2, "output");
     rmSync(out, { recursive: true, force: true });
     mkdirSync(join(out, "run-arr"), { recursive: true });
     writeFileSync(join(out, "run-arr", "_flow.json"), "[1]");
-    assert.deepEqual(bootSweep(root2), []);
+    assert.deepEqual(await bootSweep(root2), []);
     const ledger = readFileSync(join(root2, "output", "_ledger.jsonl"), "utf8");
     assert.match(ledger, /_flow.json is not an object/);
   });

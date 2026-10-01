@@ -279,7 +279,7 @@ describe("loadCard", () => {
       folder === "checkpoints" && name === "a.safetensors" ? "/models/a.safetensors" : null,
   };
 
-  it("an unknown card answers in the LOAD door's voice, never the engine's bootstrap voice", () => {
+  it("an unknown card answers in the LOAD door's voice, never the engine's bootstrap voice", async () => {
     // The ORDER, pinned by making the two failures mutually
     // exclusive: a seat whose every read throws (the bootstrap
     // refusal) must lose to the card's own refusal for a name that

@@ -135,7 +135,7 @@ describe("errText", () => {
     assert.equal(errText(e), "Error: x");
   });
 
-  it("non-Errors voice Error: String(v)", () => {
+  it("non-Errors voice Error: String(v)", async () => {
     assert.equal(errText("boom"), "Error: boom");
     assert.equal(errText(42), "Error: 42");
     assert.equal(errText(undefined), "Error: undefined");
@@ -143,7 +143,7 @@ describe("errText", () => {
 });
 
 describe("settlePersist", () => {
-  it("rewrites the sidecar and appends the terminal ledger row", () => {
+  it("rewrites the sidecar and appends the terminal ledger row", async () => {
     const runDir = join(dir, "rset");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -163,7 +163,7 @@ describe("settlePersist", () => {
       artifacts: ["out/a.png"],
       skippedStages: ["s2"],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["run_id"], "r1");
     assert.equal(sidecar["status"], "failed");
@@ -174,7 +174,7 @@ describe("settlePersist", () => {
     assert.match(ledger, /"run_id":"r1"/);
   });
 
-  it("preserves terminal stage presentation metadata in the sidecar", () => {
+  it("preserves terminal stage presentation metadata in the sidecar", async () => {
     const runDir = join(dir, "rstagemeta");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -193,7 +193,7 @@ describe("settlePersist", () => {
         merged: true,
       } as never],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as { stages: Array<Record<string, unknown>> };
     assert.deepEqual(sidecar.stages[0], {
       id: "s1",
@@ -210,44 +210,44 @@ describe("settlePersist", () => {
     });
   });
 
-  it("a persist failure never unmakes the in-memory truth", () => {
+  it("a persist failure never unmakes the in-memory truth", async () => {
     const fileAsDir = join(dir, "filedir");
     writeFileSync(fileAsDir, "x");
     const run = record({ dir: join(fileAsDir, "r") });
-    settlePersist(run, fileAsDir);
-    settlePersist(record(), join(dir, "nostate", "deep"));
+    await settlePersist(run, fileAsDir);
+    await settlePersist(record(), join(dir, "nostate", "deep"));
   });
 
-  it("THE TERMINAL ECHO (the audit's gap): the compose echo survives into the settled _flow.json", () => {
+  it("THE TERMINAL ECHO (the audit's gap): the compose echo survives into the settled _flow.json", async () => {
     const runDir = join(dir, "recho");
     mkdirSync(runDir, { recursive: true });
     const echo = { seam: "carry,cut", calls: 2, benchRev: 17 };
-    settlePersist(record({ dir: runDir, composeEcho: echo }), dir);
+    await settlePersist(record({ dir: runDir, composeEcho: echo }), dir);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.deepEqual(sidecar["compose_echo"], echo);
   });
 
-  it("THE EXPORT-NAME STAMP (023's self-critique #4/#6): a stage voice_name rides the settled _flow.json + the record", () => {
+  it("THE EXPORT-NAME STAMP (023's self-critique #4/#6): a stage voice_name rides the settled _flow.json + the record", async () => {
     const runDir = join(dir, "rexp");
     mkdirSync(runDir, { recursive: true });
     const run = record({ dir: runDir, params: [{ voice_name: "night-keeper" } as never] });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.exportName, "night-keeper");
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["export_name"], "night-keeper");
   });
 
-  it("runs without a voice_name stamp nothing (no export_name key)", () => {
+  it("runs without a voice_name stamp nothing (no export_name key)", async () => {
     const runDir = join(dir, "rnoexp");
     mkdirSync(runDir, { recursive: true });
     const run = record({ dir: runDir, params: [{ text: "hi" } as never] });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.exportName, undefined);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.ok(!("export_name" in sidecar));
   });
 
-  it("THE SNAPSHOT FALLBACK (024's post-mortem): compiled stage params may consume card keys — the card snapshot still names the mint", () => {
+  it("THE SNAPSHOT FALLBACK (024's post-mortem): compiled stage params may consume card keys — the card snapshot still names the mint", async () => {
     const runDir = join(dir, "rsnap");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -255,13 +255,13 @@ describe("settlePersist", () => {
       params: [{ workflow: {} } as never],
       cardSnapshot: { card: "qwen3-tts", params: { voice_name: "night-keeper", text: "hi" } },
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.exportName, "night-keeper");
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["export_name"], "night-keeper");
   });
 
-  it("THE EXPORT-PATH STAMP (the export FULL PATH, roadmap OWED 2026-09-24): the engine-reported mint rides the record + sidecar verbatim", () => {
+  it("THE EXPORT-PATH STAMP (the export FULL PATH, roadmap OWED 2026-09-24): the engine-reported mint rides the record + sidecar verbatim", async () => {
     const runDir = join(dir, "rpath");
     mkdirSync(runDir, { recursive: true });
     const mint = "/mnt/data/models/audio/voices/night-keeper_17.qvoice";
@@ -278,14 +278,14 @@ describe("settlePersist", () => {
         result_outputs: { prompt_id: "p1", qvoice_path: mint },
       } as never],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.exportPath, mint);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["export_path"], mint);
     assert.equal(sidecar["export_name"], "night-keeper");
   });
 
-  it("THE LOUDNESS + FRESHNESS STAMPS (2026-09-26 — the compact-row chip's data): the meter reading and the voice-mint receipt lift off the stage result_outputs onto the record + sidecar", () => {
+  it("THE LOUDNESS + FRESHNESS STAMPS (2026-09-26 — the compact-row chip's data): the meter reading and the voice-mint receipt lift off the stage result_outputs onto the record + sidecar", async () => {
     const runDir = join(dir, "rloudfresh");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -315,7 +315,7 @@ describe("settlePersist", () => {
         },
       } as never],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     // the meter's pair lifts whole (no re-derivation, no rounding here)
     assert.deepEqual(run.loudness, { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 });
     assert.deepEqual(run.voiceFreshness, { reused_existing: false, voice_file: "tide_2.qvoice" });
@@ -324,7 +324,7 @@ describe("settlePersist", () => {
     assert.deepEqual(sidecar["voice_freshness"], { reused_existing: false, voice_file: "tide_2.qvoice" });
   });
 
-  it("unmetered, voiceless runs stamp neither (no fabricated receipts), and incoherent shapes skip", () => {
+  it("unmetered, voiceless runs stamp neither (no fabricated receipts), and incoherent shapes skip", async () => {
     const runDir = join(dir, "rnofab");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -343,7 +343,7 @@ describe("settlePersist", () => {
         },
       } as never],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.loudness, undefined);
     assert.equal(run.voiceFreshness, undefined);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
@@ -351,7 +351,7 @@ describe("settlePersist", () => {
     assert.ok(!("voice_freshness" in sidecar));
   });
 
-  it("runs whose engine minted nothing stamp no export_path (load lanes)", () => {
+  it("runs whose engine minted nothing stamp no export_path (load lanes)", async () => {
     const runDir = join(dir, "rnopath");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -367,13 +367,13 @@ describe("settlePersist", () => {
         result_outputs: { prompt_id: "p1" },
       } as never],
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.exportPath, undefined);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.ok(!("export_path" in sidecar));
   });
 
-  it("THE VARIANT STAMP (commission 033's self-critique #5): the lane rides the record + sidecar + terminal ledger row — design reads apart from performing", () => {
+  it("THE VARIANT STAMP (commission 033's self-critique #5): the lane rides the record + sidecar + terminal ledger row — design reads apart from performing", async () => {
     const runDir = join(dir, "rvariant");
     mkdirSync(runDir, { recursive: true });
     const run = record({
@@ -381,7 +381,7 @@ describe("settlePersist", () => {
       params: [{ text: "hi" } as never],
       cardSnapshot: { card: "qwen3-tts", params: { variant: "customvoice", voice_name: "night-frequency" } },
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.variant, "customvoice");
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["variant"], "customvoice");
@@ -390,30 +390,30 @@ describe("settlePersist", () => {
     assert.match(ledger, /"variant":"customvoice"/);
   });
 
-  it("runs without a variant stamp nothing (no variant key — never guessed)", () => {
+  it("runs without a variant stamp nothing (no variant key — never guessed)", async () => {
     const runDir = join(dir, "rnovariant");
     mkdirSync(runDir, { recursive: true });
     const run = record({ dir: runDir, params: [{ text: "hi" } as never] });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.variant, undefined);
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.ok(!("variant" in sidecar));
   });
 
-  it("THE REGISTRATION CARRY: a row that already holds a variant keeps it when the bodies name none (the ?? right side)", () => {
+  it("THE REGISTRATION CARRY: a row that already holds a variant keeps it when the bodies name none (the ?? right side)", async () => {
     // registration stamps run.variant; settle re-lifts from the same
     // bodies — the fallback keeps the birth stamp when neither body
     // names a lane (never un-names a run at rest).
     const runDir = join(dir, "rvarcarry");
     mkdirSync(runDir, { recursive: true });
     const run = record({ dir: runDir, params: [{ text: "hi" } as never], variant: "voicedesign" });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.variant, "voicedesign");
     const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
     assert.equal(sidecar["variant"], "voicedesign");
   });
 
-  it("THE JUNK-BODIES SKIP (§16 burn-down: the stamp loops' guard arm): null/array bodies never crash the stamp — the lane still lifts from the live body", () => {
+  it("THE JUNK-BODIES SKIP (§16 burn-down: the stamp loops' guard arm): null/array bodies never crash the stamp — the lane still lifts from the live body", async () => {
     // the export-name loop's `continue` TRUE arm had no wall (a
     // flagged branch at HEAD); the variant lift shares the shape.
     // Junk in, lane out — never a crash, never a guess.
@@ -424,7 +424,7 @@ describe("settlePersist", () => {
       params: [null, { variant: "customvoice" }] as never,
       cardSnapshot: { card: "qwen3-tts", params: ["junk"] },
     });
-    settlePersist(run, dir);
+    await settlePersist(run, dir);
     assert.equal(run.variant, "customvoice");
     assert.equal(run.exportName, undefined);
   });

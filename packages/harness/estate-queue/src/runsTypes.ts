@@ -13,7 +13,7 @@ import { join } from "node:path";
 import type { EngineJson } from "@melite/comfyui-cordis";
 import {
   appendLedger,
-  atomicWriteJson,
+  writeJsonAtomic,
   sidecarDoc,
   sidecarStageOf,
   variantOfBodies,
@@ -184,10 +184,10 @@ export function errText(err: unknown): string {
  *  _flow.json sidecar (the restart authority) and appends the
  *  terminal ledger row. Best-effort by law — a persist failure
  *  never unmakes the run's truth in memory. */
-export function settlePersist(
+export async function settlePersist(
   run: RunRecord,
   stateRoot: string,
-): void {
+): Promise<void> {
   // THE EXPORT-NAME STAMP (023's self-critique #4/#6): a
   // design/export lane's voice_name rides the submitted body — lift
   // the first non-empty one onto the row so the receipt names the
@@ -263,7 +263,7 @@ export function settlePersist(
     }
   }
   try {
-    atomicWriteJson(
+    await writeJsonAtomic(
       join(run.dir, "_flow.json"),
       sidecarDoc({
         runId: run.runId,

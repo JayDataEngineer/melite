@@ -16,7 +16,7 @@
 import { readdir, readFile, stat } from "node:fs/promises";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { dshHomePath } from "@deepseek-ai/dsh-home-paths";
 
 /** One bench stage's picks — the card it composes and the model it
  *  names (the model is unstated unless explicitly put in params). */
@@ -43,8 +43,7 @@ function liveCutoffMs(): number {
 }
 
 export function benchDir(): string {
-  const dshHome = process.env["DSH_HOME"] ?? join(homedir(), ".dsh");
-  return join(dshHome, "storages", "drafts", "docs");
+  return dshHomePath("storages", "drafts", "docs");
 }
 
 function benchFiles(): Promise<string[]> {

@@ -79,6 +79,7 @@ export function schemaEnvelope(dict: Record<string, SchemaRef & { consts?: unkno
 // declaration; before it, the form spelled visible_when while the
 // tool face spelled visibleWhen — a dead read for every card).
 import { extraOf, type ExtraBag, type ExtraKey, type Wtype } from '@melite/contracts/extraKeys'
+import { deepEqualJson } from '@deepseek-ai/dsh-util-values'
 
 import type {
   FormSpecDoc,
@@ -916,32 +917,11 @@ export function activeRecipeId(spec: FormSpecDoc, values: SpecValues): string | 
     let holds = true
     for (const [k, v] of Object.entries(patch)) {
       if (k === axisKey('Recipe')) continue
-      if (!deepEqualHeld(values[k], v)) { holds = false; break }
+      if (!deepEqualJson(values[k], v)) { holds = false; break }
     }
     if (holds && Object.keys(patch).length > 0) return row.id
   }
   return undefined
-}
-
-/** Deep equality over JSON-shaped held values (arrays compared
- * element-wise -- the lora bag rows; primitives by Object.is). */
-function deepEqualHeld(a: unknown, b: unknown): boolean {
-  if (Object.is(a, b)) return true
-  if (Array.isArray(a) && Array.isArray(b)) {
-    if (a.length !== b.length) return false
-    for (let i = 0; i < a.length; i++) if (!deepEqualHeld(a[i], b[i])) return false
-    return true
-  }
-  if (typeof a === 'object' && a !== null && typeof b === 'object' && b !== null) {
-    const ka = Object.keys(a as Record<string, unknown>)
-    const kb = Object.keys(b as Record<string, unknown>)
-    if (ka.length !== kb.length) return false
-    for (const k of ka) {
-      if (!deepEqualHeld((a as Record<string, unknown>)[k], (b as Record<string, unknown>)[k])) return false
-    }
-    return true
-  }
-  return false
 }
 
 /** One group's active row under the owner chain (inner recursion of

@@ -32,12 +32,25 @@ vi.mock("node:fs/promises", async () => {
   };
 });
 
+// The store's write seam is writeFileAtomic (a node_modules external
+// Node loads itself — the fs/promises mock above cannot reach it), so
+// failure injection for the save queue rides this boundary instead.
+const atomicMocks = vi.hoisted(() => ({ writeFileAtomic: vi.fn() }));
+
+vi.mock("@deepseek-ai/dsh-atomic-write", async () => {
+  const actual = await vi.importActual<typeof import("@deepseek-ai/dsh-atomic-write")>("@deepseek-ai/dsh-atomic-write");
+  return { ...actual, writeFileAtomic: atomicMocks.writeFileAtomic };
+});
+
 type ActualFs = typeof import("node:fs/promises");
 let actualFs: ActualFs;
+type ActualAtomic = typeof import("@deepseek-ai/dsh-atomic-write");
+let actualAtomic: ActualAtomic;
 const roots: string[] = [];
 
 beforeEach(async () => {
   actualFs = await vi.importActual<ActualFs>("node:fs/promises");
+  actualAtomic = await vi.importActual<ActualAtomic>("@deepseek-ai/dsh-atomic-write");
   fsMocks.lstat.mockImplementation(actualFs.lstat);
   fsMocks.mkdir.mockImplementation(actualFs.mkdir);
   fsMocks.readFile.mockImplementation(actualFs.readFile);
@@ -46,6 +59,7 @@ beforeEach(async () => {
   fsMocks.rm.mockImplementation(actualFs.rm);
   fsMocks.unlink.mockImplementation(actualFs.unlink);
   fsMocks.writeFile.mockImplementation(actualFs.writeFile);
+  atomicMocks.writeFileAtomic.mockImplementation(actualAtomic.writeFileAtomic);
 });
 
 afterEach(() => {
@@ -122,14 +136,14 @@ describe("operation store filesystem seams", () => {
     const firstGate = new Promise<void>((resolve) => { releaseFirst = resolve; });
     let firstStarted!: () => void;
     const firstStartedPromise = new Promise<void>((resolve) => { firstStarted = resolve; });
-    fsMocks.writeFile.mockImplementation(async (...args: unknown[]) => {
+    atomicMocks.writeFileAtomic.mockImplementation(async (...args: unknown[]) => {
       if (firstWrite) {
         firstWrite = false;
         firstStarted();
         await firstGate;
         throw new Error("first write failed");
       }
-      return actualFs.writeFile(...(args as Parameters<ActualFs["writeFile"]>));
+      return actualAtomic.writeFileAtomic(...(args as Parameters<ActualAtomic["writeFileAtomic"]>));
     });
     const store = new FileOperationStore(storeRoot);
     const first = store.save(operation("queued"));

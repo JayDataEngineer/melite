@@ -1,5 +1,6 @@
 import { createRequire } from "node:module";
 import { WTYPE_SET, extraOf } from "@melite/contracts/extraKeys";
+import { deepEqualJson } from "@deepseek-ai/dsh-util-values";
 import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, judgeSamplerEnvelope, laneBoundsOf, laneSurfaceOf, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, StateDot, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
@@ -658,31 +659,13 @@ function activeRecipeId(spec, values) {
 		let holds = true;
 		for (const [k, v] of Object.entries(patch)) {
 			if (k === axisKey("Recipe")) continue;
-			if (!deepEqualHeld(values[k], v)) {
+			if (!deepEqualJson(values[k], v)) {
 				holds = false;
 				break;
 			}
 		}
 		if (holds && Object.keys(patch).length > 0) return row.id;
 	}
-}
-/** Deep equality over JSON-shaped held values (arrays compared
-* element-wise -- the lora bag rows; primitives by Object.is). */
-function deepEqualHeld(a, b) {
-	if (Object.is(a, b)) return true;
-	if (Array.isArray(a) && Array.isArray(b)) {
-		if (a.length !== b.length) return false;
-		for (let i = 0; i < a.length; i++) if (!deepEqualHeld(a[i], b[i])) return false;
-		return true;
-	}
-	if (typeof a === "object" && a !== null && typeof b === "object" && b !== null) {
-		const ka = Object.keys(a);
-		const kb = Object.keys(b);
-		if (ka.length !== kb.length) return false;
-		for (const k of ka) if (!deepEqualHeld(a[k], b[k])) return false;
-		return true;
-	}
-	return false;
 }
 /** One group's active row under the owner chain (inner recursion of
 *  activeVariantId — Variant resolves first, chained groups after). */

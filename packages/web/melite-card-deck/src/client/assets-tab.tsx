@@ -4,13 +4,11 @@
  *   ComfyUI Manager — a direct GUI on the estate's management plane.
  *     Every button is ONE action of the manage-plane SSOT
  *     (@melite/estate-queue's managePlane.ts — Cordis provisioning +
- *     ComfyUI-Manager), reached over the `manage` Typert
- *     remote: a same-origin POST /api/manage/act carrying the
- *     client-request wire frame (the documented frame pair,
- *     api-gateway.md — the sanctioned caller shape for plugins outside
- *     the DSH web kernel; the host mounts the remote in the estate
- *     composition). The vocabulary mirrors the comfy_manage agent tool
- *     1:1. Progressive
+ *     ComfyUI-Manager), reached over the `manage` Typert remote
+ *     (MANAGE_TYPERT_REMOTE — the host binds it in the estate
+ *     composition; the deck seats the namespace card-base's
+ *     manageRemote() accessor hands back). The vocabulary mirrors the
+ *     comfy_manage agent tool 1:1. Progressive
  *     disclosure: status is the cheap index and refreshes SILENTLY
  *     after every mutating action (never through the result pane —
  *     that pane belongs to the user's last explicit dispatch);

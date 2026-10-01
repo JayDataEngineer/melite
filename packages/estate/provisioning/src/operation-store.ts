@@ -1,14 +1,6 @@
-import { createHash, randomUUID } from "node:crypto";
-import {
-  lstat,
-  mkdir,
-  readFile,
-  realpath,
-  rename,
-  rm,
-  unlink,
-  writeFile,
-} from "node:fs/promises";
+import { createHash } from "node:crypto";
+import { lstat, mkdir, readFile, realpath, unlink } from "node:fs/promises";
+import { writeFileAtomic } from "@deepseek-ai/dsh-atomic-write";
 import { join, resolve } from "node:path";
 import {
   PROVISION_OUTCOMES,
@@ -213,14 +205,10 @@ export class FileOperationStore implements OperationStorePort {
     await this.enqueue(checked.operationId, async () => {
       const root = await this.prepareRoot();
       const destination = join(root, operationFile(checked.operationId));
-      const temporary = join(root, `.${operationFile(checked.operationId)}.part-${randomUUID()}`);
       try {
-        await writeFile(temporary, `${JSON.stringify(checked)}\n`, { encoding: "utf8", flag: "wx", mode: 0o600 });
-        await rename(temporary, destination);
+        await writeFileAtomic(destination, `${JSON.stringify(checked)}\n`, { mode: 0o600 });
       } catch (error: unknown) {
         throw new OperationStoreError("io", "Failed to persist provisioning operation", error);
-      } finally {
-        await rm(temporary, { force: true }).catch(() => undefined);
       }
     });
   }
