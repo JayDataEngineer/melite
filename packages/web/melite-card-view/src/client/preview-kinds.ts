@@ -3,6 +3,7 @@
  * hour 15). */
 
 import type { FormSpecDoc } from './spec-form.tsx'
+import type { BenchReport } from '@melite/contracts/benchResult'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
 
 /** THE PREVIEW SEAM CONSULT (hour-9 law: "Where the VIDEO PREVIEW
@@ -117,17 +118,11 @@ export function previewArtifactsFor(row: Record<string, unknown>): Array<{ name:
  *  kind). ONLY kind-'report' entries harvest; a degenerate value
  *  (not an object) never renders — the contract's validator names
  *  it at the writer, the reader just stays silent. */
-export function previewReportsFor(row: Record<string, unknown>): Array<{ name: string, report: {
-  kind: 'report'
-  status: 'pass' | 'fail' | 'warn'
-  title?: string
-  chips?: string[]
-  rows?: Record<string, string | number | boolean>
-} }> {
+export function previewReportsFor(row: Record<string, unknown>): Array<{ name: string, report: BenchReport }> {
   const result = typeof row['result'] === 'object' && row['result'] !== null ? row['result'] as Record<string, unknown> : {}
   const raw = typeof result['reports'] === 'object' && result['reports'] !== null && !Array.isArray(result['reports'])
     ? result['reports'] as Record<string, unknown> : {}
-  const out: Array<{ name: string, report: { kind: 'report', status: 'pass' | 'fail' | 'warn', title?: string, chips?: string[], rows?: Record<string, string | number | boolean> } }> = []
+  const out: Array<{ name: string, report: BenchReport }> = []
   for (const [name, val] of Object.entries(raw)) {
     if (typeof val !== 'object' || val === null || Array.isArray(val)) continue
     const rep = val as Record<string, unknown>
