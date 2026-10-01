@@ -25,6 +25,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    # THE TIER DELEGATION (cruft row 2, 2026-10-12): the typecheck
+    # wall cost ~116s of identical tsc work and CI paid it once per
+    # OS leg plus once in coverage — five runs per PR with the ship
+    # playbook's step. It now runs ONCE, in the typecheck job below,
+    # via the same wall file; the other seats set the delegation env.
+    env:
+      MELITE_TIER_DELEGATED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -36,6 +43,27 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: Unit
         run: pnpm run test
+
+  # THE TYPECHECK SEAT (cruft row 2): one ubuntu job owns the whole
+  # typecheck wall — the src net (every packages/* tsconfig, tsc
+  # --noEmit) and the test tier (spec files + repo tier) — by running
+  # the wall file itself, unchanged. tsc is OS-independent; the unit
+  # matrix above still owns OS portability of the runtime battery.
+  typecheck:
+    name: typecheck wall (src net + test tier)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck wall
+        run: pnpm exec vitest run tests/walls/ts/suites/typecheck-gate.spec.ts
 
   # THE BOUNDARY LINT SEAT (schema-gate-inventory fix 5, 2026-10-12):
   # `pnpm run lint` (tools/arch-lint.ts — the four estate boundary
@@ -61,6 +89,10 @@ jobs:
     name: coverage gate (per-file 100%)
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Cruft row 2: the tier runs in the typecheck job; the coverage
+    # gate measures src coverage and never needed the tsc sweep.
+    env:
+      MELITE_TIER_DELEGATED: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4

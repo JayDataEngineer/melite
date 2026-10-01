@@ -85,7 +85,18 @@ async function pool<T>(items: string[], worker: (item: string) => Promise<T>, wi
   return results;
 }
 
-describe("THE TYPECHECK GATE — every package, every run", () => {
+// DELEGATION SEAM (cruft row 2, 2026-10-12): the tier cost ~116s of
+// identical tsc work, and CI paid it FIVE times per PR — once per
+// OS leg of the unit matrix and once inside the coverage job — on
+// top of the ship playbook's direct step. When
+// MELITE_TIER_DELEGATED=1 the wall skips and the owning surface
+// runs the same implementation itself; in CI that owner is the
+// dedicated tier job in .github/workflows/tests.yml. A plain local
+// `pnpm run test` sets no env and keeps the wall — the suite stays
+// self-sufficient where the tier has no other owner.
+const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
+
+describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", () => {
   const dirs = packageDirs();
 
   it("the net reaches the estate (discovery is dynamic, not a named list)", () => {
