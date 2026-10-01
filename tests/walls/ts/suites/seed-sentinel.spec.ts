@@ -245,7 +245,7 @@ describe("GATE S: the seed sentinel mints at render", () => {
     for (const f of actionFiles) {
       const src = readFileSync(join(modelsDir, f), "utf8");
       if (src.includes("Math.random")) actionOffenders.push(f);
-      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"') && !src.includes("diffusionParamRows")) {
+      if (/\bseed\b/.test(src) && !src.includes('"seed-sentinel"') && !src.includes("diffusionParamRows(")) {
         if (channelCarve.includes(f)) {
           if (!src.includes("held by the channel instead of the mint")) {
             carveRationaleMisses.push(f);

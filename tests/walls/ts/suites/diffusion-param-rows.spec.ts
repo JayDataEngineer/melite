@@ -20,6 +20,9 @@
 
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { diffusionParamRows, EDIT_DIFFUSION_BOUNDS } from "../../../../packages/engines/comfyui-card-kit/src/paramRows.ts";
 import { t2i as qwenImg21T2I } from "../../../../packages/models/qwen-img-21/src/actions.ts";
 import { t2i as zImageT2I } from "../../../../packages/models/z-image/src/actions.ts";
@@ -45,7 +48,28 @@ const EDIT_OWN_TAIL = [
 ];
 const EDIT_ROWS = [...EDIT_OWN_HEAD, ...diffusionParamRows(EDIT_DIFFUSION_BOUNDS), ...EDIT_OWN_TAIL];
 
+/** The adopters, DERIVED FROM THE TREE — not an import list. A
+ * family that spreads the factory self-joins this wall; the named
+ * maps below must then grow with it (a hand list stayed blind to a
+ * seventh family — the F2 verification's hole (b)). */
+const modelsDir = join(dirname(fileURLToPath(import.meta.url)), "../../../../packages/models");
+const ADOPTERS = readdirSync(modelsDir).filter((f) => {
+  try {
+    return readFileSync(join(modelsDir, f, "src", "actions.ts"), "utf8").includes("diffusionParamRows(");
+  } catch { return false; }
+});
+
 describe("the shared diffusion param surface (one home)", () => {
+  it("every tree adopter is asserted by name here (the census is the tree, not this file)", () => {
+    const asserted = new Set(["qwen-img-21", "z-image", "anima", "krea-2", "qwen-img-edit-21", "qwen-img-edit-2511"]);
+    assert.deepEqual(
+      ADOPTERS.filter((f) => !asserted.has(f)),
+      [],
+      "a family spreads diffusionParamRows() but has no named assertion in this wall — add its expectations",
+    );
+    assert.deepEqual(ADOPTERS.length, 6, "the adopter census changed — update this pin and the named assertions together");
+  });
+
   it("the four text-to-image families declare the factory's rows, not a hand copy", () => {
     for (const [family, action] of [
       ["qwen-img-21", qwenImg21T2I],
