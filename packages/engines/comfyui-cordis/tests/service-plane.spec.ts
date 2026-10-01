@@ -358,6 +358,35 @@ describe("registerCard (one card, one plugin)", () => {
     svc.registerCard(card({ id: "image-edit", boarded: ["qwen-img-edit-2511"] }));
     assert.deepEqual(svc.cardIds(), ["image-edit", "image-gen"]);
   });
+
+  it("a declared node class the engine doc does not know refuses at registration (G2)", async () => {
+    // THE DECLARED NODE-CLASS GATE: the flowOutputBindings' nodeClass
+    // is a declaration, judgeable at the registration door against
+    // the engine's own node doc — the unknown class used to die at
+    // compose (or never). Null doc = fail-open (the assertModRequires
+    // law), so the two halves below pin both directions.
+    const svc = await boot();
+    svc.setObjectInfoNodes(["TestNode", "SaveImage"]);
+    assert.throws(
+      () => svc.registerCard(card({
+        flowOutputBindings: [{ channel: "image", node: "Ghost.0", nodeClass: "Ghost" }],
+      })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "node-class" && /Ghost/.test(e.message),
+    );
+    // the known class registers; the doc's names are the vocabulary
+    svc.registerCard(card({
+      flowOutputBindings: [{ channel: "image", node: "SaveImage.0", nodeClass: "SaveImage" }],
+    }));
+    assert.deepEqual(svc.cardIds(), ["card1"]);
+    // no doc loaded: fail-open, the compose door stays the backstop
+    svc.setObjectInfoNodes(null);
+    svc.registerCard(card({
+      id: "card2",
+      boarded: ["fam2"],
+      flowOutputBindings: [{ channel: "image", node: "Ghost.0", nodeClass: "Ghost" }],
+    }));
+    assert.deepEqual(svc.cardIds(), ["card1", "card2"]);
+  });
 });
 
 describe("flow contract registration guards", () => {

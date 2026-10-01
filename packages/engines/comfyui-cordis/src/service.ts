@@ -506,6 +506,29 @@ export class ComfyUIService extends Service {
     // door's validation (packs and flavors already gated; the card's
     // own declared kinds rode unvalidated until now).
     validateDeclaredMods(def.id, def.mods);
+    // THE DECLARED NODE-CLASS GATE (G2, 2026-10-12): every
+    // flowOutputBinding names the node class its bound output must
+    // carry — that declaration is judgeable HERE against the engine's
+    // own node doc, at the registration door, instead of dying at
+    // compose (the flow-output mismatch) or never. Fail-open when the
+    // doc is not loaded (null), the same law as assertModRequires —
+    // and boot-time cards register BEFORE the live doc arrives, so
+    // the gate's real teeth are on LATE registrations (hot plugins,
+    // profile inserts — the family-taken outage class), where the doc
+    // is already seated. Environmental absence for boot cards stays
+    // compose-owned: the managed snapshots differ per lane BY DESIGN
+    // (the base engine doc does not know the managed packs), so
+    // refusing a boot card there would hide the card on lanes whose
+    // pack install is simply late or partial — compose refuses loud
+    // per run instead, which is the honest environmental answer.
+    if (this.objectInfoNodes !== null && def.flowOutputBindings !== undefined) {
+      for (const binding of def.flowOutputBindings) {
+        if (!this.objectInfoNodes.has(binding.nodeClass)) {
+          throw new ComposeRefusal('node-class',
+            `card '${def.id}' binds output '${binding.channel}' to node class '${binding.nodeClass}' — the engine's node doc does not know it`);
+        }
+      }
+    }
     // THE REQUIRES-MODEL LIFT (2026-09-21, the phantom model
     // demand): cards declare requiresModel inside flowKinds (the
     // single declaration) while the gates (cardGate, compose's
