@@ -892,6 +892,18 @@ describe("THE SIDECAR'S READ CONTRACT", () => {
     expect(parseSidecar({ status: "queued" })).not.toBeNull();
     expect(parseSidecar({ stages: [] })).not.toBeNull();
   });
+  it("CONTENT typing: present-but-non-string pipeline/status quarantines (strictness fix 7)", () => {
+    expect(parseSidecar({ pipeline: 42 })).toBeNull();
+    expect(parseSidecar({ status: 42 })).toBeNull();
+    // absent keys stay legal (found-ness is the file-era convention)
+    expect(parseSidecar({ stages: [{ id: "s" }] })).not.toBeNull();
+  });
+  it("a nested request record is what request returns (the check is live, not theater)", () => {
+    const parsed = parseSidecar({ request: { card: "x" }, stages: [] });
+    expect(parsed!.request).toEqual({ card: "x" });
+    expect(parseSidecar({ request: 42 })).toBeNull();
+    expect(parseSidecar({ request: "x" })).toBeNull();
+  });
 });
 
 // ── THE PARITY LAW, EXTENDED BY THE LIVE RE-CHECK (2026-10-10) ────

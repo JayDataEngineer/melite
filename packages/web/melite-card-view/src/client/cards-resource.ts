@@ -1132,7 +1132,7 @@ export function openCardsResource(
     yield { ok: true, value }
     if (ctx.signal.aborted) return
     if (isTerminal(value.status)) return
-    yield* pollRunFrames(runId, value, ctx.signal)
+    yield* pollRunFrames(address, runId, value, ctx.signal)
   })()
 }
 
@@ -1152,6 +1152,7 @@ function isTerminal(status: string): boolean {
  *  own observation granularity, not user perception of latency: stage
  *  transitions inside the estate tick on the pump's settle path. */
 async function* pollRunFrames(
+  address: string,
   runId: string,
   hydrated: CardsRunValue,
   signal: AbortSignal,
@@ -1175,7 +1176,16 @@ async function* pollRunFrames(
     } catch {
       continue // the last ok value stays; the next poll may recover
     }
-    const next = readRun(runId, row)
+    let next: ReturnType<typeof readRun>
+    try {
+      // the read door throws on out-of-vocabulary status (strictness
+      // fix 3) — surface it as the card's failure, keep polling
+      // recoverable exactly like the fetch above it
+      next = readRun(runId, row)
+    } catch (e) {
+      yield failure(address, e instanceof Error ? e.message : String(e))
+      return
+    }
     const moved = next.status !== value.status
       || JSON.stringify(next.stages) !== JSON.stringify(value.stages)
     if (!moved) continue

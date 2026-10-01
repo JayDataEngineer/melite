@@ -64,8 +64,8 @@ describe("readRun — the draft key rides the value", () => {
     expect(v.draftId).toBe("bench-main");
   });
   test("a run naming no draft restores nothing (null, never '')", () => {
-    expect(readRun("r1", { status: "x", stages: [] }).draftId).toBeNull();
-    expect(readRun("r1", { status: "x", draft_id: "", stages: [] }).draftId).toBeNull();
+    expect(readRun("r1", { status: "completed", stages: [] }).draftId).toBeNull();
+    expect(readRun("r1", { status: "completed", draft_id: "", stages: [] }).draftId).toBeNull();
   });
 });
 

@@ -1,5 +1,5 @@
 import { createRequire } from "node:module";
-import { extraOf } from "@melite/contracts/extraKeys";
+import { WTYPE_SET, extraOf } from "@melite/contracts/extraKeys";
 import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, judgeSamplerEnvelope, laneBoundsOf, laneSurfaceOf, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
 import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, StateDot, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
@@ -20,6 +20,39 @@ var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).expor
 var __require = /* #__PURE__ */ (() => createRequire(import.meta.url))();
 //#endregion
 //#region src/spec.ts
+/**
+* spec.ts — @melite/card-base: THE EMISSION CONTRACT.
+*
+* A card package EMITS; the base CONSTRUCTS (operator order,
+* 2026-09-12: "The package to construct the card ui should see that
+* the card package emits an image input, then constructs the input
+* component automatically"). This module is the emission's client-side
+* shape — the served form-spec document as the base consumes it —
+* plus the PURE projections. No fetchers here (wire.ts), no
+* components (form.tsx): types and derivations only.
+*
+* THE LAYERED-PARAMS LAW (the parameter audit, 2026-09-14 — the
+* DSH settings model, subsystems/settings.md): the form-spec serves
+* the card's own SERIALIZED SCHEMA (schemastery toJSON — the SSOT,
+* one serializer server-side) and the bench's stage params ARE the
+* USER layer: a key's PRESENCE is the override mark, never its
+* value. resolveValue layers schema defaults <- model defaults <-
+* served stamps <- user — the engine's compose cascade verbatim,
+* resolved client-side so the form shows exactly what a run
+* composes. Edits are set/unset ops over the user layer; a family
+* Recipe macro pick is an ordinary multi-set of declared keys —
+* no stamp ledger, no value-compare heuristics, no heal walk
+* (seedUser's one validation clause aside).
+*
+* THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
+* via the package system, it needs to have 'input' 'required=True',
+* or 'output', so the edges are defined"): every card's emission
+* carries `inputs` — one row per declared input edge, the required
+* fact joined per the law (dsl.py Field.emit: `required: True
+* emits, False omits`) — and `outputs`, the declared output edges.
+* The base constructs input components and picker candidates from
+* THESE, never from result-URL sniffing.
+*/
 /** Build an envelope from raw dict nodes — the TEST-side and
 *  migration-side constructor; the served envelopes come from
 *  schemastery's own toJSON. Ids assign in insertion order; a node
@@ -242,9 +275,9 @@ function projectDict(env, dict, family) {
 			value: String(o["value"]),
 			label: String(o["label"])
 		} : String(o));
-		const hint = typeof extra.wtype === "string" ? extra.wtype : "";
+		const hint = extra.wtype;
 		let type;
-		if (hint !== "") type = hint;
+		if (hint !== void 0 && hint !== "") type = hint;
 		else if (options !== void 0 && node.type === "union") type = "select";
 		else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
 		else if (node.type === "string") type = "text";
@@ -2866,6 +2899,22 @@ async function fetchFormSpec(model, signal) {
 	const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
 	const env = doc["schema"];
 	if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
+	const wtypeErrors = [];
+	const judgeEnvelope = (e, surface) => {
+		if (e === null || e === void 0 || typeof e !== "object") return;
+		const refs = e.refs;
+		if (typeof refs !== "object" || refs === null) return;
+		for (const [id, node] of Object.entries(refs)) {
+			if (typeof node !== "object" || node === null) continue;
+			const extra = node.meta?.["extra"];
+			if (typeof extra !== "object" || extra === null) continue;
+			const w = extra["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) wtypeErrors.push(`${surface} ref ${id}: wtype '${String(w)}' is not in WTYPE_SET (@melite/contracts/extraKeys)`);
+		}
+	};
+	judgeEnvelope(doc["schema"], "schema");
+	for (const [pack, env2] of Object.entries(doc["mod_schemas"] ?? {})) judgeEnvelope(env2, `mod:${pack}`);
+	if (wtypeErrors.length > 0) throw new Error(`form-spec ${model}: ${wtypeErrors.join("; ")}`);
 	return doc;
 }
 /** /v1/forms — every card's meta row (the edge emission included). */

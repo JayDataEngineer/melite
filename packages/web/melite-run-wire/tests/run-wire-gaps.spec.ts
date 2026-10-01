@@ -33,11 +33,13 @@ describe('the catalog door (GET /v1/model-catalog)', () => {
 })
 
 describe('the status law — ragged docs', () => {
-  it('a missing stages array, a numeric status, and an empty draft_id read honest', () => {
-    const row = readRunStatus('r1', { status: 42, draft_id: '' })
+  it('a missing stages array and an empty draft_id read honest; an out-of-vocabulary status THROWS (strictness fix 3)', () => {
+    const row = readRunStatus('r1', { status: 'completed', draft_id: '' })
     expect(row.stages).toEqual([])
-    expect(row.status).toBe('unknown')
+    expect(row.status).toBe('completed')
     expect(row.draftId).toBeNull()
+    expect(() => readRunStatus('r1', { status: 42 })).toThrow(/outside the vocabulary/)
+    expect(() => readRunStatus('r1', { status: 'bananized' })).toThrow(/outside the vocabulary/)
   })
 
   it('an empty-string stage url is left alone (never rewritten)', () => {

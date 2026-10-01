@@ -247,17 +247,29 @@ export function parseSidecar(raw: unknown): { stages: Array<Record<string, unkno
       stages.push(row)
     }
   }
-  // the REQUEST: a record when present
+  // the REQUEST: a record when present — and it is what `request`
+  // returns (the check was dead theater: it validated the key, then
+  // handed back the whole doc; strictness fix 7, 2026-10-01)
   const rawRequest = doc["request"]
   if (rawRequest !== undefined && rawRequest !== null) {
     if (typeof rawRequest !== "object" || Array.isArray(rawRequest)) return null
   }
+  // CONTENT typing (strictness fix 7): `pipeline` and `status` are
+  // strings when PRESENT. Absent keys stay legal — the file-era
+  // convention (found-ness matters; absent pipeline is "" to the
+  // list reader). A present-but-non-string value is corruption the
+  // old parse silently retyped: `pipeline: 42` became "" and served.
+  if (doc["pipeline"] !== undefined && typeof doc["pipeline"] !== "string") return null
+  if (doc["status"] !== undefined && typeof doc["status"] !== "string") return null
   return {
     // the CALLER's own row, fields intact (this judges the shape; it
     // never rebuilds a sidecar — a settle carries the old row's own
     // faces forward, and a rebuild would drop them)
     stages: Array.isArray(rawStages) ? (rawStages as Array<Record<string, unknown>>) : [],
     pipeline: typeof doc["pipeline"] === "string" ? doc["pipeline"] : "",
-    request: doc as Record<string, unknown>,
+    request:
+      rawRequest !== undefined && rawRequest !== null
+        ? (rawRequest as Record<string, unknown>)
+        : (doc as Record<string, unknown>),
   }
 }

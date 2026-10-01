@@ -25,7 +25,9 @@ function doc(over: Record<string, unknown> = {}): FormSpecDoc {
     2: { type: 'number', meta: { description: 'Steps', default: 0, step: 1 } },
     3: { type: 'number', meta: { description: 'Cfg', default: 5, step: 0.5 } },
     4: { type: 'boolean', meta: { description: 'Turbo', default: false } },
-    5: { type: 'string', meta: { description: 'Inherit', extra: { wtype: 'tri' } } },
+    // the tri-state rides the NODE TYPE passthrough ('tri' is not a
+    // declared wtype — the render vocabulary's schema-bound arm)
+    5: { type: 'tri', meta: { description: 'Inherit' } },
     6: { type: 'string', meta: { description: 'Notes', extra: { wtype: 'textarea' } } },
     7: { type: 'string', meta: { description: 'Image', tooltip: 'drop here', extra: { wtype: 'image' } } },
     8: { type: 'array', meta: { description: 'Shots', extra: { wtype: 'image_list' } } },

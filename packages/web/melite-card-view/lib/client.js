@@ -7406,7 +7406,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
@@ -7424,6 +7424,26 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"stopping",
 				"queued",
 				"pending"
+			]);
+			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
+				"done",
+				"completed",
+				"succeeded",
+				"success",
+				"failed",
+				"error",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"stopping",
+				"running",
+				"live",
+				"pending",
+				"queued",
+				"stale",
+				"cached",
+				"skipped",
+				"reused"
 			]);
 		}));
 		//#endregion
@@ -7451,9 +7471,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				if (p === void 0 || typeof p !== "object" || typeof p.value !== "number" || typeof p.max !== "number") delete stage.progress;
 				if (typeof stage.activity !== "string" || stage.activity === "") delete stage.activity;
 			}
+			const status = doc["status"];
+			if (typeof status !== "string" || !RUN_STATUS_WORDS.has(status.toLowerCase())) throw new Error(`runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`);
 			return {
 				runId,
-				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				status,
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
 				stages,
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
@@ -8649,7 +8671,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				};
 				if (ctx.signal.aborted) return;
 				if (isTerminal(value.status)) return;
-				yield* pollRunFrames(runId, value, ctx.signal);
+				yield* pollRunFrames(address, runId, value, ctx.signal);
 			})();
 		}
 		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
@@ -8666,7 +8688,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  next poll may recover. The cadence (1500ms) rides the run pump's
 		*  own observation granularity, not user perception of latency: stage
 		*  transitions inside the estate tick on the pump's settle path. */
-		async function* pollRunFrames(runId, hydrated, signal) {
+		async function* pollRunFrames(address, runId, hydrated, signal) {
 			let value = hydrated;
 			const sleep = (ms) => new Promise((resolve) => {
 				const t = setTimeout(() => {
@@ -8687,7 +8709,13 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				} catch {
 					continue;
 				}
-				const next = readRun(runId, row);
+				let next;
+				try {
+					next = readRun(runId, row);
+				} catch (e) {
+					yield failure(address, e instanceof Error ? e.message : String(e));
+					return;
+				}
 				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
 				value = next;
 				yield {
@@ -11213,7 +11241,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  faces read keys off the result, never off a bare record. */
 		function extraOf(node) {
 			const raw = node?.meta?.["extra"];
-			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
 		}
 		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
 		var init_extraKeys = __esmMin((() => {
@@ -12410,6 +12441,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -44818,4 +44850,4 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="378431d78e386087eb836767f45fea52e6e2adf0";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="ed86145f1550842240c04a73f609c699430e1e70";

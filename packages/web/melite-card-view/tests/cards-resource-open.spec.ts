@@ -366,6 +366,32 @@ describe("the run view — hydrate, then poll to terminal", () => {
     }
   });
 
+  test("an out-of-vocabulary poll doc yields the named failure and ends (never a buried terminal)", async () => {
+    // strictness fix 3's poll arm: readRunStatus throws on a status
+    // outside RUN_STATUS_WORDS — the old ':unknown' default handed
+    // the garbage to the fold, which buried it as a terminal. The
+    // guard surfaces the door's own text against the ADDRESS and
+    // stops the tail (the hydrate stays the last ok frame).
+    const fakes = stubWire({
+      runDocs: [
+        { run_id: "run-1", status: "running", stages: [] },
+        { run_id: "run-1", status: "banana", stages: [] },
+        { run_id: "run-1", status: "completed", stages: [] },
+      ],
+    });
+    try {
+      const frames = await collect(ADDR, ctx());
+      expect(frames).toHaveLength(2);
+      expect(frames[0]).toMatchObject({ ok: true, value: { status: "running" } });
+      expect(frames[1]!.ok).toBe(false);
+      expect(failureText(frames[1]!)).toMatch(/outside the vocabulary/);
+      // the third doc never serves: the tail returned at the failure
+      expect(fakes.calls.filter((c) => c.method === "runs/status")).toHaveLength(2);
+    } finally {
+      fakes.unmount();
+    }
+  });
+
   test("an abort mid-poll ends the tail (the hydrate stays the last frame)", async () => {
     const fakes = stubWire({
       runDocs: [{ run_id: "run-1", status: "running", stages: [] }],

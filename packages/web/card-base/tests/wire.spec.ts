@@ -115,6 +115,29 @@ test('fetchFormSpec: a schema-less envelope REFUSES (never a silent empty form)'
   }
 })
 
+test('fetchFormSpec: a foreign wtype REFUSES at the wire (LAW 8 — never the silent text fallback)', async () => {
+  // one schema ref carrying wtype 'slidr' (a typo'd slider): the
+  // write-side bag guard never sees a served doc, so the WIRE is
+  // the boundary — it names the ref and the set's home.
+  const env = (wtype: unknown) => ({
+    uid: 0,
+    refs: { 1: { type: 'object', dict: { probe: 2 } }, 2: { type: 'string', meta: { extra: { wtype } } } },
+  })
+  const cases: Array<{ doc: Record<string, unknown>; want: RegExp }> = [
+    { doc: { form: 'x', schema: env('slidr') }, want: /schema ref 2: wtype 'slidr' is not in WTYPE_SET/ },
+    // mod_schemas walk the same gate, named by pack
+    { doc: { form: 'x', schema: env('slider'), mod_schemas: { sam: env('seed') } }, want: /mod:sam ref 2: wtype 'seed' is not in WTYPE_SET/ },
+  ]
+  for (const { doc, want } of cases) {
+    useFake({ '/v1/form-spec?model=m': () => json(doc) })
+    await expect(fetchFormSpec('m')).rejects.toThrow(want)
+    resetFake()
+  }
+  // '' is the explicit no-hint spelling — it rides (members ride too)
+  useFake({ '/v1/form-spec?model=m': () => json({ form: 'x', schema: env('') }) })
+  await expect(await fetchFormSpec('m')).toBeTruthy()
+})
+
 test('fetchFormsTable: the meta table rides verbatim (the picker kind-matches off it)', async () => {
   useFake({ '/v1/forms': () => json({ txt2img: { label: 'T', genre: 'image', order: 1 } }) })
   expect(await fetchFormsTable()).toEqual({ txt2img: { label: 'T', genre: 'image', order: 1 } })

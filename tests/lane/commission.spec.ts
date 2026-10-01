@@ -286,7 +286,19 @@ describe('the commissioner — the launch (a stubbed maker, never a real one)', 
     // by booting this profile: "engine 'agent' seated: brain
     // zai/glm-5.3 + skill reader"). Without a route, every card that
     // needs a subagent brain refused for a reason unrelated to the card.
-    const dry = await commission({ path: 'video', slug: 'lane-seat', execute: false })
+    // THE DEFAULT ARM OWNS ITS PRECONDITION: an ambient
+    // MELITE_AGENT_ROUTE (an operator shell, a harness session) is the
+    // explicit-route case wearing another name — delete it for the
+    // default probe, restore the exact prior state after.
+    const hadAmbient = 'MELITE_AGENT_ROUTE' in process.env
+    const ambient = process.env['MELITE_AGENT_ROUTE']
+    delete process.env['MELITE_AGENT_ROUTE']
+    let dry: Awaited<ReturnType<typeof commission>>
+    try {
+      dry = await commission({ path: 'video', slug: 'lane-seat', execute: false })
+    } finally {
+      if (hadAmbient) process.env['MELITE_AGENT_ROUTE'] = ambient
+    }
     assert.equal(dry.agent_route, DEFAULT_AGENT_ROUTE)
     assert.equal(dry.env?.['MELITE_AGENT_ROUTE'], DEFAULT_AGENT_ROUTE)
     // the explicit wins: the operator's environment is the authority

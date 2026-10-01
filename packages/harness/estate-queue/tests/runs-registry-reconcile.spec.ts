@@ -498,6 +498,32 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     assert.equal(side["pipeline"], "flow_inline");
   });
 
+  it("a NON-OBJECT sidecar never enters the replay plan (the settle's shape guard is TOCTOU-only)", async () => {
+    // JSON.parse accepts `null`/`42`/`"x"` — the plan's own
+    // parseSidecar refuses them before any id reaches the settle's
+    // re-read, so the run is never replayed and never settled: the
+    // sweep owns it and the doc rides untouched. The settle-side
+    // guard exists only for a doc that CHANGES shape between the
+    // plan's read and the settle's re-read.
+    for (const doc of [null, 42, "x", [1, 2]]) {
+      const s = seat();
+      engineSeat(s);
+      const outRoot = join(s.state, "output");
+      mkdirSync(join(outRoot, "run-nonobj"), { recursive: true });
+      writeFileSync(join(outRoot, "run-nonobj", "_flow.json"), JSON.stringify(doc));
+      writeFileSync(
+        join(outRoot, "run-nonobj", "_request.json"),
+        JSON.stringify({ draft_id: "nope", test: false, flow_inline: wfBody82()["flow_inline"] }),
+      );
+      s.svc.reconciled = false;
+      const revived = await s.svc.bootReconcile();
+      assert.deepEqual(revived, [], "a non-object sidecar revives nothing: " + JSON.stringify(doc));
+      // untouched: never settled failed (the sweep road owns it)
+      const raw = JSON.parse(readFileSync(join(outRoot, "run-nonobj", "_flow.json"), "utf8")) as unknown;
+      assert.deepEqual(raw, doc, "the doc rides verbatim: " + JSON.stringify(doc));
+    }
+  });
+
   it("the service's modelValidateArm delegates to the extracted arm", async () => {
     const s = seat();
     engineSeat(s);

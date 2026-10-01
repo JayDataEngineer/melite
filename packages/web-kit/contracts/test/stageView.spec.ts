@@ -1,9 +1,11 @@
 import { expect, test } from 'vitest'
 
 import {
+  RUN_STATUS_WORDS,
   cardResultFromRecord,
   projectStageView,
   projectUpstreamStages,
+  statusOf,
   type StageViewOwnerProps,
 } from '../src/stageView.ts'
 
@@ -280,4 +282,20 @@ test('projectUpstreamStages maps candidates with defaults and card-specific face
     service: '3d',
     genre: '3d',
   })
+})
+
+// THE LOCKSTEP WALL (schema-strictness fix 3, 2026-10-01): every word in
+// RUN_STATUS_WORDS must be a word statusOf actually branches on. The
+// fold's default returns 'pending', so a member that folds to 'pending'
+// means the set and the switch disagree — the read door (readRunStatus)
+// would admit a word the fold buries, or the fold would branch on a word
+// the door refuses.
+test('RUN_STATUS_WORDS x statusOf lockstep: every domain member hits an explicit case', () => {
+  const offenders = [...RUN_STATUS_WORDS].filter((w) => statusOf(w) === 'pending')
+  expect(offenders).toEqual([])
+})
+
+test('garbage stays outside the domain and folds to pending', () => {
+  expect(RUN_STATUS_WORDS.has('bananized')).toBe(false)
+  expect(statusOf('bananized')).toBe('pending')
 })

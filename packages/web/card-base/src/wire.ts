@@ -6,6 +6,7 @@
  * and the one upload door.
  */
 import type { CatalogCard, FormSpecDoc } from './spec.ts'
+import { WTYPE_SET } from '@melite/contracts/extraKeys'
 import { readAsDataURL } from '@melite/formats/readFile'
 
 /** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
@@ -116,6 +117,31 @@ export async function fetchFormSpec(model: string, signal?: AbortSignal): Promis
       || typeof (env as { uid?: unknown }).uid !== 'number'
       || typeof (env as { refs?: unknown }).refs !== 'object')) {
     throw new Error('form-spec: no schema envelope')
+  }
+  // THE WTYPE WIRE GATE (strictness fix 5, 2026-10-01 — LAW 8's
+  // missing side): the write-side bag guard refuses foreign spellings
+  // at the declaration, but this fetch is the BOUNDARY the served doc
+  // crosses. A wtype outside WTYPE_SET renders the silent plain-text
+  // fallback; here it refuses, naming the field and the set's home.
+  const wtypeErrors: string[] = []
+  const judgeEnvelope = (e: unknown, surface: string): void => {
+    if (e === null || e === undefined || typeof e !== 'object') return
+    const refs = (e as { refs?: unknown }).refs
+    if (typeof refs !== 'object' || refs === null) return
+    for (const [id, node] of Object.entries(refs as Record<string, unknown>)) {
+      if (typeof node !== 'object' || node === null) continue
+      const extra = (node as { meta?: Record<string, unknown> }).meta?.['extra']
+      if (typeof extra !== 'object' || extra === null) continue
+      const w = (extra as Record<string, unknown>)['wtype']
+      if (w !== undefined && w !== '' && !(WTYPE_SET as readonly string[]).includes(w as string)) {
+        wtypeErrors.push(`${surface} ref ${id}: wtype '${String(w)}' is not in WTYPE_SET (@melite/contracts/extraKeys)`)
+      }
+    }
+  }
+  judgeEnvelope(doc['schema'], 'schema')
+  for (const [pack, env2] of Object.entries(doc['mod_schemas'] ?? {})) judgeEnvelope(env2, `mod:${pack}`)
+  if (wtypeErrors.length > 0) {
+    throw new Error(`form-spec ${model}: ${wtypeErrors.join('; ')}`)
   }
   return doc
 }

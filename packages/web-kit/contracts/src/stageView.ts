@@ -206,6 +206,22 @@ export function isLiveRunStatus(value: string): boolean {
   return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase())
 }
 
+/** The fold's whole input domain — every run-level word `statusOf` and
+ * the terminal/live judgements branch on, in ONE list. Boundary readers
+ * (readRunStatus) throw on words outside it: garbage must fail loud at
+ * the read, never fold to 'pending' or pass through raw (the
+ * schema-strictness audit's fix 3, 2026-10-01). Kept in lockstep with
+ * statusOf's case list by the walls spec (a word in one and not the
+ * other fails the test). */
+export const RUN_STATUS_WORDS: ReadonlySet<string> = new Set([
+  'done', 'completed', 'succeeded', 'success',
+  'failed', 'error',
+  'stopped', 'interrupted', 'unknown',
+  'stopping', 'running', 'live',
+  'pending', 'queued',
+  'stale', 'cached', 'skipped', 'reused',
+])
+
 function galleryOf(value: unknown): CardResult['gallery'] {
   if (!Array.isArray(value)) return undefined
   const gallery = value.flatMap((entry) => {

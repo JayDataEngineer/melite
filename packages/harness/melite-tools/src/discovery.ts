@@ -40,6 +40,14 @@ import type {
 import { agentFormDoc } from '@melite/engine-agent'
 import type { ExtraBag } from '@melite/contracts/extraKeys'
 import { faceStamp } from './faceStamp.ts'
+import type {
+  FormSpecDoc,
+  ModifierKind,
+  SchemaEnvelope,
+  ModifierOption,
+  SpecField,
+  VariantRow,
+} from '@melite/contracts/formSpec'
 
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -150,7 +158,7 @@ function variantRow(
     sampler_envelope?: SamplerEnvelope
   },
   declEngine: string,
-): Record<string, unknown> {
+): VariantRow {
   return {
     id: v.id,
     label: v.label,
@@ -200,8 +208,8 @@ function specVariants(
   key: string,
   service: string,
   primary: boolean,
-): Record<string, unknown>[] {
-  const rows: Record<string, unknown>[] = []
+): VariantRow[] {
+  const rows: VariantRow[] = []
   const seen = new Set<string>()
   const declEngine = decl.engine ?? ''
   for (const v of decl.variants ?? []) {
@@ -244,10 +252,10 @@ function specVariants(
 }
 
 /** The variant-group contract from the DECL's groups. */
-function groupContract(decl: ModelDecl | null): Record<string, unknown> {
-  const out: Record<string, unknown> = {}
+function groupContract(decl: ModelDecl | null): Record<string, { label?: string; tooltip?: string; filters_on?: string | null; default?: string }> {
+  const out: Record<string, { label?: string; tooltip?: string; filters_on?: string | null; default?: string }> = {}
   for (const g of decl?.variant_groups ?? []) {
-    const entry: Record<string, unknown> = { label: g.label }
+    const entry: { label?: string; tooltip?: string; filters_on?: string | null; default?: string } = { label: g.label }
     if (g.tooltip) entry.tooltip = g.tooltip
     if (g.default) entry.default = g.default
     out[g.id] = entry
@@ -348,6 +356,88 @@ function optionTooltip(
  *  so a seat with no envelope is a brick by construction (the
  *  qvoice pack boards the DECL but the base lane's envelope is
  *  dropped by owner-scoping — the entry must drop with it). */
+/** THE ENVELOPE PREDICATE (schema-strictness fix 5, 2026-10-01):
+ *  the serialized schemastery envelope arrives from the ENGINE plane
+ *  as `unknown` (its toJSON), and the served contract types it.
+ *  The envelope's two facts are checked here; the ref table's per-node
+ *  facts ride the client's walker and the client's own wtype gate. */
+function isSchemaEnvelope(e: unknown): e is SchemaEnvelope {
+  if (typeof e !== 'object' || e === null || Array.isArray(e)) return false
+  const env = e as { uid?: unknown; refs?: unknown }
+  return typeof env.uid === 'number' && typeof env.refs === 'object' && env.refs !== null && !Array.isArray(env.refs)
+}
+
+/** The engine's own form doc (the engine-doc arm) narrowed to the
+ *  served contract — same predicate, the form's own name checked. */
+/** One envelope off the engine's formSchemas — a malformed
+ *  envelope refuses (the served contract is never a lie). */
+function servedEnvelope(e: unknown, card: string): SchemaEnvelope | null {
+  if (e === null || e === undefined) return null
+  if (!isSchemaEnvelope(e)) {
+    throw new Error(`form-spec: card '${card}' serialized a malformed schema envelope (uid number + refs object)`)
+  }
+  return e
+}
+
+/** The absorbed mod envelopes, keyed by pack (the same check, per
+ *  pack). */
+function servedModEnvelopes(mods: Record<string, unknown>, card: string): Record<string, SchemaEnvelope | null> {
+  const out: Record<string, SchemaEnvelope | null> = {}
+  for (const [pack, env] of Object.entries(mods)) out[pack] = servedEnvelope(env, card)
+  return out
+}
+
+function isFormSpecDoc(e: unknown): e is FormSpecDoc {
+  if (typeof e !== 'object' || e === null) return false
+  const doc = e as { form?: unknown; schema?: unknown }
+  if (typeof doc.form !== 'string') return false
+  if (doc.schema !== null && doc.schema !== undefined && !isSchemaEnvelope(doc.schema)) return false
+  return true
+}
+
+/** THE SERVED-KIND NARROW (schema-strictness fix 5, 2026-10-01):
+ *  the card-declared kind rows arrive from the ENGINE plane as loose
+ *  records (the engine cannot name card-base's field rows), and the
+ *  served contract types them. The three required keys are checked
+ *  here, at the serve boundary — a malformed row refuses instead of
+ *  riding as `Record<string, unknown>`. */
+function servedFields(
+  rows: readonly Record<string, unknown>[] | undefined,
+  where: string,
+): readonly SpecField[] | undefined {
+  if (rows === undefined) return undefined
+  return rows.map((row, i) => {
+    const name = row['name']
+    const label = row['label']
+    const type = row['type']
+    if (typeof name !== 'string' || typeof label !== 'string' || typeof type !== 'string') {
+      throw new Error(
+        `form-spec: ${where} field ${i} must carry string name/label/type — ${JSON.stringify(row).slice(0, 120)}`,
+      )
+    }
+    return { ...row, name, label, type }
+  })
+}
+
+/** The pick-option narrow (the served kind's option rows: value +
+ *  label are the two the leaf renders). */
+function servedOptions(
+  rows: readonly Record<string, unknown>[] | undefined,
+  where: string,
+): readonly ModifierOption[] | undefined {
+  if (rows === undefined) return undefined
+  return rows.map((row, i) => {
+    const value = row['value']
+    const label = row['label']
+    if (typeof value !== 'string' || typeof label !== 'string') {
+      throw new Error(
+        `form-spec: ${where} option ${i} must carry string value/label — ${JSON.stringify(row).slice(0, 120)}`,
+      )
+    }
+    return { ...row, value, label }
+  })
+}
+
 function specModifiers(
   svc: ComfyUIService,
   card: string,
@@ -355,8 +445,8 @@ function specModifiers(
   decl: ModelDecl | null,
   def: CardDefinition | undefined,
   enveloped: ReadonlySet<string>,
-): Record<string, unknown>[] {
-  const out: Record<string, unknown>[] = []
+): ModifierKind[] {
+  const out: ModifierKind[] = []
   for (const m of decl?.mods ?? []) {
     // THE MARRIAGE GRAMMAR (#36): entries are pack names or
     // {pack, marries} declarations — normalized once here, served
@@ -371,7 +461,7 @@ function specModifiers(
     // entry carries the pack's catalog facts; its param rows derive
     // client-side off mod_schemas[pack] (the absorbed contract's own
     // toJSON — same walker as the card fields, one meta path).
-    const entry: Record<string, unknown> = {
+    const entry: ModifierKind = {
       kind: meta.kind,
       label: meta.label,
       param_key: meta.param_key ?? pack,
@@ -429,7 +519,7 @@ function specModifiers(
     if (typeof k.kind !== 'string' || k.kind === '' || typeof k.label !== 'string' || k.label === '' || typeof k.param_key !== 'string' || k.param_key === '' || typeof k.cardinality !== 'string' || k.cardinality === '') {
       throw new Error(`form-spec: card '${card}' declares a malformed mod kind (kind/label/param_key/cardinality required) — ${JSON.stringify(k).slice(0, 120)}`)
     }
-    const entry: Record<string, unknown> = {
+    const entry: ModifierKind = {
       kind: k.kind,
       label: k.label,
       param_key: k.param_key,
@@ -444,9 +534,12 @@ function specModifiers(
     // Served verbatim; absent = ordered (the default every pack kind
     // already follows — no served row changes shape).
     if (k.category !== undefined) entry.category = k.category
-    if (k.fields !== undefined) entry.fields = k.fields
-    if (k.kindFields !== undefined) entry.kindFields = k.kindFields
-    if (k.options !== undefined) entry.options = k.options
+    const servedFieldsRow = servedFields(k.fields, `mod kind ${k.kind}`)
+    if (servedFieldsRow !== undefined) entry.fields = servedFieldsRow
+    const servedKindFields = servedFields(k.kindFields, `mod kind ${k.kind} kindFields`)
+    if (servedKindFields !== undefined) entry.kindFields = servedKindFields
+    const servedOptionsRow = servedOptions(k.options, `mod kind ${k.kind}`)
+    if (servedOptionsRow !== undefined) entry.options = servedOptionsRow
     // THE LEAF FACE (paint-leaf-canvas.md): served verbatim — the
     // section renderer offers the brush verb only on a declared
     // face; never sniffed from the kind name.
@@ -459,7 +552,12 @@ function specModifiers(
     // THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
     // served verbatim — the compose door enforces them only when
     // the kind's bag is non-empty.
-    if (k.requires !== undefined) entry.requires = k.requires
+    if (k.requires !== undefined) {
+      if (!k.requires.every((r) => typeof r === 'string')) {
+        throw new Error(`form-spec: mod kind ${k.kind} carries a non-string requires entry — ${JSON.stringify(k.requires).slice(0, 120)}`)
+      }
+      entry.requires = k.requires
+    }
     out.push(entry)
   }
   return out
@@ -560,7 +658,7 @@ export function specBody(
   svc: ComfyUIService,
   defs: Map<string, CardDefinition>,
   res: SpecResolution,
-): Record<string, unknown> {
+): FormSpecDoc {
   // ONE VOICE FOR AN UNKNOWN CARD: the defs map is this function's
   // own input and its only caller builds res.card FROM it, so a miss
   // here was unreachable — and the reachable miss (formSchemas
@@ -697,11 +795,11 @@ export function specBody(
     // THE MOD CONTRACT ENVELOPES (keyed by pack — the absorbed
     //  contracts' own toJSON; the modifier surface walks these for
     //  its param rows, the same walker as the card fields).
-    mod_schemas: schemas.mods,
+    mod_schemas: servedModEnvelopes(schemas.mods, res.card),
     model: res.model,
     outputs: def.flowKinds.outputs,
     // THE CARD'S OWN SERIALIZED SCHEMA — the served form's SSOT.
-    schema: schemas.schema,
+    schema: servedEnvelope(schemas.schema, res.card),
     service: res.service,
     size: surface.size === 'huge' ? 'huge' : null,
     variants: decl ? specVariants(decl, key, res.service, primary) : [],
@@ -1050,7 +1148,7 @@ export async function kindsDoorArm(): Promise<Record<string, unknown>> {
 export async function formSpecArm(
   model: string,
   engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>,
-): Promise<Record<string, unknown> | null> {
+): Promise<FormSpecDoc | null> {
   // THE ENGINE ARM (stroke 66, generalized stroke 69 — the
   // card-seam completion): an engine id resolves to the ENGINE's
   // own form doc (no card, no family) built by the door's LIVE
@@ -1059,7 +1157,11 @@ export async function formSpecArm(
   // same declared contract its executor's gate validates.
   const buildEngine = engineDocs?.get(model)
   if (buildEngine !== undefined) {
-    return buildEngine()
+    const engineDoc = buildEngine()
+    if (!isFormSpecDoc(engineDoc)) {
+      throw new Error(`form-spec: engine '${model}' built a form doc without a form name / malformed schema envelope`)
+    }
+    return engineDoc
   }
   const defs = await loadCardDefs()
   const res = resolveSpecKey(model, defs, boardedMap(defs))

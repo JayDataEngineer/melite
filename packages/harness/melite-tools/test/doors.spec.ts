@@ -1406,6 +1406,24 @@ describe('/v1 prefix seat lanes', () => {
     assert.equal(empty.status, 200)
   })
 
+  test('a non-object POST body gets a named 400 at the door (strictness fix 6)', async () => {
+    const h = seatsHost()
+    for (const [label, raw] of [['array', '[1,2]'], ['number', '42'], ['string', '"x"'], ['null', 'null']] as const) {
+      const r = await call(h.routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        raw,
+      })
+      assert.equal(r.status, 400, label)
+      assert.ok(
+        String((r.body as { error: string }).error).includes('needs a JSON object body'),
+        `${label}: ${(r.body as { error: string }).error}`,
+      )
+    }
+    // and the seat still sees nothing: no calls recorded
+    assert.deepEqual(h.calls, [])
+  })
+
   test('lowercase methods normalize; missing method/url default in', async () => {
     const h = seatsHost()
     const r = await call(h.routes, '/v1', { method: 'post', url: 'http://localhost/v1/flows/validate', body: {} })

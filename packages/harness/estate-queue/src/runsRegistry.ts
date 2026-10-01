@@ -424,7 +424,15 @@ export class RunsRuntimeService extends Service {
       // rows), and a gate here made those read "undefined". The readers
       // that KEY a row by id (the boot sweep, the resurrect plan) are
       // where the parse belongs.
-      pre = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8")) as Record<string, unknown>;
+      const raw: unknown = JSON.parse(readFileSync(join(dir, "_flow.json"), "utf8"));
+      // post-parse shape guard (strictness fix 7): JSON.parse accepts
+      // `null`/`42`/`"x"` — the bare cast below would have served
+      // them as the settle's identity carrier. TOCTOU-only live: the
+      // plan's own parseSidecar refuses non-object docs before any id
+      // reaches this re-read (pinned in runs-registry-reconcile).
+      /* v8 ignore next -- TOCTOU-only: plan-time parseSidecar owns the static path */
+      if (raw === null || typeof raw !== "object" || Array.isArray(raw)) throw new Error("sidecar is not an object");
+      pre = raw as Record<string, unknown>;
     } catch {
       /* v8 ignore next 3 -- TOCTOU-only (the agent-engine law):
        * the record was readable+queued at plan time or it never

@@ -573,6 +573,19 @@ describe("listRuns envelope", () => {
     assert.equal((ghosted[0] as Record<string, unknown>)["draft_id"], "");
   });
 
+  it("a PRESENT-but-unreadable sidecar reads unknown, never success (strictness fix 7)", async () => {
+    const state = tmp();
+    const out = join(state, "output");
+    mkdirSync(join(out, "run-torn"), { recursive: true });
+    // _flow.json exists but cannot be read as a file — EISDIR stands in
+    // for any torn/permission read that is NOT the no-file law
+    mkdirSync(join(out, "run-torn", "_flow.json"));
+    const { runs } = await listRuns(state, 500, async () => false);
+    const torn = runs.find((r) => r["run_id"] === "run-torn") as Record<string, unknown> | undefined;
+    assert.ok(torn, "the torn row is served");
+    assert.equal(torn["status"], "unknown");
+  });
+
   it("the limit slices (count still counts every dir)", async () => {
     const state = tmp();
     populate(state);

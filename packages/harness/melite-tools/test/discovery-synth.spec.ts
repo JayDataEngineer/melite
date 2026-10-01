@@ -30,6 +30,7 @@ vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
 })
 
 import type { CardDefinition, ComfyUIService } from '@melite/comfyui-cordis'
+import type { ModifierKind } from '@melite/contracts/formSpec'
 import {
   cardToolsArm, formSpecArm as formSpecArmRaw, resolveSpecKey, specBody as specBodyRaw, stampOptionsFrom,
 } from '../src/discovery.ts'
@@ -159,9 +160,9 @@ describe('formSpecArm synthetic boarding', () => {
       ['card-c', card({ identity: { label: 'C', description: 'c', genre: 'image' } })],
     ])
     mockState.svc = svc({ formSchemas: () => ({ schema: ENVELOPE, mods: {} }) })
-    const spec = (await formSpecArm('syn-fam')) as Record<string, unknown>
-    assert.equal(spec['form'], 'card-a')
-    assert.equal(spec['service'], 'syn-fam')
+    const spec = await formSpecArm('syn-fam')
+    assert.equal(spec?.form, 'card-a')
+    assert.equal(spec?.service, 'syn-fam')
   })
 
   test('cardToolsArm tolerates a def without boarding', async () => {
@@ -275,15 +276,15 @@ describe('specBody primary envelope', () => {
   }
 
   test('variants filter, dedupe, and label every cell', () => {    const { defs, res } = mega()
-    const spec = specBody(mockState.svc as ComfyUIService, defs, res) as Record<string, unknown>
-    assert.equal(spec['engine'], 'custom-engine')
+    const spec = specBody(mockState.svc as ComfyUIService, defs, res)
+    assert.equal(spec.engine, 'custom-engine')
     // THE BASE LAYER INPUT: the family row's own defaults (the schema
     // envelope carries the rest — defaults derive client-side now)
-    assert.deepEqual(spec['model_defaults'], { strength: 3 })
-    assert.equal(spec['layout'], 'studio')
-    assert.equal(spec['size'], 'huge')
-    const variants = spec['variants'] as Array<Record<string, unknown>>
-    assert.deepEqual(variants.map((r) => r['id']), [
+    assert.deepEqual(spec.model_defaults, { strength: 3 })
+    assert.equal(spec.layout, 'studio')
+    assert.equal(spec.size, 'huge')
+    const variants = spec.variants ?? []
+    assert.deepEqual(variants.map((r) => r.id), [
       'turbo',
       'int8',
       'turbo__int8',
@@ -347,8 +348,13 @@ describe('specBody primary envelope', () => {
 
   test('modifiers scope packs, absorb fields, and tooltip options', () => {
     const { defs, res } = mega()
-    const spec = specBody(mockState.svc as ComfyUIService, defs, res) as Record<string, unknown>
-    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const spec = specBody(mockState.svc as ComfyUIService, defs, res)
+    const modifiers = spec.features?.modifiers ?? []
+    const rowOf = (k: string): ModifierKind => {
+      const hit = modifiers.find((m) => m.kind === k)
+      assert.ok(hit !== undefined, 'kind ' + k)
+      return hit
+    }
     // THE WIRE IS PLURAL (the retired controlnets bag — kind stays
     // singular, param_key is plural, schema_key names the pack
     // envelope for the client's hybrid walk). THE ENVELOPE MIRROR
@@ -356,13 +362,13 @@ describe('specBody primary envelope', () => {
     // no mask envelope (pinned below) and no mask seat — a kind with
     // no envelope is a brick by construction (the qvoice/base live
     // precedent: the owner offers, the scoped-out withholds).
-    assert.deepEqual(modifiers.map((m) => m['param_key']), ['loras', 'controlnets'])
-    assert.ok(!modifiers.some((m) => m['kind'] === 'mask'), 'no mask seat without its envelope')
+    assert.deepEqual(modifiers.map((m) => m.param_key), ['loras', 'controlnets'])
+    assert.ok(!modifiers.some((m) => m.kind === 'mask'), 'no mask seat without its envelope')
     const loras = modifiers[0]!
-    assert.equal(loras['kind'], 'lora')
-    assert.equal(loras['entry'], 'option')
-    assert.equal(loras['option_key'], 'id')
-    assert.equal(loras['schema_key'], 'loras')
+    assert.equal(loras.kind, 'lora')
+    assert.equal(loras.entry, 'option')
+    assert.equal(loras.option_key, 'id')
+    assert.equal(loras.schema_key, 'loras')
     assert.equal('max_stack' in loras, false)
     // THE PARAM FIELDS ARE THE ENVELOPE'S: the entry carries catalog
     // facts only — its param rows derive client-side off mod_schemas
@@ -370,7 +376,7 @@ describe('specBody primary envelope', () => {
     // THE RESOLVED FACTS ride every option (the hybrid leaf stamps
     // model + preprocessor onto new entries; lora leaves ignore
     // them — additive, never a second wire)
-    assert.deepEqual(loras['options'], [
+    assert.deepEqual(loras.options, [
       { value: 'l1', label: 'L1', tooltip: 'cat — f.safetensors — runtime catalog', defaults: { strength: 0.8 }, model: 'f.safetensors' },
       { value: 'l2', label: 'l2', tooltip: 'g.safetensors — runtime catalog', defaults: {}, model: 'g.safetensors' },
     ])
@@ -380,19 +386,19 @@ describe('specBody primary envelope', () => {
     assert.deepEqual(
       (({ kind, param_key, schema_key, entry, option_key, max_stack, cardinality }) =>
         ({ kind, param_key, schema_key, entry, option_key, max_stack, cardinality }))(
-        modifiers[1]! as Record<string, string | number>,
+        modifiers[1]!,
       ),
       {
         kind: 'controlnet', param_key: 'controlnets', schema_key: 'controlnet',
         entry: 'hybrid', option_key: 'type', max_stack: 5, cardinality: 'list',
       },
     )
-    assert.deepEqual(modifiers[1]!['options'], [])
+    assert.deepEqual(modifiers[1]!.options, [])
     // THE MOD CONTRACT ENVELOPES ride keyed by pack; mask (family
     // 'other') never boards syn-a — the law by absence (and the seat
     // drops with the envelope — the mirror law, asserted above)
-    assert.deepEqual(Object.keys(spec['mod_schemas'] as object), ['loras', 'controlnet'])
-    const groups = (spec['features'] as { variant_groups: Record<string, unknown> }).variant_groups
+    assert.deepEqual(Object.keys(spec.mod_schemas ?? {}), ['loras', 'controlnet'])
+    const groups = spec.features?.variant_groups
     assert.deepEqual(groups, {
       Variant: { label: 'Variant', tooltip: 't', default: 'turbo' },
       Quant: { label: 'Quant' },
@@ -431,10 +437,10 @@ describe('specBody non-primary envelope', () => {
       card: 'syn-card',
       service: 'syn-a',
       model: 'syn-b',
-    }) as Record<string, unknown>
-    const variants = spec['variants'] as Array<Record<string, unknown>>
+    })
+    const variants = spec.variants ?? []
     assert.deepEqual(
-      variants.map((r) => r['id']),
+      variants.map((r) => r.id),
       ['v', 'q-key', 'q-svc'],
     )
     assert.equal(spec['layout'], null)
@@ -462,7 +468,7 @@ describe('specBody declaration-absent arms', () => {
       card: 'syn-card',
       service: 'syn-n',
       model: 'syn-n',
-    }) as Record<string, unknown>
+    })
     assert.equal(spec['engine'], 'comfyui')
     // schema defaults ride the ENVELOPE (client derives); the family
     // row declares none — model_defaults serves the empty object
@@ -487,7 +493,7 @@ describe('specBody declaration-absent arms', () => {
     mockState.svc = svc({ formSchemas: () => ({ schema: carrier, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-card', service: 'syn-r', model: 'syn-r',
-    }) as Record<string, unknown>
+    })
     assert.equal('recipes' in spec, false)
   })
 
@@ -515,7 +521,7 @@ describe('specBody declaration-absent arms', () => {
     mockState.svc = svc({ formSchemas: () => ({ schema: carrier, mods: {} }) })
     const spec = specBody(mockState.svc as ComfyUIService, defs, {
       card: 'syn-card', service: 'syn-r', model: 'syn-r',
-    }) as Record<string, unknown>
+    })
     const rows = spec['variants'] as Array<{ id: string; defaults: Record<string, unknown> }>
     // the payload row: the stamp the pill writes at click
     assert.deepEqual(rows.find((r) => r.id === 'realism')!.defaults, { loras: [{ id: 'cel_shade' }] })
@@ -545,7 +551,7 @@ describe('specBody declaration-absent arms', () => {
       card: 'syn-nodecl',
       service: 'syn-nodecl',
       model: '__no_decl__',
-    }) as Record<string, unknown>
+    })
     // THE LAW (the parameter audit): the body NEVER flattens schema
     // defaults — the envelope rides verbatim and fieldsOf walks the
     // node shapes client-side (pinned in card-base)
@@ -567,7 +573,7 @@ describe('specBody declaration-absent arms', () => {
       card: 'syn-fn',
       service: 'syn-fn',
       model: '__no_decl__',
-    }) as Record<string, unknown>
+    })
     // the seam's own toJSON answers ({} for the function-schema
     // fixture); the body adds no walk of its own
     assert.deepEqual(spec['model_defaults'], {})

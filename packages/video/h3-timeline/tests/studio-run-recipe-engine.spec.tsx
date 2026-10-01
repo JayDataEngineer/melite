@@ -51,7 +51,11 @@ function envelope(): unknown {
       steps: num("Sampling steps (run)", 20, { min: 4, max: 40 }),
       denoise: num("Denoise (run)", 0.7, { min: 0, max: 1, step: 0.05 }),
       seed: { type: "number", meta: { description: "Seed", default: -1, step: 1 } },
-      sharpen_enabled: bool("Sharpen", false, { wtype: "tri" }),
+      // the tri-state is SCHEMA-BOUND (its node type — the tri atom
+      // serves type:'tri', never a declared wtype; WTYPE_SET holds no
+      // tri member and the estate's own h3 declaration carries a plain
+      // boolean, so the hint spelling was the fixture's own invention)
+      sharpen_enabled: { type: "tri", meta: { description: "Sharpen", default: false } },
       width: num("Width", 1344, { min: 448, max: 1344 }),
       height: num("Height", 768, { min: 448, max: 768 }),
       ref_images: { type: "array", meta: { description: "Reference images", extra: { wtype: "image_list", max_stack: 8 } } },

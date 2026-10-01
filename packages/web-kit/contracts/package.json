@@ -32,7 +32,8 @@
     "./vocab": "./src/vocab.ts",
     "./wire": "./src/wire.ts",
     "./benchStage": "./src/benchStage.ts",
-    "./applyGuard": "./src/applyGuard.ts"
+    "./applyGuard": "./src/applyGuard.ts",
+    "./formSpec": "./src/formSpec.ts"
   },
   "version": "0.1.0",
   "types": "./src/index.ts",

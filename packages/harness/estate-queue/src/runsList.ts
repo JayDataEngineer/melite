@@ -516,12 +516,18 @@ async function buildRunCard(
 ): Promise<Record<string, unknown> | null> {
   const runDir: string = join(outputRoot, ent.dir);
   let buf: string | null = null;
+  // NO sidecar (ENOENT) is the file-era completed-run law: it reads
+  // the "success" default, pinned by runs-list.spec. A sidecar that
+  // EXISTS but cannot be read (torn read, permissions) is different —
+  // unknown, never success (strictness fix 7, 2026-10-01).
+  let torn = false;
   try {
     buf = readFileSync(join(runDir, "_flow.json"), "utf8").slice(0, 8191);
-  } catch {
+  } catch (e) {
     buf = null;
+    torn = !(typeof e === "object" && e !== null && (e as NodeJS.ErrnoException).code === "ENOENT");
   }
-  let status = "success";
+  let status = torn ? "unknown" : "success";
   let pipeline = "";
   let prompt = "";
   let draft = "";

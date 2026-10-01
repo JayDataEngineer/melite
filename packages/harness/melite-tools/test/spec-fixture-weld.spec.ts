@@ -26,6 +26,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { formSpecArm } from '../src/discovery.ts'
+import type { FormSpecDoc } from '@melite/contracts/formSpec'
 
 const FIXTURES = {
   'qwen-img-edit-21': join(
@@ -40,8 +41,8 @@ const FIXTURES = {
 
 /** The contract projection: machine-local presence marks strip to
  *  ids (the same normalization both arms ride — one spelling). */
-const contractOf = (doc: Record<string, unknown>): Record<string, unknown> => {
-  const out = { ...doc }
+const contractOf = (doc: FormSpecDoc): Record<string, unknown> => {
+  const out: Record<string, unknown> = { ...doc }
   // families keep the OBJECT face the client renders (id + the
   // DECL label); only the machine-local present mark strips
   if (Array.isArray(out['families'])) {

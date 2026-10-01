@@ -6,6 +6,7 @@
 import "../../../../tests/helpers/boot-models.ts";
 import { agentFormDoc } from '@melite/engine-agent'
 import type { SamplerEnvelope } from '@melite/contracts/laneRelations'
+import type { FormSpecDoc, ModifierKind } from '@melite/contracts/formSpec'
 import { craftFormDoc } from '@melite/engine-craft'
 import { readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -292,8 +293,8 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves the tts envelope for its default family', async () => {
-    const spec = (await formSpecSweep('tts')) as Record<string, unknown>
-    assert.equal(spec['form'], 'tts')
+    const spec = await formSpecSweep('tts')
+    assert.equal(spec?.form, 'tts')
     // THE LARGE DEFAULT (operator 2026-09-23): the unstated model
     // resolves the 1.7B family.
     assert.equal(spec['service'], 'qwen3-tts-voicedesign')
@@ -338,7 +339,8 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves the card-only mask envelope (the studio retired at parity, stroke 75)', async () => {
-    const spec = (await formSpecSweep('mask')) as Record<string, unknown>
+    const spec = await formSpecSweep('mask')
+    assert.ok(spec !== null)
     assert.equal(spec['form'], 'mask')
     assert.equal(spec['service'], 'mask')
     assert.deepEqual(spec['variants'], [])
@@ -351,7 +353,7 @@ describe('live door arms', () => {
     // stroke 78: the CATEGORY serves VERBATIM (standalone vs
     // ordered — the section's drag law reads it, never the kind
     // name)
-    const mods = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const mods = spec.features?.modifiers ?? []
     assert.deepEqual(mods.map((m) => m['category']), ['standalone', 'standalone', 'ordered'])
     // stroke 76: the paint leaf face serves VERBATIM on the
     // declared kind — the section offers the brush only on this row
@@ -376,7 +378,8 @@ describe('live door arms', () => {
   })
 
   test('formSpecArm serves image-gen with NO recipe catalog (stroke 34 — the layer is dead)', async () => {
-    const spec = (await formSpecSweep('image-gen')) as Record<string, unknown>
+    const spec = await formSpecSweep('image-gen')
+    assert.ok(spec !== null)
     assert.equal('recipes' in spec, false)
     // the macro payload rides the FAMILY row instead: krea-2's
     // realism row serves its lora stamp in the variant defaults
@@ -394,8 +397,9 @@ describe('live door arms', () => {
     // envelope — the bench judged a domain every face was silent
     // about, so the composing agent learned [4,8] by refusal. The
     // row carries it now (null for absent, the row's own law).
-    const spec = (await formSpecSweep('image-gen')) as Record<string, unknown>
-    const rows = spec['variants'] as Array<{ id: string; group: string; sampler_envelope?: SamplerEnvelope | null }>
+    const spec = await formSpecSweep('image-gen')
+    assert.ok(spec !== null)
+    const rows = spec['variants'] ?? []
     const turbo = rows.find((r) => r.id === 'turbo')
     assert.ok(turbo, 'the turbo variant row serves')
     assert.deepEqual(turbo!.sampler_envelope, { steps: [4, 8], cfg: [1, 2] })
@@ -456,14 +460,14 @@ describe('live door arms', () => {
     // THE REQUIRED JOIN MOVED CLIENT-SIDE (the parameter audit): the
     // edge rows serve the DECLARED edges only — required facts ride
     // the schema envelope's own nodes (fieldsOf walks them)
-    const inputs = body['inputs'] as Array<Record<string, unknown>>
-    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'frame')), '{"name":"frame","kind":"image"}')
-    assert.equal(JSON.stringify(inputs.find((i) => i['name'] === 'seed')), '{"name":"seed","kind":"int"}')
+    const inputs = body.inputs ?? []
+    assert.equal(JSON.stringify(inputs.find((i) => i.name === 'frame')), '{"name":"frame","kind":"image"}')
+    assert.equal(JSON.stringify(inputs.find((i) => i.name === 'seed')), '{"name":"seed","kind":"int"}')
     // nameless junk rides the ENVELOPE verbatim (nothing drops) — but
     // no input row ever names it
     const dict = ((body['schema'] as { refs: Record<string, { dict?: Record<string, unknown> }> }).refs['0']!.dict)
     assert.deepEqual(Object.keys(dict!).sort(), ['7', 'frame', 'junk'])
-    assert.equal(inputs.some((i) => i['name'] === 7 || i['name'] === undefined), false)
+    assert.equal(inputs.some((i) => i.name === '7' || i.name === undefined), false)
     assert.equal('fields' in body, false)
   })
 
@@ -501,7 +505,7 @@ describe('live door arms', () => {
         packs.map((id) => ({ id, present: null })),
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__maskform__', service: '__maskform__', model: '__maskform__' })
-    const kinds = (body['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const kinds = body.features?.modifiers ?? []
     assert.equal(kinds.length, 2, 'both card-declared kinds serve')
     const detect = kinds.find((k) => k['kind'] === 'mask_detect')
     assert.ok(detect !== undefined, 'the field kind serves')
@@ -533,8 +537,12 @@ describe('live door arms', () => {
       mods: [{
         kind: 'pick', label: 'Pick', param_key: 'pick', cardinality: 'single',
         entry: 'option', option_key: 'id', scalar_key: 'strength', max_stack: 2,
-        kindFields: { id: { type: 'string' } },
-        fields: [{ name: 'x' }],
+        // kindFields is an ARRAY of served rows (the declared
+        // mod-kind master's wire shape — FieldRow: name/label/type)
+        kindFields: [{ name: 'id', label: 'Id', type: 'string' }],
+        // well-formed rows ride verbatim (the door refuses partial
+        // rows — the malformed-kind test owns that refusal)
+        fields: [{ name: 'x', label: 'X', type: 'string' }],
         options: [{ value: 'a', label: 'A' }],
       }],
     })]])
@@ -549,13 +557,13 @@ describe('live door arms', () => {
         packs.map((id) => ({ id, present: null })),
     } as unknown as ReturnType<typeof theService>
     const body = specBody(fakeSvc, defs, { card: '__kindfull__', service: '__kindfull__', model: '__kindfull__' })
-    const kinds = (body['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const kinds = body.features?.modifiers ?? []
     assert.equal(kinds.length, 1)
     assert.deepEqual(kinds[0], {
       kind: 'pick', label: 'Pick', param_key: 'pick', cardinality: 'single',
       entry: 'option', option_key: 'id', scalar_key: 'strength', max_stack: 2,
-      fields: [{ name: 'x' }],
-      kindFields: { id: { type: 'string' } },
+      fields: [{ name: 'x', label: 'X', type: 'string' }],
+      kindFields: [{ name: 'id', label: 'Id', type: 'string' }],
       options: [{ value: 'a', label: 'A' }],
     })
   })
@@ -598,9 +606,9 @@ describe('live door arms', () => {
   // distill row's married step count serves in the option defaults —
   // boarding stamps {strength, steps} onto the entry. ──
   test('the h3 loras options serve their distill step counts (strength + steps in the defaults)', async () => {
-    const spec = (await formSpecSweep('h3')) as Record<string, unknown>
+    const spec = await formSpecSweep('h3')
     assert.ok(spec !== null)
-    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const modifiers = spec.features?.modifiers ?? []
     const lora = modifiers.find((m) => m['kind'] === 'lora')
     assert.ok(lora !== undefined, 'the loras pack serves on the h3 family')
     // THE MARRIAGE DECLARATION (#36, the recipes rework): the kind
@@ -608,9 +616,9 @@ describe('live door arms', () => {
     // client resolver mirrors compose (lora steps > steps row,
     // Math.max) so the face shows what the film runs.
     assert.deepEqual(lora!['marries'], { steps: 'max' }, 'the loras kind declares the steps marriage (max aggregation)')
-    const opts = lora!['options'] as Array<Record<string, unknown>>
-    const dareties = opts.find((o) => o['value'] === 'h3_lightx2v_dareties')
-    const turbo = opts.find((o) => o['value'] === 'h3_lightx2v_turbo')
+    const opts = lora!.options ?? []
+    const dareties = opts.find((o) => o.value === 'h3_lightx2v_dareties')
+    const turbo = opts.find((o) => o.value === 'h3_lightx2v_turbo')
     assert.ok(dareties !== undefined && turbo !== undefined, 'both distill rows serve')
     assert.deepEqual(dareties!['defaults'], { strength: 0.8, steps: 4 }, 'dareties v4: a four-step distill (fixed point); strength 0.8 per the operator 2026-09-21 (silveroxides\u2019 documented solo range 0.6\u20130.8)')
     assert.deepEqual(turbo!['defaults'], { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 }, 'turbo 4-8: the married default rides WITH its declared range')
@@ -638,13 +646,13 @@ describe('live door arms', () => {
   })
 
   test('a route-owned key serves the owning family lora catalog', async () => {
-    const spec = (await formSpecSweep('h3-timeline')) as Record<string, unknown>
+    const spec = await formSpecSweep('h3-timeline')
     assert.ok(spec !== null)
-    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const modifiers = spec.features?.modifiers ?? []
     const lora = modifiers.find((m) => m['kind'] === 'lora')
     assert.ok(lora !== undefined)
-    const options = lora!['options'] as Array<Record<string, unknown>>
-    assert.ok(options.some((option) => option['value'] === 'h3_lightx2v_turbo'))
+    const options = lora!.options ?? []
+    assert.ok(options.some((option) => option.value === 'h3_lightx2v_turbo'))
     assert.deepEqual(
       options.find((option) => option['value'] === 'h3_lightx2v_turbo')!['defaults'],
       { strength: 0.6, steps: 8, steps_min: 4, steps_max: 8 },
@@ -660,11 +668,11 @@ describe('live door arms', () => {
     assert.ok(doc !== null, 'the engine id resolves')
     assert.equal(doc['form'], 'agent')
     assert.equal(doc['engine'], 'agent')
-    const kinds = (doc['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const kinds = doc.features?.modifiers ?? []
     assert.deepEqual(kinds.map((k) => k['param_key']), ['mcps', 'skills', 'inputs'])
-    const mcps = kinds[0]!['fields'] as Array<{ options: Array<{ value: string }> }>
+    const mcps = kinds[0]!.fields ?? []
     assert.deepEqual(mcps[0]!.options, [{ value: 'blender', label: 'blender' }])
-    const skills = kinds[1]!['fields'] as Array<{ options: Array<{ value: string }> }>
+    const skills = kinds[1]!.fields ?? []
     assert.deepEqual(skills[0]!.options, [{ value: 'card:mask', label: 'Mask Form' }])
   })
 
@@ -710,8 +718,9 @@ describe('live door arms', () => {
   //    model's prompt-enhance SKILL.md, composed with the old
   //    composer's grammar ─────────────────────────────────────────
   test('formSpecArm serves krea-2 the composed prompt-enhance recipe (byte referee: the old served fixture)', async () => {
-    const spec = (await formSpecSweep('krea-2')) as { enhance_prompts?: Record<string, unknown> }
-    const served = spec.enhance_prompts?.['prompt']
+    const spec = await formSpecSweep('krea-2')
+    assert.ok(spec !== null)
+    const served = spec.enhance_prompts?.prompt
     assert.equal(typeof served, 'string')
     // the composition grammar is pinned by the OLD tree's served spec
     // fixture — byte-for-byte (role + notes + img_gen + img_gen_json)
@@ -732,20 +741,21 @@ describe('live door arms', () => {
     // z-image is the ONE live family boarding ip_adapter (scalar_key
     // 'weight') AND controlnet (preprocessor-carrying rows) — the two
     // pack-row arms no krea-2 form ever takes.
-    const spec = (await formSpecSweep('z-image')) as Record<string, unknown>
+    const spec = await formSpecSweep('z-image')
+    assert.ok(spec !== null)
     assert.equal(spec['form'], 'image-gen')
     assert.equal(spec['service'], 'z-image')
-    const modifiers = (spec['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+    const modifiers = spec.features?.modifiers ?? []
     const ip = modifiers.find((m) => m['kind'] === 'ip_adapter')
     assert.ok(ip !== undefined, 'the scalar pack serves')
     assert.equal(ip['scalar_key'], 'weight')
     assert.equal(ip['entry'], 'hybrid')
     assert.equal(ip['option_key'], 'kind')
-    const ipOpts = ip['options'] as Array<Record<string, unknown>>
+    const ipOpts = ip.options ?? []
     assert.ok(ipOpts.length > 0, 'the retired vocabulary still serves')
-    assert.deepEqual(ipOpts[0]!['defaults'], { weight: 1.0 }, 'the default rides the scalar key, never strength')
-    const cn = modifiers.find((m) => m['kind'] === 'controlnet')!
-    const cnOpts = cn['options'] as Array<Record<string, unknown>>
+    assert.deepEqual(ipOpts[0]!.defaults, { weight: 1.0 }, 'the default rides the scalar key, never strength')
+    const cn = modifiers.find((m) => m.kind === 'controlnet')!
+    const cnOpts = cn.options ?? []
     assert.ok(cnOpts.length > 0, 'the union rows serve')
     assert.ok(
       cnOpts.some((o) => 'preprocessor' in o),
@@ -756,10 +766,10 @@ describe('live door arms', () => {
   test('THE TWO CHECKPOINT FACES (the upstream table — Model names sizes: the .6 and the 1.7B; Base is a variant, never a third family)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
-    const faces = (card: string, model: string): Array<Record<string, unknown>> => {
+    const faces = (card: string, model: string): NonNullable<FormSpecDoc['families']> => {
       const def = defs.get(card)
       assert.ok(def !== undefined, card + ' boards')
-      return (specBody(svc, defs, { card, service: model, model })['families'] as Array<Record<string, unknown>>)
+      return specBody(svc, defs, { card, service: model, model }).families ?? []
     }
     // the tts rail: two sizes, two checkpoint-honest faces, plus the
     // Base compose address (qvoice across ALL qwen3-tts, operator
@@ -769,21 +779,21 @@ describe('live door arms', () => {
     // (the large default).
     const tts = faces('tts', 'qwen3-tts-voicedesign')
     assert.deepEqual(
-      tts.map((f) => [f['id'], f['label']]),
+      tts.map((f) => [f.id, f.label ?? null]),
       [['qwen3-tts-voicedesign', 'Qwen3-TTS 1.7B'], ['qwen3-tts', 'Qwen3-TTS 0.6B'], ['qwen3-tts-base', 'Qwen3-TTS 0.6B Base Native'], ['qwen3-tts-voicedesign-design', 'Qwen3-TTS 1.7B VoiceDesign Native']],
     )
     // true families keep their DECL faces (the 2026-09-16 family-face law, unmoved)
     const music = faces('music', 'music3')
-    assert.deepEqual(music.map((f) => [f['id'], f['label']]), [['music3', 'MiniMax Music 3'], ['yue2', 'YuE2']])
+    assert.deepEqual(music.map((f) => [f.id, f.label ?? null]), [['music3', 'MiniMax Music 3'], ['yue2', 'YuE2']])
   })
 
   test('THE QVOICE SEAT (qvoice loads across ALL qwen3-tts — the owner and every route, operator 2026-09-23)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
-    const modsOf = (model: string): Array<Record<string, unknown>> => {
+    const modsOf = (model: string): ModifierKind[] => {
       const def = defs.get('tts')
       assert.ok(def !== undefined, 'the tts card boards')
-      return (specBody(svc, defs, { card: 'tts', service: 'qwen3-tts', model })['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+      return specBody(svc, defs, { card: 'tts', service: 'qwen3-tts', model }).features?.modifiers ?? []
     }
     // the owner lane offers the LOAD/USE seat (the lanpaint
     // precedent: boarded + enveloped + fired — the entry is owed)
@@ -796,7 +806,7 @@ describe('live door arms', () => {
     assert.deepEqual(
       (({ kind, param_key, schema_key, cardinality, max_stack, options }) =>
         ({ kind, param_key, schema_key, cardinality, max_stack, options }))(
-        seat as Record<string, unknown>,
+        seat,
       ),
       {
         kind: 'qvoice', param_key: 'qvoice', schema_key: 'qvoice',
@@ -816,10 +826,10 @@ describe('live door arms', () => {
   test('THE DESIGN SEAT (qvoice saves across ALL qwen3-tts — the exporter fires from any lane, operator 2026-09-23)', async () => {
     const defs = await loadCardDefs()
     const svc = theService()
-    const modsOf = (model: string): Array<Record<string, unknown>> => {
+    const modsOf = (model: string): ModifierKind[] => {
       const def = defs.get('tts')
       assert.ok(def !== undefined, 'the tts card boards')
-      return (specBody(svc, defs, { card: 'tts', service: 'qwen3-tts-voicedesign', model })['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers
+      return specBody(svc, defs, { card: 'tts', service: 'qwen3-tts-voicedesign', model }).features?.modifiers ?? []
     }
     // the designer offers the SAVE seat (boarded + enveloped +
     // fired — the entry is owed)
@@ -829,7 +839,7 @@ describe('live door arms', () => {
     assert.deepEqual(
       (({ kind, param_key, schema_key, cardinality, max_stack, options }) =>
         ({ kind, param_key, schema_key, cardinality, max_stack, options }))(
-        seat as Record<string, unknown>,
+        seat,
       ),
       {
         kind: 'qvoice_save', param_key: 'qvoice_save', schema_key: 'qvoice_save',

@@ -31,7 +31,8 @@ const SPEC = {
   size: 'huge',
   schema: schemaEnvelope({
     input_image: { type: 'string', meta: { description: 'Input image', extra: { wtype: 'image', group: 'input' } } },
-    seed: { type: 'number', meta: { description: 'Seed', extra: { wtype: 'seed', group: 'input' } } },
+    // 'seed' is DERIVED (step 1 on a number), never a declared wtype
+    seed: { type: 'number', meta: { description: 'Seed', step: 1, extra: { group: 'input' } } },
     resolution: { consts: ['1024', '2048'], meta: { description: 'Resolution', default: '1024', extra: { group: 'generation' } } },
     steps: { type: 'number', meta: { description: 'Steps', default: 12, step: 1, extra: { wtype: 'number', group: 'generation' } } },
     shape_steps: { type: 'number', meta: { description: 'Shape steps', default: 8, step: 1, extra: { wtype: 'number', group: 'stage' } } },

@@ -1433,7 +1433,10 @@ window.__ModuleLoader__.load({
 		*  faces read keys off the result, never off a bare record. */
 		function extraOf(node) {
 			const raw = node?.meta?.["extra"];
-			return typeof raw === "object" && raw !== null && !Array.isArray(raw) ? raw : {};
+			if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return {};
+			const w = raw["wtype"];
+			if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) throw new Error("serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).");
+			return raw;
 		}
 		var EXTRA_KEYS, EXTRA_KEY_SET, WTYPE_SET, WTYPE_SEATS, MEDIA_SET, ZONE_SET, ROLE_SET;
 		var init_extraKeys = __esmMin((() => {
@@ -2653,7 +2656,7 @@ window.__ModuleLoader__.load({
 				status: "done"
 			}));
 		}
-		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES;
+		var TERMINAL_RUN_STATUSES, LIVE_RUN_STATUSES, RUN_STATUS_WORDS;
 		var init_stageView = __esmMin((() => {
 			TERMINAL_RUN_STATUSES = /* @__PURE__ */ new Set([
 				"completed",
@@ -2671,6 +2674,26 @@ window.__ModuleLoader__.load({
 				"stopping",
 				"queued",
 				"pending"
+			]);
+			RUN_STATUS_WORDS = /* @__PURE__ */ new Set([
+				"done",
+				"completed",
+				"succeeded",
+				"success",
+				"failed",
+				"error",
+				"stopped",
+				"interrupted",
+				"unknown",
+				"stopping",
+				"running",
+				"live",
+				"pending",
+				"queued",
+				"stale",
+				"cached",
+				"skipped",
+				"reused"
 			]);
 		}));
 		//#endregion
@@ -3063,6 +3086,7 @@ window.__ModuleLoader__.load({
 			ROLE_SET: () => ROLE_SET,
 			RUN_ID_RE: () => RUN_ID_RE,
 			RUN_MEDIA_PREFIX: () => RUN_MEDIA_PREFIX,
+			RUN_STATUS_WORDS: () => RUN_STATUS_WORDS,
 			SEGMENT_STATUSES: () => SEGMENT_STATUSES,
 			SELF_NAMED_FAMILIES: () => SELF_NAMED_FAMILIES,
 			SESSION_RE: () => SESSION_RE,
@@ -42228,6 +42252,39 @@ void main() {
 		//#region src/spec.ts
 		init_extraKeys();
 		init_laneRelations();
+		/**
+		* spec.ts — @melite/card-base: THE EMISSION CONTRACT.
+		*
+		* A card package EMITS; the base CONSTRUCTS (operator order,
+		* 2026-09-12: "The package to construct the card ui should see that
+		* the card package emits an image input, then constructs the input
+		* component automatically"). This module is the emission's client-side
+		* shape — the served form-spec document as the base consumes it —
+		* plus the PURE projections. No fetchers here (wire.ts), no
+		* components (form.tsx): types and derivations only.
+		*
+		* THE LAYERED-PARAMS LAW (the parameter audit, 2026-09-14 — the
+		* DSH settings model, subsystems/settings.md): the form-spec serves
+		* the card's own SERIALIZED SCHEMA (schemastery toJSON — the SSOT,
+		* one serializer server-side) and the bench's stage params ARE the
+		* USER layer: a key's PRESENCE is the override mark, never its
+		* value. resolveValue layers schema defaults <- model defaults <-
+		* served stamps <- user — the engine's compose cascade verbatim,
+		* resolved client-side so the form shows exactly what a run
+		* composes. Edits are set/unset ops over the user layer; a family
+		* Recipe macro pick is an ordinary multi-set of declared keys —
+		* no stamp ledger, no value-compare heuristics, no heal walk
+		* (seedUser's one validation clause aside).
+		*
+		* THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
+		* via the package system, it needs to have 'input' 'required=True',
+		* or 'output', so the edges are defined"): every card's emission
+		* carries `inputs` — one row per declared input edge, the required
+		* fact joined per the law (dsl.py Field.emit: `required: True
+		* emits, False omits`) — and `outputs`, the declared output edges.
+		* The base constructs input components and picker candidates from
+		* THESE, never from result-URL sniffing.
+		*/
 		/** Build an envelope from raw dict nodes — the TEST-side and
 		*  migration-side constructor; the served envelopes come from
 		*  schemastery's own toJSON. Ids assign in insertion order; a node
@@ -42450,9 +42507,9 @@ void main() {
 					value: String(o["value"]),
 					label: String(o["label"])
 				} : String(o));
-				const hint = typeof extra.wtype === "string" ? extra.wtype : "";
+				const hint = extra.wtype;
 				let type;
-				if (hint !== "") type = hint;
+				if (hint !== void 0 && hint !== "") type = hint;
 				else if (options !== void 0 && node.type === "union") type = "select";
 				else if (node.type === "number") type = String(meta["step"] ?? "") === "1" ? "seed" : "slider";
 				else if (node.type === "string") type = "text";
@@ -46175,6 +46232,7 @@ void main() {
 		}
 		//#endregion
 		//#region src/wire.ts
+		init_extraKeys();
 		init_readFile();
 		/** Read a same-origin /v1 JSON door. Non-200 → named throw (the door's
 		*  own error text when present). */
@@ -46267,6 +46325,22 @@ void main() {
 			const doc = await v1Get("/v1/form-spec?model=" + encodeURIComponent(model), signal);
 			const env = doc["schema"];
 			if (env !== null && (typeof env !== "object" || typeof env.uid !== "number" || typeof env.refs !== "object")) throw new Error("form-spec: no schema envelope");
+			const wtypeErrors = [];
+			const judgeEnvelope = (e, surface) => {
+				if (e === null || e === void 0 || typeof e !== "object") return;
+				const refs = e.refs;
+				if (typeof refs !== "object" || refs === null) return;
+				for (const [id, node] of Object.entries(refs)) {
+					if (typeof node !== "object" || node === null) continue;
+					const extra = node.meta?.["extra"];
+					if (typeof extra !== "object" || extra === null) continue;
+					const w = extra["wtype"];
+					if (w !== void 0 && w !== "" && !WTYPE_SET.includes(w)) wtypeErrors.push(`${surface} ref ${id}: wtype '${String(w)}' is not in WTYPE_SET (@melite/contracts/extraKeys)`);
+				}
+			};
+			judgeEnvelope(doc["schema"], "schema");
+			for (const [pack, env2] of Object.entries(doc["mod_schemas"] ?? {})) judgeEnvelope(env2, `mod:${pack}`);
+			if (wtypeErrors.length > 0) throw new Error(`form-spec ${model}: ${wtypeErrors.join("; ")}`);
 			return doc;
 		}
 		/** /v1/forms — every card's meta row (the edge emission included). */
@@ -48515,9 +48589,11 @@ void main() {
 				if (p === void 0 || typeof p !== "object" || typeof p.value !== "number" || typeof p.max !== "number") delete stage.progress;
 				if (typeof stage.activity !== "string" || stage.activity === "") delete stage.activity;
 			}
+			const status = doc["status"];
+			if (typeof status !== "string" || !RUN_STATUS_WORDS.has(status.toLowerCase())) throw new Error(`runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`);
 			return {
 				runId,
-				status: typeof doc["status"] === "string" ? doc["status"] : "unknown",
+				status,
 				draftId: typeof doc["draft_id"] === "string" && doc["draft_id"] !== "" ? doc["draft_id"] : null,
 				stages,
 				...typeof doc["error"] === "string" && doc["error"] !== "" ? { error: doc["error"] } : {}
@@ -50205,4 +50281,4 @@ void main() {
 });
 
 //# sourceMappingURL=client.js.map
-/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="84f123f6d7a99765b6cd6c0f61d32907d40bffc1";
+/*__MELITE_BUILD_STAMP__*/globalThis.__MELITE_BUILD_STAMP__="19a688a98ef0aa027eda2c9252ecaf760cd5f21e";

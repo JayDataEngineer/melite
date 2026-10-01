@@ -79,7 +79,8 @@ export interface RunStatusRow {
 // wire-only words: `error` is the run record's failure stamp, `unknown`
 // is a schema value). These names stay so existing importers ride the
 // same truth.
-export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES } from '@melite/contracts/stageView' 
+export { isTerminalStatus as isTerminalRun, TERMINAL_RUN_STATUSES, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
+import { RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 
 /** The ONE media-url rewrite (readRunStatus + the file-era list
  *  fallback share it): bare run-relative names ride the estate's
@@ -125,9 +126,22 @@ export function readRunStatus(runId: string, doc: Record<string, unknown>): RunS
       delete stage.activity
     }
   }
+  // THE READ DOOR THROWS (schema-strictness fix 3, 2026-10-01): a
+  // status word outside the fold's domain (RUN_STATUS_WORDS,
+  // @melite/contracts/stageView) is corruption, not a state — the old
+  // ':unknown' default handed garbage to the fold, which buried it as
+  // a terminal. melite-card-view's run view wraps this and fails the
+  // card visibly; card-base's fetchRunStatus lets it propagate as a
+  // failed read.
+  const status = doc['status']
+  if (typeof status !== 'string' || !RUN_STATUS_WORDS.has(status.toLowerCase())) {
+    throw new Error(
+      `runs/status ${runId}: run-level status ${JSON.stringify(status)} is outside the vocabulary`,
+    )
+  }
   return {
     runId,
-    status: typeof doc['status'] === 'string' ? (doc['status'] as string) : 'unknown',
+    status,
     draftId: typeof doc['draft_id'] === 'string' && (doc['draft_id'] as string) !== ''
       ? (doc['draft_id'] as string)
       : null,

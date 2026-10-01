@@ -829,6 +829,15 @@ export function apply(c: CtxView, config: Config = {}): void {
             } catch {
               return fail(400, { error: 'body must be JSON' })
             }
+            // SHAPE GATE (schema-strictness fix 6, 2026-10-01): this
+            // arm forwarded ANY parsed JSON verbatim — a POST body of
+            // `42`, `"x"`, or `[1,2]` rode straight into the seat.
+            // Field-level law belongs to each seat (it throws its own
+            // named errors); the OBJECT shape is the seam this door
+            // owns — every /v1 POST verb takes a record body.
+            if (body === null || typeof body !== 'object' || Array.isArray(body)) {
+              return fail(400, { error: `seat lane: POST ${path} needs a JSON object body (got ${body === null ? 'null' : Array.isArray(body) ? 'an array' : `a ${typeof body}`})` })
+            }
             request(method, pathWithQuery, body, signal, 120_000)
               .then((value) => ok(value))
               .catch(failEstate)

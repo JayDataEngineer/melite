@@ -145,7 +145,11 @@ export interface ExtraBag {
   order?: number | null
   group?: string
   zone?: Zone
-  wtype?: Wtype
+  /** THE DECLARED HINT (WTYPE_SET's union). The empty string is the
+   *  explicit no-hint spelling: extraOf tolerates it as absent (the
+   *  engine wall fixture knob({wtype:''}) pins it), every foreign
+   *  spelling refuses. */
+  wtype?: Wtype | ''
   width?: number
   columns?: number
   visible_when?: string
@@ -269,7 +273,16 @@ export function extraOf(
   node: { meta?: Record<string, unknown> } | null | undefined,
 ): Partial<ExtraBag> {
   const raw = node?.meta?.['extra']
-  return typeof raw === 'object' && raw !== null && !Array.isArray(raw)
-    ? raw as Partial<ExtraBag>
-    : {}
+  if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) return {}
+  // wtype membership at the READ (strictness fix 5, 2026-10-01): the
+  // write-side bag guard refuses foreign spellings, but this getter
+  // narrows untyped serialized rows too — a wtype outside WTYPE_SET
+  // must refuse here, never ride as a silent text fallback.
+  const w = (raw as Record<string, unknown>)['wtype']
+  if (w !== undefined && w !== '' && !(WTYPE_SET as readonly string[]).includes(w as string)) {
+    throw new Error(
+      "serialized extra carries wtype '" + String(w) + "' — not in WTYPE_SET. The renderer has no arm for it (add it with its seat, or fix the spelling).",
+    )
+  }
+  return raw as Partial<ExtraBag>
 }

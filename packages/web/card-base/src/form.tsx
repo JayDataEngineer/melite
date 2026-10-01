@@ -150,7 +150,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
     // (presentation type: the wtype hint wins — a declared
     // {type:'path',wtype:'image'} constructs the square like the
     // envelope's extra.wtype does).
-    const declared = (rows: SpecField[] | undefined): SpecField[] | undefined =>
+    const declared = (rows: readonly SpecField[] | undefined): SpecField[] | undefined =>
       rows?.map((f) => (typeof f.wtype === 'string' && f.wtype !== '' ? { ...f, type: f.wtype } : f))
     return {
       ...k,
