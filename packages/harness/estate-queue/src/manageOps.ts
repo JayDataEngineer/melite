@@ -79,18 +79,22 @@ function waitForQueuePoll(ctx: ManageCtx): Promise<void> {
   const signal = ctx.signal;
   if (signal?.aborted === true) return Promise.reject(abortReason(signal));
   return new Promise<void>((resolvePromise, rejectPromise) => {
-    let settled = false;
-    let dispose: () => void = () => {};
-    const finish = (fn: () => void): void => {
-      if (settled) return;
-      settled = true;
-      signal?.removeEventListener("abort", onAbort);
+    // The seat IS the timer (ManageCtx.timeout, the conformance
+    // stroke's no-bare-setTimeout guarantee): the poll waits on
+    // ctx.timeout and races the door's signal. No settled-flag dance
+    // -- a promise settles once, so the guard the wrapper carried
+    // was unreachable; the post-registration re-check closes the
+    // race where the signal aborts between the check above and the
+    // listener landing.
+    const dispose = ctx.timeout((): void => {
+      signal?.removeEventListener('abort', onAbort);
+      resolvePromise();
+    }, 1000);
+    const onAbort = (): void => {
       dispose();
-      fn();
+      rejectPromise(abortReason(signal as AbortSignal));
     };
-    const onAbort = (): void => finish(() => rejectPromise(abortReason(signal as AbortSignal)));
-    signal?.addEventListener("abort", onAbort, { once: true });
-    dispose = ctx.timeout((): void => finish(resolvePromise), 1000);
+    signal?.addEventListener('abort', onAbort, { once: true });
     if (signal?.aborted === true) onAbort();
   });
 }
