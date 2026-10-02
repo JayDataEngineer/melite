@@ -683,26 +683,22 @@ function familyFace(fam) {
 		}
 	}
 }
-function stampOptionsFrom(schema, svc, family) {
+function stampOptionsFrom(schema, svc, family, boardedPacks) {
 	const env = schema;
 	if (env == null || env.refs == null || env.uid == null) return;
 	const root = env.refs[String(env.uid)] ?? env.refs[env.uid];
 	if (root?.dict == null) return;
-	for (const refId of Object.values(root.dict)) {
+	for (const [field, refId] of Object.entries(root.dict)) {
 		const node = env.refs[String(refId)];
 		if (node == null || node.meta == null) continue;
 		const extra = node.meta.extra;
 		if (extra == null || typeof extra.optionsFrom !== "string") continue;
 		const pack = extra.optionsFrom;
-		let rows = [];
-		try {
-			rows = svc.modCatalog(pack, family).rows;
-		} catch {
-			/* v8 ignore next -- an unregistered pack name on a live lane
-			degrades to an empty select (visible, honest); the compose
-			door remains the loud backstop for a picked-then-refused id */
-			rows = [];
+		if (!boardedPacks.has(pack)) {
+			const boarded = [...boardedPacks].sort().join(", ");
+			throw new Error(`form-spec: field '${field}' names optionsFrom pack '${pack}' the ${family} envelope does not board (${boarded === "" ? "no packs boarded" : `boarded: ${boarded}`})`);
 		}
+		const rows = svc.modCatalog(pack, family).rows;
 		const options = [];
 		if (node.meta.default === "" || node.meta.default === void 0) options.push({
 			value: "",
@@ -740,8 +736,9 @@ function specBody(svc, defs, res) {
 	const envelopeKey = owningAtom(key);
 	const schemas = svc.formSchemas(res.card, envelopeKey);
 	if (schemas === null) throw new Error(unknownCardVoice(res.card));
-	stampOptionsFrom(schemas.schema, svc, envelopeKey);
-	const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, new Set(Object.keys(schemas.mods)));
+	const boardedPacks = new Set(Object.keys(schemas.mods));
+	stampOptionsFrom(schemas.schema, svc, envelopeKey, boardedPacks);
+	const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, boardedPacks);
 	let liveMids;
 	try {
 		liveMids = new Set(liveScanOrder());

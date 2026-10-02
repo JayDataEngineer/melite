@@ -593,10 +593,11 @@ describe('the catalog-fed select stamp (2026-09-21, the freeform-lie kill)', () 
   })
   const rowsSvc = (rows: Array<{ id: string }>) =>
     ({ modCatalog: (pack: string) => (pack === 'loras' ? { rows } : { rows: [] }) }) as never
+  const boarded = (packs: string[]) => new Set(packs)
 
   test('stamps options from the pack\'s LIVE rows — the empty arm first for a clearable default', () => {
     const e = env()
-    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }, { id: 'h3_lightx2v_turbo' }]), 'h3')
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }, { id: 'h3_lightx2v_turbo' }]), 'h3', boarded(['loras']))
     const node = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
     assert.deepEqual(node.meta.extra.options, [
       { value: '', label: '— none —' },
@@ -606,30 +607,53 @@ describe('the catalog-fed select stamp (2026-09-21, the freeform-lie kill)', () 
     assert.equal(node.meta.extra.optionsFrom, undefined, 'the hint never rides the served doc')
   })
 
-  test('a non-empty default serves rows only; an unknown pack degrades to the honest empty select', () => {
+  test('a non-empty default serves rows only', () => {
     const e = env()
     const node1 = (e.refs as Record<string, { meta: { default: string; extra: Record<string, unknown> } }>)['1']
     node1.meta.default = 'h3_taomate_3step'
-    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }]), 'h3')
+    stampOptionsFrom(e, rowsSvc([{ id: 'h3_taomate_3step' }]), 'h3', boarded(['loras']))
     assert.deepEqual(node1.meta.extra.options, [{ value: 'h3_taomate_3step', label: 'h3_taomate_3step' }])
-    const e2 = env()
+  })
+
+  test('THE REFERENT REFUSAL (T5, 2026-10-12): a pack the envelope does not board refuses loud, naming field, pack, and what IS boarded', () => {
+    const e = env()
+    // the old law served an empty select and called it honest — the
+    // dropdown read "nothing installed" for a misconfigured name.
+    // The door now refuses at the sweep, the earliest point where
+    // the pack, the field, and the boarded set are all in hand.
+    assert.throws(
+      () => stampOptionsFrom(e, rowsSvc([]), 'h3', boarded([])),
+      /form-spec: field 'refine_lora' names optionsFrom pack 'loras' the h3 envelope does not board \(no packs boarded\)/,
+    )
+    assert.throws(
+      () => stampOptionsFrom(e, rowsSvc([]), 'h3', boarded(['controlnet'])),
+      /names optionsFrom pack 'loras' the h3 envelope does not board \(boarded: controlnet\)/,
+    )
+    // nothing was stamped onto the refusing envelope
+    const node = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
+    assert.equal(node.meta.extra.options, undefined)
+  })
+
+  test('a provider that throws past a PROVEN referent propagates (never a silent catch)', () => {
+    const e = env()
     const throwing = { modCatalog: () => { throw new Error('no pack') } } as never
-    stampOptionsFrom(e2, throwing, 'h3')
-    const node2 = (e2.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['1']
-    assert.deepEqual(node2.meta.extra.options, [{ value: '', label: '— none —' }], 'visible and honest, never a throw')
+    assert.throws(
+      () => stampOptionsFrom(e, throwing, 'h3', boarded(['loras'])),
+      /no pack/,
+    )
   })
 
   test('ordinary fields are untouched; a null-ish envelope is a no-op (never a throw)', () => {
     const e = env()
-    stampOptionsFrom(e, rowsSvc([{ id: 'x' }]), 'h3')
+    stampOptionsFrom(e, rowsSvc([{ id: 'x' }]), 'h3', boarded(['loras']))
     const prompt = (e.refs as Record<string, { meta: { extra: Record<string, unknown> } }>)['2']
     assert.deepEqual(prompt.meta.extra, {}, "a field without the hint never gains options")
-    stampOptionsFrom(null, rowsSvc([]), 'x')
-    stampOptionsFrom({} as never, rowsSvc([]), 'x')
+    stampOptionsFrom(null, rowsSvc([]), 'x', boarded([]))
+    stampOptionsFrom({} as never, rowsSvc([]), 'x', boarded([]))
     // a root with NO dict and a ref id that misses the refs table:
     // both walk arms return/continue, never throw
-    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object' } } } as never, rowsSvc([]), 'x')
-    stampOptionsFrom({ uid: 9, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x')
-    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x')
+    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object' } } } as never, rowsSvc([]), 'x', boarded([]))
+    stampOptionsFrom({ uid: 9, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x', boarded([]))
+    stampOptionsFrom({ uid: 0, refs: { 0: { type: 'object', dict: { a: 1 } } } } as never, rowsSvc([]), 'x', boarded([]))
   })
 })

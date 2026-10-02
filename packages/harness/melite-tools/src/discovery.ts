@@ -616,26 +616,36 @@ export function stampOptionsFrom(
   schema: unknown,
   svc: { modCatalog(pack: string, family: string): { rows: ReadonlyArray<{ id: string }> } },
   family: string,
+  boardedPacks: ReadonlySet<string>,
 ): void {
   const env = schema as StampEnv | null
   if (env == null || env.refs == null || env.uid == null) return
   const root = env.refs[String(env.uid)] ?? env.refs[env.uid as never]
   if (root?.dict == null) return
-  for (const refId of Object.values(root.dict)) {
+  for (const [field, refId] of Object.entries(root.dict)) {
     const node = env.refs[String(refId)]
     if (node == null || node.meta == null) continue
     const extra = node.meta.extra
     if (extra == null || typeof extra.optionsFrom !== 'string') continue
     const pack = extra.optionsFrom
-    let rows: ReadonlyArray<{ id: string }> = []
-    try {
-      rows = svc.modCatalog(pack, family).rows
-    } catch {
-      /* v8 ignore next -- an unregistered pack name on a live lane
-         degrades to an empty select (visible, honest); the compose
-         door remains the loud backstop for a picked-then-refused id */
-      rows = []
+    // THE REFERENT REFUSAL (T5, 2026-10-12): optionsFrom names a mod
+    // pack the envelope must BOARD — a name the envelope's own mod
+    // schemas do not carry is a missing referent, and the door
+    // refuses in the field's voice instead of serving an empty
+    // select that reads as "nothing installed" (the old degradation
+    // laundered a misconfiguration into an honest-looking dropdown;
+    // the sweep is the earliest resolvable point — the pack, the
+    // field, and the boarded set are all in hand here). A boarded
+    // pack with zero live rows stays the honest empty arm.
+    if (!boardedPacks.has(pack)) {
+      const boarded = [...boardedPacks].sort().join(', ')
+      throw new Error(
+        `form-spec: field '${field}' names optionsFrom pack '${pack}' the ${family} envelope does not board (${boarded === '' ? 'no packs boarded' : `boarded: ${boarded}`})`,
+      )
     }
+    // no catch: a provider that throws past a proven referent is a
+    // provider fault — the refusal propagates in its own voice
+    const rows = svc.modCatalog(pack, family).rows
     const options: Array<{ value: string; label: string }> = []
     if (node.meta.default === '' || node.meta.default === undefined) {
       options.push({ value: '', label: '— none —' })
@@ -708,8 +718,12 @@ export function specBody(
   // compose door keeps refusing unknown ids loud). The empty arm
   // rides first when the field's default is '' (a refine pick must
   // be clearable). LORAS ARE ONLY MODS: the ids come from the
-  // served rows, never a hand-spelled string.
-  stampOptionsFrom(schemas.schema, svc, envelopeKey)
+  // served rows, never a hand-spelled string. The referent law
+  // (T5): the pack must be one the envelope boards — the mod
+  // schemas' key set, built once here and shared with the
+  // modifiers walk below.
+  const boardedPacks = new Set(Object.keys(schemas.mods))
+  stampOptionsFrom(schemas.schema, svc, envelopeKey, boardedPacks)
   // THE MOD SYSTEM OWNS MODS (the old SubcardGrid law, 2026-08-09:
   // "LoRA is a MOD, never a standalone addition — the free-text
   // grid must not render the mod bags as raw JSON rows; the
@@ -717,7 +731,7 @@ export function specBody(
   // pack) and render ONLY through the mod surface. ControlNet
   // proves the law by absence: the pack waits unboarded and no
   // envelope, no entry, no endpoint ever names it.
-  const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, new Set(Object.keys(schemas.mods)))
+  const modifiers = specModifiers(svc, res.card, envelopeKey, decl, def, boardedPacks)
   // the machine truth (one spelling: liveScanOrder, the registry's
   // own admission read) — presence marks ride the families block
   let liveMids: Set<string>
