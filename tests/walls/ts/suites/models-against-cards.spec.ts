@@ -267,10 +267,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.deepEqual(starving, [], "starving fields found:\n  " + starving.join("\n  "));
     // the exemption list itself is a wall: hand-built carriers are
     // named, never a growing hole
-    assert.ok(walked >= 60,
-      `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set empties the arm)`);
-    assert.ok(judged >= 5,
-      `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge empties the arm)`);
+    assert.equal(walked, 465,
+      `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
+    assert.equal(judged, 7,
+      `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
     // exact: the 2 skips are qwen-img-edit-2511's declared
     // resolution rows (width/height are not its params — it
     // declares its own), the surface-successor precedent. GROWTH
