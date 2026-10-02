@@ -481,8 +481,9 @@ describe("THE LIVE TAIL — the run press seeds it, the run frames ride it (1.8'
       expect(seen.filter((c) => c.method === "runs/status" && c.args.runId === "r_1")).toHaveLength(1);
     }, { timeout: 4000 });
     // the unmounted face ends the tail: no subscribe attempt, and no
-    // status re-read ever — the poll's 1500ms cadence is gone.
-    await new Promise((r) => setTimeout(r, 300));
+    // status re-read ever — the window spans the retired poll's full
+    // 1500ms interval, so a re-seeded cadence would land inside it.
+    await new Promise((r) => setTimeout(r, 1700));
     expect(seen.filter((c) => c.method === "runs/status")).toHaveLength(1);
     expect(seen.map((c) => c.method)).not.toContain("runs/subscribe");
   });
