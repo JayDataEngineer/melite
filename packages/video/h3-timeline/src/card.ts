@@ -42,6 +42,7 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { gatedResolve } from '@melite/comfyui-cordis'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
+import { assertOverlayGated } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
@@ -155,14 +156,9 @@ export const identity = {
  *  types + bounds on every knob the overlay introduces) and
  *  DISCARDS its default-fills — the stanza's absent-key law (null
  *  length for per-window spans, the family budgets) owns the
- *  semantics. */
-const assertOverlayGated = (doc: Record<string, unknown>, where: string): void => {
-  try {
-    paramSchema(doc)
-  } catch (e) {
-    throw new Error(`${where}: ${String(e)}`)
-  }
-}
+ *  semantics. The walk is the family action's re-check
+ *  (assertOverlayGated, models/h3/src/actions.ts) — one owner, the
+ *  card imports it (h3-b). */
 
 export const inject = ['comfyui']
 

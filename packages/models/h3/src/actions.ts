@@ -115,8 +115,10 @@ export function parseH3Facts(raw: unknown): H3Facts {
 }
 
 /** The overlay re-check the film loop voices per stanza (the same
- * carrier the card's compose gate walks — ONE schema, imported). */
-const assertOverlayGated = (doc: Record<string, unknown>, where: string): void => {
+ *  carrier the card's compose gate walks — ONE schema, imported).
+ *  Exported so the card's single-call lift judges through the same
+ *  re-check (the h3-b duplicate is gone: one owner). */
+export const assertOverlayGated = (doc: Record<string, unknown>, where: string): void => {
   try {
     paramSchema(doc)
   } catch (e) {

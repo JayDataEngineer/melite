@@ -472,3 +472,4 @@ export const family: Plugin = {
 };
 
 export { finalizeH3, H3_T4_STRIP } from "./finalize.ts"
+export { assertOverlayGated } from "./actions.ts"
