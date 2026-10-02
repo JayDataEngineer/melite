@@ -521,9 +521,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // carries a non-empty name, an http(s) url, a NON-ABSOLUTE
     // folder under the models root, a 64-hex sha256 when present,
     // and a non-negative size when present. The declaring split is
-    // EXACT: 9 families declare provisions, and the SERVED-catalog
-    // families declaring none is the provisioner-catalog carve the
-    // E-C1 census names — this arm pins the DECL side of it.
+    // EXACT both ways: 9 families declare provisions, and the served
+    // side of the split is this arm's own census below (declarers∩
+    // served, every declarer serves) — the provisioner-catalog carve
+    // is enumerated here, not deferred.
     const PROVISION_DECLARERS = ["anny", "h3", "kimodo", "pixal3d", "qwen-img-21",
       "qwen-img-edit-21", "qwen-img-edit-2511", "trellis2-native", "yue2"];
     // the rows those nine declare, exactly (D-M12: a floor let a
