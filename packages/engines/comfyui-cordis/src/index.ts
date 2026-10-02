@@ -26,6 +26,7 @@ export type { PromptGraph, NodeRef, NodeInputs, JsonValue } from "@melite/comfyu
 export { ComfyUIService, ComposeRefusal, resolveCardFlowOutputs } from "./service.ts";
 export type { CardDefinition, CardFlowOutputBinding, DeclaredModifierKind } from "./service.ts";
 export { gatedResolve } from "./admission.ts";
+export { LORAS_RIDERS, LANPAINT_RIDERS, MASK_RIDERS, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from "./mods/packs.ts";
 export { loadFacts } from "@melite/comfyui-card-kit/facts";
 export type { FactsFile, FactsReads, ModelFacts, LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 export { loadTextPair, decodeSave, stackLoras } from '@melite/comfyui-card-kit';
