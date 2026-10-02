@@ -8,10 +8,11 @@
  * logical face (the bar scrubs the player). The seam object is the
  * bridge: the player writes (handle + clock), the bar reads. A
  * plain observable box — no store, no context, the smallest honest
- * straddle: createFilmSeam() once per stage view (a useRef in the
- * owner), FilmSeamPlayer into the preview slot, FilmSeamBar into
- * the shell's bottom slot when the card CLAIMS the seam (the
- * served spec's preview.timeline) AND a film artifact exists.
+ * straddle: createFilmSeam() once per stage view (a lazy
+ * useState initializer in the owner), FilmSeamPlayer into the
+ * preview slot, FilmSeamBar into the shell's bottom slot when the
+ * card CLAIMS the seam (the served spec's preview.timeline) AND a
+ * film artifact exists.
  */
 import { useCallback, useEffect, useState } from 'react'
 import { createElement as h, type Ref } from 'react'
@@ -34,6 +35,16 @@ export interface FilmSeam {
 
 export function createFilmSeam(fps = 0): FilmSeam {
   const listeners = new Set<() => void>()
+  // THE LISTENER FAULT LAW (the client-store fold's guarantee, applied
+  // here too): a subscriber that throws must not stop the others, and
+  // must never break the write that notified it. The loops below ran
+  // bare until the 1.6 verification found it — the catalog folds kept
+  // this guard and the seam did not.
+  const notify = (): void => {
+    for (const fn of [...listeners]) {
+      try { fn() } catch (e) { console.warn('[filmSeam] subscriber fault:', e) }
+    }
+  }
   const seam: FilmSeam = {
     handle: null,
     current: 0,
@@ -46,11 +57,11 @@ export function createFilmSeam(fps = 0): FilmSeam {
     },
     bind(handle) {
       seam.handle = handle
-      for (const fn of listeners) fn()
+      notify()
     },
     report(partial) {
       Object.assign(seam, partial)
-      for (const fn of listeners) fn()
+      notify()
     },
   }
   return seam

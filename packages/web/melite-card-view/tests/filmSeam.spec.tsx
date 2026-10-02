@@ -45,6 +45,20 @@ describe('createFilmSeam (the observable bridge)', () => {
     expect(seen.length).toBe(2)
   })
 
+  it('a throwing subscriber never stops the others, and never breaks the write', () => {
+    // THE LISTENER FAULT LAW (2026-10-12, the 1.6 verification): the
+    // seam's notify loops ran bare — one subscriber's fault silently
+    // starved every later subscriber AND surfaced out of report(). The
+    // catalog's store folds keep this guard; the seam now does too.
+    const seam = createFilmSeam()
+    const reached: string[] = []
+    seam.subscribe(() => { reached.push('first') })
+    seam.subscribe(() => { throw new Error('subscriber fault') })
+    seam.subscribe(() => { reached.push('third') })
+    expect(() => seam.report({ current: 1 })).not.toThrow()
+    expect(reached).toEqual(['first', 'third'])
+  })
+
   it("fps rides the constructor (the card's own frame clock)", () => {
     expect(createFilmSeam(24).fps).toBe(24)
   })
