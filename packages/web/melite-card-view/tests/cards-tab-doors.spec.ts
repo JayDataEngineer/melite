@@ -15,7 +15,7 @@ import {
 } from "../src/client/CardsTab.tsx";
 import { terminalOutcomeOf } from "../src/client/cards-resource.ts";
 import { benchResultDefects } from "@melite/contracts";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';

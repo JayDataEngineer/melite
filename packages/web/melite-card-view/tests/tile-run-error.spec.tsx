@@ -23,7 +23,7 @@ import { unbindEstateRemote } from '@melite/card-base/client'
 import { unknownVariantVoice } from '@melite/contracts/laneRelations'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
-import { schemaEnvelope } from '../src/client/spec-form.tsx'
+import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 // The verbatim ComfyUI refusal shape the estate serves on

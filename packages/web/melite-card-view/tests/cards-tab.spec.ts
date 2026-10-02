@@ -18,7 +18,7 @@
 import { describe, expect, test, afterEach, vi } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
 import { resolveCardsAddress, groupStagesByCard, runCardStage, runBenchSequential } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import { readRun, restoreRunToBench } from "../src/client/cards-resource.ts";
 import type { BenchStageView, CardsBenchValue, CardsRunValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";

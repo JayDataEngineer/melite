@@ -7,7 +7,7 @@ import { createElement as h, useCallback, useEffect, useMemo, useRef, useState }
 import { Button, IconPlayOutlineRegular, Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import css from './card.module.css'
 import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives'
-import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
+import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { patchStageParams } from './draft.ts'
 import type { CardsDraftValue } from './cards-resource.ts'
 import { fetchBench, uploadInputFile, benchSessionKey } from './cards-resource.ts'

@@ -13,7 +13,7 @@ import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';

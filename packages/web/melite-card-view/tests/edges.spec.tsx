@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { createElement, useRef } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { schemaEnvelope, SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, CardForm as SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 
 afterEach(() => {
   cleanup()

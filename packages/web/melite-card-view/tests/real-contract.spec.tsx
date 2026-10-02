@@ -18,11 +18,11 @@ import fixture21 from './fixtures/image-edit-spec.json'
 import fixture2511 from './fixtures/image-edit-2511-spec.json'
 import { assertFormSpecDoc, fieldsOf } from '@melite/card-base/client'
 import {
-  SpecForm,
+  CardForm as SpecForm,
   modOwnedFields,
   type FormSpecDoc,
   type SpecValues,
-} from '../src/client/spec-form.tsx'
+} from '@melite/card-base/client'
 
 // THE WELDED CONTRACTS, seated through the SAME boundary judgment
 // the live fetch applies (audit #48's cure: the double cast is dead

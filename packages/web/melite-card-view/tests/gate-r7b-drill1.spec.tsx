@@ -13,7 +13,7 @@ import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { resetStageWrites } from "../src/client/draft.ts";
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 import type { StageViewOwnerProps } from "../src/client/types.ts";
 

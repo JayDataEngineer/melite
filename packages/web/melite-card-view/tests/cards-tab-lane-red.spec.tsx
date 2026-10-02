@@ -16,7 +16,7 @@ import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { resetStageWrites } from "../src/client/draft.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 
 // the 2.1 served shape (discovery's doc): the family's lanes row
 // carrying the DECL's relations block VERBATIM

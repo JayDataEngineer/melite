@@ -17,7 +17,7 @@ import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { resetPickCellsForTests } from '@melite/card-base/client';
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue, CardsDraftValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {

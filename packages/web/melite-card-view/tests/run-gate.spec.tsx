@@ -28,7 +28,7 @@ import { createElement } from 'react'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
 import { patchStageParams, resetStageWrites } from '../src/client/draft.ts'
-import { schemaEnvelope } from '../src/client/spec-form.tsx'
+import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 const BENCH: CardsBenchValue = {

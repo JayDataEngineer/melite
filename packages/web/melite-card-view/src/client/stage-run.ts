@@ -3,7 +3,7 @@
  * generic MCP card — a standalone-subagent spawn), and the bench's
  * sequential pass (extracted from CardsTab.tsx hour 15). */
 
-import { fetchFormSpec, fieldsOf } from './spec-form.tsx'
+import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
 import { statusOf } from '@melite/contracts/stageView'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'

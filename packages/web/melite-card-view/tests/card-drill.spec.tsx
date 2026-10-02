@@ -22,7 +22,7 @@ import { createElement } from 'react'
 
 import { resetCardFamiliesCache } from '@melite-plugin/melite-run-wire'
 import { CardsTab } from '../src/client/CardsTab.tsx'
-import { schemaEnvelope } from '../src/client/spec-form.tsx'
+import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 
 const BENCH: CardsBenchValue = {

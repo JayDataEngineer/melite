@@ -18,7 +18,7 @@ import { mountEstateFakes } from './estate-harness.ts'
 import { unbindEstateRemote } from '@melite/card-base/client'
 
 import { CardsTab } from '../src/client/CardsTab.tsx'
-import { schemaEnvelope } from '../src/client/spec-form.tsx'
+import { schemaEnvelope } from '@melite/card-base/client'
 import type { CardsBenchValue } from '../src/client/cards-resource.ts'
 import type { StageViewOwnerProps } from '../src/client/types.ts'
 

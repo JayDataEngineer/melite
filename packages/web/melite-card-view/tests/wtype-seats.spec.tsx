@@ -12,7 +12,7 @@ import { describe, expect, test } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement, useState } from 'react'
 import { WTYPE_SEATS } from '@melite/contracts/extraKeys'
-import { SpecForm, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
+import { CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import type { SchemaRef } from '@melite/card-base/client'
 
 // one minimal served doc per wtype: a single root field carrying

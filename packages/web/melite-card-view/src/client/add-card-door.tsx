@@ -3,7 +3,7 @@
 
 import { createElement as h, useEffect, useState } from 'react'
 import { Input, Modal } from '@deepseek-ai/dsh-client-ui-primitives'
-import { fetchCardCatalog, fetchFormSpec, seedUser, type CatalogCard, type FormSpecDoc } from './spec-form.tsx'
+import { fetchCardCatalog, fetchFormSpec, seedUser, type CatalogCard, type FormSpecDoc } from '@melite/card-base/client'
 import { titleCaseId } from '@melite/card-base/client'
 import css from './card.module.css'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'

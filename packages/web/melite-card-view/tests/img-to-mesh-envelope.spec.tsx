@@ -12,7 +12,7 @@ import { afterEach } from 'vitest'
 import { createElement, useEffect } from 'react'
 import { CardZoomOverlay, zoomWidthFor } from '../src/client/zoom.tsx'
 import type { BenchStageView, CardsBenchValue } from '../src/client/cards-resource.ts'
-import { fetchFormSpec, schemaEnvelope } from '../src/client/spec-form.tsx'
+import { fetchFormSpec, schemaEnvelope } from '@melite/card-base/client'
 
 const SPEC = {
   form: 'img-to-mesh',

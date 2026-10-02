@@ -14,8 +14,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
-import { ModifiersSection } from '../src/client/spec-form.tsx'
-import { schemaEnvelope, type ModifierKind, type SpecValues } from '../src/client/spec-form.tsx'
+import { ModifiersSection } from '@melite/card-base/client'
+import { schemaEnvelope, type ModifierKind, type SpecValues } from '@melite/card-base/client'
 
 const loraKind = (): ModifierKind => ({
   kind: 'lora',
@@ -173,10 +173,10 @@ const QWEN_MOD_SPEC = {
       { kind: 'mask', label: 'Region Mask', param_key: 'mask', cardinality: 'list' },
     ],
   },
-} as never as import('../src/client/spec-form.tsx').FormSpecDoc
+} as never as import('@melite/card-base/client').FormSpecDoc
 
 test('THE LAW: mod-owned fields NEVER render flat on the card form — the section owns them', async () => {
-  const { SpecForm, modOwnedFields } = await import('../src/client/spec-form.tsx')
+  const { CardForm: SpecForm, modOwnedFields } = await import('@melite/card-base/client')
   // the pure projection: the mask kind owns its three names + both bags
   const owned = modOwnedFields(QWEN_MOD_SPEC)
   expect([...owned].sort()).toEqual(['input_mask', 'loras', 'mask', 'mask_feather', 'mask_mode'])
@@ -201,7 +201,7 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
 })
 
 test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fields (image square included)', async () => {
-  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  const { CardForm: SpecForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(SpecForm, {
@@ -232,7 +232,7 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
 })
 
 test('OPTION kinds still ride the served rows: lora create seeds the row default strength (core port)', async () => {
-  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  const { CardForm: SpecForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(SpecForm, {
@@ -308,7 +308,7 @@ const PAINT_SPEC = {
         ] },
     ],
   },
-} as never as import('../src/client/spec-form.tsx').FormSpecDoc
+} as never as import('@melite/card-base/client').FormSpecDoc
 
 /** The hosted face (the CardsTab role in miniature): the embedded
  *  canvas — seeds from the payload value, commits stroke PNGs. */
@@ -319,7 +319,7 @@ function FakeFace(p: { referenceUrl: string; value: string; onChange: (u: string
 }
 
 async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>) {
-  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  const { CardForm: SpecForm } = await import('@melite/card-base/client')
   render(createElement(SpecForm, {
     spec: PAINT_SPEC,
     user: values,
@@ -366,7 +366,7 @@ test('declared face + NO hosted face: no canvas — the square holds (graceful b
 })
 
 test('undeclared kind + hosted face: no verb — the face is declared, never sniffed', async () => {
-  const { SpecForm } = await import('../src/client/spec-form.tsx')
+  const { CardForm: SpecForm } = await import('@melite/card-base/client')
   const plain = {
     ...PAINT_SPEC,
     features: { modifiers: [{ kind: 'mask_paint', label: 'Paint', param_key: 'mask_paint', cardinality: 'list',
@@ -374,7 +374,7 @@ test('undeclared kind + hosted face: no verb — the face is declared, never sni
         { name: 'name', label: 'Export name', type: 'string', default: 'paint' },
         { name: 'payload', label: 'Paint payload', type: 'path', wtype: 'image', default: '' },
       ] }] },
-  } as never as import('../src/client/spec-form.tsx').FormSpecDoc
+  } as never as import('@melite/card-base/client').FormSpecDoc
   const values: SpecValues = { input_image: 'http://x/in.png' }
   render(createElement(SpecForm, {
     spec: plain,

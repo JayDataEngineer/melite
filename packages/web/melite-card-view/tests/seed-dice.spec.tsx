@@ -19,7 +19,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, test } from 'vitest'
 import { createElement } from 'react'
 
-import { schemaEnvelope, SpecForm, type FormSpecDoc } from '../src/client/spec-form.tsx'
+import { schemaEnvelope, CardForm as SpecForm, type FormSpecDoc } from '@melite/card-base/client'
 
 afterEach(cleanup)
 

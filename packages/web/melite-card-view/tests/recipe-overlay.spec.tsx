@@ -20,7 +20,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
-import { resolveValue, schemaEnvelope, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from '../src/client/spec-form.tsx'
+import { resolveValue, schemaEnvelope, seedUser, CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 
 /** image-gen's stroke-34 shape: sampling fields, NO recipe field,
  *  NO catalog — the family rows are the only recipe concept. */

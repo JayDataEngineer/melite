@@ -29,11 +29,11 @@ import {
   schemaEnvelope,
   seedAxisValues,
   seedUser,
-  SpecForm,
+  CardForm as SpecForm,
   variantRows,
   type FormSpecDoc,
   type SpecValues,
-} from '../src/client/spec-form.tsx'
+} from '@melite/card-base/client'
 
 /** The krea-2 wire shape (lane read 2026-09-12): turbo (default) +
  *  raw Variant rows, int8 Quant cell OWNED by turbo. */
@@ -409,7 +409,7 @@ const QWEN: FormSpecDoc = {
 }
 
 test('axisGroups: the Recipe group NEVER rides as an axis (stroke 33 — the compose-door refused the stamped key)', async () => {
-  const { axisGroups } = await import('../src/client/spec-form.tsx')
+  const { axisGroups } = await import('@melite/card-base/client')
   // neither fixture owns a recipe field: the served `default` row is
   // stamp-less display metadata — seating it stamped `recipe` onto
   // cards that cannot declare it (image-edit's compose refusal)
@@ -475,7 +475,7 @@ test('the qwen drill chains Quant by owner — the user layer never gains a reci
 })
 
 test('a Recipe pick keeps its declared-knob defaults but NEVER stamps the recipe key (the vocabulary guard)', async () => {
-  const { axisPickPatch } = await import('../src/client/spec-form.tsx')
+  const { axisPickPatch } = await import('@melite/card-base/client')
   const patch = axisPickPatch(SEEDVR, SEEDVR.variants![2]!)
   // the group rides no axis — no durable key, no below-reseed, no model move
   expect(patch['recipe']).toBeUndefined()
@@ -636,7 +636,7 @@ const IMGGEN: FormSpecDoc = {
 }
 
 test('recipe-yield (stroke 34): NO card owns a recipe field — the group never rides, nothing seeds', async () => {
-  const { axisGroups } = await import('../src/client/spec-form.tsx')
+  const { axisGroups } = await import('@melite/card-base/client')
   // the card-recipe layer is dead: even a schema that still declares
   // a plain `recipe` knob gets NO Recipe axis (it renders as an
   // ordinary param field if it exists — image-gen's is deleted)
@@ -680,7 +680,7 @@ test('seedUser drops every held recipe key (stroke 34 — no card declares the f
 //    variant turbo refused at compose) ─────────────────────────────
 
 test('modelSwitchPatch: a model switch re-seeds every axis (never the old family\'s variant)', async () => {
-  const { modelSwitchPatch } = await import('../src/client/spec-form.tsx')
+  const { modelSwitchPatch } = await import('@melite/card-base/client')
   // the spec's own family seats the chain (turbo + its cell); the
   // route never rides (krea-2-raw is not a model — stroke 21)
   expect(modelSwitchPatch(KREA, 'krea-2')).toMatchObject({ model: 'krea-2', variant: 'turbo', quant: 'int8' })
@@ -966,7 +966,7 @@ test('SELECTING A FAMILY FILTERS VARIANT+QUANT: the cross-spec pick clears the a
 })
 
 test('THE FILTER, END TO END: a cleared cross-spec pick seeds the NEW family\'s rows on its own spec (select krea-2 → variant/quant become krea\'s)', async () => {
-  const { seedUser } = await import('../src/client/spec-form.tsx')
+  const { seedUser } = await import('@melite/card-base/client')
   // the drill's post-refetch state: model=krea-2 landed, axes cleared
   // by modelSwitchPatch; seedUser over the KREA spec (what the
   // form-spec?model=krea-2 fetch serves) seeds krea's OWN rows —

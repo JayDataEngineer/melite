@@ -7,7 +7,7 @@ import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, SpecForm, type FormSpecDoc, type SpecValues } from './spec-form.tsx'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
 import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/client'

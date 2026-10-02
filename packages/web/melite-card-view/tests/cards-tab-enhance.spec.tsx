@@ -14,7 +14,7 @@ import { CardsTab } from "../src/client/CardsTab.tsx";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { flushStageWrites } from "../src/client/draft.ts";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
 
 afterEach(() => {

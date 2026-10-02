@@ -13,7 +13,7 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import { createElement as h } from "react";
 import { AddCardDoor } from "../src/client/add-card-door.tsx";
 import type { BenchStageView, CardsBenchValue } from "../src/client/cards-resource.ts";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 

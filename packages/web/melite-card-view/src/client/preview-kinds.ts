@@ -2,7 +2,7 @@
  * the artifact harvest (pure projections, extracted from CardsTab.tsx
  * hour 15). */
 
-import type { FormSpecDoc } from './spec-form.tsx'
+import type { FormSpecDoc } from '@melite/card-base/client'
 import type { BenchReport } from '@melite/contracts/benchResult'
 import { mediaKindOf } from '@melite/contracts/mediaKinds'
 

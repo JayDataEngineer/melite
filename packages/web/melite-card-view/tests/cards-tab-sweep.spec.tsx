@@ -14,7 +14,7 @@ import type { ReactElement } from "react";
 import { mountEstateFakes, type EstateFakes, type EstateRefusal } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { CardsTab } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {

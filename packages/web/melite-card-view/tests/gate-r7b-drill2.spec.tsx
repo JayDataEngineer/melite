@@ -10,7 +10,7 @@ import { createElement as h } from "react";
 import { mountEstateFakes, type EstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 import { StageDrill } from "../src/client/stage-drill.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 
 afterEach(() => {

@@ -6,7 +6,7 @@
 import { describe, expect, test, afterEach, vi } from "vitest";
 import { resetCardFamiliesCache } from "@melite-plugin/melite-run-wire";
 import { runCardStage } from "../src/client/CardsTab.tsx";
-import { schemaEnvelope } from "../src/client/spec-form.tsx";
+import { schemaEnvelope } from '@melite/card-base/client';
 import type { BenchStageView } from "../src/client/cards-resource.ts";
 import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
