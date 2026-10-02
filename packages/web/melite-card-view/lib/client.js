@@ -8032,15 +8032,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			if (typeof row["run_id"] !== "string") throw new Error("runs/start: no run_id in the answer");
 			return row["run_id"];
 		}
-		/** The run status (poll target). Throws on transport failure only. */
-		async function runStatus(runId) {
-			const doc = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId), "runs/status");
-			if (typeof doc["status"] !== "string") throw new Error("runs/status: not a status doc");
-			return doc;
-		}
-		/** The terminal statuses — the poll's stop condition must match the
-		* stream's, or a dropped socket polls forever / an unknown run stops
-		* early. */
+		/** The terminal statuses — the tail's stop condition must match the
+		*  stream's, or a dropped socket rides forever / an unknown run stops
+		*  early. */
 		function runFinished(status) {
 			return isTerminalStatus(status);
 		}
@@ -8228,6 +8222,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function benchSessionOfAddress(address) {
 			if (!address.startsWith("dsh-resource://cards/bench/")) return "main";
 			return benchSessionOf(address.slice(27));
+		}
+		/** The run address (the wand's target, plan §5). */
+		function cardsRunAddress(runId) {
+			return "dsh-resource://cards/run/" + encodeURIComponent(runId);
 		}
 		/** The draft-stage address — the conversation card's studio target
 		*  (the old embed's law; both segments encode, either may carry the
@@ -8891,6 +8889,31 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				yield* streamRunFrames(remote, runId, address, value, ctx.signal);
 			})();
 		}
+		/** The sidebar conversation card's run-frames carrier — handed down
+		*  from the client entry. The card (the toolview mount in the right
+		*  sidebar's cards column) cannot reach ctx.remote (estateRemote
+		*  binds the namespaces only, and $stream lives on the remote face),
+		*  so the entry binds the live face here after its mounts; the card's
+		*  live tail then rides the SAME run frames the run view's resource
+		*  serves. Unbound (a harness that never mounted) is the provider's
+		*  unmounted face: one snapshot, one failure frame, the tail ends. */
+		let runFramesRemote;
+		/** Bind the run-frames carrier (the client entry, once, after mounts).
+		*
+		* @param remote the live remote face ($stream included); undefined
+		*   unbinds (tests reset between mounts) */
+		function bindRunFramesRemote(remote) {
+			runFramesRemote = remote;
+		}
+		/** The sidebar conversation card's live tail — run frames by run id
+		*  (the run view's resource, same address, same carrier law).
+		*
+		* @param runId the started run
+		* @param signal abort disposes the stream and ends the tail
+		* @returns the run resource's frames: one hydrate, then movement */
+		function subscribeRunFrames(runId, signal) {
+			return openCardsResource(cardsRunAddress(runId), { signal }, runFramesRemote, void 0);
+		}
 		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
 		*  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
 		*  'failed'. A settled run ends the stream; the hydrated/polled value
@@ -9422,19 +9445,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*         no shipped atom covers row→modal. Hand-rolled, layout-only.
 		*   (a-2) THE LIVE RUN, post-kill: the gateway-era events WS died
 		*         with the gateway app (nothing serves it, by design); the
-		*         run stream remote EXISTS (runs/subscribe — the run view
-		*         rides it through the resource), and this flow view keeps
-		*         its own direct read over the runs/status remote (handroll
-		*         row 1.8's remaining consumer tail). The fold mapping
-		*         (idempotent stage frames by INDEX — the estate mapping law)
-		*         stays in draft.ts for that day.
+		*         run tail rides the run resource's frames (runs/subscribe
+		*         over the reconnecting RemoteStream — the entry hands the
+		*         carrier down, cards-resource.ts's bindRunFramesRemote).
+		*         The run press seeds the tail; the interval poll is gone.
 		*   (c-3) NO CLIENT: the draft/run remote layer (draft.ts). No DSH
 		*         package wraps the estate's remotes as a browser client; the
 		*         thin wire caller (client-request frame, api-gateway.md) is
 		*         the sanctioned shape for plugins outside the web kernel.
 		*/
-		/** Run-status poll cadence (the editor's door, cheap same-host read). */
-		const POLL_MS = 1500;
 		/** Parse the melite_flow / card-tool call: the draft id + the model
 		*  header. NATIVE CHANNEL FIRST: a settled result carries the tool's
 		*  persisted presentationMeta (ToolResultNode.meta) with {draft_id} —
@@ -9484,22 +9503,33 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				isError: block.isError === true
 			};
 		}
-		/** Draft doc + live run status, fetched and polled (all doors in draft.ts). */
+		/** Draft doc + live run status (all doors in draft.ts; the live tail
+		*  rides the run resource's frames — cards-resource.ts). */
 		function useDraft(draftId) {
 			const [doc, setDoc] = (0, react.useState)(null);
 			const [live, setLive] = (0, react.useState)(null);
+			const [liveRunId, setLiveRunId] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
 			const [tick, setTick] = (0, react.useState)(0);
-			const pollRef = (0, react.useRef)(null);
 			const refresh = (0, react.useCallback)(() => {
 				setTick((t) => t + 1);
 			}, []);
+			/** Seed the live tail from the run press's own answer — the started
+			*  run id is the only honest seed (the draft doc carries none). */
+			const startedRun = (0, react.useCallback)((runId) => {
+				setLive(null);
+				setLiveRunId(runId);
+			}, []);
+			(0, react.useEffect)(() => {
+				if (draftId === null) return;
+				setDoc(null);
+				setLive(null);
+				setLiveRunId(null);
+				setError(null);
+			}, [draftId]);
 			(0, react.useEffect)(() => {
 				if (draftId === null) return;
 				let alive = true;
-				setDoc(null);
-				setLive(null);
-				setError(null);
 				fetchDraft(draftId).then((d) => {
 					if (alive) setDoc(d);
 				}).catch((e) => {
@@ -9509,34 +9539,36 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					alive = false;
 				};
 			}, [draftId, tick]);
-			const runId = live?.run_id ?? null;
 			(0, react.useEffect)(() => {
-				if (runId === null) return;
+				if (liveRunId === null) return;
+				const controller = new AbortController();
 				let alive = true;
-				const step = () => {
-					runStatus(runId).then((s) => {
+				(async () => {
+					for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
 						if (!alive) return;
-						setLive(s);
-						if (runFinished(s.status)) {
-							if (pollRef.current !== null) window.clearInterval(pollRef.current);
-							pollRef.current = null;
+						if (!frame.ok) continue;
+						setLive({
+							run_id: frame.value.runId,
+							status: frame.value.status,
+							stages: frame.value.stages
+						});
+						if (runFinished(frame.value.status)) {
 							setTick((t) => t + 1);
+							return;
 						}
-					}).catch(() => {});
-				};
-				step();
-				pollRef.current = window.setInterval(step, POLL_MS);
+					}
+				})();
 				return () => {
 					alive = false;
-					if (pollRef.current !== null) window.clearInterval(pollRef.current);
-					pollRef.current = null;
+					controller.abort();
 				};
-			}, [runId]);
+			}, [liveRunId]);
 			return {
 				doc,
 				live,
 				error,
-				refresh
+				refresh,
+				startedRun
 			};
 		}
 		/** The chat-listed card row: kind tag, title, service, status dot, prompt.
@@ -9575,7 +9607,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		/** One melite_flow call as the REAL action cards (native React, in-tree). */
 		function FlowCards({ block, openSurface }) {
 			const parsed = (0, react.useMemo)(() => parseCardsBlock(block), [block]);
-			const { doc, live, error, refresh } = useDraft(parsed.draftId);
+			const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId);
 			const [openStage, setOpenStage] = (0, react.useState)(null);
 			if (parsed.settled && !parsed.isError && parsed.draftId === null) return /* @__PURE__ */ (0, react_jsx_runtime.jsx)("div", {
 				className: card_module_css_default.card,
@@ -9662,7 +9694,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch);
 							const gate = await refuseForUnlandedWrite(draftId, openRow.stageId);
 							if (gate !== null) throw new Error(gate);
-							await startDraft(draftId);
+							startedRun(await startDraft(draftId));
 							setOpenStage(null);
 							refresh();
 						},
@@ -44884,6 +44916,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			} catch (error) {
 				console.error("[melite-card-view] estate direct bind failed:", error);
 			}
+			bindRunFramesRemote(ctx.remote);
 			for (const tool of CARD_TOOLS) try {
 				ctx.slots.inject("tool.call.toolview", () => ctx.slots.register({
 					name: "tool.call.toolview",

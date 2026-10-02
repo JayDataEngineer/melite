@@ -40,31 +40,26 @@
  *         no shipped atom covers row→modal. Hand-rolled, layout-only.
  *   (a-2) THE LIVE RUN, post-kill: the gateway-era events WS died
  *         with the gateway app (nothing serves it, by design); the
- *         run stream remote EXISTS (runs/subscribe — the run view
- *         rides it through the resource), and this flow view keeps
- *         its own direct read over the runs/status remote (handroll
- *         row 1.8's remaining consumer tail). The fold mapping
- *         (idempotent stage frames by INDEX — the estate mapping law)
- *         stays in draft.ts for that day.
+ *         run tail rides the run resource's frames (runs/subscribe
+ *         over the reconnecting RemoteStream — the entry hands the
+ *         carrier down, cards-resource.ts's bindRunFramesRemote).
+ *         The run press seeds the tail; the interval poll is gone.
  *   (c-3) NO CLIENT: the draft/run remote layer (draft.ts). No DSH
  *         package wraps the estate's remotes as a browser client; the
  *         thin wire caller (client-request frame, api-gateway.md) is
  *         the sanctioned shape for plugins outside the web kernel.
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import css from './card.module.css'
 import { Pill, StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
-import { cardsDraftStageAddress } from './cards-resource.ts'
+import { cardsDraftStageAddress, subscribeRunFrames } from './cards-resource.ts'
 import { STATUS_DOT } from './bench-row.ts'
 import type { ToolCallBlockView } from './types.ts'
 import {
-  cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, runStatus, startDraft,
+  cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
-
-/** Run-status poll cadence (the editor's door, cheap same-host read). */
-const POLL_MS = 1500
 
 export interface FlowCardsProps {
   block: ToolCallBlockView
@@ -134,71 +129,80 @@ export function parseCardsBlock(block: ToolCallBlockView): {
   return { draftId, model, malformedArgs, settled, isError: block.isError === true }
 }
 
-/** Draft doc + live run status, fetched and polled (all doors in draft.ts). */
+/** Draft doc + live run status (all doors in draft.ts; the live tail
+ *  rides the run resource's frames — cards-resource.ts). */
 function useDraft(draftId: string | null): {
   doc: DraftDoc | null
   live: RunStatusDoc | null
   error: string | null
   refresh: () => void
+  startedRun: (runId: string) => void
 } {
   const [doc, setDoc] = useState<DraftDoc | null>(null)
   const [live, setLive] = useState<RunStatusDoc | null>(null)
+  const [liveRunId, setLiveRunId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [tick, setTick] = useState(0)
-  const pollRef = useRef<number | null>(null)
 
   const refresh = useCallback(() => { setTick((t) => t + 1) }, [])
+
+  /** Seed the live tail from the run press's own answer — the started
+   *  run id is the only honest seed (the draft doc carries none). */
+  const startedRun = useCallback((runId: string) => {
+    setLive(null)
+    setLiveRunId(runId)
+  }, [])
+
+  // PER-DRAFT RESET: the live tail and its doc die with the draft —
+  // a refresh (tick) re-reads the doc but never kills a seeded tail
+  // (the drill can close and reopen mid-run; the tail survives).
+  useEffect(() => {
+    if (draftId === null) return
+    setDoc(null)
+    setLive(null)
+    setLiveRunId(null)
+    setError(null)
+  }, [draftId])
 
   // Hydrate the doc (one GET per draftId or manual refresh; never a storm).
   useEffect(() => {
     if (draftId === null) return
     let alive = true
-    setDoc(null)
-    setLive(null)
-    setError(null)
     fetchDraft(draftId)
       .then((d) => { if (alive) setDoc(d) })
       .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'draft hydration failed') })
     return () => { alive = false }
   }, [draftId, tick])
 
-  // THE LIVE RUN — the gateway-era events WS died with the gateway
-  // app (nothing serves it, by design). The run stream remote exists
-  // (`runs/subscribe`, the run view rides it through the resource);
-  // this flow view keeps its own direct read — the runs/status
-  // remote over the wire frame, terminal authority by construction
-  // (handroll row 1.8's remaining consumer tail).
-  const runId = live?.run_id ?? null
-
-  // The poll — stops on a terminal status, then refreshes the draft
-  // doc (the runs seat stamps a fresh createdAt on write-back).
+  // THE LIVE RUN — the run tail rides the run resource's frames
+  // (runs/subscribe over the reconnecting RemoteStream, the run view's
+  // own carrier; handroll row 1.8's consumer tail CLOSED here — the
+  // interval poll is gone). A failure frame changes nothing: the
+  // stream's supervisor owns the retry, and the last live doc stays
+  // (the poll's own silent-transient law). A terminal status ends the
+  // tail and refreshes the draft doc (the runs seat stamps a fresh
+  // createdAt on write-back); the tail ending without one keeps the
+  // last live doc — the card's face never freezes pretending.
   useEffect(() => {
-    if (runId === null) return
+    if (liveRunId === null) return
+    const controller = new AbortController()
     let alive = true
-    const step = (): void => {
-      runStatus(runId)
-        .then((s) => {
-          if (!alive) return
-          setLive(s)
-          if (runFinished(s.status)) {
-            if (pollRef.current !== null) window.clearInterval(pollRef.current)
-            pollRef.current = null
-            // the runs seat stamps a fresh createdAt on write-back; refetch
-            setTick((t) => t + 1)
-          }
-        })
-        .catch(() => { /* transient poll failure: keep the interval */ })
-    }
-    step()
-    pollRef.current = window.setInterval(step, POLL_MS)
-    return () => {
-      alive = false
-      if (pollRef.current !== null) window.clearInterval(pollRef.current)
-      pollRef.current = null
-    }
-  }, [runId])
+    void (async () => {
+      for await (const frame of subscribeRunFrames(liveRunId, controller.signal)) {
+        if (!alive) return
+        if (!frame.ok) continue
+        setLive({ run_id: frame.value.runId, status: frame.value.status, stages: frame.value.stages })
+        if (runFinished(frame.value.status)) {
+          // the runs seat stamps a fresh createdAt on write-back; refetch
+          setTick((t) => t + 1)
+          return
+        }
+      }
+    })()
+    return () => { alive = false; controller.abort() }
+  }, [liveRunId])
 
-  return { doc, live, error, refresh }
+  return { doc, live, error, refresh, startedRun }
 }
 
 /** The chat-listed card row: kind tag, title, service, status dot, prompt.
@@ -229,7 +233,7 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
 /** One melite_flow call as the REAL action cards (native React, in-tree). */
 export function FlowCards({ block, openSurface }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
-  const { doc, live, error, refresh } = useDraft(parsed.draftId)
+  const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId)
   const [openStage, setOpenStage] = useState<string | null>(null)
 
   // A settled, successful call whose result predates the draft contract
@@ -306,7 +310,7 @@ export function FlowCards({ block, openSurface }: FlowCardsProps) {
             if (patch !== null) await patchStageParams(draftId, openRow.stageId, patch)
             const gate = await refuseForUnlandedWrite(draftId, openRow.stageId)
             if (gate !== null) throw new Error(gate)
-            await startDraft(draftId)
+            startedRun(await startDraft(draftId))
             setOpenStage(null)
             refresh()
           }}

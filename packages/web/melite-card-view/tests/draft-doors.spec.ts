@@ -12,7 +12,6 @@
 //                    truth; delivered:false with a non-string reason
 //                    lands as 'undelivered'.
 //   outcome/start  — patchStageOutcome's frame; startDraft's run_id +
-//                    its missing-run_id refusal; runStatus's doc + its
 //                    malformed refusal.
 //   rows/fold      — rowStatus's full precedence table (pending, cached,
 //                    succeeded, error, unknown), prompt/service/thumb
@@ -27,7 +26,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   cardRows, fetchDraft, fetchDraftRev, foldFrame, patchStageOutcome,
-  patchStageParams, runStatus, startDraft,
+  patchStageParams, startDraft,
 } from "../src/client/draft.ts";
 import type { DraftDoc, RunStatusDoc } from "../src/client/draft.ts";
 import { mountEstateFakes, type EstateFakesOptions } from "./estate-harness.ts";
@@ -208,7 +207,7 @@ describe("patchStageOutcome — the attribution write", () => {
   });
 });
 
-describe("startDraft / runStatus — the run doors", () => {
+describe("startDraft — the run door", () => {
   test("startDraft returns the run_id", async () => {
     wire({ startDocs: [{ run_id: "r_7" }] });
     expect(await startDraft("d")).toBe("r_7");
@@ -216,14 +215,6 @@ describe("startDraft / runStatus — the run doors", () => {
   test("startDraft refuses loud when the answer names no run", async () => {
     wire({ startDocs: [{ nope: true }] });
     await expect(startDraft("d")).rejects.toThrow(/runs\/start: no run_id in the answer/);
-  });
-  test("runStatus returns the status doc", async () => {
-    wire({ runDocs: [{ run_id: "r", status: "running", stages: [] }] });
-    expect(await runStatus("r")).toEqual({ run_id: "r", status: "running", stages: [] });
-  });
-  test("runStatus refuses a non-doc payload", async () => {
-    wire({ runDocs: [{ run_id: "r" }] });
-    await expect(runStatus("r")).rejects.toThrow(/runs\/status: not a status doc/);
   });
   test("fetchDraft with a string draft_id but non-array stages refuses", async () => {
     wire({ draftStages: { draft_id: "d", stages: {} } as unknown as Array<Record<string, unknown>> });

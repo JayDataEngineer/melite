@@ -1209,6 +1209,42 @@ export function openCardsResource(
   })()
 }
 
+/** The sidebar conversation card's run-frames carrier — handed down
+ *  from the client entry. The card (the toolview mount in the right
+ *  sidebar's cards column) cannot reach ctx.remote (estateRemote
+ *  binds the namespaces only, and $stream lives on the remote face),
+ *  so the entry binds the live face here after its mounts; the card's
+ *  live tail then rides the SAME run frames the run view's resource
+ *  serves. Unbound (a harness that never mounted) is the provider's
+ *  unmounted face: one snapshot, one failure frame, the tail ends. */
+let runFramesRemote: ClientRemote | undefined
+
+/** Bind the run-frames carrier (the client entry, once, after mounts).
+ *
+ * @param remote the live remote face ($stream included); undefined
+ *   unbinds (tests reset between mounts) */
+export function bindRunFramesRemote(remote: ClientRemote | undefined): void {
+  runFramesRemote = remote
+}
+
+/** The sidebar conversation card's live tail — run frames by run id
+ *  (the run view's resource, same address, same carrier law).
+ *
+ * @param runId the started run
+ * @param signal abort disposes the stream and ends the tail
+ * @returns the run resource's frames: one hydrate, then movement */
+export function subscribeRunFrames(
+  runId: string,
+  signal: AbortSignal,
+): AsyncIterable<RemoteResult<CardsRunValue>> {
+  // The run address reaches only the run branch (parseCardsAddress
+  // above), so every ok frame is a run value — narrowed here, at the
+  // one place that owns the address, not at every consumer.
+  const frames: AsyncIterable<RemoteResult<CardsValue>> =
+    openCardsResource(cardsRunAddress(runId), { signal }, runFramesRemote, undefined)
+  return frames as AsyncIterable<RemoteResult<CardsRunValue>>
+}
+
 /** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
  *  stopFlag stamps 'stopped'; the settle path stamps 'completed' or
  *  'failed'. A settled run ends the stream; the hydrated/polled value

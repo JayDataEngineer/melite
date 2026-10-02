@@ -51,7 +51,7 @@ import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remot
 import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote'
 import { FlowCards } from './FlowCards.tsx'
 import { CardsTab } from './CardsTab.tsx'
-import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
 import { bindEstateRemoteFromRemote, useToastStore, type EstateNamespaces } from '@melite/card-base/client'
 import { resolveCardsAddress } from './CardsTab.tsx'
 import type { StageViewOwnerProps, ToolCallBlockView, ToolCallOwnerProps } from './types.ts'
@@ -208,6 +208,12 @@ export async function apply(ctx: ClientContext): Promise<void> {
   } catch (error) {
     console.error('[melite-card-view] estate direct bind failed:', error)
   }
+
+  // THE RUN-FRAMES CARRIER (handroll row 1.8's consumer tail): the
+  // conversation card's live tail rides the run resource's frames,
+  // and $stream lives on the remote face component code cannot reach
+  // — hand it down here, the same one-bind law as the estate bind.
+  bindRunFramesRemote(ctx.remote)
 
   for (const tool of CARD_TOOLS) {
     try {

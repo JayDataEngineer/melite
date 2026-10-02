@@ -606,18 +606,9 @@ export async function startDraft(draftId: string): Promise<string> {
   return row['run_id']
 }
 
-/** The run status (poll target). Throws on transport failure only. */
-export async function runStatus(runId: string): Promise<RunStatusDoc> {
-  const doc = await unwrapRemote(estateRemote().runs.status(runId), 'runs/status') as unknown as Record<string, unknown>
-  if (typeof doc['status'] !== 'string') {
-    throw new Error('runs/status: not a status doc')
-  }
-  return doc as unknown as RunStatusDoc
-}
-
-/** The terminal statuses — the poll's stop condition must match the
- * stream's, or a dropped socket polls forever / an unknown run stops
- * early. */
+/** The terminal statuses — the tail's stop condition must match the
+ *  stream's, or a dropped socket rides forever / an unknown run stops
+ *  early. */
 export function runFinished(status: string): boolean {
   return isTerminalStatus(status)
 }
