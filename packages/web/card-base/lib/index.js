@@ -6410,6 +6410,46 @@ function PoserFigureStage({ identityModel, identityCoeffs, localChanges, framing
 	}, "figure failed: " + failed) : null);
 }
 //#endregion
+//#region src/pick-store.ts
+const pickCells = /* @__PURE__ */ new Map();
+const PICK_CELL_CAP = 64;
+/** The cell for a view identity, created on first use and
+*  refreshed to the newest insertion on every later read (LRU, not
+*  FIFO-of-birth); the oldest insertion is pruned at the cap. */
+function pickCellOf(id) {
+	let cell = pickCells.get(id);
+	if (cell === void 0) {
+		if (pickCells.size >= PICK_CELL_CAP) for (const oldest of pickCells.keys()) {
+			pickCells.delete(oldest);
+			break;
+		}
+		cell = {
+			key: null,
+			listeners: /* @__PURE__ */ new Set()
+		};
+		pickCells.set(id, cell);
+	} else {
+		pickCells.delete(id);
+		pickCells.set(id, cell);
+	}
+	return cell;
+}
+/** The cell's current key, and the write that notifies every
+*  subscriber of the cell. */
+function readPick(cell) {
+	return cell.key;
+}
+/** Write a cell's key and invalidate its subscribers. */
+function writePick(cell, next) {
+	cell.key = next;
+	for (const l of cell.listeners) l();
+}
+/** The test seam: cells are module-shared BY DESIGN (identity-stable
+*  across mounts); walls reset between cases so no pick bleeds. */
+function resetPickCellsForTests() {
+	pickCells.clear();
+}
+//#endregion
 //#region src/report-view.tsx
 /** The report status vocabulary → the DSH dot's own states (the
 *  semantic set StateDot ships: done/warning/error — no invented
@@ -6539,26 +6579,9 @@ function ReferenceImageBadge({ url, label, className, ...props }) {
 * to specialize — the h3 studio rides the shared VIDEO preview for
 * its hero, exactly as an image-gen card rides the IMAGE one.
 */
-const pickCells = /* @__PURE__ */ new Map();
-const PICK_CELL_CAP = 64;
-function pickCellOf(id) {
-	let cell = pickCells.get(id);
-	if (cell === void 0) {
-		if (pickCells.size >= PICK_CELL_CAP) for (const oldest of pickCells.keys()) {
-			pickCells.delete(oldest);
-			break;
-		}
-		cell = {
-			key: null,
-			listeners: /* @__PURE__ */ new Set()
-		};
-		pickCells.set(id, cell);
-	} else {
-		pickCells.delete(id);
-		pickCells.set(id, cell);
-	}
-	return cell;
-}
+/** THE PICK CELLS (DSH's client state law): the view subscribes to
+*  the identity-keyed mirror the pick-store module owns; a
+*  presentation component never owns store-lifetime state. */
 function usePickCell(id) {
 	const cell = pickCellOf(id);
 	const key = useSyncExternalStore((onChange) => {
@@ -6566,17 +6589,11 @@ function usePickCell(id) {
 		return () => {
 			cell.listeners.delete(onChange);
 		};
-	}, () => cell.key);
+	}, () => readPick(cell));
 	const set = (next) => {
-		cell.key = next;
-		for (const l of cell.listeners) l();
+		writePick(cell, next);
 	};
 	return [key, set];
-}
-/** The test seam: cells are module-shared BY DESIGN (identity-stable
-*  across mounts); walls reset between cases so no pick bleeds. */
-function resetPickCellsForTests() {
-	pickCells.clear();
 }
 /** THE HISTORY HERO (stroke 40 + the output-component stroke): one
 * hook, three faces — the hero artifact, the REST of whatever set

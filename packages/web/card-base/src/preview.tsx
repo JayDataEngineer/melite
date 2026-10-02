@@ -19,61 +19,23 @@ import type { PreviewArtifact, PreviewOwnerProps } from '@melite/contracts'
 import { isLiveRunStatus } from '@melite/contracts/stageView'
 import { cn } from './chrome.ts'
 import s from './preview.module.css'
+import { pickCellOf, readPick, writePick } from './pick-store.ts'
 
-/** THE PICK CELLS (DSH's client state law — web-client.md: the
- *  client keeps "identity-stable, React-free mirrors" and the UI
- *  subscribes through useSyncExternalStore; a presentation
- *  component never owns store-lifetime state). The history pick
- *  lives in an EXTERNAL cell keyed by the view's IDENTITY — the
- *  stage plus the current run's urls. The cell is shared across
- *  mounts: an unkeyed remount (the drill swaps stages in the same
- *  mount position) reads the SAME cell as its identity dictates —
- *  a different stage or a new run is a DIFFERENT cell (fresh,
- *  unpicked), so the pick can never leak across stages or runs;
- *  history growth keeps the same cell, so a keyed pick survives
- *  index shifts. No effects, no mount-lifetime coupling.
- *  THE CAP: 64 cells, insertion-pruned — a long session never
- *  grows the map unbounded. */
-type PickCell = { key: string | null, listeners: Set<() => void> }
-const pickCells = new Map<string, PickCell>()
-const PICK_CELL_CAP = 64
-function pickCellOf(id: string): PickCell {
-  let cell = pickCells.get(id)
-  if (cell === undefined) {
-    if (pickCells.size >= PICK_CELL_CAP) {
-      // the map is non-empty at cap — take the OLDEST insertion
-      for (const oldest of pickCells.keys()) {
-        pickCells.delete(oldest)
-        break
-      }
-    }
-    cell = { key: null, listeners: new Set() }
-    pickCells.set(id, cell)
-  } else {
-    // refresh insertion order (LRU, not FIFO-of-birth)
-    pickCells.delete(id)
-    pickCells.set(id, cell)
-  }
-  return cell
-}
+export { resetPickCellsForTests } from './pick-store.ts'
+
+/** THE PICK CELLS (DSH's client state law): the view subscribes to
+ *  the identity-keyed mirror the pick-store module owns; a
+ *  presentation component never owns store-lifetime state. */
 function usePickCell(id: string): [string | null, (key: string | null) => void] {
   const cell = pickCellOf(id)
   const key = useSyncExternalStore(
     (onChange: () => void) => { cell.listeners.add(onChange); return () => { cell.listeners.delete(onChange) } },
-    () => cell.key,
+    () => readPick(cell),
   )
-  const set = (next: string | null): void => {
-    cell.key = next
-    for (const l of cell.listeners) l()
-  }
+  const set = (next: string | null): void => { writePick(cell, next) }
   return [key, set]
 }
 
-/** The test seam: cells are module-shared BY DESIGN (identity-stable
- *  across mounts); walls reset between cases so no pick bleeds. */
-export function resetPickCellsForTests(): void {
-  pickCells.clear()
-}
 
 /** THE HISTORY HERO (stroke 40 + the output-component stroke): one
  * hook, three faces — the hero artifact, the REST of whatever set
