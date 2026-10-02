@@ -165,9 +165,17 @@ declare module "@deepseek-ai/cordis" {
  *  (the pure domain module) emits and subscribes through it.
  *
  *  ONE implementation, three callers: the plugin's service, the tests'
- *  `bootCtx`, and any direct construction. The seam is fiber-scoped —
- *  `ctx.effect` detaches it when the fiber is disposed, so a torn-down
- *  Context never leaves a half-installed emitter behind.
+ *  `bootCtx`, and any direct construction outside the package (it is
+ *  re-exported from index.ts). The seam is fiber-scoped — `ctx.effect`
+ *  detaches it when the fiber is disposed.
+ *
+ *  ONE SEAM AT A TIME, MEASURED (the verification, 2026-10-12): the
+ *  seam is module state, so the LAST install wins, and disposing an
+ *  OLDER Context nulls the newer, still-live seam. The estate is
+ *  single-tenant here (one root Context, one plugin apply), and the
+ *  failure mode is loud — `onBenchChange` then refuses rather than
+ *  subscribing to nothing — but a tree that mounts two draft plugins
+ *  must install once.
  * @param ctx - the Context whose bus carries `bench.changed`.
  * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
  */
