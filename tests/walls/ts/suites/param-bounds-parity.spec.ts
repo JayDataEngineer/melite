@@ -189,9 +189,10 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
   it("the six families' diffusion rows ride the shared factory IN SERVED ORDER (names; F2 deep-equals the rows)", () => {
     // WHAT THIS ARM IS: the served ORDER of each family's diffusion
     // surface, and the edit families' narrowed core riding the same
-    // factory — NAMES in order. A DRIFTED hand copy (different rows)
-    // reds here and on this wall's parity arm; a byte-correct hand
-    // copy reds NOWHERE (F2's own header says so: it "passes — dead
+    // factory — NAMES in order. A hand copy whose row NAMES drift
+    // reds here and on this wall's parity arm; a copy whose BOUNDS
+    // drift alone reds on F2 and on the parity arm, not here; a
+    // byte-correct hand copy reds NOWHERE (F2's own header says so: it "passes — dead
     // weight the factory deletes at review"), and this arm does not
     // claim otherwise.
     const defaults = diffusionParamRows();
