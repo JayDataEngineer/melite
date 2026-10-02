@@ -51,7 +51,7 @@
 
 import type { EstateDoorUrl } from "./generated/gatewayDoors"
 import { readAsDataURL } from "@melite/formats/readFile"
-import { sleep } from './sleep.ts'
+import { sleep } from "./sleep"
 
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()
@@ -126,7 +126,6 @@ function isBackendUrl(input: string): boolean {
     return false
   }
 }
-
 
 // Backoff with full jitter — avoids thundering herd when many components
 // retry at once (e.g. on gateway reconnect after a redeploy).

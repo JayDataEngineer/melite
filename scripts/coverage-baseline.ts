@@ -402,6 +402,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/catalog/src/generated/gatewayDoors.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/modelCatalog.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // sleep.ts (2026-10-12, the 7.9 clone fold): measured 100/100/100/100 with
+  // test/sleep.spec.ts pinning the abort contract (the verification receipt's D1/D2:
+  // the helper shipped unpinned AND outside this gate).
+  '**/packages/web-kit/catalog/src/sleep.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/runStatusContract.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/runStatusContractStore.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/catalog/src/serviceForms.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

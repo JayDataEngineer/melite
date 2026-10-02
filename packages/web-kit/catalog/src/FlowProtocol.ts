@@ -25,7 +25,7 @@ import {
   validateRunStatusContract,
 } from "./runStatusContract"
 import { useRunStatusContractStore } from "./runStatusContractStore"
-import { sleep } from './sleep.ts'
+import { sleep } from "./sleep"
 
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.
@@ -287,7 +287,6 @@ export async function pollFlowRun(
 
 export type CompiledGenerationResult =
   | { kind: "started"; runId: string; status: FlowRunStatus; urls: string[] }
-
 
 
 
