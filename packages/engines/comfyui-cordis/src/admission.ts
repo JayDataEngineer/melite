@@ -19,7 +19,9 @@ import { ComposeRefusal } from './errors.ts'
  *  (riders ride verbatim — the compose reads them downstream).
  *  @param cardId the card's registration id (refusal voice)
  *  @param schema the card's schemastery object (callable, .dict
- *   carrying the declared knobs)
+ *   carrying the declared knobs). A dict-LESS callable has no
+ *   declared surface to admit against, so the gate fails CLOSED:
+ *   every param key refuses unless it is a named rider.
  *  @param riders the card's admitted non-knob keys (exact names or
  *   trailing-* prefixes): mod bags, admits, studio writes
  *  @param params the raw params the compose received

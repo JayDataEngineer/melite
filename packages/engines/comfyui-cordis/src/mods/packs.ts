@@ -267,7 +267,7 @@ export function apply(ctx: Context): void {
 // lanes read them — derived here so the field surface and the
 // admission surface cannot drift (a new pack field is admitted the
 // day it is declared).
-const fieldKeys = (fields: Schemastery): readonly string[] => Object.keys(fields.dict ?? {})
+const fieldKeys = (fields: { dict?: Record<string, unknown> }): readonly string[] => Object.keys(fields.dict ?? {})
 
 /** The loras pack's rider keys (every card boarding a lora family). */
 export const LORAS_RIDERS: readonly string[] = fieldKeys(LorasFields)
