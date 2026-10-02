@@ -679,6 +679,29 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
     assert.ok(!text.includes('→'), 'no arrow prints — there is no id to point at')
   })
 
+  test('AN UNREADABLE ROW WORD RUNS, NEVER THROWS (2026-10-12 follow-through): unreachable is not done', async () => {
+    // 'unreachable' is the card plane's own transport stamp riding a
+    // persisted runStatus (LOW-23's debt) — no door validated the
+    // word. The cache-hit skip reads the view-side fold: an unreadable
+    // word is not done, so the pass proceeds (here it stops at the
+    // no-card gate — this row never carried one); the classifier's
+    // refusal must never kill the tool call.
+    const seen = mockFetch([
+      (u: string) => {
+        if (u === '/v1/bench/main') {
+          return { status: 200, body: { draft_id: 'd_unread', rev: 2, stages: [
+            { id: 's_0', card: '', runStatus: 'unreachable', params: {} },
+          ] } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({ bench: true }, fakeExec(AbortSignal.timeout(6000))) as Record<string, unknown>
+    assert.equal(out.status, 'stopped')
+    assert.equal(out.error, 'stage s_0 names no card — nothing to compose (melite_construct patch)')
+  })
+
   test('THE PASS-ROWS RENDER NEVER CRASHES (the receipt over unknown JSON): partial rows print ? marks, never throw', async () => {
     // the render faces tool-output values, typed unknown — a row
     // missing every key (a persisted shape from before the pass

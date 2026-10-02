@@ -19,7 +19,7 @@ import { createElement as h, useCallback, useEffect, useRef, useState, type Reac
 import { createPortal } from 'react-dom'
 import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
-import { isLiveRunStatus, statusOf } from '@melite/contracts/stageView'
+import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
 import css from './card.module.css'
 import { BenchStageView, CardsBenchValue } from './cards-resource.ts'
 import type { StageViewOwnerProps } from './types.ts'
@@ -205,8 +205,10 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   const act = rec !== null && typeof rec['activity'] === 'string' ? rec['activity'] : ''
   const pct = prog !== null && prog.max > 0 ? Math.floor((100 * prog.value) / prog.max) : null
   // the owner's failed judgement (was a raw 'failed' compare — an
-  // 'error'-worded run showed no refusal text here while the tile did)
-  const failedText = statusOf(typeof stage.runStatus === 'string' ? stage.runStatus : '') === 'error'
+  // 'error'-worded run showed no refusal text here while the tile did).
+  // The view-side read: the persisted row can carry a word no door
+  // validated ('unreachable') — not failed, and no throw at the pane.
+  const failedText = statusOrPendingOf(typeof stage.runStatus === 'string' ? stage.runStatus : '') === 'error'
     && typeof rec?.['error'] === 'string' ? rec['error'] : null
   // THE START-ERROR OVERRIDE: a client-side start rejection (no row
   // write yet, or the row write itself failed) still owns the bar —

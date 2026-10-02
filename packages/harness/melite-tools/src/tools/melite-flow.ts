@@ -30,7 +30,7 @@ import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
 import { boardedMap, resolveSpecKey } from '../discovery.ts'
-import { isTerminalStatus, statusOf } from '@melite/contracts/stageView'
+import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView'
 import { benchDraftIdOf } from '@melite/contracts/benchStage';
 
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
@@ -332,8 +332,13 @@ async function runBench(
     // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
     // re-ran every stage the estate settles 'completed' and every
     // cached/reused row.
+    // The view-side read (2026-10-12): a draft row's runStatus is a
+    // persisted word no door validated — the card plane itself writes
+    // 'unreachable' (cards-resource's transport escalation) — so the
+    // classifier's refusal must not kill the tool call; an unreadable
+    // row is simply not done and runs.
     {
-      const folded = statusOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
+      const folded = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
       if (folded === 'done' || folded === 'cached' || folded === 'reused') {
         pass.push({ stage: stageId, card, skipped: 'done' })
         continue
@@ -498,8 +503,12 @@ async function observeAndAttribute(
       return { status: terminal, url, artifacts: arts }
     }
     // the queue-feedback stamp, classified by the fold (queued or
-    // still-waiting stamps queued; 'live'/'stopping' stamp running)
-    const foldedLive = statusOf(status)
+    // still-waiting stamps queued; 'live'/'stopping' stamp running).
+    // The view-side read: this doc came over the wire without
+    // readRunStatus's validation, and isTerminalStatus above passes an
+    // unreadable word through as non-terminal — the poller keeps its
+    // cadence on a word it cannot read, never dies on the throw.
+    const foldedLive = statusOrPendingOf(status)
     const live = foldedLive === 'queued' || foldedLive === 'pending' ? 'queued' : 'running'
     if (live !== lastLive) {
       lastLive = live

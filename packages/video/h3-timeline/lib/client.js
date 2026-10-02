@@ -5772,7 +5772,7 @@ window.__ModuleLoader__.load({
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				const folded = statusOf(run.status ?? "");
+				const folded = statusOrPendingOf(run.status ?? "");
 				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;

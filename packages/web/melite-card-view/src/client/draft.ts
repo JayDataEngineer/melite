@@ -71,7 +71,7 @@ export type FlowEventFrame =
 
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
-import { isTerminalStatus, statusOf, type CardStatus } from '@melite/contracts/stageView'
+import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's
@@ -631,16 +631,19 @@ export interface CardRow {
    *  into a 'ready' that reads never-ran) is dead — the row carries
    *  the fold's CardStatus. The estate's queued-for-start stage word
    *  ('pending') folds to 'queued' — the waiting face — so a live
-   *  run's yet-to-start stages read waiting, not never-ran; the
-   *  'pending' home itself is unreachable from a real word (only ''
-   *  and words the fold does not know land there: no dot, not
-   *  running). */
+   *  run's yet-to-start stages read waiting, not never-ran. The
+   *  'pending' home is the no-information face: '' and words outside
+   *  the vocabulary land there through the view-side read (no dot,
+   *  not running — never a thrown render). */
   status: CardStatus
   thumbUrl: string | null
 }
 
 function rowStatus(live: string | undefined, doc: string | undefined): CardRow['status'] {
-  return statusOf(live ?? doc ?? '')
+  // The view-side read: both words are persisted draft values no door
+  // validated (the card plane writes 'unreachable' onto rows) — an
+  // unreadable word is the no-information face, never a thrown render.
+  return statusOrPendingOf(live ?? doc ?? '')
 }
 
 /** Distill the draft (+ optional live run status) into card rows. */

@@ -593,8 +593,10 @@ async function observeRunOutcomeRun(
     const startStatus = await fetchRunStatus(runId, signal).then((r) => r.status).catch(() => 'running')
     // the queue-feedback stamp, classified by the fold: queued or
     // still-waiting stamps queued; 'live'/'stopping' stamp running
+    // (the fold carries every waiting word onto 'queued' itself —
+    // statusOf('pending') is 'queued' — so one compare answers it)
     const foldedStart = statusOf(startStatus)
-    const first = foldedStart === 'queued' || foldedStart === 'pending' ? 'queued' : 'running'
+    const first = foldedStart === 'queued' ? 'queued' : 'running'
     await patchStageOutcome(draftId, stageId, { runStatus: first, result: { run_id: runId } })
     onTouched?.()
   } catch { /* bookkeeping */ }
@@ -676,9 +678,10 @@ async function observeRunOutcomeRun(
       // the LIVE flip (queued → running): patch the tile the moment
       // the estate picks the run up — never a stuck 'queued' face.
       // Classified by the fold: queued or still-waiting stamps queued;
-      // the wire's 'live' and the estate's 'stopping' stamp running.
+      // the wire's 'live' and the estate's 'stopping' stamp running
+      // (every waiting word folds onto 'queued' itself — one compare).
       const foldedLive = statusOf(row.status)
-      const live = foldedLive === 'queued' || foldedLive === 'pending' ? 'queued' : 'running'
+      const live = foldedLive === 'queued' ? 'queued' : 'running'
       // THE PROGRESS FORWARD (2026-09-13, the operator's "forward
       // the comfyui progress webhooks like before"): the tap's live
       // fold rides the row — patched ONLY when the integer percent

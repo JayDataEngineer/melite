@@ -312,6 +312,19 @@ describe('run_status render — the human line', () => {
     assert.equal(text({ run_id: 'r', status: 'queued', queue_position: 0 }), 'run r queued — 0/0 stage(s)')
   })
 
+  test('an unreadable stage word counts as not done — the line renders, never throws (2026-10-12 follow-through)', () => {
+    // The run-level word passed readRunStatus's door; the per-stage
+    // words did not, and the card plane stamps 'unreachable' on rows
+    // (LOW-23's debt). The view-side read answers no-information: the
+    // count says not-done and the agent keeps its answer.
+    const tool = runStatus((async () => ({})) as EstateRequest)
+    const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
+    assert.equal(
+      text({ run_id: 'r1', status: 'running', stages: [{ status: 'completed' }, { status: 'unreachable' }, { status: 'weird' }], artifacts: [] }),
+      'run r1 running — 1/3 stage(s)',
+    )
+  })
+
   test('a live row with no stage rows renders its registered plan + age (Fix 2)', () => {
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''

@@ -233,14 +233,18 @@ describe("startDraft / runStatus — the run doors", () => {
 
 describe("cardRows — the full precedence + narrowing table", () => {
   const doc = (stages: DraftDoc["stages"]): DraftDoc => ({ draft_id: "d", stages });
-  test("the fold owns the word: named statuses keep their name; synonyms fold; an unknown word REFUSES", () => {
+  test("the fold owns the word: named statuses keep their name; synonyms fold; an unknown word is the no-information face", () => {
     // pending is the estate's queued-for-start word and folds to the
     // waiting face; cached keeps its name (the dot map knows it);
     // succeeded folds to done; error keeps its name; interrupted is a
     // deliberate end and folds to stopped; the flow's own 'ready'
-    // ("awaiting run") folds to the waiting face. A word nobody knows
-    // now refuses loud (operator decision 2026-10-12) instead of
-    // rendering as a stage that is merely waiting.
+    // ("awaiting run") folds to the waiting face. An unknown word is
+    // answered by the VIEW-SIDE READ (2026-10-12 follow-through, same
+    // operator decision): a draft row's runStatus is a persisted word
+    // no door validated — the card plane itself writes 'unreachable'
+    // (cards-resource's transport escalation) — so the row renders the
+    // no-information face instead of throwing the whole cards tab; the
+    // classifier's refusal lives at seats reading a validated door.
     const rows = cardRows(doc([
       { id: "a", status: "pending" },
       { id: "b", status: "cached" },
@@ -251,7 +255,10 @@ describe("cardRows — the full precedence + narrowing table", () => {
       { id: "g", status: "success" },
     ]));
     expect(rows.map((r) => r.status)).toEqual(["queued", "cached", "done", "error", "queued", "stopped", "done"]);
-    expect(() => cardRows(doc([{ id: "h", status: "weird" }]))).toThrow(/weird/);
+    expect(cardRows(doc([{ id: "h", status: "weird" }]))[0]?.status).toBe("pending");
+    // 'unreachable' is the real reachable word (LOW-23's debt rides
+    // runStatus until the stage row grows its own health channel)
+    expect(cardRows(doc([{ id: "i", status: "unreachable" }]))[0]?.status).toBe("pending");
   });
   test("live pending → queued (the waiting face); live running → running; live queued → queued; live stopping → running", () => {
     const live = (status: string): RunStatusDoc => ({ run_id: "r", status: "running", stages: [{ id: "x", status }] });

@@ -11,7 +11,7 @@
 // Pure module: fold + format. The fetch (who owns the runs payload) is the
 // caller's business — LibrarySidebar polls listRuns on mediaVersion bump.
 import type { MediaRun } from "@melite/contracts";
-import { statusOf } from "@melite/contracts/stageView";
+import { statusOrPendingOf } from "@melite/contracts/stageView";
 
 export interface FamilyProvenance {
   /** Completed runs that used this family. */
@@ -33,7 +33,10 @@ export function familyProvenance(
 ): Record<string, FamilyProvenance> {
   const out: Record<string, FamilyProvenance> = {};
   for (const run of runs) {
-    const folded = statusOf(run.status ?? "");
+    // The view-side read (2026-10-12): a MediaRun.status is a listed
+    // wire word no door validated here — an unreadable run simply
+    // contributes no provenance, never a throw through the barrel.
+    const folded = statusOrPendingOf(run.status ?? "");
     if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
     const fams = run.families ?? [];
     if (fams.length === 0) continue;

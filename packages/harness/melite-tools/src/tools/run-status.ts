@@ -16,7 +16,7 @@ import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { JsonValue, ToolDefinition } from '../types.ts'
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol'
-import { statusOf } from '@melite/contracts/stageView'
+import { statusOrPendingOf } from '@melite/contracts/stageView'
 import type { EstateRequest } from '../estate.ts'
 import { jsonClean } from '../json-clean.ts'
 import { isTerminalStatus } from '@melite/contracts/stageView'
@@ -169,7 +169,10 @@ export function runStatus(request: EstateRequest): ToolDefinition {
         // the done count reads the owner's fold (2026-10-01, the vocab
         // law): the raw === 'completed' compare silently read every
         // file-era done word (succeeded, success) as not-yet-done.
-        const done = stages.filter(s => s && statusOf(typeof s.status === 'string' ? s.status : '') === 'done').length
+        // The view-side read (2026-10-12): the run-level word passed
+        // readRunStatus's door, the per-stage words did not — an
+        // unreadable stage counts as not done, never kills the answer.
+        const done = stages.filter(s => s && statusOrPendingOf(typeof s.status === 'string' ? s.status : '') === 'done').length
         const total = stages.length
         const pos = typeof v.queue_position === 'number' && v.queue_position > 0
           ? ' (queue #' + v.queue_position + ')' : ''

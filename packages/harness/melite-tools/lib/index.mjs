@@ -7,7 +7,7 @@ import { buildH3TimelineTool } from "@melite/video-h3-timeline/tool";
 import { CARD_PLANE_ENGINE, RUN_ID_RE, RUN_MEDIA_PREFIX, WIRE_STAGE_KEYS, benchDraftIdOf, benchSessionOf, canonicalRunMediaUrl, normalizeBenchStages } from "@melite/contracts/benchStage";
 import { defineTool } from "@deepseek-ai/dsh-tools";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
-import { isTerminalStatus, statusOf } from "@melite/contracts/stageView";
+import { isTerminalStatus, statusOf, statusOrPendingOf } from "@melite/contracts/stageView";
 import { normalizeJsonArrayParams } from "@melite/estate-call/cardTool";
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { FLOW_ID_RE, rootsManifest, searchedVoice } from "@melite/estate-queue";
@@ -242,7 +242,7 @@ function runStatus(request) {
 				}];
 				const stages = v.stages ?? [];
 				const artifacts = v.artifacts ?? [];
-				const done = stages.filter((s) => s && statusOf(typeof s.status === "string" ? s.status : "") === "done").length;
+				const done = stages.filter((s) => s && statusOrPendingOf(typeof s.status === "string" ? s.status : "") === "done").length;
 				const total = stages.length;
 				const pos = typeof v.queue_position === "number" && v.queue_position > 0 ? " (queue #" + v.queue_position + ")" : "";
 				const plan = total === 0 && Array.isArray(v.planned_stages) && v.planned_stages.length > 0 ? " · plan: " + v.planned_stages.length + " stage(s)" + (typeof v.card === "string" && v.card ? " (" + v.card + ")" : "") : "";
@@ -1089,7 +1089,7 @@ async function runBench(request, a, signal) {
 		const stageId = row["id"];
 		const card = typeof row["card"] === "string" && row["card"] !== "" ? row["card"] : "";
 		{
-			const folded = statusOf(typeof row["runStatus"] === "string" ? row["runStatus"] : "");
+			const folded = statusOrPendingOf(typeof row["runStatus"] === "string" ? row["runStatus"] : "");
 			if (folded === "done" || folded === "cached" || folded === "reused") {
 				pass.push({
 					stage: stageId,
@@ -1259,7 +1259,7 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 				artifacts: arts
 			};
 		}
-		const foldedLive = statusOf(status);
+		const foldedLive = statusOrPendingOf(status);
 		const live = foldedLive === "queued" || foldedLive === "pending" ? "queued" : "running";
 		if (live !== lastLive) {
 			lastLive = live;

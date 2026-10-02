@@ -7989,7 +7989,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return isTerminalStatus(status);
 		}
 		function rowStatus(live, doc) {
-			return statusOf(live ?? doc ?? "");
+			return statusOrPendingOf(live ?? doc ?? "");
 		}
 		/** Distill the draft (+ optional live run status) into card rows. */
 		function cardRows(doc, live) {
@@ -8432,9 +8432,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		async function observeRunOutcomeRun(draftId, stageId, runId, signal, onTouched) {
 			try {
-				const foldedStart = statusOf(await (0, _melite_card_base_client.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running"));
 				await patchStageOutcome(draftId, stageId, {
-					runStatus: foldedStart === "queued" || foldedStart === "pending" ? "queued" : "running",
+					runStatus: statusOf(await (0, _melite_card_base_client.fetchRunStatus)(runId, signal).then((r) => r.status).catch(() => "running")) === "queued" ? "queued" : "running",
 					result: { run_id: runId }
 				});
 				onTouched?.();
@@ -8483,8 +8482,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				transportFails = 0;
 				if (!isTerminalStatus(row.status)) {
-					const foldedLive = statusOf(row.status);
-					const live = foldedLive === "queued" || foldedLive === "pending" ? "queued" : "running";
+					const live = statusOf(row.status) === "queued" ? "queued" : "running";
 					const stage = row.stages.find((s) => s.id === stageId) ?? (row.stages.length === 1 ? row.stages[0] : void 0);
 					const p = stage?.progress;
 					const pct = p !== void 0 && p.max > 0 ? Math.floor(100 * p.value / p.max) : null;
@@ -9626,7 +9624,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		function terminalStageErrorOf(stages) {
 			for (const stage of stages) {
-				if (statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
+				if (statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") !== "error") continue;
 				if (typeof stage.result !== "object" || stage.result === null || Array.isArray(stage.result)) continue;
 				const error = Reflect.get(stage.result, "error");
 				if (typeof error === "string" && error !== "") return error;
@@ -9850,7 +9848,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					refused: null
 				};
 				{
-					const folded = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
+					const folded = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
 					if (folded === "done" || folded === "cached" || folded === "reused") continue;
 				}
 				const res = await runCardStage(bench.draftId, stage);
@@ -40552,7 +40550,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function familyProvenance(runs) {
 			const out = {};
 			for (const run of runs) {
-				const folded = statusOf(run.status ?? "");
+				const folded = statusOrPendingOf(run.status ?? "");
 				if (folded !== "done" && folded !== "cached" && folded !== "reused") continue;
 				const fams = run.families ?? [];
 				if (fams.length === 0) continue;
@@ -40940,7 +40938,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const prog = rec !== null && typeof rec["progress"] === "object" && rec["progress"] !== null ? rec["progress"] : null;
 			const act = rec !== null && typeof rec["activity"] === "string" ? rec["activity"] : "";
 			const pct = prog !== null && prog.max > 0 ? Math.floor(100 * prog.value / prog.max) : null;
-			const failedText = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "") === "error" && typeof rec?.["error"] === "string" ? rec["error"] : null;
+			const failedText = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") === "error" && typeof rec?.["error"] === "string" ? rec["error"] : null;
 			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
 			return (0, react.createElement)("div", {
 				className: card_module_css_default.zoomOverlay,
@@ -44395,7 +44393,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const prev = terminalSeen.current;
 				terminalSeen.current = cur;
 				if (prev === null) return;
-				for (const [id, status] of cur) if (statusOf(status) === "done" && statusOf(prev.get(id) ?? "") !== "done") {
+				for (const [id, status] of cur) if (statusOrPendingOf(status) === "done" && statusOrPendingOf(prev.get(id) ?? "") !== "done") {
 					setLocalRunError((claim) => claim !== null && claim.kind === "start" && claim.rowLanded ? null : claim);
 					return;
 				}

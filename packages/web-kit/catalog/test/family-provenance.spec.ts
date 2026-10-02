@@ -48,6 +48,18 @@ describe("familyProvenance", () => {
     ]);
     assert.deepEqual(out["a"], { count: 2, lastRunAt: 900_000 });
   });
+
+  it("an unreadable status word contributes nothing and never throws (2026-10-12 follow-through)", () => {
+    // A listed MediaRun.status is a wire word no door validated; the
+    // view-side read folds it to no-information — no provenance, no
+    // throw through the barrel (the classifier's refusal is not this
+    // seat's contract).
+    const out = familyProvenance([
+      run({ status: "unreachable", families: ["a"], created_at: 100 }),
+      run({ status: "weird", families: ["a"], created_at: 200 }),
+    ]);
+    assert.deepEqual(out, {});
+  });
 });
 
 describe("formatLastRun", () => {

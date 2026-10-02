@@ -4,7 +4,7 @@
  * sequential pass (extracted from CardsTab.tsx hour 15). */
 
 import { fetchFormSpec, fieldsOf } from '@melite/card-base/client'
-import { statusOf } from '@melite/contracts/stageView'
+import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { defaultFamilyForCard } from '@melite-plugin/melite-run-wire'
 import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
@@ -218,9 +218,12 @@ export async function runBenchSequential(
     // THE CACHE-HIT SKIP, folded (2026-10-01): the raw 'done' compare
     // re-ran every stage the estate settles 'completed' and every
     // 'cached'/'reused' row — the skip now recognizes the whole done
-    // family, exactly what the fold says carries an artifact.
+    // family, exactly what the fold says carries an artifact. The
+    // view-side read (2026-10-12): a persisted row's word (the card
+    // plane writes 'unreachable') is not door-validated — an
+    // unreadable row runs, never throws the pass.
     {
-      const folded = statusOf(typeof stage.runStatus === 'string' ? stage.runStatus : '')
+      const folded = statusOrPendingOf(typeof stage.runStatus === 'string' ? stage.runStatus : '')
       if (folded === 'done' || folded === 'cached' || folded === 'reused') continue
     }
     const res = await runCardStage(bench.draftId, stage)

@@ -163,10 +163,12 @@ export function statusOf(value: string): CardStatus {
       return 'skipped'
     case 'reused':
       return 'reused'
-    // ABSENCE is not a word: a seat that hands the fold an empty or
-    // whitespace-only string is saying "no information", and the
-    // no-information home is the same face. It is spelled as a case so
-    // the refusal below stays about UNKNOWN WORDS.
+    // ABSENCE is not a word: the EMPTY string is a seat saying "no
+    // information", and the no-information home is the same face. It
+    // is spelled as a case so the refusal below stays about UNKNOWN
+    // WORDS — a whitespace-only string is a word-shaped value, not
+    // absence, and refuses like any other stranger (the view-side
+    // read below folds it for the seats that render).
     case '':
       return 'pending'
     // THE REFUSAL (operator decision 2026-10-12): a word outside the

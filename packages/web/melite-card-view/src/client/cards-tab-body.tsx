@@ -58,7 +58,7 @@ import { runCardStage, runBenchSequential } from './stage-run.ts'
 import type { CardsBenchValue, CardsDraftValue, CardsRunValue, BenchStageView } from './cards-resource.ts'
 import { fetchMediaLibrary, CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, benchSessionOfAddress, cardsRunAddress, fetchBench, fetchLatestRunForDraft, freshStageRow, markCardsSurface, observeRunOutcome, openCardsResource, parseCardsAddress, reconcileBenchRuns, restoreRunToBench, uploadInputFile } from './cards-resource.ts'
 import { startCardRun, stopRun } from '@melite/card-base/client'
-import { statusOf } from '@melite/contracts/stageView'
+import { statusOrPendingOf } from '@melite/contracts/stageView'
 import { addStageWire, groupStagesWire, removeStageWire, reorderStageWire, ungroupStageWire } from './add-stage.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
@@ -230,8 +230,11 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     if (prev === null) return // first frame: baseline, no claim to retire
     for (const [id, status] of cur) {
       // the fold's done family retires the claim — a stage the estate
-      // settles 'completed' (or a cached/reused row) now lands too
-      if (statusOf(status) === 'done' && statusOf(prev.get(id) ?? '') !== 'done') {
+      // settles 'completed' (or a cached/reused row) now lands too.
+      // The view-side read: these are persisted bench words no door
+      // validated ('unreachable' rides rows today) — an unreadable
+      // word retires nothing and never throws the effect.
+      if (statusOrPendingOf(status) === 'done' && statusOrPendingOf(prev.get(id) ?? '') !== 'done') {
         setLocalRunError((claim) =>
           claim !== null && claim.kind === 'start' && claim.rowLanded ? null : claim)
         return
