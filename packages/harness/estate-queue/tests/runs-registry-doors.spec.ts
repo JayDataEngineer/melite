@@ -953,7 +953,7 @@ describe("status + stop", () => {
     const w = live(s, {
       runId: "run-f2staged12345-00000006",
       status: "running",
-      stages: [{ id: "s1", status: "running" } as unknown as RunStageRow],
+      stages: [{ id: "s1", status: "running" } as RunStageRow],
     });
     const staged = await s.svc.status(w, sig());
     assert.equal(staged["planned_stages"], undefined);
