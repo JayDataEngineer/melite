@@ -40,9 +40,10 @@
  *         no shipped atom covers row→modal. Hand-rolled, layout-only.
  *   (a-2) THE LIVE RUN, post-kill: the gateway-era events WS died
  *         with the gateway app (nothing serves it, by design); the
- *         poll over the runs/status remote IS the live channel until
- *         the collapse plan's stream remote exists (@Remote
- *         ({mode:'stream'}) over the mux). The fold mapping
+ *         run stream remote EXISTS (runs/subscribe — the run view
+ *         rides it through the resource), and this flow view keeps
+ *         its own direct read over the runs/status remote (handroll
+ *         row 1.8's remaining consumer tail). The fold mapping
  *         (idempotent stage frames by INDEX — the estate mapping law)
  *         stays in draft.ts for that day.
  *   (c-3) NO CLIENT: the draft/run remote layer (draft.ts). No DSH
