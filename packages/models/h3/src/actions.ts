@@ -25,6 +25,7 @@ import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
 import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.ts'
+import { H3_LORA_ROWS } from '../mods/loras.ts'
 import type { Family } from './schema.ts'
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from '@melite/comfyui-card-kit/vocab'
 import { computeFilmMix, parseFilmMixClips, stanzaSecs } from './filmMix.ts'
@@ -42,8 +43,21 @@ import {
   transitionOverlap,
 } from './timelineContract.ts'
 
-const LORA_STACK_GOLD =
-  '[{"on":true,"lora":"h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors","str":0.6,"v":1,"a":1,"t":1}]'
+// THE ABSENT-BAG DEFAULT (h3-a, 2026-10-12): the turbo distill row,
+// built from the family lora CATALOG (mods/loras.ts — the one owner
+// of every lora filename and default strength; the value was
+// restated as a literal here, which is how a catalog edit would
+// have silently missed the default). The wire shape matches a
+// resolved bag row: on, lora (filename), str (default_strength),
+// plus the four fixed mode flags. A missing catalog row refuses at
+// load — the default would have no source.
+const loraStackDefault = (): string => {
+  const row = H3_LORA_ROWS.find((r) => r.id === 'h3_lightx2v_turbo')
+  if (row === undefined) {
+    throw new Error("h3 action: the lora catalog has no 'h3_lightx2v_turbo' row — the absent-bag default has no source; fix the catalog row id")
+  }
+  return JSON.stringify([{ on: true, lora: row.filename, str: row.default_strength, v: 1, a: 1, t: 1 }])
+}
 // His 17k+5 grid, in-graph (ComfyMathExpression): snap latent steps to 2 mod 5
 // (the card's own principles row: "Length snaps to the 17k+5 frame grid
 // at 24fps" — the principles).
@@ -681,9 +695,10 @@ function renderH3Window(
   // writes the mod bag `loras` — [{id, strength}] rows the service
   // resolves to {name, strength} filenames against the family's
   // flavor catalog. Those rows build the upstream stack verbatim
-  // ({on, lora, str, v:1, a:1, t:1}); an empty bag rides the frozen
-  // gold solo (turbo 0.6 — plaguekind 1:1, the mod plane's own
-  // default). ONE surface, one owner.
+  // ({on, lora, str, v:1, a:1, t:1}); an empty bag rides the
+  // family catalog's turbo row (the mod plane's own default, built
+  // from the catalog so the value has one owner). ONE surface, one
+  // owner.
   const loraStack = Array.isArray(p.loras) && (p.loras as unknown[]).length > 0
     ? JSON.stringify((p.loras as Array<Record<string, unknown>>).map((r) => ({
         // the service resolves every row against the family catalog
@@ -694,7 +709,7 @@ function renderH3Window(
         str: r.strength as number,
         v: 1, a: 1, t: 1,
       })))
-    : LORA_STACK_GOLD
+    : loraStackDefault()
   // t4r templates carry shift_video 8.0; the t4 family carries the INT
   // NO SILENT RESOLUTION LAW: the walked shift_video IS the value
   // (declared default 8; the family literals retired with the
