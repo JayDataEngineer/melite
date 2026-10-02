@@ -1,0 +1,3 @@
+{"type":"header","format":"v0","sessionId":"form-spec-read-1","profile":"melite-test"}
+{"type":"user","text":"Open the image-edit card and show me its form — I want to see every knob it exposes."}
+{"type":"assistant","text":"Reading /v1/form-spec?model=image-edit: the envelope carries 74 refs, 7 variants, and the mask mod schema; every dict id resolves and the form projects 12 top-level fields."}

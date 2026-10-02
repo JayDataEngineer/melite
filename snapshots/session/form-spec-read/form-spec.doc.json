@@ -1,0 +1,1109 @@
+{
+  "contract": null,
+  "model_defaults": {
+    "input_images": [],
+    "seed": -1,
+    "use_stock_nodes": false,
+    "double_reference": false,
+    "steps": 25,
+    "sampler": "euler",
+    "scheduler": "simple",
+    "cfg": 1,
+    "width": 1024,
+    "height": 1024
+  },
+  "engine": "comfyui",
+  "enhance_prompt": null,
+  "enhance_prompts": {
+    "prompt": null,
+    "lyrics": ""
+  },
+  "features": {
+    "modifiers": [
+      {
+        "kind": "mask",
+        "label": "Region Mask",
+        "param_key": "mask",
+        "schema_key": "mask",
+        "cardinality": "list",
+        "max_stack": 1,
+        "options": []
+      }
+    ],
+    "variant_groups": {
+      "Variant": {
+        "label": "Variant",
+        "tooltip": "Quantization tier of the ONE 2.1 base — INT8 ConvRot (the official template pick) or BF16 (full precision, most VRAM)."
+      },
+      "Quant": {
+        "label": "Quant",
+        "tooltip": "The download tier — INT8 ConvRot (7.3GB) or BF16 (14.2GB)."
+      },
+      "Recipe": {
+        "label": "Recipe",
+        "tooltip": "One-click recipes — patch-only rows that stamp picks onto the draft; Default stamps nothing.",
+        "default": "default"
+      }
+    }
+  },
+  "form": "image-edit",
+  "genre": "image",
+  "guide": null,
+  "inputs": [
+    {
+      "name": "prompt",
+      "kind": "text"
+    },
+    {
+      "name": "input_images",
+      "kind": "image_list"
+    },
+    {
+      "name": "input_mask",
+      "kind": "seg"
+    }
+  ],
+  "label": "Edit Image",
+  "layout": null,
+  "loader_info": null,
+  "mod_schemas": {
+    "mask": {
+      "uid": 987,
+      "refs": {
+        "921": {
+          "type": "any",
+          "meta": {
+            "description": "Region Mask",
+            "extra": {
+              "wtype": "mask",
+              "group": "mask",
+              "zone": "mods",
+              "order": -1,
+              "tooltip": "Add the mask mod, then drop an RGBA PNG whose alpha channel marks the region."
+            }
+          }
+        },
+        "925": {
+          "type": "string",
+          "meta": {
+            "role": "path",
+            "extra": {
+              "wtype": "image",
+              "group": "input",
+              "zone": "inputs",
+              "order": -1,
+              "width": 1,
+              "columns": 3,
+              "tooltip": "RGBA PNG whose alpha channel marks the region. Standalone: region semantics for this lane. Alongside lanpaint: the inpaint region — present with the input images, the builder switches to the lanpaint sampler."
+            },
+            "description": "Region Mask"
+          }
+        },
+        "926": {
+          "type": "const",
+          "meta": {},
+          "value": "auto"
+        },
+        "927": {
+          "type": "const",
+          "meta": {},
+          "value": "crop_stitch"
+        },
+        "928": {
+          "type": "const",
+          "meta": {},
+          "value": "full_frame"
+        },
+        "932": {
+          "type": "union",
+          "meta": {
+            "default": "crop_stitch",
+            "description": "Edit Scope",
+            "extra": {
+              "wtype": "select",
+              "group": "mask",
+              "zone": "mods",
+              "order": 1,
+              "width": 1,
+              "options": [
+                {
+                  "value": "auto",
+                  "label": "Whole image (default)"
+                },
+                {
+                  "value": "crop_stitch",
+                  "label": "Masked region (crop + stitch)"
+                }
+              ],
+              "tooltip": "No mask modifier = whole-image editing by default. Add a mask modifier to choose Masked region (crop + stitch): crop the region, edit it, and composite it back."
+            }
+          },
+          "list": [
+            926,
+            927,
+            928
+          ]
+        },
+        "933": {
+          "type": "const",
+          "meta": {},
+          "value": "off"
+        },
+        "934": {
+          "type": "const",
+          "meta": {},
+          "value": "person"
+        },
+        "935": {
+          "type": "const",
+          "meta": {},
+          "value": "face"
+        },
+        "936": {
+          "type": "const",
+          "meta": {},
+          "value": "hand"
+        },
+        "940": {
+          "type": "union",
+          "meta": {
+            "default": "off",
+            "description": "Region Detector",
+            "extra": {
+              "wtype": "select",
+              "group": "mask",
+              "zone": "mods",
+              "order": 2,
+              "width": 1,
+              "options": [
+                "off",
+                "person",
+                "face",
+                "hand"
+              ],
+              "tooltip": "Automated region source for crop_stitch (the Impact detectors): person = segmentation silhouette, face/hand = boxes. off = use the Region Mask."
+            }
+          },
+          "list": [
+            933,
+            934,
+            935,
+            936
+          ]
+        },
+        "947": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 256,
+            "step": 8,
+            "default": 64,
+            "description": "Context Padding",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 3,
+              "width": 1,
+              "tooltip": "Pixels of surrounding context kept in the crop (crop_stitch mode). More context = more coherence; 64 is the sweet spot."
+            }
+          }
+        },
+        "954": {
+          "type": "number",
+          "meta": {
+            "min": -32,
+            "max": 32,
+            "step": 1,
+            "default": 8,
+            "description": "Grow / Shrink",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 4,
+              "width": 1,
+              "tooltip": "Expand (+) or shrink (−) the region by an exact pixel disk before the run. Applied host-side."
+            }
+          }
+        },
+        "961": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 32,
+            "step": 1,
+            "default": 8,
+            "description": "Feather",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 5,
+              "width": 1,
+              "tooltip": "Gaussian falloff the composite blends through — kills the pasted-on rectangle edge."
+            }
+          }
+        },
+        "968": {
+          "type": "number",
+          "meta": {
+            "min": 0,
+            "max": 1,
+            "step": 0.05,
+            "default": 0,
+            "description": "Re-threshold",
+            "extra": {
+              "wtype": "slider",
+              "group": "mask",
+              "zone": "mods",
+              "order": 6,
+              "width": 1,
+              "tooltip": "Re-binarize the feathered mask at this level. 0 = keep the soft falloff."
+            }
+          }
+        },
+        "972": {
+          "type": "boolean",
+          "meta": {
+            "default": false,
+            "description": "Invert",
+            "extra": {
+              "wtype": "boolean",
+              "group": "mask",
+              "zone": "mods",
+              "order": 7,
+              "width": 1,
+              "tooltip": "Work OUTSIDE the painted region instead."
+            }
+          }
+        },
+        "979": {
+          "type": "number",
+          "meta": {
+            "min": 64,
+            "max": 16384,
+            "step": 8,
+            "default": 512,
+            "description": "Region Detail Size",
+            "extra": {
+              "wtype": "number",
+              "group": "mask",
+              "zone": "mods",
+              "order": 8,
+              "width": 1,
+              "tooltip": "Working size the region detailer scales each region toward (DetailerForEach guide_size with bbox sizing, capped by the canonical max 1024)."
+            }
+          }
+        },
+        "986": {
+          "type": "number",
+          "meta": {
+            "min": 0.05,
+            "max": 1,
+            "step": 0.05,
+            "default": 0.5,
+            "description": "Region Denoise",
+            "extra": {
+              "wtype": "number",
+              "group": "mask",
+              "zone": "mods",
+              "order": 9,
+              "width": 1,
+              "tooltip": "How strongly the region is reworked (DetailerForEach denoise): 0.5 keeps structure, 1 fully rewrites the crop."
+            }
+          }
+        },
+        "987": {
+          "type": "object",
+          "meta": {
+            "default": {}
+          },
+          "dict": {
+            "mask": 921,
+            "input_mask": 925,
+            "mask_mode": 932,
+            "mask_detector": 940,
+            "mask_context_pad": 947,
+            "mask_grow": 954,
+            "mask_feather": 961,
+            "mask_threshold": 968,
+            "mask_invert": 972,
+            "mask_detail_size": 979,
+            "mask_denoise": 986
+          }
+        }
+      }
+    }
+  },
+  "model": "qwen-img-edit-21",
+  "outputs": {
+    "default": "image"
+  },
+  "schema": {
+    "uid": 3385,
+    "refs": {
+      "315": {
+        "type": "const",
+        "meta": {},
+        "value": "cfgpp_ud10_ab"
+      },
+      "316": {
+        "type": "const",
+        "meta": {},
+        "value": "ddim"
+      },
+      "317": {
+        "type": "const",
+        "meta": {},
+        "value": "ddpm"
+      },
+      "318": {
+        "type": "const",
+        "meta": {},
+        "value": "deis"
+      },
+      "319": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_2"
+      },
+      "320": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_2_ancestral"
+      },
+      "321": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_adaptive"
+      },
+      "322": {
+        "type": "const",
+        "meta": {},
+        "value": "dpm_fast"
+      },
+      "323": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m"
+      },
+      "324": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_cfg_pp"
+      },
+      "325": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde"
+      },
+      "326": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_gpu"
+      },
+      "327": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_heun"
+      },
+      "328": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2m_sde_heun_gpu"
+      },
+      "329": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2s_ancestral"
+      },
+      "330": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_2s_ancestral_cfg_pp"
+      },
+      "331": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_3m_sde"
+      },
+      "332": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_3m_sde_gpu"
+      },
+      "333": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_sde"
+      },
+      "334": {
+        "type": "const",
+        "meta": {},
+        "value": "dpmpp_sde_gpu"
+      },
+      "335": {
+        "type": "const",
+        "meta": {},
+        "value": "er_sde"
+      },
+      "336": {
+        "type": "const",
+        "meta": {},
+        "value": "euler"
+      },
+      "337": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_ancestral"
+      },
+      "338": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_ancestral_cfg_pp"
+      },
+      "339": {
+        "type": "const",
+        "meta": {},
+        "value": "euler_cfg_pp"
+      },
+      "340": {
+        "type": "const",
+        "meta": {},
+        "value": "exp_heun_2_x0"
+      },
+      "341": {
+        "type": "const",
+        "meta": {},
+        "value": "exp_heun_2_x0_sde"
+      },
+      "342": {
+        "type": "const",
+        "meta": {},
+        "value": "gradient_estimation"
+      },
+      "343": {
+        "type": "const",
+        "meta": {},
+        "value": "gradient_estimation_cfg_pp"
+      },
+      "344": {
+        "type": "const",
+        "meta": {},
+        "value": "heun"
+      },
+      "345": {
+        "type": "const",
+        "meta": {},
+        "value": "heunpp2"
+      },
+      "346": {
+        "type": "const",
+        "meta": {},
+        "value": "ipndm"
+      },
+      "347": {
+        "type": "const",
+        "meta": {},
+        "value": "ipndm_v"
+      },
+      "348": {
+        "type": "const",
+        "meta": {},
+        "value": "lcm"
+      },
+      "349": {
+        "type": "const",
+        "meta": {},
+        "value": "lms"
+      },
+      "350": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep"
+      },
+      "351": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_ancestral"
+      },
+      "352": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_ancestral_cfg_pp"
+      },
+      "353": {
+        "type": "const",
+        "meta": {},
+        "value": "res_multistep_cfg_pp"
+      },
+      "354": {
+        "type": "const",
+        "meta": {},
+        "value": "sa_solver"
+      },
+      "355": {
+        "type": "const",
+        "meta": {},
+        "value": "sa_solver_pece"
+      },
+      "356": {
+        "type": "const",
+        "meta": {},
+        "value": "seeds_2"
+      },
+      "357": {
+        "type": "const",
+        "meta": {},
+        "value": "seeds_3"
+      },
+      "358": {
+        "type": "const",
+        "meta": {},
+        "value": "uni_pc"
+      },
+      "359": {
+        "type": "const",
+        "meta": {},
+        "value": "uni_pc_bh2"
+      },
+      "361": {
+        "type": "const",
+        "meta": {},
+        "value": "beta"
+      },
+      "362": {
+        "type": "const",
+        "meta": {},
+        "value": "ddim_uniform"
+      },
+      "363": {
+        "type": "const",
+        "meta": {},
+        "value": "exponential"
+      },
+      "364": {
+        "type": "const",
+        "meta": {},
+        "value": "karras"
+      },
+      "365": {
+        "type": "const",
+        "meta": {},
+        "value": "kl_optimal"
+      },
+      "366": {
+        "type": "const",
+        "meta": {},
+        "value": "linear_quadratic"
+      },
+      "367": {
+        "type": "const",
+        "meta": {},
+        "value": "normal"
+      },
+      "368": {
+        "type": "const",
+        "meta": {},
+        "value": "sgm_uniform"
+      },
+      "369": {
+        "type": "const",
+        "meta": {},
+        "value": "simple"
+      },
+      "3319": {
+        "type": "string",
+        "meta": {}
+      },
+      "3323": {
+        "type": "array",
+        "meta": {
+          "default": [],
+          "description": "Input Images",
+          "extra": {
+            "order": -1,
+            "group": "input",
+            "width": 1,
+            "zone": "inputs",
+            "wtype": "image_list",
+            "max_stack": 16,
+            "serveDefault": true,
+            "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
+          }
+        },
+        "inner": 3319
+      },
+      "3327": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Input Image"
+        }
+      },
+      "3331": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Image 2"
+        }
+      },
+      "3335": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Image 3"
+        }
+      },
+      "3336": {
+        "type": "string",
+        "meta": {}
+      },
+      "3339": {
+        "type": "array",
+        "meta": {
+          "default": [],
+          "description": "Reference Images",
+          "extra": {
+            "hidden": true
+          }
+        },
+        "inner": 3336
+      },
+      "3343": {
+        "type": "string",
+        "meta": {
+          "role": "path",
+          "extra": {
+            "hidden": true
+          },
+          "description": "Region Mask"
+        }
+      },
+      "3346": {
+        "type": "string",
+        "meta": {
+          "description": "Prompt",
+          "extra": {
+            "order": 0,
+            "group": "prompt",
+            "columns": 2,
+            "width": 1,
+            "required": true,
+            "zone": "params",
+            "wtype": "textarea"
+          }
+        }
+      },
+      "3349": {
+        "type": "string",
+        "meta": {
+          "description": "Negative Prompt",
+          "extra": {
+            "order": 1,
+            "group": "prompt",
+            "width": 1,
+            "zone": "params",
+            "wtype": "textarea"
+          }
+        }
+      },
+      "3352": {
+        "type": "number",
+        "meta": {
+          "description": "Width",
+          "extra": {
+            "order": 0,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number",
+            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
+          }
+        }
+      },
+      "3355": {
+        "type": "number",
+        "meta": {
+          "description": "Height",
+          "extra": {
+            "order": 1,
+            "group": "resolution",
+            "columns": 3,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number",
+            "tooltip": "Target resolution — the 2.1 lane edits at target size (both axes together, never one alone)."
+          }
+        }
+      },
+      "3360": {
+        "type": "number",
+        "meta": {
+          "description": "Seed",
+          "step": 1,
+          "default": -1,
+          "extra": {
+            "order": 4,
+            "group": "sampling",
+            "width": 1,
+            "zone": "params"
+          }
+        }
+      },
+      "3366": {
+        "type": "number",
+        "meta": {
+          "description": "Steps",
+          "min": 1,
+          "max": 50,
+          "step": 1,
+          "extra": {
+            "order": 0,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "number"
+          }
+        }
+      },
+      "3372": {
+        "type": "number",
+        "meta": {
+          "description": "Guidance Scale",
+          "min": 0.1,
+          "max": 10,
+          "step": 0.1,
+          "extra": {
+            "order": 1,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "tooltip": "Qwen-Image-Edit uses low CFG (flow-matching); leave unset — the model's own recipe is the default."
+          }
+        }
+      },
+      "3374": {
+        "type": "union",
+        "meta": {
+          "description": "Sampler",
+          "extra": {
+            "order": 2,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "select"
+          }
+        },
+        "list": [
+          315,
+          316,
+          317,
+          318,
+          319,
+          320,
+          321,
+          322,
+          323,
+          324,
+          325,
+          326,
+          327,
+          328,
+          329,
+          330,
+          331,
+          332,
+          333,
+          334,
+          335,
+          336,
+          337,
+          338,
+          339,
+          340,
+          341,
+          342,
+          343,
+          344,
+          345,
+          346,
+          347,
+          348,
+          349,
+          350,
+          351,
+          352,
+          353,
+          354,
+          355,
+          356,
+          357,
+          358,
+          359
+        ]
+      },
+      "3376": {
+        "type": "union",
+        "meta": {
+          "description": "Scheduler",
+          "extra": {
+            "order": 3,
+            "group": "sampling",
+            "columns": 2,
+            "width": 1,
+            "zone": "params",
+            "wtype": "select"
+          }
+        },
+        "list": [
+          361,
+          362,
+          363,
+          364,
+          365,
+          366,
+          367,
+          368,
+          369
+        ]
+      },
+      "3380": {
+        "type": "boolean",
+        "meta": {
+          "description": "Use Stock Nodes",
+          "default": false,
+          "extra": {
+            "order": 1,
+            "group": "edit_tuning",
+            "width": 1,
+            "tooltip": "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.",
+            "zone": "params"
+          }
+        }
+      },
+      "3384": {
+        "type": "boolean",
+        "meta": {
+          "description": "Double Reference",
+          "default": false,
+          "extra": {
+            "order": 2,
+            "group": "edit_tuning",
+            "width": 1,
+            "tooltip": "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)",
+            "zone": "params"
+          }
+        }
+      },
+      "3385": {
+        "type": "object",
+        "meta": {
+          "default": {}
+        },
+        "dict": {
+          "input_images": 3323,
+          "image1": 3327,
+          "image2": 3331,
+          "image3": 3335,
+          "reference_images": 3339,
+          "input_mask": 3343,
+          "prompt": 3346,
+          "negative_prompt": 3349,
+          "width": 3352,
+          "height": 3355,
+          "seed": 3360,
+          "steps": 3366,
+          "cfg": 3372,
+          "sampler": 3374,
+          "scheduler": 3376,
+          "use_stock_nodes": 3380,
+          "double_reference": 3384
+        }
+      }
+    }
+  },
+  "service": "qwen-img-edit-21",
+  "size": null,
+  "variants": [
+    {
+      "id": "int8",
+      "label": "INT8 ConvRot",
+      "group": "Variant",
+      "defaults": {},
+      "route": "qwen-img-edit-21",
+      "hint": "The official template pick — 7.3GB unet, int8 convrot (DEFAULT)",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "int8_convrot",
+      "label": "INT8 ConvRot",
+      "group": "Quant",
+      "defaults": {},
+      "route": "qwen-img-edit-21-int8",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "int8_convrot",
+      "vram_peak_gb": 24,
+      "owner": "int8"
+    },
+    {
+      "id": "bf16",
+      "label": "BF16",
+      "group": "Variant",
+      "defaults": {},
+      "route": "qwen-img-edit-21-bf16",
+      "hint": "Full precision unet + bf16 encoder — 14.2GB unet, highest fidelity, most VRAM",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "bf16__bf16",
+      "label": "BF16",
+      "group": "Quant",
+      "defaults": {},
+      "route": "qwen-img-edit-21-bf16",
+      "hint": null,
+      "engine": "comfyui",
+      "quant": "bf16",
+      "vram_peak_gb": 48,
+      "owner": "bf16"
+    },
+    {
+      "id": "remove_background",
+      "label": "Remove Background",
+      "group": "Recipe",
+      "defaults": {
+        "prompt": "Remove the background, and output a PNG image"
+      },
+      "route": "",
+      "hint": "The official one-click — the Comfy-Org background-removal template's canned prompt verbatim (the 2.1 base renders the subject on transparency; solver/cfg/steps ride the family defaults, which are the template's own values).",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "upstream_solvers",
+      "label": "Upstream Solvers",
+      "group": "Recipe",
+      "defaults": {
+        "sampler": "euler",
+        "scheduler": "simple"
+      },
+      "route": "",
+      "hint": "Sampler euler + scheduler simple — the official 2.1 templates' own solver truth (this family's DECL defaults, both members of the card's sampler/scheduler vocabularies).",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    },
+    {
+      "id": "default",
+      "label": "Default",
+      "group": "Recipe",
+      "defaults": {},
+      "route": "",
+      "hint": "The family default — no extra stamps; a fresh card lands here.",
+      "engine": "comfyui",
+      "sampler_envelope": null,
+      "quant": null,
+      "vram_peak_gb": null,
+      "owner": ""
+    }
+  ],
+  "lanes": {
+    "base": [
+      "input_images",
+      "image1",
+      "image2",
+      "image3",
+      "reference_images",
+      "input_mask",
+      "prompt",
+      "negative_prompt",
+      "width",
+      "height",
+      "seed",
+      "steps",
+      "cfg",
+      "sampler",
+      "scheduler"
+    ],
+    "relations": {
+      "together": [
+        {
+          "fields": [
+            "width",
+            "height"
+          ],
+          "cure": "an EmptyLatentImage takes both axes — state width and height together, or neither (the lane's own 1024s)"
+        }
+      ],
+      "required": [
+        {
+          "fields": [
+            "prompt"
+          ],
+          "cure": "an edit states WHAT to change — write the prompt (the instruction, not a description of the image)"
+        },
+        {
+          "fields": [
+            "input_images",
+            "image1",
+            "image2",
+            "image3",
+            "reference_images"
+          ],
+          "any_of": true,
+          "cure": "an edit needs the image being edited — the ordered input_images list, or a legacy image1/image2/image3/reference_images anchor"
+        }
+      ]
+    },
+    "bounds": {
+      "width": {
+        "min": 256,
+        "max": 1536
+      },
+      "height": {
+        "min": 256,
+        "max": 1536
+      }
+    },
+    "variants": {}
+  },
+  "packs": [],
+  "families": [
+    {
+      "id": "qwen-img-edit-21",
+      "label": "Qwen Image Edit 2.1"
+    },
+    {
+      "id": "qwen-img-edit-2511",
+      "label": "Qwen Image Edit 2511"
+    }
+  ]
+}

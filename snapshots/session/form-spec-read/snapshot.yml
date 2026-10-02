@@ -1,0 +1,14 @@
+# snapshot.yml — keyless recorded-session scenario (DSH tier 6).
+# The form-spec read plane (B5, 2026-10-12): no snapshot or test:web
+# scenario read a form-spec envelope or loadCardDefs — that plane was
+# policed only by walls (open-findings-index-2026-10-01.md:60). This
+# scenario records the read: the parent session carries the user task,
+# form-spec.doc.json is the recorded door payload (a byte copy of the
+# welded fixture packages/web/melite-card-view/tests/fixtures/
+# image-edit-spec.json at the copy commit), and replay drives the REAL
+# fetchFormSpec judgment and the REAL card-def compose — keyless, no
+# network, no PROD :3080 contact.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
