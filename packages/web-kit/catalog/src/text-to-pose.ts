@@ -13,6 +13,7 @@
 
 import { apiFetch } from "./api"
 import { decodeB64ToBuffer, downloadBase64Payload, encodeBufferToB64, SOMA_VERTEX_COUNT } from "@melite/formats"
+import { sleep } from './sleep.ts'
 
 // ── Constants ──────────────────────────────────────────────────────────────
 
@@ -691,9 +692,6 @@ export async function deleteScene(filename: string): Promise<void> {
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 /**
  * Pick a specific frame from a PoseMotion's flat keypoints.

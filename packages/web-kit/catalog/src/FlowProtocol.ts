@@ -25,6 +25,7 @@ import {
   validateRunStatusContract,
 } from "./runStatusContract"
 import { useRunStatusContractStore } from "./runStatusContractStore"
+import { sleep } from './sleep.ts'
 
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.
@@ -251,7 +252,7 @@ export async function pollFlowRun(
       }
       // 5xx / gateway blips keep polling: a transient restart during a
       // long video render (2400s bricks) must not kill a healthy run.
-      await new Promise((r) => setTimeout(r, intervalMs))
+      await sleep(intervalMs)
       continue
     }
     const data = (await resp.json()) as FlowRunStatus
@@ -277,7 +278,7 @@ export async function pollFlowRun(
     // Non-terminal tick — surface live progress (KSampler steps) to the
     // store before sleeping for the next poll.
     opts?.onTick?.(data)
-    await new Promise((r) => setTimeout(r, intervalMs))
+    await sleep(intervalMs)
   }
   throw new Error(
     `Flow run ${runId} timed out after ${Math.round(maxWaitMs / 60_000)} min`,

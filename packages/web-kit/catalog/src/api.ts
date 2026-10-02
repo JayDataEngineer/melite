@@ -51,6 +51,7 @@
 
 import type { EstateDoorUrl } from "./generated/gatewayDoors"
 import { readAsDataURL } from "@melite/formats/readFile"
+import { sleep } from './sleep.ts'
 
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()
@@ -126,15 +127,6 @@ function isBackendUrl(input: string): boolean {
   }
 }
 
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(resolve, ms)
-    signal?.addEventListener('abort', () => {
-      clearTimeout(t)
-      reject(new DOMException('Aborted', 'AbortError'))
-    }, { once: true })
-  })
-}
 
 // Backoff with full jitter — avoids thundering herd when many components
 // retry at once (e.g. on gateway reconnect after a redeploy).
