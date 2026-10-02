@@ -18,7 +18,6 @@ import {
   downloadServerVideo,
   exportBVH,
   fetchBindJoints,
-  formatBytes,
   generatePose,
   listConstraints,
   listExamples,
@@ -464,17 +463,15 @@ describe("scenes", () => {
   });
 });
 
-describe("pickFrame + formatBytes", () => {
+// formatBytes left with the DSH-conformance row (2026-10-12): the
+// hand-rolled formatter had no production caller — DSH's
+// @deepseek-ai/dsh-client-ui-primitives fileSizeText is the live
+// size formatter, and a dead hand-roll is cruft, not conformance.
+describe("pickFrame", () => {
   it("clamps the frame index", () => {
     assert.deepEqual(pickFrame(MOTION, 0), [1, 2, 3]);
     assert.deepEqual(pickFrame(MOTION, -5), [1, 2, 3]);
     assert.deepEqual(pickFrame(MOTION, 99), [4, 5, 6]);
-  });
-
-  it("formats bytes, kilobytes, and megabytes", () => {
-    assert.equal(formatBytes(512), "512 B");
-    assert.equal(formatBytes(2048), "2.0 KB");
-    assert.equal(formatBytes(3 * 1024 * 1024), "3.0 MB");
   });
 });
 
