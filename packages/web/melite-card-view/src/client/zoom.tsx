@@ -17,6 +17,7 @@
  */
 import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
+import { useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives'
 import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
@@ -170,6 +171,7 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   }
   // THE ENVELOPE LIFT: the detail reports the estate's surface.size;
   // the frame grows for 'huge' (the card listens, the view talks).
+  const dialogRef = useRef<HTMLDivElement | null>(null)
   const [surfaceSize, setSurfaceSize] = useState<string | null>(null)
   const onSurface = (size: string): void => { setSurfaceSize(size === '' ? null : size) }
 
@@ -179,12 +181,12 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
     return () => { window.clearTimeout(t) }
   }, [stage.id])
 
-  // Escape closes (direct onClose).
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent): void => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => { window.removeEventListener('keydown', onKey) }
-  }, [onClose])
+  // THE MODAL OWNERSHIP (DSH useModalLayer): the overlay's Escape,
+  // its focus lifetime and its place in the document's layer stack
+  // are the primitive's — no local window keydown listener. ZoomMount
+  // exists only while the overlay is shown (CardZoomOverlay renders it
+  // through the body portal), so the layer is open for its whole life.
+  useModalLayer(dialogRef, true, onClose)
 
   // THE FRAME GESTURE + THE WEBHOOK BAR (hour-26, the operator: the
   // play button rides the top bar; the comfyui progress webhooks
@@ -216,7 +218,17 @@ function ZoomMount(props: ZoomDetailProps & { detail: (p: ZoomDetailProps) => Re
   const startError = typeof props.startError === 'string' && props.startError !== '' ? props.startError : null
 
   return h('div', {
+    ref: dialogRef,
     className: css.zoomOverlay,
+    // THE DIALOG CONTRACT (the hand-roll row 2.7): the full-bleed
+    // surface stays ours (the audit's own call — a 94vw CSS
+    // scale-in card is not DSH's Modal), but the overlay now carries
+    // the dialog semantics useModalLayer keys on, so Escape, the
+    // focus lifetime and the layer stack belong to the primitive
+    // instead of a local window keydown listener.
+    role: 'dialog',
+    'aria-modal': true,
+    'aria-label': 'Stage ' + String(stage.title ?? stage.card ?? stage.id),
     // backdrop click closes (target === currentTarget so card clicks
     // don't bubble-close)
     onClick: (e: React.MouseEvent) => { if (e.target === e.currentTarget) onClose() },

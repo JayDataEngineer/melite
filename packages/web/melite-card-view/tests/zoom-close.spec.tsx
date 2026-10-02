@@ -52,7 +52,13 @@ describe("the dismiss arms — Escape and backdrop close, nothing else", () => {
   test("Escape closes the zoom (never a trapped overlay)", async () => {
     const rec = mount();
     await screen.findByText("detail-body", {}, { timeout: 4000 });
-    fireEvent.keyDown(window, { key: "Escape" });
+    // The key rides the DOCUMENT, not the window: DSH's useModalLayer
+    // owns the overlay's keyboard through a document-level listener
+    // (one registration for the whole layer stack — a window listener
+    // per overlay is the drift the hand-roll row named). The close
+    // behavior is unchanged; where the event is dispatched changed
+    // with the owner.
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(rec.closes()).toBe(1);
   });
 

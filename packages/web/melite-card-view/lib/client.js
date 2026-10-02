@@ -10011,6 +10011,52 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		var init_readFile = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/sleep.ts
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
+		function sleep(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/api.ts
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
@@ -10046,15 +10092,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				return false;
 			}
 		}
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					reject(new DOMException("Aborted", "AbortError"));
-				}, { once: true });
-			});
-		}
 		function backoffMs(attempt) {
 			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
 			return Math.round(exp * (.5 + Math.random() * .5));
@@ -10088,7 +10125,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						});
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
-							await sleep$1(backoffMs(attempt), callerSignal);
+							await sleep(backoffMs(attempt), callerSignal);
 							continue;
 						}
 						if (backend) {
@@ -10103,7 +10140,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -10153,6 +10190,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
 		var init_api = __esmMin((() => {
 			init_readFile();
+			init_sleep();
 			MAX_RETRIES = 4;
 			BASE_MS = 400;
 			CAP_MS = 4e3;
@@ -13340,7 +13378,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await new Promise((r) => setTimeout(r, intervalMs));
+					await sleep(intervalMs);
 					continue;
 				}
 				const data = await resp.json();
@@ -13355,7 +13393,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
 				opts?.onTick?.(data);
-				await new Promise((r) => setTimeout(r, intervalMs));
+				await sleep(intervalMs);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -13492,6 +13530,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			init_api();
 			init_runStatusContract();
 			init_runStatusContractStore();
+			init_sleep();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
@@ -39964,9 +40003,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`, { method: "DELETE" });
 			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
 		}
-		function sleep(ms) {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
 		/**
 		* Pick a specific frame from a PoseMotion's flat keypoints.
 		* Clamps to valid range.
@@ -40097,6 +40133,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		var init_text_to_pose = __esmMin((() => {
 			init_api();
 			init_src$1();
+			init_sleep();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/serviceForms.ts
@@ -40925,6 +40962,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				setCardLlm(route);
 				setCardLlmSel(route);
 			};
+			const dialogRef = (0, react.useRef)(null);
 			const [surfaceSize, setSurfaceSize] = (0, react.useState)(null);
 			const onSurface = (size) => {
 				setSurfaceSize(size === "" ? null : size);
@@ -40937,15 +40975,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					window.clearTimeout(t);
 				};
 			}, [stage.id]);
-			(0, react.useEffect)(() => {
-				const onKey = (e) => {
-					if (e.key === "Escape") onClose();
-				};
-				window.addEventListener("keydown", onKey);
-				return () => {
-					window.removeEventListener("keydown", onKey);
-				};
-			}, [onClose]);
+			(0, _deepseek_ai_dsh_client_ui_primitives.useModalLayer)(dialogRef, true, onClose);
 			const live = props.running || isLiveRunStatus(typeof stage.runStatus === "string" ? stage.runStatus : "");
 			const rec = typeof stage.result === "object" && stage.result !== null ? stage.result : null;
 			const prog = rec !== null && typeof rec["progress"] === "object" && rec["progress"] !== null ? rec["progress"] : null;
@@ -40954,7 +40984,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const failedText = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "") === "error" && typeof rec?.["error"] === "string" ? rec["error"] : null;
 			const startError = typeof props.startError === "string" && props.startError !== "" ? props.startError : null;
 			return (0, react.createElement)("div", {
+				ref: dialogRef,
 				className: card_module_css_default.zoomOverlay,
+				role: "dialog",
+				"aria-modal": true,
+				"aria-label": "Stage " + String(stage.title ?? stage.card ?? stage.id),
 				onClick: (e) => {
 					if (e.target === e.currentTarget) onClose();
 				}
