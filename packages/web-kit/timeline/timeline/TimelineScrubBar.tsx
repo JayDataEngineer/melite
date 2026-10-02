@@ -13,6 +13,7 @@
  * own "bottom: timeline scrub" slot law.
  */
 import { useCallback, useRef, useState } from "react"
+import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import type { PointerEvent as ReactPointerEvent } from "react"
 import styles from "./timeline.module.css"
 
@@ -79,15 +80,20 @@ export function TimelineScrubBar({
     <div className={styles.scrubBar} data-testid={tid ?? "timeline-scrub-bar"} data-dragging={dragging ? "true" : undefined}>
       {onTogglePlay !== undefined
         ? (
-          <button
-            type="button"
+          // DSH Button (law 1: the sibling timeline bars already
+          // ride it; this raw button was the last hand-rolled one).
+          // Ghost/sm is the sibling zoom control's own shape, and the
+          // scrubToggle class keeps the seam's flex sizing.
+          <Button
+            variant="ghost"
+            size="sm"
             className={styles.scrubToggle}
             aria-label={playing ? "Pause" : "Play"}
             onClick={onTogglePlay}
             data-testid="timeline-scrub-toggle"
           >
             {playing ? "❚❚" : "▶"}
-          </button>
+          </Button>
         )
         : null}
       <div
