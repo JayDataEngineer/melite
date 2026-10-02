@@ -594,13 +594,17 @@ function familyFace(fam: string): string {
   }
 }
 
-/** THE CATALOG-FED SELECT STAMP (2026-09-21): walks the envelope's
- * root dict; any field whose node declares extra.optionsFrom gets
- * its options stamped from the named mod pack's LIVE catalog rows
- * for this family (value = row id, label = row id). The empty arm
- * rides first when the field's default is '' so a pick can clear.
- * Mutates the freshly-toJSON'd envelope in place — formSchemas
- * serializes per call, so no shared carrier is touched. */
+/** THE CATALOG-FED SELECT STAMP (2026-09-21; referent-checked
+ * 2026-10-12): walks the envelope's root dict; any field whose node
+ * declares extra.optionsFrom gets its options stamped from the named
+ * mod pack's LIVE catalog rows for this family (value = row id,
+ * label = row id). The empty arm rides first when the field's default
+ * is '' so a pick can clear. @param boardedPacks — the packs the
+ * envelope's mods table boards (the sweep's Object.keys(schemas.mods)
+ * set); a field naming a pack outside it THROWS the form-spec refusal —
+ * the provider's empty-rows return never degrades to an unexplained
+ * empty select. Mutates the freshly-toJSON'd envelope in place —
+ * formSchemas serializes per call, so no shared carrier is touched. */
 interface StampNode {
   dict?: Record<string, unknown>
   // THE ONE VOCABULARY: the bag's shape owns the floor contract
