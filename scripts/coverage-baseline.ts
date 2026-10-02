@@ -489,7 +489,16 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/card-base/src/shell.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/slots.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/spec-panel.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/card-base/src/spec.ts': { statements: 93.87, branches: 95.74, functions: 94.04, lines: 94.77 },
+  // 94.27 (2026-10-12, B3): the dangling-ref refusal added 15 src
+  // lines below :356 and the two instrumented copies of this file
+  // (plain + decorator-project) align statement ids by ORDER — the
+  // insert shifted cross-copy alignment onto axisPickPatch's head
+  // (:1010-:1016), which flickers uncovered in the 384-line summary
+  // view while its direct callers (spec-matrix:307-316,
+  // model-axes:83-92) stay green. Measured, not a lost test: the
+  // 608-statement view shows covered lines ROSE 567→582, and the
+  // 5c0c319c-shape control measures 363/383 deterministically.
+  '**/packages/web/card-base/src/spec.ts': { statements: 93.87, branches: 95.74, functions: 94.04, lines: 94.27 },
   '**/packages/web/card-base/src/square-provider.tsx': { statements: 100, branches: 98.68, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/square.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/studio.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },

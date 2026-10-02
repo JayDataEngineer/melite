@@ -90,9 +90,15 @@ test('fieldsOfEnvelope: a missing root walks to no fields (never a throw on a sh
   expect(fieldsOfEnvelope({ uid: 9, refs: {} })).toEqual([])
 })
 
-test('fieldsOfEnvelope: a dangling dict id skips (the walker never invents a field)', () => {
+test('THE DANGLING-REF REFUSAL (G9-half, 2026-10-12): a dict id the refs table lacks throws, naming field and id — never a silent hole', () => {
   const env: SchemaEnvelope = { uid: 0, refs: { 0: { type: 'object', dict: { ghost: 99 } } } }
-  expect(fieldsOfEnvelope(env)).toEqual([])
+  // the old walk skipped the field and the form rendered incomplete
+  // with no diagnostic; the producer mints a ref for every dict id,
+  // so this arm is a corrupt-envelope refusal (union list members
+  // are exempt by the bare-union law below)
+  expect(() => fieldsOfEnvelope(env)).toThrow(
+    "form-spec: field \"ghost\" points at ref 99 the envelope's refs table does not carry",
+  )
 })
 
 test('THE FAMILY-KEY RESOLUTION (2026-09-21, the families-DRY law): a composed variant-quant key walks as its boarded BASE', () => {

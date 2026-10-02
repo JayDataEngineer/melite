@@ -3054,6 +3054,7 @@ window.__ModuleLoader__.load({
 				"params",
 				"result",
 				"runStatus",
+				"health",
 				"inputs",
 				"inputOutputs"
 			];
@@ -42348,7 +42349,7 @@ void main() {
 			const out = [];
 			for (const [name, id] of Object.entries(dict)) {
 				let node = env.refs[id];
-				if (node === void 0) continue;
+				if (node === void 0) throw new Error("form-spec: field " + JSON.stringify(name) + " points at ref " + JSON.stringify(id) + " the envelope's refs table does not carry — the form is refused rather than rendered with a hole");
 				if (node.type === "union" && Array.isArray(node.list) && node.list.length === 2) {
 					const a = env.refs[node.list[0]];
 					const b = env.refs[node.list[1]];

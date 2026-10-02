@@ -326,7 +326,22 @@ function projectDict(
   const out: SpecField[] = []
   for (const [name, id] of Object.entries(dict)) {
     let node: SchemaRef | undefined = env.refs[id]
-    if (node === undefined) continue
+    // THE DANGLING-REF REFUSAL (G9-half, 2026-10-12): a dict id the
+    // refs table does not carry is a corrupt envelope — the old walk
+    // dropped the field and the form rendered with a hole and no
+    // diagnostic. The producer mints a ref for every dict id, so this
+    // arm is unreachable for a well-formed envelope; refusing here is
+    // the earliest client-side point. The UNION members are exempt by
+    // design (non-string consts mint no ref — the bare-union law,
+    // pinned below), and the hybrid projection's own short-envelope
+    // guard answers [] before this walk.
+    if (node === undefined) {
+      throw new Error(
+        'form-spec: field ' + JSON.stringify(name)
+        + ' points at ref ' + JSON.stringify(id)
+        + ' the envelope\'s refs table does not carry — the form is refused rather than rendered with a hole',
+      )
+    }
     // nullable unwrap: union [inner, const(null)] -> inner, outer meta wins
     if (node.type === 'union' && Array.isArray(node.list) && node.list.length === 2) {
       const a = env.refs[node.list[0]]
