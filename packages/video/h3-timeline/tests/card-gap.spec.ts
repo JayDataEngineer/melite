@@ -171,6 +171,7 @@ describe("the schema gate arms", () => {
       variant: "t4_open", calls: [SHOT()],
       ctx_load_latent_path: "/tmp/x.latent",
     }) as Record<string, unknown>;
+    assert.equal(walked.ctx_load_latent_path, "/tmp/x.latent", "lenient walk, inert key (the verification receipt's D2: the walked doc still carries the word)");
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_retired_vocab");
     const out = graphOf(g);
