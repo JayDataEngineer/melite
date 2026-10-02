@@ -2,7 +2,7 @@ import { createRequire } from "node:module";
 import { WTYPE_SET, extraOf } from "@melite/contracts/extraKeys";
 import { deepEqualJson } from "@deepseek-ai/dsh-util-values";
 import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, judgeSamplerEnvelope, laneBoundsOf, laneSurfaceOf, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice } from "@melite/contracts/laneRelations";
-import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, StateDot, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
+import { Button, DisclosureRow, IconArchiveOutlineRegular, IconPlusOutlineRegular, Input, Menu, Modal, Pill, StateDot, Switch, Toast, Tooltip } from "@deepseek-ai/dsh-client-ui-primitives";
 import { clsx } from "clsx";
 import { readAsDataURL, readAsDataURL as readAsDataURL$1 } from "@melite/formats/readFile";
 import { Fragment, jsx, jsxs } from "react/jsx-runtime";
@@ -975,8 +975,6 @@ var card_module_default = {
 	"sectionLabelText": "VMoOIq_sectionLabelText",
 	"skeleton": "VMoOIq_skeleton",
 	"sourceRow": "VMoOIq_sourceRow",
-	"specChip": "VMoOIq_specChip",
-	"specChipOn": "VMoOIq_specChipOn",
 	"specChips": "VMoOIq_specChips",
 	"specDice": "VMoOIq_specDice",
 	"specDiceOn": "VMoOIq_specDiceOn",
@@ -3442,12 +3440,10 @@ function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost
 			...f.tooltip !== void 0 && f.tooltip !== "" ? { title: f.tooltip } : {}
 		}, rows.map((row) => {
 			const on = held.has(row.value);
-			return createElement("button", {
-				type: "button",
+			return createElement(Pill, {
 				key: row.value,
-				className: card_module_default.specChip + (on ? " " + card_module_default.specChipOn : ""),
+				active: on,
 				"aria-pressed": on,
-				"data-chip": row.value,
 				onClick: () => {
 					const next = new Set(held);
 					if (on) next.delete(row.value);

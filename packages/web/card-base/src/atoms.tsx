@@ -1,7 +1,7 @@
 /** atoms.tsx — extracted from form.tsx (hour 15, the godfile split; the
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, useCallback, useEffect, useRef, useState } from 'react'
-import { Input, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
+import { Input, Pill, Switch } from '@deepseek-ai/dsh-client-ui-primitives'
 import { InputSquare, isImageUrl, isMeshUrl } from './square.tsx'
 import { type SpecField, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
@@ -195,11 +195,16 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
       ...(f.tooltip !== undefined && f.tooltip !== '' ? { title: f.tooltip } : {}) },
       rows.map((row) => {
         const on = held.has(row.value)
-        return h('button', {
-          type: 'button', key: row.value,
-          className: css.specChip + (on ? ' ' + css.specChipOn : ''),
+        // DSH Pill (the interactive chip, law 1): the toggle row is
+        // the primitive's own case — Pill renders a button when
+        // onClick rides it and owns its active face. The old
+        // `data-chip` test hook left with the hand-rolled chip: no
+        // reader anywhere in the tree, and data-* props do not
+        // cross Pill's prop type.
+        return h(Pill, {
+          key: row.value,
+          active: on,
           'aria-pressed': on,
-          'data-chip': row.value,
           onClick: () => {
             const next = new Set(held)
             if (on) { next.delete(row.value) } else { next.add(row.value) }

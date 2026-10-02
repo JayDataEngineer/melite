@@ -430,24 +430,6 @@ select option {
   display: flex;
 }
 
-.VMoOIq_specChip {
-  border: 1px solid var(--dsw-alias-border-l2);
-  background: var(--dsw-alias-bg-base);
-  color: var(--dsw-alias-label-secondary);
-  cursor: pointer;
-  border-radius: 999px;
-  padding: 4px 8px;
-  font-size: 11px;
-  line-height: 1.2;
-}
-
-.VMoOIq_specChipOn {
-  border-color: var(--dsw-alias-accent, #80808099);
-  background: var(--dsw-alias-bg-elevated, #8080801f);
-  color: var(--dsw-alias-label-primary);
-  font-weight: 600;
-}
-
 .VMoOIq_modLeafModal {
   width: min(760px, 100vw - 32px);
   max-height: min(80vh, 760px);
