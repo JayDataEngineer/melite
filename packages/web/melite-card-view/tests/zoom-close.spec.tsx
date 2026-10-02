@@ -98,10 +98,14 @@ describe("the dismiss arms — Escape and backdrop close, nothing else", () => {
   });
 
   test("the overlay carries the dialog contract the primitive keys on", async () => {
-    // MEASURED (2026-10-12): useModalLayer registers against the
-    // element carrying role="dialog" + aria-modal and names it with
-    // aria-label. Without those the layer never registers and Escape
-    // stops working — so the semantics are pinned, not assumed.
+    // MEASURED (2026-10-12): the overlay is a labelled dialog, which
+    // is what a screen reader needs to treat it as one and what a
+    // consumer of modalSelector looks for. The pin is the SEMANTICS,
+    // not a claim about the primitive's registration — useModalLayer
+    // registers from the RefObject and never reads these attributes
+    // (the verification receipt measured that: deleting all three
+    // leaves Escape working). This arm holds the a11y contract; the
+    // Escape arm above holds the keyboard registration.
     mount();
     await screen.findByText("detail-body", {}, { timeout: 4000 });
     const el = overlay();
