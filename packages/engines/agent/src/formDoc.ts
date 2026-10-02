@@ -15,7 +15,7 @@ export interface AgentFormCensus {
   skills: readonly CensusRow[];
 }
 
-/** The served doc (the FormSpecDoc shape the drill's SpecForm
+/** The served doc (the FormSpecDoc shape the drill's CardForm
  * walks: schema envelope + features.modifiers — specBody's arms,
  * mirrored for an engine with no card, no family, no variants). */
 export function agentFormDoc(census: AgentFormCensus): Record<string, unknown> {

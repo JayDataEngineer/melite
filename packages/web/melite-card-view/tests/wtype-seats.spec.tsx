@@ -12,7 +12,7 @@ import { describe, expect, test } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { createElement, useState } from 'react'
 import { WTYPE_SEATS } from '@melite/contracts/extraKeys'
-import { CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import type { SchemaRef } from '@melite/card-base/client'
 
 // one minimal served doc per wtype: a single root field carrying
@@ -41,7 +41,7 @@ const docOf = (wtype: string, withOptions: boolean): FormSpecDoc => {
 
 const Host = (doc: FormSpecDoc): ReturnType<typeof createElement> => createElement(function ProbeHost() {
   const [user, setUser] = useState<SpecValues>({})
-  return createElement(SpecForm, {
+  return createElement(CardForm, {
     spec: doc,
     user,
     onSet: (name: string, v: unknown) => { setUser((m) => ({ ...m, [name]: v })) },

@@ -19,7 +19,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, expect, test } from 'vitest'
 import { createElement } from 'react'
 
-import { schemaEnvelope, CardForm as SpecForm, type FormSpecDoc } from '@melite/card-base/client'
+import { schemaEnvelope, CardForm, type FormSpecDoc } from '@melite/card-base/client'
 
 afterEach(cleanup)
 
@@ -41,7 +41,7 @@ const DICE: FormSpecDoc = {
 }
 
 function mount(onSet: (n: string, v: unknown) => void, user: Record<string, unknown> = {}): HTMLElement {
-  const { container } = render(createElement(SpecForm, { spec: DICE, user, onSet, onPick: () => {} }))
+  const { container } = render(createElement(CardForm, { spec: DICE, user, onSet, onPick: () => {} }))
   return container
 }
 
@@ -91,7 +91,7 @@ test('THE TOGGLE, random → fixed: the click MINTS a concrete int (the kit mint
 
 test('TYPING FIXES: a number typed while random flips the dice hollow by DERIVATION (one source of truth)', async () => {
   const holder: { user: Record<string, unknown> } = { user: { seed: -1 } }
-  const { container } = render(createElement(SpecForm, {
+  const { container } = render(createElement(CardForm, {
     spec: DICE,
     user: holder.user,
     onSet: (n, v) => { holder.user = { ...holder.user, [n]: v } },
@@ -100,7 +100,7 @@ test('TYPING FIXES: a number typed while random flips the dice hollow by DERIVAT
   expect((container.querySelector('[data-seed-dice]') as HTMLElement).getAttribute('data-seed-dice')).toBe('random')
   // the user layer now holds a concrete seed (what typing lands after
   // coerceFieldEdit) — re-render derives the hollow dice
-  const { container: next } = render(createElement(SpecForm, {
+  const { container: next } = render(createElement(CardForm, {
     spec: DICE,
     user: { ...holder.user, seed: 9127 },
     onSet: () => {},

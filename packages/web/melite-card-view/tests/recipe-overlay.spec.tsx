@@ -20,7 +20,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
-import { resolveValue, schemaEnvelope, seedUser, CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { resolveValue, schemaEnvelope, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 
 /** image-gen's stroke-34 shape: sampling fields, NO recipe field,
  *  NO catalog — the family rows are the only recipe concept. */
@@ -92,7 +92,7 @@ test('seedUser drops a held recipe key — the flush deletes it, the card compos
 // ── the rendered drill: no seat ─────────────────────────────────────
 
 test('the drill renders NO recipe select — the dead layer has no face', () => {
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     spec: GEN,
     user: {},
     onSet: vi.fn(),

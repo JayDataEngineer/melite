@@ -258,7 +258,7 @@ export type FieldAtomClaim = (props: {
 
 /** THE GENERIC SOURCE ROW (2026-09-13, the operator's law: ONE
  *  generic input component — "EVEN FOR THE ADVANCED STUDIO CARDS…
- *  sources from ONE SYSTEM with NO EXCEPTIONS"). SpecForm fields get
+ *  sources from ONE SYSTEM with NO EXCEPTIONS"). CardForm fields get
  *  the row through the constructor; every NON-field surface (studio
  *  cards, bespoke rails) rides THIS wrapper: the same plus square,
  *  the same three-entry menu (From flow / From media / From file),

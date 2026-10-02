@@ -155,9 +155,10 @@ export function DeclarativeStudio(props: StageViewOwnerProps & {
       : h(StudioShell, {
           // LEFT — the params rail (the declared knob surface)
           params: h('div', { className: css.studioRail },
-        // SpecForm renders each group's title itself — no duplicate.
+        // CardForm renders each group's title itself — no duplicate.
         declaration.expose.map((g) => h('section', { key: g, className: css.studioGroup },
-          // the group title the old SpecForm delegation rendered — the
+          // the group title the old SpecForm delegation rendered (the
+          // view's component is CardForm today) — the
           // studio owns its partition now, so it owns the heading too
           h('h4', { className: css.studioGroupTitle }, g),
           h(StudioFields, { fields: rowsOfGroup(specRows, g), value, onEdit, square: squareFor }),

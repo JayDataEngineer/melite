@@ -11,7 +11,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { createElement, useRef } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import userEvent from '@testing-library/user-event'
-import { schemaEnvelope, CardForm as SpecForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { schemaEnvelope, CardForm, useSquareProvider, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 
 afterEach(() => {
   cleanup()
@@ -88,7 +88,7 @@ test('THE EDGE LAW: the picker offers only kind-matching outputs — a text-outp
     }
     return createElement('div', null,
       wireMenu,
-      createElement(SpecForm, { spec: doc, user: {}, onSet: editRef.current, onPick: () => {}, square }),
+      createElement(CardForm, { spec: doc, user: {}, onSet: editRef.current, onPick: () => {}, square }),
     )
   }
   render(createElement(Host))
@@ -134,7 +134,7 @@ test('THE EDGE LAW: a field with no declared edge falls to the full list (the pi
     }
     return createElement('div', null,
       wireMenu,
-      createElement(SpecForm, { spec: doc, user: {}, onSet: () => {}, onPick: () => {}, square }),
+      createElement(CardForm, { spec: doc, user: {}, onSet: () => {}, onPick: () => {}, square }),
     )
   }
   render(createElement(Host))
@@ -184,7 +184,7 @@ test('THE LIST-SEAT LAW: the reference stack IS an input — its cells narrow by
     }
     return createElement('div', null,
       wireMenu,
-      createElement(SpecForm, { spec: doc, user: {}, onSet: editRef.current, onPick: () => {}, square, wire: { candidates: rows.map(({ id, label, url }) => ({ id, label, url })), candidatesFor } }),
+      createElement(CardForm, { spec: doc, user: {}, onSet: editRef.current, onPick: () => {}, square, wire: { candidates: rows.map(({ id, label, url }) => ({ id, label, url })), candidatesFor } }),
     )
   }
   render(createElement(Host))

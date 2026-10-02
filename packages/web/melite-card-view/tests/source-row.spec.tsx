@@ -14,7 +14,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
 
-import { schemaEnvelope, CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { schemaEnvelope, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 
 afterEach(cleanup)
 
@@ -33,7 +33,7 @@ function Host({ spec, user, onSet }: {
   user: SpecValues
   onSet: (name: string, v: unknown) => void
 }): ReturnType<typeof createElement> {
-  return createElement(SpecForm, {
+  return createElement(CardForm, {
     spec,
     user,
     onSet,
@@ -76,7 +76,7 @@ const railSpec: FormSpecDoc = {
 }
 
 test('THE INPUT RAIL: the declared signature renders ONE rail in signature order — image1 first, no second input group', () => {
-  const { container } = render(createElement(SpecForm, {
+  const { container } = render(createElement(CardForm, {
     user: { reference_images: ['a.png'] },
     onSet: vi.fn<(name: string, v: unknown) => void>(),
     onPick: () => {},
@@ -144,7 +144,7 @@ const modSlotSpec: FormSpecDoc = {
 }
 
 test('THE MOD-MODAL LAW: a mod-owned slot NEVER seats in the rail — the card-owned squares only', () => {
-  const { container } = render(createElement(SpecForm, {
+  const { container } = render(createElement(CardForm, {
     user: {},
     onSet: vi.fn<(name: string, v: unknown) => void>(),
     onPick: () => {},
@@ -160,7 +160,7 @@ test('THE MOD-MODAL LAW: a mod-owned slot NEVER seats in the rail — the card-o
 
 test('THE MOD-MODAL LAW: the mod renders its own input seat — the reference image rides inside the mod', async () => {
   const user = userEvent.setup()
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     user: {},
     onSet: vi.fn<(name: string, v: unknown) => void>(),
     onPick: () => {},

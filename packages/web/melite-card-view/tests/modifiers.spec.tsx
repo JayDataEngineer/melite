@@ -176,13 +176,13 @@ const QWEN_MOD_SPEC = {
 } as never as import('@melite/card-base/client').FormSpecDoc
 
 test('THE LAW: mod-owned fields NEVER render flat on the card form — the section owns them', async () => {
-  const { CardForm: SpecForm, modOwnedFields } = await import('@melite/card-base/client')
+  const { CardForm: CardForm, modOwnedFields } = await import('@melite/card-base/client')
   // the pure projection: the mask kind owns its three names + both bags
   const owned = modOwnedFields(QWEN_MOD_SPEC)
   expect([...owned].sort()).toEqual(['input_mask', 'loras', 'mask', 'mask_feather', 'mask_mode'])
   // the rendered form: NO Region Mode / Region Mask / Feather flat
   const values: SpecValues = {}
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: () => {},
@@ -201,10 +201,10 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
 })
 
 test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fields (image square included)', async () => {
-  const { CardForm: SpecForm } = await import('@melite/card-base/client')
+  const { CardForm: CardForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: onEdit,
@@ -232,10 +232,10 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
 })
 
 test('OPTION kinds still ride the served rows: lora create seeds the row default strength (core port)', async () => {
-  const { CardForm: SpecForm } = await import('@melite/card-base/client')
+  const { CardForm: CardForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     spec: QWEN_MOD_SPEC,
     user: values,
     onSet: onEdit,
@@ -319,8 +319,8 @@ function FakeFace(p: { referenceUrl: string; value: string; onChange: (u: string
 }
 
 async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>) {
-  const { CardForm: SpecForm } = await import('@melite/card-base/client')
-  render(createElement(SpecForm, {
+  const { CardForm: CardForm } = await import('@melite/card-base/client')
+  render(createElement(CardForm, {
     spec: PAINT_SPEC,
     user: values,
     onSet: (name: string, v: unknown) => { values[name] = v },
@@ -366,7 +366,7 @@ test('declared face + NO hosted face: no canvas — the square holds (graceful b
 })
 
 test('undeclared kind + hosted face: no verb — the face is declared, never sniffed', async () => {
-  const { CardForm: SpecForm } = await import('@melite/card-base/client')
+  const { CardForm: CardForm } = await import('@melite/card-base/client')
   const plain = {
     ...PAINT_SPEC,
     features: { modifiers: [{ kind: 'mask_paint', label: 'Paint', param_key: 'mask_paint', cardinality: 'list',
@@ -376,7 +376,7 @@ test('undeclared kind + hosted face: no verb — the face is declared, never sni
       ] }] },
   } as never as import('@melite/card-base/client').FormSpecDoc
   const values: SpecValues = { input_image: 'http://x/in.png' }
-  render(createElement(SpecForm, {
+  render(createElement(CardForm, {
     spec: plain,
     user: values,
     onSet: (name: string, v: unknown) => { values[name] = v },

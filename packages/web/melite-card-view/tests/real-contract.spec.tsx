@@ -18,7 +18,7 @@ import fixture21 from './fixtures/image-edit-spec.json'
 import fixture2511 from './fixtures/image-edit-2511-spec.json'
 import { assertFormSpecDoc, fieldsOf } from '@melite/card-base/client'
 import {
-  CardForm as SpecForm,
+  CardForm,
   modOwnedFields,
   type FormSpecDoc,
   type SpecValues,
@@ -83,7 +83,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(REAL2511.lanes?.base?.includes('use_stock_nodes')).toBe(true)
   })
 
-  test('SpecForm renders the real contract: the input stack seats; width/height follow the model grammar', async () => {
+  test('CardForm renders the real contract: the input stack seats; width/height follow the model grammar', async () => {
     // THE HOST'S RE-SERVE LAW (stage-drill: "a pick refetches the
     // family's own matrix — the axes re-filter LIVE"): the pick
     // swaps the SERVED doc, so this host does the same — spec for
@@ -95,7 +95,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
         user: { model: 'qwen-img-edit-21', prompt: 'a cat' },
       })
       setHost = setState
-      return createElement(SpecForm, {
+      return createElement(CardForm, {
         spec: state.spec,
         user: state.user,
         onSet: (name: string, v: unknown) => {
@@ -129,7 +129,7 @@ describe('THE REAL image-edit CONTRACT drives the real form', () => {
     expect(owned.has('input_mask')).toBe(true)
     expect(owned.has('mask_mode')).toBe(true)
     // the rendered form: no flat Region Mask row; the section rides
-    render(createElement(SpecForm, {
+    render(createElement(CardForm, {
       spec: REAL21,
       user: { model: 'qwen-img-edit-21', prompt: 'a cat' },
       onSet: () => {},

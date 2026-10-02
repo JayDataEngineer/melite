@@ -7,7 +7,7 @@ import { Button, Input, Modal, Pill, StateDot } from '@deepseek-ai/dsh-client-ui
 import { CardDrill } from './card-drill.tsx'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
-import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm as SpecForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
+import { coerceFieldEdit, fetchFormSpec, fieldsOf, resolveValue, seedUser, CardForm, type FormSpecDoc, type SpecValues } from '@melite/card-base/client'
 import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-base/client'
 import { reconcileStageWriteFailures, scheduleStageParam } from './draft.ts'
 import { postManageAction } from '@melite/card-base/client'
@@ -351,7 +351,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // shows is what the engine gets. Slots keep their immediate flush
     // below (the discrete-gesture law); the slot arm never reaches
     // here.
-    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+    /* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
     const shape2: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
@@ -377,7 +377,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // not at Run. Before this, the pick lived only in this modal's
     // React state; close without Run and it evaporated — the reopen
     // reseeded from a bench row that never heard it.
-    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+    /* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
@@ -471,7 +471,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v
       return next
     })
-    /* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+    /* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
     const shape: string | undefined = spec !== null
       ? fieldsOf(spec).find((f) => f.name === name)?.type : undefined
     /* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
@@ -900,7 +900,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         h('div', { className: css.params },
         !loaded ? h('div', { className: css.load }, 'form…')
         : spec !== null
-          ? h(SpecForm, {
+          ? h(CardForm, {
             spec, user, base: servedBase, onSet, onPick, onUnset, wire,
             onPatch: onPatchParams,
             // THE TWO PROMPTS' ARMS (stroke 18, the operator's law:

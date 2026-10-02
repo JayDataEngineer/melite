@@ -43181,7 +43181,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					...m,
 					[name]: v
 				}));
-				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape2 = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape2 !== "image" && shape2 !== "file" && shape2 !== "mesh") {
@@ -43195,7 +43195,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 					});
 				}
-				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape === "image" || shape === "file" || shape === "mesh") {
@@ -43259,7 +43259,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					for (const [k, v] of Object.entries(m)) if (k !== name) next[k] = v;
 					return next;
 				});
-				/* v8 ignore next 1 -- single-render law: SpecForm renders only when spec is non-null (probe 2026-09-19) */
+				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
 				const shape = spec !== null ? (0, _melite_card_base_client.fieldsOf)(spec).find((f) => f.name === name)?.type : void 0;
 				/* v8 ignore next 4 -- the tri-state atoms unset only from slot shapes; these atoms are never slots (probe 2026-09-19) */
 				if (shape === "image" || shape === "file" || shape === "mesh") {

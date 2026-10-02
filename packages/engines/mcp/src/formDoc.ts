@@ -47,7 +47,7 @@ export function mcpParams(tools: readonly McpToolRow[]) {
   });
 }
 
-/** The PER-SERVER doc (the FormSpecDoc shape the drill's SpecForm
+/** The PER-SERVER doc (the FormSpecDoc shape the drill's CardForm
  *  walks — specBody's arms, mirrored for an engine with no card,
  *  no family, no variants). The MODEL is the SERVER: families lists
  *  every seated instance, so the Model rail switches servers and
