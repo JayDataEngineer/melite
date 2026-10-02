@@ -176,7 +176,7 @@ const QWEN_MOD_SPEC = {
 } as never as import('@melite/card-base/client').FormSpecDoc
 
 test('THE LAW: mod-owned fields NEVER render flat on the card form — the section owns them', async () => {
-  const { CardForm: CardForm, modOwnedFields } = await import('@melite/card-base/client')
+  const { CardForm, modOwnedFields } = await import('@melite/card-base/client')
   // the pure projection: the mask kind owns its three names + both bags
   const owned = modOwnedFields(QWEN_MOD_SPEC)
   expect([...owned].sort()).toEqual(['input_mask', 'loras', 'mask', 'mask_feather', 'mask_mode'])
@@ -201,7 +201,7 @@ test('THE LAW: mod-owned fields NEVER render flat on the card form — the secti
 })
 
 test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fields (image square included)', async () => {
-  const { CardForm: CardForm } = await import('@melite/card-base/client')
+  const { CardForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(CardForm, {
@@ -232,7 +232,7 @@ test('FIELD kinds: + Mod → Region Mask → the leaf renders the kind\'s OWN fi
 })
 
 test('OPTION kinds still ride the served rows: lora create seeds the row default strength (core port)', async () => {
-  const { CardForm: CardForm } = await import('@melite/card-base/client')
+  const { CardForm } = await import('@melite/card-base/client')
   const values: SpecValues = {}
   const onEdit = (name: string, v: unknown): void => { values[name] = v }
   render(createElement(CardForm, {
@@ -319,7 +319,7 @@ function FakeFace(p: { referenceUrl: string; value: string; onChange: (u: string
 }
 
 async function openPaintLeaf(values: SpecValues, extra?: Record<string, unknown>) {
-  const { CardForm: CardForm } = await import('@melite/card-base/client')
+  const { CardForm } = await import('@melite/card-base/client')
   render(createElement(CardForm, {
     spec: PAINT_SPEC,
     user: values,
@@ -366,7 +366,7 @@ test('declared face + NO hosted face: no canvas — the square holds (graceful b
 })
 
 test('undeclared kind + hosted face: no verb — the face is declared, never sniffed', async () => {
-  const { CardForm: CardForm } = await import('@melite/card-base/client')
+  const { CardForm } = await import('@melite/card-base/client')
   const plain = {
     ...PAINT_SPEC,
     features: { modifiers: [{ kind: 'mask_paint', label: 'Paint', param_key: 'mask_paint', cardinality: 'list',

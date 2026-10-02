@@ -9,13 +9,11 @@
 // selected variant's stamps, then the caller's params), so every
 // read normalizes with its own default.
 //
-// Node creation order follows the SERIALIZED id order exactly — the
-// reference renderers assign `<Class>.<index>` ids depth-first
-// post-order from the output list (saved, then ctx_saved), so the
-// per-class creation sequence below is pinned by that walk (two
-// observed inversions are kept verbatim: t4r creates the fps 24.0
-// PrimitiveFloat before the seconds 10.0 one, and the reference
-// resizer before the geometry resizer).
+// Node creation order matches the SERIALIZED id order — the id-order
+// test pins the walk. Two sequences that read inverted are the
+// reference's own (t4r creates the fps 24.0 PrimitiveFloat before
+// the seconds 10.0 one; the reference resizer comes before the
+// geometry resizer) — kept verbatim, never corrected.
 //
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
 // inputs exactly like the reference renderers do; the compose strips
@@ -168,7 +166,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // writes `variant`/`quant`/`recipe` onto every fresh stage; the
     // admission covers the card's own served surface, image-gen's
     // recipe-knob law).
-    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'motion_*', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
+    admits: ['ctx_*', 'fps_seconds', 'image_name', 'k', 'noise_seed', 'quant', 'recipe', 'ref_image_size', 'sla_*', 'variant'],
     jsonArrayParams: JSON_ARRAY_PARAMS,
     // the packs the window graph rides (EXTENSION LAW) + the film
     // tail's file boundary (melite-utility-nodes: MeliteUnload +
@@ -221,10 +219,12 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // (calls, audio_clips, keyframes, refs, document), the lora
       // bag, the per-window fences, the derive keys (variant,
       // quant, recipe, refine — refine is injected by the door
-      // AFTER this walk) and the two context/motion prefix classes.
+      // AFTER this walk) and the context prefix class (ctx_* — the
+      // compat law's own list at schema.ts names it; motion_* is
+      // gone: no reader, no producer, no draft carries it).
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'variant', 'quant', 'recipe', 'refine', 'model', 'ctx_*', 'motion_*',
+        'refs', 'variant', 'quant', 'recipe', 'refine', 'model', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

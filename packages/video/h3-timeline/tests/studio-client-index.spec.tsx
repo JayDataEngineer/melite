@@ -183,6 +183,28 @@ describe("the harvest shape feeds the filmstrip", () => {
     assert.ok(screen.getByTestId("tl-run-history").textContent!.includes("Runs (1)"))
   })
 
+  it("a history row with no status word rides the not-done tick (never a throw)", () => {
+    // The chip's membership guard reads `h.status ?? ""` — a row with
+    // no status at all is the nullish arm of that coalesce, and the
+    // guard must answer the not-done tick for it (the word "" is not
+    // in RUN_STATUS_WORDS; the classifier never hears it).
+    mount({
+      params: CALLS,
+      result: {
+        artifacts: {},
+        metadata: {
+          history: [
+            { runId: "run-done", status: "completed", durationSec: 4, video: "https://u/done.mp4" },
+            { runId: "run-bare", durationSec: 2, video: "https://u/bare.mp4" },
+          ],
+        },
+      },
+    })
+    const text = screen.getByTestId("tl-run-history").textContent!
+    assert.ok(text.includes("✓"))
+    assert.ok(text.includes("×"))
+  })
+
   it("projects generic stage history into H3 history", () => {
     mount({
       params: CALLS,

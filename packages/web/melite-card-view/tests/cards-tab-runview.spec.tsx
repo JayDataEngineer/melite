@@ -14,7 +14,9 @@ import { mountEstateFakes } from "./estate-harness.ts";
 import { unbindEstateRemote } from '@melite/card-base/client';
 
 interface Call { method: string; args: Record<string, unknown> }
-interface RunStage { id: string; status: string; url?: string }
+// The wire stage's status can be ABSENT (the run doc's per-stage words
+// pass no validating door) — the seat's guard folds it to no word.
+interface RunStage { id: string; status?: string; url?: string }
 
 let fakes: { calls: Call[]; unmount: () => void } | null = null;
 let posted: Call[] = [];
@@ -169,6 +171,33 @@ describe("the run stages — dots and thumbs", () => {
     // the unknown status rides without a dot (never a lying color)
     const bare = document.querySelector('li[data-stage-status="canceled"]');
     expect(bare?.querySelector('[class*="tileDot"]')).toBeNull();
+  });
+
+  test("a stage with no status word renders bare too (the seat's own guard, never a throw)", async () => {
+    // The wire stage's status can be absent outright — the dot seat
+    // folds it to no word (typeof guard at draft-run-views.tsx): no
+    // dot, no lying color, and the classifier never hears it (the
+    // persisted-word law's absence arm, pinned 2026-10-12 when the
+    // per-file branch gate caught it uncovered).
+    mountRun(
+      {
+        runId: "r-1", status: "done", draftId: "d-1",
+        stages: [{ id: "a", status: "running" }, { id: "g" }],
+      },
+      (address) => { opened.push(address); },
+    );
+    await screen.findByText("r-1");
+    // the two stage tiles; the absent-status one is the li React left
+    // without a data-stage-status attribute (undefined is omitted)
+    const tiles = Array.from(document.querySelectorAll('li[class*="tile"]'));
+    expect(tiles.length).toBe(2);
+    const bare = tiles.find((li) => li.getAttribute("data-stage-status") === null);
+    expect(bare).toBeDefined();
+    // …and no dot span — the same bare face as an unknown word.
+    expect(bare?.querySelector('[class*="tileDot"]')).toBeNull();
+    // the string-status sibling still paints its dot.
+    const withWord = document.querySelector('li[data-stage-status="running"]');
+    expect(withWord?.querySelector('[class*="tileDot"]')).not.toBeNull();
   });
 });
 

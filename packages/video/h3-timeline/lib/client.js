@@ -8074,21 +8074,24 @@ window.__ModuleLoader__.load({
 									hist.length,
 									")"
 								]
-							}), hist.slice(0, 8).map((h, i) => /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
-								href: h.video,
-								target: "_blank",
-								rel: "noreferrer",
-								title: h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : ""),
-								className: studio_module_css_default.histChip,
-								children: [
-									RUN_STATUS_WORDS.has((h.status ?? "").toLowerCase()) && statusOf(h.status ?? "") === "done" ? "✓" : "×",
-									" ",
-									(h.runId ?? "run").replace(/^run-/, "").slice(0, 8),
-									" · ",
-									h.durationSec ?? "?",
-									"s"
-								]
-							}, h.runId ?? i))]
+							}), hist.slice(0, 8).map((h, i) => {
+								const word = (h.status ?? "").toLowerCase();
+								return /* @__PURE__ */ (0, react_jsx_runtime.jsxs)("a", {
+									href: h.video,
+									target: "_blank",
+									rel: "noreferrer",
+									title: h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : ""),
+									className: studio_module_css_default.histChip,
+									children: [
+										RUN_STATUS_WORDS.has(word) && statusOf(word) === "done" ? "✓" : "×",
+										" ",
+										(h.runId ?? "run").replace(/^run-/, "").slice(0, 8),
+										" · ",
+										h.durationSec ?? "?",
+										"s"
+									]
+								}, h.runId ?? i);
+							})]
 						});
 					})(),
 					/* @__PURE__ */ (0, react_jsx_runtime.jsxs)("div", {

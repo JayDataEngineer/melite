@@ -157,20 +157,32 @@ describe("the schema gate arms", () => {
     );
   });
 
-  it("the chaining rail vocabulary is retired — the seam is automatic, never authored", () => {
+  it("the chaining rail vocabulary is retired — ctx rides inert, motion_* is gone outright", () => {
     // (2026-09-20: the MotionContext seam is forgotten; the
-    // drift-control continuation owns the chaining. The old carry
-    // knobs ride INERT — no admission gate, no node, nothing read)
+    // drift-control continuation owns the chaining. The ctx_*
+    // carry knobs ride INERT — no node, nothing read — because the
+    // compat law at schema.ts names the class. motion_context_length
+    // lost its admit the same day it lost its last reader: no
+    // document ever carried one (measured over data/), so the T6
+    // gate now refuses it named, like every other unknown word —
+    // changed with the behavior 2026-10-12, when the h3 conformance
+    // row's dead-admit ask landed.)
     const walked = def.schema({
       variant: "t4_open", calls: [SHOT()],
-      motion_context_length: "39", ctx_load_latent_path: "/tmp/x.latent",
+      ctx_load_latent_path: "/tmp/x.latent",
     }) as Record<string, unknown>;
-    assert.equal(walked.motion_context_length, "39", "lenient walk, inert key");
     const g = new GraphBuilder();
     def.compose(walked, model, g, "run_retired_vocab");
     const out = graphOf(g);
     assert.equal(ofClass(out, "MiniMaxH3MotionContext").length, 0, "the retired seam never mounts");
     assert.equal(ofClass(out, "MiniMaxH3MotionContextLoadLatent").length, 0, "no cross-prompt load");
+    assert.throws(
+      () => def.compose(
+        def.schema({ variant: "t4_open", calls: [SHOT()], motion_context_length: "39" } as never),
+        model, g, "run_motion_gone",
+      ),
+      /motion_context_length/,
+    );
   });
 });
 
@@ -776,9 +788,18 @@ describe("the overlays cannot go around Schemaster", () => {
     // The nested row above is the per-window strictness (schema.ts's
     // CALL_KEYS). The DOC-level law is T6's: a key that is neither
     // a declared knob nor a declared rider (the studio shot vocab,
-    // the lora bag, the derive keys, the ctx_*/motion_* prefix
-    // classes) refuses, named.
+    // the lora bag, the derive keys, the ctx_* prefix class)
+    // refuses, named. The motion_* prefix class is gone (2026-10-12:
+    // no reader, no producer, no draft carries one) — its keys
+    // refuse like any other unknown word.
     const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(
+        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], motion_prompt: "a retired rail's ghost" } as never),
+        model, g, "run_motion_refuses",
+      ),
+      /motion_prompt/,
+    );
     assert.throws(
       () => def.compose(
         def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], promptt: "typo of prompt" }),

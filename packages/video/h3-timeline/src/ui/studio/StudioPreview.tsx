@@ -126,7 +126,19 @@ export function StudioPreview({
           <span className={s.histTitle}>
             Runs ({hist.length})
           </span>
-          {hist.slice(0, 8).map((h, i) => (
+          {hist.slice(0, 8).map((h, i) => {
+            // the owner's done family decides the tick — a run the
+            // estate settles 'succeeded' or a cached row is as done
+            // as 'completed'. A word outside the vocabulary is not a
+            // done run: this seat reads membership itself, because
+            // the contract fold refuses unknown words (operator
+            // decision 2026-10-12) and the studio must still mount
+            // for any word it is handed. The word is derived ONCE —
+            // an absent status folds to "" here, which the
+            // membership test already answers, so the classifier is
+            // never handed a coalesced second read.
+            const word = (h.status ?? "").toLowerCase()
+            return (
             <a
               key={h.runId ?? i}
               href={h.video}
@@ -140,17 +152,11 @@ export function StudioPreview({
               }
               className={s.histChip}
             >
-              {/* the owner's done family decides the tick — a run the
-                  estate settles 'succeeded' or a cached row is as
-                  done as 'completed'. A word outside the vocabulary
-                  is not a done run: this seat reads membership
-                  itself, because the contract fold refuses unknown
-                  words (operator decision 2026-10-12) and the studio
-                  must still mount for any word it is handed. */}
-              {(RUN_STATUS_WORDS.has((h.status ?? "").toLowerCase()) && statusOf(h.status ?? "") === "done") ? "✓" : "×"}{" "}
+              {(RUN_STATUS_WORDS.has(word) && statusOf(word) === "done") ? "✓" : "×"}{" "}
               {(h.runId ?? "run").replace(/^run-/, "").slice(0, 8)} · {h.durationSec ?? "?"}s
             </a>
-          ))}
+            )
+          })}
         </div>
       )
     })()}
