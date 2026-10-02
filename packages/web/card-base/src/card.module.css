@@ -225,14 +225,28 @@ select option {
 .squareEmptyIcon { align-items: center; display: flex; }
 .squareActions { align-items: flex-end; display: flex; inset: 0; justify-content: flex-end; padding: 4px; pointer-events: none; position: absolute; }
 .squareActions > * { pointer-events: auto; }
+/* THE CHIP CONTRAST LAW (2026-10-02, the operator's recurring blank
+   ✕): `--dsw-alias-bg-module` is not a DSH token — the theme defines
+   `--dsw-alias-bg-module-platform`, and the dead name always fell
+   through to this rule's own `#fff`. That painted a WHITE chip on
+   the dark module while `--dsw-alias-label-primary` (measured
+   rgb(249,250,251) on the live lane) painted a near-white glyph on
+   it: the detach ✕ and the pick icon were both invisible, measured in
+   Chromium at 1.005:1 contrast. A chip now paints the theme's solid
+   interactive surface with its content in the primary label — the pair
+   inverts correctly in both schemes. The fill carries NO hard-coded
+   fallback: a fallback literal is exactly how the white chip returned,
+   and the shipped rules name only tokens the theme defines.
+   card-base/tests/chip-contrast.spec.ts fails the build if a chip rule
+   regresses to a dead name or a literal fill. */
 .squarePick {
-  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2);
+  align-items: center; background: var(--dsw-alias-interactive-bg-hover-solid); border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; height: 22px;
   justify-content: center; left: 4px; padding: 0; position: absolute; top: 4px; width: 22px;
 }
 .squareBadge { color: var(--dsw-alias-label-secondary); font-size: 10px; line-height: 17px; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .squareX {
-  align-items: center; background: var(--dsw-alias-bg-module, #fff); border: 0.5px solid var(--dsw-alias-border-l2);
+  align-items: center; background: var(--dsw-alias-interactive-bg-hover-solid); border: 0.5px solid var(--dsw-alias-border-l2);
   border-radius: 999px; color: var(--dsw-alias-label-primary); cursor: pointer; display: flex; font-size: 10px; line-height: 17px;
   padding: 0 4px; position: absolute; right: 4px; top: 4px;
 }

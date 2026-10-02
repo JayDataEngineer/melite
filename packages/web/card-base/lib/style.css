@@ -252,7 +252,7 @@ select option {
 }
 
 .VMoOIq_squarePick {
-  background: var(--dsw-alias-bg-module, #fff);
+  background: var(--dsw-alias-interactive-bg-hover-solid);
   border: .5px solid var(--dsw-alias-border-l2);
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
@@ -279,7 +279,7 @@ select option {
 }
 
 .VMoOIq_squareX {
-  background: var(--dsw-alias-bg-module, #fff);
+  background: var(--dsw-alias-interactive-bg-hover-solid);
   border: .5px solid var(--dsw-alias-border-l2);
   color: var(--dsw-alias-label-primary);
   cursor: pointer;
