@@ -39,12 +39,23 @@ import {
 } from '@melite/models-h3/schema'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
+import { gatedResolve } from '@melite/comfyui-cordis'
 import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
 import { finalizeH3 } from '@melite/models-h3'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 
 export { assertCarriedSpanGrid, assertGridLength, assertSpanGrid, gridSnap } from '@melite/models-h3/timelineContract'
 export { carrier, JSON_ARRAY_PARAMS, schema } from '@melite/models-h3/schema'
+
+// THE CARRIER'S CALLABLE FACE — ONE cast serving the compose strict
+// resolve's judge: schemastery schemas are callable (Schema.resolve)
+// but carry a typed data parameter, while the card seam takes
+// unknown. The full `schema()` normalizer CANNOT run here (its t4r
+// admission judges Object.keys(raw) as explicit injects, and the
+// merged carrier doc's walked defaults would read as injects), so
+// the strict resolve walks the carrier `paramSchema` — same
+// carrier the schemaCarrier registration hands the door.
+const schemaFn = paramSchema as unknown as (v: unknown) => Record<string, unknown>
 
 // inputs the t4 family templates OMIT whose pin defaults the engine
 // would auto-fill at serialization — the strip set lives with the lane, in the
@@ -263,7 +274,17 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       if (gateInput.length === null) {
         throw new Error('length is null — send a real frame count or omit the key; the 17k+5 grid default fills natively (never null)')
       }
-      p = paramSchema(gateInput) as unknown as Record<string, unknown>
+      // T6'S STRICT RESOLVE: the carrier walk refuses a key that is
+      // neither a declared knob nor a rider. The rider list is the
+      // composer's own non-knob reads: the studio shot vocab
+      // (calls, audio_clips, keyframes, refs, document), the lora
+      // bag, the per-window fences, the derive keys (variant,
+      // quant, recipe, refine — refine is injected by the door
+      // AFTER this walk) and the two context/motion prefix classes.
+      p = gatedResolve('h3-timeline', schemaFn, [
+        'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
+        'refs', 'variant', 'quant', 'recipe', 'refine', 'model', 'ctx_*', 'motion_*',
+      ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its
       // prompt, image (the anchor), refs (the reference bundle) and

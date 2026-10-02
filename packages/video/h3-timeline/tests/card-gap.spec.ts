@@ -772,6 +772,34 @@ describe("the overlays cannot go around Schemaster", () => {
     assert.ok(!json.includes("bogus_knob"), "the unknown key never lands on a node input");
   });
 
+  it("T6: a doc-level typo REFUSES unknown-param (the entry doc is admitted, not merged silent)", () => {
+    // The nested row above is the per-window strictness (schema.ts's
+    // CALL_KEYS). The DOC-level law is T6's: a key that is neither
+    // a declared knob nor a declared rider (the studio shot vocab,
+    // the lora bag, the derive keys, the ctx_*/motion_* prefix
+    // classes) refuses, named.
+    const g = new GraphBuilder();
+    assert.throws(
+      () => def.compose(
+        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], promptt: "typo of prompt" }),
+        model, g, "run_doc_typo",
+      ),
+      /promptt/,
+    );
+    assert.throws(
+      () => def.compose(
+        def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], widht: 9999 }),
+        model, g, "run_doc_typo2",
+      ),
+      /widht/,
+    );
+    // the riders still serve (a stated variant composes)
+    def.compose(
+      def.schema({ calls: [{ text: "a push in", start_frame: 0, end_frame: 90 }], variant: "t4_open" }),
+      model, new GraphBuilder(), "run_doc_rider",
+    );
+  });
+
   it("the post-process knobs ride EXPLICIT and DECLARED (one owner each — the legacy switch aliases are retired)", () => {
     const g = new GraphBuilder();
     def.compose(
