@@ -1,32 +1,29 @@
-// Tier 3 — the h3-timeline card (the h3_window renderer port).
+// Tier 3 — the h3-timeline card.
 //
-// CARD SURFACE vs RENDERER VOCABULARY (2026-09-07): the schema below
-// mirrors ONLY the retired python card's own fields (H3TimelineCard:
-// prompt, image, seed, width, height, length, steps, sharpen_enabled,
-// sharpen_strength, interpolate_enabled, shift_video, shift_audio
-// 12 keys; the S-decl purge deleted 2026-09-08). The window families (t4r /
-// t4_open / t4_chain), the motion-context chaining rail, and the SLA /
-// SR / interp leaves are the RENDERER vocabulary the compose body
-// still reads: those keys ride the compose door's explicit-params
-// overlay (prepareCardParams — the ONE resolver: schema defaults, then the
+// CARD SURFACE vs RENDERER VOCABULARY: the schema declares the
+// card's own 12 fields (prompt, image, seed, width, height, length,
+// steps, sharpen_enabled, sharpen_strength, interpolate_enabled,
+// shift_video, shift_audio). The window families (t4r / t4_open /
+// t4_chain), the motion-context chaining rail and the SLA / SR /
+// interp leaves are the RENDERER vocabulary the compose body reads:
+// those keys ride the compose door's explicit-params overlay
+// (prepareCardParams — the ONE resolver: schema defaults, then the
 // selected variant's stamps, then the caller's params), so every
-// read below normalizes with its old default and the served shape
-// stays byte-identical.
+// read normalizes with its own default.
 //
-// Node creation order follows the SERIALIZED id
-// order exactly — the reference renderers assign `<Class>.<index>` ids
-// depth-first post-order from the output list (saved, then
-// ctx_saved), so the per-class creation sequence below is pinned by
-// that walk (observed inversions, kept verbatim: t4r creates the fps
-// 24.0 PrimitiveFloat BEFORE the seconds 10.0 one, and the reference
-// resizer BEFORE the geometry resizer).
+// Node creation order follows the SERIALIZED id order exactly — the
+// reference renderers assign `<Class>.<index>` ids depth-first
+// post-order from the output list (saved, then ctx_saved), so the
+// per-class creation sequence below is pinned by that walk (two
+// observed inversions are kept verbatim: t4r creates the fps 24.0
+// PrimitiveFloat before the seconds 10.0 one, and the reference
+// resizer before the geometry resizer).
 //
 // Autofill law: the GraphBuilder auto-fills pin defaults for omitted
 // inputs exactly like the reference renderers do; the compose strips
 // the t4-family leaks post-hoc (_T4_AUTOFILL_STRIP) — the strip rides
-// the h3 family's own finalizeH3 (t4r, like the python's `if not is_t4r`,
-// strips nothing; the i2v dead-branch node marks the t4r family in
-// the serialized graph).
+// the h3 family's own finalizeH3 (t4r strips nothing; the i2v
+// dead-branch node marks the t4r family in the serialized graph).
 import type { Context } from '@deepseek-ai/cordis'
 import { DECL as h3Decl } from '@melite/models-h3'
 import type { Family } from '@melite/models-h3/schema'
@@ -67,31 +64,14 @@ const schemaFn = paramSchema as unknown as (v: unknown) => Record<string, unknow
 // (No local CardDefinition augmentation: the service's schemaCarrier
 // seat — Schema-typed since ledger row 23 — already carries this.)
 
-/** Schemastery objects are lenient (unknown/missing keys ride); the
- *  family-admission laws are the renderer's own validators, ported:
- *  unknown variant + family-conditional key admission on EXPLICIT
- *  params only (the python gate reads model_fields_set). The t4r
- *  staged-image law rides compose (it reads the merged value). The
- *  renderer-vocabulary keys (variant, k, ctx_*, sla_*, ...) are NOT
- *  declared knobs — old drafts keep working because the schema admits
- *  them and the compose door overlays explicit params last (the
- *  img-to-mesh filename_prefix precedent).*/
-// ONE MODEL (the operator's law, 2026-09-20 "we use ONE model" +
-// 2026-09-21 "HOW IS MINIMAX H3 AND H3 TIMELINE TWO DIFFERENT
-// MODELS?" — LANDED, roadmap §8): the card boards ONE family. The
-// old h3 + h3-keyframe family packages are dead — their addresses
-// survive as VARIANT ROUTES on the h3 family (timeline →
-// h3-timeline — the pre-correction family address; fl2va →
-// h3-fl2va, ref2va → h3-ref2va, timeline-ref2va →
-// h3-timeline-ref, keyframe → h3-keyframe), so old drafts resolve
-// migration-free and the facts rows re-derive through the merged
-// family. THE SURVIVOR-ID CORRECTION (operator, 2026-09-22): the
-// family is the CHECKPOINT id `h3` — never a lane name (anima
-// isn't anima-generate); the card id `h3-timeline` (the usecase
-// surface) keeps its own name.
-// THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5) —
-// and with it the LANE'S FILES, which this card used to own as
-// constants of its own.
+/** The card's boarding roster: ONE family. The retired h3 and
+ *  h3-keyframe family packages survive as VARIANT ROUTES on the h3
+ *  family (timeline → h3-timeline, fl2va → h3-fl2va, ref2va →
+ *  h3-ref2va, timeline-ref2va → h3-timeline-ref, keyframe →
+ *  h3-keyframe), so old drafts resolve migration-free. The family is
+ *  the CHECKPOINT id `h3` — never a lane name; the card id
+ *  `h3-timeline` (the usecase surface) keeps its own name. The id
+ *  comes from the family's own DECL, and with it the lane's files. */
 export const BOARDED: string[] = [h3Decl.id]
 
 // THE VARIANT ROUTES (the TTS fold's VARIANT_ADDRESSES pattern):
@@ -133,32 +113,6 @@ export const identity = {
 // it render exactly the frozen graphs. Card-knob reads use the schema
 // value directly (always defined post-schema) except the two bare
 // keys (prompt/image), which normalize absent.
-/** THE MERGED FILM (the merged-graph builder, 2026-09-17): the
- *  execute-lane transport composed each window separately and merged
- *  the graphs post-serialization (namespacing + rewiring the seam
- *  links); the TS flip lost that half — a multi-call doc composed ONE
- *  window and the seams never rode. This is the port: ONE prompt, N
- *  windows under `window${k}_` scopes (GraphBuilder.scoped), REAL seam
- *  edges between scopes (the executor orders windows off the graph),
- *  per-window stanzas in the vocabulary (k, ctx_save_clip_index,
- *  the per-call knobs REPLACE, the span rider per window). The seam
- *  itself is the studio's document law (docModel): transition
- *  'extend' (absent = extend) chains the previous LATENT; 'cut' is a fresh window,
- *  and 'cut' + first_frame_prev_sec opens from the previous VIDEO
- *  tail (the node's context_frames arm). prev_sec scales the carry:
- *  picture snapped to the node's legal context lengths (5/22/39/56
- *  frames — only whole latent steps), audio at 24 frames/second. */
-/** ENFORCEMENT-ONLY WALK (2026-09-19, the operator's order: the
- *  schema gates EVERY hop — nothing goes around Schemaster). The
- *  overlays (the single-call lift, the film per-window stanza)
- *  merge user-authored knobs AFTER the compose gate walked the
- *  entry doc; this walk keeps the carrier's REFUSALS (declared
- *  types + bounds on every knob the overlay introduces) and
- *  DISCARDS its default-fills — the stanza's absent-key law (null
- *  length for per-window spans, the family budgets) owns the
- *  semantics. The walk is the family action's re-check
- *  (assertOverlayGated, models/h3/src/actions.ts) — one owner, the
- *  card imports it (h3-b). */
 
 export const inject = ['comfyui']
 

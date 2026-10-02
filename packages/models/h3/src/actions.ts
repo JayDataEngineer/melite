@@ -144,6 +144,17 @@ export interface WindowHandles {
   savePassthrough?: OutputHandle
 }
 
+/** THE MERGED FILM: ONE prompt, N windows under `window${k}_`
+ *  scopes (GraphBuilder.scoped), with real seam edges between scopes
+ *  (the executor orders windows off the graph) and per-window
+ *  stanzas in the renderer vocabulary (k, ctx_save_clip_index, the
+ *  per-call knobs REPLACE, the span rider per window). The seam is
+ *  the studio's document law (docModel): transition 'extend' (absent
+ *  = extend) chains the previous LATENT; 'cut' is a fresh window, and
+ *  'cut' + first_frame_prev_sec opens from the previous VIDEO tail
+ *  (the node's context_frames arm). prev_sec scales the carry:
+ *  picture snapped to the node's legal context lengths (5/22/39/56
+ *  frames — only whole latent steps), audio at 24 frames/second. */
 function renderH3Film(
   p: Record<string, unknown>,
   g: GraphBuilder,
