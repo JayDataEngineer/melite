@@ -1,4 +1,4 @@
-// families/index.ts — the family table (47 plugins, generated +
+// families/index.ts — the family table (48 plugins, generated +
 // frozen): every family owns its declaration file; this index is
 // the ONLY load order (sorted by genre then id — the table's key
 // order is id-sorted at the service, order here is just load
@@ -35,6 +35,7 @@ import { family as input } from "@melite/models-input";
 import { family as joycaption } from "@melite/models-joycaption";
 import { family as joytag } from "@melite/models-joytag";
 import { family as krea2 } from "@melite/models-krea-2";
+import { family as mask } from "@melite/models-mask";
 import { family as pixel_upscale } from "@melite/models-pixel_upscale";
 import { family as qwenImg21 } from "@melite/models-qwen-img-21";
 import { family as qwenImgEdit21 } from "@melite/models-qwen-img-edit-21";
@@ -84,6 +85,7 @@ export const FAMILY_PLUGINS: Plugin[] = [
   joycaption,
   joytag,
   krea2,
+  mask,
   pixel_upscale,
   qwenImgEdit2511,
   seedvr2_ema,

@@ -28,9 +28,10 @@ describe("the families provider (the lanes' models seat)", () => {
     };
     expect(seat, "the service registers on the context (ctx.get resolves it)").not.toBeUndefined();
     const ids = seat.allDecls().map((d) => d.id);
-    // The registry census (47) with the three census-verb families
+    // The registry census (48 — the F1 mask mint's mask-select
+    // joined, 2026-10-12) with the three census-verb families
     // named — the flows the commission chain composes.
-    expect(ids.length).toBe(47);
+    expect(ids.length).toBe(48);
     for (const family of ["anny", "skin", "fit"]) {
       expect(ids, `family ${family} boards the lane seat`).toContain(family);
     }
@@ -51,7 +52,7 @@ describe("the families provider (the lanes' models seat)", () => {
     // racing the afterAll sweep.
     await ctx.plugin(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { familyCount(): number };
-    expect(seat.familyCount()).toBe(47);
+    expect(seat.familyCount()).toBe(48);
     await ctx.fiber.dispose();
     // ctx.plugin children are parent-owned: the provider's fiber
     // disposes recursively — the ModelsService registration and

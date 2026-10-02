@@ -519,6 +519,9 @@ importers:
       '@melite/models-ltx-director-distilled':
         specifier: workspace:*
         version: link:../../models/ltx-director-distilled
+      '@melite/models-mask':
+        specifier: workspace:*
+        version: link:../../models/mask
       '@melite/models-mesh_refine':
         specifier: workspace:*
         version: link:../../models/mesh_refine
@@ -1271,6 +1274,9 @@ importers:
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
+      '@melite/models-mask':
+        specifier: workspace:*
+        version: link:../../models/mask
     devDependencies:
       '@types/node':
         specifier: ^22.20.0
@@ -1782,6 +1788,25 @@ importers:
       '@deepseek-ai/cordis':
         specifier: ^4.0.4
         version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@melite/comfyui-cordis':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-cordis
+    devDependencies:
+      '@types/node':
+        specifier: ^22.20.0
+        version: 22.20.1
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/models/mask:
+    dependencies:
+      '@deepseek-ai/cordis':
+        specifier: ^4.0.4
+        version: 4.0.4(@deepseek-ai/cordis-plugin-include@1.0.9)(@deepseek-ai/cordis-plugin-loader@1.0.5)
+      '@melite/comfyui-card-kit':
+        specifier: workspace:*
+        version: link:../../engines/comfyui-card-kit
       '@melite/comfyui-cordis':
         specifier: workspace:*
         version: link:../../engines/comfyui-cordis

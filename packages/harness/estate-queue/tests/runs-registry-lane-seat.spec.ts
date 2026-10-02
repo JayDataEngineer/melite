@@ -73,7 +73,7 @@ describe("the runs door through the lane's models seat", () => {
   it("the families provider populates the seat the door composes from", async () => {
     const { svc, ctx } = await laneSeat(modelsFamiliesProvider);
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
-    assert.equal(seat.allDecls().length, 47, "the booted table, not a bare service");
+    assert.equal(seat.allDecls().length, 48, "the booted table, not a bare service (48 with the F1 mint's mask-select)");
     const err = await remote(() =>
       svc.start({ draft_id: "d1", test: false, flow: "character" }, new AbortController().signal),
     );

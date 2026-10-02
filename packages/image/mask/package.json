@@ -18,7 +18,8 @@
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
-    "@melite/contracts": "workspace:*"
+    "@melite/contracts": "workspace:*",
+    "@melite/models-mask": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",

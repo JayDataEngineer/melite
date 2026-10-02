@@ -111,10 +111,11 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     // (the typert protocol returned as the IN-TREE vendor); +2 at
     // stroke 4 — the weightless verb families (packages/models/fit,
     // packages/models/skin) each bring a tsconfig into the net;
+    // +1 at the F1 mask mint (packages/models/mask, 2026-10-12);
     // adding or removing a package MUST touch this number
     // deliberately — a tsconfig deleted to dodge the net fails the
     // wall by arithmetic.
-    expect(dirs.length).toBe(90);
+    expect(dirs.length).toBe(91);
     // The incident's package is in the net BY NAME (the engine ran
     // from source, so no build step ever saw it).
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);

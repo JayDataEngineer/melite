@@ -12,6 +12,7 @@ import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { IMPACT_DETECTOR_PROVISIONS } from "@melite/comfyui-card-kit/impact";
+import { MASK_WEIGHTS } from "@melite/models-mask";
 import type { CardDefinition } from "@melite/comfyui-cordis/service";
 import {
   getModel, registryIds, registryModel,
@@ -317,6 +318,13 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.equal(hand.folder, "ultralytics/bbox", "the subpack provider reads models/ultralytics/bbox/");
     assert.match(hand.sha256 ?? "", /^[0-9a-f]{64}$/, "a declared hash is a verified hash (minted from disk)");
     assert.ok(!rows.some((r) => r.name === "yolo11m.pt"), "yolo11m is unpinned (its 80 COCO generality is NOT this card)");
+  });
+
+  it("THE PROVISIONS↔WEIGHTS AGREEMENT (the F1 mint): every weight the family's lane loads, this card downloads — the three names live in models/mask beside the build (MASK_WEIGHTS, the LANE_FILES pattern), the provisions here, and a drift between the two halves is a silent wrong-weights run (the recipe↔weights law the variant cells carry, pinned at the card because the card owns the downloads)", () => {
+    const names = new Set((def.provisions ?? []).map((r) => r.name));
+    assert.ok(names.has(MASK_WEIGHTS.checkpoint), "the SAM3 checkpoint the lane loads is provisioned");
+    assert.ok(names.has(MASK_WEIGHTS.unet), "the RT-DETR detector the lane loads is provisioned");
+    assert.ok(names.has(MASK_WEIGHTS.sam2), "the SAM2 model the lane loads is provisioned");
   });
 
   it("THE DECLARED HERO (the history/preview defect, 2026-10-09: the gallery led with engine completion order — usually the manifest photo, not the mask)", () => {

@@ -1,10 +1,9 @@
-// @melite/image-mask — THE MASK LANE'S WALLS, at the lane's new home
-// (the atom vocabulary, stroke 2 — the card-system stroke, 2026-09-30).
-// The lane is this card's DECLARED action (a tool card boards no
-// family, so the card declares the segment itself); the kit's maskT1
-// and its wall are deleted with the move. Every case below came from
-// the kit wall verbatim — the cases walk the composed graph, and the
-// action composes the same graph.
+// @melite/models-mask — THE MASK LANE'S WALLS, at the family home
+// (the atom vocabulary's F1 mint, operator order 2026-10-12; moved
+// from image/mask with the lane, having moved there from the kit
+// wall — the cases walk the composed graph, and the action composes
+// the same graph). The lane is the mask family's declared select
+// action; the card binds it through declaredAction off the DECL.
 import "../../../../tests/helpers/boot-models.ts";
 import { describe, it, beforeAll } from "vitest";
 import assert from "node:assert/strict";
@@ -15,17 +14,20 @@ import { loadFacts } from "@melite/comfyui-card-kit/facts";
 import { getModel, registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { mask as maskLane } from "../src/lane.ts";
+import { select as maskLane, MASK_WEIGHTS } from "../src/actions.ts";
 
 const FACTS_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..", "packages", "engines", "comfyui-cordis", "data", "model-facts.json");
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
-// THE CARD'S OWN PINS ride the row (a tool card declares its weights)
-const MASK_PINS = { checkpoint: "sam3_pin.pth", unet: "rtdetr_pin.pth", sam2: "sam2_pin.pt" };
-
+// THE FAMILY'S WEIGHTS ARE CONSTANTS (the F1 mint's door change, with
+// the behavior): the door no longer reads lane_inputs — no variant of
+// this family swaps a weight, so the three names live beside the
+// build (MASK_WEIGHTS, the LANE_FILES pattern) and the row carries
+// nothing. The old empty-pin refusals died with the row-read: an
+// empty loader name is unrepresentable now.
 const FACTS: ModelFacts = {
-  id: "mask", family: "mask", card: "mask", defaults: {},
-  lane_inputs: { ...MASK_PINS }, variants: [], variant_groups: [], outputs: [], mods: [],
+  id: "mask", family: "mask-select", card: "mask", defaults: {},
+  lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [],
 } as unknown as ModelFacts;
 
 const dump = (g: GraphBuilder): Record<string, { class_type: string; inputs: Record<string, unknown> }> =>
@@ -145,7 +147,7 @@ describe("the mask lane (the selection lane's arms — moved from the kit wall w
     assert.equal(det.inputs.labels, "face,hand", "the labels set rides");
     assert.equal(det.inputs.threshold, 0.6, "the detection threshold rides verbatim");
     const sam = Object.values(row).find((n) => n.class_type === "SAMLoader")!;
-    assert.equal(sam.inputs.model_name, "sam2_pin.pt", "the card's SAM2 pin rides (never a caller string)");
+    assert.equal(sam.inputs.model_name, MASK_WEIGHTS.sam2, "the family's SAM2 constant rides (never a caller string)");
     const comb = Object.values(row).find((n) => n.class_type === "SAMDetectorCombined")!;
     assert.equal(comb.inputs.detection_hint, "center-1", "the pack's best-practice hint rides");
     const saves = Object.values(row).filter((n) => n.class_type === "SaveImage");
@@ -492,25 +494,22 @@ describe("the mask lane (the stroke-78 arms — moved from the kit wall with the
     assert.ok(!classes(row).includes("MaskComposite"), "the empty hop composites nothing");
     assert.ok(Object.values(row).some((n) => n.class_type === "SaveImage" && String(n.inputs.filename_prefix).endsWith("mask_combined_union")), "the terminal save still rides");
   });
-// THE PINS ARE THE CARD'S DECLARATION (the tool-lane facts door): a
-  // pin that is not a non-empty string refuses HERE, before any node
-  // composes — a tool card's weights are a declaration, so a drifted
-  // or missing one must not reach a loader with an empty name.
-  it("a missing or empty pin refuses at the facts door (never a loader with an empty name)", () => {
-    // The regexes are anchored end to end (the M2b residual closed,
-    // 2026-10-12): the label prefix and the full template are pinned,
-    // so a clause grown onto the helper's message fails here.
-    for (const key of ["checkpoint", "unet", "sam2"] as const) {
-      const missing: Record<string, unknown> = { ...MASK_PINS };
-      delete missing[key];
-      assert.throws(
-        () => instantiateAction(maskLane, { ...maskBase }, { ...FACTS, lane_inputs: missing } as ModelFacts, new GraphBuilder(), "r_pin"),
-        new RegExp(`^Error: mask select: lane_inputs\\.${key} = undefined — a non-empty string is required$`),
-      );
-      assert.throws(
-        () => instantiateAction(maskLane, { ...maskBase }, { ...FACTS, lane_inputs: { ...MASK_PINS, [key]: "" } } as ModelFacts, new GraphBuilder(), "r_pin"),
-        new RegExp(`^Error: mask select: lane_inputs\\.${key} = "" — a non-empty string is required$`),
-      );
-    }
+// THE WEIGHTS ARE THE FAMILY'S CONSTANTS (the F1 mint's door change,
+// with the behavior): the door reads NOTHING off a row — the three
+// names are the family's own (MASK_WEIGHTS beside the build), so
+// whatever a row carries, the loaders wire the constants and an
+// empty name is unrepresentable. The old door refused a missing or
+// empty pin from the row; the row-read died with the tool-lane
+// stroke (no variant of this family swaps a weight).
+  it("the facts door closes over the family constants — any row wires the same three weights (never a loader with a caller name)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(maskLane, { ...maskBase, primary_via_rtdetr: true, export_boxes: true }, { ...FACTS, lane_inputs: { checkpoint: "", unet: "caller.pth", sam2: "" } } as ModelFacts, g, "r_pin");
+    const row = dump(g);
+    const ckpt = Object.values(row).find((n) => n.class_type === "CheckpointLoaderSimple")!;
+    assert.equal(ckpt.inputs.ckpt_name, MASK_WEIGHTS.checkpoint, "the checkpoint constant rides (a row value cannot reach a loader)");
+    const unet = Object.values(row).find((n) => n.class_type === "UNETLoader")!;
+    assert.equal(unet.inputs.unet_name, MASK_WEIGHTS.unet, "the unet constant rides (never the caller string)");
+    const sam = Object.values(row).find((n) => n.class_type === "SAMLoader");
+    assert.equal(sam?.inputs.model_name ?? MASK_WEIGHTS.sam2, MASK_WEIGHTS.sam2, "the sam2 constant rides when the arm composes (an empty row name never reaches a loader)");
   });
 });

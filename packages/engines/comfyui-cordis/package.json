@@ -70,6 +70,7 @@
     "@melite/models-latentsync": "workspace:*",
     "@melite/models-ltx-2-3": "workspace:*",
     "@melite/models-ltx-director-distilled": "workspace:*",
+    "@melite/models-mask": "workspace:*",
     "@melite/models-mesh_refine": "workspace:*",
     "@melite/models-moss": "workspace:*",
     "@melite/models-moss-sfx": "workspace:*",

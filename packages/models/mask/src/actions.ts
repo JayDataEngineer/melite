@@ -1,19 +1,20 @@
-// lane.ts — the mask studio's lane as a DECLARED ACTION (the atom
-// vocabulary, stroke 2 — the card-system stroke). The mask card is a
-// tool card: it boards no family, so its lane has no atom to live in.
-// The vocabulary's answer for a tool lane is a DECLARED segment, not
-// an undeclared arm: the pins are the action's FACTS, the knobs its
-// params, the node tree its build, and the card composes it through
-// the same generic interpreter every family's lane rides.
+// actions.ts — the mask family's declared select action (the atom
+// vocabulary, the F1 mint, operator order 2026-10-12). The mask card
+// is a tool card, but its lane is a real atom: this family owns the
+// segment — the three weights are the action's FACTS, the knobs its
+// params, the node tree its build — and the card binds it through
+// declaredAction off the DECL (the interlock: drop the action here
+// and the card's binding refuses at boarding, never at first run).
 //
-// This file is the lane's ONLY home: the card kit's `maskT1` is
-// deleted with this move (it was the last undeclared lane in the kit),
-// and the card keeps everything else it always owned — the schema
-// walk, the draw/export admission, the strip pass, the refusal voices.
+// This file is the lane's ONLY home (relocated verbatim from
+// image/mask/src/lane.ts, the tool-lane stroke's home — the card kit's
+// `maskT1` died before that): the card keeps everything else it always
+// owned — the schema walk, the draw/export admission, the strip pass,
+// the refusal voices. The build's error voices still say `maskT1:`
+// (the name the specs pin; the lane's own historical voice).
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { NodeInputs, NodeRef, OutputHandle } from '@melite/comfyui-card-kit/graph'
-import { requireText, type LaneInputsFacts } from '@melite/comfyui-card-kit/facts'
 import { impactDetector } from '@melite/comfyui-card-kit/impact'
 
 /** the wired-tensor law (the mask lane's own spell handling): a '$name'
@@ -30,8 +31,9 @@ const personDetector = impactDetector('person')
 const faceDetector = impactDetector('face')
 const handDetector = impactDetector('hand')
 
-/** The closed facts shape the lane reads: the three SAM pins the card
- *  owns (the tool card's weights, not a family's row). */
+/** The closed facts shape the lane reads: the three SAM weights the
+ *  family owns (constants — no variant swaps them, no row declares
+ *  them; the h3 LANE_FILES pattern). */
 export interface MaskLaneFacts {
   checkpoint: string
   unet: string
@@ -42,18 +44,30 @@ export interface MaskLaneFacts {
  *  validated types and bounds — a same-process typed boundary). */
 export type MaskLaneParams = Record<string, unknown>
 
-/** The tool-lane facts door: the three pins ARE the facts (a tool
- *  card declares its own weights — there is no family row to read
- *  them from, and a pin that is not a non-empty string refuses here
- *  rather than composing a loader with an empty name).
- *  @param raw the resolved lane_inputs (the card's own pins)
- *  @returns the three pins the lane reads */
-export function parseMaskLaneFacts(raw: LaneInputsFacts): MaskLaneFacts {
-  return {
-    checkpoint: requireText(raw, 'checkpoint', 'mask select'),
-    unet: requireText(raw, 'unet', 'mask select'),
-    sam2: requireText(raw, 'sam2', 'mask select'),
-  };
+/** The family's three weight names — the lane's own constants (the
+ *  LANE_FILES pattern, the h3 precedent: clip/vae_video/vae_audio
+ *  never ride a row either). No variant of this family swaps a
+ *  weight and no user picks one, so they live beside the build that
+ *  wires them; the card's provisions declare the downloads, and
+ *  image/mask/tests/card.spec.ts pins the agreement (a weight the
+ *  lane loads that no provision downloads is a silent
+ *  wrong-weights run — the same law the variant cells carry). */
+export const MASK_WEIGHTS = {
+  checkpoint: 'sam3.1_multiplex_fp16.safetensors',
+  unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
+  sam2: 'sam2.1_hiera_large.pt',
+} as const
+
+/** The family's facts door: the lane reads NOTHING off a row (the
+ *  three weights are the family's constants above), so the door
+ *  returns them closed — an empty loader name is unrepresentable,
+ *  which is the old refusal law (a pin that is not a non-empty
+ *  string refused here) held by construction. The registry still
+ *  exercises this door at registration over the empty family row.
+ *  @param _raw the resolved lane_inputs (empty on this family)
+ *  @returns the three weights the lane wires into its loaders */
+export function parseMaskLaneFacts(_raw: unknown): MaskLaneFacts {
+  return { checkpoint: MASK_WEIGHTS.checkpoint, unet: MASK_WEIGHTS.unet, sam2: MASK_WEIGHTS.sam2 };
 }
 
 export interface EntryTuneShape {
@@ -80,20 +94,20 @@ export const TUNE_KEYS: readonly (keyof EntryTuneShape)[] = [
 ]
 export type EntryTune = EntryTuneShape
 
-/** THE MASK SELECTION LANE (the tool-lane declaration, stroke 2 —
- *  2026-09-30): the input_image admission stays on the card; this is
- *  the lane alone. TWO selection families: the SAM3 CLIP/RT-DETR leg
- *  (checkpoint + unet pins) and the SAM2 impact-pack arm (sam2 + the
- *  pack's own specialized detectors — person on segm, face/hand on
- *  their bbox models — the detector proposes, SAM2 refines). */
-export const mask: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
+/** THE MASK SELECTION ACTION (the family's one declared lane): the
+ *  input_image admission stays on the card; this is the lane alone.
+ *  TWO selection families: the SAM3 CLIP/RT-DETR leg (checkpoint +
+ *  unet weights) and the SAM2 impact-pack arm (sam2 + the pack's own
+ *  specialized detectors — person on segm, face/hand on their bbox
+ *  models — the detector proposes, SAM2 refines). */
+export const select: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
   id: "select",
   inputs: [],
   outputs: [{ name: "default", kind: "MASK" }],
   params: [],
   facts: parseMaskLaneFacts,
   build({ p, facts, g, runId }) {
-    const li: MaskLaneFacts = { checkpoint: facts.checkpoint, unet: facts.unet, sam2: facts.sam2 }  // the card's own pins (a tool card declares them)
+    const li: MaskLaneFacts = { checkpoint: facts.checkpoint, unet: facts.unet, sam2: facts.sam2 }  // the family's weight constants (MASK_WEIGHTS above)
     const prefix = `${runId}/mask`        // the arm's "%s/mask" % run_id
     const samThreshold = p.sam_threshold as number
     // undeclared legacy renderer keys ride the door's explicit-params
@@ -203,9 +217,10 @@ export const mask: ComfyActionSpec<MaskLaneParams, MaskLaneFacts> = {
     // THE SEGM PROVIDER (the Impact Pack gap audit, 2026-10-08): the
     // pack's own detailer-pipe-test wires SegmDetectorSEGS — a
     // segmentation detector whose boxes come from CLASS-PIXEL masks
-    // (tighter crops, no center-point guess). The pin rides the
-    // card's PINS row (segm/person_yolov8m-seg.pt — ABSENT until
-    // 2026-10-09, downloaded + provision-declared that night).
+    // (tighter crops, no center-point guess). The detector model
+    // comes from the card kit's detector catalog
+    // (segm/person_yolov8m-seg.pt — ABSENT until 2026-10-09,
+    // downloaded + provision-declared that night).
     const segmProvider = (): OutputHandle =>
       // SLOT 1 (proven live 2026-10-09: slot 0 is BBOX_DETECTOR —
       // wiring it into SegmDetectorSEGS.segm_detector 400s the run

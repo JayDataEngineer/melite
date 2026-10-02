@@ -447,6 +447,10 @@ describe('loadRunOntoBench — the run record wins', () => {
     // admission refuses a model the card does not board (mask boards
     // none) — every mask restore died 'model X is not offered by
     // card X'. The family-less voice strips; the restore lands.
+    // (The F1 mint, 2026-10-12, keeps this arm: the family id is
+    // mask-select, never the card's id, so the strip still owns the
+    // card's self-naming residue — the form-spec door keeps the
+    // card arm too.)
     const side = {
       run_id: 'rm',
       flow: {

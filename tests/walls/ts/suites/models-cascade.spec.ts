@@ -38,13 +38,16 @@ describe("the defaults cascade is the cordis primitive (A3)", () => {
     const svc = modelsService();
     assert.ok(svc instanceof ModelsService, "modelsService() returns a Service instance");
     assert.equal(svc.name, MODELS_SERVICE);
-    // 47 since stroke 4 (fit + skin return unoffered as weightless
-    // verb families; ideogram retired with its card 2026-09-17, and
-    // the stroke-87 fit + skin weights retirements stand)
-    assert.equal(svc.registryIds().length, 47) // +1: yue2 on the music card (2026-09-20) // +1: the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as the Base variant) // +2: the qwen 2.1 pair (2026-09-21) // -2: the H3 fold (h3 + h3-keyframe died into h3-timeline's variants; their routes survive) // +2: fit + skin return unoffered (stroke 4 — the meld verb families), "every registered model through the service at boot");
-    // 100 since stroke 4 (the fit + skin standard routes return
-    // declared-but-unoffered; the catalog serves neither)
-    assert.equal(svc.modelIds().length, 100) // +1: qwen3-tts-voicedesign-design — the design lane's own route (transcript-015, 2026-09-24) // +1: yue2 on the music card (2026-09-20) // +6: the qwen 2.1 pair (2026-09-21) // +1: the survivor-id correction (2026-09-22 — the h3 family id serves as its own address; the family renames h3-timeline → h3 in place) // +1: qwen3-tts-voicedesign-base — the 1.7B clone lane's own flat route (the 1:1 matrix, 2026-09-23) // +2: the fit + skin standard routes (stroke 4), "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
+    // 48 since the F1 mask mint (mask-select, unoffered, 2026-10-12;
+    // 47 before it since stroke 4 — fit + skin returned unoffered as
+    // weightless verb families; ideogram retired with its card
+    // 2026-09-17, and the stroke-87 fit + skin weights retirements
+    // stand)
+    assert.equal(svc.registryIds().length, 48) // +1: yue2 on the music card (2026-09-20) // +1: the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as the Base variant) // +2: the qwen 2.1 pair (2026-09-21) // -2: the H3 fold (h3 + h3-keyframe died into h3-timeline's variants; their routes survive) // +2: fit + skin return unoffered (stroke 4 — the meld verb families) // +1: mask-select (the F1 mint, 2026-10-12 — the tool lane's family), "every registered model through the service at boot");
+    // 101 since the F1 mask mint (the family id is its own route;
+    // 100 before it since stroke 4 — the fit + skin standard routes
+    // returned declared-but-unoffered; the catalog serves neither)
+    assert.equal(svc.modelIds().length, 101) // +1: qwen3-tts-voicedesign-design — the design lane's own route (transcript-015, 2026-09-24) // +1: yue2 on the music card (2026-09-20) // +6: the qwen 2.1 pair (2026-09-21) // +1: the survivor-id correction (2026-09-22 — the h3 family id serves as its own address; the family renames h3-timeline → h3 in place) // +1: qwen3-tts-voicedesign-base — the 1.7B clone lane's own flat route (the 1:1 matrix, 2026-09-23) // +2: the fit + skin standard routes (stroke 4) // +1: mask-select (the F1 mint, 2026-10-12), "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
   });
 
   it("registerFamily refuses duplicates LOUD (one owner per id)", (): void => {

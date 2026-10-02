@@ -39,28 +39,27 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import {
+  declaredAction,
   finalizeMask,
   IMPACT_DETECTOR_IDS,
   IMPACT_DETECTOR_PROVISIONS,
   IMPACT_PACKS,
   impactArmNames,
+  instantiateAction,
 } from '@melite/comfyui-card-kit'
-import { instantiateAction } from '@melite/comfyui-card-kit'
-import { mask as maskLane } from './lane.ts'
+import { DECL as maskDecl, MASK_WEIGHTS } from '@melite/models-mask'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 import { bag } from '@melite/contracts/extraKeys'
 import { gatedResolve } from '@melite/comfyui-cordis'
 
-// THE ACTION CARD OWNS ITS SAM PINS (the studio's law, shared —
-// the same weights, the same lane). The three Impact detector
-// vocabularies, provisions, graph paths, and routing live in the
-// card kit's one detector catalog.
-const PINS = {
-  checkpoint: 'sam3.1_multiplex_fp16.safetensors',
-  unet: 'rt_detr_v4-x-hgnet_fp32.safetensors',
-  sam2: 'sam2.1_hiera_large.pt',
-}
+// THE WEIGHTS LAW (the studio's law, shared — the same weights, the
+// same lane): the three weight NAMES live in the mask family beside
+// the lane that loads them (models/mask MASK_WEIGHTS), this card's
+// provisions declare the downloads, and card.spec.ts pins the two
+// halves agree. The three Impact detector vocabularies, provisions,
+// graph paths, and routing live in the card kit's one detector
+// catalog.
 
 // THE IMPACT VOCABULARY (the operator's 2026-10-09 order: "I DON'T
 // WANT 100+ YOLO CLASSES, I ONLY WANT THE ONES SHOWN IN THE IMPACT
@@ -667,21 +666,22 @@ export function apply(ctx: Context): void {
       }
       if (paintMasks.length > 0) lane['paint_masks'] = paintMasks
 
-      // THE TOOL LANE (the atom vocabulary, stroke 2 — the card-system
-      // stroke): this card boards no family, so its lane is declared
-      // HERE as an action rather than authored inline — the pins are
-      // its facts, the knobs its params, the tree its build. The card
-      // composes it through the same interpreter every family's lane
-      // rides; the kit's `maskT1` is deleted with the move. A tool
-      // lane has no family DECL to resolve against, so the card's own
-      // declaration IS the action — `declaredAction` is the FAMILY
-      // resolver, and a card that declared a DECL to satisfy it would
-      // be a fake atom.
+      // THE FAMILY BINDING (the atom vocabulary's F1 mint, operator
+      // order 2026-10-12): the lane is the mask family's declared
+      // select action (models/mask), and this card composes it through
+      // the same interpreter every family's lane rides — resolved off
+      // the DECL, never a hand-imported action list (the interlock:
+      // the family drops the action and this binding refuses at
+      // boarding, loud, never a legacy fallback). The row's
+      // lane_inputs are empty — the family's facts door closes over
+      // its own weight constants (MASK_WEIGHTS, the LANE_FILES
+      // pattern); the card keeps the provisions (the downloads) and
+      // card.spec.ts pins the agreement.
       const row: ModelFacts = {
-        id: 'mask', family: 'mask', card: 'mask', defaults: {},
-        lane_inputs: { ...PINS }, variants: [], variant_groups: [], outputs: [], mods: [],
+        id: 'mask', family: 'mask-select', card: 'mask', defaults: {},
+        lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [],
       }
-      instantiateAction(maskLane, lane as never, row, g, runId)
+      instantiateAction(declaredAction(maskDecl, 'select'), lane as never, row, g, runId)
     },
     // THE 512-HINT STRIP (the red-box hunt): kills the autofilled
     // {0,0,512,512} bboxes default on unscoped SAM3 detects (an
