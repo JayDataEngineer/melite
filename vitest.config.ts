@@ -2,6 +2,7 @@ import path from 'node:path'
 import { realpathSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { defineConfig } from 'vitest/config'
+import { COVERAGE_BASELINE } from './scripts/coverage-baseline.ts'
 import {
   PROXY_SETUP,
   resolutionFacade,
@@ -590,12 +591,20 @@ export default defineConfig({
         // family and is covered by the same HMR spec; keep it gated
         // (do NOT exempt). This comment records the deliberate non-exempt.
       ],
+      // THE PER-FILE BASELINE (2026-10-12, the gate's tree debt).
+      // The four global metric keys are GONE on purpose: vitest's
+      // global threshold set covers every collected file EVEN IF a
+      // glob row also matches it, so a global 100 can never be
+      // relaxed by a per-file floor — it would simply re-fail every
+      // baselined file. scripts/coverage-baseline.ts therefore
+      // carries one row per gated file at its MEASURED number (86
+      // files below 100, 212 threshold errors, measured on
+      // 00c4615d), which keeps every gated file checked, makes a
+      // coverage drop fail, and lets a too-high floor announce
+      // itself. The ratchet law lives with the table.
       thresholds: {
         perFile: true,
-        statements: 100,
-        branches: 100,
-        functions: 100,
-        lines: 100,
+        ...COVERAGE_BASELINE,
       },
       reporter: process.env.CI
         ? ['text', uncoveredLocationsReporter]
