@@ -10,7 +10,7 @@ import { join } from "node:path";
 import { test } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
-import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
+import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
 // The storage stack composed AT THE COMPOSITION SITE, mirroring DSH's
 // own rig (session-projection-cache/tests/fixtures.spec.ts l.27-104):
@@ -33,8 +33,9 @@ import queuePlugin, {
 // (the runsRegistryPlugin closure news it up) — the type lives at
 // its defining file; type-only, erased at runtime.
 import type { RunsRuntimeService } from "../../../../packages/harness/estate-queue/src/runsRegistry.ts";
-import { runsRemotePlugin } from '@melite/estate-runs';
-import type { RunStartDoc, RunsRemoteService } from '@melite/estate-runs';
+import { notifyRunChanged } from "../../../../packages/harness/estate-queue/src/runsChange.ts";
+import { runsRemotePlugin, RunsRemoteService } from '@melite/estate-runs';
+import type { RunStartDoc } from '@melite/estate-runs';
 
 interface Booted {
   ctx: Context;
@@ -1112,4 +1113,192 @@ test("a bench-composed run carries its OWN snapshot (restore never falls back to
     `the run carries the bench it was composed from (saw ${String(flow.bench_snapshot?.stages?.length ?? "none")} stages) — ` +
     "a bench run with no snapshot restores from the LIVING bench, which is the staleness the law forbids");
   await fiber.dispose();
+});
+
+// ── runs/subscribe (1.8: the push source for the live row) ─────────
+// The fake-this arms drive the generator straight off the prototype
+// (the bench stream's own test law, estate/drafts
+// tests/remote.spec.ts "zero-state and rethrow arms"): a hand seat
+// decides what the status read answers and which run ids the change
+// events carry — every watch arm without a boot. The last arm rides
+// the REAL seat end-to-end.
+
+type SeatScriptStep = { err?: unknown; row?: Record<string, unknown> };
+
+function subscribeWithSeat(
+  script: SeatScriptStep[],
+  signal: AbortSignal,
+): {
+  gen: AsyncGenerator<Record<string, unknown>>;
+  wakes: Array<(runId: string) => void>;
+  calls: () => number;
+} {
+  const wakes: Array<(runId: string) => void> = [];
+  let calls = 0;
+  const fake = {
+    ctx: {
+      runs: {
+        status: async (): Promise<Record<string, unknown>> => {
+          calls += 1;
+          const step = script[Math.min(calls - 1, script.length - 1)] ?? {};
+          if (step.err !== undefined) throw step.err;
+          return step.row ?? { run_id: "run-1", status: "running", stages: [] };
+        },
+        onRunChange: (fn: (runId: string) => void): (() => void) => {
+          wakes.push(fn);
+          return () => {
+            const i = wakes.indexOf(fn);
+            if (i >= 0) wakes.splice(i, 1);
+          };
+        },
+      },
+    },
+  };
+  const gen = RunsRemoteService.prototype.subscribe.call(
+    fake as never,
+    "run-1",
+    signal,
+  ) as AsyncGenerator<Record<string, unknown>>;
+  return { gen, wakes, calls: () => calls };
+}
+
+const tick = (ms: number): Promise<void> => new Promise((resolve) => { setTimeout(resolve, ms); });
+
+test("runs/subscribe yields the row on open, a matching wake re-reads, abort ends clean", async () => {
+  const controller = new AbortController();
+  const { gen, wakes } = subscribeWithSeat([
+    { row: { run_id: "run-1", status: "running", stages: [] } },
+    { row: { run_id: "run-1", status: "failed", stages: [], error: "boom" } },
+  ], controller.signal);
+  const first = await gen.next();
+  assert.equal(first.done, false);
+  assert.deepEqual(first.value, { run_id: "run-1", status: "running", stages: [] });
+  // parked: the wake resolves the park, the re-read serves the moved row
+  const secondP = gen.next();
+  await tick(25);
+  wakes[0]("run-1");
+  const second = await secondP;
+  assert.equal(second.done, false);
+  assert.deepEqual(second.value, { run_id: "run-1", status: "failed", stages: [], error: "boom" });
+  // An abort that lands while suspended AT the yield has no listener
+  // attached — the next resume parks with an already-aborted signal
+  // (the pre-check arm) and ends done: never a hang, never a lost
+  // row, never a second listener.
+  controller.abort();
+  const last = await gen.next();
+  assert.equal(last.done, true);
+});
+
+test("an unknown-run open parks (the zero-state watch); a foreign run's wake never wakes it", async () => {
+  const controller = new AbortController();
+  const { gen, wakes } = subscribeWithSeat([
+    { err: new RemoteError("runs/unknown-run", 'unknown run_id "run-1"', { runId: "run-1" }) },
+    { row: { run_id: "run-1", status: "queued", stages: [] } },
+  ], controller.signal);
+  let settled = false;
+  const firstP = gen.next();
+  void firstP.then(() => { settled = true; }, () => { settled = true; });
+  await tick(25);
+  // PARKED, not served and not thrown: a rejected open is TERMINAL
+  // at the gateway, so the watch degrades to a park (a start racing
+  // the open, a boot replay re-birthing the row).
+  assert.equal(settled, false);
+  wakes[0]("run-other");
+  await tick(25);
+  // the mismatch arm: a foreign id never wakes the watch
+  assert.equal(settled, false);
+  wakes[0]("run-1");
+  const first = await firstP;
+  assert.equal(first.done, false);
+  assert.deepEqual(first.value, { run_id: "run-1", status: "queued", stages: [] });
+  controller.abort();
+  assert.equal((await gen.next()).done, true);
+});
+
+test("a non-unknown RemoteError rethrows (never degrades to a park)", async () => {
+  const { gen } = subscribeWithSeat(
+    [{ err: new RemoteError("gateway/internal", "seat boom", {}) }],
+    new AbortController().signal,
+  );
+  await assert.rejects(gen.next(), /seat boom/);
+});
+
+test("a foreign throw (not a RemoteError at all) rethrows untouched", async () => {
+  const { gen } = subscribeWithSeat(
+    [{ err: new Error("seat boom") }],
+    new AbortController().signal,
+  );
+  await assert.rejects(gen.next(), /seat boom/);
+});
+
+test("an aborted signal refuses before the open (the status arm never runs)", async () => {
+  const { gen, calls } = subscribeWithSeat(
+    [{ row: { run_id: "run-1", status: "running", stages: [] } }],
+    AbortSignal.abort(),
+  );
+  await assert.rejects(gen.next());
+  assert.equal(calls(), 0);
+});
+
+test("runs/subscribe pushes the live row end-to-end over the REAL seat (the poll is dead)", async () => {
+  const { runs, adapter, fiber } = await boot();
+  const sig = new AbortController().signal;
+  const receipt = await runs.start(inlineBody("d_ok"), sig);
+  const controller = new AbortController();
+  const it = RunsRemoteService.prototype.subscribe.call(
+    adapter as never,
+    receipt.run_id,
+    controller.signal,
+  ) as AsyncGenerator<Record<string, unknown>>;
+  const seen: Array<Record<string, unknown>> = [];
+  const deadline = Date.now() + 10_000;
+  for (;;) {
+    if (Date.now() > deadline) break;
+    const won = await Promise.race([
+      it.next().then((r) => ({ r })),
+      tick(200).then(() => "quiet" as const),
+    ]);
+    if (won === "quiet") break; // the park holds — no further movement
+    if (won.r.done === true) break;
+    seen.push(won.r.value);
+    if (won.r.value["status"] === "failed") break;
+  }
+  controller.abort();
+  assert.equal((await it.next()).done, true);
+  const last = seen.at(-1);
+  assert.ok(last !== undefined, "the stream served the settled row");
+  assert.equal(last["status"], "failed");
+  assert.match(String(last["error"]), /no ComfyUIHostService/);
+  await fiber.dispose();
+});
+
+test("a park ended by ABORT finishes the park and returns (the abort listener arm)", async () => {
+  // The unknown-run park's second exit: not a runs.changed wake but
+  // the holder's own abort — the park's abort listener finishes it,
+  // and the post-park signal check returns without another read.
+  const controller = new AbortController();
+  const { gen, wakes, calls } = subscribeWithSeat(
+    [{ err: new RemoteError("runs/unknown-run", 'unknown run_id "run-1"', { runId: "run-1" }) }],
+    controller.signal,
+  );
+  const opened = gen.next();
+  await tick(2); // parked on the refusal (the wake + abort listener seated)
+  assert.equal(wakes.length, 1);
+  controller.abort(); // the abort listener finishes the park
+  assert.equal((await opened).done, true);
+  assert.equal(calls(), 1); // the re-read never ran
+});
+
+test("the runtime service's onRunChange seats the seam (the service wiring, not a second bus)", async () => {
+  const { runs, fiber } = await boot();
+  try {
+    const seen: string[] = [];
+    const off = runs.onRunChange((runId) => { seen.push(runId); });
+    notifyRunChanged("run-z");
+    off();
+    notifyRunChanged("run-z");
+    assert.deepEqual(seen, ["run-z"]);
+  } finally {
+    await fiber.dispose();
+  }
 });

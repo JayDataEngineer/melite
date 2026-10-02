@@ -8,6 +8,7 @@ import { randomBytes } from "node:crypto";
 import type { Branded } from "@deepseek-ai/dsh-brand";
 import { MAX_SETTLED_RUNS } from "./queueLock.ts";
 import type { LifecycleState } from "./queueLifecycle.ts";
+import { notifyRunChanged } from "./runsChange.ts";
 // ── the registry (Gateway.__init__ 1066-1071 + serial law) ───────
 
 /** The run id: run-<12hex>-<8hex>, opaque as it crosses wire, queue
@@ -61,6 +62,7 @@ export class QueueCore {
       if (run === undefined) continue;
       run.status = "running";
       this.activeId = runId;
+      notifyRunChanged(runId);
       return run;
     }
     return null;
@@ -77,14 +79,17 @@ export class QueueCore {
   settleRun(run: QueueRunRow, failureText: string | null): LifecycleState {
     if (run.stopFlag) {
       run.status = "stopped";
+      notifyRunChanged(run.runId);
       return run.status;
     }
     if (failureText === null) {
       run.status = "completed";
+      notifyRunChanged(run.runId);
       return run.status;
     }
     run.status = "failed";
     run.error = failureText;
+    notifyRunChanged(run.runId);
     return run.status;
   }
 

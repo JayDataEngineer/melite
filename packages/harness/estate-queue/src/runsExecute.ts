@@ -8,6 +8,7 @@ import { ComfyUIWiringService, loadCardDefs, needComfyUI, spliceWorkflow } from 
 import type { EngineJson, MergeRow, MergeStageResult } from "@melite/comfyui-cordis";
 import type { EngineExecutor, EngineStageRow } from "@melite/engine-contract";
 import { errText, runRel, type RunRecord, type RunStageRow } from "./runsTypes.ts";
+import { notifyRunChanged } from "./runsChange.ts";
 import { engineFilmName } from "./filmLead.ts";
 import { needComfyUI as _ncu } from "@melite/comfyui-cordis";
 type EngineCtx = Parameters<typeof _ncu>[0];
@@ -321,6 +322,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
           (a: string): boolean => a !== "",
         );
         run.artifacts.push(...arts);
+        notifyRunChanged(run.runId);
         if (arts.length > 0) {
           // DIVERGENCE-BY-ORDER: run-relative names, no /v1 prefix
           // (the asset HTTP face died with the app).

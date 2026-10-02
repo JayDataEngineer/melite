@@ -48,7 +48,7 @@
  *    bench agrees after each).
  */
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
-import type { RemoteErrorCode, RemoteFailure, RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
+import type { RemoteErrorCode, RemoteFailure, RemoteResult, RemoteStreamHandle } from '@deepseek-ai/dsh-typert-protocol'
 import { bindEstateRemote, unbindEstateRemote } from '@melite/card-base/client'
 // The generated namespace row types (type-only — the fakes serve
 // intentionally-partial rows against them, cast at each verb below).
@@ -102,8 +102,9 @@ export interface EstateFakesOptions {
   benchDoc?: Record<string, unknown>
   draftStages?: Array<Record<string, unknown>>
   draftBenchRev?: number
-  /** The drafts/get doc's `intent`, served verbatim (default ''). */
-  draftIntent?: string
+  /** The drafts/get doc's `intent`, served verbatim — a string, or
+   *  any garbage shape (the reader's non-string arm must be seen). */
+  draftIntent?: unknown
   /** The drafts/get bench block served VERBATIM (a garbage shape is
    *  the estate misbehaving — the wall must see it). */
   draftBench?: unknown
@@ -116,6 +117,11 @@ export interface EstateFakesOptions {
    *  the client tolerates). */
   addStageRevs?: number[]
   runDocs?: Array<Record<string, unknown>>
+  /** The runs/subscribe stream source (the run view's live tail): a
+   *  handle factory the stream tests drive — docs push through it,
+   *  a close is a carrier loss. Unset = the subscribe verb refuses
+   *  LOUD (no silent empty stream). */
+  openRunStream?: (runId: string, signal: AbortSignal) => RemoteStreamHandle<RunRow, never>
   patchFailures?: Array<Record<string, unknown>>
   /** Revs the drafts/patch ok arms ANSWER, in call order (the real
    *  door names the rev each landing write produced — THE
@@ -361,12 +367,13 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
           ? { bench: opts.draftBench }
           : opts.draftOmitBench === true ? {} : { bench: { rev: opts.draftBenchRev ?? 7, log: [] } }
         // THE PARTIAL-ROW LAW (same law as bench/get): explicitly
-        // served garbage stages ride verbatim — the cast pins the
-        // served bytes against the wire row without sanitizing them.
+        // served garbage stages and intents ride verbatim — the cast
+        // pins the served bytes against the wire row without
+        // sanitizing them.
         return ok({
           draft_id: 'bench-s1',
           rev: liveDraftRev ?? 7,
-          intent: opts.draftIntent ?? '',
+          intent: (opts.draftIntent ?? '') as DraftGetRow['intent'],
           ...servedBench,
           stages: liveDraftStages ?? servedStages,
         } as DraftGetRow)
@@ -448,6 +455,11 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
         calls.push({ method: 'runs/validate', args: { doc } })
         takeThrow('runs/validate')
         return takeRefusal('runs/validate') ?? ok({})
+      },
+      subscribe: (runId: string, signal?: AbortSignal): RemoteStreamHandle<RunRow, never> => {
+        calls.push({ method: 'runs/subscribe', args: { runId } })
+        if (opts.openRunStream !== undefined) return opts.openRunStream(runId, signal ?? new AbortController().signal)
+        throw new Error('estate-harness: runs/subscribe not faked (pass openRunStream)')
       },
     },
     media: {

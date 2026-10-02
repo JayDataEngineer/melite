@@ -1180,9 +1180,12 @@ export function openCardsResource(
       }
       return
     }
-    // run view: hydrate, then poll the status remote until terminal or
-    // abort (the events WS died with the gateway; the stream remote
-    // replaces the poll when the plane exists).
+    // run view: hydrate, then push (1.8, the hand-roll audit's last
+    // poll, 2026-10-12 — THE POLL IS DEAD): runs/subscribe pushes a
+    // fresh row after every registry write that moves the run (the
+    // claim, the settle, the artifacts harvest, the stop press) over
+    // the same-origin mux the bench tail rides; the tail yields on
+    // row change until terminal or abort.
     let value: CardsRunValue
     try {
       value = readRun(runId, await unwrapRemote(estateRemote().runs.status(runId), 'runs/status') as unknown as Record<string, unknown>)
@@ -1191,9 +1194,18 @@ export function openCardsResource(
       return
     }
     yield { ok: true, value }
-    if (ctx.signal.aborted) return
     if (isTerminal(value.status)) return
-    yield* pollRunFrames(address, runId, value, ctx.signal)
+    if (remote === undefined) {
+      // THE UNMOUNTED FACE (the bench branch's own honest degrade,
+      // one law for both tails): one HTTP snapshot, then ONE failure
+      // frame — an absent stream face is a broken mount, never a
+      // silent freeze pretending to watch.
+      yield failure(address, 'run stream unavailable — the remote face did not mount (showing one snapshot)')
+      return
+    }
+    // no aborted re-check here: the stream's own opening guard owns
+    // that arm (the bench branch's shape — one law, one place)
+    yield* streamRunFrames(remote, runId, address, value, ctx.signal)
   })()
 }
 
@@ -1205,53 +1217,115 @@ function isTerminal(status: string): boolean {
   return isTerminalStatus(status)
 }
 
-/** The live tail (the honest degrade): poll `runs/status` and yield a
- *  value ONLY when the row moved (no frame spam) until the run turns
- *  terminal or the holder aborts. A poll error mid-run is not a
- *  failure frame — the last ok value stays (the kit keeps it); the
- *  next poll may recover. The cadence (1500ms) rides the run pump's
- *  own observation granularity, not user perception of latency: stage
- *  transitions inside the estate tick on the pump's settle path. */
-async function* pollRunFrames(
-  address: string,
+/** THE RUN TAIL, STREAM EDITION (1.8, the hand-roll audit's last
+ *  poll retired 2026-10-12 — the poll is DEAD): consume
+ *  `runs/subscribe` through the gateway's reconnecting RemoteStream —
+ *  one item per registry write that moves the run, push on the
+ *  same-origin mux, zero cadence chatter. The laws the poll held,
+ *  kept one-for-one (the bench tail's own charter, streamBenchFrames
+ *  below):
+ *
+ *  - NO FRAME SPAM: an item yields ONLY on row change — status
+ *    drift or the stages' own bytes. The spam floor is seeded from
+ *    the hydrated row, so the stream re-serving the row the view
+ *    already shows stays quiet.
+ *  - THE VISIBILITY LAW (the silent-death cure): a carrier loss —
+ *    the wire dropped, the supervisor is reconnecting — surfaces as
+ *    ONE failure frame beside the last ok value, cleared by the next
+ *    frame. A TERMINAL stream failure (the supervisor gave up) is
+ *    one final failure frame, then the tail ends; the holder can
+ *    reopen.
+ *  - TERMINAL ROW: a settled run ends the tail (the last ok frame
+ *    stays as the view).
+ *  - ABORT: the holder's signal disposes the stream and ends the
+ *    tail clean.
+ *
+ * The loss race: the carrierFailed callback cannot yield from inside
+ * the generator, so it trips a latch the consumption loop races
+ * against the pending iterator step — the voice lands the moment the
+ * loss is noticed, not at recovery. */
+async function* streamRunFrames(
+  remote: ClientRemote,
   runId: string,
+  address: string,
   hydrated: CardsRunValue,
   signal: AbortSignal,
 ): AsyncGenerator<RemoteResult<CardsRunValue>> {
-  let value = hydrated
-  const sleep = (ms: number): Promise<'slept' | 'abort'> =>
-    new Promise((resolve) => {
-      const t = setTimeout(() => { signal.removeEventListener('abort', onAbort); resolve('slept') }, ms)
-      const onAbort = (): void => { clearTimeout(t); resolve('abort') }
-      // NO PRE-ABORTED ARM (the loop's own `!signal.aborted` check
-      // runs in the same synchronous block just above — no abort
-      // can land between the check and this executor).
-      signal.addEventListener('abort', onAbort, { once: true })
-    })
-  while (!signal.aborted && !isTerminal(value.status)) {
-    const woke = await sleep(1500)
-    if (woke === 'abort' || signal.aborted) return
-    let row: Record<string, unknown>
-    try {
-      row = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status') as unknown as Record<string, unknown>
-    } catch {
-      continue // the last ok value stays; the next poll may recover
+  let wake: (() => void) | undefined
+  let latch: Promise<'loss'> = new Promise(resolve => { wake = () => resolve('loss') })
+  const stream = remote.$stream<Record<string, unknown>>({
+    name: 'cards run stream',
+    // A generation END (mux drop, host restart) is CARRIER — retry
+    // through the supervisor; the subscribe generator itself only
+    // ends on abort, so an end before abort is always the carrier.
+    open: openSignal => estateRemote().runs.subscribe(runId, openSignal) as AsyncIterable<Record<string, unknown>>,
+    ended: accepted => new RemoteStreamCarrierError(
+      accepted
+        ? `run stream ended after its snapshot (${address})`
+        : `run stream ended before its first frame (${address})`),
+    // ONE VOICE PER EPISODE: the latch re-arms when the loss frame is
+    // yielded; a drop between items trips it and the always-race
+    // above voices it before the reconnect's first item arrives
+    carrierFailed: () => { wake?.() },
+  })
+  const onAbort = (): void => { void stream.dispose() }
+  if (signal.aborted) { onAbort(); return }
+  signal.addEventListener('abort', onAbort, { once: true })
+  const iterator = stream[Symbol.asyncIterator]()
+  let first = true
+  // the spam floor is seeded from the hydrated row: the stream's
+  // opening re-read of the same row stays quiet (no frame for the
+  // state the view already shows)
+  let lastStatus: string = hydrated.status
+  let lastFaces: string = JSON.stringify(hydrated.stages)
+  try {
+    for (;;) {
+      const step = iterator.next()
+      // ALWAYS race the loss latch: a carrier drop fires while the
+      // consumer is parked on the pending item — the voice must land
+      // at the moment of loss, not at recovery (a parked plain await
+      // would swallow the episode entirely)
+      const raced: { item: IteratorResult<RemoteStreamItem<Record<string, unknown>>> } | 'loss' =
+        await Promise.race([
+          step.then(item => ({ item })),
+          latch,
+        ])
+      let result: IteratorResult<RemoteStreamItem<Record<string, unknown>>>
+      if (raced === 'loss') {
+        yield failure(address, 'run live stream lost — reconnecting (showing the last known state)')
+        latch = new Promise(resolve => { wake = () => resolve('loss') })
+        result = await step
+      } else {
+        result = raced.item
+      }
+      if (result.done) return
+      const item = result.value
+      if (first) {
+        // mark the opening baseline accepted — a later generation end
+        // classifies as after-snapshot (carrier, retry)
+        item.accept()
+        first = false
+      }
+      const value = readRun(runId, item.value)
+      // THE ROW-CHANGE GATE: an item yields ONLY when the status or
+      // the stages' own bytes moved (stable through the JSON
+      // round-trip, so a reconnect re-serving the identical row
+      // stays quiet)
+      const faces = JSON.stringify(value.stages)
+      if (lastStatus === value.status && lastFaces === faces) continue
+      lastStatus = value.status
+      lastFaces = faces
+      yield { ok: true, value }
+      if (isTerminal(value.status)) return
     }
-    let next: ReturnType<typeof readRun>
-    try {
-      // the read door throws on out-of-vocabulary status (strictness
-      // fix 3) — surface it as the card's failure, keep polling
-      // recoverable exactly like the fetch above it
-      next = readRun(runId, row)
-    } catch (e) {
-      yield failure(address, e instanceof Error ? e.message : String(e))
-      return
-    }
-    const moved = next.status !== value.status
-      || JSON.stringify(next.stages) !== JSON.stringify(value.stages)
-    if (!moved) continue
-    value = next
-    yield { ok: true, value }
+  } catch (e) {
+    // terminal supervisor failure — one final voice, then the tail
+    // ends; the holder (the resource seat) can reopen the address
+    yield failure(address, 'run stream failed: ' + (e instanceof Error ? e.message : String(e)))
+    return
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+    await stream.dispose()
   }
 }
 

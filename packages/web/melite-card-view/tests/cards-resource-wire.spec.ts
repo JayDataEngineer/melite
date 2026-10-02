@@ -343,6 +343,18 @@ describe("freshStageRow — the drill's fresh read (null when gone, never a thro
     }
   });
 
+  test("a non-string intent degrades to empty — the row still reads (the estate misbehaving)", async () => {
+    const fakes = mountEstateFakes({
+      draftStages: [{ id: "s_0" }],
+      draftIntent: 42,
+    });
+    try {
+      await expect(freshStageRow("d_1", "s_0")).resolves.toMatchObject({ id: "s_0" });
+    } finally {
+      fakes.unmount();
+    }
+  });
+
   test("a missing row reads null (the caller composes its held row)", async () => {
     const fakes = mountEstateFakes({
       draftStages: [{ id: "s_0" }],

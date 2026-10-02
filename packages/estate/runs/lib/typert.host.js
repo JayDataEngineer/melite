@@ -13,15 +13,17 @@ let JsonValueRemoteCodec$schema5$value
 const JsonValueRemoteCodec$schema5 = () => (JsonValueRemoteCodec$schema5$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5())).readonly()]))
 let JsonValueRemoteCodec$schema6$value
 const JsonValueRemoteCodec$schema6 = () => (JsonValueRemoteCodec$schema6$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6())).readonly()]))
+let JsonValueRemoteCodec$schema7$value
+const JsonValueRemoteCodec$schema7 = () => (JsonValueRemoteCodec$schema7$value ??= z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema7())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema7())).readonly()]))
 let _melite_estate_runs_runs_list_parameter_0$schema$value
 const _melite_estate_runs_runs_list_parameter_0$schema = () => (_melite_estate_runs_runs_list_parameter_0$schema$value ??= z.string())
 let _melite_estate_runs_runs_list_result$schema$value
 const _melite_estate_runs_runs_list_result$schema = () => (_melite_estate_runs_runs_list_result$schema$value ??= z.object({
   'count': z.number(),
-  'runs': z.array(z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema())).readonly()])).readonly()),
+  'runs': z.array(z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()])).readonly()),
 }))
 let _melite_estate_runs_runs_start_parameter_0$schema$value
-const _melite_estate_runs_runs_start_parameter_0$schema = () => (_melite_estate_runs_runs_start_parameter_0$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4())).readonly()])).readonly())
+const _melite_estate_runs_runs_start_parameter_0$schema = () => (_melite_estate_runs_runs_start_parameter_0$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6())).readonly()])).readonly())
 let _melite_estate_runs_runs_start_result$schema$value
 const _melite_estate_runs_runs_start_result$schema = () => (_melite_estate_runs_runs_start_result$schema$value ??= z.object({
   'run_id': z.string(),
@@ -31,15 +33,19 @@ const _melite_estate_runs_runs_start_result$schema = () => (_melite_estate_runs_
 let _melite_estate_runs_runs_status_parameter_0$schema$value
 const _melite_estate_runs_runs_status_parameter_0$schema = () => (_melite_estate_runs_runs_status_parameter_0$schema$value ??= z.string())
 let _melite_estate_runs_runs_status_result$schema$value
-const _melite_estate_runs_runs_status_result$schema = () => (_melite_estate_runs_runs_status_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5())).readonly()])).readonly())
+const _melite_estate_runs_runs_status_result$schema = () => (_melite_estate_runs_runs_status_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema7())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema7())).readonly()])).readonly())
 let _melite_estate_runs_runs_stop_parameter_0$schema$value
 const _melite_estate_runs_runs_stop_parameter_0$schema = () => (_melite_estate_runs_runs_stop_parameter_0$schema$value ??= z.string())
 let _melite_estate_runs_runs_stop_result$schema$value
-const _melite_estate_runs_runs_stop_result$schema = () => (_melite_estate_runs_runs_stop_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema6())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema6())).readonly()])).readonly())
+const _melite_estate_runs_runs_stop_result$schema = () => (_melite_estate_runs_runs_stop_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema())).readonly()])).readonly())
+let _melite_estate_runs_runs_subscribe_parameter_0$schema$value
+const _melite_estate_runs_runs_subscribe_parameter_0$schema = () => (_melite_estate_runs_runs_subscribe_parameter_0$schema$value ??= z.string())
+let _melite_estate_runs_runs_subscribe_result$schema$value
+const _melite_estate_runs_runs_subscribe_result$schema = () => (_melite_estate_runs_runs_subscribe_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema5())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema5())).readonly()])).readonly())
 let _melite_estate_runs_runs_validate_parameter_0$schema$value
-const _melite_estate_runs_runs_validate_parameter_0$schema = () => (_melite_estate_runs_runs_validate_parameter_0$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema2())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema2())).readonly()])).readonly())
+const _melite_estate_runs_runs_validate_parameter_0$schema = () => (_melite_estate_runs_runs_validate_parameter_0$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3())).readonly()])).readonly())
 let _melite_estate_runs_runs_validate_result$schema$value
-const _melite_estate_runs_runs_validate_result$schema = () => (_melite_estate_runs_runs_validate_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema3())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema3())).readonly()])).readonly())
+const _melite_estate_runs_runs_validate_result$schema = () => (_melite_estate_runs_runs_validate_result$schema$value ??= z.record(z.string(), z.union([z.literal(null), z.string(), z.number(), z.literal(false), z.literal(true), z.array(z.lazy(() => JsonValueRemoteCodec$schema4())), z.record(z.string(), z.lazy(() => JsonValueRemoteCodec$schema4())).readonly()])).readonly())
 
 export const TYPERT = {
   package: '@melite/estate-runs',
@@ -72,7 +78,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-runs#runs/list:result',
         create: _melite_estate_runs_runs_list_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":105,"column":9},
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":110,"column":9},
     },
     {
       id: '@melite/estate-runs#runs/start',
@@ -99,7 +105,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-runs#runs/start:result',
         create: _melite_estate_runs_runs_start_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":77,"column":9},
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":82,"column":9},
     },
     {
       id: '@melite/estate-runs#runs/status',
@@ -126,7 +132,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-runs/types#RunRow',
         create: _melite_estate_runs_runs_status_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":86,"column":9},
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":91,"column":9},
     },
     {
       id: '@melite/estate-runs#runs/stop',
@@ -153,7 +159,34 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-runs/types#RunRow',
         create: _melite_estate_runs_runs_stop_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":95,"column":9},
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":100,"column":9},
+    },
+    {
+      id: '@melite/estate-runs#runs/subscribe',
+      service: 'runsRemote',
+      namespace: 'runs',
+      method: 'subscribe',
+      mode: 'stream',
+      invocation: { kind: 'direct' },
+      parameters: [
+        {
+          name: 'runId',
+          wire: 'runId',
+          source: 'json',
+          codec: {
+            mode: 'strict',
+            typeSymbol: '@melite/estate-runs#runs/subscribe:runId',
+            create: _melite_estate_runs_runs_subscribe_parameter_0$schema,
+          },
+        },
+      ],
+      cancellation: { parameter: 'signal' },
+      result: {
+        mode: 'strict',
+        typeSymbol: '@melite/estate-runs/types#RunRow',
+        create: _melite_estate_runs_runs_subscribe_result$schema,
+      },
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":135,"column":10},
     },
     {
       id: '@melite/estate-runs#runs/validate',
@@ -180,7 +213,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-runs/types#RunRow',
         create: _melite_estate_runs_runs_validate_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":114,"column":9},
+      sourceLocation: {"file":"packages/estate/runs/src/index.ts","line":119,"column":9},
     },
   ],
   model: {
@@ -227,6 +260,13 @@ export const TYPERT = {
             "signature": "@Remote(\"validate\") async remoteExportValidate( doc: RunStartDoc, signal: AbortSignal, ): Promise<RunRow>",
             "summary": "Endpoint `runs/validate` — the pure compile (registry seat).",
             "jsDoc": "/** Endpoint `runs/validate` — the pure compile (registry seat). */"
+          },
+          {
+            "kind": "method",
+            "name": "subscribe",
+            "signature": "@Remote({ mode: \"stream\" }) async *subscribe( runId: string, signal: AbortSignal, ): AsyncIterable<RunRow>",
+            "summary": "Endpoint `runs/subscribe` — THE PUSH SOURCE for the live row (1.8, the hand-roll audit's last poll, 2026-10-12): the row on open, then a fresh row after every registry write that moves the run — the change events the write spine fires (the claim, the settle, the artifacts harvest, the stop press).",
+            "jsDoc": "/** Endpoint `runs/subscribe` — THE PUSH SOURCE for the live row\n *  (1.8, the hand-roll audit's last poll, 2026-10-12): the row on\n *  open, then a fresh row after every registry write that moves\n *  the run — the change events the write spine fires (the claim,\n *  the settle, the artifacts harvest, the stop press). Stream mode\n *  rides the typert logical-stream carrier — the same-origin mux\n *  the bench tail rides. Abort ends the stream clean; a listener's\n *  fault never breaks it (the seam's wrapper guards). */"
           }
         ],
         "types": [

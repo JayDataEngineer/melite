@@ -162,10 +162,11 @@ function useDraft(draftId: string | null): {
   }, [draftId, tick])
 
   // THE LIVE RUN — the gateway-era events WS died with the gateway
-  // app (nothing serves it, by design); until the collapse plan's
-  // stream remote exists (@Remote({mode:'stream'}) over the mux),
-  // the poll below IS the live channel — the runs/status remote over
-  // the wire frame, terminal authority by construction.
+  // app (nothing serves it, by design). The run stream remote exists
+  // (`runs/subscribe`, the run view rides it through the resource);
+  // this flow view keeps its own direct read — the runs/status
+  // remote over the wire frame, terminal authority by construction
+  // (handroll row 1.8's remaining consumer tail).
   const runId = live?.run_id ?? null
 
   // The poll — stops on a terminal status, then refreshes the draft

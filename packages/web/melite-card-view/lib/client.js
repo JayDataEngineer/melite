@@ -5472,15 +5472,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			array(lazy(() => JsonValueRemoteCodec$schema6$1())),
 			record(string(), lazy(() => JsonValueRemoteCodec$schema6$1())).readonly()
 		]);
-		let JsonValueRemoteCodec$schema7$value;
-		const JsonValueRemoteCodec$schema7 = () => JsonValueRemoteCodec$schema7$value ??= union([
+		let JsonValueRemoteCodec$schema7$value$1;
+		const JsonValueRemoteCodec$schema7$1 = () => JsonValueRemoteCodec$schema7$value$1 ??= union([
 			literal(null),
 			string(),
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema7())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema7$1())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema7$1())).readonly()
 		]);
 		let JsonValueRemoteCodec$schema8$value;
 		const JsonValueRemoteCodec$schema8 = () => JsonValueRemoteCodec$schema8$value ??= union([
@@ -5600,8 +5600,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema7())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema7$1())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema7$1())).readonly()
 		])).readonly();
 		let _melite_estate_drafts_bench_clear_result$schema$value;
 		const _melite_estate_drafts_bench_clear_result$schema = () => _melite_estate_drafts_bench_clear_result$schema$value ??= object({
@@ -6596,6 +6596,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			array(lazy(() => JsonValueRemoteCodec$schema6())),
 			record(string(), lazy(() => JsonValueRemoteCodec$schema6())).readonly()
 		]);
+		let JsonValueRemoteCodec$schema7$value;
+		const JsonValueRemoteCodec$schema7 = () => JsonValueRemoteCodec$schema7$value ??= union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema7())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
+		]);
 		let _melite_estate_runs_runs_list_parameter_0$schema$value;
 		const _melite_estate_runs_runs_list_parameter_0$schema = () => _melite_estate_runs_runs_list_parameter_0$schema$value ??= string();
 		let _melite_estate_runs_runs_list_result$schema$value;
@@ -6607,8 +6617,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				number(),
 				literal(false),
 				literal(true),
-				array(lazy(() => JsonValueRemoteCodec$schema())),
-				record(string(), lazy(() => JsonValueRemoteCodec$schema())).readonly()
+				array(lazy(() => JsonValueRemoteCodec$schema2())),
+				record(string(), lazy(() => JsonValueRemoteCodec$schema2())).readonly()
 			])).readonly())
 		});
 		let _melite_estate_runs_runs_start_parameter_0$schema$value;
@@ -6618,8 +6628,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema4())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema4())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema6())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema6())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_start_result$schema$value;
 		const _melite_estate_runs_runs_start_result$schema = () => _melite_estate_runs_runs_start_result$schema$value ??= object({
@@ -6636,8 +6646,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema5())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema5())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema7())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema7())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_stop_parameter_0$schema$value;
 		const _melite_estate_runs_runs_stop_parameter_0$schema = () => _melite_estate_runs_runs_stop_parameter_0$schema$value ??= string();
@@ -6648,8 +6658,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema6())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema6())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema())).readonly()
+		])).readonly();
+		let _melite_estate_runs_runs_subscribe_parameter_0$schema$value;
+		const _melite_estate_runs_runs_subscribe_parameter_0$schema = () => _melite_estate_runs_runs_subscribe_parameter_0$schema$value ??= string();
+		let _melite_estate_runs_runs_subscribe_result$schema$value;
+		const _melite_estate_runs_runs_subscribe_result$schema = () => _melite_estate_runs_runs_subscribe_result$schema$value ??= record(string(), union([
+			literal(null),
+			string(),
+			number(),
+			literal(false),
+			literal(true),
+			array(lazy(() => JsonValueRemoteCodec$schema5())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema5())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_validate_parameter_0$schema$value;
 		const _melite_estate_runs_runs_validate_parameter_0$schema = () => _melite_estate_runs_runs_validate_parameter_0$schema$value ??= record(string(), union([
@@ -6658,8 +6680,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema2())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema2())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema3())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema3())).readonly()
 		])).readonly();
 		let _melite_estate_runs_runs_validate_result$schema$value;
 		const _melite_estate_runs_runs_validate_result$schema = () => _melite_estate_runs_runs_validate_result$schema$value ??= record(string(), union([
@@ -6668,8 +6690,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			number(),
 			literal(false),
 			literal(true),
-			array(lazy(() => JsonValueRemoteCodec$schema3())),
-			record(string(), lazy(() => JsonValueRemoteCodec$schema3())).readonly()
+			array(lazy(() => JsonValueRemoteCodec$schema4())),
+			record(string(), lazy(() => JsonValueRemoteCodec$schema4())).readonly()
 		])).readonly();
 		const TYPERT_REMOTE$2 = {
 			package: "@melite/estate-runs",
@@ -6699,7 +6721,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 105,
+						"line": 110,
 						"column": 9
 					}
 				},
@@ -6728,7 +6750,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 77,
+						"line": 82,
 						"column": 9
 					}
 				},
@@ -6757,7 +6779,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 86,
+						"line": 91,
 						"column": 9
 					}
 				},
@@ -6786,8 +6808,37 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 95,
+						"line": 100,
 						"column": 9
+					}
+				},
+				{
+					id: "@melite/estate-runs#runs/subscribe",
+					service: "runsRemote",
+					namespace: "runs",
+					method: "subscribe",
+					mode: "stream",
+					invocation: { kind: "direct" },
+					parameters: [{
+						name: "runId",
+						wire: "runId",
+						source: "json",
+						codec: {
+							mode: "strict",
+							typeSymbol: "@melite/estate-runs#runs/subscribe:runId",
+							create: _melite_estate_runs_runs_subscribe_parameter_0$schema
+						}
+					}],
+					cancellation: { parameter: "signal" },
+					result: {
+						mode: "strict",
+						typeSymbol: "@melite/estate-runs/types#RunRow",
+						create: _melite_estate_runs_runs_subscribe_result$schema
+					},
+					sourceLocation: {
+						"file": "packages/estate/runs/src/index.ts",
+						"line": 135,
+						"column": 10
 					}
 				},
 				{
@@ -6815,7 +6866,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					},
 					sourceLocation: {
 						"file": "packages/estate/runs/src/index.ts",
-						"line": 114,
+						"line": 119,
 						"column": 9
 					}
 				}
@@ -8832,9 +8883,12 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					ok: true,
 					value
 				};
-				if (ctx.signal.aborted) return;
 				if (isTerminal(value.status)) return;
-				yield* pollRunFrames(address, runId, value, ctx.signal);
+				if (remote === void 0) {
+					yield failure(address, "run stream unavailable — the remote face did not mount (showing one snapshot)");
+					return;
+				}
+				yield* streamRunFrames(remote, runId, address, value, ctx.signal);
 			})();
 		}
 		/** The terminal statuses — the runs seat's own vocabulary (runsRegistry:
@@ -8844,47 +8898,93 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function isTerminal(status) {
 			return isTerminalStatus(status);
 		}
-		/** The live tail (the honest degrade): poll `runs/status` and yield a
-		*  value ONLY when the row moved (no frame spam) until the run turns
-		*  terminal or the holder aborts. A poll error mid-run is not a
-		*  failure frame — the last ok value stays (the kit keeps it); the
-		*  next poll may recover. The cadence (1500ms) rides the run pump's
-		*  own observation granularity, not user perception of latency: stage
-		*  transitions inside the estate tick on the pump's settle path. */
-		async function* pollRunFrames(address, runId, hydrated, signal) {
-			let value = hydrated;
-			const sleep = (ms) => new Promise((resolve) => {
-				const t = setTimeout(() => {
-					signal.removeEventListener("abort", onAbort);
-					resolve("slept");
-				}, ms);
-				const onAbort = () => {
-					clearTimeout(t);
-					resolve("abort");
-				};
-				signal.addEventListener("abort", onAbort, { once: true });
+		/** THE RUN TAIL, STREAM EDITION (1.8, the hand-roll audit's last
+		*  poll retired 2026-10-12 — the poll is DEAD): consume
+		*  `runs/subscribe` through the gateway's reconnecting RemoteStream —
+		*  one item per registry write that moves the run, push on the
+		*  same-origin mux, zero cadence chatter. The laws the poll held,
+		*  kept one-for-one (the bench tail's own charter, streamBenchFrames
+		*  below):
+		*
+		*  - NO FRAME SPAM: an item yields ONLY on row change — status
+		*    drift or the stages' own bytes. The spam floor is seeded from
+		*    the hydrated row, so the stream re-serving the row the view
+		*    already shows stays quiet.
+		*  - THE VISIBILITY LAW (the silent-death cure): a carrier loss —
+		*    the wire dropped, the supervisor is reconnecting — surfaces as
+		*    ONE failure frame beside the last ok value, cleared by the next
+		*    frame. A TERMINAL stream failure (the supervisor gave up) is
+		*    one final failure frame, then the tail ends; the holder can
+		*    reopen.
+		*  - TERMINAL ROW: a settled run ends the tail (the last ok frame
+		*    stays as the view).
+		*  - ABORT: the holder's signal disposes the stream and ends the
+		*    tail clean.
+		*
+		* The loss race: the carrierFailed callback cannot yield from inside
+		* the generator, so it trips a latch the consumption loop races
+		* against the pending iterator step — the voice lands the moment the
+		* loss is noticed, not at recovery. */
+		async function* streamRunFrames(remote, runId, address, hydrated, signal) {
+			let wake;
+			let latch = new Promise((resolve) => {
+				wake = () => resolve("loss");
 			});
-			while (!signal.aborted && !isTerminal(value.status)) {
-				if (await sleep(1500) === "abort" || signal.aborted) return;
-				let row;
-				try {
-					row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId, signal), "runs/status");
-				} catch {
-					continue;
+			const stream = remote.$stream({
+				name: "cards run stream",
+				open: (openSignal) => (0, _melite_card_base_client.estateRemote)().runs.subscribe(runId, openSignal),
+				ended: (accepted) => new _deepseek_ai_dsh_api_gateway_client.RemoteStreamCarrierError(accepted ? `run stream ended after its snapshot (${address})` : `run stream ended before its first frame (${address})`),
+				carrierFailed: () => {
+					wake?.();
 				}
-				let next;
-				try {
-					next = readRun(runId, row);
-				} catch (e) {
-					yield failure(address, e instanceof Error ? e.message : String(e));
-					return;
+			});
+			const onAbort = () => {
+				stream.dispose();
+			};
+			if (signal.aborted) {
+				onAbort();
+				return;
+			}
+			signal.addEventListener("abort", onAbort, { once: true });
+			const iterator = stream[Symbol.asyncIterator]();
+			let first = true;
+			let lastStatus = hydrated.status;
+			let lastFaces = JSON.stringify(hydrated.stages);
+			try {
+				for (;;) {
+					const step = iterator.next();
+					const raced = await Promise.race([step.then((item) => ({ item })), latch]);
+					let result;
+					if (raced === "loss") {
+						yield failure(address, "run live stream lost — reconnecting (showing the last known state)");
+						latch = new Promise((resolve) => {
+							wake = () => resolve("loss");
+						});
+						result = await step;
+					} else result = raced.item;
+					if (result.done) return;
+					const item = result.value;
+					if (first) {
+						item.accept();
+						first = false;
+					}
+					const value = readRun(runId, item.value);
+					const faces = JSON.stringify(value.stages);
+					if (lastStatus === value.status && lastFaces === faces) continue;
+					lastStatus = value.status;
+					lastFaces = faces;
+					yield {
+						ok: true,
+						value
+					};
+					if (isTerminal(value.status)) return;
 				}
-				if (!(next.status !== value.status || JSON.stringify(next.stages) !== JSON.stringify(value.stages))) continue;
-				value = next;
-				yield {
-					ok: true,
-					value
-				};
+			} catch (e) {
+				yield failure(address, "run stream failed: " + (e instanceof Error ? e.message : String(e)));
+				return;
+			} finally {
+				signal.removeEventListener("abort", onAbort);
+				await stream.dispose();
 			}
 		}
 		/** THE BENCH TAIL, STREAM EDITION (2026-09-15, the mux swap — the

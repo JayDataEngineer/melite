@@ -35,6 +35,7 @@ import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.ts";
 import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
+import { installRunsChangeSeam, notifyRunChanged, onRunChange } from "./runsChange.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
 import { readFileSync } from "node:fs";
@@ -284,6 +285,13 @@ export class RunsRuntimeService extends Service {
 
   constructor(ctx: Context) {
     super(ctx, "runs");
+    // THE RUNS CHANGE SEAM (1.8, the run-view push source): the
+    // write spine lives in pure modules (queueCore, runsExecute)
+    // that own no Context, so this service — the seat's owner —
+    // installs the seam on the bus; every writer keeps calling
+    // notifyRunChanged. Fiber-scoped: the effect detaches it when
+    // this fiber dies (the bench seat's installer law, verbatim).
+    installRunsChangeSeam(this.ctx);
     // STROKE 83 — THE BOOT RECONCILE (resurrect is no longer
     // tested-but-unwired): queued sidecars of a DEAD process are
     // REPLAYED through the start door with their own run ids, then
@@ -342,6 +350,14 @@ export class RunsRuntimeService extends Service {
      * the fiber down. */
     const swallowPlanFault = (): void => { /* see the ignore above */ };
     void this.bootReconcile((): boolean => disposed).catch(swallowPlanFault);
+  }
+
+  /** Subscribe to run-row movement (the seat face runs/subscribe
+   *  parks on); returns the unsubscribe. Delegates to the module
+   *  seam — a listener's fault never breaks the write (the wrapper
+   *  guards; the law lives at runsChange.ts onRunChange). */
+  onRunChange(fn: (runId: string) => void): () => void {
+    return onRunChange(fn);
   }
 
   /** THE BOOT RECONCILE (stroke 83; boot_resurrect reborn as a
@@ -1474,6 +1490,7 @@ export class RunsRuntimeService extends Service {
     // re-press on an already-stopping row is idempotent.
     if (run.status === "running") run.status = "stopping";
     run.stopFlag = true;
+    notifyRunChanged(runId);
     // The interrupt rides the injected engine service when the
     // seat exists (best-effort — the flag is the authority).
     try {

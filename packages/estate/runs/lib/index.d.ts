@@ -18,6 +18,10 @@ interface RunsSeat {
         runs: Record<string, unknown>[];
     }>;
     validate(doc: unknown, signal: AbortSignal): Promise<Record<string, unknown>>;
+    /** Subscribe to run-row movement (the seam module's guarded
+     *  wrapper — runsChange.ts in @melite/estate-queue); returns the
+     *  unsubscribe. */
+    onRunChange(fn: (runId: string) => void): () => void;
 }
 declare module "@deepseek-ai/cordis" {
     interface Context {
@@ -49,6 +53,15 @@ export declare class RunsRemoteService extends TypertRemoteService {
     }>;
     /** Endpoint `runs/validate` — the pure compile (registry seat). */
     remoteExportValidate(doc: RunStartDoc, signal: AbortSignal): Promise<RunRow>;
+    /** Endpoint `runs/subscribe` — THE PUSH SOURCE for the live row
+     *  (1.8, the hand-roll audit's last poll, 2026-10-12): the row on
+     *  open, then a fresh row after every registry write that moves
+     *  the run — the change events the write spine fires (the claim,
+     *  the settle, the artifacts harvest, the stop press). Stream mode
+     *  rides the typert logical-stream carrier — the same-origin mux
+     *  the bench tail rides. Abort ends the stream clean; a listener's
+     *  fault never breaks it (the seam's wrapper guards). */
+    subscribe(runId: string, signal: AbortSignal): AsyncIterable<RunRow>;
 }
 /** The runs remote row (the estate mounts it after the registry). */
 export declare const runsRemotePlugin: {

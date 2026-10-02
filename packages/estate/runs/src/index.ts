@@ -24,6 +24,7 @@ import type { RunStartDoc, RunRow } from "./types.ts";
 import {
   Remote,
   TypertRemoteService,
+  remoteErrorOf,
 } from "@deepseek-ai/dsh-typert-protocol";
 
 
@@ -52,6 +53,10 @@ interface RunsSeat {
     doc: unknown,
     signal: AbortSignal,
   ): Promise<Record<string, unknown>>;
+  /** Subscribe to run-row movement (the seam module's guarded
+   *  wrapper — runsChange.ts in @melite/estate-queue); returns the
+   *  unsubscribe. */
+  onRunChange(fn: (runId: string) => void): () => void;
 }
 
 declare module "@deepseek-ai/cordis" {
@@ -116,6 +121,73 @@ export class RunsRemoteService extends TypertRemoteService {
     signal: AbortSignal,
   ): Promise<RunRow> {
     return (await this.ctx.runs.validate(doc, signal)) as RunRow;
+  }
+
+  /** Endpoint `runs/subscribe` — THE PUSH SOURCE for the live row
+   *  (1.8, the hand-roll audit's last poll, 2026-10-12): the row on
+   *  open, then a fresh row after every registry write that moves
+   *  the run — the change events the write spine fires (the claim,
+   *  the settle, the artifacts harvest, the stop press). Stream mode
+   *  rides the typert logical-stream carrier — the same-origin mux
+   *  the bench tail rides. Abort ends the stream clean; a listener's
+   *  fault never breaks it (the seam's wrapper guards). */
+  @Remote({ mode: "stream" })
+  async *subscribe(
+    runId: string,
+    signal: AbortSignal,
+  ): AsyncIterable<RunRow> {
+    signal.throwIfAborted();
+    // One finish arm per park: finish detaches BOTH listeners before
+    // resolving, so it can never run twice; an abort that landed
+    // while the generator was suspended AT A YIELD has no listener
+    // attached — the post-park re-check catches it.
+    const park = (): Promise<void> => new Promise<void>((resolve) => {
+      if (signal.aborted) {
+        resolve();
+        return;
+      }
+      const offAbort = (): void => { signal.removeEventListener("abort", onAbort); };
+      const finish = (): void => {
+        offChange();
+        offAbort();
+        resolve();
+      };
+      const offChange = this.ctx.runs.onRunChange((id) => {
+        if (id !== runId) return;
+        finish();
+      });
+      const onAbort = (): void => { finish(); };
+      signal.addEventListener("abort", onAbort, { once: true });
+    });
+    for (;;) {
+      // THE ZERO-STATE PARK (the bench stream's birth watch, same
+      // law): the gateway classifies a REJECTED open as TERMINAL, so
+      // an unknown run at open would kill the holder's whole stream.
+      // A run id the registry does not know YET — a start racing the
+      // open, a boot replay re-birthing the row — parks instead: the
+      // next runs.changed wake re-reads. runs/status still refuses
+      // unknown-run for direct unary callers — only the WATCH
+      // degrades.
+      let row: Record<string, unknown>;
+      try {
+        row = await this.ctx.runs.status(runId, signal);
+      } catch (error) {
+        // String(code): the code union THIS package's build program
+        // sees carries the protocol's own gateway codes — the runs/*
+        // vocabulary is declared at the producing package
+        // (@melite/estate-queue, next to the throws), which this
+        // package must not pull into its build graph (the header's
+        // structural law), so the watch compares the widened string.
+        const refused = remoteErrorOf(error);
+        if (refused === undefined || String(refused.code) !== "runs/unknown-run") throw error;
+        await park();
+        if (signal.aborted) return;
+        continue;
+      }
+      yield row as RunRow;
+      await park();
+      if (signal.aborted) return;
+    }
   }
 }
 
