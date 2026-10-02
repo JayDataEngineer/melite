@@ -33,6 +33,7 @@ import { useCatalogContractStore } from "./catalogContractStore"
 // string and defaults as an opaque record.
 
 import type { components } from "@melite/contracts/schema"
+import { createClientStore } from "./clientStore"
 
 export type FamilyEntry = components["schemas"]["FamilyEntryWire"]
 export type VariantEntry = components["schemas"]["VariantEntryWire"]
@@ -117,30 +118,26 @@ export function controlnetTypesOf(
 // after expiry re-fetches in the background while still returning the stale
 // cache for immediate responsiveness. This ensures YAML catalog edits are
 // picked up without a manual page refresh.
-let _cache: Catalog | null = null
+// THE SANCTIONED SEAT (the hand-roll row 1.7): the catalog cache is a
+// module-level value with subscribers — `createClientStore` owns the
+// record, the observation and the publication. `_cacheTime`, the retry
+// timer and the in-flight flag stay module locals: they are not observed
+// state, and the seat's contract is about what SUBSCRIBERS see.
+const catalogStore = createClientStore<{ catalog: Catalog | null; loaded: boolean }>({ catalog: null, loaded: false })
 let _cacheTime = 0 // Date.now() of last successful fetch
 const _CACHE_TTL_MS = 30_000 // 30 seconds
 let _inflight: Promise<Catalog> | null = null
-let _loaded = false // true only after a SUCCESSFUL load
 let _bgRetryTimer: ReturnType<typeof setTimeout> | null = null
-const _listeners = new Set<() => void>()
 
-function _notify(): void {
- for (const fn of _listeners) {
- try { fn() } catch (e) { console.warn("[modelCatalog] listener error:", e) }
- }
-}
-
-/** Subscribe to catalog readiness. Called when _cache transitions from
+/** Subscribe to catalog readiness. Called when the catalog transitions from
  * null → populated. Returns an unsubscribe fn. */
 export function onCatalogReady(fn: () => void): () => void {
- _listeners.add(fn)
- return () => { _listeners.delete(fn) }
+ return catalogStore.subscribe(() => { fn() })
 }
 
 /** True after the catalog has been successfully loaded at least once. */
 export function isCatalogLoaded(): boolean {
- return _loaded
+ return catalogStore.getState().loaded
 }
 
 /** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
@@ -156,10 +153,8 @@ function _ingest(data: unknown): Catalog {
  if (!valid) throw new CatalogContractError(violations)
  useCatalogContractStore.getState().reportOk()
  const catalog = data as Catalog
- _cache = catalog
  _cacheTime = Date.now()
- _loaded = true
- _notify()
+ catalogStore.setState({ catalog, loaded: true })
  return catalog
 }
 
@@ -167,7 +162,8 @@ export async function loadCatalog(opts?: { force?: boolean }): Promise<Catalog> 
  // TTL check: if the cache is older than _CACHE_TTL_MS, re-fetch in the
  // background. The stale cache is returned immediately so the UI stays
  // responsive; listeners fire when the fresh data arrives.
- if (_cache && !opts?.force) {
+ const cached = catalogStore.getState().catalog
+ if (cached && !opts?.force) {
  const age = Date.now() - _cacheTime
  if (age > _CACHE_TTL_MS && !_inflight) {
  // Background refresh — don't await, don't block the caller. A failure
@@ -187,10 +183,10 @@ export async function loadCatalog(opts?: { force?: boolean }): Promise<Catalog> 
  }
  // Resolve with the (possibly stale) cache: on failure the GOOD cache
  // keeps serving, on success it just got replaced by _ingest.
- return _cache as Catalog
+ return catalogStore.getState().catalog as Catalog
  })().finally(() => { _inflight = null })
  }
- return _cache
+ return cached
  }
  if (_inflight) return _inflight
  _inflight = (async () => {
@@ -219,7 +215,7 @@ export async function loadCatalog(opts?: { force?: boolean }): Promise<Catalog> 
  * Keeps trying until the catalog loads, then notifies subscribers.
  * Safe to call multiple times — collapses into a single inflight request. */
 export function ensureCatalog(): void {
- if (_loaded) return
+ if (catalogStore.getState().loaded) return
  if (_inflight) return // already trying
  loadCatalog()
  .then(() => {
@@ -245,16 +241,14 @@ export function ensureCatalog(): void {
 }
 
 export function getCachedCatalog(): Catalog | null {
- return _cache
+ return catalogStore.getState().catalog
 }
 
 /** Seed the cache with pre-fetched data (test utility — production code uses
  * loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
  * a fake catalog without going to the network. */
 export function primeCatalog(data: Catalog): void {
- _cache = data
- _loaded = true
- _notify()
+ catalogStore.setState({ catalog: data, loaded: true })
 }
 
 // ── Module-level cache warm: fire the background load immediately on import ──
@@ -301,7 +295,7 @@ function parentModelForRoute(routeKey: string, cat: Catalog): string | undefined
  return undefined
 }
 
-export function familyOf(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
+export function familyOf(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  if (!cat?.models) return undefined
  const own = cat.models[routeKey]?.family
  if (own) return own
@@ -329,7 +323,7 @@ export type StudioBinding = components["schemas"]["StudioBindingWire"]
 
 export function studioOf(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): StudioBinding | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
@@ -346,7 +340,7 @@ export function studioOf(
  */
 export function formOf(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string | undefined {
  if (!cat?.models) return undefined
  const own = cat.models[routeKey]?.form
@@ -357,7 +351,7 @@ export function formOf(
  return parent ? cat.models[parent].form : undefined
 }
 
-export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
+export function familyLabel(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey
  return cat.families?.[fam]?.label ?? routeKey
@@ -373,7 +367,7 @@ export function familyLabel(routeKey: string, cat: Catalog = _cache ?? { familie
  */
 export function familyGenre(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): CardGenre | undefined {
  const fam = familyOf(routeKey, cat)
  // Wire genre is a plain string — narrow onto the view union (never cast).
@@ -400,7 +394,7 @@ export function familyGenre(
  */
 export function familyAccepts(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): SourceMediaType[] {
  const fam = familyOf(routeKey, cat)
  return cat.families?.[fam ?? routeKey]?.accepts ?? []
@@ -419,7 +413,7 @@ export function familyAccepts(
  */
 export function familyTransformMatrix(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): Record<string, SourceMediaType[]> {
  const fam = familyOf(routeKey, cat)
  const transforms = cat.families?.[fam ?? routeKey]?.transforms
@@ -445,7 +439,7 @@ export function familyTransformMatrix(
  */
 export function familyCardSummary(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): CardSummaryEntry | null {
  const fam = familyOf(routeKey, cat)
  return cat.families?.[fam ?? routeKey]?.card_summary ?? null
@@ -453,7 +447,7 @@ export function familyCardSummary(
 
 export function familyConditioning(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
@@ -469,7 +463,7 @@ export function familyConditioning(
  */
 export function familyOptionalOutputs(
  familyId: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): OptionalOutputEntry[] {
  return cat.families?.[familyId]?.optional_outputs ?? []
 }
@@ -480,12 +474,12 @@ export function familyOptionalOutputs(
  * CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
  * caller keeps its own pre-catalog bootstrap value).
  */
-export function canvasDefaultModel(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
+export function canvasDefaultModel(cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0]
 }
 
 /** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
-export function variantLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
+export function variantLabel(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const m = cat.models?.[routeKey]
  return m?.variant_label ?? m?.label ?? routeKey
 }
@@ -508,7 +502,7 @@ export interface FamilyOption {
  */
 export function familiesForForm(
  formTag: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): FamilyOption[] {
  const visible = dropdownModels(formTag, cat)
  const seen = new Set<string>()
@@ -536,7 +530,7 @@ export function familiesForForm(
  */
 export function familyPrimaryRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey
@@ -564,7 +558,7 @@ export function familyPrimaryRoute(
  return members.find((k) => k === fam) ?? members[0]
 }
 
-export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
+export function modelLabel(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string {
  const m = cat.models[routeKey]
  if (!m) return routeKey
  // Prefer the model's own label, then family label, then key.
@@ -574,13 +568,13 @@ export function modelLabel(routeKey: string, cat: Catalog = _cache ?? { families
 /** Description for a model route, or undefined. Callers provide their own
  * fallback string — this returns `undefined` so `??` works. Reads the
  * `description:` declared on the model's family in the catalog YAML. */
-export function modelDescription(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
+export function modelDescription(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): string | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
  return cat.families?.[fam]?.description ?? undefined
 }
 
-export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): PromptGuide | undefined {
+export function promptGuide(routeKey: string, cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): PromptGuide | undefined {
  const fam = familyOf(routeKey, cat)
  if (!fam) return undefined
  return cat.families[fam]?.prompt_guide ?? undefined
@@ -588,7 +582,7 @@ export function promptGuide(routeKey: string, cat: Catalog = _cache ?? { familie
 
 export function dropdownModels(
  formTag?: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] {
  const out: string[] = []
  for (const [key, spec] of Object.entries(cat.models)) {
@@ -606,7 +600,7 @@ export function dropdownModels(
 
 export function variantSiblings(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string[] {
  const fam = familyOf(routeKey, cat)
  if (!fam) return routeKey ? [routeKey] : []
@@ -619,7 +613,7 @@ export function variantSiblings(
  * Models hidden from the dropdown because they're reachable only via a
  * variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
  */
-export function hiddenFromDropdown(cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): Set<string> {
+export function hiddenFromDropdown(cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null }): Set<string> {
  return new Set(
  Object.entries(cat.models)
  .filter(([, m]) => m.hide_from_dropdown)
@@ -634,7 +628,7 @@ export function hiddenFromDropdown(cat: Catalog = _cache ?? { families: {}, mode
  */
 export function variantsForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): VariantEntry[] {
  const own = cat.models[routeKey]?.variants
  if (own) return own
@@ -662,7 +656,7 @@ export function variantsForRoute(
  */
 export function presetsForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): Record<string, PresetEntry> | undefined {
  // MODELS PRESENCE (2026-09-12): see routeCoordinates — models is always
  // present here. Direct access, no `?.` on models.
@@ -678,7 +672,7 @@ export function presetsForRoute(
  */
 export function activeVariantForRoute(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): VariantEntry | undefined {
  // Direct hit in this model's own variants. A route can be BOTH a
  // variant row's route AND its PRIMARY quant cell's route (krea-2-raw:
@@ -719,7 +713,7 @@ export function activeVariantForRoute(
  */
 export function routeCoordinates(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): { variant: string | undefined; quant: string | undefined } {
  // MODELS PRESENCE (2026-09-12): every Catalog reaching here carries
  // models — the default parameter literal declares it, _ingest only runs
@@ -795,7 +789,7 @@ function matrixCell(
 export function composeVariantRoute(
  currentRoute: string,
  clicked: { group?: string; quant?: string; route?: string },
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): string {
  const fam = familyOf(currentRoute, cat)
  const clickedRoute = clicked.route
@@ -826,7 +820,7 @@ export function composeVariantRoute(
 export function axisCellExists(
  currentRoute: string,
  clicked: { group?: string; quant?: string; route?: string },
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): boolean {
  if (!clicked.route) return true
  const fam = familyOf(currentRoute, cat)
@@ -843,7 +837,7 @@ export function axisCellExists(
  */
 export function familyHasVariantAxis(
  routeKey: string,
- cat: Catalog = _cache ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
+ cat: Catalog = catalogStore.getState().catalog ?? { families: {}, models: {}, capabilities: null, engine_order: null, quant_order: null },
 ): boolean {
  const fam = familyOf(routeKey, cat)
  const groups = fam ? (cat.families?.[fam]?.variant_groups as Record<string, unknown> | undefined) : undefined

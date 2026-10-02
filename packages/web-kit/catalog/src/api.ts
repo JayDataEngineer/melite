@@ -52,6 +52,7 @@
 import type { EstateDoorUrl } from "./generated/gatewayDoors"
 import { readAsDataURL } from "@melite/formats/readFile"
 import { sleep } from "./sleep"
+import { createClientStore } from "./clientStore"
 
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()
@@ -92,25 +93,28 @@ function shouldRetryStatus(status: number, method: string): boolean {
 
 export type BackendState = 'online' | 'degraded' | 'offline'
 
-let state: BackendState = 'online'
+// THE SANCTIONED SEAT (the hand-roll row 1.7): backend liveness is a
+// module-level value, which is exactly what `createClientStore` owns —
+// observation, synchronous publication, and shallow-merged patches.
+// The public surface below is unchanged (`getBackendState` /
+// `onBackendState`); only the notification half moved onto the store.
+const backendStore = createClientStore<{ state: BackendState }>({ state: "online" })
 let consecutiveFail = 0
 
-const listeners = new Set<(s: BackendState) => void>()
-
-export function getBackendState(): BackendState { return state }
+export function getBackendState(): BackendState { return backendStore.getState().state }
 
 /** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
 export function onBackendState(cb: (s: BackendState) => void): () => void {
-  listeners.add(cb)
-  return () => { listeners.delete(cb) }
+  // The store notifies every subscriber with (next, prev); the public
+  // contract only ever handed the new value, so the callback reads it
+  // from the record. A listener fault must not break the chain — the
+  // store owns that guard, exactly as the hand-rolled loop did.
+  return backendStore.subscribe((next) => { cb(next.state) })
 }
 
 function setState(next: BackendState) {
-  if (next === state) return
-  state = next
-  for (const cb of listeners) {
-    try { cb(next) } catch { /* listener faults must not break the chain */ }
-  }
+  if (next === backendStore.getState().state) return
+  backendStore.setState({ state: next })
 }
 
 /** True if `input` targets our own backend (same-origin or root-relative). */

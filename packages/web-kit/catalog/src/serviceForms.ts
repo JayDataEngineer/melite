@@ -17,6 +17,7 @@
 // new `selectedService === "..."` branch in N components.
 
 import { apiFetch } from "./api"
+import { createClientStore } from "./clientStore"
 
 export interface FormEntry {
   /** sidebar_key — the MCP tool / surface name shown in the sidebar. */
@@ -72,33 +73,33 @@ export interface SidebarItem {
   genre: Genre
 }
 
-let _cache: FormsData = {}
+// THE SANCTIONED SEAT (the hand-roll row 1.7): the forms cache is a
+// module-level value with subscribers — `createClientStore` owns the
+// record, the observation and the publication. The cache itself moves
+// INTO the record (it was module state anyway); the exported accessors
+// keep their names and their shapes.
+const formsStore = createClientStore<{ cache: FormsData }>({ cache: {} })
 let _inflight: Promise<FormsData> | null = null
-const _listeners = new Set<() => void>()
-
-function notify(): void {
-  for (const fn of _listeners) {
-    try { fn() } catch (e) { console.warn("[serviceForms] listener error:", e) }
-  }
-}
 
 export async function loadForms(opts?: { force?: boolean }): Promise<FormsData> {
-  if (Object.keys(_cache).length > 0 && !opts?.force) return _cache
+  if (Object.keys(formsStore.getState().cache).length > 0 && !opts?.force) return formsStore.getState().cache
   if (_inflight) return _inflight
   _inflight = (async () => {
     try {
       const res = await apiFetch("/v1/forms")
       if (!res.ok) {
         console.warn("[serviceForms] /v1/forms failed:", res.status)
-        return _cache
+        return formsStore.getState().cache
       }
       const data = await res.json()
-      _cache = (data?.forms ?? {}) as FormsData
-      notify()
-      return _cache
+      // The record IS the publication: a changed cache notifies the
+      // store's subscribers, and an unchanged one notifies nobody — the
+      // engine's own patch law, replacing the hand-rolled notify().
+      formsStore.setState({ cache: (data?.forms ?? {}) as FormsData })
+      return formsStore.getState().cache
     } catch (e) {
       console.warn("[serviceForms] fetch error:", e)
-      return _cache
+      return formsStore.getState().cache
     } finally {
       _inflight = null
     }
@@ -107,12 +108,11 @@ export async function loadForms(opts?: { force?: boolean }): Promise<FormsData> 
 }
 
 export function getCachedForms(): FormsData {
-  return _cache
+  return formsStore.getState().cache
 }
 
 export function subscribeForms(fn: () => void): () => void {
-  _listeners.add(fn)
-  return () => { _listeners.delete(fn) }
+  return formsStore.subscribe(() => { fn() })
 }
 
 // ── Selectors ──────────────────────────────────────────────────────────────
@@ -135,7 +135,7 @@ export function subscribeForms(fn: () => void): () => void {
  * `selectedService`), return the form-tag it belongs to. This is THE
  * primitive that drives every render decision in GenerateFormBody.
  */
-export function formForSidebarKey(sidebarKey: string, forms: FormsData = _cache): string | undefined {
+export function formForSidebarKey(sidebarKey: string, forms: FormsData = formsStore.getState().cache): string | undefined {
   for (const [formTag, entry] of Object.entries(forms)) {
     if (entry.sidebar_key === sidebarKey) return formTag
   }
@@ -146,12 +146,12 @@ export function formForSidebarKey(sidebarKey: string, forms: FormsData = _cache)
  * Check whether the given sidebar_key belongs to the given form-tag.
  * Internal — the convenience predicates below are the public API.
  */
-function isForm(sidebarKey: string, formTag: string, forms: FormsData = _cache): boolean {
+function isForm(sidebarKey: string, formTag: string, forms: FormsData = formsStore.getState().cache): boolean {
   return forms[formTag]?.sidebar_key === sidebarKey
 }
 
 /** True if the sidebar_key belongs to ANY of the given form-tags. */
-function isInAnyForm(sidebarKey: string, formTags: string[], forms: FormsData = _cache): boolean {
+function isInAnyForm(sidebarKey: string, formTags: string[], forms: FormsData = formsStore.getState().cache): boolean {
   return formTags.some((t) => isForm(sidebarKey, t, forms))
 }
 
@@ -170,7 +170,7 @@ export const isEditForm     = (k: string) => isForm(k, "form_edit")
  * True if the sidebar_key belongs to any audio-genre form-tag.
  * (form_tts, form_voice, form_voice_studio, form_music, form_sound)
  */
-export function isAudioForm(sidebarKey: string, forms: FormsData = _cache): boolean {
+export function isAudioForm(sidebarKey: string, forms: FormsData = formsStore.getState().cache): boolean {
   return isInAnyForm(sidebarKey, ["form_tts", "form_voice", "form_voice_studio", "form_music", "form_sound"], forms)
 }
 
