@@ -40883,8 +40883,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*   (zoomIn — transform/opacity, zero reflow, NO modal pop).
 		* • While the settle holds the box shows a pure SKELETON; the real
 		*   detail swaps in after ZOOM_SKELETON_MS.
-		* • Close vectors: the Collapse (X) button, a backdrop click
-		*   (target === currentTarget), and Escape — all direct onClose.
+		* • Close vectors: the Collapse (X) button and a backdrop click
+		*   (target === currentTarget) call onClose directly; Escape belongs
+		*   to DSH's useModalLayer, which also owns the focus lifetime and
+		*   the layer stack (the dialog contract on the root is what it keys
+		*   on).
 		* • The overlay is the scroll container; the inner flex centers a
 		*   card shorter than the area and scrolls one that is taller.
 		*/

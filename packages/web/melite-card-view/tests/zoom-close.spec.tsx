@@ -65,9 +65,49 @@ describe("the dismiss arms — Escape and backdrop close, nothing else", () => {
   test("other keys stay quiet (never a stray dismiss)", async () => {
     const rec = mount();
     await screen.findByText("detail-body", {}, { timeout: 4000 });
-    fireEvent.keyDown(window, { key: "a" });
-    fireEvent.keyDown(window, { key: "Enter" });
+    // on the DOCUMENT, like the Escape arm: the listener the overlay
+    // answers to lives there, so a window-dispatched key would prove
+    // nothing (measured in happy-dom — the two dispatch targets do
+    // not reach each other's listeners).
+    fireEvent.keyDown(document, { key: "a" });
+    fireEvent.keyDown(document, { key: "Enter" });
     expect(rec.closes()).toBe(0);
+  });
+
+  test("the overlay takes focus on open and gives it back on close", async () => {
+    // MEASURED (2026-10-12): DSH's useModalLayer moves focus into the
+    // dialog's first control when the layer opens, and restores the
+    // previously focused element when it closes. That focus lifetime
+    // was the primitive's whole point over a bare keydown listener —
+    // it is pinned here so a regression in either direction is red.
+    const opener = document.createElement("button");
+    document.body.appendChild(opener);
+    opener.focus();
+    expect(document.activeElement).toBe(opener);
+
+    const rec = mount();
+    await screen.findByText("detail-body", {}, { timeout: 4000 });
+    expect(document.activeElement).not.toBe(opener);
+    expect(overlay().contains(document.activeElement)).toBe(true);
+
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(rec.closes()).toBe(1);
+    cleanup(); // the layer's dispose restores focus
+    expect(document.activeElement).toBe(opener);
+    opener.remove();
+  });
+
+  test("the overlay carries the dialog contract the primitive keys on", async () => {
+    // MEASURED (2026-10-12): useModalLayer registers against the
+    // element carrying role="dialog" + aria-modal and names it with
+    // aria-label. Without those the layer never registers and Escape
+    // stops working — so the semantics are pinned, not assumed.
+    mount();
+    await screen.findByText("detail-body", {}, { timeout: 4000 });
+    const el = overlay();
+    expect(el.getAttribute("role")).toBe("dialog");
+    expect(el.getAttribute("aria-modal")).toBe("true");
+    expect(el.getAttribute("aria-label")).toBe("Stage hero");
   });
 
   test("a backdrop click closes (the target is the currentTarget)", async () => {

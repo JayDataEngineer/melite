@@ -10,15 +10,17 @@
  *   (zoomIn — transform/opacity, zero reflow, NO modal pop).
  * • While the settle holds the box shows a pure SKELETON; the real
  *   detail swaps in after ZOOM_SKELETON_MS.
- * • Close vectors: the Collapse (X) button, a backdrop click
- *   (target === currentTarget), and Escape — all direct onClose.
+ * • Close vectors: the Collapse (X) button and a backdrop click
+ *   (target === currentTarget) call onClose directly; Escape belongs
+ *   to DSH's useModalLayer, which also owns the focus lifetime and
+ *   the layer stack (the dialog contract on the root is what it keys
+ *   on).
  * • The overlay is the scroll container; the inner flex centers a
  *   card shorter than the area and scrolls one that is taller.
  */
 import { createElement as h, useCallback, useEffect, useRef, useState, type ReactPortal } from 'react'
 import { createPortal } from 'react-dom'
-import { useModalLayer } from '@deepseek-ai/dsh-client-ui-primitives'
-import { IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
+import { useModalLayer, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular } from '@deepseek-ai/dsh-client-ui-primitives'
 import { fetchEnhanceRoutes, getCardLlm, setCardLlm } from '@melite/catalog'
 import { isLiveRunStatus, statusOrPendingOf } from '@melite/contracts/stageView'
 import css from './card.module.css'
