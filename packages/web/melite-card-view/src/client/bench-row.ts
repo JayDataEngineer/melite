@@ -4,7 +4,7 @@
 
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
-import { statusOf, type CardStatus } from '@melite/contracts/stageView'
+import { statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
 
 /** CardStatus → the installed StateDot union (FlowCards' CardRowLine
  *  law: done|warning|ongoing|error — a stage that never ran shows NO
@@ -98,11 +98,16 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   const title = isGroup
     ? 'Group (' + String(children) + ')'
     : (stage.title ?? stage.card ?? stage.id)
-  // THE FOLD AT THE SEAM (2026-10-01): 'ready' — a status word the
-  // estate never stamps, invented to mean "never ran" — is dead. The
-  // fold's pending home carries that meaning (no dot, not running),
-  // and every real word folds to its CardStatus exactly once, here.
-  const status = statusOf(typeof stage.runStatus === 'string' ? stage.runStatus : '')
+  // THE FOLD AT THE SEAM: every word in the vocabulary folds to its
+  // CardStatus exactly once, here. A word outside it is "never ran"
+  // — this seat's own no-information home (no dot, not running) — and
+  // the membership test is explicit, because the contract fold now
+  // refuses an unknown word rather than laundering it into 'pending'
+  // (operator decision 2026-10-12). 'ready' is NOT such a word: it is
+  // FlowStatus's "awaiting run" (the bench stamps it at birth) and
+  // folds to the waiting face like 'pending'.
+  const rawStatus = typeof stage.runStatus === 'string' ? stage.runStatus : ''
+  const status: CardStatus = statusOrPendingOf(rawStatus)
   // THE WEBHOOK FEED (stroke 46b, the operator's order): the engine's
   // /ws progress tap folds activity + progress onto the stage rows —
   // the drill shows them LIVE (the tile keeps its percent pill).

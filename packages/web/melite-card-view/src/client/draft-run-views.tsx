@@ -13,7 +13,7 @@ import type { CardsDraftValue, CardsRunValue, BenchStageView, CardsBenchValue } 
 import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
 import { STATUS_DOT } from './bench-row.ts'
-import { isLiveRunStatus, statusOf } from '@melite/contracts/stageView'
+import { isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -160,7 +160,13 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
           // statusOf, so 'completed' — the word the estate settles
           // every finished stage with — lands on 'done' and shows its
           // dot; the old raw-word table never knew it.
-          const dot = STATUS_DOT[statusOf(s.status)]
+          // A word outside the vocabulary rides BARE (no dot, no
+          // lying color) — this seat's own law, kept explicit now that
+          // the contract fold refuses rather than folding garbage to
+          // 'pending' (operator decision 2026-10-12).
+          const word = typeof s.status === 'string' ? s.status.toLowerCase() : ''
+          // null (not undefined) is the map's own "no dot" value
+          const dot = RUN_STATUS_WORDS.has(word) ? STATUS_DOT[statusOf(word)] : null
           const face = thumb !== null
             ? h('a', { href: thumb, target: '_blank', rel: 'noreferrer', className: css.tileImgLink },
                 h('img', { className: css.tileImg, src: thumb, alt: s.id, loading: 'lazy' }))

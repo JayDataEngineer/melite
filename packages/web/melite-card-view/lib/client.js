@@ -7385,12 +7385,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				case "running":
 				case "live": return "running";
 				case "pending":
-				case "queued": return "queued";
+				case "queued":
+				case "ready": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
 				case "skipped": return "skipped";
 				case "reused": return "reused";
-				default: return "pending";
+				case "": return "pending";
+				default: {
+					const known = [...RUN_STATUS_WORDS].join(", ");
+					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
+				}
 			}
 		}
 		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
@@ -7409,6 +7414,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		}
 		function isLiveRunStatus(value) {
 			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
+		}
+		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+		*  answers "what should this row show", and a word outside the
+		*  vocabulary has no answer to show — it is the no-information home,
+		*  not a crash. `statusOf` above stays the strict classifier (it
+		*  refuses, because a caller asking it for a classification deserves
+		*  the truth); every view seat reads through THIS so the membership
+		*  law lives once instead of per seat. Absence ('') folds the same
+		*  way, which is why it needs no case of its own downstream. */
+		function statusOrPendingOf(value) {
+			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -7516,7 +7532,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				inputIndices,
 				result: harvested,
 				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
-				status: statusOf(owner.runStatus),
+				status: statusOrPendingOf(owner.runStatus),
 				...error === "" ? {} : { error },
 				runId,
 				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
@@ -7574,6 +7590,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"live",
 				"pending",
 				"queued",
+				"ready",
 				"stale",
 				"cached",
 				"skipped",
@@ -8220,6 +8237,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function tileStatusFromVerdict(verdict) {
 			if (verdict === "gone") return "stopped";
 			if (isLiveRunStatus(verdict)) return "running";
+			if (!RUN_STATUS_WORDS.has(verdict.toLowerCase())) return "stopped";
 			const folded = statusOf(verdict);
 			if (folded === "done" || folded === "cached" || folded === "skipped" || folded === "reused") return "done";
 			return "stopped";
@@ -9197,7 +9215,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const isGroup = stage.card === "group";
 			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
 			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
-			const status = statusOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
+			const status = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
 			typeof stage.activity === "string" && stage.activity;
 			const progress = stage.progress ?? null;
 			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
@@ -12627,6 +12645,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			statusOf: () => statusOf,
+			statusOrPendingOf: () => statusOrPendingOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
@@ -44234,7 +44253,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				onClick: onRestore
 			}, restoring ? "Restoring…" : "Restore to bench")), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.restoreNote }, note) : null, (0, react.createElement)("ol", { className: card_module_css_default.tileGrid }, run.stages.map((s) => {
 				const thumb = s.url !== void 0 ? toRunMediaUrl(run.runId, s.url) : null;
-				const dot = STATUS_DOT[statusOf(s.status)];
+				const word = typeof s.status === "string" ? s.status.toLowerCase() : "";
+				const dot = RUN_STATUS_WORDS.has(word) ? STATUS_DOT[statusOf(word)] : null;
 				const face = thumb !== null ? (0, react.createElement)("a", {
 					href: thumb,
 					target: "_blank",

@@ -2521,12 +2521,17 @@ window.__ModuleLoader__.load({
 				case "running":
 				case "live": return "running";
 				case "pending":
-				case "queued": return "queued";
+				case "queued":
+				case "ready": return "queued";
 				case "stale": return "stale";
 				case "cached": return "cached";
 				case "skipped": return "skipped";
 				case "reused": return "reused";
-				default: return "pending";
+				case "": return "pending";
+				default: {
+					const known = [...RUN_STATUS_WORDS].join(", ");
+					throw new Error(`statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`);
+				}
 			}
 		}
 		/** THE TERMINAL JUDGEMENT — the other half of the same question ("is
@@ -2545,6 +2550,17 @@ window.__ModuleLoader__.load({
 		}
 		function isLiveRunStatus(value) {
 			return !isTerminalStatus(value) && LIVE_RUN_STATUSES.has(value.toLowerCase());
+		}
+		/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+		*  answers "what should this row show", and a word outside the
+		*  vocabulary has no answer to show — it is the no-information home,
+		*  not a crash. `statusOf` above stays the strict classifier (it
+		*  refuses, because a caller asking it for a classification deserves
+		*  the truth); every view seat reads through THIS so the membership
+		*  law lives once instead of per seat. Absence ('') folds the same
+		*  way, which is why it needs no case of its own downstream. */
+		function statusOrPendingOf(value) {
+			return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : "pending";
 		}
 		function galleryOf(value) {
 			if (!Array.isArray(value)) return void 0;
@@ -2652,7 +2668,7 @@ window.__ModuleLoader__.load({
 				inputIndices,
 				result: harvested,
 				...Array.isArray(row["history"]) ? { history: row["history"] } : {},
-				status: statusOf(owner.runStatus),
+				status: statusOrPendingOf(owner.runStatus),
 				...error === "" ? {} : { error },
 				runId,
 				...typeof row["saveToAssets"] === "boolean" ? { saveToAssets: row["saveToAssets"] } : {}
@@ -2710,6 +2726,7 @@ window.__ModuleLoader__.load({
 				"live",
 				"pending",
 				"queued",
+				"ready",
 				"stale",
 				"cached",
 				"skipped",
@@ -3174,6 +3191,7 @@ window.__ModuleLoader__.load({
 			searchedVoice: () => searchedVoice,
 			stageEngineOf: () => stageEngineOf,
 			statusOf: () => statusOf,
+			statusOrPendingOf: () => statusOrPendingOf,
 			stripKeys: () => stripKeys,
 			stripSelfNamedModel: () => stripSelfNamedModel,
 			subcardCount: () => subcardCount,
@@ -8063,7 +8081,7 @@ window.__ModuleLoader__.load({
 								title: h.runId + " · " + (h.status ?? "?") + " · " + (h.durationSec ?? "?") + "s" + (h.at ? " · " + (/* @__PURE__ */ new Date(h.at * 1e3)).toLocaleString() : ""),
 								className: studio_module_css_default.histChip,
 								children: [
-									statusOf(h.status ?? "") === "done" ? "✓" : "×",
+									RUN_STATUS_WORDS.has((h.status ?? "").toLowerCase()) && statusOf(h.status ?? "") === "done" ? "✓" : "×",
 									" ",
 									(h.runId ?? "run").replace(/^run-/, "").slice(0, 8),
 									" · ",

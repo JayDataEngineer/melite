@@ -148,6 +148,12 @@ export function statusOf(value: string): CardStatus {
     // probe while the row showed never-ran (audit 185d8565's R1).
     case 'pending':
     case 'queued':
+    // 'ready' is FlowStatus's "all stages have params, awaiting run"
+    // (FlowTypes.ts) — the word the bench document stamps at birth
+    // (estate/drafts/src/bench.ts). It is the waiting face, exactly
+    // like 'pending'; it is a real word, not the dead sentinel the
+    // bench-row comment once claimed.
+    case 'ready':
       return 'queued'
     case 'stale':
       return 'stale'
@@ -157,8 +163,24 @@ export function statusOf(value: string): CardStatus {
       return 'skipped'
     case 'reused':
       return 'reused'
-    default:
+    // ABSENCE is not a word: a seat that hands the fold an empty or
+    // whitespace-only string is saying "no information", and the
+    // no-information home is the same face. It is spelled as a case so
+    // the refusal below stays about UNKNOWN WORDS.
+    case '':
       return 'pending'
+    // THE REFUSAL (operator decision 2026-10-12): a word outside the
+    // vocabulary fails loud here, exactly as readRunStatus already
+    // fails loud at the read door — the fold must never launder an
+    // unrecognized word into 'pending' and render it as a stage that is
+    // merely waiting. The message names the word and points at the one
+    // vocabulary owner.
+    default: {
+      const known = [...RUN_STATUS_WORDS].join(', ')
+      throw new Error(
+        `statusOf: unknown run-status word ${JSON.stringify(value)} — the vocabulary is RUN_STATUS_WORDS (${known}); add the word to the fold and the set together, never fold garbage to 'pending'`,
+      )
+    }
   }
 }
 
@@ -218,9 +240,21 @@ export const RUN_STATUS_WORDS: ReadonlySet<string> = new Set([
   'failed', 'error',
   'stopped', 'interrupted', 'unknown',
   'stopping', 'running', 'live',
-  'pending', 'queued',
+  'pending', 'queued', 'ready',
   'stale', 'cached', 'skipped', 'reused',
 ])
+
+/** THE VIEW-SIDE READ (the shared seam, 2026-10-12): a projection
+ *  answers "what should this row show", and a word outside the
+ *  vocabulary has no answer to show — it is the no-information home,
+ *  not a crash. `statusOf` above stays the strict classifier (it
+ *  refuses, because a caller asking it for a classification deserves
+ *  the truth); every view seat reads through THIS so the membership
+ *  law lives once instead of per seat. Absence ('') folds the same
+ *  way, which is why it needs no case of its own downstream. */
+export function statusOrPendingOf(value: string): CardStatus {
+  return RUN_STATUS_WORDS.has(value.toLowerCase()) ? statusOf(value) : 'pending'
+}
 
 function galleryOf(value: unknown): CardResult['gallery'] {
   if (!Array.isArray(value)) return undefined
@@ -345,7 +379,7 @@ export function projectStageView(
     inputIndices,
      result: harvested,
      ...(Array.isArray(row['history']) ? { history: row['history'] as unknown[] } : {}),
-     status: statusOf(owner.runStatus),
+     status: statusOrPendingOf(owner.runStatus),
     ...(error === '' ? {} : { error }),
     runId,
     ...(typeof row['saveToAssets'] === 'boolean' ? { saveToAssets: row['saveToAssets'] } : {}),

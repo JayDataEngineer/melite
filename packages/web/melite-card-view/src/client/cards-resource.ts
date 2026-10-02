@@ -210,7 +210,7 @@ export const CARDS_BENCH_ADDRESS = 'dsh-resource://cards/bench'
 // stays for this module's callers, but there is no second producer
 // to drift.
 import { benchSessionOf } from '@melite/contracts/benchStage'
-import { isTerminalStatus, isLiveRunStatus, statusOf } from '@melite/contracts/stageView'
+import { isTerminalStatus, isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
 export { benchSessionOf as benchSessionKey }
 
 /** The bench address for one session key. */
@@ -314,6 +314,12 @@ export function tileStatusFromVerdict(verdict: string): 'running' | 'done' | 'st
   // conservative terminal, never a fake spinner.
   if (verdict === 'gone') return 'stopped'
   if (isLiveRunStatus(verdict)) return 'running'
+  // THIS SEAT'S OWN UNREADABLE-WORD LAW, kept explicit: the contract
+  // fold refuses a word outside the vocabulary (operator decision
+  // 2026-10-12), and this seat's contract is the conservative
+  // terminal, not an exception — so the membership test happens HERE,
+  // against the one vocabulary owner, before the fold is called.
+  if (!RUN_STATUS_WORDS.has(verdict.toLowerCase())) return 'stopped'
   const folded = statusOf(verdict)
   if (folded === 'done' || folded === 'cached' || folded === 'skipped' || folded === 'reused') return 'done'
   return 'stopped'

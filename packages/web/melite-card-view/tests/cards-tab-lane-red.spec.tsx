@@ -58,7 +58,7 @@ function mountBench(): void {
   mountEstateFakes({
     benchDoc: {
       draft_id: "bench-p", rev: 1, log: [],
-      stages: [{ id: "s_1", card: "image-edit", title: "Edit", run_status: "idle" }],
+      stages: [{ id: "s_1", card: "image-edit", title: "Edit", run_status: "pending" }],
     },
     draftStages: [{ id: "s_1", card: "image-edit", params: {} }],
     draftBenchRev: 1,
@@ -69,7 +69,7 @@ function mountBench(): void {
       navigation: { address: "dsh-resource://cards/bench" },
       actions: { openResource: () => {} },
     } }),
-    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [{ id: "s_1", card: "image-edit", title: "Edit", runStatus: "idle" }] as unknown as BenchStageView[] } as never }),
+    useResource: () => ({ status: "live" as const, value: { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [{ id: "s_1", card: "image-edit", title: "Edit", runStatus: "pending" }] as unknown as BenchStageView[] } as never }),
   }));
 }
 

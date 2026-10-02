@@ -2,6 +2,7 @@ import { expect, test } from 'vitest'
 
 import {
   RUN_STATUS_WORDS,
+  statusOrPendingOf,
   cardResultFromRecord,
   projectStageView,
   projectUpstreamStages,
@@ -210,9 +211,10 @@ test('projectStageView maps every run status and result run identity', () => {
   // (stopped/interrupted/unknown) folds to stopped; wind-down
   // (stopping) reads running; the estate's queued-for-start stage
   // word (pending) reads queued — agreeing with isLiveRunStatus, its
-  // own live set — while the no-information words (the dead 'ready'
-  // sentinel, garbage, the empty word) alone read pending: never a
-  // dot, never a spinner.
+  // own live set — as does the flow's own 'ready' ("awaiting run"),
+  // which the bench stamps at birth. The empty word alone reads
+  // pending: absence, never a dot, never a spinner. A word outside the
+  // vocabulary refuses.
   const statuses = [
     ['done', 'done'],
     ['completed', 'done'],
@@ -232,13 +234,21 @@ test('projectStageView maps every run status and result run identity', () => {
     ['cached', 'cached'],
     ['skipped', 'skipped'],
     ['reused', 'reused'],
-    ['ready', 'pending'],
-    ['gibberish', 'pending'],
+    ['ready', 'queued'],
   ] as const
   for (const [runStatus, expected] of statuses) {
     expect(projectStageView(owner({}, { runStatus })).status).toBe(expected)
   }
-  expect(projectStageView(owner({}, { runStatus: 'x', runId: 'run-owner' })).runId).toBe('run-owner')
+  // a word outside the vocabulary: the CLASSIFIER refuses loud
+  // (operator decision 2026-10-12) while the VIEW shows the
+  // no-information home — a projection answers what to render, and an
+  // unrecognized word has no answer to render
+  expect(() => statusOf('gibberish')).toThrow(/gibberish/)
+  expect(projectStageView(owner({}, { runStatus: 'gibberish' })).status).toBe('pending')
+  expect(statusOrPendingOf('gibberish')).toBe('pending')
+  // a real word: the fold refuses outside the vocabulary, and this
+  // assertion is about runId precedence, not the status
+  expect(projectStageView(owner({}, { runStatus: 'done', runId: 'run-owner' })).runId).toBe('run-owner')
   expect(projectStageView(owner({ result: { error: 'result failure', runId: 'run-result', assets: [] } })).runId).toBe('run-result')
   expect(projectStageView(owner({ result: { run_id: 'run-snake', assetUrls: ['/asset'] } })).runId).toBe('run-snake')
   expect(projectStageView(owner({ result: { error: 'result failure', assetUrls: ['/asset'] } })).error).toBe('result failure')
@@ -286,16 +296,28 @@ test('projectUpstreamStages maps candidates with defaults and card-specific face
 
 // THE LOCKSTEP WALL (schema-strictness fix 3, 2026-10-01): every word in
 // RUN_STATUS_WORDS must be a word statusOf actually branches on. The
-// fold's default returns 'pending', so a member that folds to 'pending'
-// means the set and the switch disagree — the read door (readRunStatus)
-// would admit a word the fold buries, or the fold would branch on a word
-// the door refuses.
+// fold's default refuses, so a member that throws means the set and the
+// switch disagree — the read door (readRunStatus) would admit a word the
+// fold buries, or the fold would branch on a word the door refuses.
 test('RUN_STATUS_WORDS x statusOf lockstep: every domain member hits an explicit case', () => {
-  const offenders = [...RUN_STATUS_WORDS].filter((w) => statusOf(w) === 'pending')
+  // since the fold refuses unknown words, a member that throws IS a
+  // member the switch does not branch on (previously detectable as a
+  // fold to 'pending')
+  const offenders = [...RUN_STATUS_WORDS].filter((w) => {
+    try {
+      statusOf(w)
+      return false
+    } catch {
+      return true
+    }
+  })
   expect(offenders).toEqual([])
 })
 
-test('garbage stays outside the domain and folds to pending', () => {
+test('garbage stays outside the domain and REFUSES loud (operator decision 2026-10-12)', () => {
   expect(RUN_STATUS_WORDS.has('bananized')).toBe(false)
-  expect(statusOf('bananized')).toBe('pending')
+  expect(() => statusOf('bananized')).toThrow(/bananized/)
+  // absence is not a word: an empty string is "no information", and
+  // the no-information home is the same face
+  expect(statusOf('')).toBe('pending')
 })

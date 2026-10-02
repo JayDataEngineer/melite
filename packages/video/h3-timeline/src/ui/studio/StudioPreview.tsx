@@ -5,7 +5,7 @@
  */
 import type { RefObject } from "react"
 import type { CardStage } from "@melite/contracts"
-import { statusOf } from "@melite/contracts/stageView"
+import { statusOf, RUN_STATUS_WORDS } from "@melite/contracts/stageView"
 import { refGenreOf } from '@melite/models-h3/timelineContract'
 import { EmptyState, PaneHeader } from "@melite/card-base/client"
 import { FilmPlayer } from "@melite-plugin/timeline/ui/timeline"
@@ -142,8 +142,12 @@ export function StudioPreview({
             >
               {/* the owner's done family decides the tick — a run the
                   estate settles 'succeeded' or a cached row is as
-                  done as 'completed' */}
-              {statusOf(h.status ?? "") === "done" ? "✓" : "×"}{" "}
+                  done as 'completed'. A word outside the vocabulary
+                  is not a done run: this seat reads membership
+                  itself, because the contract fold refuses unknown
+                  words (operator decision 2026-10-12) and the studio
+                  must still mount for any word it is handed. */}
+              {(RUN_STATUS_WORDS.has((h.status ?? "").toLowerCase()) && statusOf(h.status ?? "") === "done") ? "✓" : "×"}{" "}
               {(h.runId ?? "run").replace(/^run-/, "").slice(0, 8)} · {h.durationSec ?? "?"}s
             </a>
           ))}

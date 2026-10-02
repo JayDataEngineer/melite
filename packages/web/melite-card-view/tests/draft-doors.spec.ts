@@ -233,22 +233,25 @@ describe("startDraft / runStatus — the run doors", () => {
 
 describe("cardRows — the full precedence + narrowing table", () => {
   const doc = (stages: DraftDoc["stages"]): DraftDoc => ({ draft_id: "d", stages });
-  test("the fold owns the word: named statuses keep their name; synonyms fold; unknown → pending", () => {
-    // pending keeps its name (the no-information home is pending now,
-    // never a fake 'queued' or the dead 'ready' sentinel); cached
-    // keeps its name (the dot map knows it); succeeded folds to done;
-    // error keeps its name; the estate's queued-for-start word folds
-    // to queued; a word nobody knows reads as pending.
+  test("the fold owns the word: named statuses keep their name; synonyms fold; an unknown word REFUSES", () => {
+    // pending is the estate's queued-for-start word and folds to the
+    // waiting face; cached keeps its name (the dot map knows it);
+    // succeeded folds to done; error keeps its name; interrupted is a
+    // deliberate end and folds to stopped; the flow's own 'ready'
+    // ("awaiting run") folds to the waiting face. A word nobody knows
+    // now refuses loud (operator decision 2026-10-12) instead of
+    // rendering as a stage that is merely waiting.
     const rows = cardRows(doc([
       { id: "a", status: "pending" },
       { id: "b", status: "cached" },
       { id: "c", status: "succeeded" },
       { id: "d", status: "error" },
-      { id: "e", status: "weird" },
+      { id: "e", status: "ready" },
       { id: "f", status: "interrupted" },
       { id: "g", status: "success" },
     ]));
-    expect(rows.map((r) => r.status)).toEqual(["queued", "cached", "done", "error", "pending", "stopped", "done"]);
+    expect(rows.map((r) => r.status)).toEqual(["queued", "cached", "done", "error", "queued", "stopped", "done"]);
+    expect(() => cardRows(doc([{ id: "h", status: "weird" }]))).toThrow(/weird/);
   });
   test("live pending → queued (the waiting face); live running → running; live queued → queued; live stopping → running", () => {
     const live = (status: string): RunStatusDoc => ({ run_id: "r", status: "running", stages: [{ id: "x", status }] });
