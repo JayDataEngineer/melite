@@ -17,6 +17,7 @@ import { DECL as florence2Decl } from '@melite/models-florence2'
 import { DECL as joycaptionDecl } from '@melite/models-joycaption'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): each boarded
 // family's declared action composes — the card delegates, never
@@ -97,6 +98,13 @@ const schema = z.object({
   // overlay) and compose never reads it.
 })
 
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
+
 export const inject = ['comfyui']
 
 // THE IDENTITY RUNG (native 2026-09-10 — migrated from the frozen
@@ -149,7 +157,7 @@ export function apply(ctx: Context): void {
       florence2: ['ComfyUI-Florence2'],
       joycaption: ['joycaption_comfyui'],
     },
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     // checkpoint rides admits (the service's admission-extras law):
     // the variant rail's route stamp, admitted but never rendered —
     // no form field, no second picker.
@@ -161,7 +169,7 @@ export function apply(ctx: Context): void {
       // (threshold/character_threshold are 0–1 — a threshold=5 draft
       // refuses LOUD here, never composes), fills declared defaults.
       // The composer's reads below are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('tagger', schemaFn, ['checkpoint', 'model'], p)
       const img = typeof doc.input_image === 'string' ? doc.input_image : ''
       if (!img.trim()) {
         throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)")

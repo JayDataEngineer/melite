@@ -13,6 +13,7 @@ import { bag } from '@melite/contracts/extraKeys'
 import { DECL as inputDecl } from '@melite/models-input'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes the whole segment; an unbound family refuses loud
@@ -40,6 +41,13 @@ const schema = z.object({
   scale_height: z.number().description("Scale Height").min(-1).step(1).default(-1).extra('extra', bag({ order: 5, group: "transform", wtype: 'number', visible_when: 'media_type=image' })),
   scale_method: z.string().description("Scale Method").default("lanczos").extra('extra', bag({ order: 6, group: "transform", wtype: 'text', visible_when: 'media_type=image' })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -107,7 +115,7 @@ export function apply(ctx: Context): void {
     // retired row's admits minus the boarded families' studio
     // writes, which the projection unions from the facts file).
     admits: ['crop', 'scale'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent —
       // the card's own declaration validates the last hop into the
@@ -116,7 +124,7 @@ export function apply(ctx: Context): void {
       // the schema declares no bounds and no defaults (source is the
       // only knob; crop/media_type/scale ride admits, inert). The
       // composer's reads below are reads of the GATED doc.
-      const doc = schema(p) as unknown as Record<string, unknown>
+      const doc = gatedResolve('input-prep', schemaFn, ['crop', 'scale', 'model'], p)
       if (typeof doc.source !== 'string' || !doc.source.trim()) {
         throw new Error("required param 'source' missing on the input-prep card (the staged source — upload, asset drop, prior-run artifact, or input-dir filename)")
       }

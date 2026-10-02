@@ -5,8 +5,14 @@ import { DECL as DECL$1 } from "@melite/models-trellis2-native";
 import { DECL as DECL$2 } from "@melite/models-transfer_rig";
 import { SAMPLERS, SCHEDULERS, vocabulary } from "@melite/comfyui-card-kit/vocab";
 import { bag } from "@melite/contracts/extraKeys";
+import { gatedResolve } from "@melite/comfyui-cordis";
 //#region src/card.ts
-const schema = z.object({
+/** The schema's callable face — ONE cast serving both seams (the
+*  registration's schema carrier and the compose strict resolve's
+*  judge): schemastery schemas are callable (Schema.resolve) but
+*  carry a typed data parameter, while both card-seam consumers
+*  take unknown. */
+const schemaFn = z.object({
 	input_image: z.string().role("path").description("Source image").extra("extra", bag({
 		order: 0,
 		group: "input",
@@ -336,9 +342,14 @@ function apply(ctx) {
 			pixal3d: ["comfyui-core-trellis2", "ComfyUI-MoGe"],
 			transfer_rig: ["melite-autorig-nodes"]
 		},
-		schema,
+		schema: schemaFn,
 		compose(p, model, g, runId) {
-			const doc = schema(p);
+			const doc = gatedResolve("img-to-mesh", schemaFn, [
+				"model",
+				"input_image",
+				"rigged_glb",
+				"target_glb"
+			], p);
 			const bound = ACTION_BINDINGS[model.family ?? model.id];
 			if (bound) bound(doc, model, g, runId);
 			else throw new Error(`no declared action for family '${String(model.family ?? model.id)}' on the img-to-mesh card — every boarded family (pixal3d, trellis2-native, transfer_rig) composes its own segment; this address owns none`);

@@ -48,6 +48,7 @@ import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 const schema = z.object({
   // Ride keys (no .default — the compose-door cascade overlays model
@@ -100,6 +101,13 @@ const schema = z.object({
   // never a declared knob, and compose never reads it: prefixes are
   // family constants below).
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -176,7 +184,7 @@ export function apply(ctx: Context): void {
       pixal3d: ['comfyui-core-trellis2', 'ComfyUI-MoGe'],
       transfer_rig: ['melite-autorig-nodes'],
     },
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -185,7 +193,7 @@ export function apply(ctx: Context): void {
       // declared 4..60; the closed vocabularies refuse outside
       // their rows), fills defaults, passes undeclared keys through
       // inert. The composer's reads below are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('img-to-mesh', schemaFn, ['model', 'input_image', 'rigged_glb', 'target_glb'], p)
       // The arm IS the family's declared action (runId rides the
       // signature; prefixes are family constants, not run-scoped,
       // not knobs).

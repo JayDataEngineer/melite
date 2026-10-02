@@ -31,6 +31,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 /** The served identity space's 11 dims, in its label order (the
  *  bake validator names the same eleven — gender/age/muscle/weight/
@@ -58,6 +59,13 @@ const schema = z.object({
   // law coerces in compose — python step-doc: str(x) != "false")
   transparent: vocabulary(["true", "false"]).description("Background").default("true").extra('extra', bag({ order: 4, group: "turnaround", width: 1, tooltip: "Transparent turnaround background (for compositing into sheets).", wtype: 'select' })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -108,7 +116,7 @@ export function apply(ctx: Context): void {
       { channel: 'default', node: 'SaveImage.0', nodeClass: 'SaveImage' },
     ],
     requires: ['melite-poser-nodes', 'melite-kimodo-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -118,7 +126,7 @@ export function apply(ctx: Context): void {
       // their pin range), fills defaults, passes undeclared keys
       // through inert. The composer's reads below are reads of the
       // GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('anny', schemaFn, ['model'], p)
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) bound(doc, model, g, runId)
       else {

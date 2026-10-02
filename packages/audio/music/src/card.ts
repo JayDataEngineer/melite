@@ -13,6 +13,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 export const schema = z.object({
   prompt: z.string().description("Tags / Description").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "Structured caption: Genre + Vocal Details + Arrangement. E.g. 'funk, pop, soul, guitar, 105 BPM'.", required: true, wtype: 'textarea', })),
@@ -24,6 +25,13 @@ export const schema = z.object({
   lm_cfg_scale: z.number().description("LM CFG").min(0.1).max(10).step(0.1).default(1.7).extra('extra', bag({ order: 4, group: "generation", width: 1, tooltip: "Lyric-encoder guidance (MiniMaxMusic3TextEncode cfg_scale). 1.7 = lane default.", visible_when: 'model=music3' })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: 0, group: "seed", width: 1 })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 // THE FAMILY IDS COME FROM THEIR DECLS (the closure gate's RULE 5):
 // a retyped id breaks the card at RUNTIME — not-boarded — with every
@@ -76,7 +84,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     },
     // stock-only card: the MiniMax + YuE2 nodes ride upstream core
     // (comfy_extras.nodes_minimax_music / nodes_yue2); no requires.
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the h3 admission precedent — the card's
       // own declaration validates the last hop into the engine):
@@ -84,7 +92,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // duration=900 draft refuses LOUD here, never composes),
       // fills defaults, admits legacy keys inert. The composer's
       // reads below are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('music', schemaFn, ['model'], p)
       if (!doc.prompt) {
         throw new Error("required param 'prompt' missing or empty on the music card (the music caption — what the song IS)")
       }

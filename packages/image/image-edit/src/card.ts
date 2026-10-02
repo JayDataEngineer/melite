@@ -51,6 +51,7 @@ import { samplingExtra } from '@melite/comfyui-card-kit/fields'
 import { DECL as qwenImgEdit21Decl } from '@melite/models-qwen-img-edit-21'
 import { DECL as qwenImgEdit2511Decl } from '@melite/models-qwen-img-edit-2511'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve, MASK_RIDERS, LANPAINT_RIDERS } from '@melite/comfyui-cordis'
 
 // THE STACK CAP (the max_images law — the card RIDES the models'
 // DECLs, never a hardcoded count): the roomiest boarded lane's
@@ -143,6 +144,13 @@ export const schema = z.object({  // CARD-OWNED SURFACE ONLY (2026-09-08, the 1:
   use_stock_nodes: z.boolean().description("Use Stock Nodes").default(false).extra('extra', bag({ order: 1, group: "edit_tuning", width: 1, tooltip: "When true, build_img2img_edit emits the stock Qwen-Image-Edit node graph (no DiffSynth patches, no custom ControlNet wiring). Useful for reproducing upstream behavior exactly.", zone: 'params' })),
   double_reference: z.boolean().description("Double Reference").default(false).extra('extra', bag({ order: 2, group: "edit_tuning", width: 1, tooltip: "CURRENTLY UNBUILDABLE on this plane (agent-debt F-4, 2026-09-22): true fires a LOUD refusal — the TS plane builds the stock plain-edit graph only, never a silent plain-edit. Leave false. (When the double-encode lane exists: encode the input image twice — VAE + vision encoder — for stronger identity preservation.)", zone: 'params' })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 // THE BOARDING (2026-09-21, the naming law; order flipped 2026-09-22,
 // operator catch e): the card names its LANES — the family ids name
@@ -273,7 +281,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       outputs: { default: 'image' },
       requiresModel: false,
     },
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -282,7 +290,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // defaults, and passes the mod-plane surface (image1, lanpaint_*,
       // mask bags, loras) through verbatim — nothing drops. The
       // composer's reads below are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('image-edit', schemaFn, ['model', 'loras', ...MASK_RIDERS, ...LANPAINT_RIDERS, 'mask_detector_threshold'], p)
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing or empty on the image-edit card (WHAT to change, not the whole image)")
       }

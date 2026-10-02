@@ -8,6 +8,7 @@ import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 /** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
  * family's declared sfx action — the card owns only dispatch; the
@@ -35,6 +36,13 @@ const schema = z.object({
   duration: z.number().description("Duration (s)").min(0.5).max(300).step(0.5).default(10).extra('extra', bag({ order: null, tooltip: "Output length in seconds" })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -66,13 +74,13 @@ export function apply(ctx: Context): void {
     },
     // renders through the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the h3 admission precedent): the card's
       // own schemastery walk validates types + bounds (duration is
       // 0.5–300 — anything else refuses LOUD, never composes),
       // fills defaults; the composer reads the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('sfx', schemaFn, ['model'], p)
       if (!(doc.prompt as string)?.trim()) {
         throw new Error("required param 'prompt' missing or empty on the sfx card (describe the SOUND, not the scene)")
       }

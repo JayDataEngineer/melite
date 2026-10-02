@@ -11,6 +11,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 export const schema = z.object({
   prompt: z.string().description("Prompt").extra('extra', bag({ order: 0, group: "prompt", columns: 1, tooltip: "What the body DOES — verb-first, one continuous action per segment. Multi-segment: separate with | and pair with motion_prompts.", required: true, wtype: 'textarea', })),
@@ -30,6 +31,13 @@ export const schema = z.object({
   motion_constraints: z.string().description("Joint constraints").extra('extra', bag({ order: 2, group: "chain", tooltip: "Pin joints (e.g. left_foot:ground) — JSON or key:value lines, applied per segment.", wtype: 'textarea' })),
   preview_glb: z.string().role('path').description("Preview character GLB").extra('extra', bag({ order: 0, group: "output", tooltip: "SOMAX-rigged character GLB — the motion is skinned onto it (somax bake) as an animated GLB artifact.", wtype: 'file' })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 // THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
 export const BOARDED: string[] = [kimodoDecl.id]
@@ -98,7 +106,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       },
     ],
     requires: ['melite-kimodo-nodes', 'melite-poser-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -108,7 +116,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // outside separated|regular|nocfg), fills defaults, passes
       // undeclared keys through inert. The composer's reads below
       // are reads of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('motion', schemaFn, ['model'], p)
       if (!doc.prompt || !(doc.prompt as string).trim()) {
         throw new Error("required param 'prompt' missing on the motion card — the motion lane generates FROM a text prompt")
       }

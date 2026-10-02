@@ -260,3 +260,22 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice', fields: QvoiceFields as never }))
   ctx.effect(() => ctx.comfyui.registerPack({ pack: 'qvoice_save', fields: QvoiceSaveFields as never }))
 }
+
+// ── THE COMPOSE RIDER SURFACES (T6, 2026-10-12) ────────────────
+// gatedResolve admits a card's declared knobs plus its riders; the
+// mod packs' own field dicts ARE the rider surface for cards whose
+// lanes read them — derived here so the field surface and the
+// admission surface cannot drift (a new pack field is admitted the
+// day it is declared).
+const fieldKeys = (fields: Schemastery): readonly string[] => Object.keys(fields.dict ?? {})
+
+/** The loras pack's rider keys (every card boarding a lora family). */
+export const LORAS_RIDERS: readonly string[] = fieldKeys(LorasFields)
+/** The lanpaint pack's rider keys (region-inpaint lanes). */
+export const LANPAINT_RIDERS: readonly string[] = fieldKeys(LanpaintFields)
+/** The mask pack's rider keys (region-modality lanes). */
+export const MASK_RIDERS: readonly string[] = fieldKeys(MaskFields)
+/** The qvoice pack's rider keys (voice-lock load lanes). */
+export const QVOICE_RIDERS: readonly string[] = fieldKeys(QvoiceFields)
+/** The qvoice_save pack's rider keys (voice export lanes). */
+export const QVOICE_SAVE_RIDERS: readonly string[] = fieldKeys(QvoiceSaveFields)

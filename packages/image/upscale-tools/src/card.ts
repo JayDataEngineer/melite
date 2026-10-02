@@ -11,6 +11,7 @@ import { bag } from '@melite/contracts/extraKeys'
 import { DECL as seedvr2Decl } from '@melite/models-seedvr2_ema'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 // THE FAMILY BINDINGS (the atom vocabulary, stroke 3): the declared
 // action composes; the legacy kit lane stays the declared fallback
@@ -43,6 +44,13 @@ const schema = z.object({
   // parse via the door's non-strict overlay but compose never reads
   // them).
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -85,7 +93,7 @@ export function apply(ctx: Context): void {
     // for two-card-flow handoff).
     admits: ['filename_prefix'],
     spells: ['input_image'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -95,7 +103,7 @@ export function apply(ctx: Context): void {
       // declared seed default (-1), and passes admits keys through
       // verbatim. The composer's reads below are reads of the GATED
       // doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('upscale-tools', schemaFn, ['filename_prefix', 'model'], p)
       if (!doc.input_image || !(doc.input_image as string).trim()) {
         throw new Error("required param 'input_image' missing or empty on the upscale-tools card (what gets upscaled)")
       }

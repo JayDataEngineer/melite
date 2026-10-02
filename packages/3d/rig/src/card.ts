@@ -37,6 +37,7 @@ import { DECL as anycreatureDecl, bind as speciesBindAction } from '@melite/mode
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 export { parseValidateRigOutput, validateRigReport, ValidateRigOutputError } from './validateRigReport.ts'
 export type { ValidateRigJson, ValidateRigOutput, ValidateRigViolation } from './validateRigReport.ts'
@@ -64,6 +65,13 @@ const schema = z.object({
   max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 7, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win).", min: 1, max: 8 })),
   strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -108,12 +116,12 @@ export function apply(ctx: Context): void {
       },
     ],
     requires: ['melite-autorig-nodes', 'melite-poser-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, _model, g, runId) {
       // THE SCHEMA GATE (the quad-remesh precedent): the declared
       // types + bounds own the last hop into the engine; every read
       // below is a read of the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('rig', schemaFn, ['model'], p)
       const mesh = String(doc.mesh_glb || '')
       if (!mesh.trim()) {
         throw new Error(

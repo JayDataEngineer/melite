@@ -50,6 +50,7 @@ import { mask as maskLane } from './lane.ts'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { DeclaredModifierKind } from '@melite/comfyui-cordis'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 // THE ACTION CARD OWNS ITS SAM PINS (the studio's law, shared —
 // the same weights, the same lane). The three Impact detector
@@ -162,6 +163,13 @@ const figuresOf = (e: Record<string, unknown>, key: string, primary: boolean): n
 const schema = z.object({
   input_image: z.string().role('path').description('Input').extra('extra', bag({ order: 1, group: 'input', width: 2, tooltip: 'The image every mask selects FROM.', wtype: 'image' })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 // The optional search REGION's four entry fields (the EMBEDDED region
 // writes them; -1 = unset, the selection runs unscoped — the four
@@ -455,14 +463,14 @@ export function apply(ctx: Context): void {
     // loud with its fetch URL, never a silent downstream death.
     armWeights,
     mods: MODS,
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, _model, g, runId) {
       // THE SCHEMA GATE (the music/sfx/tts admission precedent):
       // the card's own declaration validates the last hop — here
       // the input's presence (the lane scalars all live in the
       // bags now; the composer's reads below are reads of GATED
       // bag entries through scalarOf).
-      const doc = schema(p) as unknown as Record<string, unknown>
+      const doc = gatedResolve('mask', schemaFn, ['sam3', 'sam2', 'draw', 'model'], p)
       if (typeof doc.input_image !== 'string' || !doc.input_image.trim()) {
         throw new Error("required param 'input_image' missing on the mask card — the mask lane selects FROM an image")
       }

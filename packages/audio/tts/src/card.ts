@@ -11,6 +11,7 @@ import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from '@melite/comfyui-cordis'
 
 export const schema = z.object({
   text: z.string().description("Text").extra('extra', bag({ order: null, placeholder: "The words to speak", tooltip: "The text to synthesize — the design sample on the VoiceDesign lane", required: true, wtype: 'textarea', })),
@@ -66,6 +67,13 @@ export const schema = z.object({
   repetition_penalty: z.number().description("Repetition Penalty").min(0.8).max(2).step(0.01).default(1.05).extra('extra', bag({ order: null })),
   seed: z.number().description("Seed").step(1).default(-1).extra('extra', bag({ order: null })),
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 // THE BOARDED MODELS (the operator's table: SIZES are models —
 // the .6 and the 1.7B checkpoints. Base is a VARIANT (route
@@ -190,7 +198,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     ],
     // Load + TTS ride the authored Audiocore pack; SaveAudio is core.
     requires: ['melite-audio-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     // mode rides admits (the tagger-checkpoint precedent, caught by
     // the estate contract laws 2026-10-10): the audio lane reads
     // p.mode ('full' vs section modes) — a lane-consumed param the
@@ -212,8 +220,15 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // THE SCHEMA GATE (the h3 admission precedent): the card's
       // own schemastery walk validates types + bounds (temperature
       // is 0–2 — anything else refuses LOUD, never composes), fills
-      // defaults; the composer reads the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      // defaults; the composer reads the GATED doc. T6's admission
+      // gate: the qvoice/qvoice_save pack field dicts are the rider
+      // surface; the literal 'qvoice_save' key is admitted so the
+      // card's own off-surface refusal (a stated stale bag names no
+      // surface) still speaks instead of the gate; 'mode' and
+      // 'variant' ride as the family's variant-address params the
+      // lane resolver reads; 'model' rides as the family-default
+      // stamp.
+      const doc = gatedResolve('tts', schemaFn, ['mode', 'variant', 'model', 'qvoice_save', ...QVOICE_RIDERS, ...QVOICE_SAVE_RIDERS], p)
       if (!(doc.text as string)?.trim()) {
         throw new Error("required param 'text' missing or empty on the tts card (the words to speak)")
       }

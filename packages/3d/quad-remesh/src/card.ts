@@ -26,6 +26,7 @@ import { DECL as autoremesherDecl } from '@melite/models-autoremesher'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { bag } from '@melite/contracts/extraKeys'
+import { gatedResolve } from '@melite/comfyui-cordis'
 
 const schema = z.object({
   // This card is model-less, so its six numeric defaults live in the
@@ -43,6 +44,13 @@ const schema = z.object({
   // is ALWAYS "" here; explicit knobs rule) and NO filename_prefix
   // (compose stamps `<runId>/remeshed` internally, never a knob).
 })
+
+/** The schema's callable face — ONE cast serving both seams (the
+ *  registration's schema carrier and the compose strict resolve's
+ *  judge): schemastery schemas are callable (Schema.resolve) but
+ *  carry a typed data parameter, while both card-seam consumers
+ *  take unknown. */
+const schemaFn = schema as unknown as (v: unknown) => Record<string, unknown>
 
 export const inject = ['comfyui']
 
@@ -91,7 +99,7 @@ export function apply(ctx: Context): void {
       { channel: 'default', node: 'AutoRemesher.0', nodeClass: 'AutoRemesher' },
     ],
     requires: ['melite-autoremesher-nodes'],
-    schema: schema as unknown as (v: unknown) => Record<string, unknown>,
+    schema: schemaFn,
     compose(p, model, g, runId) {
       // THE SCHEMA GATE (the audio-trio admission precedent — the
       // card's own declaration validates the last hop into the
@@ -100,7 +108,7 @@ export function apply(ctx: Context): void {
       // — declared 100..1000000), fills defaults, passes undeclared
       // keys through inert. The composer's reads below are reads of
       // the GATED doc.
-      const doc = schema(p) as Record<string, unknown>
+      const doc = gatedResolve('quad-remesh', schemaFn, ['model'], p)
       const input = String(doc.input || '')
       if (!input.trim()) {
         throw new Error(
