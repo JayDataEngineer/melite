@@ -72,6 +72,11 @@ export interface CardRowLineTabRow {
    *  raw word stays on stage.runStatus for the drill's wire truth. */
   status: CardStatus
   dot: 'done' | 'ongoing' | 'error' | 'warning' | null
+  /** THE TRANSPORT-HEALTH CARRY (LOW-23, 2026-10-12): the stage
+   *  row's resource word ('unreachable' while the transport is
+   *  down), or null — never folded into status, never laundered
+   *  into run vocabulary. */
+  health: string | null
   prompt: string | null
   /** the failure carry — the run's own refusal text (rendered on the
    *  tile caption and the drill; null when the run never failed). */
@@ -108,6 +113,10 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   // folds to the waiting face like 'pending'.
   const rawStatus = typeof stage.runStatus === 'string' ? stage.runStatus : ''
   const status: CardStatus = statusOrPendingOf(rawStatus)
+  // THE HEALTH CARRY (LOW-23): the transport word rides its own
+  // channel — never the status fold. A present word ('unreachable'
+  // after the escalation threshold) renders as the warning face.
+  const health = typeof stage.health === 'string' && stage.health !== '' ? stage.health : null
   // THE WEBHOOK FEED (stroke 46b, the operator's order): the engine's
   // /ws progress tap folds activity + progress onto the stage rows —
   // the drill shows them LIVE (the tile keeps its percent pill).
@@ -147,7 +156,14 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
     title: String(title),
     service: typeof stage.engine === 'string' && stage.engine !== '' ? stage.engine : null,
     status,
-    dot: STATUS_DOT[status],
+    // THE HEALTH DOT (LOW-23): a present health word owns the dot —
+    // 'warning', never the fold of the (possibly stale) status word.
+    // The run may genuinely still be running server-side while the
+    // transport is down; the warning dot is the only face that says
+    // WHY the row went quiet.
+    dot: health !== null ? 'warning' : STATUS_DOT[status],
+    /** the transport-health carry — the row's resource word, or null. */
+    health,
     prompt: promptRaw !== '' ? promptRaw.slice(0, 96) : null,
     /** the failure carry — the run's own refusal text, or null. */
     error: failText !== '' ? failText : null,

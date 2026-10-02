@@ -571,10 +571,14 @@ export async function patchStageParams(
  *  bench draft), so the tab — the one that knows WHICH stage ran —
  *  writes the outcome the wire edge later reads. result.url rides
  *  the media-route currency (renders in tiles AND stages verbatim
- *  as the next run's chained input). */
+ *  as the next run's chained input). health is the transport
+ *  channel (LOW-23): `health: 'unreachable'` escalates, `health:
+ *  null` clears on recovery — the status word itself never carries
+ *  a resource signal. At least one of runStatus/health/result
+ *  rides every body this helper sends. */
 export async function patchStageOutcome(
   draftId: string, stageId: string,
-  outcome: { runStatus: string; result?: Record<string, unknown> },
+  outcome: { runStatus?: string; health?: string | null; result?: Record<string, unknown> },
   expectRev?: number,
 ): Promise<void> {
   // THE REVLESS-WRITE CURE (2026-09-14, the operator's "PRESS PLAY.

@@ -108,11 +108,13 @@ export type DraftGetRow = { readonly [key: string]: JsonValue };
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
  *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
  *  Optional: presence IS the write; a null params value is the
- *  merge-patch DELETE (the layered-params law). */
+ *  merge-patch DELETE (the layered-params law); a null health value
+ *  is the same DELETE (the recovery clear, LOW-23). */
 export type DraftStagePatch = {
   params?: JsonValue;
   result?: JsonValue;
   runStatus?: JsonValue;
+  health?: JsonValue;
   inputs?: JsonValue;
   inputOutputs?: JsonValue;
 };
@@ -678,8 +680,11 @@ export class DraftsRemoteService extends TypertRemoteService {
     // fence's disease, not its cure. Any body carrying an author key
     // (params | inputs | inputOutputs) walks the full law unchanged.
     const bench = benchBlockOf(doc);
+    // `health` walks the telemetry arm with result/runStatus (LOW-23,
+    // 2026-10-12): it is the poll's transport word — the escalation
+    // writes it, the recovery clears it, neither is authorship.
     const telemetry: boolean = Object.keys(patch).every(
-      (k: string): boolean => k === "result" || k === "runStatus",
+      (k: string): boolean => k === "result" || k === "runStatus" || k === "health",
     );
     // THE CAS WALK (the layered-params law): an AUTHOR patch is a
     // bench author and joins the revision law every other author
@@ -776,6 +781,14 @@ export class DraftsRemoteService extends TypertRemoteService {
       }
     }
     if ("runStatus" in patch) stage["runStatus"] = patch["runStatus"];
+    // THE HEALTH ARM (LOW-23): the transport word's own channel — a
+    // null value DELETES the field (the recovery clear; a stage that
+    // never escalated never carries it), the merge-patch semantics
+    // the params arm already owns.
+    if ("health" in patch) {
+      if (patch["health"] === null) delete stage["health"];
+      else stage["health"] = patch["health"];
+    }
     }
     // the params the row will HOLD once this write lands (undefined
     // when the body carries no params arm) — judged as half of the

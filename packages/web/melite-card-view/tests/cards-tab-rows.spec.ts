@@ -71,6 +71,38 @@ describe("benchRow — the status fold and the dot (the 2026-10-01 law)", () => 
   });
 });
 
+describe("benchRow — the health channel (LOW-23, 2026-10-12)", () => {
+  test("a present health word owns the dot (warning) and rides the row verbatim — runStatus keeps its own word", () => {
+    // the escalation face: the run may genuinely still be live
+    // server-side while the transport is down — the status word is
+    // not rewritten, the health word is what the tile renders
+    const row = benchRow(stage({ id: "s_0", runStatus: "running", health: "unreachable" }));
+    expect(row.health).toBe("unreachable");
+    expect(row.dot).toBe("warning");
+    expect(row.status).toBe("running");
+  });
+
+  test("no health word: null carry, the status dot rules (the plain face)", () => {
+    expect(benchRow(stage({ id: "s_0", runStatus: "running" })).health).toBeNull();
+    expect(benchRow(stage({ id: "s_0", runStatus: "running" })).dot).toBe("ongoing");
+  });
+
+  test("an empty-string health word carries nothing (presence is truthy truth, never a blank face)", () => {
+    const row = benchRow(stage({ id: "s_0", runStatus: "running", health: "" }));
+    expect(row.health).toBeNull();
+    expect(row.dot).toBe("ongoing");
+  });
+
+  test("an era row with runStatus 'unreachable' still folds to pending (the pre-LOW-23 persisted word)", () => {
+    // rows written before the channel existed carry the transport
+    // word INSIDE runStatus; the contract fold keeps sending
+    // out-of-vocabulary words to the no-information home
+    const row = benchRow(stage({ id: "s_0", runStatus: "unreachable" }));
+    expect(row.status).toBe("pending");
+    expect(row.health).toBeNull();
+  });
+});
+
 describe("benchRow — the upstream badge's resolution", () => {
   const parent = stage({ id: "s_0", card: "image-gen" });
 

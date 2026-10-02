@@ -608,6 +608,31 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
     assert.deepEqual(bench.log, [], "the undo log collects actions — telemetry is not one");
   });
 
+  test("THE HEALTH CHANNEL (LOW-23): the transport word lands on its own field, null DELETES it, and neither bumps rev nor logs", async () => {
+    const { ctx, domain } = await bootCtx();
+    await ensureBench(domain, { session: "health", stages: [{ id: "s_0" }] });
+    const svc = new DraftsRemoteService(ctx);
+    // the escalation: the transport word rides health, never runStatus
+    const escalation = await svc.patch("bench-health", "s_0", { health: "unreachable" }, null, sig);
+    assert.deepEqual(escalation.patched, ["health"]);
+    assert.equal(escalation.rev, 0, "the transport word is telemetry — the CAS handle never moves");
+    let doc = await svc.get("bench-health", sig);
+    const stage = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(stage["health"], "unreachable");
+    assert.equal("runStatus" in stage, false, "the escalation writes NO status word — a resource signal is not run vocabulary");
+    // the recovery: the clear deletes the field entirely (a stage
+    // that never escalated never carries it)
+    const clear = await svc.patch("bench-health", "s_0", { runStatus: "running", health: null }, null, sig);
+    assert.deepEqual(clear.patched, ["health", "runStatus"]);
+    doc = await svc.get("bench-health", sig);
+    const cleared = (doc["stages"] as Array<Record<string, unknown>>)[0]!;
+    assert.equal(cleared["runStatus"], "running");
+    assert.equal("health" in cleared, false, "null is the merge-patch DELETE — the field is gone, not null-valued");
+    const bench = doc["bench"] as { rev: number; log: unknown[] };
+    assert.equal(bench.rev, 0, "escalation and recovery are both telemetry");
+    assert.deepEqual(bench.log, []);
+  });
+
   test("the whole generation never moves the rev: run start + EVERY progress frame + terminal all land silent", async () => {
     const { ctx, domain } = await bootCtx();
     await ensureBench(domain, { session: "gen", stages: [{ id: "s_0" }] });

@@ -7329,6 +7329,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"params",
 				"result",
 				"runStatus",
+				"health",
 				"inputs",
 				"inputOutputs"
 			];
@@ -7966,7 +7967,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  bench draft), so the tab — the one that knows WHICH stage ran —
 		*  writes the outcome the wire edge later reads. result.url rides
 		*  the media-route currency (renders in tiles AND stages verbatim
-		*  as the next run's chained input). */
+		*  as the next run's chained input). health is the transport
+		*  channel (LOW-23): `health: 'unreachable'` escalates, `health:
+		*  null` clears on recovery — the status word itself never carries
+		*  a resource signal. At least one of runStatus/health/result
+		*  rides every body this helper sends. */
 		async function patchStageOutcome(draftId, stageId, outcome, expectRev) {
 			await patchWithRebase(draftId, stageId, outcome, expectRev);
 		}
@@ -8449,6 +8454,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			let lastPct = null;
 			let lastAct = "";
 			let transportFails = 0;
+			let healthStamped = false;
 			const TRANSPORT_UNREACHABLE_AFTER = 10;
 			const TRANSPORT_BACKOFF_BASE_MS = 1500;
 			const TRANSPORT_BACKOFF_MAX_MS = 1e4;
@@ -8460,7 +8466,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if ((0, _melite_card_base_client.isEstateRefusal)(e)) {
 						const terminal = tileStatusFromVerdict(await (0, _melite_card_base_client.probeRunGone)(runId, signal));
 						try {
-							await patchStageOutcome(draftId, stageId, {
+							await patchStageOutcome(draftId, stageId, healthStamped ? {
+								runStatus: terminal,
+								result: { run_id: runId },
+								health: null
+							} : {
 								runStatus: terminal,
 								result: { run_id: runId }
 							});
@@ -8471,9 +8481,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					transportFails += 1;
 					if (transportFails === TRANSPORT_UNREACHABLE_AFTER) try {
 						await patchStageOutcome(draftId, stageId, {
-							runStatus: "unreachable",
+							health: "unreachable",
 							result: { run_id: runId }
 						});
+						healthStamped = true;
 						lastLive = "";
 						onTouched?.();
 					} catch {}
@@ -8489,6 +8500,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const act = stage?.activity ?? "";
 					if (live !== lastLive || pct !== lastPct || act !== lastAct) {
 						const patch = { runStatus: live };
+						if (healthStamped) {
+							patch["health"] = null;
+							healthStamped = false;
+						}
 						if (pct !== null || act !== "") patch["result"] = {
 							run_id: runId,
 							...pct !== null && p !== void 0 ? { progress: {
@@ -8513,7 +8528,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const runError = typeof rowError === "string" ? rowError : void 0;
 				const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError);
 				try {
-					await patchStageOutcome(draftId, stageId, {
+					await patchStageOutcome(draftId, stageId, healthStamped ? {
+						runStatus: terminal,
+						result,
+						health: null
+					} : {
 						runStatus: terminal,
 						result
 					});
@@ -9214,6 +9233,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const children = isGroup && Array.isArray(stage.children) ? stage.children.length : 0;
 			const title = isGroup ? "Group (" + String(children) + ")" : stage.title ?? stage.card ?? stage.id;
 			const status = statusOrPendingOf(typeof stage.runStatus === "string" ? stage.runStatus : "");
+			const health = typeof stage.health === "string" && stage.health !== "" ? stage.health : null;
 			typeof stage.activity === "string" && stage.activity;
 			const progress = stage.progress ?? null;
 			progress !== null && progress.max > 0 && Math.floor(100 * progress.value / progress.max);
@@ -9235,7 +9255,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				title: String(title),
 				service: typeof stage.engine === "string" && stage.engine !== "" ? stage.engine : null,
 				status,
-				dot: STATUS_DOT[status],
+				dot: health !== null ? "warning" : STATUS_DOT[status],
+				/** the transport-health carry — the row's resource word, or null. */
+				health,
 				prompt: promptRaw !== "" ? promptRaw.slice(0, 96) : null,
 				/** the failure carry — the run's own refusal text, or null. */
 				error: failText !== "" ? failText : null,
@@ -41243,7 +41265,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				className: card_module_css_default.runError,
 				"data-testid": "tile-run-error",
 				title: row.error
-			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null))));
+			}, row.error.length > 140 ? row.error.slice(0, 140) + "…" : row.error) : null, row.health !== null ? (0, react.createElement)("span", {
+				className: card_module_css_default.runError,
+				"data-testid": "tile-health",
+				title: "transport " + row.health
+			}, "transport " + row.health) : null))));
 		}
 		/** THE AUDIO-BARS FACE (2026-09-13): the old system's music tile
 		*  preview — a deterministic bar strip (heights hashed from the stage

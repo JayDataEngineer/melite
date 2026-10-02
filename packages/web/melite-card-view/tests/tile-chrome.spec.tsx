@@ -165,3 +165,37 @@ test('the trash removes through the bench CAS door', async () => {
     expect(doc.expect_rev).toBe(7)
   })
 })
+
+test('THE HEALTH FACE (LOW-23): an escalated row keeps its spinner and captions the transport word — never a status rewrite', async () => {
+  // the outage face: the stage is running (the spinner persists —
+  // the run may still be live server-side) while the health channel
+  // carries 'unreachable'; the caption renders the transport word,
+  // and runStatus keeps its own word (no rewrite, no fold).
+  stubWire()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({
+      status: 'live' as const,
+      value: {
+        ...BENCH,
+        stages: [{
+          ...BENCH.stages[0]!,
+          runStatus: 'running',
+          health: 'unreachable',
+        }],
+      },
+    }),
+  }))
+  // the spinner rides (running is still the run's own word)
+  expect(await screen.findByTestId('tile-spin')).toBeTruthy()
+  // the caption carries the transport word verbatim
+  const face = screen.getByTestId('tile-health')
+  expect(face.textContent).toBe('transport unreachable')
+  expect(face.getAttribute('title')).toBe('transport unreachable')
+})

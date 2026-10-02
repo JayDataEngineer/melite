@@ -241,10 +241,9 @@ describe("cardRows — the full precedence + narrowing table", () => {
     // ("awaiting run") folds to the waiting face. An unknown word is
     // answered by the VIEW-SIDE READ (2026-10-12 follow-through, same
     // operator decision): a draft row's runStatus is a persisted word
-    // no door validated — the card plane itself writes 'unreachable'
-    // (cards-resource's transport escalation) — so the row renders the
-    // no-information face instead of throwing the whole cards tab; the
-    // classifier's refusal lives at seats reading a validated door.
+    // no door validated — so the row renders the no-information face
+    // instead of throwing the whole cards tab; the classifier's
+    // refusal lives at seats reading a validated door.
     const rows = cardRows(doc([
       { id: "a", status: "pending" },
       { id: "b", status: "cached" },
@@ -256,8 +255,9 @@ describe("cardRows — the full precedence + narrowing table", () => {
     ]));
     expect(rows.map((r) => r.status)).toEqual(["queued", "cached", "done", "error", "queued", "stopped", "done"]);
     expect(cardRows(doc([{ id: "h", status: "weird" }]))[0]?.status).toBe("pending");
-    // 'unreachable' is the real reachable word (LOW-23's debt rides
-    // runStatus until the stage row grows its own health channel)
+    // 'unreachable' inside runStatus is an ERA row: the transport
+    // stamp rode the status word before the health channel existed
+    // (LOW-23, landed 2026-10-12 — the card plane now writes `health`)
     expect(cardRows(doc([{ id: "i", status: "unreachable" }]))[0]?.status).toBe("pending");
   });
   test("live pending → queued (the waiting face); live running → running; live queued → queued; live stopping → running", () => {

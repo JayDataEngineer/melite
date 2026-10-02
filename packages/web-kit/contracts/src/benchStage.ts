@@ -274,11 +274,16 @@ export function normalizeBenchStages(stages: unknown): Array<Record<string, unkn
  *  the SAME members in a DIFFERENT order, and each door composed its
  *  own refusal voice from its own copy. A key added to one door left
  *  the other refusing it; the two voices disagreed about what the
- *  door wanted. One list, in the contract, in the voice's order. */
+ *  door wanted. One list, in the contract, in the voice's order.
+ *  `health` (LOW-23, 2026-10-12): the stage row's transport-health
+ *  channel — the card plane's resource signal rides its own field,
+ *  never runStatus; a null value is the merge-patch DELETE (the
+ *  recovery clear), the same semantics params carries. */
 export const STAGE_PATCH_KEYS = [
   "params",
   "result",
   "runStatus",
+  "health",
   "inputs",
   "inputOutputs",
 ] as const;

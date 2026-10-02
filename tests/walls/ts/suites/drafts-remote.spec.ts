@@ -523,8 +523,8 @@ test("drafts/patch refuses unknown keys with the door's old voice", async () => 
   // const, so they can never disagree about what the door wants.
   const { STAGE_PATCH_KEYS } = await import("../../../../packages/web-kit/contracts/src/benchStage.ts");
   assert.deepEqual([...STAGE_PATCH_KEYS],
-    ["params", "result", "runStatus", "inputs", "inputOutputs"],
-    "the accepted stage-patch keys, exact and in the voice's order");
+    ["params", "result", "runStatus", "health", "inputs", "inputOutputs"],
+    "the accepted stage-patch keys, exact and in the voice's order (health joined at LOW-23, 2026-10-12 — the transport channel)");
   const { STAGE_PATCH_KEYS: GATE_LIST } = await import("../../../../packages/harness/estate-queue/src/runsGates.ts");
   assert.deepEqual([...GATE_LIST], [...STAGE_PATCH_KEYS], "the runs gate's list IS the contract's (no second copy)");
   assert.equal(

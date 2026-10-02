@@ -88,6 +88,11 @@ export interface BenchStageView {
   outputs?: string[]
   provenance?: string
   runStatus?: string
+  /** THE TRANSPORT-HEALTH CHANNEL (LOW-23, 2026-10-12): the card
+   *  plane's resource signal — 'unreachable' after the escalation
+   *  threshold, absent otherwise, deleted on recovery. Never a
+   *  runStatus value: a resource signal is not run vocabulary. */
+  health?: string
   result?: unknown
   /** THE SERVED RESOLVED MAP (hour-26 stroke 15, the 1:1 run law):
    *  prepareCardParams' own stamped + lifted body, served by the
@@ -615,11 +620,19 @@ async function observeRunOutcomeRun(
   // downed gateway used to retry forever with the tile face stuck at
   // 'running' — the audit's "a 502 becomes 'still live'". The estate
   // ANSWERED-refusal arm below already cures the phantom case; the
-  // never-answers case now gets an explicit 'unreachable' face (an
-  // in-vocabulary free string the tile renders verbatim) after
+  // never-answers case now gets an explicit 'unreachable' face after
   // TRANSPORT_UNREACHABLE_AFTER consecutive failures, with backoff —
-  // and the next successful poll corrects the face (lastLive is
-  // blanked when the face lands, so the live patch always fires).
+  // and the next successful poll corrects the face (the recovery
+  // patch clears the health word, so the live patch always fires).
+  // THE HEALTH CHANNEL (LOW-23, 2026-10-12, the operator's "add a
+  // health field"): the transport word rides the stage row's own
+  // `health` field, never runStatus — folding it into the status
+  // word laundered a resource signal into run vocabulary, and the
+  // status classifiers had to treat an out-of-vocabulary word as
+  // no-information to survive it. With its own channel, runStatus
+  // keeps whatever live word it last held (the run may genuinely
+  // still be running server-side) and the row renders the health
+  // word beside it — the warning face says WHY the dot went quiet.
   // THE POLICY (3.6's rationale, recorded — the DSH mirror): the
   // backoff is ConnectionRecoveryConfig's shape (references/
   // deepseek-harness/packages/client/connection/src/recovery-config.ts
@@ -630,10 +643,9 @@ async function observeRunOutcomeRun(
   // round-trip, not a carrier redial (DSH also jitters 50-100%). The escalation threshold (10 consecutive
   // transport failures) is the never-answers judgment: under it, a
   // flap stays a live face (the under-threshold wall); past it, the
-  // tile says what is true — the transport is down. LOW-23's half
-  // stays owed: the health word rides runStatus until the stage row
-  // grows its own health channel (a product-surface decision).
+  // row says what is true — the transport is down.
   let transportFails = 0
+  let healthStamped = false
   const TRANSPORT_UNREACHABLE_AFTER = 10
   const TRANSPORT_BACKOFF_BASE_MS = 1500
   const TRANSPORT_BACKOFF_MAX_MS = 10000
@@ -651,7 +663,12 @@ async function observeRunOutcomeRun(
         const verdict = await probeRunGone(runId, signal)
         const terminal = tileStatusFromVerdict(verdict)
         try {
-          await patchStageOutcome(draftId, stageId, { runStatus: terminal, result: { run_id: runId } })
+          // the refusal ANSWERED the transport — a stale health word
+          // retires with the phantom verdict (same clear law)
+          await patchStageOutcome(draftId, stageId,
+            healthStamped
+              ? { runStatus: terminal, result: { run_id: runId }, health: null }
+              : { runStatus: terminal, result: { run_id: runId } })
           onTouched?.()
         } catch { /* bookkeeping */ }
         // tileStatusFromVerdict's vocabulary is running|done|stopped
@@ -662,7 +679,8 @@ async function observeRunOutcomeRun(
       transportFails += 1
       if (transportFails === TRANSPORT_UNREACHABLE_AFTER) {
         try {
-          await patchStageOutcome(draftId, stageId, { runStatus: 'unreachable', result: { run_id: runId } })
+          await patchStageOutcome(draftId, stageId, { health: 'unreachable', result: { run_id: runId } })
+          healthStamped = true // the recovery patch below clears it
           lastLive = '' // force the corrective live patch on recovery
           onTouched?.()
         } catch { /* bookkeeping */ }
@@ -694,7 +712,14 @@ async function observeRunOutcomeRun(
         ? Math.floor((100 * p.value) / p.max) : null
       const act = stage?.activity ?? ''
       if (live !== lastLive || pct !== lastPct || act !== lastAct) {
-        const patch: { runStatus: string; result?: Record<string, unknown> } = { runStatus: live }
+        const patch: { runStatus: string; health?: null; result?: Record<string, unknown> } = { runStatus: live }
+        // THE RECOVERY CLEAR (LOW-23): the first live patch after an
+        // escalation deletes the health word — the transport answered,
+        // the warning face retires with the same write.
+        if (healthStamped) {
+          patch['health'] = null
+          healthStamped = false
+        }
         if (pct !== null || act !== '') {
           patch['result'] = {
             run_id: runId,
@@ -727,7 +752,10 @@ async function observeRunOutcomeRun(
     const runError = typeof rowError === 'string' ? rowError : undefined
     const { result, terminal } = terminalOutcomeOf(runId, row.status, stage, runError)
     try {
-      await patchStageOutcome(draftId, stageId, { runStatus: terminal, result })
+      // the terminal patch clears a stale health word too: a settled
+      // run answered the transport — no warning face outlives it
+      await patchStageOutcome(draftId, stageId,
+        healthStamped ? { runStatus: terminal, result, health: null } : { runStatus: terminal, result })
       onTouched?.()
     } catch {
       /* bookkeeping — the bench may have moved; the next run rewrites the row */

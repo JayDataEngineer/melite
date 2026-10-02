@@ -78,10 +78,12 @@ describe('terminalStageErrorOf (the normalized failure carry)', () => {
   })
 
   it('treats an unreadable persisted word as not failed — the pane never dies on it (2026-10-12 follow-through)', () => {
-    // 'unreachable' is the card plane's own transport stamp riding
-    // runStatus (LOW-23's debt); the row's word was never validated by
-    // a door. The view-side read folds it to no-information: no rescue
-    // offer, no throw.
+    // 'unreachable' inside runStatus is an ERA row: rows written
+    // before the health channel existed (LOW-23 landed 2026-10-12)
+    // carry the transport stamp in the status word — the card plane
+    // now writes it on `health`, never runStatus. The view-side read
+    // folds the era word to no-information: no rescue offer, no
+    // throw.
     expect(terminalStageErrorOf([
       { runStatus: 'unreachable', result: { error: 'transport down' } },
       { runStatus: 'weird', result: { error: 'garbage' } },

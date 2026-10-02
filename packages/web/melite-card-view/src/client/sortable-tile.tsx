@@ -210,6 +210,14 @@ export function SortableTile({ row, entered, onOpen, grouping, selected, onToggl
             ? h('span', { className: css.runError, 'data-testid': 'tile-run-error', title: row.error },
                 row.error.length > 140 ? row.error.slice(0, 140) + '…' : row.error)
             : null,
+          // THE HEALTH FACE (LOW-23): the transport word under the
+          // caption — the row says WHY it went quiet (the spinner
+          // may legitimately persist: the run can still be live
+          // server-side while the gateway is down).
+          row.health !== null
+            ? h('span', { className: css.runError, 'data-testid': 'tile-health', title: 'transport ' + row.health },
+                'transport ' + row.health)
+            : null,
         ),
       ),
     ),

@@ -106,12 +106,14 @@ describe("observeRunOutcome — the start read binds the row first", () => {
 });
 
 describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'running' forever)", () => {
-  test("a downed gateway gets an 'unreachable' face, then recovery corrects it", async () => {
+  test("a downed gateway gets an 'unreachable' HEALTH word, then recovery clears it", async () => {
     // the fallback audit's CRITICAL-2: a 502 loop used to retry
     // forever with the tile stuck at 'running' — "a transport
     // failure became 'still live'". Ten consecutive transport
-    // failures must patch an explicit 'unreachable' face, and the
-    // first successful poll must correct it back to 'running'.
+    // failures must patch an explicit transport word on the row's
+    // HEALTH channel (LOW-23: never runStatus — a resource signal
+    // is not run vocabulary), and the first successful poll must
+    // clear it back to a plain live face.
     vi.useFakeTimers();
     let fakes: Fakes | undefined;
     try {
@@ -132,12 +134,81 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
       await vi.advanceTimersByTimeAsync(120_000);
       ctrl.abort();
       await expect(done).resolves.toBeNull();
-      const statuses = patchesOf(fakes).map(
-        (p) => (p["patch"] as { runStatus?: string }).runStatus,
-      );
-      // [0] the honest-optimism bind, [1] the escalation face,
-      // [2] the corrective live patch on recovery
-      expect(statuses).toEqual(["running", "unreachable", "running"]);
+      const patches = patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>);
+      // [0] the honest-optimism bind, [1] the escalation (the
+      // transport word rides the HEALTH channel — runStatus is
+      // absent from the body, the whole point of LOW-23), [2] the
+      // corrective live patch on recovery (carries the health CLEAR
+      // beside the live word)
+      expect(patches[0]).toMatchObject({ runStatus: "running" });
+      expect("runStatus" in patches[1]!).toBe(false);
+      expect(patches[1]).toMatchObject({ health: "unreachable" });
+      expect(patches[2]).toMatchObject({ runStatus: "running", health: null });
+    } finally {
+      vi.useRealTimers();
+      fakes?.unmount();
+    }
+  });
+
+  test("a terminal settle straight off the outage clears the health word with the outcome", async () => {
+    // the outage arm's other exit: no live frame ever answers — the
+    // first answered poll IS the terminal settle. The terminal patch
+    // carries the health CLEAR beside the outcome (a settled run
+    // answered the transport; no warning face outlives it).
+    vi.useFakeTimers();
+    let fakes: Fakes | undefined;
+    try {
+      // calls 1..11 die on the wire (escalation lands on 10); call
+      // 12 answers the finished run.
+      fakes = stubEstate({
+        throws: Array.from({ length: 11 }, (_, i) => ({
+          method: "runs/status" as const,
+          onCall: i + 1,
+          message: "door down",
+        })),
+        runDocs: [{ run_id: "r_1", status: "completed", stages: [] }],
+      });
+      const done = observeRunOutcome("d_1", "s_0", "r_1");
+      await vi.advanceTimersByTimeAsync(120_000);
+      await expect(done).resolves.toBe("done");
+      const patches = patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>);
+      expect(patches[1]).toMatchObject({ health: "unreachable" });
+      expect(patches[2]).toMatchObject({ runStatus: "done", health: null });
+    } finally {
+      vi.useRealTimers();
+      fakes?.unmount();
+    }
+  });
+
+  test("a phantom cure after the escalation clears the health word with the verdict", async () => {
+    // the third clear seat: the estate ANSWERS a refusal after the
+    // outage (the registry restarted) — the phantom verdict's patch
+    // carries the health CLEAR too (the refusal answered the
+    // transport as surely as a live frame would have).
+    vi.useFakeTimers();
+    let fakes: Fakes | undefined;
+    try {
+      // calls 1..11 die on the wire; call 12 (the poll) and 13
+      // (probeRunGone's status read) both refuse; the file-era list
+      // is empty — gone from both maps.
+      fakes = stubEstate({
+        throws: Array.from({ length: 11 }, (_, i) => ({
+          method: "runs/status" as const,
+          onCall: i + 1,
+          message: "door down",
+        })),
+        refusals: [
+          { method: "runs/status", message: "no such run", onCall: 12 },
+          { method: "runs/status", message: "no such run", onCall: 13 },
+        ],
+        listRows: [],
+      });
+      const done = observeRunOutcome("d_1", "s_0", "r_1");
+      await vi.advanceTimersByTimeAsync(120_000);
+      await expect(done).resolves.toBe("stopped");
+      const patches = patchesOf(fakes).map((p) => p["patch"] as Record<string, unknown>);
+      expect(patches[1]).toMatchObject({ health: "unreachable" });
+      expect(patches[2]).toMatchObject({ runStatus: "stopped", health: null });
     } finally {
       vi.useRealTimers();
       fakes?.unmount();
@@ -163,8 +234,12 @@ describe("observeRunOutcome — THE TRANSPORT ESCALATION (CRITICAL-2: never 'run
       ctrl.abort();
       await expect(done).resolves.toBeNull();
       const statuses = patchesOf(fakes).map(
-        (p) => (p["patch"] as { runStatus?: string }).runStatus,
+        (p) => (p["patch"] as { runStatus?: string; health?: string }).runStatus,
       );
+      // a flap never escalates: no health word anywhere, and the
+      // live word keeps flowing
+      expect(patchesOf(fakes).every(
+        (p) => (p["patch"] as Record<string, unknown>)["health"] === undefined)).toBe(true);
       expect(statuses.includes("unreachable")).toBe(false);
       expect(statuses[0]).toBe("running");
     } finally {
