@@ -86,6 +86,26 @@ describe("the restore's foreign voice — a non-Error rejection still reads", ()
   });
 });
 
+describe("the restore note — the carried count names the preview carry", () => {
+  test("a report with carried outcomes counts them in the note", async () => {
+    restoreCtl.fn.mockResolvedValue({ added: 2, skipped: 1, carried: 2, notes: [] });
+    mountRunView({});
+    await screen.findByText("r-1");
+    fireEvent.click(screen.getByRole("button", { name: "Restore to bench" }));
+    expect(
+      await screen.findByText("restored 2 stage(s) to the bench, 1 skipped, 2 outcome(s) carried", {}, { timeout: 5000 }),
+    ).toBeTruthy();
+  });
+
+  test("a report with nothing carried stays quiet (no zero-count noise)", async () => {
+    restoreCtl.fn.mockResolvedValue({ added: 1, skipped: 0, carried: 0, notes: [] });
+    mountRunView({});
+    await screen.findByText("r-1");
+    fireEvent.click(screen.getByRole("button", { name: "Restore to bench" }));
+    expect(await screen.findByText("restored 1 stage(s) to the bench", {}, { timeout: 5000 })).toBeTruthy();
+  });
+});
+
 describe("the cancel guard's neighborhood — the stop door owns the affordance", () => {
   test("a live run with no stop door offers no cancel (nothing to arm)", async () => {
     mountRunView({ run: runValue({ status: "running" }), onBack: () => {}, onStop: undefined });

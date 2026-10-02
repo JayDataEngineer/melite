@@ -127,7 +127,8 @@ describe("restoreRunToBench — the card back into a flow", () => {
       addStageRevs: [22, 23],
     });
     const report = await restoreRunToBench(run(), 'main');
-    expect(report).toEqual({ added: 2, skipped: 0, notes: [] });
+    // carried 0 — this run's stage rows are empty (no outcome to ride)
+    expect(report).toEqual({ added: 2, skipped: 0, carried: 0, notes: [] });
     expect(calls.map((c) => c.method)).toEqual(["drafts/get", "bench/get", "bench/add-stage", "bench/add-stage"]);
     expect(calls[0]?.args).toEqual({ draftId: "bench-main" });
     expect(calls[1]?.args).toEqual({ sessionKey: "main" });

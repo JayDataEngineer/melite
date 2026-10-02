@@ -40,11 +40,10 @@ describe('the rebase law (a moved bench costs one silent rebase, never a stuck t
     })
     try {
       const row = await addStageWire({ card: 'image-edit', expect_rev: 35 }, 'main')
-      // MEANING ADAPTED (dead-transport shape): the old envelope
-      // stub answered {rev: 430, stage: 's_9'}; the live lane mints
-      // the row itself — the landed stage is the fresh object, not a
-      // scripted id. The law pinned is the rebase sequence + landing.
-      expect(row['stage']).toMatchObject({ id: 'fresh_1', card: 'image-edit' })
+      // THE ANSWER IS THE DOOR'S BenchStageRow (2026-10-02): stage is
+      // the seated id string. The law pinned is the rebase sequence +
+      // landing — the id names the row the door seated.
+      expect(row['stage']).toBe('fresh_1')
       expect(seenCalls(fakes.calls)).toEqual([
         { method: 'bench/add-stage', expectRev: 35 },
         { method: 'bench/get', expectRev: undefined },

@@ -536,7 +536,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/bench-row.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/bench-view.tsx': { statements: 99.45, branches: 98.27, functions: 98.36, lines: 99.3 },
   '**/packages/web/melite-card-view/src/client/card-drill.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 100, branches: 99.4, functions: 100, lines: 100 },
+  '**/packages/web/melite-card-view/src/client/cards-resource.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/cards-tab-body.tsx': { statements: 100, branches: 98.41, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/css-modules.d.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/dnd-payloads.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

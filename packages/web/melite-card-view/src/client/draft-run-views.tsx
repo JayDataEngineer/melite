@@ -118,7 +118,10 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
     restoreRunToBench(run, sessionKey).then((report) => {
       const extra = report.notes.length > 0 ? ' (' + report.notes.join('; ') + ')' : ''
       const skipped = report.skipped > 0 ? ', ' + String(report.skipped) + ' skipped' : ''
-      setNote('restored ' + String(report.added) + ' stage(s) to the bench' + skipped + extra)
+      // the carried count names the preview carry — the outcomes that
+      // rode the restored rows (the resume law's run-view half)
+      const carried = report.carried > 0 ? ', ' + String(report.carried) + ' outcome(s) carried' : ''
+      setNote('restored ' + String(report.added) + ' stage(s) to the bench' + skipped + carried + extra)
       setRestoring(false)
       onRestored()
     }).catch((e: unknown) => {

@@ -8731,7 +8731,16 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  SKIPPED and counted (add-stage requires one); an id collision
 		*  retries once without the id (the bench auto-ids s_<n>) and notes
 		*  it. Any other refusal throws with the door's own text — the bench
-		*  keeps whatever landed before it, and the report says so. */
+		*  keeps whatever landed before it, and the report says so.
+		*
+		*  THE OUTCOME CARRY (2026-10-02, the resume law's run-view half):
+		*  the run's own stage rows hold the terminal outcome a bare
+		*  re-admission loses — the add-stage door authors params only and
+		*  refuses result/runStatus by its own law, so the outcome rides the
+		*  same drafts patch door the live observer writes, stamped by the
+		*  same builder (terminalOutcomeOf). Matching is by stage id (the
+		*  run executed this very draft's rows); a draft edited since keeps
+		*  its surviving ids' outcomes and simply has none for new rows. */
 		async function restoreRunToBench(run, sessionKey, signal) {
 			if (run.draftId === null || run.draftId === "") throw new Error("this run names no draft — nothing to restore");
 			const key = benchSessionOf(sessionKey);
@@ -8754,6 +8763,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const report = {
 				added: 0,
 				skipped: 0,
+				carried: 0,
 				notes: []
 			};
 			for (const st of stages) {
@@ -8776,6 +8786,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					const row = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench["add-stage"](key, doc, signal), "bench/add-stage");
 					if (typeof row["rev"] === "number") rev = row["rev"];
 					report.added += 1;
+					await carryOutcome(run, key, id, row, report, signal);
 				} catch (e) {
 					const message = e instanceof Error ? e.message : String(e);
 					if (id !== null && message.includes("already on the bench")) {
@@ -8786,6 +8797,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							if (typeof row["rev"] === "number") rev = row["rev"];
 							report.added += 1;
 							report.notes.push(id + " was already on the bench — added under a fresh id");
+							await carryOutcome(run, key, id, row, report, signal);
 						} catch (e2) {
 							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
 						}
@@ -8793,6 +8805,41 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 			}
 			return report;
+		}
+		/** One restored row's outcome carry: patch the terminal outcome the
+		*  run's own stage row holds onto the seated bench row, through the
+		*  drafts patch door (the only door result/runStatus lawfully ride
+		*  — the add-stage verb refuses them by its authoring law). The
+		*  lookup id is the DRAFT's id (the run's rows carry it); the patch
+		*  target is the SEATED id the add answer names (a collision retry
+		*  seats a fresh one). A stage with no outcome data carries nothing;
+		*  a carry that cannot land notes itself — the workflow stands
+		*  either way.
+		*  @param run the run value the restore serves (its stage rows hold
+		*  the terminal outcomes).
+		*  @param benchKey the bench draft id the rows landed on.
+		*  @param draftStageId the DRAFT stage id this row restored (null —
+		*  an id-less draft row — carries nothing: the run's rows are id-keyed).
+		*  @param addAnswer the bench/add-stage answer (its `stage` names the
+		*  seated id; a non-string answer falls back to the draft id).
+		*  @param report the report the carry counts into.
+		*  @param signal the caller's abort signal, honored by the patch. */
+		async function carryOutcome(run, benchKey, draftStageId, addAnswer, report, signal) {
+			if (draftStageId === null) return;
+			const runStage = run.stages.find((s) => s.id === draftStageId);
+			if (runStage === void 0) return;
+			const outcome = terminalOutcomeOf(run.runId, runStage.status, runStage, void 0);
+			if (!("url" in outcome.result) && !("artifacts" in outcome.result) && !("error" in outcome.result)) return;
+			const seated = typeof addAnswer["stage"] === "string" && addAnswer["stage"] !== "" ? addAnswer["stage"] : draftStageId;
+			try {
+				await patchStageOutcome(benchKey, seated, {
+					runStatus: outcome.terminal,
+					result: outcome.result
+				});
+				report.carried += 1;
+			} catch (e) {
+				report.notes.push("could not carry " + draftStageId + "'s outcome: " + (e instanceof Error ? e.message : String(e)));
+			}
 		}
 		/** The provider registration body: `ctx.resources.register({ protocol:
 		*  'cards', open })`. The bench tail rides the mounted remote face
@@ -44412,7 +44459,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				restoreRunToBench(run, sessionKey).then((report) => {
 					const extra = report.notes.length > 0 ? " (" + report.notes.join("; ") + ")" : "";
 					const skipped = report.skipped > 0 ? ", " + String(report.skipped) + " skipped" : "";
-					setNote("restored " + String(report.added) + " stage(s) to the bench" + skipped + extra);
+					const carried = report.carried > 0 ? ", " + String(report.carried) + " outcome(s) carried" : "";
+					setNote("restored " + String(report.added) + " stage(s) to the bench" + skipped + carried + extra);
 					setRestoring(false);
 					onRestored();
 				}).catch((e) => {

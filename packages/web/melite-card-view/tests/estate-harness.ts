@@ -116,6 +116,10 @@ export interface EstateFakesOptions {
    *  agrees). Unset = the answer carries no rev (the live minimum
    *  the client tolerates). */
   addStageRevs?: number[]
+  /** bench/add-stage answers name NO stage id (estate drift — the
+   *  seated row is readable only through bench/get). Callers that
+   *  need the seated id must fall back to the id they sent. */
+  addStageNoIds?: boolean
   runDocs?: Array<Record<string, unknown>>
   /** The runs/subscribe stream source (the run view's live tail): a
    *  handle factory the stream tests drive — docs push through it,
@@ -283,7 +287,15 @@ export function mountEstateFakes(opts: EstateFakesOptions = {}): EstateFakes {
       // estate stamped (and the managed bench agrees from here on).
       const scriptedRev = addStageRevs.shift()
       if (scriptedRev !== undefined) benchRevValue = scriptedRev
-      return ok(scriptedRev !== undefined ? { ...defaultOk, rev: scriptedRev, stage: fresh } : { ...defaultOk, stage: fresh })
+      // THE ANSWER IS THE DOOR'S BenchStageRow (2026-10-02): `stage`
+      // is the SEATED ID STRING, never the row object this fake used
+      // to hand back (the drift was pinned by rebase-law; the restore
+      // outcome carry needs the id the retry arm mints).
+      const answerStage: string = typeof fresh['id'] === 'string' ? (fresh['id'] as string) : ''
+      if (opts.addStageNoIds === true) {
+        return ok(scriptedRev !== undefined ? { ...defaultOk, rev: scriptedRev } : { ...defaultOk })
+      }
+      return ok(scriptedRev !== undefined ? { ...defaultOk, rev: scriptedRev, stage: answerStage } : { ...defaultOk, stage: answerStage })
     }
     // THE CLEAR ALL (2026-10-10): the fake mirrors the verb — every
     // stage out, one rev.
