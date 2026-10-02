@@ -1,12 +1,10 @@
 // Tier 3 — the h3-timeline card.
 //
-// CARD SURFACE vs RENDERER VOCABULARY: the schema declares the
-// card's own 12 fields (prompt, image, seed, width, height, length,
-// steps, sharpen_enabled, sharpen_strength, interpolate_enabled,
-// shift_video, shift_audio). The window families (t4r / t4_open /
+// CARD SURFACE vs RENDERER VOCABULARY: the schema below declares
+// the card's own fields; the window families (t4r / t4_open /
 // t4_chain), the motion-context chaining rail and the SLA / SR /
-// interp leaves are the RENDERER vocabulary the compose body reads:
-// those keys ride the compose door's explicit-params overlay
+// interp leaves are the RENDERER vocabulary the compose body reads,
+// and those keys ride the compose door's explicit-params overlay
 // (prepareCardParams — the ONE resolver: schema defaults, then the
 // selected variant's stamps, then the caller's params), so every
 // read normalizes with its own default.
@@ -106,13 +104,6 @@ export const identity = {
     'SLA at sparsity 0.90 gives ~1.75x speedup with no quality loss — use it by default',
   ],
 }
-
-// ── the renderer body — node order IS the python's serialized id order ────
-// Every renderer-vocabulary read (a key the 12-knob schema does not
-// declare) normalizes with its old schema default, so calls that omit
-// it render exactly the frozen graphs. Card-knob reads use the schema
-// value directly (always defined post-schema) except the two bare
-// keys (prompt/image), which normalize absent.
 
 export const inject = ['comfyui']
 
