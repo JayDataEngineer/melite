@@ -67,6 +67,136 @@ window.__ModuleLoader__.load({
 		}
 		var init_readFile = __esmMin((() => {}));
 		//#endregion
+		//#region ../../web-kit/catalog/src/sleep.ts
+		/**
+		* sleep.ts — ONE delay for the package (the hand-roll audit's 7.9).
+		*
+		* Four clones across this package's own sources carried three
+		* different contracts: an abortable sleep that rejects with an
+		* `AbortError` (api.ts's retry backoff), a plain delay
+		* (text-to-pose's poll), and two inline `new Promise(r =>
+		* setTimeout(r, ms))` waits (FlowProtocol's poll ticks). They are one
+		* function with an optional signal: a caller with no signal gets the
+		* plain delay, a caller with one gets the abort that clears the timer.
+		*
+		* Why this is a local module and not the DSH timer seat: this package
+		* is a browser client (no `Context`), and `ctx.timeout` is fiber-owned
+		* by the Cordis plugin. The cross-package fold the row names is
+		* unavailable to every one of these sites for that reason alone; what
+		* IS available is one implementation per package, which is this.
+		* @module @melite/catalog/sleep
+		*/
+		/**
+		* Await `ms` milliseconds; an `AbortSignal` clears the timer and
+		* rejects with a DOM `AbortError`, the spelling the retry path
+		* already catches.
+		* @param ms - delay in milliseconds.
+		* @param signal - optional cancellation; an already-aborted signal rejects without waiting.
+		* @returns resolves after the delay, rejects on abort.
+		*/
+		function sleep(ms, signal) {
+			return new Promise((resolve, reject) => {
+				if (signal?.aborted === true) {
+					reject(new DOMException("Aborted", "AbortError"));
+					return;
+				}
+				const timer = setTimeout(() => {
+					signal?.removeEventListener("abort", onAbort);
+					resolve();
+				}, ms);
+				const onAbort = () => {
+					clearTimeout(timer);
+					reject(new DOMException("Aborted", "AbortError"));
+				};
+				signal?.addEventListener("abort", onAbort, { once: true });
+			});
+		}
+		var init_sleep = __esmMin((() => {}));
+		//#endregion
+		//#region ../../web-kit/catalog/src/clientStore.ts
+		/**
+		* clientStore — THE client store seat: a bound, zustand-shaped store over the
+		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
+		* zustand/immer engine the web shell shares through its frozen module table —
+		* see packages/web/shared/web-platform.ts).
+		*
+		* The engine owns observation, synchronous publication, and Immer-backed
+		* updates. This module owns the binding every browser store in the repository
+		* shares: the module-level lifetime (the document survives remounts and is
+		* shared across tenants), the `getState`/`setState`/`subscribe`/
+		* `getInitialState`/`destroy` statics module-level callers use, and the
+		* selector hook.
+		*
+		* `setState` shallow-merges a patch into the record and replaces the record
+		* whole when `replace` is true. A patch that leaves the record unchanged keeps
+		* the current snapshot and notifies nobody.
+		*/
+		function createClientStore(init) {
+			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
+			const stops = /* @__PURE__ */ new Set();
+			let initialState;
+			const getState = () => engine.getSnapshot();
+			const setState = (partial, replace) => {
+				const patch = typeof partial === "function" ? partial(getState()) : partial;
+				if (replace === true) {
+					engine.set(patch);
+					return;
+				}
+				engine.update((draft) => {
+					Object.assign(draft, patch);
+				});
+			};
+			const subscribe = (listener) => {
+				let previous = getState();
+				const stop = engine.subscribe(() => {
+					const next = getState();
+					const before = previous;
+					previous = next;
+					listener(next, before);
+				});
+				stops.add(stop);
+				return () => {
+					stops.delete(stop);
+					stop();
+				};
+			};
+			const api = {
+				setState,
+				getState,
+				getInitialState: () => initialState,
+				subscribe,
+				destroy: () => {
+					for (const stop of stops) stop();
+					stops.clear();
+				}
+			};
+			const initial = typeof init === "function" ? init(setState, getState, api) : init;
+			engine.set(initial);
+			initialState = initial;
+			function useStore(selector, equalityFn = Object.is) {
+				const selectorRef = (0, react.useRef)(selector);
+				selectorRef.current = selector;
+				const equalityRef = (0, react.useRef)(equalityFn);
+				equalityRef.current = equalityFn;
+				const getSnapshot = (0, react.useMemo)(() => {
+					let prev;
+					let hasPrev = false;
+					return () => {
+						const sel = selectorRef.current;
+						const next = sel ? sel(getState()) : getState();
+						if (hasPrev && equalityRef.current(prev, next)) return prev;
+						hasPrev = true;
+						prev = next;
+						return next;
+					};
+				}, []);
+				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
+			}
+			/* v8 ignore stop */
+			return Object.assign(useStore, api);
+		}
+		var init_clientStore = __esmMin((() => {}));
+		//#endregion
 		//#region ../../web-kit/catalog/src/api.ts
 		/** The named escape for non-table URLs. Every use is deliberate and
 		* greppable. */
@@ -77,21 +207,17 @@ window.__ModuleLoader__.load({
 			return GATEWAY_CODES.has(status) || SAFE_METHODS.has(method) && status >= 500 && status < 600;
 		}
 		function getBackendState() {
-			return state;
+			return backendStore.getState().state;
 		}
 		/** Subscribe to backend liveness changes. Returns an unsubscribe fn. */
 		function onBackendState(cb) {
-			listeners.add(cb);
-			return () => {
-				listeners.delete(cb);
-			};
+			return backendStore.subscribe((next) => {
+				cb(next.state);
+			});
 		}
 		function setState(next) {
-			if (next === state) return;
-			state = next;
-			for (const cb of listeners) try {
-				cb(next);
-			} catch {}
+			if (next === backendStore.getState().state) return;
+			backendStore.setState({ state: next });
 		}
 		/** True if `input` targets our own backend (same-origin or root-relative). */
 		function isBackendUrl(input) {
@@ -101,15 +227,6 @@ window.__ModuleLoader__.load({
 			} catch {
 				return false;
 			}
-		}
-		function sleep$1(ms, signal) {
-			return new Promise((resolve, reject) => {
-				const t = setTimeout(resolve, ms);
-				signal?.addEventListener("abort", () => {
-					clearTimeout(t);
-					reject(new DOMException("Aborted", "AbortError"));
-				}, { once: true });
-			});
 		}
 		function backoffMs(attempt) {
 			const exp = Math.min(CAP_MS, BASE_MS * 2 ** attempt);
@@ -144,7 +261,7 @@ window.__ModuleLoader__.load({
 						});
 						if (shouldRetryStatus(res.status, method) && attempt < MAX_RETRIES && Date.now() < deadline) {
 							if (backend) setState("degraded");
-							await sleep$1(backoffMs(attempt), callerSignal);
+							await sleep(backoffMs(attempt), callerSignal);
 							continue;
 						}
 						if (backend) {
@@ -159,7 +276,7 @@ window.__ModuleLoader__.load({
 							consecutiveFail++;
 							setState(consecutiveFail >= OFFLINE_THRESHOLD ? "offline" : "degraded");
 						}
-						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep$1(backoffMs(attempt));
+						if (attempt < MAX_RETRIES && Date.now() < deadline) await sleep(backoffMs(attempt));
 					}
 				}
 				throw lastErr instanceof Error ? lastErr : /* @__PURE__ */ new Error("network request failed");
@@ -206,9 +323,11 @@ window.__ModuleLoader__.load({
 				throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`);
 			}
 		}
-		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, state, consecutiveFail, listeners, inflight;
+		var MAX_RETRIES, BASE_MS, CAP_MS, OFFLINE_THRESHOLD, TOTAL_BUDGET_MS, SAFE_METHODS, GATEWAY_CODES, backendStore, consecutiveFail, inflight;
 		var init_api = __esmMin((() => {
 			init_readFile();
+			init_sleep();
+			init_clientStore();
 			MAX_RETRIES = 4;
 			BASE_MS = 400;
 			CAP_MS = 4e3;
@@ -220,9 +339,8 @@ window.__ModuleLoader__.load({
 				503,
 				504
 			]);
-			state = "online";
+			backendStore = createClientStore({ state: "online" });
 			consecutiveFail = 0;
-			listeners = /* @__PURE__ */ new Set();
 			inflight = /* @__PURE__ */ new Map();
 		}));
 		//#endregion
@@ -364,90 +482,6 @@ window.__ModuleLoader__.load({
 			isNonEmptyString = (v) => typeof v === "string" && v.trim().length > 0;
 		}));
 		//#endregion
-		//#region ../../web-kit/catalog/src/clientStore.ts
-		/**
-		* clientStore — THE client store seat: a bound, zustand-shaped store over the
-		* DSH platform snapshot store (`@deepseek-ai/dsh-client-store`, the
-		* zustand/immer engine the web shell shares through its frozen module table —
-		* see packages/web/shared/web-platform.ts).
-		*
-		* The engine owns observation, synchronous publication, and Immer-backed
-		* updates. This module owns the binding every browser store in the repository
-		* shares: the module-level lifetime (the document survives remounts and is
-		* shared across tenants), the `getState`/`setState`/`subscribe`/
-		* `getInitialState`/`destroy` statics module-level callers use, and the
-		* selector hook.
-		*
-		* `setState` shallow-merges a patch into the record and replaces the record
-		* whole when `replace` is true. A patch that leaves the record unchanged keeps
-		* the current snapshot and notifies nobody.
-		*/
-		function createClientStore(init) {
-			const engine = (0, _deepseek_ai_dsh_client_store.createSnapshotStore)(void 0);
-			const stops = /* @__PURE__ */ new Set();
-			let initialState;
-			const getState = () => engine.getSnapshot();
-			const setState = (partial, replace) => {
-				const patch = typeof partial === "function" ? partial(getState()) : partial;
-				if (replace === true) {
-					engine.set(patch);
-					return;
-				}
-				engine.update((draft) => {
-					Object.assign(draft, patch);
-				});
-			};
-			const subscribe = (listener) => {
-				let previous = getState();
-				const stop = engine.subscribe(() => {
-					const next = getState();
-					const before = previous;
-					previous = next;
-					listener(next, before);
-				});
-				stops.add(stop);
-				return () => {
-					stops.delete(stop);
-					stop();
-				};
-			};
-			const api = {
-				setState,
-				getState,
-				getInitialState: () => initialState,
-				subscribe,
-				destroy: () => {
-					for (const stop of stops) stop();
-					stops.clear();
-				}
-			};
-			const initial = typeof init === "function" ? init(setState, getState, api) : init;
-			engine.set(initial);
-			initialState = initial;
-			function useStore(selector, equalityFn = Object.is) {
-				const selectorRef = (0, react.useRef)(selector);
-				selectorRef.current = selector;
-				const equalityRef = (0, react.useRef)(equalityFn);
-				equalityRef.current = equalityFn;
-				const getSnapshot = (0, react.useMemo)(() => {
-					let prev;
-					let hasPrev = false;
-					return () => {
-						const sel = selectorRef.current;
-						const next = sel ? sel(getState()) : getState();
-						if (hasPrev && equalityRef.current(prev, next)) return prev;
-						hasPrev = true;
-						prev = next;
-						return next;
-					};
-				}, []);
-				return (0, react.useSyncExternalStore)(subscribe, getSnapshot, getSnapshot);
-			}
-			/* v8 ignore stop */
-			return Object.assign(useStore, api);
-		}
-		var init_clientStore = __esmMin((() => {}));
-		//#endregion
 		//#region ../../web-kit/catalog/src/modelCatalog.ts
 		var modelCatalog_exports = /* @__PURE__ */ __exportAll({
 			activeVariantForRoute: () => activeVariantForRoute,
@@ -505,24 +539,16 @@ window.__ModuleLoader__.load({
 				label: o.label
 			}));
 		}
-		function _notify() {
-			for (const fn of _listeners$1) try {
-				fn();
-			} catch (e) {
-				console.warn("[modelCatalog] listener error:", e);
-			}
-		}
-		/** Subscribe to catalog readiness. Called when _cache transitions from
+		/** Subscribe to catalog readiness. Called when the catalog transitions from
 		* null → populated. Returns an unsubscribe fn. */
 		function onCatalogReady(fn) {
-			_listeners$1.add(fn);
-			return () => {
-				_listeners$1.delete(fn);
-			};
+			return catalogStore.subscribe(() => {
+				fn();
+			});
 		}
 		/** True after the catalog has been successfully loaded at least once. */
 		function isCatalogLoaded() {
-			return _loaded;
+			return catalogStore.getState().loaded;
 		}
 		/** Fetch the model catalog. THROWS on non-2xx (no silent empty `{}`).
 		* The caller MUST surface the error. Returning a fake empty catalog here
@@ -537,14 +563,16 @@ window.__ModuleLoader__.load({
 			if (!valid) throw new CatalogContractError(violations);
 			useCatalogContractStore.getState().reportOk();
 			const catalog = data;
-			_cache$3 = catalog;
 			_cacheTime = Date.now();
-			_loaded = true;
-			_notify();
+			catalogStore.setState({
+				catalog,
+				loaded: true
+			});
 			return catalog;
 		}
 		async function loadCatalog(opts) {
-			if (_cache$3 && !opts?.force) {
+			const cached = catalogStore.getState().catalog;
+			if (cached && !opts?.force) {
 				if (Date.now() - _cacheTime > _CACHE_TTL_MS && !_inflight$2) _inflight$2 = (async () => {
 					try {
 						_ingest(await apiJson("/v1/model-catalog"));
@@ -552,11 +580,11 @@ window.__ModuleLoader__.load({
 						if (e instanceof CatalogContractError) useCatalogContractStore.getState().reportViolation(e.violations);
 						else useCatalogContractStore.getState().reportError(e instanceof Error ? e.message : String(e));
 					}
-					return _cache$3;
+					return catalogStore.getState().catalog;
 				})().finally(() => {
 					_inflight$2 = null;
 				});
-				return _cache$3;
+				return cached;
 			}
 			if (_inflight$2) return _inflight$2;
 			_inflight$2 = (async () => {
@@ -577,7 +605,7 @@ window.__ModuleLoader__.load({
 		* Keeps trying until the catalog loads, then notifies subscribers.
 		* Safe to call multiple times — collapses into a single inflight request. */
 		function ensureCatalog() {
-			if (_loaded) return;
+			if (catalogStore.getState().loaded) return;
 			if (_inflight$2) return;
 			loadCatalog().then(() => {
 				if (_bgRetryTimer) {
@@ -598,15 +626,16 @@ window.__ModuleLoader__.load({
 			});
 		}
 		function getCachedCatalog() {
-			return _cache$3;
+			return catalogStore.getState().catalog;
 		}
 		/** Seed the cache with pre-fetched data (test utility — production code uses
 		* loadCatalog/ensureCatalog which fetch from the endpoint). Lets tests inject
 		* a fake catalog without going to the network. */
 		function primeCatalog(data) {
-			_cache$3 = data;
-			_loaded = true;
-			_notify();
+			catalogStore.setState({
+				catalog: data,
+				loaded: true
+			});
 		}
 		/**
 		* For route keys that are NOT top-level catalog entries (e.g. a quant-tier
@@ -616,7 +645,7 @@ window.__ModuleLoader__.load({
 		function parentModelForRoute(routeKey, cat) {
 			for (const [key, spec] of Object.entries(cat.models)) if ((spec.variants ?? []).some((v) => v.route === routeKey)) return key;
 		}
-		function familyOf(routeKey, cat = _cache$3 ?? {
+		function familyOf(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -629,7 +658,7 @@ window.__ModuleLoader__.load({
 			const parent = parentModelForRoute(routeKey, cat);
 			return parent ? cat.models[parent].family : void 0;
 		}
-		function studioOf(routeKey, cat = _cache$3 ?? {
+		function studioOf(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -648,7 +677,7 @@ window.__ModuleLoader__.load({
 		* or render). The 2026-09-18 retirement: the retired per-form alias
 		* tables are gone — forms no longer reshape slot keys.
 		*/
-		function formOf(routeKey, cat = _cache$3 ?? {
+		function formOf(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -661,7 +690,7 @@ window.__ModuleLoader__.load({
 			const parent = parentModelForRoute(routeKey, cat);
 			return parent ? cat.models[parent].form : void 0;
 		}
-		function familyLabel(routeKey, cat = _cache$3 ?? {
+		function familyLabel(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -680,7 +709,7 @@ window.__ModuleLoader__.load({
 		* badge. The schema-driven replacement for engine-name substring
 		* classifiers.
 		*/
-		function familyGenre(routeKey, cat = _cache$3 ?? {
+		function familyGenre(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -708,7 +737,7 @@ window.__ModuleLoader__.load({
 		* isImageFile prefix check. (authored 2026-08-09; corrected
 		* 2026-10-10)
 		*/
-		function familyAccepts(routeKey, cat = _cache$3 ?? {
+		function familyAccepts(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -729,7 +758,7 @@ window.__ModuleLoader__.load({
 		* TWO consumers (this editor + backend _validate_params_for_media), zero
 		* drift. (2026-08-09)
 		*/
-		function familyTransformMatrix(routeKey, cat = _cache$3 ?? {
+		function familyTransformMatrix(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -757,7 +786,7 @@ window.__ModuleLoader__.load({
 		* is declared — no free-coded per-family dimension logic in the view.
 		* (2026-08-09; size_param added 2026-08-10.)
 		*/
-		function familyCardSummary(routeKey, cat = _cache$3 ?? {
+		function familyCardSummary(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -767,7 +796,7 @@ window.__ModuleLoader__.load({
 			const fam = familyOf(routeKey, cat);
 			return cat.families?.[fam ?? routeKey]?.card_summary ?? null;
 		}
-		function familyConditioning(routeKey, cat = _cache$3 ?? {
+		function familyConditioning(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -785,7 +814,7 @@ window.__ModuleLoader__.load({
 		* ``genre`` — the input card no longer declares any (mask removed
 		* 2026-08-14), so this is the vocabulary for OTHER families that do.
 		*/
-		function familyOptionalOutputs(familyId, cat = _cache$3 ?? {
+		function familyOptionalOutputs(familyId, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -800,7 +829,7 @@ window.__ModuleLoader__.load({
 		* CANVAS_DEFAULT_MODEL; returns undefined before the catalog loads (the
 		* caller keeps its own pre-catalog bootstrap value).
 		*/
-		function canvasDefaultModel(cat = _cache$3 ?? {
+		function canvasDefaultModel(cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -810,7 +839,7 @@ window.__ModuleLoader__.load({
 			return Object.entries(cat.models).find(([, m]) => m.canvas_default)?.[0];
 		}
 		/** Display name for a model within its family variant picker (Turbo / Base / Raw / …). */
-		function variantLabel(routeKey, cat = _cache$3 ?? {
+		function variantLabel(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -828,7 +857,7 @@ window.__ModuleLoader__.load({
 		* empty-model seed. The default is FULLY catalog-declared — the frontend
 		* never picks a default itself.
 		*/
-		function familiesForForm(formTag, cat = _cache$3 ?? {
+		function familiesForForm(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -859,7 +888,7 @@ window.__ModuleLoader__.load({
 		* value so the dropdown always shows the family even when a sub-variant is
 		* selected.
 		*/
-		function familyPrimaryRoute(routeKey, cat = _cache$3 ?? {
+		function familyPrimaryRoute(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -873,7 +902,7 @@ window.__ModuleLoader__.load({
 			const members = Object.entries(cat.models).filter(([, s]) => s.family === fam).map(([k]) => k);
 			return members.find((k) => k === fam) ?? members[0];
 		}
-		function modelLabel(routeKey, cat = _cache$3 ?? {
+		function modelLabel(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -887,7 +916,7 @@ window.__ModuleLoader__.load({
 		/** Description for a model route, or undefined. Callers provide their own
 		* fallback string — this returns `undefined` so `??` works. Reads the
 		* `description:` declared on the model's family in the catalog YAML. */
-		function modelDescription(routeKey, cat = _cache$3 ?? {
+		function modelDescription(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -898,7 +927,7 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families?.[fam]?.description ?? void 0;
 		}
-		function promptGuide(routeKey, cat = _cache$3 ?? {
+		function promptGuide(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -909,7 +938,7 @@ window.__ModuleLoader__.load({
 			if (!fam) return void 0;
 			return cat.families[fam]?.prompt_guide ?? void 0;
 		}
-		function dropdownModels(formTag, cat = _cache$3 ?? {
+		function dropdownModels(formTag, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -926,7 +955,7 @@ window.__ModuleLoader__.load({
 			}
 			return out.sort();
 		}
-		function variantSiblings(routeKey, cat = _cache$3 ?? {
+		function variantSiblings(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -941,7 +970,7 @@ window.__ModuleLoader__.load({
 		* Models hidden from the dropdown because they're reachable only via a
 		* variant toggle (e.g. z-image-q5 — picked by clicking the Q5 button).
 		*/
-		function hiddenFromDropdown(cat = _cache$3 ?? {
+		function hiddenFromDropdown(cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -955,7 +984,7 @@ window.__ModuleLoader__.load({
 		* route key is a quant-tier sibling (e.g. z-image-q5 inherits z-image's
 		* variants). Returns ``[]`` for models without variants.
 		*/
-		function variantsForRoute(routeKey, cat = _cache$3 ?? {
+		function variantsForRoute(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -980,7 +1009,7 @@ window.__ModuleLoader__.load({
 		* h3-timeline incident dies by construction. only_routes gating is
 		* not re-derived here — the wire never carries a gated-out preset.
 		*/
-		function presetsForRoute(routeKey, cat = _cache$3 ?? {
+		function presetsForRoute(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -994,7 +1023,7 @@ window.__ModuleLoader__.load({
 		* Find the variant whose route matches ``routeKey`` — used to highlight the
 		* active toggle when the form is hydrated from saved state.
 		*/
-		function activeVariantForRoute(routeKey, cat = _cache$3 ?? {
+		function activeVariantForRoute(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -1024,7 +1053,7 @@ window.__ModuleLoader__.load({
 		* (FP8/Q8/Q5) → 6 routes. The composer below switches one axis while
 		* preserving the others.
 		*/
-		function routeCoordinates(routeKey, cat = _cache$3 ?? {
+		function routeCoordinates(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -1080,7 +1109,7 @@ window.__ModuleLoader__.load({
 				if (rc.variant === variant && rc.quant === quant) return key;
 			}
 		}
-		function composeVariantRoute(currentRoute, clicked, cat = _cache$3 ?? {
+		function composeVariantRoute(currentRoute, clicked, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -1112,7 +1141,7 @@ window.__ModuleLoader__.load({
 		* positively know a cell is missing, and the served variants list is
 		* itself catalog-derived — hiding is only correct on positive evidence.
 		*/
-		function axisCellExists(currentRoute, clicked, cat = _cache$3 ?? {
+		function axisCellExists(currentRoute, clicked, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -1131,7 +1160,7 @@ window.__ModuleLoader__.load({
 		* matrix system in that case so the two never render duplicate rows
 		* (2026-08-08 — one system, not two).
 		*/
-		function familyHasVariantAxis(routeKey, cat = _cache$3 ?? {
+		function familyHasVariantAxis(routeKey, cat = catalogStore.getState().catalog ?? {
 			families: {},
 			models: {},
 			capabilities: null,
@@ -1142,11 +1171,12 @@ window.__ModuleLoader__.load({
 			const groups = fam ? cat.families?.[fam]?.variant_groups : void 0;
 			return !!groups && "Variant" in groups;
 		}
-		var CARD_GENRES, _cache$3, _cacheTime, _CACHE_TTL_MS, _inflight$2, _loaded, _bgRetryTimer, _listeners$1;
+		var CARD_GENRES, catalogStore, _cacheTime, _CACHE_TTL_MS, _inflight$2, _bgRetryTimer;
 		var init_modelCatalog = __esmMin((() => {
 			init_api();
 			init_catalogContract();
 			init_catalogContractStore();
+			init_clientStore();
 			CARD_GENRES = [
 				"image",
 				"video",
@@ -1156,13 +1186,14 @@ window.__ModuleLoader__.load({
 				"other",
 				"text"
 			];
-			_cache$3 = null;
+			catalogStore = createClientStore({
+				catalog: null,
+				loaded: false
+			});
 			_cacheTime = 0;
 			_CACHE_TTL_MS = 3e4;
 			_inflight$2 = null;
-			_loaded = false;
 			_bgRetryTimer = null;
-			_listeners$1 = /* @__PURE__ */ new Set();
 			/* v8 ignore next -- module warm-load runs only in browser builds, where
 			* MODE is "production"/"development"; under vitest MODE is always "test",
 			* so the taken arm is unreachable here (2026-09-12). */
@@ -3245,12 +3276,12 @@ window.__ModuleLoader__.load({
 		* { force: true } to bypass the cache.
 		*/
 		async function loadFamilySchemas(opts) {
-			if (_cache$2 && !opts?.force) return _cache$2;
+			if (_cache$1 && !opts?.force) return _cache$1;
 			if (_inflight$1) return _inflight$1;
 			_inflight$1 = (async () => {
 				try {
 					const data = await apiJson("/v1/flows/families/param-schemas");
-					_cache$2 = data;
+					_cache$1 = data;
 					return data;
 				} finally {
 					_inflight$1 = null;
@@ -3261,14 +3292,14 @@ window.__ModuleLoader__.load({
 		/** Sync lookup — returns the cached schema for a family, or null if the
 		* cache isn't loaded yet or the family is unknown. Pure, no fetch. */
 		function getFamilySchema(familyId) {
-			if (!_cache$2) return null;
-			return _cache$2[familyId] ?? null;
+			if (!_cache$1) return null;
+			return _cache$1[familyId] ?? null;
 		}
 		/** Is the schema cache POPULATED (a successful bulk fetch with ≥1
 		* family)? Distinguishes "transmission worked and the family is absent"
 		* (a phantom family — throw) from the cache-cold/failed branch (defer). */
 		function isFamilySchemaCachePopulated() {
-			return !!_cache$2 && Object.keys(_cache$2).length > 0;
+			return !!_cache$1 && Object.keys(_cache$1).length > 0;
 		}
 		function jsonTypeOf(val) {
 			/* v8 ignore next -- defensive: both callers (coerceParamsToSchema,
@@ -3659,10 +3690,10 @@ window.__ModuleLoader__.load({
 			}
 			return coerced.params;
 		}
-		var _cache$2, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
+		var _cache$1, _inflight$1, WIRE_RELAXED_KEYS, EDITOR_MOD_ENTRY_KEYS;
 		var init_familyParamContract = __esmMin((() => {
 			init_api();
-			_cache$2 = null;
+			_cache$1 = null;
 			_inflight$1 = null;
 			WIRE_RELAXED_KEYS = /* @__PURE__ */ new Set([
 				"sampling_steps",
@@ -3867,7 +3898,7 @@ window.__ModuleLoader__.load({
 						useRunStatusContractStore.getState().reportViolation(runId, violations);
 						throw new RunStatusContractError(runId, violations);
 					}
-					await new Promise((r) => setTimeout(r, intervalMs));
+					await sleep(intervalMs);
 					continue;
 				}
 				const data = await resp.json();
@@ -3882,7 +3913,7 @@ window.__ModuleLoader__.load({
 					throw new Error(`Flow run ${runId} failed${detail ? `: ${detail}` : ""}`);
 				}
 				opts?.onTick?.(data);
-				await new Promise((r) => setTimeout(r, intervalMs));
+				await sleep(intervalMs);
 			}
 			throw new Error(`Flow run ${runId} timed out after ${Math.round(maxWaitMs / 6e4)} min`);
 		}
@@ -4019,6 +4050,7 @@ window.__ModuleLoader__.load({
 			init_api();
 			init_runStatusContract();
 			init_runStatusContractStore();
+			init_sleep();
 			NON_JSON_BODY_CAP = 2e3;
 			_requiredEmptyResolver = null;
 		}));
@@ -4840,8 +4872,8 @@ window.__ModuleLoader__.load({
 		*/
 		function warnOnce(...params) {
 			const message = params.join(" ");
-			if (message in _cache$1) return;
-			_cache$1[message] = true;
+			if (message in _cache) return;
+			_cache[message] = true;
 			warn(...params);
 		}
 		/**
@@ -5529,7 +5561,7 @@ window.__ModuleLoader__.load({
 				for (let i = 0, l = children.length; i < l; i++) intersect(children[i], raycaster, intersects, true);
 			}
 		}
-		var AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, FloatType, RGBAFormat, RedFormat, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache$1, _setConsoleFunction, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers$1, _object3DId, _v1$6, _q1, _m1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _colorKeywords, _hslA, _hslB, Color, _color, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$3, Points, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, LightShadow, _position$2, _quaternion$2, _scale$2, Camera$1, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, GridHelper, Controls;
+		var AttachedBindMode, RepeatWrapping, ClampToEdgeWrapping, MirroredRepeatWrapping, NearestFilter, NearestMipmapNearestFilter, NearestMipmapLinearFilter, LinearFilter, LinearMipmapNearestFilter, LinearMipmapLinearFilter, UnsignedByteType, FloatType, RGBAFormat, RedFormat, InterpolateDiscrete, InterpolateLinear, InterpolateSmooth, InterpolateBezier, ZeroCurvatureEnding, ZeroSlopeEnding, WrapAroundEnding, NormalAnimationBlendMode, BasicDepthPacking, SRGBColorSpace, LinearSRGBColorSpace, LinearTransfer, SRGBTransfer, KeepStencilOp, StaticDrawUsage, WebGLCoordinateSystem, _cache, _setConsoleFunction, EventDispatcher, _lut, _seed, DEG2RAD, RAD2DEG, MathUtils, Vector2, Quaternion, Vector3, _vector$c, _quaternion$5, Matrix3, _m3, LINEAR_REC709_TO_XYZ, XYZ_TO_LINEAR_REC709, ColorManagement, _canvas, ImageUtils, _sourceId, Source, _textureId, _tempVec3, Texture, Vector4, Matrix4, _v1$7, _m1$2, _zero, _one, _x, _y, _z, _matrix$2, _quaternion$4, Euler, Layers$1, _object3DId, _v1$6, _q1, _m1$1, _target, _position$4, _scale$3, _quaternion$3, _xAxis, _yAxis, _zAxis, _addedEvent, _removedEvent, _childaddedEvent, _childremovedEvent, Object3D, Group, _colorKeywords, _hslA, _hslB, Color, _color, _v0$2, _v1$5, _v2$4, _v3$2, _vab, _vac, _vbc, _vap, _vbp, _vcp, _v40, _v41, _v42, Triangle, Box3, _points, _vector$b, _box$4, _v0$1, _v1$4, _v2$3, _f0, _f1, _f2, _center, _extents, _triangleNormal, _testAxis, _vector$a, _vector2$1, _id$2, BufferAttribute, Uint16BufferAttribute, Uint32BufferAttribute, Float32BufferAttribute, _box$3, _v1$3, _v2$2, Sphere, _id$1, _m1, _obj, _offset, _box$2, _boxMorphTargets, _vector$9, BufferGeometry, InterleavedBuffer, _vector$8, InterleavedBufferAttribute, _materialId, Material, _vector$7, _segCenter, _segDir, _diff, _edge1, _edge2, _normal$1, Ray, MeshBasicMaterial, _inverseMatrix$3, _ray$3, _sphere$6, _sphereHitAt, _vA, _vB, _vC, _tempA, _morphA, _intersectionPoint, _intersectionPointWorld, Mesh, _baseVector, _skinIndex, _skinWeight, _vector4, _matrix4, _vertex, _sphere$5, _inverseMatrix$2, _ray$2, SkinnedMesh, Bone, DataTexture, _offsetMatrix, _identityMatrix$1, Skeleton$1, InstancedBufferAttribute, _instanceLocalMatrix, _instanceWorldMatrix, _instanceIntersects, _box3, _identity, _mesh$1, _sphere$4, InstancedMesh, _vector1, _vector2, _normalMatrix, Plane, _sphere$3, _defaultSpriteCenter, _vector$6, Frustum, LineBasicMaterial, _vStart, _vEnd, _inverseMatrix$1, _ray$1, _sphere$1, _intersectPointOnRay, _intersectPointOnSegment, Line, _start, _end, LineSegments, LineLoop, PointsMaterial, _inverseMatrix, _ray, _sphere, _position$3, Points, BoxGeometry, CylinderGeometry, ConeGeometry, PolyhedronGeometry, OctahedronGeometry, PlaneGeometry, RingGeometry, SphereGeometry, TorusGeometry, ShadowMaterial, MeshStandardMaterial, MeshPhysicalMaterial, MeshDepthMaterial, Interpolant, CubicInterpolant, LinearInterpolant, DiscreteInterpolant, BezierInterpolant, KeyframeTrack, BooleanKeyframeTrack, ColorKeyframeTrack, NumberKeyframeTrack, QuaternionLinearInterpolant, QuaternionKeyframeTrack, StringKeyframeTrack, VectorKeyframeTrack, AnimationClip, Cache, LoadingManager, DefaultLoadingManager, Loader, loading, HttpError, FileLoader, _loading, ImageLoader, TextureLoader, Light, HemisphereLight, _projScreenMatrix, _lightPositionWorld, _lookTarget, LightShadow, _position$2, _quaternion$2, _scale$2, Camera$1, _v3$1, _minTarget, _maxTarget, PerspectiveCamera, SpotLightShadow, SpotLight, PointLightShadow, PointLight, OrthographicCamera, DirectionalLightShadow, DirectionalLight, AmbientLight, LoaderUtils, _errorMap, ImageBitmapLoader, _RESERVED_CHARS_RE, _reservedRe, _wordChar, _wordCharOrDot, _directoryRe, _nodeRe, _objectRe, _propertyRe, _trackRe, _supportedObjectNames, Composite, PropertyBinding, _matrix, Raycaster, GridHelper, Controls;
 		var init_three_core = __esmMin((() => {
 			AttachedBindMode = "attached";
 			RepeatWrapping = 1e3;
@@ -5561,7 +5593,7 @@ window.__ModuleLoader__.load({
 			KeepStencilOp = 7680;
 			StaticDrawUsage = 35044;
 			WebGLCoordinateSystem = 2e3;
-			_cache$1 = {};
+			_cache = {};
 			_setConsoleFunction = null;
 			EventDispatcher = class {
 				/**
@@ -30561,9 +30593,6 @@ window.__ModuleLoader__.load({
 			const res = await apiFetch(`/poser/text-to-pose/scenes/${filename}`, { method: "DELETE" });
 			if (!res.ok && res.status !== 404) throw new Error(`Delete failed: HTTP ${res.status}`);
 		}
-		function sleep(ms) {
-			return new Promise((resolve) => setTimeout(resolve, ms));
-		}
 		/**
 		* Pick a specific frame from a PoseMotion's flat keypoints.
 		* Clamps to valid range.
@@ -30694,32 +30723,26 @@ window.__ModuleLoader__.load({
 		var init_text_to_pose = __esmMin((() => {
 			init_api();
 			init_src$1();
+			init_sleep();
 		}));
 		//#endregion
 		//#region ../../web-kit/catalog/src/serviceForms.ts
-		function notify() {
-			for (const fn of _listeners) try {
-				fn();
-			} catch (e) {
-				console.warn("[serviceForms] listener error:", e);
-			}
-		}
 		async function loadForms(opts) {
-			if (Object.keys(_cache).length > 0 && !opts?.force) return _cache;
+			if (Object.keys(formsStore.getState().cache).length > 0 && !opts?.force) return formsStore.getState().cache;
 			if (_inflight) return _inflight;
 			_inflight = (async () => {
 				try {
 					const res = await apiFetch("/v1/forms");
 					if (!res.ok) {
 						console.warn("[serviceForms] /v1/forms failed:", res.status);
-						return _cache;
+						return formsStore.getState().cache;
 					}
-					_cache = (await res.json())?.forms ?? {};
-					notify();
-					return _cache;
+					const data = await res.json();
+					formsStore.setState({ cache: data?.forms ?? {} });
+					return formsStore.getState().cache;
 				} catch (e) {
 					console.warn("[serviceForms] fetch error:", e);
-					return _cache;
+					return formsStore.getState().cache;
 				} finally {
 					_inflight = null;
 				}
@@ -30727,38 +30750,37 @@ window.__ModuleLoader__.load({
 			return _inflight;
 		}
 		function getCachedForms() {
-			return _cache;
+			return formsStore.getState().cache;
 		}
 		function subscribeForms(fn) {
-			_listeners.add(fn);
-			return () => {
-				_listeners.delete(fn);
-			};
+			return formsStore.subscribe(() => {
+				fn();
+			});
 		}
 		/**
 		* Reverse-lookup: given a sidebar_key (the value the rest of the app calls
 		* `selectedService`), return the form-tag it belongs to. This is THE
 		* primitive that drives every render decision in GenerateFormBody.
 		*/
-		function formForSidebarKey(sidebarKey, forms = _cache) {
+		function formForSidebarKey(sidebarKey, forms = formsStore.getState().cache) {
 			for (const [formTag, entry] of Object.entries(forms)) if (entry.sidebar_key === sidebarKey) return formTag;
 		}
 		/**
 		* Check whether the given sidebar_key belongs to the given form-tag.
 		* Internal — the convenience predicates below are the public API.
 		*/
-		function isForm(sidebarKey, formTag, forms = _cache) {
+		function isForm(sidebarKey, formTag, forms = formsStore.getState().cache) {
 			return forms[formTag]?.sidebar_key === sidebarKey;
 		}
 		/** True if the sidebar_key belongs to ANY of the given form-tags. */
-		function isInAnyForm(sidebarKey, formTags, forms = _cache) {
+		function isInAnyForm(sidebarKey, formTags, forms = formsStore.getState().cache) {
 			return formTags.some((t) => isForm(sidebarKey, t, forms));
 		}
 		/**
 		* True if the sidebar_key belongs to any audio-genre form-tag.
 		* (form_tts, form_voice, form_voice_studio, form_music, form_sound)
 		*/
-		function isAudioForm(sidebarKey, forms = _cache) {
+		function isAudioForm(sidebarKey, forms = formsStore.getState().cache) {
 			return isInAnyForm(sidebarKey, [
 				"form_tts",
 				"form_voice",
@@ -30792,12 +30814,12 @@ window.__ModuleLoader__.load({
 			for (const items of Object.values(out)) items.sort((a, b) => a.order - b.order || a.label.localeCompare(b.label));
 			return out;
 		}
-		var _cache, _inflight, _listeners, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
+		var formsStore, _inflight, isTtsForm, isVoiceForm, isVoiceStudioForm, isMusicForm, isGenerateForm, isEditForm;
 		var init_serviceForms = __esmMin((() => {
 			init_api();
-			_cache = {};
+			init_clientStore();
+			formsStore = createClientStore({ cache: {} });
 			_inflight = null;
-			_listeners = /* @__PURE__ */ new Set();
 			isTtsForm = (k) => isForm(k, "form_tts");
 			isVoiceForm = (k) => isForm(k, "form_voice");
 			isVoiceStudioForm = (k) => isForm(k, "form_voice_studio");
