@@ -33,6 +33,7 @@ import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.ts";
 import type { SourceEchoRef } from "./runsSourceEcho.ts";
 import type { GraphRow } from "./queue.ts";
+import type { RunId } from "./queueCore.ts";
 import type { RunRecord } from "./runsTypes.ts";
 
 /** The door's refusal shape (status carries the HTTP class; the
@@ -407,7 +408,7 @@ export async function registerCompiledRun(args: {
   testFlag: boolean;
   draftId: string;
   stateRoot: string;
-  enqueue: (row: { runId: string; status: string; error: string; createdAt: number; draftId: string; testFlag: boolean; stopFlag: boolean }) => number;
+  enqueue: (row: { runId: RunId; status: string; error: string; createdAt: number; draftId: string; testFlag: boolean; stopFlag: boolean }) => number;
   /** F-6(b) admission warnings (computed pre-registration by the
    *  start door — the film lane's VRAM-pressure warn): stamped on
    *  the record and the queued sidecar. Absent means none. */
@@ -435,7 +436,7 @@ export async function registerCompiledRun(args: {
    *  between a wall (which can be forgotten, and was) and a type
    *  (which cannot be forgotten at all). */
   door: {
-    runId: string;
+    runId: RunId;
     pipeline: string;
     /** The card arm's identity (card snapshot law). The inline
      *  REPLAY arm (stroke 83 boot resurrect) reuses a run id with
@@ -460,7 +461,7 @@ export async function registerCompiledRun(args: {
   // THE ONE RUN ID (see the type above): the caller's. There is no
   // second producer here, and there cannot be one without failing the
   // compiler.
-  const runId: string = door.runId;
+  const runId: RunId = door.runId;
   // THE SOURCE-ECHO GUARD (the source-echo law, 2026-09-23): every
   // compiled stage's params are swept for source pointers BEFORE the
   // run dir exists — a dead source refuses here with its URL named,

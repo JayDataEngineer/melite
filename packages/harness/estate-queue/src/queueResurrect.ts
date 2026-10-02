@@ -1,4 +1,5 @@
 import { parseSidecar } from "./queueSidecar.ts"
+import type { RunId } from "./queueCore.ts"
 // queueResurrect.ts — resurrection planning + strict JSON reads
 // (boot tolerance for on-disk records; lenient arms deleted
 // 2026-09-18 — JSON arrays/objects ride, nothing is re-interpreted).
@@ -11,7 +12,7 @@ import { join } from "node:path";
 
 export interface ResurrectPlan {
   /** run_ids to re-queue, FIFO by created_at (order survives). */
-  readonly order: string[];
+  readonly order: RunId[];
   /** run_ids swept below (orphans / half-written). */
   readonly orphans: string[];
 }
@@ -208,7 +209,7 @@ export function planResurrect(
   } catch {
     return { order: [], orphans: [] };
   }
-  const candidates: { created: number; runId: string }[] = [];
+  const candidates: { created: number; runId: RunId }[] = [];
   const orphans: string[] = [];
   for (const name of names.sort()) {
     if (!name.startsWith("run-")) continue;
@@ -247,12 +248,16 @@ export function planResurrect(
       orphans.push(name);
       continue;
     }
-    candidates.push({ created: createdNum, runId: name });
+    // The durable/file brand door: the dir name IS the run id,
+    // admitted only past the run- prefix, the sidecar parse and the
+    // usable-request check above (the dsh-brand convention: the
+    // cast lives at the validating boundary, never at consumers).
+    candidates.push({ created: createdNum, runId: name as RunId });
   }
   candidates.sort((a: { created: number }, b: { created: number }): number =>
     a.created - b.created,
   );
-  return { order: candidates.map((c: { runId: string }): string => c.runId), orphans };
+  return { order: candidates.map((c: { runId: RunId }): RunId => c.runId), orphans };
 }
 
 /** The state-root triple every boot seam takes (server.ts

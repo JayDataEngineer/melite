@@ -16,6 +16,7 @@ import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -453,7 +454,8 @@ describe("pump + engine", () => {
     const dir = join(s.state, "output", runId);
     mkdirSync(dir, { recursive: true });
     const row: RunRecord = {
-      runId,
+      // The fixture brands at its construction door (arbitrary label).
+      runId: runId as RunId,
       status: "running",
       stages: [],
       skippedStages: [],

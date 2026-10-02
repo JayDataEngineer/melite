@@ -1022,7 +1022,9 @@ test("the run id is minted ONCE: a composed graph's forward references name the 
     "a second mint composes the graph under one id and registers the run under another, " +
     "so every forward reference names a run that was never created");
   // and the id is composed into the same value the run registers
-  assert.match(start, /const runId: string = reuse\?\.runId \?\? newRunId\(\)/,
+  // the branded declaration (B7): the reuse seam or the mint, never a
+  // second value — and the value is the RunId the row carries
+  assert.match(start, /const runId: RunId = reuse\?\.runId \?\? newRunId\(\)/,
     "the one mint IS the run's id (the reuse seam or the mint, never a second value)");
   assert.doesNotMatch(start, /const runIdSeed|runIdSeed\s*[,;]/,
     "the retired second mint is gone — one id, one derivation");

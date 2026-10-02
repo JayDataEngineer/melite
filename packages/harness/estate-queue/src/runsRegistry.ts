@@ -33,6 +33,7 @@ import { loadEndpointConfig } from "@melite/comfyui-cordis";
 import { fetchEngineMem, filmLoadOf, filmMemoryWarn } from "./filmMemoryWarn.ts";
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
 import { newRunId, outRootFor, pipelineOf, strictBodyCheck, draftIdOk, planResurrect, bootSweep, appendLedger, refusal } from "./queue.ts";
+import type { RunId } from "./queueCore.ts";
 import { cardRefusal, toRemoteError, refusePreview } from "./runsRefusalVoices.ts";
 import { coerceSnapshotBody } from "./runsValidateStages.ts";
 export { toRemoteError } from "./runsRefusalVoices.ts";
@@ -412,7 +413,7 @@ export class RunsRuntimeService extends Service {
   /** Settle a replay-refused resurrect id: rebuild the row's
    *  identity from its own sidecar (the stage faces ride verbatim)
    *  and persist failed through the canonical terminal writer. */
-  private async settleReplayRefusal(stateRoot: string, runId: string, error: string): Promise<void> {
+  private async settleReplayRefusal(stateRoot: string, runId: RunId, error: string): Promise<void> {
     const dir = join(outRootFor(stateRoot, false), runId);
     let pre: Record<string, unknown> = {};
     try {
@@ -496,7 +497,7 @@ export class RunsRuntimeService extends Service {
    */
   private async composeBenchStages(
     benchDoc: Record<string, unknown>,
-    runId: string,
+    runId: RunId,
   ): Promise<Array<Record<string, unknown>>> {
     const cards = this.ctx.cardRegistry;
     const rows = Array.isArray(benchDoc["stages"]) ? (benchDoc["stages"] as unknown[]) : [];
@@ -601,7 +602,7 @@ export class RunsRuntimeService extends Service {
     /** INTERNAL (stroke 83 boot resurrect): reuse a dead process's
      *  run id when replaying its _request.json — the remote surface
      *  never passes this (two-arg wire calls only). */
-    reuse?: { runId: string },
+    reuse?: { runId: RunId },
   ): Promise<{ run_id: string; status: string; queue_position: number }> {
     signal.throwIfAborted();
     // The pre-registration chain, order (queue.ts's envelope
@@ -658,7 +659,7 @@ export class RunsRuntimeService extends Service {
     // there is only one value to disagree about. A wall drives the
     // pair (the composed run's own forward references resolve, which
     // is impossible when the two ids differ).
-    const runId: string = reuse?.runId ?? newRunId();
+    const runId: RunId = reuse?.runId ?? newRunId();
     let body: Record<string, unknown> = checked.body;
     const strict = strictBodyCheck(body);
     if (strict !== null) throw toRemoteError(strict);
@@ -1485,7 +1486,7 @@ export class RunsRuntimeService extends Service {
   }
 
   /** The live map (the queue seat's core registry — rich rows). */
-  private liveRun(runId: RunRecord["runId"]): RunRecord | undefined {
+  private liveRun(runId: string): RunRecord | undefined {
     return (this.core.runs as Map<string, RunRecord>).get(runId);
   }
 

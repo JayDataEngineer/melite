@@ -18,7 +18,8 @@ import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
-import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -659,16 +660,18 @@ describe("validate", () => {
 });
 
 describe("status + stop", () => {
-  const live = (s: Seat, over: Partial<RunRecord> = {}): string => {
+  // The fixture brands at its construction door (the run-id type's
+  // own law): call sites pass arbitrary labels, the helper mints the
+  // brand once, where the row is built.
+  const live = (s: Seat, over: Partial<Omit<RunRecord, "runId">> & { runId?: string } = {}): string => {
     const row: RunRecord = {
-      runId: "run-live",
       status: "queued",
       stages: [],
       skippedStages: [],
       artifacts: [],
       error: "",
       draftId: "d1",
-      dir: join(s.state, "output", "run-live"),
+      dir: join(s.state, "output", over.runId ?? "run-live"),
       testFlag: false,
       stopFlag: false,
       params: [],
@@ -678,6 +681,7 @@ describe("status + stop", () => {
       outputNodes: [],
       initials: {},
       ...over,
+      runId: (over.runId ?? "run-live") as RunId,
     };
     (s.core.runs as Map<string, RunRecord>).set(row.runId, row);
     return row.runId;
@@ -703,7 +707,7 @@ describe("status + stop", () => {
       exportName: "Cherry_17",
       exportPath: "/voices/Cherry_17.qvoice",
       variant: "customvoice",
-    } as Partial<RunRecord>);
+    });
     const got = await s.svc.status(id, sig());
     assert.deepEqual(got["source_echo"], { refs: [{ url: "/x", file: "/tmp/x" }] });
     assert.equal(got["export_name"], "Cherry_17");
@@ -714,7 +718,7 @@ describe("status + stop", () => {
       runId: "run-status-empty-stamps",
       exportName: "",
       exportPath: "",
-    } as Partial<RunRecord>);
+    });
     const empty = await s.svc.status(emptyId, sig());
     assert.equal("export_name" in empty, false);
     assert.equal("export_path" in empty, false);
@@ -726,7 +730,7 @@ describe("status + stop", () => {
       runId: "run-status-loud",
       loudness: { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 },
       voiceFreshness: { reused_existing: true, voice_file: "harbour_2.qvoice" },
-    } as Partial<RunRecord>);
+    });
     const got = await s.svc.status(id, sig());
     assert.deepEqual(got["loudness"], { loudness_lufs: -24.72274663827507, peak_db: -6.366579627483562 });
     assert.deepEqual(got["voice_freshness"], { reused_existing: true, voice_file: "harbour_2.qvoice" });
@@ -892,13 +896,13 @@ describe("status + stop", () => {
       stages: [{ id: "s1", status: "completed" }], skipped_stages: [],
       artifacts: ["film.mp4"], error: "",
     }));
-    live(s, { runId: huskId, status: "completed", dir } as Partial<RunRecord>);
+    live(s, { runId: huskId, status: "completed", dir });
     const got = await s.svc.status(huskId, sig());
     assert.equal(got["from_disk"], true);
     assert.equal((got["stages"] as unknown[]).length, 1);
 
     // A genuinely-empty QUEUED row is legitimate (nothing yet) — stays live.
-    const q = live(s, { runId: "run-f5queued1234-00000003" } as Partial<RunRecord>);
+    const q = live(s, { runId: "run-f5queued1234-00000003" });
     const liveAns = await s.svc.status(q, sig());
     assert.equal(liveAns["from_disk"], undefined);
     assert.equal(liveAns["status"], "queued");
@@ -909,7 +913,7 @@ describe("status + stop", () => {
 
   it("terminal empty rows stay live when disk is absent or has no usable arrays", async () => {
     const s = seat();
-    const noDisk = live(s, { runId: "run-terminal-no-disk", status: "completed" } as Partial<RunRecord>);
+    const noDisk = live(s, { runId: "run-terminal-no-disk", status: "completed" });
     const liveNoDisk = await s.svc.status(noDisk, sig());
     assert.equal(liveNoDisk["from_disk"], undefined);
 
@@ -921,7 +925,7 @@ describe("status + stop", () => {
       stages: "not-an-array",
       artifacts: "not-an-array",
     }));
-    live(s, { runId: malformedId, dir: malformedDir, status: "completed" } as Partial<RunRecord>);
+    live(s, { runId: malformedId, dir: malformedDir, status: "completed" });
     const malformed = await s.svc.status(malformedId, sig());
     assert.equal(malformed["from_disk"], undefined);
   });
@@ -938,7 +942,7 @@ describe("status + stop", () => {
         id: "h3-film", type: "comfyui", input_from: [], input_names: {},
         outputs: {}, params: { workflow: { fat: "50KB of prompt JSON must never ride status" } },
       }],
-    } as Partial<RunRecord>);
+    });
     const got = await s.svc.status(q, sig());
     assert.equal(got["status"], "running");
     assert.equal(got["from_disk"], undefined);
@@ -949,8 +953,8 @@ describe("status + stop", () => {
     const w = live(s, {
       runId: "run-f2staged12345-00000006",
       status: "running",
-      stages: [{ id: "s1", status: "running" }],
-    } as Partial<RunRecord>);
+      stages: [{ id: "s1", status: "running" } as unknown as RunStageRow],
+    });
     const staged = await s.svc.status(w, sig());
     assert.equal(staged["planned_stages"], undefined);
   });
@@ -970,7 +974,7 @@ describe("status + stop", () => {
     writeFileSync(absTop, "img");
     writeFileSync(absNested, "vid");
     (s.core.runs as Map<string, RunRecord>).set(runId, {
-      runId,
+      runId: runId as RunId,
       status: "completed",
       stages: [{ id: "s", name: "s", index: 0, status: "completed", outputs: {}, expected: {} }],
       skippedStages: [],
@@ -1308,7 +1312,8 @@ describe("cross-roots manifest (§23)", () => {
 
   const liveRow = (s: Seat): string => {
     const row: RunRecord = {
-      runId: "run-live",
+      // The fixture brands at its construction door (arbitrary label).
+      runId: "run-live" as RunId,
       status: "queued",
       stages: [],
       skippedStages: [],

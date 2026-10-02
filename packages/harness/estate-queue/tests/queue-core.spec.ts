@@ -8,11 +8,13 @@
 // stopped-rows-stay).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { QueueCore, newRunId, terminalFrame, type QueueRunRow } from "../src/queueCore.ts";
+import { QueueCore, newRunId, terminalFrame, type QueueRunRow, type RunId } from "../src/queueCore.ts";
 import { MAX_SETTLED_RUNS } from "../src/queueLock.ts";
 
+// The fixture brands at its construction door (the run-id type's
+// own law): the ids below are arbitrary labels, never minted.
 const row = (runId: string, over: Partial<QueueRunRow> = {}): QueueRunRow => ({
-  runId,
+  runId: runId as RunId,
   status: "queued",
   error: "",
   createdAt: 1_000,

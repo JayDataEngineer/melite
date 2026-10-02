@@ -5,12 +5,18 @@
 // Erasable-syntax TS only (node --experimental-strip-types): no
 // enums, import type for types, .ts specifiers for relative imports.
 import { randomBytes } from "node:crypto";
+import type { Branded } from "@deepseek-ai/dsh-brand";
 import { MAX_SETTLED_RUNS } from "./queueLock.ts";
 import type { LifecycleState } from "./queueLifecycle.ts";
 // ── the registry (Gateway.__init__ 1066-1071 + serial law) ───────
 
+/** The run id: run-<12hex>-<8hex>, opaque as it crosses wire, queue
+ *  and file (branded at its two producers — the mint below and the
+ *  resurrect fs door — per the dsh-brand convention). */
+export type RunId = Branded<"RunId">;
+
 export interface QueueRunRow {
-  runId: string;
+  runId: RunId;
   status: LifecycleState;
   /** Terminal failure text ("<Type>: <msg>") — "" until failed. */
   error: string;
@@ -129,13 +135,15 @@ export class QueueCore {
   }
 }
 
-/** run-<12hex>-<8hex> ids (submit 1267: uuid4 hex + time-ms low 32). */
-export function newRunId(): string {
+/** run-<12hex>-<8hex> ids (submit 1267: uuid4 hex + time-ms low 32).
+ *  The mint is one of the brand's two producers; the return cast is
+ *  the construction door. */
+export function newRunId(): RunId {
   const rand: string = randomBytes(6).toString("hex");
   const ts: string = ((Date.now() & 0xffffffff) >>> 0)
     .toString(16)
     .padStart(8, "0");
-  return "run-" + rand + "-" + ts;
+  return "run-" + rand + "-" + ts as RunId;
 }
 
 /** The terminal broadcast frame (worker 1413-1414): every

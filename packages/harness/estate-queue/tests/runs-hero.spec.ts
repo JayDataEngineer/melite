@@ -11,6 +11,7 @@ import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
 import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 import { declaredPrimaryFirst, runOne } from "../src/runsExecute.ts";
 
 class FakeEngine extends ComfyUIHostService {
@@ -38,7 +39,9 @@ class FakeEngine extends ComfyUIHostService {
 }
 
 const runWithCard = (cardId: string): RunRecord => ({
-  runId: "run-hero-00000000-00000000",
+  // The fixture brands at its construction door; the id is a fixed
+  // label, never minted.
+  runId: "run-hero-00000000-00000000" as RunId,
   status: "queued",
   stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }],
   skippedStages: [],

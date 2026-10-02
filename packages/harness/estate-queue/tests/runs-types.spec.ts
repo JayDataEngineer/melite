@@ -16,6 +16,7 @@ import {
 import { variantOfBodies } from "../src/queue.ts";
 import { sidecarStageOf } from "../src/queueSidecar.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 
 let dir = "";
 
@@ -25,7 +26,8 @@ beforeAll(() => {
 
 function record(over: Partial<RunRecord> = {}): RunRecord {
   return {
-    runId: "r1",
+    // The fixture brands at its construction door (arbitrary label).
+    runId: "r1" as RunId,
     status: "completed",
     stages: [],
     skippedStages: [],

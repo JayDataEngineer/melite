@@ -19,6 +19,7 @@ import {
   variantOfBodies,
 } from "./queue.ts";
 import type { GraphRow } from "./queue.ts";
+import type { RunId } from "./queueCore.ts";
 
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
 export type RunStatus =
@@ -63,7 +64,7 @@ export interface RunStageRow {
  *  door's RunsService held one map; the queue's core is that map
  *  now). */
 export interface RunRecord {
-  runId: string;
+  runId: RunId;
   status: RunStatus;
   stages: RunStageRow[];
   skippedStages: string[];

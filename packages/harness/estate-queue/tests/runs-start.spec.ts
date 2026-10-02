@@ -17,6 +17,7 @@ import {
 import type { CompiledStage } from "../src/runsStart.ts";
 import { newRunId } from "../src/queueCore.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 
 /** registerCompiledRun now returns a refusal union (the source-echo
  *  gate) — these walls register sourceless stages, so a refusal is
@@ -368,7 +369,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { runId: "run-door", pipeline: "m", cardId: "c", requestBody: body },
+      door: { runId: "run-door" as RunId, pipeline: "m", cardId: "c", requestBody: body },
     });
     assert.equal(run.runId, "run-door");
     assert.equal(run.pipeline, "m");
@@ -399,7 +400,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { runId: "run-nonlist", pipeline: "m", cardId: "c", requestBody: body, benchDoc },
+      door: { runId: "run-nonlist" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc },
     });
     const snap = run.benchSnapshot as { stages: Array<Record<string, unknown>>; intent: string };
     assert.equal(snap.intent, "mixed rows");
@@ -425,7 +426,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { runId: "run-snap", pipeline: "m", cardId: "c", requestBody: body, benchDoc },
+      door: { runId: "run-snap" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc },
     });
     assert.deepEqual(run.cardSnapshot, { card: "c", params: body });
     // THE CONTRACTED STAMP: the row rides with provenance restored
@@ -461,7 +462,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { runId: "run-head", pipeline: "m", cardId: "tts", requestBody: body, benchDoc: logged },
+      door: { runId: "run-head" as RunId, pipeline: "m", cardId: "tts", requestBody: body, benchDoc: logged },
     });
     assert.deepEqual((run.benchSnapshot as Record<string, unknown>)["bench_head"], {
       rev: 1, at: 1758841200, author: "tool", kind: "ensure", stage: "s_0", summary: "card birth",
@@ -474,7 +475,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { runId: "run-bare", pipeline: "m", cardId: "c", requestBody: body, benchDoc: bare },
+      door: { runId: "run-bare" as RunId, pipeline: "m", cardId: "c", requestBody: body, benchDoc: bare },
     });
     assert.equal("bench_head" in (run2.benchSnapshot as Record<string, unknown>), false);
   });
@@ -496,7 +497,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 0,
-      door: { runId: "run-var", pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
+      door: { runId: "run-var" as RunId, pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
     });
     // the compiled stage params carry no variant (engine-shaped) —
     // the exact submitted body names the lane (the export-name
@@ -518,7 +519,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 0,
-      door: { runId: "run-var2", pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
+      door: { runId: "run-var2" as RunId, pipeline: "qwen3-tts", cardId: "qwen3-tts", requestBody: body },
     });
     assert.equal(run.variant, "voicedesign");
     const ledger = readFileSync(join(root, "output", "_ledger.jsonl"), "utf8");
@@ -545,7 +546,7 @@ describe("registerCompiledRun", () => {
 
   it("an empty bench stamps no bench snapshot (the key stays absent, never null)", async () => {
     const root = tmp();
-    const doorBase = { runId: "run-nobench", pipeline: "m", cardId: "c", requestBody: {} };
+    const doorBase = { runId: "run-nobench" as RunId, pipeline: "m", cardId: "c", requestBody: {} };
     const { run } = await mustRegister({
       compiled: compiled([one]),
       testFlag: false,
@@ -566,7 +567,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 3,
-      door: { ...doorBase, runId: "run-nointent", benchDoc: { stages, intent: 7 } },
+      door: { ...doorBase, runId: "run-nointent" as RunId, benchDoc: { stages, intent: 7 } },
     });
     assert.deepEqual(run2.benchSnapshot, { stages: [{ id: "s", provenance: "restored" }], intent: "" });
   });
@@ -594,7 +595,7 @@ describe("registerCompiledRun", () => {
       stateRoot: root,
       enqueue: () => 0,
       door: {
-        runId: "run-echo", pipeline: "m", cardId: "h3-timeline",
+        runId: "run-echo" as RunId, pipeline: "m", cardId: "h3-timeline",
         requestBody: body, benchDoc: { bench: { rev: 17 } },
       },
     });
@@ -619,7 +620,7 @@ describe("registerCompiledRun", () => {
       draftId: "d1",
       stateRoot: root,
       enqueue: () => 0,
-      door: { runId: "run-noecho", pipeline: "m", cardId: "c", requestBody: { model: "m" } },
+      door: { runId: "run-noecho" as RunId, pipeline: "m", cardId: "c", requestBody: { model: "m" } },
     });
     assert.equal(run.composeEcho, undefined);
     const flow = JSON.parse(readFileSync(join(run.dir, "_flow.json"), "utf8")) as Record<string, unknown>;

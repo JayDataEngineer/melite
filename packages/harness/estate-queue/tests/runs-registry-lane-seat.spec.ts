@@ -21,6 +21,7 @@ import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { QueueCore } from "../src/queue.ts";
 import type { RunRecord } from "../src/runsTypes.ts";
+import type { RunId } from "../src/queueCore.ts";
 
 let TMP = "";
 afterEach(() => {
@@ -160,7 +161,7 @@ describe("the runs door through the lane's models seat", () => {
     const replay = await svc.start(
       { draft_id: "d1", test: false, ...durable },
       new AbortController().signal,
-      { runId: ans.run_id },
+      { runId: ans.run_id as RunId }, // the wire door: a wire id re-enters the internal reuse door
     );
     assert.equal(replay.run_id, ans.run_id, "the replay rewrites in place (stroke 83)");
     await settleRun(svc, ans.run_id);
@@ -239,7 +240,7 @@ describe("the runs door through the lane's models seat", () => {
       svc.start(
         { draft_id: "d1", test: false, ...durable, photo: "data/input/../../../../etc/hostile.png" },
         new AbortController().signal,
-        { runId: "run-traversal" },
+        { runId: "run-traversal" as RunId },
       ),
     );
     assert.ok(traversal instanceof RemoteError, "the replay arm runs the same gate");
@@ -253,7 +254,7 @@ describe("the runs door through the lane's models seat", () => {
       svc.start(
         { draft_id: "d1", test: false, ...durable, photo: 12 },
         new AbortController().signal,
-        { runId: "run-mangled" },
+        { runId: "run-mangled" as RunId },
       ),
     );
     assert.ok(mangled instanceof RemoteError, "the mangled replay refuses");

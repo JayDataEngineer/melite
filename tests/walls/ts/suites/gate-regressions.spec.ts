@@ -486,8 +486,10 @@ describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-0
     expect(startCalls, "the start chain CALLS no mint of its own — the id is the caller's")
       .toBe(0);
     // and the type says so: the door is required, its runId required
-    expect(start).toMatch(/const runId: string = door\.runId;/);
-    expect(start).toMatch(/\n  door: \{\n    runId: string;/);
+    // (and BRANDED — the opaque-id convention; the brand, not the
+    // bare string, is what a second producer would collide on)
+    expect(start).toMatch(/const runId: RunId = door\.runId;/);
+    expect(start).toMatch(/\n  door: \{\n    runId: RunId;/);
   });
 
   it("the bench stage id has ONE producer (the admitted row and the stored row cannot differ)", () => {
