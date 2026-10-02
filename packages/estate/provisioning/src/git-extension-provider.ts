@@ -81,14 +81,17 @@ function signalAborted(signal: AbortSignal | undefined): boolean {
  *  the provider's runGit owns the PinnedGitError fold. */
 export class SubprocessGitCommandRunner implements GitCommandRunner {
   readonly maxOutputBytes: number;
+  // STRIP-ONLY LAW (the same law mp4Probe.ts records): this package
+  // loads inside the dsh host's Node strip-only TypeScript mode, which
+  // rejects constructor parameter properties — the field is declared
+  // and assigned explicitly, never in the constructor head.
+  private readonly runtime: SubprocessRuntime;
 
-  constructor(
-    private readonly runtime: SubprocessRuntime,
-    maxOutputBytes = DEFAULT_GIT_OUTPUT_BYTES,
-  ) {
+  constructor(runtime: SubprocessRuntime, maxOutputBytes = DEFAULT_GIT_OUTPUT_BYTES) {
     if (!Number.isSafeInteger(maxOutputBytes) || maxOutputBytes <= 0) {
       throw new PinnedGitError("invalid-request", "Git output bound must be a positive integer");
     }
+    this.runtime = runtime;
     this.maxOutputBytes = maxOutputBytes;
   }
 
