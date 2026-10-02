@@ -1,7 +1,9 @@
-// cards-resource.ts — the uploads door's client verb now lives in
-// the base (@melite/card-base/client — the construction law's upload
-// half); re-exported here for the view's import paths.
-export { uploadInputFile } from '@melite/card-base/client'
+// cards-resource.ts — the cards resource protocol: the cards tab's
+// live values (bench read, draft writes, the resource addresses).
+// The uploads door's client verb is NOT re-exported here — it lives
+// in @melite/card-base/client (the construction law's upload half)
+// and its consumers import it from its own home (the 2026-10-12
+// §6-adjacent deletion of this compat line).
 
 /**
  * The `cards` resource protocol — the cards tab's live values.
