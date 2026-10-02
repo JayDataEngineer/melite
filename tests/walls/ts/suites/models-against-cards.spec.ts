@@ -557,6 +557,17 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.equal(judged, PROVISION_ROW_COUNT,
       `the shape arm judged exactly ${String(PROVISION_ROW_COUNT)} provision rows (saw ${String(judged)}) — ` +
       "a row appearing or leaving a family is a deliberate edit");
+    // gap (a)'s OTHER half (the audit, 2026-09-28: "the served families
+    // declare none and no wall enumerates the split"): the split is now
+    // enumerated exactly — and the 2026-09-28 shape INVERTED: every
+    // declarer serves. The served roster is the same modelsService walk
+    // the served-owner arm reads; a declarer going dark (or a served
+    // family the declarer census missed) MOVES the intersection and is
+    // argued here — the provisioner-catalog carve is no longer deferred.
+    const servedRoster = new Set(modelsService().modelIds());
+    const servingDeclarers = PROVISION_DECLARERS.filter((fam) => servedRoster.has(fam));
+    assert.deepEqual(servingDeclarers, PROVISION_DECLARERS,
+      `every provision declarer also SERVES (saw ${servingDeclarers.join(", ")}) — a declarer going dark, or the declaring/serving split reopening, is a deliberate edit`);
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {
