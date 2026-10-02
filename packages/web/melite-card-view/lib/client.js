@@ -43148,7 +43148,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const [user, setUser] = (0, react.useState)({});
 			const [drillItem, setDrillItem] = (0, react.useState)(null);
 			const [drillWalk, setDrillWalk] = (0, react.useState)([]);
-			const filmSeamRef = (0, react.useRef)(createFilmSeam());
+			const [filmSeam] = (0, react.useState)(() => createFilmSeam());
 			const [enhancing, setEnhancing] = (0, react.useState)(false);
 			const [enhanceNote, setEnhanceNote] = (0, react.useState)(null);
 			const [error, setError] = (0, react.useState)(null);
@@ -43574,7 +43574,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} } : {}
 				};
 				return renderPreview(owner, kind === "video" && seamFilmUrl !== null ? (0, react.createElement)(FilmSeamPlayer, {
-					seam: filmSeamRef.current,
+					seam: filmSeam,
 					src: seamFilmUrl
 				}) : kind === "video" ? (0, react.createElement)(_melite_card_base_client.VideoStagePreview, owner) : kind === "audio" ? (0, react.createElement)(_melite_card_base_client.AudioStagePreview, owner) : kind === "mesh" ? (0, react.createElement)(_melite_card_base_client.MeshStagePreview, owner) : (0, react.createElement)(_melite_card_base_client.ImageStagePreview, owner));
 			};
@@ -43594,7 +43594,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, pct + "% (" + String(progress.value) + "/" + String(progress.max) + ")") : null);
 			const seamFilmUrl = spec?.preview?.timeline === true ? previewArtifactsFor(stage).find((a) => primaryKindFor(spec, a.url) === "video")?.url ?? null : null;
 			const genericDetail = () => (0, react.createElement)(ScrollLockedDetail, null, webhookFeed, (0, react.createElement)(_melite_card_base_client.StudioShell, {
-				bottom: seamFilmUrl !== null ? (0, react.createElement)(ScrollLockedDetail, { testid: "timeline-seam-bottom" }, (0, react.createElement)(FilmSeamBar, { seam: filmSeamRef.current })) : void 0,
+				bottom: seamFilmUrl !== null ? (0, react.createElement)(ScrollLockedDetail, { testid: "timeline-seam-bottom" }, (0, react.createElement)(FilmSeamBar, { seam: filmSeam })) : void 0,
 				params: (0, react.createElement)("div", { className: card_module_css_default.paramsCol }, enhanceNote !== null ? (0, react.createElement)("div", {
 					className: card_module_css_default.enhanceRow,
 					"data-testid": "enhance-note"

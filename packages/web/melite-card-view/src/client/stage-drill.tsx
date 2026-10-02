@@ -150,7 +150,14 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
   // THE TIMELINE SEAM (the form-seams stroke 2026-09-17): the
   // optional bottom-slot bridge — created once, wired only when the
   // served spec claims preview.timeline AND a video face renders.
-  const filmSeamRef = useRef(createFilmSeam())
+  // THE LAZY SEAT (the 1.6 row, 2026-10-12): `useRef(createFilmSeam())`
+  // ran the factory on EVERY render and kept only the first value — the
+  // comment below claimed "created once" while the tree allocated a
+  // throwaway seam (and its listener Set) per render. useState's lazy
+  // initializer creates it exactly once per mount, which is what the
+  // comment always meant and what a module-lifetime store would have
+  // made expensive.
+  const [filmSeam] = useState(() => createFilmSeam())
   // THE ✦ AGENT ENHANCE SEAT (hour 24 stroke 10): one press — the
   // sweep door enhances every declared field; the write-back rides
   // the SAME values seam the form's own edits ride (the next Run
@@ -847,7 +854,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // rides the shared FilmPlayer (handle-wired) instead of the
     // plain video face — the bottom bar scrubs it.
     const fallback = kind === 'video' && seamFilmUrl !== null
-      ? h(FilmSeamPlayer, { seam: filmSeamRef.current, src: seamFilmUrl })
+      ? h(FilmSeamPlayer, { seam: filmSeam, src: seamFilmUrl })
       : kind === 'video'
       ? h(VideoStagePreview, owner)
       : kind === 'audio'
@@ -884,7 +891,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     h(StudioShell, {
     bottom: seamFilmUrl !== null
       ? h(ScrollLockedDetail, { testid: 'timeline-seam-bottom' },
-          h(FilmSeamBar, { seam: filmSeamRef.current }))
+          h(FilmSeamBar, { seam: filmSeam }))
       : undefined,
     params: h('div', { className: css.paramsCol },
         // the ✦ row is a HEADER ACTION, never scroll content (hour 24
