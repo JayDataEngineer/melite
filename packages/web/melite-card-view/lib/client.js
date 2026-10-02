@@ -9365,11 +9365,23 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			const result = stage.result;
 			const url = typeof result === "object" && result !== null && typeof Reflect.get(result, "url") === "string" ? Reflect.get(result, "url") : "";
 			const failText = typeof result === "object" && result !== null && typeof Reflect.get(result, "error") === "string" ? Reflect.get(result, "error") : "";
-			const face = previewKindFor(url);
+			const artifacts = previewArtifactsFor(stage);
+			const harvested = (() => {
+				for (const a of artifacts) {
+					const kind = previewKindFor(a.name);
+					if (kind === null) continue;
+					return {
+						kind,
+						url: a.url
+					};
+				}
+				return null;
+			})();
+			const face = previewKindFor(url) ?? harvested?.kind ?? null;
 			const absolute = (u) => /^(https?:\/\/|\/)/.test(u);
 			const posterFromArtifacts = (() => {
 				if (face !== "mesh") return null;
-				for (const a of previewArtifactsFor(stage)) if (previewKindFor(a.url) === "image" && absolute(a.url)) return a.url;
+				for (const a of artifacts) if ((previewKindFor(a.name) ?? previewKindFor(a.url)) === "image" && absolute(a.url)) return a.url;
 				return null;
 			})();
 			return {

@@ -10,7 +10,7 @@
  */
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, test } from 'vitest'
-import { benchRow, previewKindFor } from '../src/client/CardsTab'
+import { benchRow, previewKindFor, previewArtifactsFor } from '../src/client/CardsTab'
 
 const stage = (over: Record<string, unknown> = {}) => ({
   id: 's1', card: 'music', title: 'the song', status: 'done',
@@ -63,6 +63,62 @@ describe('benchRow tile face dispatch', () => {
     expect(row.face).toBe('audio')
     expect(row.videoUrl).toBeNull()
     expect(row.thumbUrl).toBeNull()
+  })
+
+  // THE RESTORED-RUN LAW (2026-10-02, the operator: "when I resume
+  // historical runs the image preview doesn't auto populate back" —
+  // the non-zoomed tile showed the kind face while the zoomed drill
+  // previewed the very same run).
+  test('a RESTORED image run: the gallery route previews (the kind comes from the artifact name)', () => {
+    // The gallery's restore stamp (infer-gallery/bench-load.ts) mints
+    // the query-carrying artifact route, keyed by the run-relative
+    // tail. The url is loadable; its PATH has no extension, so the
+    // url sniff alone reads null — which is exactly what emptied the
+    // tile. The harvest's NAME carries the kind.
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rz/out.png')
+    const row = benchRow(stage({
+      card: 'image-gen',
+      result: { url, artifacts: { 'run-0f1e2d-rz/out.png': url } },
+    }) as never)
+    expect(row.face).toBe('image')
+    expect(row.thumbUrl).toBe(url)
+  })
+
+  test('a RESTORED video run: the gallery route rides the video face', () => {
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rz/clip.mp4')
+    const row = benchRow(stage({
+      card: 'h3-timeline',
+      result: { url, artifacts: { 'run-0f1e2d-rz/clip.mp4': url } },
+    }) as never)
+    expect(row.face).toBe('video')
+    expect(row.videoUrl).toBe(url)
+    expect(row.thumbUrl).toBeNull()
+  })
+
+  test('a RESTORED mesh run: the turnaround poster rides the gallery route (the pick reads the name the url hides)', () => {
+    const route = (tail: string): string => '/infer-gallery/artifact?path=' + encodeURIComponent(tail)
+    const row = benchRow(stage({
+      card: 'anny',
+      result: {
+        url: route('run-0f1e2d-rz/model.glb'),
+        artifacts: { 'run-0f1e2d-rz/model.glb': route('run-0f1e2d-rz/model.glb'), 'run-0f1e2d-rz/turnaround.png': route('run-0f1e2d-rz/turnaround.png') },
+      },
+    }) as never)
+    expect(row.face).toBe('mesh')
+    expect(row.thumbUrl).toBe(route('run-0f1e2d-rz/turnaround.png'))
+  })
+
+  test('the tile and the drill decide from ONE harvest (the asymmetry is gone by construction)', () => {
+    const url = '/infer-gallery/artifact?path=' + encodeURIComponent('run-0f1e2d-rz/out.png')
+    const st = stage({
+      card: 'image-gen',
+      result: { url, artifacts: { 'run-0f1e2d-rz/out.png': url } },
+    }) as never
+    // The drill reads previewArtifactsFor; the tile now classifies off
+    // the same rows, so a run can never preview in one view and show
+    // a kind face in the other.
+    expect(previewArtifactsFor(st as unknown as Record<string, unknown>)[0]?.url)
+      .toBe(benchRow(st).thumbUrl)
   })
 })
 

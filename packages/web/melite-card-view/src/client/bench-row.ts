@@ -141,12 +141,35 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
   // system's audio-bars face), a glb neither; mesh rows show a real
   // POSTER when the run shipped one (anny's turnaround renders ride
   // alongside the glb — zero render cost), else the kind face.
-  const face = previewKindFor(url)
+  //
+  // THE RESTORED-RUN HARVEST (2026-10-02, the operator's "resume
+  // historical runs and the preview is gone"): the gallery's restore
+  // stamp mints `result.url` as the query-carrying artifact route
+  // `/infer-gallery/artifact?path=<run-relative tail>` — the url is
+  // loadable, but its PATH carries no extension, so the sniff above
+  // read null and the tile fell to the kind face while the zoomed
+  // drill (which harvests `result.artifacts`) previewed the same
+  // run. The tile takes its kind from that same harvest when the
+  // sniff cannot: the stamp keys every artifact by its run-relative
+  // tail, so the NAME carries the kind the url hides.
+  const artifacts = previewArtifactsFor(stage as unknown as Record<string, unknown>)
+  const harvested = ((): { kind: 'video' | 'image' | 'audio' | 'mesh'; url: string } | null => {
+    for (const a of artifacts) {
+      const kind = previewKindFor(a.name)
+      if (kind === null) continue
+      return { kind, url: a.url }
+    }
+    return null
+  })()
+  const face = previewKindFor(url) ?? harvested?.kind ?? null
   const absolute = (u: string): boolean => /^(https?:\/\/|\/)/.test(u)
   const posterFromArtifacts = ((): string | null => {
     if (face !== 'mesh') return null
-    for (const a of previewArtifactsFor(stage as unknown as Record<string, unknown>)) {
-      if (previewKindFor(a.url) === 'image' && absolute(a.url)) return a.url
+    for (const a of artifacts) {
+      // live gallery names may be stems while their urls carry the
+      // extension; restored urls hide it behind the query while their
+      // names carry it — the pick consults both, never one.
+      if ((previewKindFor(a.name) ?? previewKindFor(a.url)) === 'image' && absolute(a.url)) return a.url
     }
     return null
   })()
@@ -180,7 +203,11 @@ export function benchRow(stage: BenchStageView, bench?: CardsBenchValue): CardRo
       ? (Reflect.get(result, 'activity') as string) : '',
     // same-origin absolute or leading-/ artifact urls render; a bare
     // run-relative filename cannot resolve without its run (the run
-    // view owns that face) — the kind Pill rides instead.
+    // view owns that face) — the kind Pill rides instead. Every real
+    // writer hands the bench an absolute url (the live observer via
+    // the run-wire's one rewrite, the restore stamp via the gallery
+    // route), so the harvest supplies the KIND and this selection
+    // stays url-driven.
     thumbUrl: face === 'image' && absolute(url) ? url : posterFromArtifacts,
     face,
     videoUrl: face === 'video' && absolute(url) ? url : null,
