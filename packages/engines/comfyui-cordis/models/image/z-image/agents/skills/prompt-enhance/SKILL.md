@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: Z-Image — per-model prompt-enhance recipes
+description: Z-Image prompt rules — descriptive prose, NOT comma tag lists
 ---
 # Z-Image — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).

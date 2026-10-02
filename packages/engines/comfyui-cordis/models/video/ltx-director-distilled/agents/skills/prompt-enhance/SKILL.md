@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: LTX 2.3 Director
+description: LTX 2.3 Director prompt rules — natural language, not tag lists
 ---
 # LTX 2.3 Director (distilled) — per-model prompt-enhance recipes (the
 # model's agent-facing interface file; agents/ = the AI agent's interface

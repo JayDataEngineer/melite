@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: MiniMax H3 — per-model prompt-enhance recipes
+description: MiniMax H3 prompt rules — prose describing a scene unfolding over time
 ---
 # MiniMax H3 — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).

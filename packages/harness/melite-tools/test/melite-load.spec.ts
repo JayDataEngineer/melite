@@ -177,6 +177,54 @@ describe('melite_load render — the loaded line', () => {
     )
   })
 
+  test('EVERY SKILL RIDES ITS DESCRIPTION, and a prompt-enhance skill routes the prompt law (2026-10-02)', () => {
+    // THE OPERATOR'S LIVE BREAK: "it chooses anima but never reads the
+    // prompt guide unless I tell it too — the LLM writes plaintext
+    // instead of booru tags". The bundle already carried
+    // `model:anima:prompt-enhance` (proven on the live lane), but the
+    // render printed bare ids, so nothing said WHICH skill carried the
+    // model's prompting style or that the style changes per model. Two
+    // renders pin the cure: the description rides each entry, and the
+    // presence of a prompt-enhance skill states the duty.
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      {
+        name: 'c', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'c',
+          skills: [
+            { id: 'model:anima', description: 'Anima model row' },
+            { id: 'model:anima:prompt-enhance', description: 'Anima prompt rules — comma-separated Danbooru tags, NOT prose (read before writing an anima prompt)' },
+          ],
+          signature: { params_schema: { properties: { prompt: {} }, required: ['prompt'] } },
+        },
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.match(text, /model:anima — Anima model row/)
+    assert.match(text, /model:anima:prompt-enhance — Anima prompt rules — comma-separated Danbooru tags, NOT prose/)
+    assert.match(text, /^prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt/m)
+  })
+
+  test('a bundle with NO prompt-enhance skill states no prompting law (the line never invents one)', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const parts = tool.output.render(
+      { name: 'c', inference_type: 'card' },
+      {
+        name: 'c', inference_type: 'card',
+        bundle: {
+          kind: 'card', name: 'c',
+          skills: [{ id: 'card:c:craft', description: 'the craft doc' }],
+          signature: { params_schema: { properties: { prompt: {} }, required: ['prompt'] } },
+        },
+      } as never,
+    ) as Array<{ text?: string }>
+    const text = parts.map((p) => p?.text ?? '').join('\n')
+    assert.doesNotMatch(text, /^prompting:/m)
+    assert.match(text, /card:c:craft — the craft doc/)
+  })
+
   test('THE LANE LINE RENDERS THE ROW TYPES (required/at_most_one rows are {fields,any_of} objects; variant laws ride)', () => {
     // 2026-10-10, the DECL audit's row 1: the render cast required
     // and at_most_one to string[] — the DECL rows are {fields, cure?}

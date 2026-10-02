@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: Anima — per-model prompt-enhance recipes
+description: Anima prompt rules — comma-separated Danbooru tags, NOT prose (read before writing an anima prompt)
 ---
 # Anima — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).

@@ -2465,8 +2465,13 @@ function meliteLoad(request, opts = {}) {
 				if (stages.length > 0) out.push("stages: " + stages.map((s) => `${str(s?.id)}:${str(s?.card)}`).join(" → "));
 				const skills = Array.isArray(b.skills) ? b.skills : [];
 				if (skills.length > 0) {
-					const names = skills.slice(0, 8).map((s) => str(s?.id) !== "" ? str(s?.id) : str(s?.ref));
+					const names = skills.slice(0, 8).map((s) => {
+						const id = str(s?.id) !== "" ? str(s?.id) : str(s?.ref);
+						const desc = str(s?.description);
+						return desc !== "" ? `${id} — ${desc}` : id;
+					});
 					out.push(`skills: ${skills.length} — read one with melite_skill_read: ${names.join(", ")}${skills.length > 8 ? " …" : ""}`);
+					if (skills.some((s) => /prompt-enhance/.test(str(s?.id)))) out.push("prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt — every model wants a different style (comma tags for the anime models, prose for others)");
 				}
 				const digest = str(b.digest);
 				if (digest !== "") out.push("digest: " + digest + " (quote it to skip a reload)");

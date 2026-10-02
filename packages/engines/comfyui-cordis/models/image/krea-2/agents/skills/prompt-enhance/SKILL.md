@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: Krea 2 — per-model prompt-enhance recipes
+description: Krea 2 prompt rules — continuous descriptive PROSE, not comma tags
 ---
 # Krea 2 — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).

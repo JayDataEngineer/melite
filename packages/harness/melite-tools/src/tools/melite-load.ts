@@ -332,7 +332,6 @@ export function meliteLoad(
         }
         const skills = Array.isArray(b.skills) ? b.skills : []
         if (skills.length > 0) {
-          const names = skills.slice(0, 8).map((s) => str(s?.id) !== '' ? str(s?.id) : str(s?.ref))
           // THE ROUTING LAW (2026-09-13, image-flow session): a bare id
           // list points the model at the WRONG door — the harness's own
           // core `skill` tool (session catalog) refused
@@ -340,7 +339,28 @@ export function meliteLoad(
           // melite plane served the very id 200. Every list-yielding
           // render names the tool that opens one entry; these ids open
           // with melite_skill_read, never the core skill tool.
+          //
+          // EACH SKILL RIDES ITS DESCRIPTION (2026-10-02, the
+          // operator's live break — "it chooses anima but never reads
+          // the prompt guide unless I tell it"): an id alone says
+          // nothing about WHICH entry matters, so the agent picked the
+          // model, skipped every skill, and wrote prose to a
+          // tag-trained model. The description is the routing surface.
+          const names = skills.slice(0, 8).map((s) => {
+            const id = str(s?.id) !== '' ? str(s?.id) : str(s?.ref)
+            const desc = str(s?.description)
+            return desc !== '' ? `${id} — ${desc}` : id
+          })
           out.push(`skills: ${skills.length} — read one with melite_skill_read: ${names.join(', ')}${skills.length > 8 ? ' …' : ''}`)
+          // THE PROMPTING LAW: each model's `prompt-enhance` skill
+          // states how THAT model wants its prompt written (anima takes
+          // comma-separated Danbooru tags, NOT prose). A prompt written
+          // in another model's style yields the wrong picture, so the
+          // load names the duty instead of leaving it to be guessed —
+          // the ids never carried it.
+          if (skills.some((s) => /prompt-enhance/.test(str(s?.id)))) {
+            out.push('prompting: read the per-model prompt rules with melite_skill_read BEFORE writing a prompt — every model wants a different style (comma tags for the anime models, prose for others)')
+          }
         }
         const digest = str(b.digest)
         if (digest !== '') out.push('digest: ' + digest + ' (quote it to skip a reload)')

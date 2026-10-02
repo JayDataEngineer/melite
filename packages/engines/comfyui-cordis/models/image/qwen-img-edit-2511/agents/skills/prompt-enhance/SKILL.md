@@ -1,6 +1,6 @@
 ---
 name: prompt-enhance
-description: Qwen Image Edit 2511 — per-model prompt-enhance recipes
+description: Qwen Image Edit 2511 prompt rules — state the EDIT in descriptive prose
 ---
 # Qwen Image Edit 2511 — per-model prompt-enhance recipes (the model's agent-facing
 # interface file; agents/ = the AI agent's interface with the model).
