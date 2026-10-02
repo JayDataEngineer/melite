@@ -1,24 +1,37 @@
 // param-bounds-parity.spec.ts — THE TWO HOMES ARE ONE (the
-// atom-vocabulary attainment audit's F3, 2026-10-12).
+// atom-vocabulary-attainment audit's F3, 2026-10-12; defects
+// D1-D5 cured 2026-10-12 after the F3 verification receipt).
 //
 // Every knob's type AND bounds are declared twice: in the action's
 // ParamSpec (enforced for family/DECL write rows by
-// validateWriteRowsAgainstActions) and in the card's z.object
+// validateWriteRowsAgainstActions) and in the card's schema
 // (enforced on the USER's card write). The two agree today —
 // measured here — and nothing kept them agreeing. A bounds edit on
 // one side that missed the other would compose a graph the user's
 // own card schema forbids, or reject a value the engine accepts.
 //
-// This wall reads both homes and asserts they are EQUAL, per
-// (card, action, param): the numeric envelope (min, max), the
-// declared type, and the enum's options against the vocabulary the
-// action cites. A card field the action does not declare, or an
-// action row the card does not expose, is named too — the two
-// surfaces must be the same set, not a subset relationship.
+// WHAT THIS WALL ASSERTS, per (card, family, action, param):
+// (1) the SERVED numeric envelope (minimum/maximum) EQUALS the
+//     action's `bounds`; (2) the served TYPE matches the action
+//     row's type (number → number; enum/string → string, the
+//     emitter's wire-coerced spelling); (3) the served enum
+//     options EQUAL the action's cited vocabulary IN SERVED ORDER
+//     (the card's dropdown order is the user's menu order);
+// (4) SET EQUALITY both ways: every served knob is declared by an
+//     action row, except the named card-owned set below; every
+//     action row is served, except that same named set. A rename
+//     on either side turns this red.
+// (5) the shared-factory mechanism: the six families' diffusion
+//     rows ride `diffusionParamRows()` (the F2 wall deep-equals
+//     the rows themselves; this arm pins the SERVED ORDER and the
+//     edit families' narrowed core).
 //
-// It also pins the mechanism: the bounds come from the SHARED
-// factories (diffusion rows for the six diffusion families), so a
-// family narrowing is a parameter, not a second hand-typed copy.
+// The named card-owned set is the image-edit card's four hidden
+// legacy aliases (`image1`/`image2`/`image3`/`reference_images`,
+// declared `extra.hidden` at image-edit/src/card.ts and dropped by
+// the emitter as validation-only), plus the synthesized `model`
+// picker on multi-family cards. Every skip is NAMED and counted —
+// a silent skip is a hole, not a pass.
 
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
@@ -35,6 +48,25 @@ import { edit as edit2511 } from "../../../../packages/models/qwen-img-edit-2511
 
 type ParamRow = { name: string; type: string; bounds?: readonly [number, number]; options?: readonly string[] };
 type Action = { id: string; params: readonly ParamRow[] };
+
+/** The action row type → the served params_schema spellings the
+ *  emitter can produce for it (params-emit.ts:117 for the integer
+ *  narrowing of a step-1 number; its header for the pass-through
+ *  families). A row type absent here is one the wire cannot express
+ *  differently, and the wall asserts nothing about it. */
+const SERVED_TYPES: Record<string, readonly string[]> = {
+  number: ["number", "integer"],
+  string: ["string"],
+  enum: ["string"],
+  boolean: ["boolean"],
+  image_list: ["array"],
+};
+
+/** The six families' actions under the wall's own row shape. The
+ *  families' actions are plain object literals whose params are
+ *  `readonly ParamSpec[]` — structurally this row type, so the
+ *  identity is a widening, not an assertion to unknown. */
+const asAction = (action: { id: string; params: readonly { name: string; type: string; bounds?: readonly [number, number]; options?: readonly string[] }[] }): Action => action;
 
 /** One field as the SERVED params_schema projects it (the emitter
  *  every door ships — the tools door and the discovery door read the
@@ -80,69 +112,114 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
   const EDIT_ACTIONS = [["qwen-img-edit-21", edit21], ["qwen-img-edit-2511", edit2511]] as const;
 
   for (const card of [
-    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21"], actions: T2I_ACTIONS },
-    { name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "qwen-img-edit-2511"], actions: EDIT_ACTIONS },
+    { name: "image-gen", schema: imageGenSchema, boarded: ["krea-2", "z-image", "anima", "qwen-img-21"], actions: T2I_ACTIONS, cardOwned: ["model"] as readonly string[] },
+    {
+      name: "image-edit", schema: imageEditSchema, boarded: ["qwen-img-edit-21", "qwen-img-edit-2511"], actions: EDIT_ACTIONS,
+      // the card's four hidden legacy aliases (image-edit/src/card.ts declares
+      // them extra.hidden — validation-only, dropped by the emitter)
+      cardOwned: ["model", "image1", "image2", "image3", "reference_images"] as readonly string[],
+    },
   ] as const) {
-    it(`${card.name}: every field the actions declare carries the SAME envelope and options on the card`, () => {
+    it(`${card.name}: every declared row is served with the SAME envelope, type and options — and the two sets are EQUAL`, () => {
       const served = serveCard(card.schema, card.boarded);
-      const judged: string[] = [];
+      const asserted: string[] = [];
+      const declared = new Set<string>();
       for (const [family, raw] of card.actions) {
-        const action = raw as unknown as Action;
+        const action = asAction(raw);
         for (const row of action.params) {
+          declared.add(row.name);
           const field = served.get(row.name);
-          if (field === undefined) continue;
-          judged.push(`${family}/${action.id}:${row.name}`);
+          if (field === undefined) {
+            // NOT a silent skip: the row must be on the named
+            // card-owned set, or the two surfaces have drifted.
+            assert.ok(
+              card.cardOwned.includes(row.name),
+              `${card.name} ${family}/${action.id} declares "${row.name}" but the served card does not expose it — the two surfaces must be the same set (F3): add the knob to the card or drop the row`,
+            );
+            continue;
+          }
+          const where = `${card.name} ${family}/${action.id} "${row.name}"`;
           if (row.type === "number") {
             const fromCard = [field.min, field.max];
             const fromAction = row.bounds === undefined ? [null, null] : [...row.bounds];
             assert.deepEqual(
               fromCard,
               fromAction,
-              `${card.name} ${family}/${action.id} "${row.name}": the card's served envelope ${JSON.stringify(fromCard)} does not EQUAL the action's ParamSpec bounds ${JSON.stringify(fromAction)} — the two homes are ONE (F3): edit BOTH, or bound neither`,
+              `${where}: the card's served envelope ${JSON.stringify(fromCard)} does not EQUAL the action's ParamSpec bounds ${JSON.stringify(fromAction)} — the two homes are ONE (F3): edit BOTH, or bound neither`,
             );
+            asserted.push(where);
           } else if (row.type === "enum") {
+            // ORDER-SENSITIVE: the card's dropdown order is the
+            // user's menu order, so a reordered vocabulary is drift.
             assert.deepEqual(
-              [...(field.options ?? [])].sort(),
-              [...(row.options ?? [])].sort(),
-              `${card.name} ${family}/${action.id} "${row.name}": the card's served enum options must EQUAL the action's cited vocabulary`,
+              [...(field.options ?? [])],
+              [...(row.options ?? [])],
+              `${where}: the card's served enum options must EQUAL the action's cited vocabulary IN ORDER`,
             );
+            asserted.push(where);
+          }
+          if (SERVED_TYPES[row.type] !== undefined) {
+            // The emitter's own wire spellings (params-emit.ts:117
+            // serves number+step(1) as integer; :13 the string /
+            // boolean / array families pass through as-is, and an
+            // enum or a wire-coerced Select serves "string"). The
+            // mapping is NAMED, so a new served spelling turns this
+            // red instead of silently passing.
+            assert.ok(
+              SERVED_TYPES[row.type].includes(field.type),
+              `${where}: the card serves type "${field.type}" where the action declares "${row.type}" (served spellings: ${JSON.stringify(SERVED_TYPES[row.type])}) — the type is declared twice (F3)`,
+            );
+            asserted.push(`${where} (type)`);
           }
         }
       }
-      assert.ok(judged.length >= 9, `${card.name}: the parity arm judged the surface (saw ${judged.length} fields — a surface that empties an arm is a hole, not a pass)`);
+      // SET EQUALITY, the other direction: every served knob is a
+      // declared row or on the named card-owned set. A card-side
+      // RENAME lands here.
+      for (const name of served.keys()) {
+        assert.ok(
+          declared.has(name) || card.cardOwned.includes(name),
+          `${card.name} serves a knob "${name}" that no boarded action declares and that is not on the named card-owned set ${JSON.stringify(card.cardOwned)} — the two surfaces must be the same set (F3)`,
+        );
+      }
+      assert.ok(asserted.length >= 9, `${card.name}: the parity arm judged the surface (saw ${asserted.length} asserted rows — a surface that empties an arm is a hole, not a pass)`);
     });
   }
 
   it("the six families' rows ARE the shared factory's output (the mechanism, pinned)", () => {
-    // If a family hand-copied the rows, the parity above would still
-    // pass while the two homes drift together; this arm pins that
-    // the bounds come from the ONE factory with the family's
-    // narrowing as a parameter.
+    // WHAT THIS ARM IS: the served ORDER of each family's diffusion
+    // surface, and the edit families' narrowed core riding the same
+    // factory. F2's wall (diffusion-param-rows.spec.ts) deep-equals
+    // each family's full row set against the factory's output, so a
+    // byte-correct hand copy reds THERE, not here — a drifted hand
+    // copy reds on BOTH this wall's parity arm (the card still holds
+    // the factory's bounds) and F2's. Neither arm is redundant; they
+    // catch different edits.
     const defaults = diffusionParamRows();
     const edits = diffusionParamRows(EDIT_DIFFUSION_BOUNDS);
     const names = (rows: readonly ParamRow[]): string => rows.map((r) => r.name).join(",");
     assert.equal(
-      names((qwenImg21T2I as Action).params),
+      names(asAction(qwenImg21T2I).params),
       names(defaults),
       "qwen-img-21's rows are the factory's defaults in served order",
     );
     assert.equal(
-      names((zImageT2I as Action).params),
+      names(asAction(zImageT2I).params),
       names(defaults),
       "z-image's rows are the factory's defaults in served order",
     );
     assert.equal(
-      names((animaT2I as Action).params),
+      names(asAction(animaT2I).params),
       names(defaults),
       "anima's rows are the factory's defaults in served order",
     );
     assert.equal(
-      names((krea2T2I as Action).params),
+      names(asAction(krea2T2I).params),
       names(defaults),
       "krea-2's rows are the factory's defaults in served order",
     );
     const editCore = (family: string, action: unknown): string => {
-      const rows = (action as Action).params;
+      const rows = asAction(action).params;
       const start = rows.findIndex((r) => r.name === "prompt");
       assert.ok(start >= 0, `${family}: the family's surface carries the diffusion core`);
       return names(rows.slice(start, start + edits.length));
