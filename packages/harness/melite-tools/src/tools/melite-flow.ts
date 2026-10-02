@@ -333,10 +333,11 @@ async function runBench(
     // re-ran every stage the estate settles 'completed' and every
     // cached/reused row.
     // The view-side read (2026-10-12): a draft row's runStatus is a
-    // persisted word no door validated — the card plane itself writes
-    // 'unreachable' (cards-resource's transport escalation) — so the
-    // classifier's refusal must not kill the tool call; an unreadable
-    // row is simply not done and runs.
+    // persisted word no door validated — era rows carry the card
+    // plane's old 'unreachable' spelling (the transport escalation
+    // now writes the health channel) — so the classifier's refusal
+    // must not kill the tool call; an unreadable row is simply not
+    // done and runs.
     {
       const folded = statusOrPendingOf(typeof row['runStatus'] === 'string' ? row['runStatus'] as string : '')
       if (folded === 'done' || folded === 'cached' || folded === 'reused') {

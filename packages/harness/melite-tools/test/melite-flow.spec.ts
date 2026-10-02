@@ -680,12 +680,13 @@ describe('melite_flow tile contract — the chat hydrates from the render', () =
   })
 
   test('AN UNREADABLE ROW WORD RUNS, NEVER THROWS (2026-10-12 follow-through): unreachable is not done', async () => {
-    // 'unreachable' is the card plane's own transport stamp riding a
-    // persisted runStatus (LOW-23's debt) — no door validated the
-    // word. The cache-hit skip reads the view-side fold: an unreadable
-    // word is not done, so the pass proceeds (here it stops at the
-    // no-card gate — this row never carried one); the classifier's
-    // refusal must never kill the tool call.
+    // 'unreachable' riding a persisted runStatus is the ERA spelling
+    // (the escalation writes the health channel since 2026-10-12) —
+    // no door validated the word. The cache-hit skip reads the
+    // view-side fold: an unreadable word is not done, so the pass
+    // proceeds (here it stops at the no-card gate — this row never
+    // carried one); the classifier's refusal must never kill the tool
+    // call.
     const seen = mockFetch([
       (u: string) => {
         if (u === '/v1/bench/main') {

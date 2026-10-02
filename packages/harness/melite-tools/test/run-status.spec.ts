@@ -314,9 +314,10 @@ describe('run_status render — the human line', () => {
 
   test('an unreadable stage word counts as not done — the line renders, never throws (2026-10-12 follow-through)', () => {
     // The run-level word passed readRunStatus's door; the per-stage
-    // words did not, and the card plane stamps 'unreachable' on rows
-    // (LOW-23's debt). The view-side read answers no-information: the
-    // count says not-done and the agent keeps its answer.
+    // words did not, and era rows carry 'unreachable' in runStatus
+    // (the escalation writes the health channel since 2026-10-12).
+    // The view-side read answers no-information: the count says
+    // not-done and the agent keeps its answer.
     const tool = runStatus((async () => ({})) as EstateRequest)
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(

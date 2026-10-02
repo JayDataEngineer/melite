@@ -631,8 +631,9 @@ async function observeRunOutcomeRun(
   // status classifiers had to treat an out-of-vocabulary word as
   // no-information to survive it. With its own channel, runStatus
   // keeps whatever live word it last held (the run may genuinely
-  // still be running server-side) and the row renders the health
-  // word beside it — the warning face says WHY the dot went quiet.
+  // still be running server-side) and the tile captions the health
+  // word beside the still-persisting spinner — transport silence,
+  // not a run verdict.
   // THE POLICY (3.6's rationale, recorded — the DSH mirror): the
   // backoff is ConnectionRecoveryConfig's shape (references/
   // deepseek-harness/packages/client/connection/src/recovery-config.ts
