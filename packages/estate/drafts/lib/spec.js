@@ -10,14 +10,17 @@
 import { defineDomain, domainTable } from "@deepseek-ai/dsh-storage-domain";
 import { z } from "zod";
 /** One draft doc — the composer's shape: six contract keys plus
- *  caller extras verbatim (loose: extras ride). */
+ *  caller extras verbatim. THE SERVE READ IS DELIBERATELY LOOSE
+ *  (the write doors are strict; this read hands the composer's own
+ *  extras back, pinned by bench-coverage's "extras ride the loose
+ *  schema" row) — a looseObject needs no .passthrough() on top. */
 const DraftDocSchema = z.looseObject({
     draft_id: z.string(),
     status: z.string(),
     createdAt: z.number(),
     completedAt: z.union([z.number(), z.null()]),
     intent: z.string(),
-    stages: z.array(z.looseObject({ id: z.string() }).passthrough()),
+    stages: z.array(z.looseObject({ id: z.string() })),
 });
 /** One drafts-domain record: the doc plus the recency column the
  *  list arm orders by (the file-mtime equivalent — seconds). */

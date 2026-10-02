@@ -45,11 +45,13 @@ export type DraftGetRow = {
 /** Endpoint `drafts/patch` body — the door's FIXED key set (unknown
  *  keys refuse at admission with the old door's voice; STAGE_PATCH_KEYS).
  *  Optional: presence IS the write; a null params value is the
- *  merge-patch DELETE (the layered-params law). */
+ *  merge-patch DELETE (the layered-params law); a null health value
+ *  is the same DELETE (the recovery clear, LOW-23). */
 export type DraftStagePatch = {
     params?: JsonValue;
     result?: JsonValue;
     runStatus?: JsonValue;
+    health?: JsonValue;
     inputs?: JsonValue;
     inputOutputs?: JsonValue;
 };
@@ -92,7 +94,34 @@ declare module "@deepseek-ai/cordis" {
         draftsRemote: DraftsRemoteService;
         benchRemote: BenchRemoteService;
     }
+    interface Events {
+        /**
+         * A bench write landed. Emitted after every successful bench verb
+         * (and after the drafts-patch door's bench-shaped write).
+         * @param session - the bench session whose doc changed.
+         */
+        "bench.changed": (session: string) => void;
+    }
 }
+/** Install the typed bench event seam on a Context: `bench.ts`
+ *  (the pure domain module) emits and subscribes through it.
+ *
+ *  ONE implementation, three callers: the plugin's service, the tests'
+ *  `bootCtx`, and any direct construction outside the package (it is
+ *  re-exported from index.ts). The seam is fiber-scoped — `ctx.effect`
+ *  detaches it when the fiber is disposed.
+ *
+ *  ONE SEAM AT A TIME, MEASURED (the verification, 2026-10-12): the
+ *  seam is module state, so the LAST install wins, and disposing an
+ *  OLDER Context nulls the newer, still-live seam. The estate is
+ *  single-tenant here (one root Context, one plugin apply), and the
+ *  failure mode is loud — `onBenchChange` then refuses rather than
+ *  subscribing to nothing — but a tree that mounts two draft plugins
+ *  must install once.
+ * @param ctx - the Context whose bus carries `bench.changed`.
+ * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
+ */
+export declare function installBenchChangeSeam(ctx: Context): () => void;
 /** ── THE OUTPUT HISTORY HELPERS (stroke 40) ──────────────────────
  * A result's OUTPUT urls, one spelling: the artifacts name→url map
  * first, the flat assetUrls list second, the lone url third (the

@@ -298,7 +298,25 @@ export interface BenchUndoRow {
  *  walks ACTIONS (targeting them would ping-pong). */
 export declare function undoBench(drafts: Domain<DraftsDomainSpec>, session: string, body: Record<string, unknown>, admit?: StageAdmission): Promise<BenchUndoRow>;
 type BenchChangeListener = (session: string) => void;
-/** Subscribe to bench writes; returns the unsubscribe. */
+/** The event seam this pure domain module reaches the bus through.
+ *  `bench.ts` owns no Context (it is the domain layer, not a plugin),
+ *  so the plugin installs the pair once and every writer here keeps
+ *  calling {@link notifyBenchChange}. */
+export interface BenchChangeSeam {
+    emit: (session: string) => void;
+    on: (fn: BenchChangeListener) => () => void;
+}
+/** Install the seam (the plugin does this with its Context; tests do
+ *  it with their own). Pass null to detach. */
+export declare function setBenchChangeSeam(seam: BenchChangeSeam | null): void;
+/** Subscribe to bench writes; returns the unsubscribe.
+ *
+ *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`
+ *  stops at the first throwing listener and rethrows out of the emit
+ *  (measured 2026-10-12 on cordis 4.0.4), while this module's
+ *  contract is that a subscriber's fault never breaks the write and
+ *  never starves the listeners after it. Wrapping the handler is what
+ *  makes the typed event lawful here. */
 export declare function onBenchChange(fn: BenchChangeListener): () => void;
 /** Fire the write event — the remote layer calls this after every
  *  successful bench write (the door seam: every in-process and

@@ -39,7 +39,41 @@ export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, setBenchChangeSeam, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { benchDraftIdOf } from "@melite/contracts/benchStage";
+/** Install the typed bench event seam on a Context: `bench.ts`
+ *  (the pure domain module) emits and subscribes through it.
+ *
+ *  ONE implementation, three callers: the plugin's service, the tests'
+ *  `bootCtx`, and any direct construction outside the package (it is
+ *  re-exported from index.ts). The seam is fiber-scoped — `ctx.effect`
+ *  detaches it when the fiber is disposed.
+ *
+ *  ONE SEAM AT A TIME, MEASURED (the verification, 2026-10-12): the
+ *  seam is module state, so the LAST install wins, and disposing an
+ *  OLDER Context nulls the newer, still-live seam. The estate is
+ *  single-tenant here (one root Context, one plugin apply), and the
+ *  failure mode is loud — `onBenchChange` then refuses rather than
+ *  subscribing to nothing — but a tree that mounts two draft plugins
+ *  must install once.
+ * @param ctx - the Context whose bus carries `bench.changed`.
+ * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
+ */
+export function installBenchChangeSeam(ctx) {
+    let detach = null;
+    ctx.effect(() => {
+        setBenchChangeSeam({
+            emit: (session) => { ctx.emit("bench.changed", session); },
+            on: (fn) => {
+                const stop = ctx.on("bench.changed", fn);
+                return () => { stop(); };
+            },
+        });
+        detach = () => { setBenchChangeSeam(null); };
+        return detach;
+    });
+    return () => { detach?.(); };
+}
 /** The wrap voice for a thrown store error: Error.message when the
  *  value carries one, else the string form. Every store/domain throw
  *  site constructs `new Error` (or an Error subclass), so the else
@@ -493,7 +527,10 @@ let DraftsRemoteService = (() => {
             // fence's disease, not its cure. Any body carrying an author key
             // (params | inputs | inputOutputs) walks the full law unchanged.
             const bench = benchBlockOf(doc);
-            const telemetry = Object.keys(patch).every((k) => k === "result" || k === "runStatus");
+            // `health` walks the telemetry arm with result/runStatus (LOW-23,
+            // 2026-10-12): it is the poll's transport word — the escalation
+            // writes it, the recovery clears it, neither is authorship.
+            const telemetry = Object.keys(patch).every((k) => k === "result" || k === "runStatus" || k === "health");
             // THE CAS WALK (the layered-params law): an AUTHOR patch is a
             // bench author and joins the revision law every other author
             // walks — fence on expectRev BEFORE any mutation (the record is
@@ -585,6 +622,16 @@ let DraftsRemoteService = (() => {
                 }
                 if ("runStatus" in patch)
                     stage["runStatus"] = patch["runStatus"];
+                // THE HEALTH ARM (LOW-23): the transport word's own channel — a
+                // null value DELETES the field (the recovery clear; a stage that
+                // never escalated never carries it), the merge-patch semantics
+                // the params arm already owns.
+                if ("health" in patch) {
+                    if (patch["health"] === null)
+                        delete stage["health"];
+                    else
+                        stage["health"] = patch["health"];
+                }
             };
             // the params the row will HOLD once this write lands (undefined
             // when the body carries no params arm) — judged as half of the
@@ -827,6 +874,9 @@ let BenchRemoteService = (() => {
         constructor(ctx) {
             super(ctx, "benchRemote", { namespace: "bench" });
             __runInitializers(this, _instanceExtraInitializers);
+            // THE EVENT SEAT (the hand-roll row 1.2, 2026-10-12): the bench
+            // push spine is the typed `bench.changed` event, not a module Set.
+            installBenchChangeSeam(ctx);
         }
         /** Endpoint `bench/get` — one session's bench block as the row. */
         async remoteExportGet(sessionKey, signal) {
@@ -864,7 +914,7 @@ let BenchRemoteService = (() => {
                     if (error instanceof RemoteError &&
                         error.code === "bench/not-found") {
                         row = {
-                            draft_id: "bench-" + sessionKey,
+                            draft_id: benchDraftIdOf(sessionKey),
                             session: sessionKey,
                             rev: 0,
                             intent: "",

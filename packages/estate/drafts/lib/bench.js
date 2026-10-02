@@ -13,7 +13,7 @@
 //   is never rewritten (patch/undo arms land in later strokes).
 //   AUTHORSHIP — every entry carries author ("agent"|"user").
 import { unwrapItemArrays } from '@melite/comfyui-card-kit';
-import { BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
+import { benchDraftIdOf, BIRTH_STRIP_KEYS, LOAD_CARRY_KEYS, normalizeBenchStage, SELF_NAMED_FAMILIES, stripKeys } from '@melite/contracts/benchStage';
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 /** Session key gate: same charset family as draft ids, capped so
  * "bench-" + session always clears the 96-char draft ceiling.
@@ -29,7 +29,7 @@ import { BENCH_DRAFT_RE, RESTORED_PROVENANCE_SPELLING, SESSION_RE } from "@melit
 import { RESTORED_PROVENANCE } from "./remote.js";
 export { SESSION_RE };
 function benchIdOf(session) {
-    return "bench-" + session;
+    return benchDraftIdOf(session);
 }
 const AUTHORS = ["agent", "user"];
 function authorOk(v) {
@@ -1764,26 +1764,38 @@ function applyInverse(doc, e, admit, session = "") {
         doc["stages"] = snapshot;
     }
 }
-const benchChangeListeners = new Set();
-/** Subscribe to bench writes; returns the unsubscribe. */
-export function onBenchChange(fn) {
-    benchChangeListeners.add(fn);
-    return () => {
-        benchChangeListeners.delete(fn);
-    };
+let benchChangeSeam = null;
+/** Install the seam (the plugin does this with its Context; tests do
+ *  it with their own). Pass null to detach. */
+export function setBenchChangeSeam(seam) {
+    benchChangeSeam = seam;
 }
-/** Fire the write event — the remote layer calls this after every
- *  successful bench write (the door seam: every in-process and
- *  host-routed write crosses the remote arms). */
-export function notifyBenchChange(session) {
-    for (const fn of benchChangeListeners) {
+/** Subscribe to bench writes; returns the unsubscribe.
+ *
+ *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`
+ *  stops at the first throwing listener and rethrows out of the emit
+ *  (measured 2026-10-12 on cordis 4.0.4), while this module's
+ *  contract is that a subscriber's fault never breaks the write and
+ *  never starves the listeners after it. Wrapping the handler is what
+ *  makes the typed event lawful here. */
+export function onBenchChange(fn) {
+    if (benchChangeSeam === null) {
+        throw new Error("estate-drafts: no bench change seam installed — the plugin installs it in apply(), tests call setBenchChangeSeam()");
+    }
+    return benchChangeSeam.on((session) => {
         try {
             fn(session);
         }
         catch {
             /* a listener's fault never breaks the write */
         }
-    }
+    });
+}
+/** Fire the write event — the remote layer calls this after every
+ *  successful bench write (the door seam: every in-process and
+ *  host-routed write crosses the remote arms). */
+export function notifyBenchChange(session) {
+    benchChangeSeam?.emit(session);
 }
 /** The public notify (the drafts-patch door writes bench docs from
  *  remote.ts — outside this module; it fires this with the session
