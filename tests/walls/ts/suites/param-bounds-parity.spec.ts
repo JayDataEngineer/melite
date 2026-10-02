@@ -186,15 +186,14 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
     });
   }
 
-  it("the six families' rows ARE the shared factory's output (the mechanism, pinned)", () => {
+  it("the six families' diffusion rows ride the shared factory IN SERVED ORDER (names; F2 deep-equals the rows)", () => {
     // WHAT THIS ARM IS: the served ORDER of each family's diffusion
     // surface, and the edit families' narrowed core riding the same
-    // factory. F2's wall (diffusion-param-rows.spec.ts) deep-equals
-    // each family's full row set against the factory's output, so a
-    // byte-correct hand copy reds THERE, not here — a drifted hand
-    // copy reds on BOTH this wall's parity arm (the card still holds
-    // the factory's bounds) and F2's. Neither arm is redundant; they
-    // catch different edits.
+    // factory — NAMES in order. A DRIFTED hand copy (different rows)
+    // reds here and on this wall's parity arm; a byte-correct hand
+    // copy reds NOWHERE (F2's own header says so: it "passes — dead
+    // weight the factory deletes at review"), and this arm does not
+    // claim otherwise.
     const defaults = diffusionParamRows();
     const edits = diffusionParamRows(EDIT_DIFFUSION_BOUNDS);
     const names = (rows: readonly ParamRow[]): string => rows.map((r) => r.name).join(",");
@@ -218,7 +217,7 @@ describe("THE PARAM-BOUNDS PARITY WALL — the card's schema and the action's ro
       names(defaults),
       "krea-2's rows are the factory's defaults in served order",
     );
-    const editCore = (family: string, action: unknown): string => {
+    const editCore = (family: string, action: Parameters<typeof asAction>[0]): string => {
       const rows = asAction(action).params;
       const start = rows.findIndex((r) => r.name === "prompt");
       assert.ok(start >= 0, `${family}: the family's surface carries the diffusion core`);
