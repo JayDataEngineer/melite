@@ -26,6 +26,7 @@ import {
   notifyBenchChange,
   notifyBenchDocWrite,
   onBenchChange,
+  setBenchChangeSeam,
   getBench,
   groupBench,
   patchBench,
@@ -150,6 +151,40 @@ declare module "@deepseek-ai/cordis" {
     draftsRemote: DraftsRemoteService;
     benchRemote: BenchRemoteService;
   }
+  interface Events {
+    /**
+     * A bench write landed. Emitted after every successful bench verb
+     * (and after the drafts-patch door's bench-shaped write).
+     * @param session - the bench session whose doc changed.
+     */
+    "bench.changed": (session: string) => void;
+  }
+}
+
+/** Install the typed bench event seam on a Context: `bench.ts`
+ *  (the pure domain module) emits and subscribes through it.
+ *
+ *  ONE implementation, three callers: the plugin's service, the tests'
+ *  `bootCtx`, and any direct construction. The seam is fiber-scoped —
+ *  `ctx.effect` detaches it when the fiber is disposed, so a torn-down
+ *  Context never leaves a half-installed emitter behind.
+ * @param ctx - the Context whose bus carries `bench.changed`.
+ * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
+ */
+export function installBenchChangeSeam(ctx: Context): () => void {
+  let detach: (() => void) | null = null;
+  ctx.effect(() => {
+    setBenchChangeSeam({
+      emit: (session: string): void => { ctx.emit("bench.changed", session); },
+      on: (fn: (session: string) => void): (() => void) => {
+        const stop = ctx.on("bench.changed", fn);
+        return () => { stop(); };
+      },
+    });
+    detach = () => { setBenchChangeSeam(null); };
+    return detach;
+  });
+  return () => { detach?.(); };
 }
 
 /** The wrap voice for a thrown store error: Error.message when the
@@ -995,6 +1030,9 @@ export class DraftsRemoteService extends TypertRemoteService {
 export class BenchRemoteService extends TypertRemoteService {
   constructor(ctx: Context) {
     super(ctx, "benchRemote", { namespace: "bench" });
+    // THE EVENT SEAT (the hand-roll row 1.2, 2026-10-12): the bench
+    // push spine is the typed `bench.changed` event, not a module Set.
+    installBenchChangeSeam(ctx);
   }
 
   /** Endpoint `bench/get` — one session's bench block as the row. */

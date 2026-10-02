@@ -49,6 +49,10 @@ export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDo
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" } as never, // same never-plugin law as the json backend above
   );
+  // THE EVENT SEAT (the hand-roll row 1.2): the bench push spine is
+  // the typed `bench.changed` event; every test tree installs the same
+  // seam the plugin installs, so no test can pass by skipping the bus.
+  installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
 }
 
@@ -134,3 +138,5 @@ export function syncCodeOf(fn: () => unknown): string {
     return (err.code ?? "NOT-REMOTE") + "|" + String(err.message);
   }
 }
+
+import { installBenchChangeSeam } from "../src/remote.ts";

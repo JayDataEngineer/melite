@@ -36,6 +36,7 @@ import {
   sameResultOutputs,
 } from "../src/remote.ts";
 import type { BenchDoc } from "../src/remote.ts";
+import { installBenchChangeSeam } from "../src/remote.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 
 const sig = new AbortController().signal;
@@ -64,6 +65,10 @@ async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpe
     { name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as never,
     { backend: "json" } as never, // same never-plugin law as the json backend above
   );
+  // The typed `bench.changed` seam (the hand-roll row 1.2): this file
+  // boots its own Context rather than the shared helper, so it
+  // installs the same seam the plugin installs.
+  installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
 }
 

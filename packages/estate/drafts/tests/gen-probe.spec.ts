@@ -1,6 +1,12 @@
 import { expect, test } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
 import { onBenchChange, notifyBenchChange } from '../src/bench.ts'
-import { BenchRemoteService } from '../src/remote.ts'
+import { BenchRemoteService, installBenchChangeSeam } from '../src/remote.ts'
+
+// The typed `bench.changed` seam (the hand-roll row 1.2): this probe
+// calls the subscribe prototype with a fake `this`, so it installs the
+// seam on its own Context — the same installer the plugin uses.
+installBenchChangeSeam(new Context())
 
 test('decorated probe with logs', async () => {
   console.log('TYPE of proto method:', typeof (BenchRemoteService.prototype as never as Record<string, unknown>)['subscribe'])

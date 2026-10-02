@@ -1,7 +1,18 @@
 import { describe, expect, test } from "vitest";
-import { onBenchChange, notifyBenchChange, notifyBenchDocWrite } from "../src/bench.ts";
-import { BenchRemoteService } from "../src/remote.ts";
+import { Context } from "@deepseek-ai/cordis";
+import { onBenchChange, notifyBenchChange, notifyBenchDocWrite, setBenchChangeSeam } from "../src/bench.ts";
+import { BenchRemoteService, installBenchChangeSeam } from "../src/remote.ts";
 import { sig, bootCtx } from "./bench-helpers.ts";
+
+// THE EVENT SEAT (the hand-roll row 1.2, 2026-10-12): these arms
+// exercise the module's own event law, so they install the SAME seam
+// the plugin installs — a real cordis Context carrying the typed
+// `bench.changed` event. Nothing here hand-rolls a listener set: the
+// law (a subscriber's fault never breaks the write, never starves the
+// listeners after it) is the module's wrapper over the real bus, and
+// this file is what keeps it pinned.
+const ctx = new Context();
+installBenchChangeSeam(ctx);
 
 // ── THE CHANGE EVENTS + THE SUBSCRIBE STREAM (2026-09-12) ──────────
 // The push source: every bench write fires the change event at the
@@ -25,6 +36,27 @@ describe("the bench change events (the push source)", () => {
     const off = onBenchChange(() => { throw new Error("listener fault") });
     expect(() => notifyBenchChange("main")).not.toThrow();
     off();
+  });
+
+  test("a tree with NO seam installed refuses LOUD (never a silent no-op)", () => {
+    // THE LAW THIS FILE KEEPS: `onBenchChange` without a seam is a
+    // programming error, not an empty subscription. A silent no-op
+    // would let a whole test tree (or a boot path) stop hearing bench
+    // writes and still pass every assertion it still runs.
+    setBenchChangeSeam(null);
+    try {
+      expect(() => onBenchChange(() => {})).toThrow(/no bench change seam installed/);
+    } finally {
+      installBenchChangeSeam(ctx);
+    }
+  });
+
+  test("the seam's disposer detaches it (a torn-down Context leaves no emitter)", () => {
+    const own = new Context();
+    const detach = installBenchChangeSeam(own);
+    detach();
+    expect(() => onBenchChange(() => {})).toThrow(/no bench change seam installed/);
+    installBenchChangeSeam(ctx); // restore the file's own seam
   });
 
   test("notifyBenchDocWrite parses bench-shaped draft ids only", () => {

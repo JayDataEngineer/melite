@@ -2328,27 +2328,52 @@ function applyInverse(
 // lands (the collapse plan). One seam, every writer visible.
 
 type BenchChangeListener = (session: string) => void;
-const benchChangeListeners = new Set<BenchChangeListener>();
 
-/** Subscribe to bench writes; returns the unsubscribe. */
+/** The event seam this pure domain module reaches the bus through.
+ *  `bench.ts` owns no Context (it is the domain layer, not a plugin),
+ *  so the plugin installs the pair once and every writer here keeps
+ *  calling {@link notifyBenchChange}. */
+export interface BenchChangeSeam {
+  emit: (session: string) => void;
+  on: (fn: BenchChangeListener) => () => void;
+}
+
+let benchChangeSeam: BenchChangeSeam | null = null;
+
+/** Install the seam (the plugin does this with its Context; tests do
+ *  it with their own). Pass null to detach. */
+export function setBenchChangeSeam(seam: BenchChangeSeam | null): void {
+  benchChangeSeam = seam;
+}
+
+/** Subscribe to bench writes; returns the unsubscribe.
+ *
+ *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`
+ *  stops at the first throwing listener and rethrows out of the emit
+ *  (measured 2026-10-12 on cordis 4.0.4), while this module's
+ *  contract is that a subscriber's fault never breaks the write and
+ *  never starves the listeners after it. Wrapping the handler is what
+ *  makes the typed event lawful here. */
 export function onBenchChange(fn: BenchChangeListener): () => void {
-  benchChangeListeners.add(fn);
-  return () => {
-    benchChangeListeners.delete(fn);
-  };
+  if (benchChangeSeam === null) {
+    throw new Error(
+      "estate-drafts: no bench change seam installed — the plugin installs it in apply(), tests call setBenchChangeSeam()",
+    );
+  }
+  return benchChangeSeam.on((session: string): void => {
+    try {
+      fn(session);
+    } catch {
+      /* a listener's fault never breaks the write */
+    }
+  });
 }
 
 /** Fire the write event — the remote layer calls this after every
  *  successful bench write (the door seam: every in-process and
  *  host-routed write crosses the remote arms). */
 export function notifyBenchChange(session: string): void {
-  for (const fn of benchChangeListeners) {
-    try {
-      fn(session);
-    } catch {
-      /* a listener's fault never breaks the write */
-    }
-  }
+  benchChangeSeam?.emit(session);
 }
 
 /** The public notify (the drafts-patch door writes bench docs from
