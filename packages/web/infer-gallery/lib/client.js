@@ -26590,6 +26590,7 @@ window.__ModuleLoader__.load({
 				"params",
 				"result",
 				"runStatus",
+				"health",
 				"inputs",
 				"inputOutputs"
 			];
@@ -32949,14 +32950,6 @@ window.__ModuleLoader__.load({
 			return motion.frames_flat[clamped];
 		}
 		/**
-		* Format cache size for display.
-		*/
-		function formatBytes(bytes) {
-			if (bytes < 1024) return `${bytes} B`;
-			if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-			return `${(bytes / 1048576).toFixed(1)} MB`;
-		}
-		/**
 		* Fetch the 77-joint SOMA-71 rest-pose (bind-pose) positions for the
 		* requested identity model. Used by Pose Studio's "Load Model" button to
 		* enter Edit Mode WITHOUT generating a motion first — the user can grab
@@ -33714,7 +33707,6 @@ window.__ModuleLoader__.load({
 			formForSidebarKey: () => formForSidebarKey,
 			formOf: () => formOf,
 			formSidebarItems: () => formSidebarItems,
-			formatBytes: () => formatBytes,
 			formatLastRun: () => formatLastRun,
 			generatePose: () => generatePose,
 			getBackendState: () => getBackendState,

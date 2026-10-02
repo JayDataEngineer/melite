@@ -39976,14 +39976,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return motion.frames_flat[clamped];
 		}
 		/**
-		* Format cache size for display.
-		*/
-		function formatBytes(bytes) {
-			if (bytes < 1024) return `${bytes} B`;
-			if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-			return `${(bytes / 1048576).toFixed(1)} MB`;
-		}
-		/**
 		* Fetch the 77-joint SOMA-71 rest-pose (bind-pose) positions for the
 		* requested identity model. Used by Pose Studio's "Load Model" button to
 		* enter Edit Mode WITHOUT generating a motion first — the user can grab
@@ -40741,7 +40733,6 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			formForSidebarKey: () => formForSidebarKey,
 			formOf: () => formOf,
 			formSidebarItems: () => formSidebarItems,
-			formatBytes: () => formatBytes,
 			formatLastRun: () => formatLastRun,
 			generatePose: () => generatePose,
 			getBackendState: () => getBackendState,
@@ -42410,8 +42401,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				"data-testid": tid ?? "timeline-scrub-bar",
 				"data-dragging": dragging ? "true" : void 0,
 				children: [
-					onTogglePlay !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)("button", {
-						type: "button",
+					onTogglePlay !== void 0 ? /* @__PURE__ */ (0, react_jsx_runtime.jsx)(_deepseek_ai_dsh_client_ui_primitives.Button, {
+						variant: "ghost",
+						size: "sm",
 						className: timeline_module_css_default.scrubToggle,
 						"aria-label": playing ? "Pause" : "Play",
 						onClick: onTogglePlay,
