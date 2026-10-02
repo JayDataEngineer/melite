@@ -17,7 +17,10 @@
     }
   },
   "dependencies": {
+    "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.1",
+    "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*",
+    "@melite/estate-runs": "workspace:*",
     "@melite/image-image-gen": "workspace:*",
     "@melite/viewer-base": "workspace:*"
   },

@@ -143,10 +143,14 @@ describe("the boundary laws", () => {
     expect(src).not.toMatch(/function artifactFileName/);
   });
 
-  it("the terminal run vocabulary is ONE set, and both readers use it", () => {
+  it("the terminal run vocabulary is ONE set, and the stream reader uses it", () => {
     expect(TERMINAL_RUN_STATUSES).toContain("error");
+    // the gallery's terminal check rides the stream source (the viewer
+    // client half owns the tail laws); the row renders, it never re-derives
+    const viewerClient = readFileSync("packages/web/viewer/src/client/index.ts", "utf8");
+    expect(viewerClient).toContain("TERMINAL_RUN_STATUSES");
+    expect(viewerClient).not.toMatch(/new Set\(\['completed', 'failed', 'stopped'/);
     const runCard = readFileSync("packages/web/viewer-base/src/runCard.tsx", "utf8");
-    expect(runCard).toContain("TERMINAL_RUN_STATUSES");
     expect(runCard).not.toMatch(/new Set\(\['completed', 'failed', 'stopped'/);
   });
 

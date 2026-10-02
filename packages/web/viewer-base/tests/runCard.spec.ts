@@ -6,17 +6,22 @@
  *           read refused/stopped/error/ok off presentationMeta, and a
  *           card projecting a subset still renders (every meta face
  *           narrows to null, never throws);
- *   live  — with a run id the row polls the same-origin run proxy
- *           until the run settles (terminal statuses stop the poll,
- *           404 parks the badge at the structural gone word, transient failures retry);
+ *   live  — the gallery rides the composition's run frames (the
+ *           runFrames prop: runs/subscribe through the gateway's
+ *           stream face). No prop is no arm — the row renders its
+ *           durable model alone and fetches nothing. A terminal
+ *           frame's artifacts land through the estate media rewrite;
+ *           an ended source keeps its last frame standing; unmount
+ *           aborts the source's signal;
  *   claim — the toolview claim rides ctx.effect + slots.inject with
- *           the card's wire tool name as the key.
+ *           the card's wire tool name as the key, threading the
+ *           frames source through the registered component's props.
  *
  * RENDER NOTE: viewer-base ships peer-only react, so this node-lane
  * spec renders through the estate's single React 18.3.1 instance
  * (gallery tree's react-dom — the same store file viewer-base's own
  * react resolves to) over a root-jsdom document stood up below. Real
- * rendering, real fetch Responses, real timers — no mocks.
+ * rendering, real AbortSignals — no mocks.
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createElement } from 'react'
@@ -38,6 +43,7 @@ vi.mock('@deepseek-ai/dsh-client-ui-primitives', async () => {
 import { cleanup, render } from '../../infer-gallery/node_modules/@testing-library/react'
 
 import { claimRunCardToolview, runCardModel, RunCardRow } from '../src/runCard.tsx'
+import type { RunCardRowProps, RunGalleryFrame, RunFramesSource } from '../src/runCard.tsx'
 
 // ── the document (stood up once; per-test fetch stubs come and go) ──
 const dom = new JSDOM('<!doctype html><html><body></body></html>', { url: 'http://localhost/' })
@@ -71,11 +77,14 @@ const streamingBlock = (over: Record<string, unknown> = {}): unknown => ({
   argsRaw: JSON.stringify({ prompt: 'a tabby cat' }),
   ...over,
 })
-const propsFor = (block: unknown, toolName = 'image-gen'): never =>
-  ({ toolName, block }) as never
+const propsFor = (block: unknown, toolName = 'image-gen'): RunCardRowProps =>
+  // the frozen call slice's union does not admit the unknown fakes;
+  // cast at the one door, carry the row's real prop type onward
+  ({ toolName, block }) as RunCardRowProps
 
-const okJson = (body: unknown, status = 200): Response =>
-  new Response(JSON.stringify(body), { status })
+/** A settled run row's props: model + run_id on the meta. */
+const settledRunProps = (over: Record<string, unknown> = {}): RunCardRowProps =>
+  propsFor(settledBlock({ meta: { model: 'ideogram4', run_id: 'r_1' }, ...over }))
 
 describe('runCardModel — the durable slice alone', () => {
   it('a streaming prefix reads running with the prompt, everything else null', () => {
@@ -92,6 +101,8 @@ describe('runCardModel — the durable slice alone', () => {
     expect(runCardModel(propsFor(streamingBlock({ argsRaw: '{"prompt":' }))).prompt).toBe(null)
     expect(runCardModel(propsFor(streamingBlock({ argsRaw: undefined }))).prompt).toBe(null)
     expect(runCardModel(propsFor(streamingBlock({ argsRaw: '{"prompt":42}' }))).prompt).toBe(null)
+    // a head alone (PreparingToolCall carries no argsRaw key at all)
+    expect(runCardModel(propsFor({})).prompt).toBe(null)
   })
 
   it('a refused row carries model/run plus the joined headline', () => {
@@ -126,7 +137,8 @@ describe('runCardModel — the durable slice alone', () => {
 
 describe('RunCardRow — the running row never touches the wire', () => {
   it('a streaming prefix badges running with the prompt and no fetch', async () => {
-    const fetchSpy = vi.fn(async (): Promise<Response> => okJson({}))
+    // the no-wire pin: a stub with nothing to serve (the row must never call)
+    const fetchSpy = vi.fn()
     vi.stubGlobal('fetch', fetchSpy)
     const view = render(createElement(RunCardRow, propsFor(streamingBlock())))
     expect(await view.findByText('running')).toBeTruthy()
@@ -136,110 +148,117 @@ describe('RunCardRow — the running row never touches the wire', () => {
   })
 })
 
-describe('RunCardRow — the gallery poll', () => {
-  const settledRun = (over: Record<string, unknown> = {}): never =>
-    propsFor(settledBlock({ meta: { model: 'ideogram4', run_id: 'r_1' }, ...over }))
+describe('RunCardRow — the gallery rides the run frames', () => {
+  const settledRun = settledRunProps
 
-  it('a settled run stops at completed and renders the artifact wall', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (input: unknown): Promise<Response> => {
-      expect(String(input)).toBe('/melite-viewer/run/r_1')
-      return okJson({ status: 'completed', artifacts: ['a.png', '', 42] })
-    }))
-    const view = render(createElement(RunCardRow, settledRun()))
-    expect(await view.findByText('completed')).toBeTruthy()
-    const img = view.container.querySelector('img')
-    expect(img?.getAttribute('src')).toBe('/melite-viewer/asset/r_1/a.png')
-    expect(img?.getAttribute('alt')).toBe('a.png')
-    expect(view.container.querySelectorAll('img')).toHaveLength(1)
-  })
+  /** A scripted source: hands the queued frames to the row, records
+   * the signal it was handed, and ends. `hang` parks instead — a
+   * source whose stream stays open (the parked tail between rows). */
+  const scriptedSource = (frames: readonly RunGalleryFrame[], hang = false) => {
+    const signals: AbortSignal[] = []
+    const read: string[] = []
+    const source: RunFramesSource = async function* rows(runId, signal) {
+      signals.push(signal)
+      read.push(`open:${runId}`)
+      for (const frame of frames) {
+        if (signal.aborted) return
+        read.push(`yield:${frame.status}`)
+        yield frame
+      }
+      read.push(hang ? 'hang' : 'end')
+      if (hang) await new Promise<void>(() => {}) // parked: no more rows, no end
+    }
+    return { source, signals, read }
+  }
 
-  it('a 404 parks the badge at gone — the structural word, never a forged wire status', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => new Response('nope', { status: 404 })))
+  it('no source is no arm: the row renders its durable model alone and fetches nothing', async () => {
+    // the no-wire pin: a stub with nothing to serve (the row must never call)
+    const fetchSpy = vi.fn()
+    vi.stubGlobal('fetch', fetchSpy)
     const view = render(createElement(RunCardRow, settledRun()))
-    expect(await view.findByText('gone')).toBeTruthy()
-    expect(view.container.querySelector('img')).toBeNull()
-    // the status channel stays clean: no wire word was fabricated
-    // ('unknown' is a REAL terminal word — a 404 must not forge it).
-    expect(view.container.textContent).not.toContain('unknown')
-  })
-
-  it('a transient failure retries, a running status repolls, completion lands', async () => {
-    const bodies: unknown[] = [
-      'reject',
-      { status: 'running', artifacts: [] },
-      { status: 'completed', artifacts: ['done.png'] },
-    ]
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => {
-      const next = bodies.shift()
-      if (next === 'reject') throw new Error('socket reset')
-      return okJson(next)
-    }))
-    const view = render(createElement(RunCardRow, settledRun()))
-    expect(await view.findByText('completed', undefined, { timeout: 8000 })).toBeTruthy()
-    expect(view.container.querySelector('img')?.getAttribute('src')).toBe(
-      '/melite-viewer/asset/r_1/done.png',
-    )
-  }, 15000)
-
-  it('a status-less body lands with the row state as the badge', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => okJson({ artifacts: ['a.png'] })))
-    const view = render(createElement(RunCardRow, settledRun()))
+    // the badge falls to the row state; no wire, no gallery
     expect(await view.findByText('ok')).toBeTruthy()
-    expect(view.container.querySelector('img')?.getAttribute('src')).toBe(
-      '/melite-viewer/asset/r_1/a.png',
-    )
+    expect(view.container.querySelector('img')).toBeNull()
+    expect(fetchSpy).not.toHaveBeenCalled()
   })
 
-  it('a shapeless artifacts body renders no wall', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => okJson({ status: 'completed' })))
-    const view = render(createElement(RunCardRow, settledRun()))
+  it('frames land: the badge reads the frame status, artifacts ride the estate media rewrite', async () => {
+    // a real pause between frames — each frame commits before the next
+    const source: RunFramesSource = async function* rows(runId, signal) {
+      void runId
+      yield { status: 'running', artifacts: [] }
+      await new Promise((r) => setTimeout(r, 30))
+      if (!signal.aborted) {
+        yield { status: 'completed', artifacts: ['r_1/a.png', 'https://cdn.example/b.png'] }
+      }
+    }
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
+    expect(await view.findByText('running')).toBeTruthy()
+    expect(await view.findByText('completed')).toBeTruthy()
+    const srcs = [...view.container.querySelectorAll('img')].map((i) => i.getAttribute('src'))
+    // registry names `<runId>/<rel>` ride the media route; absolute urls pass verbatim
+    expect(srcs).toEqual(['/melite-media/runs/r_1/a.png', 'https://cdn.example/b.png'])
+    expect(view.container.querySelector('img')?.getAttribute('alt')).toBe('r_1/a.png')
+  })
+
+  it('an empty artifact name renders no image (the rewrite returns null)', async () => {
+    const { source } = scriptedSource([{ status: 'completed', artifacts: [''] }])
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
     expect(await view.findByText('completed')).toBeTruthy()
     expect(view.container.querySelector('img')).toBeNull()
   })
 
-  it('garbage bodies retry; unmounting clears the retry', async () => {
-    const fetchSpy = vi.fn(async (): Promise<Response> => new Response('not json{{{', { status: 200 }))
-    vi.stubGlobal('fetch', fetchSpy)
-    const view = render(createElement(RunCardRow, settledRun()))
-    // let the first poll fail into a scheduled retry, then leave —
-    // the cleanup must clear the pending timer (no stray poll after).
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1), { timeout: 3000 })
-    await new Promise((r) => setTimeout(r, 50))
-    view.unmount()
-    await new Promise((r) => setTimeout(r, 2200))
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
+  it('a source that ends without a terminal frame keeps its last frame standing', async () => {
+    const { source, read } = scriptedSource([{ status: 'running', artifacts: [] }])
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
+    expect(await view.findByText('running')).toBeTruthy()
+    await vi.waitFor(() => expect(read).toContain('end'), { timeout: 3000 })
+    // the ended source's last frame stays as the gallery
+    expect(view.container.textContent).toContain('running')
   })
 
-  it('leaving mid-flight drops the late ok answer (no write after unmount)', async () => {
-    let resolveFetch!: (res: Response) => void
-    const fetchSpy = vi.fn(
-      () => new Promise<Response>((r) => { resolveFetch = r }),
-    )
-    vi.stubGlobal('fetch', fetchSpy)
-    const view = render(createElement(RunCardRow, settledRun()))
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1), { timeout: 3000 })
+  it('unmount aborts the source\'s signal (the tail disposes)', async () => {
+    const { source, signals } = scriptedSource([{ status: 'running', artifacts: [] }], true)
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
+    expect(await view.findByText('running')).toBeTruthy()
+    await vi.waitFor(() => expect(signals).toHaveLength(1), { timeout: 3000 })
+    expect(signals[0]?.aborted).toBe(false)
     view.unmount()
-    resolveFetch(okJson({ status: 'running', artifacts: ['late.png'] }))
-    await new Promise((r) => setTimeout(r, 50))
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    await vi.waitFor(() => expect(signals[0]?.aborted).toBe(true), { timeout: 3000 })
   })
 
-  it('leaving mid-flight drops the late refusal too', async () => {
-    let resolveFetch!: (res: Response) => void
-    const fetchSpy = vi.fn(() => new Promise<Response>((r) => { resolveFetch = r }))
-    vi.stubGlobal('fetch', fetchSpy)
-    const view = render(createElement(RunCardRow, settledRun()))
-    await vi.waitFor(() => expect(fetchSpy).toHaveBeenCalledTimes(1), { timeout: 3000 })
+  it('a frame landing after unmount writes nothing (the tail left)', async () => {
+    let push!: () => void
+    const source: RunFramesSource = async function* rows() {
+      yield { status: 'running', artifacts: [] }
+      await new Promise<void>((r) => { push = r })
+      // late: the row is gone; the loop body must drop it, not write
+      yield { status: 'completed', artifacts: [] }
+    }
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
+    expect(await view.findByText('running')).toBeTruthy()
     view.unmount()
-    resolveFetch(new Response('gone', { status: 404 }))
-    await new Promise((r) => setTimeout(r, 50))
-    expect(fetchSpy).toHaveBeenCalledTimes(1)
+    push()
+    await new Promise((r) => setTimeout(r, 30))
+    expect(view.container.textContent).not.toContain('completed')
+  })
+
+  it('a source that breaks its own law (throws) logs loud and keeps the last frame', async () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const source: RunFramesSource = async function* rows() {
+      yield { status: 'running', artifacts: [] }
+      throw new Error('source broke its law')
+    }
+    const view = render(createElement(RunCardRow, { ...settledRun(), runFrames: source }))
+    expect(await view.findByText('running')).toBeTruthy()
+    await vi.waitFor(() => expect(errorSpy).toHaveBeenCalled(), { timeout: 3000 })
+    errorSpy.mockRestore()
+    expect(view.container.textContent).toContain('running')
   })
 })
 
 describe('RunCardRow — the refused row reads honestly', () => {
   it('refused with a headline shows it; the ragged row shows neither prompt nor run', async () => {
-    vi.stubGlobal('fetch', vi.fn(async (): Promise<Response> => okJson({})))
     const view = render(createElement(RunCardRow, propsFor(settledBlock({
       call: undefined,
       meta: { error: 'soap' },
@@ -252,6 +271,24 @@ describe('RunCardRow — the refused row reads honestly', () => {
 })
 
 describe('claimRunCardToolview — the keyed slot claim', () => {
+  const claimCtx = () => {
+    const registered: { options: unknown; component: unknown }[] = []
+    const ctx = {
+      effect: (fn: () => unknown, name?: string): unknown => {
+        void name
+        return fn()
+      },
+      slots: {
+        inject: (_key: string, callback: () => unknown): unknown => callback(),
+        register: (options: unknown, component: unknown): unknown => {
+          registered.push({ options, component })
+          return () => {}
+        },
+      },
+    }
+    return { ctx, registered }
+  }
+
   it('rides ctx.effect + slots.inject with the wire tool name as the key', () => {
     const seen: unknown[] = []
     const ctx = {
@@ -274,7 +311,26 @@ describe('claimRunCardToolview — the keyed slot claim', () => {
     expect(seen).toEqual([
       ['effect', 'image-gen row'],
       ['inject', 'tool.call.toolview'],
-      ['register', { name: 'tool.call.toolview', key: 'image-gen.call' }, RunCardRow],
+      ['register', { name: 'tool.call.toolview', key: 'image-gen.call' }, expect.any(Function)],
     ])
+  })
+
+  it('without a source the bare row registers (component identity kept)', () => {
+    const { ctx, registered } = claimCtx()
+    claimRunCardToolview(ctx, 'image-gen', 'image-gen row')
+    expect(registered[0]?.options).toEqual({ name: 'tool.call.toolview', key: 'image-gen' })
+    expect(registered[0]?.component).toBe(RunCardRow)
+  })
+
+  it('with a source the registered component threads it into the row', async () => {
+    const { ctx, registered } = claimCtx()
+    const source: RunFramesSource = async function* rows() {
+      yield { status: 'completed', artifacts: ['r_1/a.png'] }
+    }
+    claimRunCardToolview(ctx, 'image-gen', 'image-gen row', source)
+    const Row = registered[0]?.component as (props: unknown) => unknown
+    const view = render(createElement(Row as never, settledRunProps() as never))
+    expect(await view.findByText('completed')).toBeTruthy()
+    expect(view.container.querySelector('img')?.getAttribute('src')).toBe('/melite-media/runs/r_1/a.png')
   })
 })

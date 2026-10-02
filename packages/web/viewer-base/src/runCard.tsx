@@ -14,18 +14,21 @@
  * derived ONLY from the frozen call block — args for the prompt, the
  * card's presentationMeta projection on the settled node (the same
  * payload presentResult reads host-side; see image-gen's tool.ts) for
- * model/run/error. The gallery is the one live arm: artifacts live on
- * the Melite gateway, so the row polls the viewer's same-origin run
- * proxy until the run settles and renders the artifacts through the
- * asset proxy (never an attachment loader — tool.call.images is the
- * DSH attachment plugin's; our bytes are gateway assets).
+ * model/run/error. The gallery is the one live arm: it rides the run
+ * resource's frames (runs/subscribe over the gateway's stream face),
+ * handed down by the composition as the `runFrames` prop — the row
+ * itself stays runtime-dep-free and presentational, deriving from
+ * props only (the web-card law: raw events and persisted metadata,
+ * never a fetch of its own). No source (a composition without the
+ * estate's runs namespace) renders no gallery; the retired poll's
+ * same-origin door answers 502 `estate_killed` by design since
+ * 2026-09-10, so its answers were always the gone badge.
  */
-import { TERMINAL_RUN_STATUSES } from '@melite-plugin/melite-run-wire'
 import { useEffect, useState } from 'react'
 import type { JSX } from 'react'
 import { StateDot } from '@deepseek-ai/dsh-client-ui-primitives'
 import type { ToolCallViewProps } from '@deepseek-ai/dsh-client-ui-tool/client'
-import { assetProxyUrl, runProxyUrl } from './wire.ts'
+import { listArtifactMediaUrl } from '@melite-plugin/melite-run-wire'
 
 /**
  * The run-card meta projection every model card's tool emits via
@@ -47,10 +50,6 @@ interface RowModel {
   prompt: string | null
   headline: string | null
 }
-
-// the shared terminal vocabulary (melite-run-wire) — the one place
-// a status means "stop asking"
-const TERMINAL = new Set(TERMINAL_RUN_STATUSES)
 
 /** Derive the row model from the durable slice alone (replay-safe). */
 export function runCardModel(props: ToolCallViewProps): RowModel {
@@ -90,54 +89,58 @@ export function runCardModel(props: ToolCallViewProps): RowModel {
 interface GalleryState {
   status: string | null
   artifacts: readonly string[]
-  /** 404 structural sentinel (LOW-2's cure, status-vocabulary audit):
-   * "no such run at the gateway" rides its OWN field — the status
-   * channel carries wire words only, never a forged one ('unknown'
-   * is a real terminal word the wire may send; a 404 is not it). */
-  gone: boolean
 }
 
-/** Poll the same-origin run proxy until the run settles; collect artifacts. */
-export function useRunGallery(runId: string | null): GalleryState {
-  const [state, setState] = useState<GalleryState>({ status: null, artifacts: [], gone: false })
+/** One gallery frame — the run row's live facts as the composition
+ * serves them: the registry's status word plus the artifact names in
+ * the runs row's own spelling (`<runId>/<rel>`; absolute and rooted
+ * urls pass through the row's media rewrite verbatim). */
+export interface RunGalleryFrame {
+  readonly status: string
+  readonly artifacts: readonly string[]
+}
+
+/** The live-run source the composition hands down: `runs/subscribe`
+ * through the gateway's stream face, one frame per row that moved.
+ * The source owns the stream's lifecycle laws — it ends on the
+ * terminal row, disposes on abort, and re-serves nothing (the
+ * row-change gate is the source's, one law with the run view's
+ * tail); aborting the signal ends the iterable. */
+export type RunFramesSource =
+  (runId: string, signal: AbortSignal) => AsyncIterable<RunGalleryFrame>
+
+/** Ride the composition's run frames for the gallery arm. No source
+ * (a composition without the estate's runs namespace) is no arm: the
+ * state stays empty and the row renders its durable model alone. An
+ * ended source keeps the last frame standing (the terminal row is the
+ * source's own last yield). */
+export function useRunGallery(
+  runId: string | null,
+  source: RunFramesSource | undefined,
+): GalleryState {
+  const [state, setState] = useState<GalleryState>({ status: null, artifacts: [] })
   useEffect(() => {
-    if (runId === null) return
+    if (runId === null || source === undefined) return
     const controller = new AbortController()
-    let timer: ReturnType<typeof setTimeout> | undefined
     let stopped = false
-    const poll = async (): Promise<void> => {
+    void (async () => {
       try {
-        const res = await fetch(runProxyUrl(runId), {
-          signal: controller.signal,
-          headers: { accept: 'application/json' },
-        })
-        if (res.ok) {
-          const body = JSON.parse(await res.text()) as { status?: string; artifacts?: string[] }
-          const status = typeof body.status === 'string' ? body.status : null
-          const artifacts = Array.isArray(body.artifacts) ? body.artifacts.filter(
-            (a): a is string => typeof a === 'string' && a !== '',
-          ) : []
-          if (!stopped) setState({ status, artifacts, gone: false })
-          if (status === null || TERMINAL.has(status)) return
-        } else {
-          // 404 — no such run at the gateway: stop polling, keep the
-          // last known state, raise the structural gone flag (the
-          // badge word 'gone' is the estate's no-such-run vocabulary
-          // — probeRunGone's word — and rides its own field, never
-          // the status channel a wire word could collide with).
-          if (!stopped) setState((s) => ({ ...s, gone: true }))
-          return
+        for await (const frame of source(runId, controller.signal)) {
+          if (stopped) return
+          setState({ status: frame.status, artifacts: frame.artifacts })
         }
-      } catch { /* transient — retry below */ }
-      if (!stopped) timer = setTimeout(poll, 2000)
-    }
-    void poll()
+      } catch (error) {
+        // the source's law is to end, never throw; if it ever does,
+        // the last gallery state stands — the durable model is the
+        // row's truth, and a rejected async body must not go unhandled
+        console.error('[melite/viewer-base] run gallery tail failed:', error)
+      }
+    })()
     return () => {
       stopped = true
       controller.abort()
-      if (timer !== undefined) clearTimeout(timer)
     }
-  }, [runId])
+  }, [runId, source])
   return state
 }
 
@@ -152,10 +155,16 @@ const DOT: Record<RowState, Parameters<typeof StateDot>[0]['state']> = {
   stopped: 'warning',
 }
 
-export function RunCardRow(props: ToolCallViewProps): JSX.Element {
-  const model = runCardModel(props)
-  const gallery = useRunGallery(model.state === 'running' ? null : model.runId)
-  const badge = gallery.gone ? 'gone' : gallery.status ?? model.state
+/** The row's props: the slot's view props plus the composition's
+ * live-run source (optional — the claim threads it when the
+ * composition holds the estate's runs namespace). */
+export type RunCardRowProps = ToolCallViewProps & { readonly runFrames?: RunFramesSource }
+
+export function RunCardRow(props: RunCardRowProps): JSX.Element {
+  const { runFrames, ...view } = props
+  const model = runCardModel(view)
+  const gallery = useRunGallery(model.state === 'running' ? null : model.runId, runFrames)
+  const badge = gallery.status ?? model.state
   return (
     <div data-melite-run-card style={{
       border: '1px solid rgba(128,128,128,0.35)',
@@ -177,15 +186,21 @@ export function RunCardRow(props: ToolCallViewProps): JSX.Element {
       )}
       {model.runId !== null && gallery.artifacts.length > 0 && (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
-          {gallery.artifacts.map((rel) => (
-            <img
-              key={rel}
-              src={assetProxyUrl(model.runId ?? '', rel)}
-              alt={rel}
-              loading="lazy"
-              style={{ width: 128, height: 128, objectFit: 'cover', borderRadius: 6, display: 'block' }}
-            />
-          ))}
+          {gallery.artifacts.flatMap((name) => {
+            // the one media rewrite (melite-run-wire): registry names
+            // `<runId>/<rel>` ride the estate's media route; absolute
+            // and rooted urls pass verbatim; an empty name is no image
+            const url = listArtifactMediaUrl(name)
+            return url === null ? [] : [(
+              <img
+                key={name}
+                src={url}
+                alt={name}
+                loading="lazy"
+                style={{ width: 128, height: 128, objectFit: 'cover', borderRadius: 6, display: 'block' }}
+              />
+            )]
+          })}
         </div>
       )}
     </div>
@@ -210,12 +225,28 @@ export interface ClaimCtx {
  * Claim `tool.call.toolview` for one run card's wire tool name, with
  * the default row — the ui-skill registration shape (the
  * declaration-aware `slots.inject`, reconciling + disposal included).
- * Returns nothing; the claim lives and dies with `ctx`.
+ * `runFrames` (the composition's live-run source) rides the
+ * registered component's props; absent, the row registers bare and
+ * renders its durable model alone. Returns nothing; the claim lives
+ * and dies with `ctx`.
+ *
+ * @param ctx the claiming composition's client ctx
+ * @param toolName the card's wire tool name (the keyed slot's key)
+ * @param label the effect's name (the composition's own line)
+ * @param runFrames the live-run source the composition holds, if any
  */
-export function claimRunCardToolview(ctx: ClaimCtx, toolName: string, label: string): void {
+export function claimRunCardToolview(
+  ctx: ClaimCtx,
+  toolName: string,
+  label: string,
+  runFrames?: RunFramesSource,
+): void {
+  const Row = runFrames === undefined ? RunCardRow
+    : (props: ToolCallViewProps): JSX.Element =>
+        <RunCardRow {...props} runFrames={runFrames} />
   ctx.effect(() => ctx.slots.inject('tool.call.toolview', () =>
     ctx.slots.register(
       { name: 'tool.call.toolview', key: toolName },
-      RunCardRow,
+      Row,
     )), label)
 }

@@ -83,6 +83,10 @@ const GALLERY = rootPath('packages/web/infer-gallery')
 const DOM_SPEC_TREES = [
   `${CARD_VIEW}/tests/**/*.spec.{ts,tsx}`,
   `${GALLERY}/tests/**/*.spec.{ts,tsx}`,
+  // the viewer client half's specs (the run-card claim + its frames
+  // source): the api-gateway client leaf is window-bound, so the
+  // composition spec rides the dom lane with the other client trees.
+  `${rootPath('packages/web/viewer')}/tests/**/*.spec.{ts,tsx}`,
   // THE CARD PACKAGES' OWN CLIENT SPECS (2026-09-12, the
   // composition-root correction): each card's studio registration +
   // adapter live in its package now — its spec rides the dom lane
@@ -482,7 +486,6 @@ export default defineConfig({
         'packages/web/infer-gallery/src/client/MediaPanel.tsx',
         'packages/web/infer-gallery/src/index.ts',
         'packages/web/melite-card-deck/src/client/assets-tab.tsx',
-        'packages/web/viewer-base/src/runCard.tsx',
         // §TEST-20 CLOSED (2026-09-15, strokes 70-73): the 26-file
         // estate-plane triage is BURNED DOWN — every file restored
         // to per-file 100x4 with honest behavioral arms (the ledger
