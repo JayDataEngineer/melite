@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.ts";
+import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, venvPython, warn } from "./provision-shared.ts";
 import { loadConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 
@@ -15,8 +15,9 @@ export function linkInTree(name: string, workspace: string): string {
   if (existsSync(join(target, "__init__.py"))) return "skipped";
   const src = join(REPO, "vendor", "comfyui_extensions", name);
   if (!existsSync(join(src, "__init__.py"))) {
-    warn("  [" + name + "] vendor pack not checked out under " +
-      "vendor/comfyui_extensions (git submodule update --init)");
+    warn("  [" + name + "] vendor pack missing under " +
+      "vendor/comfyui_extensions (a fresh clone of this repository " +
+      "carries all 14 packs as tracked files)");
     return "failed";
   }
   if (DRY) {
@@ -89,9 +90,9 @@ export function runtimePython(workspace: string): string {
   // cmdSync) — the one extension pip pins ride. The ubuntu-desktop
   // receipt: without this leg every pip pin failed against a
   // nonexistent infra/python/.venv (the BYO-era fallback).
-  const managed = join(workspace, ".venv", "bin", "python");
+  const managed = venvPython(join(workspace, ".venv"));
   if (existsSync(managed)) return managed;
-  return join(workspace, "infra", "python", ".venv", "bin", "python");
+  return venvPython(join(workspace, "infra", "python", ".venv"));
 }
 
 export function pipInstall(pkgs: string[], workspace: string): boolean {

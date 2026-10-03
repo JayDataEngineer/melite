@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { COMFY_PROJECT, FAILS, REPO, RUNTIME, check, die, fail, info, warn } from "./provision-shared.ts";
+import { COMFY_PROJECT, FAILS, REPO, RUNTIME, check, die, fail, info, venvPython, warn } from "./provision-shared.ts";
 import { boundModelFolders, enginePort, engineUrl } from "./provision-config.ts";
 import type { EndpointConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
@@ -133,7 +133,7 @@ export function vendorManager(): void {
   }
   env.UV_PROJECT_ENVIRONMENT = join(RUNTIME, ".venv");
   const r = spawnSync("uv",
-    ["pip", "install", "--python", join(RUNTIME, ".venv", "bin", "python"),
+    ["pip", "install", "--python", venvPython(join(RUNTIME, ".venv")),
       "-r", join(mgrDir, "requirements.txt")],
     { cwd: REPO, env, stdio: "inherit" });
   if (r.status !== 0) fail("manager requirements install failed");
@@ -180,14 +180,14 @@ export function cmdBootCmd(cfg: EndpointConfig): void {
   if (cfg.provision === "managed") {
     const port = enginePort(cfg);
     console.log("# managed launch (cwd resolves custom_nodes; weights via " +
-      "extra_model_paths; estate streams for input/output):");
-    console.log("cd " + RUNTIME + " && " + join(RUNTIME, ".venv", "bin",
-      "python") + " main.py \\\n" +
-      "  --listen 127.0.0.1 --port " + port + " \\\n" +
-      "  --extra-model-paths-config extra_model_paths.yaml \\\n" +
-      "  --input-directory " + join(REPO, "data", "input") + " \\\n" +
-      "  --output-directory " + join(REPO, "data", "temp") + " \\\n" +
-      "  --user-directory user");
+      "extra_model_paths; estate streams for input/output; one line — " +
+      "paste into any shell):");
+    console.log("cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
+      " main.py --listen 127.0.0.1 --port " + port +
+      " --extra-model-paths-config extra_model_paths.yaml" +
+      " --input-directory " + join(REPO, "data", "input") +
+      " --output-directory " + join(REPO, "data", "temp") +
+      " --user-directory user");
   } else {
     const boot = (cfg.boot_cmd ?? "").trim();
     if (!boot) {

@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { REPO, die, info } from "./provision-shared.ts";
+import { REPO, die, info, venvPython } from "./provision-shared.ts";
 
 // ── anny-commercial runtime ──────────────────────────────────────
 // dev_docs/design/commercial-estimator-chain.md — SAM 3D Body → MHR →
@@ -142,7 +142,7 @@ export function cmdCommercial(warmup: boolean): void {
   // Materialize data/runtime/anny-commercial (venv + checkouts +
   // worker). Idempotent: a healthy runtime is left alone.
   const root = join(REPO, "data", "runtime", "anny-commercial");
-  const venvPy = join(root, ".venv", "bin", "python");
+  const venvPy = venvPython(join(root, ".venv"));
   const marker = join(root, ".provisioned");
   const expected = [venvPy, join(root, "commercial_chain.py"),
     join(root, "SOMA-X", "tools", "mhr2soma.py"),

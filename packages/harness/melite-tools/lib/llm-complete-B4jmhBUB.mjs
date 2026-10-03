@@ -946,7 +946,7 @@ function catalogSection(defs, mcpServers = []) {
 	const { cards, capabilities } = cardSections(defs);
 	if (mcpServers.length > 0) cards["mcp"] = {
 		id: "mcp",
-		label: "MCP",
+		label: "MCP (experimental)",
 		description: "Spawn a standalone DSH subagent provisioned with the chosen MCP servers’ tools — stack MCP tiles to grant servers, hand it artifacts through Inputs, the Task is its brief.",
 		genre: "3d",
 		families: [],
@@ -975,7 +975,7 @@ async function modelCatalogArm(mcpServers = []) {
 function formsWithEngines(cardRows, mcpServers) {
 	const out = { ...cardRows };
 	if (mcpServers.length > 0) out["mcp"] = {
-		label: "MCP",
+		label: "MCP (experimental)",
 		genre: "3d",
 		order: 23,
 		plugin: "mcp",

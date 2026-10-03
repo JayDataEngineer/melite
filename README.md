@@ -44,15 +44,17 @@ under `${DSH_HOME:-$HOME/.dsh}/profiles/`. It writes machine-local profile
 state; the source of truth remains this repository.
 
 Those two commands do **not** give you a runnable estate. Weights and the
-engine are separate, deliberate downloads on a fresh machine:
+engine are separate, deliberate downloads on a fresh machine. The
+provisioning CLI is plain Node — the same commands on Windows, macOS, and
+Linux:
 
 ```sh
-./setup.sh sync        # ComfyUI core + Manager checkout (managed instance)
-./setup.sh extensions  # declared extension packs (Layer C installs first)
-./setup.sh models      # declared weights — tens of GB, sha-pinned rows
+pnpm run provision -- sync        # ComfyUI core + Manager checkout (managed instance)
+pnpm run provision -- extensions  # declared extension packs (Layer C installs first)
+pnpm run provision -- models      # declared weights — tens of GB, sha-pinned rows
 ```
 
-`setup.sh models` queues every declared provision (family provisions rows
+`provision models` queues every declared provision (family provisions rows
 and variant-cell artifacts) through ComfyUI-Manager; `--dry-run` lists the
 plan without downloading. Model files keep their own upstream licenses; this
 repository's license covers the code.
@@ -60,12 +62,23 @@ repository's license covers the code.
 Check the configured ComfyUI endpoint and declarations:
 
 ```sh
-./setup.sh verify
+pnpm run provision -- verify
+```
+
+If you cloned or moved the checkout, repin the profile paths once:
+
+```sh
+pnpm run profile:regen
 ```
 
 `inference.config.json` is the estate default configuration. The engine reads
 its live endpoint from `COMFYUI_URL` or the ComfyUI endpoint file; the current
 repository default is `http://127.0.0.1:8188`.
+
+From inside a DSH session, provisioning rides the extension's own tools:
+loading a card reports missing weights and packs in the load payload, and
+`comfy_manage` installs them (`install_extension`, `provision_model`). No
+shell step is part of the product.
 
 Boot the studio:
 

@@ -7,7 +7,8 @@ description: Gameplay SFX wave through the declared Moss SFX card and shared ben
 
 ## Provisioning
 
-Use `./setup.sh verify` and `./setup.sh extensions` for declared resources.
+Use `pnpm run provision -- verify` and `pnpm run provision -- extensions`
+for declared resources.
 The current management/provisioning contract is documented in
 `dev_docs/tools/comfy-manage.md`; do not invoke a separate downloader or assume a
 registry tool from this skill.

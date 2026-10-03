@@ -48,7 +48,9 @@
     "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts",
     "test:web:browser": "pnpm --filter @melite-plugin/dsh-card-view exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
-    "lint": "node tools/arch-lint.ts"
+    "lint": "node tools/arch-lint.ts",
+    "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
+    "profile:regen": "node scripts/regen-profile-paths.mjs"
   },
   "license": "AGPL-3.0-or-later"
 }

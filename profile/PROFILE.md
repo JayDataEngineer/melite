@@ -48,5 +48,5 @@ dependency. To add it on a machine that has it:
 ```
 
 and append `"dsh-glb-viewer"` to the plugin list. Profile yml absolute
-paths: run `scripts/regen-profile-paths.sh` after cloning or moving
+paths: run `scripts/regen-profile-paths.mjs` after cloning or moving
 the checkout.

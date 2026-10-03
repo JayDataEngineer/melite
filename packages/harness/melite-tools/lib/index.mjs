@@ -1,4 +1,4 @@
-import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-1WCmOnEC.mjs";
+import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-B4jmhBUB.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
@@ -1783,7 +1783,7 @@ function meliteFlow(request) {
 * this tool is its AI door (the manage seat, POST /v1/manage on
 * browser mounts). The manual door is
 * `provision manage <action>` (packages/engines/comfyui-cordis/scripts/provision.ts,
-* via ./setup.sh manage …).
+* via `pnpm run provision -- manage <action> …`).
 *
 * INFRA UPKEEP, NOT EXECUTION (INFERENCE LAW): no action runs
 * inference. Lifecycle actions (restart/stop/switch_version/update)

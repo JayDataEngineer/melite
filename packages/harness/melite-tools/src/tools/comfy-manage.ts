@@ -11,7 +11,7 @@
  * this tool is its AI door (the manage seat, POST /v1/manage on
  * browser mounts). The manual door is
  * `provision manage <action>` (packages/engines/comfyui-cordis/scripts/provision.ts,
- * via ./setup.sh manage …).
+ * via `pnpm run provision -- manage <action> …`).
  *
  * INFRA UPKEEP, NOT EXECUTION (INFERENCE LAW): no action runs
  * inference. Lifecycle actions (restart/stop/switch_version/update)

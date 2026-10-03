@@ -1,5 +1,5 @@
 # NOTE: absolute paths below are machine-pinned. After a fresh clone run
-# scripts/regen-profile-paths.sh to repin them to your checkout.
+# scripts/regen-profile-paths.mjs to repin them to your checkout.
 # profile-melite-test/cordis.base.yml — THE DEV LANE COMPOSITION (hand-maintained).
 # Migrated to the 0.2.0-rc.1 train 2026-09-28 (operator: "dev rides the
 # latest RC, not old cruft"): the 0.1.7-rc.2 pnpm overrides are GONE; this

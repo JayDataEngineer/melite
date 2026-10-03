@@ -15,6 +15,19 @@ export const ROOT_CONFIG: string = join(REPO, "inference.config.json");
 export const RUNTIME: string = join(REPO, "data", "runtime", "comfyui");
 export const COMFY_PROJECT: string = join(REPO, "infra", "comfyui");
 
+/** Python executable inside a uv venv: `Scripts/python.exe` on
+ * Windows, `bin/python` everywhere else. Every venv spawn and every
+ * printed launch command resolves through this — the provisioning
+ * CLI runs on Windows, macOS, and Linux unchanged (operator law,
+ * 2026-10-12: the product is pnpm + ComfyUI, no POSIX-only paths).
+ * @param venvRoot absolute path to the venv directory
+ * @returns absolute path to the venv's python executable */
+export function venvPython(venvRoot: string): string {
+  return process.platform === "win32"
+    ? join(venvRoot, "Scripts", "python.exe")
+    : join(venvRoot, "bin", "python");
+}
+
 export let DRY = false;
 export const FAILS: string[] = [];
 

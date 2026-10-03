@@ -38,9 +38,9 @@
 //   extensions | models | all [--dry-run]
 //   dsh | manage <action> [key=value ...] | commercial [--no-warmup]
 //
-// Usage:
+// Usage (any OS — Windows, macOS, Linux; pnpm + ComfyUI, no wrappers):
+//   pnpm run provision -- <command>
 //   node --experimental-strip-types packages/engines/comfyui-cordis/scripts/provision.ts <command>
-//   ./setup.sh <command>   (the thin POSIX wrapper — same call)
 // Erasable-syntax TS only: no enums, no namespaces.
 
 import { DEFAULT_CONFIG, info, setDry } from "./provision-shared.ts";
@@ -74,7 +74,11 @@ function usage(): void {
 }
 
 async function main(): Promise<number> {
-  const argv = process.argv.slice(2);
+  // `pnpm run provision -- <cmd>` forwards the separator literally on
+  // some pnpm versions; drop it so both spellings parse identically.
+  const raw = process.argv.slice(2);
+  if (raw[0] === "--") raw.shift();
+  const argv = raw;
   const cmd = argv[0];
   if (!cmd || cmd === "--help" || cmd === "-h") {
     usage();
