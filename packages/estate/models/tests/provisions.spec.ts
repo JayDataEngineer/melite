@@ -407,7 +407,10 @@ describe("provisionsForFamily (the live table)", () => {
     }
   });
   test("a provision-less family reads absent ≡ empty", async () => {
-    assert.deepEqual(await provisionsForFamily("anima"), []);
+    // 2026-10-12 ghost-debt: anima and seedvr2_ema now provision
+    // their lane weights; florence2 still declares none (the
+    // pack-supplied weights ride the vendored pack's own contract)
+    assert.deepEqual(await provisionsForFamily("florence2"), []);
   });
   test("kimodo carries the skin row", async () => {
     const rows = await provisionsForFamily("kimodo");

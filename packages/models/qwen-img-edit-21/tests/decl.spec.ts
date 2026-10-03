@@ -51,7 +51,9 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
 
   it("provisions the shared weights: encoder + vae from the one 2.1 repo", () => {
     const provs = DECL.provisions ?? [];
-    assert.equal(provs.length, 2);
+    // 2026-10-12 ghost-debt: 2 -> 3, the bf16 lane's TE joined the
+    // table (the int8 default + the bf16 tier both downloadable)
+    assert.equal(provs.length, 3);
     for (const p of provs) {
       assert.ok(p.url.startsWith("https://huggingface.co/Comfy-Org/Qwen-Image-2.1/"));
       assert.match(p.sha256 ?? "", /^[0-9a-f]{64}$/);

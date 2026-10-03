@@ -197,11 +197,11 @@ export const DECL: ModelDecl = {
       "size_bytes": 948461364
     },
     {
-      "name": "dino_v3_L_naf_fp32.safetensors",
-      "url": "https://huggingface.co/Comfy-Org/Pixal3D/resolve/main/clip_vision/dino_v3_L_naf_fp32.safetensors",
+      "name": "dino_v3_vit_l.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/TRELLIS.2/resolve/main/clip_vision/dino_v3_vit_l.safetensors",
       "folder": "clip_vision",
-      "sha256": "4ad2ec4e0879a5b5b04cd97325cc37da954a7b6edca5170b86510f17f2b2290f",
-      "size_bytes": 1215214176
+      "sha256": "5cb785e458de7c460579082418af81f5c62380c181599344bdc60898c63468ee",
+      "size_bytes": 1212559776
     },
     {
       "name": "birefnet.safetensors",
@@ -213,7 +213,7 @@ export const DECL: ModelDecl = {
   ],
   "lane_inputs": {
     "background_removal": "birefnet.safetensors",
-    "clip_vision": "dino_v3_L_naf_fp32.safetensors",
+    "clip_vision": "dino_v3_vit_l.safetensors",
     "texture_vae": "trellis_2_texture_vae_bf16.safetensors",
     "unet": "trellis_2_int8_convrot.safetensors",
     "vae": "trellis_2_shape_vae_bf16.safetensors"

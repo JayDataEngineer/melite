@@ -88,6 +88,31 @@ export const DECL: ModelDecl = {
     "unet": "minimax_music3_dit_int8_convrot.safetensors",
     "vae": "minimax_music3_dav.safetensors"
   },
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the lane's
+  // three weights, provisioned from Comfy-Org's official Music-3 repo.
+  "provisions": [
+    {
+      "name": "minimax_music3_dit_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-Music-3/resolve/main/diffusion_models/minimax_music3_dit_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "d6b959633e69899f99f3a92d6741c0fe79f26958a30811e50e372ef978b24d5f",
+      "size_bytes": 2502161682
+    },
+    {
+      "name": "minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-Music-3/resolve/main/text_encoders/minimax_music3_text_encoder_pruned_int8_convrot.safetensors",
+      "folder": "text_encoders",
+      "sha256": "010b7416d2336a08c711bc22ee65849c9623069ddb7d89bec011a75699e52014",
+      "size_bytes": 9196611886
+    },
+    {
+      "name": "minimax_music3_dav.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/MiniMax-Music-3/resolve/main/vae/minimax_music3_dav.safetensors",
+      "folder": "vae",
+      "sha256": "2a32155b769be01445fcc2a8663b910fc9e1751e18dc1c3ec528064512d9ef0c",
+      "size_bytes": 216696128
+    }
+  ],
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench

@@ -42,6 +42,19 @@ export const DECL: ModelDecl = {
       "cells": [],
     }
   ],
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the
+  // balanced preset's upscaler (h3_to_1080_balanced.yaml:15); the
+  // seedvr2 pair it shares with h3/quality rides the seedvr2_ema
+  // family's rows (one owner per weight).
+  "provisions": [
+    {
+      "name": "4xNomos2_hq_dat2.pth",
+      "url": "https://github.com/Phhofm/models/releases/download/4xNomos2_hq_dat2/4xNomos2_hq_dat2_150000.pth",
+      "folder": "upscale_models",
+      "sha256": "1f2be2b4786b5031776aed90e1818564f5576ab1e44da9355c7f3788ea25bdea",
+      "size_bytes": 140196334
+    }
+  ],
   "variant_groups": [
     {
       "id": "Variant",

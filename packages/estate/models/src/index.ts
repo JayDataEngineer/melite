@@ -223,8 +223,33 @@ export async function provisionsForFamily(
     );
   }
   // absent ≡ empty (the declaration law — readers ?? []; a family
-  // that declares no provisions serves no provision files).
-  return decl.provisions ?? [];
+  // that declares no provisions serves no provision files). The
+  // UNION LAW (2026-10-12 model audit, fix 1) adds the variant-cell
+  // artifacts: provisions and artifacts are parallel channels — the
+  // manage plane lists both, deduped by url+folder (variants share
+  // artifacts), basename with the C5 query/fragment strip.
+  const rows: ProvisionRow[] = [...(decl.provisions ?? [])];
+  const seen = new Set(rows.map((r) => r.url + "\u0000" + r.folder));
+  for (const variant of decl.variants ?? []) {
+    for (const cell of variant.cells) {
+      const artifact = cell.artifact;
+      if (artifact === undefined || artifact === null) continue;
+      const key = artifact.source_url + "\u0000" + artifact.dest_sub;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      let name = artifact.source_url.split("/").pop() ?? "";
+      const cut = Math.max(name.indexOf("?"), name.indexOf("#"));
+      if (cut >= 0) name = name.slice(0, cut);
+      rows.push({
+        name,
+        url: artifact.source_url,
+        folder: artifact.dest_sub,
+        sha256: artifact.sha256,
+        size_bytes: artifact.size_bytes,
+      });
+    }
+  }
+  return rows;
 }
 
 /** sha256 hex of one file (the DECL sha gates every serve).

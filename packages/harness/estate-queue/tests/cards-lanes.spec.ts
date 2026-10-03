@@ -147,10 +147,12 @@ describe("lanePresenceRefusal (the gate)", () => {
   });
   it("a missing lane file without a provision row omits the hint", () => {
     arm(null);
-    // music3's text_encoder/minimax file carries no provisions row
-    // for the name — the refusal's hint arm stays empty
+    // 2026-10-12 ghost-debt: music3 now provisions its lane weights,
+    // so the hint arm fires there; transfer_rig still declares none
+    // (its skin npz rides the pack's own contract) — the hint stays
+    // empty for a family with no provisions row
     try {
-      lanePresenceRefusal("music3");
+      lanePresenceRefusal("transfer_rig");
       return; // family lane rows all present: nothing probed
     } catch (e) {
       assert.ok(!/fetch it:/.test((e as Error).message), "no provision hint without a provisions row");

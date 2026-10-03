@@ -309,7 +309,35 @@ export async function provisionsByFamily(
       continue
     }
     /* v8 ignore stop */
-    out[id] = { engine: decl.engine ?? '', provisions: decl.provisions ?? [] }
+    /* UNION LAW (2026-10-12 model audit, fix 1): a family's download
+     * truth is provisions PLUS every variant-cell artifact — the
+     * qwen families split TE/VAE (provisions) from the UNET (cell
+     * artifact), and either channel alone ghosts the other half.
+     * Deduped by url+dest_sub (variants share artifacts). */
+    const rows: ProvisionRow[] = [...(decl.provisions ?? [])]
+    const seen = new Set(rows.map((r) => r.url + '\u0000' + r.folder))
+    for (const variant of decl.variants ?? []) {
+      for (const cell of variant.cells) {
+        const artifact = cell.artifact
+        if (artifact === undefined || artifact === null) continue
+        const key = artifact.source_url + '\u0000' + artifact.dest_sub
+        if (seen.has(key)) continue
+        seen.add(key)
+        // basename with the query/fragment stripped — the boundary
+        // audit's C5 law (provisioning.ts artifactFileName's twin)
+        let name = artifact.source_url.split('/').pop() ?? ''
+        const cut = Math.max(name.indexOf('?'), name.indexOf('#'))
+        if (cut >= 0) name = name.slice(0, cut)
+        rows.push({
+          name,
+          url: artifact.source_url,
+          folder: artifact.dest_sub,
+          sha256: artifact.sha256,
+          size_bytes: artifact.size_bytes,
+        })
+      }
+    }
+    out[id] = { engine: decl.engine ?? '', provisions: rows }
   }
   for (const [id, def] of defs) {
     if (def.provisions !== undefined && def.provisions.length > 0) {

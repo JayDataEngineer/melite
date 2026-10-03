@@ -109,7 +109,7 @@
   "CLIPVisionLoader.0": {
     "class_type": "CLIPVisionLoader",
     "inputs": {
-      "clip_name": "dino_v3_L_naf_fp32.safetensors"
+      "clip_name": "dino_v3_vit_l.safetensors"
     }
   },
   "Trellis2Conditioning.0": {

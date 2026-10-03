@@ -118,6 +118,31 @@ export const DECL: ModelDecl = {
     "unet": "z_image_turbo_int8_convrot.safetensors",
     "vae": "ae.safetensors"
   },
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the lane's
+  // three weights are provisioned from Comfy-Org's split-files repo.
+  "provisions": [
+    {
+      "name": "z_image_turbo_int8_convrot.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_int8_convrot.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "be517ebd47c912a5626a588e1aeea43e6be4a43c0cdcd2b48a2a780d9f358635",
+      "size_bytes": 6201001296
+    },
+    {
+      "name": "qwen_3_4b.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors",
+      "folder": "text_encoders",
+      "sha256": "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a",
+      "size_bytes": 8044982048
+    },
+    {
+      "name": "ae.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors",
+      "folder": "vae",
+      "sha256": "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38",
+      "size_bytes": 335304388
+    }
+  ],
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench

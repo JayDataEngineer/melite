@@ -91,6 +91,32 @@ export const DECL: ModelDecl = {
     "unet": "anima-base-v1.0.safetensors",
     "vae": "qwen_image_vae.safetensors"
   },
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): base from
+  // circlestone-labs' official split-files repo; the TE is Qwen3-0.6B
+  // Base single-file; the VAE mirrors the qwen families' row.
+  "provisions": [
+    {
+      "name": "anima-base-v1.0.safetensors",
+      "url": "https://huggingface.co/circlestone-labs/Anima/resolve/main/split_files/diffusion_models/anima-base-v1.0.safetensors",
+      "folder": "diffusion_models",
+      "sha256": "bd43b7cffe1ed1153d9c41e7beb2f18cb1273eafbaa3af3edd6a173dc90a006e",
+      "size_bytes": 4182218328
+    },
+    {
+      "name": "qwen_3_06b_base.safetensors",
+      "url": "https://huggingface.co/Qwen/Qwen3-0.6B-Base/resolve/main/model.safetensors",
+      "folder": "text_encoders",
+      "sha256": "cd2a512003e2f9f3cd3c32a9c3573f820bb28c940f73c57b1ddaa983d9223eba",
+      "size_bytes": 1192135096
+    },
+    {
+      "name": "qwen_image_vae.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+      "folder": "vae",
+      "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+      "size_bytes": 253806246
+    }
+  ],
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench

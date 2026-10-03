@@ -122,43 +122,44 @@ function familyPlan(
   ref: Extract<ResourceRef, { kind: "model" }>,
   decl: ModelDecl,
 ): ProvisionPlan {
-  const rows = decl.provisions ?? [];
-  if (rows.length > 0) {
-    return {
-      ref,
-      items: rows.map((row) => modelPlanItem(ref, row, "direct")),
-    };
+  // UNION LAW (2026-10-12 model audit, fix 1): provisions AND the
+  // variant-cell artifact both download — the qwen families declare
+  // TE/VAE provisions plus the UNET cell artifact, and the old
+  // either-or arm never downloaded the artifact half.
+  const items: ProvisionPlanItem[] = [];
+  for (const row of decl.provisions ?? []) {
+    items.push(modelPlanItem(ref, row, "direct"));
   }
   const coordinates = routeCoordinates(ref, decl);
   const resolved = modelsService().resolve(ref.id, coordinates.variant, coordinates.quant);
   const artifact = resolved.cell?.artifact;
-  if (artifact === undefined || artifact === null) {
-    throw new Error(`model "${ref.id}" declares no downloadable provisions`);
-  }
-  const row: ProvisionRow = {
-    // THE FILENAME IS THE PATHNAME'S BASENAME (the boundary audit's
-    // C5): `split("/").pop()` kept a query string and a fragment
-    // ("f.safetensors?download=1"), so the manager downloaded under a
-    // clean name while this row inspected a name with the query
-    // glued on, and the post-download check reported model-not-landed
-    // for a model that was on disk. A trailing-slash URL yielded ""
-    // and refused later as an invalid destination.
-    name: artifactFileName(artifact.source_url),
-    url: artifact.source_url,
-    folder: artifact.dest_sub,
-    sha256: artifact.sha256,
-    size_bytes: artifact.size_bytes,
-  };
-  return {
-    ref,
-    items: [modelPlanItem(
+  if (artifact !== undefined && artifact !== null) {
+    const row: ProvisionRow = {
+      // THE FILENAME IS THE PATHNAME'S BASENAME (the boundary audit's
+      // C5): `split("/").pop()` kept a query string and a fragment
+      // ("f.safetensors?download=1"), so the manager downloaded under a
+      // clean name while this row inspected a name with the query
+      // glued on, and the post-download check reported model-not-landed
+      // for a model that was on disk. A trailing-slash URL yielded ""
+      // and refused later as an invalid destination.
+      name: artifactFileName(artifact.source_url),
+      url: artifact.source_url,
+      folder: artifact.dest_sub,
+      sha256: artifact.sha256,
+      size_bytes: artifact.size_bytes,
+    };
+    items.push(modelPlanItem(
       ref,
       row,
       "direct",
       coordinates.variant as string,
       coordinates.quant as string,
-    )],
-  };
+    ));
+  }
+  if (items.length === 0) {
+    throw new Error(`model "${ref.id}" declares no downloadable provisions`);
+  }
+  return { ref, items };
 }
 
 function modelPlanItem(

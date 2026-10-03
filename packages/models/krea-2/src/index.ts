@@ -201,6 +201,24 @@ export const DECL: ModelDecl = {
     "unet": "krea2_turbo_int8_convrot.safetensors",
     "vae": "qwen_image_vae.safetensors"
   },
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the TE and
+  // VAE the t2i lane loads (the UNETs ride the variant cells above).
+  "provisions": [
+    {
+      "name": "qwen3vl_4b_fp8_scaled.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/text_encoders/qwen3vl_4b_fp8_scaled.safetensors",
+      "folder": "text_encoders",
+      "sha256": "54bd5144df0bbc25dd6ccadfcb826b521445a1b06ae5a42570bdd2974ca87094",
+      "size_bytes": 5242467968
+    },
+    {
+      "name": "qwen_image_vae.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+      "folder": "vae",
+      "sha256": "a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f",
+      "size_bytes": 253806246
+    }
+  ],
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench

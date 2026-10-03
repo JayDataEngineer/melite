@@ -526,15 +526,19 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // carries a non-empty name, an http(s) url, a NON-ABSOLUTE
     // folder under the models root, a 64-hex sha256 when present,
     // and a non-negative size when present. The declaring split is
-    // EXACT both ways: 9 families declare provisions, and the served
+    // EXACT both ways: 15 families declare provisions, and the served
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
-    const PROVISION_DECLARERS = ["anny", "h3", "kimodo", "pixal3d", "qwen-img-21",
-      "qwen-img-edit-21", "qwen-img-edit-2511", "trellis2-native", "yue2"];
-    // the rows those nine declare, exactly (D-M12: a floor let a
-    // family's whole table go unjudged)
-    const PROVISION_ROW_COUNT = 42;
+    const PROVISION_DECLARERS = ["anima", "anny", "h3", "kimodo", "krea-2",
+      "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
+      "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "trellis2-native",
+      "yue2", "z-image"];
+    // the rows those fifteen declare, exactly (D-M12: a floor let a
+    // family's whole table go unjudged) — 2026-10-12, the ghost-debt
+    // landing: 42 -> 59 (17 new rows across 8 families; the dino
+    // swap is net-zero)
+    const PROVISION_ROW_COUNT = 59;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -557,7 +561,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       }
     }
     assert.deepEqual(declarers, PROVISION_DECLARERS,
-      `the provision declarers are the named 9 (saw ${declarers.join(", ")}) — a family starting or stopping its own provisioning is a deliberate edit`);
+      `the provision declarers are the named 15 (saw ${declarers.join(", ")}) — a family starting or stopping its own provisioning is a deliberate edit`);
     // D-M12 (the wall audit, 2026-09-28): a floor let a whole
     // family's rows go unjudged. The judged row count is EXACT.
     assert.equal(judged, PROVISION_ROW_COUNT,
@@ -1065,5 +1069,64 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
     assert.equal(pairs, 625, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
+  });
+});
+
+// ── THE GHOST WALL (2026-10-12 model audit, fix 3: the mask card's
+// PROVISIONS↔WEIGHTS AGREEMENT promoted to every family) ──────────
+// Every weight a family's lane declares loading must be downloaded
+// by SOME declaration channel (family provisions, a variant cell
+// artifact, or the boarded card's provisions). A lane that names a
+// file nothing downloads is a ghost — it runs on this machine only
+// because the operator hand-placed bytes, and refuses on every
+// fresh provision. The audit found 13 such files; this wall keeps
+// the count at zero.
+describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
+  const WEIGHT_RE = /\.(safetensors|pt|pth|ckpt|gguf|onnx|sft|bin)$/;
+
+  /** String leaves of a lane_inputs dict that name weight files. */
+  function weightNames(value: unknown, into: string[] = []): string[] {
+    if (typeof value === "string") {
+      if (WEIGHT_RE.test(value)) into.push(value);
+    } else if (Array.isArray(value)) {
+      for (const v of value) weightNames(v, into);
+    } else if (value !== null && typeof value === "object") {
+      for (const v of Object.values(value as Record<string, unknown>)) weightNames(v, into);
+    }
+    return into;
+  }
+
+  it("every lane weight is declared by some download channel", async () => {
+    const { loadCardDefs, provisionsByFamily } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const byFamily = await provisionsByFamily(await loadCardDefs());
+    const offenders: string[] = [];
+    for (const id of modelIds()) {
+      const view = getModel(id);
+      const declared = new Set((byFamily[id]?.provisions ?? []).map((r) => r.name));
+      // variant-cell artifacts count as declarations (basename with
+      // the C5 query/fragment strip — mirrors cardDefs' union walk)
+      for (const variant of view.variants ?? []) {
+        for (const cell of variant.cells) {
+          const artifact = cell.artifact;
+          if (artifact === undefined || artifact === null) continue;
+          let name = artifact.source_url.split("/").pop() ?? "";
+          const cut = Math.max(name.indexOf("?"), name.indexOf("#"));
+          if (cut >= 0) name = name.slice(0, cut);
+          declared.add(name);
+        }
+      }
+      const lanes: Array<string> = [
+        ...weightNames(view.lane_inputs ?? {}),
+        ...(view.variants ?? []).flatMap((v) => weightNames(v.lane_inputs ?? {})),
+      ];
+      for (const weight of lanes) {
+        if (!declared.has(weight)) {
+          offenders.push(`${id}: lane loads ${weight} — no provisions/artifact/card row downloads it`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, [], `ghost weights (the audit's fix 3; hand-placed bytes are not a provision):\n${offenders.join("\n")}`);
   });
 });

@@ -72,6 +72,13 @@ export const DECL: ModelDecl = {
       "folder": "anny",
       "sha256": "989eed67a59a4397ac61693e968bcea34504735d2e298eaa1885df6048a95b96",
       "size_bytes": 494404
+    },
+    {
+      "name": "sam_vit_b_01ec64.pth",
+      "url": "https://dl.fbaipublicfiles.com/segment_anything/sam_vit_b_01ec64.pth",
+      "folder": "sams",
+      "sha256": "ec2df62732614e57411cdcf32a23ffdf28910380d03139ee0f4fcbe91eb8c912",
+      "size_bytes": 375042383
     }
   ],
   "lane_inputs": {

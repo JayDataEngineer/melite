@@ -427,8 +427,9 @@ export const DECL: ModelDecl = {
     },
     {
       "name": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
-      "url": "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_bf16.safetensors",
+      "url": "https://huggingface.co/LBH-123-AI/Minimax_h3_latent_Upscaler/resolve/main/minimax_h3_latent_upscaler_3d_conv_v1/minimax_h3_latent_upscaler_3d_conv_v1_bf16.safetensors",
       "folder": "diffusion_models",
+      "size_bytes": 690592992,
       "sha256": "4f57821f5837f32f7142b67d815606dbd7550f194e5c769f7d6c3f83b146a5e6"
     },
     {

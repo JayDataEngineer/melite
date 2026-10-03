@@ -160,6 +160,13 @@ export const DECL: ModelDecl = {
   // the engine's downloader dedups by content).
   "provisions": [
     {
+      "name": "qwen3vl_8b_bf16.safetensors",
+      "url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_bf16.safetensors",
+      "folder": "text_encoders",
+      "sha256": "68bdc82bc1b66851162ae656225e7e2068166b603db19bd5d5a3b90eb12669a9",
+      "size_bytes": 17534334616
+    },
+    {
       "name": "qwen3vl_8b_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors",
       "folder": "text_encoders",

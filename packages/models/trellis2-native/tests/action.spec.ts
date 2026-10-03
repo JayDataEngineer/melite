@@ -136,7 +136,9 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
       () => instantiateAction(mesh, { ...PARAMS }, broken, new GraphBuilder({}), "probe-door"),
       /^Error: trellis2-native mesh: lane_inputs\.texture_vae = "" — a non-empty string is required$/
     );
-    assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_L_naf_fp32.safetensors", "the DECL's own row parses clean");  });
+    // 2026-10-12 ghost-debt: naf_fp32 -> vit_l — the lane agrees with
+    // the graph it composes (trellis_t1.json loads dino_v3_vit_l)
+assert.equal(parseMeshFacts(FACTS.lane_inputs as never).clip_vision, "dino_v3_vit_l.safetensors", "the DECL's own row parses clean");  });
 
   it("the golden holds with the bg key absent (the admission's own coercion — auto default)", () => {
 

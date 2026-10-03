@@ -25,9 +25,10 @@
 //     IS turbo/int8). Unknown variant id resolves to no-variant,
 //     never a throw. Unknown quant on a found variant refuses
 //     the 500-class value error ("\"q\" is not a valid Quant"),
-//     NOT a catalog-miss 404. Cell None or artifact None ->
-//     "model \"X\" has no artifact at (VAR, QUANT)" with null for
-//     the empty coordinate.
+//     NOT a catalog-miss 404. No provisions row AND no cell
+//     artifact -> "model \"X\" declares no downloadable provisions
+//     or artifact at (VAR, QUANT)" with null for the empty
+//     coordinate (the union miss, 2026-10-12).
 //   - artifact row: name = source_url basename, url = source_url,
 //     relative_path = "models/<dest_sub stripped>" or "models".
 //   - presence: join(runtime, folder, name) where folder =
@@ -227,20 +228,19 @@ export function resolveArtifactRows(
   if (model === undefined) {
     throw new CatalogMiss("model " + JSON.stringify(mid) + " not found in catalog");
   }
-  if (model.provisions.length > 0) {
-    const rows: CatalogArtifactRow[] = [];
-    for (const p of model.provisions) {
-      const name: string = p.name.trim();
-      const url: string = p.url.trim();
-      if (name === "" || url === "") continue;
-      rows.push({ name, url, relative_path: provisionDest(p.folder) });
-    }
-    if (rows.length === 0) {
-      throw new CatalogMiss(
-        "model " + JSON.stringify(mid) + " declares no downloadable provisions",
-      );
-    }
-    return rows;
+  // UNION LAW (2026-10-12 model audit, fix 1): provisions and the
+  // variant-cell artifact are PARALLEL download channels, never
+  // either-or shadows. The qwen families declare both — provisions
+  // (TE/VAE) plus the cell artifact (the primary UNET) — and the old
+  // `if (provisions.length > 0) return` arm left every artifact row
+  // unreachable, while loadPlane's every()-presence check read
+  // TE+VAE alone as the family being fully present.
+  const rows: CatalogArtifactRow[] = [];
+  for (const p of model.provisions) {
+    const name: string = p.name.trim();
+    const url: string = p.url.trim();
+    if (name === "" || url === "") continue;
+    rows.push({ name, url, relative_path: provisionDest(p.folder) });
   }
   const vrow: CatalogVariant | undefined =
     variant !== ""
@@ -263,32 +263,33 @@ export function resolveArtifactRows(
       cell = vrow.cells[0] as CatalogCell | undefined;
     }
   }
-  if (cell === undefined || cell.artifact === undefined) {
+  if (cell !== undefined && cell.artifact !== undefined) {
+    const sourceUrl: string = cell.artifact.source_url;
+    /* v8 ignore next -- split() always yields >= 1 part, so pop() is
+     * never undefined here; the ?? is the type-system's toll
+     * (noUncheckedIndexedAccess), not a runtime arm. */
+    const name: string = sourceUrl.split("/").pop() ?? "";
+    const destSub: string = stripSlashes(cell.artifact.dest_sub);
+    rows.push({
+      name,
+      url: sourceUrl,
+      relative_path: destSub !== "" ? "models/" + destSub : "models",
+    });
+  }
+  if (rows.length === 0) {
     const vText: string = variant !== "" ? variant : "None";
     const qText: string = quant !== "" ? quant : "None";
     throw new CatalogMiss(
       "model " +
         JSON.stringify(mid) +
-        " has no artifact at (" +
+        " declares no downloadable provisions or artifact at (" +
         vText +
         ", " +
         qText +
         ")",
     );
   }
-  const sourceUrl: string = cell.artifact.source_url;
-  /* v8 ignore next -- split() always yields >= 1 part, so pop() is
-   * never undefined here; the ?? is the type-system's toll
-   * (noUncheckedIndexedAccess), not a runtime arm. */
-  const name: string = sourceUrl.split("/").pop() ?? "";
-  const destSub: string = stripSlashes(cell.artifact.dest_sub);
-  return [
-    {
-      name,
-      url: sourceUrl,
-      relative_path: destSub !== "" ? "models/" + destSub : "models",
-    },
-  ];
+  return rows;
 }
 
 /** The runtime models tree root (data/runtime/comfyui — the RUNTIME). */

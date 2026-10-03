@@ -106,7 +106,9 @@ describe("resolveCatalogArtifact (the legacy texts ARE the wire)", () => {
     // an unknown variant id resolves to no-variant (never a throw there)
     assert.throws(
       () => resolveCatalogArtifact(ds, "krea-2", "ghost", ""),
-      (e: unknown) => e instanceof CatalogMiss && /has no artifact at \(ghost, None\)/.test((e as Error).message),
+      // 2026-10-12 union: the miss names BOTH channels — provisions
+      // and the cell artifact — never the either-or artifact text
+      (e: unknown) => e instanceof CatalogMiss && /declares no downloadable provisions or artifact at \(ghost, None\)/.test((e as Error).message),
     );
   });
 
@@ -122,12 +124,12 @@ describe("resolveCatalogArtifact (the legacy texts ARE the wire)", () => {
     const ds = [decl({ variants: [variant("a", [cellQ("int8")]), variant("b", [cellQ("int8", { source_url: "https://h/b.safetensors", dest_sub: "" })])] })];
     assert.throws(
       () => resolveCatalogArtifact(ds, "krea-2", "a", "int8"),
-      /has no artifact at \(a, int8\)/,
+      /declares no downloadable provisions or artifact at \(a, int8\)/,
     );
     // the empty coordinate prints None
     assert.throws(
       () => resolveCatalogArtifact([decl({ variants: [variant("a", [cellQ("int8")])] })], "krea-2", "", "int8"),
-      /has no artifact at \(None, int8\)/,
+      /declares no downloadable provisions or artifact at \(None, int8\)/,
     );
     // a bare dest_sub is bare models
     assert.equal(resolveCatalogArtifact(ds, "krea-2", "b", "int8")[0]!.relative_path, "models");
@@ -136,7 +138,7 @@ describe("resolveCatalogArtifact (the legacy texts ARE the wire)", () => {
   it("resolveArtifactRows is the pure core (no cache, no I/O)", () => {
     const models = loadCatalogModels([decl({ variants: [variant("v", [])] })]);
     resetCatalogCache();
-    assert.throws(() => resolveArtifactRows(models, "krea-2"), /has no artifact at \(None, None\)/);
+    assert.throws(() => resolveArtifactRows(models, "krea-2"), /declares no downloadable provisions or artifact at \(None, None\)/);
     assert.throws(() => resolveArtifactRows([], "krea-2"), /not found in catalog/);
   });
 });

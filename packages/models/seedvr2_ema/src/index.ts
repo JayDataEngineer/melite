@@ -104,6 +104,25 @@ export const DECL: ModelDecl = {
     "unet": "seedvr2_ema_3b_fp16.safetensors",
     "vae": "ema_vae_fp16.safetensors"
   },
+  // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the fp16
+  // conversion pair from numz' comfy repack; SEEDVR2 folder maps via
+  // the endpoint's extra_model_folders (the pack registers the type).
+  "provisions": [
+    {
+      "name": "seedvr2_ema_3b_fp16.safetensors",
+      "url": "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_3b_fp16.safetensors",
+      "folder": "SEEDVR2",
+      "sha256": "2fd0e03a3dad24e07086750360727ca437de4ecd456f769856e960ae93e2b304",
+      "size_bytes": 6783018808
+    },
+    {
+      "name": "ema_vae_fp16.safetensors",
+      "url": "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors",
+      "folder": "SEEDVR2",
+      "sha256": "20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1",
+      "size_bytes": 501324814
+    }
+  ],
   // THE REQUIRED WORD, STATED (2026-10-10, the DECL audit's gap 4 —
   // the GAP-7 shape on the legacy lanes): the card's compose seat has
   // refused this field since the merge, imperatively, while the bench
