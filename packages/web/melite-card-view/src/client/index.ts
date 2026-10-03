@@ -267,7 +267,15 @@ export async function apply(ctx: ClientContext): Promise<void> {
       }
     })), 'melite-card-view: chat file mentions')
   } catch (error) {
-    console.error('[melite-card-view] chat file mentions registration failed:', error)
+    // ALREADY SEATED (the estate's loader law, 2026-09-28): this row
+    // can apply twice, and cordis's provide() throws the bare
+    // duplicate-service Error on the second construction. The seat
+    // exists at this plugin's own name, first apply won it — that
+    // rejection is success, not a failure, and stays off the error
+    // console (the e2e lane pins it clean).
+    const twin = /service "chatFileMentions" has been registered at </.test(String((error as { message?: unknown })?.message))
+    if (twin) console.info('[melite-card-view] chat file mentions: already seated — nothing to do')
+    else console.error('[melite-card-view] chat file mentions registration failed:', error)
   }
 
   // BUILT-IN STUDIO SURFACE (the ui-tool law: the host package ships

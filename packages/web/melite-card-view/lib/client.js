@@ -45139,7 +45139,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					} catch {}
 				})), "melite-card-view: chat file mentions");
 			} catch (error) {
-				console.error("[melite-card-view] chat file mentions registration failed:", error);
+				if (/service "chatFileMentions" has been registered at </.test(String(error?.message))) console.info("[melite-card-view] chat file mentions: already seated — nothing to do");
+				else console.error("[melite-card-view] chat file mentions registration failed:", error);
 			}
 			try {
 				ctx.effect(() => ctx.sidebarRightTabs.register({

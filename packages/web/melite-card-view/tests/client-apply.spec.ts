@@ -29,6 +29,7 @@ interface FakeCtx {
   };
   opened: string[];
   errors: string[][];
+  infos: string[][];
   remote: {
     $mount: () => Promise<() => void>;
     bench: { subscribe: () => AsyncIterable<Record<string, unknown>> };
@@ -40,6 +41,7 @@ interface FakeCtx {
    * for every namespace name (the mounts never landed). */
   absentNamespaces: boolean;
   failRegisterKeys: Set<string>;
+  failProvideDuplicate: boolean;
   uiSession?: unknown;
   sawSessionSubscribe?: boolean;
   failSpotlightEffect?: boolean;
@@ -51,6 +53,7 @@ function fakeCtx(): FakeCtx {
     regs: { toolviews: [], tabTypes: [], bodies: [], providers: [], turnFolds: [], provides: [], effects: [] },
     opened: [],
     errors: [],
+    infos: [],
     remote: {
       $mount: async () => async () => {},
       $stream: () => ({
@@ -71,13 +74,18 @@ function fakeCtx(): FakeCtx {
     failFiber: false,
     absentNamespaces: false,
     failRegisterKeys: new Set(),
+    failProvideDuplicate: false,
     ctx: {},
   };
   const origError = console.error;
+  const origInfo = console.info;
   console.error = (...args: unknown[]): void => {
     fake.errors.push(args.map(String));
   };
-  (fake as unknown as { restore: () => void }).restore = () => { console.error = origError; };
+  console.info = (...args: unknown[]): void => {
+    fake.infos.push(args.map(String));
+  };
+  (fake as unknown as { restore: () => void }).restore = () => { console.error = origError; console.info = origInfo; };
   const maybeThrow = (key: string): void => {
     if (fake.failRegisterKeys.has(key)) throw new Error(`conflict: ${key}`);
   };
@@ -158,6 +166,11 @@ function fakeCtx(): FakeCtx {
     },
     provide: (name: string, value: unknown): (() => void) => {
       maybeThrow("provide:" + name);
+      // cordis's bare duplicate-service Error, verbatim shape (the
+      // loader's documented double apply)
+      if (fake.failProvideDuplicate) {
+        throw new Error(`service "${name}" has been registered at <mf>`);
+      }
       fake.regs.provides.push({ name, value });
       return () => {};
     },
@@ -247,6 +260,18 @@ describe("apply() — the happy path registers both planes", () => {
       const face = row.def.inject!();
       expect(face.openMedia()).toBe(true);
       expect(fake.opened).toEqual(["tab:media"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("an already-seated mentions provide is success, not failure (the loader's double apply)", async () => {
+    const fake = fakeCtx();
+    fake.failProvideDuplicate = true;
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.errors).toEqual([]);
+      expect(fake.infos.join(" ")).toContain("already seated");
     } finally {
       restore(fake);
     }
