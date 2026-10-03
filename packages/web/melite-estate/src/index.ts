@@ -224,7 +224,7 @@ const rows: readonly Plugin[] = [
         : env.split(",").map((s) => s.trim()).filter((s) => s !== "")
       ).map((s) => s);
       if (engines.length === 0) {
-        console.log("[melite-estate] mcp row OFF (MELITE_MCP_ENGINES empty) — no engine named, nothing seated");
+        console.log("[melite-estate] mcp row OFF (no engine named — MELITE_MCP_ENGINES or config; the MCP card is optional/experimental)");
         return;
       }
       // LOUD seat decision (the craft row's law): a silent row
@@ -232,7 +232,13 @@ const rows: readonly Plugin[] = [
       console.log("[melite-estate] mcp row applying with config " + JSON.stringify({ engines }));
       mcpEngines(ctx, { engines });
     },
-    config: { engines: ["mcp:blender"] },
+    // OPTIONAL/EXPERIMENTAL (the operator's law, 2026-10-12 — "we
+    // set the mcp card to optional, so it can be experimental"):
+    // the default seats NOTHING. The MCP card folds into the picker
+    // only when an engine is explicitly named (MELITE_MCP_ENGINES
+    // or a config override) — the estate boots complete without
+    // it, and seating one is the opt-in experiment.
+    config: { engines: [] },
   } as unknown as Plugin,
   // The craft loop engine (async apply: the route resolution rides
   // listModels — the seat lands after the enumeration).

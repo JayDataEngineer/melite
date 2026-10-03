@@ -74,7 +74,9 @@ export function agentCardFormDoc(census: AgentFormCensus): Record<string, unknow
     variants: [],
     inputs: [],
     outputs: { default: "text" },
-    label: "MCP",
+    // EXPERIMENTAL (the operator's 2026-10-12 law: the MCP card is
+    // optional — the label says so on every face it serves)
+    label: "MCP (experimental)",
     description:
       "Spawn a standalone DSH subagent provisioned with the chosen MCP servers' tools: " +
       "stack MCP tiles to grant servers, Inputs to hand it artifacts, the Task is its brief — " +

@@ -488,7 +488,7 @@ describe('catalog route', () => {
     assert.equal(forms.status, 200)
     const rows = forms.body as Record<string, Record<string, unknown>>
     assert.ok(rows['mcp'] !== undefined, 'the ONE generic mcp row serves')
-    assert.equal(rows['mcp']!['label'], 'MCP')
+    assert.equal(rows['mcp']!['label'], 'MCP (experimental)')
     assert.equal(rows['mcp']!['sidebar_key'], '3d')
     assert.equal(rows['mcp']!['plugin'], 'mcp')
     assert.equal(rows['mcp']!['default_service'], 'mcp')
@@ -506,7 +506,7 @@ describe('catalog route', () => {
     assert.equal(generic.status, 200)
     const doc = generic.body as Record<string, unknown>
     assert.equal(doc['form'], 'mcp')
-    assert.equal(doc['label'], 'MCP')
+    assert.equal(doc['label'], 'MCP (experimental)')
     assert.equal(doc['engine'], 'agent')
     assert.deepEqual(doc['families'], [])
     const kinds = ((doc['features'] as { modifiers: Array<Record<string, unknown>> }).modifiers)
@@ -1172,7 +1172,7 @@ describe('/v1 prefix discovery arms', () => {
     const cards = (r.body as { cards: Record<string, Record<string, unknown>> }).cards
     assert.ok(cards['mcp'] !== undefined, 'the generic MCP card lands ONE cards row')
     const row = cards['mcp']!
-    assert.equal(row['label'], 'MCP')
+    assert.equal(row['label'], 'MCP (experimental)')
     assert.equal(row['genre'], '3d')
     assert.deepEqual(row['families'], [], 'no families — the add door resolves the bare key (the agent face)')
     assert.equal(cards['mcp:blender'], undefined, 'no per-server cards row (the servers live ON the card)')

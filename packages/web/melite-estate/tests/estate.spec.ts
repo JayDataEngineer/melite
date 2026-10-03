@@ -213,7 +213,8 @@ describe('dispatch — mount order is load order', () => {
       failOnStartupError: false,
     })
     const mcpRow = ctx.plugins.find((p) => p.name === 'melite-engine-mcp-row')
-     expect(mcpRow?.cfg).toEqual({ engines: ['mcp:blender'] })
+     // optional/experimental (2026-10-12): the default seats nothing
+     expect(mcpRow?.cfg).toEqual({ engines: [] })
   })
 
   it('blenderPath overrides the stdio command — the declared default carries it otherwise', async () => {
@@ -387,14 +388,13 @@ describe('Unity MCP row — intentionally not composed', () => {
 })
 
 describe('melite-engine-mcp-row — the gated seat read', () => {
-  it('announces its config LOUD and seats through the mcp lane', async () => {
+  it('the optional default seats NOTHING — the row announces OFF loudly (the operator law of 2026-10-12: the MCP card is experimental, opt-in)', async () => {
     const lines = silence()
     try {
       const { fn, cfg } = await rowApply('melite-engine-mcp-row')
-      const ctx = toolsCtx().ctx
-      fn(ctx, cfg)
-       expect(lines.join('\n')).toContain('[melite-estate] mcp row applying with config {"engines":["mcp:blender"]}')
-       expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:blender'] })
+      fn(toolsCtx().ctx, cfg)
+      expect(lines.join('\n')).toContain('mcp row OFF (no engine named')
+      expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
     } finally {
       vi.restoreAllMocks()
     }
@@ -412,7 +412,7 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
     try {
       const { fn, cfg } = await rowApply('melite-engine-mcp-row')
       fn(toolsCtx().ctx, cfg)
-      expect(lines.join('\n')).toContain('row OFF (MELITE_MCP_ENGINES empty)')
+      expect(lines.join('\n')).toContain('mcp row OFF (no engine named')
       expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
     } finally {
       delete process.env['MELITE_MCP_ENGINES']

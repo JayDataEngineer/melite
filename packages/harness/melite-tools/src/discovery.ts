@@ -1089,7 +1089,7 @@ export function catalogSection(
   if (mcpServers.length > 0) {
     cards['mcp'] = {
       id: 'mcp',
-      label: 'MCP',
+      label: 'MCP (experimental)',
       description:
         'Spawn a standalone DSH subagent provisioned with the chosen MCP servers\u2019 tools \u2014 ' +
         'stack MCP tiles to grant servers, hand it artifacts through Inputs, the Task is its brief.',
@@ -1136,7 +1136,7 @@ export function formsWithEngines(
   // service row of its own.
   if (mcpServers.length > 0) {
     out['mcp'] = {
-      label: 'MCP',
+      label: 'MCP (experimental)',
       genre: '3d',
       order: 23,
       plugin: 'mcp',
