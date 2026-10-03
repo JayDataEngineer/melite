@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/audio",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "main": "./viewers/index.ts",
   "types": "./viewers/index.ts",
