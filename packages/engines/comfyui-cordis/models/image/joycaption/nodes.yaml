@@ -5,7 +5,7 @@
 extensions:
   - name: joycaption_comfyui
     url: https://github.com/fpgaminer/joycaption_comfyui.git
-    ref: 8789c1c
+    ref: 8789c1cd683dcd08ab4c1ef7587fea4299025b44
     version: 1.1.0
     required: true
     desc: "JoyCaption beta-one captioning (JJC_DownloadAndLoadJoyCaptionModel + JJC_JoyCaption). Checkpoint self-downloads on first run."

@@ -1,7 +1,7 @@
 extensions:
 - name: comfyui-h3-motion-context
   url: https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context.git
-  ref: 429e952
+  ref: 429e952ae5c09b54f44cb6e3bef7331d998f0656
   version: 0.5.1
   required: true
   desc: 'BASE pack for H3 motion context: MiniMaxH3MotionContext, MotionContextTrim,
@@ -24,7 +24,7 @@ extensions:
     \ Upstream has since tagged v1.4.3 (066ada9); re-pin only with a lane re-render."
 - name: ComfyUI-VideoHelperSuite
   url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
-  ref: 4d907be
+  ref: 4d907bee61e92c2e65af3bd6383a4e4d356126d1
   version: 1.7.9
   required: true
   desc: Video I/O utilities (VHS preview/metadata flags in window graphs).
@@ -41,7 +41,7 @@ extensions:
   desc: ImageSharpenKJ + ModelPreviewOverrideKJ (post-ladder polish in window graphs).
 - name: rgthree-comfy
   url: https://github.com/rgthree/rgthree-comfy.git
-  ref: 2c5342a
+  ref: 2c5342a8cb0eaecaabf61435a5f37dd594c510ba
   version: 1.0.2608210019
   required: true
   desc: Fast Groups Bypasser nodes present in the window graphs.

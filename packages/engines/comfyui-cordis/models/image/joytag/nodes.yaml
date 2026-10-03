@@ -5,6 +5,6 @@
 extensions:
   - name: Comfyui_joytag
     url: https://github.com/StartHua/Comfyui_joytag
-    ref: 025dd12
+    ref: 025dd12d0ca562c0b096c661f5a98f90d399361b
     required: true
     desc: "JoyTag booru tagger (CXH_JoyTag). Weights: fancyfeast/joytag model.safetensors, pack-local checkpoints dir (node does not auto-download)."

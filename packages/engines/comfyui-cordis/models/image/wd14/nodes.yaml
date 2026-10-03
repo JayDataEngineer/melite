@@ -3,7 +3,7 @@
 extensions:
 - name: ComfyUI-WD14-Tagger
   url: https://github.com/pythongosssss/ComfyUI-WD14-Tagger.git
-  ref: 9e0a6e7
+  ref: 9e0a6e700299182fc05c58b62e7ad9f72182a78b
   version: 1.0.1
   required: true
   desc: WD14Tagger (booru interrogator — IMAGE + model/thresholds → STRING tags;

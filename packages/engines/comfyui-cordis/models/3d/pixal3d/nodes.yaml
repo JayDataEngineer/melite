@@ -14,7 +14,7 @@
 extensions:
   - name: ComfyUI-MoGe
     url: https://github.com/kijai/ComfyUI-MoGe.git
-    ref: 8276bab
+    ref: 8276bab55f293a5bf000fef6a0dbedd3110efb29
     version: "0.5.0"
     required: true
     desc: "MoGe depth estimation — pixel-aligned camera conditioning for Pixal3D (camera_angle_x → camera transform matrix → per-token pixel alignment). Required: pixal3d conditioning will not compose without it."
