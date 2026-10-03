@@ -528,6 +528,37 @@ describe("artifact source and landing behavior", () => {
     await rejectsCode(writer.inspect({ root: store, relativePath: "present.bin", expectedSha256: "bad" }), "invalid-digest");
   });
 
+  test("inspect is a READ: an in-store symlink verifies through its target; an escaping or broken one never reads outside", async () => {
+    // the krea-2 law (2026-10-12): clip/qwen3vl_4b_fp8_scaled.safetensors
+    // is an 82-byte symlink to text_encoders/ inside the store — the
+    // walk FATALed on it instead of verifying the bytes. inspect never
+    // takes the write-side symlink refusal; confinement moves to the
+    // realpath (an escape still refuses invalid-path).
+    const store = root();
+    const writer = new VerifiedArtifactWriter(store);
+    mkdirSync(join(store, "text_encoders"));
+    writeFileSync(join(store, "text_encoders", "te.bin"), bytes);
+    symlinkSync(join("text_encoders", "te.bin"), join(store, "clip.bin"), "file");
+    const through = await writer.inspect({
+      root: store,
+      relativePath: "clip.bin",
+      expectedSha256: digest(bytes),
+    });
+    assert.equal(through.present, true);
+    assert.equal(through.sizeBytes, bytes.length);
+    // a symlink pointing OUTSIDE the root refuses invalid-path
+    const outside = root();
+    writeFileSync(join(outside, "outside.bin"), bytes);
+    symlinkSync(join(outside, "outside.bin"), join(store, "escape.bin"), "file");
+    await rejectsCode(writer.inspect({ root: store, relativePath: "escape.bin" }), "invalid-path");
+    // a broken symlink reads as absent, never fatal
+    symlinkSync(join(store, "gone.bin"), join(store, "broken.bin"), "file");
+    assert.deepEqual(
+      await writer.inspect({ root: store, relativePath: "broken.bin" }),
+      { present: false, path: join(store, "broken.bin") },
+    );
+  });
+
   test("hashes files with and without a signal", async () => {
     const store = root();
     const path = join(store, "hash.bin");

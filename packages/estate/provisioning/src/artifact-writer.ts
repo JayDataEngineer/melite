@@ -434,15 +434,44 @@ export class VerifiedArtifactWriter implements ArtifactWriterPort {
     request: ArtifactInspectionRequest,
     signal?: AbortSignal,
   ): Promise<ArtifactInspection> {
+    // READ law (2026-10-12, the krea-2 clip symlink): inspection
+    // never writes, so it takes no mkdir side effect and no
+    // write-side symlink refusal — an operator may satisfy a
+    // declared row through a symlink laid out inside the store
+    // (clip/qwen3vl_4b_fp8_scaled.safetensors -> text_encoders/).
+    // Confinement stays real: the RESOLVED destination may never
+    // read outside the root, enforced on the realpath.
     const destination = resolveConfinedPath(request.root, request.relativePath);
-    await preparePath(request.root, destination);
     const kind = await existingKind(destination);
     if (kind === "missing") return { present: false, path: destination };
-    const sha256 = await sha256File(destination, signal);
+    let realDestination: string;
+    try {
+      realDestination = await realpath(destination);
+    } catch (error: unknown) {
+      // a symlink whose target is gone reads as absent, never fatal
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        return { present: false, path: destination };
+      }
+      throw error;
+    }
+    const rootPath = resolve(request.root);
+    let realRoot = rootPath;
+    try {
+      realRoot = await realpath(rootPath);
+    } catch {
+      // a missing root cannot contain the destination that exists
+    }
+    if (!within(realRoot, realDestination)) {
+      throw new ProvisioningError("invalid-path", "artifact inspection escapes its root");
+    }
+    const stats = await stat(realDestination);
+    if (!stats.isFile()) {
+      throw new ProvisioningError("invalid-path", "artifact inspection target is not a file");
+    }
+    const sha256 = await sha256File(realDestination, signal);
     if (request.expectedSha256 !== undefined && normalizeDigest(request.expectedSha256) !== sha256) {
       return { present: false, path: destination, sha256 };
     }
-    const stats = await stat(destination);
     return { present: true, path: destination, sha256, sizeBytes: stats.size };
   }
 }

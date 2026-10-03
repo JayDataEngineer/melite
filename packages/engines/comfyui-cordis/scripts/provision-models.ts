@@ -15,6 +15,19 @@ import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.ts"
 
 // ── models via the estate downloader + frozen catalog + sha256 gate ──
 
+/** Cheap existence probe for DRY runs: confined path, no hashing. A
+ *  symlink counts (the inspect read law resolves in-store links). */
+async function artifactExists(storeRoot: string, relativePath: string): Promise<boolean> {
+  try {
+    const { resolveConfinedPath } = await import("@melite/estate-provisioning");
+    const { lstat } = await import("node:fs/promises");
+    const kind = await lstat(resolveConfinedPath(storeRoot, relativePath));
+    return kind.isFile() || kind.isSymbolicLink();
+  } catch {
+    return false;
+  }
+}
+
 export function sha256Of(path: string): string {
   const h = createHash("sha256");
   const fd = openSync(path, "r");
@@ -62,12 +75,20 @@ export async function fetchVerified(_workspace: string,
     manager?: Pick<ComfyUiManagerProvider, "installModel">): Promise<string> {
   const relativePath = sub === "" ? name : sub.replace(/^\/+|\/+$/gu, "") + "/" + name;
   const writer = new VerifiedArtifactWriter(storeRoot);
-  const existing = await writer.inspect({
-    root: storeRoot,
-    relativePath,
-    expectedSha256: want,
-  });
-  if (existing.present) return "skipped";
+  // DRY is a PLAN, never the work (2026-10-12): hashing every present
+  // row's full sha made --dry-run read 731GB off the estate store for
+  // a download plan. A dry run probes EXISTENCE only — the real run
+  // keeps the full inspect (sha gate) on every row.
+  if (!DRY) {
+    const existing = await writer.inspect({
+      root: storeRoot,
+      relativePath,
+      expectedSha256: want,
+    });
+    if (existing.present) return "skipped";
+  } else if (await artifactExists(storeRoot, relativePath)) {
+    return "skipped";
+  }
   info("  [model] " + label + " -> " + relativePath);
   if (DRY) {
     console.log("[dry-run] ComfyUI-Manager install_model " + url + " -> " + relativePath);
@@ -158,8 +179,11 @@ export async function stepModels(): Promise<boolean> {
       info("no frozen-catalog provisions declared");
       return true;
     }
+    // DRY presence is an EXISTENCE probe — the sha gate runs only in
+    // a real pass, and the plan says so (never "verified").
     info("models: " + ok + " downloaded+verified, " + skipped +
-      " present, " + bad + " failed");
+      " present" + (DRY ? " (dry: existence probe, sha unverified)" : "") +
+      ", " + bad + " failed");
     return bad === 0;
   }
 }
