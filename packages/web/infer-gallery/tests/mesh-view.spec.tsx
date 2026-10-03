@@ -37,7 +37,8 @@ vi.mock('@melite/formats/glbLoad', () => ({
   autoFitToHeight: (...args: unknown[]) => autoFitToHeight(...args),
 }))
 
-import { MeshView, artifactNameFor, unsupportedCopy } from '../src/client/mesh-view.tsx'
+import { MeshView, artifactNameFor, unsupportedCopy, ArtifactTabBody } from '../src/client/mesh-view.tsx'
+import { estateArtifactAddress } from '../src/client/artifact-address.ts'
 
 /** A minimal loaded-gltf stand-in: one mesh child under the scene root,
  *  OFFSET so the framing assertions can tell "moved the camera to the
@@ -122,6 +123,28 @@ describe('MeshView — the visual door renders the mesh in place', () => {
     unmount()
     expect(disposeStage).toHaveBeenCalledTimes(1)
     expect(spy).toHaveBeenCalled()
+  })
+})
+
+describe('ArtifactTabBody — the estate-artifact tab seat (the address IS the data)', () => {
+  it('decodes its own address and renders the mesh under the REAL file name', async () => {
+    const url = '/infer-gallery/artifact?path=run-77/trellis2_native.glb'
+    render(<ArtifactTabBody useTabInfo={() => ({ tab: { navigation: { address: estateArtifactAddress(url) }, actions: { openResource() {} } } })} />)
+    // the viewer received the decoded URL, and the caption names the
+    // artifact (the ?path= tail), never the route segment
+    await waitFor(() => { expect(loadGLB).toHaveBeenCalledWith(url) })
+    expect(screen.getByTestId('mesh-view-canvas')).toBeTruthy()
+    expect(screen.getByLabelText('3D view of trellis2_native.glb')).toBeTruthy()
+  })
+
+  it('a malformed segment voices the honest refusal, never a blank pane', () => {
+    render(<ArtifactTabBody useTabInfo={() => ({ tab: { navigation: { address: 'dsh-resource://estate-artifact/%%%%' }, actions: { openResource() {} } } })} />)
+    expect(screen.getByTestId('mesh-view-failure').textContent).toContain('unreadable')
+  })
+
+  it('an absent hook (headless harness) voices the same refusal', () => {
+    render(<ArtifactTabBody />)
+    expect(screen.getByTestId('mesh-view-failure').textContent).toContain('unreadable')
   })
 })
 

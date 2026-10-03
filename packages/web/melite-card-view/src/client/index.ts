@@ -42,6 +42,8 @@ import type {} from '@deepseek-ai/dsh-client-resources/client'
 // contribution (TYPERT_REMOTE — the descriptor set the mount serves;
 // its declaration merge types ctx.remote.bench / ctx.remote.drafts).
 import type {} from '@deepseek-ai/dsh-api-gateway/client'
+import type {} from '@deepseek-ai/dsh-client-ui-chat/client'
+import type {} from '@deepseek-ai/dsh-client-ui-conversation/client'
 // All four estate contributions (bench/drafts from estate-drafts,
 // runs, media) — the one-lane law: every estate verb the tab speaks
 // rides these mounted namespaces.
@@ -50,6 +52,8 @@ import { TYPERT_REMOTE as RUNS_TYPERT_REMOTE } from '@melite/estate-runs/remote'
 import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remote'
 import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote'
 import { FlowCards } from './FlowCards.tsx'
+import { CARD_TOOLS } from './card-tools.ts'
+import { buildChatFileMentions, meliteCardsTurnDefinition } from './card-mentions.ts'
 import { CardsTab } from './CardsTab.tsx'
 import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands, type BenchNamespace } from './cards-resource.ts'
 import { bindEstateRemoteFromRemote, useToastStore, type EstateNamespaces } from '@melite/card-base/client'
@@ -89,22 +93,7 @@ declare module '@deepseek-ai/dsh-client-ui-slots' {
 }
 
 /** Every card tool that produces a draft — the card tile renders for ALL of them. */
-export const CARD_TOOLS = [
-  'melite_flow',
-  'image_card', 'tts_card', 'video_card', 'music_card', 'sfx_card',
-  'three_d_card', 'motion_card', 'body_card', 'image_edit_card',
-  'h3_timeline_card',
-  'creature_flow', 'humanoid_flow', 'non_humanoid_flow', 'prop_flow',
-  'sprite_sheet',
-  // TOOL-PLANE names (the DSH plain-id convention — h3-timeline
-  // tool.ts: "the card id, hyphens→underscores, no suffix"): the
-  // chat harness calls the tool by THIS name, so the toolview seat
-  // must claim it for the conversation card to render (the registry
-  // plane's h3_timeline_card is the composition wire name, a
-  // different plane). Live-lane receipt 2026-09-12: an accepted
-  // h3_timeline chat run rendered the generic tool card, no rows.
-  'h3_timeline',
-]
+export { CARD_TOOLS } from './card-tools.ts'
 /** The tab type's identity (the key its body registers under). */
 const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
 
@@ -114,7 +103,7 @@ const CARDS_TAB_ID = '@melite-plugin/dsh-card-view'
  *  to open the Cards tab at a draft stage — the old embed's law — and
  *  the gateway client's remote service, which carries the mounted
  *  estate namespaces the bench tail consumes). */
-export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote']
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation']
 
 /**
  * Register both planes: the toolview keys for every card tool, and the
@@ -221,13 +210,30 @@ export async function apply(ctx: ClientContext): Promise<void> {
       // tab rides the register call's inject share (plain callback from
       // the apply closure — the contract's own cross-surface channel):
       // ctx.sidebarRight.openResource claims the address, places it,
-      // and reveals the column in one step (ISidebarRight).
+      // and reveals the column in one step (ISidebarRight). Both faces
+      // answer false on a shell refusal — FlowCardsProps promises it,
+      // and a throw here would render the whole card tree dead.
       ctx.slots.inject('tool.call.toolview', () => ctx.slots.register(
         {
           name: 'tool.call.toolview',
           key: tool,
-          inject: (): { openSurface: (address: string) => boolean } => ({
-            openSurface: (address: string): boolean => { ctx.sidebarRight.openResource(address); return true },
+          inject: (): { openSurface: (address: string) => boolean, openMedia: () => boolean } => ({
+            openSurface: (address: string): boolean => {
+              try {
+                ctx.sidebarRight.openResource(address)
+                return true
+              } catch {
+                return false
+              }
+            },
+            openMedia: (): boolean => {
+              try {
+                ctx.sidebarRight.openTab('media')
+                return true
+              } catch {
+                return false
+              }
+            },
           }),
         },
         FlowCards,
@@ -235,6 +241,33 @@ export async function apply(ctx: ClientContext): Promise<void> {
     } catch (error) {
       console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error)
     }
+  }
+
+  // THE ID VOCABULARY (task d, seam ii): the conversation engine folds
+  // card-tool results into turn data, and the chat's markdown renderer
+  // asks chatFileMentions to resolve an authored id token against it.
+  // The definition is state-only (no view target); the provider's
+  // resolver opens the Media page — the one home both draft tiles and
+  // run artifacts have. Both registrations degrade independently: a
+  // missing engine or a doubled kind logs and leaves the rest of the
+  // lane standing.
+  try {
+    ctx.effect(() => ctx.uiConversation.events.register(meliteCardsTurnDefinition), 'melite-card-view: meliteCards turn fold')
+  } catch (error) {
+    console.error('[melite-card-view] meliteCards turn fold registration failed:', error)
+  }
+
+  try {
+    ctx.effect(() => ctx.provide('chatFileMentions', buildChatFileMentions(() => {
+      try {
+        ctx.sidebarRight.openTab('media')
+      } catch {
+        // A refused open leaves the mention inert — the renderer's
+        // open callback must never throw into the chat.
+      }
+    })), 'melite-card-view: chat file mentions')
+  } catch (error) {
+    console.error('[melite-card-view] chat file mentions registration failed:', error)
   }
 
   // BUILT-IN STUDIO SURFACE (the ui-tool law: the host package ships

@@ -35,6 +35,7 @@ import { autoFitToHeight, loadGLB } from '@melite/formats/glbLoad'
 import { isModelUrl } from '@melite/contracts/mediaKinds'
 
 import { artifactNameOf, artifactPathOfUrl } from './artifact-ops.ts'
+import { artifactUrlOfAddress } from './artifact-address.ts'
 import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens'
 
 /** THE ARTIFACT-NAME LAW (the operator's 2026-09-26 report:
@@ -256,4 +257,31 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
         : null}
     </div>
   )
+}
+
+/** The standard tab hook every tab body receives (local spelling —
+ *  the same shape MediaPanel and the cards tab spell). */
+interface TabInfo {
+  readonly tab: {
+    readonly navigation: { readonly address: string }
+    readonly actions: { openResource(address: string): void }
+  }
+}
+
+/** The estate-artifact tab body: the address IS the data (the b64url
+ *  segment decodes to the artifact URL — see artifact-address.ts). A
+ *  malformed segment is this package's own bug and voices itself as
+ *  the mesh seat's honest-failure copy, never a blank pane. Absent
+ *  hook (headless harnesses) renders the same honest refusal. */
+export function ArtifactTabBody({ useTabInfo }: { useTabInfo?: () => TabInfo }): React.JSX.Element {
+  const tabInfo = useTabInfo !== undefined ? useTabInfo() : undefined
+  const url = tabInfo !== undefined ? artifactUrlOfAddress(tabInfo.tab.navigation.address) : null
+  if (url === null) {
+    return (
+      <div data-testid="mesh-view-failure" style={{ width: '100%', minHeight: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: 16, borderRadius: 8, background: bgBase1, color: stateWarnPrimary1, fontSize: 13, lineHeight: 1.5 }}>
+        artifact address unreadable — the viewer cannot decode it
+      </div>
+    )
+  }
+  return <MeshView url={url} file={artifactNameOf(url)} height={'72vh'} />
 }

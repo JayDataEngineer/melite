@@ -25,27 +25,15 @@ import { artifactNameOf, artifactPathOfUrl, deleteArtifact, renameArtifact } fro
 /** THE ESTATE-ARTIFACT ADDRESS (2026-09-10 regression fix): run artifacts
  *  live outside the DSH workspace, so no document owner can read them.
  *  The native seam for addressable non-workspace content is a resource
- *  address claimed by a tab type — the viewer tab claims
- *  `dsh-resource://estate-artifact/<b64url of the same-origin artifact
- *  URL>` (its own tab renders the mesh). The URL this panel embeds is
- *  its SAME-ORIGIN route path (fetchable from the body; no foreign
- *  origin ever leaks). The address FORMAT is the cross-plugin contract
- *  (both sides carry the 4-line codec — client bundles cannot import
- *  across plugins). When no viewer tab is loaded, openResource on the
- *  address is a no-op and the download link stays — the artifact must
- *  remain reachable either way. */
-const ARTIFACT_PREFIX = 'dsh-resource://estate-artifact/'
-
-function b64uEncode(text: string): string {
-  const bytes = new TextEncoder().encode(text)
-  let bin = ''
-  for (const b of bytes) bin += String.fromCharCode(b)
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-function estateArtifactAddress(url: string): string {
-  return ARTIFACT_PREFIX + b64uEncode(url)
-}
+ *  address claimed by a tab type — THIS package's estate-artifact tab
+ *  claims `dsh-resource://estate-artifact/<b64url of the same-origin
+ *  artifact URL>` and renders the mesh (its body is mesh-view's
+ *  ArtifactTabBody). The URL this panel embeds is its SAME-ORIGIN route
+ *  path (fetchable from the body; no foreign origin ever leaks). The
+ *  address FORMAT's one home is artifact-address.ts (both seats ride
+ *  this package). When the shell tab service is absent the guard below
+ *  voices it and the download link stays — the artifact must remain
+ *  reachable either way. */
 
 /** The standard tab hook the seat injects into every body (local spelling
  *  of UseSidebarRightTabInfo — the actions a tab may take on itself). */
@@ -71,6 +59,7 @@ import {
   gradientStage,
 } from './ui.tsx'
 import { MEDIA_KINDS } from './media-kinds.ts'
+import { estateArtifactAddress } from './artifact-address.ts'
 import {
   bgBase1,
   bgBase2,

@@ -112,3 +112,36 @@ describe("the row law (FlowCards × the inject share)", () => {
     expect(await screen.findByText(/Run/i, {}, { timeout: 4000 })).toBeTruthy()
   })
 })
+
+describe("the media door (the header affordance × the inject share)", () => {
+  test("the affordance renders only when the face provides it and opens the media page", async () => {
+    stubDraftDoc()
+    const opened: string[] = []
+    render(h(FlowCards, {
+      block: flowBlock("draft-1"),
+      openMedia: () => { opened.push("media"); return true },
+    }))
+    const door = await screen.findByRole("button", { name: "open media" }, { timeout: 4000 })
+    door.click()
+    expect(opened).toEqual(["media"])
+  })
+
+  test("without the face the header renders no media affordance", async () => {
+    stubDraftDoc()
+    render(h(FlowCards, { block: flowBlock("draft-1") }))
+    await screen.findByText("s_0", {}, { timeout: 4000 })
+    expect(screen.queryByRole("button", { name: "open media" })).toBeNull()
+  })
+
+  test("a refused open (the shell face answers false) leaves the card standing", async () => {
+    stubDraftDoc()
+    render(h(FlowCards, {
+      block: flowBlock("draft-1"),
+      openMedia: () => false,
+    }))
+    const door = await screen.findByRole("button", { name: "open media" }, { timeout: 4000 })
+    door.click()
+    // the card did not unmount or throw — the header is still there
+    expect(screen.getByText("melite")).toBeTruthy()
+  })
+})

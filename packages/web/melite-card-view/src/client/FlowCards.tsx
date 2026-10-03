@@ -69,6 +69,10 @@ export interface FlowCardsProps {
    *  in headless harnesses/tests: the row degrades to the in-card
    *  drill, never throws. Returns false when the shell refused. */
   openSurface?: (address: string) => boolean
+  /** Opens the shell's Media page (the archive the card's runs land
+   *  in). The header affordance renders only when the register site
+   *  provides it; a shell refusal returns false and the card stays. */
+  openMedia?: () => boolean
 }
 
 /** Parse the melite_flow / card-tool call: the draft id + the model
@@ -231,7 +235,7 @@ function CardRowLine({ row, onOpen }: { row: CardRow; onOpen: () => void }) {
 }
 
 /** One melite_flow call as the REAL action cards (native React, in-tree). */
-export function FlowCards({ block, openSurface }: FlowCardsProps) {
+export function FlowCards({ block, openSurface, openMedia }: FlowCardsProps) {
   const parsed = useMemo(() => parseCardsBlock(block), [block])
   const { doc, live, error, refresh, startedRun } = useDraft(parsed.draftId)
   const [openStage, setOpenStage] = useState<string | null>(null)
@@ -274,6 +278,12 @@ export function FlowCards({ block, openSurface }: FlowCardsProps) {
             render that reads as a model-less call */}
         {parsed.malformedArgs && <span className={css.state} data-state="error">args unparseable — corrupted call record</span>}
         {error !== null && <span className={css.state} data-state="error" role="button" tabIndex={0} onClick={refresh} onKeyDown={refresh}>{error} · retry</span>}
+        {/* The media door: the card's runs land in the shell's Media
+            page, and the header names that door. The ROW click stays
+            the authoring open (the law above); this is the card-level
+            archive affordance, rendered only when the register site
+            provides the shell face. */}
+        {openMedia !== undefined && <button type="button" className={css.media} onClick={() => { openMedia() }}>open media</button>}
       </div>
       {doc === null && error === null && <div className={css.load}>cards…</div>}
       {rows.map((row) => (

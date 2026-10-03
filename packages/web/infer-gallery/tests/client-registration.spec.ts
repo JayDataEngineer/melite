@@ -11,6 +11,7 @@
  * boot).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { estateArtifactAddress } from '../src/client/artifact-address.ts'
 
 interface GuideRow {
   order: number
@@ -22,7 +23,9 @@ interface GuideRow {
 interface TabType {
   id: string
   kind: string
-  title(): string
+  title: (() => string) | ((address: string) => string)
+  patterns?: readonly string[]
+  priority?: 'extension' | 'builtin' | 'fallback'
   guide?: GuideRow[]
 }
 
@@ -88,15 +91,15 @@ describe('the gallery client registration (the full port)', () => {
     expect(mod.inject).toContain('sidebarRightTabs')
   })
 
-  it('apply registers the single Media tab type with guide row + icon', async () => {
+  it('apply registers the Media page type and the estate-artifact resource type', async () => {
     const mod = await loadClient()
     const { ctx, reg } = fakeCtx()
     mod.apply(ctx as never)
     const kinds = reg.tabTypes.map((t) => t.kind)
-    expect(kinds).toEqual(['media'])
+    expect(kinds).toEqual(['media', 'estate-artifact'])
     const media = reg.tabTypes[0]
     expect(media.id).toBe('infer-media:media')
-    expect(media.title()).toBe('Media')
+    expect((media.title as () => string)()).toBe('Media')
     expect(media.guide).toHaveLength(1)
     expect(media.guide![0].order).toBe(51)
     expect(media.guide![0].title()).toBe('Media')
@@ -109,8 +112,8 @@ describe('the gallery client registration (the full port)', () => {
     const mod = await loadClient()
     const { ctx, reg } = fakeCtx()
     mod.apply(ctx as never)
-    expect(reg.injectWaits).toEqual(['sidebar.right.pane.tab'])
-    expect(reg.bodies.map((b) => b.key)).toEqual(['infer-media:media'])
+    expect(reg.injectWaits).toEqual(['sidebar.right.pane.tab', 'sidebar.right.pane.tab'])
+    expect(reg.bodies.map((b) => b.key)).toEqual(['infer-media:media', 'infer-media:estate-artifact'])
     expect(reg.bodies.every((b) => b.name === 'sidebar.right.pane.tab')).toBe(true)
     expect(reg.bodies.every((b) => typeof b.component === 'function')).toBe(true)
   })
@@ -120,8 +123,8 @@ describe('the gallery client registration (the full port)', () => {
     const { ctx, reg } = fakeCtx()
     mod.apply(ctx as never)
     mod.apply(ctx as never)
-    expect(reg.tabTypes).toHaveLength(1)
-    expect(reg.bodies).toHaveLength(1)
+    expect(reg.tabTypes).toHaveLength(2)
+    expect(reg.bodies).toHaveLength(2)
   })
 
   it('a failing registry is logged, never thrown (the shell law)', async () => {
@@ -148,5 +151,29 @@ describe('the gallery client registration (the full port)', () => {
     mod.apply(ctx as never)
     const node = reg.tabTypes[0].guide![0].icon!({}) as { type: string }
     expect(node.type).toBe('svg')
+  })
+})
+
+describe('the estate-artifact resource type (the claim the model tiles ride)', () => {
+  it('claims the address kind at the builtin band', async () => {
+    const mod = await loadClient()
+    const { ctx, reg } = fakeCtx()
+    mod.apply(ctx as never)
+    const t = reg.tabTypes.find((x) => x.kind === 'estate-artifact')
+    expect(t).toBeDefined()
+    expect(t!.id).toBe('infer-media:estate-artifact')
+    expect(t!.patterns).toEqual(['dsh-resource://estate-artifact/**'])
+    expect(t!.priority).toBe('builtin')
+    expect(t!.guide).toBeUndefined()
+  })
+
+  it('titles each tab with the decoded artifact\'s REAL file name', async () => {
+    const mod = await loadClient()
+    const { ctx, reg } = fakeCtx()
+    mod.apply(ctx as never)
+    const t = reg.tabTypes.find((x) => x.kind === 'estate-artifact')
+    const title = t!.title as (address: string) => string
+    expect(title(estateArtifactAddress('/infer-gallery/artifact?path=run-9/prop_final.glb'))).toBe('prop_final.glb')
+    expect(title('dsh-resource://estate-artifact/%%%%')).toBe('artifact')
   })
 })

@@ -14,7 +14,7 @@ afterEach(() => {
 interface ToolDef {
   name: string;
   key?: string;
-  inject?: () => { openSurface: (address: string) => boolean };
+  inject?: () => { openSurface: (address: string) => boolean, openMedia: () => boolean };
 }
 
 interface FakeCtx {
@@ -23,6 +23,8 @@ interface FakeCtx {
     tabTypes: Array<Record<string, unknown>>;
     bodies: Array<{ def: ToolDef; comp: unknown }>;
     providers: Array<Record<string, unknown>>;
+    turnFolds: Array<Record<string, unknown>>;
+    provides: Array<{ name: string; value: unknown }>;
     effects: string[];
   };
   opened: string[];
@@ -46,7 +48,7 @@ interface FakeCtx {
 
 function fakeCtx(): FakeCtx {
   const fake: FakeCtx = {
-    regs: { toolviews: [], tabTypes: [], bodies: [], providers: [], effects: [] },
+    regs: { toolviews: [], tabTypes: [], bodies: [], providers: [], turnFolds: [], provides: [], effects: [] },
     opened: [],
     errors: [],
     remote: {
@@ -145,9 +147,24 @@ function fakeCtx(): FakeCtx {
         return () => {};
       },
     },
+    uiConversation: {
+      events: {
+        register: (def: Record<string, unknown>): (() => void) => {
+          maybeThrow("turn-fold");
+          fake.regs.turnFolds.push(def);
+          return () => {};
+        },
+      },
+    },
+    provide: (name: string, value: unknown): (() => void) => {
+      maybeThrow("provide:" + name);
+      fake.regs.provides.push({ name, value });
+      return () => {};
+    },
     sidebarRight: {
       isExpanded: (): boolean => true,
       openResource: (address: string): void => { fake.opened.push(address); },
+      openTab: (kind: string): void => { fake.opened.push(`tab:${kind}`); },
     },
     get uiSession(): unknown {
       return fake.uiSession;
@@ -162,7 +179,7 @@ function restore(fake: FakeCtx): void {
 
 describe("the entry exports — the client contract", () => {
   test("inject names the five seats (registries before bodies)", () => {
-    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote"]);
+    expect(inject).toEqual(["slots", "sidebarRightTabs", "resources", "sidebarRight", "remote", "uiConversation"]);
   });
 
   test("CARD_TOOLS claims every producing tool (the tile renders for all)", () => {
@@ -183,11 +200,16 @@ describe("apply() — the happy path registers both planes", () => {
       expect(fake.regs.bodies).toHaveLength(1);
       expect(fake.regs.providers).toHaveLength(1);
       expect(fake.regs.providers[0]).toMatchObject({ protocol: "cards" });
+      expect(fake.regs.turnFolds).toHaveLength(1);
+      expect(fake.regs.turnFolds[0]).toMatchObject({ kind: "meliteCards" });
+      expect(fake.regs.provides.map((p) => p.name)).toEqual(["chatFileMentions"]);
       expect(fake.regs.effects).toEqual([
         "melite-card-view: estate remote contribution",
         "melite-card-view: runs remote contribution",
         "melite-card-view: media remote contribution",
         "melite-card-view: manage remote contribution",
+        "melite-card-view: meliteCards turn fold",
+        "melite-card-view: chat file mentions",
         "melite-card-view: cards tab type",
         "melite-card-view: cards resource provider",
         "melite-card-view: bench spotlight",
@@ -212,6 +234,57 @@ describe("apply() — the happy path registers both planes", () => {
       const face = row.def.inject!();
       expect(face.openSurface("dsh-resource://cards/bench")).toBe(true);
       expect(fake.opened).toEqual(["dsh-resource://cards/bench"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the toolview inject opens the Media page by kind (the header door's face)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      const row = fake.regs.toolviews.find((r) => r.def.key === "image_card")!;
+      const face = row.def.inject!();
+      expect(face.openMedia()).toBe(true);
+      expect(fake.opened).toEqual(["tab:media"]);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("the mentions provider's open never throws into the chat (a refused Media open stays inert)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      (fake.ctx.sidebarRight as { openTab: () => void }).openTab = (): void => {
+        throw new Error("no seat mounted");
+      };
+      const mentions = fake.regs.provides.find((p) => p.name === "chatFileMentions")!.value as {
+        forClosing(owner: unknown): { resolve(value: string): { open(): void } | undefined } | undefined;
+      };
+      const owner = { turn: { data: { get: () => ({ rows: [{ tool: "image_card", draftId: "p_1", runId: null }] }) } } };
+      const resolver = mentions.forClosing(owner);
+      expect(resolver).toBeDefined();
+      expect(() => resolver!.resolve("p_1")!.open()).not.toThrow();
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a shell refusal answers false, never a throw (the FlowCardsProps promise)", async () => {
+    const fake = fakeCtx();
+    try {
+      await apply(fake.ctx as never);
+      (fake.ctx.sidebarRight as { openResource: () => void }).openResource = (): void => {
+        throw new Error("no seat mounted");
+      };
+      (fake.ctx.sidebarRight as { openTab: () => void }).openTab = (): void => {
+        throw new Error("no seat mounted");
+      };
+      const row = fake.regs.toolviews.find((r) => r.def.key === "image_card")!;
+      const face = row.def.inject!();
+      expect(face.openSurface("dsh-resource://cards/bench")).toBe(false);
+      expect(face.openMedia()).toBe(false);
     } finally {
       restore(fake);
     }
@@ -290,6 +363,25 @@ describe("apply() — failures log, never throw (the boot survives)", () => {
       expect(voices.some((v) => v.includes("cards tab type registration failed"))).toBe(true);
       expect(voices.some((v) => v.includes("cards resource provider registration failed"))).toBe(true);
       expect(voices.some((v) => v.includes("cards tab body registration failed"))).toBe(true);
+    } finally {
+      restore(fake);
+    }
+  });
+
+  test("a dead turn fold or mentions provide logs per site (the boot survives)", async () => {
+    const fake = fakeCtx();
+    fake.failRegisterKeys.add("turn-fold");
+    fake.failRegisterKeys.add("provide:chatFileMentions");
+    try {
+      await apply(fake.ctx as never);
+      expect(fake.regs.turnFolds).toHaveLength(0);
+      expect(fake.regs.provides).toHaveLength(0);
+      // the rest of the lane kept its seats
+      expect(fake.regs.toolviews).toHaveLength(CARD_TOOLS.length);
+      expect(fake.regs.tabTypes).toHaveLength(1);
+      const voices = fake.errors.map((args) => args.join(" "));
+      expect(voices.some((v) => v.includes("meliteCards turn fold registration failed"))).toBe(true);
+      expect(voices.some((v) => v.includes("chat file mentions registration failed"))).toBe(true);
     } finally {
       restore(fake);
     }

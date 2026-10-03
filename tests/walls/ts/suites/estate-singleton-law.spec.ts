@@ -138,9 +138,13 @@ describe("the estate singleton law — one binder per bundle, stamped honest", (
     // THE MOUNTER'S LAW: card-view $mounts the namespaces, so its
     // entry injects the parent 'remote' (never the dotted names —
     // that wait is its own $mount) and binds directly through the
-    // inject-free ctx.get after the mounts land.
+    // inject-free ctx.get after the mounts land. 'uiConversation'
+    // rides the same list since the meliteCards fold landed: the
+    // conversation engine is a parent-level seat the entry registers
+    // against, not an estate remote (the dotted-name ban below is
+    // untouched).
     const cardView = readFileSync(join(ROOT, "packages/web/melite-card-view/src/client/index.ts"), "utf8");
-    expect(cardView.includes("export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote']"), "card-view's injects are exactly the parent-level set").toBe(true);
+    expect(cardView.includes("export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation']"), "card-view's injects are exactly the parent-level set").toBe(true);
     expect(cardView.includes("ctx.get('remote.bench')"), "card-view binds through the inject-free reflect seam").toBe(true);
     expect(cardView.includes("bindEstateRemoteFromRemote"), "card-view's bind is the shared direct bind").toBe(true);
   });

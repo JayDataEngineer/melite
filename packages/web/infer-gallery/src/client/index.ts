@@ -38,6 +38,9 @@ import type { Context as ClientContext } from '@deepseek-ai/cordis'
 import type { ComponentType } from 'react'
 import { claimGalleryApply, releaseGalleryApply } from './apply-guard.ts'
 import { MediaPanel, MediaTabIcon } from './MediaPanel.tsx'
+import { ArtifactTabBody } from './mesh-view.tsx'
+import { artifactUrlOfAddress } from './artifact-address.ts'
+import { artifactNameOf } from './artifact-ops.ts'
 
 import { setContractToastSink } from '@melite/catalog'
 import { useToastStore } from '@melite/card-base/client'
@@ -52,6 +55,8 @@ setContractToastSink((type, message, action) => {
 /** The tab type's identity (the id its body registers under — the
  *  deleted package's contract spelling, restored). */
 const MEDIA_TAB_ID = 'infer-media:media'
+/** The estate-artifact resource type's identity (its body registers under it). */
+const ESTATE_ARTIFACT_TAB_ID = 'infer-media:estate-artifact'
 
 /** Local structural spelling of the seats this entry touches (the
  *  card-deck pattern: no type-merge dependency on sibling UI
@@ -63,7 +68,12 @@ interface TabCtx {
     register(def: {
       id: string
       kind: string
-      title(): string
+      /** Page kinds take no argument; resource kinds title each address. */
+      title: (() => string) | ((address: string) => string)
+      /** Resource-address globs; omitted by page kinds (opened by kind). */
+      patterns?: readonly string[]
+      /** Band rank; a type that says nothing is an extension. */
+      priority?: 'extension' | 'builtin' | 'fallback'
       guide?: Array<{
         id: string
         order: number
@@ -123,6 +133,37 @@ export function apply(ctx: ClientContext): void {
     ))
   } catch (error: unknown) {
     console.error('[melite-gallery] media tab body registration failed:', error)
+  }
+
+  // The estate-artifact tab (2026-09-10's cross-plugin contract, in-tree
+  // since the external glb viewer left the profile): a RESOURCE type
+  // claiming `dsh-resource://estate-artifact/**` — the address's b64url
+  // segment decodes to the artifact URL, and THIS package's mesh seat
+  // renders it. The media panel's model tiles open it through the
+  // standard openResource hook; without this claim that open throws
+  // (an address nothing claims is a refusal, not a no-op).
+  try {
+    tab.effect(() => tab.sidebarRightTabs.register({
+      id: ESTATE_ARTIFACT_TAB_ID,
+      kind: 'estate-artifact',
+      patterns: ['dsh-resource://estate-artifact/**'],
+      priority: 'builtin',
+      title: (address: string): string => {
+        const url = artifactUrlOfAddress(address)
+        return url !== null ? artifactNameOf(url) : 'artifact'
+      },
+    }), 'melite-gallery: estate-artifact tab type')
+  } catch (error: unknown) {
+    console.error('[melite-gallery] estate-artifact tab type registration failed:', error)
+  }
+
+  try {
+    tab.slots.inject('sidebar.right.pane.tab', () => tab.slots.register(
+      { name: 'sidebar.right.pane.tab', key: ESTATE_ARTIFACT_TAB_ID },
+      ArtifactTabBody as unknown as ComponentType<Record<string, unknown>>,
+    ))
+  } catch (error: unknown) {
+    console.error('[melite-gallery] estate-artifact tab body registration failed:', error)
   }
 }
 

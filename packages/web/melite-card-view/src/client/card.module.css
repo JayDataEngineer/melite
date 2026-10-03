@@ -42,6 +42,23 @@
 .state[data-state='running'], .state[data-state='queued'], .state[data-state='pending'], .state[data-state='starting'], .state[data-state='draft'] { color: var(--dsw-alias-state-warn-primary); }
 .state[data-state='failed'], .state[data-state='error'], .state[data-state='stopped'], .state[data-state='interrupted'] { color: var(--dsw-alias-state-error-primary); }
 
+.media {
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  margin: -2px 0;
+  margin-left: auto;
+  padding: 1px 6px;
+}
+
+.media:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.media:focus-visible { outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: -1px; }
+
 .prompt {
   color: var(--dsw-alias-label-secondary);
   display: -webkit-box;
