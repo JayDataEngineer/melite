@@ -92,7 +92,7 @@ export async function fetchVerified(_workspace: string,
   info("  [model] " + label + " -> " + relativePath);
   if (DRY) {
     console.log("[dry-run] ComfyUI-Manager install_model " + url + " -> " + relativePath);
-    return "skipped";
+    return "planned";
   }
   if (manager === undefined) {
     warn("  [model] " + name + ": ComfyUI-Manager is unavailable; refusing a direct model download");
@@ -149,7 +149,7 @@ export async function stepModels(): Promise<boolean> {
         die("ComfyUI-Manager is required for model provisioning: " + (error instanceof Error ? error.message : String(error)));
       }
     }
-    let ok = 0, bad = 0, skipped = 0;
+    let ok = 0, bad = 0, skipped = 0, planned = 0;
     for (const { family, row } of await catalogProvisions()) {
       const url = String(row.url ?? "");
       const name = String(row.name ?? "").trim();
@@ -173,17 +173,19 @@ export async function stepModels(): Promise<boolean> {
         family + "/provision/" + name, url, name, sub, want, manager);
       if (st === "ok") ok += 1;
       else if (st === "bad") bad += 1;
+      else if (st === "planned") planned += 1;
       else skipped += 1;
     }
-    if (ok === 0 && skipped === 0 && bad === 0) {
+    if (ok === 0 && skipped === 0 && bad === 0 && planned === 0) {
       info("no frozen-catalog provisions declared");
       return true;
     }
     // DRY presence is an EXISTENCE probe — the sha gate runs only in
-    // a real pass, and the plan says so (never "verified").
+    // a real pass, and the plan says so (never "verified"). PLANNED
+    // rows are the plan itself: what a real run would queue.
     info("models: " + ok + " downloaded+verified, " + skipped +
       " present" + (DRY ? " (dry: existence probe, sha unverified)" : "") +
-      ", " + bad + " failed");
+      ", " + planned + " planned, " + bad + " failed");
     return bad === 0;
   }
 }
