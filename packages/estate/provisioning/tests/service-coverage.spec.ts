@@ -61,7 +61,9 @@ function modelItem(over: Partial<Extract<ProvisionPlanItem, { kind: "model" }>> 
     sha256: "a".repeat(64),
     sizeBytes: 4,
     required: true,
-    provider: "direct",
+    // this spec exercises the Manager arm; the direct arm's behavior
+    // lives in provisioning.spec.ts
+    provider: "manager",
     ...over,
   };
 }

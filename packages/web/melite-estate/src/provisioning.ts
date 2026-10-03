@@ -415,6 +415,15 @@ function provisioningConfig(ctx: Context): ProvisioningConfig {
   return {
     declaration: declarationPort(ctx),
     ...(storeRoot === undefined ? {} : { storeRoot, artifactWriter: new VerifiedArtifactWriter(storeRoot) }),
+    // THE DIRECT MODEL ARM'S BYTE SOURCE: the DECL url is the whole
+    // request — no token, no header (a token inside a url row leaks
+    // into logs and caches; the credential-store field it would ride
+    // is owed work, not a url query). Anything a gated host answers
+    // non-200 lands as a named fetch refusal.
+    fetcher: async (url, signal) => {
+      const response = await fetch(url, { signal, redirect: "follow" });
+      return { status: response.status, body: response.body };
+    },
     manager: lazyManager(ctx),
     inspector: lazyInspector(),
     lifecycle: lifecyclePort(ctx),

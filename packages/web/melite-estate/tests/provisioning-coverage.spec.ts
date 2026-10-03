@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeEach, describe, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { createServer, type Server } from "node:http";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
@@ -102,6 +102,13 @@ function startServer(state: ServerState, prefix: string): Promise<string> {
         url: "https://example.invalid/model.bin",
         filename: "model.bin",
       }] }));
+      return;
+    }
+    if (route === "/model.bin") {
+      // the direct arm's byte source: the composition's fetcher hits
+      // this route with the DECL's own url, no Manager in between
+      res.writeHead(200, { "content-type": "application/octet-stream" });
+      res.end(MODEL_BYTES);
       return;
     }
     if (path === "/manager/queue/install_model") {
@@ -380,14 +387,21 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal((await noEndpoint.ctx.provisioning.inspect({ kind: "model", owner: "family", id: "h3" })).state, "failed");
   });
 
-  test("lazy Manager installs a declared model and reuses its provider", async () => {
+  test("the direct arm fetches a declared model through the composition's fetcher and reuses the landed bytes", async () => {
     const store = tempRoot("web-model-store-");
-    const mounted = await mount({ cards: cardsWithModels(), store });
+    const cards = cardsWithModels();
+    const mounted = await mount({ cards, store });
+    // the DECL url IS the fetch url now — point the card's row at the
+    // rig's own server once the endpoint exists (the registry reads
+    // the map live, so this lands before ensure resolves it)
+    cards.get("card-model")!.provisions![0]!.url = `${mounted.endpoint}/model.bin`;
     const result = await mounted.ctx.provisioning.ensure({ kind: "model", owner: "card", id: "card-model" });
     assert.equal(result.state, "active", JSON.stringify(result));
     const second = await mounted.ctx.provisioning.ensure({ kind: "model", owner: "card", id: "card-model" });
     assert.equal(second.state, "active", JSON.stringify(second));
-    assert.equal(mounted.state.calls.filter((path) => path === "/manager/queue/install_model").length, 1);
+    assert.equal(mounted.state.calls.filter((path) => path === "/model.bin").length, 1);
+    assert.equal(mounted.state.calls.some((path) => path === "/manager/queue/install_model"), false);
+    assert.deepEqual(readFileSync(join(store, "checkpoints", "model.bin")), MODEL_BYTES);
   });
 
   test("lazy Manager covers registry, URL, and pinned git post-install paths", async () => {

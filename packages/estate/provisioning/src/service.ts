@@ -8,6 +8,7 @@ import {
 } from "./artifact-writer.ts";
 import { ManagerProviderError } from "./manager-provider.ts";
 import { providerOk, unknownProviderRefusal } from "./contracts.ts";
+import type { ArtifactFetcher } from "./ports.ts";
 import {
   resourceKey,
   sameResourceRef,
@@ -305,6 +306,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
   private readonly declaration: DeclarationPort;
   private readonly writer: ArtifactWriterPort | undefined;
   private readonly writerRoot: string;
+  private readonly fetcher: ArtifactFetcher | undefined;
   private readonly manager: ManagerPort | undefined;
   private readonly inspector: InspectorPort | undefined;
   private readonly lifecycle: LifecyclePort | undefined;
@@ -322,6 +324,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     this.declaration = config.declaration;
     this.writer = config.artifactWriter ?? (config.storeRoot === undefined ? undefined : new VerifiedArtifactWriter(config.storeRoot));
     this.writerRoot = config.storeRoot ?? (config.artifactWriter as { root?: unknown } | undefined)?.root as string ?? "";
+    this.fetcher = config.fetcher;
     this.manager = config.manager;
     this.inspector = config.inspector;
     this.lifecycle = config.lifecycle;
@@ -695,8 +698,22 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     if (this.writer === undefined || this.writer.inspect === undefined) {
       throw new ItemRefusal("blocked", "artifact/inspect-unavailable", "model acquisition requires the configured model store inspector");
     }
-    if (this.manager?.installModel === undefined) {
-      throw new ItemRefusal("blocked", "manager/model-unavailable", "model acquisition requires ComfyUI-Manager model installation");
+    // THE PROVIDER ARM FOR MODELS (the contract's vocabulary): the
+    // declaration stamps every model row with its intended source,
+    // and this arm honours the token — a "direct" row used to be
+    // silently countermanded to ComfyUI-Manager, which resolved the
+    // row through its own catalog URL and refused anything the
+    // catalog did not know. A token with no model arm is REFUSED BY
+    // NAME (the extension arm's law), never routed to a default.
+    if (!providerOk(item.provider)) {
+      throw new ItemRefusal("blocked", "model/unknown-provider", unknownProviderRefusal(item.provider));
+    }
+    if (item.provider === "git" || item.provider === "external") {
+      throw new ItemRefusal(
+        "blocked",
+        "model/provider-without-arm",
+        `the model plan arm does not implement provider "${item.provider}" — git clones are an extension arm, external acquisition rides the operator-confirmed door`,
+      );
     }
     const relativePath = relativeArtifactPath(item.folder, item.name);
     const existing = await this.writer.inspect({
@@ -717,6 +734,51 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
         ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
         integrity: "declared-sha256",
       });
+    }
+    if (item.provider === "local") {
+      throw new ItemRefusal(
+        "blocked",
+        "model/not-present",
+        `local model ${item.name} is not present at ${relativePath} with the declared digest — the local arm verifies, it never installs`,
+      );
+    }
+    if (item.provider === "direct") {
+      if (this.fetcher === undefined) {
+        throw new ItemRefusal("blocked", "artifact/fetch-unavailable", "direct model acquisition requires a configured artifact fetcher");
+      }
+      this.move(ref, operationId, "verifying");
+      const response = await this.fetcher(item.url, signal);
+      if (response.status !== 200 || response.body === null) {
+        throw new ItemRefusal(
+          "failed",
+          "artifact/fetch-refused",
+          `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`,
+        );
+      }
+      try {
+        const landed = await this.writer.write({
+          root: this.writerRoot,
+          relativePath,
+          expectedSha256: item.sha256,
+          operationId,
+          source: response.body,
+          sizeBytes: item.sizeBytes,
+        }, signal);
+        this.move(ref, operationId, "installed");
+        return itemResult(item, "active", "active", {
+          path: landed.path,
+          sha256: landed.sha256,
+          integrity: "declared-sha256",
+        });
+      } catch (error) {
+        if (error instanceof ProvisioningError) {
+          throw new ItemRefusal("failed", "artifact/" + error.code, error.message);
+        }
+        throw error;
+      }
+    }
+    if (this.manager?.installModel === undefined) {
+      throw new ItemRefusal("blocked", "manager/model-unavailable", "model acquisition requires ComfyUI-Manager model installation");
     }
     this.move(ref, operationId, "verifying");
     const installed = await this.manager.installModel({

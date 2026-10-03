@@ -106,6 +106,9 @@ export interface ProvisioningConfig {
   readonly declaration: DeclarationPort;
   readonly artifactWriter?: ArtifactWriterPort;
   readonly storeRoot?: string;
+  /** the direct model arm's byte source — unwired lanes refuse
+   *  direct acquisition loud instead of falling back to a manager */
+  readonly fetcher?: ArtifactFetcher;
   readonly manager?: ManagerPort;
   readonly inspector?: InspectorPort;
   readonly lifecycle?: LifecyclePort;

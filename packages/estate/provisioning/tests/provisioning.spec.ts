@@ -22,6 +22,8 @@ import {
   writeVerifiedArtifact,
 } from "../src/index.ts";
 import type {
+  ArtifactFetcher,
+  ArtifactResponse,
   DeclarationPort,
   ManagerPort,
   ModelProvisionPlanItem,
@@ -55,6 +57,13 @@ function managerWriting(store: string, onInstall?: (url: string) => void | Promi
       writeFileSync(destination, BYTES);
       return { installed: true };
     },
+  };
+}
+function fetchServing(onFetch?: (url: string) => void | Promise<void>): ArtifactFetcher {
+  return async (url: string): Promise<ArtifactResponse> => {
+    await onFetch?.(url);
+    if (url.endsWith("bad") || url.endsWith("fail")) return { status: 404, body: null };
+    return { status: 200, body: source() };
   };
 }
 function source(bytes: Uint8Array = BYTES): AsyncIterable<Uint8Array> {
@@ -260,7 +269,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      manager: managerWriting(store, async () => { installs += 1; await gate; }),
+      fetcher: fetchServing(async () => { installs += 1; await gate; }),
       operationIdFactory: () => "op-dedupe",
     });
     const first = service.ensure(ref);
@@ -283,7 +292,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      manager: managerWriting(store),
+      fetcher: fetchServing(),
     });
     const result = await service.ensure(ref);
     assert.equal(result.state, "partial");
@@ -303,6 +312,7 @@ describe("provisioning service", () => {
       name: "rt_detr_v4-x-hgnet_fp32.safetensors",
       folder: "diffusion_models",
       url: "https://huggingface.co/Comfy-Org/SDPose/resolve/main/diffusion_models/rt_detr_v4-x-hgnet_fp32.safetensors",
+      provider: "manager",
     });
     const service = new ProvisioningService(new Context(), {
       declaration: declarationFor({ ref, items: [item] }),
@@ -332,6 +342,7 @@ describe("provisioning service", () => {
       name: "sam2.1_hiera_large.pt",
       folder: "sams",
       url: "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt",
+      provider: "manager",
     });
     const service = new ProvisioningService(new Context(), {
       declaration: declarationFor({ ref, items: [item] }),
@@ -362,6 +373,7 @@ describe("provisioning service", () => {
       folder: "sams",
       url: "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt",
       sizeBytes: BYTES.length + 1,
+      provider: "manager",
     });
     let received: unknown;
     const service = new ProvisioningService(new Context(), {
@@ -400,7 +412,7 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      manager: managerWriting(store),
+      fetcher: fetchServing(),
     });
     assert.equal(ctx.provisioning.name, "provisioning");
     assert.equal(typeof ctx.provisioning.ensure, "function");
@@ -422,11 +434,120 @@ describe("provisioning service", () => {
     const service = new ProvisioningService(ctx, {
       declaration: declarationFor(plan),
       artifactWriter: new VerifiedArtifactWriter(store),
-      manager: managerWriting(store),
+      fetcher: fetchServing(),
     });
     const result = await service.ensure(ref);
     assert.equal(result.state, "failed");
     assert.equal(result.items[0]?.outcome, "failed");
+  });
+
+  test("a direct item streams the declared URL into the verified writer without a manager", async () => {
+    const store = root();
+    const ref = modelRef();
+    const item = modelItem();
+    const plan: ProvisionPlan = { ref, items: [item] };
+    const fetched: string[] = [];
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: fetchServing((url) => { fetched.push(url); }),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "active");
+    assert.equal(result.items[0]?.integrity, "declared-sha256");
+    assert.equal(result.items[0]?.sha256, SHA);
+    assert.deepEqual(fetched, [item.url]);
+    assert.deepEqual(readFileSync(join(store, "checkpoints", "one.bin")), BYTES);
+  });
+
+  test("a direct fetch answering non-200 fails named and nothing lands", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem()] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: async (): Promise<ArtifactResponse> => ({ status: 403, body: null }),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "artifact/fetch-refused");
+    assert.match(result.items[0]?.detail ?? "", /403/);
+    assert.equal(existsSync(join(store, "checkpoints", "one.bin")), false);
+  });
+
+  test("direct acquisition without a fetcher is blocked, not manager-routed", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem()] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.errorCode, "artifact/fetch-unavailable");
+  });
+
+  test("direct bytes that fail the declared digest fail named at the writer's gate", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem()] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: async (): Promise<ArtifactResponse> => ({ status: 200, body: source(Buffer.from("wrong bytes")) }),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "artifact/hash-mismatch");
+    assert.equal(existsSync(join(store, "checkpoints", "one.bin")), false);
+  });
+
+  test("a model item naming git or external is refused by name", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = {
+      ref,
+      items: [modelItem({ key: "g", name: "g.bin", provider: "git" }), modelItem({ key: "e", name: "e.bin", provider: "external" })],
+    };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.errorCode, "model/provider-without-arm");
+    assert.equal(result.items[1]?.errorCode, "model/provider-without-arm");
+  });
+
+  test("a model item naming an out-of-vocabulary provider is refused with the vocabulary", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem({ provider: "civitai" })] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.errorCode, "model/unknown-provider");
+    assert.match(result.items[0]?.detail ?? "", /civitai/);
+    assert.match(result.items[0]?.detail ?? "", /local, manager, git, direct, external/);
+  });
+
+  test("a local model item that is absent is blocked, never installed", async () => {
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem({ provider: "local" })] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.errorCode, "model/not-present");
+    assert.equal(existsSync(join(store, "checkpoints", "one.bin")), false);
   });
 
   test("returns blocked when the declared digest is absent", async () => {

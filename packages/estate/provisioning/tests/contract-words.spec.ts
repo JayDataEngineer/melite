@@ -52,4 +52,26 @@ describe("the provider vocabulary is closed and dispatched", () => {
     expect(localArm).toBeGreaterThan(-1);
     expect(gate).toBeLessThan(localArm);
   });
+
+  test("the model arm dispatches on the token too — direct is honoured, not countermanded", () => {
+    // the CivitAI audit's half-1: acquireModel used to route every
+    // model to ComfyUI-Manager whatever the declaration stamped, and
+    // the Manager resolved the row through its own catalog URL. The
+    // gate precedes the arms; the direct arm streams the declared URL
+    // through the verified writer.
+    const src = readFileSync(new URL("../src/service.ts", import.meta.url), "utf8");
+    expect(src).toContain("model/unknown-provider");
+    expect(src).toContain("model/provider-without-arm");
+    expect(src).toContain("artifact/fetch-unavailable");
+    const modelGate = src.indexOf('"model/unknown-provider"');
+    const directArm = src.indexOf('"artifact/fetch-refused"');
+    // acquireExternal shares the manager refusal string; the plan
+    // arm's copy is the last one in the file
+    const managerGate = src.lastIndexOf('"manager/model-unavailable"');
+    expect(modelGate).toBeGreaterThan(-1);
+    expect(directArm).toBeGreaterThan(-1);
+    expect(managerGate).toBeGreaterThan(-1);
+    expect(modelGate).toBeLessThan(directArm);
+    expect(directArm).toBeLessThan(managerGate);
+  });
 });
