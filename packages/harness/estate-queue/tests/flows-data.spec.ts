@@ -44,12 +44,39 @@ const dropRoots = (): void => {
   ROOT = "";
 };
 
+const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
+  // the retired anny-hmr row's shape verbatim (the 2026-10-13
+  // template cut removed the ROW; the family's estimate ACTION and
+  // this interpreter stay live — the anny card's hmr-estimate chip
+  // drives the same action through the commercial lane's verbs)
+  id: "anny-estimate-probe",
+  description: "d",
+  stages: [plainStage({
+    id: "estimate",
+    engine: CARD_PLANE_ENGINE,
+    family: "anny",
+    action: "estimate",
+    description: "MultiHMR2 regression + loud single-person lock",
+    inputs: { photo: { initial: "photo" } },
+    expected: { photo: "image" },
+    params: { photo: "$photo" },
+  })],
+  initialValidators: { photo: "photo" },
+  tool: null,
+  skillRefs: [],
+});
+
 describe("registry", () => {
-  it("names thirteen flows (craft-loop stroke 55, agent-spawn stroke 61); the getter answers unknowns with undefined", () => {
+  // EIGHT (2026-10-13, operator template cut): five 3D/rig template
+  // rows retired for the Blender-MCP lane (anny-hmr, character,
+  // kimodo-native, skin-apply, agent-spawn); the anny lanes the
+  // chips drive survive, and body-to-somax stays — the motion
+  // studio's import door drives it live.
+  it("names eight flows; the getter answers unknowns with undefined", () => {
     const names = registryFlowNames();
-    assert.equal(names.length, 13);
+    assert.equal(names.length, 8);
     assert.deepEqual([...names].sort(), names);
-    assert.ok(getRegistryFlow("character") !== undefined);
+    assert.ok(getRegistryFlow("anny-hmr-commercial") !== undefined);
     assert.equal(getRegistryFlow("ghost"), undefined);
   });
 
@@ -207,8 +234,23 @@ describe("registry", () => {
   });
 
   it("expansion resolves from_flow links (single-hop) and copies rows", () => {
-    const flow = getRegistryFlow("character")!;
-    assert.equal(flow.stages.filter((s) => s.fromFlow !== null).length, 4);
+    // the template cut left no seed row carrying links — the lattice
+    // is minted here from survivors (the live-seat wall below mints
+    // the same shape; this one pins expansion semantics alone)
+    const flow: RegistryFlow = {
+      id: "link-probe",
+      description: "d",
+      stages: [
+        linkedStage("anny-hmr-commercial", "estimate", "body", {
+          photo: { stage: "img", output: "photo" },
+        }),
+        linkedStage("fit-seat", "seat", "seat", {}),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    assert.equal(flow.stages.filter((s) => s.fromFlow !== null).length, 2);
     const expanded = expandRegistryFlow(flow);
     // copies ride the base (engine/card/outputs) under the link id.
     for (const st of expanded.stages) {
@@ -248,28 +290,69 @@ describe("registry", () => {
       /links unknown flow ghost-flow/,
     );
     assert.throws(
-      () => expandRegistryFlow(flesh([link("character", "ghost-stage", "a")])),
-      /links unknown stage character\/ghost-stage/,
+      () => expandRegistryFlow(flesh([link("anny-hmr-commercial", "ghost-stage", "a")])),
+      /links unknown stage anny-hmr-commercial\/ghost-stage/,
     );
-    // character's coat is itself a link — linking it chains (refused).
-    const coat = getRegistryFlow("character")!.stages.find((s) => s.fromFlow !== null)!;
-    assert.throws(
-      () =>
-        expandRegistryFlow(
-          flesh([link("character", coat.id, "a")]),
-        ),
-      /single-hop only/,
-    );
+    // a stage that is ITSELF a link — linking it chains (refused).
+    // The source is live-registered: no seed row carries links since
+    // the template cut, and live seats are the composition the door
+    // exists for (the seat-gap wall's own shape).
+    const seed = getRegistryFlow("anny-hmr-commercial")!;
+    const disposeChain = registerRegistryFlow({
+      ...seed,
+      id: "chain-link-src",
+      stages: [linkedStage("anny-hmr-commercial", seed.stages[0]!.id, "chained", {})],
+    });
+    try {
+      assert.throws(
+        () => expandRegistryFlow(flesh([link("chain-link-src", "chained", "a")])),
+        /single-hop only/,
+      );
+    } finally {
+      disposeChain();
+    }
   });
 });
 
 describe("registryFlowToInline", () => {
   it("projects edges, cards, card_io and skip_when", () => {
-    const inline = registryFlowToInline(expandRegistryFlow(getRegistryFlow("character")!)) as {
+    // the retired character row was the only skip_when carrier — the
+    // lattice is minted here (the projection law it pinned stays)
+    const skipFlow: RegistryFlow = {
+      id: "skip-probe",
+      description: "d",
+      stages: [
+        plainStage({
+          id: "img", engine: CARD_PLANE_ENGINE, card: "image-gen",
+          description: "d",
+          inputs: { character_prompt: { initial: "character_prompt" } },
+          expected: { character_prompt: "text" },
+          outputs: { photo: "image" }, cardIo: { photo: "image" },
+          params: { prompt: "$character_prompt" },
+          skipWhen: { initial: "starter_image", when: "present" },
+        }),
+        plainStage({
+          id: "gimg", engine: CARD_PLANE_ENGINE, card: "image-gen",
+          description: "d",
+          inputs: { garment_prompt: { initial: "garment_prompt" } },
+          expected: { garment_prompt: "text" },
+          outputs: { gimg: "image" }, cardIo: { gimg: "image" },
+          params: { prompt: "$garment_prompt" },
+          skipWhen: { initial: "garment_image_1", when: "present" },
+        }),
+        linkedStage("anny-hmr-commercial", "estimate", "body", {
+          photo: { stage: "img", output: "photo" },
+        }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const inline = registryFlowToInline(expandRegistryFlow(skipFlow)) as {
       stages: Array<Record<string, unknown>>;
     };
     assert.ok(inline.stages.length > 0);
-    const linked = inline.stages.find((s) => (s["id"] as string).includes("coat"));
+    const linked = inline.stages.find((s) => (s["id"] as string).includes("body"));
     assert.ok(linked !== undefined && linked["engine"] === "comfyui");
     const skipped = inline.stages.filter((s) => "skip_when" in s);
     assert.equal(skipped.length, 2);
@@ -281,13 +364,29 @@ describe("registryFlowToInline", () => {
     assert.deepEqual(tts.stages[0]!["inputs"], { text: { initial: "prompt" } });
     assert.deepEqual(tts.stages[0]!["outputs"], { wav: "audio" });
     assert.equal(tts.stages[0]!["card"], "tts");
-    const kimodo = registryFlowToInline(getRegistryFlow("kimodo-native")!) as {
+    // (the atom vocabulary, stroke 3): the motion card stage — the
+    // card's flowOutputBindings own the motion_npz channel (card_io),
+    // and output_nodes died with the hand-wired literal it annotated.
+    // The kimodo-native TEMPLATE row retired with the 3D cut; the
+    // motion CARD survives and the projection law is minted here.
+    const motionFlow: RegistryFlow = {
+      id: "motion-probe",
+      description: "d",
+      stages: [plainStage({
+        id: "t2m", engine: CARD_PLANE_ENGINE, card: "motion",
+        description: "d",
+        inputs: { prompt: { initial: "prompt" } },
+        expected: { prompt: "text" },
+        outputs: { motion_npz: "data" }, cardIo: { motion_npz: "data" },
+        params: { model: "kimodo" },
+      })],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const kimodo = registryFlowToInline(motionFlow) as {
       stages: Array<Record<string, unknown>>;
     };
-    // (the atom vocabulary, stroke 3): the t2m stage is a motion card
-    // stage now — the card's flowOutputBindings own the motion_npz
-    // channel (card_io), and output_nodes died with the hand-wired
-    // literal it annotated
     assert.deepEqual(kimodo.stages[0]!["outputs"], { motion_npz: "data" });
     assert.equal(kimodo.stages[0]!["card"], "motion");
     assert.deepEqual(kimodo.stages[0]!["card_io"], { motion_npz: "data" });
@@ -298,7 +397,7 @@ describe("registryFlowToInline", () => {
       // The doors' own order (stroke 4): expand → compose → inline.
       // The census rows carry no outputs — the DECL derivation owns
       // them, and only the composed projection is door-legal.
-      composeFamilyStages(expandRegistryFlow(getRegistryFlow("anny-hmr")!), [
+      composeFamilyStages(expandRegistryFlow(ANNY_ESTIMATE_FLOW()), [
         ANNY_DECL,
       ]),
     ) as {
@@ -324,7 +423,7 @@ describe("registryInitialsError", () => {
   it("absent initials ride; photo files stage from every root", () => {
     const r = roots();
     try {
-      const anny = getRegistryFlow("anny-hmr")!;
+      const anny = getRegistryFlow("anny-hmr-commercial")!;
       assert.equal(registryInitialsError(anny, {}, r), null);
       assert.equal(registryInitialsError(anny, { photo: null }, r), null);
       // relative (repo-anchored) hit.
@@ -349,7 +448,7 @@ describe("registryInitialsError", () => {
   it("refusals name the fault (type / browser-local / ext / traversal / disk / URL)", () => {
     const r = roots();
     try {
-      const anny = getRegistryFlow("anny-hmr")!;
+      const anny = getRegistryFlow("anny-hmr-commercial")!;
       assert.match(registryInitialsError(anny, { photo: 42 }, r)!, /must be a file path string/);
       assert.match(
         registryInitialsError(anny, { photo: "data:image/png;base64,x" }, r)!,
@@ -538,12 +637,12 @@ describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
       ...ghostFlow,
       stages: [
         plain("z", ""),
-        { ...plain("c", "cee"), fromFlow: { flow: "character", stage: "ghost-stage" } },
+        { ...plain("c", "cee"), fromFlow: { flow: "anny-hmr-commercial", stage: "ghost-stage" } },
       ],
     };
     assert.throws(
       () => registrySkillBody(ghostStage),
-      /stage 'c' links from unknown stage 'character\/ghost-stage' \(known stages: /,
+      /stage 'c' links from unknown stage 'anny-hmr-commercial\/ghost-stage' \(known stages: /,
     );
     // a plain (unlinked) flow still renders its engine line verbatim
     const text = registrySkillBody({ ...ghostFlow, stages: [plain("z", "")] });
@@ -553,13 +652,36 @@ describe("registrySkillBody dangling links (L8 — refuse, never lie)", () => {
 
 describe("registrySkillBody", () => {
   it("renders heads, edges, outputs, card_io and skip_when", () => {
-    const expandedText = registrySkillBody(expandRegistryFlow(getRegistryFlow("character")!));
-    assert.ok(expandedText.startsWith("# flow character\n"));
+    // the retired character row was this render's subject — the same
+    // lattice (skip_when pair + a linked stage) is minted here
+    const skipFlow: RegistryFlow = {
+      id: "skip-probe",
+      description: "d",
+      stages: [
+        plainStage({
+          id: "img", engine: CARD_PLANE_ENGINE, card: "image-gen",
+          description: "d",
+          inputs: { character_prompt: { initial: "character_prompt" } },
+          expected: { character_prompt: "text" },
+          outputs: { photo: "image" }, cardIo: { photo: "image" },
+          params: { prompt: "$character_prompt" },
+          skipWhen: { initial: "starter_image", when: "present" },
+        }),
+        linkedStage("anny-hmr-commercial", "estimate", "body", {
+          photo: { stage: "img", output: "photo" },
+        }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const expandedText = registrySkillBody(expandRegistryFlow(skipFlow));
+    assert.ok(expandedText.startsWith("# flow skip-probe\n"));
     assert.ok(expandedText.includes("## stages"));
-    assert.ok(expandedText.includes("- coat (comfyui):"));
+    assert.ok(expandedText.includes("- body (comfyui):"));
     assert.ok(expandedText.includes("skip when initial 'starter_image' is present"));
-    const text = registrySkillBody(getRegistryFlow("character")!);
-    assert.ok(text.includes("from skin-apply/coat"));
+    const text = registrySkillBody(skipFlow);
+    assert.ok(text.includes("from anny-hmr-commercial/estimate"));
     const tts = registrySkillBody(getRegistryFlow("audio-native-tts")!);
     assert.ok(tts.includes("card_io wav: audio"));
     assert.ok(tts.includes("initial 'prompt'"));

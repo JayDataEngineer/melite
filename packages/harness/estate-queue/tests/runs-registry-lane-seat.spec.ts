@@ -76,12 +76,12 @@ describe("the runs door through the lane's models seat", () => {
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
     assert.equal(seat.allDecls().length, 48, "the booted table, not a bare service (48 with the F1 mint's mask-select)");
     const err = await remote(() =>
-      svc.start({ draft_id: "d1", test: false, flow: "character" }, new AbortController().signal),
+      svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, new AbortController().signal),
     );
-    // The door's REQUIRED initial answers first: character composes
-    // the fit verb, which needs a bone, and the request carries none.
-    // The skip_when preview scope this flow reaches with a bone is a
-    // LATER gate — the lowest level that can answer answers first.
+    // The door's REQUIRED initial answers first: fit-seat needs a
+    // bone and the request carries none. The preview scope this flow
+    // reaches with a bone is a LATER gate — the lowest level that
+    // can answer answers first.
     assert.ok(err instanceof RemoteError, "the required-initial refusal, never a crash");
     assert.equal((err as RemoteError).code, "runs/invalid-request");
     assert.match((err as RemoteError).message, /"bone" is REQUIRED/);
@@ -93,7 +93,7 @@ describe("the runs door through the lane's models seat", () => {
     const seat = ctx.get("models") as unknown as { allDecls(): { id: string }[] };
     assert.equal(seat.allDecls().length, 0);
     const err = await remote(() =>
-      svc.start({ draft_id: "d1", test: false, flow: "character", bone: "hand_r" }, new AbortController().signal),
+      svc.start({ draft_id: "d1", test: false, flow: "fit-seat", bone: "hand_r" }, new AbortController().signal),
     );
     assert.ok(err instanceof RemoteError);
     assert.equal((err as RemoteError).code, "runs/invalid-request");

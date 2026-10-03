@@ -363,11 +363,10 @@ describe("validate", () => {
     // and the door takes the schema-only verdict. The old degrade
     // answered a workflow_pin here, accusing a flow's stages of
     // classes the pin never claimed not to serve. The flow is
-    // anny-hmr, which is a family verb with no card stage, so the
-    // sweep is the only thing that can judge it (the character flow
-    // refuses earlier, at the fit verb's compose; image-upscale needs
-    // a card the structural fake does not serve).
-    const schemaOnly = await s.svc.validate({ flow: "anny-hmr" }, sig());
+    // anny-hmr-commercial, which is a family verb with no card
+    // stage, so the sweep is the only thing that can judge it
+    // (image-upscale needs a card the structural fake does not serve).
+    const schemaOnly = await s.svc.validate({ flow: "anny-hmr-commercial" }, sig());
     // The POSITIVE the commit means: a served verdict. Asserting the
     // absence of a `code` key would pass for any success, including
     // one that carried pin errors under another field.
@@ -389,9 +388,9 @@ describe("validate", () => {
     // The INITIAL gate is the flow arm's own voice and still refuses
     // the present-but-absent input.
     const bad = await remote(() =>
-      s.svc.validate({ flow: "character", starter_image: "/nonexistent.png" }, sig()),
+      s.svc.validate({ flow: "anny-hmr-commercial", photo: "/nonexistent.png" }, sig()),
     );
-    assert.match(bad.message, /starter_image/);
+    assert.match(bad.message, /photo/);
   });
 
   it("the model arm walks strict, doors, dangling, id, resolve", async () => {
@@ -401,7 +400,7 @@ describe("validate", () => {
     );
     assert.equal(strict.code, "runs/invalid-request");
     const amb = await remote(() =>
-      s.svc.validate({ model: "m", flow: "character" }, sig()),
+      s.svc.validate({ model: "m", flow: "anny-hmr-commercial" }, sig()),
     );
     assert.match(amb.message, /ambiguous/);
     const dang = await remote(() =>

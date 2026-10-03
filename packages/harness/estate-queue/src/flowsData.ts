@@ -3,7 +3,7 @@
 // gateway package (doors/flowsRegistry.ts, killed with the gateway
 // app — KILL commit 40b57f94) live HERE as data, beside their
 // serving owners (the runs registry {flow:} arms). Port verbatim:
-// the eleven declarations, the live from_flow expansion, and the
+// the eight declarations, the live from_flow expansion, and the
 // inline shim (registryFlowToInline) — validate and start resolve
 // stages LIVE through expandRegistryFlow, no snapshot drift.
 //
@@ -193,7 +193,7 @@ export function linkedStage(
   };
 }
 
-// ── the eleven declarations ─────────────────────────────────────
+// ── the eight declarations (cut 2026-10-13) ────────────────────
 
 
 
@@ -225,34 +225,24 @@ export function linkedStage(
  *  params carry those fields at DRIVE time; the registry row is
  *  the template + the agent leaf. */
 
-import { ANNY_HMR,
+import { BODY_TO_SOMAX,
   ANNY_HMR_COMMERCIAL,
   ANNY_PARAMS,
   AUDIO_NATIVE_TTS,
-  BODY_TO_SOMAX,
-  CHARACTER,
   FIT_SEAT,
   IMAGE_UPSCALE,
-  KIMODO_NATIVE,
   MUSIC_NATIVE,
-  SKIN_APPLY,
-  CRAFT_LOOP,
-  AGENT_SPAWN } from "./flowsRegistryRows.ts";
+  CRAFT_LOOP } from "./flowsRegistryRows.ts";
 
 const REGISTRY: Record<string, RegistryFlow> = {
-  "anny-hmr": ANNY_HMR,
   "craft-loop": CRAFT_LOOP,
-  "agent-spawn": AGENT_SPAWN,
   "anny-hmr-commercial": ANNY_HMR_COMMERCIAL,
+  "body-to-somax": BODY_TO_SOMAX,
   "anny-params": ANNY_PARAMS,
   "audio-native-tts": AUDIO_NATIVE_TTS,
-  "body-to-somax": BODY_TO_SOMAX,
-  character: CHARACTER,
   "fit-seat": FIT_SEAT,
   "image-upscale": IMAGE_UPSCALE,
-  "kimodo-native": KIMODO_NATIVE,
   "music-native": MUSIC_NATIVE,
-  "skin-apply": SKIN_APPLY,
 };
 
 // THE LIVE SEAT (G1, 2026-10-11 — live-reload-surface doc's type

@@ -143,7 +143,9 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // E-M8: the censuses are EXACT (a floor let a fixture or a
     // graph shrink silently — the wall would judge less and say green).
     expect(Object.keys(doc).length, "the tracked fixture carries the flow classes (exact)").toBe(14);
-    expect(names.length, "the registry flows judged, exact").toBe(13);
+    // the CUT roster's census (2026-10-13: five 3D/rig rows
+    // retired; body-to-somax stays — the motion studio drives it)
+    expect(names.length, "the registry flows judged, exact").toBe(8);
     // (the atom vocabulary, stroke 4 — completed): EVERY census
     // stage's backend is a declared action now — anny's estimator
     // chains + verbatim bake, and the meld verbs' coat/seat (their
@@ -153,16 +155,17 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // composed graph on the EXPANDED plane (fromFlow hops
     // materialize, so character's body/skin/fit hops count in).
     // Zero hand-authored nodes remain — every census graph rides
-    // the same hierarchy a card stage rides; 29 is the total
-    // judged.
-    expect(familyNodes, "the nodes composed from family actions, exact").toBe(29);
+    // the same hierarchy a card stage rides. The CUT roster
+    // (2026-10-13) judges 6 family-composed nodes over 3 family
+    // stages (anny-hmr-commercial's estimator chain + fit-seat's
+    // seat + anny-params' compose; the retired character hop
+    // lattice died with its row).
+    expect(familyNodes, "the nodes composed from family actions, exact").toBe(6);
     // the STAGE census (exact): an action composing zero nodes would
     // shrink the node count silently — the stage count refuses it.
-    // 8 = the 5 census rows' direct stages + character's 3 fromFlow
-    // hops (body/skin/fit materialize on the expanded plane).
-    expect(familyStages, "the stages composed from family actions, exact").toBe(8);
+    expect(familyStages, "the stages composed from family actions, exact").toBe(3);
     expect(nodes - familyNodes, "the hand-authored nodes remaining, exact").toBe(0);
-    expect(nodes, "the nodes judged, exact").toBe(29);
+    expect(nodes, "the nodes judged, exact").toBe(6);
     // the dotted sub-keys: the remesh combo's sign_mode sub-values
     // died with the garment literal (the pixal3d mesh action owns
     // that node now). Zero is the current truth — a dotted sub-key

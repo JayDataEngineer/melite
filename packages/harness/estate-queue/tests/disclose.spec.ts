@@ -93,15 +93,15 @@ describe("flowSummaryRows", () => {
         mkdirSync(join(repo, "flows", name), { recursive: true });
         writeFileSync(join(repo, "flows", name, "tool.json"), JSON.stringify(body));
       };
-      leaf("anny-hmr", { stage_title: "Anny face" });
+      leaf("anny-hmr-commercial", { stage_title: "Anny face" });
       leaf("audio-native-tts", {});
       leaf("body-to-somax", { stage_title: "" });
-      leaf("character", { stage_title: 5 });
+      leaf("craft-loop", { stage_title: 5 });
       const byName = new Map(flowSummaryRows(repo).map((r) => [r.name, r.title]));
-      assert.equal(byName.get("anny-hmr"), "Anny face");
+      assert.equal(byName.get("anny-hmr-commercial"), "Anny face");
       assert.equal(byName.get("audio-native-tts"), "audio-native-tts");
       assert.equal(byName.get("body-to-somax"), "body-to-somax");
-      assert.equal(byName.get("character"), "character");
+      assert.equal(byName.get("craft-loop"), "craft-loop");
       assert.equal(byName.get("fit-seat"), "fit-seat");
     } finally {
       rmSync(repo, { recursive: true, force: true });

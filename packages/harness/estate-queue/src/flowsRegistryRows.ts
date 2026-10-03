@@ -6,38 +6,6 @@ import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage'
 import type { RegistryFlow } from "./flowsData.ts";
 import { plainStage, initial, linkedStage, fromStage } from "./flowsData.ts";
 
-export const ANNY_HMR: RegistryFlow = {
-  id: "anny-hmr",
-  description:
-    "Pilot stroke 1 (dev_docs/plans/anny-pilot.md §4): photo → Anny body GLB " +
-    "via the estimator pack (MultiHMR2 regression + loud single-person " +
-    "lock) — the first SUB-ACTION verb's flow template; the anny card's " +
-    "HMR chip runs this through the queue and hydrates body_glb from " +
-    "its artifacts.",
-  stages: [
-    plainStage({
-      id: "estimate",
-      engine: CARD_PLANE_ENGINE,
-      // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
-      // vocabulary, stroke 4 — the estimator fork's resolution):
-      // photo→body is the hmr-estimate VERB (SubActionMod law,
-      // stroke 89 — its calibration knobs never join the anny card
-      // schema; they live FIXED in the family's action build). The
-      // row routes (family + action + the photo ref); the family's
-      // DECL composes the graph at expansion — one truth, the same
-      // hierarchy a card stage rides, without a card face.
-      family: "anny",
-      action: "estimate",
-      description: "MultiHMR2 regression + loud single-person lock",
-      inputs: { photo: initial("photo") },
-      expected: { photo: "image" },
-      params: { photo: "$photo" },
-    }),
-  ],
-  initialValidators: { photo: "photo" },
-  tool: null,
-  skillRefs: [],
-};
 export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
   id: "anny-hmr-commercial",
   description:
@@ -191,117 +159,7 @@ export const BODY_TO_SOMAX: RegistryFlow = {
   tool: null,
   skillRefs: [],
 };
-export const CHARACTER: RegistryFlow = {
-  id: "character",
-  description:
-    "Headless keeper pipeline: z-image character + garment images (or " +
-    "operator-supplied starters) -> ANNY commercial body -> SOMAX rig -> " +
-    "pixal3d garment (remesh tail folded) -> skin detail -> automatic " +
-    "fit-seat attach -> dressed-GLB export. VALIDATE-ONLY on the queue's " +
-    "{flow:} door (2026-09-30 multi-stage boundary stamp): card= stages " +
-    "refuse at start — drive the cards through the bench (construct " +
-    "chaining) or the {model:} door.",
-  stages: [
-    plainStage({
-      id: "img",
-      engine: CARD_PLANE_ENGINE,
-      card: "image-gen",
-      description:
-        "z-image character sheet via the image-gen card (skipped when the " +
-        "operator brings starter_image)",
-      inputs: { character_prompt: initial("character_prompt") },
-      expected: { character_prompt: "text" },
-      outputs: { photo: "image" },
-      cardIo: { photo: "image" },
-      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3 — the
-      // flow-system stroke): the stage names the card and the family;
-      // the family's declared t2i action composes the graph, exactly
-      // as the bench does. The flow row owns routing only.
-      params: {
-        model: "z-image",
-        prompt: "$character_prompt",
-        seed: 20260906,
-        width: 1024,
-        height: 1024,
-      },
-      skipWhen: { initial: "starter_image", when: "present" },
-    }),
-    plainStage({
-      id: "gimg",
-      engine: CARD_PLANE_ENGINE,
-      card: "image-gen",
-      description:
-        "z-image garment sheet via the image-gen card (skipped when the " +
-        "operator brings garment_image_1)",
-      inputs: { garment_prompt: initial("garment_prompt") },
-      expected: { garment_prompt: "text" },
-      outputs: { gimg: "image" },
-      cardIo: { gimg: "image" },
-      params: {
-        model: "z-image",
-        prompt: "$garment_prompt",
-        seed: 20260907,
-        width: 1024,
-        height: 1024,
-      },
-      skipWhen: { initial: "garment_image_1", when: "present" },
-    }),
-    linkedStage("anny-hmr-commercial", "estimate", "body", {
-      photo: fromStage("img", "photo"),
-    }),
-    linkedStage("body-to-somax", "rig", "rig", {
-      glb: fromStage("body", "body"),
-    }),
-    plainStage({
-      id: "garment",
-      engine: CARD_PLANE_ENGINE,
-      card: "img-to-mesh",
-      description:
-        "pixal3d garment lift incl. the remesh tail (step e folded — GetMeshInfo " +
-        "-> RemeshMesh -> DecimateMesh ride in-chain) via the img-to-mesh card — " +
-        "the pixal3d family's declared mesh action",
-      inputs: { garment_image: fromStage("gimg", "gimg") },
-      expected: { garment_image: "image" },
-      outputs: { garment: "mesh" },
-      cardIo: { garment: "mesh" },
-      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3): the
-      // pinned GARMENT_WORKFLOW literal was a stale snapshot of the
-      // pixal3d mesh lane (it drifted the moment a weight or a node
-      // default moved). The family's declared action composes the
-      // graph; the official calibrations (768 remesh, 4096 atlas)
-      // ride the card schema's own defaults.
-      params: {
-        model: "pixal3d",
-        input_image: "$garment_image",
-        seed: 42,
-      },
-    }),
-    // THE SAME TWO VERBS, THEIR FILE INPUTS ONLY (stroke-89's law,
-    // as the standalone rows): the coat and the seat take the body and
-    // the prop; the coat's detail kind/map size/seed and the seat's
-    // fit row are each verb's own vocabulary inside the action, so
-    // this flow wires files and nothing else.
-    linkedStage("skin-apply", "coat", "coat", {
-      body: fromStage("rig", "body"),
-    }),
-    linkedStage("fit-seat", "seat", "seat", {
-      body: fromStage("coat", "skin"),
-      prop: fromStage("garment", "garment"),
-      bone: initial("bone"),
-    }),
-  ],
-  initialValidators: {
-    starter_image: "photo",
-    garment_image_1: "photo",
-    // the fit verb's bone, carried as a text initial — this flow
-    // composes that verb, so the seat's required initial rides here
-    // too.
-    bone: "text",
-  },
-  requiredInitials: ["bone"],
-  tool: null,
-  skillRefs: [],
-};
+
 export const FIT_SEAT: RegistryFlow = {
   id: "fit-seat",
   description:
@@ -436,44 +294,6 @@ export const IMAGE_UPSCALE: RegistryFlow = {
     "model:z-image:prompt-enhance",
   ],
 };
-export const KIMODO_NATIVE: RegistryFlow = {
-  id: "kimodo-native",
-  description:
-    "Text-to-motion gate — ComfyUI Kimodo lane (island nodes, raw PyTorch " +
-    "kimodo package, local SOMA-RP-v1.1 weights + local LLM2Vec encoder). " +
-    "VALIDATE-ONLY on the queue's {flow:} door (2026-09-30 multi-stage " +
-    "boundary stamp): card= stages refuse at start — drive the motion card " +
-    "through the bench or {model:}.",
-  stages: [
-    plainStage({
-      id: "t2m",
-      engine: CARD_PLANE_ENGINE,
-      card: "motion",
-      description: "Kimodo text-to-pose via the motion card (the kimodo family's declared compose action)",
-      inputs: { prompt: initial("prompt") },
-      // (the derivation law): the motion card's flowKinds.inputs
-      // declares prompt: text — the kind derives, no hand mirror
-      outputs: { motion_npz: "data" },
-      cardIo: { motion_npz: "data" },
-      // THE LANE IS THE FAMILY'S (the atom vocabulary, stroke 3):
-      // this stage hand-wired the KimodoLoader + KimodoTextToPose
-      // nodes — a second copy of the kimodo compose lane. The
-      // family's declared action composes the graph; output_nodes
-      // died with the literal (the card's flowOutputBindings own the
-      // motion_npz channel).
-      params: {
-        prompt: "$prompt",
-        seed: 42,
-        duration_sec: 3,
-        diffusion_steps: 25,
-        num_samples: 1,
-      },
-    }),
-  ],
-  initialValidators: {},
-  tool: null,
-  skillRefs: [],
-};
 export const MUSIC_NATIVE: RegistryFlow = {
   id: "music-native",
   description:
@@ -536,45 +356,6 @@ export const MUSIC_NATIVE: RegistryFlow = {
   },
   skillRefs: [],
 };
-export const SKIN_APPLY: RegistryFlow = {
-  id: "skin-apply",
-  description:
-    "Deterministic skin detail maps onto a SOMAX body under the meld skin laws " +
-    "(the apply-skin verb engine): the controller sidecar assembles from the " +
-    "verb's own vocabulary (the door admits photo, glb, bake_params and a " +
-    "bare-name text initial) " +
-    "in-pack, SkinApply grafts, the turnaround proves.",
-  stages: [
-    plainStage({
-      id: "coat",
-      engine: CARD_PLANE_ENGINE,
-      description:
-        "SkinPack (maps) -> SkinSidecar (sidecar) -> SkinApply (graft) -> proof views",
-      inputs: { body: initial("body") },
-      expected: { body: "mesh" },
-      // THE VERB'S BACKEND IS A DECLARED ACTION (the atom
-      // vocabulary, stroke 4): the apply-skin verb's nodes compose
-      // from the skin family's DECL — every knob rides verbatim, the
-      // proof framing is FIXED in the action build. The row routes;
-      // the declaration owns the graph (SubActionMod law — the
-      // 2026-09-16 retirement killed the skin CARD; the family is
-      // the sanctioned seam, not a revival).
-      family: "skin",
-      action: "coat",
-      // THE BODY IS THE ONLY REQUEST KNOB (stroke-89's law, and the
-      // door's own type: initialValidators admit photo/glb/bake_params
-      // only, so a stage spelling `$map_size` names a key the flow can
-      // never declare — the merged worker refused it by name). The
-      // detail kind, map size and seed are the verb's fixed vocabulary
-      // inside the action, exactly as the anny estimator fixes
-      // conf_thresh and dist_thresh_nms.
-      params: { body: "$body" },
-    }),
-  ],
-  initialValidators: { body: "glb" },
-  tool: null,
-  skillRefs: [],
-};
 export const CRAFT_LOOP: RegistryFlow = {
   id: "craft-loop",
   description:
@@ -591,29 +372,6 @@ export const CRAFT_LOOP: RegistryFlow = {
       description: "act → capture → critique → decide (the loop engine)",
       inputs: {},
       outputs: { default: "image" },
-      params: {},
-    }),
-  ],
-  initialValidators: {},
-  tool: null,
-  skillRefs: [],
-};
-export const AGENT_SPAWN: RegistryFlow = {
-  id: "agent-spawn",
-  description:
-    "Spawn a subagent with a task: a general tool-calling loop on the runs plane " +
-    "(engine 'agent'). The allow-listed MCP servers become its tools (mcp__<server>__*), " +
-    "the named skills are spawn-injected into its brief as operating instructions, and " +
-    "it works until the task is done — max_turns default unlimited, hard circuit breaker " +
-    "1000, the stop door always live. Artifacts land in the run dir. Driven by the runs " +
-    "door — see flows/agent-spawn/agents/AGENT.md.",
-  stages: [
-    plainStage({
-      id: "agent",
-      engine: "agent",
-      description: "task → tool calls → answer (the agent engine)",
-      inputs: {},
-      outputs: { default: "text" },
       params: {},
     }),
   ],

@@ -165,7 +165,8 @@ describe("the melite tool faces answer over the live composition", () => {
     // serves the REGISTRY'S OWN census, exactly.
     const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
     const flowNames = registryFlowNames();
-    assert.ok(flowNames.length >= 10, `the flows registry is real (${String(flowNames.length)})`);
+    // the CUT roster's census (2026-10-13): eight flows
+    assert.ok(flowNames.length >= 8, `the flows registry is real (${String(flowNames.length)})`);
     // F-M3 exact: the envelope's OWN census claim (counts.flows) is
     // the registry's census — the rows view may clamp (the
     // counts-first law), the count never lies.

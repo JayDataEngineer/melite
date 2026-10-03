@@ -26,6 +26,7 @@ import {
   toolRowFor,
 } from "../src/loadPlane.ts";
 import { toolBaseRows } from "../src/toolProjection.ts";
+import { getRegistryFlow, linkedStage, registerRegistryFlow } from "../src/flowsData.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
 
 const REPO = resolveRepoRoot();
@@ -437,12 +438,25 @@ describe("loadCard", () => {
 
 describe("loadFlow", () => {
   it("null-tool flows serve null signatures; linked stages ride verbatim", () => {
-    const a = loadFlow(REPO, "anny-hmr");
+    const a = loadFlow(REPO, "anny-hmr-commercial");
     assert.equal(a["signature"], null);
     assert.deepEqual(a["refs"], []);
-    const c = loadFlow(REPO, "character");
-    const stages = c["stages"] as Array<{ fromFlow?: unknown }>;
-    assert.ok(stages.some((s) => s.fromFlow !== undefined));
+    // no seed row carries links since the template cut (2026-10-13) —
+    // the link lattice is live-registered, the seat the drop-in door
+    // owns; disclosure serves the link verbatim through that seat
+    const seed = getRegistryFlow("anny-hmr-commercial")!;
+    const dispose = registerRegistryFlow({
+      ...seed,
+      id: "link-disclose-probe",
+      stages: [linkedStage("anny-hmr-commercial", seed.stages[0]!.id, "linked", {})],
+    });
+    try {
+      const c = loadFlow(REPO, "link-disclose-probe");
+      const stages = c["stages"] as Array<{ fromFlow?: unknown }>;
+      assert.ok(stages.some((s) => s.fromFlow !== undefined));
+    } finally {
+      dispose();
+    }
   });
 
   it("tooled flows serve the overlay; skill refs resolve with lines", () => {

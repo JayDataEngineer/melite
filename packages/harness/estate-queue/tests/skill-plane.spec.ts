@@ -94,7 +94,7 @@ const mkEstate = (withFlows = true): string => {
   writeFileSync(join(E, "afile"), "stray");
   if (withFlows) {
     mkdirSync(join(ROOT, "flows"), { recursive: true });
-    w("flows/anny-hmr/SKILL.md", "# Mega skill\n");
+    w("flows/anny-hmr-commercial/SKILL.md", "# Mega skill\n");
   }
   return ROOT;
 };
@@ -369,10 +369,10 @@ describe("flowRows", () => {
   it("renders one gated row per declaration (SKILL.md wins, else registry)", () => {
     mkEstate();
     const rows = flowRows(ROOT);
-    assert.ok(rows.length >= 11);
-    const anny = rows.find((r) => r.row.id === "flow:anny-hmr");
+    assert.ok(rows.length >= 8); // the eight-flow registry (template cut, 2026-10-13)
+    const anny = rows.find((r) => r.row.id === "flow:anny-hmr-commercial");
     assert.ok(anny !== undefined);
-    assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr", "SKILL.md")));
+    assert.ok(anny.bodyPath !== null && anny.bodyPath.endsWith(join("flows", "anny-hmr-commercial", "SKILL.md")));
     assert.equal(anny.bodyText, null);
     const tts = rows.find((r) => r.row.id === "flow:audio-native-tts");
     assert.ok(tts !== undefined && tts.bodyText !== null && tts.bodyText.length > 0);
@@ -401,11 +401,11 @@ describe("flowRows", () => {
     // with their refusal carried on the row. THAT is the isolation:
     // the broken subset is skipped, the rest of the lane is intact.
     assert.ok(
-      rows.some((r) => r.row.id === "flow:agent-spawn"),
+      rows.some((r) => r.row.id === "flow:craft-loop"),
       "a family-free flow still serves on a bare seat",
     );
     assert.equal(
-      rows.find((r) => r.row.id === "flow:anny-hmr"),
+      rows.find((r) => r.row.id === "flow:anny-hmr-commercial"),
       undefined,
       "the family-carrying flow is skipped, not thrown over the rest",
     );
@@ -413,7 +413,7 @@ describe("flowRows", () => {
     // the un-seated read composes every family stage and serves every
     // flow row. The skip is per-flow, never lane-wide.
     const served = flowRows(ROOT);
-    assert.ok(served.length >= 11, "a seated table serves every flow row again");
+    assert.ok(served.length >= 8, "a seated table serves every flow row again");
   });
 });
 
@@ -476,7 +476,7 @@ describe("buildSkillIndex + findSkill", () => {
     const lane = findSkill(ROOT, "model:m4");
     assert.ok(lane !== null && lane.path === null && typeof lane.bodyText === "string");
     assert.match(lane.bodyText as string, /comma tags, NOT prose/);
-    const flow = findSkill(ROOT, "flow:anny-hmr");
+    const flow = findSkill(ROOT, "flow:anny-hmr-commercial");
     assert.ok(flow !== null && flow.bodyText === null);
     const rendered = findSkill(ROOT, "flow:audio-native-tts");
     assert.ok(rendered !== null && rendered.bodyText !== null);

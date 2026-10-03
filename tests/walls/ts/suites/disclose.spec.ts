@@ -109,10 +109,12 @@ test("discover — both planes, live rows, the door's voices", { timeout: 60_000
   //    name. Deliberate is the point — a roster change is an API
   //    change, and the wall is where it gets said out loud.
   const THE_FLOW_ROSTER = [
-    "agent-spawn", "anny-hmr", "anny-hmr-commercial", "anny-params",
-    "audio-native-tts", "body-to-somax", "character", "craft-loop",
-    "fit-seat", "image-upscale", "kimodo-native", "music-native",
-    "skin-apply",
+    // the eight-flow roster (template cut 2026-10-13: five 3D/rig
+    // template rows retired for the Blender-MCP lane; body-to-somax
+    // survives — the motion studio's import door drives it live)
+    "anny-hmr-commercial", "anny-params",
+    "audio-native-tts", "body-to-somax", "craft-loop",
+    "fit-seat", "image-upscale", "music-native",
   ];
   const { registryFlowNames } = await import("../../../../packages/harness/estate-queue/src/flowsData.ts");
   const { loadCardDefs } = await import("../../../../packages/engines/comfyui-cordis/src/cardDefs.ts");
@@ -364,8 +366,8 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   // 2. a flow skill read answers the DOC (the registry render or
   //    the SKILL.md leaf). The sample is skin-apply.
   const sig = new AbortController().signal;
-  const doc = skills.read("flow:skin-apply", sig);
-  assert.equal(doc.id, "flow:skin-apply");
+  const doc = skills.read("flow:fit-seat", sig);
+  assert.equal(doc.id, "flow:fit-seat");
   assert.ok(
     typeof doc.content === "string" && doc.content.length > 0,
     "the flow's skill body renders",
@@ -380,8 +382,8 @@ test("the skills seat — index + read, the door's voices (REBUILD-16)", async (
   const request = makeEstateRequest(ctx) as (method: EstateMethod, path: string, body: unknown, signal: AbortSignal) => Promise<unknown>;
   const laneIdx = (await request("GET", "/v1/skills", undefined, sig)) as { count?: number };
   assert.ok(typeof laneIdx.count === "number" && (laneIdx.count ?? 0) > 0, "lane serves the seeded index");
-  const laneDoc = (await request("GET", "/v1/skills/flow%3Askin-apply", undefined, sig)) as { id?: string };
-  assert.equal(laneDoc.id, "flow:skin-apply", "lane serves the read");
+  const laneDoc = (await request("GET", "/v1/skills/flow%3Afit-seat", undefined, sig)) as { id?: string };
+  assert.equal(laneDoc.id, "flow:fit-seat", "lane serves the read");
   // (env restore + tmp cleanup live in the file-level afterEach —
   // the ONE restore path; these nested finallies were the second
   // critique's double-restore smell)

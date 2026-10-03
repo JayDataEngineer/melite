@@ -36,8 +36,8 @@ describe("LoadResolverService", () => {
   });
 
   it("flows open by name (unknowns 404 LOUD)", () => {
-    const b = seat().load("flow", "anny-hmr") as { bundle: { name: string; kind: string } };
-    assert.equal(b.bundle.name, "anny-hmr");
+    const b = seat().load("flow", "anny-hmr-commercial") as { bundle: { name: string; kind: string } };
+    assert.equal(b.bundle.name, "anny-hmr-commercial");
     assert.equal(b.bundle.kind, "flow");
     assert.throws(() => seat().load("flow", "ghost"), /unknown flow 'ghost'/);
   });

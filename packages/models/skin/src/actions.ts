@@ -21,7 +21,7 @@ export function parseSkinFacts(_raw: LaneInputsFacts): Record<string, never> {
   return {}
 }
 
-/** The coat action (the flow 'skin-apply' the meld chips drive):
+/** The coat action (the meld chips drive it through the family's
  *  SkinPack (maps) → SkinSidecar (kind sidecar) → SkinApply (graft)
  *  → the 4-view proof sheet. Every param rides VERBATIM — a $-ref
  *  passes through untyped-by-design (the inline compile and the

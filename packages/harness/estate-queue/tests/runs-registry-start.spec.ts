@@ -349,25 +349,25 @@ describe("start flow arm", () => {
     assert.match(unknown.message, /no flow named ghost in the registry/);
     const bad = await remote(() =>
       s.svc.start(
-        { draft_id: "d1", test: false, flow: "character", starter_image: "/nonexistent.png" },
+        { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo: "/nonexistent.png" },
         sig(),
       ),
     );
-    assert.match(bad.message, /starter_image/);
+    assert.match(bad.message, /photo/);
     assert.equal(s.core.runs.size, 0);
   });
 
   it("a flow whose REQUIRED initial is absent refuses at the door, by name", async () => {
-    // character composes the fit verb, whose bone is a required
-    // initial: the door refuses here — before the compiler's
-    // skip_when scope, before any run registers — so the lowest
-    // level that can answer answers.
+    // fit-seat carries the required bone initial (the retired
+    // character row linked the same verb): the door refuses here —
+    // before any run registers — so the lowest level that can
+    // answer answers.
     const s = seat();
     const err = await remote(() =>
-      s.svc.start({ draft_id: "d1", test: false, flow: "character" }, sig()),
+      s.svc.start({ draft_id: "d1", test: false, flow: "fit-seat" }, sig()),
     );
     assert.equal(err.code, "runs/invalid-request");
-    assert.match(err.message, /"bone" is REQUIRED by the "character" flow/);
+    assert.match(err.message, /"bone" is REQUIRED by the "fit-seat" flow/);
   });
 });
 

@@ -3,7 +3,9 @@
 // parity with the retired hand literals, and the derivation law.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { getRegistryFlow, expandRegistryFlow } from "../src/flowsData.ts";
+import { getRegistryFlow, expandRegistryFlow, plainStage } from "../src/flowsData.ts";
+import type { RegistryFlow } from "../src/flowsData.ts";
+import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import {
   composeFamilyStages,
   liveFamilyDecls,
@@ -11,6 +13,28 @@ import {
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 
 const decls = [ANNY_DECL];
+
+const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
+  // the retired anny-hmr row's shape verbatim (the 2026-10-13
+  // template cut removed the ROW; the family's estimate ACTION and
+  // this interpreter stay live — the anny card's hmr-estimate chip
+  // drives the same action through the commercial lane's verbs)
+  id: "anny-estimate-probe",
+  description: "d",
+  stages: [plainStage({
+    id: "estimate",
+    engine: CARD_PLANE_ENGINE,
+    family: "anny",
+    action: "estimate",
+    description: "MultiHMR2 regression + loud single-person lock",
+    inputs: { photo: { initial: "photo" } },
+    expected: { photo: "image" },
+    params: { photo: "$photo" },
+  })],
+  initialValidators: { photo: "photo" },
+  tool: null,
+  skillRefs: [],
+});
 
 describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   it("a card-only flow passes through untouched", () => {
@@ -21,7 +45,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("the estimate action lands the retired literal's wire, node for node", () => {
-    const row = getRegistryFlow("anny-hmr");
+    const row = ANNY_ESTIMATE_FLOW();
     assert.notEqual(row, undefined);
     const composed = composeFamilyStages(expandRegistryFlow(row!), decls);
     const st = composed.stages[0];
@@ -97,7 +121,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an unadmitted param refuses with the card plane's voice", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bad = {
       ...row,
       stages: [
@@ -111,7 +135,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an unknown family refuses naming the seat's register", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bad = {
       ...row,
       stages: [
@@ -120,7 +144,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls),
-      /flow 'anny-hmr' stage 'estimate' names family 'ghost' — no such family in the models seat \(registered: anny\)/,
+      /flow 'anny-estimate-probe' stage 'estimate' names family 'ghost' — no such family in the models seat \(registered: anny\)/,
     );
     // THE SEAT'S THREE CONDITIONS SPEAK FOR THEMSELVES: a bare mount
     // (owner mounted, table empty) and an absent seat are environment
@@ -133,7 +157,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     );
     assert.throws(
       () => composeFamilyStages(bad, [], "absent"),
-      /\[models\] no ModelsService for flow 'anny-hmr' stage 'estimate' naming family 'ghost'/,
+      /\[models\] no ModelsService for flow 'anny-estimate-probe' stage 'estimate' naming family 'ghost'/,
     );
     // a genuinely unregistered family on a seated table keeps the
     // registration voice, with the table's real contents
@@ -144,7 +168,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("an undeclared action refuses with the flow's voice naming the stage", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bad = {
       ...row,
       stages: [
@@ -153,12 +177,12 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls),
-      /flow 'anny-hmr' stage 'estimate' names action 'morph' the family 'anny' does not declare \(family 'anny' declares no action 'morph'/,
+      /flow 'anny-estimate-probe' stage 'estimate' names action 'morph' the family 'anny' does not declare \(family 'anny' declares no action 'morph'/,
     );
   });
 
   it("a lane-bound action refuses — only lane-independent verbs compose", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bound = [
       ANNY_DECL,
       {
@@ -190,7 +214,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a stage naming both card and family refuses at admission", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bad = {
       ...row,
       stages: [
@@ -204,7 +228,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a hand-written output that contradicts the declaration refuses", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const bad = {
       ...row,
       stages: [
@@ -218,7 +242,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
   });
 
   it("a hand-written output that AGREES with the declaration composes", () => {
-    const row = expandRegistryFlow(getRegistryFlow("anny-hmr")!);
+    const row = expandRegistryFlow(ANNY_ESTIMATE_FLOW()!);
     const agreeing = {
       ...row,
       stages: [

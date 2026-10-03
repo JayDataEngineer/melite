@@ -731,10 +731,10 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   //    flow's classes, so the compile is ok (the cardGate wire,
   //    2026-09-13; the old wall pinned the null-registry gap —
   //    0 pinned classes).
-  const skinApply = (await runs.validate({ flow: "skin-apply" }, sig)) as {
+  const annyEstimate = (await runs.validate({ flow: "anny-hmr-commercial" }, sig)) as {
     ok?: boolean;
   };
-  assert.equal(skinApply["ok"], true, "a family verb expands live through the same arm");
+  assert.equal(annyEstimate["ok"], true, "a family verb expands live through the same arm");
   // the fit verb composes when its bone rides (the seam is the
   // flow's required initial, not a kill switch in the action)
   const fitSeat = (await runs.validate({ flow: "fit-seat", bone: "hand_r" }, sig)) as {
@@ -759,33 +759,30 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
     rmSync(bodyFile, { force: true });
     rmSync(propFile, { force: true });
   }
-  // 3. start on a single-stage flow: expansion rides the inline
-  //    pipeline and the run REGISTERS (the pin sweep is the
+  // 3. start on a single-stage family flow: expansion rides the
+  //    inline pipeline and the run REGISTERS (the pin sweep is the
   //    validate gate; start's engine seam is the pump) — the run
   //    exists, then settles FAILED loud on the missing engine seat
   //    (this wall's own law).
   const started = (await runs.start(
-    { flow: "skin-apply", test: true, draft_id: "d_ok" }, sig,
+    { flow: "anny-hmr-commercial", test: true, draft_id: "d_ok" }, sig,
   )) as Record<string, unknown>;
   assert.match(String(started["run_id"]), /^run-/);
-  // 4. a MULTI-stage registry flow (character — 7 stages incl. the
-  //    z-image builder graph) serves at validate: the real pin
-  //    carries its classes, so the multi-stage compile is ok. The
-  //    door's own required initial rides the request — a bone the
-  //    verb needs, carried as a text initial.
-  const character = (await runs.validate({ flow: "character", bone: "hand_r" }, sig)) as {
+  // 4. a MULTI-stage registry flow (image-upscale — two card stages)
+  //    serves at validate: the real pin carries its classes, so the
+  //    multi-stage compile is ok. START refuses card= stages
+  //    explicitly (the multi-stage boundary stamp, 2026-09-30) — the
+  //    refusal text is the contract, never a quiet widening.
+  const upscale = (await runs.validate({ flow: "image-upscale" }, sig)) as {
     ok?: boolean;
   };
-  assert.equal(character["ok"], true);
+  assert.equal(upscale["ok"], true);
   await assert.rejects(
-    runs.start({ flow: "character", test: true, draft_id: "d_ok", bone: "hand_r" }, sig),
+    runs.start({ flow: "image-upscale", test: true, draft_id: "d_ok" }, sig),
     (e: unknown) => {
       const re = remoteErrorOf(e);
       assert.ok(re, "a RemoteError");
-      // the FIRST gate that names an unported shape refuses — for
-      // character that is its skip_when branches (the inline
-      // pipeline's own voice, never widened quietly).
-      assert.match(re.message, /skip_when is unported/);
+      assert.match(re.message, /card=|multi-stage/);
       return true;
     },
   );
@@ -801,7 +798,7 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
   const sig = new AbortController().signal;
   // 1. a photo initial that is not on disk refuses at VALIDATE with
   //    the door's text (before any compile).
-  const badPhoto = { flow: "skin-apply", test: true, draft_id: "d_ok", body: "/no/such/file.glb" };
+  const badPhoto = { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r", body: "/no/such/file.glb" };
   await assert.rejects(
     () => runs.validate(badPhoto, sig),
     (e: Error & { code?: string }) => /is not on disk/.test(e.message) && e.code === "runs/invalid-request",
@@ -832,13 +829,13 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
   // 4. an on-disk file with a WRONG EXTENSION refuses the stageable
   //    check (the typed media vocab gate) — the body initial is a
   //    MESH, so the voice names a mesh.
-  const badExt = { flow: "skin-apply", test: true, draft_id: "d_ok", body: "dev_docs/CONFORMANCE_LEDGER.md" };
+  const badExt = { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r", body: "dev_docs/CONFORMANCE_LEDGER.md" };
   await assert.rejects(
     () => runs.validate(badExt, sig),
     (e: Error) => /is not a stageable mesh/.test(e.message),
   );
   // 5. a browser-local blob initial refuses with the upload voice.
-  const blob = { flow: "skin-apply", test: true, draft_id: "d_ok", body: "blob:http://x/y" };
+  const blob = { flow: "fit-seat", test: true, draft_id: "d_ok", bone: "hand_r", body: "blob:http://x/y" };
   await assert.rejects(
     () => runs.validate(blob, sig),
     (e: Error) => /browser-local/.test(e.message),
@@ -851,14 +848,14 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
     (e: unknown) => /"bone" is REQUIRED by the "fit-seat" flow/.test(remoteErrorOf(e)?.message ?? String(e)),
   );
   // 6. absent OPTIONAL initials ride PAST the initial gate (the $channel
-  //    arms own them) — skin-apply then COMPILES through the wired
-  //    registry's real pin, which PROVES the gate did not fire on
-  //    absent initials (the ok, not a refusal, is the proof).
-  const skinPastGate = (await runs.validate(
-    { flow: "skin-apply", test: true, draft_id: "d_ok" },
+  //    arms own them) — anny-hmr-commercial then COMPILES through the
+  //    wired registry's real pin, which PROVES the gate did not fire
+  //    on absent initials (the ok, not a refusal, is the proof).
+  const pastGate = (await runs.validate(
+    { flow: "anny-hmr-commercial", test: true, draft_id: "d_ok" },
     sig,
   )) as { ok?: boolean };
-  assert.equal(skinPastGate["ok"], true);
+  assert.equal(pastGate["ok"], true);
 });
 
 test("the remote adapter speaks every registry arm (start/status/list/stop/validate)", async () => {
