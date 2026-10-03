@@ -40,7 +40,7 @@
 //
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 
@@ -363,19 +363,39 @@ export function checkModelPathPresent(
   return findModelPathPresent(modelPath, repoRoot, cfg);
 }
 
-/** The root inheritance base: the root config's models.read_root
- *  (inference.config.json at the repo root). Empty string = no
- *  root statement (missing file, no models block, non-string
- *  read_root) — the mount leg then needs the endpoint's own base.
- *  One deterministic read, no cache. */
+/** The root inheritance base: the OVERLAY law (the portability fix,
+ *  2026-10-12) — data/inference.local.json when present, else the
+ *  tracked inference.config.json; models.read_root joined with
+ *  engines.comfyui.base, anchored to the repo root when relative.
+ *  Machine-local absolutes live in the untracked overlay ONLY (the
+ *  provision script's loadRoot + the estate door's loadStoreRoot
+ *  are the twins); the tracked tree ships portable repo-relative
+ *  defaults, so a fresh clone never inherits another machine's
+ *  /mnt. Empty string = no root statement (missing files, no
+ *  models block, non-string read_root) — the mount leg then needs
+ *  the endpoint's own base. One deterministic read, no cache. */
 function rootModelsReadRoot(repoRoot: string): string {
   try {
-    const raw: unknown = JSON.parse(readFileSync(join(repoRoot, "inference.config.json"), "utf8"));
+    const overlayPath = join(repoRoot, "data", "inference.local.json");
+    const rootPath = join(repoRoot, "inference.config.json");
+    const raw: unknown = JSON.parse(
+      readFileSync(existsSync(overlayPath) ? overlayPath : rootPath, "utf8"),
+    );
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return "";
     const models: unknown = (raw as Record<string, unknown>)["models"];
     if (typeof models !== "object" || models === null || Array.isArray(models)) return "";
     const rr: unknown = (models as Record<string, unknown>)["read_root"];
-    return typeof rr === "string" ? rr.trim() : "";
+    if (typeof rr !== "string" || rr.trim() === "") return "";
+    let store = rr.trim();
+    const engines: unknown = (raw as Record<string, unknown>)["engines"];
+    if (typeof engines === "object" && engines !== null && !Array.isArray(engines)) {
+      const comfy: unknown = (engines as Record<string, unknown>)["comfyui"];
+      if (typeof comfy === "object" && comfy !== null && !Array.isArray(comfy)) {
+        const base: unknown = (comfy as Record<string, unknown>)["base"];
+        if (typeof base === "string" && base.trim() !== "") store = join(store, base.trim());
+      }
+    }
+    return isAbsolute(store) ? store : join(repoRoot, store);
   } catch {
     return "";
   }

@@ -58,7 +58,7 @@ import {
   statSync,
   type Stats,
 } from "node:fs";
-import { basename, dirname, join } from "node:path";
+import { basename, dirname, isAbsolute, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 export const name = "estate-models";
@@ -143,9 +143,16 @@ interface RootConfig {
  *  provision script's boundModelFolders law, verbatim): endpoint
  *  model_download_path (when set) else endpoint model_base_path
  *  (when set) else <root models.download_root>/<engines.comfyui.
- *  base>. Present-but-empty endpoint keys refuse LOUD (unset the
- *  key to inherit — never guessed); an unset read_root refuses
- *  LOUD (the provision law's own die). */
+ *  base>. The root config is the machine-local overlay
+ *  (data/inference.local.json) when present, else the tracked
+ *  inference.config.json — the SAME overlay law as provision-config
+ *  loadRoot (machine-local absolutes live in the untracked overlay
+ *  ONLY; the tracked tree ships portable repo-relative defaults, so
+ *  a fresh clone never inherits another machine's /mnt). A relative
+ *  store anchors to the repo dir (the CLI's anchorDir law). A
+ *  present-but-empty endpoint key refuses LOUD (unset the key to
+ *  inherit — never guessed); an unset read_root refuses LOUD (the
+ *  provision law's own die). */
 export function loadStoreRoot(repoDir: string): string {
   const ep = JSON.parse(
     readFileSync(
@@ -169,8 +176,12 @@ export function loadStoreRoot(repoDir: string): string {
         `${k} is EMPTY in the endpoint config — unset the key to inherit the root config (inference.config.json), or name it explicitly (never guessed)`,
       );
   }
+  // overlay first (untracked, gitignored): the machine-local pin —
+  // mirrors provision-config.ts loadRoot exactly
+  const overlayPath = join(repoDir, "data", "inference.local.json");
+  const rootPath = join(repoDir, "inference.config.json");
   const root = JSON.parse(
-    readFileSync(join(repoDir, "inference.config.json"), "utf8"),
+    readFileSync(existsSync(overlayPath) ? overlayPath : rootPath, "utf8"),
   ) as RootConfig;
   if (rootStr(root.models?.read_root) === "")
     throw new ModelsDoorError(
@@ -192,7 +203,8 @@ export function loadStoreRoot(repoDir: string): string {
       "models/no-store-root",
       "no models store root resolves (endpoint model_download_path/model_base_path unset AND root models.download_root unset) — configure model storage (never guessed)",
     );
-  return store;
+  // a relative store anchors to the checkout (portable defaults)
+  return isAbsolute(store) ? store : join(repoDir, store);
 }
 
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));

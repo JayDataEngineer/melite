@@ -64,6 +64,9 @@ const BAD_BYTES = Buffer.from("tampered-bytes-that-miss-the-decl-sha");
 
 /** The checkout's live store root (the tracked endpoint pins the
  *  explicit download_path — the placement law's ground truth). */
+// the machine-local overlay names this box's store (data/inference.local.json,
+// untracked); virgin clones resolve the repo-relative default — the
+// anchoring test below pins that half
 const LIVE_STORE = "/mnt/data/models/image-gen/comfyui";
 
 function row(over: Partial<ProvisionRow> = {}): ProvisionRow {
@@ -315,13 +318,34 @@ describe("loadStoreRoot + resolveStoreRoot", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  test("a RELATIVE tracked store anchors to the repo dir (the virgin-clone law: no machine inherits another box's /mnt)", () => {
+    // the tracked defaults, verbatim: read_root "data/models",
+    // engines.comfyui.base "image-gen/comfyui" — repo-relative, so a
+    // fresh clone resolves its store INSIDE the checkout
+    const dir = repoDir(
+      {},
+      {
+        models: { read_root: "data/models", download_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui" } },
+      },
+    );
+    try {
+      assert.equal(
+        loadStoreRoot(dir),
+        join(dir, "data/models/image-gen/comfyui"),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   test("the root base alone derives", () => {
     const dir = repoDir(
       {},
       { models: { read_root: "/r" }, engines: { comfyui: { base: "eng" } } },
     );
     try {
-      assert.equal(loadStoreRoot(dir), "eng");
+      // relative bases anchor to the repo dir (portable-defaults law)
+      assert.equal(loadStoreRoot(dir), join(dir, "eng"));
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

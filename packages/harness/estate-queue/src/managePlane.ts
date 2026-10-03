@@ -1339,14 +1339,20 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
 /** The engine's own LoRA directory, as ComfyUI's folder_paths would
  *  resolve it: the endpoint's model root + `loras`. A declared override
  *  wins (a box whose models live elsewhere), and the copy lands where
- *  the combo will find it. */
-function engineLorasDir(cfg: Record<string, unknown>): string {
+ *  the combo will find it. Nothing declared answers null — never a
+ *  guessed path (the portability law, 2026-10-12: this fallback once
+ *  baked one machine's /mnt absolute into every clone). */
+function engineLorasDir(cfg: Record<string, unknown>): string | null {
   const declared = process.env['MELITE_COMFYUI_LORAS_DIR']
   if (declared !== undefined && declared !== '') return declared
   const root = typeof cfg['model_base_path'] === 'string' ? (cfg['model_base_path'] as string) : ''
   if (root !== '') return join(root, 'loras')
-  return '/mnt/data/models/image-gen/comfyui/loras'
+  return null
 }
+
+/** The refusal text for an undeclared loras dir — one spelling. */
+const LORAS_DIR_UNDECLARED =
+  'the loras install dir is undeclared — set MELITE_COMFYUI_LORAS_DIR or the endpoint model_base_path (never guessed)'
 
 /** `lora_list` — THE FACT + THE ROWS. The engine's own
  *  LoraLoaderModelOnly combo is the only truth about what /prompt will
@@ -1370,7 +1376,7 @@ async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvel
       user_row_problems: file.problems,
       // rows the engine does NOT have: named here, not at /prompt
       unboarded,
-      install_dir: engineLorasDir(cfg),
+      install_dir: engineLorasDir(cfg) ?? LORAS_DIR_UNDECLARED,
       // a file copied in is only seen by the combo after a reboot —
       // core enumerates folder_paths at import, and a reboot is the
       // only refresh primitive this repo owns
@@ -1386,6 +1392,9 @@ async function hLoraInstall(req: Req, ctx: ManageCtx): Promise<[number, ManageEn
   const cfg = ctx.endpoint()
   estateOnly(req, cfg)
   const dir = engineLorasDir(cfg)
+  // a copy needs a REAL target — an undeclared dir refuses loud
+  // (never a guessed path on someone else's machine)
+  if (dir === null) throw new Refused(502, LORAS_DIR_UNDECLARED)
   // THE BYTES ARM: a browser upload (the civit flow) needs no path
   if (req.data !== '') {
     if (req.filename === '') throw new Refused(422, 'lora_install with bytes requires filename')
