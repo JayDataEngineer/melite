@@ -137,6 +137,20 @@ function startServer(state: ServerState, prefix: string): Promise<string> {
       res.end(JSON.stringify([{ version: "1.0.0" }]));
       return;
     }
+    // THE LANDED-HEAD DOOR (2026-10-13, the extensions law): a declared
+    // ref installs through Manager's git_url door and the estate then
+    // VERIFIES the landed commit here. The fixture answers with the
+    // pinned row's own commit, so a ref row reaches restart_required
+    // only by actually being verified.
+    if (path === "/customnode/installed") {
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify([
+        { aux_id: "https://example.invalid/pinned", ver: "0a1b2c3d4e5f60718293a4b5c6d7e8f901234567" },
+        { aux_id: "https://example.invalid/demo", ver: "9f8e7d6c5b4a39281706f5e4d3c2b1a098765432" },
+        { aux_id: "https://example.invalid/operator", ver: "1122334455667788990011223344556677889900" },
+      ]));
+      return;
+    }
     if (path === "/manager/queue/install" || path === "/manager/queue/start" || path === "/customnode/install/git_url" || path === "/customnode/install/pip") {
       res.writeHead(200, { "content-type": "application/json" });
       res.end("{}");
@@ -313,7 +327,7 @@ describe.sequential("estate provisioning composition paths", () => {
   test("resolves family, card, and extension declarations and lists every source", async () => {
     const { ctx } = await mount({
       cards: cardsWithModels(),
-      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n    ref: main\n    pip:\n      - numpy\n",
+      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n",
     });
     const family = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "h3" });
     assert.equal(family.items.length > 0, true);
@@ -409,7 +423,7 @@ describe.sequential("estate provisioning composition paths", () => {
 
   test("lazy Manager covers registry, URL, and pinned git post-install paths", async () => {
     const mounted = await mount({
-      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n  - name: registry-only\n    registry: demo\n    version: 1.0.0\n    url: ''\n  - name: pinned\n    registry: ''\n    version: ''\n    url: https://example.invalid/pinned.git\n    ref: main\n    pip:\n      - numpy\n  - name: operator\n    registry: ''\n    version: ''\n    url: https://example.invalid/operator.git\n  - name: local\n    registry: ''\n    version: ''\n    url: ''\n",
+      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n  - name: registry-only\n    registry: demo\n    version: 1.0.0\n    url: ''\n  - name: pinned\n    registry: ''\n    version: ''\n    url: https://example.invalid/pinned.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n  - name: operator\n    registry: ''\n    version: ''\n    url: https://example.invalid/operator.git\n  - name: local\n    registry: ''\n    version: ''\n    url: ''\n",
     });
     const registry = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "demo" });
     assert.equal(registry.state, "restart_required");

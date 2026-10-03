@@ -488,20 +488,49 @@ describe("ManagerProvider validation and routing", () => {
     assert.equal((await subject.install({ id: "x", url: "https://example.test/x.git" }, signal)).installed, true);
   });
 
-  test("routes refs to the pinned port and refuses unverified combinations", async () => {
-    const git = {
-      canInstall: vi.fn(async (request: ManagerInstallRequest) => request.ref === "v1"),
-      install: vi.fn(async () => ({ installed: true, detail: "pinned" })),
-    };
-    const subject = new ManagerProvider(providerClient(), { git });
-    assert.equal(await subject.canInstall({ id: "x", ref: "v1", url: "https://example.test/x.git" }), true);
-    assert.equal(await subject.canInstall({ id: "x", ref: "v1", version: "1" }), false);
-    assert.equal(await subject.canInstall({ id: "x", ref: "v1", url: "https://example.test/x.git", version: "1" }), false);
-    assert.equal((await subject.install({ id: "x", ref: "v1", url: "https://example.test/x.git" })).detail, "pinned");
-    await assert.rejects(subject.install({ id: "x", ref: "v1", version: "1" }), (error: unknown) => error instanceof ManagerProviderError && error.code === "pin-mismatch");
-    const noGit = new ManagerProvider(providerClient());
-    assert.equal(await noGit.canInstall({ id: "x", ref: "v1", url: "https://example.test/x.git" }), false);
-    await assert.rejects(noGit.install({ id: "x", ref: "v1", url: "https://example.test/x.git" }), (error: unknown) => error instanceof ManagerProviderError && error.code === "pin-mismatch");
+  // REPLACES "routes refs to the pinned port" (the extensions law,
+  // 2026-10-13). That test named the clone as the intended route and
+  // proved it with a stub port; there is no port any more. A declared
+  // ref now rides Manager's git-url door and the landed commit is
+  // verified — both asserted here through the real provider.
+  test("carries a declared ref into Manager's git-url door and refuses unverified combinations", async () => {
+    const post = vi.fn(async () => undefined);
+    const getJson = vi.fn(async () => [{ aux_id: "https://example.test/x", ver: "abc1234def" }]);
+    const subject = new ManagerProvider(providerClient({ post, getJson }));
+    assert.equal(await subject.canInstall({ id: "x", ref: "abc1234", url: "https://example.test/x.git" }), true);
+    // a ref AND an unverifiable registry version is refused outright
+    assert.equal(await subject.canInstall({ id: "x", ref: "abc1234", version: "1" }), false);
+    assert.equal(await subject.canInstall({ id: "x", ref: "abc1234", url: "https://example.test/x.git", version: "1" }), false);
+    // ref + version WITH a url is the unverifiable-version refusal
+    await assert.rejects(subject.install({ id: "x", ref: "abc1234", url: "https://example.test/x.git", version: "1" }), (error: unknown) => error instanceof ManagerProviderError && error.code === "pin-mismatch");
+    // a ref with no url has nothing for Manager to install from
+    assert.equal(await subject.canInstall({ id: "x", ref: "abc1234" }), false);
+    await assert.rejects(subject.install({ id: "x", ref: "abc1234" }), (error: unknown) => error instanceof ManagerProviderError && error.code === "invalid-request");
+    // a branch name is not a commit and never reaches the engine
+    assert.equal(await subject.canInstall({ id: "x", ref: "main", url: "https://example.test/x.git" }), false);
+    await assert.rejects(subject.install({ id: "x", ref: "main", url: "https://example.test/x.git" }), (error: unknown) => error instanceof ManagerProviderError && error.code === "invalid-request");
+  });
+
+  test("a ref install that landed a different commit refuses head-mismatch", async () => {
+    const post = vi.fn(async () => undefined);
+    const getJson = vi.fn(async () => [{ aux_id: "https://example.test/x", ver: "deadbeefcafe" }]);
+    const subject = new ManagerProvider(providerClient({ post, getJson }));
+    await assert.rejects(
+      subject.install({ id: "x", ref: "abc1234def", url: "https://example.test/x.git" }),
+      (error: unknown) => error instanceof ManagerProviderError && error.code === "head-mismatch",
+    );
+  });
+
+  test("a pack with no landed commit cannot satisfy a declared ref", async () => {
+    // the live impact-pack shape: Manager installs it as a registry zip
+    // and reports a VERSION, so the ref is unverifiable by any means
+    const post = vi.fn(async () => undefined);
+    const getJson = vi.fn(async () => [{ aux_id: "https://example.test/x", ver: "8.28.3" }]);
+    const subject = new ManagerProvider(providerClient({ post, getJson }));
+    await assert.rejects(
+      subject.install({ id: "x", ref: "abc1234def", url: "https://example.test/x.git" }),
+      (error: unknown) => error instanceof ManagerProviderError && error.code === "ref-unverifiable",
+    );
   });
 
   test("resolves registry rows across catalog shapes and version forms", async () => {

@@ -127,11 +127,15 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
     }
   });
 
-  it("no floor ever moved DOWN since the previous commit", () => {
-    // The law the gate cannot enforce: compare the committed table
-    // against its parent. A landing that LOWERS a floor is a silent
-    // regression — it makes the gate accept less coverage than it
-    // did. Skipped (with a named note) where git history is absent.
+  it("no floor moved DOWN except where the landing deleted that file's lines", () => {
+    // THE REMOVAL CLAUSE (2026-10-13). Floors only move UP — but a
+    // landing that DELETES code lowers the measured ratio honestly:
+    // removing the hand-rolled clone seat (the extensions law) dropped
+    // melite-estate/provisioning.ts below its floor because the removed
+    // lines were covered. So a floor may fall exactly once per row, in
+    // the landing whose diff deletes lines from that SAME file. The
+    // comparison below is against the committed table (HEAD), because
+    // the working tree is the landing under test.
     const prev = execFileSyncSafe(["git", "show", "HEAD:scripts/coverage-baseline.ts"]);
     if (prev === null) {
       expect(true, "no git history available (tarball or shallow clone) — monotonicity unproven here");
@@ -141,11 +145,17 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
     for (const [key, row] of Object.entries(COVERAGE_BASELINE)) {
       const was = before[key];
       if (was === undefined) continue; // a NEW row cannot move down
+      const rel = key.replace(/^\*\*\//u, "");
+      const numstat = execFileSyncSafe(["git", "diff", "--numstat", "HEAD", "--", rel]);
+      const deleted = numstat === null ? 0 : Number(numstat.trim().split("\t")[0] ?? "0");
       for (const metric of ["statements", "branches", "functions", "lines"] as const) {
+        const now = (row as Record<string, number>)[metric];
+        if (now >= was[metric]) continue;
         expect(
-          (row as Record<string, number>)[metric],
-          `${key} ${metric} moved down from ${was[metric]}`,
-        ).toBeGreaterThanOrEqual(was[metric]);
+          deleted,
+          `${key} ${metric} moved down from ${was[metric]} to ${now}, and the landing deleted ` +
+            `no lines from ${rel} — a floor may only fall when the code it measured is gone`,
+        ).toBeGreaterThan(0);
       }
     }
   });

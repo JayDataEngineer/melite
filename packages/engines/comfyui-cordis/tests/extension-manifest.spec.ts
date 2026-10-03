@@ -76,16 +76,22 @@ describe("Impact extension declaration SSOT", () => {
     assert.deepEqual(rows.map((row) => ({
       name: row.name,
       url: row.url,
-      ref: row.ref,
       required: row.required,
       pip: row.pip,
     })), requirements.map((name) => ({
       name,
       url: pins[name as keyof typeof pins].url,
-      ref: pins[name as keyof typeof pins].ref,
       required: true,
       pip: [...pins[name as keyof typeof pins].pip],
     })));
+    // NO commit pin is declared for either pack (2026-10-13): Manager
+    // installs them as registry ZIPs — the live engine reports ver
+    // "8.28.3" with no .git and no sha — so a declared commit could
+    // never be verified and the declaration was a lie about what
+    // Manager installed. Under the Manager-only + verify-landed-HEAD
+    // law an unverifiable pin must not be declarable at all.
+    // (an absent ref reads as "" through the manifest reader)
+    assert.deepEqual(rows.map((row) => row.ref), ["", ""], "no unverifiable pin is declared");
   });
 
   it("each mask requirement has exactly one card-owned manifest declaration", () => {

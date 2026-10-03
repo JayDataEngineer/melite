@@ -4,8 +4,6 @@ import {
   ComfyUiManagerHttpClient,
   ComfyUiManagerProvider,
   FileOperationStore,
-  PinnedGitExtensionProvider,
-  SubprocessGitCommandRunner,
   VerifiedArtifactWriter,
   ProvisioningService,
   postManagerPip,
@@ -250,14 +248,10 @@ function lazyManager(ctx: Context): ManagerPort {
       requestTimeoutMs: 30_000,
       queueTimeoutMs: 300_000,
     });
-    const git = new PinnedGitExtensionProvider({
-      runner: new SubprocessGitCommandRunner(ctx.subprocess),
-      customNodesRoot: join(runtimeModelsRoot(resolveRepoRoot()).replace(/\/models$/u, ""), "custom_nodes"),
-      postInstall: async ({ requirements, signal }: { requirements: readonly string[]; signal?: AbortSignal }): Promise<void> => {
-        await postManagerPip(client, requirements, signal);
-      },
-    });
-    provider = new ComfyUiManagerProvider(client, { git });
+    // THE SINGLE VENDOR (2026-10-13): no clone seat exists any more. A
+    // declared ref rides Manager's git-url door as url@commit and the
+    // estate verifies the landed HEAD through /customnode/installed.
+    provider = new ComfyUiManagerProvider(client);
     return provider;
   };
   return {

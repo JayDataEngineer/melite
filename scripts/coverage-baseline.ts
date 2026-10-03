@@ -145,7 +145,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/estate/models/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/artifact-writer.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/contracts.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/estate/provisioning/src/git-extension-provider.ts': { statements: 100, branches: 97.36, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-client.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/manager-provider.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -563,7 +562,12 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/invariant.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-estate/src/index.ts': { statements: 100, branches: 98.33, functions: 100, lines: 100 },
-  '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.4, branches: 100, functions: 97.72, lines: 99.29 },
+  // RE-MINTED DOWN, the one legal downward move: this landing DELETED
+  // the hand-rolled clone seat (the extensions law). The removed lines
+  // were covered, so removing them legitimately lowers the measured
+  // ratio. See the ratchet spec's removal clause — a row may move down
+  // only in a landing whose diff deletes lines from that same file.
+  '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.39, branches: 100, functions: 97.67, lines: 99.28 },
   '**/packages/web/melite-run-wire/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/gateway.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

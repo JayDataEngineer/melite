@@ -11,10 +11,7 @@ import {
   ManagerClientError,
   ManagerProviderError,
   postManagerPip,
-  PinnedGitExtensionProvider,
-  type GitCommandRunner,
   type ManagerInstallRequest,
-  type PinnedGitExtensionPort,
   type ProvisionOperation,
 } from "../src/index.ts";
 
@@ -595,65 +592,166 @@ describe("ManagerPort provider", () => {
     expect(queued).toBe(false);
   });
 
-  test("routes a requested ref only to the pinned git provider", async () => {
-    let httpCalls = 0;
+  // THE SINGLE VENDOR (the extensions law, 2026-10-13). These two
+  // tests REPLACE the pair that pinned the hand-rolled clone as
+  // intended — one of them was literally named "routes a requested ref
+  // only to the pinned git provider" and asserted httpCalls === 0, i.e.
+  // that NO Manager request happened. The clone is gone: a declared ref
+  // now rides Manager's git-url door and the estate verifies the
+  // landed commit.
+  test("a declared ref installs through Manager's git-url door with the pin in the url", async () => {
+    const posts: Array<{ path: string; body: unknown }> = [];
+    const gets: string[] = [];
     const client = new ComfyUiManagerHttpClient({
       baseUrl: "http://127.0.0.1:8188",
-      fetch: async (): Promise<Response> => {
-        httpCalls += 1;
-        return json({}, 500);
+      fetch: async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+        const url = String(input);
+        if (typeof init?.body === "string") posts.push({ path: url, body: JSON.parse(init.body) as unknown });
+        else gets.push(url);
+        if (url.endsWith("/customnode/installed")) {
+          return json([{ aux_id: "https://github.com/example/pack", ver: "abc1234def5678" }]);
+        }
+        return json({ ok: true });
       },
     });
-    let received: ManagerInstallRequest | undefined;
-    const git: PinnedGitExtensionPort = {
-      canInstall: async (request): Promise<boolean> => request.ref === "release/2.0.0",
-      install: async (request): Promise<{ installed: boolean; detail: string }> => {
-        received = request;
-        return { installed: true, detail: "pinned" };
-      },
-    };
-    const provider = new ComfyUiManagerProvider(client, { git });
+    const provider = new ComfyUiManagerProvider(client);
     const request: ManagerInstallRequest = {
       id: "example-pack",
       url: "https://github.com/example/pack.git",
-      ref: "release/2.0.0",
-      registry: "comfy.org/example",
+      ref: "abc1234",
     };
     expect(await provider.canInstall(request)).toBe(true);
-    expect((await provider.install(request)).installed).toBe(true);
-    expect(received?.ref).toBe("release/2.0.0");
-    expect(httpCalls).toBe(0);
+    const result = await provider.install(request);
+    expect(result.installed).toBe(true);
+    // the pin rides the url after '@' — Manager splits on the LAST '@'
+    // and checks that commit out after a full clone
+    expect(posts).toHaveLength(1);
+    expect(posts[0]?.path).toContain("/customnode/install/git_url");
+    expect(posts[0]?.body).toEqual({ url: "https://github.com/example/pack.git@abc1234" });
+    // and the landed commit was verified, never assumed
+    expect(gets.some((u) => u.endsWith("/customnode/installed"))).toBe(true);
+    expect(result.detail).toContain("abc1234def5678");
   });
 
-  test("fetches a URL/ref row at that exact ref", async () => {
-    const customNodesRoot = join(root(), "custom_nodes");
-    const calls: string[][] = [];
-    const runner: GitCommandRunner = {
-      run: async (args): Promise<{ stdout: string; stderr: string }> => {
-        calls.push([...args]);
-        if (args[0] === "init") {
-          const temporary = args.at(-1);
-          assert.ok(temporary);
-          mkdirSync(temporary);
+  test("a landed commit that is not the declared pin refuses head-mismatch", async () => {
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/customnode/installed")) {
+          return json([{ aux_id: "https://github.com/example/pack", ver: "deadbeefdeadbeef" }]);
         }
-        return {
-          stdout: args.includes("rev-parse") ? "a".repeat(40) : "",
-          stderr: "",
-        };
+        return json({ ok: true });
       },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    await expect(provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "abc1234",
+    })).rejects.toMatchObject({ code: "head-mismatch" });
+  });
+
+  test("a pack Manager installed with no commit cannot satisfy a declared pin", async () => {
+    // a registry-zip install reports a VERSION, not a sha: the declared
+    // ref is unverifiable by any means, and a lie about it must fail
+    // closed rather than read as success
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/customnode/installed")) {
+          return json([{ aux_id: "https://github.com/example/pack", ver: "8.28.3" }]);
+        }
+        return json({ ok: true });
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    await expect(provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "abc1234",
+    })).rejects.toMatchObject({ code: "ref-unverifiable" });
+  });
+
+  test("a branch name is refused at the declaration, before any request", async () => {
+    let calls = 0;
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (): Promise<Response> => {
+        calls += 1;
+        return json({});
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    const branch: ManagerInstallRequest = {
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "main",
     };
-    const provider = new PinnedGitExtensionProvider({ customNodesRoot, runner });
+    expect(await provider.canInstall(branch)).toBe(false);
+    await expect(provider.install(branch)).rejects.toMatchObject({ code: "invalid-request" });
+    expect(calls).toBe(0);
+  });
+
+  test("a malformed installed answer cannot satisfy a declared ref", async () => {
+    // Manager's own door is a WIRE boundary: an answer that is not a
+    // list, or a row with no identity, must read as "nothing landed"
+    // rather than crashing or passing silently.
+    for (const answer of [{ not: "a list" }, [{}]]) {
+      const client = new ComfyUiManagerHttpClient({
+        baseUrl: "http://127.0.0.1:8188",
+        fetch: async (input: string | URL | Request): Promise<Response> => {
+          const url = String(input);
+          if (url.endsWith("/customnode/installed")) return json(answer);
+          return json({ ok: true });
+        },
+      });
+      const provider = new ComfyUiManagerProvider(client);
+      await expect(provider.install({
+        id: "example-pack",
+        url: "https://github.com/example/pack.git",
+        ref: "abc1234",
+      })).rejects.toMatchObject({ code: "ref-unverifiable" });
+    }
+  });
+
+  test("an installed row with no commit reads as unverifiable, not as a match", async () => {
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request): Promise<Response> => {
+        const url = String(input);
+        if (url.endsWith("/customnode/installed")) {
+          return json([{ aux_id: "https://github.com/example/pack" }]);
+        }
+        return json({ ok: true });
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
+    await expect(provider.install({
+      id: "example-pack",
+      url: "https://github.com/example/pack.git",
+      ref: "abc1234",
+    })).rejects.toMatchObject({ code: "ref-unverifiable" });
+  });
+
+  test("an unpinned url installs with no verification and no ref", async () => {
+    const posts: Array<{ path: string; body: unknown }> = [];
+    const client = new ComfyUiManagerHttpClient({
+      baseUrl: "http://127.0.0.1:8188",
+      fetch: async (input: string | URL | Request, init?: RequestInit): Promise<Response> => {
+        const url = String(input);
+        if (typeof init?.body === "string") posts.push({ path: url, body: JSON.parse(init.body) as unknown });
+        return json({ ok: true });
+      },
+    });
+    const provider = new ComfyUiManagerProvider(client);
     const result = await provider.install({
       id: "example-pack",
       url: "https://github.com/example/pack.git",
-      ref: "release/2.0.0",
     });
     expect(result.installed).toBe(true);
-    expect(existsSync(join(customNodesRoot, "example-pack"))).toBe(true);
-    const fetch = calls.find((args) => args.includes("fetch"));
-    expect(fetch).toContain("release/2.0.0");
-    expect(calls.flat()).not.toContain("latest");
-    expect(calls.flat()).not.toContain("master");
+    expect(posts[0]?.body).toEqual({ url: "https://github.com/example/pack.git" });
   });
 });
 

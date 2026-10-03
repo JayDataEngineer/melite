@@ -15,7 +15,9 @@ export type ManagerProviderErrorCode =
   | "invalid-request"
   | "pin-mismatch"
   | "model-unregistered"
-  | "model-metadata";
+  | "model-metadata"
+  | "head-mismatch"
+  | "ref-unverifiable";
 
 export class ManagerProviderError extends Error {
   readonly code: ManagerProviderErrorCode;
@@ -27,14 +29,41 @@ export class ManagerProviderError extends Error {
   }
 }
 
-export interface PinnedGitExtensionPort {
-  canInstall(request: ManagerInstallRequest, signal?: AbortSignal): Promise<boolean>;
-  install(request: ManagerInstallRequest, signal?: AbortSignal): Promise<ManagerInstallResult>;
+export interface ComfyUiManagerProviderOptions {
+  readonly queue?: ManagerQueueWaitOptions;
 }
 
-export interface ComfyUiManagerProviderOptions {
-  readonly git?: PinnedGitExtensionPort;
-  readonly queue?: ManagerQueueWaitOptions;
+/** THE GIT-URL INSTALL BUDGET. Manager's /customnode/install/git_url
+ *  route is SYNCHRONOUS — it clones, checks out the commit, and runs the
+ *  pack's pip leg inside the request (manager_server.py:1557-1584 →
+ *  manager_core.py:2360-2368). The client's default request timeout
+ *  cannot cover that: a cold pack blew the fuse before this was
+ *  measured. The CLI uses 900 s; the estate matches it. */
+export const EXTENSION_INSTALL_TIMEOUT_MS = 900_000;
+
+/** A declared ref must be a commit, never a branch: Manager splits the
+ *  url on its LAST '@' and checks the result out, so a branch name
+ *  would either fail the clone or silently float to whatever HEAD is. */
+const DECLARED_REF = /^[0-9a-f]{7,64}$/iu;
+
+/** One row of Manager's /customnode/installed answer. `ver` is the
+ *  resolved commit for a git clone and the registry version for a zip
+ *  install (identify_node_pack_from_path, manager_core.py:1576). */
+interface InstalledExtensionRow {
+  readonly aux_id?: string;
+  readonly ver?: string;
+  readonly name?: string;
+}
+
+function repoIdentity(url: string): string {
+  return url
+    .replace(/\.git$/u, "")
+    .replace(/@.*$/u, "")
+    .replace(/^git\+/u, "")
+    .replace(/^https?:\/\/github\.com\//iu, "github.com/")
+    .replace(/^git@github\.com:/iu, "github.com/")
+    .replace(/\/+$/u, "")
+    .toLowerCase();
 }
 
 /** Conservative floor rate for declared model downloads: the queue
@@ -296,23 +325,24 @@ async function assertVersionAvailable(
 
 export class ComfyUiManagerProvider implements ManagerPort {
   readonly client: ComfyUiManagerHttpClient;
-  private readonly git: PinnedGitExtensionPort | undefined;
   private readonly queue: ManagerQueueWaitOptions;
 
   constructor(client: ComfyUiManagerHttpClient, options: ComfyUiManagerProviderOptions = {}) {
     this.client = client;
-    this.git = options.git;
     this.queue = options.queue ?? {};
   }
 
   async canInstall(request: ManagerInstallRequest, signal?: AbortSignal): Promise<boolean> {
-    if (request.url !== undefined && request.registry === undefined && request.ref === undefined && request.version === undefined) {
-      return request.url.trim() !== "";
+    // A PURE DECLARATION CHECK (no network): the landed-HEAD
+    // verification belongs to install() alone, so planning a lane never
+    // reaches the engine.
+    if (request.url !== undefined && request.registry === undefined) {
+      if (request.url.trim() === "") return false;
+      if (request.ref !== undefined && request.version !== undefined) return false;
+      if (request.ref !== undefined && !DECLARED_REF.test(request.ref)) return false;
+      return true;
     }
-    if (request.ref !== undefined) {
-      if (request.version !== undefined || this.git === undefined) return false;
-      return await this.git.canInstall(request, signal);
-    }
+    if (request.ref !== undefined) return false;
     try {
       await this.resolveRegistryRow(request, signal);
       return true;
@@ -322,24 +352,91 @@ export class ComfyUiManagerProvider implements ManagerPort {
     }
   }
 
+  /** The landed commit for a declared pack, or null when Manager
+   *  reports no such pack. Matched by repo identity, never by the
+   *  installed directory name (Manager derives that from the url). */
+  private async landedVer(url: string, signal?: AbortSignal): Promise<string | null> {
+    const rows = await this.client.getJson<InstalledExtensionRow[]>("/customnode/installed", {
+      ...(signal === undefined ? {} : { signal }),
+    });
+    // A WIRE boundary (Manager's own answer), so the shape IS checked
+    // here rather than trusted — and both refusals below are tested.
+    if (!Array.isArray(rows)) return null;
+    const want = repoIdentity(url);
+    for (const row of rows) {
+      if (repoIdentity(row.aux_id ?? "") === want) return row.ver ?? null;
+    }
+    return null;
+  }
+
   async install(request: ManagerInstallRequest, signal?: AbortSignal): Promise<ManagerInstallResult> {
-    if (request.url !== undefined && request.registry === undefined && request.ref === undefined && request.version === undefined) {
+    // THE SINGLE VENDOR (the extensions law, 2026-10-13): a declared
+    // REPOSITORY row installs through Manager's git-url door whether or
+    // not it pins a commit. The pin rides the url as `@<commit>`,
+    // which is load-bearing twice: Manager splits on the LAST '@'
+    // (manager_core.py:2300) and — because normalize_to_github_id
+    // strips a trailing .git but NOT an @sha — an @-suffixed url can
+    // never match the registry map, so the git arm always runs and the
+    // pin is never discarded for `latest`.
+    if (request.url !== undefined && request.registry === undefined) {
       if (request.url.trim() === "") {
         throw new ManagerProviderError("invalid-request", "Declared extension repository URL must not be empty");
       }
-      await this.client.post("/customnode/install/git_url", { url: request.url }, {
+      let target = request.url;
+      if (request.ref !== undefined) {
+        if (request.version !== undefined) {
+          throw new ManagerProviderError(
+            "pin-mismatch",
+            "The declared git ref cannot be combined with an unverified registry version",
+          );
+        }
+        if (!DECLARED_REF.test(request.ref)) {
+          throw new ManagerProviderError(
+            "invalid-request",
+            `Declared extension ref '${request.ref}' is not a commit — Manager checks the ` +
+              `url's @suffix out, so a branch name would float (pin a commit sha)`,
+          );
+        }
+        target = request.url + "@" + request.ref;
+      }
+      await this.client.post("/customnode/install/git_url", { url: target }, {
+        timeoutMs: EXTENSION_INSTALL_TIMEOUT_MS,
         ...(signal === undefined ? {} : { signal }),
       });
-      return { installed: true, detail: "git URL submitted to ComfyUI-Manager" };
-    }
-    if (request.ref !== undefined) {
-      if (request.version !== undefined || this.git === undefined) {
+      // FAIL CLOSED ON THE LANDED HEAD. Manager's answer is a 200 even
+      // when it skipped ("Already exists"), and its Windows
+      // non-instant branch drops the commit entirely
+      // (manager_core.py:2355-2358) — so the landed commit is the ONLY
+      // evidence the pin was honored. Without a declared ref there is
+      // nothing to verify: a zip install carries a version, not a sha.
+      if (request.ref === undefined) {
+        return { installed: true, detail: "git URL submitted to ComfyUI-Manager" };
+      }
+      const landed = await this.landedVer(request.url, signal);
+      // A zip install reports a VERSION, not a sha — the declared ref
+      // is then unverifiable by any means (the impact packs are the live
+      // case: ver "8.28.3", no .git). That is its own refusal, not a
+      // mismatch: nothing landed that could be compared.
+      if (landed === null || !DECLARED_REF.test(landed)) {
         throw new ManagerProviderError(
-          "pin-mismatch",
-          "The declared git ref cannot be combined with an unverified registry version",
+          "ref-unverifiable",
+          `ComfyUI-Manager installed '${request.id}' but reports no landed commit — the ` +
+            `declared ref ${request.ref} cannot be verified (the pack did not land as a git clone)`,
         );
       }
-      return await this.git.install(request, signal);
+      if (landed.length === 0 || !request.ref.startsWith(landed) && !landed.startsWith(request.ref)) {
+        throw new ManagerProviderError(
+          "head-mismatch",
+          `ComfyUI-Manager landed ${request.id} at ${landed}, not the declared ref ${request.ref}`,
+        );
+      }
+      return { installed: true, detail: `git URL installed and verified at ${landed}` };
+    }
+    if (request.ref !== undefined) {
+      throw new ManagerProviderError(
+        "invalid-request",
+        "A declared git ref needs a repository URL — Manager installs from the url, never from a ref alone",
+      );
     }
     const resolved = await this.resolveRegistryRow(request, signal);
     const version = requestedVersion(request);

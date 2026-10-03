@@ -471,8 +471,13 @@ describe("the throwing owners — remove and ungroup fall back loud", () => {
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
-    expect(await screen.findByText("remove failed", {}, { timeout: 4000 })).toBeTruthy();
-  });
+    // The refusal rides the client's async failure path and renders on a
+    // macrotask, so the wait budget must exceed a LOADED event loop: the
+    // old 4s/5s pairing failed once in the full-suite run (green in
+    // isolation three times over), which is the flake class the audit
+    // named — a fixed budget sized for an idle box.
+    expect(await screen.findByText("remove failed", {}, { timeout: 15000 })).toBeTruthy();
+  }, 30_000);
 
   test("a throwing ungroup voices the fallback (never a throw past the gesture)", async () => {
     mountBench(
