@@ -175,7 +175,7 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // in-graph Delay/Mix/Duck chain needed no declaration beyond the
     // same pack).
     requires: [
-      'comfyui-h3-motion-context', 'ComfyUI-PlagueKind-Nodes',
+      'comfyui-h3-motion-context', 'Comfyui-PlagueKind-Nodes',
       'ComfyUI-Frame-Interpolation', 'ComfyUI-KJNodes',
       'ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-LTXVideo',
       'melite-utility-nodes', 'melite-audio-nodes',

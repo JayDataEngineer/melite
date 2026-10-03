@@ -53,3 +53,11 @@ extensions:
   ref: 892515e3eb9a4920a131a502a047e47adca9eb0d
   required: true
   desc: RTXVideoSuperResolution (bypassed group; class must register).
+- name: melite-utility-nodes
+  url: https://github.com/JayDataEngineer/melite-utility-nodes
+  version: 0.1.0
+  required: true
+  desc: >-
+    MeliteUnload / MeliteConcatVideos — the film's window-save boundary
+    and video join. The card already requires this pack; no manifest
+    installed it (extension census, 2026-10-13).

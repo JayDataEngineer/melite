@@ -52,3 +52,17 @@ extensions:
       plan.
     pip:
       - trimesh
+  # 2026-10-13 (the extension census): both packs are checked at
+  # runtime — extension_node_types names their classes, so a missing
+  # pack is a refusal — yet NO manifest ever installed them, so a fresh
+  # estate refused 3d lanes it had no way to satisfy.
+  - name: melite-blender-proxy-nodes
+    url: https://github.com/JayDataEngineer/melite-blender-proxy-nodes
+    version: 0.1.0
+    required: true
+    desc: Blender bridge (MeliteBlenderExport/MCPCall/RunScript/RenderShot) — the Blender export lane.
+  - name: melite-unity-nodes
+    url: https://github.com/JayDataEngineer/melite-unity-nodes
+    version: 0.1.0
+    required: true
+    desc: Unity bridge (MeliteUnityBatch) — the Unity batch lane.

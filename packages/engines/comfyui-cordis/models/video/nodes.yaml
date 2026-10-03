@@ -2,5 +2,5 @@
 extensions:
   # (Cordis 2026-09-07: melite-video-nodes is archived — unconsumed
   # lane stub. video-gen's real declaration rides the card
-  # (requires = comfyui-videohelpersuite), resolved live by the
+  # (requires = ComfyUI-VideoHelperSuite), resolved live by the
   # compose gate; this file stays a stub, never a second source.)

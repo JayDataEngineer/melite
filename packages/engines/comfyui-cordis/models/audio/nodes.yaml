@@ -16,3 +16,16 @@ extensions:
     version: 0.1.0
     required: true
     desc: MOSS-SFX v2 diffusion — the sfx lane.
+  - name: melite-audio-nodes
+    url: https://github.com/JayDataEngineer/melite-audio-nodes
+    version: 0.1.0
+    required: true
+    desc: >-
+      The audio core pack, and the ONLY owner of MeliteQVoiceCopy — the
+      .qvoice copy node the tts graph emits. Declared here because the
+      2026-09-04 split declared the two carved packs and left this one
+      undeclared, so a fresh estate installed tts+sfx and still failed
+      at /prompt on a node class nothing had installed (audit
+      2026-10-13). The Audiocore* classes are duplicated across the
+      three packs by the split; this row is what makes MeliteQVoiceCopy
+      reachable.

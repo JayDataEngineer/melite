@@ -208,19 +208,23 @@
     "ComfyUI-MoGe": [
       "MoGeGeometryToFOV"
     ],
-    "ComfyUI-PlagueKind-Nodes": [
-      "H3AdaLNLoRAFix",
-      "H3SLAAttention",
-      "PlagueKindBundleIn",
-      "PlagueKindBundleOut"
-    ],
     "ComfyUI-SeedVR2_VideoUpscaler": [
       "SeedVR2LoadDiTModel",
       "SeedVR2LoadVAEModel",
       "SeedVR2VideoUpscaler"
     ],
+    "ComfyUI-VideoHelperSuite": [
+      "VHS_LoadVideoPath",
+      "VHS_VideoCombine"
+    ],
     "ComfyUI-WD14-Tagger": [
       "WD14Tagger|pysssss"
+    ],
+    "Comfyui-PlagueKind-Nodes": [
+      "H3AdaLNLoRAFix",
+      "H3SLAAttention",
+      "PlagueKindBundleIn",
+      "PlagueKindBundleOut"
     ],
     "Comfyui_joytag": [
       "CXH_JoyTag"
@@ -255,10 +259,6 @@
       "LanPaintInpaint",
       "LanPaintSampler"
     ],
-    "comfyui-videohelpersuite": [
-      "VHS_LoadVideoPath",
-      "VHS_VideoCombine"
-    ],
     "comfyui_nvidia_rtx_nodes": [
       "RTXVideoSuperResolution"
     ],
@@ -269,7 +269,11 @@
     "melite-audio-nodes": [
       "AudiocoreTTS",
       "AudiocoreVoiceStudio",
-      "LoadAudiocoreModel"
+      "LoadAudiocoreModel",
+      "MeliteAudioSlice",
+      "MeliteFilmAudioMix",
+      "MeliteLoudness",
+      "MeliteQVoiceCopy"
     ],
     "melite-autoremesher-nodes": [
       "AutoRemesher"
@@ -293,8 +297,39 @@
       "MultiHMR2ImageToAnny",
       "Sam3dBodyImageToAnny"
     ],
+    "melite-poser-nodes": [
+      "CompositeCharacter",
+      "FitProp",
+      "FitRow",
+      "RayCreatureRigBridge",
+      "RayRenderGLBViews",
+      "RaySomaxBake",
+      "SkinApply",
+      "SkinPack",
+      "SkinSidecar"
+    ],
+    "melite-sfx-nodes": [
+      "AudiocoreFamilyInfo",
+      "AudiocoreMusic",
+      "AudiocoreTTS",
+      "AudiocoreVoiceEmbedding",
+      "AudiocoreVoiceStudio",
+      "LoadAudiocoreModel",
+      "UnloadAudiocoreModel"
+    ],
+    "melite-tts-nodes": [
+      "AudiocoreTTS",
+      "AudiocoreVoiceStudio",
+      "AudiocoreVoiceEmbedding",
+      "LoadAudiocoreModel",
+      "UnloadAudiocoreModel"
+    ],
     "melite-unity-nodes": [
       "MeliteUnityBatch"
+    ],
+    "melite-utility-nodes": [
+      "MeliteConcatVideos",
+      "MeliteUnload"
     ],
     "qweneditutils": [
       "TextEncodeQwenImageEditPlus"
@@ -305,7 +340,7 @@
     ]
   },
   "meta": {
-    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) \u2014 this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
+    "status": "CARD-OWNED SLICES (merged 2026-09-08, package-boundary extermination): model-owned keys (defaults/lane_inputs/variants/variant_groups/mods/accepts/studio) DERIVE from the registry at load (facts.ts) — this file keeps ONLY what the registry cannot carry: per-card outputs/requires_by_family, per-address card_knobs, the row roster, extension_node_types. mask-studio RETIRED 2026-09-16 (CONTRACT D at parity, stroke 75): mask-form owns the mask surface; the studio rows left with the card.",
     "wall": "tests/walls/ts/suites/models-flows.test.ts (AGREE + derivation)"
   },
   "rows": {
