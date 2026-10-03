@@ -4,14 +4,62 @@
 // failed "catalog does not contain exactly one row").
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import {
   MELITE_MODEL_BASE,
   ensureManagerSecurityWeak,
+  fetchVerified,
   writeManagerLocalModelList,
 } from "../scripts/provision-models.ts";
+
+describe("fetchVerified truncation retry", () => {
+  const dir = mkdtempSync(join(tmpdir(), "melite-trunc-"));
+  mkdirSync(join(dir, "sub"), { recursive: true });
+  const good = Buffer.from("the whole declared artifact, not a byte less", "utf8");
+  const want = createHash("sha256").update(good).digest("hex");
+
+  it("deletes a mismatched partial and re-queues; the digest gate owns the verdict", async () => {
+    let calls = 0;
+    // fake Manager: first install "completes" a truncated stream,
+    // second lands the declared bytes
+    const manager = {
+      async installModel() {
+        calls += 1;
+        const { writeFile } = await import("node:fs/promises");
+        const bytes = calls === 1 ? good.subarray(0, 7) : good;
+        await writeFile(join(dir, "sub", "model.safetensors"), bytes);
+        return { installed: true, detail: "queue 1/1" };
+      },
+    };
+    const st = await fetchVerified("", dir, "fam/provision/model.safetensors",
+      "https://x/model.safetensors", "model.safetensors", "sub", want,
+      manager, { type: MELITE_MODEL_BASE, base: MELITE_MODEL_BASE });
+    assert.equal(st, "ok");
+    assert.equal(calls, 2, "the truncated first attempt is retried exactly once more");
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("fails loud after the final attempt still lands wrong bytes", async () => {
+    let calls = 0;
+    const manager = {
+      async installModel() {
+        calls += 1;
+        const { writeFile } = await import("node:fs/promises");
+        await writeFile(join(dir, "sub", "model.safetensors"), good.subarray(0, 5));
+        return { installed: true, detail: "queue 1/1" };
+      },
+    };
+    const st = await fetchVerified("", dir, "fam/provision/model.safetensors",
+      "https://x/model.safetensors", "model.safetensors", "sub", want,
+      manager, { type: MELITE_MODEL_BASE, base: MELITE_MODEL_BASE });
+    assert.equal(st, "bad");
+    assert.equal(calls, 3, "three attempts, then the row fails");
+  });
+});
 
 describe("writeManagerLocalModelList", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-mll-"));

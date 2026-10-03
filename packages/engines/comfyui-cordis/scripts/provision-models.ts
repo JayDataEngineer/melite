@@ -160,6 +160,19 @@ export async function catalogProvisions(): Promise<Array<{ family: string; row: 
   return out;
 }
 
+/** Deletes a landed artifact (a truncated partial) through the same
+ *  confinement the writer enforces, so Manager's next queue round
+ *  re-downloads instead of skipping the existing file.
+ *
+ *  @param storeRoot absolute store root
+ *  @param relativePath store-relative artifact path
+ */
+async function removePartial(storeRoot: string, relativePath: string): Promise<void> {
+  const { resolveConfinedPath } = await import("@melite/estate-provisioning");
+  const { rm } = await import("node:fs/promises");
+  await rm(resolveConfinedPath(storeRoot, relativePath), { force: true });
+}
+
 export async function fetchVerified(_workspace: string,
     storeRoot: string, label: string, url: string, name: string,
     sub: string, want: string,
@@ -190,17 +203,37 @@ export async function fetchVerified(_workspace: string,
     warn("  [model] " + name + ": ComfyUI-Manager is unavailable; refusing a direct model download");
     return "bad";
   }
-  try {
-    const installed = await manager.installModel({
-      id: label,
-      name,
-      savePath: sub,
-      url,
-      filename: name,
-      ...(tags === undefined ? {} : tags),
-    });
-    if (!installed.installed) {
-      warn("  [model] " + name + ": ComfyUI-Manager refused the model install");
+  // Manager marks a dead stream done (IncompleteRead class): the
+  // landed bytes land short and only the digest gate sees it. Retry
+  // the whole queue round after DELETING the partial — Manager skips
+  // downloads whose destination file already exists.
+  const attempts = 3;
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    let queued = true;
+    try {
+      const installed = await manager.installModel({
+        id: label,
+        name,
+        savePath: sub,
+        url,
+        filename: name,
+        ...(tags === undefined ? {} : tags),
+      });
+      queued = installed.installed;
+    } catch (error: unknown) {
+      // An honest-budget timeout on a live link means the stream
+      // died mid-file — same remedy as a digest mismatch.
+      warn("  [model] " + name + ": attempt " + String(attempt) + "/" + String(attempts) +
+        " " + (error instanceof Error ? error.message : String(error)).slice(0, 160));
+      queued = false;
+    }
+    if (!queued && attempt < attempts) {
+      await removePartial(storeRoot, relativePath);
+      continue;
+    }
+    if (!queued) {
+      warn("  [model] " + name + ": ComfyUI-Manager did not complete the install in " +
+        String(attempts) + " attempts");
       return "bad";
     }
     const landed = await writer.inspect({
@@ -208,16 +241,20 @@ export async function fetchVerified(_workspace: string,
       relativePath,
       expectedSha256: want,
     });
-    if (!landed.present) {
-      warn("  [model] " + name + ": Manager queue completed but declared bytes are absent or mismatched");
-      return "bad";
+    if (landed.present) {
+      info("  [model] " + name + ": verified (" + landed.sha256 + ")");
+      return "ok";
     }
-    info("  [model] " + name + ": verified (" + landed.sha256 + ")");
-    return "ok";
-  } catch (error: unknown) {
-    warn("  [model] " + name + ": " + (error instanceof Error ? error.message : String(error)).slice(0, 200));
+    if (attempt < attempts) {
+      warn("  [model] " + name + ": attempt " + String(attempt) + "/" + String(attempts) +
+        " landed absent or mismatched bytes — deleting the partial and re-queueing");
+      await removePartial(storeRoot, relativePath);
+      continue;
+    }
+    warn("  [model] " + name + ": Manager queue completed but declared bytes are absent or mismatched");
     return "bad";
   }
+  return "bad";
 }
 
 export async function stepModels(): Promise<boolean> {
