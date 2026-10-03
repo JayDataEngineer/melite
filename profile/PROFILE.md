@@ -15,8 +15,8 @@ The lane declares it as a file input:
 ```yaml
   melite-test:
     profile: melite-test
-    profile_dir: /home/user/Documents/programs/active/inference.cpp/profile
-    dsh_home: /home/user/.dsh-dev      # a side spot — never ~/.dsh (prod)
+    profile_dir: <repo>/profile
+    dsh_home: <home>/.dsh-dev      # a side spot — never ~/.dsh (prod)
     on_demand: true                   # ./apply.sh launch --lane melite-test
 ```
 
@@ -37,3 +37,16 @@ Everything else — roster, retry policies, default model — rides the
 same harness train as prod (`dsh-provision/pin/dsh-version`, 0.2.0-rc.1)
 and the same invariants. Version rows are EXACT pins at the train; the
 contract rejects ranges and anything below the train.
+
+## Optional local plugins
+
+dsh-glb-viewer (dev-local, outside this repo) is not a default
+dependency. To add it on a machine that has it:
+
+```json
+"dsh-glb-viewer": "link:<path-to-your>/dsh-glb-viewer"
+```
+
+and append `"dsh-glb-viewer"` to the plugin list. Profile yml absolute
+paths: run `scripts/regen-profile-paths.sh` after cloning or moving
+the checkout.

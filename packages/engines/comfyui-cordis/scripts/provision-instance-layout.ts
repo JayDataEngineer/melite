@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { DEFAULT_CONFIG, RUNTIME } from "./provision-shared.ts";
-import { FIXED_FOLDERS, boundModelFolders, engineField, enginePort, loadRoot } from "./provision-config.ts";
+import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot } from "./provision-config.ts";
 import type { EndpointConfig } from "./provision-config.ts";
 
 // ── instance commands ───────────────────────────────────────────
@@ -109,10 +109,10 @@ export function syncEndpointFromRoot(cfg: EndpointConfig): void {
     model_base_path: paths.base_path,
     model_download_path: paths.download_path,
     url,
-    input_dir: engineField(root, "input_dir", cfg.input_dir),
+    input_dir: anchorDir(engineField(root, "input_dir", cfg.input_dir)),
     input_dir_container: engineField(root, "input_dir_container",
       cfg.input_dir_container),
-    output_dir: engineField(root, "output_dir", cfg.output_dir),
+    output_dir: anchorDir(engineField(root, "output_dir", cfg.output_dir)),
     boot_cmd: boot,
   };
   const changed: string[] = [];

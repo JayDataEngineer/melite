@@ -39,7 +39,7 @@ import process from 'node:process'
 const REPO = dirname(dirname(fileURLToPath(import.meta.url)))
 const HOME = join(tmpdir(), 'melite-agent-audit')
 const RUN_CWD = join(tmpdir(), 'melite-agent-audit-run')
-const DSH = '/home/user/.local/bin/dsh'
+const DSH = process.env.DSH_BIN ?? 'dsh'
 
 const TASK = 'AUDIT RUN — no generation, no runs, no melite_flow. '
   + '1) Call melite_discover with lookup=all. '

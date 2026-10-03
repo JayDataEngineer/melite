@@ -82,9 +82,9 @@ window.__ModuleLoader__.load({
 			guard.release();
 		}
 		//#endregion
-		//#region \0dsh-css:infer-gallery/src/client/overlay.module.css.mjs
-		const css = "._2saHFG_lightbox{width:min(1200px,96vw);max-width:96vw}._2saHFG_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
-		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@d29a3d30";
+		//#region \0dsh-css:packages/web/infer-gallery/src/client/overlay.module.css.mjs
+		const css = ".P_5Nua_lightbox{width:min(1200px,96vw);max-width:96vw}.P_5Nua_wand{z-index:3;background:var(--dsw-alias-fill-subtle,#020617d1);color:var(--dsw-alias-state-warn-primary,#fde68a);letter-spacing:.4px;cursor:pointer;opacity:1;border-radius:6px;align-items:center;gap:4px;padding:4px 6px;font-family:inherit;font-size:9px;font-weight:700;display:flex;position:absolute;top:6px;right:6px}";
+		const tagId = "@melite-plugin/dsh-gallery/overlay.module.css@d598eaf4";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-gallery";
@@ -93,8 +93,8 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var overlay_module_css_default = {
-			"lightbox": "_2saHFG_lightbox",
-			"wand": "_2saHFG_wand"
+			"lightbox": "P_5Nua_lightbox",
+			"wand": "P_5Nua_wand"
 		};
 		//#endregion
 		//#region ../../../node_modules/.pnpm/three@0.184.0/node_modules/three/build/three.core.js

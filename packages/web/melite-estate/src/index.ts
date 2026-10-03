@@ -15,6 +15,7 @@
 // Erasable-syntax TS only: no enums, `import type` for types, bare
 // package specifiers only.
 
+import { dirname, join, resolve } from "node:path";
 import type { Context } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
 
@@ -118,18 +119,22 @@ import provisioningComposition from "./provisioning.ts";
 
 // The blender stdio row's declared config. command is the ONE
 // deployment-varying choice (where the blender binary lives — an
-// operator install path, not repo state), so apply() overrides it
-// from the estate's config face (Config.blenderPath, settable in
-// cordis.yml). args/cwd stay repo-pinned literals: they name the
-// vendored Layer C tree itself, which moves with the checkout, not
-// with the deployment.
+// operator install, not repo state): MELITE_ESTATE_BLENDER overrides
+// it, else `blender` on PATH. apply() may also override it from the
+// estate's config face (Config.blenderPath, settable in cordis.yml).
+// args/cwd stay repo-anchored: they name the vendored Layer C tree
+// itself, which moves with the checkout, not with the deployment.
+const REPO_ROOT = resolve(import.meta.dirname, "..", "..", "..", "..");
+const blenderServer = join(REPO_ROOT,
+  "vendor", "comfyui_extensions", "melite-blender-proxy-nodes",
+  "mcp_server.py");
 const BLENDER_STDIO_DEFAULTS: StdioConfig = {
   transport: "stdio",
   serverName: "blender",
-  command: "/home/user/tools/blender-4.5.0-linux-x64/blender",
-  args: ["-b", "--python", "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py"],
+  command: "blender",
+  args: ["-b", "--python", blenderServer],
   env: {},
-  cwd: "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes",
+  cwd: dirname(blenderServer),
   toolCallTimeoutMs: 300000,
   failOnStartupError: false,
 };
@@ -435,13 +440,15 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     }
     // the blender row's command is the config face's one
     // deployment-varying choice: Config.blenderPath overrides it,
-    // the declared defaults carry everything else. Announced LOUD
-    // (the lane's seat-decision law) — an overridden binary is a
+    // MELITE_ESTATE_BLENDER overrides the declared default, and the
+    // declared default is `blender` on PATH. Announced LOUD (the
+    // lane's seat-decision law) — an overridden binary is a
     // deployment fact the log must carry.
     if (row === mcpBlenderRow) {
-      const command = config.blenderPath ?? BLENDER_STDIO_DEFAULTS.command;
-      if (config.blenderPath !== undefined) {
-        console.log("[melite-estate] blender binary overridden by config: " + config.blenderPath);
+      const command = config.blenderPath ??
+        process.env["MELITE_ESTATE_BLENDER"] ?? BLENDER_STDIO_DEFAULTS.command;
+      if (command !== BLENDER_STDIO_DEFAULTS.command) {
+        console.log("[melite-estate] blender binary overridden: " + command);
       }
       ctx.plugin(row, { ...BLENDER_STDIO_DEFAULTS, command });
       continue;

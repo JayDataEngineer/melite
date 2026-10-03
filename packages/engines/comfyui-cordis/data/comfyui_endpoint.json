@@ -1,9 +1,9 @@
 {
   "provision": "managed",
   "boot_cmd": "cd <repo>/data/runtime/comfyui && .venv/bin/python main.py --listen 127.0.0.1 --port 8188 --extra-model-paths-config extra_model_paths.yaml --input-directory <repo>/data/input --output-directory <repo>/data/temp --user-directory user",
-  "input_dir": "/home/user/Documents/programs/active/inference.cpp/data/input",
+  "input_dir": "data/input",
   "input_dir_container": "/root/ComfyUI/input",
-  "output_dir": "/home/user/Documents/programs/active/inference.cpp/data/temp",
+  "output_dir": "data/temp",
   "extra_model_folders": {
     "SEEDVR2": "SEEDVR2",
     "anny": "anny",

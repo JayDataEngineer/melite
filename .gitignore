@@ -201,3 +201,6 @@ data/runtime/real-install-tarballs/
 
 # developer-local material (audits, design docs, runbooks) — never shipped
 /dev_docs/
+
+# machine-local root-config overlay (portable tracked defaults win on fresh clones)
+/data/inference.local.json

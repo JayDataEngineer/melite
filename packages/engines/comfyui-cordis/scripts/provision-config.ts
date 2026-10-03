@@ -2,8 +2,8 @@
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { ROOT_CONFIG, die } from "./provision-shared.ts";
+import { isAbsolute, join, resolve } from "node:path";
+import { REPO, ROOT_CONFIG, die } from "./provision-shared.ts";
 
 // ── config (the root file is the SSOT; the endpoint overrides) ──
 
@@ -27,6 +27,13 @@ export interface RootConfig {
 }
 
 export function loadRoot(): RootConfig {
+  // Machine-local overlay first (untracked, gitignored): developer
+  // estates pin absolute model roots here; the tracked file ships
+  // portable repo-relative defaults.
+  const local = join(REPO, "data", "inference.local.json");
+  if (existsSync(local)) {
+    return JSON.parse(readFileSync(local, "utf8")) as RootConfig;
+  }
   if (!existsSync(ROOT_CONFIG)) {
     die("no root config at inference.config.json — model storage is " +
       "configured from the project root (never guessed)");
@@ -66,6 +73,17 @@ export interface BoundLayout {
   folders: Record<string, string>;
 }
 
+/**
+ * Anchors a configured directory: absolute values pass through,
+ * relative values resolve against the repository root. Lets the
+ * tracked inference.config.json ship portable ("data/models") while
+ * machine-local overlays (data/inference.local.json) pin absolute
+ * roots on developer estates.
+ */
+export function anchorDir(value: string): string {
+  return isAbsolute(value) ? value : resolve(REPO, value);
+}
+
 export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
   // THE ONE derivation: ROOT config + endpoint overrides
   // -> {folder: mount subdir}. Refuses an unconfigured root LOUD.
@@ -79,10 +97,11 @@ export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
   }
   const root = loadRoot();
   const base = rootStr(cfg.model_base_path) ||
-    join(rootStr(root.models?.read_root), rootStr(root.engines?.comfyui?.base));
+    join(anchorDir(rootStr(root.models?.read_root)),
+      rootStr(root.engines?.comfyui?.base));
   const download = rootStr(cfg.model_download_path) ||
     rootStr(cfg.model_base_path) ||
-    join(rootStr(root.models?.download_root),
+    join(anchorDir(rootStr(root.models?.download_root)),
       rootStr(root.engines?.comfyui?.base));
   if (!rootStr(root.models?.read_root)) {
     die("models.read_root is unset in inference.config.json — " +

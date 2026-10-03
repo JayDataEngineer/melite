@@ -25,7 +25,7 @@
 #                         the prompt, not the brief — never bare).
 #   [out-prefix]          attempt logs land at <prefix>-attempt<k>.log
 # Knobs (tests stub the binary + zero the backoff):
-#   SUPERVISOR_DSH_BIN       (default /home/user/.local/bin/dsh)
+#   SUPERVISOR_DSH_BIN       (default: first dsh on PATH, run via node)
 #   SUPERVISOR_PROFILE       (default headless)
 #   SUPERVISOR_DSH_PATCH     optional --patch overlay path, passed to
 #                             the launcher before the prompt (machine-
@@ -55,7 +55,7 @@ set -uo pipefail
 
 PROMPT_FILE="${1:?usage: commission-supervisor.sh <launch-prompt-file> [out-prefix]}"
 OUT_PREFIX="${2:-/tmp/commission}"
-DSH_BIN="${SUPERVISOR_DSH_BIN:-/home/user/.local/bin/dsh}"
+DSH_BIN="${SUPERVISOR_DSH_BIN:-$(command -v dsh 2>/dev/null || echo dsh)}"
 PROFILE="${SUPERVISOR_PROFILE:-headless}"
 PATCH_ARGS=()
 [ -n "${SUPERVISOR_DSH_PATCH:-}" ] && PATCH_ARGS+=(--patch "${SUPERVISOR_DSH_PATCH}")

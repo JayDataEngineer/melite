@@ -39,6 +39,7 @@
  * lifecycle; the routes never throw.
  */
 import type { Context } from '@deepseek-ai/cordis'
+import { join } from 'node:path'
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX , RUN_ID_RE} from "@melite/contracts/benchStage";
 
 /** The upstream's artifact prefix: the gateway route that has served
@@ -78,8 +79,9 @@ const DEFAULT_TIMEOUT_MS = 15_000
 const RUNS_LIMIT = '500'
 const DRAFTS_LIMIT = 200
 /** Sidecar tree default: the estate runs stream (SERVER-STATE ROOT
- *  LAW — build/ was the C era's cwd and is gone). */
-const DEFAULT_FLOW_DIR = '/home/user/Documents/programs/active/inference.cpp/data/runs/output'
+ *  LAW — build/ was the C era's cwd and is gone), anchored to the
+ *  checkout so the default moves with the clone. */
+const DEFAULT_FLOW_DIR = join(import.meta.dirname, '..', '..', '..', '..', 'data', 'runs', 'output')
 /** A run dir name: run-<hex>-<word> (the runs grammar). */
 const RUN_DIR = RUN_ID_RE
 

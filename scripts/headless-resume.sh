@@ -22,7 +22,7 @@ set -uo pipefail
 BRIEF="${1:?usage: headless-resume.sh <brief-file> [out-prefix] [timeout-s]}"
 OUT="${2:-/tmp/chat}"
 TIMEOUT_S="${3:-540}"
-DSH_BIN="${HEADLESS_DSH_BIN:-/home/user/.local/bin/dsh}"
+DSH_BIN="${HEADLESS_DSH_BIN:-$(command -v dsh 2>/dev/null || echo dsh)}"
 PROFILE="${HEADLESS_PROFILE:-headless}"
 export PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$PATH"
 

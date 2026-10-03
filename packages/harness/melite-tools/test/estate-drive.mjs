@@ -17,13 +17,15 @@
 import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
-const DSH_HOME = '/home/user/Documents/programs/active/inference.cpp/data/runtime/dsh-harness-home'
+const DSH_HOME = process.env.MELITE_DRIVE_DSH_HOME ??
+  '/home/user/Documents/programs/active/inference.cpp/data/runtime/dsh-harness-home'
 // provider credentials: the operator's machine env file (the same
 // exports the GUI launcher uses). Parsed at spawn time, never copied
 // into this file. Without them the provider adapter never mounts and
 // initialize answers `no adapter registered for provider "zai"`.
 const keyEnv = {}
-for (const m of readFileSync('/home/user/start-dsh.sh', 'utf8').matchAll(/^export ([A-Z0-9_]+)="([^"]*)"/gm)) {
+const KEYENV = process.env.MELITE_DRIVE_KEYENV ?? '/home/user/start-dsh.sh'
+for (const m of readFileSync(KEYENV, 'utf8').matchAll(/^export ([A-Z0-9_]+)="([^"]*)"/gm)) {
   keyEnv[m[1]] = m[2]
 }
 const SESSION = 'estate-job-' + Date.now().toString(36)

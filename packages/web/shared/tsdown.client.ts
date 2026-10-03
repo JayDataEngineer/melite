@@ -64,7 +64,9 @@ const SKIP_WORKSPACE_BUILD: UserConfig = { entry: '' }
 /** Externals resolved from the loader module table: the platform seed entries. */
 const CLIENT_EXTERNALS: readonly string[] = PLATFORM_MODULES
 
-const REPOSITORY_ROOT = fileURLToPath(new URL('..', import.meta.url))
+// packages/web/shared/ -> repository root (three levels up), so
+// rebasing covers every package tree, not just packages/web/
+const REPOSITORY_ROOT = fileURLToPath(new URL('../../../', import.meta.url))
 
 /** Rebase a physical path onto a repository-relative id when it lives under the repo. */
 function repositoryRelativePath(physical: string): string {

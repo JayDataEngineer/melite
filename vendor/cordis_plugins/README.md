@@ -15,7 +15,7 @@ registry (published-frozen — operator step 3).
 
 ## Provenance (harness commit 141eb6f, dsh-0.1.0-rc.8)
 
-Copied from `/home/user/Documents/programs/deepseek-harness`
+Copied from the DeepSeek Harness reference checkout
 (verified `git rev-parse HEAD` = `141eb6f…`): each package carries
 `src/` + `package.json` + `README.md` + `LICENSE`, byte-identical to
 the harness (only the manifest deltas O1–O3 below differ). The
@@ -130,7 +130,7 @@ separately).
 
 ## Sync procedure (mirror the harness vendor discipline)
 
-1. `git -C /home/user/Documents/programs/deepseek-harness rev-parse HEAD` → record the commit above.
+1. `git -C <dsh-reference-checkout> rev-parse HEAD` → record the commit above.
 2. Re-copy `src/ package.json README.md LICENSE` per package; re-apply O1–O2; byte-diff to confirm.
 3. Root `pnpm install`, rebuild `lib/`, run `--check`, gateway `tsc`, the wall battery.
 4. Log the sync + any new local mod in the next section.

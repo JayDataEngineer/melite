@@ -17,17 +17,44 @@
  */
 import { describe, it, beforeAll, afterAll } from "vitest";
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { accessSync, constants } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { pathToFileURL } from "node:url";
 import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { Context } from "@deepseek-ai/cordis";
 
 // ── the gate: blender + the vendored server face ──────────────────
-const BLENDER = process.env["MELITE_E2E_BLENDER"] ?? "/home/user/tools/blender-4.5.0-linux-x64/blender";
+/** Resolve a bare binary name through PATH (existsSync cannot). */
+function onPath(name: string): string {
+  for (const dir of (process.env["PATH"] ?? "").split(":")) {
+    if (!dir) continue;
+    const candidate = join(dir, name);
+    try {
+      accessSync(candidate, constants.X_OK);
+      return candidate;
+    } catch { /* not in this dir */ }
+  }
+  return "";
+}
+const BLENDER = process.env["MELITE_E2E_BLENDER"] ?? onPath("blender");
 const REPO = join(import.meta.dirname, "..", "..");
 const MCP_SERVER = join(REPO, "vendor", "comfyui_extensions", "melite-blender-proxy-nodes", "mcp_server.py");
-const HAS_ENGINE = existsSync(BLENDER) && existsSync(MCP_SERVER);
+// The @deepseek-ai scope the host rows import from: an explicit
+// override, else the newest mise-installed global dsh (the dev
+// estate's layout), else unresolvable (the suite self-skips).
+const DSH_SCOPE: string | null = (() => {
+  const env = process.env["MELITE_DSH_MODULES"];
+  if (env) return env;
+  const installs = join(process.env["HOME"] ?? "", ".local/share/mise/installs/node");
+  try {
+    const version = readdirSync(installs).sort().at(-1);
+    if (version === undefined) return null;
+    return join(installs, version, "lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai");
+  } catch { return null; }
+})();
+const HAS_ENGINE = BLENDER !== "" && existsSync(MCP_SERVER) && DSH_SCOPE !== null;
 
 /** Mint a fresh sandbox (the estate-smoke convention). */
 function mintSandbox(prefix: string): { root: string; dispose(): void } {
@@ -78,10 +105,9 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
       // The host rows the lane rides (dsh-base cordis.patch.yml):
       // system-prompt first (ToolRuntime's constructor wires its
       // schema face into it), then the tools registry itself.
-      const DSH = "/home/user/.local/share/mise/installs/node/24.21.0/lib/node_modules/@deepseek-ai/dsh/node_modules/@deepseek-ai";
-      const promptPkg = await import(DSH + "/dsh-system-prompt/lib/index.js");
+      const promptPkg = await import(pathToFileURL(join(DSH_SCOPE!, "dsh-system-prompt/lib/index.js")).href);
       new (promptPkg as unknown as { default: new (c: unknown, cfg: unknown) => unknown }).default(ctx, {});
-      const toolsPkg = await import(DSH + "/dsh-tools/lib/index.js");
+      const toolsPkg = await import(pathToFileURL(join(DSH_SCOPE!, "dsh-tools/lib/index.js")).href);
       new (toolsPkg as unknown as { ToolRuntime: new (c: unknown, cfg: unknown) => unknown }).ToolRuntime(ctx, { mode: "native" });
       // The blender stdio row, VERBATIM from the lane's composition:
       // failOnStartupError false, the mcp_server.py face, the same

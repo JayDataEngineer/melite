@@ -19,7 +19,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
+// the real checkout's vendored blender server, as the defaults anchor
+// it (src/index.ts resolves the same way — file-anchored, not literal)
+const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
+const BLENDER_SERVER = join(REPO_ROOT, 'vendor', 'comfyui_extensions', 'melite-blender-proxy-nodes', 'mcp_server.py')
 import estateDefault, { apply, name } from '../src/index.ts'
 
 const mcpBridge = vi.hoisted(() => ({
@@ -213,16 +217,19 @@ describe('dispatch — mount order is load order', () => {
   })
 
   it('blenderPath overrides the stdio command — the declared default carries it otherwise', async () => {
-    // no blenderPath: the mounted cfg IS the declared defaults (the
-    // binary default, the vendored mcp_server.py args and cwd)
+    // no blenderPath and no MELITE_ESTATE_BLENDER: the mounted cfg IS
+    // the declared defaults — PATH `blender`, repo-anchored
+    // mcp_server.py args and cwd (portable: no machine literals)
+    const saved = process.env.MELITE_ESTATE_BLENDER
+    delete process.env.MELITE_ESTATE_BLENDER
     const plain = await mount({ repoRoot: '/tmp/pin' })
     const plainRow = plain.plugins.find((p) => p.name === 'mcp-client-blender')
     expect(plainRow?.cfg).toMatchObject({
-      command: '/home/user/tools/blender-4.5.0-linux-x64/blender',
-      args: ['-b', '--python', '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py'],
+      command: 'blender',
+      args: ['-b', '--python', BLENDER_SERVER],
     })
     // a blenderPath from the config face (the cordis.yml surface)
-    // replaces ONLY the command — args/cwd stay the repo-pinned
+    // replaces ONLY the command — args/cwd stay the repo-anchored
     // vendored tree
     const lines = silence()
     try {
@@ -231,12 +238,22 @@ describe('dispatch — mount order is load order', () => {
       expect(row?.cfg).toMatchObject({
         transport: 'stdio',
         command: '/opt/blender/blender',
-        args: ['-b', '--python', '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py'],
-        cwd: '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes',
+        args: ['-b', '--python', BLENDER_SERVER],
+        cwd: dirname(BLENDER_SERVER),
       })
-      expect(lines.join('\n')).toContain('[melite-estate] blender binary overridden by config: /opt/blender/blender')
+      expect(lines.join('\n')).toContain('[melite-estate] blender binary overridden: /opt/blender/blender')
     } finally {
       vi.restoreAllMocks()
+    }
+    // MELITE_ESTATE_BLENDER rides the same one-knob contract
+    process.env.MELITE_ESTATE_BLENDER = '/opt/custom/blender'
+    try {
+      const envRow = (await mount({ repoRoot: '/tmp/pin' }))
+        .plugins.find((p) => p.name === 'mcp-client-blender')
+      expect(envRow?.cfg).toMatchObject({ command: '/opt/custom/blender' })
+    } finally {
+      if (saved === undefined) delete process.env.MELITE_ESTATE_BLENDER
+      else process.env.MELITE_ESTATE_BLENDER = saved
     }
   })
 

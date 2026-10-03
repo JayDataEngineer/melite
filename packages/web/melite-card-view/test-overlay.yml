@@ -17,11 +17,11 @@
 # the shared tsdown preset; same as ray-gallery), NOT lib/index.mjs.
 #
 # One-time profile link (makes the package-name row resolvable):
-#   DSH_HOME=/tmp/ray-dsh-home dsh plugin --profile web add link:/home/user/Documents/programs/ray/dsh/ray-card-view
+#   DSH_HOME=/tmp/ray-dsh-home dsh plugin --profile web add link:<repo>/packages/web/melite-card-view
 #
 # Boot:
 #   DSH_HOME=/tmp/ray-dsh-home dsh --profile web \
-#     --patch /home/user/Documents/programs/ray/dsh/ray-card-view/test-overlay.yml --port 3083
+#     --patch <repo>/packages/web/melite-card-view/test-overlay.yml --port 3083
 
 - id: webserver
   config:
@@ -30,7 +30,7 @@
 
 - insert:
     - id: ray-card-view-host
-      name: /home/user/Documents/programs/ray/dsh/ray-card-view/lib/index.js
+      name: <repo>/packages/web/melite-card-view/lib/index.js
       config:
         gatewayUrl: ''  # the lanes answer in-process (R5); cross-host names the owning DSH
     - id: ray-card-view-client
