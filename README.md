@@ -43,12 +43,24 @@ The provisioner renders `inference`, `headless`, `estate`, and `melite-test`
 under `${DSH_HOME:-$HOME/.dsh}/profiles/`. It writes machine-local profile
 state; the source of truth remains this repository.
 
+Those two commands do **not** give you a runnable estate. Weights and the
+engine are separate, deliberate downloads on a fresh machine:
+
+```sh
+./setup.sh sync        # ComfyUI core + Manager checkout (managed instance)
+./setup.sh extensions  # declared extension packs (Layer C installs first)
+./setup.sh models      # declared weights — tens of GB, sha-pinned rows
+```
+
+`setup.sh models` queues every declared provision (family provisions rows
+and variant-cell artifacts) through ComfyUI-Manager; `--dry-run` lists the
+plan without downloading. Model files keep their own upstream licenses; this
+repository's license covers the code.
+
 Check the configured ComfyUI endpoint and declarations:
 
 ```sh
 ./setup.sh verify
-./setup.sh extensions
-./setup.sh models
 ```
 
 `inference.config.json` is the estate default configuration. The engine reads
