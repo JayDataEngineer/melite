@@ -372,6 +372,82 @@ describe("ManagerPort provider", () => {
     });
   });
 
+  test("a declared size raises the queue-drain budget past the extension-sized floor", async () => {
+    // 8 GiB declared at the 1 MiB/s floor rate ⇒ a ~2.2 hour budget;
+    // the queue below drains only on poll 5 (4 × 80ms = 320ms) — far
+    // past the 150ms floor, far inside the sized budget.
+    let queuePolls = 0;
+    const fetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const requestUrl = new URL(String(input));
+      const path = requestUrl.pathname + requestUrl.search;
+      if (path === "/externalmodel/getlist?mode=cache") return json({ models: [] });
+      if (path === "/manager/queue/install_model" || path === "/manager/queue/start") {
+        return new Response(null, { status: 200 });
+      }
+      if (path === "/manager/queue/status") {
+        queuePolls += 1;
+        return json({ total_count: 1, done_count: queuePolls >= 5 ? 1 : 0, in_progress_count: queuePolls >= 5 ? 0 : 1, is_processing: queuePolls < 5 });
+      }
+      return json({}, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({
+        baseUrl: "http://127.0.0.1:8188",
+        fetch: fetcher,
+        queueTimeoutMs: 150,
+        pollIntervalMs: 80,
+      }),
+    );
+    const result = await provider.installModel({
+      id: "big/provision/big.safetensors",
+      name: "big.safetensors",
+      savePath: "diffusion_models",
+      url: "https://huggingface.co/x/big/resolve/main/big.safetensors",
+      filename: "big.safetensors",
+      type: "melite",
+      base: "melite",
+      sizeBytes: 8 * 1024 * 1024 * 1024,
+    });
+    assert.equal(result.installed, true);
+    assert.equal(queuePolls, 5);
+
+    // same queue, no declared size: the 150ms floor dies mid-drain
+    let barePolls = 0;
+    const bareFetcher: typeof globalThis.fetch = async (input): Promise<Response> => {
+      const requestUrl = new URL(String(input));
+      const path = requestUrl.pathname + requestUrl.search;
+      if (path === "/externalmodel/getlist?mode=cache") return json({ models: [] });
+      if (path === "/manager/queue/install_model" || path === "/manager/queue/start") {
+        return new Response(null, { status: 200 });
+      }
+      if (path === "/manager/queue/status") {
+        barePolls += 1;
+        return json({ total_count: 1, done_count: barePolls >= 5 ? 1 : 0, in_progress_count: barePolls >= 5 ? 0 : 1, is_processing: barePolls < 5 });
+      }
+      return json({}, 404);
+    };
+    const bare = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({
+        baseUrl: "http://127.0.0.1:8188",
+        fetch: bareFetcher,
+        queueTimeoutMs: 150,
+        pollIntervalMs: 80,
+      }),
+    );
+    await assert.rejects(
+      bare.installModel({
+        id: "big/provision/big.safetensors",
+        name: "big.safetensors",
+        savePath: "diffusion_models",
+        url: "https://huggingface.co/x/big/resolve/main/big.safetensors",
+        filename: "big.safetensors",
+        type: "melite",
+        base: "melite",
+      }),
+      (error: unknown) => error instanceof ManagerClientError && error.code === "queue-timeout",
+    );
+  });
+
   test("queues the Manager SAM2 row for the declared official Hugging Face URL", async () => {
     const declaredUrl = "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt";
     const catalogUrl = "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt";

@@ -59,6 +59,9 @@ export interface ManagerModelInstallRequest {
    *  whitelist to admit the install. */
   readonly type?: string;
   readonly base?: string;
+  /** Declared artifact size in bytes; scales the queue-drain budget
+   *  (multi-GB model files outlast an extension-sized wait). */
+  readonly sizeBytes?: number;
 }
 
 export interface ManagerModelInstallResult {

@@ -37,6 +37,32 @@ export interface ComfyUiManagerProviderOptions {
   readonly queue?: ManagerQueueWaitOptions;
 }
 
+/** Conservative floor rate for declared model downloads: the queue
+ *  budget grants at least this many bytes per second of wall time
+ *  (residential HF pulls measure ~3 MiB/s; 1 MiB/s leaves slack). */
+export const MODEL_QUEUE_BYTES_PER_SEC = 1_048_576;
+
+/** Hard ceiling on a single model install's queue-drain wait — a
+ *  dead queue must still surface within an operator's shift. */
+export const MODEL_QUEUE_MAX_TIMEOUT_MS = 14_400_000;
+
+/**
+ * Queue-drain budget for a model install: the default (extension-
+ * sized) floor, raised by the declared artifact size at the floor
+ * rate, clamped to the ceiling.
+ *
+ * @param sizeBytes declared artifact size in bytes, when known
+ * @param defaultMs the wait budget used when no size is declared
+ * @returns the per-install queue-drain timeout in milliseconds
+ */
+export function modelQueueTimeoutMs(sizeBytes: number | undefined, defaultMs: number): number {
+  if (sizeBytes === undefined) {
+    return defaultMs;
+  }
+  const sized = Math.ceil((sizeBytes / MODEL_QUEUE_BYTES_PER_SEC) * 1000);
+  return Math.min(Math.max(defaultMs, sized), MODEL_QUEUE_MAX_TIMEOUT_MS);
+}
+
 interface RegistryRow {
   readonly id: string;
   readonly version: string;
@@ -405,6 +431,12 @@ export class ComfyUiManagerProvider implements ManagerPort {
     });
     const status = await this.client.waitForQueue({
       ...this.queue,
+      // A declared multi-GB artifact outlasts an extension-sized
+      // wait: scale the drain budget by the declared size at a
+      // conservative floor rate, clamped to a hard ceiling so a
+      // dead queue still surfaces.
+      timeoutMs: modelQueueTimeoutMs(request.sizeBytes,
+        this.queue?.timeoutMs ?? this.client.queueTimeoutMs),
       ...(signal === undefined ? {} : { signal }),
     });
     return {

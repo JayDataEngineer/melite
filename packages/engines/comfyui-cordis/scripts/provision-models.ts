@@ -164,7 +164,7 @@ export async function fetchVerified(_workspace: string,
     storeRoot: string, label: string, url: string, name: string,
     sub: string, want: string,
     manager?: Pick<ComfyUiManagerProvider, "installModel">,
-    tags?: { type: string; base: string }): Promise<string> {
+    tags?: { type: string; base: string; sizeBytes?: number }): Promise<string> {
   const relativePath = sub === "" ? name : sub.replace(/^\/+|\/+$/gu, "") + "/" + name;
   const writer = new VerifiedArtifactWriter(storeRoot);
   // DRY is a PLAN, never the work (2026-10-12): hashing every present
@@ -236,7 +236,10 @@ export async function stepModels(): Promise<boolean> {
         const endpoint = engineUrl(cfg);
         if (endpoint === "") throw new Error("ComfyUI endpoint URL is not configured");
         manager = new ComfyUiManagerProvider(
-          new ComfyUiManagerHttpClient({ baseUrl: endpoint, requestTimeoutMs: 30_000, queueTimeoutMs: 300_000 }),
+          // The floor wait fits an unknown-size artifact on a slow
+          // link (multi-GB model files, not extensions); rows that
+          // declare size_bytes raise it further at the provider.
+          new ComfyUiManagerHttpClient({ baseUrl: endpoint, requestTimeoutMs: 30_000, queueTimeoutMs: 900_000 }),
         );
       } catch (error: unknown) {
         die("ComfyUI-Manager is required for model provisioning: " + (error instanceof Error ? error.message : String(error)));
@@ -288,7 +291,8 @@ export async function stepModels(): Promise<boolean> {
       }
       const st = await fetchVerified("", storeRoot,
         family + "/provision/" + name, url, name, sub, want, manager,
-        { type: MELITE_MODEL_BASE, base: MELITE_MODEL_BASE });
+        { type: MELITE_MODEL_BASE, base: MELITE_MODEL_BASE,
+          ...(row.size_bytes === undefined ? {} : { sizeBytes: row.size_bytes }) });
       if (st === "ok") ok += 1;
       else if (st === "bad") bad += 1;
       else if (st === "planned") planned += 1;
