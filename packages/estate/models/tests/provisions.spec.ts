@@ -446,6 +446,65 @@ describe("provisionsForFamily (the live table)", () => {
       "90ee2cdf50f168382a7dd7e9c88b118298aba0aca4b72022080c89c4bab0ceb2",
     );
   });
+  test("a family's cell artifacts join its provisions (krea-2's UNET rows)", async () => {
+    // the union loop's live arm (da89924c landed it with no cell
+    // that carried an artifact under any spec's read — the audit
+    // of 2026-10-13 pins the real table's own row)
+    const rows = await provisionsForFamily("krea-2");
+    const unet = rows.find((r) => r.name === "krea2_turbo_int8_convrot.safetensors");
+    assert.ok(unet !== undefined);
+    assert.equal(unet.folder, "diffusion_models");
+    assert.equal(
+      unet.url,
+      "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors",
+    );
+    assert.equal(unet.sha256, "8e4eeda70dd5037ab1ba2bef6b417f9f901e26093117cf397f741fc1fdaaf3f1");
+    assert.equal(unet.size_bytes, 13492686496);
+    // the provisions channel rides first (the union's order)
+    assert.equal(rows[0]!.name, "qwen3vl_4b_fp8_scaled.safetensors");
+  });
+  test("the union loop dedupes shared cells and strips the query off the basename", async () => {
+    // a probe family on the real singleton: the dedupe hit (two
+    // cells sharing url+dest_sub) and the C5 basename cut (a url
+    // whose ? precedes the filename) — both arms the live table
+    // never rides. The recipe↔weights law makes every cell legal:
+    // the atom lane_inputs spell both loaded names.
+    const { modelsService } = await import("@melite/comfyui-cordis/models-service");
+    const svc = modelsService();
+    const { actions: _a, defaults: _d, ...base } =
+      svc.getModel("krea-2") as unknown as Record<string, unknown>;
+    const probe = structuredClone(base) as Record<string, unknown>;
+    const hex = "1".repeat(64);
+    probe["id"] = "probe-union-family";
+    probe["label"] = "Union Probe";
+    probe["provisions"] = [];
+    probe["lane_inputs"] = { unet: "dup.safetensors", vae: "a?b.safetensors" };
+    probe["variants"] = [
+      { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+      { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        cells: [
+          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+            artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
+          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+            artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
+        ] },
+      { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        cells: [
+          { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+            artifact: { source_url: "https://host/a?b.safetensors", dest_sub: "unet", dest_root: "COMFYUI_ROOT", size_bytes: 1024, sha256: hex } },
+        ] },
+    ];
+    const off = svc.registerFamily(probe as never);
+    try {
+      assert.deepEqual(await provisionsForFamily("probe-union-family"), [
+        { name: "dup.safetensors", url: "https://host/dup.safetensors", folder: "unet", sha256: hex, size_bytes: 1024 },
+        { name: "a", url: "https://host/a?b.safetensors", folder: "unet", sha256: hex, size_bytes: 1024 },
+      ]);
+    } finally {
+      off();
+    }
+  });
 });
 
 describe("resolveDest + sha256OfFile", () => {

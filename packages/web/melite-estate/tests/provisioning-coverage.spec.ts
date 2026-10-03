@@ -513,6 +513,26 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal(mounted.state.calls.filter((path) => path.startsWith("/object_info")).length, 1);
   });
 
+  test("the REAL readiness backoff resolves and cancels (the rig stubs it everywhere else)", async () => {
+    // li-bg's rig stub made every mount instant — and the real body
+    // lost its coverage (the floor fell after the baseline). This
+    // arm imports a FRESH graph (the :516 pattern) so the holder is
+    // the production one, then exercises both exits: the full sleep
+    // and the abort cancellation.
+    vi.resetModules();
+    const { SEAMS } = await import("../src/provisioning.ts");
+    const started = Date.now();
+    await SEAMS.readinessBackoff();
+    assert.ok(Date.now() - started >= 450, "the real 500ms sleep ran");
+    // abort INSIDE the window (a pre-aborted signal never fires the
+    // listener — the waitUntilReady loop checks aborted at its top,
+    // so production never reaches the backoff pre-aborted)
+    const controller = new AbortController();
+    const pending = SEAMS.readinessBackoff(controller.signal);
+    setTimeout(() => controller.abort(), 50);
+    await assert.rejects(pending, /readiness wait cancelled/);
+  });
+
   test("object-info preserves non-Error rejection detail", async () => {
     vi.resetModules();
     const freshComposition = (await import("../src/provisioning.ts")).default;

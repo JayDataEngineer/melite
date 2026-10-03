@@ -228,6 +228,52 @@ describe("manage cancellation and rail coverage", () => {
     await assert.rejects(dispatchManage({ action: "list_extensions" }, linked, controller.signal), /endpoint-abort/);
   });
 
+  it("the linked timer's PRE-ABORTED arm fires immediately (a signal aborted at schedule time never waits)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-linkcancel-"));
+    const controller = new AbortController();
+    let statusPolls = 0;
+    globalThis.fetch = (async (url: unknown) => {
+      if (String(url).endsWith("/manager/queue/status")) {
+        statusPolls += 1;
+        // abort on the FIRST poll: the drain's NEXT timer schedules
+        // with the signal already aborted, and the WRAPPER's
+        // pre-aborted arm answers the callback itself — the
+        // underlying seat never runs
+        if (statusPolls === 1) controller.abort(new Error("drain-abort"));
+        return json({ is_processing: true, in_progress_count: 1 });
+      }
+      return json({});
+    }) as typeof fetch;
+    const linked = { ...ctx() } as ManageCtx;
+    await assert.rejects(
+      dispatchManage({ action: "update", force: true, timeout_seconds: 5 }, linked, controller.signal),
+      /drain-abort/,
+    );
+  });
+
+  it("the linked timer's abort LISTENER fires the callback mid-wait (the wrapped seat races the caller's signal)", async () => {
+    root = mkdtempSync(join(tmpdir(), "manage-linkcancel-"));
+    const controller = new AbortController();
+    globalThis.fetch = (async (url: unknown) => String(url).endsWith("/manager/queue/status")
+      ? json({ is_processing: true, in_progress_count: 1 })
+      : json({})) as typeof fetch;
+    const linked = {
+      ...ctx(),
+      // the REAL timer seat: the callback waits its delay, and the
+      // caller's abort (10ms in) must fire it through the wrapper's
+      // listener — never the full 1000ms
+      timeout: (callback: () => void, delay: number): (() => void) => {
+        const t = setTimeout(callback, delay);
+        return () => { clearTimeout(t); };
+      },
+    } as ManageCtx;
+    setTimeout(() => controller.abort(new Error("mid-drain-abort")), 10);
+    await assert.rejects(
+      dispatchManage({ action: "update", force: true, timeout_seconds: 5 }, linked, controller.signal),
+      /mid-drain-abort/,
+    );
+  });
+
   it("propagates late caller aborts and transport timeouts through the rail", async () => {
     root = mkdtempSync(join(tmpdir(), "manage-cancel-"));
     const late = new AbortController();

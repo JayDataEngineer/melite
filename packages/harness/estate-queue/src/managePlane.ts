@@ -411,6 +411,11 @@ function normalizedResources(resources: readonly ResourceStatus[], provisioning?
     let detail = resource.detail;
     // NO SEAT = no operation merge, not a throw: a resource status the
     // door can still report beats a status door that cannot answer.
+    /* v8 ignore next 7 -- the only caller (hStatus) initialises
+     * resources = [] and assigns entries only in the branch that
+     * first resolves the provisioning seat, so a resource reaching
+     * this callback never sees provisioning === undefined; [] never
+     * invokes the map (audit 2026-10-13, call-site proof). */
     if (provisioning === undefined) {
       return {
         ...resource,

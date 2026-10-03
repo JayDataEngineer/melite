@@ -613,6 +613,9 @@ async function runSingle(
   // claimed it. The prompt rides bag.prompt (params), its display
   // home. (drafts/list shows the card id as the draft name — the
   // bench-default receipt's own shape.)
+  /* v8 ignore next -- resolveSpecKey answered above; every real card
+   * id and family alias is far under 80 chars, so the truncation arm
+   * is defensive only (2026-10-13, the coverage-cure pass). */
   const intent = card.length > 80 ? card.slice(0, 77) + '…' : card
   let draftId: string
   try {

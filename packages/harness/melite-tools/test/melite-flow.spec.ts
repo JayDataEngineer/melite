@@ -326,6 +326,78 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(startBody.draft_id, 'd-w')
   })
 
+  test('a wired bench whose flow-arm start REFUSES carries the rode line + the refusal (never a silent single-card retry)', async () => {
+    // the wired-bench contract's error arm: the bench carries
+    // wiring, the start rides the FLOW arm, and the door refuses —
+    // the receipt names the arm it rode and the door's own error
+    // (no fallback re-press through the single-card body: that
+    // would discard the wires the contract exists to keep).
+    const wiredBench = {
+      session: 'main', rev: 0, log: [],
+      stages: [
+        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
+        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
+          inputs: { input_images: { stage: 's_0', output: 'default' } } },
+      ],
+    }
+    const seen = mockFetch([
+      (u: string) => {
+        if (String(u).endsWith('/v1/bench/main')) return { status: 200, body: wiredBench }
+        if (String(u).endsWith('/v1/bench/ensure')) {
+          return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
+        }
+        if (String(u).endsWith('/v1/flows/start')) {
+          return { status: 409, body: { error: 'runs/active-run: a run is already pressing' } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21',
+      params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.match(String(out.rode), /flow-arm/)
+    assert.match(String(out.error), /active-run/)
+    // and exactly ONE start press: the refusal never re-pressed
+    const starts = seen.calls.filter((c) => c.url.endsWith('/v1/flows/start'))
+    assert.equal(starts.length, 1, 'the refusal retried the start')
+  })
+
+  test('a bench read whose row carries no stages array falls to the single-card arm (the advisory read never lies)', async () => {
+    // the wired-bench contract's read arm: a 200 row WITHOUT a
+    // stages array (the shape drift the door could answer mid-roll)
+    // is not wiring evidence — the start rides the single-card body
+    // as if the bench were empty, and the receipt carries the model.
+    const seen = mockFetch([
+      (u: string) => {
+        // ensure FIRST: the bench-read regex below would swallow the
+        // ensure POST (the door's paths share the prefix)
+        if (String(u).endsWith('/v1/bench/ensure')) {
+          return { status: 200, body: { bench: 'main', draft_id: 'd-flat', stages: [] } }
+        }
+        if (/\/v1\/bench\/[^/?]+$/.test(u)) {
+          return { status: 200, body: { session: 'main', rev: 7, stages: 'drifting' } }
+        }
+        if (String(u).endsWith('/v1/flows/start')) {
+          return { status: 202, body: { run_id: 'r-flat', status: 'queued' } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-gen', model: 'new-model-1',
+      params: { prompt: 'flat bench' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.equal(out.error, undefined)
+    assert.equal(out.run_id, 'r-flat')
+    assert.equal(out.model, 'new-model-1', 'the single-card body carried the model')
+    assert.doesNotMatch(String(out.rode ?? ''), /bench carries wiring/)
+    const startBody = decodeJsonBody(seen.calls.find((c) => c.url.endsWith('/v1/flows/start'))!.init)
+    assert.equal(startBody.model, 'new-model-1', 'the start rode the single-card body')
+  })
+
   test('normalizes card JSON arrays before the bench and start doors', async () => {
     const seen = mockFetch([okBenchWith('d-json'), okDraftThenStart('d-json', 'r-json')])
     const tool = meliteFlow(seen.request)
@@ -1120,6 +1192,30 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
       await new Promise((r) => setTimeout(r, 20))
     }
     assert.equal(patches[patches.length - 1]!.runStatus, 'done')
+  })
+
+  test('the LAST link expires without re-arming: no successor poll, the waiting face answers', async () => {
+    // the rearms-0 arm: the chain's final link spends its budget on
+    // a still-live run, answers the waiting face, and STOPS — no
+    // successor link exists to stamp (the contrast with the re-arm
+    // spec above: there the successor landed the terminal stamp).
+    let polls = 0
+    const seen = mockFetch([
+      (u: string) => {
+        if (u.startsWith('/v1/flows/status/')) {
+          polls += 1
+          return { status: 200, body: { status: 'running', stages: [] } }
+        }
+        return undefined
+      },
+    ])
+    const out = await observeAndAttribute(seen.request, 'd_last', 's_0', 'run-last', new AbortController().signal, 40, 0)
+    assert.equal(out.status, 'queued', 'the waiting face')
+    const pollsAtExpiry = polls
+    assert.ok(pollsAtExpiry >= 1, 'the link observed at least once')
+    // no re-arm: the poll count is stable past the cadence
+    await new Promise((r) => setTimeout(r, 120))
+    assert.equal(polls, pollsAtExpiry, 'a rearms-0 link re-armed anyway')
   })
 
   // The bench caller's receipt for the same expiry: the flow is NOT

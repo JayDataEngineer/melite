@@ -208,6 +208,17 @@ describe("admitStageModel (the write-time gate)", () => {
       expect(r.offered).toEqual([]);
     }
   });
+  it("a flow whose stage rides a FAMILY names the family rider, not a card rider", () => {
+    // the cut's wake (d7ba0c77): the family-rider flows were the
+    // only rows whose stages carried family+action with NO card —
+    // anny-params still rides one, and the refusal names it
+    const r = svc.admitStageModel("anny-params", "anny");
+    expect(r.ok).toBe(false);
+    if (r.ok === false) {
+      expect(r.error).toMatch(/card riders \(none\)/);
+      expect(r.error).toMatch(/family riders \(anny\.bake\)/);
+    }
+  });
   it("a model outside the board refuses with boards + downloaded + the offer", () => {
     const hit = firstBoarded();
     if (hit === null) return;

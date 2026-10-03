@@ -440,6 +440,12 @@ describe("registryInitialsError", () => {
         registryInitialsError(anny, { photo: "/v1/assets/runs/run1/a.png" }, r),
         null,
       );
+      // the LIVE prefix answers too (the legacy spelling above kept
+      // only its own twin; the live media door was never read here)
+      assert.equal(
+        registryInitialsError(anny, { photo: "/melite-media/runs/run1/a.png" }, r),
+        null,
+      );
     } finally {
       dropRoots();
     }
@@ -557,6 +563,12 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
   });
 
   it("refuses a shape the gate would have refused (never a silent literal)", () => {
+    // a TEXT-kind initial refuses a bare number (a bare NAME is the
+    // only legal spelling); fit-seat's bone is the live text initial
+    assert.equal(normalizedInitialValue("bone", "text", 42), null);
+    const refused = extractRequestInitials(getRegistryFlow("fit-seat")!, { bone: 42 });
+    assert.ok("refusal" in refused, "the text initial refuses a number");
+    assert.match(refused.refusal, /"bone" must be a bare name \(got number\)/);
     assert.equal(normalizedInitialValue("photo", "photo", { nope: 1 }), null);
     assert.equal(normalizedInitialValue("photo", "photo", 7), null);
     assert.equal(normalizedInitialValue("photo", "photo", ["a"]), null);

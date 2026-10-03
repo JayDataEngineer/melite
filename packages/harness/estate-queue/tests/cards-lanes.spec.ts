@@ -145,17 +145,49 @@ describe("lanePresenceRefusal (the gate)", () => {
     arm(null);
     assert.equal(lanePresenceRefusal("anycreature"), null);
   });
-  it("a missing lane file without a provision row omits the hint", () => {
+  it("a missing lane file without a provision row omits the hint", async () => {
+    // REPLACES a vacuous pin (audit 2026-10-13): the old body called
+    // lanePresenceRefusal("transfer_rig"), whose ONLY lane key is
+    // model_path — a key LANE_FOLDERS does not map — so it returned
+    // null at the stand-down and could never throw. The honest probe
+    // registers a family that maps a lane file and declares NO
+    // provisions row: the refusal must name the folders and carry
+    // no fetch hint (the ?? [] arm's own contract).
     arm(null);
-    // 2026-10-12 ghost-debt: music3 now provisions its lane weights,
-    // so the hint arm fires there; transfer_rig still declares none
-    // (its skin npz rides the pack's own contract) — the hint stays
-    // empty for a family with no provisions row
+    const { modelsService } = await import("@melite/comfyui-cordis/models-service");
+    const svc = modelsService();
+    const { actions: _a, defaults: _d, ...base } =
+      getModel("krea-2") as unknown as Record<string, unknown>;
+    const probe = structuredClone(base) as Record<string, unknown>;
+    delete probe["provisions"];
+    probe["id"] = "probe-noprov-lanes";
+    probe["label"] = "Probe No-Provision Lanes";
+    probe["lane_inputs"] = {
+      ...(probe["lane_inputs"] as Record<string, unknown>),
+      checkpoint: "probe.bin",
+    };
+    // actions are dropped for the clone (functions do not survive
+    // structuredClone), so the variants ride fresh and routeless —
+    // no resolver_defaults to validate against a missing surface,
+    // no cell artifact for the recipe↔weights law to spell
+    probe["variants"] = [
+      { id: "v", label: "V", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0,
+        resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+        cells: [{ quant: "fp16", label: "FP16", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+    ];
+    const off = svc.registerFamily(probe as never);
     try {
-      lanePresenceRefusal("transfer_rig");
-      return; // family lane rows all present: nothing probed
-    } catch (e) {
-      assert.ok(!/fetch it:/.test((e as Error).message), "no provision hint without a provisions row");
+      assert.throws(
+        () => lanePresenceRefusal("probe-noprov-lanes"),
+        (e: Error & { code?: string }) => {
+          assert.equal(e.code, "lane_input_missing");
+          assert.match(e.message, /folders checked:/);
+          assert.ok(!/fetch it:/.test(e.message), "no provision hint without a provisions row");
+          return true;
+        },
+      );
+    } finally {
+      off();
     }
   });
   it("a missing lane file refuses with folders + the law code", () => {

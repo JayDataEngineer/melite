@@ -340,4 +340,26 @@ describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () =
     cmd.handler({ rawInput: 'off' })
     for (const h of HEADLESS) assert.ok(!names().includes(h), 'off failed to unseat on headless: ' + h)
   })
+
+  test('on while already seated is a no-op (no stacked doors); toggle flips both ways', async () => {
+    setEnv('MELITE_HEADLESS', '1')
+    setEnv('MELITE_ADHOC', undefined)
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context)
+    const names = () => f.registered.map((r) => r.name)
+    const [cmd] = f.seatRegistry()
+    // 'on' while the boot already seated the doors: the early
+    // return answers — the door count stays one, never stacked
+    const again = cmd.handler({ rawInput: 'on' })
+    assert.equal(again.kind, 'success')
+    const doorCount = (n: string) => f.registered.filter((r) => r.name === n).length
+    for (const h of HEADLESS) assert.equal(doorCount(h), 1, 'on-while-seated stacked a door: ' + h)
+    // toggle from seated → unseated, then back — both directions
+    const toggedOff = cmd.handler({ rawInput: 'toggle' })
+    assert.equal(toggedOff.kind, 'success')
+    for (const h of HEADLESS) assert.ok(!names().includes(h), 'toggle failed to unseat: ' + h)
+    const toggedOn = cmd.handler({ rawInput: 'toggle' })
+    assert.equal(toggedOn.kind, 'success')
+    for (const h of HEADLESS) assert.ok(names().includes(h), 'toggle failed to re-seat: ' + h)
+  })
 })

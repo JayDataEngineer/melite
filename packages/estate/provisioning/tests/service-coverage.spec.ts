@@ -13,6 +13,7 @@ import {
 } from "../src/index.ts";
 import type {
   ArtifactInspection,
+  ArtifactResponse,
   ArtifactWriterPort,
   DeclarationPort,
   InspectorPort,
@@ -237,6 +238,39 @@ describe("ProvisioningService public seams", () => {
     const signalled = makeService(basicConfig(async () => { throw new Error("late"); })).service;
     const cancelled = await signalled.inspect(ref, signal.signal);
     assert.equal(cancelled.state, "failed");
+  });
+
+  test("an extension naming a provider outside the vocabulary is refused by name", async () => {
+    // 3320f3d6 shipped the gate with a source-text wall only; this
+    // pins the runtime refusal (pinned 2026-10-13, the cut's-wake
+    // audit). The plan validator refuses only a BLANK provider, so
+    // "civitai" rides through validation and dies at acquire.
+    const ref = extensionRef();
+    const service = makeService(basicConfig(plan(ref, [extensionItem({ provider: "civitai" })]))).service;
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "blocked");
+    assert.equal(result.items[0]?.errorCode, "extension/unknown-provider");
+  });
+
+  test("a direct model whose writer throws a foreign error fails provisioning-named", async () => {
+    // the direct arm rethrows non-ProvisioningError writers (the
+    // port is injected; the interface does not promise wrapping) —
+    // the item-level conversion lands provisioning/failed
+    const ref = modelRef();
+    const writer: ArtifactWriterPort = {
+      inspect: async (): Promise<ArtifactInspection> => ({ present: false }),
+      write: async (): Promise<VerifiedArtifactResult> => { throw new Error("store offline"); },
+    };
+    const service = makeService(basicConfig(plan(ref, [modelItem({ provider: "direct" })]), {
+      artifactWriter: writer,
+      fetcher: async (): Promise<ArtifactResponse> => ({
+        status: 200,
+        body: (async function* (): AsyncGenerator<Uint8Array> { yield new Uint8Array([1, 2, 3, 4]); })(),
+      }),
+    })).service;
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "provisioning/failed");
   });
 
   test("aggregate state and outcome cover empty, blocked, failed, active, restart, mixed, and partial", async () => {

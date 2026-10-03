@@ -179,6 +179,38 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     }
   });
 
+  it("an undeclared loras dir names the same sentence from both doors", async () => {
+    // the SHIPPED endpoint config carries no model_base_path (the
+    // key is optional in both production shapes), so engineLorasDir
+    // answering null is the normal managed-lane state, not a fault —
+    // the doors must refuse in the registration voice, not crash
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+    try {
+      const ctx = CTX({
+        objectInfo: engineAnswer(OBJECT_INFO),
+        endpoint: () => ({ provision: "managed", url: "http://engine.invalid:8188" }),
+      });
+      const src = join(tempRoot("lane-nodir-"), "my_lora.safetensors");
+      writeFileSync(src, Buffer.alloc(64, 7));
+      const [code, res] = await run(
+        { action: "lora_install", path: src, families: ["h3"] },
+        ctx,
+      );
+      assert.equal(code, 502);
+      assert.equal(res.ok, false);
+      assert.match(res.detail, /the loras install dir is undeclared/);
+      const [lc, lres] = await run({ action: "lora_list" }, ctx);
+      assert.equal(lc, 200);
+      assert.equal(lres.ok, true);
+      const data = lres.data as Record<string, unknown>;
+      assert.match(String(data["install_dir"]), /the loras install dir is undeclared/);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
   it("lora_install refuses loudly: no path, a missing file, a non-LoRA", async () => {
     const ctx = CTX({ objectInfo: engineAnswer(OBJECT_INFO) });
     const [noPath] = await run({ action: "lora_install" }, ctx);

@@ -242,14 +242,17 @@ export async function provisionsForFamily(
   // artifacts), basename with the C5 query/fragment strip.
   const rows: ProvisionRow[] = [...(decl.provisions ?? [])];
   const seen = new Set(rows.map((r) => r.url + "\u0000" + r.folder));
-  for (const variant of decl.variants ?? []) {
+  /* variants is required on ModelDecl and validateDecl refuses a
+   * non-array at registration — the ?? fallback was provably dead
+   * and deleted (audit 2026-10-13). */
+  for (const variant of decl.variants) {
     for (const cell of variant.cells) {
       const artifact = cell.artifact;
       if (artifact === undefined || artifact === null) continue;
       const key = artifact.source_url + "\u0000" + artifact.dest_sub;
       if (seen.has(key)) continue;
       seen.add(key);
-      let name = artifact.source_url.split("/").pop() ?? "";
+      let name = artifact.source_url.slice(artifact.source_url.lastIndexOf("/") + 1);
       const cut = Math.max(name.indexOf("?"), name.indexOf("#"));
       if (cut >= 0) name = name.slice(0, cut);
       rows.push({

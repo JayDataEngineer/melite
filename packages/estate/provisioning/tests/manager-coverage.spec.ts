@@ -637,6 +637,25 @@ describe("ManagerProvider model catalog", () => {
     assert.deepEqual(payload, { name: "one.bin", type: "checkpoint", base: "SD", save_path: "models/checkpoints", url: model.url, filename: model.filename, ui_id: model.id });
   });
 
+  test("a DECLARED row the catalog lacks defaults its lone tag to the manager-local pair", async () => {
+    // e6e510e7 typed type/base independently optional (ports.ts):
+    // a declared row carrying only one tag falls to "model"/"melite"
+    // for the other — pinned 2026-10-13, the cut's-wake audit
+    const post = vi.fn(async () => undefined);
+    const waitForQueue = vi.fn(async () => queueStatus());
+    const subject = modelProvider({ models: [] }, { post, waitForQueue });
+    await subject.installModel({ ...model, type: "checkpoint" });
+    await subject.installModel({ ...model, base: "SD" });
+    // queue/start posts interleave — read only the install_model rows
+    const payloads = post.mock.calls
+      .map((call) => (call as unknown as [string, Record<string, unknown>])[1])
+      .filter((body) => body?.name === "one.bin");
+    assert.equal(payloads[0]?.base, "melite");
+    assert.equal(payloads[0]?.type, "checkpoint");
+    assert.equal(payloads[1]?.type, "model");
+    assert.equal(payloads[1]?.base, "SD");
+  });
+
   test("filters malformed model catalog rows", async () => {
     const invalidRows = [
       null,

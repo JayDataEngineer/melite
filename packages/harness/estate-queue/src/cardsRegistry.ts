@@ -327,6 +327,10 @@ export class CardRegistryService extends Service {
     // is the primed proof); the READ rides the one cache. Cold and
     // steady-state boots are byte-identical: cardDefsNow() is the
     // same object prime() captured until a refresh swaps it.
+    /* v8 ignore next -- prime() takes this.defs FROM loadCardDefs(),
+     * the same module cache cardDefsNow() returns — the ?? arm wants
+     * a null module cache beside a non-null primed table, and no
+     * seat can build one (audit 2026-10-13, call-site proof). */
     return cardDefsNow() ?? this.defs;
   }
 
@@ -690,6 +694,10 @@ export class CardRegistryService extends Service {
     admitIncomplete: boolean,
   ): string | null {
     const def: CardDefinition | undefined = this.defsSync().get(card);
+    /* v8 ignore next -- laneVerdict's own defsSync-miss guard (the
+     * same lookup, earlier in the same request) already returned on
+     * a missing card — this arm wants a table that mutates between
+     * two same-request reads, which the frozen cache forbids. */
     if (def === undefined) return null;
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const boarded: readonly string[] = def.boarded ?? [];
@@ -733,6 +741,9 @@ export class CardRegistryService extends Service {
         }
         return rows;
       });
+    /* v8 ignore next 2 -- declaring.length > 0 built perFamily, so
+     * [0] always exists; the ?? [] is the noUncheckedIndexedAccess
+     * artifact (audit 2026-10-13). */
     const first = perFamily[0] ?? [];
     const agreed = first.filter((x) => perFamily.every((rows) => rows.some((y) => y.key === x.key)));
     const relations: Record<string, unknown[]> = {};
@@ -761,6 +772,9 @@ export class CardRegistryService extends Service {
       }
     }
     const surface: readonly string[] | null = declaring.length > 0
+      /* v8 ignore next -- the incomplete-draft filter above admits
+       * a row only when its params !== undefined, so the ?? null is
+       * the noUncheckedIndexedAccess artifact (audit 2026-10-13). */
       ? declaring[0]!.params ?? null
       : null;
     // the surface judgment stays the undeclared-key gate's voice

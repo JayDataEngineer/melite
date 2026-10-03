@@ -316,7 +316,10 @@ export async function provisionsByFamily(
      * Deduped by url+dest_sub (variants share artifacts). */
     const rows: ProvisionRow[] = [...(decl.provisions ?? [])]
     const seen = new Set(rows.map((r) => r.url + '\u0000' + r.folder))
-    for (const variant of decl.variants ?? []) {
+    /* variants is required on ModelDecl (families/contract.ts) and
+     * validateDecl refuses a non-array at registration — the ??
+     * fallback was provably dead and deleted (audit 2026-10-13). */
+    for (const variant of decl.variants) {
       for (const cell of variant.cells) {
         const artifact = cell.artifact
         if (artifact === undefined || artifact === null) continue
@@ -325,7 +328,7 @@ export async function provisionsByFamily(
         seen.add(key)
         // basename with the query/fragment stripped — the boundary
         // audit's C5 law (provisioning.ts artifactFileName's twin)
-        let name = artifact.source_url.split('/').pop() ?? ''
+        let name = artifact.source_url.slice(artifact.source_url.lastIndexOf('/') + 1)
         const cut = Math.max(name.indexOf('?'), name.indexOf('#'))
         if (cut >= 0) name = name.slice(0, cut)
         rows.push({

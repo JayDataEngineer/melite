@@ -557,6 +557,13 @@ describe("artifact source and landing behavior", () => {
       await writer.inspect({ root: store, relativePath: "broken.bin" }),
       { present: false, path: join(store, "broken.bin") },
     );
+    // a symlink LOOP is neither ENOENT nor an escape — the realpath
+    // rethrows the raw ELOOP (the 59c34223 refactor specced the
+    // ENOENT twin; this is its non-ENOENT sibling, pinned 2026-10-13)
+    symlinkSync(join(store, "loop-b.bin"), join(store, "loop-a.bin"), "file");
+    symlinkSync(join(store, "loop-a.bin"), join(store, "loop-b.bin"), "file");
+    const loop = await rejectsError(writer.inspect({ root: store, relativePath: "loop-a.bin" }));
+    assert.equal((loop as NodeJS.ErrnoException).code, "ELOOP");
   });
 
   test("hashes files with and without a signal", async () => {

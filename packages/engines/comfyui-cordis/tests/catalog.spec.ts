@@ -327,4 +327,42 @@ describe("root-config inheritance (read_root law)", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+  it("the engine base joins the read_root and a relative read_root anchors to the repo root", () => {
+    // the overlay law's never-specced arms (3fa79263): a RELATIVE
+    // read_root anchors under the repo root and the engines.comfyui
+    // base joins beneath it — the tracked config's own shape, so
+    // the fixture is machine-independent (audit 2026-10-13)
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "data", "models", "image-gen", "comfyui", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "data", "models", "image-gen", "comfyui", "checkpoints", "b.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui" } },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "b.safetensors", root, {} as never),
+        join(root, "data/models/image-gen/comfyui/checkpoints/b.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("an engines block without a comfyui object leaves the read_root alone", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "mount", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "mount", "checkpoints", "n.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: join(root, "mount") },
+        engines: {},
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "n.safetensors", root, {} as never),
+        join(root, "mount", "checkpoints", "n.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

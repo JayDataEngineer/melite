@@ -476,6 +476,26 @@ describe("provisioning service", () => {
     assert.equal(existsSync(join(store, "checkpoints", "one.bin")), false);
   });
 
+  test("a non-200 that still carries a body names the status without the no-body suffix", async () => {
+    // an upstream error page answers 502 WITH bytes — the detail
+    // carries the status alone (the 403 arm above pins the body-less
+    // twin); pinned 2026-10-13, the cut's-wake audit
+    const store = root();
+    const ref = modelRef();
+    const plan: ProvisionPlan = { ref, items: [modelItem()] };
+    const service = new ProvisioningService(new Context(), {
+      declaration: declarationFor(plan),
+      artifactWriter: new VerifiedArtifactWriter(store),
+      fetcher: async (): Promise<ArtifactResponse> => ({ status: 502, body: source(Buffer.from("upstream error page")) }),
+    });
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "failed");
+    assert.equal(result.items[0]?.errorCode, "artifact/fetch-refused");
+    assert.match(result.items[0]?.detail ?? "", /502/);
+    assert.doesNotMatch(result.items[0]?.detail ?? "", /with no body/);
+    assert.equal(existsSync(join(store, "checkpoints", "one.bin")), false);
+  });
+
   test("direct acquisition without a fetcher is blocked, not manager-routed", async () => {
     const store = root();
     const ref = modelRef();

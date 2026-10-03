@@ -9,8 +9,10 @@ import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
 import {
   composeFamilyStages,
   liveFamilyDecls,
+  liveFamilySeat,
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
+import { estimate } from "../../../models/anny/src/actions.ts";
 
 const decls = [ANNY_DECL];
 
@@ -254,6 +256,47 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
       (composed.stages[0] as { outputs: Record<string, string> }).outputs,
       { body: "mesh" },
     );
+  });
+
+  it("a MIXED flow passes its plain card stage through untouched while the family stage composes", () => {
+    // the template cut's wake (d7ba0c77): the retired mixed FLOW
+    // ROWS were the only ones that rode a plain stage NEXT TO a
+    // family stage, so composeOne's passthrough arm lost its
+    // exercise. A live flow with both keeps it honest: family
+    // composes, card rides as-is.
+    const mixed = { ...ANNY_ESTIMATE_FLOW(), stages: [
+      ...ANNY_ESTIMATE_FLOW().stages,
+      plainStage({
+        id: "ride",
+        engine: CARD_PLANE_ENGINE,
+        card: "image-gen",
+        description: "the plain rider",
+        inputs: {},
+        params: { prompt: "as authored" },
+      }),
+    ] }
+    const expanded = expandRegistryFlow(mixed)
+    const composed = composeFamilyStages(expanded, decls)
+    const ride = composed.stages[1]!
+    assert.equal(ride.card, "image-gen", "the plain stage kept its card")
+    assert.deepEqual(ride.params, { prompt: "as authored" }, "the plain stage's params rode untouched")
+    assert.notEqual((composed.stages[0]!.params as Record<string, unknown>)["workflow"], undefined, "the family stage composed its envelope")
+  });
+
+  it("a family action that declares ZERO outputs composes without a producer row", () => {
+    // the derivation law's empty half: outputs derive from the
+    // declaration, so an action declaring none contributes a graph
+    // with no first-output producer — the merge resolves nothing.
+    const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate, outputs: [] }] }] as typeof decls
+    const probe = ANNY_ESTIMATE_FLOW()
+    const composed = composeFamilyStages(expandRegistryFlow(probe), quiet)
+    const wf = (composed.stages[0]!.params as { workflow: Record<string, unknown> }).workflow
+    assert.ok(Object.keys(wf).length > 0, "the quiet action still built its graph")
+  });
+
+  it("a seat mounted with ZERO families reports the bare state, each condition its own voice", () => {
+    assert.deepEqual(liveFamilySeat({ allDecls: () => [] }), { decls: [], state: "bare" });
+    assert.deepEqual(liveFamilySeat({ allDecls: () => decls }), { decls, state: "seated" });
   });
 
   it("liveFamilyDecls degrades to [] when no seat exists", () => {

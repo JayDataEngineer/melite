@@ -684,6 +684,10 @@ function edgeText(edge: RegistryEdge, flow: RegistryFlow): string {
  *  naming the flow and stage. (Both callers guard fromFlow !== null
  *  before the call; the fence throw below is the rim's contract.) */
 function resolveLink(st: RegistryStage): RegistryStage {
+  /* v8 ignore next 3 -- resolveLink is module-private and BOTH
+   * callers (:671, :713) guard fromFlow !== null inline; the fence
+   * is the rim's contract for future callers, not a reachable arm
+   * (audit 2026-10-13). */
   if (st.fromFlow === null) {
     throw new Error("resolveLink: stage '" + st.id + "' carries no fromFlow link (caller guard missing)");
   }

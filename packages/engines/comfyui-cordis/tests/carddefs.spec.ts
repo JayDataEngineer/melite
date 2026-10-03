@@ -14,6 +14,7 @@ import {
   provisionsByFamily, theService,
 } from "../src/cardDefs.ts";
 import { ComfyUIService } from "../src/service.ts";
+import { modelsService } from "../src/models/models.ts";
 import type { CardDefinition } from "../src/service.ts";
 // THE PER-FILE BOOT (li-m's own law, applied to the tests): models
 // never boot at import (that import-time await bricked the estate
@@ -117,6 +118,82 @@ describe("loadCardDefs (the registry boot)", () => {
     // a card with NO provisions adds no row
     const bare = await provisionsByFamily(new Map([["bare-card", {}]]) as never);
     assert.equal(bare["bare-card"], undefined);
+    // THE UNION LAW's every arm (da89924c landed the loop with the
+    // happy arms only; the audit of 2026-10-13 pins the rest): a variant
+    // cell WITHOUT an artifact skips; two cells sharing url+dest_sub
+    // dedupe to one row; a fresh cell lands its basename with the
+    // query stripped.
+  }, 240000);
+
+  it("provisionsByFamily unions a live family's variant-cell artifacts (skip + dedupe)", async () => {
+    // THE UNION LAW's every arm (da89924c landed the loop with the
+    // happy arms only; the audit of 2026-10-13 pins the rest). The union
+    // loop reads the MODELS table, so the probe registers a family
+    // DECL live on the singleton — one cell without an artifact
+    // (skips), two cells sharing url+dest_sub (dedupes to one row),
+    // one fresh cell (lands its basename with the query stripped).
+    await loadCardDefs();
+    // the MODELS singleton carries the union loop's table (the CARD
+    // service is theService — the wrong door)
+    const svc = modelsService();
+    // the DECL resolves through the STRICT schema — clone a live row
+    // (function members dropped: structuredClone cannot carry them)
+    // instead of hand-building a shape the resolver refuses
+    const { actions: _a, defaults: _d, ...base } = svc.getModel(svc.modelIds()[0]!) as unknown as Record<string, unknown>;
+    const probe = structuredClone(base) as Record<string, unknown>;
+    probe["id"] = "wall-union-family";
+    probe["label"] = "Union Probe";
+    // the base family's real provisions would ride the clone — the
+    // probe unions ONLY what its cells carry
+    probe["provisions"] = [];
+    // the recipe↔weights law: every downloaded basename must be
+    // loaded by a lane_input row, or registration refuses — the
+    // atom table spells both probe names
+    probe["lane_inputs"] = { unet: "dup.safetensors", vae: "a?b.safetensors" };
+    probe["variants"] = [
+              { id: "v1", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 0, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+                cells: [{ quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false, artifact: null }] },
+              // two cells sharing url+dest_sub — the dedupe arm
+              { id: "v2", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 1, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+                cells: [
+                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                    artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet" } },
+                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                    artifact: { source_url: "https://host/dup.safetensors", dest_sub: "unet" } },
+                ] },
+              // a url whose QUERY precedes the weights suffix —
+              // registerable (the segment ends .safetensors, and the
+              // lane truth loads the raw name) and the union's
+              // basename cut lands name "a"
+              { id: "v3", label: "", description: "", hint: "", group: "Variant", route: "", engine: "", order: 2, resolver_defaults: {}, lane_inputs: {}, wire_defaults: null,
+                cells: [
+                  { quant: "q8", label: "", source: null, description: "", route: "", engine: "", vram_peak_gb: 0, resolver_defaults: {}, hide_from_dropdown: false,
+                    artifact: { source_url: "https://host/a?b.safetensors", dest_sub: "unet" } },
+                ] },
+    ];
+    let off: (() => void) | undefined;
+    const ctx = new Context();
+    await ctx.plugin({
+      name: "wall-union-family",
+      apply(c2: Context): void {
+        c2.effect(() => {
+          off = svc.registerFamily(probe as never);
+          return () => { off?.() };
+        });
+      },
+    });
+    try {
+      const union = await provisionsByFamily(new Map());
+      const landed = union["wall-union-family"]!;
+      // the engine rides the cloned base family's own row
+      assert.equal(typeof landed.engine, "string");
+      assert.deepEqual(landed.provisions, [
+        { name: "dup.safetensors", url: "https://host/dup.safetensors", folder: "unet", sha256: undefined, size_bytes: undefined },
+        { name: "a", url: "https://host/a?b.safetensors", folder: "unet", sha256: undefined, size_bytes: undefined },
+      ]);
+    } finally {
+      off?.();
+    }
   }, 240000);
 });
 
