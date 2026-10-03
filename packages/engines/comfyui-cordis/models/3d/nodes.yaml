@@ -40,6 +40,8 @@ extensions:
   - name: melite-autoremesher-nodes
     registry: melite-autoremesher-nodes
     version: 0.1.0
+    url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
+    ref: 26ee7e0ee456177817a77dc3885ef4957d37b7fd
     required: false
     desc: >-
       In-tree quad-remesh pack: vendored huxingyi/autoremesher CLI
@@ -48,3 +50,5 @@ extensions:
       melite-3d presets yaml; resolution chain explicit > preset >
       defaults, loud on missing budgets. Phase 0 of the consolidation
       plan.
+    pip:
+      - trimesh
