@@ -37,6 +37,12 @@ export function cmdSync(cfg: EndpointConfig): void {
   const s = spawnSync("uv",
     ["sync", "--frozen", "--project", COMFY_PROJECT],
     { cwd: REPO, env, stdio: "inherit" });
+  // a missing binary spawns NOTHING (status null) — name it, never a
+  // silent exit 1 (the ubuntu-desktop self-provisioning receipt)
+  if (s.error !== undefined) {
+    die("uv failed to spawn — install it first (https://docs.astral.sh/uv/): " +
+      s.error.message);
+  }
   if (s.status !== 0) process.exit(s.status ?? 1);
   const coreUrl = "https://github.com/comfyanonymous/ComfyUI.git";
   if (existsSync(join(RUNTIME, "main.py"))) {
