@@ -4,8 +4,10 @@
 # bound live via the vendor symlink.
 # SYSTEM REQUIREMENT (Law 0, 2026-09-07): the pack shells `blender -b`
 # for FBX export — the Blender binary must be on PATH (or
-# SKINTOKEN_BLENDER_BIN / BLENDER_BIN set). Enforced at compose by
-# python/card_requires.py SYSTEM_BINARY_REQUIRES, not just noted here.
+# SKINTOKEN_BLENDER_BIN / BLENDER_BIN set). No compose-time check
+# runs: the pack's own resolver (env then PATH) raises LOUD at node
+# time when the binary is missing (the python card_requires.py gate
+# died with the Python estate, 2026-10-03 audit step 8).
 extensions:
 - name: melite-autorig-nodes
   registry: melite-autorig-nodes
