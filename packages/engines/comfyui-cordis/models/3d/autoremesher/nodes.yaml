@@ -11,6 +11,7 @@
 # with the Python estate, 2026-10-03 audit step 8).
 extensions:
 - name: melite-autoremesher-nodes
+  url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
   version: 0.1.0
   url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
   ref: 26ee7e0ee456177817a77dc3885ef4957d37b7fd

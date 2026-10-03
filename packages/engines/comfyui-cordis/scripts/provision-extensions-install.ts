@@ -1,88 +1,63 @@
-// provision-extensions-install — extension installs (vendor symlinks, registry/url git clones) + pip.
-// Split from scripts/provision.ts (pure move — no logic changes).
+// provision-extensions-install — the extension install step.
+//
+// CHANNEL LAW (operator 2026-10-13): ComfyUI-Manager is the ONE
+// vendor for extensions. Every declared row carries a git url —
+// upstream packs at their upstream repos, first-party packs at
+// github.com/JayDataEngineer/<pack> (the same repos this tree
+// references as submodules under vendor/comfyui_extensions).
+// Installs ride Manager's own node queue
+// (/manager/queue/install + /manager/queue/start), which also runs
+// each pack's requirements.txt pip leg; the CLI never clones, never
+// pip-installs, never copies directories. Outcomes are verified on
+// disk after the queue drains (the installed clone's git remote)
+// because per-item results stream over websocket events, not a
+// REST body.
 
-import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
+import { execSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, venvPython, warn } from "./provision-shared.ts";
-import { loadConfig } from "./provision-config.ts";
+import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.ts";
+import { engineUrl, loadConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 
-// ── extensions via git (registry cache + url clones) + vendor symlinks ──
-
-// A vendored pack is a REAL ComfyUI extension: it must publish
-// NODE_CLASS_MAPPINGS somewhere in its python, or ComfyUI would
-// ignore the directory and installing it would lie.
-function publishesNodes(src: string): boolean {
-  const walk = (dir: string): boolean => {
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      const p = join(dir, e.name);
-      if (e.isDirectory()) {
-        if (e.name === ".git" || e.name === "__pycache__") continue;
-        if (walk(p)) return true;
-      } else if (e.name.endsWith(".py") &&
-          readFileSync(p, "utf8").includes("NODE_CLASS_MAPPINGS")) {
-        return true;
-      }
-    }
-    return false;
+/** The /manager/queue/install body for an unknown git-url pack —
+ *  the exact form Manager's install_custom_node route resolves
+ *  through its risky-level gate (allow_git_url_install + loopback
+ *  listen, both pinned on this estate).
+ *  @param name declaration row name — rides ui_id so queue events
+ *             trace back to the row.
+ *  @param url the pack's git remote.
+ *  @returns the JSON body the route accepts. */
+export function queueInstallPayload(name: string, url: string):
+    Record<string, unknown> {
+  return {
+    id: "unknown",
+    version: "unknown",
+    selected_version: "unknown",
+    files: [url],
+    pip: [],
+    channel: "default",
+    mode: "cache",
+    ui_id: name,
   };
-  return walk(src);
 }
 
-/** Install a vendored pack as a REAL directory under custom_nodes —
- * ComfyUI's own extension mechanism (operator law 2026-10-13: a
- * symlink is a dev convenience; an engine that must stand on its own
- * carries real directories with no path back into a working tree
- * that may move, change branch, or be deleted). Replaces any symlink
- * or stale copy of the same name. */
-export function installVendorPack(name: string, workspace: string): string {
-  const target = join(workspace, "custom_nodes", name);
-  const src = join(REPO, "vendor", "comfyui_extensions", name);
-  if (!existsSync(join(src, "__init__.py"))) {
-    warn("  [" + name + "] vendor pack missing under " +
-      "vendor/comfyui_extensions (a fresh clone of this repository " +
-      "carries all 14 packs as tracked files)");
-    return "failed";
-  }
-  if (!publishesNodes(src)) {
-    warn("  [" + name + "] no NODE_CLASS_MAPPINGS — not a ComfyUI " +
-      "extension; skipping");
-    return "skipped";
-  }
-  if (DRY) {
-    console.log("[dry-run] real install " + target + " <- " + src);
-    return "installed";
-  }
-  mkdirSync(dirname(target), { recursive: true });
-  rmSync(target, { recursive: true, force: true });
-  cpSync(src, target, { recursive: true });
-  info("  [" + name + "] installed — real directory in custom_nodes");
-  return "installed";
+/** Queue-drain predicate over GET /manager/queue/status.
+ *  @param status the parsed status body.
+ *  @returns true when no task is processing and every queued task
+ *           has finished. */
+export function queueDrained(status: {
+  total_count: number; done_count: number; is_processing: boolean;
+}): boolean {
+  return !status.is_processing && status.total_count === status.done_count;
 }
 
-export function sameWorld(workspace: string, duty: string): boolean {
-  // Duties touching the workspace FILESYSTEM require it WRITABLE
-  // from HERE — a container/remote workspace is provisioned from
-  // INSIDE its world, never by guessing.
-  const cn = join(workspace, "custom_nodes");
-  try {
-    mkdirSync(cn, { recursive: true });
-    writeFileSync(join(cn, ".provision-write-test"), "x");
-    unlinkSync(join(cn, ".provision-write-test"));
-    return true;
-  } catch {
-    warn("  workspace " + workspace + " is not writable from here " +
-      "(another world: container/remote) — " + duty + " is done from " +
-      "inside that world (entrypoint) or by deployment binds; " +
-      "refusing to guess");
-    return false;
-  }
-}
-
+/** True if some custom_nodes clone's git remote IS this url (the
+ *  Manager renames install dirs; matching the remote is exact).
+ *  @param url the declared git remote.
+ *  @param workspace the engine workspace root.
+ *  @returns true when a clone with this remote is installed. */
 export function urlInstalled(url: string, workspace: string): boolean {
-  // True if some custom_nodes clone's git remote IS this url (the
-  // Manager renames install dirs; matching the remote is exact).
   const want = url.replace(/\/$/, "").toLowerCase()
     .replace(/\.git$/, "");
   let kids: string[] = [];
@@ -101,82 +76,38 @@ export function urlInstalled(url: string, workspace: string): boolean {
   return false;
 }
 
-export function runtimePython(workspace: string): string {
-  const venv = process.env.VIRTUAL_ENV ?? "";
-  if (venv && existsSync(join(venv, "bin", "python"))) {
-    return join(venv, "bin", "python");
-  }
-  const cb = process.env.COMFY_BIN ?? "";
-  if (cb) {
-    const py = join(dirname(cb), "python");
-    if (existsSync(py)) return py;
-  }
-  // the MANAGED runtime's own venv (UV_PROJECT_ENVIRONMENT from
-  // cmdSync) — the one extension pip pins ride. The ubuntu-desktop
-  // receipt: without this leg every pip pin failed against a
-  // nonexistent infra/python/.venv (the BYO-era fallback).
-  const managed = venvPython(join(workspace, ".venv"));
-  if (existsSync(managed)) return managed;
-  return venvPython(join(workspace, "infra", "python", ".venv"));
-}
-
-export function pipInstall(pkgs: string[], workspace: string): boolean {
-  // Declared pins ride the SERVING runtime venv (nodes import them
-  // at load); uv is the rail; satisfied pins are no-ops.
-  const py = runtimePython(workspace);
-  const r = spawnSync("uv",
-    ["pip", "install", "--python", py, ...pkgs],
-    { encoding: "utf8", timeout: 600000 });
-  if (r.status === 0) return true;
-  warn("  pip install failed (" + pkgs.join(" ") + "): " +
-    ((r.stderr || r.stdout) ?? "").trim().slice(0, 200));
-  return false;
-}
-
-/** The vendored manager's registry cache (custom-node-list.json,
- *  shipped inside the vendored custom node) — cnr id → reference
- *  git URL. This keeps registry declarations installable at
- *  provision time (engine down, manager not answering) with zero
- *  external Python: same map the manager itself consults. */
-export function registryUrl(reg: string): string {
-  const f = join(RUNTIME, "custom_nodes", "comfyui-manager",
-    "custom-node-list.json");
-  if (!existsSync(f)) {
-    return "";
-  }
+/** The installed clone's HEAD commit, for ref-pin verification.
+ *  @param workspace the engine workspace root.
+ *  @param dir the custom_nodes dir name Manager installed.
+ *  @returns the commit sha, or "" when the dir is not a clone. */
+export function installedHead(workspace: string, dir: string): string {
   try {
-    const doc = JSON.parse(readFileSync(f, "utf8")) as {
-      custom_nodes?: Array<{ id?: string; reference?: string }> };
-    const w = reg.toLowerCase();
-    const row = (doc.custom_nodes ?? []).find(
-      (r) => String(r.id ?? "").toLowerCase() === w);
-    return row?.reference ?? "";
-  } catch {
-    return "";
-  }
+    return execSync("git rev-parse HEAD",
+      { cwd: join(workspace, "custom_nodes", dir), encoding: "utf8" })
+      .trim();
+  } catch { return ""; }
 }
 
-/** Install one pack from git — the same mechanism the built-in
- *  manager uses for git installs, driven at provision time (engine
- *  down). Returns ok or the failure text. */
-export function gitCloneInstall(url: string, workspace: string,
-    ref: string): { ok: boolean; error?: string } {
-  const base = url.replace(/\/+$/, "").replace(/\.git$/, "")
-    .split("/").pop() ?? "";
-  if (!base) return { ok: false, error: "cannot derive a pack name from " + url };
-  const dest = join(workspace, "custom_nodes", base);
-  const git = (args: string[]): number =>
-    spawnSync("git", args, { cwd: workspace, stdio: "pipe" }).status ?? 1;
-  let r = git(["clone", "--quiet", "--depth", "1", url, dest]);
-  if (r !== 0) r = git(["clone", "--quiet", url, dest]);
-  if (r !== 0) return { ok: false, error: "git clone failed for " + url };
-  if (ref) {
-    git(["-C", dest, "fetch", "--quiet", "--depth", "1", "origin", ref]);
-    if (git(["-C", dest, "checkout", "--quiet", "FETCH_HEAD"]) !== 0) {
-      warn("  ref " + ref + " not fetchable — left on the default head");
-    }
+/** Idempotently pin allow_git_url_install = true in the manager's
+ *  config.ini — the flag gate for unknown-URL queue installs
+ *  (read once at engine startup; a change needs a restart).
+ *  @param configPath the manager config.ini path.
+ *  @returns true when the file already carried the flag. */
+export function ensureManagerGitUrlAllowed(configPath: string): boolean {
+  const wanted = "allow_git_url_install = true";
+  if (!existsSync(configPath)) {
+    mkdirSync(dirname(configPath), { recursive: true });
+    writeFileSync(configPath, "[default]\n" + wanted + "\n");
+    return false;
   }
-  return { ok: true };
+  const text = readFileSync(configPath, "utf8");
+  if (/^\s*allow_git_url_install\s*=/m.test(text)) {
+    const line = text.split("\n").find(
+      (l) => /^\s*allow_git_url_install\s*=/.test(l));
+    return line?.trim() === wanted;
+  }
+  writeFileSync(configPath, text.replace(/\n*$/u, "\n") + wanted + "\n");
+  return false;
 }
 
 export async function stepExtensions(): Promise<boolean> {
@@ -190,93 +121,137 @@ export async function stepExtensions(): Promise<boolean> {
   }
   const workspace = RUNTIME;
   const counts = { installed: 0, skipped: 0, failed: 0, blocked: 0 };
-  let restart = false;
-  {
-    const vendorWorld = sameWorld(workspace, "vendor install");
-    for (const e of exts) {
-      const name = (e.name ?? "").trim();
-      const reg = (e.registry ?? "").trim();
-      const url = (e.url ?? "").trim();
-      if (!name) continue;
-      if (e.pip.length > 0) {
-        if (DRY) {
-          console.log("[dry-run] pip install [" + name + "]: " +
-            e.pip.join(", "));
-        } else if (!pipInstall(e.pip, workspace)) {
-          counts.failed += 1;
-          continue;
-        }
-      }
-      if (!reg && !url) {
-        if (!vendorWorld) { counts.failed += 1; continue; }
-        const st = installVendorPack(name, workspace);
-        counts[st as keyof typeof counts] += 1;
-        continue;
-      }
-      if (url && !reg) {
-        if (urlInstalled(url, workspace)) {
-          counts.skipped += 1;
-          info("  [" + name + "] already in custom_nodes — skipping");
-          continue;
-        }
-        if (DRY) {
-          console.log("[dry-run] install [" + name + "] from url " +
-            JSON.stringify(url));
-          counts.installed += 1;
-          continue;
-        }
-        const rep = gitCloneInstall(url, workspace, e.ref);
-        if (!rep.ok) {
-          warn("  [" + name + "] failed: " +
-            (rep.error ?? "").slice(0, 160));
-          counts.failed += 1;
-          continue;
-        }
-        counts.installed += 1;
-        restart = true;
-        continue;
-      }
-      // registry form: bare id (install_node refuses @pins; the
-      // declared version stays the RECORDED expectation).
-      if (existsSync(join(workspace, "custom_nodes", reg.toLowerCase()))) {
-        counts.skipped += 1;
-        info("  [" + name + "] already in custom_nodes — skipping");
-        continue;
-      }
-      if (DRY) {
-        console.log("[dry-run] install_node [" + name + "] registry id " +
-          JSON.stringify(reg));
-        counts.installed += 1;
-        continue;
-      }
-      const gitUrl = registryUrl(reg);
-      if (!gitUrl) {
-        warn("  [" + name + "] registry id " + JSON.stringify(reg) +
-          " not in the vendored registry cache — declare a url or " +
-          "install at runtime (comfy_manage install_extension)");
+  let planned = 0;
+  const pending: Array<{ name: string; url: string; ref: string }> = [];
+  for (const e of exts) {
+    const name = (e.name ?? "").trim();
+    const url = (e.url ?? "").trim();
+    const ref = (e.ref ?? "").trim();
+    if (!name) continue;
+    if (!url && (e.registry ?? "").trim()) {
+      warn("  [" + name + "] registry rows ride the runtime door " +
+        "(comfy_manage install_extension) — declare a url for the " +
+        "provision step");
+      counts.failed += 1;
+      continue;
+    }
+    if (!url) {
+      warn("  [" + name + "] has no url — every extension declares " +
+        "its source (first-party packs: github.com/JayDataEngineer/" +
+        name + ")");
+      counts.failed += 1;
+      continue;
+    }
+    if (urlInstalled(url, workspace)) {
+      counts.skipped += 1;
+      info("  [" + name + "] already in custom_nodes — skipping");
+      continue;
+    }
+    if (DRY) {
+      console.log("[dry-run] manager queue install [" + name + "] " + url);
+      planned += 1;
+      continue;
+    }
+    pending.push({ name, url, ref });
+  }
+  if (!DRY && pending.length > 0) {
+    const endpoint = engineUrl(cfg);
+    if (endpoint === "") {
+      die("ComfyUI endpoint URL is not configured — the extension " +
+        "queue rides the running engine's manager");
+    }
+    // The engine must be UP: the queue lives inside it.
+    try {
+      const probe = await fetch(endpoint + "/manager/version",
+        { signal: AbortSignal.timeout(10_000) });
+      if (!probe.ok) throw new Error("status " + probe.status);
+    } catch (error: unknown) {
+      die("ComfyUI-Manager is not answering at " + endpoint + " — " +
+        "start the engine first (pnpm run provision -- boot-cmd); " +
+        "extensions install through the manager queue: " +
+        (error instanceof Error ? error.message : String(error)));
+    }
+    const flagStable = ensureManagerGitUrlAllowed(
+      join(RUNTIME, "user", "__manager", "config.ini"));
+    if (!flagStable) {
+      die("allow_git_url_install written to the manager config — the " +
+        "engine reads it once at startup: restart the engine, then " +
+        "rerun this step");
+    }
+    // Enqueue every row, then start the queue once.
+    for (const row of pending) {
+      const res = await fetch(endpoint + "/manager/queue/install", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(queueInstallPayload(row.name, row.url)),
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) {
+        warn("  [" + row.name + "] queue install refused (status " +
+          res.status + ")");
         counts.failed += 1;
-        continue;
+        row.url = "";
       }
-      const rep = gitCloneInstall(gitUrl, workspace, e.ref);
-      if (!rep.ok) {
-        warn("  [" + name + "] failed: " +
-            (rep.error ?? "").slice(0, 160));
+    }
+    const startable = pending.filter((r) => r.url !== "");
+    if (startable.length > 0) {
+      const res = await fetch(endpoint + "/manager/queue/start", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: "{}",
+        signal: AbortSignal.timeout(30_000),
+      });
+      if (!res.ok) {
+        die("/manager/queue/start refused (status " + res.status + ")");
+      }
+      // Drain: Manager works the queue serially (clones + pip legs
+      // can take minutes on a cold machine).
+      const deadline = Date.now() + 900_000;
+      for (;;) {
+        await new Promise((r) => setTimeout(r, 1_000));
+        const st = await fetch(endpoint + "/manager/queue/status",
+          { signal: AbortSignal.timeout(10_000) });
+        if (!st.ok) continue;
+        const body = await st.json() as {
+          total_count: number; done_count: number;
+          is_processing: boolean; in_progress_count: number;
+        };
+        info("  queue: " + body.done_count + "/" + body.total_count +
+          " done" + (body.in_progress_count > 0 ? ", working" : ""));
+        if (queueDrained(body)) break;
+        if (Date.now() > deadline) {
+          die("manager queue did not drain within 15 minutes — the " +
+            "engine log has the failing row; rerun this step");
+        }
+      }
+    }
+    // Verify outcomes on disk: the clone's git remote IS the row.
+    for (const row of pending) {
+      if (row.url === "") continue;
+      if (!urlInstalled(row.url, workspace)) {
+        warn("  [" + row.name + "] not installed after the queue " +
+          "drained — the engine log has the failure");
         counts.failed += 1;
         continue;
       }
       counts.installed += 1;
-      restart = true;
-      if (e.version) {
-        info("  [" + name + "] installed (declaration records version " +
-          e.version + " — the registry head moved; audit the drift " +
-          "deliberately)");
+      if (row.ref) {
+        const dir = row.url.replace(/\/+$/, "").replace(/\.git$/, "")
+          .split("/").pop() ?? "";
+        const head = installedHead(workspace, dir);
+        if (head !== "" && head !== row.ref) {
+          warn("  [" + row.name + "] installed at " + head.slice(0, 10) +
+            " but the declaration pins " + row.ref.slice(0, 10) +
+            " — audit the drift deliberately (the pin is the truth)");
+        }
       }
     }
   }
-  info("extensions: " + counts.installed + " installed, " +
+  info("extensions: " + counts.installed + " installed" +
+    (planned > 0 ? ", " + planned + " planned" : "") + ", " +
     counts.skipped + " skipped, " + counts.failed + " failed, " +
     counts.blocked + " blocked");
-  if (restart) {
+  if (!DRY && counts.installed > 0) {
     info("restart required for new nodes (restart_comfyui is " +
       "operator-invoked: comfy restart, or the stop/boot doors)");
   }

@@ -15,10 +15,12 @@
 //   managed        a lockfile-pinned ComfyUI under data/runtime/comfyui/
 //                  with the built-in manager vendored into custom_nodes/.
 // Declaration provisioning:
-//   extensions     git clones (registry ids resolve through the
-//                  vendored manager's own custom-node-list.json cache;
-//                  url+ref clones directly); vendor packs symlinked
-//                  from vendor/comfyui_extensions.
+//   extensions     ComfyUI-Manager's node queue per declaration row
+//                  (/manager/queue/install + start; the engine must
+//                  be up — every row carries its git url, first-party
+//                  packs at github.com/JayDataEngineer/<pack>, the
+//                  same repos vendor/comfyui_extensions references
+//                  as submodules).
 //   models         ComfyUI-Manager's install_model queue per declaration
 //                  provision row (the engine's provisionsByFamily —
 //                  DECL + card-owned rows), followed by shared TS

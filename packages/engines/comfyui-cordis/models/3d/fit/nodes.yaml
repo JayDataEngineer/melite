@@ -1,9 +1,10 @@
 # fit — ComfyUI extension dependencies (fit-card stroke 2b, 2026-09-06).
 # The fitting lane rides OUR authored pack (melite-poser-nodes — FitProp
 # placement surgery + RayRenderGLBViews proof views); bound live via the
-# vendor symlink. check_card_requires resolves this against object_info.
+# the Manager queue install (github.com/JayDataEngineer/melite-poser-nodes). check_card_requires resolves this against object_info.
 extensions:
 - name: melite-poser-nodes
+  url: https://github.com/JayDataEngineer/melite-poser-nodes
   version: 0.1.0
   required: true
   desc: FitProp (socket/fit/grip placement surgery) + RayRenderGLBViews (proof turnaround).

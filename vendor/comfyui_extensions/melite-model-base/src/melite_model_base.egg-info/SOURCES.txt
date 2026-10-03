@@ -1,7 +1,0 @@
-README.md
-pyproject.toml
-src/melite_model_base/__init__.py
-src/melite_model_base.egg-info/PKG-INFO
-src/melite_model_base.egg-info/SOURCES.txt
-src/melite_model_base.egg-info/dependency_links.txt
-src/melite_model_base.egg-info/top_level.txt
