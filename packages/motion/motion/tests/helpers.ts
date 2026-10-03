@@ -78,7 +78,7 @@ export function stubLoads(opts: {
       return new Response(JSON.stringify({
         form: 'motion',
         schema: schemaEnvelope({
-          duration_sec: { type: 'number', meta: { description: 'Duration (s)', default: 5, min: 1, max: 30, step: 0.5 } },
+          duration_sec: { type: 'number', meta: { description: 'Duration (s)', default: 5, min: 1, max: 10, step: 0.5 } },
           diffusion_steps: { type: 'number', meta: { description: 'Diffusion steps', default: 25, min: 10, max: 200, step: 1 } },
           num_samples: { type: 'number', meta: { description: 'Samples', default: 1, min: 1, max: 4, step: 1 } },
           num_transition_frames: { type: 'number', meta: { description: 'Transition frames', default: 10, min: 0, max: 60, step: 1 } },

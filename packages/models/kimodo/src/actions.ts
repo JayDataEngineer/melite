@@ -53,7 +53,7 @@ export const compose: ComfyActionSpec<KimodoParams, KimodoFacts> = {
   // enum is the card's CFG-mode vocabulary.
   params: [
     { name: "prompt", type: "string" },
-    { name: "duration_sec", type: "number", bounds: [1, 30] },
+    { name: "duration_sec", type: "number", bounds: [1, 10] },
     { name: "num_samples", type: "number", bounds: [1, 4] },
     { name: "num_transition_frames", type: "number", bounds: [0, 60] },
     { name: "cfg_type", type: "enum", options: ["separated", "regular", "nocfg"] },
