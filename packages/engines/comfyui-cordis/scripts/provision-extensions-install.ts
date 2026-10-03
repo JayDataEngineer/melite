@@ -5,13 +5,12 @@
 // upstream packs at their upstream repos, first-party packs at
 // github.com/JayDataEngineer/<pack> (the same repos this tree
 // references as submodules under vendor/comfyui_extensions).
-// Installs ride Manager's own node queue
-// (/manager/queue/install + /manager/queue/start), which also runs
-// each pack's requirements.txt pip leg; the CLI never clones, never
+// Installs ride Manager's own git-url door
+// (POST /customnode/install/git_url — the same endpoint the estate
+// provider and Manager's UI use), which also runs each pack's
+// requirements.txt pip leg; the CLI never clones, never
 // pip-installs, never copies directories. Outcomes are verified on
-// disk after the queue drains (the installed clone's git remote)
-// because per-item results stream over websocket events, not a
-// REST body.
+// disk after each call (the installed clone's git remote).
 
 import { execSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
@@ -19,38 +18,6 @@ import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.ts";
 import { engineUrl, loadConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
-
-/** The /manager/queue/install body for an unknown git-url pack —
- *  the exact form Manager's install_custom_node route resolves
- *  through its risky-level gate (allow_git_url_install + loopback
- *  listen, both pinned on this estate).
- *  @param name declaration row name — rides ui_id so queue events
- *             trace back to the row.
- *  @param url the pack's git remote.
- *  @returns the JSON body the route accepts. */
-export function queueInstallPayload(name: string, url: string):
-    Record<string, unknown> {
-  return {
-    id: "unknown",
-    version: "unknown",
-    selected_version: "unknown",
-    files: [url],
-    pip: [],
-    channel: "default",
-    mode: "cache",
-    ui_id: name,
-  };
-}
-
-/** Queue-drain predicate over GET /manager/queue/status.
- *  @param status the parsed status body.
- *  @returns true when no task is processing and every queued task
- *           has finished. */
-export function queueDrained(status: {
-  total_count: number; done_count: number; is_processing: boolean;
-}): boolean {
-  return !status.is_processing && status.total_count === status.done_count;
-}
 
 /** True if some custom_nodes clone's git remote IS this url (the
  *  Manager renames install dirs; matching the remote is exact).
@@ -148,7 +115,7 @@ export async function stepExtensions(): Promise<boolean> {
       continue;
     }
     if (DRY) {
-      console.log("[dry-run] manager queue install [" + name + "] " + url);
+      console.log("[dry-run] manager git_url install [" + name + "] " + url);
       planned += 1;
       continue;
     }
@@ -168,7 +135,7 @@ export async function stepExtensions(): Promise<boolean> {
     } catch (error: unknown) {
       die("ComfyUI-Manager is not answering at " + endpoint + " — " +
         "start the engine first (pnpm run provision -- boot-cmd); " +
-        "extensions install through the manager queue: " +
+        "extensions install through Manager's git-url door: " +
         (error instanceof Error ? error.message : String(error)));
     }
     const flagStable = ensureManagerGitUrlAllowed(
@@ -178,59 +145,34 @@ export async function stepExtensions(): Promise<boolean> {
         "engine reads it once at startup: restart the engine, then " +
         "rerun this step");
     }
-    // Enqueue every row, then start the queue once.
+    // Install each row through Manager's own git-url door — the
+    // same endpoint the estate provider and Manager's UI use. The
+    // call is synchronous: Manager clones the repo and runs its
+    // requirements.txt inside the request (a cold pip leg can take
+    // minutes; the timeout is 15 minutes per row). The node QUEUE
+    // (queue/install) resolves names through Manager's channel
+    // registry — first-party pack names are not in it and the
+    // worker refuses them ("not found in [default, cache]");
+    // git_url is the door for arbitrary remotes.
     for (const row of pending) {
-      const res = await fetch(endpoint + "/manager/queue/install", {
+      info("  [" + row.name + "] manager git_url install — " + row.url);
+      const res = await fetch(endpoint + "/customnode/install/git_url", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify(queueInstallPayload(row.name, row.url)),
-        signal: AbortSignal.timeout(30_000),
+        body: JSON.stringify({ url: row.url }),
+        signal: AbortSignal.timeout(900_000),
       });
       if (!res.ok) {
-        warn("  [" + row.name + "] queue install refused (status " +
-          res.status + ")");
+        warn("  [" + row.name + "] install refused (status " + res.status +
+          ") — the engine log has the failure");
         counts.failed += 1;
-        row.url = "";
+        continue;
       }
-    }
-    const startable = pending.filter((r) => r.url !== "");
-    if (startable.length > 0) {
-      const res = await fetch(endpoint + "/manager/queue/start", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: "{}",
-        signal: AbortSignal.timeout(30_000),
-      });
-      if (!res.ok) {
-        die("/manager/queue/start refused (status " + res.status + ")");
-      }
-      // Drain: Manager works the queue serially (clones + pip legs
-      // can take minutes on a cold machine).
-      const deadline = Date.now() + 900_000;
-      for (;;) {
-        await new Promise((r) => setTimeout(r, 1_000));
-        const st = await fetch(endpoint + "/manager/queue/status",
-          { signal: AbortSignal.timeout(10_000) });
-        if (!st.ok) continue;
-        const body = await st.json() as {
-          total_count: number; done_count: number;
-          is_processing: boolean; in_progress_count: number;
-        };
-        info("  queue: " + body.done_count + "/" + body.total_count +
-          " done" + (body.in_progress_count > 0 ? ", working" : ""));
-        if (queueDrained(body)) break;
-        if (Date.now() > deadline) {
-          die("manager queue did not drain within 15 minutes — the " +
-            "engine log has the failing row; rerun this step");
-        }
-      }
-    }
-    // Verify outcomes on disk: the clone's git remote IS the row.
-    for (const row of pending) {
-      if (row.url === "") continue;
+      // Verify the outcome on disk: the clone's git remote IS the
+      // row (a 200 with action=skip means it was already there).
       if (!urlInstalled(row.url, workspace)) {
-        warn("  [" + row.name + "] not installed after the queue " +
-          "drained — the engine log has the failure");
+        warn("  [" + row.name + "] not present after a 200 — the " +
+          "engine log has the failure");
         counts.failed += 1;
         continue;
       }

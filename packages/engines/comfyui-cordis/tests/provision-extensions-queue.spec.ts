@@ -1,9 +1,8 @@
-// provision-extensions manager-queue channel — the payload contract
-// for /manager/queue/install (unknown git-url form), the drain
-// predicate over /manager/queue/status, the allow_git_url_install
-// flag writer, and the on-disk remote verification (the estate's
-// operator law 2026-10-13: Manager is the ONE extension vendor; the
-// CLI never clones).
+// provision-extensions manager channel — the allow_git_url_install
+// flag writer that admits git-url installs, and the on-disk remote
+// verification (the estate's operator law 2026-10-13: Manager is
+// the ONE extension vendor; the CLI never clones — installs ride
+// POST /customnode/install/git_url, verified by the clone's remote).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -13,38 +12,8 @@ import { join } from "node:path";
 import {
   ensureManagerGitUrlAllowed,
   installedHead,
-  queueDrained,
-  queueInstallPayload,
   urlInstalled,
 } from "../scripts/provision-extensions-install.ts";
-
-describe("queueInstallPayload", () => {
-  it("builds the unknown git-url form Manager's route accepts", () => {
-    const body = queueInstallPayload(
-      "melite-sfx-nodes", "https://github.com/JayDataEngineer/melite-sfx-nodes");
-    assert.deepEqual(body, {
-      id: "unknown",
-      version: "unknown",
-      selected_version: "unknown",
-      files: ["https://github.com/JayDataEngineer/melite-sfx-nodes"],
-      pip: [],
-      channel: "default",
-      mode: "cache",
-      ui_id: "melite-sfx-nodes",
-    });
-  });
-});
-
-describe("queueDrained", () => {
-  it("drains only when nothing processes and counts match", () => {
-    assert.equal(queueDrained(
-      { total_count: 3, done_count: 3, is_processing: false }), true);
-    assert.equal(queueDrained(
-      { total_count: 3, done_count: 2, is_processing: false }), false);
-    assert.equal(queueDrained(
-      { total_count: 3, done_count: 3, is_processing: true }), false);
-  });
-});
 
 describe("ensureManagerGitUrlAllowed", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-ext-flag-"));
