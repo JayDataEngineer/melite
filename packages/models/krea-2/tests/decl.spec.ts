@@ -88,3 +88,57 @@ describe("the declared provisions are pinned verbatim", () => {
     }
   });
 });
+
+// THE VERBATIM CELL-ARTIFACT LAW: each declared cell artifact's source
+// url, digest, size and destination are literals here — a substituted
+// sha or a moved file fails this block.
+const CELL_ARTIFACT_PINS: ReadonlyArray<
+  readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
+> = [
+  ["turbo", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors", "8e4eeda70dd5037ab1ba2bef6b417f9f901e26093117cf397f741fc1fdaaf3f1", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
+  ["raw", "int8", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors", "5585a4a38c4bcfb6fde2d480a4aa6edf7f665721ebde56d30662c35a45f5fa5c", 13492686496, "COMFYUI_ROOT", "diffusion_models"],
+];
+
+describe("the declared cell artifacts are pinned verbatim", () => {
+  it("every cell carries its pinned source_url, sha256 and destination", () => {
+    const cells = DECL.variants.flatMap((v) => v.cells);
+    assert.equal(cells.length, CELL_ARTIFACT_PINS.length,
+      "every declared cell artifact is pinned — a new cell edits this table");
+    for (const [variant, quant, source_url, sha256, size_bytes, dest_root, dest_sub] of CELL_ARTIFACT_PINS) {
+      const cell = DECL.variants.find((v) => v.id === variant)!.cells.find((c) => c.quant === quant)!;
+      const art = cell.artifact!;
+      assert.equal(art.source_url, source_url, `${variant}/${quant}: the source url is pinned verbatim`);
+      assert.equal(art.sha256, sha256, `${variant}/${quant}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(art.size_bytes, size_bytes, `${variant}/${quant}: the declared size is pinned verbatim`);
+      assert.equal(art.dest_root, dest_root, `${variant}/${quant}: the destination root is pinned verbatim`);
+      assert.equal(art.dest_sub, dest_sub, `${variant}/${quant}: the destination sub-folder is pinned verbatim`);
+    }
+  });
+});
+
+// THE VERBATIM MOD-ROW LAW: every LoRA flavor row's filename and
+// source_url are literals here — a renamed row or a moved file fails
+// this block. A new row is a deliberate edit of this table.
+const LORAS_MOD_PINS: ReadonlyArray<
+  readonly [id: string, filename: string, source_url: string]
+> = [
+  ["krea2_realism_lora", "krea-2/krea2_realism_lora.safetensors", "https://huggingface.co/gokaygokay/Krea-2-Realism-LoRA/resolve/main/krea2_realism_lora.safetensors"],
+  ["krea2_turbo_lora_rank_64_bf16", "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_turbo_lora_rank_64_bf16.safetensors"],
+  ["krea2_darkbrush", "krea-2/krea2_darkbrush.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_darkbrush.safetensors"],
+  ["krea2_dotmatrix", "krea-2/krea2_dotmatrix.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_dotmatrix.safetensors"],
+  ["krea2_kidsdrawing", "krea-2/krea2_kidsdrawing.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_kidsdrawing.safetensors"],
+  ["krea2_neondrip", "krea-2/krea2_neondrip.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_neondrip.safetensors"],
+  ["krea2_rainywindow", "krea-2/krea2_rainywindow.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_rainywindow.safetensors"],
+  ["krea2_retroanime", "krea-2/krea2_retroanime.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_retroanime.safetensors"],
+  ["krea2_softwatercolor", "krea-2/krea2_softwatercolor.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_softwatercolor.safetensors"],
+  ["krea2_sunsetblur", "krea-2/krea2_sunsetblur.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_sunsetblur.safetensors"],
+  ["krea2_vintagetarot", "krea-2/krea2_vintagetarot.safetensors", "https://huggingface.co/Comfy-Org/Krea-2/resolve/main/loras/krea2_vintagetarot.safetensors"],
+  ["krea2filterbypass3", "krea-2/krea2filterbypass3.safetensors", "https://huggingface.co/uzumix/krea2filterbypass3.safetensors/resolve/main/krea2filterbypass3.safetensors"],
+];
+
+describe("the LoRA flavor rows are pinned verbatim", () => {
+  it("every row carries its pinned filename and source_url", () => {
+    assert.deepEqual(KREA_ROWS.map((r) => [r.id, r.filename, r.source_url]), LORAS_MOD_PINS,
+      "the pin table IS the flavor table — a row added, dropped, renamed or re-pointed fails here");
+  });
+});

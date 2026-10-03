@@ -29,6 +29,18 @@ const FACTS_PATH = join(
 );
 const facts = loadFacts(FACTS_PATH, { getModel, registryIds, registryModel });
 
+// THE VERBATIM CONTENT LAW: the card's detector downloads are literals
+// here, compared field-by-field against the card-kit catalog the card
+// spreads — an identity check against that same constant cannot fail,
+// so the digest, url and size are the pins.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, url: string, folder: string, sha256: string, size_bytes: number]
+> = [
+  ["person_yolov8m-seg.pt", "https://huggingface.co/Bingsu/adetailer/resolve/main/person_yolov8m-seg.pt", "ultralytics/segm", "c8ab26f517173b1fe8342d336a09f443eb61cb08dcbfc78d53fff4c2547ae81e", 54827683],
+  ["face_yolov8m.pt", "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt", "ultralytics/bbox", "717923c19b3f4bbf5250b728f1fa6b2cb72a33aed1d236ea9caf0e21ad943e5f", 52026019],
+  ["hand_yolov8s.pt", "https://huggingface.co/Bingsu/adetailer/resolve/main/hand_yolov8s.pt", "ultralytics/bbox", "70b540063fbc385736d8258970744a4afbc4cbf7932134bae3b24cdadeadec06", 22507643],
+];
+
 let def: CardDefinition;
 let model: ModelFacts;
 
@@ -477,9 +489,14 @@ describe("the image-edit compose gate", () => {
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "person" }), ["person_yolov8m-seg.pt"], "person names its row");
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask: [{ mask_detector: "face" }] }), ["face_yolov8m.pt"], "a bag-stated detector names its row");
     assert.deepEqual(arm({ mask_mode: "crop_stitch", mask_detector: "hand" }), ["hand_yolov8s.pt"], "hand names its row");
+  });
+  it("THE CARD-OWNED PROVISIONS ARE PINNED VERBATIM (the Impact rows the crop_stitch arm fetches)", () => {
     assert.deepEqual(def.provisions, IMPACT_DETECTOR_PROVISIONS, "the card's Impact rows are the card-kit catalog verbatim");
-    const rows = (def.provisions ?? []).map((r) => r.name).sort();
-    assert.deepEqual(rows, ["face_yolov8m.pt", "hand_yolov8s.pt", "person_yolov8m-seg.pt"], "every named row is declared");
+    assert.deepEqual(
+      (def.provisions ?? []).map((r) => [r.name, r.url, r.folder, r.sha256, r.size_bytes]),
+      PROVISION_PINS,
+      "every card-owned provision row carries its pinned url, folder, digest and size",
+    );
   });
   it("the firing refusals pass the DEFAULT lanes (the blank() law)", () => {
     // the lanpaint/outpaint/mask knobs at their declared defaults

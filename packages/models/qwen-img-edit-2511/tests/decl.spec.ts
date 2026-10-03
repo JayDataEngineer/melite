@@ -78,3 +78,30 @@ describe("the declared provisions are pinned verbatim", () => {
     }
   });
 });
+
+// THE VERBATIM CELL-ARTIFACT LAW: each declared cell artifact's source
+// url, digest, size and destination are literals here — a substituted
+// sha or a moved file fails this block.
+const CELL_ARTIFACT_PINS: ReadonlyArray<
+  readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
+> = [
+  ["lightning", "lightning4", "https://huggingface.co/lightx2v/Qwen-Image-Edit-2511-Lightning/resolve/main/qwen_image_edit_2511_fp8_e4m3fn_scaled_lightning_comfyui_4steps_v1.0.safetensors", "16d03fd9bab36b0a588e77db23825629df62ab99fc3e62f3a36887b201dcc36f", 20447469486, "COMFYUI_ROOT", "diffusion_models"],
+  ["standard", "int8", "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors", "11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829", 20499083824, "COMFYUI_ROOT", "diffusion_models"],
+];
+
+describe("the declared cell artifacts are pinned verbatim", () => {
+  it("every cell carries its pinned source_url, sha256 and destination", () => {
+    const cells = DECL.variants.flatMap((v) => v.cells);
+    assert.equal(cells.length, CELL_ARTIFACT_PINS.length,
+      "every declared cell artifact is pinned — a new cell edits this table");
+    for (const [variant, quant, source_url, sha256, size_bytes, dest_root, dest_sub] of CELL_ARTIFACT_PINS) {
+      const cell = DECL.variants.find((v) => v.id === variant)!.cells.find((c) => c.quant === quant)!;
+      const art = cell.artifact!;
+      assert.equal(art.source_url, source_url, `${variant}/${quant}: the source url is pinned verbatim`);
+      assert.equal(art.sha256, sha256, `${variant}/${quant}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(art.size_bytes, size_bytes, `${variant}/${quant}: the declared size is pinned verbatim`);
+      assert.equal(art.dest_root, dest_root, `${variant}/${quant}: the destination root is pinned verbatim`);
+      assert.equal(art.dest_sub, dest_sub, `${variant}/${quant}: the destination sub-folder is pinned verbatim`);
+    }
+  });
+});
