@@ -323,13 +323,15 @@ export const DECL: ModelDecl = {
       "name": "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
       "url": "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
       "folder": "diffusion_models",
-      "sha256": "64f57f77ed85df04f7c0989ab84a5c3c110fb43a40dbc9badfe8ab2d5baafbca"
+      "sha256": "64f57f77ed85df04f7c0989ab84a5c3c110fb43a40dbc9badfe8ab2d5baafbca",
+      "size_bytes": 20970379632
     },
     {
       "name": "minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
       "url": "https://huggingface.co/smhfacct/Minimax-H3-fl2va-ref2va-hybrid-models/resolve/main/minimax_h3_hybrid_fl2va_ref2va_b25-49-int8.safetensors",
       "folder": "diffusion_models",
-      "sha256": "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d"
+      "sha256": "a629cfea8d89a071b140c6e1935dc9a23e72de6badc18975a2bb9e6d1423d76d",
+      "size_bytes": 20970379632
     },
     // THE FOLDED SINGLE-SHOT WEIGHTS (roadmap §8 — inherited from
     // the dead h3 family verbatim: the fl2va/ref2va lanes load
@@ -339,91 +341,106 @@ export const DECL: ModelDecl = {
       "name": "minimax_h3_fl2va_pruned_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors",
       "folder": "diffusion_models",
-      "sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a"
+      "sha256": "e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a",
+      "size_bytes": 20970379616
     },
     {
       "name": "minimax_h3_ref2va_pruned_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors",
       "folder": "diffusion_models",
-      "sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779"
+      "sha256": "9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779",
+      "size_bytes": 20970379616
     },
     {
       "name": "qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors",
       "folder": "text_encoders",
-      "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6"
+      "sha256": "35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6",
+      "size_bytes": 15687142551
     },
     {
       "name": "minimax_h3_video_vae_fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_fp16.safetensors",
       "folder": "vae",
-      "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522"
+      "sha256": "7c1f131492e7eddacaac9069a61b81bdd39de5cc96561e677c5eab1cdce5e522",
+      "size_bytes": 5207808496
     },
     {
       "name": "minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "url": "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors",
       "folder": "loras/h3",
-      "sha256": "ffc5386a1b97aa1bc112b56378f37ef3c1cc69d55d5282281e8c6c728811e710"
+      "sha256": "ffc5386a1b97aa1bc112b56378f37ef3c1cc69d55d5282281e8c6c728811e710",
+      "size_bytes": 867067150
     },
     {
       "name": "minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "url": "https://huggingface.co/silveroxides/MiniMax-H3_tests/resolve/main/experimental/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors",
       "folder": "loras/h3",
-      "sha256": "e14c9e78834f5fac9195cb022baf2bc83372140da5142a8c999a1f568cb4915d"
+      "sha256": "e14c9e78834f5fac9195cb022baf2bc83372140da5142a8c999a1f568cb4915d",
+      "size_bytes": 2116726792
     },
     {
       "name": "minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors",
       "folder": "loras/h3",
-      "sha256": "c396a9a06f58399e9df9754b18299818d84a2ddd371724ba48fe4a41221437dc"
+      "sha256": "c396a9a06f58399e9df9754b18299818d84a2ddd371724ba48fe4a41221437dc",
+      "size_bytes": 1956192992
     },
     {
       "name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors",
       "folder": "loras/h3",
-      "sha256": "2339acdf19bfe123f46b971ea35d367a84adb85de43627e1eceafa5a5b2b111e"
+      "sha256": "2339acdf19bfe123f46b971ea35d367a84adb85de43627e1eceafa5a5b2b111e",
+      "size_bytes": 1956193000
     },
     {
       "name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
       "folder": "loras/h3",
-      "sha256": "5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c"
+      "sha256": "5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c",
+      "size_bytes": 1956193000
     },
     {
       "name": "MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "url": "https://huggingface.co/Kijai/MiniMax-H3-experimental/resolve/main/loras/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors",
       "folder": "loras/h3",
-      "sha256": "e97b813a6f857b9dab310f31ec30a8334f63a3e7dcb5d07c0c91933d3447a897"
+      "sha256": "e97b813a6f857b9dab310f31ec30a8334f63a3e7dcb5d07c0c91933d3447a897",
+      "size_bytes": 1725921392
     },
     {
       "name": "MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "url": "https://huggingface.co/Kijai/MiniMax-H3-experimental/resolve/main/loras/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors",
       "folder": "loras/h3",
-      "sha256": "6f18e1c2eccb14b37322607730f26b16bf1169b56cd098ea006cffaec43d1e39"
+      "sha256": "6f18e1c2eccb14b37322607730f26b16bf1169b56cd098ea006cffaec43d1e39",
+      "size_bytes": 1725921392
     },
     {
       "name": "minimax_h3_turbo_v4_step600_ema.safetensors",
       "url": "https://huggingface.co/larryvrh/MiniMax-H3-Turbo-Lora/resolve/main/minimax_h3_turbo_v4_step600_ema.safetensors",
       "folder": "loras/h3",
-      "sha256": "5f3a626cd72c93a8b9318d6760c510bc5092d2ab13aaba1f932c5bab07a416d3"
+      "sha256": "5f3a626cd72c93a8b9318d6760c510bc5092d2ab13aaba1f932c5bab07a416d3",
+      "size_bytes": 779849816
     },
     {
       "name": "H3-PK-Parasyte-Turbo.safetensors",
       "url": "https://huggingface.co/Plaguekind/H3-Lora/resolve/main/H3-PK-Parasyte-Turbo.safetensors",
       "folder": "loras/h3",
-      "sha256": "dbf74bfb490b9322bd455edff95ce222b3553bb3472e4743134755db1edfe044"
+      "sha256": "dbf74bfb490b9322bd455edff95ce222b3553bb3472e4743134755db1edfe044",
+      "size_bytes": 2115774558
     },
     {
       "name": "minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "url": "https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "folder": "loras/h3",
-      "sha256": "de9663d974a884b477556748239c6f28239f7ca1825be270f98f023ff5dab6a7"
+      "sha256": "de9663d974a884b477556748239c6f28239f7ca1825be270f98f023ff5dab6a7",
+      "size_bytes": 181697688
     },
     {
       "name": "h3_silu_temb_grid.safetensors",
       "url": "https://huggingface.co/deAPI-ai/minimax-h3-33b-int8/resolve/main/loras/h3_silu_temb_grid.safetensors",
       "folder": "h3_adaln",
-      "sha256": "30eb3c2cc7fb6b470d9717ff840d359313ac27cd64b705e32da1baa10f72d6a8"
+      "sha256": "30eb3c2cc7fb6b470d9717ff840d359313ac27cd64b705e32da1baa10f72d6a8",
+      "size_bytes": 5510600
     },
     {
       "name": "minimax_h3_latent_upscaler_3d_bf16.safetensors",
@@ -436,25 +453,29 @@ export const DECL: ModelDecl = {
       "name": "film_net_fp16.safetensors",
       "url": "https://huggingface.co/Comfy-Org/frame_interpolation/resolve/main/frame_interpolation/film_net_fp16.safetensors",
       "folder": "frame_interpolation",
-      "sha256": "f226e51375dc839d4b40e5c3d63da560dd1ea1c962364ec78f5adf2d05db05c0"
+      "sha256": "f226e51375dc839d4b40e5c3d63da560dd1ea1c962364ec78f5adf2d05db05c0",
+      "size_bytes": 68882302
     },
     {
       "name": "qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/text_encoders/qwen3vl_32b_minimax_h3_int8_convrot.safetensors",
       "folder": "text_encoders",
-      "sha256": "bc2ced0fbea64757fa9acddccfc0b3f4819d1dcf1da6c124d690d368be283923"
+      "sha256": "bc2ced0fbea64757fa9acddccfc0b3f4819d1dcf1da6c124d690d368be283923",
+      "size_bytes": 27141342152
     },
     {
       "name": "minimax_h3_video_vae_int8_convrot.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_video_vae_int8_convrot.safetensors",
       "folder": "vae",
-      "sha256": "52a2c8c73583c86e4f41cdcce3a6ad0ea562987bc0bf3d60a0cef5f5c8e60c0e"
+      "sha256": "52a2c8c73583c86e4f41cdcce3a6ad0ea562987bc0bf3d60a0cef5f5c8e60c0e",
+      "size_bytes": 2811065184
     },
     {
       "name": "minimax_h3_audio_vae_fp32.safetensors",
       "url": "https://huggingface.co/Comfy-Org/MiniMax-H3/resolve/main/vae/minimax_h3_audio_vae_fp32.safetensors",
       "folder": "vae",
-      "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48"
+      "sha256": "8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48",
+      "size_bytes": 605254808
     }
   ],
   "has_agent": true,
