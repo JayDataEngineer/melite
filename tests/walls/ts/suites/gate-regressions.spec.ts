@@ -37,11 +37,18 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
       // /var/tmp, not /tmp: this box's /tmp janitor killed the log
       // between redirect and tail twice (2026-10-12); the repo-local
       // .scratch is the one tree the janitor provably never touches.
-      /> \.scratch\/hook-walls\.log 2>&1/,
+      // PER-RUN (2026-10-13): the path carries the PID because two
+      // hook runs used to share one file — the loser's `>` truncate
+      // made it tail the winner's verdict.
+      /> \.scratch\/hook-walls\.\$\$\.log 2>&1/,
     );
-    expect(walls, "the hook's temp tree rides the janitor-free /var/tmp").toMatch(
-      /TMPDIR=\/var\/tmp\/melite-hook/,
+    expect(walls, "the hook's temp tree rides the janitor-free /var/tmp, PER RUN").toMatch(
+      /mktemp -d \/var\/tmp\/melite-hook-XXXXXX/,
     );
+    // and the run's own tree goes with the run — a fixed dir let two
+    // hook runs sweep each other's LIVE trees through the tmp
+    // sweeper's 1s mtime fence
+    expect(walls, "the run's temp tree is removed when the hook ends").toMatch(/rm -rf "\$d"/);
     expect(walls, "vitest's exit code must reach lefthook verbatim").toContain(
       "exit $code",
     );
