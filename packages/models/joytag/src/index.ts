@@ -23,6 +23,24 @@ export const DECL: ModelDecl = {
     "remove_tag": ""
   },
   "genre": "image",
+  // THE §4c RECEIPT (2026-10-12): the weights the pack loads — the
+  // audit's ghost "model.safetensors (fancyfeast/joytag)" closed as
+  // a provisions row: the estate store copy minted the sha (366 MB),
+  // the HF resolve URL answers a ranged GET. lane_inputs names the
+  // file so the ghost wall (weights ⊆ provisions) owns the relation
+  // from now on.
+  "provisions": [
+    {
+      "name": "model.safetensors",
+      "url": "https://huggingface.co/fancyfeast/joytag/resolve/main/model.safetensors",
+      "folder": "taggers/joytag",
+      "sha256": "5304065c0e4fb26b265194fa2209b8dddfa2b9a7239397c1ae0f47649f91e293",
+      "size_bytes": 366011736,
+    },
+  ],
+  "lane_inputs": {
+    "model_path": "model.safetensors",
+  },
   "variants": [
     {
       "id": "standard",

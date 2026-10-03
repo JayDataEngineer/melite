@@ -530,15 +530,16 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
-    const PROVISION_DECLARERS = ["anima", "anny", "h3", "kimodo", "krea-2",
-      "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
+    const PROVISION_DECLARERS = ["anima", "anny", "h3", "joytag", "kimodo",
+      "krea-2", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
       "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "trellis2-native",
       "yue2", "z-image"];
-    // the rows those fifteen declare, exactly (D-M12: a floor let a
+    // the rows those sixteen declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
-    // swap is net-zero)
-    const PROVISION_ROW_COUNT = 59;
+    // swap is net-zero); the §4c closing: 59 -> 60 (joytag's
+    // model.safetensors, the pack weights the audit ghosted)
+    const PROVISION_ROW_COUNT = 60;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
