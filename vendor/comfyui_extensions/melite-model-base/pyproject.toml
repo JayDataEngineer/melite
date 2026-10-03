@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "melite-model-base"
+version = "1.0.0"
+description = "Wrap diffusers-style pipelines so ComfyUI's model_management tracks their VRAM"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "CC-BY-NC-4.0" }
+authors = [{ name = "JayDataEngineer" }]
+# torch is imported unconditionally but deliberately NOT declared as a
+# dependency: ComfyUI environments always ship their own CUDA-matched torch,
+# and pip resolving a default (CPU) wheel here would break GPU installs.
+dependencies = []
+
+[tool.setuptools.packages.find]
+where = ["src"]

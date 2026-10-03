@@ -1,0 +1,23 @@
+[project]
+name = "minimax-h3-motioncache"
+version = "1.0.0"
+description = "Motion-aware denoising cache and batched VAE decoder for MiniMax H3 in ComfyUI"
+authors = [{ name = "starsFriday" }]
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+dependencies = []
+keywords = ["ComfyUI", "MiniMax H3", "MotionCache", "video generation", "VAE"]
+classifiers = [
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Repository = "https://github.com/starsFriday/ComfyUI-MiniMax-H3-MotionCache"
+Documentation = "https://github.com/starsFriday/ComfyUI-MiniMax-H3-MotionCache#readme"
+"Bug Tracker" = "https://github.com/starsFriday/ComfyUI-MiniMax-H3-MotionCache/issues"
+
+[tool.comfy]
+PublisherId = "starsfriday"
+DisplayName = "MiniMax H3 MotionCache"
+requires-comfyui = ">=0.30.0"
