@@ -1,5 +1,5 @@
 {
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "type": "module",
   "description": "the img-to-mesh card (the 3d lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",

@@ -1,6 +1,6 @@
 {
   "name": "@melite/harness-provisioner",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one bundle mounts the estate row (in-process seats, no second process), the tool surface, the card view/deck, media previews, and the runs gallery \u2014 and the infer-provision bin renders ready-to-boot profiles (inference / headless / estate / melite-test) into any DSH_HOME.",
   "type": "module",
@@ -8,14 +8,14 @@
     "infer-provision": "./bin/infer-provision.mjs"
   },
   "dependencies": {
-    "@melite-plugin/dsh-card-deck": "link:../../web/melite-card-deck",
-    "@melite-plugin/dsh-card-view": "link:../../web/melite-card-view",
-    "@melite-plugin/dsh-gallery": "link:../../web/infer-gallery",
-    "@melite-plugin/melite-estate": "link:../../web/melite-estate",
-    "@melite/3d-img-to-mesh": "link:../../3d/img-to-mesh",
-    "@melite/harness-tools": "link:../melite-tools",
-    "@melite/motion-motion": "link:../../motion/motion",
-    "@melite/video-h3-timeline": "link:../../video/h3-timeline"
+    "@melite-plugin/dsh-card-deck": "workspace:*",
+    "@melite-plugin/dsh-card-view": "workspace:*",
+    "@melite-plugin/dsh-gallery": "workspace:*",
+    "@melite-plugin/dsh-estate": "workspace:*",
+    "@melite/3d-img-to-mesh": "workspace:*",
+    "@melite/harness-tools": "workspace:*",
+    "@melite/motion-motion": "workspace:*",
+    "@melite/video-h3-timeline": "workspace:*"
   },
   "dsh": {
     "bundle": {

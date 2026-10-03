@@ -1128,28 +1128,28 @@ importers:
         specifier: '>=0.2.0-rc.1 <0.3.0'
         version: 0.2.0-rc.1(6b7d1b1723e9f4ed9293d8ae68806c4b)
       '@melite-plugin/dsh-card-deck':
-        specifier: link:../../web/melite-card-deck
+        specifier: workspace:*
         version: link:../../web/melite-card-deck
       '@melite-plugin/dsh-card-view':
-        specifier: link:../../web/melite-card-view
+        specifier: workspace:*
         version: link:../../web/melite-card-view
-      '@melite-plugin/dsh-gallery':
-        specifier: link:../../web/infer-gallery
-        version: link:../../web/infer-gallery
-      '@melite-plugin/melite-estate':
-        specifier: link:../../web/melite-estate
+      '@melite-plugin/dsh-estate':
+        specifier: workspace:*
         version: link:../../web/melite-estate
+      '@melite-plugin/dsh-gallery':
+        specifier: workspace:*
+        version: link:../../web/infer-gallery
       '@melite/3d-img-to-mesh':
-        specifier: link:../../3d/img-to-mesh
+        specifier: workspace:*
         version: link:../../3d/img-to-mesh
       '@melite/harness-tools':
-        specifier: link:../melite-tools
+        specifier: workspace:*
         version: link:../melite-tools
       '@melite/motion-motion':
-        specifier: link:../../motion/motion
+        specifier: workspace:*
         version: link:../../motion/motion
       '@melite/video-h3-timeline':
-        specifier: link:../../video/h3-timeline
+        specifier: workspace:*
         version: link:../../video/h3-timeline
 
   packages/image/image-edit:
