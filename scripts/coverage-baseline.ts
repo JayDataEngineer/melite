@@ -124,7 +124,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/service.ts': { statements: 98.33, branches: 97.68, functions: 100, lines: 99.02 },
   '**/packages/engines/comfyui-cordis/src/serviceMods.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/supervisor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/engines/comfyui-cordis/src/userLoras.ts': { statements: 54.03, branches: 45.83, functions: 69.23, lines: 59.18 },
+  '**/packages/engines/comfyui-cordis/src/userLoras.ts': { statements: 91.93, branches: 86.66, functions: 100, lines: 92.85 },
   '**/packages/engines/comfyui-cordis/src/wiringWall.ts': { statements: 96.59, branches: 93.75, functions: 94.44, lines: 96 },
   '**/packages/engines/contract/src/engines.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/contract/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

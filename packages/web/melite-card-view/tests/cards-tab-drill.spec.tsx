@@ -432,9 +432,13 @@ describe("the group compound — members, ungroup, and its honesty", () => {
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
-    expect(await screen.findByText("stale rev", {}, { timeout: 4000 })).toBeTruthy();
+    // The refusal rides the client's async failure path and renders on a
+    // macrotask; the budget must exceed a LOADED event loop (the sibling
+    // drill2 case failed once in a full-suite run with a 4s wait inside
+    // a 5s test — a fixed budget sized for an idle box).
+    expect(await screen.findByText("stale rev", {}, { timeout: 15000 })).toBeTruthy();
     expect(screen.getByText("Ungroup")).toBeTruthy();
-  });
+  }, 30_000);
 });
 
 describe("the slot-claimed drill — remove and bindRun ride the owner", () => {
