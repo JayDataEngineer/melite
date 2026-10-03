@@ -267,7 +267,12 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     assert.deepEqual(starving, [], "starving fields found:\n  " + starving.join("\n  "));
     // the exemption list itself is a wall: hand-built carriers are
     // named, never a growing hole
-    assert.equal(walked, 465,
+    // 2026-10-12: 465 -> 469, the img-to-mesh card's four sign-mode
+    // separation knobs (remesh_qef, remesh_drop_inverted,
+    // remesh_drop_enclosed, remesh_fix_poles) — the audit's pinned-off
+    // literals became card params with the core defaults as schema
+    // defaults
+    assert.equal(walked, 469,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -1054,8 +1059,11 @@ describe("THE TWO-HOMES BOUNDS-SYNC WALL (card schema == action ParamSpec, every
     // domains hollowed) must fail LOUD, not pass vacuous. Update
     // these numbers deliberately when a card boards a new family or
     // a family joins a card's surface.
+    // 2026-10-12: 617 -> 625, the img-to-mesh sign-mode separation
+    // knobs (four booleans across two boarded families — pixal3d and
+    // trellis2-native each carry the quartet on their ParamSpec)
     assert.equal(cards, 13, "the boarded-cards census changed — update this pin deliberately");
-    assert.equal(pairs, 617, "the shared-name pair census changed — update this pin deliberately");
+    assert.equal(pairs, 625, "the shared-name pair census changed — update this pin deliberately");
     assert.deepEqual(offenders, [], `two-homes drift (card schema vs action ParamSpec):\n${offenders.join("\n")}`);
   });
 });

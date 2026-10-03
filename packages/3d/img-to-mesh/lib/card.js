@@ -137,8 +137,36 @@ const schemaFn = z.object({
 		families: ["pixal3d", "trellis2-native"],
 		wtype: "number"
 	})),
-	decimate_faces: z.number().description("Decimate faces").min(1e4).max(2e6).step(1e4).extra("extra", bag({
+	remesh_qef: z.boolean().description("Remesh QEF").default(false).extra("extra", bag({
 		order: 1,
+		group: "mesh",
+		width: 1,
+		tooltip: "Quadratic-error edge fitting in the UDF solve. On: sharper limb separation and crease preservation on blobby output. Off is the core default.",
+		families: ["pixal3d", "trellis2-native"]
+	})),
+	remesh_drop_inverted: z.boolean().description("Drop inverted").default(false).extra("extra", bag({
+		order: 2,
+		group: "mesh",
+		width: 1,
+		tooltip: "Drop inside-out surface components after the solve — separated parts that come out with flipped normals. Off is the core default.",
+		families: ["pixal3d", "trellis2-native"]
+	})),
+	remesh_drop_enclosed: z.boolean().description("Drop enclosed").default(false).extra("extra", bag({
+		order: 3,
+		group: "mesh",
+		width: 1,
+		tooltip: "Drop fully-enclosed interior shells (duplicated inner surfaces the solve can leave). Off is the core default.",
+		families: ["pixal3d", "trellis2-native"]
+	})),
+	remesh_fix_poles: z.boolean().description("Fix poles").default(false).extra("extra", bag({
+		order: 4,
+		group: "mesh",
+		width: 1,
+		tooltip: "Repair pole vertices at voxel-grid corners (pinched star patterns). Off is the core default.",
+		families: ["pixal3d", "trellis2-native"]
+	})),
+	decimate_faces: z.number().description("Decimate faces").min(1e4).max(2e6).step(1e4).extra("extra", bag({
+		order: 5,
 		group: "mesh",
 		width: 1,
 		tooltip: "Exact face count after decimation (midpoint placement). 700000 is the official calibration.",
@@ -146,7 +174,7 @@ const schemaFn = z.object({
 		wtype: "number"
 	})),
 	smooth_angle: z.number().description("Smooth angle").min(0).max(180).step(5).extra("extra", bag({
-		order: 2,
+		order: 6,
 		group: "mesh",
 		width: 1,
 		tooltip: "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.",

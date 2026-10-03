@@ -96,6 +96,22 @@ describe("the trellis2-native mesh action — byte-stability (the compatibility 
     assertGraphGolden(golden("the-golden-holds-on-a-wired-tensor-anchor-spell-the-image-is"), action.toJSON(), "the golden holds on a wired-tensor anchor ('$spell' — the image IS an upstream stage's output)");
     assert.equal(nodesOf(action, "LoadImage").length, 0, "a spelled tensor never builds a loader");  });
 
+  it("the sign-mode separation flags ride the card params (absent = the pinned core defaults)", () => {
+
+    const quiet = new GraphBuilder({});
+    instantiateAction(mesh, { ...PARAMS }, FACTS, quiet, "probe-sign-quiet");
+    const quietNode = nodesOf(quiet, "RemeshMesh")[0] as { inputs: Record<string, unknown> };
+    assert.equal(quietNode.inputs["sign_mode.qef"], false, "absent params keep the core default");
+    assert.equal(quietNode.inputs["fix_poles"], false, "absent params keep the core default");
+    const loud = new GraphBuilder({});
+    instantiateAction(mesh, { ...PARAMS, remesh_qef: true, remesh_drop_inverted: true, remesh_drop_enclosed: true, remesh_fix_poles: true } as typeof PARAMS, FACTS, loud, "probe-sign-loud");
+    const loudNode = nodesOf(loud, "RemeshMesh")[0] as { inputs: Record<string, unknown> };
+    assert.equal(loudNode.inputs["sign_mode.qef"], true, "qef rides the param");
+    assert.equal(loudNode.inputs["sign_mode.drop_inverted_components"], true, "drop_inverted rides the param");
+    assert.equal(loudNode.inputs["sign_mode.drop_enclosed_components"], true, "drop_enclosed rides the param");
+    assert.equal(loudNode.inputs["fix_poles"], true, "fix_poles rides the param");
+    assert.equal(loudNode.inputs["sign_mode"], "udf", "the mode itself stays the UDF lane");  });
+
   it("GATE S — seed -1 mints ONCE per compose and feeds every sampler the same take", () => {
 
     const a = new GraphBuilder({});

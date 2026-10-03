@@ -956,7 +956,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3385,
+    "uid": 3401,
     "refs": {
       "315": {
         "type": "const",
@@ -1228,11 +1228,11 @@
         "meta": {},
         "value": "simple"
       },
-      "3319": {
+      "3335": {
         "type": "string",
         "meta": {}
       },
-      "3323": {
+      "3339": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1249,9 +1249,9 @@
           },
           "max_stack": 3
         },
-        "inner": 3319
+        "inner": 3335
       },
-      "3327": {
+      "3343": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1261,7 +1261,7 @@
           "description": "Input Image"
         }
       },
-      "3331": {
+      "3347": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1271,7 +1271,7 @@
           "description": "Image 2"
         }
       },
-      "3335": {
+      "3351": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1281,11 +1281,11 @@
           "description": "Image 3"
         }
       },
-      "3336": {
+      "3352": {
         "type": "string",
         "meta": {}
       },
-      "3339": {
+      "3355": {
         "type": "array",
         "meta": {
           "default": [],
@@ -1294,9 +1294,9 @@
             "hidden": true
           }
         },
-        "inner": 3336
+        "inner": 3352
       },
-      "3343": {
+      "3359": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -1306,7 +1306,7 @@
           "description": "Region Mask"
         }
       },
-      "3346": {
+      "3362": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -1321,7 +1321,7 @@
           }
         }
       },
-      "3349": {
+      "3365": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -1334,7 +1334,7 @@
           }
         }
       },
-      "3352": {
+      "3368": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -1349,7 +1349,7 @@
           }
         }
       },
-      "3355": {
+      "3371": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -1364,7 +1364,7 @@
           }
         }
       },
-      "3360": {
+      "3376": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -1378,7 +1378,7 @@
           }
         }
       },
-      "3366": {
+      "3382": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -1395,7 +1395,7 @@
           }
         }
       },
-      "3372": {
+      "3388": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -1412,7 +1412,7 @@
           }
         }
       },
-      "3374": {
+      "3390": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -1473,7 +1473,7 @@
           359
         ]
       },
-      "3376": {
+      "3392": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -1498,7 +1498,7 @@
           369
         ]
       },
-      "3380": {
+      "3396": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -1512,7 +1512,7 @@
           }
         }
       },
-      "3384": {
+      "3400": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -1526,29 +1526,29 @@
           }
         }
       },
-      "3385": {
+      "3401": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3323,
-          "image1": 3327,
-          "image2": 3331,
-          "image3": 3335,
-          "reference_images": 3339,
-          "input_mask": 3343,
-          "prompt": 3346,
-          "negative_prompt": 3349,
-          "width": 3352,
-          "height": 3355,
-          "seed": 3360,
-          "steps": 3366,
-          "cfg": 3372,
-          "sampler": 3374,
-          "scheduler": 3376,
-          "use_stock_nodes": 3380,
-          "double_reference": 3384
+          "input_images": 3339,
+          "image1": 3343,
+          "image2": 3347,
+          "image3": 3351,
+          "reference_images": 3355,
+          "input_mask": 3359,
+          "prompt": 3362,
+          "negative_prompt": 3365,
+          "width": 3368,
+          "height": 3371,
+          "seed": 3376,
+          "steps": 3382,
+          "cfg": 3388,
+          "sampler": 3390,
+          "scheduler": 3392,
+          "use_stock_nodes": 3396,
+          "double_reference": 3400
         }
       }
     }

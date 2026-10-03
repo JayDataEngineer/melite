@@ -18,10 +18,14 @@
 // AUTOFILL LAW: the reference strips only the empty autofills it overrides
 // (LoadImage.upload, KSampler.control_after_generate). Other
 // pin autofills SURVIVE into the served graph and are emitted
-// here as literals: RemeshMesh band/fix_poles/project_back,
+// here as literals: RemeshMesh band/project_back,
 // ImageCropToMask background/grow_mask, MoGeInference
 // apply_mask/batch_size/force_projection/fov_x_degrees. Everything
 // else is exactly the inputs the engine consumes — no more.
+// (fix_poles and the sign-mode separation flags are card params
+// since 2026-10-12 — the pinned-off core defaults became the
+// schema defaults: remesh_qef / remesh_drop_inverted /
+// remesh_drop_enclosed / remesh_fix_poles.)
 //
 // FAMILIES LAW (2026-09-21, the DRY stroke): `families` declares
 // BASE family ids ONLY (the boarded ids) — the client walk
@@ -76,8 +80,12 @@ const schema = z.object({
   tex2_steps: z.number().description("Texture pass 2 steps").min(4).max(60).step(1).extra('extra', bag({ order: 4, group: "stage", width: 1, tooltip: "Second texture pass steps (raw unet — the detail pass). 12 is the official calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'number' })),
   tex2_cfg: z.number().description("Texture pass 2 CFG").min(1).max(15).step(0.5).extra('extra', bag({ order: 5, group: "stage", width: 1, tooltip: "Second texture pass guidance. 1.0 is the official calibration (near-verbatim detail sampling).", families: ['pixal3d', 'trellis2-native'] })),
   remesh_resolution: z.number().description("Remesh resolution").min(128).max(2048).step(64).extra('extra', bag({ order: 0, group: "mesh", width: 1, tooltip: "UDF remesh voxel resolution. 768 is the official calibration; lower = lighter mesh, coarser surface.", families: ['pixal3d', 'trellis2-native'],  wtype: 'number' })),
-  decimate_faces: z.number().description("Decimate faces").min(10000).max(2000000).step(10000).extra('extra', bag({ order: 1, group: "mesh", width: 1, tooltip: "Exact face count after decimation (midpoint placement). 700000 is the official calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'number' })),
-  smooth_angle: z.number().description("Smooth angle").min(0).max(180).step(5).extra('extra', bag({ order: 2, group: "mesh", width: 1, tooltip: "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.", families: ['pixal3d', 'trellis2-native'] })),
+  remesh_qef: z.boolean().description("Remesh QEF").default(false).extra('extra', bag({ order: 1, group: "mesh", width: 1, tooltip: "Quadratic-error edge fitting in the UDF solve. On: sharper limb separation and crease preservation on blobby output. Off is the core default.", families: ['pixal3d', 'trellis2-native'] })),
+  remesh_drop_inverted: z.boolean().description("Drop inverted").default(false).extra('extra', bag({ order: 2, group: "mesh", width: 1, tooltip: "Drop inside-out surface components after the solve — separated parts that come out with flipped normals. Off is the core default.", families: ['pixal3d', 'trellis2-native'] })),
+  remesh_drop_enclosed: z.boolean().description("Drop enclosed").default(false).extra('extra', bag({ order: 3, group: "mesh", width: 1, tooltip: "Drop fully-enclosed interior shells (duplicated inner surfaces the solve can leave). Off is the core default.", families: ['pixal3d', 'trellis2-native'] })),
+  remesh_fix_poles: z.boolean().description("Fix poles").default(false).extra('extra', bag({ order: 4, group: "mesh", width: 1, tooltip: "Repair pole vertices at voxel-grid corners (pinched star patterns). Off is the core default.", families: ['pixal3d', 'trellis2-native'] })),
+  decimate_faces: z.number().description("Decimate faces").min(10000).max(2000000).step(10000).extra('extra', bag({ order: 5, group: "mesh", width: 1, tooltip: "Exact face count after decimation (midpoint placement). 700000 is the official calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'number' })),
+  smooth_angle: z.number().description("Smooth angle").min(0).max(180).step(5).extra('extra', bag({ order: 6, group: "mesh", width: 1, tooltip: "Normal-smoothing crease angle, applied before unwrap and after texturing. 180 is the official calibration.", families: ['pixal3d', 'trellis2-native'] })),
   atlas_size: vocabulary(MESH_ATLAS_SIZES).description("Atlas size").extra('extra', bag({ order: 0, group: "bake", width: 1, tooltip: "Unwrap + baked color atlas resolution. 4096 is the official calibration (VRAM-heavy); 2048 is the lighter fallback.", families: ['pixal3d', 'trellis2-native'],  wtype: 'select' })),
   ao_size: vocabulary(MESH_AO_SIZES).description("AO bake size").extra('extra', bag({ order: 1, group: "bake", width: 1, tooltip: "Ambient-occlusion bake resolution. 1024 is the official calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'select' })),
   normal_size: vocabulary(MESH_NORMAL_SIZES).description("Normal bake size").extra('extra', bag({ order: 2, group: "bake", width: 1, tooltip: "Normal-map bake resolution. 2048 is the official calibration.", families: ['pixal3d', 'trellis2-native'],  wtype: 'select' })),

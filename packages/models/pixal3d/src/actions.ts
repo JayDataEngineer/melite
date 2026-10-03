@@ -207,13 +207,15 @@ function sharedLiftChain(
   const remeshed = g.node('RemeshMesh', {
     mesh: info, resolution: p.remesh_resolution as number,
     sign_mode: 'udf',
-    'sign_mode.qef': false,
-    'sign_mode.drop_inverted_components': false,
-    'sign_mode.drop_enclosed_components': false,
+    // the separation knobs are card params since 2026-10-12 — the
+    // card's schema defaults (false) ARE the pinned core defaults
+    'sign_mode.qef': p.remesh_qef === true,
+    'sign_mode.drop_inverted_components': p.remesh_drop_inverted === true,
+    'sign_mode.drop_enclosed_components': p.remesh_drop_enclosed === true,
     smooth_iters: 20,
     drop_small_components: 0.01, precluster_max_verts: 20000000,
     // pin autofills leaves in place (core defaults)
-    band: 1.0, fix_poles: false, project_back: 0.0,
+    band: 1.0, fix_poles: p.remesh_fix_poles === true, project_back: 0.0,
   }).out()
 
   // texture stage, two passes: 12/7.5/simple feeds the stage; 12/1.0
@@ -314,6 +316,10 @@ export const mesh: ComfyActionSpec<MeshParams, MeshFacts> = {
     { name: "struct_sampler", type: "enum", options: SAMPLER_OPTIONS },
     { name: "struct_scheduler", type: "enum", options: SCHEDULER_OPTIONS },
     { name: "remesh_resolution", type: "number", bounds: [128, 2048] },
+    { name: "remesh_qef", type: "boolean" },
+    { name: "remesh_drop_inverted", type: "boolean" },
+    { name: "remesh_drop_enclosed", type: "boolean" },
+    { name: "remesh_fix_poles", type: "boolean" },
     { name: "decimate_faces", type: "number", bounds: [10000, 2000000] },
     { name: "smooth_angle", type: "number", bounds: [0, 180] },
     { name: "atlas_size", type: "enum", options: MESH_ATLAS_SIZES },
