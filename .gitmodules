@@ -43,6 +43,3 @@
 [submodule "vendor/comfyui_extensions/melite-utility-nodes"]
 	path = vendor/comfyui_extensions/melite-utility-nodes
 	url = https://github.com/JayDataEngineer/melite-utility-nodes.git
-[submodule "vendor/comfyui_extensions/MotionCorrection"]
-	path = vendor/comfyui_extensions/MotionCorrection
-	url = https://github.com/JayDataEngineer/MotionCorrection.git
