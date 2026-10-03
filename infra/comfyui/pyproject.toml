@@ -100,6 +100,13 @@ torch = { index = "pytorch-cu128" }
 torchvision = { index = "pytorch-cu128" }
 torchaudio = { index = "pytorch-cu128" }
 melite-model-base = { path = "../../vendor/comfyui_extensions/melite-model-base" }
+# kimodo's motion lib, VENDORED (Apache-2.0): the PyPI 0.2.2 pins a
+# dead stack (scikit-image==0.21 + matplotlib==3.7.2 + astropy==6.0.0
+# — none ship cp312 wheels), so a --frozen sync built them from
+# source and died under Cython 3 on every fresh machine; the live
+# estate's working venv runs THIS tree's 1.0.0 (torch+numpy only,
+# CMake C++ ext — cmake + g++ are provisioning prerequisites)
+motion-correction = { path = "../../vendor/comfyui_extensions/MotionCorrection" }
 
 [[tool.uv.index]]
 name = "pytorch-cu128"
