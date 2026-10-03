@@ -26,3 +26,28 @@ describe("the seedvr2_ema model plugin (the whole model, one package)", () => {
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
 });
+
+// THE VERBATIM CONTENT LAW: every declared provision row's digest, url
+// and size are literals in the table below — a substituted sha, a wrong
+// path inside the right repo, or a drifted size fails this block. A new
+// row is a deliberate edit of this table.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, sha256: string, url: string, size_bytes: number]
+> = [
+  ["seedvr2_ema_3b_fp16.safetensors", "2fd0e03a3dad24e07086750360727ca437de4ecd456f769856e960ae93e2b304", "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_3b_fp16.safetensors", 6783018808],
+  ["ema_vae_fp16.safetensors", "20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1", "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors", 501324814],
+];
+
+describe("the declared provisions are pinned verbatim", () => {
+  it("every row carries its pinned sha256, url and size_bytes", () => {
+    const rows = DECL.provisions ?? [];
+    assert.deepEqual(rows.map((r) => r.name), PROVISION_PINS.map((p) => p[0]),
+      "the pin table IS the declared table — a row added, dropped or renamed is a deliberate edit");
+    for (const [name, sha256, url, size_bytes] of PROVISION_PINS) {
+      const row = rows.find((r) => r.name === name)!;
+      assert.equal(row.sha256, sha256, `${name}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(row.url, url, `${name}: the url is pinned verbatim — a wrong path inside the right repo fails here`);
+      assert.equal(row.size_bytes, size_bytes, `${name}: the declared size is pinned verbatim`);
+    }
+  });
+});

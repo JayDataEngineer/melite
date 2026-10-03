@@ -73,3 +73,56 @@ describe("the qwen-img-edit-21 model plugin (the cached-reference edit lane of t
       "the stamp is the official template's prompt widget verbatim — nothing else (defaults own solver/cfg/steps)");
   });
 });
+
+// THE VERBATIM CONTENT LAW: every declared provision row's digest, url
+// and size are literals in the table below — a substituted sha, a wrong
+// path inside the right repo, or a drifted size fails this block. A new
+// row is a deliberate edit of this table.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, sha256: string, url: string, size_bytes: number]
+> = [
+  ["qwen3vl_8b_bf16.safetensors", "68bdc82bc1b66851162ae656225e7e2068166b603db19bd5d5a3b90eb12669a9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_bf16.safetensors", 17534334616],
+  ["qwen3vl_8b_int8_convrot.safetensors", "8bfd0f6e12abf2d2d697ecc888e5e90b0d6741d6708f05799f53afa560452e8f", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors", 9350798360],
+  ["qwen_image_2.1_vae_bf16.safetensors", "bb21f7473051e1ac368515dd3f2e15cd44d7a11748ee8823e1ddca3e4876b7c9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors", 675509688],
+];
+
+describe("the declared provisions are pinned verbatim", () => {
+  it("every row carries its pinned sha256, url and size_bytes", () => {
+    const rows = DECL.provisions ?? [];
+    assert.deepEqual(rows.map((r) => r.name), PROVISION_PINS.map((p) => p[0]),
+      "the pin table IS the declared table — a row added, dropped or renamed is a deliberate edit");
+    for (const [name, sha256, url, size_bytes] of PROVISION_PINS) {
+      const row = rows.find((r) => r.name === name)!;
+      assert.equal(row.sha256, sha256, `${name}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(row.url, url, `${name}: the url is pinned verbatim — a wrong path inside the right repo fails here`);
+      assert.equal(row.size_bytes, size_bytes, `${name}: the declared size is pinned verbatim`);
+    }
+  });
+});
+
+// THE VERBATIM CELL-ARTIFACT LAW: each declared cell artifact's source
+// url, digest, size and destination are literals here — a substituted
+// sha or a moved file fails this block.
+const CELL_ARTIFACT_PINS: ReadonlyArray<
+  readonly [variant: string, quant: string, source_url: string, sha256: string, size_bytes: number, dest_root: string, dest_sub: string]
+> = [
+  ["int8", "int8_convrot", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_int8_convrot.safetensors", "cb74113cb03faecd79611b01fd7fd642f0aa60d6f0b95086abee214d75eaa57d", 7256783064, "COMFYUI_ROOT", "diffusion_models"],
+  ["bf16", "bf16", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/diffusion_models/qwen_image_2.1_bf16.safetensors", "89f4158d066cc33906a199fca85634f766892dd78f49b6698dabf187ac86c4bc", 14230280616, "COMFYUI_ROOT", "diffusion_models"],
+];
+
+describe("the declared cell artifacts are pinned verbatim", () => {
+  it("every cell carries its pinned source_url, sha256 and destination", () => {
+    const cells = DECL.variants.flatMap((v) => v.cells);
+    assert.equal(cells.length, CELL_ARTIFACT_PINS.length,
+      "every declared cell artifact is pinned — a new cell edits this table");
+    for (const [variant, quant, source_url, sha256, size_bytes, dest_root, dest_sub] of CELL_ARTIFACT_PINS) {
+      const cell = DECL.variants.find((v) => v.id === variant)!.cells.find((c) => c.quant === quant)!;
+      const art = cell.artifact!;
+      assert.equal(art.source_url, source_url, `${variant}/${quant}: the source url is pinned verbatim`);
+      assert.equal(art.sha256, sha256, `${variant}/${quant}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(art.size_bytes, size_bytes, `${variant}/${quant}: the declared size is pinned verbatim`);
+      assert.equal(art.dest_root, dest_root, `${variant}/${quant}: the destination root is pinned verbatim`);
+      assert.equal(art.dest_sub, dest_sub, `${variant}/${quant}: the destination sub-folder is pinned verbatim`);
+    }
+  });
+});

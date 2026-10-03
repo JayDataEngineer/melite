@@ -562,7 +562,7 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       }
     }
     assert.deepEqual(declarers, PROVISION_DECLARERS,
-      `the provision declarers are the named 15 (saw ${declarers.join(", ")}) — a family starting or stopping its own provisioning is a deliberate edit`);
+      `the provision declarers are the named ${String(PROVISION_DECLARERS.length)} (saw ${declarers.join(", ")}) — a family starting or stopping its own provisioning is a deliberate edit`);
     // D-M12 (the wall audit, 2026-09-28): a floor let a whole
     // family's rows go unjudged. The judged row count is EXACT.
     assert.equal(judged, PROVISION_ROW_COUNT,

@@ -60,3 +60,29 @@ describe("the qwen-img-21 model plugin (the t2i lane of the 2.1 base)", () => {
     }
   });
 });
+
+// THE VERBATIM CONTENT LAW: every declared provision row's digest, url
+// and size are literals in the table below — a substituted sha, a wrong
+// path inside the right repo, or a drifted size fails this block. A new
+// row is a deliberate edit of this table.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, sha256: string, url: string, size_bytes: number]
+> = [
+  ["qwen3vl_8b_bf16.safetensors", "68bdc82bc1b66851162ae656225e7e2068166b603db19bd5d5a3b90eb12669a9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_bf16.safetensors", 17534334616],
+  ["qwen3vl_8b_int8_convrot.safetensors", "8bfd0f6e12abf2d2d697ecc888e5e90b0d6741d6708f05799f53afa560452e8f", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/text_encoders/qwen3vl_8b_int8_convrot.safetensors", 9350798360],
+  ["qwen_image_2.1_vae_bf16.safetensors", "bb21f7473051e1ac368515dd3f2e15cd44d7a11748ee8823e1ddca3e4876b7c9", "https://huggingface.co/Comfy-Org/Qwen-Image-2.1/resolve/main/vae/qwen_image_2.1_vae_bf16.safetensors", 675509688],
+];
+
+describe("the declared provisions are pinned verbatim", () => {
+  it("every row carries its pinned sha256, url and size_bytes", () => {
+    const rows = DECL.provisions ?? [];
+    assert.deepEqual(rows.map((r) => r.name), PROVISION_PINS.map((p) => p[0]),
+      "the pin table IS the declared table — a row added, dropped or renamed is a deliberate edit");
+    for (const [name, sha256, url, size_bytes] of PROVISION_PINS) {
+      const row = rows.find((r) => r.name === name)!;
+      assert.equal(row.sha256, sha256, `${name}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(row.url, url, `${name}: the url is pinned verbatim — a wrong path inside the right repo fails here`);
+      assert.equal(row.size_bytes, size_bytes, `${name}: the declared size is pinned verbatim`);
+    }
+  });
+});

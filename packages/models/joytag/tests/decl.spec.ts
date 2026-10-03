@@ -26,3 +26,27 @@ describe("the joytag model plugin (the whole model, one package)", () => {
     assert.equal(new Set(ids).size, ids.length, "variant ids unique");
   });
 });
+
+// THE VERBATIM CONTENT LAW: every declared provision row's digest, url
+// and size are literals in the table below — a substituted sha, a wrong
+// path inside the right repo, or a drifted size fails this block. A new
+// row is a deliberate edit of this table.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, sha256: string, url: string, size_bytes: number]
+> = [
+  ["model.safetensors", "5304065c0e4fb26b265194fa2209b8dddfa2b9a7239397c1ae0f47649f91e293", "https://huggingface.co/fancyfeast/joytag/resolve/main/model.safetensors", 366011736],
+];
+
+describe("the declared provisions are pinned verbatim", () => {
+  it("every row carries its pinned sha256, url and size_bytes", () => {
+    const rows = DECL.provisions ?? [];
+    assert.deepEqual(rows.map((r) => r.name), PROVISION_PINS.map((p) => p[0]),
+      "the pin table IS the declared table — a row added, dropped or renamed is a deliberate edit");
+    for (const [name, sha256, url, size_bytes] of PROVISION_PINS) {
+      const row = rows.find((r) => r.name === name)!;
+      assert.equal(row.sha256, sha256, `${name}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(row.url, url, `${name}: the url is pinned verbatim — a wrong path inside the right repo fails here`);
+      assert.equal(row.size_bytes, size_bytes, `${name}: the declared size is pinned verbatim`);
+    }
+  });
+});

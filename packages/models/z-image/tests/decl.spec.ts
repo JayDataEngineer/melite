@@ -86,3 +86,29 @@ describe("the z-image model plugin", () => {
     }
   });
 });
+
+// THE VERBATIM CONTENT LAW: every declared provision row's digest, url
+// and size are literals in the table below — a substituted sha, a wrong
+// path inside the right repo, or a drifted size fails this block. A new
+// row is a deliberate edit of this table.
+const PROVISION_PINS: ReadonlyArray<
+  readonly [name: string, sha256: string, url: string, size_bytes: number]
+> = [
+  ["z_image_turbo_int8_convrot.safetensors", "be517ebd47c912a5626a588e1aeea43e6be4a43c0cdcd2b48a2a780d9f358635", "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/diffusion_models/z_image_turbo_int8_convrot.safetensors", 6201001296],
+  ["qwen_3_4b.safetensors", "6c671498573ac2f7a5501502ccce8d2b08ea6ca2f661c458e708f36b36edfc5a", "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/text_encoders/qwen_3_4b.safetensors", 8044982048],
+  ["ae.safetensors", "afc8e28272cd15db3919bacdb6918ce9c1ed22e96cb12c4d5ed0fba823529e38", "https://huggingface.co/Comfy-Org/z_image_turbo/resolve/main/split_files/vae/ae.safetensors", 335304388],
+];
+
+describe("the declared provisions are pinned verbatim", () => {
+  it("every row carries its pinned sha256, url and size_bytes", () => {
+    const rows = DECL.provisions ?? [];
+    assert.deepEqual(rows.map((r) => r.name), PROVISION_PINS.map((p) => p[0]),
+      "the pin table IS the declared table — a row added, dropped or renamed is a deliberate edit");
+    for (const [name, sha256, url, size_bytes] of PROVISION_PINS) {
+      const row = rows.find((r) => r.name === name)!;
+      assert.equal(row.sha256, sha256, `${name}: the digest is pinned verbatim — a substituted sha fails here`);
+      assert.equal(row.url, url, `${name}: the url is pinned verbatim — a wrong path inside the right repo fails here`);
+      assert.equal(row.size_bytes, size_bytes, `${name}: the declared size is pinned verbatim`);
+    }
+  });
+});
