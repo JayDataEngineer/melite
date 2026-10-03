@@ -162,8 +162,15 @@ const wfBody82 = (): Record<string, unknown> =>
   });
 
 const waitRunning82 = async (s: Seat, runId: string): Promise<void> => {
+  // THE CLAIM-WRITE SEAM (the wedge landing, 2026-10-03; the pump
+  // spec's waitRunning owns the full law): the row flips 'running'
+  // at claim, but the executor holds the run only after the claim
+  // persist — the first stage's flip is the seam, and everything
+  // between it and the executor call is synchronous.
   for (let i = 0; i < 200; i++) {
-    if ((s.core.runs.get(runId) as RunRecord).status === "running") return;
+    const row = s.core.runs.get(runId) as RunRecord | undefined;
+    if (row !== undefined && row.status === "running" &&
+        (row.stages[0] as unknown as { status?: string } | undefined)?.["status"] === "running") return;
     await new Promise((r) => setTimeout(r, 10));
   }
   throw new Error("never claimed " + runId);

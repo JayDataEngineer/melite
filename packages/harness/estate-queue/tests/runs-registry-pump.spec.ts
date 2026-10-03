@@ -9,7 +9,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
-import { ComfyUIHostService } from "@melite/comfyui-cordis";
+import { ComfyUIHostService, ComfyUIWiringService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
@@ -158,8 +158,17 @@ describe("pump + engine", () => {
       ...over,
     });
   const waitRunning = async (s: Seat, runId: string): Promise<void> => {
+    // THE CLAIM-WRITE SEAM (the commission wedge landing, 2026-10-03):
+    // the row flips 'running' at claim, but the engine holds the run
+    // only after the claim persist (durable 'running' on disk — see
+    // claimPersist) and runOne's stage stamps. The first stage's
+    // flip is the seam these rigs wait on: everything between it
+    // and the executeFlow call is synchronous, so a timer observing
+    // the flip proves onFlow was entered.
     for (let i = 0; i < 200; i++) {
-      if ((s.core.runs.get(runId) as RunRecord).status === "running") return;
+      const row = s.core.runs.get(runId) as RunRecord | undefined;
+      if (row !== undefined && row.status === "running" &&
+          (row.stages[0] as unknown as { status?: string } | undefined)?.["status"] === "running") return;
       await new Promise((r) => setTimeout(r, 10));
     }
     throw new Error("never claimed " + runId);
@@ -315,6 +324,52 @@ describe("pump + engine", () => {
     const row = await settleWait(s, (await s.svc.start(wfBody(), sig())).run_id);
     assert.equal(row.status, "completed");
     assert.deepEqual(row.artifacts, []);
+  });
+
+  // THE CLAIM-RELEASE LAW (the commission wedge landing, 2026-10-03):
+  // runOne guards its own paths, but an escape from an UNGUARDED
+  // stretch — a wiring seat whose armed() throws, the one fence call
+  // outside its own catch — used to strand the claim: activeId held,
+  // the pump exited, every later run queued forever behind a claim
+  // nobody owned. The pump's catch settles the row failed loud and
+  // keeps claiming.
+  it("a runOne escape settles failed, frees the claim, and the next run proceeds (claim-release law)", async () => {
+    const s = seat();
+    // the engine must be SEATED: an unseated fiber refuses at the
+    // guarded resolve arm and never reaches the fence. The wiring
+    // seat registers through Service construction (super(ctx,
+    // 'comfyuiWiring')) — a subclass whose armed() throws is the
+    // escape under test: the fence calls it OUTSIDE its own catch.
+    engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    class ThrowingWiring extends ComfyUIWiringService {
+      override armed(): boolean {
+        throw new Error("wiring seat died mid-boot");
+      }
+    }
+    new ThrowingWiring(ctx);
+    const first = await s.svc.start(wfBody(), sig());
+    const row = await settleWait(s, first.run_id);
+    assert.equal(row.status, "failed");
+    assert.match(row.error, /run seat escape/);
+    assert.match(row.error, /wiring seat died mid-boot/);
+    assert.equal(
+      (row.stages[0] as unknown as Record<string, unknown>)["status"],
+      "failed",
+    );
+    assert.equal(s.core.activeId, null, "the claim is free");
+    // the claim persist wrote 'running' before the escape; settle
+    // rewrote it failed — the disk face ends terminal either way
+    const sidecar = JSON.parse(
+      readFileSync(join(row.dir, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.equal(sidecar["status"], "failed");
+    // the queue CONTINUES: a second run settles too, never stranded
+    // behind the dead claim
+    const second = await s.svc.start(wfBody(), sig());
+    const row2 = await settleWait(s, second.run_id);
+    assert.equal(row2.status, "failed");
+    assert.equal(s.core.activeId, null);
   });
 
   it("stop converges stopped (flag + stop text; the error stays empty)", async () => {

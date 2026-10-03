@@ -11,11 +11,11 @@
 //   5. CARD BIRTH LAW: compose-first in every mode — the start
 //      rides the minted draft_id; a refused compose never starts
 
-import { describe, test } from 'vitest'
+import { describe, test, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
-import { foldConnects, meliteFlow } from '../src/tools/melite-flow.ts'
+import { foldConnects, meliteFlow, observeAndAttribute } from '../src/tools/melite-flow.ts'
 import type { EstateRequest } from '../src/estate.ts'
 import type { ContentBlock } from '@deepseek-ai/dsh-llm'
 import type { JsonValue, TextBlock } from '../src/types.ts'
@@ -1076,6 +1076,104 @@ describe('melite_flow bench — the agent drives THE shared bench', () => {
        url: '/melite-media/runs/rb1/img/SaveImage_00001_.png',
        assetUrls: ['/melite-media/runs/rb1/img/SaveImage_00001_.png'],
      })
+  })
+
+  // THE OBSERVATION BUDGET (the commission wedge landing, 2026-10-03):
+  // the outcome observer polled WITHOUT a wall clock — a run whose
+  // claim never released hung the tool for the life of the session
+  // (the film press wedged 95 min on a dead engine). The budget
+  // bounds the OBSERVATION, never the run: expiry returns the
+  // waiting face ('queued' — a word the terminal arm never produces)
+  // and a background re-arm link keeps attributing through the
+  // drafts stage door until the run settles.
+  test('the observation budget expires loud: still-live run → the waiting face, and the re-arm link lands the terminal stamp', async () => {
+    let polls = 0
+    const patches: Array<Record<string, unknown>> = []
+    const seen = mockFetch([
+      (u: string) => {
+        if (u.startsWith('/v1/flows/status/')) {
+          polls += 1
+          // live for the first link's polls, terminal once the
+          // re-arm link takes over
+          return { status: 200, body: polls <= 2
+            ? { status: 'running', stages: [] }
+            : { status: 'completed', stages: [{ id: 's_0' }] } }
+        }
+        if (u === '/v1/flows/drafts/d_b/stages/s_0') {
+          patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
+          return { status: 200, body: {} }
+        }
+        return undefined
+      },
+    ])
+    // budget 40ms, one re-arm: the first link polls twice (t0 live,
+    // then sleeps past its deadline), returns the waiting face, and
+    // its successor observes the terminal and stamps done
+    const out = await observeAndAttribute(seen.request, 'd_b', 's_0', 'run-x', new AbortController().signal, 40, 1)
+    assert.equal(out.status, 'queued')
+    assert.equal(out.url, '')
+    assert.deepEqual(out.artifacts, [])
+    assert.ok(patches.length >= 1, 'the live stamp landed')
+    assert.equal(patches[0]!.runStatus, 'running')
+    // the re-arm link's terminal stamp lands within the poll cadence
+    for (let i = 0; i < 100 && !patches.some((p) => p['runStatus'] === 'done'); i++) {
+      await new Promise((r) => setTimeout(r, 20))
+    }
+    assert.equal(patches[patches.length - 1]!.runStatus, 'done')
+  })
+
+  // The bench caller's receipt for the same expiry: the flow is NOT
+  // failed — the receipt is pending, names the run, and renders
+  // through the success face (no REFUSED), so the maker re-waits
+  // with run_status instead of re-pressing the bench.
+  test('a bench stage that outlives the observation budget returns pending (not stopped, no refusal render)', async () => {
+    vi.useFakeTimers()
+    try {
+      const patches: Array<Record<string, unknown>> = []
+      const seen = mockFetch([
+        (u: string) => {
+          if (u === '/v1/bench/main') {
+            return { status: 200, body: { draft_id: 'd_bench', rev: 3, stages: [
+              { id: 's_0', card: 'image-gen', params: { prompt: 'hi' } },
+            ] } }
+          }
+          if (u.endsWith('/v1/flows/start')) return { status: 202, body: { run_id: 'rb1', status: 'queued' } }
+          if (u.startsWith('/v1/flows/status/')) {
+            return { status: 200, body: { status: 'running', stages: [] } }
+          }
+          if (u === '/v1/flows/drafts/d_bench/stages/s_0') {
+            patches.push(decodeJsonBody(seen.calls[seen.calls.length - 1]!.init))
+            return { status: 200, body: {} }
+          }
+          return undefined
+        },
+      ])
+      const tool = meliteFlow(seen.request)
+      // a never-aborting signal: the fake clock owns time, and a
+      // wall-clock timeout would fire inside the 900s advance
+      const exec = fakeExec(new AbortController().signal)
+      const runP = tool.execute({ bench: true, test: true }, exec) as Promise<Record<string, unknown>>
+      await vi.advanceTimersByTimeAsync(900_100)
+      const out = await runP
+      assert.equal(out.mode, 'bench')
+      assert.equal(out.status, 'pending')
+      assert.equal(out.stoppedAt, 's_0')
+      assert.equal(out.run_id, 'rb1')
+      assert.ok(!('error' in out), 'a pending receipt is not a refusal')
+      const passRow = (out.pass as Array<Record<string, unknown>>)[0]!
+      assert.equal(passRow['status'], 'queued')
+      // the receipt renders through the success face: the header
+      // names the run and the poll door, never REFUSED
+      const rendered = tool.output!.render!({ bench: true, test: true } as never, asJson(out))
+      const text = asText(rendered[0])
+      assert.match(text, /\[pending\]/)
+      assert.match(text, /→ rb1 \[pending\] — poll with run_status/)
+      assert.ok(!text.includes('REFUSED'))
+      // the observer stamped the live face before its budget spent
+      assert.ok(patches.some((p) => p['runStatus'] === 'running'))
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   test('a failed terminal STOPS the pass — later rows never run', async () => {

@@ -11,6 +11,7 @@ import {
   runRel,
   errText,
   settlePersist,
+  claimPersist,
   runLogTail,
 } from "../src/runsTypes.ts";
 import { variantOfBodies } from "../src/queue.ts";
@@ -141,6 +142,41 @@ describe("errText", () => {
     assert.equal(errText("boom"), "Error: boom");
     assert.equal(errText(42), "Error: 42");
     assert.equal(errText(undefined), "Error: undefined");
+  });
+});
+
+describe("claimPersist", () => {
+  // THE CLAIM PERSIST (the commission wedge landing, 2026-10-03):
+  // registration writes 'queued', settle writes terminal — a process
+  // death between claim and settle left the sidecar 'queued' forever,
+  // so the next boot replayed a run that had already claimed (and a
+  // wedged claim was indistinguishable on disk from never-claimed).
+  // The claim write puts 'running' on disk the moment the pump
+  // claims; the boot sweep owns retiring it.
+  it("writes the row's running faces at claim time (claimed-on-disk ≠ never-claimed)", async () => {
+    const runDir = join(dir, "claim1");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      status: "running",
+      stages: [{ id: "s", name: "s", index: 0, status: "queued", outputs: {}, expected: {} }],
+    });
+    await claimPersist(run);
+    const doc = JSON.parse(
+      readFileSync(join(runDir, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.equal(doc["status"], "running");
+    assert.equal(doc["run_id"], "r1");
+    assert.equal(
+      (doc["stages"] as Array<Record<string, unknown>>)[0]!["status"],
+      "queued",
+    );
+  });
+
+  it("self-swallows a fault (a file-as-dir never blocks the claim — the settlePersist law)", async () => {
+    const fileAsDir = join(dir, "claim-filedir");
+    writeFileSync(fileAsDir, "x");
+    await claimPersist(record({ dir: join(fileAsDir, "r"), status: "running" }));
   });
 });
 

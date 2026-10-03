@@ -56,6 +56,7 @@ import type { CompiledStage } from "./runsStart.ts";
 import { listRunsAcross, parseIntOrNull } from "./runsList.ts";
 import type { FlowsValidateAnswer } from "./runsValidate.ts";
 import {
+  claimPersist,
   errText,
   runLogTail,
   settlePersist,
@@ -1618,6 +1619,10 @@ export class RunsRuntimeService extends Service {
         // claim is this map's own row.
         const run: RunRecord | null = this.core.tryDequeue() as RunRecord | null;
         if (run === null) return;
+        // THE CLAIM PERSIST (the commission wedge landing, 2026-10-03):
+        // 'running' lands on disk at claim time, not only at settle —
+        // claimPersist (runsTypes.ts) owns the crash window it closes.
+        await claimPersist(run);
         // Cache the engine seat WHILE this fiber lives — the
         // teardown effect's interrupt rides this cache (a ctx.get
         // from a dying fiber refuses). Best-effort: a claim
@@ -1630,7 +1635,39 @@ export class RunsRuntimeService extends Service {
             /* no seat yet — the card-plane rigs never have one */
           }
         }
-        await runOne(run, this.ctx, (r) => this.settle(r));
+        try {
+          await runOne(run, this.ctx, (r) => this.settle(r));
+        } catch (exc: unknown) {
+          // THE CLAIM-RELEASE LAW (audit R1's arm, completed
+          // 2026-10-03): runOne guards its own paths, but ANY
+          // escape between claim and settle — a seat lookup on a
+          // dying fiber, a persist fault — left activeId held with
+          // the pump exited: every later run stranded behind a
+          // claim nobody owned (the commission wedge's queue
+          // half). The pump settles the row failed loud itself and
+          // keeps claiming: the queue may delay a run, never
+          // strand it.
+          const text: string = "run seat escape (pump settle): " + errText(exc);
+          for (const stage of run.stages) {
+            if (stage["status"] === "running") {
+              stage["status"] = "failed";
+              stage["error"] = text;
+            }
+          }
+          run.status = "failed";
+          run.error = text;
+          try {
+            await this.settle(run);
+          } catch {
+            /* a dying fiber refuses its own seats — settle's very
+             * capture throws. Nothing is left to free HERE: the
+             * claim persist already wrote 'running' on disk, the
+             * fiber's in-memory claim dies with the fiber, and the
+             * next boot's sweep retires the row (queueSweep's law).
+             * Touching this.core would re-read the dead ctx and
+             * escape the pump — the exact shape this catch closes. */
+          }
+        }
       }
     } finally {
       this.pumping = false;
@@ -1656,5 +1693,12 @@ export class RunsRuntimeService extends Service {
     await settlePersist(run, queue.stateRoot);
     queue.core.releaseActive();
     queue.core.evictSettled();
+    // THE SETTLE WAKE: the change seam's contract lists the settle
+    // among its emitters ("a claim, a settle, an artifacts harvest,
+    // a stop press" — runsChange.ts), but this path never fired it;
+    // a watcher parked on the running row never learned of the
+    // terminal write. Firing after the evict so the re-read serves
+    // the terminal row.
+    notifyRunChanged(run.runId);
   }
 }

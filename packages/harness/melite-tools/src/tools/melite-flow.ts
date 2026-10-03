@@ -190,6 +190,19 @@ export function foldConnects(
 const TIMEOUT_MS = 30_000
 const DRAFT_TIMEOUT_MS = 15_000
 const VALIDATE_TIMEOUT_MS = 15_000
+/** THE OBSERVATION BUDGET (the commission wedge landing, 2026-10-03):
+ *  the outcome observer polled WITHOUT a wall clock — a run whose
+ *  claim never released (the queue's single-active lane) hung the
+ *  tool for the life of the session (the film press wedged 95 min
+ *  on a dead engine; the queue-side armor landed with this budget —
+ *  runsRegistry.ts's pump catch). The budget bounds the
+ *  OBSERVATION, never the run: expiry returns the waiting face
+ *  ('queued' — a word the terminal arm can never produce), re-arms
+ *  a background attribution link, and the caller reports a pending
+ *  receipt (run_status owns re-waiting). Three times the wait
+ *  family's WAIT_MAX_S=300 — above every legitimate render
+ *  observed, short enough to free a wedged transcript. */
+const OBSERVE_MAX_MS = 900_000
 
 interface StartResult {
   run_id?: unknown
@@ -363,6 +376,15 @@ async function runBench(
     pass.push({ stage: stageId, card, run_id: runId, status: outcome.status,
       ...(outcome.url !== '' ? { url: outcome.url } : {}),
       ...(outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}) })
+    if (outcome.status === 'queued') {
+      // THE PENDING RECEIPT (the commission wedge, 2026-10-03): the
+      // observation budget spent on a run that is still live — the
+      // flow is NOT failed. The run continues on the queue, the
+      // render prints `[pending] — poll with run_status`, and the
+      // background attribution link still lands the terminal stamp
+      // on the stage row when the run settles.
+      return { mode: 'bench', target, draft_id: draftId, status: 'pending', stoppedAt: stageId, run_id: runId, pass }
+    }
     if (outcome.status !== 'done') {
       return { mode: 'bench', target, draft_id: draftId, status: 'stopped', stoppedAt: stageId, run_id: runId,
         error: `stage ${stageId} (${card}) ended ${outcome.status}`, pass }
@@ -413,13 +435,16 @@ function sleepAbort(ms: number, signal: AbortSignal): Promise<void> {
  *  /melite-media/runs/<runId>/, urls that carry a scheme or lead
  *  with / pass verbatim (the ONE rewrite — the run-wire law,
  *  mirrored). */
-async function observeAndAttribute(
+export async function observeAndAttribute(
   request: EstateRequest,
   draftId: string,
   stageId: string,
   runId: string,
   signal: AbortSignal,
+  budgetMs: number = OBSERVE_MAX_MS,
+  rearms: number = 2,
 ): Promise<{ status: string; url: string; artifacts: string[] }> {
+  const deadline = Date.now() + budgetMs
   let lastLive = ''
   for (;;) {
     signal.throwIfAborted()
@@ -517,6 +542,22 @@ async function observeAndAttribute(
         await request( 'PATCH', `/v1/flows/drafts/${encodeURIComponent(draftId)}/stages/${encodeURIComponent(stageId)}`,
           { runStatus: live, result: { run_id: runId } }, signal, DRAFT_TIMEOUT_MS)
       } catch { /* bookkeeping */ }
+    }
+    if (Date.now() >= deadline) {
+      // THE WAIT-EXPIRED RECEIPT (the commission wedge, 2026-10-03):
+      // budget spent on a run that is still live — the observation
+      // ends, the run does not. 'queued' is the fold's waiting face
+      // and a word the terminal arm can never return, so the
+      // callers branch on it cleanly. Attribution outlives the
+      // observation: one background link with a fresh signal (the
+      // attribution-outlives-the-call law — the fire-and-forget
+      // arms' own shape) keeps stamping the stage row until the run
+      // settles or the chain's re-arms run out (the queue-side
+      // armor bounds the run itself).
+      if (rearms > 0) {
+        void observeAndAttribute(request, draftId, stageId, runId, new AbortController().signal, budgetMs, rearms - 1).catch(String)
+      }
+      return { status: 'queued', url: '', artifacts: [] }
     }
     await sleepAbort(1500, signal)
   }
@@ -857,7 +898,7 @@ export function meliteFlow(request: EstateRequest): ToolDefinition {
         properties: {
           run_id: { type: 'string', description: 'The queue run id — poll with run_status(run_id). Absent on a pre-run refusal; PRESENT on a stopped-mid-flow refusal (a stage that ran and failed — render prints it after the error).' },
           draft_id: { type: 'string', description: 'The minted card draft id — the chat tile handle (?meliteCards=). Absent on refusal.' },
-          status: { type: 'string', description: 'Registration status (queued/running). Absent on refusal.' },
+          status: { type: 'string', description: 'The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal.' },
           mode: { type: 'string', description: 'Which composition ran (or was attempted): card | flow | adhoc.', required: true },
           target: { type: 'string', description: 'The card id, flow name, or ad-hoc pipeline name (echoed on refusal).', required: true },
           error: { type: 'string', description: 'The refusal text — present exactly when the tool refused (render prints REFUSED).' },

@@ -19,6 +19,7 @@ import {
   variantOfBodies,
 } from "./queue.ts";
 import type { GraphRow } from "./queue.ts";
+import type { SidecarStage } from "./queueSidecar.ts";
 import type { RunId } from "./queueCore.ts";
 
 /** Stage statuses — the run worker's vocabulary (inherited from the retired oracle). */
@@ -280,31 +281,7 @@ export async function settlePersist(
     await writeJsonAtomic(
       join(run.dir, "_flow.json"),
       sidecarDoc({
-        runId: run.runId,
-        status: run.status,
-        error: run.error,
-        stages: run.stages.map((st) => sidecarStageOf(st)),
-        skippedStages: [...run.skippedStages],
-        artifacts: [...run.artifacts],
-        createdAt: run.createdAt,
-        testFlag: run.testFlag,
-        draftId: run.draftId,
-        pipeline: run.pipeline,
-        graph: run.graphRows,
-        // THE SNAPSHOT CARRY (stroke 48 fix): the settle rewrite
-        // re-renders the sidecar from the row — the snapshots stamped
-        // at registration ride along, never wiped.
-        cardSnapshot: run.cardSnapshot,
-        benchSnapshot: run.benchSnapshot,
-        // F-6(b): the admission warnings ride the settle rewrite
-        // too (a terminal disk row keeps what the live row warned).
-        warnings: run.warnings,
-        // THE COMPOSE ECHO rides the settle rewrite too (a terminal
-        // disk row keeps what the engine received at start).
-        composeEcho: run.composeEcho,
-        // THE SOURCE ECHO rides the settle rewrite too (a terminal
-        // disk row keeps the files that created it).
-        sourceEcho: run.sourceEcho,
+        ...sidecarFacesOf(run),
         exportName,
         exportPath,
         variant,
@@ -329,6 +306,82 @@ export async function settlePersist(
        never throws), so this catch has no honest trigger (2026-09-12) */
   } catch {
     /* nor the ledger row */
+  }
+}
+
+/** The row's own sidecar faces — the base every sidecar writer
+ *  shares. The settle rewrite adds the lifted stamps (export name,
+ *  path, variant, loudness, freshness — read off COMPLETED
+ *  outputs); the claim write has nothing lifted yet and carries
+ *  exactly these. */
+function sidecarFacesOf(run: RunRecord): {
+  runId: string;
+  status: string;
+  error: string;
+  stages: SidecarStage[];
+  skippedStages: string[];
+  artifacts: string[];
+  createdAt: number;
+  testFlag: boolean;
+  draftId: string;
+  pipeline: string;
+  graph: GraphRow[];
+  cardSnapshot: unknown;
+  benchSnapshot: unknown;
+  warnings: string[] | undefined;
+  composeEcho: { seam: string; calls: number; benchRev: number | null } | undefined;
+  sourceEcho: { refs: Array<{ url: string; file: string }> } | undefined;
+} {
+  return {
+    runId: run.runId,
+    status: run.status,
+    error: run.error,
+    stages: run.stages.map((st) => sidecarStageOf(st)),
+    skippedStages: [...run.skippedStages],
+    artifacts: [...run.artifacts],
+    createdAt: run.createdAt,
+    testFlag: run.testFlag,
+    draftId: run.draftId,
+    pipeline: run.pipeline,
+    graph: run.graphRows,
+    // THE SNAPSHOT CARRY (stroke 48 fix): every sidecar rewrite
+    // re-renders the document from the row — the snapshots stamped
+    // at registration ride along, never wiped.
+    cardSnapshot: run.cardSnapshot,
+    benchSnapshot: run.benchSnapshot,
+    // F-6(b): the admission warnings ride every rewrite too (a disk
+    // row keeps what the live row warned).
+    warnings: run.warnings,
+    // THE COMPOSE ECHO rides every rewrite too (a disk row keeps
+    // what the engine received at start).
+    composeEcho: run.composeEcho,
+    // THE SOURCE ECHO rides every rewrite too (a disk row keeps the
+    // files that created the run).
+    sourceEcho: run.sourceEcho,
+  };
+}
+
+/** The claim persist (the commission wedge landing, 2026-10-03):
+ *  the pump rewrites the run's _flow.json the moment it CLAIMS the
+ *  row. Registration writes 'queued', settle writes terminal, and a
+ *  process death between the two left the sidecar saying 'queued'
+ *  forever — the next boot REPLAYED a run that had already claimed
+ *  (duplicate GPU spend) and a claimed-but-wedged row was
+ *  indistinguishable on disk from a never-claimed one. The claim
+ *  write closes the window: 'running' on disk means the process
+ *  owned the claim, and the boot sweep (queueSweep.ts) owns its
+ *  retirement. Best-effort by law, same as settlePersist — the
+ *  in-memory row is the truth; a persist failure never blocks the
+ *  claim. No ledger row: the ledger carries dispositions, and a
+ *  claim is not one.
+ * @param run the just-claimed row (tryDequeue already set status
+ *  'running' in memory).
+ * @returns when the write completed or self-swallowed its fault. */
+export async function claimPersist(run: RunRecord): Promise<void> {
+  try {
+    await writeJsonAtomic(join(run.dir, "_flow.json"), sidecarDoc(sidecarFacesOf(run)));
+  } catch {
+    /* the sidecar must never take the claim down (settlePersist law) */
   }
 }
 
