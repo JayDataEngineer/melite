@@ -10,10 +10,12 @@ import { tmpdir } from "node:os";
 import { execSync } from "node:child_process";
 import { join } from "node:path";
 import {
+  clearStaleInstall,
   ensureManagerGitUrlAllowed,
   installedHead,
   urlInstalled,
 } from "../scripts/provision-extensions-install.ts";
+import { symlinkSync, existsSync } from "node:fs";
 
 describe("ensureManagerGitUrlAllowed", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-ext-flag-"));
@@ -67,6 +69,64 @@ describe("urlInstalled + installedHead", () => {
       { cwd: cn, encoding: "utf8" }).trim();
     assert.equal(installedHead(dir, "melite-sfx-nodes"), head);
     assert.equal(installedHead(dir, "not-a-clone"), "");
+  });
+
+  it("cleans up", () => { rmSync(dir, { recursive: true, force: true }); });
+});
+
+describe("clearStaleInstall", () => {
+  const url = "https://github.com/JayDataEngineer/melite-sfx-nodes";
+  let dir: string;
+  let cn: string;
+
+  it("sets up", () => {
+    dir = mkdtempSync(join(tmpdir(), "melite-clear-"));
+    cn = join(dir, "custom_nodes");
+    mkdirSync(cn);
+  });
+
+  it("no-ops when the path is absent", () => {
+    assert.equal(clearStaleInstall(url, dir), "");
+  });
+
+  it("unlinks a dev-era symlink without touching its target", () => {
+    const victim = join(dir, "vendor-copy");
+    mkdirSync(victim);
+    writeFileSync(join(victim, "nodes.py"), "# pack\n");
+    symlinkSync(victim, join(cn, "melite-sfx-nodes"));
+    assert.equal(clearStaleInstall(url, dir), "symlink");
+    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+    assert.equal(existsSync(join(victim, "nodes.py")), true);
+  });
+
+  it("removes a real-copy directory (no git, no remote)", () => {
+    mkdirSync(join(cn, "melite-sfx-nodes"));
+    writeFileSync(join(cn, "melite-sfx-nodes", "nodes.py"), "# pack\n");
+    assert.equal(clearStaleInstall(url, dir), "directory");
+    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+  });
+
+  it("removes a stale clone with a different remote", () => {
+    const other = join(dir, "other-origin.git");
+    execSync("git init --quiet --bare " + JSON.stringify(other),
+      { encoding: "utf8" });
+    execSync("git clone --quiet " + JSON.stringify(other) +
+      " melite-sfx-nodes", { cwd: cn, encoding: "utf8" });
+    assert.equal(clearStaleInstall(url, dir), "stale clone");
+    assert.equal(existsSync(join(cn, "melite-sfx-nodes")), false);
+  });
+
+  it("keeps a Manager install of this remote", () => {
+    const keep = join(cn, "melite-sfx-nodes");
+    const origin = join(dir, "pack-origin.git");
+    execSync("git init --quiet --bare " + JSON.stringify(origin),
+      { encoding: "utf8" });
+    execSync("git clone --quiet " + JSON.stringify(origin) +
+      " melite-sfx-nodes", { cwd: cn, encoding: "utf8" });
+    execSync("git remote set-url origin " + url,
+      { cwd: keep, encoding: "utf8" });
+    assert.equal(clearStaleInstall(url, dir), "");
+    assert.equal(existsSync(join(keep, ".git")), true);
   });
 
   it("cleans up", () => { rmSync(dir, { recursive: true, force: true }); });

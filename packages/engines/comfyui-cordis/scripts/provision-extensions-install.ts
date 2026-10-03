@@ -13,7 +13,7 @@
 // disk after each call (the installed clone's git remote).
 
 import { execSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.ts";
 import { engineUrl, loadConfig } from "./provision-config.ts";
@@ -75,6 +75,39 @@ export function ensureManagerGitUrlAllowed(configPath: string): boolean {
   }
   writeFileSync(configPath, text.replace(/\n*$/u, "\n") + wanted + "\n");
   return false;
+}
+
+/** Clear a stale install shape at a url row's custom_nodes path —
+ *  a Manager install of THIS remote is the only shape that may
+ *  stay (urlInstalled decides); the dev-symlink era and real-copy
+ *  era left links and plain directories that Manager correctly
+ *  refuses to install over ("Already exists"). A symlink unlinks
+ *  without touching its target; a git dir with a different remote
+ *  is a declaration conflict — the declaration is the truth.
+ *  @param url the declared git remote.
+ *  @param workspace the engine workspace root.
+ *  @returns "" when nothing was removed, else the removed shape
+ *           ("symlink" | "file" | "directory" | "stale clone"). */
+export function clearStaleInstall(url: string, workspace: string): string {
+  const dir = url.replace(/\/+$/, "").replace(/\.git$/, "")
+    .split("/").pop() ?? "";
+  const target = join(workspace, "custom_nodes", dir);
+  let st;
+  try {
+    st = lstatSync(target);
+  } catch { return ""; }
+  if (st.isSymbolicLink()) {
+    rmSync(target, { force: true });
+    return "symlink";
+  }
+  if (!st.isDirectory()) {
+    rmSync(target, { force: true });
+    return "file";
+  }
+  if (urlInstalled(url, workspace)) return "";
+  const shape = existsSync(join(target, ".git")) ? "stale clone" : "directory";
+  rmSync(target, { recursive: true, force: true });
+  return shape;
 }
 
 export async function stepExtensions(): Promise<boolean> {
@@ -155,6 +188,12 @@ export async function stepExtensions(): Promise<boolean> {
     // worker refuses them ("not found in [default, cache]");
     // git_url is the door for arbitrary remotes.
     for (const row of pending) {
+      const stale = clearStaleInstall(row.url, workspace);
+      if (stale !== "") {
+        warn("  [" + row.name + "] removed a stale " + stale +
+          " at custom_nodes/" + row.url.split("/").pop() +
+          " — Manager owns this path now");
+      }
       info("  [" + row.name + "] manager git_url install — " + row.url);
       const res = await fetch(endpoint + "/customnode/install/git_url", {
         method: "POST",
