@@ -37,6 +37,11 @@ function fakeCtx(): Fake {
       fn()
       return () => {}
     },
+    // dsh-inject semantics: the callback fires only when the named
+    // service is composed. The fake composes none by default (a bare
+    // mount seats no commands registry); the /melite-runs tests pass
+    // their own registry through injectCommands below.
+    inject: (_names: readonly string[], _fn: (ctx: unknown) => void) => {},
     tools: {
       register: (def: { name: string }) => {
         registered.push(def)
@@ -235,6 +240,7 @@ describe('expansion seat', () => {
         if (typeof cleanup === 'function') cleanups.push(cleanup as () => void)
         return () => {}
       },
+      inject: () => {},
       tools: { register: (def: { name: string }) => { registered.push(def.name); return () => {} } },
       get: () => undefined,
     }
@@ -245,5 +251,93 @@ describe('expansion seat', () => {
     cleanups[0]?.()
     assert.equal(registered.length, 9)
     cleanups[1]?.()
+  })
+})
+
+describe('the /melite-runs toggle (the user-side AI-run door, 2026-10-13)', () => {
+  // The command rides ctx.inject('commands'): dsh semantics fire the
+  // callback only where a commands registry is composed. The fake
+  // captures it; a registry composed = the browser lane's surface.
+  interface CmdDef {
+    name: string
+    handler: (inv: { rawInput: string }) => { kind: 'success' | 'error'; text: string }
+  }
+  function fakeCtxWithCommands() {
+    const registered: Array<{ name: string }> = []
+    let commandsCb: ((ctx: { commands: { register(d: CmdDef): () => void } }) => void) | undefined
+    const ctx = {
+      logger: { info: () => {}, warn: () => {} },
+      effect: () => () => {},
+      inject: (names: readonly string[], fn: (ctx: { commands: { register(d: CmdDef): () => void } }) => void) => {
+        if (names.includes('commands')) commandsCb = fn
+      },
+      tools: {
+        register: (def: { name: string }) => {
+          registered.push(def)
+          return () => {
+            const i = registered.lastIndexOf(def)
+            if (i >= 0) registered.splice(i, 1)
+          }
+        },
+        schemas: () => registered.map((d) => ({ name: d.name })),
+      },
+      get: (_name: string) => undefined,
+    }
+    return { ctx, registered, seatRegistry: () => {
+      const defs: CmdDef[] = []
+      if (!commandsCb) throw new Error('commands callback never captured — apply did not inject')
+      commandsCb({ commands: { register: (d) => { defs.push(d); return () => {} } } })
+      return defs
+    } }
+  }
+
+  test('on seats the run doors + flips the compose loop; off reverses both', async () => {
+    setEnv('MELITE_HEADLESS', undefined)
+    setEnv('MELITE_ADHOC', undefined)
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context)
+    const names = () => f.registered.map((r) => r.name)
+    // browser default: no run doors
+    for (const h of HEADLESS) assert.ok(!names().includes(h), 'run door leaked at boot: ' + h)
+    const [cmd] = f.seatRegistry()
+    assert.equal(cmd.name, 'melite-runs')
+    const constructBefore = f.registered.find((r) => r.name === 'melite_construct')
+    const seated = cmd.handler({ rawInput: 'on' })
+    assert.equal(seated.kind, 'success')
+    for (const h of HEADLESS) assert.ok(names().includes(h), 'run door never seated: ' + h)
+    // the compose loop re-seats with the flipped interface flag (its
+    // model-facing copy names the door this mount now owns): the OLD
+    // construct seat is disposed and a NEW definition lands
+    const constructDefs = f.registered.filter((r) => r.name === 'melite_construct')
+    assert.equal(constructDefs.length, 1, 'compose loop stacked a duplicate seat')
+    assert.notEqual(constructDefs[0], constructBefore, 'compose loop never re-seated')
+    const unseated = cmd.handler({ rawInput: 'off' })
+    assert.equal(unseated.kind, 'success')
+    for (const h of HEADLESS) assert.ok(!names().includes(h), 'run door never unseated: ' + h)
+  })
+
+  test('bare invocation reads the state; unknown argument refuses', async () => {
+    setEnv('MELITE_HEADLESS', undefined)
+    setEnv('MELITE_ADHOC', undefined)
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context)
+    const [cmd] = f.seatRegistry()
+    const read = cmd.handler({ rawInput: '' })
+    assert.equal(read.kind, 'success')
+    assert.ok(read.text.includes('OFF'), 'bare read must state the browser default')
+    const bad = cmd.handler({ rawInput: 'sideways' })
+    assert.equal(bad.kind, 'error')
+  })
+
+  test('a headless mount boots with the doors seated; the command can still unseat them', async () => {
+    setEnv('MELITE_HEADLESS', '1')
+    setEnv('MELITE_ADHOC', undefined)
+    const f = fakeCtxWithCommands()
+    await apply(f.ctx as unknown as Context)
+    const names = () => f.registered.map((r) => r.name)
+    for (const h of HEADLESS) assert.ok(names().includes(h), 'headless boot lost a run door: ' + h)
+    const [cmd] = f.seatRegistry()
+    cmd.handler({ rawInput: 'off' })
+    for (const h of HEADLESS) assert.ok(!names().includes(h), 'off failed to unseat on headless: ' + h)
   })
 })

@@ -50,7 +50,8 @@ Linux:
 
 ```sh
 pnpm run provision -- sync        # ComfyUI core + Manager checkout (managed instance)
-pnpm run provision -- extensions  # declared extension packs (Layer C installs first)
+pnpm run provision -- extensions  # declared packs — installed BY ComfyUI-Manager's
+                                   # git-url door, so the engine must be UP first
 pnpm run provision -- models      # declared weights — tens of GB, sha-pinned rows
 ```
 

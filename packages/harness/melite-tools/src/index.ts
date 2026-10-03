@@ -167,6 +167,11 @@ interface CtxView {
     register(definition: ToolDefinition): () => void
     schemas(): Array<{ name: string; description?: string; parameters?: unknown }>
   }
+  /** dsh-commands seam (dynamic child inject — the permission-presets
+   * precedent): the callback activates only where a command registry is
+   * composed; absent on lanes that never seat one (headless
+   * one-shots) — a clean skip, never a boot failure. */
+  inject(names: readonly string[], fn: (ctx: { commands: { register(definition: unknown): () => void } }) => void): void
 }
 
 /** Register the Melite tools against the live estate gateway. */
@@ -207,10 +212,19 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // The compose face carries the interface flag (the INTERFACE LAW,
   // 2026-09-13: its model-facing copy names the run door THIS mount
   // owns — the browser hint points at the user's Run press, headless
-  // at melite_flow — never a phantom verb).
+  // at melite_flow — never a phantom verb). construct + load are
+  // seated through the /melite-runs toggle's reseat (the flag they
+  // carry flips with the delegation state); discover carries none.
   c.tools.register(meliteDiscover(request))
-  c.tools.register(meliteConstruct(request, { headless }))
-  c.tools.register(meliteLoad(request, { headless }))
+  let composeSeats: Array<() => void> = []
+  const seatComposeLoop = (delegated: boolean): void => {
+    for (const dispose of composeSeats.splice(0)) dispose()
+    composeSeats.push(
+      c.tools.register(meliteConstruct(request, { headless: delegated })),
+      c.tools.register(meliteLoad(request, { headless: delegated })),
+    )
+  }
+  seatComposeLoop(headless)
 
   // BASE, DEFERRED — seated on the FIRST catalog touch (any
   // discover/load execute calls expandEstateDoors). Registrations
@@ -220,7 +234,12 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // way. The observe arm stays a door, never a run press; seats
   // probe at call time and refuse loudly on a store-less lane.
   const deferredDisposers: Array<() => void> = []
-  c.effect(() => () => { for (const d of deferredDisposers.splice(0)) d() })
+  c.effect(() => () => {
+    for (const dispose of [...runDoorSeats, ...composeSeats]) dispose()
+    runDoorSeats = []
+    composeSeats = []
+    for (const d of deferredDisposers.splice(0)) d()
+  })
   const seated = new Set<string>()
   installExpansion(() => {
     const doors: Array<[string, () => () => void]> = [
@@ -255,9 +274,13 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // disclosure tax buys nothing headless. Seat at boot.
   if (headless) expandEstateDoors()
 
-  // HEADLESS run doors — the delegated operator (QUEUE LANE LAW: the
-  // queue's own registration door, models named explicitly, never a
-  // hand-assembled graph).
+  // THE RUN DOORS — runtime-seatable (the /melite-runs toggle,
+  // operator 2026-10-13: "a / command that toggles if the AI
+  // executes flows or not"). headless mounts boot with them seated
+  // (the delegated operator); browser mounts boot with them absent
+  // (the interface law: the user presses Run). Both seats are the
+  // QUEUE LANE LAW's own registrations — never a bypass, never a
+  // hand-assembled graph.
   // (2026-10-01: the withArgCoercion valve that wrapped these two
   // registrations is DELETED — it rewrote args AFTER the session log
   // wrote them, breaking Model-visible⟺logged. The late-arrival
@@ -268,10 +291,54 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
   // handroll audit's ranked item 1; verifier-corrected 2026-10-01:
   // the modes===0 arm returns a soft error object, it is not this
   // refusal.)
-  if (headless) {
-    c.tools.register(meliteFlow(request))
-    c.tools.register(runStatus(request))
+  let runDoorSeats: Array<() => void> = []
+  const seatRunDoors = (): void => {
+    if (runDoorSeats.length > 0) return
+    runDoorSeats.push(c.tools.register(meliteFlow(request)), c.tools.register(runStatus(request)))
   }
+  const unseatRunDoors = (): void => {
+    for (const dispose of runDoorSeats.splice(0)) dispose()
+  }
+  if (headless) seatRunDoors()
+
+  // The /melite-runs COMMAND — the user-side toggle for the same
+  // delegation. on/off/settle verbs: 'on' seats the run doors and
+  // flips the compose loop's model-facing copy to name melite_flow;
+  // 'off' reverses both (the user's Run press owns runs again); no
+  // argument reports the state. Mid-session seats reach the next
+  // model request (a boot-fixed catalog — the transcript-016 note —
+  // sees them at its next session), and the command's result says
+  // so plainly. Registered only where a commands registry is
+  // composed (browser lanes); its absence on headless one-shots is
+  // the designed skip, not a degraded mount.
+  c.inject(['commands'], ({ commands }) => {
+    commands.register({
+      name: 'melite-runs',
+      description: 'Toggle whether the AI can start runs (melite_flow) or runs wait for the user\u2019s Run press',
+      input: { hint: '[on|off]' },
+      handler: ({ rawInput }: { rawInput: string }): { kind: 'success' | 'error'; text: string } => {
+        const verb = rawInput.trim().toLowerCase()
+        if (verb !== '' && verb !== 'on' && verb !== 'off' && verb !== 'toggle') {
+          return { kind: 'error', text: `unknown argument "${rawInput.trim()}" (use on, off, or no argument to read the state)` }
+        }
+        const delegated = verb === '' ? runDoorSeats.length > 0 : verb === 'toggle' ? runDoorSeats.length === 0 : verb === 'on'
+        if (delegated) {
+          seatRunDoors()
+          seatComposeLoop(true)
+        } else {
+          unseatRunDoors()
+          seatComposeLoop(false)
+        }
+        c.logger.info('melite-tools: /melite-runs %s — AI run doors %s', verb || '(read)', delegated ? 'SEATED' : 'UNSEATED')
+        return {
+          kind: 'success',
+          text: delegated
+            ? 'AI runs ON — melite_flow + run_status seated; the next model request sees them (a boot-fixed catalog sees them next session).'
+            : 'AI runs OFF — runs start at the user\u2019s Run press again.',
+        }
+      },
+    })
+  })
 
   // (2026-09-12: the readDefaultLlm copy that lived here is deleted —
   // zero callers since the enhance seams needing ctx.llm moved to
