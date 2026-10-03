@@ -21,8 +21,8 @@ The lane declares it as a file input:
 ```
 
 The contract (composition, pins, roster, default model, teams, env
-wiring) is `dsh-provision/docs/profile-handoff.md`. The dev loop for
-drop-ins is `dsh-provision/docs/hot-reload-playbook.md`.
+wiring) is `dsh-provision/dev_docs/profile-handoff.md`. The dev loop for
+drop-ins is `dsh-provision/dev_docs/hot-reload-playbook.md`.
 
 **Differences from the prod lane, exactly:**
 

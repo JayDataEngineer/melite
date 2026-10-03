@@ -181,7 +181,7 @@ export const estimate: ComfyActionSpec<{ readonly photo: string }, Record<string
 /** The commercial photo→body chain (the hmr-estimate verb's
  *  commercial engine — the flow 'anny-hmr-commercial'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
- *  sale (docs/design/commercial-estimator-chain.md). The
+ *  sale (dev_docs/design/commercial-estimator-chain.md). The
  *  person_index stays FIXED at the loudest detection (0) — the
  *  verb's own person picker is a chip knob, never a bench surface
  *  (SubActionMod law). */

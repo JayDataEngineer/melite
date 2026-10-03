@@ -832,7 +832,7 @@ test("the compile-time initial gate — both {flow:} doors refuse before registr
   // 4. an on-disk file with a WRONG EXTENSION refuses the stageable
   //    check (the typed media vocab gate) — the body initial is a
   //    MESH, so the voice names a mesh.
-  const badExt = { flow: "skin-apply", test: true, draft_id: "d_ok", body: "docs/CONFORMANCE_LEDGER.md" };
+  const badExt = { flow: "skin-apply", test: true, draft_id: "d_ok", body: "dev_docs/CONFORMANCE_LEDGER.md" };
   await assert.rejects(
     () => runs.validate(badExt, sig),
     (e: Error) => /is not a stageable mesh/.test(e.message),

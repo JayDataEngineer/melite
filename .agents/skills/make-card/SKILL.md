@@ -18,7 +18,7 @@ the same package.
 Bare word, one of `3d/ audio/ image/ models/ motion/ video/`
 (`packages/models/` is for model families — see the `make-model`
 skill; cards never live there). New genre? Read
-`docs/dsh-homolog/structure.md` (the naming law) first.
+`dev_docs/dsh-homolog/structure.md` (the naming law) first.
 
 ## 2. The files
 

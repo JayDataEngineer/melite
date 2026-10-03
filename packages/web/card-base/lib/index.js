@@ -5718,7 +5718,7 @@ var require_react_dom_development = /* @__PURE__ */ __commonJSMin(((exports) => 
 //#region src/studioRail.tsx
 /**
 * StudioRail — the shell-provided TOOLS slot in the studio's left rail
-* (spec docs/design/card-studio-pattern.md §5 + §7.10).
+* (spec dev_docs/design/card-studio-pattern.md §5 + §7.10).
 *
 * WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
 * so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must
@@ -6186,7 +6186,7 @@ function StudioFields({ fields, value, onEdit, square }) {
 /**
 * poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the live
 * follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING — they
-* are supposed to CHANGE THE [REDACTED 2026-11-05] BODY"). The figure is not a
+* are supposed to CHANGE THE BODY"). The figure is not a
 * static portrait: it is SHAPED BY THE CARD'S LIVE PARAMS — the 11
 * identity coeffs and the non-zero local_changes ride the SAME
 * shared bind-mesh module the body studios use

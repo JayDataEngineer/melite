@@ -1,6 +1,6 @@
 // s4-client-deps.spec.ts — S4a walls: the real DSH client set lands.
 //
-// The S4 migration record (docs/design/editor-on-dsh-client-2026-09-08.md)
+// The S4 migration record (dev_docs/design/editor-on-dsh-client-2026-09-08.md)
 // converts the editor lane onto the published DSH client stack. This wall
 // pins the stroke's two preparation facts: (1) the editor declares the
 // real packages at the coherent 0.1.5-rc train (2026-09-10 train

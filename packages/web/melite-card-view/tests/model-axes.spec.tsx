@@ -1061,7 +1061,7 @@ test('a DECLared columns group grids its fields — Width and Height share ONE r
   expect(labels.some((t) => t.includes('Height'))).toBe(true)
   expect((cells[0] as HTMLElement).style.gridColumn).toBe('span 1')
   // THE GRID IS THE LAW (2026-09-21, the operator's catch: "WHY
-  // THE [REDACTED 2026-11-05] IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"): an
+  // WHY IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"): an
   // UNDECLARED group grids 2 by DEFAULT — the form-card grammar is
   // the system law at the card level, never per-card decoration a
   // card can forget. (A card that wants a stack declares columns: 1.)

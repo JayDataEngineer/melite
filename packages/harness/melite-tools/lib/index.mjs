@@ -1000,6 +1000,19 @@ function foldConnects(flowId, stages, connects) {
 const TIMEOUT_MS$2 = 3e4;
 const DRAFT_TIMEOUT_MS = 15e3;
 const VALIDATE_TIMEOUT_MS = 15e3;
+/** THE OBSERVATION BUDGET (the commission wedge landing, 2026-10-03):
+*  the outcome observer polled WITHOUT a wall clock — a run whose
+*  claim never released (the queue's single-active lane) hung the
+*  tool for the life of the session (the film press wedged 95 min
+*  on a dead engine; the queue-side armor landed with this budget —
+*  runsRegistry.ts's pump catch). The budget bounds the
+*  OBSERVATION, never the run: expiry returns the waiting face
+*  ('queued' — a word the terminal arm can never produce), re-arms
+*  a background attribution link, and the caller reports a pending
+*  receipt (run_status owns re-waiting). Three times the wait
+*  family's WAIT_MAX_S=300 — above every legitimate render
+*  observed, short enough to free a wedged transcript. */
+const OBSERVE_MAX_MS = 9e5;
 /** POST /v1/flows/start — the verbatim-error pattern (the agent
 *  reads the gateway's refusal text, not a transport code). */
 /** THE WIRE-BOOLEAN READ (attempt-035's provenance receipt,
@@ -1135,6 +1148,15 @@ async function runBench(request, a, signal) {
 			...outcome.url !== "" ? { url: outcome.url } : {},
 			...outcome.artifacts.length > 0 ? { artifacts: outcome.artifacts } : {}
 		});
+		if (outcome.status === "queued") return {
+			mode: "bench",
+			target,
+			draft_id: draftId,
+			status: "pending",
+			stoppedAt: stageId,
+			run_id: runId,
+			pass
+		};
 		if (outcome.status !== "done") return {
 			mode: "bench",
 			target,
@@ -1191,7 +1213,8 @@ function sleepAbort(ms, signal) {
 *  /melite-media/runs/<runId>/, urls that carry a scheme or lead
 *  with / pass verbatim (the ONE rewrite — the run-wire law,
 *  mirrored). */
-async function observeAndAttribute(request, draftId, stageId, runId, signal) {
+async function observeAndAttribute(request, draftId, stageId, runId, signal, budgetMs = OBSERVE_MAX_MS, rearms = 2) {
+	const deadline = Date.now() + budgetMs;
 	let lastLive = "";
 	for (;;) {
 		signal.throwIfAborted();
@@ -1269,6 +1292,14 @@ async function observeAndAttribute(request, draftId, stageId, runId, signal) {
 					result: { run_id: runId }
 				}, signal, DRAFT_TIMEOUT_MS);
 			} catch {}
+		}
+		if (Date.now() >= deadline) {
+			if (rearms > 0) observeAndAttribute(request, draftId, stageId, runId, new AbortController().signal, budgetMs, rearms - 1).catch(String);
+			return {
+				status: "queued",
+				url: "",
+				artifacts: []
+			};
 		}
 		await sleepAbort(1500, signal);
 	}
@@ -1618,7 +1649,7 @@ function meliteFlow(request) {
 					},
 					status: {
 						type: "string",
-						description: "Registration status (queued/running). Absent on refusal."
+						description: "The bench outcome: done | pending | stopped | queued | running. pending = the observation budget spent on a still-live run (the run continues on the queue — re-wait with run_status(run_id)); absent on refusal."
 					},
 					mode: {
 						type: "string",

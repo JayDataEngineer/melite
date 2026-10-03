@@ -52,7 +52,7 @@ implies a directed scene with AV output.
   ported verbatim from MiniMax-AI/MiniMax-H3. Its two guides (base modes
   + Ref2VA) are read ONLY through `h3_prompt_library` — no filesystem
   tool exists; the tool serves the repo's vendored copy at
-  `docs/prompt-guides/minimax-h3/` (byte-identical, single source of
+  `dev_docs/prompt-guides/minimax-h3/` (byte-identical, single source of
   truth).
 - `skills/prompt-enhance/SKILL.md` — the Enhance-button recipes
   (condensed native format for routes `h3` and `h3-ref2va`).

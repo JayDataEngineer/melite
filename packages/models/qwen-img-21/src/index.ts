@@ -4,7 +4,7 @@
 // a change here is a family change, nothing else moves).
 //
 // THE NAMING LAW (operator order 2026-09-21: "the naming convention
-// is extremely poor and will lead to confusing [REDACTED 2026-11-05] in the models
+// is extremely poor and leads to confusing labels in the models
 // for edit and the card labels"): a family id names the MODEL and
 // its VERSION — never the operation. The 2511 predecessor baked
 // 'edit' into the model id (qwen-img-edit-2511), which read as "the

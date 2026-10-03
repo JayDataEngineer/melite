@@ -132,7 +132,7 @@ describe("the anny compose gate", () => {
 
   // ── stroke 90: the sculpt panel converts, it does not die ──────
 
-  it("the schema carries ALL 254 morph sliders in the morph group (the [REDACTED 2026-11-05]-ton law)", async () => {
+  it("the schema carries ALL 254 morph sliders in the morph group (the bulk law)", async () => {
     const { theService } = await import("@melite/comfyui-cordis");
     await loadCardDefs();
     const live = theService().formSchemas("anny", "anny")!;

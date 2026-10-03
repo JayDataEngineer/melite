@@ -19,7 +19,7 @@ instruction below means one call to this bundle's guide tool —
 
 Omit the path (or pass `list`) to get the manifest first. The tool serves
 the repo's single vendored copy of these guides
-(`docs/prompt-guides/minimax-h3/`), byte-identical to the upstream skill's
+(`dev_docs/prompt-guides/minimax-h3/`), byte-identical to the upstream skill's
 `references/` — there is no bundle-local duplicate.
 
 Ported verbatim from MiniMax-AI/MiniMax-H3

@@ -1,7 +1,7 @@
 /**
  * `@melite-plugin/dsh-card-deck` — HOST ONLY.
  *
- * THE ESTATE COLLAPSE (docs/plans/estate-collapse-2026-09-10.md,
+ * THE ESTATE COLLAPSE (dev_docs/plans/estate-collapse-2026-09-10.md,
  * 2026-09-10): this host once proxied /v1|/comfyui|/poser|/health to
  * the second-Loader estate process (retired) and tunneled the events
  * WS — the seam that enshrined the degenerate copy of DSH. ALL of it

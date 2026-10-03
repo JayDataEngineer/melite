@@ -2,7 +2,7 @@
 
 The per-stage execute ABI the worker loop calls, with zero inference:
 stages declare EXPLICIT sim params and the engine writes text files.
-Design record: docs/design/row6-sim-backend.md.
+Design record: dev_docs/design/row6-sim-backend.md.
 """
 
 import asyncio

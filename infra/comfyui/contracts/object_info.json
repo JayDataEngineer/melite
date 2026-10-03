@@ -4644,7 +4644,7 @@
  "provenance": {
   "captured": "2026-09-06T16:01:10+00:00",
   "comfyui_version": "0.34.0",
-  "core_pin": "# ComfyUI core source pin \u2014 version hops are deliberate pin bumps\n# (audited ref: docs/comfyui/comfy-mcp.md \u00a71, 2026-08-31 estate audit)\nd3eaf6adb388c27245374ac26e585fef4936c485",
+  "core_pin": "# ComfyUI core source pin \u2014 version hops are deliberate pin bumps\n# (audited ref: dev_docs/comfyui/comfy-mcp.md \u00a71, 2026-08-31 estate audit)\nd3eaf6adb388c27245374ac26e585fef4936c485",
   "endpoint": "http://127.0.0.1:18466",
   "flows": {
    "AnnyGroundBody": [

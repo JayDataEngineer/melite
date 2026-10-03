@@ -52,9 +52,9 @@ over the same declarations and service behavior; it is not a second
 provisioning implementation.
 
 The complete operator-facing result and action contract is in
-[`../../../docs/tools/comfy-manage.md`](../../../docs/tools/comfy-manage.md).
+[`../../../dev_docs/tools/comfy-manage.md`](../../../dev_docs/tools/comfy-manage.md).
 The service design and migration record are in
-[`../../../docs/design/provisioning-service.md`](../../../docs/design/provisioning-service.md).
+[`../../../dev_docs/design/provisioning-service.md`](../../../dev_docs/design/provisioning-service.md).
 
 ## Verification
 

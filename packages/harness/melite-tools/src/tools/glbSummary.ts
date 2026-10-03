@@ -1,8 +1,8 @@
 /**
  * glbSummary — the 3D artifact's STRUCTURAL summary, read from bytes.
  *
- * WHY IT EXISTS (the operator's 2026-09-26 order: "the 3d [REDACTED 2026-11-05] needs to
- * be hooked into the media [REDACTED 2026-11-05], visual door"): `melite_view`'s image /
+ * WHY IT EXISTS (the operator's 2026-09-26 order, paraphrased: 3d output
+ * must be reachable from the media doors, visually"): `melite_view`'s image /
  * film / audio arms all end in an IMAGE the model can see. A `.glb` has
  * no raster, so before the 3D lanes emitted a poster the agent's only
  * honest observation of a mesh was a refusal that said nothing about

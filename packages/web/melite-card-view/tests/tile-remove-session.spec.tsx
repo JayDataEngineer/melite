@@ -1,5 +1,5 @@
 // THE MISADDRESSED DELETE (stroke 80 — the operator's burn, verbatim:
-// "It says 'stage not found: s_1' when I try to delete [REDACTED 2026-11-05] on the
+// "It says 'stage not found: s_1' when I try to delete things on the
 // card bar"). ROOT CAUSE: the multi-session seam (stroke 44) threaded
 // the session key through the READ path (bench address) and ONE add
 // call, but every OTHER mutation wire hardcoded 'main' — a non-main

@@ -1,8 +1,8 @@
 // melite_view's MESH ARM (vitest, the runs tree REAL in a tmp dir — the
 // estate-media walk runs for true).
 //
-// THE GAP THIS PINS (operator order 2026-09-26: "the 3d [REDACTED 2026-11-05] needs to
-// be hooked into the media [REDACTED 2026-11-05], visual door"): a 3D lane's run holds a
+// THE GAP THIS PINS (operator order 2026-09-26, paraphrased: 3d output must
+// be reachable from the media doors, visually): a 3D lane's run holds a
 // .glb and nothing else, so every arm missed — `melite_view` said "no
 // image artifacts" and the model learned NOTHING about a real, finished
 // 33MB mesh. The arm now walks the mesh kind, reports the artifact's

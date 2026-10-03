@@ -133,7 +133,7 @@ async def execute(node: NodeRow, run_dir: str,
                           "SKINTOKENS_MODEL_DIR env or the runtime "
                           "under data/runtime/skintokens (cmake build "
                           "+ hf download LocalAI-io/SkinTokens-GGUF "
-                          "--include \"F16/*\"; see docs/design/"
+                          "--include \"F16/*\"; see dev_docs/design/"
                           "auto-rig-skintokens.md) — QUEUE LANE LAW: "
                           "no silent fallback" % missing)}
 

@@ -17,8 +17,8 @@
  * What stays STUDIO CHROME (never card params): the Model-route
  * pin (the sibling-family switch, a document concept) and the doc
  * FPS (a document-local clock fact, undeclared by design). THE
- * GEOMETRY READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL
- * SEE THIS [REDACTED 2026-11-05] SKIN? 1344×768 @ 24 doc-fps" — a read-only text
+ * GEOMETRY READOUT IS DEAD (operator 2026-09-21: "WHY DO I STILL
+ * SEE THIS READOUT SKIN? 1344×768 @ 24 doc-fps" — a read-only text
  * row outside the generic seam's grid grammar; the Width/Height
  * injects own geometry, one surface).
  */

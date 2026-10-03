@@ -257,7 +257,7 @@
 .state[data-state='legacy'] { color: var(--dsw-alias-label-secondary); }
 
 /* ── THE CARDS TAB (bench + run views) — 2026-09-11: the tab's
-   classes were shipped UNSTYLED (raw text rows, the "[REDACTED 2026-11-05] text"
+   classes were shipped UNSTYLED (raw text rows, the unstyled-text
    regression). Same visual language as the FlowCards rows above:
    quiet, token-inherited, no boxes. ───────────────────────────── */
 

@@ -47,4 +47,4 @@ rig, no second process.
   the card/model/engine contract walls. (The supervisor wall died at
   the 2026-10-12 dedupe: every law moved home to
   comfyui-cordis/tests/supervisor.spec.ts and the mockless
-  comfyui-host-repoint.spec.ts — docs/audits/supervisor-duplicate-map-2026-10-12.md.)
+  comfyui-host-repoint.spec.ts — dev_docs/audits/supervisor-duplicate-map-2026-10-12.md.)

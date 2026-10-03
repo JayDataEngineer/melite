@@ -175,7 +175,7 @@ SERVING-ONLY 8 (`gateway`, `mcp_door`, `kernel_exec`, `kernel_manifest`,
   the serving table (calls proxy to the LIVE gateway over HTTP,
   `mcp_door.py:16-19`). SERVING-ONLY; dies whole with the oracle. TS has no MCP
   door. Its only importer is `tests/unit/runtime/test_mcp_door.py:22,138`
-  (dies with it). Shipped manifest `docs/gateway/tools.json` (`mcp_door.py:14`,
+  (dies with it). Shipped manifest `dev_docs/gateway/tools.json` (`mcp_door.py:14`,
   `--dump:257-265`) becomes a frozen tombstone at Stage-B.
 
 ### 3c. `python/plugins.py` — `gateway.ValidationError`
@@ -316,7 +316,7 @@ three §3c–3e files carry the alias, and all three are pre-armored.
   `python/`, so that entry is dead text (harmless: `compose.py` arms resolve
   their own path); line 18 hardcodes `REPO = "…/inference.cpp"`.
 - CONFLICT: the task brief says "parity_arm.py is NOT keeper — it dies with the
-  oracle", but `docs/design/generators-port-survey-2026-09-08.md` §0 #17 verdicts
+  oracle", but `dev_docs/design/generators-port-survey-2026-09-08.md` §0 #17 verdicts
   it KEEP ("byte-compare harness the §3 dual-maintenance rule reuses;
   subject-era retired, tool generic"). DEPENDENCY FACT: deleting `gateway.py`
   cannot break `parity_arm.py` (zero import edge either direction) — retention
@@ -334,7 +334,7 @@ three §3c–3e files carry the alias, and all three are pre-armored.
    relocated (or inlined) for `export_discovery_catalog.py:215`; TS doors own
    all traffic (ladder P-cuts landed).
 2. `python/mcp_door.py` — sole reader of `ROUTES`/`Route` (§3b); tombstone
-   `docs/gateway/tools.json` (stop regenerating).
+   `dev_docs/gateway/tools.json` (stop regenerating).
 3. `python/kernel_exec.py` + 4. `python/kernel_manifest.py` — retired-engine
    pair, zero live importers outside `vendor/retired-engines/` (already
    quarantined) and their own unit tests (delete/retire
@@ -358,7 +358,7 @@ three §3c–3e files carry the alias, and all three are pre-armored.
    `test_channel_resolution.py`, `test_gateway_doors.py`, plus `tests/unit/runtime/test_*`
    gateway boots and `tests/dev_dsh/test_dev_dsh_api_contract.py:224`) —
    retire or repoint at TS per the flip-readiness plan
-   (`docs/design/flip-readiness-2026-09-07.md:125`).
+   (`dev_docs/design/flip-readiness-2026-09-07.md:125`).
 
 ### 7b. KEEPER LIST (must survive Stage-B) — 18 modules + packages + tools + captures
 

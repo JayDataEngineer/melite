@@ -4,7 +4,7 @@
   "kind": "pipeline",
   "model": "sprite-sheet",
   "stage_title": "Sprite Sheet",
-  "description": "Generate animated sprite sheets: character action frames via image-gen, background removal, grid assembly. These lanes are AGENT-DRIVEN card chains (2026-09-04 flows rework): drive each stage card through the queue door ({model: ...}); there is no single-shot yaml door anymore (docs/queue/flows.md).",
+  "description": "Generate animated sprite sheets: character action frames via image-gen, background removal, grid assembly. These lanes are AGENT-DRIVEN card chains (2026-09-04 flows rework): drive each stage card through the queue door ({model: ...}); there is no single-shot yaml door anymore (dev_docs/queue/flows.md).",
   "params_schema": {
     "type": "object",
     "properties": {

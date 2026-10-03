@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 /**
- * THE PAINT LEAF FACE, EMBEDDED (docs/design/paint-leaf-canvas.md,
+ * THE PAINT LEAF FACE, EMBEDDED (dev_docs/design/paint-leaf-canvas.md,
  * stroke 76; the stroke-95 embed rework): the brush canvas that
  * renders INSIDE the mod leaf popup — no modal chrome, no Save
  * button: every finished stroke COMMITs its PNG data URL through

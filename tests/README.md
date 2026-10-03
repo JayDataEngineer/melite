@@ -69,8 +69,8 @@ or `packages/*/*/test/`. The current H3 timeline specs, for example, live at
 `packages/harness/melite-tools/test/`.
 
 The editor's former Python and node:test test planes are not part of the
-current runner. See [`docs/testing/index.md`](../docs/testing/index.md) for
-gate interpretation and [`docs/testing/chaos-tests.md`](../docs/testing/chaos-tests.md)
+current runner. See [`dev_docs/testing/index.md`](../dev_docs/testing/index.md) for
+gate interpretation and [`dev_docs/testing/chaos-tests.md`](../dev_docs/testing/chaos-tests.md)
 for focused failure/recovery commands.
 
 ## Running focused specs

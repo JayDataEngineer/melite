@@ -112,7 +112,7 @@ program copy (without it, `ctx.loader`/`ctx.interval` fail to
 typecheck). The `--check` gate asserts version parity (VIOLATION
 on drift) and reports a path split as a NOTE citing this section.
 
-## Homolog conformance (docs/dsh-homolog/cordis-tutorial/05+06)
+## Homolog conformance (dev_docs/dsh-homolog/cordis-tutorial/05+06)
 
 Entry shape mirrors the homolog: stable `id` on every entry (the
 loader diffs modification vs remove+add by id), platform `name`
@@ -144,7 +144,7 @@ separately).
 Provenance: same harness commit `141eb6f` (dsh-0.1.0-rc.8 tree,
 `packages/host/webserver`, version 0.1.0-rc.8). Consumed as the
 gateway's transport rim — the WEBSERVER STROKE
-(docs/patterns/cordis-core.md): the plugin owns
+(dev_docs/patterns/cordis-core.md): the plugin owns
 createServer/listen/close+closeAllConnections/upgraded-socket
 teardown/disposal; the rim (apps/gateway/src/main.ts) owns only the
 fallback seat (the dispatch loop) and the two upgrade routes.
@@ -170,7 +170,7 @@ is per-host build output, never committed).
 
 ## dsh-tools (evaluated 2026-09-08, NOT vendored — verdict with receipts)
 
-The import stroke (docs/design/import-dsh-wheels-2026-09-08.md,
+The import stroke (dev_docs/design/import-dsh-wheels-2026-09-08.md,
 LANDING RECORD) evaluated every `packages/core/tools/src/*.ts` file
 at harness `141eb6f` for the webserver path and DECLINED the member:
 each file peer-needs absent dsh packages (dsh-llm/dsh-session at

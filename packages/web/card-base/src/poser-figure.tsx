@@ -1,7 +1,7 @@
 /**
  * poser-figure.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the live
  * follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING — they
- * are supposed to CHANGE THE [REDACTED 2026-11-05] BODY"). The figure is not a
+ * are supposed to CHANGE THE BODY"). The figure is not a
  * static portrait: it is SHAPED BY THE CARD'S LIVE PARAMS — the 11
  * identity coeffs and the non-zero local_changes ride the SAME
  * shared bind-mesh module the body studios use

@@ -62,7 +62,7 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
     // path byte-for-byte. Runs stay single-engine today: the
     // single-stage gateway constraint means one run names one
     // engine; mixed-engine grouping arrives with the MCP executor
-    // (docs/design/engine-generics-mcp.md).
+    // (dev_docs/design/engine-generics-mcp.md).
     const enginesSeat: unknown = ctx.get("engines");
     let seatExecutor: EngineExecutor | null = null;
     if (

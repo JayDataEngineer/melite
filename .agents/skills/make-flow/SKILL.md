@@ -76,7 +76,7 @@ flows/<name>/
 The `description` in tool.json is where agents learn the drive model:
 stages are AGENT-DRIVEN card chains through the queue door
 (`{model: ...}`) — there is no single-shot yaml door
-(docs/queue/flows.md).
+(dev_docs/queue/flows.md).
 
 ## 3. The gates
 

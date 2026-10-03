@@ -14,7 +14,7 @@ HARDCODED-EXPECTATION: asserts vs literal bytes/shapes in the file, no py needed
 
 | suite | lines | boot shape | gateway import (top/lazy/none) | py-legs summary | ts-legs summary | goldens? | suggested verdict |
 |---|---|---|---|---|---|---|---|
-| test_api_doc_parity.py | 288 | none (file reads + node gen script) | none | none — reads routes.ts/docs/spec text only | all legs TS-only: route-table/docs/spec agreement + `gen-api-docs.ts --check` | none | CONVERT-TS-ONLY — already TS-only, no action |
+| test_api_doc_parity.py | 288 | none (file reads + node gen script) | none | none — reads routes.ts/dev_docs/spec text only | all legs TS-only: route-table/dev_docs/spec agreement + `gen-api-docs.ts --check` | none | CONVERT-TS-ONLY — already TS-only, no action |
 | test_channel_resolution.py | 131 | none (in-process) | top (`import gateway`, fatal) | all legs py: `resolve_request` channel errors in-process | none | none | CONVERT-TS-ONLY — re-express channel refusals via TS boot doors |
 | test_doc_truth.py | 254 | in-process py (TestClient, no server) | top (`import gateway`, fatal) | all legs py: source-text needles, `boot_sweep`/`boot_resurrect` in-process | doc-shape reads (md files) are impl-agnostic | none | CONVERT-TS-ONLY — swap py source needles for TS source needles |
 | test_engine_outputs.py | 208 | none (in-process stub engines) | lazy (inside fns) | stub-engine harness driven through py gateway objects; literal path asserts | none (literals are HARDCODED, reusable) | none | CONVERT-TS-ONLY — drive stub engines via node driver or TS boot |

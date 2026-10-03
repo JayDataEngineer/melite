@@ -32,7 +32,7 @@
  *
  * Not a lane tool: it installs INTO a profile directory. Which lanes
  * get the real install, and which keep the dev symlink, is the lane
- * topology's call (docs/LANE_TOPOLOGY.md).
+ * topology's call (dev_docs/LANE_TOPOLOGY.md).
  */
 import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'

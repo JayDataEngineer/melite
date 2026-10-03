@@ -1,7 +1,7 @@
 /**
  * morphs.ts — THE POSER MORPH VOCABULARY (stroke 90, 2026-09-17:
- * the anny form card keeps every studio feature — the "[REDACTED 2026-11-05] ton of
- * sliders" stage rides the served vocabulary, never a handroll).
+ * the anny form card keeps every studio feature — the hundreds of
+ * sliders stage rides the served vocabulary, never a handroll).
  *
  * The membership source is the DOOR PIN
  * (comfyui-cordis/data/poser-identity-space-anny.json — the live

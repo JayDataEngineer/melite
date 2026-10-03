@@ -3,7 +3,7 @@
  * bump-release-version.mjs — set every Melite workspace package's
  * `version` to one release number.
  *
- * THE LAW (docs/RELEASES.md step 2): a release is a proven commit, and
+ * THE LAW (dev_docs/RELEASES.md step 2): a release is a proven commit, and
  * the packages a lane installs are named by their version. The version
  * inside the manifests is the number the packed artifact carries
  * (scripts/pack-real-install.mjs packs each package as

@@ -284,7 +284,7 @@ export interface CardDefinition {
     timeline?: boolean
   }
   /** Card-declared modifier kinds (the MODs generalization, stroke
-   *  63 — docs/design/mods-contracts.md CONTRACT A): action kinds
+   *  63 — dev_docs/design/mods-contracts.md CONTRACT A): action kinds
    *  the CARD owns (MASK's mask sources), served through the ONE
    *  features.modifiers channel beside the family-DECL pack kinds.
    *  fields/kindFields are the served spec rows (the JSON wire

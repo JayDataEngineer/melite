@@ -198,3 +198,6 @@ tmp/*
 !tmp/oracle-death-import-trace.md
 !tmp/oracle-death-wall-inventory.md
 data/runtime/real-install-tarballs/
+
+# developer-local material (audits, design docs, runbooks) — never shipped
+/dev_docs/

@@ -3,7 +3,7 @@
 # The standalone gateway service was deleted with the gateway kill. There is
 # no apps/gateway entry point and no gateway port owned by this repository.
 # The current operator service shape is documented in
-# docs/deployment/production.md and is a DSH web/headless/SDK profile.
+# dev_docs/deployment/production.md and is a DSH web/headless/SDK profile.
 
 [Unit]
 Description=RETIRED inference.cpp gateway placeholder

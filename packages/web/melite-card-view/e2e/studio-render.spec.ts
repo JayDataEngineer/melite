@@ -1,7 +1,7 @@
 /**
  * E2E: the h3-timeline STUDIO in real Chromium — the browser-plane
  * wall born from the 2026-09-12 operator report ("it renders like a
- * [REDACTED 2026-11-05] form"). Root cause then: the lane host booted 14:29 UTC,
+ * plain form"). Root cause then: the lane host booted 14:29 UTC,
  * the studio bundles rebuilt 16:10 — the browser's boot graph never
  * carried @melite/video-h3-timeline, the cards.stage.view slot went
  * unclaimed, and the bench's zoom fell back to the generic card. No
@@ -193,7 +193,7 @@ test('the studio layout: full-page modal, params left, fitted preview right, tim
 })
 
 // ── THE ADD-DOOR REAL-CARD LAW (the operator's hour-7: "When I click
-// add card, and add h3 timeline. It shows me a [REDACTED 2026-11-05] form card and
+// add card, and add h3 timeline. It shows me a placeholder form card and
 // not the real card"), as HOUR-24 reshaped the door: "It should just
 // add the card and go into the drilldown view" — the picker's pick IS
 // the add, the preadd form screen is GONE, and the fresh row's drill

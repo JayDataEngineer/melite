@@ -64,4 +64,4 @@ pnpm run lint
 ```
 
 The complete command and prerequisite table is in
-[`../../docs/testing/index.md`](../../docs/testing/index.md).
+[`../../dev_docs/testing/index.md`](../../dev_docs/testing/index.md).

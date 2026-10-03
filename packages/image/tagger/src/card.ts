@@ -129,7 +129,7 @@ export function apply(ctx: Context): void {
     id: 'tagger',
     // stage-row id the compose emits (purge S-decls verdict: the
     // retired row carried "" — engine truth wins, recorded in
-    // docs/design/python-purge-2026-09-08.md).
+    // dev_docs/design/python-purge-2026-09-08.md).
     skeleton: 'tagger',
     // the four boarded families (derived — the DECL ids are the
     // one spelling; RULE 5).

@@ -1,6 +1,6 @@
 """compose/ — the audio-cpp plugin's translation service.
 
-The flow-typed-edges contract (docs/queue/flow-typed-edges.md):
+The flow-typed-edges contract (dev_docs/queue/flow-typed-edges.md):
 this engine produces audio. Flows that omit `outputs` on a stage
 using this engine get the default Kind.audio output named
 "default"; the Flow validator type-checks edges at construction.

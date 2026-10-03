@@ -1,5 +1,5 @@
 // extraKeys.ts — THE EXTRA-BAG CONTRACT (2026-10-10, the operator's
-// law: "the contracts should be so [REDACTED 2026-11-05] deep that it is
+// law: the contracts should be so deep that it is
 // literally impossible to speak two vocabularies").
 //
 // THE CRIME THIS FILE KILLS: every face read `meta.extra.<key>` by

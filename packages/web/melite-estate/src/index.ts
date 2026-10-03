@@ -36,7 +36,7 @@ import comfyuiWiring from "@melite/comfyui-cordis/comfyui-wiring";
 // (one registry every engine provider registers into), then the
 // ComfyUI adapter (engine id 'comfyui' — merged-submit law inside;
 // the runs lane resolves through the seat). MCP engines register
-// as 'mcp:<server>' rows next (docs/design/engine-generics-mcp.md).
+// as 'mcp:<server>' rows next (dev_docs/design/engine-generics-mcp.md).
 import enginesContract from "@melite/engine-contract";
 import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // Stroke 54: the MCP lane. The dsh-mcp-client row (the official
@@ -105,8 +105,8 @@ import provisioningComposition from "./provisioning.ts";
  *  probe boots mount it themselves. The queue takes no row
  *  config: its state root is MELITE_STATE_ROOT else <cwd>/data/runs. */
 
-// (2026-09-21, the operator's boundary — VERBATIM: "STOP [REDACTED 2026-11-05] WITH
-// THE DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
+// (2026-09-21, the operator's boundary — paraphrased: STOP MODIFYING THE
+// DEFAULT DSH SKILL SYSTEM. WHEN I TELL YOU TO REACH PAST TOOLS,
 // AND INJECT INTO DSH SKILLS? WHEN?" — never.) The melite surface is
 // TOOLS ONLY: melite_discover / melite_load / melite_skill_read over the
 // estate's own /v1/skills door. DSH core's skill seat — its session

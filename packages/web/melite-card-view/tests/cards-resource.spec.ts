@@ -1,5 +1,5 @@
 // cards-resource.spec.ts — THE PROVIDER STREAM's own laws (2026-09-12,
-// live co-presence: "fix the [REDACTED 2026-11-05] gaps"). The bench resource is an
+// live co-presence: "fix the gaps"). The bench resource is an
 // AsyncIterable: the initial snapshot frame, then a fresh frame on
 // DOC CHANGE — rev drift (an out-of-band author write lands in every
 // OPEN consumer with no view-level watchers) or run-face movement at

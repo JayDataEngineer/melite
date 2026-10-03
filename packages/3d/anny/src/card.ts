@@ -16,7 +16,7 @@
 //
 // STROKE 90 (the keep-all-features order, 2026-09-17): the studio's
 // sculpt stages CONVERT, they don't die — the 254 local-change
-// morphs ("a [REDACTED 2026-11-05] ton of sliders") ride the same pin law as the 11
+// morphs (hundreds of sliders) ride the same pin law as the 11
 // (kit morphs.ts, door-pinned: labels/range/defaults all 0; compose
 // ships only NON-ZERO entries — absent = the engine's own 0), and
 // the native figure viewport (the /poser shaped bind mesh — NEVER

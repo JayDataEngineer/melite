@@ -1,6 +1,6 @@
 /**
  * construction-law.spec.tsx — THE CONSTRUCTION LAW, pinned (operator,
- * 2026-09-12: "img-to-mesh has a [REDACTED 2026-11-05] input component. you are not
+ * 2026-09-12: "img-to-mesh has a broken input component. you are not
  * using it around. you are hardcoding.").
  *
  * The law: an emitted image/file input constructs THE ONE SQUARE

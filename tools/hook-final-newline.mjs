@@ -8,7 +8,7 @@ const TEXTY = /\.(ts|tsx|mjs|cjs|js|jsx|json|yml|yaml|md|sh|css|html|svg|txt)$/;
 
 // GENERATED OUTPUT IS NOT SOURCE (2026-10-10, the li-u receipt).
 // Five packages compile to lib/ (their main/exports point there and
-// the running estate loads them — docs/deployment/build.md owns that
+// the running estate loads them — dev_docs/deployment/build.md owns that
 // law). tsc emits no trailing newline, so staging a rebuild tripped
 // this hook on nineteen generated files and the commit could not
 // land — an editor-side convention applied to a build artifact. The

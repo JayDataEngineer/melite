@@ -1,6 +1,6 @@
 // extra-vocabulary.spec.ts — THE HARVEST PIN (2026-10-10, the
-// operator's law: "the contracts should be so [REDACTED 2026-11-05] deep that it
-// is literally impossible to speak two vocabularies").
+// operator's law: the contracts should be so deep that it
+// is literally impossible to speak two vocabularies).
 //
 // Wall 1 (compile): every declaration writes its bag through
 // bag() — tsc refuses an unknown key at the literal (ts2353), and

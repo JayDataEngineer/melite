@@ -1,6 +1,6 @@
 /**
  * VideoTimelineStudio — tenant #4, the timeline card's wide authoring
- * surface (docs/design/video-timeline-card.md §3 D3 + §7 S5 + §10).
+ * surface (dev_docs/design/video-timeline-card.md §3 D3 + §7 S5 + §10).
  *
  * WHAT IT IS: the DOCUMENT, editable — with the THREE-LAYER control
  * system usable (2026-08-15 rework — "the card [REDACTED 2026-11-05], it is missing 95%
@@ -48,7 +48,7 @@
  * the bar is the interaction model, and this tenant passes its own
  * lanes/labels/packed mode.
  *
- * E1 (the pattern, docs/design/card-studio-pattern.md §3): a studio is a
+ * E1 (the pattern, dev_docs/design/card-studio-pattern.md §3): a studio is a
  * param editor. The registry's `writes` set (cardStudios.ts) is the
  * DECLARED surface — the document keys + every Layer A doc key the run
  * panel owns; the E4 contract test drives real gestures and asserts

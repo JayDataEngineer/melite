@@ -1,5 +1,5 @@
 // craft-engine.ts — the craft loop engine (stroke 55, plan §2.3:
-// docs/design/engine-generics-mcp.md). One stage = ONE LOOP:
+// dev_docs/design/engine-generics-mcp.md). One stage = ONE LOOP:
 // act (a nested engine command through the engines seat) →
 // capture (the act's artifacts land in the run dir) → critique
 // (a named image-capable model route, the artifact attached) →

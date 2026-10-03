@@ -4,7 +4,7 @@
   "kind": "pipeline",
   "model": "non-humanoid-flow",
   "stage_title": "Non-Humanoid Flow",
-  "description": "The creature/prop pipeline: concept image -> TRELLIS mesh -> CleanMesh QEM decimation -> optional anyCreature rig -> 8 review views. Composes the image and 3d cards internally. These lanes are AGENT-DRIVEN card chains (2026-09-04 flows rework): drive each stage card through the queue door ({model: ...}); there is no single-shot yaml door anymore (docs/queue/flows.md).",
+  "description": "The creature/prop pipeline: concept image -> TRELLIS mesh -> CleanMesh QEM decimation -> optional anyCreature rig -> 8 review views. Composes the image and 3d cards internally. These lanes are AGENT-DRIVEN card chains (2026-09-04 flows rework): drive each stage card through the queue door ({model: ...}); there is no single-shot yaml door anymore (dev_docs/queue/flows.md).",
   "params_schema": {
     "type": "object",
     "properties": {

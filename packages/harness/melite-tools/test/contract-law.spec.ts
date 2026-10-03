@@ -1,6 +1,6 @@
 // contract-law.spec.ts — THE ESTATE CONTRACT LAWS (operator order
 // 2026-10-10: "add more testing around contracts to ensure they
-// are REAL DEEP ones not little [REDACTED 2026-11-05] ones").
+// are REAL DEEP ones, not shallow ones").
 //
 // WHAT MAKES THESE DEEP: they are not pins on one card's shape —
 // they hold EVERY registered card × EVERY boarded family × EVERY

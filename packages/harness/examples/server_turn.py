@@ -14,7 +14,7 @@ Then, with a credential in the environment:
 cwd defaults to the repo: the agent reads the estate laws
 (instruction discovery). No skill surface rides the mount — the
 estate's tools are the provisioner bundle
-(docs/deployment/dsh-profiles.md).
+(dev_docs/deployment/dsh-profiles.md).
 """
 
 from __future__ import annotations

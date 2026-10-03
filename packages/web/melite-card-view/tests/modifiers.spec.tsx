@@ -274,7 +274,7 @@ test('removing a macro-stamped row commits the plain bag — no guard needed, on
   expect(onEdit).toHaveBeenCalledWith('loras', [{ id: 'krea2_darkbrush', strength: 0.5 }])
 })
 
-// ── STROKE 95: THE EMBEDDED PAINT CANVAS (docs/design/paint-leaf-canvas.md)
+// ── STROKE 95: THE EMBEDDED PAINT CANVAS (dev_docs/design/paint-leaf-canvas.md)
 //    The `mask_paint` kind declares leaf_face; the host (CardsTab)
 //    delivers the brush canvas — EMBEDDED at the top of the leaf
 //    popup (the visual preview, never a Paint button + nested

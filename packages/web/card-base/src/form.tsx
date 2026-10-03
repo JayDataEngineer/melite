@@ -313,7 +313,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
       : []
     // THE CAP IS DECLARED, NEVER INVENTED (2026-10-11, the
     // operator's wall: "composing cards isn't actually schema
-    // based — you just hardcode [REDACTED 2026-11-05]"): the served max_stack is
+    // based — you just hardcode it"): the served max_stack is
     // the boarded lane's own (the serve narrows the roomiest card
     // cap to the family's lane_inputs.max_images); an UNDECLARED cap
     // is a card bug the face renders honestly (no add-cell limit,
@@ -452,7 +452,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
       : null,
     shownGroups.map((g) => {
       // THE GRID IS THE LAW (2026-09-21, the operator's catch: "WHY
-      // THE [REDACTED 2026-11-05] IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"):
+      // WHY IS WIDTH AND HEIGHT ON DIFFERENT VERTICAL ROWS?"):
       // the form-card grammar — pairs on a row — is the SYSTEM
       // default at the CARD level, never per-card decoration a card
       // can forget (h3's General face stacked because the grid was

@@ -1,4 +1,4 @@
-// modifierSubcards — modifiers as dependent mini-cards (docs/design/modifier-subcards.md).
+// modifierSubcards — modifiers as dependent mini-cards (dev_docs/design/modifier-subcards.md).
 //
 // THE STORAGE IS THE WIRE (2026-08-07, recon revision): params.loras[] /
 // params.controlnets[] are already the wire shape (executeGeneration spreads

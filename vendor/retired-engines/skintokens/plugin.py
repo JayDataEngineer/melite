@@ -7,7 +7,7 @@ the SkinTokens/TokenRig GGML port: static mesh → generated skeleton
 CPU lane never contends with the ComfyUI GPU — a second bloodstream
 like audio).
 
-The station it fills (docs/design/auto-rig-skintokens.md): anny's
+The station it fills (dev_docs/design/auto-rig-skintokens.md): anny's
 baked body / a trellis lift is a STATUE; this is the
 statue → animatable-character leg of the chain.
 """

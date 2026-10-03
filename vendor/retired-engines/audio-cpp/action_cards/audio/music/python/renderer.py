@@ -16,7 +16,7 @@ TWO argv shapes, one home:
 
 CLI shape: the flags mirror the GenerationRequest(task, family,
 model, ...) surface of the upstream binding layer (Delusion's
-task.py — see docs/research/trellis2-native-method-case-study.md
+task.py — see dev_docs/research/trellis2-native-method-case-study.md
 §"audio.cpp node design, verified 2026-09-03"). The exact flag
 spelling is provisional until the binding lane pins it; a wrong
 flag surfaces as the binary's own loud stderr in the sidecar

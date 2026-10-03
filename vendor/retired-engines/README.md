@@ -22,5 +22,5 @@ change this category needs (python/plugins.py `_iter_plugin_dirs` is depth-2
 today). Until it lands, this README is the only resident — which the scan
 ignores harmlessly.
 
-Design record: docs/plans/cpp-engines.md (the sketch — anyCreature forge
+Design record: dev_docs/plans/cpp-engines.md (the sketch — anyCreature forge
 card, kimodo motion card, autoremesher quad-remesh card, the chain).

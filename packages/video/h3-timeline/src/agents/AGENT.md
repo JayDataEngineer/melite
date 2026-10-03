@@ -103,4 +103,4 @@ follow the sanctioned recovery in the runbook.
 The example shows structure, not a substitute for the loaded schema. For the
 full current grid, audio, and film-tail rules, read
 `skills/directing/SKILL.md`, `../timelineContract.ts`, and
-[`docs/cards/h3-timeline.md`](../../../../../docs/cards/h3-timeline.md).
+[`dev_docs/cards/h3-timeline.md`](../../../../../dev_docs/cards/h3-timeline.md).

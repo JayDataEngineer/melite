@@ -473,7 +473,7 @@ describe('live door arms', () => {
 
   test('specBody serves card-declared mod kinds VERBATIM on the one modifiers channel (stroke 63)', async () => {
     const svc = theService()
-    // CONTRACT A (docs/design/mods-contracts.md): the card's own
+    // CONTRACT A (dev_docs/design/mods-contracts.md): the card's own
     // action kinds ride features.modifiers beside pack kinds — no
     // family DECL, no mod_schemas envelope; fields/kindFields/
     // options ARE the schema (the entry is the schema).

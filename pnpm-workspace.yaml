@@ -11,7 +11,7 @@ minimumReleaseAge: 0
 ## dsh plugins, not infrastructure — so it joins as a workspace MEMBER
 ## like every other plugin (core ships py/ + the contract; nothing else).
 ## The generic UI kit lives at web/ (THE WEB REGISTRY ruling, 2026-09-03,
-## docs/design/web-registry.md §3): first-party design system ABOVE
+## dev_docs/design/web-registry.md §3): first-party design system ABOVE
 ## pathways — the editor and every engine plugin consume it; no consumer
 ## hosts shared infrastructure in its subtree.
 packages:

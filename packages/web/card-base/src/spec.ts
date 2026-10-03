@@ -1170,7 +1170,7 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
 
 
 // ── THE CLIENT'S COMPOSE GATE (2026-09-29, the operator's law: "IF
-//    THE CARD IS A CONTRACT/SCHEMA, HOW THE [REDACTED 2026-11-05] DOES THE SYSTEM
+//    THE CARD IS A CONTRACT/SCHEMA, HOW DOES THE SYSTEM
 //    ALLOW CONSTRUCTING BAD CONTRACTS? IT CAN ALL BE VALIDATED
 //    BEFOREHAND, IN THE CODE") ───────────────────────────────────
 // The estate door has always held this law (cardsVariant.ts:

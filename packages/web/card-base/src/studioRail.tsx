@@ -1,6 +1,6 @@
 /**
  * StudioRail — the shell-provided TOOLS slot in the studio's left rail
- * (spec docs/design/card-studio-pattern.md §5 + §7.10).
+ * (spec dev_docs/design/card-studio-pattern.md §5 + §7.10).
  *
  * WHY A PORTAL: vertical space is the scarce axis (§7.9 — human figures),
  * so a tenant's tool buttons (Skeleton / Refine pose / Export / …) must

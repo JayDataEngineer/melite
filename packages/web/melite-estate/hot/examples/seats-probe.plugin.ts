@@ -12,7 +12,7 @@
 // '\[hot-seats-probe\] pass'). The "dead seat" was the door's error
 // map rendering refusals as 502 (fixed in melite-tools doors.ts —
 // failEstate maps the code's class; see THE FALSE-DEATH LAW in
-// docs/CONFORMANCE_LEDGER.md).
+// dev_docs/CONFORMANCE_LEDGER.md).
 //
 // THE MOUNT SHAPES (hard-won; the two wrong ones crash-looped the
 // lane at boot — Restart=always turned each into ~900 log lines of

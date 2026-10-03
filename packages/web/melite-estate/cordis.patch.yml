@@ -7,7 +7,7 @@
 # composition mechanism (the seats disclose/load/runs/skills/queue/
 # manage register in-process on the estate fiber; the browser HTTP
 # doors live in the doors rows of the same composition — see
-# docs/plans/estate-collapse-2026-09-10.md; the second-process estate
+# dev_docs/plans/estate-collapse-2026-09-10.md; the second-process estate
 # and its DSH→degenerate-copy proxy died with the gateway).
 - insert:
     - id: melite-estate

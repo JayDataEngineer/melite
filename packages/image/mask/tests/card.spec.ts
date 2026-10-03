@@ -62,7 +62,7 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.deepEqual([...def.admits ?? []], ["sam3", "sam2", "draw"]);
   });
 
-  it("the leaf faces: the IMAGE PREVIEW canvas on BOTH detector kinds (the unified card, 2026-10-08: \"THE SAME [REDACTED 2026-11-05] CARD… THERE NEEDS TO BE AN IMAGE PREVIEW IN BOTH\"), paint on draw", () => {
+  it("the leaf faces: the IMAGE PREVIEW canvas on BOTH detector kinds (the unified card, 2026-10-08: THE SAME CARD… THERE NEEDS TO BE AN IMAGE PREVIEW IN BOTH), paint on draw", () => {
     const mods = def.mods ?? [];
     assert.equal(mods.find((k) => k.kind === "sam3")!.leaf_face, "bbox-canvas");
     assert.equal(mods.find((k) => k.kind === "sam2")!.leaf_face, "bbox-canvas",

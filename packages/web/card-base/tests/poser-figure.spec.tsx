@@ -1,7 +1,7 @@
 /**
  * poser-figure.spec.tsx — THE NATIVE FIGURE STAGE (stroke 90 + the
  * live follow-up, 2026-09-17: "these knobs do LITERALLY NOTHING —
- * they are supposed to CHANGE THE [REDACTED 2026-11-05] BODY"). The figure rides
+ * they are supposed to CHANGE THE BODY"). The figure rides
  * the SHARED bind-mesh module (@melite/formats/poserSkin — mocked
  * here; its own contract lives in web-kit/formats/test), and it
  * RESHAPES from the card's LIVE identity coeffs + local changes:

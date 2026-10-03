@@ -3,7 +3,7 @@
 build/
 build-dbg/
 .git/
-docs/
+/dev_docs/
 output/
 *.log
 __pycache__/

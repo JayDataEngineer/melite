@@ -1,6 +1,6 @@
 """compose/ — the anycreature plugin's translation service.
 
-The flow-typed-edges contract (docs/queue/flow-typed-edges.md):
+The flow-typed-edges contract (dev_docs/queue/flow-typed-edges.md):
 this engine produces a glb mesh. Flows that omit `outputs` on a
 stage using this engine get the default Kind.mesh output named
 "default"; the Flow validator type-checks edges at construction.

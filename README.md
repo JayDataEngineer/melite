@@ -20,8 +20,8 @@ client are retired; they are not alternate launch paths.
   `vendor/comfyui_extensions/`. Foreign packs are declared and installed by
   the provisioning path.
 
-The canonical documentation map is [`docs/README.md`](docs/README.md). Start
-with [`AGENTS.md`](AGENTS.md) before changing the harness or composing media.
+The agent and developer contract is [`AGENTS.md`](AGENTS.md). Read it before
+changing the harness or composing media.
 
 ## Quick start
 
@@ -53,9 +53,7 @@ Check the configured ComfyUI endpoint and declarations:
 
 `inference.config.json` is the estate default configuration. The engine reads
 its live endpoint from `COMFYUI_URL` or the ComfyUI endpoint file; the current
-repository default is `http://127.0.0.1:8188`. See
-[`docs/comfyui/setup.md`](docs/comfyui/setup.md) for BYO/managed behavior and
-configuration precedence.
+repository default is `http://127.0.0.1:8188`.
 
 Boot the studio:
 
@@ -95,9 +93,7 @@ MELITE_HEADLESS=1 MELITE_STATE_ROOT="$PWD" \
 
 Headless sessions may use `melite_flow` to submit a card or named flow and
 `run_status` to monitor it. They still cross the same queue and draft-backed
-registration path. The sanctioned 3088 procedure is
-[`docs/RUNBOOK-3088-AGENT.md`](docs/RUNBOOK-3088-AGENT.md); the smaller setup
-recipe is [`docs/HEADLESS-CHAT-TESTING.md`](docs/HEADLESS-CHAT-TESTING.md).
+registration path.
 
 ## Testing
 
@@ -117,7 +113,7 @@ pnpm run test:web
 `test:coverage` is the CI coverage command. The e2e tier is mixed: individual
 suites gate on their own environment, engine, lane, or `FILM_E2E` conditions;
 it is not accurate to describe the whole tier as key-gated. See
-[`tests/README.md`](tests/README.md) and [`docs/testing/index.md`](docs/testing/index.md).
+[`tests/README.md`](tests/README.md).
 
 Architecture lint is available as:
 
@@ -142,17 +138,18 @@ checkout is available.
 | `vendor/comfyui_extensions/` | first-party Layer C packs |
 | `vendor/cordis_plugins/` | pinned Cordis platform packages |
 | `references/` | read-only study material; the DSH reference checkout is external |
-| `docs/` | current documentation plus clearly labeled historical records |
+| `dev_docs/` | developer-local material (untracked): working plan, ledger, audits, runbooks |
 
 ## Documentation rules
 
-- Current docs describe the DSH/Cordis implementation, not a retired gateway.
+- Current documentation describes the DSH/Cordis implementation, not a retired
+  gateway.
 - Historical plans and audits are evidence, not setup instructions.
 - The executable declaration or contract owns a list, port, profile, or tool
   vocabulary; prose links to it instead of copying it.
-- Update `docs/README.md`, the relevant current page, and a recorded snapshot
-  when a user-visible contract changes.
+- Update the relevant README and a recorded snapshot when a user-visible
+  contract changes.
 - Never commit credentials, signed URLs, or machine-specific state roots.
 
-Read [`docs/index.md`](docs/index.md) for the complete documentation map and
-[`docs/ROADMAP.md`](docs/ROADMAP.md) for work that is still owed.
+The working plan and the forward-looking work index live in `dev_docs/`
+(developer-local, untracked).

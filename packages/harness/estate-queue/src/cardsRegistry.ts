@@ -14,7 +14,7 @@
 // plane): the card-run derivation resolve_card_model +
 // submit's phase-2 arm + the rim wrap (card_hooks.compose), with
 // the survey's verdict
-// (docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
+// (dev_docs/design/card-lane-port-survey-2026-09-08.md §0 + §5): import
 // @melite/comfyui IN-PROCESS — no template SSOT, no subprocess, no
 // class-tree port. The graph truth already lives in TS
 // (the card packages — stable);

@@ -15,7 +15,7 @@ temperature/max-tokens) ride the CLI's own defaults — a card knob
 appears only when an operator asks to steer it (no speculative
 surface). The skin arm (existing skeleton → weights) is the
 transfer_rig upgrade path, deliberately NOT on this card (see
-docs/design/auto-rig-skintensors.md).
+dev_docs/design/auto-rig-skintensors.md).
 """
 
 from __future__ import annotations

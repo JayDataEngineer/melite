@@ -1,5 +1,5 @@
 // mcp-engine.ts — the MCP engine provider (stroke 54, the
-// engine-generics plan §3 step 5: docs/design/engine-generics-mcp.md).
+// engine-generics plan §3 step 5: dev_docs/design/engine-generics-mcp.md).
 // One executor per configured engine id: `mcp:<server>` executes
 // stage rows as TOOL CALLS on the host ToolRuntime — the same
 // `ctx.tools.execute()` programmatic channel the agent loop rides

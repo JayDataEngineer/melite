@@ -7,7 +7,7 @@
 #
 # This is a BASIC card: prompt + duration + seed + the family knob
 # the renderer reads as data. The audio_cpp binding layer is
-# upstream (per docs/research/trellis2-native-method-case-study.md
+# upstream (per dev_docs/research/trellis2-native-method-case-study.md
 # §"audio.cpp node design, verified 2026-09-03": Delusion's
 # task.py + runtime.py is the binding; we ship the card surface and
 # let the lane's compose arm call audiocpp_cli with the per-family

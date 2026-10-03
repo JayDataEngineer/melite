@@ -1,6 +1,6 @@
-// Tier 2.5 — the emit kit (docs/design/one-contract-compose.md §2;
+// Tier 2.5 — the emit kit (dev_docs/design/one-contract-compose.md §2;
 // operator order 2026-09-07:
-// "MOST OF THIS [REDACTED 2026-11-05] JUST RIDES DEFAULTS AND A FEW COMFYUI NODES
+// "MOST OF THIS LANE JUST RIDES DEFAULTS AND A FEW COMFYUI NODES
 // SLAPPED TOGETHER").
 //
 // The admission contract landed (card-decls carries knobs+admits+

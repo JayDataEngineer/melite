@@ -508,7 +508,7 @@ function specModifiers(
     }))
     out.push(entry)
   }
-  // CARD-DECLARED KINDS (stroke 63 — docs/design/mods-contracts.md
+  // CARD-DECLARED KINDS (stroke 63 — dev_docs/design/mods-contracts.md
   // CONTRACT A): the card's own action kinds ride the SAME channel,
   // VERBATIM (fields/kindFields/options are the served rows — the
   // card IS the catalog; no mod_schemas envelope derives them, the

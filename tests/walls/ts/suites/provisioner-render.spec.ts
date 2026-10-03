@@ -72,7 +72,7 @@ function pnpmHealthy(): boolean {
 const PNPM_OK = pnpmHealthy();
 const gate = test.skipIf(!PNPM_OK);
 
-// BUNDLE PIN (docs/deployment/dsh-profiles.md — hermetic, plain `test`:
+// BUNDLE PIN (dev_docs/deployment/dsh-profiles.md — hermetic, plain `test`:
 // it scans the checked-in bundle, needs no pnpm, and stays green where
 // the render arms above self-skip). The HOST `skill-filesystem` row is
 // pinned OFF for every profile the provisioner bundle mounts —

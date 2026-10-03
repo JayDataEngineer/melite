@@ -1,7 +1,7 @@
 /**
  * mesh-view — THE 3D VIEWPORT for the media plane (the operator's
- * 2026-09-26 order: "the 3d [REDACTED 2026-11-05] needs to be hooked into the media
- * [REDACTED 2026-11-05], visual door"). A `.glb` artifact opens HERE, in the drilldown,
+ * 2026-09-26 order, paraphrased: 3d output is hooked into the media
+ * doors, visually. A `.glb` artifact opens HERE, in the drilldown,
  * orbitable — not as a download link with a sidebar hand-off.
  *
  * WHY IT LIVES IN THE GALLERY (and not as another viewer): a 3D run's

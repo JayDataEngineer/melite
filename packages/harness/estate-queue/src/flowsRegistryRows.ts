@@ -9,7 +9,7 @@ import { plainStage, initial, linkedStage, fromStage } from "./flowsData.ts";
 export const ANNY_HMR: RegistryFlow = {
   id: "anny-hmr",
   description:
-    "Pilot stroke 1 (docs/plans/anny-pilot.md §4): photo → Anny body GLB " +
+    "Pilot stroke 1 (dev_docs/plans/anny-pilot.md §4): photo → Anny body GLB " +
     "via the estimator pack (MultiHMR2 regression + loud single-person " +
     "lock) — the first SUB-ACTION verb's flow template; the anny card's " +
     "HMR chip runs this through the queue and hydrates body_glb from " +
@@ -41,7 +41,7 @@ export const ANNY_HMR: RegistryFlow = {
 export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
   id: "anny-hmr-commercial",
   description:
-    "The commercial photo→Anny chain (docs/design/commercial-estimator-chain.md): " +
+    "The commercial photo→Anny chain (dev_docs/design/commercial-estimator-chain.md): " +
     "SAM 3D Body → MHR → SOMA → anny — every link license-cleared for sale " +
     "(SAM License operator-accepted; the rest Apache 2.0). Emits a grounded " +
     "bind-pose body GLB + anny phenotype/local-change params.",
@@ -67,7 +67,7 @@ export const ANNY_HMR_COMMERCIAL: RegistryFlow = {
 export const ANNY_PARAMS: RegistryFlow = {
   id: "anny-params",
   description:
-    "Stroke 3 (docs/design/anny-evolution.md §2): preset params → grounded " +
+    "Stroke 3 (dev_docs/design/anny-evolution.md §2): preset params → grounded " +
     "Anny body GLB (authored 11-dim rows + verbatim estimated runs " +
     "re-instantiate bit-exact) — the preset-load verb's flow template; the " +
     "anny card's preset picker runs this through the queue and hydrates " +

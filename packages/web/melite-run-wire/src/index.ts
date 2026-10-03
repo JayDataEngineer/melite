@@ -8,7 +8,7 @@ import { RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage"
  * runs wire SSOT, 2026-09-12) and carried a DOCUMENTED DEVIATION —
  * it minted its own rpcIds and hand-wrote client-request envelopes,
  * which the api-gateway law reserves to the Connection. The H1
- * program (docs/CONFORMANCE_LEDGER.md) is now CLOSED: every
+ * program (dev_docs/CONFORMANCE_LEDGER.md) is now CLOSED: every
  * transport verb rides the mounted Typert namespaces in
  * melite-card-view (estate-remote.ts binds them; runs-policy.ts
  * carries the run verbs; the media/list verb lives in

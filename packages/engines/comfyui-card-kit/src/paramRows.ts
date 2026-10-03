@@ -1,5 +1,5 @@
 // paramRows.ts — THE SHARED ACTION PARAM SURFACES (the atom
-// vocabulary's declared-plane half: docs/design/atom-vocabulary-
+// vocabulary's declared-plane half: dev_docs/design/atom-vocabulary-
 // 2026-10-12.md's "declare once, compose everywhere", applied to
 // the write plane).
 //

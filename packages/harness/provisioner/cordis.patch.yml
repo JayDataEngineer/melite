@@ -33,7 +33,7 @@
 # owns the estate state. The runs/drafts/bench faces ride Typert
 # remotes where the estate bundle is mounted.
 #
-# PROFILE-SHAPE PIN (progressive disclosure — docs/deployment/
+# PROFILE-SHAPE PIN (progressive disclosure — dev_docs/deployment/
 # dsh-profiles.md): the HOST `skill-filesystem` row is pinned OFF for
 # every profile this bundle mounts. That row auto-discovers workspace
 # skills and ships their descriptions into the agent context unbidden —

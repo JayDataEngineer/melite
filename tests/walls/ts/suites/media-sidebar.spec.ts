@@ -176,7 +176,7 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['dead flows tab kind', 'kind: "flows"'],
     ['dead flows guide order', 'order: 52'],
     // THE TAG DEATH (operator order, 2026-09-20: "get rid of the
-    // [REDACTED 2026-11-05] FINAL FILM tag"): a tile's preview is its currency —
+    // FINAL FILM tag"): a tile's preview is its currency —
     // the status ribbon never ships again.
     ['dead FINAL FILM tag', 'FINAL FILM'],
   ]

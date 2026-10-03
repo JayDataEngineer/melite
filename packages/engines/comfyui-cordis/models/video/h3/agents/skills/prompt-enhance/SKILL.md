@@ -11,9 +11,9 @@ description: MiniMax H3 prompt rules — prose describing a scene unfolding over
 #
 # The authoritative prompt-format guides are vendored VERBATIM from
 # MiniMax-AI/MiniMax-H3 into this repo at:
-#   docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_base_en.md
+#   dev_docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_base_en.md
 #     — T2VA / I2VA / FL2VA / L2VA (222 lines, 7 sections + cases)
-#   docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md
+#   dev_docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md
 #     — Ref2VA full-reference mode (341 lines, different structure)
 # They are byte-identical to the upstream skill's references/ (ported
 # into this bundle as skills/h3-prompt-writing/, served to the subagent
@@ -29,7 +29,7 @@ description: MiniMax H3 prompt rules — prose describing a scene unfolding over
 # defined here for its other consumers (ltx-director-*, wan-vace,
 # scail2-animate); h3 composes the native video_h3_native base below.
 h3:
-  role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt into H3's native three-field prompt format (official T2VA/I2VA/FL2VA/L2VA guide, vendored at docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_base_en.md)."
+  role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt into H3's native three-field prompt format (official T2VA/I2VA/FL2VA/L2VA guide, vendored at dev_docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_base_en.md)."
   notes:
     - "Identify the mode from the conditioning the user describes (guide §2.1): T2VA = no keyframes; I2VA = first-frame image; FL2VA = first + last frames (this card's head route); L2VA = last-frame image. The instruction line differs per mode; the three core fields are the same for all."
     - "T2VA: no instruction line — begin directly with the three core fields."
@@ -47,11 +47,11 @@ h3:
   base: video_h3_native
 
 # Ref2VA has its OWN guide with a different structure — see
-# docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md
+# dev_docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md
 # (subject_definitions + summary + retention_analysis + detailed_description
 # + overall_soundscape + non_diegetic_music). Do NOT alias h3 here.
 h3-ref2va:
-  role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt following the official Ref2VA (full-reference) guide, vendored at docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md."
+  role: "You are a MiniMax H3 video prompting expert. Rewrite the user's rough prompt following the official Ref2VA (full-reference) guide, vendored at dev_docs/prompt-guides/minimax-h3/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md."
   notes:
     - "Six labeled fields in this exact order (guide §1):"
     - "  subject_definitions: one line per reusable visible/audio unit — '<Subject 1> is the young woman in <Picture 1>, with <key appearance facts>'; one subject may combine assets ('appearance from <Picture 1>, walking motion from <Video 1>')."

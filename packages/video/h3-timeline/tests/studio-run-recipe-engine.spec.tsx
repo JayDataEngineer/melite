@@ -207,8 +207,8 @@ describe("recipe (clock + route) — the document's identity", () => {
     serve()
     const { keys, doc } = engine({ fps: 30 })
     await screen.findByLabelText("Recipe")
-    // THE READOUT IS DEAD (operator 2026-09-21: "WHY DO I STIL SEE
-    // THIS [REDACTED 2026-11-05] SKIN?"): geometry owns ONE surface — the Width /
+    // THE READOUT IS DEAD (operator 2026-09-21: "WHY DO I STILL SEE
+    // THIS READOUT SKIN?"): geometry owns ONE surface — the Width /
     // Height injects. No derived text row ever renders.
     assert.ok(!document.body.textContent!.includes("doc-fps"))
     assert.equal(document.querySelector('[data-testid="tl-recipe-geom"]'), null)

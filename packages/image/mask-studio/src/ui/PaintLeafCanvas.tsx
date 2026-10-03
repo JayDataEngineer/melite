@@ -1,4 +1,4 @@
-// PaintLeafCanvas.tsx — THE PAINT LEAF FACE, EMBEDDED (docs/design/
+// PaintLeafCanvas.tsx — THE PAINT LEAF FACE, EMBEDDED (dev_docs/design/
 // paint-leaf-canvas.md, stroke 76; the stroke-95 embed rework — the
 // operator's design: the mod popup CARRIES the visual preview): the
 // brush canvas that renders INSIDE the mod leaf, never a nested
