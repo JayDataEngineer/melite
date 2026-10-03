@@ -3,8 +3,8 @@
 
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { DEFAULT_CONFIG, RUNTIME } from "./provision-shared.ts";
+import { isAbsolute, join, relative, sep } from "node:path";
+import { DEFAULT_CONFIG, REPO, RUNTIME } from "./provision-shared.ts";
 import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot } from "./provision-config.ts";
 import type { EndpointConfig } from "./provision-config.ts";
 
@@ -48,6 +48,21 @@ export function cmdPaths(cfg: EndpointConfig): void {
     lines.push("  # pack-declared categories (extra_model_folders)");
     for (const f of extras) lines.push("  " + f + ": " + folders[f]);
   }
+  // ComfyUI-Manager writes model downloads under
+  // folder_paths["download_model_base"][0][0] when that folder name
+  // is registered (manager glob/manager_server.py get_model_dir), and
+  // under its own models/ otherwise. The loader in core
+  // comfy/utils/extra_config.py registers one folder name per
+  // remaining key, so the `download_model_base: .` key registers the
+  // store itself — every Manager model install then lands inside the
+  // estate store the endpoint config binds (desktop receipt:
+  // sam_vit_b_01ec64 landed at the store's sams/ on the first queue
+  // attempt).
+  lines.push(
+    "download_model_base:",
+    "  base_path: " + bound.download_path,
+    "  download_model_base: .",
+  );
   writeFileSync(join(RUNTIME, "extra_model_paths.yaml"),
     lines.join("\n") + "\n");
   console.log("runtime layout + extra_model_paths.yaml → " + RUNTIME);
@@ -93,12 +108,38 @@ export const ENDPOINT_DERIVED: readonly string[] = ["url", "model_base_path",
   "model_download_path", "input_dir", "input_dir_container", "output_dir",
   "boot_cmd"];
 
+/**
+ * The writable form of a derived path for the TRACKED endpoint file:
+ * repo-relative stays relative, an absolute path under the repository
+ * is stored relative to the repo root, and a machine absolute outside
+ * the repository returns null — that value belongs to the untracked
+ * machine overlay (data/inference.local.json), never to a file a
+ * fresh clone shares (ledger li-portability).
+ *
+ * @param value the derived machine-resolved path
+ * @returns the tracked-file-safe form, or null when the overlay owns it
+ */
+export function endpointWritable(value: string,
+    repo: string = REPO): string | null {
+  const v = value.trim();
+  if (v === "") return v;
+  if (!isAbsolute(v)) return v;
+  const rel = relative(repo, v);
+  if (rel !== "" && !rel.startsWith("..") && !isAbsolute(rel)) {
+    return rel.split(sep).join("/");
+  }
+  return null;
+}
+
 export function syncEndpointFromRoot(cfg: EndpointConfig): void {
   // The endpoint's url, model_*, stream and boot_cmd keys are derived
   // from the root config (the endpoint file is a generated surface
   // for these fields). An explicit endpoint value still wins when
   // SET; unset inherits the root. boot_cmd's --port is rewritten
-  // from the resolved port (the port-drift gap).
+  // from the resolved port (the port-drift gap). Path values are
+  // written only in their tracked-file-safe form — a machine
+  // absolute outside the repo stays in the untracked overlay and is
+  // deliberately NOT written here.
   const root = loadRoot();
   const url = engineField(root, "url", cfg.url);
   const port = enginePort(cfg);
@@ -116,19 +157,30 @@ export function syncEndpointFromRoot(cfg: EndpointConfig): void {
     boot_cmd: boot,
   };
   const changed: string[] = [];
+  const skipped: string[] = [];
+  const next: Record<string, string> = {};
   for (const [k, v] of Object.entries(derived)) {
+    const writable = k === "input_dir_container" ? v : endpointWritable(v);
+    if (writable === null) {
+      skipped.push(k);
+      continue;
+    }
+    next[k] = writable;
     if (String((cfg as Record<string, unknown>)[k] ?? "").trim() !==
-        v.trim()) {
+        writable.trim()) {
       changed.push(k);
-      (cfg as Record<string, unknown>)[k] = v;
+      (cfg as Record<string, unknown>)[k] = writable;
     }
   }
   if (changed.length === 0) return;
   const onDisk = JSON.parse(readFileSync(DEFAULT_CONFIG, "utf8")) as
     Record<string, unknown>;
   for (const k of ENDPOINT_DERIVED) {
-    if (k in derived) onDisk[k] = derived[k];
+    if (k in next) onDisk[k] = next[k];
   }
   writeFileSync(DEFAULT_CONFIG, JSON.stringify(onDisk, null, 2) + "\n");
-  console.log("endpoint derived from root: " + changed.join(", "));
+  console.log("endpoint derived from root: " + changed.join(", ") +
+    (skipped.length > 0
+      ? " (machine-local, overlay-owned, not written: " + skipped.join(", ") + ")"
+      : ""));
 }
