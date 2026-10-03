@@ -51,7 +51,7 @@ import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // without inject" — failing every sync invisibly). Only the
 // instance name is ours (one row per server: blender, godot…).
 import * as mcpClientPlugin from "@deepseek-ai/dsh-mcp-client";
-import { type Config as McpClientConfig } from "@deepseek-ai/dsh-mcp-client";
+import { type Config as McpClientConfig, type StdioConfig } from "@deepseek-ai/dsh-mcp-client";
 import { mcpEngines } from "@melite/engine-mcp";
 // Stroke 55: the craft loop engine — the critic route resolves at
 // boot (first image-capable route; a blind lane seats no craft).
@@ -116,6 +116,70 @@ import provisioningComposition from "./provisioning.ts";
 // poll, the trace) is deleted; its "catalog follows the bench"
 // behavior belonged to a seat we were never given.
 
+// The blender stdio row's declared config. command is the ONE
+// deployment-varying choice (where the blender binary lives — an
+// operator install path, not repo state), so apply() overrides it
+// from the estate's config face (Config.blenderPath, settable in
+// cordis.yml). args/cwd stay repo-pinned literals: they name the
+// vendored Layer C tree itself, which moves with the checkout, not
+// with the deployment.
+const BLENDER_STDIO_DEFAULTS: StdioConfig = {
+  transport: "stdio",
+  serverName: "blender",
+  command: "/home/user/tools/blender-4.5.0-linux-x64/blender",
+  args: ["-b", "--python", "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py"],
+  env: {},
+  cwd: "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes",
+  toolCallTimeoutMs: 300000,
+  failOnStartupError: false,
+};
+
+// The MCP control lane: the blender stdio server (official
+// MCP protocol, idle-reaped at 1800s; the client owns
+// reconnect). failOnStartupError false — a slow/absent blender
+// never takes the lane down (a failed start then rides the
+// supervisor's reconnect loop AND the REJECTED witness above).
+const mcpBlenderRow = {
+  name: "mcp-client-blender",
+  inject: mcpClientPlugin.inject,
+  Config: mcpClientPlugin.Config,
+  // The bridge's own apply, witnessed: cordis buries per-fiber
+  // apply rejections (both 2026-09-15 postmortems), so the
+  // settled/rejected voice lives HERE — a rejection logs its
+  // cause chain (the bridge wraps firstAttemptError) before it
+  // vanishes, then rethrows to keep fiber semantics identical.
+  // A settled apply censuses the blender namespace once (the
+  // executor seat ≠ published tools — proven distinct today).
+  apply: (ctx: Context, config: unknown) => {
+    const p = (mcpClientPlugin.apply as (ctx: Context, config: McpClientConfig) => unknown)(
+      ctx,
+      config as McpClientConfig,
+    ) as unknown;
+    if (p === undefined || typeof (p as Promise<unknown>).then !== "function") return p;
+    return (p as Promise<unknown>).then(
+      (v: unknown) => {
+        const t = ctx.get("tools") as unknown as { get(name: string): unknown } | undefined;
+        const seen = ["mcp__blender__scene_info", "mcp__blender__render_shot"]
+          .map((n) => n + "=" + (t?.get(n) === undefined ? "absent" : "PRESENT"))
+          .join(" ");
+        console.log("[melite-estate] mcp-client-blender ready: " + seen);
+        return v;
+      },
+      (e: unknown) => {
+        const chain = (x: unknown, depth: number): string => {
+          if (depth > 2 || x === null || (typeof x !== "object" && typeof x !== "string")) return "";
+          const err = x as { message?: unknown; cause?: unknown };
+          const head = typeof x === "string" ? x : String(err.message ?? x);
+          return head + (err.cause === undefined ? "" : " | caused by: " + chain(err.cause, depth + 1));
+        };
+        console.log("[melite-estate] mcp-client-blender REJECTED: " + chain(e, 0).slice(0, 900));
+        throw e;
+      },
+    );
+  },
+  config: BLENDER_STDIO_DEFAULTS,
+} as unknown as Plugin;
+
 const rows: readonly Plugin[] = [
   // The subprocess seat first: the DSH local provider (managed
   // ranges, scrubbed child env, bounded collected output). The git
@@ -127,60 +191,7 @@ const rows: readonly Plugin[] = [
   // The engines seat BEFORE every adapter + consumer (mount order
   // is load order — the adapters' inject gates on it).
   enginesContract,
-  // The MCP control lane: the blender stdio server (official
-  // MCP protocol, idle-reaped at 1800s; the client owns
-  // reconnect). failOnStartupError false — a slow/absent blender
-  // never takes the lane down (a failed start then rides the
-  // supervisor's reconnect loop AND the REJECTED witness above).
-  {
-    name: "mcp-client-blender",
-    inject: mcpClientPlugin.inject,
-    Config: mcpClientPlugin.Config,
-    // The bridge's own apply, witnessed: cordis buries per-fiber
-    // apply rejections (both 2026-09-15 postmortems), so the
-    // settled/rejected voice lives HERE — a rejection logs its
-    // cause chain (the bridge wraps firstAttemptError) before it
-    // vanishes, then rethrows to keep fiber semantics identical.
-    // A settled apply censuses the blender namespace once (the
-    // executor seat ≠ published tools — proven distinct today).
-    apply: (ctx: Context, config: unknown) => {
-      const p = (mcpClientPlugin.apply as (ctx: Context, config: McpClientConfig) => unknown)(
-        ctx,
-        config as McpClientConfig,
-      ) as unknown;
-      if (p === undefined || typeof (p as Promise<unknown>).then !== "function") return p;
-      return (p as Promise<unknown>).then(
-        (v: unknown) => {
-          const t = ctx.get("tools") as unknown as { get(name: string): unknown } | undefined;
-          const seen = ["mcp__blender__scene_info", "mcp__blender__render_shot"]
-            .map((n) => n + "=" + (t?.get(n) === undefined ? "absent" : "PRESENT"))
-            .join(" ");
-          console.log("[melite-estate] mcp-client-blender ready: " + seen);
-          return v;
-        },
-        (e: unknown) => {
-          const chain = (x: unknown, depth: number): string => {
-            if (depth > 2 || x === null || (typeof x !== "object" && typeof x !== "string")) return "";
-            const err = x as { message?: unknown; cause?: unknown };
-            const head = typeof x === "string" ? x : String(err.message ?? x);
-            return head + (err.cause === undefined ? "" : " | caused by: " + chain(err.cause, depth + 1));
-          };
-          console.log("[melite-estate] mcp-client-blender REJECTED: " + chain(e, 0).slice(0, 900));
-          throw e;
-        },
-      );
-    },
-    config: {
-      transport: "stdio",
-      serverName: "blender",
-      command: "/home/user/tools/blender-4.5.0-linux-x64/blender",
-      args: ["-b", "--python", "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py"],
-      env: {},
-      cwd: "/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes",
-      toolCallTimeoutMs: 300000,
-      failOnStartupError: false,
-    },
-  } as unknown as Plugin,
+  mcpBlenderRow,
   // ...and the same server on the RUNS plane: mcp:blender stages
   // execute as mcp__blender__* tool calls through the runtime.
   // inject gates the APPLY on both seats (the comfyui adapter's
@@ -394,9 +405,13 @@ export const name = "melite-estate";
 /** The estate's config face (stroke 45c): repoRoot PINS the runs
  *  state tree — the queue seat refuses unpinned boots (a cwd-guessed
  *  root silently serves an empty runs tree; the profile patch names
- *  the repo). */
+ *  the repo). blenderPath overrides the blender stdio row's command
+ *  (the operator's blender install — a deployment-varying choice,
+ *  cordis.yml-changeable; the vendored mcp_server.py it launches
+ *  stays repo-pinned). */
 export interface Config {
   repoRoot?: string;
+  blenderPath?: string;
 }
 
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
@@ -416,6 +431,19 @@ export async function apply(ctx: Context, config: Config = {}): Promise<void> {
     // the queue row receives the pin (its QueueConfig.repoRoot)
     if (row === queuePlugin) {
       ctx.plugin(row, { repoRoot: config.repoRoot });
+      continue;
+    }
+    // the blender row's command is the config face's one
+    // deployment-varying choice: Config.blenderPath overrides it,
+    // the declared defaults carry everything else. Announced LOUD
+    // (the lane's seat-decision law) — an overridden binary is a
+    // deployment fact the log must carry.
+    if (row === mcpBlenderRow) {
+      const command = config.blenderPath ?? BLENDER_STDIO_DEFAULTS.command;
+      if (config.blenderPath !== undefined) {
+        console.log("[melite-estate] blender binary overridden by config: " + config.blenderPath);
+      }
+      ctx.plugin(row, { ...BLENDER_STDIO_DEFAULTS, command });
       continue;
     }
     // rows may carry their own config face (the MCP lane's stdio

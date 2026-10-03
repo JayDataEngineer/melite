@@ -133,7 +133,7 @@ afterEach(() => {
 
 // apply is async (the models row is awaited so a family refusal
 // fails the estate boot loud): mount awaits it the way cordis does.
-async function mount(config?: { repoRoot?: string }): Promise<Ctx> {
+async function mount(config?: { repoRoot?: string; blenderPath?: string }): Promise<Ctx> {
   const ctx: Ctx = {
     plugins: [],
     plugin(row, cfg) {
@@ -210,6 +210,34 @@ describe('dispatch — mount order is load order', () => {
     })
     const mcpRow = ctx.plugins.find((p) => p.name === 'melite-engine-mcp-row')
      expect(mcpRow?.cfg).toEqual({ engines: ['mcp:blender'] })
+  })
+
+  it('blenderPath overrides the stdio command — the declared default carries it otherwise', async () => {
+    // no blenderPath: the mounted cfg IS the declared defaults (the
+    // binary default, the vendored mcp_server.py args and cwd)
+    const plain = await mount({ repoRoot: '/tmp/pin' })
+    const plainRow = plain.plugins.find((p) => p.name === 'mcp-client-blender')
+    expect(plainRow?.cfg).toMatchObject({
+      command: '/home/user/tools/blender-4.5.0-linux-x64/blender',
+      args: ['-b', '--python', '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py'],
+    })
+    // a blenderPath from the config face (the cordis.yml surface)
+    // replaces ONLY the command — args/cwd stay the repo-pinned
+    // vendored tree
+    const lines = silence()
+    try {
+      const ctx = await mount({ repoRoot: '/tmp/pin', blenderPath: '/opt/blender/blender' })
+      const row = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
+      expect(row?.cfg).toMatchObject({
+        transport: 'stdio',
+        command: '/opt/blender/blender',
+        args: ['-b', '--python', '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes/mcp_server.py'],
+        cwd: '/home/user/Documents/programs/active/inference.cpp/vendor/comfyui_extensions/melite-blender-proxy-nodes',
+      })
+      expect(lines.join('\n')).toContain('[melite-estate] blender binary overridden by config: /opt/blender/blender')
+    } finally {
+      vi.restoreAllMocks()
+    }
   })
 
   it('applies bare rows naked and defaults the config face', async () => {
