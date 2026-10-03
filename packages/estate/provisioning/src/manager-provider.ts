@@ -361,7 +361,33 @@ export class ComfyUiManagerProvider implements ManagerPort {
     const catalog = await this.client.getJson("/externalmodel/getlist?mode=cache", {
       ...(signal === undefined ? {} : { signal }),
     });
-    const row = findModelCatalogRow(catalog, savePath, filename);
+    // Public-catalog echo first (Manager's own metadata for the row);
+    // a miss throws for callers that did not identify their row as
+    // estate-declared (the estate door's operator URLs stay refused
+    // here). A DECLARED row (the models step passes the local-list
+    // tags) carries its own url and destination: it rides the
+    // manager-local model-list (get_data_by_mode('local')) so
+    // check_whitelist_for_model still matches save_path+base+
+    // filename. The install stays Manager-authoritative — the queue
+    // downloads and the caller digest-verifies the landed bytes.
+    const declared = request.type !== undefined || request.base !== undefined;
+    let row: ModelCatalogRow;
+    try {
+      row = findModelCatalogRow(catalog, savePath, filename);
+    } catch (error: unknown) {
+      if (declared && error instanceof ManagerProviderError && error.code === "model-unregistered") {
+        row = {
+          name: filename,
+          type: request.type ?? "model",
+          base: request.base ?? "melite",
+          savePath,
+          url: request.url,
+          filename,
+        };
+      } else {
+        throw error;
+      }
+    }
     const payload: Record<string, unknown> = {
       name: row.name,
       type: row.type,
@@ -383,7 +409,7 @@ export class ComfyUiManagerProvider implements ManagerPort {
     });
     return {
       installed: true,
-      detail: `queued model ${row.name}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
+      detail: `${declared ? "declared row" : "catalog row"} ${row.name}; queue ${String(status.doneCount)}/${String(status.totalCount)}`,
     };
   }
 

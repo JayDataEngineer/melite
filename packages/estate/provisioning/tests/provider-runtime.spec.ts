@@ -327,6 +327,51 @@ describe("ManagerPort provider", () => {
     assert.equal(queued, false, "no direct or queue download is attempted for an unregistered artifact");
   });
 
+  test("queues a DECLARED row the catalog lacks, tagged for the manager-local model list", async () => {
+    const url = "https://huggingface.co/fancyfeast/joytag/resolve/main/model.safetensors";
+    const calls: Array<{ readonly path: string; readonly body: unknown }> = [];
+    let queuePolls = 0;
+    const fetcher: typeof globalThis.fetch = async (input, init): Promise<Response> => {
+      const requestUrl = new URL(String(input));
+      const path = requestUrl.pathname + requestUrl.search;
+      const body = typeof init?.body === "string" ? init.body : undefined;
+      calls.push({ path, body });
+      if (path === "/externalmodel/getlist?mode=cache") return json({ models: [] });
+      if (path === "/manager/queue/install_model") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/start") return new Response(null, { status: 200 });
+      if (path === "/manager/queue/status") {
+        queuePolls += 1;
+        return json({ total_count: 1, done_count: queuePolls === 1 ? 0 : 1, in_progress_count: queuePolls === 1 ? 1 : 0, is_processing: queuePolls === 1 });
+      }
+      return json({}, 404);
+    };
+    const provider = new ComfyUiManagerProvider(
+      new ComfyUiManagerHttpClient({ baseUrl: "http://127.0.0.1:8188", fetch: fetcher }),
+      { queue: { timeoutMs: 100, pollIntervalMs: 1 } },
+    );
+    const result = await provider.installModel({
+      id: "joytag/provision/model.safetensors",
+      name: "model.safetensors",
+      savePath: "taggers/joytag",
+      url,
+      filename: "model.safetensors",
+      type: "melite",
+      base: "melite",
+    });
+    assert.equal(result.installed, true);
+    assert.match(result.detail ?? "", /declared row/u);
+    const queued = calls.find((call) => call.path === "/manager/queue/install_model");
+    assert.deepEqual(JSON.parse(String(queued?.body)), {
+      name: "model.safetensors",
+      type: "melite",
+      base: "melite",
+      save_path: "taggers/joytag",
+      url,
+      filename: "model.safetensors",
+      ui_id: "joytag/provision/model.safetensors",
+    });
+  });
+
   test("queues the Manager SAM2 row for the declared official Hugging Face URL", async () => {
     const declaredUrl = "https://huggingface.co/facebook/sam2.1-hiera-large/resolve/main/sam2.1_hiera_large.pt";
     const catalogUrl = "https://dl.fbaipublicfiles.com/segment_anything_2/092824/sam2.1_hiera_large.pt";

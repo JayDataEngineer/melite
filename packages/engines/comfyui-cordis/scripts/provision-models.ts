@@ -2,7 +2,8 @@
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { createHash } from "node:crypto";
-import { closeSync, openSync, readSync } from "node:fs";
+import { closeSync, existsSync, mkdirSync, openSync, readSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import {
   ComfyUiManagerHttpClient,
   ComfyUiManagerProvider,
@@ -10,10 +11,100 @@ import {
 } from "@melite/estate-provisioning";
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 import { cascadeInit } from "../src/models/models.ts";
-import { DEFAULT_CONFIG, DRY, die, info, warn } from "./provision-shared.ts";
+import type * as CATALOG from "../src/models/families/contract.ts";
+import { DEFAULT_CONFIG, DRY, RUNTIME, die, info, warn } from "./provision-shared.ts";
 import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.ts";
 
 // ── models via the estate downloader + frozen catalog + sha256 gate ──
+
+/** The Manager whitelist key this estate's declared rows match on:
+ *  check_whitelist_for_model compares save_path+base+filename between
+ *  the install payload and the model list, so both sides mint the
+ *  same tag. */
+export const MELITE_MODEL_BASE = "melite";
+
+export interface LocalModelListRow {
+  name: string;
+  type: string;
+  base: string;
+  save_path: string;
+  filename: string;
+  url: string;
+}
+
+/**
+ * Writes Manager's LOCAL model-list (read by get_data_by_mode('local')
+ * from <manager-install>/model-list.json) with one row per declared
+ * provision — the file that admits estate rows into Manager's install
+ * whitelist. Deterministic: rows are sorted by save_path+filename so
+ * repeated runs byte-match.
+ *
+ * @param listPath absolute path of the manager-local model-list.json
+ * @param rows the declared provision rows (family + ProvisionRow)
+ */
+export function writeManagerLocalModelList(listPath: string,
+    rows: ReadonlyArray<{ family: string; row: Pick<ProvisionRow, "name" | "folder" | "url"> }>): void {
+  const list: LocalModelListRow[] = rows
+    .map(({ family, row }) => ({
+      name: family + "/" + row.name,
+      type: MELITE_MODEL_BASE,
+      base: MELITE_MODEL_BASE,
+      save_path: row.folder.replace(/^\/+|\/+$/g, ""),
+      filename: row.name,
+      url: row.url,
+    }))
+    .sort((a, b) =>
+      a.save_path + "/" + a.filename < b.save_path + "/" + b.filename ? -1 : 1);
+  mkdirSync(dirname(listPath), { recursive: true });
+  writeFileSync(listPath,
+    JSON.stringify({ models: list }, null, 2) + "\n");
+  info("  [model] manager local model-list: " + list.length +
+    " rows → " + listPath);
+}
+
+/**
+ * Pins Manager's security_level to 'weak' — the tier whose install
+ * gates accept the declared-row channel (non-.safetensors installs
+ * are otherwise refused unless their url sits in the public catalog).
+ * The estate's per-row sha256 gate is the actual download boundary:
+ * every queued file is digest-verified after Manager lands it, so
+ * 'weak' plus verification is tighter than the default level without
+ * it. Idempotent: replaces only the security_level line; reports
+ * whether a RUNNING engine would need a restart (Manager caches its
+ * config at read).
+ *
+ * @param configPath absolute path of user/__manager/config.ini
+ * @returns true when the on-disk line was already 'weak'
+ */
+export function ensureManagerSecurityWeak(configPath: string): boolean {
+  const wanted = "security_level = weak";
+  if (!existsSync(configPath)) {
+    mkdirSync(dirname(configPath), { recursive: true });
+    writeFileSync(configPath, "[default]\n" + wanted + "\n");
+    info("  [model] manager config: security_level=weak (digest gate " +
+      "owns the boundary; engine restart applies it)");
+    return false;
+  }
+  const text = readFileSync(configPath, "utf8");
+  const lines = text.split("\n");
+  let seen = false;
+  for (let i = 0; i < lines.length; i += 1) {
+    if (/^\s*security_level\s*=/.test(lines[i])) {
+      seen = lines[i].trim() === wanted;
+      if (!seen) {
+        lines[i] = wanted;
+        writeFileSync(configPath, lines.join("\n"));
+        info("  [model] manager config: security_level=weak (digest " +
+          "gate owns the boundary; engine restart applies it)");
+      }
+      return seen;
+    }
+  }
+  writeFileSync(configPath, text.replace(/\n*$/u, "\n") + wanted + "\n");
+  info("  [model] manager config: security_level=weak appended " +
+    "(digest gate owns the boundary; engine restart applies it)");
+  return false;
+}
 
 /** Cheap existence probe for DRY runs: confined path, no hashing. A
  *  symlink counts (the inspect read law resolves in-store links). */
@@ -52,7 +143,7 @@ export interface ProvisionRow {
   size_bytes?: number;
 }
 
-export async function catalogProvisions(): Promise<Array<{ family: string; row: ProvisionRow }>> {
+export async function catalogProvisions(): Promise<Array<{ family: string; row: CATALOG.ProvisionRow }>> {
   // The MODEL-side download places, TS-natively from the declaration
   // rows (the engine's provisionsByFamily — DECL provisions + card-
   // owned provisions; the model.py cell/provision walks died with
@@ -62,7 +153,7 @@ export async function catalogProvisions(): Promise<Array<{ family: string; row: 
   await cascadeInit();
   const defs = await loadCardDefs();
   const byFamily = await provisionsByFamily(defs);
-  const out: Array<{ family: string; row: ProvisionRow }> = [];
+  const out: Array<{ family: string; row: CATALOG.ProvisionRow }> = [];
   for (const fam of Object.keys(byFamily).sort()) {
     for (const row of byFamily[fam]?.provisions ?? []) out.push({ family: fam, row });
   }
@@ -72,7 +163,8 @@ export async function catalogProvisions(): Promise<Array<{ family: string; row: 
 export async function fetchVerified(_workspace: string,
     storeRoot: string, label: string, url: string, name: string,
     sub: string, want: string,
-    manager?: Pick<ComfyUiManagerProvider, "installModel">): Promise<string> {
+    manager?: Pick<ComfyUiManagerProvider, "installModel">,
+    tags?: { type: string; base: string }): Promise<string> {
   const relativePath = sub === "" ? name : sub.replace(/^\/+|\/+$/gu, "") + "/" + name;
   const writer = new VerifiedArtifactWriter(storeRoot);
   // DRY is a PLAN, never the work (2026-10-12): hashing every present
@@ -105,6 +197,7 @@ export async function fetchVerified(_workspace: string,
       savePath: sub,
       url,
       filename: name,
+      ...(tags === undefined ? {} : tags),
     });
     if (!installed.installed) {
       warn("  [model] " + name + ": ComfyUI-Manager refused the model install");
@@ -148,6 +241,30 @@ export async function stepModels(): Promise<boolean> {
       } catch (error: unknown) {
         die("ComfyUI-Manager is required for model provisioning: " + (error instanceof Error ? error.message : String(error)));
       }
+      // The declared rows ride Manager's LOCAL model-list channel:
+      // /manager/queue/install_model whitelists every request by
+      // save_path+base+filename against the channel catalog
+      // (manager_server.py check_whitelist_for_model), and most
+      // estate rows (pinned HF artifacts) exist in NO public
+      // catalog. get_data_by_mode('local') reads
+      // <manager-install>/model-list.json — the sanctioned file for
+      // exactly this. Non-.safetensors files additionally require
+      // security_level 'weak' (the url-whitelist tier); the estate's
+      // per-row sha256 gate is the actual boundary, so 'weak' plus
+      // digest verification is tighter than the default level
+      // without it. Both writes are idempotent; a running engine
+      // reads the local list per request but caches its config —
+      // restart the engine when the security line changes.
+      const rows = await catalogProvisions();
+      const listPath = join(RUNTIME, "custom_nodes", "comfyui-manager",
+        "model-list.json");
+      if (existsSync(dirname(listPath))) {
+        writeManagerLocalModelList(listPath, rows);
+      } else {
+        warn("  [model] ComfyUI-Manager is not installed yet — local " +
+          "model-list NOT written (run the extensions step first)");
+      }
+      ensureManagerSecurityWeak(join(RUNTIME, "user", "__manager", "config.ini"));
     }
     let ok = 0, bad = 0, skipped = 0, planned = 0;
     for (const { family, row } of await catalogProvisions()) {
@@ -170,7 +287,8 @@ export async function stepModels(): Promise<boolean> {
         continue;
       }
       const st = await fetchVerified("", storeRoot,
-        family + "/provision/" + name, url, name, sub, want, manager);
+        family + "/provision/" + name, url, name, sub, want, manager,
+        { type: MELITE_MODEL_BASE, base: MELITE_MODEL_BASE });
       if (st === "ok") ok += 1;
       else if (st === "bad") bad += 1;
       else if (st === "planned") planned += 1;

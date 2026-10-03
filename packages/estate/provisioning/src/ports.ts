@@ -54,6 +54,11 @@ export interface ManagerModelInstallRequest {
   readonly savePath: string;
   readonly url: string;
   readonly filename: string;
+  /** Optional Manager bookkeeping tags for rows the public catalog
+   *  does not carry; must match the local model-list's base for the
+   *  whitelist to admit the install. */
+  readonly type?: string;
+  readonly base?: string;
 }
 
 export interface ManagerModelInstallResult {
