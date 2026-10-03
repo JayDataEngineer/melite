@@ -76,6 +76,48 @@ describe("laneFilesStatus", () => {
     writeFileSync(join(dir, "present.bin"), "x");
     assert.equal(laneFilesStatus({ lane_inputs: { checkpoint: "present.bin" } }), true);
   });
+
+  // The test above answers true whether the gate CONSULTED the store
+  // or simply returned true (audit 2026-10-13, mutation-proven:
+  // replacing laneFilesStatus' whole body with `return true` left the
+  // entire estate-queue suite green). These two pin the answer the
+  // GPU receipt rows consume: the MISS is false, and the checker seam
+  // is the store the default path reads.
+  it("a family whose mapped lane file is ABSENT answers false", () => {
+    arm(null);
+    assert.equal(laneFilesStatus({ lane_inputs: { checkpoint: "never-written.bin" } }), false);
+  });
+
+  it("consults the check seam with the store path the default builds", () => {
+    // LaneCheck answers the path when the file is PRESENT and null when
+    // it is ABSENT (the shape checkModelPresent itself returns).
+    const seen: Array<[string, string]> = [];
+    const present = laneFilesStatus(
+      { lane_inputs: { checkpoint: "present.bin" } },
+      (folder, name) => {
+        seen.push([folder, name]);
+        return folder === "checkpoints" ? "models/" + folder + "/" + name : null;
+      },
+    );
+    assert.equal(present, true, "a checker that finds the file in one folder means present");
+    // the seam is consulted for the lane's stock folder FIRST, then the
+    // endpoint's pack folders — the raw folder name, no "models/"
+    // prefix (the DEFAULT check adds that, not the caller)
+    assert.equal(seen[0]?.[0], "checkpoints");
+    assert.equal(seen[0]?.[1], "present.bin");
+    // one call only: the stock folder hit short-circuits the probe, so
+    // a hit never walks the pack folders (a miss does — that is the
+    // probe's whole point)
+    assert.deepEqual(seen, [["checkpoints", "present.bin"]]);
+    // and a checker that finds it nowhere answers the miss
+    assert.equal(
+      laneFilesStatus(
+        { lane_inputs: { checkpoint: "present.bin" } },
+        () => null,
+      ),
+      false,
+    );
+  });
 });
 
 describe("lanePresenceRefusal (the gate)", () => {

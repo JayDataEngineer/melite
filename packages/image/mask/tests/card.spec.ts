@@ -325,6 +325,22 @@ describe("the mask card declaration (stroke 95 — the two-bars law)", () => {
     assert.ok(names.has(MASK_WEIGHTS.checkpoint), "the SAM3 checkpoint the lane loads is provisioned");
     assert.ok(names.has(MASK_WEIGHTS.unet), "the RT-DETR detector the lane loads is provisioned");
     assert.ok(names.has(MASK_WEIGHTS.sam2), "the SAM2 model the lane loads is provisioned");
+    // BOTH directions (audit 2026-10-13, F6): the three has() asserts
+    // above are one-directional — a fourth weight added to
+    // MASK_WEIGHTS that nothing provisions still passed green, which
+    // is exactly the silent wrong-weights run this law names. The
+    // card also carries the Impact detector rows, which are NOT lane
+    // weights (the operator picks one), so the closing pin names BOTH
+    // categories: no fourth kind of row can ride the card unseen, and
+    // no lane weight can be added without a provision.
+    assert.equal(
+      names.size,
+      Object.keys(MASK_WEIGHTS).length + IMPACT_DETECTOR_PROVISIONS.length,
+      "every provisioned row is a lane weight or a declared Impact detector row",
+    );
+    for (const row of IMPACT_DETECTOR_PROVISIONS) {
+      assert.ok(names.has(row.name), `the Impact detector row ${row.name} is provisioned`);
+    }
   });
 
   it("THE DECLARED HERO (the history/preview defect, 2026-10-09: the gallery led with engine completion order — usually the manifest photo, not the mask)", () => {

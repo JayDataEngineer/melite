@@ -202,20 +202,27 @@ describe('estate lane error classes', () => {
     assert.ok(text.includes('bench/store-failed'), text)
   })
 
-  test('conflict voices answer 409 (cas, overwrite-required, duplicate-stage)', async () => {
-    const routes = boot({
-      benchRemote: {
-        patch: () => Promise.reject(new RemoteError('bench/overwrite-required', 'load onto a non-empty bench requires overwrite: true', { current_rev: 3, stages: 5 })),
-      },
+  // All THREE voices the title names, each constructed (audit
+  // 2026-10-13: the old body built only `overwrite-required` while the
+  // title promised cas-conflict and duplicate-stage too — the same
+  // lie shape as the transfer_rig defect, and mutating either missing
+  // code's status left the suite green).
+  for (const code of ['bench/cas-conflict', 'bench/overwrite-required', 'bench/duplicate-stage'] as const) {
+    test(`conflict voice ${code} answers 409 with its details verbatim`, async () => {
+      const routes = boot({
+        benchRemote: {
+          patch: () => Promise.reject(new RemoteError(code, 'load onto a non-empty bench requires overwrite: true', { current_rev: 3, stages: 5 })),
+        },
+      })
+      // the real mutation-arm grammar: POST /v1/bench/:session/<verb>
+      const { status, text } = await post(routes, '/v1/bench/default/patch', { expect_rev: 2 })
+      assert.equal(status, 409)
+      const body = JSON.parse(text) as { code: string; current_rev: number; stages: number }
+      assert.equal(body.code, code)
+      assert.equal(body.current_rev, 3)
+      assert.equal(body.stages, 5)
     })
-    // the real mutation-arm grammar: POST /v1/bench/:session/<verb>
-    const { status, text } = await post(routes, '/v1/bench/default/patch', { expect_rev: 2 })
-    assert.equal(status, 409)
-    const body = JSON.parse(text) as { code: string; current_rev: number; stages: number }
-    assert.equal(body.code, 'bench/overwrite-required')
-    assert.equal(body.current_rev, 3)
-    assert.equal(body.stages, 5)
-  })
+  }
 
   test('GET status refusal: unknown-run is a 404 carrying runId (not-found class)', async () => {
     const routes = boot({
@@ -283,5 +290,63 @@ describe('estate lane error classes', () => {
       assert.equal(status, 404)
       assert.match(text, /runs\/unknown-run/)
     }
+  })
+
+  // EVERY ROW OF REFUSAL_STATUS, ONE LOOP (audit 2026-10-13, mutation-
+  // proven: the table at doors.ts:618 carries 17 rows and only 3 were
+  // pinned — mutating any of the other 14 left the WHOLE melite-tools
+  // suite green, because a status nobody asserts is a status nobody
+  // owns). The mapping is centralized in failEstate, so one route
+  // with a per-code rejection proves every row's class.
+  const REFUSAL_CLASS: ReadonlyArray<readonly [string, number]> = [
+    // 404 — a named thing is absent
+    ['runs/unknown-run', 404],
+    ['runs/run-unknown', 404],
+    ['bench/not-found', 404],
+    ['bench/stage-not-found', 404],
+    ['bench/wire-stage-not-found', 404],
+    ['bench/nothing-to-undo', 404],
+    ['draft/not-found', 404],
+    // 409 — state conflicts
+    ['bench/cas-conflict', 409],
+    ['bench/overwrite-required', 409],
+    ['bench/duplicate-stage', 409],
+    // 502 — the storage/infra layer refused a valid call
+    ['bench/store-failed', 502],
+    ['draft/store-failed', 502],
+    ['draft/cannot-persist', 502],
+    ['media/no-seat', 502],
+    ['gateway/internal', 502],
+    ['gateway/cancelled', 502],
+  ]
+
+  // RemoteError types its code against the DECLARED details map; this
+  // loop walks the door's own table, a wider vocabulary than any one
+  // caller's declared row, so the construction is cast once here rather
+  // than at every call site.
+  const refusal = (code: string): Error =>
+    new RemoteError(code as never, 'refused', {} as never)
+
+  test('EVERY declared refusal code answers its declared class', async () => {
+    for (const [code, expected] of REFUSAL_CLASS) {
+      const routes = boot({
+        runs: { validate: () => Promise.reject(refusal(code)) },
+      })
+      const { status, text } = await post(routes, '/v1/flows/validate', { flow: 'image-gen', stages: [] })
+      assert.equal(status, expected, `${code} must answer ${String(expected)}`)
+      assert.match(text, new RegExp(code.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&')), `${code} rides in the body`)
+    }
+  })
+
+  test('an UNDECLARED code answers 400 — the honest unknown class, never 502', async () => {
+    // the table's documented fallback (doors.ts:614): an unknown
+    // refusal is the seat's answer with an unknown vocabulary, so it
+    // is the caller's 400 — never the dead-seat 502 that reads as an
+    // absent lane.
+    const routes = boot({
+      runs: { validate: () => Promise.reject(refusal('future/unknown-code')) },
+    })
+    const { status } = await post(routes, '/v1/flows/validate', { flow: 'image-gen', stages: [] })
+    assert.equal(status, 400)
   })
 })

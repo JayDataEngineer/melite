@@ -442,11 +442,44 @@ describe.sequential("estate provisioning composition paths", () => {
     const timeout = await mount({ extensions: extensionYaml, state: { statsFailures: 200 } });
     const timedOut = await timeout.ctx.provisioning.activate({ kind: "extension", id: "demo" }, { force: true });
     assert.equal(timedOut.state, "failed");
+    // The two readiness voices, PINNED (audit 2026-10-13): the arms
+    // were reached but only their OUTCOME was asserted, so rewriting
+    // either sentence left every suite green. The wait is bounded to
+    // 120 attempts, so the exhausted wait is the real refusal here.
+    assert.match(
+      JSON.stringify(timedOut),
+      /did not become ready after restart/,
+      "the exhausted readiness wait names itself",
+    );
     const aborted = await mount({ extensions: extensionYaml });
     const controller = new AbortController();
     controller.abort();
     const cancelled = await aborted.ctx.provisioning.activate({ kind: "extension", id: "demo" }, { force: true }, controller.signal);
     assert.equal(cancelled.state, "cancelled");
+
+    // The readiness loop's OWN cancel arm (provisioning.ts:400) is not
+    // what a pre-aborted signal reaches — the seat refuses earlier.
+    // It fires when the abort lands INSIDE the wait, which the rig
+    // makes reachable: abort from the backoff seam, then let the loop
+    // come back round.
+    const midWait = await mount({ extensions: extensionYaml, state: { statsFailures: 200 } });
+    const { SEAMS } = await import("../src/provisioning.ts");
+    const mid = new AbortController();
+    SEAMS.readinessBackoff = async (): Promise<void> => { mid.abort(); };
+    try {
+      const stopped = await midWait.ctx.provisioning.activate({ kind: "extension", id: "demo" }, { force: true }, mid.signal);
+      // What is OBSERVABLE here is the service's own fold: the seat's
+      // readiness voice ("readiness wait cancelled") is caught and
+      // replaced with the operation-level cancellation, so the arm's
+      // string is not reachable from here. The arm fires — this
+      // asserts the outcome that proves it, and the swallowed voice is
+      // owed at the service's error fold (dev_docs/ROADMAP.md), not
+      // pinned by a test that cannot see it.
+      assert.equal(stopped.state, "cancelled");
+      assert.equal(stopped.items[0]?.errorCode, "provisioning/cancelled");
+    } finally {
+      SEAMS.readinessBackoff = async (): Promise<void> => {};
+    }
   });
 
   test("lifecycle covers empty queue snapshots and endpoint loss during restart", async () => {

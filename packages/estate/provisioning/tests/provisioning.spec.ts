@@ -6,6 +6,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -555,6 +556,33 @@ describe("provisioning service", () => {
     assert.match(result.items[0]?.detail ?? "", /civitai/);
     assert.match(result.items[0]?.detail ?? "", /local, manager, git, direct, external/);
   });
+
+  // The two arms the audit found unproven (2026-10-13, F8): git and
+  // external are LEGAL providers in the vocabulary, so
+  // unknownProviderRefusal never fires for them — their own arm at
+  // service.ts:711 refuses instead, naming why no model arm exists.
+  // Without these the whole "a model plan never clones" claim rested
+  // on a comment.
+  for (const provider of ["git", "external"] as const) {
+    test(`a model item on the ${provider} provider is refused by name`, async () => {
+      const store = root();
+      const ref = modelRef();
+      const plan: ProvisionPlan = { ref, items: [modelItem({ provider })] };
+      const service = new ProvisioningService(new Context(), {
+        declaration: declarationFor(plan),
+        artifactWriter: new VerifiedArtifactWriter(store),
+      });
+      const result = await service.ensure(ref);
+      assert.equal(result.state, "blocked");
+      assert.equal(result.items[0]?.errorCode, "model/provider-without-arm");
+      assert.match(result.items[0]?.detail ?? "", new RegExp(`"${provider}"`));
+      assert.match(
+        result.items[0]?.detail ?? "",
+        /git clones are an extension arm|external acquisition rides the operator-confirmed door/,
+      );
+      assert.deepEqual(readdirSync(store), [], "nothing lands for an unimplemented arm");
+    });
+  }
 
   test("a local model item that is absent is blocked, never installed", async () => {
     const store = root();

@@ -19,6 +19,9 @@ const surface: readonly DeclaredSurface[] = [{
     { name: "sampler", type: "enum", options: ["euler", "heun"] },
     { name: "prompt", type: "string" },
     { name: "turbo", type: "boolean" },
+    // the LIST-typed lane: h3/qwen-img-edit declare ref_images and
+    // friends as image_list (models/h3/src/actions.ts:1359)
+    { name: "ref_images", type: "image_list" },
   ],
 }];
 
@@ -59,6 +62,26 @@ describe("validateWriteRowsAgainstActions (the declared-plane door)", () => {
       [{ where: "defaults", values: { turbo: "yes" } }],
       /probe defaults: 'turbo' declares boolean but carries string/,
     );
+  });
+
+  // The image_list arm had NO negative test anywhere (audit
+  // 2026-10-13, mutation-proven: disabling it left the whole
+  // comfyui-cordis suite green while the string and number arms
+  // beside it all died). Four live families write ref_images /
+  // ref_videos / ref_audios through this door, so a non-array was
+  // composing a wrong graph silently.
+  it("a non-array on a list-typed param refuses with both types", () => {
+    throwsDoor(
+      [{ where: "defaults", values: { ref_images: "not-an-array" } }],
+      /probe defaults: 'ref_images' declares image_list but carries string/,
+    );
+  });
+
+  it("an array on a list-typed param passes the door", () => {
+    const checked = validateWriteRowsAgainstActions("probe", [
+      { where: "defaults", values: { ref_images: ["a.png", "b.png"] } },
+    ], surface);
+    assert.deepEqual(checked, ["defaults:ref_images"]);
   });
 
   it("reserved row coordinates, mod-plane keys, and null stamps skip", () => {

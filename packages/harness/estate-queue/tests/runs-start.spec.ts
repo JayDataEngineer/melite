@@ -627,16 +627,17 @@ describe("registerCompiledRun", () => {
     assert.equal("compose_echo" in flow, false);
   });
 
-  it("an unwritable state root throws LOUD (a refusal contract, never a silent skip)", async () => {
-    // registerCompiledRun raw-throws the node fs Error (the write's
-    // parent-dir mkdir on the 555 root raises EACCES) — the caller (the
-    // start arm) folds it; pinning the loud shape here so a future
-    // silent-skip can never slip in. Root bypasses permission bits:
-    // skip there.
-    if (typeof process.geteuid === "function" && process.geteuid() === 0) {
-      console.warn("unwritable-root wall skipped: running as root");
-      return;
-    }
+  // Root bypasses permission bits, and a `return` on that path records
+  // a PASS — the wall's own "never a silent skip" contract held only in
+  // a comment (audit 2026-10-13). Declared skip now, so a root runner
+  // reports SKIPPED rather than a false green.
+  it.skipIf(typeof process.geteuid === "function" && process.geteuid() === 0)(
+    "an unwritable state root throws LOUD (a refusal contract, never a silent skip)",
+    async () => {
+      // registerCompiledRun raw-throws the node fs Error (the write's
+      // parent-dir mkdir on the 555 root raises EACCES) — the caller
+      // (the start arm) folds it; pinning the loud shape here.
+
     const root = tmp();
     chmodSync(root, 0o555);
     try {
@@ -652,8 +653,9 @@ describe("registerCompiledRun", () => {
           }),
         /EACCES|EPERM|permission/i,
       );
-    } finally {
-      chmodSync(root, 0o755);
-    }
-  });
+      } finally {
+        chmodSync(root, 0o755);
+      }
+    },
+  );
 });

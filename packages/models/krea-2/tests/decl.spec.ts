@@ -16,6 +16,10 @@ import { KREA_ROWS, inject, apply } from "../mods/loras.ts";
 
 describe("the krea-2 model plugin (the whole model, one package)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
+    // the DECL's own id IS the wire address (the registry looks the
+    // family up by it); a typo here would strand the family with
+    // every spec still green (audit 2026-10-13, mutation-proven)
+    assert.equal(DECL.id, "krea-2");
     assert.equal(family.name, "family-krea-2");
     assert.deepEqual(family.inject, ["models"]);
     assert.equal(typeof family.apply, "function");

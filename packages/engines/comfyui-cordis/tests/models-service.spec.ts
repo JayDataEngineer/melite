@@ -124,6 +124,29 @@ describe("registerFamily (the metaclass gates)", () => {
     );
   });
 
+  // THE ENGINE FACTS DOOR (the complexity floor's stroke 1) had NO
+  // negative test at all (audit 2026-10-13): every existing row used
+  // `unet`/`vae`, which are VALID members, so the unknown-member
+  // refusal was never exercised. The door exists to catch a TYPO'd
+  // lane fact — and a typo there composes a wrong graph silently.
+  it("a typo'd lane fact refuses on the family row AND on every variant merge", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ lane_inputs: { unett: "x.safetensors" } })),
+      /unknown member\(s\) refused .*: unett/u,
+    );
+    assert.throws(
+      () =>
+        fresh().registerFamily(
+          clone({ variants: [{ ...variant(), lane_inputs: { text_encodr: "x.safetensors" } }] }),
+        ),
+      /unknown member\(s\) refused .*: text_encodr/u,
+    );
+    // a member the schema knows still registers (the door judges the
+    // unknown one, never every lane key)
+    const ok = fresh().registerFamily(clone({ lane_inputs: { checkpoint: "ok.safetensors" } }));
+    assert.equal(typeof ok, "function", "a real member rides through");
+  });
+
   it("THE RECIPE↔WEIGHTS LAW: a cell that downloads what the lane never loads refuses at birth", () => {
     // the third live break's silent half, as a registration refusal:
     // raw's 52-step marriage stamping a checkpoint the lane truth
