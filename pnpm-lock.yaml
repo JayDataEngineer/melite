@@ -435,6 +435,9 @@ importers:
       '@melite/engine-contract':
         specifier: workspace:*
         version: link:../contract
+      '@melite/estate-provisioning':
+        specifier: workspace:*
+        version: link:../../estate/provisioning
       '@melite/image-image-edit':
         specifier: workspace:*
         version: link:../../image/image-edit

@@ -42,6 +42,7 @@
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/engine-contract": "workspace:*",
+    "@melite/estate-provisioning": "workspace:*",
     "@melite/image-image-edit": "workspace:*",
     "@melite/image-image-gen": "workspace:*",
     "@melite/image-input-prep": "workspace:*",
