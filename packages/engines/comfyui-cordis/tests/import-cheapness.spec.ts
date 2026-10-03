@@ -14,7 +14,13 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
     const mod = await Promise.race([
       import("../src/index.ts"),
       new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("IMPORT HANG: the package root still awaits the models boot (the li-m regression)")), 2_000),
+        // 10s, not 2s (2026-10-12): this is a HANG detector — a
+        // real li-m regression (a top-level await on the models
+        // boot) never resolves, while a healthy cold import on a
+        // loaded machine (pre-push runs beside the estate and
+        // ComfyUI) measured 2.02s against the old 2s budget and
+        // false-positived the push gate three times in a row.
+        setTimeout(() => reject(new Error("IMPORT HANG: the package root still awaits the models boot (the li-m regression)")), 10_000),
       ),
     ]);
     assert.ok(mod !== null && mod !== undefined);
