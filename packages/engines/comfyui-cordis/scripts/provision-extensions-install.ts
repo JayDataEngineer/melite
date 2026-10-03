@@ -2,7 +2,7 @@
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, unlinkSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, venvPython, warn } from "./provision-shared.ts";
 import { loadConfig } from "./provision-config.ts";
@@ -10,9 +10,34 @@ import { mergeManifest } from "./provision-extensions-manifest.ts";
 
 // ── extensions via git (registry cache + url clones) + vendor symlinks ──
 
-export function linkInTree(name: string, workspace: string): string {
+// A vendored pack is a REAL ComfyUI extension: it must publish
+// NODE_CLASS_MAPPINGS somewhere in its python, or ComfyUI would
+// ignore the directory and installing it would lie.
+function publishesNodes(src: string): boolean {
+  const walk = (dir: string): boolean => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, e.name);
+      if (e.isDirectory()) {
+        if (e.name === ".git" || e.name === "__pycache__") continue;
+        if (walk(p)) return true;
+      } else if (e.name.endsWith(".py") &&
+          readFileSync(p, "utf8").includes("NODE_CLASS_MAPPINGS")) {
+        return true;
+      }
+    }
+    return false;
+  };
+  return walk(src);
+}
+
+/** Install a vendored pack as a REAL directory under custom_nodes —
+ * ComfyUI's own extension mechanism (operator law 2026-10-13: a
+ * symlink is a dev convenience; an engine that must stand on its own
+ * carries real directories with no path back into a working tree
+ * that may move, change branch, or be deleted). Replaces any symlink
+ * or stale copy of the same name. */
+export function installVendorPack(name: string, workspace: string): string {
   const target = join(workspace, "custom_nodes", name);
-  if (existsSync(join(target, "__init__.py"))) return "skipped";
   const src = join(REPO, "vendor", "comfyui_extensions", name);
   if (!existsSync(join(src, "__init__.py"))) {
     warn("  [" + name + "] vendor pack missing under " +
@@ -20,20 +45,20 @@ export function linkInTree(name: string, workspace: string): string {
       "carries all 14 packs as tracked files)");
     return "failed";
   }
+  if (!publishesNodes(src)) {
+    warn("  [" + name + "] no NODE_CLASS_MAPPINGS — not a ComfyUI " +
+      "extension; skipping");
+    return "skipped";
+  }
   if (DRY) {
-    console.log("[dry-run] link " + target + " <- " + src);
+    console.log("[dry-run] real install " + target + " <- " + src);
     return "installed";
   }
   mkdirSync(dirname(target), { recursive: true });
-  try {
-    symlinkSync(src, target);
-    info("  [" + name + "] symlinked -> " + src);
-    return "installed";
-  } catch {
-    cpSync(src, target, { recursive: true });
-    warn("  [" + name + "] symlink unavailable — COPIED");
-    return "installed";
-  }
+  rmSync(target, { recursive: true, force: true });
+  cpSync(src, target, { recursive: true });
+  info("  [" + name + "] installed — real directory in custom_nodes");
+  return "installed";
 }
 
 export function sameWorld(workspace: string, duty: string): boolean {
@@ -167,7 +192,7 @@ export async function stepExtensions(): Promise<boolean> {
   const counts = { installed: 0, skipped: 0, failed: 0, blocked: 0 };
   let restart = false;
   {
-    const vendorWorld = sameWorld(workspace, "vendor symlinking");
+    const vendorWorld = sameWorld(workspace, "vendor install");
     for (const e of exts) {
       const name = (e.name ?? "").trim();
       const reg = (e.registry ?? "").trim();
@@ -184,7 +209,7 @@ export async function stepExtensions(): Promise<boolean> {
       }
       if (!reg && !url) {
         if (!vendorWorld) { counts.failed += 1; continue; }
-        const st = linkInTree(name, workspace);
+        const st = installVendorPack(name, workspace);
         counts[st as keyof typeof counts] += 1;
         continue;
       }
