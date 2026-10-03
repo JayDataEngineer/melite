@@ -33,6 +33,17 @@ let ctx: Context;
 // a tmp tree; a leaked env var redirects benchDir() for every suite
 // that shares the worker after us. Stash, set, RESTORE.
 const stashed: Record<string, string | undefined> = {};
+
+// The stash existed and was never spent (2026-10-13, the flake audit):
+// beforeAll copied DSH_HOME and MELITE_STATE_ROOT, and nothing ever
+// wrote them back, so this wall's roots outlived it. afterAll is the
+// only place a whole-file rig can honestly hand the env back.
+afterAll(() => {
+  for (const [key, value] of Object.entries(stashed)) {
+    if (value === undefined) delete process.env[key];
+    else process.env[key] = value;
+  }
+});
 /** The seeded bench doc's path (the arm below reads it back after the
  *  boot — the walls audit's H7: a boot that DELETED the seed still
  *  settled every seat and the old arm passed). */

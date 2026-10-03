@@ -41,6 +41,22 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 
 const sig = new AbortController().signal;
 
+
+/** OWN the env this rig sets (2026-10-13, the flake audit): the two
+ *  roots were set and never restored, so a later spec in the same fork
+ *  inherited a root whose tree its own onTestFinished had already
+ *  deleted. Capture at set time, restore with the test. */
+function ownEnv(): void {
+  const keys = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
+  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
+  onTestFinished(() => {
+    for (const [k, v] of previous) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+}
+
 // TMP OWNERSHIP (stroke 13): every bootCtx tree is owned — the
 // disposer runs through onTestFinished so a leaked tree can never
 // outlive its test.
@@ -53,6 +69,7 @@ function mintRoot(): string {
 async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
   const root = mintRoot();
   mkdirSync(join(root, "storage"), { recursive: true });
+  ownEnv();
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();

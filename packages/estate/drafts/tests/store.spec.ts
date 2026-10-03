@@ -94,9 +94,25 @@ function legacyRoot(files: Record<string, string>): string {
   return root;
 }
 
+/** Point the store at a root — and OWN the change (2026-10-13, the
+ *  flake audit's worst leak). These two keys were set and never
+ *  restored, while mintRoot's onTestFinished DELETES the very tree
+ *  MELITE_STATE_ROOT still named: a later test in the same fork read a
+ *  deleted path. The restore is registered per call, beside the mint
+ *  that owns the tree. */
 function env(root: string): void {
+  const previous = {
+    state: process.env["MELITE_STATE_ROOT"],
+    storage: process.env["MELITE_STORAGE_ROOT"],
+  };
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
+  onTestFinished(() => {
+    for (const [key, value] of [["MELITE_STATE_ROOT", previous.state], ["MELITE_STORAGE_ROOT", previous.storage]] as const) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
 }
 
 test("no storage facility mounted: the loud earliest refusal", async () => {

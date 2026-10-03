@@ -59,8 +59,15 @@ function doc(id: string, extra: Record<string, unknown> = {}): string {
 }
 
 async function boot(extraLegacy: Record<string, string> = {}): Promise<Context> {
-  const root = mintRoot();
-  const stateRoot = join(root, "state");
+  return await bootAt(join(mintRoot(), "state"), extraLegacy);
+}
+
+/** The same rig against a CHOSEN state root (the durability arm needs
+ *  two boots on ONE root; store.ts:85-88 caches the opened domain in a
+ *  WeakMap keyed on the facility object IDENTITY, so a fresh Context
+ *  builds a fresh facility and re-opens from disk at :114 — the
+ *  re-boot really reads the file). */
+async function bootAt(stateRoot: string, extraLegacy: Record<string, string> = {}): Promise<Context> {
   mkdirSync(join(stateRoot, "drafts"), { recursive: true });
   // Two legacy docs: d_old (older mtime) + d_new (newer, carries
   // model/name display keys for the index row).
@@ -76,6 +83,7 @@ async function boot(extraLegacy: Record<string, string> = {}): Promise<Context> 
   const now = new Date("2026-09-01T00:00:00Z");
   utimesSync(join(stateRoot, "drafts", "d_old.json"), old, old);
   utimesSync(join(stateRoot, "drafts", "d_new.json"), now, now);
+  ownEnv();
   process.env["MELITE_STATE_ROOT"] = stateRoot;
   process.env["MELITE_STORAGE_ROOT"] = "";
 
@@ -782,3 +790,49 @@ test("drafts/patch delivers inputs and inputOutputs keys; a missing stage answer
   assert.equal(miss.delivered, false);
   assert.equal(miss.reason, "stage not found");
 });
+
+// THE BENCH SURVIVES THE PROCESS (2026-10-13, the durability trio).
+// Every persistence test in this file boots ONE context and reads it
+// back; nothing ever proved the thing survives a restart, which is the
+// one property the operator's bench depends on. Two boots on ONE state
+// root: the second Context builds a fresh storage facility, misses the
+// WeakMap cache keyed on facility identity (store.ts:85-88), and
+// re-opens from disk at :114 — so this reads the FILE, not a handle.
+test("the bench survives a dispose + re-boot on one root", async () => {
+  const stateRoot = join(mintRoot(), "state");
+  const first = await bootAt(stateRoot);
+  const born = await first.benchRemote.ensure(
+    { session: "keeper", intent: "hero", stages: [{ id: "s_0", model: "krea-2" }] },
+    sig,
+  );
+  assert.equal(born.created, true);
+  assert.equal(born.rev, 0, "the birth writes rev 0");
+  await first.fiber.dispose();
+
+  const second = await bootAt(stateRoot);
+  const back = await second.benchRemote.get("keeper", sig);
+  const stages = back.stages as Record<string, unknown>[];
+  assert.equal(stages.length, 1, "the stage survived the restart");
+  assert.equal(stages[0]!["id"], "s_0");
+  assert.equal(stages[0]!["model"], "krea-2");
+  // the CAS counter did NOT reset: a re-boot that re-birthed or
+  // re-imported the bench would read a different rev, and a writer
+  // holding the old rev would then win a compare-and-set it should lose
+  assert.equal(back.rev, 0, "the write counter is the one boot one wrote");
+  await second.fiber.dispose();
+});
+
+/** OWN the env this rig sets (2026-10-13, the flake audit): the roots
+ *  were set and never restored, so a later spec in the same fork
+ *  inherited a root whose tree its own teardown had already deleted.
+ *  Capture at set time, restore with the test. */
+function ownEnv(): void {
+  const keys = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
+  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
+  onTestFinished(() => {
+    for (const [k, v] of previous) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+}

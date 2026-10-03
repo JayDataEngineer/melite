@@ -18,8 +18,14 @@ import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import {describe, it, beforeAll} from "vitest";
+import {afterAll, beforeAll, describe, it} from "vitest";
 import { expect } from "vitest";
+
+let stateRootBefore: string | undefined;
+afterAll(() => {
+  if (stateRootBefore === undefined) delete process.env["MELITE_STATE_ROOT"];
+  else process.env["MELITE_STATE_ROOT"] = stateRootBefore;
+});
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundleSeats } from "../../helpers/bundle-seats.ts";
@@ -45,6 +51,10 @@ let ctx: Context;
 
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "estate-composition-wall-"));
+  // OWN the key (2026-10-13, the flake audit): set in beforeAll and
+  // never restored, so every later spec in this fork inherited a root
+  // that this wall's own teardown deletes.
+  stateRootBefore = process.env["MELITE_STATE_ROOT"];
   process.env["MELITE_STATE_ROOT"] = root;
   ctx = new Context();
   // cross-copy plugin shapes ride the honest Plugin cast — never

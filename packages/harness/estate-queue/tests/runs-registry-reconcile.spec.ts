@@ -43,8 +43,12 @@ interface Seat {
   cards: Record<string, (...args: never[]) => unknown>;
 }
 
-const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
-  const state = tmp();
+const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat =>
+  seatAt(tmp(), cardOver);
+
+/** The same rig on a CHOSEN state root (the round-trip arm needs a
+ *  SECOND seat over the first one's bytes — the dead-process case). */
+const seatAt = (state: string, cardOver: Record<string, (...args: never[]) => unknown> = {}): Seat => {
   const ctx = new Context();
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
@@ -550,3 +554,70 @@ describe("stroke-83 boot reconcile (resurrect REBORN as a replay)", () => {
     assert.match(String(side["sweep"]), /boot sweep/);
   });
 });
+
+// THE ROUND TRIP (2026-10-13, the door audit's gap 1). Every reboot
+// test above HAND-AUTHORED its `_flow.json`: the writer (runsStart.ts
+// -> sidecarDoc) and the reader (queueResurrect.ts -> parseSidecar)
+// were pinned to two independently written JSON shapes, so renaming a
+// field on either side stayed green while a production run silently
+// dropped at boot. Nothing crossed the two. This does: the REAL start
+// door writes the bytes, a FRESH seat reads them off disk.
+describe("the writer's own bytes survive the process", () => {
+  it("a real run's _flow.json is readable by a real boot on a fresh seat", async () => {
+    const s = seat();
+    engineSeat(s);
+    const ans = await s.svc.start(wfBody82(), new AbortController().signal);
+
+    // read the writer's OWN sidecar — no fixture, no hand-authored shape
+    const sidecarPath = join(s.state, "output", ans.run_id, "_flow.json");
+    const sidecar = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
+    assert.equal(sidecar["status"], "queued", "the shape bootReconcile replays");
+    assert.equal(sidecar["draft_id"], "d1");
+
+    // the DEAD-PROCESS case: a second seat over the SAME root, engine
+    // aboard, nothing re-armed by hand. The constructor's OWN
+    // fire-and-forget bootReconcile (runsRegistry.ts:353) is what runs
+    // — so the assertion is its EFFECT: the run reappears in a queue
+    // that started empty, which it can only do by reading the writer's
+    // bytes. (The once-guard at :387 means an explicit second call
+    // returns []; re-arming it by hand would test the re-arm, not the
+    // round trip.)
+    const dead = seatAt(s.state);
+    new FakeEngine((dead.svc as unknown as { ctx: Context }).ctx);
+    const revived = await waitForReplay(dead);
+    assert.equal(revived.length, 1, "exactly the writer's run was replayed");
+    const row = await settleWait(dead, revived[0]!);
+    assert.notEqual(row.status, "queued", "the replayed run really ran");
+  });
+
+  it("a completed run is NOT resurrected (the settle writer is readable too)", async () => {
+    const s = seat();
+    engineSeat(s);
+    const ans = await s.svc.start(wfBody82(), new AbortController().signal);
+    await settleWait(s, ans.run_id);
+    const sidecar = JSON.parse(
+      readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.notEqual(sidecar["status"], "queued", "the settle writer moved it off queued");
+
+    const dead = seatAt(s.state);
+    new FakeEngine((dead.svc as unknown as { ctx: Context }).ctx);
+    assert.deepEqual(await waitForReplay(dead), [], "a settled run is never resurrected");
+  });
+});
+
+/** The ids the fresh seat's OWN boot replay put into its queue, after
+ *  the fire-and-forget reconcile has had time to land. Bounded so a
+ *  reader that never replays fails with [] instead of hanging. */
+const waitForReplay = async (s: Seat): Promise<string[]> => {
+  for (let i = 0; i < 200; i++) {
+    const ids = [...s.core.runs.keys()].filter((id) => s.core.runs.get(id) !== undefined);
+    if (ids.length > 0) {
+      // one more turn so a second (unexpected) replay would also show
+      await new Promise((r) => setTimeout(r, 20));
+      return [...s.core.runs.keys()];
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+  return [];
+};

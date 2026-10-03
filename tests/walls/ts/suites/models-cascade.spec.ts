@@ -32,22 +32,27 @@ import {
   modelsService,
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { mergedDefaults } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
+import { assertAddressesServe } from "../../../../packages/engines/comfyui-cordis/src/models/service.ts";
 
 describe("the defaults cascade is the cordis primitive (A3)", () => {
   it("the models system is a booted Service (the PORT LAW)", (): void => {
     const svc = modelsService();
     assert.ok(svc instanceof ModelsService, "modelsService() returns a Service instance");
     assert.equal(svc.name, MODELS_SERVICE);
-    // 48 since the F1 mask mint (mask-select, unoffered, 2026-10-12;
-    // 47 before it since stroke 4 — fit + skin returned unoffered as
-    // weightless verb families; ideogram retired with its card
-    // 2026-09-17, and the stroke-87 fit + skin weights retirements
-    // stand)
-    assert.equal(svc.registryIds().length, 48) // +1: yue2 on the music card (2026-09-20) // +1: the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as the Base variant) // +2: the qwen 2.1 pair (2026-09-21) // -2: the H3 fold (h3 + h3-keyframe died into h3-timeline's variants; their routes survive) // +2: fit + skin return unoffered (stroke 4 — the meld verb families) // +1: mask-select (the F1 mint, 2026-10-12 — the tool lane's family), "every registered model through the service at boot");
-    // 101 since the F1 mask mint (the family id is its own route;
-    // 100 before it since stroke 4 — the fit + skin standard routes
-    // returned declared-but-unoffered; the catalog serves neither)
-    assert.equal(svc.modelIds().length, 101) // +1: qwen3-tts-voicedesign-design — the design lane's own route (transcript-015, 2026-09-24) // +1: yue2 on the music card (2026-09-20) // +6: the qwen 2.1 pair (2026-09-21) // +1: the survivor-id correction (2026-09-22 — the h3 family id serves as its own address; the family renames h3-timeline → h3 in place) // +1: qwen3-tts-voicedesign-base — the 1.7B clone lane's own flat route (the 1:1 matrix, 2026-09-23) // +2: the fit + skin standard routes (stroke 4) // +1: mask-select (the F1 mint, 2026-10-12), "every flat id still serves (routes over the registry)"); // 90 since the form-seams stroke (ideogram retired)
+    // NO HAND COUNT (2026-10-13, the flake audit). This literal was
+    // 48 with a five-line editorial trail of "+1 / -2" annotations —
+    // a ratchet that fires on any family mint AND can never fail
+    // independently: bootModels already refuses when familyCount()
+    // disagrees with FAMILY_PLUGINS.length (service.ts:1113), over the
+    // same table registryIds() reads. What this wall actually owns is
+    // the DERIVED property: every registered family serves an address.
+    assertAddressesServe(svc.modelIds(), svc.registryIds());
+    // The route census is a DERIVED property, not a number: every
+    // registry id must be reachable as a model id (assertAddressesServe
+    // above) and every flat id must resolve through its ladder. A count
+    // would be a hand-maintained ratchet with the same editorial trail.
+    assert.ok(svc.modelIds().length >= svc.registryIds().length, "the route surface is at least the registry");
+    assert.ok(svc.modelIds().length > 0, "the boot served at least one route");
   });
 
   it("registerFamily refuses duplicates LOUD (one owner per id)", (): void => {
