@@ -28,7 +28,12 @@ export function cmdSync(cfg: EndpointConfig): void {
   }
   const pin = readFileSync(pinF, "utf8").split("\n")
     .map((l) => l.trim()).find((l) => l && !l.startsWith("#")) ?? "";
-  cmdPaths(cfg);
+  // ORDER LAW (the ubuntu-desktop receipt): the core checkout lands
+  // BEFORE cmdPaths — ComfyUI's tree tracks models/<folder>/
+  // put_*_models_here placeholders, and a layout written first makes
+  // `git checkout` abort on the untracked collision. The runtime
+  // layout (pointers + extra_model_paths.yaml) is layered onto the
+  // checked-out core, exactly how the reference estate was built.
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(process.env)) {
     if (v !== undefined) env[k] = v;
@@ -50,6 +55,7 @@ export function cmdSync(cfg: EndpointConfig): void {
       { encoding: "utf8" });
     if ((have.stdout ?? "").trim() === pin) {
       info("core already at pin " + pin.slice(0, 12));
+      cmdPaths(cfg);
       vendorManager();
       return;
     }
@@ -68,6 +74,7 @@ export function cmdSync(cfg: EndpointConfig): void {
   git(["checkout", "--quiet", "FETCH_HEAD"]);
   info("core checked out at " + pin.slice(0, 12) + " (workspace root: " +
     RUNTIME + ")");
+  cmdPaths(cfg);
   vendorManager();
 }
 
