@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { DEFAULT_CONFIG, REPO, RUNTIME } from "./provision-shared.ts";
-import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot } from "./provision-config.ts";
+import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot, rootStr } from "./provision-config.ts";
 import type { EndpointConfig } from "./provision-config.ts";
 
 // ── instance commands ───────────────────────────────────────────
@@ -160,8 +160,17 @@ export function syncEndpointFromRoot(cfg: EndpointConfig): void {
   const skipped: string[] = [];
   const next: Record<string, string> = {};
   for (const [k, v] of Object.entries(derived)) {
+    // Path keys record themselves only as EXPLICIT endpoint overrides
+    // of the root config — an unset key inherits the root and stays
+    // unset in the tracked file (li-portability: the tracked shape
+    // carries no redundant derivations; url/boot_cmd/containers are
+    // generated-surface facts and always record).
+    const override = k === "model_base_path" || k === "model_download_path" ||
+      k === "input_dir" || k === "output_dir"
+      ? rootStr(String((cfg as Record<string, unknown>)[k] ?? "")) !== ""
+      : true;
     const writable = k === "input_dir_container" ? v : endpointWritable(v);
-    if (writable === null) {
+    if (writable === null || !override) {
       skipped.push(k);
       continue;
     }
@@ -181,6 +190,6 @@ export function syncEndpointFromRoot(cfg: EndpointConfig): void {
   writeFileSync(DEFAULT_CONFIG, JSON.stringify(onDisk, null, 2) + "\n");
   console.log("endpoint derived from root: " + changed.join(", ") +
     (skipped.length > 0
-      ? " (machine-local, overlay-owned, not written: " + skipped.join(", ") + ")"
+      ? " (not written — inherited or overlay-owned: " + skipped.join(", ") + ")"
       : ""));
 }
