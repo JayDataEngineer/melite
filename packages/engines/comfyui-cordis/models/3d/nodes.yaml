@@ -22,7 +22,6 @@
 # the side checkout per its INSTALL.md).
 extensions:
   - name: melite-kimodo-nodes
-    registry: melite-kimodo-nodes
     version: 0.1.0
     required: false
     desc: >-
@@ -38,7 +37,6 @@ extensions:
     pip:
       - "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
   - name: melite-autoremesher-nodes
-    registry: melite-autoremesher-nodes
     version: 0.1.0
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
     ref: 26ee7e0ee456177817a77dc3885ef4957d37b7fd

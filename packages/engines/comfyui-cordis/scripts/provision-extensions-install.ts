@@ -85,6 +85,12 @@ export function runtimePython(workspace: string): string {
     const py = join(dirname(cb), "python");
     if (existsSync(py)) return py;
   }
+  // the MANAGED runtime's own venv (UV_PROJECT_ENVIRONMENT from
+  // cmdSync) — the one extension pip pins ride. The ubuntu-desktop
+  // receipt: without this leg every pip pin failed against a
+  // nonexistent infra/python/.venv (the BYO-era fallback).
+  const managed = join(workspace, ".venv", "bin", "python");
+  if (existsSync(managed)) return managed;
   return join(workspace, "infra", "python", ".venv", "bin", "python");
 }
 

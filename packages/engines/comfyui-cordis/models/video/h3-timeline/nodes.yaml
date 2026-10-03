@@ -1,13 +1,16 @@
 extensions:
 - name: comfyui-h3-motion-context
-  registry: comfyui-h3-motion-context
+  url: https://github.com/NikoDemon80/ComfyUI-H3-Motion-Context.git
+  ref: 429e952
   version: 0.5.1
   required: true
   desc: 'BASE pack for H3 motion context: MiniMaxH3MotionContext, MotionContextTrim,
     MotionContextSaveLatent, MotionContextLoadLatent. Owns the four shared class names
     under coexistence with the MultiRef fork. Name = the real install dir (mcp registry
     id); pinned at the v0.5.1 tag the estate runs (core 0.34.0 required
-    by ext 0.4.0+).'
+    by ext 0.4.0+). 2026-10-12: the registry id resolved in NO Manager
+    cache (890-row new tier, 5931-row root) — redeclared as the exact
+    url+ref the reference estate executes.'
 - name: Comfyui-PlagueKind-Nodes
   url: https://github.com/PlagueKind/Comfyui-PlagueKind-Nodes.git
   ref: 01f186e
@@ -20,10 +23,14 @@ extensions:
     \ contest piece (run-6a96c100); container copy verified pristine at this ref.\
     \ Upstream has since tagged v1.4.3 (066ada9); re-pin only with a lane re-render."
 - name: ComfyUI-VideoHelperSuite
-  registry: comfyui-videohelpersuite
+  url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git
+  ref: 4d907be
   version: 1.7.9
   required: true
   desc: Video I/O utilities (VHS preview/metadata flags in window graphs).
+    2026-10-12: registry id "comfyui-videohelpersuite" resolved in NO
+    Manager cache (the cache spells it "vhs") — redeclared as the
+    exact url+ref the reference estate executes.
 - name: ComfyUI-KJNodes
   url: https://github.com/kijai/ComfyUI-KJNodes.git
   # 2026-09-06 gap-fix: ref 'master' was a FLOATING pin (the
@@ -33,10 +40,14 @@ extensions:
   required: true
   desc: ImageSharpenKJ + ModelPreviewOverrideKJ (post-ladder polish in window graphs).
 - name: rgthree-comfy
-  registry: rgthree-comfy
+  url: https://github.com/rgthree/rgthree-comfy.git
+  ref: 2c5342a
   version: 1.0.2608210019
   required: true
   desc: Fast Groups Bypasser nodes present in the window graphs.
+    2026-10-12: registry id "rgthree-comfy" resolved in NO Manager
+    cache (the cache spells it "rgthree") — redeclared as the exact
+    url+ref the reference estate executes.
 - name: Nvidia_RTX_Nodes_ComfyUI
   url: https://github.com/Comfy-Org/Nvidia_RTX_Nodes_ComfyUI
   ref: 892515e3eb9a4920a131a502a047e47adca9eb0d

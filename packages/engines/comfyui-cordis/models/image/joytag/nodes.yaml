@@ -1,9 +1,9 @@
 # joytag lane extension declarations (tagger-card stroke, 2026-09-06).
-# The tagger card's CXH_JoyTag node. Registry-canonical bare id (PIN LAW);
-# the install rail resolved it via the URL form of the same engine.
+# The tagger card's CXH_JoyTag node. URL-pinned (2026-10-12: the bare
+# registry id resolved in NO Manager cache — the estate installs the
+# exact ref; the registry branch never carried this pack).
 extensions:
   - name: Comfyui_joytag
-    registry: Comfyui_joytag
     url: https://github.com/StartHua/Comfyui_joytag
     ref: 025dd12
     required: true

@@ -13,7 +13,8 @@
 # MoGe — the camera transform is mandatory for the conditioning).
 extensions:
   - name: ComfyUI-MoGe
-    registry: comfyui-moge
+    url: https://github.com/kijai/ComfyUI-MoGe.git
+    ref: 8276bab
     version: "0.5.0"
     required: true
     desc: "MoGe depth estimation — pixel-aligned camera conditioning for Pixal3D (camera_angle_x → camera transform matrix → per-token pixel alignment). Required: pixal3d conditioning will not compose without it."

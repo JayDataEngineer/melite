@@ -3,7 +3,8 @@
 # (PIN LAW); installed via the URL form of the same engine rail.
 extensions:
   - name: ComfyUI-Florence2
-    registry: ComfyUI-Florence2
+    url: https://github.com/kijai/ComfyUI-Florence2.git
+    ref: 9ece3de
     version: 1.1.0
     required: true
     desc: "Florence-2 captioning (DownloadAndLoadFlorence2Model + Florence2Run). Checkpoint self-downloads to ComfyUI/models/LLM on first run."

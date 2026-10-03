@@ -4,7 +4,6 @@
 # the vendor symlink. check_card_requires resolves this against object_info.
 extensions:
 - name: melite-poser-nodes
-  registry: melite-poser-nodes
   version: 0.1.0
   required: true
   desc: SkinPack (deterministic detail maps, CPU) + SkinApply (GLB texture surgery) + RayRenderGLBViews (proof turnaround).

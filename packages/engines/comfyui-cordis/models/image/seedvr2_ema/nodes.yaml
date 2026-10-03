@@ -4,7 +4,8 @@
 # SaveImage).
 extensions:
 - name: ComfyUI-SeedVR2_VideoUpscaler
-  registry: comfyui-seedvr2-videoupscaler
+  url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler.git
+  ref: 4490bd1
   version: 1.1.0
   required: true
   desc: SeedVR2LoadDiTModel + SeedVR2LoadVAEModel + SeedVR2VideoUpscaler

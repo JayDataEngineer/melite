@@ -10,7 +10,6 @@
 # died with the Python estate, 2026-10-03 audit step 8).
 extensions:
 - name: melite-autorig-nodes
-  registry: melite-autorig-nodes
   version: 0.1.0
   required: true
   desc: KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).

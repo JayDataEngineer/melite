@@ -9,7 +9,6 @@
 # been the implementation since 2026-09-04.
 extensions:
   - name: melite-kimodo-nodes
-    registry: melite-kimodo-nodes
     version: 0.1.0
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
@@ -24,7 +23,6 @@ extensions:
   # registry + version, the fit/skin/anny rows) — a bare-name row
   # forked the pin and extension_lane refused the whole manifest.
   - name: melite-poser-nodes
-    registry: melite-poser-nodes
     version: 0.1.0
     required: true
     desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.

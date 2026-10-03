@@ -8,7 +8,6 @@ extensions:
   # row forked the pin and extension_lane refused the whole manifest
   # ("divergent pins for melite-poser-nodes"), 0 entries served.
   - name: melite-poser-nodes
-    registry: melite-poser-nodes
     version: 0.1.0
     required: true
     desc: The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).
