@@ -255,6 +255,58 @@ export function engineDirs(enginesRoot: string): string[] {
   return out;
 }
 
+/** THE FAMILY LANE (operator 2026-10-03): the id `model:<mid>` names
+ *  the family's entrance row, and the compose refusal voice sends the
+ *  agent there by that id alone ("Read the family lane:
+ *  melite_skill_read model:<family>."). A family that ships only
+ *  skills — no GUIDE.md, no agents/AGENT.md — had NO such row, so the
+ *  instruction 404ed and the prompt rules it was announcing (anima's
+ *  comma-tag rule, the TTS voice lane, the music/sfx lanes) never
+ *  reached the agent that had just chosen that model.
+ *
+ *  This builds that row from the skills themselves: the tier-1 line
+ *  each skill already serves (its frontmatter description), plus the
+ *  exact read ids. It is synthesized only when the family has skills
+ *  and no file row of its own — a family that ships agents/AGENT.md
+ *  keeps its authored row verbatim, and the row is not a counted
+ *  skill (buildSkillIndex skips scope `model-lane`), so no count
+ *  moves. */
+function familyLane(
+  mdir: string,
+  mid: string,
+  genre: string,
+  skillRows: DocRow[],
+): DocRow | null {
+  if (skillRows.length === 0) return null;
+  const lines: string[] = [
+    "# " + mid + " — family lane (synthesized: this family ships skills, no agents/AGENT.md)",
+    "",
+    "Read the rows below with melite_skill_read BEFORE writing a prompt for "
+      + mid + "; every family wants its own prompt shape.",
+    "",
+  ];
+  for (const r of skillRows) {
+    lines.push(
+      "- `" + r.row.id + "` — " + r.row.name + (r.row.description === "" ? "" : ": " + r.row.description),
+    );
+  }
+  return {
+    row: gateSkill(
+      "model:" + mid,
+      mid,
+      mid + " family lane: " + String(skillRows.length) + " skill row(s) to read before writing a prompt",
+      "model-lane",
+      genre,
+      null,
+      mid,
+      null,
+      null,
+    ),
+    path: join(mdir, "agents", "skills"),
+    bodyText: lines.join("\n") + "\n",
+  };
+}
+
 /** LEVEL 1+3 model docs (lane_disclosure._model_rows 259-312):
  *  GUIDE.md / agents/AGENT.md / agents/skills/* per model dir. */
 export function modelRows(engine: string): DocRow[] {
@@ -296,6 +348,7 @@ export function modelRows(engine: string): DocRow[] {
       } catch {
         continue;
       }
+      const own: DocRow[] = [];
       for (const sk of sks) {
         const skp: string = join(mdir, "agents", "skills", sk);
         const doc: string = isDir(skp) ? join(skp, "SKILL.md") : skp;
@@ -308,7 +361,15 @@ export function modelRows(engine: string): DocRow[] {
           null,
           mid,
         );
-        if (r !== null) rows.push(r);
+        if (r !== null) {
+          own.push(r);
+          rows.push(r);
+        }
+      }
+      // The family lane, when the family has no row of its own.
+      if (guide === null && agent === null) {
+        const lane: DocRow | null = familyLane(mdir, mid, genre, own);
+        if (lane !== null) rows.push(lane);
       }
     }
   }

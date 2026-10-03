@@ -58,6 +58,24 @@ const mkEstate = (withFlows = true): string => {
   mkdirSync(join(E, "eng-a", "models", "g1", "m1", "agents", "skills", "emptydir"), { recursive: true });
   w("packages/engines/eng-a/models/g1/m3/GUIDE.md", "# Guide Three\n");
   w("packages/engines/eng-a/models/g1/m2/agents/AGENT.md", "no frontmatter, no heading\n");
+  // A family that ships ONLY skills — the anima shape: the compose
+  // refusal names `model:<family>`, and no file row carries that id.
+  w(
+    "packages/engines/eng-a/models/g1/m4/agents/skills/prompt-enhance/SKILL.md",
+    '---\nname: prompt-enhance\ndescription: M4 prompt rules — comma tags, NOT prose (read before writing an m4 prompt)\n---\nbody\n',
+  );
+  w("packages/engines/eng-a/models/g1/m4/agents/skills/extra/SKILL.md", "---\nname: extra\ndescription: second lane\n---\nbody\n");
+  // A family with no docs at all, and a skill whose frontmatter
+  // carries no description — both arms of the lane builder.
+  w("packages/engines/eng-a/models/g1/m5/agents/README.md", "nothing to teach\n");
+  w("packages/engines/eng-a/models/g1/m6/agents/skills/bare.md", "# bare\n");
+  // m7 keeps an EMPTY skills dir: the walk reaches the lane builder
+  // with no rows, which must build no lane rather than announce zero.
+  mkdirSync(join(E, "eng-a", "models", "g1", "m7", "agents", "skills"), { recursive: true });
+  // A family whose agents/spawn is a FILE: the readdir fails with
+  // ENOTDIR, which is not the tolerated ENOENT — the walker must name
+  // the unreadable surface instead of degrading silently.
+  w("packages/engines/eng-a/models/g1/m8/agents/spawn", "not a directory\n");
   w("packages/engines/eng-a/src/cards/g2/c1/AGENT.md", "# Card One\n");
   w("packages/engines/eng-a/src/cards/g2/c2/agents/AGENT.md", "# Card Two\n");
   w("packages/engines/eng-a/src/cards/g2/c2/agents/skills/s1.md", "s1\n");
@@ -138,6 +156,11 @@ describe("modelRows", () => {
       "model:m1:quoted.md",
       "model:m2",
       "guide:m3",
+      "model:m4:extra",
+      "model:m4:prompt-enhance",
+      "model:m4",
+      "model:m6:bare.md",
+      "model:m6",
     ]);
     assert.ok(!ids.some((id) => id.includes("emptydir") || id.includes("skip")));
     const byId = new Map(rows.map((r) => [r.row.id, r.row]));
@@ -153,6 +176,80 @@ describe("modelRows", () => {
     assert.equal(byId.get("guide:m1")?.model, "m1");
     assert.equal(byId.get("guide:m1")?.card, null);
     assert.deepEqual(modelRows(join(ROOT, "packages", "engines", "eng-c")), []);
+  });
+
+  // THE FAMILY LANE: a family that ships only skills had no
+  // `model:<mid>` row, and the compose refusal voice sends the agent
+  // to exactly that id — so the announcement 404ed (the anima defect).
+  it("synthesizes the family lane when the family ships only skills", () => {
+    mkEstate(false);
+    const rows = modelRows(join(ROOT, "packages", "engines", "eng-a"));
+    const lane = rows.find((r) => r.row.id === "model:m4");
+    assert.ok(lane, "model:m4 must resolve");
+    assert.equal(lane.row.scope, "model-lane");
+    assert.equal(lane.row.model, "m4");
+    assert.equal(lane.row.card, null);
+    assert.match(lane.row.description, /2 skill row\(s\)/);
+    // The body is inline — no file, so the read door serves the text.
+    assert.equal(typeof lane.bodyText, "string");
+    const body = lane.bodyText as string;
+    assert.match(body, /model:m4:prompt-enhance/);
+    assert.match(body, /model:m4:extra/);
+    // The tier-1 line each skill already serves rides the lane: the
+    // comma-tag rule is what the agent was told to go read.
+    assert.match(body, /comma tags, NOT prose/);
+  });
+
+  it("never synthesizes a lane over an authored row", () => {
+    mkEstate(false);
+    const rows = modelRows(join(ROOT, "packages", "engines", "eng-a"));
+    const lanes = rows.filter((r) => r.row.scope === "model-lane");
+    // m1 authors agents/AGENT.md and m3 a GUIDE.md: both keep theirs.
+    assert.deepEqual(lanes.map((r) => r.row.id), ["model:m4", "model:m6"]);
+    assert.equal(rows.filter((r) => r.row.id === "model:m1").length, 1);
+  });
+
+  it("a family with nothing to say gets no lane", () => {
+    mkEstate(false);
+    const rows = modelRows(join(ROOT, "packages", "engines", "eng-a"));
+    // m5 ships no GUIDE, no AGENT.md and no skills dir; m7 keeps an
+    // EMPTY skills dir. Neither gets a lane: an invented lane would
+    // announce zero rows and teach the agent to read nothing.
+    assert.equal(rows.some((r) => r.row.model === "m5"), false);
+    assert.equal(rows.some((r) => r.row.model === "m7"), false);
+    assert.equal(rows.filter((r) => r.row.scope === "model-lane").length, 2);
+  });
+
+  it("an unreadable surface names itself (never a silent empty walk)", () => {
+    mkEstate(false);
+    const errors: string[] = [];
+    const realError = console.error;
+    console.error = (msg: string): void => { errors.push(msg); };
+    try {
+      modelRows(join(ROOT, "packages", "engines", "eng-a"));
+      // m8's agents/spawn is a file: ENOTDIR is not the tolerated ENOENT.
+      assert.ok(
+        errors.some((m) => m.includes("spawn dir unreadable") && m.includes("m8")),
+        `the spawn surface must name itself: ${JSON.stringify(errors)}`,
+      );
+      engineDirs(join(ROOT, "packages", "engines", "afile"));
+      assert.ok(
+        errors.some((m) => m.includes("engines root unreadable")),
+        `the engines root must name itself: ${JSON.stringify(errors)}`,
+      );
+    } finally {
+      console.error = realError;
+    }
+  });
+
+  it("a skill with no description still names its read id", () => {
+    mkEstate(false);
+    const rows = modelRows(join(ROOT, "packages", "engines", "eng-a"));
+    const lane = rows.find((r) => r.row.id === "model:m6");
+    assert.ok(lane);
+    const body = lane.bodyText as string;
+    assert.match(body, /- `model:m6:bare\.md` — bare/);
+    assert.ok(!body.includes("bare:"), "an empty description adds no colon tail");
   });
 });
 
@@ -340,7 +437,7 @@ describe("buildSkillIndex + findSkill", () => {
       assert.deepEqual(empty.cards, []);
       assert.deepEqual(empty.families, []);
       assert.equal(empty.flows.count, 0);
-      const restore = seedBench([{ model: "m1" }, { model: "m3" }, { card: "c2" }]);
+      const restore = seedBench([{ model: "m1" }, { model: "m3" }, { model: "m4" }, { card: "c2" }]);
       let idx: { count: number; families: Array<{ id: string; skills: number; entrance: string | null }>; cards: Array<{ id: string; skills: number; entrance: string | null }>; flows: { count: number } };
       try {
         idx = buildSkillIndex(ROOT) as typeof idx;
@@ -356,6 +453,12 @@ describe("buildSkillIndex + findSkill", () => {
     assert.equal(m1.entrance, "model:m1", "the entrance row id");
     const m3 = idx.families.find((f) => f.id === "m3");
     assert.ok(m3 !== undefined && m3.entrance === null, "a guide-only family names no entrance");
+    // A benched skills-only family: the lane IS its entrance, and the
+    // lane row itself is not a counted skill (count stays at 2).
+    const m4 = idx.families.find((f) => f.id === "m4");
+    assert.ok(m4 !== undefined, "the benched selection carries m4");
+    assert.equal(m4.entrance, "model:m4", "the synthesized lane names the entrance");
+    assert.equal(m4.skills, 2, "the lane row is not counted as a skill");
     const c2 = idx.cards.find((c) => c.id === "c2");
     assert.ok(c2 !== undefined && c2.skills === 1 && c2.entrance === "card:c2");
     const unbenched = idx.cards.find((c) => c.id === "c1");
@@ -367,6 +470,12 @@ describe("buildSkillIndex + findSkill", () => {
     assert.ok(card.path !== null && card.path.endsWith("AGENT.md"));
     const model = findSkill(ROOT, "model:m1");
     assert.ok(model !== null);
+    // THE FAMILY LANE (operator 2026-10-03): the synthesized row
+    // resolves by the id the compose refusal names, and the read door
+    // serves its inline body — path null, bodyText the lane text.
+    const lane = findSkill(ROOT, "model:m4");
+    assert.ok(lane !== null && lane.path === null && typeof lane.bodyText === "string");
+    assert.match(lane.bodyText as string, /comma tags, NOT prose/);
     const flow = findSkill(ROOT, "flow:anny-hmr");
     assert.ok(flow !== null && flow.bodyText === null);
     const rendered = findSkill(ROOT, "flow:audio-native-tts");
@@ -424,6 +533,17 @@ describe("hSkillRead", () => {
         const n = hSkillRead(ROOT, state, "ghost");
         assert.equal(n.status, 404);
         assert.deepEqual(n.payload, { error: "no such skill: \"ghost\"" });
+        // THE FAMILY LANE: the id the compose refusal names answers
+        // 200 with the family's prompt rules — the anima case, where
+        // `melite_skill_read model:anima` used to 404 while
+        // `model:anima:prompt-enhance` held the comma-tag rule.
+        const lane = hSkillRead(ROOT, state, "model:m4");
+        assert.equal(lane.status, 200);
+        const laneBody = lane.payload as { id: string; scope: string; content: string };
+        assert.equal(laneBody.id, "model:m4");
+        assert.equal(laneBody.scope, "model-lane");
+        assert.match(laneBody.content, /comma tags, NOT prose/);
+        assert.match(laneBody.content, /melite_skill_read/);
         const journal = readFileSync(join(state, "output", "_ledger.jsonl"), "utf8");
         assert.ok(journal.includes('"event":"skill.read"'));
         assert.ok(journal.includes("model:m1:plain.md"));

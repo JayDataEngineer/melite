@@ -134,6 +134,10 @@ export function wireSkill(r: SkillRow): Record<string, unknown> {
 export interface DocRow {
   readonly row: SkillRow;
   readonly path: string;
+  /** The inline body for a row that has no file — a flow whose text
+   *  comes from the registry, and the synthesized family lane
+   *  (skillRows.modelFamilyLane). Absent means the file is the body. */
+  readonly bodyText?: string;
 }
 
 /** THE BINDING-VOCABULARY INDEX (the no-dump rework, 2026-09-21).
@@ -195,10 +199,19 @@ export function buildSkillIndex(repo: string): Record<string, unknown> {
         if (r.row.scope.endsWith("-spawn")) continue;
         const mid = r.row.model;
         if (mid === null || !pickedModels.has(mid)) continue;
-        count += 1;
         const cell = families.get(mid) ?? { genre: r.row.genre, skills: 0, entrance: null };
         if (r.row.scope === "model-skill") cell.skills += 1;
-        if (r.row.scope === "model") cell.entrance = r.row.id;
+        // A synthesized family lane IS the entrance for a family that
+        // authors no row (skillRows.familyLane) — it names the id the
+        // compose refusal tells the agent to read, so it rides the same
+        // cell an authored agents/AGENT.md row would. It is an entrance,
+        // not a skill: only a `model` row counts.
+        if (r.row.scope === "model" || r.row.scope === "model-lane") cell.entrance = r.row.id;
+        if (r.row.scope === "model-lane") {
+          families.set(mid, cell);
+          continue;
+        }
+        count += 1;
         families.set(mid, cell);
       }
       for (const r of cardRows(engine, repo).rows) {
@@ -258,7 +271,7 @@ export function findSkill(
   const engines: string[] = engineDirs(join(repo, "packages", "engines"));
   for (const engine of engines) {
     for (const r of modelRows(engine)) {
-      if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
+      if (r.row.id === sid) return { row: r.row, path: r.bodyText === undefined ? r.path : null, bodyText: r.bodyText ?? null };
     }
     for (const r of cardRows(engine, repo).rows) {
       if (r.row.id === sid) return { row: r.row, path: r.path, bodyText: null };
