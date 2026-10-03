@@ -153,3 +153,11 @@ checkout is available.
 
 The working plan and the forward-looking work index live in `dev_docs/`
 (developer-local, untracked).
+
+## License
+
+Code: GNU AGPL-3.0-or-later ([LICENSE](LICENSE)). Model weights, LoRAs,
+control nets, and other provisioned artifacts keep their own upstream
+licenses, which prevail over AGPL for those artifacts — scope and
+carve-outs in [NOTICE.md](NOTICE.md). Vendored code under `vendor/`
+retains its upstream licenses.
