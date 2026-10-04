@@ -582,12 +582,80 @@ describe("the writer's own bytes survive the process", () => {
     // bytes. (The once-guard at :387 means an explicit second call
     // returns []; re-arming it by hand would test the re-arm, not the
     // round trip.)
+    // THE GRAPH ROUND TRIP (the durability trio audit, 2026-10-15):
+    // graphRowsUsable tolerates a MISSING graph, so a writer that
+    // dropped the key (or renamed it) would leave this round trip
+    // green. The contract is that the composed rows reach disk and
+    // come back byte-for-byte — asserted against the writer's own
+    // bytes, with the stage id each row belongs to.
+    const graph = sidecar["graph"] as Array<Record<string, unknown>> | undefined;
+    assert.ok(Array.isArray(graph), "the writer's graph reached disk");
+    assert.deepEqual(
+      graph.map((g) => g["id"]),
+      ["s"],
+      "the graph row is the compiled stage's, by id",
+    );
+    assert.deepEqual(
+      graph[0]!["params"],
+      WF,
+      "the graph row carries the workflow this rig submitted, verbatim",
+    );
+
     const dead = seatAt(s.state);
     new FakeEngine((dead.svc as unknown as { ctx: Context }).ctx);
     const revived = await waitForReplay(dead);
-    assert.equal(revived.length, 1, "exactly the writer's run was replayed");
+    assert.deepEqual(revived, [ans.run_id], "the replayed run IS the writer's run, by id");
     const row = await settleWait(dead, revived[0]!);
     assert.notEqual(row.status, "queued", "the replayed run really ran");
+    assert.deepEqual(
+      row.graphRows.map((g) => g.id),
+      ["s"],
+      "the replayed run's row carries the same graph id the writer stamped",
+    );
+  });
+
+  it("the settled writer's OWN bytes serve the status door from a fresh seat (the serving round trip)", async () => {
+    // THE SERVING ROUND TRIP (the durability trio audit, 2026-10-15):
+    // every from_disk status wall pinned a HAND-WRITTEN sidecar, so
+    // the writer and the reader were each pinned alone — a writer that
+    // changed a key name would leave every serving wall green. Here
+    // the real writer settles a run that produced an artifact, and a
+    // FRESH seat (empty memory) answers from the writer's bytes; the
+    // served rows are compared to the file's, field by field.
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      writeFileSync(join(runDir, "a.png"), "PNG");
+      return { stages: { s: { outputs: {}, artifacts: ["a.png"] } }, promptId: "p" };
+    };
+    const ans = await s.svc.start(wfBody82(), new AbortController().signal);
+    const settled = await settleWait(s, ans.run_id);
+    assert.notEqual(settled.status, "queued", "the run really ran before the reader is asked");
+
+    const writerBytes = JSON.parse(
+      readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8"),
+    ) as Record<string, unknown>;
+    assert.deepEqual(
+      writerBytes["artifacts"],
+      ["a.png"],
+      "the settle writer stamped the artifact it harvested",
+    );
+
+    const fresh = seatAt(s.state);
+    new FakeEngine((fresh.svc as unknown as { ctx: Context }).ctx);
+    const served = await fresh.svc.status(ans.run_id, new AbortController().signal) as Record<string, unknown>;
+    assert.equal(served["from_disk"], true, "the fresh seat answered from the writer's file");
+    assert.equal(served["status"], writerBytes["status"], "the served status IS the writer's");
+    assert.deepEqual(
+      served["artifacts"],
+      writerBytes["artifacts"],
+      "the served artifacts ARE the writer's",
+    );
+    assert.deepEqual(
+      (served["stages"] as Array<Record<string, unknown>>).map((st) => st["id"]),
+      (writerBytes["stages"] as Array<Record<string, unknown>>).map((st) => st["id"]),
+      "the served stage ids ARE the writer's",
+    );
   });
 
   it("a completed run is NOT resurrected (the settle writer is readable too)", async () => {

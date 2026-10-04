@@ -807,6 +807,16 @@ test("the bench survives a dispose + re-boot on one root", async () => {
   );
   assert.equal(born.created, true);
   assert.equal(born.rev, 0, "the birth writes rev 0");
+  // PATCH BEFORE THE RESTART (the durability trio audit, 2026-10-15):
+  // rev 0 is what a RE-BORN bench also reads, so asserting it proves
+  // nothing about the write counter. A patched bench survives only if
+  // the second boot read the FILE the first boot wrote.
+  const patched = await first.benchRemote.patch(
+    "keeper",
+    { stage: "s_0", params: { steps: 30 }, expect_rev: 0 },
+    sig,
+  );
+  assert.equal(patched.rev, 1, "the patch advanced the counter");
   await first.fiber.dispose();
 
   const second = await bootAt(stateRoot);
@@ -815,10 +825,19 @@ test("the bench survives a dispose + re-boot on one root", async () => {
   assert.equal(stages.length, 1, "the stage survived the restart");
   assert.equal(stages[0]!["id"], "s_0");
   assert.equal(stages[0]!["model"], "krea-2");
-  // the CAS counter did NOT reset: a re-boot that re-birthed or
-  // re-imported the bench would read a different rev, and a writer
-  // holding the old rev would then win a compare-and-set it should lose
-  assert.equal(back.rev, 0, "the write counter is the one boot one wrote");
+  assert.deepEqual(stages[0]!["params"], { steps: 30 }, "the PATCH survived the restart");
+  assert.equal(back.rev, 1, "the counter is the one the patched boot wrote");
+  // and the surviving counter still CAS-guards: a writer holding the
+  // pre-restart rev must LOSE the compare-and-set it would have won
+  // before the dispose.
+  const stale = await failureOf(
+    second.benchRemote.patch(
+      "keeper",
+      { stage: "s_0", params: { steps: 60 }, expect_rev: 0 },
+      sig,
+    ),
+  );
+  assert.ok(stale !== null, "the stale writer is refused, not silently applied");
   await second.fiber.dispose();
 });
 

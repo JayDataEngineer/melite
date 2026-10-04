@@ -31,14 +31,14 @@ afterAll(() => rmSync(DIR, { recursive: true, force: true }));
 const fileOf = (p: string): string => p.split("/").pop() ?? "";
 
 const clientWith = (
-  serve: (filename: string) => { body: string; ct: string } | null,
+  serve: (filename: string) => { body: string; ct: string } | { bytes: Uint8Array; ct: string } | null,
 ): Client =>
   ({
     fetchApi: async (url: string) => {
       const name = new URL("http://x" + String(url)).searchParams.get("filename") ?? "";
       const hit = serve(name);
       if (hit === null) throw new Error("unreachable");
-      return new Response(hit.body, {
+      return new Response("bytes" in hit ? hit.bytes : hit.body, {
         status: 200,
         headers: { "content-type": hit.ct },
       });
@@ -80,6 +80,51 @@ describe("fetchOutputs (the harvest matrix)", () => {
     expect(fileOf(arts[1] ?? "")).toBe("b.json");
     expect(readFileSync(join(runDir, "n1_a.png"), "utf8")).toBe("b:a.png");
   });
+  it("BINARY BYTES READ BACK BYTE-FOR-BYTE (the media contract, 2026-10-15)", async () => {
+    // Every other wall in this file compares UTF-8 STRINGS, which a
+    // mangling writer survives: a byte dropped from a .glb, a PNG's
+    // binary tail truncated, a re-encoding all read back as "equal"
+    // when the strings happened to match. The engine's contract is the
+    // BYTE, so this wall serves bytes (a PNG signature, a zero-byte
+    // page, high bytes that no string round trip preserves) and reads
+    // the file back with Buffer.compare.
+    const runDir = join(DIR, "binary");
+    // glTF header + a byte pattern that a UTF-8 round trip mangles
+    const glb = new Uint8Array([
+      0x67, 0x6c, 0x54, 0x46, 0x02, 0x00, 0x00, 0x00,
+      0x1c, 0x00, 0x00, 0x00, 0x00, 0xff, 0xfe, 0x80,
+      0xc3, 0x28, 0x00, 0x9f, 0x92, 0xa9, 0x0a, 0x0d,
+    ]);
+    const client = clientWith((f) => (f === "rigged.glb"
+      ? { bytes: glb, ct: "model/gltf-binary" }
+      : { body: "x", ct: "application/octet-stream" }));
+    const arts = await fetchOutputs(client, runDir, {
+      outputs: { glb: { "3d": [{ filename: "rigged.glb", subfolder: "", type: "output" }] } },
+    });
+    expect(arts.length).toBe(1);
+    // the subfolder-less spelling lands under its own name (the
+    // node-prefixed name is the subfoldered arm's)
+    const written = readFileSync(join(runDir, "rigged.glb"));
+    expect(written.length).toBe(glb.length);
+    expect(Buffer.compare(written, Buffer.from(glb))).toBe(0);
+  });
+
+  it("the SEMANTIC RECORDS path writes the same bytes (not just the shape)", async () => {
+    // fetchOutputArtifacts is the record-writing face: the shape was
+    // pinned, the bytes were not.
+    const runDir = join(DIR, "records-bytes");
+    const wav = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0x00, 0x00, 0x80, 0xff, 0xfe, 0x7f]);
+    const client = clientWith((f) => (f === "clip.wav"
+      ? { bytes: wav, ct: "audio/wav" }
+      : { body: "x", ct: "application/octet-stream" }));
+    const records = await fetchOutputArtifacts(client, runDir, {
+      outputs: { snd: { audio: [{ filename: "clip.wav", subfolder: "", type: "output" }] } },
+    });
+    expect(records.length).toBe(1);
+    const written = readFileSync(records[0]!.path);
+    expect(Buffer.compare(written, Buffer.from(wav))).toBe(0);
+  });
+
   it("semantic records retain producer node provenance", async () => {
     const runDir = join(DIR, "records");
     const client = clientWith(() => ({ body: "x", ct: "application/octet-stream" }));
