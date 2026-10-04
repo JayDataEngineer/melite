@@ -322,8 +322,11 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     // compose defaults the cell. The form's own rendering is
     // unchanged — a missing axis key reads as '' on screen.
     if (axisUnset(name, v, spec)) {
+      // The seed law (seedUser at open) guarantees every axis key is
+      // present in the user map before any onSet can fire: an axis
+      // field renders only when the spec declares its group, and the
+      // seed stamped that group's key. No absent-key arm here.
       setUser((m) => {
-        if (!Object.prototype.hasOwnProperty.call(m, name)) return m
         const next: SpecValues = {}
         for (const [k, val] of Object.entries(m)) if (k !== name) next[k] = val
         return next
