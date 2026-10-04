@@ -24,7 +24,7 @@
  */
 
 import { execSync } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
@@ -80,8 +80,49 @@ const PROFILE_BASES = {
     '@melite-plugin/dsh-gallery'],
 }
 
-function renderProfile(name) {
-  // In-box bundles (@deepseek-ai/*) resolve from the DSH INSTALL, never
+/** Maps every workspace package's name to its directory by reading
+ *  this repository's pnpm-workspace.yaml globs (the manifest's
+ *  workspace:* specs are names; pnpm resolves them only inside an
+ *  install — the profile dir is its own install, so the renderer
+ *  resolves them itself). @returns Map<name, absolute dir> */
+function workspacePackages() {
+  const root = resolve(PROVISIONER, '../../..')
+  const wsFile = join(root, 'pnpm-workspace.yaml')
+  const out = new Map()
+  if (!existsSync(wsFile)) return out
+  const globs = [...readFileSync(wsFile, 'utf8').matchAll(/^\s*-\s*['"]?([^'"\s#]+)/gm)]
+    .map((m) => m[1]).filter((g) => !g.startsWith('!'))
+  const seg = (g) => g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*\*\/?/g, '(?:.*/)?').replace(/\*/g, '[^/]*')
+  const prefixes = [...new Set(globs.map((g) => g.split('*')[0]))]
+    .filter((p, i, a) => !a.some((q) => q !== p && p.startsWith(q)))
+  for (const g of globs) {
+    const re = new RegExp('^' + seg(g) + '$')
+    for (const prefix of prefixes) {
+      const base = join(root, prefix)
+      if (!existsSync(base)) continue
+      const walk = (dir, depth) => {
+        let entries = []
+        try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
+        for (const e of entries) {
+          if (!e.isDirectory() || e.name === 'node_modules') continue
+          const full = join(dir, e.name)
+          const rel = full.slice(root.length + 1)
+          if (re.test(rel)) {
+            const pj = join(full, 'package.json')
+            if (existsSync(pj)) {
+              try { out.set(JSON.parse(readFileSync(pj, 'utf8')).name, full) } catch { /* not a package */ }
+            }
+          }
+          if (depth < 8) walk(full, depth + 1)
+        }
+      }
+      walk(base, 0)
+    }
+  }
+  return out
+}
+
+function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from the DSH INSTALL, never
   // from a registry - only OUR link goes in dependencies. Mirrors what
   // `dsh plugin` itself initializes (PROFILE_TEMPLATES + reconcile).
   const bundles = PROFILE_BASES[name] || PROFILE_BASES.headless
@@ -89,14 +130,25 @@ function renderProfile(name) {
   mkdirSync(dst, { recursive: true })
   const link = 'link:' + PROVISIONER
 
-  // pnpm does NOT materialize a link: dependency's OWN link: deps —
-  // the bundle rows name five plugin PACKAGES, so each becomes a DIRECT
-  // link: dep here, resolved from this provisioner's own manifest
-  // (relative link:../ specs resolve against the provisioner dir).
+  // pnpm does NOT materialize a link: dependency's OWN link:/workspace
+  // deps — every plugin package the bundle rows name must become a
+  // DIRECT link: dep here. The provisioner's manifest declares them
+  // as workspace:* specs; a link:-only scan dropped them, so the
+  // headless/estate profiles mounted @melite/harness-tools as a
+  // bundle row with NO installed package — the tool lane could not
+  // load (ledger li-headless-profile-deps). workspace specs resolve
+  // by scanning this repository's own pnpm workspace globs
+  // (self-locating; a family re-split moves nothing).
   const provPkg = JSON.parse(readFileSync(join(PROVISIONER, 'package.json'), 'utf8'))
   const rowDeps = {}
+  const byName = workspacePackages()
   for (const [depName, spec] of Object.entries(provPkg.dependencies || {})) {
-    if (String(spec).startsWith('link:')) rowDeps[depName] = 'link:' + resolve(PROVISIONER, String(spec).slice(5))
+    const s = String(spec)
+    if (s.startsWith('link:')) {
+      rowDeps[depName] = 'link:' + resolve(PROVISIONER, s.slice(5))
+    } else if (byName.has(depName)) {
+      rowDeps[depName] = 'link:' + byName.get(depName)
+    }
   }
 
   const pkgPath = join(dst, 'package.json')
