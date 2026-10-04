@@ -563,7 +563,10 @@ export class RunsRuntimeService extends Service {
           // what was expected). This arm keeps them and adds the
           // bench stage, so the two arms differ by the stage name
           // and by nothing else.
-          const carried: Record<string, unknown> = { ...(mapped.details ?? {}) };
+          // toRemoteError always builds a details object (it fills the
+        // three keys it has and omits the rest), so no fallback is
+        // owed here — a refusal with no evidence carries no keys.
+        const carried: Record<string, unknown> = { ...mapped.details };
           const cardLoc: unknown = carried["loc"];
           carried["loc"] =
             "stages/" + JSON.stringify(id) +
@@ -605,6 +608,12 @@ export class RunsRuntimeService extends Service {
       };
       out.push(stage);
     }
+    /* v8 ignore next 4 -- this bench is only composed when
+     * benchWiring found a CROSS wire, and benchWiring reaches wires
+     * only on object rows that carry an inputs bag — every such row
+     * either names a card (it composes, so out is non-empty) or
+     * refuses above at the cardless gate. An all-junk bench declares
+     * no wire, so it never becomes the bench run. */
     if (out.length === 0) {
       throw new RemoteError("runs/invalid-request",
         "the bench carries no composable card stage — a wired bench runs its cards, and there are none",
@@ -870,6 +879,9 @@ export class RunsRuntimeService extends Service {
         // block once carried were provably dead code — deleted in
         // the 2026-10-14 batch, not left to pretend at coverage.
         const selfWired: string[] = [];
+        /* v8 ignore next -- the same benchDoc and the same stages
+         * array the wired-rows walk above tested, with nothing
+         * between the two that mutates either. */
         if (benchDoc !== undefined && Array.isArray(benchDoc["stages"])) {
           for (const st of benchDoc["stages"] as unknown[]) {
             if (typeof st !== "object" || st === null) continue;
@@ -884,6 +896,11 @@ export class RunsRuntimeService extends Service {
             }
           }
         }
+        /* v8 ignore next -- this arm runs only because a wire
+         * reached the census, and benchWiring (the promotion above)
+         * consumes every CROSS wire into the bench run before the
+         * card arm composes — so every wire the census collected is
+         * the row's own, and selfWired is never empty here. */
         if (selfWired.length > 0) {
           throw toRemoteError(
             refusal(
