@@ -151,4 +151,40 @@ describe("liveObjectInfo (the closed-body refusal + the cache)", () => {
       srv.close();
     }
   });
+
+  // THE REFRESH DOOR (2026-10-15): the engine reboots under systemd
+  // while the harness process lives, so "a restart means a new
+  // process" is false for the long-lived seat — the cached doc must
+  // not outlive the node set it describes. invalidateObjectInfo is
+  // the explicit drop; the restart and lora doors call it.
+  it("invalidateObjectInfo drops the entry — the next read re-fetches the changed doc", async () => {
+    const { createServer } = await import("node:http");
+    const { invalidateObjectInfo, liveObjectInfo } = await import("../src/comfyui-transport.ts");
+    let generation = 1;
+    let served = 0;
+    const srv = createServer((req, res) => {
+      served += 1;
+      res.writeHead(200, { "content-type": "application/json" });
+      res.end(JSON.stringify({ generation, url: String(req.url) }));
+    });
+    await new Promise<void>((resolve) => srv.listen(0, "127.0.0.1", resolve));
+    const addr = srv.address();
+    const base = "http://127.0.0.1:" + String(typeof addr === "object" && addr !== null ? addr.port : 0);
+    onTestFinished(() => new Promise<void>((resolve) => srv.close(() => resolve())));
+    try {
+      const first = await liveObjectInfo(base);
+      assert.equal(first["generation"], 1);
+      const cached = await liveObjectInfo(base);
+      assert.equal(cached["generation"], 1);
+      assert.equal(served, 1, "cached: one fetch for two reads");
+      // the engine reboots: the node set changes under the same url
+      generation = 2;
+      invalidateObjectInfo(base);
+      const fresh = await liveObjectInfo(base);
+      assert.equal(fresh["generation"], 2, "the re-fetch sees the post-restart doc");
+      assert.equal(served, 2);
+    } finally {
+      srv.close();
+    }
+  });
 });

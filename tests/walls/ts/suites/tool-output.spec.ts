@@ -360,4 +360,25 @@ describe("the melite tool faces answer over the live composition", () => {
     assert.ok(typeof digest === "string" && text.includes(digest),
       `the rendered lines carry the digest (got: ${text.slice(0, 200)}`);
   });
+
+  // THE LORA DOORS ON THE AGENT LANE (the roadmap's own gate,
+  // 2026-10-15): the tool's action list + schema must expose
+  // lora_list/lora_install — an agent manages LoRAs the way it
+  // calls search_models today. The refusal VOICES are pinned in the
+  // package spec (melite-tools/test/comfy-manage.spec.ts) against
+  // the stubbed estate leg; this wall pins the LIVE composition's
+  // own tool face.
+  it("comfy_manage's schema carries the lora doors through the live composition", async () => {
+    const def = tool("comfy_manage");
+    const params = def.parameters as { properties?: Record<string, { enum?: string[] }> };
+    const actions = params.properties?.["action"]?.enum ?? [];
+    for (const want of ["lora_list", "lora_install"]) {
+      assert.ok(actions.includes(want), `action enum carries ${want} (got: ${actions.join(", ")})`);
+    }
+    // the install door's own params ride the same schema (the copy
+    // source, the upload bytes, the row's families suggestion)
+    for (const want of ["path", "data", "families"]) {
+      assert.ok(params.properties?.[want] !== undefined, `the schema declares ${want}`);
+    }
+  });
 });

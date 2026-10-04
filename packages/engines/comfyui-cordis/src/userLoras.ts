@@ -65,6 +65,20 @@ export interface UserLoraFile {
 
 const LORA_EXTENSIONS = ['.safetensors', '.ckpt', '.pt', '.bin', '.gguf']
 
+/** The rows file's default home (the shipped state is ABSENT — the
+ *  door is opt-in; `lora_list` reports the path it would read). */
+export const DEFAULT_USER_LORAS_PATH = './data/loras/user-loras.json'
+
+/** ONE spelling of the rows-file location: the declared
+ *  MELITE_USER_LORAS override wins, the repo default otherwise.
+ *  Every reader (the manage door, the composed flavor, the hot
+ *  drop-in) resolves through here — a second literal is a second
+ *  truth about the same file. */
+export function userLorasPath(): string {
+  const declared = process.env['MELITE_USER_LORAS']
+  return declared !== undefined && declared !== '' ? declared : DEFAULT_USER_LORAS_PATH
+}
+
 /** ONE row's validation — the refusals name the field, never the file. */
 export function validateUserLoraRow(raw: unknown, at: number): { row?: UserLoraRow; problem?: string } {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) {
@@ -288,19 +302,24 @@ export function installUserLoraBytes(
 }
 
 /** The flavor a user rows file registers (the same shape the family
- *  files and hot drop-ins use — one spelling of the registration). */
-export function userLoraFlavor(file: UserLoraFile): {
-  pack: 'loras'
-  families: string[]
-  rows: Array<Record<string, unknown>>
-  runtimeCatalog: true
-} | null {
+ *  files and hot drop-ins use — one spelling of the registration).
+ *  Per-row `families` fold into the registration's own families:
+ *  FlavorRegistration carries them once, so the projected rows
+ *  drop the key and typecheck as plain catalog rows. */
+export interface UserLoraFlavor {
+  readonly pack: 'loras'
+  readonly families: string[]
+  readonly rows: Array<Omit<UserLoraRow, 'families'>>
+  readonly runtimeCatalog: true
+}
+
+export function userLoraFlavor(file: UserLoraFile): UserLoraFlavor | null {
   if (file.rows.length === 0) return null
   const families = [...new Set(file.rows.flatMap((r) => r.families))].sort()
   return {
     pack: 'loras',
     families,
     runtimeCatalog: true,
-    rows: file.rows.map((r) => ({ ...r })),
+    rows: file.rows.map(({ families: _families, ...row }: UserLoraRow): Omit<UserLoraRow, 'families'> => row),
   }
 }

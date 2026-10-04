@@ -961,6 +961,13 @@ export class ComfyUIService extends Service {
     // Resolved HERE — the service owns the flavors via modCatalog —
     // filename-shaped rows (card-authored recipe payloads) pass
     // through; unknown ids refuse LOUD, never a silent plain run.
+    // THE LANE BOUNDARY (named 2026-10-15): the `name` arm is the
+    // CARD-AUTHORING lane — a recipe payload authored against the
+    // engine's own combo, auditable in the card's source. The
+    // picker/user lane (hand-typed input) never reaches it: the
+    // leaf refuses a typed name and ids resolve against the served
+    // rows. Compose stays offline (no live combo fetch); the name
+    // the engine lacks dies at /prompt with core's own 400.
     if (Array.isArray(merged.loras)) {
       const cat = this.modCatalog('loras', modelId)
       merged.loras = (merged.loras as Array<Record<string, unknown>>).map((e) => {

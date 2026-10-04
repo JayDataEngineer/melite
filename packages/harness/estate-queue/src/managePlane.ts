@@ -16,6 +16,7 @@ import { writeFileSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {
   endpointConfigPath,
+  invalidateObjectInfo,
   liveObjectInfo,
   loadEndpointConfig,
   resolveEngineBaseUrl,
@@ -26,6 +27,7 @@ import {
   loraNamesFromObjectInfo,
   readUserLoraRows,
   unboardedRows,
+  userLorasPath,
 } from "@melite/comfyui-cordis/user-loras";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type {
@@ -744,6 +746,14 @@ function externalModelPath(req: Req): { readonly relativePath: string; readonly 
   if (folder.includes("..") || folder.startsWith("/")) {
     throw badRequest("relative_path must stay under the models root: " + req.relative_path);
   }
+  // THE NO-LORAS-REMOTE LAW, enforced at the one fetch door: the
+  // operator's rule ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S
+  // ALL BUILT IN") — a LoRA arrives by COPY through lora_install
+  // or the user rows file, never by url. Before this arm the door
+  // could fetch into models/loras and contradict the stated law.
+  if (folder === "loras" || folder.startsWith("loras/")) {
+    throw badRequest("download_model refuses the loras dir — LoRAs arrive by copy or upload (lora_install), never by url");
+  }
   const filename = req.filename !== "" ? req.filename : req.url.split("/").pop()!;
   if (filename === "" || filename.includes("/") || filename.includes("..")) {
     throw badRequest("filename must be a bare name under the models root");
@@ -1078,6 +1088,10 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
   try {
     await managerPost(base(ctx), "/manager/reboot", {}, { ctx, timeoutMs: 10_000 });
      recordEngineBoot(ctx, "estate restart");
+     // the node set changes under a reboot while this process lives —
+     // the cached /object_info doc must not outlive it (the refresh
+     // the lora answer's next_action promises, 2026-10-15)
+     invalidateLiveObjectInfo(ctx);
      return ok(req.action, "reboot issued (systemd re-spawns the engine)", { next_action: "status" });
   } catch (e) {
     if (e instanceof ManagerApiError && e.status === 503) {
@@ -1085,6 +1099,7 @@ async function hRestart(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvelo
       // the 200 is sent — same honest answer.
        if (/fetch failed|ECONNRESET|socket/i.test(e.text)) {
          recordEngineBoot(ctx, "estate restart (connection dropped mid-answer)");
+         invalidateLiveObjectInfo(ctx);
          return ok(req.action, "reboot issued (connection closed by restart)", { next_action: "status" });
       }
       throw mapManagerRefused(e, req.action);
@@ -1368,7 +1383,7 @@ async function hLoraList(req: Req, ctx: ManageCtx): Promise<[number, ManageEnvel
   const cfg = ctx.endpoint();
   estateOnly(req, cfg);
   const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
-  const file = readUserLoraRows(process.env['MELITE_USER_LORAS'] ?? './data/loras/user-loras.json')
+  const file = readUserLoraRows(userLorasPath())
   const unboarded = unboardedRows(file.rows, combo)
   return ok(
     req.action,
@@ -1432,6 +1447,10 @@ async function loraInstalled(
   result: { filename: string, bytes: number },
   verb: 'copied' | 'uploaded',
 ): Promise<[number, ManageEnvelope]> {
+  // truth at answer time: the engine may have rebooted since the
+  // cache filled (an out-of-band restart), so the combo read below
+  // must not serve the pre-restart doc — one fresh fetch per install
+  invalidateLiveObjectInfo(ctx)
   const combo = loraNamesFromObjectInfo(await objectInfoDoc(ctx))
   const visible = combo.includes(result.filename)
   return ok(
@@ -1473,6 +1492,21 @@ async function objectInfoDoc(ctx: ManageCtx): Promise<unknown> {
       : await liveObjectInfo(resolveEngineBaseUrl())
   } catch {
     return null
+  }
+}
+
+/** Drop the live /object_info cache entry for the engine this
+ *  process serves — the same key objectInfoDoc's live arm reads.
+ *  A ctx carrying its own objectInfo seam never touches the global
+ *  cache, so there is nothing to drop; and an endpoint-less
+ *  resolveEngineBaseUrl refusal means no key was ever cached. */
+function invalidateLiveObjectInfo(ctx: ManageCtx): void {
+  if (ctx.objectInfo !== undefined) return
+  try {
+    invalidateObjectInfo(resolveEngineBaseUrl())
+  } catch (e) {
+    // no endpoint configured — nothing was ever cached under a key
+    void e
   }
 }
 

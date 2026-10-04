@@ -53,6 +53,7 @@ const ACTIONS = [
   'download_model', 'provision_model',
   'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
   'snapshot_save', 'snapshot_restore',
+  'lora_list', 'lora_install',
 ] as const
 
 /** Canonical result — the typed mirror of output.schema (the music
@@ -277,7 +278,9 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       + 'runs are active); endpoint_set (point at a different ComfyUI server '
       + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
        + 'install_extension_url (git url), download_model (url), provision_model '
-       + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); restart, stop, launch, update '
+       + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); lora_list (the '
+       + 'engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator '
+       + 'already has — never fetched; the answer names the restart that follows); restart, stop, launch, update '
        + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
       + 'never runs inference, and lifecycle actions are refused while runs are '
       + 'active (stop them or pass force).',
@@ -303,7 +306,14 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
         type: 'string',
         description: 'download_model: destination under the models root, e.g. "models/checkpoints".',
       },
-      filename: { type: 'string', description: 'download_model: on-disk filename.' },
+      filename: { type: 'string', description: 'download_model: on-disk filename. lora_install: required with data (the name the engine combo will list).' },
+      path: { type: 'string', description: 'lora_install: source path of a LoRA file the operator already has (copied, never fetched).' },
+      data: { type: 'string', description: 'lora_install: base64 LoRA bytes (the browser-upload arm; requires filename).' },
+      families: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'lora_install: family ids for the row suggestion in the answer (e.g. ["z-image"]).',
+      },
       model: {
         type: 'string',
         description: 'provision_model: declared model id from melite_load (e.g. "z-image"); Manager search rows are not provision ids.',
@@ -365,7 +375,8 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
       const body: Record<string, unknown> = { action: a.action }
       for (const k of ['nodes', 'url', 'relative_path', 'filename', 'model',
                        'variant', 'quant', 'query', 'tail', 'version',
-                       'target', 'force', 'snapshot']) {
+                       'target', 'force', 'snapshot', 'path', 'data',
+                       'families']) {
         if (a[k] !== undefined && a[k] !== null && a[k] !== '') body[k] = a[k]
       }
       let res: Record<string, unknown>

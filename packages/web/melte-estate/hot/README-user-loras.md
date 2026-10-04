@@ -55,23 +55,27 @@ with `MELITE_USER_LORAS`):
 
 `filename` must be the **exact name the engine lists** (subdirs included —
 `h3/one.safetensors`). `families` must name models that board the `loras`
-pack; a row for a non-boarding model is refused loudly rather than silently
-ignored (`assertModUse`, the mods gate). A bare array of rows or
-`{"rows": [...]}` both serve; a malformed file reports its per-row problems
-and never takes the good rows down.
+pack; a row naming a family that boards no `loras` flavor is **served to no
+one** — it appears in no picker, and compose refuses its id for every family
+(pick from `lora_list`'s `engine_loras`-adjacent families; nothing refuses
+the row itself, so spell the family ids exactly as the picker shows them). A
+bare array of rows or `{"rows": [...]}` both serve; a malformed file reports
+its per-row problems and never takes the good rows down.
 
-**4 — mount the drop-in** by adding ONE line to the headless profile's
-`cordis.patch.yml` (the hot contract: the patch file is the load list, there
-is no implicit directory glob):
+**4 — nothing else.** Since 2026-10-15 the rows file is composed by the
+engine's own mod plane (`comfyui-cordis/src/mods/userLorasFlavor.ts`) — rows
+serve on the **next form-spec request**, no rebuild, no bundle, no patch
+file. The drop-in (`user-loras.plugin.ts`) remains for pointing at a
+*second* file on a process that does not compose the engine plane:
 
 ```yaml
 - id: user-loras
   file: /abs/path/to/packages/web/melte-estate/hot/user-loras.plugin.ts
 ```
 
-**5 — verify.** The drop-in logs `user-loras.plugin.ts LIVE — N user row(s)
-for <families> served beside the family table`. Rows serve on the **next
-form-spec request**; no rebuild, no bundle.
+**5 — verify.** `lora_list` (the manage door, or `comfy_manage lora_list` on
+the agent lane) answers with the rows it read, their problems, and the
+engine's own accepted names.
 
 ## The last step: prove the row against the engine
 
@@ -93,12 +97,12 @@ Empty problems list = every row is a name the engine will accept.
 ## What is delivered, and what is not
 
 - **Delivered** (`packages/engines/comfyui-cordis/src/userLoras.ts` +
-  `hot/user-loras.plugin.ts`, 9 walls in `tests/test_user_lora_plane.py`):
-  validation, the engine-combo fact, the file copy, the runtime-flavor
-  registration, and the picker's own rendering — with **no client change**.
+  `src/mods/userLorasFlavor.ts` composed in the mod plane): validation, the
+  engine-combo fact, the file copy, the runtime-flavor registration at
+  composition time, and the picker's own rendering — with **no client
+  change**. The manage doors (`lora_list` / `lora_install`, sidebar and the
+  `comfy_manage` agent lane) read the same file.
 - **Not delivered, and honestly so**: a first-class *UI* door (an "add LoRA"
-  button in the studio that writes the rows file and reboots the engine). That
-  needs a new composition row in the estate's index (a file a concurrent
-  session is mid-rewrite) and a product decision about whether the door is
-  per-lane (the patch row) or estate-wide (composition). The row-file + drop-in
-  path above works today and is the same registration the family files use.
+  button in the studio that writes the rows file and reboots the engine).
+  That is a product decision about where the button lives; the row-file path
+  above works today and is the same registration the family files use.

@@ -36,281 +36,32 @@
         "option_key": "id",
         "options": [
           {
-            "value": "krea2_realism_lora",
-            "label": "Realism",
-            "tooltip": "photorealism — krea-2/krea2_realism_lora.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.7
-            },
-            "model": "krea-2/krea2_realism_lora.safetensors"
-          },
-          {
-            "value": "krea2_turbo_lora_rank_64_bf16",
-            "label": "Turbo Rank-64 (BF16)",
-            "tooltip": "quality — krea-2/krea2_turbo_lora_rank_64_bf16.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1
-            },
-            "model": "krea-2/krea2_turbo_lora_rank_64_bf16.safetensors"
-          },
-          {
-            "value": "krea2_darkbrush",
-            "label": "Dark Brush",
-            "tooltip": "style — krea-2/krea2_darkbrush.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_darkbrush.safetensors"
-          },
-          {
-            "value": "krea2_dotmatrix",
-            "label": "Dot Matrix",
-            "tooltip": "style — krea-2/krea2_dotmatrix.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_dotmatrix.safetensors"
-          },
-          {
-            "value": "krea2_kidsdrawing",
-            "label": "Kids Drawing",
-            "tooltip": "style — krea-2/krea2_kidsdrawing.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_kidsdrawing.safetensors"
-          },
-          {
-            "value": "krea2_neondrip",
-            "label": "Neon Drip",
-            "tooltip": "style — krea-2/krea2_neondrip.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_neondrip.safetensors"
-          },
-          {
-            "value": "krea2_rainywindow",
-            "label": "Rainy Window",
-            "tooltip": "style — krea-2/krea2_rainywindow.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_rainywindow.safetensors"
-          },
-          {
-            "value": "krea2_retroanime",
-            "label": "Retro Anime",
-            "tooltip": "style — krea-2/krea2_retroanime.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_retroanime.safetensors"
-          },
-          {
-            "value": "krea2_softwatercolor",
-            "label": "Soft Watercolor",
-            "tooltip": "style — krea-2/krea2_softwatercolor.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_softwatercolor.safetensors"
-          },
-          {
-            "value": "krea2_sunsetblur",
-            "label": "Sunset Blur",
-            "tooltip": "style — krea-2/krea2_sunsetblur.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_sunsetblur.safetensors"
-          },
-          {
-            "value": "krea2_vintagetarot",
-            "label": "Vintage Tarot",
-            "tooltip": "style — krea-2/krea2_vintagetarot.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2_vintagetarot.safetensors"
-          },
-          {
-            "value": "krea2filterbypass3",
-            "label": "Filter Bypass 3",
-            "tooltip": "style — krea-2/krea2filterbypass3.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "krea-2/krea2filterbypass3.safetensors"
-          },
-          {
-            "value": "h3_lightx2v_dareties",
-            "label": "LightX2V dareties v4",
-            "tooltip": "distill — h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8,
-              "steps": 4
-            },
-            "model": "h3/minimax_h3_fl2v_lightx2v_v0.1_dareties_v4_step600_comfy_fro.safetensors"
-          },
-          {
-            "value": "h3_lightx2v_turbo",
-            "label": "LightX2V Turbo 4-8 step",
-            "tooltip": "distill — h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.6,
-              "steps": 8,
-              "steps_min": 4,
-              "steps_max": 8
-            },
-            "model": "h3/minimax_h3_fl2v_lightx2v_turbo_4to8step_v0.1-v1.0_768p_v4_step600_dareties.safetensors"
-          },
-          {
-            "value": "h3_turbo4_v1",
-            "label": "LightX2V Turbo 4-Step v1.0 (768p)",
-            "tooltip": "distill — h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors — runtime catalog",
+            "value": "qwen_edit_lightning_4step",
+            "label": "Lightning 4-Step",
+            "tooltip": "distill — qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors",
             "defaults": {
               "strength": 1,
               "steps": 4
             },
-            "model": "h3/minimax_h3_fl2v_turbo_4step_v1.0_768p_comfyui_bf16.safetensors"
+            "model": "qwen/Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors"
           },
           {
-            "value": "h3_turbo8_v1",
-            "label": "LightX2V Turbo 8-Step v1.0",
-            "tooltip": "distill — h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1,
-              "steps": 8
-            },
-            "model": "h3/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"
-          },
-          {
-            "value": "h3_ref2v_turbo4",
-            "label": "LightX2V Ref Turbo 4-Step v0.1",
-            "tooltip": "distill — h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1,
-              "steps": 4
-            },
-            "model": "h3/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors"
-          },
-          {
-            "value": "h3_acc8_fl2va",
-            "label": "Kijai FL2VA Acc 8-Step",
-            "tooltip": "distill — h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1,
-              "steps": 8
-            },
-            "model": "h3/MiniMax-H3-FL2VA-Acc-8Step_pruned_comfy.safetensors"
-          },
-          {
-            "value": "h3_acc8_ref2va",
-            "label": "Kijai Ref2VA Acc 8-Step",
-            "tooltip": "distill — h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1,
-              "steps": 8
-            },
-            "model": "h3/MiniMax-H3-Ref2VA-Acc-8Step_pruned_comfy.safetensors"
-          },
-          {
-            "value": "h3_larryvrh_v4_ema",
-            "label": "Larryvrh Turbo v4-600 EMA",
-            "tooltip": "distill — h3/minimax_h3_turbo_v4_step600_ema.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1,
-              "steps": 6,
-              "steps_min": 4,
-              "steps_max": 8
-            },
-            "model": "h3/minimax_h3_turbo_v4_step600_ema.safetensors"
-          },
-          {
-            "value": "h3_pk_parasyte",
-            "label": "PK Parasyte Turbo",
-            "tooltip": "distill — h3/H3-PK-Parasyte-Turbo.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1.5,
-              "steps": 8,
-              "steps_min": 6,
-              "steps_max": 8
-            },
-            "model": "h3/H3-PK-Parasyte-Turbo.safetensors"
-          },
-          {
-            "value": "h3_taomate_3step",
-            "label": "TaoMate 3-Step (refiner)",
-            "tooltip": "distill — h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.7,
-              "steps": 3
-            },
-            "model": "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors"
-          },
-          {
-            "value": "zimage_3d_mmorpg",
-            "label": "3D MMORPG",
-            "tooltip": "style — z-image/z-image-3d-mmorpg.safetensors — runtime catalog",
+            "value": "qwen_edit_multiple_angles",
+            "label": "Multiple Angles",
+            "tooltip": "camera control — prompt with the <sks> position vocabulary (front/back/quarter view × eye/low/high angle × shot size)",
             "defaults": {
               "strength": 0.8
             },
-            "model": "z-image/z-image-3d-mmorpg.safetensors"
+            "model": "qwen/qwen-image-edit-2511-multiple-angles-lora.safetensors"
           },
           {
-            "value": "zimage_classic_painting",
-            "label": "Classic Painting",
-            "tooltip": "style — z-image/z-image-classic-painting.safetensors — runtime catalog",
+            "value": "qwen_edit_plus_mcnsfw",
+            "label": "MCNL Multi-Concept",
+            "tooltip": "nsfw — qwen/qwen-image-edit-plus-nsfw-lora.safetensors",
             "defaults": {
               "strength": 0.8
             },
-            "model": "z-image/z-image-classic-painting.safetensors"
-          },
-          {
-            "value": "zimage_coloring_book",
-            "label": "Coloring Book",
-            "tooltip": "style — z-image/z-image-coloring-book.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "z-image/z-image-coloring-book.safetensors"
-          },
-          {
-            "value": "zimage_dejpeg",
-            "label": "DeJPEG",
-            "tooltip": "restoration — z-image/z-image-dejpeg.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 1
-            },
-            "model": "z-image/z-image-dejpeg.safetensors"
-          },
-          {
-            "value": "zimage_pixel_art",
-            "label": "Pixel Art",
-            "tooltip": "style — z-image/z-image-pixel-art.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "z-image/z-image-pixel-art.safetensors"
-          },
-          {
-            "value": "zimage_realism",
-            "label": "Realism",
-            "tooltip": "photorealism — z-image/z-image-realism.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.7
-            },
-            "model": "z-image/z-image-realism.safetensors"
-          },
-          {
-            "value": "zimage_sunbleached",
-            "label": "Sunbleached",
-            "tooltip": "style — z-image/z-image-sunbleached.safetensors — runtime catalog",
-            "defaults": {
-              "strength": 0.8
-            },
-            "model": "z-image/z-image-sunbleached.safetensors"
+            "model": "qwen/qwen-image-edit-plus-nsfw-lora.safetensors"
           }
         ]
       },

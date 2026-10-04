@@ -17,8 +17,10 @@ import {
   readUserLoraRows,
   unboardedRows,
   userLoraFlavor,
+  userLorasPath,
   validateUserLoraRow,
 } from "../src/userLoras.ts";
+import { apply as userLorasFlavor } from "../src/mods/userLorasFlavor.ts";
 import { mkdtempSync, rmSync, writeFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -303,5 +305,108 @@ describe("userLoraFlavor — the runtime catalog projection", () => {
     expect(flavor?.pack).toBe("loras");
     expect(flavor?.runtimeCatalog).toBe(true);
     expect(flavor?.rows.map((r) => r["id"])).toEqual(["a", "b"]);
+    // the projection DROPS the per-row families key: the registration
+    // carries families once, and the rows must typecheck as plain
+    // catalog rows (a families key on a served row would be a second
+    // truth about boarding)
+    for (const row of flavor?.rows ?? []) {
+      expect("families" in row).toBe(false);
+    }
+  });
+});
+
+// ── THE COMPOSED FLAVOR (2026-10-15) — the cure for the two-step
+// door: the rows file at userLorasPath() registers through the
+// engine's own mod plane (composeModPlane composes
+// mods/userLorasFlavor.ts), so a user's rows serve with no patch
+// file. These arms pin the module's apply() contract: absent file
+// is a silent no-op (the shipped state), bad rows log their
+// problems and the good ones still serve.
+describe("userLorasFlavor (the composed registration — no patch file)", () => {
+  type Registered = { pack: string; families: string[]; rows: unknown[] };
+  const mount = (): { registered: Registered[]; logs: string[] } => {
+    const registered: Registered[] = [];
+    const logs: string[] = [];
+    const ctx = {
+      effect: (fn: () => () => void): (() => void) => fn(),
+      comfyui: {
+        registerFlavor: (flavor: Registered): (() => void) => {
+          registered.push(flavor);
+          return () => { registered.splice(registered.indexOf(flavor), 1); };
+        },
+      },
+      logger: (): { warn: (m: string) => void; info: (m: string) => void } => ({
+        warn: (m: string): void => { logs.push("warn: " + m); },
+        info: (m: string): void => { logs.push("info: " + m); },
+      }),
+    };
+    userLorasFlavor(ctx as never);
+    return { registered, logs };
+  };
+  const withPath = (path: string, body: string | null, run: () => void): void => {
+    const prev = process.env["MELITE_USER_LORAS"];
+    process.env["MELITE_USER_LORAS"] = path;
+    try {
+      if (body !== null) writeFileSync(path, body, "utf8");
+      run();
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prev;
+    }
+  };
+
+  it("an absent file registers nothing and logs nothing (the shipped state)", () => {
+    withPath(join(root, "absent.json"), null, () => {
+      const { registered, logs } = mount();
+      expect(registered).toHaveLength(0);
+      expect(logs).toHaveLength(0);
+    });
+  });
+
+  it("rows register as a loras flavor through the compose's own ctx", () => {
+    withPath(join(root, "rows.json"), JSON.stringify([
+      { id: "mine", filename: "z-image/mine.safetensors", families: ["z-image"], label: "Mine" },
+    ]), () => {
+      const { registered, logs } = mount();
+      expect(registered).toHaveLength(1);
+      expect(registered[0]?.pack).toBe("loras");
+      expect(registered[0]?.families).toEqual(["z-image"]);
+      expect(logs.some((l) => /1 user row/.test(l))).toBe(true);
+    });
+  });
+
+  it("a bad row logs its problem; the good row still serves", () => {
+    withPath(join(root, "mixed.json"), JSON.stringify([
+      { filename: "no-id.safetensors", families: ["h3"] },
+      { id: "good", filename: "h3/good.safetensors", families: ["h3"] },
+    ]), () => {
+      const { registered, logs } = mount();
+      expect(logs.some((l) => /warn: row refused/.test(l))).toBe(true);
+      expect(registered).toHaveLength(1);
+      expect(registered[0]?.rows.map((r) => (r as { id: string }).id)).toEqual(["good"]);
+    });
+  });
+
+  it("a file whose rows all refuse registers nothing", () => {
+    withPath(join(root, "allbad.json"), JSON.stringify([
+      { filename: "no-id.safetensors", families: ["h3"] },
+    ]), () => {
+      const { registered, logs } = mount();
+      expect(registered).toHaveLength(0);
+      expect(logs.some((l) => /served no rows/.test(l))).toBe(true);
+    });
+  });
+
+  it("userLorasPath is one spelling: the env override wins, the default is the repo file", () => {
+    const prev = process.env["MELITE_USER_LORAS"];
+    try {
+      process.env["MELITE_USER_LORAS"] = "/tmp/elsewhere.json";
+      expect(userLorasPath()).toBe("/tmp/elsewhere.json");
+      delete process.env["MELITE_USER_LORAS"];
+      expect(userLorasPath()).toBe("./data/loras/user-loras.json");
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_USER_LORAS"];
+      else process.env["MELITE_USER_LORAS"] = prev;
+    }
   });
 });

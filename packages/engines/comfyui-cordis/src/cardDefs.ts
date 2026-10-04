@@ -197,6 +197,12 @@ export const composeModPlane = async (ctx: Context): Promise<void> => {
   for (const [specifier, label] of packagedFlavors) {
     await pluginPackage(ctx, specifier, 'packaged flavor', label)
   }
+  // THE USER ROWS FILE (2026-10-15): the opt-in flavor at
+  // userLorasPath() composes like every family flavor — rows serve
+  // with no patch file and no drop-in (absent file is a silent
+  // no-op inside its apply; the hot drop-in remains the door for a
+  // SECOND file, never the only door).
+  await ctx.plugin((await import('./mods/userLorasFlavor.ts')) as unknown as Plugin)
 }
 
 /** THE IDENTITY RUNG (native since 2026-09-10): every card

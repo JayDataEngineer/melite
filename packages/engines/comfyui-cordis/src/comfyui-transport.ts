@@ -24,7 +24,14 @@ export function sdkClient(server: string): Client {
  *  extension install — which needs an engine restart anyway, i.e.
  *  a new process. The frozen in-repo snapshot is deleted; this is
  *  the only spelling of engine truth. LOUD on an unreachable
- *  engine (QUEUE LANE LAW: no defaults, no silent empty). */
+ *  engine (QUEUE LANE LAW: no defaults, no silent empty).
+ *
+ *  The premise "a restart means a new process" is FALSE for the
+ *  long-lived harness seat: the engine reboots under systemd while
+ *  this process stays. invalidateObjectInfo() is the explicit
+ *  refresh — the restart and lora doors call it after the events
+ *  that change the node set (a reboot, a copied file), so the
+ *  next read re-fetches instead of serving the pre-restart doc. */
 const oiCache = new Map<string, Record<string, unknown>>();
 
 export async function liveObjectInfo(server: string): Promise<Record<string, unknown>> {
@@ -39,4 +46,11 @@ export async function liveObjectInfo(server: string): Promise<Record<string, unk
   const rec: Record<string, unknown> = doc as Record<string, unknown>;
   oiCache.set(server, rec);
   return rec;
+}
+
+/** Drop the cached node-definitions doc for one server. The next
+ *  liveObjectInfo(server) re-fetches. @param server — the engine
+ *  base url whose cache entry dies. */
+export function invalidateObjectInfo(server: string): void {
+  oiCache.delete(server);
 }

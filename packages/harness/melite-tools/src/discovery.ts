@@ -722,7 +722,10 @@ export function specBody(
   // compose door keeps refusing unknown ids loud). The empty arm
   // rides first when the field's default is '' (a refine pick must
   // be clearable). LORAS ARE ONLY MODS: the ids come from the
-  // served rows, never a hand-spelled string. The referent law
+  // served rows, never a hand-spelled string — the USER lane's
+  // law; a card-authored recipe payload carrying `name` (not
+  // `id`) is the authoring lane and rides compose's filename arm
+  // (service.ts names the boundary). The referent law
   // (T5): the pack must be one the envelope boards — the mod
   // schemas' key set, built once here and shared with the
   // modifiers walk below.

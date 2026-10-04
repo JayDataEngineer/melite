@@ -17,6 +17,15 @@
 // LoRA arrives as a REAL PICKER ROW — label, category, strength
 // default — with no client change at all.
 //
+// SINCE 2026-10-15 this drop-in is the SECOND door, not the only
+// one: the file at userLorasPath() (MELITE_USER_LORAS, default
+// ./data/loras/user-loras.json) is composed by the engine's own
+// mod plane (comfyui-cordis/src/mods/userLorasFlavor.ts), so rows
+// serve with no patch file at all. Mount THIS plugin only to point
+// at an ADDITIONAL file (set its config to another path) or to
+// re-register rows on a process that does not compose the engine
+// plane.
+//
 // THE USER FLOW:
 //   1. put your .safetensors where the ENGINE looks for LoRAs
 //      (`installUserLora` in comfyui-cordis/src/userLoras.ts copies a
@@ -35,10 +44,11 @@
 // spent.
 import type { Context } from '@deepseek-ai/cordis'
 import { theService } from '@melite/comfyui-cordis'
-import { readUserLoraRows, userLoraFlavor } from '@melite/comfyui-cordis/user-loras'
+import { readUserLoraRows, userLoraFlavor, userLorasPath } from '@melite/comfyui-cordis/user-loras'
 
-/** Where the operator's rows live. Override with MELITE_USER_LORAS. */
-const ROWS_PATH = process.env['MELITE_USER_LORAS'] ?? './data/loras/user-loras.json'
+/** Where the operator's rows live (the same spelling the manage
+ *  door and the composed flavor read — MELITE_USER_LORAS wins). */
+const ROWS_PATH = userLorasPath()
 
 export function apply(ctx: Context): void {
   const file = readUserLoraRows(ROWS_PATH)
@@ -61,7 +71,7 @@ export function apply(ctx: Context): void {
   // Rows the engine does not have would refuse at /prompt (a 400 after
   // the money is spent), so the cross-check is the user's last step.
   ctx.effect(() => {
-    const off = theService().registerFlavor(flavor as never)
+    const off = theService().registerFlavor(flavor)
     console.log(
       '[hot] user-loras.plugin.ts LIVE — ' + String(flavor.rows.length) + ' user row(s) for ' +
       flavor.families.join(', ') + ' served beside the family table',

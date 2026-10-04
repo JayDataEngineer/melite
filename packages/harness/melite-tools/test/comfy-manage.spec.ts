@@ -206,6 +206,47 @@ describe('comfy_manage execute — the manage lane', () => {
     assert.deepEqual(body, FULL)
   })
 
+  // THE LORA DOORS (2026-10-15, the roadmap's gate): both actions
+  // ride the enum, the install door's own params (the copy path,
+  // the upload bytes, the families suggestion) forward to the
+  // estate leg, and a refusal keeps its voice through the tool
+  // face — the model reads WHY, never a bare error.
+  test('the lora doors ride the enum, forward their fields, and keep the refusal voice', async () => {
+    const { seen, request } = mockRequest(() => ({ ok: true }))
+    const tool = comfyManage(request)
+    const params = tool.parameters as { properties?: Record<string, { enum?: string[] }> }
+    const actions = params.properties?.['action']?.enum ?? []
+    assert.ok(actions.includes('lora_list'), 'lora_list on the enum')
+    assert.ok(actions.includes('lora_install'), 'lora_install on the enum')
+    // the copy arm forwards path + families (the row suggestion)
+    await tool.execute({ action: 'lora_install', path: '/abs/mine.safetensors', families: ['h3'] }, exec())
+    let body = seen[0]!.body as Record<string, unknown>
+    assert.equal(body['action'], 'lora_install')
+    assert.equal(body['path'], '/abs/mine.safetensors')
+    assert.deepEqual(body['families'], ['h3'])
+    // the bytes arm forwards data + filename (no path at all)
+    await tool.execute({ action: 'lora_install', data: 'data:application/octet-stream;base64,AAAA', filename: 'm.safetensors' }, exec())
+    body = seen[1]!.body as Record<string, unknown>
+    assert.equal(body['data'], 'data:application/octet-stream;base64,AAAA')
+    assert.equal(body['filename'], 'm.safetensors')
+    assert.equal(body['path'], undefined, 'the bytes arm rides no path')
+    // a refusal IS the answer: the estate's manage/refused carries
+    // the plane's own detail through
+    const { request: refused } = mockRequest(() => {
+      throw new RemoteError('manage/refused', 'lora_install requires: path', {
+        action: 'lora_install',
+        status: 422,
+        data: { install_dir: '/loras' },
+      })
+    })
+    const refusing = comfyManage(refused)
+    const out = await refusing.execute({ action: 'lora_install' }, exec()) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    assert.match(String(out.detail), /requires: path/)
+    assert.equal(out.action, 'lora_install')
+    assert.equal(out.status, 422)
+  })
+
   test('lifts provisioning state fields without hiding the raw data', async () => {
     const { request } = mockRequest(() => ({
       ok: true,

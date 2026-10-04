@@ -922,6 +922,14 @@ describe("hDownloadModel", () => {
       assert.match(e1.detail, /must stay under the models root/);
       const [, e1b] = await manage({ action: "download_model", url: "http://h/f", relative_path: "/abs" });
       assert.match(e1b.detail, /must stay under the models root/);
+      // the no-loras-remote law, enforced at the fetch door: a LoRA
+      // arrives by copy or upload (lora_install), never by url
+      const [, e1c] = await manage({ action: "download_model", url: "http://h/l.safetensors", relative_path: "loras" });
+      assert.equal(e1c.ok, false);
+      assert.match(e1c.detail, /download_model refuses the loras dir/);
+      assert.match(e1c.detail, /lora_install/);
+      const [, e1d] = await manage({ action: "download_model", url: "http://h/l.safetensors", relative_path: "models/loras" });
+      assert.match(e1d.detail, /download_model refuses the loras dir/);
       const [, e2] = await manage({ action: "download_model", url: "http://h/f", filename: "a/b" });
       assert.match(e2.detail, /must be a bare name/);
       const [, e2b] = await manage({ action: "download_model", url: "http://h/" });

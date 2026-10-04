@@ -91,7 +91,7 @@ export {
   resolveEngineBaseUrl,
   resolveRepoRoot,
 } from "./comfyui-config.ts";
-export { liveObjectInfo, sdkClient } from "./comfyui-transport.ts";
+export { invalidateObjectInfo, liveObjectInfo, sdkClient } from "./comfyui-transport.ts";
 export {
   DATA_URL_IMAGE_EXT,
   UPLOAD_EXTS,
