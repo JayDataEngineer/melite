@@ -622,6 +622,63 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 0);
   });
 
+  // THE CROSS-WIRE PROMOTION, one-stage edge (batch-4 closure,
+  // 2026-10-14): a wire naming ANOTHER stage — even one whose target
+  // row is absent — promotes the start to the bench run before the
+  // card arm composes (a bench with wires is a flow, whatever the
+  // caller named). The dead cross arms this pins the SHAPE of: the
+  // discard gate below can only ever see self-wires, and its
+  // unreachable generic refusal was deleted, not covered.
+  it("a one-stage bench wired CROSS promotes to the bench run — never the discard gate", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the cross-wired bench RAN");
+    assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
+  });
+
+  // The walker's skip arms: a bench may carry carded stages whose
+  // `inputs` are malformed (a string, an array) beside a real wire —
+  // both passes skip the malformed rows without touching the real
+  // wire's verdict, and the bench run registers.
+  it("malformed stage inputs skip clean in both wire passes — the real wire rides, the run registers", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          { id: "s_x", card: "image-edit", params: { prompt: "x" }, inputs: "nope" },
+          { id: "s_y", card: "image-edit", params: { prompt: "x" }, inputs: ["no"] },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_x", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(typeof ans.run_id === "string" && ans.run_id !== "", "the wired bench RAN");
+    assert.equal(s.core.runs.size, 1);
+  });
+
   it("CLEAN SINGLE-CARD: no spells, no wires — the walls never false-alarm, the run registers", async () => {
     const s = modelDoorSeat({
       SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } },

@@ -291,23 +291,27 @@ describe('bench lanes', () => {
     await assert.rejects(req({})('GET', '/v1/bench/main', undefined, SIG, 1000))
   })
 
-  test('all five mutation verbs route to their seat method', async () => {
+  test('all six mutation verbs route to their seat method', async () => {
     const calls: Array<{ verb: string; session: string; doc: unknown }> = []
     const r = req({
       benchRemote: {
         patch: async (s: string, d: unknown) => { calls.push({ verb: 'patch', session: s, doc: d }); return 1 },
         addStage: async (s: string, d: unknown) => { calls.push({ verb: 'add_stage', session: s, doc: d }); return 2 },
         removeStage: async (s: string, d: unknown) => { calls.push({ verb: 'remove_stage', session: s, doc: d }); return 3 },
-        rewire: async (s: string, d: unknown) => { calls.push({ verb: 'rewire', session: s, doc: d }); return 4 },
-        undo: async (s: string, d: unknown) => { calls.push({ verb: 'undo', session: s, doc: d }); return 5 },
+        clear: async (s: string, d: unknown) => { calls.push({ verb: 'clear', session: s, doc: d }); return 4 },
+        rewire: async (s: string, d: unknown) => { calls.push({ verb: 'rewire', session: s, doc: d }); return 5 },
+        undo: async (s: string, d: unknown) => { calls.push({ verb: 'undo', session: s, doc: d }); return 6 },
       },
     })
     const outs: unknown[] = []
-    for (const verb of ['patch', 'add_stage', 'remove_stage', 'rewire', 'undo']) {
+    for (const verb of ['patch', 'add_stage', 'remove_stage', 'clear', 'rewire', 'undo']) {
       outs.push(await r('POST', '/v1/bench/s%20e/' + verb, { v: verb }, SIG, 1000))
     }
-    assert.deepEqual(outs, [1, 2, 3, 4, 5])
+    assert.deepEqual(outs, [1, 2, 3, 4, 5, 6])
     assert.deepEqual(calls[0], { verb: 'patch', session: 's e', doc: { v: 'patch' } })
+    // the clear arm's seat spelling pinned by itself (the 2026-10-14
+    // batch-4 closure: 'clear' sat dead on the door's switch)
+    assert.deepEqual(calls[3], { verb: 'clear', session: 's e', doc: { v: 'clear' } })
   })
 
   test('mutation with a non-object body refuses; unknown verbs fall through; seatless refuses', async () => {
@@ -316,6 +320,7 @@ describe('bench lanes', () => {
         patch: async () => ({}),
         addStage: async () => ({}),
         removeStage: async () => ({}),
+        clear: async () => ({}),
         rewire: async () => ({}),
         undo: async () => ({}),
       },

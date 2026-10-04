@@ -28,6 +28,9 @@ import { fakeExec } from './fake-exec.ts'
 declare module '@deepseek-ai/dsh-typert-protocol' {
   interface RemoteErrorDetailsMap {
     'bench/broken': { readonly session?: string };
+    // the non-cas verb failure the rebase wall simulates (a stage
+    // refusal from the seat — type-only, erased at runtime)
+    'bench/no-such-stage': { readonly stage?: string };
   }
 }
 
@@ -598,6 +601,47 @@ describe('melite_construct refusals — the CAS voice', () => {
     assert.equal(out.error_kind, 'bench/cas-conflict')
     // TWO posts only: the stale attempt + the single re-applied retry
     assert.equal(seen.filter((s) => s.method === 'POST').length, 2)
+  })
+
+  // The rebase's two exit hatches (batch-4 closure, 2026-10-14): a
+  // NON-cas error never enters the rebase, and a fresh read that
+  // carries no numeric rev rethrows the CAS verdict itself — the
+  // bench is unreadable, so the caller keeps the verdict that
+  // explains why.
+  test('a NON-cas failure on the verb surfaces as itself — the rebase never fires', async () => {
+    let gets = 0
+    const { seen, request } = mockRequest((method) => {
+      if (method === 'GET') { gets += 1; return { rev: 23, stages: [] } }
+      throw new RemoteError('bench/no-such-stage', 'stage s_9 is not on the bench', undefined as never)
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's_9', params: {}, expect_rev: 21 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    assert.equal(out.error_kind, 'bench/no-such-stage')
+    // no re-read, no retry: the rebase is for CAS verdicts only
+    assert.equal(gets, 0)
+    assert.deepEqual(seen.map((s) => s.method), ['POST'])
+  })
+
+  test('a fresh read with NO numeric rev rethrows the CAS verdict — one read, no blind retry', async () => {
+    const { seen, request } = mockRequest((method) => {
+      if (method === 'GET') return { stages: [] } // unreadable bench: no rev field
+      throw new RemoteError('bench/cas-conflict',
+        'bench main moved: rev is 23, caller held 21', { current_rev: 23, expect_rev: 21 })
+    })
+    const tool = meliteConstruct(request)
+    const out = await tool.execute(
+      { verb: 'patch', stage: 's_0', params: {}, expect_rev: 21 },
+      exec(),
+    ) as Record<string, unknown>
+    assert.equal(out.ok, false)
+    assert.equal(out.error_kind, 'bench/cas-conflict')
+    assert.equal(out.error, 'bench main moved: rev is 23, caller held 21')
+    // the stale POST, the revless GET — and no second POST
+    assert.deepEqual(seen.map((s) => s.method), ['POST', 'GET'])
   })
 
   test('a non-numeric rev carries none', async () => {

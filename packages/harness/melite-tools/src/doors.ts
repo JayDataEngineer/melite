@@ -161,8 +161,9 @@ export const ESTATE_PENDING_GRACE_MS = 120_000
  *  from three hosts, 3379 remounts in one log) reset the stamp to
  *  null on every momentary lift and held the gate closed FOREVER.
  *  The stamp now lifts only after a SUSTAINED quiet — flapping
- *  cannot extend the grace window. */
-const ESTATE_PENDING_REARM_MS = 10_000
+ *  cannot extend the grace window. Exported for the re-arm wall
+ *  (a later boot race gets a fresh window: doors.spec.ts). */
+export const ESTATE_PENDING_REARM_MS = 10_000
 let estatePendingSince: number | null = null
 let estateQuietSince: number | null = null
 const estateStillActivating = (c: CtxView): boolean => {

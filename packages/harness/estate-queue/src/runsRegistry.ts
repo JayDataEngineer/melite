@@ -861,10 +861,15 @@ export class RunsRuntimeService extends Service {
         // "no FromStage links" message hid the specific crime and
         // read as tool nonsense. Name it: a wire whose stage IS the
         // run's own stage is a CYCLE (bench/self-wire, the same law
-        // the write doors hold); a wire naming ANOTHER stage is the
-        // run-the-flow arm.
+        // the write doors hold).
+        //
+        // A wire naming ANOTHER stage never reaches this gate: the
+        // promotion above turns every cross-wired bench into the
+        // bench run before the card arm composes (a bench with wires
+        // is a flow, whatever the caller named). The cross arms this
+        // block once carried were provably dead code — deleted in
+        // the 2026-10-14 batch, not left to pretend at coverage.
         const selfWired: string[] = [];
-        const crossWired: string[] = [];
         if (benchDoc !== undefined && Array.isArray(benchDoc["stages"])) {
           for (const st of benchDoc["stages"] as unknown[]) {
             if (typeof st !== "object" || st === null) continue;
@@ -875,8 +880,6 @@ export class RunsRuntimeService extends Service {
               const rr = ref as Record<string, unknown>;
               if (typeof rr === "object" && rr !== null && rr["stage"] === stId) {
                 selfWired.push(String(stId));
-              } else if (typeof rr === "object" && rr !== null && typeof rr["stage"] === "string") {
-                crossWired.push(String(rr["stage"]));
               }
             }
           }
@@ -893,16 +896,6 @@ export class RunsRuntimeService extends Service {
             ),
           );
         }
-        void crossWired;
-        throw toRemoteError(
-          refusal(
-            400,
-            "the bench wires " +
-              JSON.stringify(wiredRows) +
-              " but a single-card run carries no FromStage links — the wires would be discarded. Run the bench flow (the wires ride as stage inputs) or clear the wiring.",
-            "invalid_request",
-          ),
-        );
       }
       const cardStage: CompiledStage = {
         id: skeleton,

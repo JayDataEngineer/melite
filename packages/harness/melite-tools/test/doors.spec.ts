@@ -16,7 +16,7 @@ import { tmpdir } from 'node:os'
 import * as path from 'node:path'
 import * as os from 'node:os'
 import { Context } from '@deepseek-ai/cordis'
-import { apply, inject, ESTATE_PENDING_GRACE_MS } from '../src/doors.ts'
+import { apply, inject, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS } from '../src/doors.ts'
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue'
 import { resolveRepoRoot } from '@melite/comfyui-cordis'
 import type { LlmStreamSeam } from '../src/llm-complete.ts'
@@ -466,6 +466,101 @@ describe('doors apply', () => {
     } finally {
       await flapping.dispose()
       await door.dispose()
+    }
+  })
+
+  // THE RE-ARM (batch-4 closure, 2026-10-14): the stamp is monotonic
+  // against flaps, but a SUSTAINED quiet (10s with nothing
+  // activating) re-arms the grace window — a LATER boot race gets a
+  // fresh window instead of inheriting a spent one. One context
+  // cannot pin this: a wedge created after its root is ready never
+  // parks a pending fiber (probed live), so the re-wedge rides a
+  // SECOND context whose wedge mounts pre-ready — while the stamp
+  // state itself is module-level and survives the swap.
+  test('THE RE-ARM: a sustained quiet re-arms the grace — a later boot race gets a FRESH window, not a spent stamp', async () => {
+    const boot = (): { ctx: Context; routes: Route[]; door: ReturnType<Context['plugin']>; wedge: ReturnType<Context['plugin']> } => {
+      const ctx = new Context()
+      const routes: Route[] = []
+      ctx.provide('webServer', {
+        port: 0,
+        register: (route: Route) => {
+          routes.push(route)
+          return () => {}
+        },
+      } as never)
+      ctx.provide('llm', fakeLlm() as never)
+      ctx.provide('tools', { schemas: () => [] } as never)
+      const wedge = ctx.plugin({
+        name: 'estate-runs',
+        inject: ['queue'],
+        apply: (child: Context) => {
+          child.provide('runs', { validate: async () => ({ ok: true }) })
+        },
+      })
+      const door = ctx.plugin({ name: 'melite-tools-doors', inject, apply: apply as never })
+      return { ctx, routes, door, wedge }
+    }
+    const probe = (routes: Route[]): Promise<{ status: number; body: unknown }> =>
+      call(routes, '/v1', {
+        method: 'POST',
+        url: 'http://localhost/v1/flows/validate',
+        body: {},
+      })
+
+    // ── context one: wedge, spend the window, go quiet ──────────
+    const one = boot()
+    try {
+      await one.door
+      await one.wedge
+      await Promise.resolve()
+      const realNow = Date.now
+      try {
+        // wedged, inside the first grace: the typed pending
+        Date.now = realNow
+        assert.equal((await probe(one.routes)).status, 503)
+        // past the grace: the gate opens (the stamp is SPENT)
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 1_000
+        assert.equal((await probe(one.routes)).status, 502)
+        // the wedge lifts; quiet observation starts, then holds past
+        // the re-arm bound: the spent stamp clears
+        await one.wedge.dispose()
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 2_000
+        assert.equal((await probe(one.routes)).status, 502)
+        Date.now = (): number =>
+          realNow() + ESTATE_PENDING_GRACE_MS + 2_000 + ESTATE_PENDING_REARM_MS + 1_000
+        assert.equal((await probe(one.routes)).status, 502)
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await one.door.dispose()
+    }
+
+    // ── context two: a fresh boot race while the estate re-wedges ─
+    const two = boot()
+    try {
+      await two.door
+      await Promise.resolve()
+      const realNow = Date.now
+      try {
+        // the re-armed window CLOSES the gate again — a spent stamp
+        // would have left it open forever
+        Date.now = realNow
+        const closed = await probe(two.routes)
+        assert.equal(closed.status, 503)
+        assert.deepEqual(closed.body, {
+          error: 'estate composition is still activating',
+          code: 'estate/pending',
+          pending: true,
+        })
+        // and the fresh window elapses like the first
+        Date.now = (): number => realNow() + ESTATE_PENDING_GRACE_MS + 1_000
+        assert.equal((await probe(two.routes)).status, 502)
+      } finally {
+        Date.now = realNow
+      }
+    } finally {
+      await two.door.dispose()
     }
   })
 })
