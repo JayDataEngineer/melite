@@ -1021,4 +1021,126 @@ describe('melite_view — the bytes-are-truth law (035 attempt-16 gap #5)', () =
     assert.equal(out.image!.mediaType, 'image/jpeg')
     assert.equal(attachments.saved[0]!.mediaType, 'image/jpeg')
   })
+
+  test('the TEXT-ONLY twins: the sniff verdict rides in text, and a lying extension is NAMED', async () => {
+    // a non-visual route still gets the sniff law in prose: the
+    // un-sniffable svg states "not sniffed", a rescued PNG under an
+    // svg name prints the sniffed type, and the liar's disagreement
+    // is spelled out — the bytes win, even when only text is served
+    const { ctx, attachments } = fakeCtx({ visual: false })
+    const tool = meliteView(ctx)
+    const plain = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'plain.svg' }, visualExec as never)
+    assert.match(String((plain as { textObservation?: unknown }).textObservation), /format not sniffed/)
+    const rescued = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'rescued.svg' }, visualExec as never)
+    const rescuedText = String((rescued as { textObservation?: unknown }).textObservation)
+    assert.match(rescuedText, /image\/png/)
+    assert.doesNotMatch(rescuedText, /bytes win/, 'nothing disagrees: the svg extension declares no image type at all')
+    const liar = await tool.execute({ run_id: 'run-abcd99-mix', artifact: 'liar.png' }, visualExec as never)
+    assert.match(
+      String((liar as { textObservation?: unknown }).textObservation),
+      /the extension declares image\/png and the BYTES say image\/jpeg — the bytes win/,
+    )
+    assert.equal(attachments.saved.length, 0, 'a text-only route attaches nothing')
+  })
 });
+
+describe('melite_view — the stripped containers (a probe that states only what it knows)', () => {
+  // hand-built MP4s with the MINIMUM legal track: a handler naming the
+  // kind, a sample entry too short to carry geometry or rate — no
+  // tkhd, no stts, no mvhd. The probe publishes codec alone, and the
+  // text observations must state that row without inventing dims,
+  // rates, durations, or frame counts (no "undefined", no zeros).
+  const box = (type: string, body: Uint8Array): Uint8Array => {
+    const out = new Uint8Array(8 + body.length)
+    const view = new DataView(out.buffer)
+    view.setUint32(0, out.length)
+    for (let i = 0; i < 4; i++) out[4 + i] = type.charCodeAt(i)
+    out.set(body, 8)
+    return out
+  }
+  const u32 = (n: number): Uint8Array => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, n); return b }
+  const hdlr = (fourcc: string): Uint8Array =>
+    box('hdlr', new Uint8Array([0, 0, 0, 0, 0, 0, 0, 0, ...fourcc.split('').map((c) => c.charCodeAt(0)), ...new Uint8Array(12)]))
+  /** the sample entry stops after reserved+dri: the geometry/rate
+   * readers run past the end and state nothing rather than guessing */
+  const bareEntry = (type: string): Uint8Array => box(type, new Uint8Array(8))
+  const strippedMp4 = (fourcc: string, entryType: string): Uint8Array => {
+    const stsd = box('stsd', new Uint8Array([0, 0, 0, 0, ...u32(1), ...bareEntry(entryType)]))
+    const stbl = box('stbl', stsd)
+    const minf = box('minf', stbl)
+    const mdia = box('mdia', new Uint8Array([...hdlr(fourcc), ...minf]))
+    const moov = box('moov', box('trak', mdia))
+    return new Uint8Array([...box('ftyp', new Uint8Array([109, 115, 110, 109, 0, 0, 2, 0])), ...moov])
+  }
+
+  beforeAll(() => {
+    // the runs: one video-kind file, one audio-kind file — the walk
+    // needs real names on disk; the read seam below serves the bytes
+    const filmRun = join(root, 'output', 'run-5e1111-strip')
+    mkdirSync(filmRun, { recursive: true })
+    writeFileSync(join(filmRun, 'strip.mp4'), new Uint8Array(8))
+    const audioRun = join(root, 'output', 'run-5e2222-strip')
+    mkdirSync(audioRun, { recursive: true })
+    writeFileSync(join(audioRun, 'strip.mp3'), new Uint8Array(8))
+  })
+
+  test('a film probe with no geometry/duration states the bare codec row', async () => {
+    const { ctx, attachments } = fakeCtx({ visual: false })
+    const bytes = strippedMp4('vide', 'avc1')
+    const read = async (): Promise<Uint8Array> => bytes
+    const out = await viewFilmArtifact(
+      { stateRoot: root } as never, 'run-5e1111-strip', 'strip.mp4', visualExec as never, ctx,
+      ctx.get('attachments') as never, undefined as never, read,
+    )
+    const text = String(out.textObservation)
+    assert.match(text, new RegExp('melite_view film: strip\\.mp4, ' + String(bytes.length) + ' bytes, streams: h264; TEXT-ONLY'), 'the row carries codec alone — no dims, no fps, no frames, no duration')
+    assert.ok(!text.includes('undefined') && !text.includes('NaN'), text)
+    assert.equal(attachments.saved.length, 0)
+  })
+
+  test('an audio probe with no rate/channels/duration states the bare codec row', async () => {
+    const { ctx, attachments } = fakeCtx({ visual: false })
+    const { viewAudioArtifact } = await import('../src/tools/melite-view.ts')
+    const bytes = strippedMp4('soun', 'mp4a')
+    const read = async (): Promise<Uint8Array> => bytes
+    const out = await viewAudioArtifact(
+      { stateRoot: root } as never, 'run-5e2222-strip', 'strip.mp3', visualExec as never, ctx,
+      ctx.get('attachments') as never, undefined as never, read,
+    )
+    const text = String(out.textObservation)
+    assert.match(text, new RegExp('melite_view audio: strip\\.mp3, ' + String(bytes.length) + ' bytes, streams: aac; TEXT-ONLY'), 'the row carries codec alone — no rate, no channels, no duration')
+    assert.ok(!text.includes('undefined') && !text.includes('NaN'), text)
+    assert.equal(attachments.saved.length, 0)
+  })
+})
+
+describe('melite_view — the route micro-arms (every fallback has an owner)', () => {
+  test('a session header WITHOUT provider/model falls to the agent options', async () => {
+    // the header exists but its config names no route: the ?? second
+    // arm reads the options seat — the route is still resolvable
+    const { ctx } = fakeCtx()
+    const tool = meliteView(ctx)
+    const halfHeaderExec = {
+      signal: AbortSignal.timeout(15_000),
+      agent: {
+        session: { requestHeader: () => ({ config: {} }) },
+        options: { provider: 'zai', model: 'glm-5v-turbo' },
+      },
+    }
+    const out = await tool.execute({ run_id: 'run-abc123-hero' }, halfHeaderExec as never) as ViewedImageValue
+    assert.equal(out.image!.attachmentId, 'att_1')
+  })
+
+  test('a text-only value RENDERS as one text block (no image block is fabricated)', async () => {
+    // the render seam's textObservation arm: the value carries no
+    // image, and the render says so in prose instead of pairing a
+    // fabricated block
+    const { ctx } = fakeCtx({ visual: false })
+    const tool = meliteView(ctx)
+    const value = await tool.execute({ run_id: 'run-face001-wide' }, visualExec as never)
+    const blocks = tool.output!.render!({} as never, value as never)
+    assert.equal(blocks.length, 1)
+    assert.equal(blocks[0]!.type, 'text')
+    assert.match((blocks[0] as { text: string }).text, /TEXT-ONLY observation/)
+  })
+})

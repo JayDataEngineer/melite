@@ -263,3 +263,55 @@ describe('melite_view — the mesh arm (3D in the media plane)', () => {
     )
   })
 })
+
+describe('melite_view — the poster/mesh chain micro-arms', () => {
+  beforeAll(() => {
+    // a poster-NAMED image with NO mesh sibling: the pattern alone
+    // must not reroute a plain image to a mesh that does not exist
+    const orphanRun = join(root, 'output', 'run-0f9111-orphan')
+    mkdirSync(orphanRun, { recursive: true })
+    writeFileSync(join(orphanRun, 'orphan_poster.png'), PNG_BYTES)
+    // a run whose audio probe dies for its OWN reason beside a mesh:
+    // the chain must rethrow that reason, not mask it with the mesh miss
+    const brokenRun = join(root, 'output', 'run-0f9222-broken')
+    mkdirSync(brokenRun, { recursive: true })
+    writeFileSync(join(brokenRun, 'garbage.wav'), new TextEncoder().encode('not a container at all'))
+    writeFileSync(join(brokenRun, 'plain_00001.glb'), glbBytes())
+  })
+
+  test('a poster-named image WITHOUT a mesh sibling is served as the plain image it is', async () => {
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute({ run_id: 'run-0f9111-orphan' }, visualExec as never) as ViewedImageValue
+    assert.match(out.url, /orphan_poster\.png$/)
+    assert.equal(out.mesh, undefined, 'no mesh beside it — the poster pattern claims nothing on its own')
+    assert.equal(out.image!.mediaType, 'image/png')
+    assert.equal(saved.length, 1)
+  })
+
+  test('a NAMED mesh with a poster observes through the early arm (no walk, no misses)', async () => {
+    // the 3D lane names its artifact: the intent check reaches the
+    // mesh arm directly and the poster rides with the verdict
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    const out = await tool.execute(
+      { run_id: 'run-9a1b2c3d4e5f-aabbccdd', artifact: 'trellis2_native_00009.glb' },
+      visualExec as never,
+    ) as ViewedImageValue
+    assert.match(out.url, /trellis2_native_00009\.glb$/)
+    assert.equal(out.mesh!.poster, 'img-to-mesh/trellis2_native_00009_poster.png')
+    assert.equal(saved.length, 1, 'the poster is the attached image')
+  })
+
+  test('an audio probe that dies for its OWN reason is rethrown, not masked by the mesh miss', async () => {
+    // the chain\'s law: only the "no artifacts of that kind" miss
+    // delegates onward — a working arm\'s real failure surfaces
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    await assert.rejects(
+      () => tool.execute({ run_id: 'run-0f9222-broken' }, visualExec as never),
+      /cannot view the audio "garbage\.wav"/,
+    )
+    assert.equal(saved.length, 0)
+  })
+})
