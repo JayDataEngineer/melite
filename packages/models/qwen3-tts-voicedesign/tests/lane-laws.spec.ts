@@ -45,6 +45,13 @@ describe("the tts lane dispatch (variant topology data, never the family id)", (
       () => instantiateAction(speak, { text: "hi", seed: 1 }, model, new GraphBuilder(), "rs"),
       /qwen3-tts-voicedesign: no lane topology for variant "yodel" — the DECL declares no such lane/,
     );
+    // and a row whose defaults carry NO variant at all — the guard
+    // coerces to the empty key and the same refusal names it
+    const bare = { ...stub("anything", "customvoice"), defaults: { mode: "tts" } } as unknown as ModelFacts;
+    assert.throws(
+      () => instantiateAction(speak, { text: "hi", seed: 1 }, bare, new GraphBuilder(), "rs2"),
+      /qwen3-tts-voicedesign: no lane topology for variant "" — the DECL declares no such lane/,
+    );
   });
 
   it("the base variant routes the clone lane (reference audio + transcript)", () => {

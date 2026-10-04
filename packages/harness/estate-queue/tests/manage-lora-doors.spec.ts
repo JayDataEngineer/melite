@@ -179,6 +179,48 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     }
   });
 
+  // ── THE BYTES ARM (batch-7 closure, 2026-10-14 — O25j): the
+  // civit-browser upload needs no path — the bytes land under the
+  // filename the operator's browser chose, and the no-filename
+  // state refuses before anything decodes.
+  it("lora_install BYTES: a browser upload lands without a path (bytes first, the name named)", async () => {
+    const ctx = CTX({ objectInfo: engineAnswer(["h3/one.safetensors"]) });
+    const dir = join(tempRoot("lane-bytes-"), "loras");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    try {
+      // bytes without a filename refuses in its own voice
+      const [nf, nfres] = await run(
+        { action: "lora_install", data: "data:application/octet-stream;base64,AAAA" },
+        ctx,
+      );
+      assert.equal(nf, 422);
+      assert.equal(nfres.ok, false);
+      assert.match(nfres.detail, /requires filename/);
+      // the upload lands, byte-identical, restart named
+      const bytes = Buffer.alloc(32, 9);
+      const [code, res] = await run(
+        {
+          action: "lora_install",
+          filename: "uploaded.safetensors",
+          data: "data:application/octet-stream;base64," + bytes.toString("base64"),
+          families: ["h3"],
+        },
+        ctx,
+      );
+      assert.equal(code, 200);
+      const data = res.data as Record<string, unknown>;
+      assert.equal(data["filename"], "uploaded.safetensors");
+      assert.equal(data["bytes"], 32);
+      assert.equal(data["restart_required"], true);
+      // the landed file is the upload, byte-identical (never a fetch)
+      assert.deepEqual(readFileSync(join(dir, "uploaded.safetensors")), bytes);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
   it("an undeclared loras dir names the same sentence from both doors", async () => {
     // the SHIPPED endpoint config carries no model_base_path (the
     // key is optional in both production shapes), so engineLorasDir

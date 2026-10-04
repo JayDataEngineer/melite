@@ -146,6 +146,48 @@ describe("the tts compose gate", () => {
     );
   });
 
+  // THE EXACT-MISSING VOICE (batch-7 closure, 2026-10-14 — O25n):
+  // the together row fires only when a member is stated, so a
+  // design compose with NEITHER half is named here, in the lane's
+  // own voice — both missing keys spelled, and each single miss
+  // named alone. The ref_text twin and the stale pack shape ride
+  // the same seat.
+  it("a design export names its actually-missing keys (both, either, and the ref_text twin)", () => {
+    // the DESIGN lane's own row (the bare -voicedesign id is the
+    // customvoice lane — speak, not design)
+    const designModel = facts.models["qwen3-tts-voicedesign-design"]!;
+    // NEITHER half — the exact-missing voice names both
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample" }), designModel, new GraphBuilder(), "r_design_none"),
+      /required Design param\(s\) 'voice_name' \+ 'design_prompt' missing or empty/,
+    );
+    // voice_name alone — the family's TOGETHER row speaks first
+    // (the judge already spoke: half-stated states are family rows)
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", voice_name: "Cherry" }), designModel, new GraphBuilder(), "r_design_v"),
+      /ride together on this lane \(state all or none\)/,
+    );
+    // design_prompt alone — the same together word
+    assert.throws(
+      () => def.compose(def.schema({ text: "sample", design_prompt: "warm" }), designModel, new GraphBuilder(), "r_design_d"),
+      /ride together on this lane \(state all or none\)/,
+    );
+    // the ref_TEXT twin refuses the same way
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "sample", voice_name: "Cherry", design_prompt: "warm", ref_text: "words",
+      }), designModel, new GraphBuilder(), "r_design_reftext"),
+      /fire nothing on a Design export/,
+    );
+    // the stale pack shape names no surface on the design lane
+    assert.throws(
+      () => def.compose(def.schema({
+        text: "sample", voice_name: "Cherry", design_prompt: "warm", qvoice_save: "Old",
+      }), designModel, new GraphBuilder(), "r_design_stale"),
+      /param 'qvoice_save' names no surface on the tts card/,
+    );
+  });
+
   it("THE QVOICE PERSISTENCE LAW: the design lane copies the minted .qvoice into the run tree", () => {
     const designModel = facts.models["qwen3-tts-voicedesign"]!;
     const g = new GraphBuilder();
