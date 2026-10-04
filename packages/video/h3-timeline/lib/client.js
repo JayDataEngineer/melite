@@ -9552,12 +9552,7 @@ window.__ModuleLoader__.load({
 			if (Array.isArray(value)) return value;
 			if (typeof value !== "string" || !value.trimStart().startsWith("[")) return [];
 			try {
-				const parsed = JSON.parse(value);
-				if (!Array.isArray(parsed)) {
-					console.error(`VideoTimelineStudio: params.${field} parses to a non-array — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`);
-					return [];
-				}
-				return parsed;
+				return JSON.parse(value);
 			} catch {
 				console.error(`VideoTimelineStudio: params.${field} is array-shaped but unparseable — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`);
 				return [];

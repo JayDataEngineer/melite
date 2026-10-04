@@ -560,9 +560,9 @@ export async function registerCompiledRun(args: {
       params: door.requestBody,
     };
   }
-  if (door !== undefined && door.benchDoc !== undefined) {
-    const benchStages = Array.isArray(door.benchDoc?.["stages"])
-      ? door.benchDoc?.["stages"]
+  if (door.benchDoc !== undefined) {
+    const benchStages = Array.isArray(door.benchDoc["stages"])
+      ? door.benchDoc["stages"]
       : undefined;
     if (benchStages !== undefined && (benchStages as unknown[]).length > 0) {
       // THE PROVENANCE HEAD (2026-09-25, the maker's fabrication
@@ -633,7 +633,7 @@ export async function registerCompiledRun(args: {
   const echoCalls: Array<Record<string, unknown>> = Array.isArray(bodyRec?.["calls"])
     ? bodyRec["calls"] as Array<Record<string, unknown>>
     : [];
-  const benchRec = door?.benchDoc as { bench?: { rev?: unknown } } | undefined;
+  const benchRec = door.benchDoc as { bench?: { rev?: unknown } } | undefined;
   const benchRev = typeof benchRec?.bench?.rev === "number" ? benchRec.bench.rev : null;
   if (echoCalls.length > 0) {
     const seam = echoCalls
@@ -658,7 +658,7 @@ export async function registerCompiledRun(args: {
   // submitted body (card snapshot / request body) as fallback —
   // the export-name stamp's 024 lesson. Variant-less runs stamp
   // nothing (the lift returns undefined; absent, never guessed).
-  const regVariant = variantOfBodies([...run.params, door?.requestBody])
+  const regVariant = variantOfBodies([...run.params, door.requestBody])
   if (regVariant !== undefined) {
     run.variant = regVariant;
     console.log(`[variant] run=${runId} draft=${draftId} variant=${regVariant}`);

@@ -157,7 +157,14 @@ describe("durableRecordUsable", () => {
     expect(durableRecordUsable(sidecar({ graph: [{ id: "a", type: "" }] }), "{}", true)).toBe(false);
   });
   it("unlistable stages/skipped/artifacts refuse", () => {
-    expect(durableRecordUsable(sidecar({ stages: "flat" }), "{}", true)).toBe(false);
+    // the stages mistype rides NESTED under `request` (a re-audit
+    // finding, 2026-10-16): a TOP-LEVEL stages:"flat" is refused by
+    // parseSidecar's own array gate one guard earlier and never
+    // reaches the sidecarList walk this arm names — the request row
+    // carries the same mistype past the parser to the named site
+    expect(durableRecordUsable(sidecar({
+      request: { draft_id: "d1", graph: [], stages: "flat", skipped_stages: [], artifacts: [] },
+    }), "{}", true)).toBe(false);
     expect(durableRecordUsable(sidecar({ skipped_stages: 7 }), "{}", true)).toBe(false);
     expect(durableRecordUsable(sidecar({ artifacts: { a: 1 } }), "{}", true)).toBe(false);
   });

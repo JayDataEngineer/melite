@@ -56,15 +56,16 @@ describe("buildStageRow (the field gates)", () => {
     expect(r.skipWhen).toEqual({ initial: "flag", when: "present" });
     expect(r.inputs[1]?.edge).toEqual({ kind: "initial", key: "seed" });
   });
-  it("unknown stage fields refuse with the extra=forbid voice (and non-objects with extras refuse on the keys walk)", () => {
+  it("unknown stage fields refuse with the extra=forbid voice (a non-object carries no keys to walk)", () => {
     try {
       row(0, { ...stage(), mystery: 1 });
       expect.unreachable();
     } catch (e) {
       expect((e as Error).message).toMatch(/stage\[0\] "s1": body carries unknown field\(s\) \["mystery"\]/);
     }
-    // the array stage now refuses as a TYPED FlowError (the leaked
-    // TypeError was the old probe vehicle; the refusal voice is the same)
+    // the array refuses at the OBJECT gate (a re-audit correction,
+    // 2026-10-16): it never reaches the keys walk this arm used to
+    // claim — a non-object has no keys to walk
     expect(() => row(0, ["x"])).toThrow(/stage\[0\]: \["x"\] is not an object/);
   });
   it("a non-object stage refuses; mistyped maps refuse through the wrap voice", () => {
@@ -90,13 +91,18 @@ describe("buildStageRow (the field gates)", () => {
     expect(() => row(0, stage({ inputs: { img: { initial: "" } } })))
       .toThrow(/refuses: FromInitial key must be a non-empty string/);
   });
-  it("missing id/engine keys ride the same refusals (String() coerce path)", () => {
+  it("missing and present-but-null id/engine keys ride the same refusals (the absent arm and the ?? coerce arm)", () => {
     const noId: Record<string, unknown> = stage();
     delete noId["id"];
     expect(() => row(0, noId)).toThrow(/refuses: Stage id must be/);
     const noEngine: Record<string, unknown> = stage();
     delete noEngine["engine"];
     expect(() => row(0, noEngine)).toThrow(/refuses: Stage engine must be/);
+    // PRESENT-but-null rides the `in rec` TRUE arm with the ?? ""
+    // coerce (a re-audit correction, 2026-10-16: the deleted-key rows
+    // above never touch the coerce — null does)
+    expect(() => row(0, stage({ id: null }))).toThrow(/refuses: Stage id must be/);
+    expect(() => row(0, stage({ engine: null }))).toThrow(/refuses: Stage engine must be/);
   });
 });
 

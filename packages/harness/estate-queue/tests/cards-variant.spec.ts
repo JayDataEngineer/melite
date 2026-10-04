@@ -58,6 +58,8 @@ describe("selectCardVariant (the R1 wire contract)", () => {
         .toThrow(CardArmError);
       try {
         selectCardVariant("m", row(), { variant: bad }, "2");
+        expect.unreachable(); // (the re-audit, 2026-10-16): without
+        // this, a non-throwing call ran zero assertions in the try
       } catch (e) {
         expect((e as Error).message).toMatch(/variant must be a string/);
       }

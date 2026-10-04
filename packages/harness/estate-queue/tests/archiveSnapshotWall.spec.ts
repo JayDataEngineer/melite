@@ -27,6 +27,11 @@ function walk(dir: string, tally: Tally): void {
   try {
     entries = readdirSync(dir);
   } catch {
+    // (the re-audit, 2026-10-16): a bare return silently SHRANK the
+    // proven population — an unreadable subtree vanished without a
+    // word and only a wholly empty tree failed. Name it instead: the
+    // wall's own failure list carries the unreadable dir.
+    tally.failures.push(`${dir}: unreadable (readdir threw)`);
     return;
   }
   for (const name of entries) {
@@ -84,7 +89,13 @@ describe("THE ARCHIVE WALL — every real sidecar's snapshot parses under the co
     // Snapshot coverage: the archive predates the contract, so
     // bench_snapshot presence is historical (card-only eras). What
     // this wall pins is the ZERO on failures — every snapshot the
-    // wand could ever offer the user LOADS.
+    // wand could ever offer the user LOADS. The card-snapshot census
+    // itself must be non-zero (the re-audit's minor): the printed
+    // count could silently read 0 over an emptied archive.
+    assert.ok(
+      tally.cardSnapshots > 0,
+      "the runs tree under data/ carries card snapshots — a zero census is a broken fixture, not a pass",
+    );
     assert.equal(
       tally.failures.length,
       0,

@@ -5,7 +5,7 @@ import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit'
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, laneTopologyOf as ttsLaneTopologyOf, type TtsLaneTopology } from '@melite/models-qwen3-tts'
-import { DECL as qwen3TtsVoicedesignDecl, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign'
+import { DECL as qwen3TtsVoicedesignDecl, variantRoute as voicedesignVariantRoute, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign'
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -123,7 +123,7 @@ const laneTopology = (model: ModelFacts): TtsLaneTopology =>
 // rename left the card boarding an address that resolves to nothing)
 export const VARIANT_ADDRESSES: string[] = [
   variantRoute(qwen3TtsDecl, 'base'),
-  variantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
+  voicedesignVariantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
 ].filter((r): r is string => r !== '')
 
 /** The identity rung (label/description — the authored prose the
@@ -306,9 +306,13 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         if (stale !== undefined) {
           throw new Error("param 'qvoice_save' names no surface on the tts card (the Design entry is FLAT — voice_name + design_prompt + sampling, the qvoice_save pack contract)")
         }
-        if (qvoiceStated(doc)) {
-          throw new Error("param 'qvoice' fires nothing on a Design export (an export creates a new voice — it performs no saved persona; drop the Voice entry or switch to a performing lane)")
-        }
+        // NOTE (the lying-test re-audit, 2026-10-16): a qvoice refusal
+        // seat here ("qvoice fires nothing on a Design export") was
+        // DEAD BY DATA FLOW — with voice_name stated (the design
+        // lane's required param) the DECLARED family conflict row
+        // voice_name×qvoice throws first, and without it the missing-
+        // params wall above throws. The family row owns the judgment;
+        // the duplicate is gone.
         // THE DECLARED ACTION (the atom vocabulary, stroke 3): the
         // boarded family's own export action composes; an unbound
         // row refuses loud below.

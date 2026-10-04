@@ -135,6 +135,11 @@ describe("the tts compose gate", () => {
       }), designModel, new GraphBuilder(), "r_design_ref"),
       /ref_audio|ref_text/,
     );
+    // judged at the FAMILY conflict row (the lying-test re-audit,
+    // 2026-10-16): voice_name×qvoice is a DECL-declared conflict, so
+    // the throw rides the family relation judgment — the card's own
+    // duplicate seat was dead by data flow and is deleted (card.ts
+    // carries the proof). This arm names that family door.
     assert.throws(
       () => def.compose(def.schema({
         text: "sample",

@@ -50,11 +50,11 @@ const seat = (cardOver: Record<string, (...args: never[]) => unknown> = {}): Sea
   const core = new QueueCore();
   (ctx as unknown as { queue: unknown }).queue = { core, stateRoot: state };
   (ctx as unknown as { draftsRemote: unknown }).draftsRemote = {
-    get: async (id: string): Promise<unknown> => {
-      if (id === "d1") return {};
-      if (id === "boom") throw new Error("transport down");
-      throw new RemoteError("draft/not-found", "no doc", { draftId: id });
-    },
+    // the happy path only (a re-audit finding, 2026-10-16): the
+    // transport-down and not-found legs this mock used to carry had
+    // no driver in this spec — those refusals are owned by the
+    // runs-start/serve specs; a rig leg nobody drives is dead weight
+    get: async (): Promise<unknown> => ({}),
   };
   const cards: Record<string, (...args: never[]) => unknown> = {
     // The validate arm now passes the seat's registry into the
@@ -138,16 +138,6 @@ const engineSeat = (s: Seat): FakeEngine => {
   return engine;
 };
 
-const remote = async (fn: () => Promise<unknown>): Promise<RemoteError> => {
-  try {
-    await fn();
-  } catch (e) {
-    assert.ok(e instanceof RemoteError, "a RemoteError, got " + String(e));
-    return e as RemoteError;
-  }
-  throw new Error("never threw");
-};
-
 describe("pump + engine", () => {
   const wfBody = (over: Record<string, unknown> = {}): Record<string, unknown> =>
     inlineBody({
@@ -212,7 +202,16 @@ describe("pump + engine", () => {
   // THE FILM PRESENTATION (2026-09-22, the valve's death): real tiny
   // mp4s written into the run dir by the fake engine. The harness
   // NEVER composes media — these arms prove presentation order only.
-  const ffmpegOk = spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
+  // The availability gate is asserted in the ARM BODY (a re-audit
+  // finding, 2026-10-16): the assert.ok(mkMp4(...)) calls fire inside
+  // onFlow, whose throws the source catch (runsExecute) folds into
+  // run.error — a host without ffmpeg failed as a mystery "error"
+  // row instead of naming the missing binary.
+  const ffmpegOk = (): boolean =>
+    spawnSync("ffmpeg", ["-version"], { encoding: "utf8" }).status === 0;
+  const needFfmpeg = (): void => {
+    assert.ok(ffmpegOk(), "ffmpeg is unavailable — the film-presentation arms need real tiny mp4s");
+  };
   const mkMp4 = (dir: string, name: string, secs: string): boolean =>
     spawnSync(
       "ffmpeg",
@@ -225,6 +224,7 @@ describe("pump + engine", () => {
 
 
   it("THE ENGINE FILM LEADS (in-graph concat; the harness never muxes)", async () => {
+    needFfmpeg();
     const s = seat();
     const engine = engineSeat(s);
     engine.onFlow = async (_rows, runDir) => {
@@ -250,6 +250,7 @@ describe("pump + engine", () => {
   });
 
   it("THE VALVE IS DEAD (2026-09-22, the operator's provenance law): windows-only films keep the windows — the harness never concats, never mixes", async () => {
+    needFfmpeg();
     const s = seat();
     const engine = engineSeat(s);
     engine.onFlow = async (_rows, runDir) => {
@@ -275,7 +276,13 @@ describe("pump + engine", () => {
   });
 
 
-  it("an undecided probe (missing stitch file) keeps the engine's own names", async () => {
+  // (renamed by the re-audit, 2026-10-16): the old name promised an
+  // "undecided probe (missing stitch file)" — no such probe exists;
+  // runRel is string surgery and engineFilmName matches only the
+  // h3_t4_film_\d+_ pattern, so this vehicle drives the NO-MATCH
+  // road: none of these artifact names is a film, the engine's own
+  // leading name leads, and the mux valve stays closed
+  it("engine names that match no film pattern keep their own order (the film lead matches only the t4 film; the mux valve stays closed)", async () => {
     const s = seat();
     const engine = engineSeat(s);
     engine.onFlow = async () => ({

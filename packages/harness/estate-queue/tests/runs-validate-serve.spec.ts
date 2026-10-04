@@ -160,9 +160,14 @@ describe("compileFlow (the $channel gate)", () => {
     }
   });
   it("an initial edge donates its key to the pool (__initial__. prefix)", () => {
+    // the input's own name is NOT the initial's key (a re-audit
+    // finding, 2026-10-16): with input seed ← initial seed, the pool
+    // already carried "seed" through inputNames and the __initial__
+    // split was never load-bearing — name the input img so ONLY the
+    // split donates "seed" and this arm fails without it
     const seeded = flowOf([buildStageRow(0, stage({
       id: "a", params: { seed: "$seed" },
-      inputs: { seed: { initial: "seed" } }, expected: { seed: "num" },
+      inputs: { img: { initial: "seed" } }, expected: { img: "num" },
       outputs: { out: "image" },
     }))]);
     const out = compileFlow(seeded, {});
@@ -206,7 +211,7 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
     expect(stale.status).toBe(400);
     expect((stale.payload as Record<string, unknown>)["error"]).toMatch(/unknown keys \["flow_inline"\]/);
   });
-  it("a non-object body serves a flow_compile 400 (batch rows ride the errors)", () => {
+  it("an inline body whose flow compiles to nothing serves the flow_compile 400 (renamed by the re-audit: the old name claimed batch rows ride the errors — this vehicle never produces them)", () => {
     const ans = inlineArm({ flow_inline: { id: "f1", stages: [] } }, null);
     expect(ans.status).toBe(400);
     const payload = ans.payload as Record<string, unknown>;

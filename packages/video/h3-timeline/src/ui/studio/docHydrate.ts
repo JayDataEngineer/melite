@@ -27,18 +27,13 @@ function arrayValue(value: unknown, field: string): unknown[] {
   if (Array.isArray(value)) return value
   if (typeof value !== 'string' || !value.trimStart().startsWith('[')) return []
   try {
-    const parsed: unknown = JSON.parse(value)
-    if (!Array.isArray(parsed)) {
-      // HIGH-4 (the fallback audit, 2026-09-28): a parseable
-      // non-array used to be cast blind (`as unknown[]`, iterating
-      // to zero) — the audio timeline vanished without a word and
-      // the film composed silent. Named now; view state stays empty
-      // and the corrupt source survives (serialize omits the key).
-      console.error(
-        `VideoTimelineStudio: params.${field} parses to a non-array — the audio timeline is corrupt; the film composes WITHOUT it. Fix or re-author the clips.`,
-      )
-      return []
-    }
+    // HIGH-4 (the fallback audit, 2026-09-28) named the parseable
+    // non-array — dead by JSON GRAMMAR (the re-audit, 2026-10-16):
+    // the guard above admits only strings opening with '[', and
+    // every string the '[' production accepts parses to an ARRAY.
+    // The non-array branch was unreachable from any input; the
+    // catch below owns the corrupt-string voice.
+    const parsed: unknown[] = JSON.parse(value)
     return parsed
   } catch {
     console.error(
