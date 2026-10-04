@@ -32,7 +32,7 @@
 // The prefix table is the suites' literal mkdtemp prefixes (audited
 // by grep, 2026-09-14); anything else in /tmp is not ours and is
 // never touched.
-import { mkdtempSync, readdirSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -123,6 +123,14 @@ export default function setup(): () => void {
   // any spec module is imported, so even a module-level tmpdir() sees
   // the scoped root.
   const runRoot = mkdtempSync(join(tmpdir(), "melite-run-"));
+  // THE OWNERSHIP MARKER (the flake audit, 2026-10-15): the sweep used
+  // to judge a run root by its top-level mtime, but nothing updates a
+  // directory's mtime when work happens in NESTED directories — so a
+  // run whose suites take more than a minute deleted its OWN tree out
+  // from under itself (or under a concurrent run), taking every spec
+  // in that run with it. The root now carries its owner's pid, and the
+  // sweep removes a root only when no live process claims it.
+  writeFileSync(join(runRoot, OWNER_FILE), String(process.pid));
   const previousTmp = process.env["TMPDIR"];
   process.env["TMPDIR"] = runRoot;
   // (1b) BEFORE as well as after: a run that was killed never reaches a
@@ -137,9 +145,32 @@ export default function setup(): () => void {
   };
 }
 
+/** The owner marker a run root carries: its pid. A root whose owner
+ *  is still running is never swept, whatever its age. */
+const OWNER_FILE = ".melite-run-owner";
+/** The legacy (unmarked) tree fence: longer than any single suite, so
+ *  a live run's tree is never mistaken for a leftover. */
+const LEGACY_STALE_MS = 60_000;
+
+/** Is some live process still the owner of this run root? A pid that
+ *  no longer exists (a crashed run, or a recycled one) owns nothing. */
+function ownerAlive(root: string): boolean {
+  try {
+    const pid = Number(readFileSync(join(root, OWNER_FILE), "utf8").trim());
+    if (!Number.isInteger(pid) || pid <= 0) return false;
+    process.kill(pid, 0);
+    return true;
+  } catch (error: unknown) {
+    // ESRCH: the owner is gone — the tree is a leftover. EPERM on
+    // another user's pid still means it EXISTS.
+    return (error as { code?: string }).code === "EPERM";
+  }
+}
+
 /** The legacy backstop sweep (1b). Best-effort by design: it never
  *  touches a tree that is not ours, and a tree a CONCURRENT run owns
- *  survives the mtime fence. */
+ *  survives — by the owner marker for run roots, by age for the
+ *  unmarked legacy prefixes. */
 function sweep(runStart: number): void {
   {
       let swept = 0;
@@ -150,14 +181,14 @@ function sweep(runStart: number): void {
         return; // no tmpdir to sweep
       }
       for (const name of names) {
-        // our own run roots are ours to remove once they go stale
+        // a run root belongs to the RUN, not to a timestamp: a live
+        // owner's tree is never touched, however long its suites run
         if (name.startsWith("melite-run-")) {
           const full = join(tmpdir(), name);
           try {
-            if (statSync(full).mtimeMs < runStart - 60_000) {
-              rmSync(full, { recursive: true, force: true });
-              swept++;
-            }
+            if (ownerAlive(full)) continue;
+            rmSync(full, { recursive: true, force: true });
+            swept++;
           } catch {
             /* raced */
           }
@@ -166,9 +197,13 @@ function sweep(runStart: number): void {
         if (!SUITE_PREFIXES.some((pfx) => name.startsWith(pfx))) continue;
         const full = join(tmpdir(), name);
         try {
-          // only trees that predate this run — a CONCURRENT vitest
-          // run owns its own; mtime is the fence
-          if (statSync(full).mtimeMs < runStart - 1_000) {
+          // trees older than the longest suite budget — a CONCURRENT
+          // run mints and writes inside nested directories, which
+          // leaves the top-level mtime untouched, so a one-second fence
+          // deleted a live run's tree (the same defect the run-root
+          // arm had). The legacy trees carry no marker, so age is the
+          // only fence they have; it must clear a whole suite.
+          if (statSync(full).mtimeMs < runStart - LEGACY_STALE_MS) {
             rmSync(full, { recursive: true, force: true });
             swept++;
           }
