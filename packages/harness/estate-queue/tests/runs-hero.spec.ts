@@ -10,6 +10,7 @@ import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { EngineJson, FlowResult, MergeRow } from "@melite/comfyui-cordis";
+import type { EngineStageRow } from "@melite/engine-contract";
 import type { RunRecord } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 import { declaredPrimaryFirst, runOne } from "../src/runsExecute.ts";
@@ -431,5 +432,150 @@ describe("runOne's wiring fence on the SEAT path (production's path)", () => {
     assert.equal(calls.n, 1, "the seat executor submitted — the unarmed fence judged nothing");
     assert.equal(run.status, "completed");
     assert.equal(run.error, "");
+  });
+});
+
+// ── THE CARD-LABEL PREFERENCE CHAIN (2026-10-16, the coverage
+// queue's runsExecute batch): both row builders read the SAME chain
+// — the stage's own card, then the record's cardId, then nothing (the
+// merged rows) or the stage id (the fence's name). A stage whose
+// `card` is PRESENT BUT EMPTY is the chain's middle case: it is not
+// the stage's own card, so the record's cardId answers. The arms
+// below pin the empty-string leg on BOTH builders and the fence's
+// last leg (a card-less record + a card-less stage = the stage id).
+describe("runOne's card-label chain (the stage's own card, the empty stage card)", () => {
+  /** A stage row carrying its composer name — "" is the cleared
+   *  picker, a name is the stage's own card. */
+  const stageWithCard = (card: string): RunRecord["stages"][number] => ({
+    id: "s",
+    name: "s",
+    index: 0,
+    status: "pending",
+    outputs: {},
+    expected: {},
+    card,
+  });
+
+  /** The seat path with a capturing executor: the rows the run seat
+   *  built are what the chain is read from. */
+  const captureSeat = async (): Promise<{ ctx: Context; seen: EngineStageRow[] }> => {
+    const { EnginesService } = await import("@melite/engine-contract");
+    const ctx = new Context();
+    const seat = new EnginesService(ctx);
+    const seen: EngineStageRow[] = [];
+    seat.register("comfyui", {
+      executor: {
+        executeStages: async (rows: EngineStageRow[]): Promise<{
+          stages: Array<{ stageId: string; outputs: Record<string, EngineJson>; artifacts: string[] }>;
+        }> => {
+          seen.push(...rows);
+          return { stages: [{ stageId: "s", outputs: {}, artifacts: [] }] };
+        },
+      },
+    });
+    return { ctx, seen };
+  };
+
+  it("the MERGED row builder: the stage's OWN card leads the record's cardId", async () => {
+    const ctx = new Context();
+    const engine = new FakeEngine(ctx);
+    let seen: MergeRow[] = [];
+    engine.onFlow = async (rows) => {
+      seen = rows;
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const run: RunRecord = {
+      ...runWithCard("h3-timeline"),
+      stages: [stageWithCard("mask")],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(
+      seen[0]?.card,
+      "mask",
+      "the stage's own composer names the graph — the record's cardId is the fallback, never the lead",
+    );
+  });
+
+  it("the MERGED row builder: an empty stage card falls through to the run's cardId", async () => {
+    const ctx = new Context();
+    const engine = new FakeEngine(ctx);
+    let seen: MergeRow[] = [];
+    engine.onFlow = async (rows) => {
+      seen = rows;
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    const run: RunRecord = {
+      ...runWithCard("h3-timeline"),
+      stages: [stageWithCard("")],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(
+      seen[0]?.card,
+      "h3-timeline",
+      "the record's card answers — an empty stage card names no composer",
+    );
+  });
+
+  it("the SEAT row builder: the stage's OWN card leads the run's cardId", async () => {
+    const { ctx, seen } = await captureSeat();
+    const run: RunRecord = {
+      ...runWithCard("h3-timeline"),
+      stages: [stageWithCard("mask")],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(
+      seen[0]?.card,
+      "mask",
+      "the adapter's walk voice names the stage's own card first",
+    );
+  });
+
+  it("the SEAT row builder: an empty stage card falls through to the run's cardId (the same chain, the other builder)", async () => {
+    const { ctx, seen } = await captureSeat();
+    const run: RunRecord = {
+      ...runWithCard("h3-timeline"),
+      stages: [stageWithCard("")],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(run.status, "completed");
+    assert.equal(
+      seen[0]?.card,
+      "h3-timeline",
+      "the adapter's walk voice names the record's card, not the empty stage field",
+    );
+  });
+
+  it("the FENCE's last name: a card-less record on a card-less stage names the STAGE ID", async () => {
+    const { ComfyUIWiringService } = await import("@melite/comfyui-cordis");
+    const ctx = new Context();
+    // armed WITHOUT the run's class ("X") — the fence refuses, and the
+    // refusal names whoever composed the graph
+    const wiring = new ComfyUIWiringService(ctx);
+    wiring.arm(new Set(["KSampler"]), new Map());
+    const engine = new FakeEngine(ctx);
+    let submitted = 0;
+    engine.onFlow = async () => {
+      submitted++;
+      return { stages: { s: { outputs: {}, artifacts: [] } }, promptId: "p" };
+    };
+    // registration's own law: cardId absent for an inline/flow run —
+    // and the stage row carries NO card key at all (the fence's chain
+    // is nullish-based, so an absent key falls through; it falls
+    // through to the stage id, never to a guess)
+    const run: RunRecord = {
+      ...runWithCard("unused"),
+      cardId: undefined,
+      stages: [{ id: "s", name: "s", index: 0, status: "pending", outputs: {}, expected: {} }],
+    };
+    await runOne(run, ctx, () => undefined);
+    assert.equal(submitted, 0, "the refusal predates any engine action");
+    assert.equal(run.status, "failed");
+    assert.ok(
+      String(run.error).includes("card 's'"),
+      "the wall names the stage id when neither card answers: " + String(run.error),
+    );
   });
 });

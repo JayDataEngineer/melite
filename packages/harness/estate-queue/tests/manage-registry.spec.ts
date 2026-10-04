@@ -89,4 +89,43 @@ describe("ManageGatewayService", () => {
     assert.equal(env.action, "status");
     assert.equal(env.detail, "server up");
   });
+
+  // THE TIMER SEAT'S STRUCTURAL BRIDGE (the coverage queue's
+  // manageRegistry batch, 2026-10-16): the service definition's
+  // timeout adapter routes ManageCtx.timer calls onto the hosting
+  // Context's own timer seat — the queue-drain poll wait is the
+  // in-tree rider. A busy-then-idle manager answer forces exactly
+  // one poll wait, and the recording seat proves the bridge fired.
+  it("the timer adapter bridges the poll wait onto the Context's timer seat", async () => {
+    const root = mkdtempSync(join(tmpdir(), "manage-timer-"));
+    const endpointPath = join(root, "endpoint.json");
+    writeFileSync(endpointPath, JSON.stringify({ provision: "managed", url: "http://engine:8188" }));
+    process.env.COMFYUI_ENDPOINT_CONFIG = endpointPath;
+    const timerDelays: number[] = [];
+    let polls = 0;
+    globalThis.fetch = (async (url: unknown) =>
+      new Response(JSON.stringify(
+        String(url).includes("/manager/queue/status") && ++polls === 1
+          ? { is_processing: true, in_progress_count: 1, total_count: 0, done_count: 0 }
+          : { is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 },
+      ))) as typeof fetch;
+    const { ctx, svc } = seat();
+    (ctx as unknown as { timeout: unknown }).timeout = (cb: () => void, ms: number): (() => void) => {
+      timerDelays.push(ms);
+      // a real seat fires asynchronously (a sync fire would hit the
+      // poll wait's own TDZ between dispose and onAbort)
+      queueMicrotask(cb);
+      return () => {};
+    };
+    try {
+      const env = await svc.act({ action: "update", force: true }, new AbortController().signal);
+      assert.equal(env.ok, true);
+      assert.match(env.detail, /update\(comfy\) queued/);
+      assert.ok(timerDelays.length >= 1, "the adapter bridged the poll wait onto the timer seat");
+      assert.ok(timerDelays.every((d) => d === 1000), "the poll wait rides the seat's own cadence");
+    } finally {
+      delete process.env.COMFYUI_ENDPOINT_CONFIG;
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

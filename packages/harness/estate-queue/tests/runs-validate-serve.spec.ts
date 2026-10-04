@@ -228,13 +228,19 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
   it("a non-FlowError from construction rethrows (never mapped to 400)", () => {
     // the array stage now refuses as a TYPED FlowError (the leaked
     // TypeError was the old probe vehicle); the rethrow arm needs a
-    // GENUINE non-FlowError — a stage whose key access throws
-    const evil: Record<string, unknown> = {};
-    Object.defineProperty(evil, "id", {
-      get() { throw new RangeError("boom"); },
-      enumerable: true,
-    });
-    expect(() => serveSubject({ id: "f1", stages: [evil] }, {}, null)).toThrow(RangeError);
+    // GENUINE non-FlowError out of flowFromBody itself — the cards
+    // seat's own read, which cardGate calls with no voice of its own
+    // (a stage-row fault never gets that far: buildStageRow folds
+    // it into a FlowError, and the door's batch rows re-read the row
+    // outside this arm — see the 2026-10-16 block below).
+    const broken = {
+      defsSync: (): never => { throw new TypeError("registry read failed"); },
+    } as never;
+    expect(() => serveSubject(
+      { id: "f1", stages: [stage({ id: "a", card: "c", params: { model: "m" } })] },
+      {},
+      broken,
+    )).toThrow(TypeError);
   });
   it("a pinned ghost class serves the workflow_pin 400 (stage-stamped)", () => {
     // An ANSWERING pin — the ghost verdict needs a registry that says
@@ -276,5 +282,44 @@ describe("inlineArm + serveSubject (the serve arms)", () => {
       }, pin);
       expect(ans.status).toBe(200);
     }
+  });
+});
+
+// 2026-10-16 — the coverage queue's runsValidateServe batch. The
+// rethrow arm above was long "walled" by a probe vehicle that never
+// reached it: a stage row whose `id` getter throws is folded into a
+// FlowError by buildStageRow, so the door takes the 400 arm, and the
+// RangeError the old assertion saw escaped one line LATER — from the
+// batch rows that 400 builds, which re-read the same row.
+describe("serveSubject's 400 arm and its batch rows (2026-10-16, the coverage queue's runsValidateServe batch)", () => {
+  it("a caught FlowError's batch rows re-read the stage row — a faulting row escapes the 400 arm as itself", () => {
+    // buildStageRow folds the getter fault into a FlowError (the
+    // door serves a 400), and the batch-row builder then walks the
+    // same row with no fold of its own: the fault rides out as the
+    // RangeError it is. The rethrow arm proper is the one above.
+    const evil: Record<string, unknown> = {};
+    Object.defineProperty(evil, "id", {
+      get() { throw new RangeError("boom"); },
+      enumerable: true,
+    });
+    expect(() => serveSubject({ id: "f1", stages: [evil] }, {}, null)).toThrow(RangeError);
+  });
+
+  it("a clean caught FlowError rides a 400 whose batch rows name every offending stage", () => {
+    // the same builder, reached without a faulting row: the 400's
+    // errors list is the per-stage batch, not just the first voice.
+    const ans = serveSubject({
+      id: "f1",
+      stages: [
+        stage({ id: "a", engine: "nope-engine" }),
+        stage({ id: "b", engine: "nope-engine" }),
+      ],
+    }, {}, null);
+    expect(ans.status).toBe(400);
+    const payload = ans.payload as { code?: string; errors?: Array<Record<string, unknown>> };
+    expect(payload.code).toBe("flow_compile");
+    const stages = (payload.errors ?? []).map((r) => r["stage"]);
+    expect(stages).toContain('"a"');
+    expect(stages).toContain('"b"');
   });
 });

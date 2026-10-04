@@ -104,6 +104,28 @@ describe("managerGet", () => {
     );
   });
 
+  it("a read that completes only after the deadline still maps to the manager timeout", async () => {
+    // The sister arm's fetch never resolves, so the classification
+    // happens in the catch. Here the fetch resolves at the abort and
+    // the body READ completes after it — the walk reaches the
+    // post-read timeout check on the success path and answers the
+    // same 504 (the coverage queue's managerRail batch, 2026-10-16).
+    globalThis.fetch = (async (_url: unknown, init: RequestInit | undefined) => {
+      await new Promise<void>((resolve) => {
+        init?.signal?.addEventListener("abort", () => resolve(), { once: true });
+      });
+      return { status: 200, text: async () => "late" } as unknown as Response;
+    }) as typeof fetch;
+    await assert.rejects(
+      managerGet("http://h", "/r", { timeoutMs: 5, ctx: CTX(1) }),
+      (error: unknown) => {
+        assert.equal((error as ManagerApiError).status, 504);
+        assert.match((error as Error).message, /manager request timed out/);
+        return true;
+      },
+    );
+  });
+
   it("propagates a caller abort to the fetch", async () => {
     const controller = new AbortController();
     let requestSignal: AbortSignal | undefined;

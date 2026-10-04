@@ -263,11 +263,14 @@ function linkCallerSignal(ctx: ManageCtx, signal: AbortSignal | undefined): Mana
   return {
     ...ctx,
     signal,
+    // The timer keeps its own abort listener (an in-flight wait
+    // fires early when the caller aborts). A timer SCHEDULED while
+    // already aborted cannot occur: every ctx.timeout caller
+    // (waitForQueuePoll, the registry seat) rejects at entry on the
+    // same tick it would schedule on — the pre-aborted leg the
+    // wrapper once carried was unreachable and is gone (the same
+    // judgment waitForQueuePoll's own comment records).
     timeout: (callback: () => void, delay: number): (() => void) => {
-      if (signal.aborted) {
-        callback();
-        return () => {};
-      }
       const clear = ctx.timeout(callback, delay);
       const onAbort = (): void => callback();
       signal.addEventListener("abort", onAbort, { once: true });

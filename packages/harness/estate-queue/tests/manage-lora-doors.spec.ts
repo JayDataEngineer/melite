@@ -279,3 +279,97 @@ describe("the manage plane — the LoRA doors (the Manager sidebar's own vocabul
     }
   });
 });
+
+// THE BYTES/LIVE SEATS (the coverage queue's managePlane batch,
+// 2026-10-16): the bytes door's own refusal, the visible-true voice,
+// and the no-seam/no-endpoint live path — objectInfoDoc's live arm
+// and invalidateLiveObjectInfo's no-key catch, driven with the
+// endpoint config pointed at an EMPTY file so resolveEngineBaseUrl
+// refuses (a spec never fetches the running engine).
+describe("lora_install — the bytes/live seats", () => {
+  it("bytes with a NON-LoRA filename refuses in the installer's own voice", async () => {
+    const ctx = CTX({ objectInfo: engineAnswer([]) });
+    const dir = join(tempRoot("lane-badext-"), "loras");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    try {
+      const [code, res] = await run(
+        {
+          action: "lora_install",
+          filename: "note.txt",
+          data: "data:application/octet-stream;base64,QUFB",
+        },
+        ctx,
+      );
+      assert.equal(code, 422);
+      assert.equal(res.ok, false);
+      assert.match(res.detail, /note\.txt is not a LoRA file/);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  it("the engine's list ALREADY naming the file says so (no restart owed)", async () => {
+    const ctx = CTX({ objectInfo: engineAnswer(["uploaded.safetensors"]) });
+    const dir = join(tempRoot("lane-visible-"), "loras");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    try {
+      const [code, res] = await run(
+        {
+          action: "lora_install",
+          filename: "uploaded.safetensors",
+          data: "data:application/octet-stream;base64,QUFB",
+        },
+        ctx,
+      );
+      assert.equal(code, 200);
+      assert.match(res.detail, /uploaded\.safetensors/);
+      assert.match(res.detail, /already in the engine's list/);
+      const data = res.data as Record<string, unknown>;
+      assert.equal(data["restart_required"], false);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  it("a ctx with NO objectInfo seam and NO endpoint answers not-visible, never fetching live", async () => {
+    // the live arms evaluate resolveEngineBaseUrl and refuse: an
+    // empty endpoint config means no URL was ever configured, so
+    // objectInfoDoc catches to null and invalidate has no key to
+    // drop — the install still answers in the restart voice
+    const cfg = join(tempRoot("lane-noep-"), "endpoint.json");
+    writeFileSync(cfg, "{}", "utf8");
+    const prevCfg = process.env["COMFYUI_ENDPOINT_CONFIG"];
+    const prevUrl = process.env["COMFYUI_URL"];
+    process.env["COMFYUI_ENDPOINT_CONFIG"] = cfg;
+    delete process.env["COMFYUI_URL"];
+    const ctx = CTX(); // NO objectInfo seam — the live arm itself
+    const dir = join(tempRoot("lane-noep-"), "loras");
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    process.env["MELITE_COMFYUI_LORAS_DIR"] = dir;
+    try {
+      const [code, res] = await run(
+        {
+          action: "lora_install",
+          filename: "uploaded.safetensors",
+          data: "data:application/octet-stream;base64,QUFB",
+        },
+        ctx,
+      );
+      assert.equal(code, 200);
+      assert.match(res.detail, /restart the engine to enter its list/);
+      const data = res.data as Record<string, unknown>;
+      assert.equal(data["restart_required"], true);
+    } finally {
+      if (prevCfg === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+      else process.env["COMFYUI_ENDPOINT_CONFIG"] = prevCfg;
+      if (prevUrl === undefined) delete process.env["COMFYUI_URL"];
+      else process.env["COMFYUI_URL"] = prevUrl;
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+});

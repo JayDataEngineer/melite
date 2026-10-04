@@ -260,7 +260,10 @@ export function compileFlowInline(
           typeof rr["stage"] === "string" && typeof rr["output"] === "string"
         ) {
           inputNames[name] = String(rr["stage"]) + "." + String(rr["output"]);
-        } else if (typeof rr === "object" && rr !== null && !Array.isArray(rr) && typeof rr["initial"] === "string") {
+        } else {
+          // the binding wall above already refused every entry that
+          // is neither {stage, output} nor {initial} — reaching the
+          // else means the {initial} shape, no re-test needed
           inputNames[name] = "__initial__." + String(rr["initial"]);
         }
       }
@@ -531,10 +534,11 @@ export async function registerCompiledRun(args: {
   if (args.warnings !== undefined && args.warnings.length > 0) {
     run.warnings = [...args.warnings];
   }
-  if (door !== undefined) {
-    run.pipeline = door.pipeline;
-    if (door.cardId !== undefined) run.cardId = door.cardId;
-  }
+  // THE DOOR IS REQUIRED (the run id is read from it above) — the
+  // door-undefined guards and the `?.`/`??` vestiges of the old
+  // optional door were dead legs, pruned with the door law.
+  run.pipeline = door.pipeline;
+  if (door.cardId !== undefined) run.cardId = door.cardId;
   // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):
   // _flow.json's stage faces are HOLLOW (ids/status only) — the card
   // + params that actually ran were recorded nowhere, so "restore the
@@ -550,7 +554,7 @@ export async function registerCompiledRun(args: {
   // LIVE bench draft, which is exactly the staleness this law was
   // built to kill. The card identity and the bench identity are
   // separate facts and each rides when it exists.
-  if (door !== undefined && door.cardId !== undefined) {
+  if (door.cardId !== undefined) {
     run.cardSnapshot = {
       card: door.cardId,
       params: door.requestBody,
@@ -614,7 +618,7 @@ export async function registerCompiledRun(args: {
   // BRIEF14 finding #2: the sidecar proves type integrity, the
   // seam/structure evidence rides unchanged); the inline door passes
   // the envelope's flow_inline doc below (same writes, same order).
-  const requestBody: unknown = door?.requestBody ?? compiled;
+  const requestBody: unknown = door.requestBody;
   // THE COMPOSE ECHO (the one-press/one-engine law, 2026-09-23: the
   // operator pressed carried, the engine received cut, and the run
   // left NO voice saying which — the film was 15 minutes of the

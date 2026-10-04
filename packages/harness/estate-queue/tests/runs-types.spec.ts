@@ -577,3 +577,60 @@ describe("runLogTail", () => {
     assert.equal(tail, "run: completed\nartifacts: a.png, b.png, d.png, 7, e.png");
   });
 });
+
+// 2026-10-16 — the coverage queue's runsTypes batch: the two
+// already-decided guards of the loudness + freshness lift (the
+// "the run already holds this stamp" legs, which the settled-run
+// rows above never reach because their records carry neither).
+describe("settlePersist's loudness + freshness guards (2026-10-16, the coverage queue's runsTypes batch)", () => {
+  it("a loudness PAIR the meter cannot vouch for stamps nothing (a stringified LUFS, a non-finite peak)", async () => {
+    // The outer gate (loudness is not a dict) had a wall; the inner
+    // pair gate did not: a row whose loudness IS an object but whose
+    // numbers are junk must ride the same silence as no meter at
+    // all — never a coerced number on the compact-row chip.
+    const runDir = join(dir, "rbadpair");
+    mkdirSync(runDir, { recursive: true });
+    const run = record({
+      dir: runDir,
+      stages: [
+        {
+          id: "h3-film", name: "h3-film", index: 0, status: "completed",
+          outputs: { default: "video" }, expected: {},
+          result_outputs: { loudness: { loudness_lufs: "-24.7", peak_db: -6.4 } },
+        } as never,
+        {
+          id: "h3-film-2", name: "h3-film-2", index: 1, status: "completed",
+          outputs: { default: "video" }, expected: {},
+          result_outputs: { loudness: { loudness_lufs: -24.7, peak_db: Number.NaN } },
+        } as never,
+      ],
+    });
+    await settlePersist(run, dir);
+    assert.equal(run.loudness, undefined);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.ok(!("loudness" in sidecar));
+  });
+
+  it("an already-stamped voiceFreshness is never re-lifted from a later stage's receipt", async () => {
+    // The first coherent pair wins — but a run that already carries
+    // the receipt (registration stamped it, or an earlier settle
+    // did) keeps its own: the loop's guard is the stamp's presence,
+    // not the stage's order.
+    const runDir = join(dir, "rkeepfresh");
+    mkdirSync(runDir, { recursive: true });
+    const stamped = { reused_existing: true, voice_file: "tide_2.qvoice" };
+    const run = record({
+      dir: runDir,
+      voiceFreshness: stamped,
+      stages: [{
+        id: "tts", name: "tts", index: 0, status: "completed",
+        outputs: { voices: "voice" }, expected: {},
+        result_outputs: { voice_freshness: { reused_existing: false, voice_file: "other_9.qvoice" } },
+      } as never],
+    });
+    await settlePersist(run, dir);
+    assert.deepEqual(run.voiceFreshness, stamped);
+    const sidecar = JSON.parse(readFileSync(join(runDir, "_flow.json"), "utf8")) as Record<string, unknown>;
+    assert.deepEqual(sidecar["voice_freshness"], stamped);
+  });
+});

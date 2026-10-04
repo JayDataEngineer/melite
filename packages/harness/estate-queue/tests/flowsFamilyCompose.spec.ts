@@ -1,8 +1,28 @@
 // flowsFamilyCompose.spec.ts — the family-action stage interpreter
 // (the atom vocabulary, stroke 4): the admission contract, the wire
 // parity with the retired hand literals, and the derivation law.
-import { describe, it } from "vitest";
+import { afterEach, describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
+
+// THE FAMILIES SEAT AS THE BOOTED SINGLETON ANSWERS IT (the
+// coverage queue's flowsFamilyCompose batch, 2026-10-16): this spec
+// deliberately runs in a worker where no models boot ever happened,
+// so liveFamilySeat's try arm only ever heard the singleton REFUSE.
+// The seat's empty half needs an answering singleton with a table
+// that holds nothing — a lane that mounted the bare catalog provider
+// without the family rows. `null` delegates to the real singleton
+// (absent, the spec's standing state); an array answers as that
+// table.
+const seat = vi.hoisted(() => ({ decls: null as readonly { readonly id: string }[] | null }));
+
+vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@melite/comfyui-cordis")>();
+  return {
+    ...real,
+    modelsService: () =>
+      seat.decls === null ? real.modelsService() : { allDecls: () => seat.decls },
+  };
+});
 import { getRegistryFlow, expandRegistryFlow, plainStage } from "../src/flowsData.ts";
 import type { RegistryFlow } from "../src/flowsData.ts";
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
@@ -304,5 +324,29 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     // boot-models import — the absent-seat law's proof)
     assert.equal(liveFamilyDecls(undefined).length, 0);
     assert.deepEqual(liveFamilyDecls({ allDecls: () => decls }), decls);
+  });
+});
+
+// ── THE COVERAGE QUEUE'S flowsFamilyCompose BATCH (2026-10-16) ──
+// liveFamilySeat's try arm reads the booted singleton directly; this
+// worker never boots models, so every call through it used to answer
+// absent. The empty-table half needs a singleton that DOES answer.
+describe("the booted singleton's own two answers (coverage queue batch, 2026-10-16)", () => {
+  afterEach(() => {
+    seat.decls = null;
+  });
+
+  it("a mounted seat holding ZERO families reports bare (not absent)", () => {
+    seat.decls = [];
+    assert.deepEqual(liveFamilySeat(), { decls: [], state: "bare" });
+    // the explicit-undefined spelling is the same read
+    assert.deepEqual(liveFamilySeat(undefined), { decls: [], state: "bare" });
+    assert.deepEqual(liveFamilyDecls(), []);
+    // the seated half of the same line, through the same door
+    seat.decls = decls;
+    assert.deepEqual(liveFamilySeat().state, "seated");
+    // back to the unbooted singleton: absent keeps its own voice
+    seat.decls = null;
+    assert.deepEqual(liveFamilySeat().state, "absent");
   });
 });

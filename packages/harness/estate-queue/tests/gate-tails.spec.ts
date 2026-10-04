@@ -6,7 +6,7 @@
 // the inline stage-edge nullish coerce, the start refusal's
 // scalar-doc label, and settleReplayRefusal's torn-identity floor.
 import { describe, it, expect } from "vitest";
-import { Context } from "@deepseek-ai/cordis";
+import { Context, Service } from "@deepseek-ai/cordis";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -297,5 +297,82 @@ describe("modelValidateArm (the model envelope)", () => {
     expect(err).toContain("no .catalog.models row not-a-card");
     expect(err).not.toContain("is a CARD");
     await ctx.fiber.dispose();
+  });
+});
+
+// 2026-10-16 — the coverage queue's runsValidateArms batch: the
+// {flow:} shim's compose refusals. The shim expands a registry flow
+// and composes its family stages BEFORE the inline compile; every
+// refusal the interpreter raises becomes the door's
+// runs/invalid-request at loc "stages".
+describe("the {flow:} shim's compose refusals (2026-10-16, the coverage queue's runsValidateArms batch)", () => {
+  const state = mkdtempSync(join(tmpdir(), "flowshim-"));
+
+  /** The families seat rides a real cordis Service — ctx.get resolves
+   *  only injector-registered services (the rig in
+   *  runs-registry-doors). */
+  class BareSeat extends Service {
+    constructor(ctx: Context) {
+      super(ctx, "models");
+    }
+    allDecls(): unknown[] {
+      return [];
+    }
+  }
+  class OfflineSeat extends Service {
+    constructor(ctx: Context) {
+      super(ctx, "models");
+    }
+    allDecls(): never {
+      // a non-Error throw: the door folds what the seat raised with
+      // `e instanceof Error ? e.message : String(e)`, and only a
+      // non-Error reaches the String half.
+      throw "models seat offline";
+    }
+  }
+  const ctxWith = (Seat: new (ctx: Context) => Service): Context => {
+    const ctx = new Context();
+    (ctx as unknown as { queue: unknown }).queue = { stateRoot: state };
+    // the shim refuses before the inline compile; the registry is
+    // here only so the seat is the shape the door documents.
+    (ctx as unknown as { cardRegistry: unknown }).cardRegistry = {
+      defsSync: (): unknown => new Map(),
+      primeObjectInfo: async (): Promise<boolean> => true,
+      phase1Card: async (): Promise<unknown> => ({}),
+    };
+    new Seat(ctx);
+    return ctx;
+  };
+  const refusal = async (
+    Seat: new (ctx: Context) => Service,
+  ): Promise<RemoteError<"runs/invalid-request">> => {
+    const ctx = ctxWith(Seat);
+    try {
+      await validate({ flow: "anny-hmr-commercial" }, new AbortController().signal, ctx);
+      expect.unreachable();
+    } catch (e) {
+      expect(e).toBeInstanceOf(RemoteError);
+      return e as RemoteError<"runs/invalid-request">;
+    } finally {
+      await ctx.fiber.dispose();
+    }
+  };
+
+  it("a family the models seat cannot name refuses at stages with the interpreter's own voice", async () => {
+    // anny-hmr-commercial is a family verb (family anny, action
+    // estimate_commercial): a mounted seat serving ZERO families is
+    // the "bare mount" condition, and its repair text rides the
+    // door's refusal verbatim.
+    const err = await refusal(BareSeat);
+    expect(err.code).toBe("runs/invalid-request");
+    expect(err.details.loc).toBe("stages");
+    expect(err.message).toMatch(/ZERO families/);
+  });
+
+  it("an unanswering seat (a non-Error throw) folds through String(e) — never a lost or empty voice", async () => {
+    const err = await refusal(OfflineSeat);
+    expect(err.code).toBe("runs/invalid-request");
+    expect(err.details.loc).toBe("stages");
+    expect(err.message).toBe("models seat offline");
   });
 });

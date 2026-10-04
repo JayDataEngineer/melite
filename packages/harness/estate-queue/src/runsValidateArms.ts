@@ -193,14 +193,19 @@ export async function validate(
     // flow_inline.stages unconditionally assumed a key this walk's
     // caller does not promise — the removed half-built-seat guard had
     // been hiding it.
-    const liveRec: Record<string, unknown> =
-      typeof liveDoc === "object" && liveDoc !== null && !Array.isArray(liveDoc)
-        ? (liveDoc as Record<string, unknown>)
-        : {};
-    const envelope: unknown = "flow_inline" in liveRec ? liveRec["flow_inline"] : liveRec;
-    const stages: unknown[] = (envelope as { stages?: unknown }).stages instanceof Array
-      ? ((envelope as { stages: unknown[] }).stages)
-      : [];
+    // THE WALK'S ONLY ARRIVALS (2026-10-16, the same law as the door
+    // comment above): validate reaches this walk only on a 200 from
+    // inlineArm, and flowFromBody — the door every subject passes —
+    // refuses a non-object body and a non-array (or empty) stages
+    // list before that 200 can exist. The non-object `: {}` and
+    // non-array `: []` fallbacks this walk carried were unreachable
+    // (a wall for an unreachable arm is a lie) and are gone; the
+    // casts state what the door already proved.
+    const liveRec = liveDoc as Record<string, unknown>;
+    const envelope = ("flow_inline" in liveRec ? liveRec["flow_inline"] : liveRec) as {
+      stages: unknown[];
+    };
+    const stages: unknown[] = envelope.stages;
     // a legal NON-card stage (a plain engine stage) is not this
     // walk's business: it composes through the engine
     const cardStages = stages.filter((st): st is Record<string, unknown> =>

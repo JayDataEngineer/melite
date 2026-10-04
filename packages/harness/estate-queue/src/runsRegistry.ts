@@ -517,7 +517,10 @@ export class RunsRuntimeService extends Service {
     runId: RunId,
   ): Promise<Array<Record<string, unknown>>> {
     const cards = this.ctx.cardRegistry;
-    const rows = Array.isArray(benchDoc["stages"]) ? (benchDoc["stages"] as unknown[]) : [];
+    // the sole caller arrives gated on benchWiring(...).cross being
+    // non-empty, and benchWiring answers [] unless stages is an
+    // array — the non-array fallback here was a dead leg, pruned
+    const rows = benchDoc["stages"] as unknown[];
     const out: Array<Record<string, unknown>> = [];
     for (const [i, st] of rows.entries()) {
       if (typeof st !== "object" || st === null) continue;

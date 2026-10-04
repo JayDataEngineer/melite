@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   expandRegistryFlow,
+  fromStage,
   linkedStage,
   getRegistryFlow,
   plainStage,
@@ -755,5 +756,119 @@ describe("the flow construction wall (flows wire what they spell)", () => {
         }
       }
     }
+  });
+});
+
+// ── THE COVERAGE QUEUE'S flowsData BATCH (2026-10-16) ──────────
+// Two registry walls whose arms the 2026-10-13 template cut left
+// without a seed row: the registration interlock on an UNVALIDATED
+// required initial, and the skill-body render of an edge whose
+// channel the source stage declares under neither spelling.
+describe("registration and render corners (coverage queue batch, 2026-10-16)", () => {
+  it("a required initial with no declared validator refuses at registration", () => {
+    // THE SEAM'S TWO HALVES MUST AGREE (flowsData:272): a required
+    // initial the flow never VALIDATES gets no shape check, and the
+    // extractor — which walks initialValidators — never lifts it.
+    // The refusal belongs at the one registration, not at the door.
+    const base = getRegistryFlow("fit-seat")!;
+    const row: RegistryFlow = {
+      ...base,
+      id: "unvalidated-required-initial",
+      requiredInitials: ["seed"],
+      initialValidators: {},
+    };
+    assert.throws(
+      () => registerRegistryFlow(row),
+      /flow 'unvalidated-required-initial' requires initial 'seed' but declares no validator for it — a required initial needs its kind/,
+    );
+    assert.equal(
+      getRegistryFlow("unvalidated-required-initial"),
+      undefined,
+      "the refused row never took its seat",
+    );
+    // the agreeing row still registers — the gate reads the KEY, not
+    // the presence of some validator
+    const agree: RegistryFlow = {
+      ...base,
+      id: "validated-required-initial",
+      requiredInitials: ["seed"],
+      initialValidators: { seed: "photo" },
+    };
+    const dispose = registerRegistryFlow(agree);
+    assert.equal(getRegistryFlow("validated-required-initial")?.id, "validated-required-initial");
+    dispose();
+  });
+
+  it("an edge whose channel the source stage declares under no spelling renders kindless", () => {
+    // edgeText's kind lookup (:673) reads the source stage's outputs
+    // then its card_io; a channel in NEITHER leaves kind "" and the
+    // rendered line drops its " (kind)" suffix — the reader learns
+    // the channel's kind is unstated instead of reading a guess.
+    const flow: RegistryFlow = {
+      id: "kindless-edge-probe",
+      description: "d",
+      stages: [
+        plainStage({
+          id: "src",
+          engine: "craft",
+          description: "the producer",
+          inputs: {},
+          outputs: { photo: "image" },
+          cardIo: { wav: "audio" },
+          params: {},
+        }),
+        plainStage({
+          id: "sink",
+          engine: "craft",
+          description: "the consumer",
+          inputs: {
+            ghost: fromStage("src", "ghost"),
+            photo: fromStage("src", "photo"),
+            wav: fromStage("src", "wav"),
+          },
+          params: { ghost: "$ghost", photo: "$photo", wav: "$wav" },
+        }),
+      ],
+      initialValidators: {},
+      tool: null,
+      skillRefs: [],
+    };
+    const body = registrySkillBody(flow);
+    // neither outputs nor card_io: no kind suffix at all
+    assert.ok(
+      body.includes("\n  input ghost: stage src.ghost\n"),
+      "the kindless edge rendered with no suffix, got:\n" + body,
+    );
+    // the two declared spellings still carry their kind, so the
+    // kindless line is the missing-channel fact and not the renderer
+    assert.ok(body.includes("  input photo: stage src.photo (image)"), "the outputs spelling kept its kind");
+    assert.ok(body.includes("  input wav: stage src.wav (audio)"), "the card_io spelling kept its kind");
+  });
+
+  // The same run reports the two gate halves this file never reached:
+  // a REQUIRED initial that is PRESENT (the absent arms were pinned,
+  // the present one rode no seed row), and the "(REQUIRED)" suffix the
+  // render owes the agent before it builds a request.
+  it("a present required initial clears the gate and rides as its bare name", () => {
+    const r = roots();
+    try {
+      const fit = getRegistryFlow("fit-seat")!;
+      writeFileSync(join(r.repoRoot, "b.glb"), "glb");
+      writeFileSync(join(r.repoRoot, "p.glb"), "glb");
+      // a bare name: no separator, no traversal — the value passes the
+      // text gate, continues the walk, and the required check finds it
+      assert.equal(registryInitialsError(fit, { body: "b.glb", prop: "p.glb", bone: "hand_r" }, r), null);
+      assert.equal(normalizedInitialValue("bone", "text", "hand_r"), "hand_r");
+    } finally {
+      dropRoots();
+    }
+  });
+
+  it("a required initial says so on its own rendered edge", () => {
+    const body = registrySkillBody(getRegistryFlow("fit-seat")!);
+    assert.ok(
+      body.includes("  input bone: initial 'bone' (REQUIRED)"),
+      "the render marks the required initial, got:\n" + body,
+    );
   });
 });

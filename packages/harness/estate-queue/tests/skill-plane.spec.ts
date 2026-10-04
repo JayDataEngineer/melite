@@ -20,6 +20,7 @@ import {
   modelRows,
   wireSkill,
 } from "../src/skillPlane.ts";
+import { flowDecls } from "../src/skillRows.ts";
 
 const REPO = process.cwd();
 let ROOT = "";
@@ -414,6 +415,27 @@ describe("flowRows", () => {
     // flow row. The skip is per-flow, never lane-wide.
     const served = flowRows(ROOT);
     assert.ok(served.length >= 8, "a seated table serves every flow row again");
+  });
+
+  // A NON-ERROR THROW (the coverage queue's skillRows batch,
+  // 2026-10-16): the loadError fold must voice a bare throw through
+  // String(e), not crash the fold itself — the seat is a structural
+  // seam, and a hostile shape there cannot take the lane down.
+  it("a non-Error throw from the models seat names the flow's loadError via String(e)", () => {
+    mkEstate();
+    const hostile = {
+      allDecls: (): never => {
+        throw "models seat offline";
+      },
+    };
+    const decls = flowDecls(ROOT, hostile);
+    const anny = decls.find((d) => d.id === "anny-hmr-commercial");
+    assert.ok(anny !== undefined, "the family-carrying flow is present with its refusal");
+    assert.equal(anny.loadError, "models seat offline");
+    assert.deepEqual(anny.stages, []);
+    assert.equal(anny.tool, null);
+    // the fold is per-flow: every row answers, none throws
+    assert.ok(decls.length >= 8, "the hostile seat refuses flows, never the walk");
   });
 });
 
