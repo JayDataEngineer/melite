@@ -215,3 +215,106 @@ describe('MeshView — the honest-failure law (never a blank box)', () => {
     expect(disposeStage).not.toHaveBeenCalled()
   })
 })
+
+describe('MeshView — the arms a fast modal walk reaches', () => {
+  // The drilldown modal mounts and unmounts on every artifact walk,
+  // so the effect's cancellation arms are the COMMON path, not the
+  // exotic one: a user swiping to the next image tears the previous
+  // viewer down while its bytes are still in flight.
+
+  it('an EMPTY loaded scene frames nothing and still comes up (a blank glb is not a crash)', async () => {
+    // loadGLB resolved a root with no geometry: the bounding box is
+    // empty, framing is skipped, and the door still says it is ready —
+    // the alternative is an exception that blanks the whole pane.
+    const empty = { scene: new THREE.Group(), geometry: new THREE.BufferGeometry() }
+    loadGLB.mockResolvedValue(empty)
+    render(<MeshView url={URL_GLB} file="empty.glb" />)
+    await waitFor(() => { expect(screen.queryByTestId('mesh-view-loading')).toBeNull() })
+    expect(screen.getByTestId('mesh-view-canvas')).toBeTruthy()
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+  })
+
+  it('a mesh with an ARRAY material and a texture disposes every buffer', async () => {
+    // the modal walks artifacts, so a mount/unmount pair must release
+    // the multi-material case too: an array material, and a material
+    // carrying a map texture, are both real in this lane.
+    const root = new THREE.Group()
+    const geometry = new THREE.BoxGeometry(1, 1, 1)
+    const texture = new THREE.Texture()
+    const textured = new THREE.MeshBasicMaterial()
+    textured.map = texture
+    root.add(new THREE.Mesh(geometry, [new THREE.MeshBasicMaterial(), textured]))
+    const gltf = { scene: root, geometry }
+    loadGLB.mockResolvedValue(gltf)
+    const geometrySpy = vi.spyOn(geometry, 'dispose')
+    const textureSpy = vi.spyOn(texture, 'dispose')
+    const view = render(<MeshView url={URL_GLB} file="multi.glb" />)
+    await waitFor(() => { expect(screen.queryByTestId('mesh-view-loading')).toBeNull() })
+    view.unmount()
+    expect(geometrySpy).toHaveBeenCalled()
+    expect(textureSpy).toHaveBeenCalled()
+  })
+
+  it('unmounting while the bytes are in flight disposes the mesh that arrives anyway', async () => {
+    // The load resolves AFTER the modal walked on: the arriving mesh
+    // must be disposed rather than attached to a stage nobody will
+    // ever see (the GPU-buffer leak the modal's walk would cause).
+    let deliver: (gltf: unknown) => void = () => {}
+    loadGLB.mockReturnValue(new Promise((resolve) => { deliver = resolve }))
+    const gltf = fakeGltf()
+    const geometrySpy = vi.spyOn(gltf.geometry, 'dispose')
+    const view = render(<MeshView url={URL_GLB} file="late.glb" />)
+    view.unmount()
+    deliver(gltf)
+    await Promise.resolve()
+    expect(geometrySpy).toHaveBeenCalled()
+  })
+
+  it('a load that fails AFTER unmount voices nothing (no setState on a dead viewer)', async () => {
+    let fail: (e: unknown) => void = () => {}
+    loadGLB.mockReturnValue(new Promise((_resolve, reject) => { fail = reject }))
+    const view = render(<MeshView url={URL_GLB} file="late-fail.glb" />)
+    view.unmount()
+    fail(new Error('socket closed'))
+    await Promise.resolve()
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+  })
+
+  it('a context failure AFTER unmount voices nothing (the guard, not a dead viewer)', async () => {
+    // the WebGL context can die in the same tick the modal walks on;
+    // the callback still fires, and the door must not speak to a
+    // viewer nobody is looking at
+    let fail: (msg: string) => void = () => {}
+    mountStage3D.mockImplementation((_canvas: unknown, opts: { onContextFailure?: (m: string) => void }) => {
+      fail = (m: string): void => { opts.onContextFailure?.(m) }
+      return { scene, camera, controls, dispose: disposeStage, addTick: () => () => {}, resize: () => {} }
+    })
+    const view = render(<MeshView url={URL_GLB} file="webgl-late.glb" />)
+    view.unmount()
+    fail('context lost after unmount')
+    await Promise.resolve()
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+  })
+
+  it('a stage core that refuses mounts nothing and drops the loading line', async () => {
+    // mountStage3D returning null is the headless/constrained-WebGL
+    // half: no stage, no canvas seat, and the pane says nothing rather
+    // than spinning forever.
+    mountStage3D.mockReturnValue(null)
+    render(<MeshView url={URL_GLB} file="no-stage.glb" />)
+    await waitFor(() => { expect(screen.queryByTestId('mesh-view-loading')).toBeNull() })
+    expect(screen.queryByTestId('mesh-view-failure')).toBeNull()
+  })
+
+  it('a WebGL context failure names itself and drops the canvas', async () => {
+    let fail: (msg: string) => void = () => {}
+    mountStage3D.mockImplementation((_canvas: unknown, opts: { onContextFailure?: (m: string) => void }) => {
+      fail = (m: string): void => { opts.onContextFailure?.(m) }
+      return { scene, camera, controls, dispose: disposeStage, addTick: () => () => {}, resize: () => {} }
+    })
+    render(<MeshView url={URL_GLB} file="webgl-dead.glb" />)
+    fail('context lost')
+    await waitFor(() => { expect(screen.getByTestId('mesh-view-failure')).toBeTruthy() })
+    expect(screen.getByTestId('mesh-view-failure').textContent).toContain('WebGL refused the canvas')
+  })
+})

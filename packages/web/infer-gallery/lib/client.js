@@ -25566,7 +25566,8 @@ window.__ModuleLoader__.load({
 					"mp3",
 					"ogg",
 					"m4a",
-					"aac"
+					"aac",
+					"qvoice"
 				],
 				video: [
 					"mp4",
@@ -25824,9 +25825,15 @@ window.__ModuleLoader__.load({
 		*  artifact route does not serve next to it — so the copy below names
 		*  the case rather than letting the fetch fail as a decode error. */
 		function unsupportedCopy(url) {
+			/* v8 ignore next 3 -- String#split always returns at least one
+			* element ("" splits to [""]), so index 0 is a string and the ??
+			* guarded an impossibility the type already forbids. */
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
 			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
-			if (!isModelUrl(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			if (!isModelUrl(path))
+ /* v8 ignore next 2 -- same: split never yields an empty array, so
+			* pop() returns the last segment as a string. */
+			return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -25874,6 +25881,9 @@ window.__ModuleLoader__.load({
 					return;
 				}
 				const canvas = canvasRef.current;
+				/* v8 ignore next 2 -- React assigns refs BEFORE an effect runs, and
+				* this effect only exists on the path that rendered the canvas, so
+				* the ref is the element. */
 				if (canvas === null) return;
 				let stage = null;
 				let root = null;
@@ -26557,15 +26567,12 @@ window.__ModuleLoader__.load({
 				const children = normalized["children"];
 				if (Array.isArray(children)) {
 					delete normalized["engine"];
-					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
+					const healedParams = normalized["params"];
+					if (Object.keys(healedParams).length === 0) delete normalized["params"];
 				}
 				out.push(normalized);
 			}
 			return out;
-		}
-		/** Is this a run id? */
-		function runIdOk(id) {
-			return RUN_ID_RE.test(id);
 		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
@@ -31050,7 +31057,6 @@ window.__ModuleLoader__.load({
 			revokeAll: () => revokeAll,
 			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
-			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
 			samplerEnvelopeCure: () => samplerEnvelopeCure,

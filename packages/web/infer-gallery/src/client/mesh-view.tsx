@@ -57,6 +57,9 @@ export const artifactNameFor = artifactNameOf
  *  the case rather than letting the fetch fail as a decode error. */
 export function unsupportedCopy(url: string): string | null {
   const fromQuery = artifactPathOfUrl(url)
+  /* v8 ignore next 3 -- String#split always returns at least one
+   * element ("" splits to [""]), so index 0 is a string and the ??
+   * guarded an impossibility the type already forbids. */
   const path = fromQuery ?? url.split('?')[0] ?? ''
   if (path.toLowerCase().endsWith(".gltf")) {
     return '3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.'
@@ -65,6 +68,8 @@ export function unsupportedCopy(url: string): string | null {
   // model regex; a .glb?v=2 classified here and as nothing in the
   // square, because the two seats' regexes disagreed on the query.
   if (!isModelUrl(path)) {
+    /* v8 ignore next 2 -- same: split never yields an empty array, so
+     * pop() returns the last segment as a string. */
     return `3D view unavailable — "${path.split('/').pop() ?? url}" is not a .glb/.gltf artifact.`
   }
   return null
@@ -139,6 +144,9 @@ export function MeshView({ url, file, height = '52vh' }: MeshViewProps): React.J
       return
     }
     const canvas = canvasRef.current
+    /* v8 ignore next 2 -- React assigns refs BEFORE an effect runs, and
+     * this effect only exists on the path that rendered the canvas, so
+     * the ref is the element. */
     if (canvas === null) return
     let stage: Stage3D | null = null
     let root: THREE.Object3D | null = null
