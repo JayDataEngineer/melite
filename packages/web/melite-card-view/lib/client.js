@@ -9162,7 +9162,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					"mp3",
 					"ogg",
 					"m4a",
-					"aac"
+					"aac",
+					"qvoice"
 				],
 				video: [
 					"mp4",

@@ -13,10 +13,10 @@
 // NO comfyui seat on purpose — the wall proves the plane's behavior
 // with the engine ABSENT (the honest degrade), mirroring runs-remote.
 import "../../../helpers/boot-models.ts";
-import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { test } from "vitest";
+import { onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
@@ -56,8 +56,24 @@ function doc(id: string): string {
   });
 }
 
+/** OWN the env this rig sets (the flake audit, 2026-10-15): three
+ *  keys were written with no hook anywhere in the file, so a later
+ *  spec in the same fork inherited a state root whose tree this rig
+ *  had already removed — and the file's own restore wrote the literal
+ *  string "undefined" under a -t filter. Capture at set time. */
+function ownEnv(keys: readonly string[]): void {
+  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
+  onTestFinished(() => {
+    for (const [k, v] of previous) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+}
+
 async function boot(): Promise<Booted> {
   const root = mkdtempSync(join(tmpdir(), "manage-remote-"));
+  ownEnv(["COMFYUI_ENDPOINT_CONFIG", "MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"]);
   // The dead-endpoint truth: the manager rail rides the engine url
   // from the endpoint config — pinned to an unreachable port so the
   // refusal is deterministic (never a live-engine accident).
@@ -166,11 +182,24 @@ test("an unknown action refuses loud at 422 (closed vocabulary, never a silent m
 });
 
 test("endpointConfigPath honors COMFYUI_ENDPOINT_CONFIG (the wall's own override resolves)", () => {
-  // The wall boots with COMFYUI_ENDPOINT_CONFIG pointed at its tmp
-  // file — the resolver must return EXACTLY that path (an override
+  // The resolver must return EXACTLY the override path (an override
   // that silently fell back to the packaged default would aim
-  // endpoint_set writes at the live config).
-  assert.equal(endpointConfigPath(), process.env["COMFYUI_ENDPOINT_CONFIG"]);
+  // endpoint_set writes at the live config). This arm OWNS its
+  // override: it used to read a key a PREVIOUS test's boot() had
+  // leaked into the fork, so it passed only by ordering (and failed
+  // under -t the moment the leak was closed).
+  const root = mkdtempSync(join(tmpdir(), "manage-remote-"));
+  onTestFinished(() => rmSync(root, { recursive: true, force: true }));
+  const endpointPath = join(root, "dead_endpoint.json");
+  writeFileSync(endpointPath, JSON.stringify({ url: "http://127.0.0.1:9" }));
+  ownEnv(["COMFYUI_ENDPOINT_CONFIG"]);
+  process.env["COMFYUI_ENDPOINT_CONFIG"] = endpointPath;
+  assert.equal(endpointConfigPath(), endpointPath);
+  // the key was captured AFTER boot() wrote it, so "saved" was the
+  // rig's own value, never the caller's — and the unconditional write
+  // back put the literal string "undefined" under a -t filter. boot()
+  // now owns the restore; this arm only has to put the key back for
+  // the duration of the check.
   const saved = process.env["COMFYUI_ENDPOINT_CONFIG"];
   delete process.env["COMFYUI_ENDPOINT_CONFIG"];
   try {
@@ -184,7 +213,8 @@ test("endpointConfigPath honors COMFYUI_ENDPOINT_CONFIG (the wall's own override
       "without the env var the PACKAGED default resolves — exactly (a same-named file elsewhere is not the default)",
     );
   } finally {
-    process.env["COMFYUI_ENDPOINT_CONFIG"] = saved;
+    if (saved === undefined) delete process.env["COMFYUI_ENDPOINT_CONFIG"];
+    else process.env["COMFYUI_ENDPOINT_CONFIG"] = saved;
   }
 });
 

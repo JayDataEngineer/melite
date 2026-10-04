@@ -58,6 +58,23 @@ describe("emitKnob (the union resolution)", () => {
     assert.equal(out.default, "512", "numeric defaults stringify on the wire");
   });
 
+  it("a {value,label} option row serves its VALUE (the both-shapes law)", () => {
+    // extraKeys.ts:28 — an option row is a plain string OR a
+    // {value,label} row. String(o) over the object arm served
+    // "[object Object]" as an enum member: the select showed a member
+    // that was not a value and submitted nothing the engine could read
+    // (the typed-seam audit's first real bug).
+    const out = emitKnob(shape({
+      type: "string",
+      meta: { default: "euler", extra: { options: ["euler", { value: "rk4", label: "Runge-Kutta 4" }] } },
+    }));
+    assert.deepEqual(out.enum, ["euler", "rk4"]);
+    assert.ok(
+      !(out.enum as string[]).includes("[object Object]"),
+      "no option row is ever stringified as an object",
+    );
+  });
+
   it("extra.options coerces ANY atom to the Select class", () => {
     const out = emitKnob(shape({ type: "number", meta: { default: 2, extra: { options: [1, 2] } } }));
     assert.equal(out.type, "string");

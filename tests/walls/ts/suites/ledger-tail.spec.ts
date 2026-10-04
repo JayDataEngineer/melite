@@ -1,4 +1,4 @@
-import { test } from 'vitest'
+import { onTestFinished, test } from 'vitest'
 import assert from 'node:assert/strict'
 import { mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -7,6 +7,21 @@ import { Context, type Plugin } from '@deepseek-ai/cordis'
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer'
 import queuePlugin, { appendLedger } from '../../../../packages/harness/estate-queue/src/index.ts'
 import type { EstateMethod } from '../../../../packages/harness/melite-tools/src/estate.ts'
+
+// OWN the env this suite sets (the flake audit, 2026-10-15): the
+// roots were written and never unwound, so a later spec in the same
+// fork inherited a root whose tree this spec's own teardown had
+// already removed — and the in-file restore captured DOWNSTREAM of the
+// write, writing a leaked value back. Capture at set time.
+function ownEnv(keys: readonly string[]): void {
+  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
+  onTestFinished(() => {
+    for (const [k, v] of previous) {
+      if (v === undefined) delete process.env[k]
+      else process.env[k] = v
+    }
+  })
+}
 
 /** THE LEDGER-TAIL WALL (REBUILD-19, the gateway kill): the dead
  *  GET /v1/ledger arm re-homes as the queue seat's own tail —
@@ -18,6 +33,7 @@ import type { EstateMethod } from '../../../../packages/harness/melite-tools/src
 test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', async () => {
   const root = mkdtempSync(join(tmpdir(), 'ledger-wall-'))
   const ctx = new Context()
+  ownEnv(['MELITE_STATE_ROOT'])
   process.env['MELITE_STATE_ROOT'] = root
   // cross-copy plugin shapes ride the honest Plugin cast: the
   // static Config types are narrower than the wall's boot rows.
@@ -127,6 +143,7 @@ test('the queue seat ledger tail — the door\'s law verbatim (REBUILD-19)', asy
 // empty answer from a non-empty journal is the vacuous-pass bug).
 test('the ledger clamp is 1..500 — proven against a journal LARGER than the cap', async () => {
   const root = mkdtempSync(join(tmpdir(), 'ledger-clamp-'))
+  ownEnv(['MELITE_STATE_ROOT'])
   process.env['MELITE_STATE_ROOT'] = root
   const ctx = new Context()
   await ctx.plugin(timerPlugin as unknown as Plugin)

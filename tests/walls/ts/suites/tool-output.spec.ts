@@ -13,7 +13,7 @@ import "../../../helpers/boot-models.ts";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, it, beforeAll } from "vitest";
+import { afterAll, beforeAll, describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { Context, Service, type Plugin } from "@deepseek-ai/cordis";
 import timerPlugin from "@deepseek-ai/cordis-plugin-timer";
@@ -83,6 +83,23 @@ async function drive(
     .map((b) => b.text);
   return { envelope, lines };
 }
+
+// OWN the env (the flake audit, 2026-10-15): this file set both keys
+// in a beforeAll with no afterAll at all, and MELITE_HEADLESS is
+// restored nowhere in the tree — its one in-process reader is
+// melite-tools/src/index.ts:193, so any later test in the same fork
+// inherited a headless estate. Capture at set time, unwind with the
+// suite (onTestFinished cannot own a beforeAll's writes — it fires
+// after the whole suite).
+const OWNED_ENV = ["MELITE_STATE_ROOT", "MELITE_HEADLESS"] as const;
+const savedEnv = new Map(OWNED_ENV.map((k) => [k, process.env[k]] as const));
+
+afterAll(() => {
+  for (const [k, v] of savedEnv) {
+    if (v === undefined) delete process.env[k];
+    else process.env[k] = v;
+  }
+});
 
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "tool-output-wall-"));

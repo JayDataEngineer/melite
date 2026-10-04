@@ -123,7 +123,7 @@ export function createZoomPromotion(
   const docOf = (): Document | null => frame.contentDocument
 
   const overlayRoots = (): unknown[] => {
-    const doc = docOf() as unknown as Document | null
+    const doc = docOf()
     if (doc === null) return []
     const out: unknown[] = []
     for (const sel of selectors) {
@@ -147,7 +147,7 @@ export function createZoomPromotion(
   const overlayOpen = (): boolean => overlayRoots().length > 0
 
   const closeGlideWanted = (): boolean => {
-    const doc = docOf() as unknown as Document | null
+    const doc = docOf()
     if (doc === null) return false
     const roots = overlayRoots() as Element[]
     if (roots.length === 0) return false
@@ -161,7 +161,7 @@ export function createZoomPromotion(
   }
 
   const gridNode = (): PromotableGridNode | null => {
-    const doc = docOf() as unknown as Document | null
+    const doc = docOf()
     if (doc === null) return null
     try {
       return (doc.querySelector(GRID_PIN_SELECTOR) as unknown as PromotableGridNode | null) ?? null
@@ -189,7 +189,7 @@ export function createZoomPromotion(
 
   const fit = (): void => {
     if (stopped || !fitEnabled) return
-    const doc = docOf() as unknown as Document | null
+    const doc = docOf()
     if (doc === null || doc.documentElement === null) return
     const h = Math.max(
       (doc.documentElement as { scrollHeight?: number }).scrollHeight ?? 0,
@@ -306,7 +306,7 @@ export function createZoomPromotion(
   return {
     attach() {
       frame.addEventListener("load", arm)
-      if ((frame.contentDocument as unknown as Document | null)?.readyState === "complete") arm()
+      if (frame.contentDocument?.readyState === "complete") arm()
     },
     detach() {
       stopped = true

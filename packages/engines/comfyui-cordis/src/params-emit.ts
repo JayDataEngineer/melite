@@ -128,7 +128,20 @@ export const emitKnob = (s: Schema): Record<string, unknown> => {
   if (type === 'string' && Array.isArray(s.list) && s.list.every((b) => b.type === 'const' && b.value !== null)) {
     out.enum = s.list.map((b) => b.value)
   } else if (iex.options !== undefined) {
-    out.enum = iex.options.map((o: unknown) => String(o))
+    // THE BOTH-SHAPES LAW (extraKeys.ts:28): an option row is a plain
+    // string OR a {value,label} row. String(o) over the object arm
+    // served "[object Object]" as an enum member — the select's own
+    // value, unreachable and unreadable (the typed-seam audit, 2026-10-15).
+    out.enum = iex.options.map((o: unknown): string => {
+      if (typeof o === "string") return o
+      if (
+        typeof o === "object" && o !== null &&
+        typeof (o as { value?: unknown }).value === "string"
+      ) {
+        return (o as { value: string }).value
+      }
+      return String(o)
+    })
   } else if (stringified && Array.isArray(s.list) && s.list.some((b) => b.type === 'boolean')) {
     out.enum = ['true', 'false']
   }
@@ -238,9 +251,11 @@ export const emitParamsSpec = (carrier: Schema, boarded: readonly string[]): Par
 /** Project a registered card's schema + boarded list to the served
  * params_schema dialect. `schemaFn` is the card's registered schema
  * (the callable); we walk its carrier via the .dict of the declared
- * object — cards register the schema object itself (h3 wraps with a
- * normalizer function whose .dict we read off the inner paramSchema
- * at registration; see service.ts cardSchemaCarrier). */
+ * object — cards register the schema object itself, and a card that
+ * wraps its schema (h3 normalizes through a function) carries the
+ * inner one at def.schemaCarrier. The registry's own reader of that
+ * field is models/service.ts:987, which resolves
+ * `def?.schemaCarrier ?? def?.schema`. */
 export const emitParamsSchema = (
   schemaCarrier: Schema,
   boarded: readonly string[],

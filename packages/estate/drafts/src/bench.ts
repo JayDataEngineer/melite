@@ -766,10 +766,25 @@ async function loadBench(
     // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
     // a conversation's bench is born at its FIRST write — never a
     // refusal. rev 0, empty stages, the session's own id.
-    const doc0: Record<string, unknown> = { draft_id: draftId, intent: "", stages: [], bench: { rev: 0, log: [] } };
+    // THE BIRTH CARRIES EVERY REQUIRED KEY (the typed-seam audit,
+    // 2026-10-15): DraftDocSchema requires status, createdAt and
+    // completedAt, and this literal left all three to a cast — so a
+    // reader that validated the record would have refused the estate's
+    // own first bench. The birth is a DRAFT: status "draft", created
+    // now, completed null.
+    const born = Math.floor(Date.now() / 1000);
+    const doc0: DraftRecord["doc"] = {
+      draft_id: draftId,
+      status: "draft",
+      createdAt: born,
+      completedAt: null,
+      intent: "",
+      stages: [],
+      bench: { rev: 0, log: [] },
+    };
     await drafts.table("docs").put(draftId, {
-      updated_at: Math.floor(Date.now() / 1000),
-      doc: doc0 as unknown as DraftRecord["doc"],
+      updated_at: born,
+      doc: doc0,
     });
     rec = drafts.table("docs").get(draftId);
     if (rec === undefined) {

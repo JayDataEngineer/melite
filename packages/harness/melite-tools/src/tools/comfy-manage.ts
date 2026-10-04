@@ -286,7 +286,7 @@ export function comfyManage(request: EstateRequest): ToolDefinition {
     parameters: {
       action: {
         type: 'string',
-        enum: ACTIONS as unknown as string[],
+        enum: ACTIONS,
         description: 'The management action to dispatch.',
         required: true,
       },

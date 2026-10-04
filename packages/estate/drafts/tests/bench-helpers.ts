@@ -34,9 +34,29 @@ export function mintRoot(): string {
   return root;
 }
 
+/** OWN the env a rig sets (the flake audit, 2026-10-15). bootCtx
+ *  writes the two roots and registered no restore — so a later spec
+ *  in the same fork inherited a root whose tree this rig's own
+ *  onTestFinished had already deleted, and any test that mounts a
+ *  drafts store without booting read it (store.ts:32). Being the
+ *  shared helper, it shipped the defect into all ten bench-*.spec.ts
+ *  callers. Capture at set time, unwind with the test. */
+export function ownEnv(keys: readonly string[]): void {
+  const previous = new Map(keys.map((k) => [k, process.env[k]] as const));
+  onTestFinished(() => {
+    for (const [k, v] of previous) {
+      if (v === undefined) delete process.env[k];
+      else process.env[k] = v;
+    }
+  });
+}
+
+const BOOT_ENV = ["MELITE_STATE_ROOT", "MELITE_STORAGE_ROOT"] as const;
+
 export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpec> }> {
   const root = mintRoot();
   mkdirSync(join(root, "storage"), { recursive: true });
+  ownEnv(BOOT_ENV);
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
