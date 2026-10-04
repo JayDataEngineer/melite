@@ -192,4 +192,76 @@ describe('ledger_tail render — the human line', () => {
     assert.match(out, /blob=yyy/)
     assert.equal(out.includes('y'.repeat(500)), false)
   })
+
+  // THE ROW-SHAPE COERCIONS (batch-5 closure, 2026-10-14 — O25i):
+  // the ledger is a durable file boundary, so the renderer treats
+  // every member as hostile: a non-string ts degrades to '?', a
+  // non-string event to '(no event)', and data rides whatever shape
+  // it arrived in — object members skip nulls and cap at 60, a bare
+  // scalar/string data rides the 80-cap note, and no row may throw.
+  test('misshapen rows degrade to their sentinels — never throw', () => {
+    const out = text({
+      shown: 5,
+      matched: 5,
+      entries: [
+        { ts: null, event: 42, data: null },
+        { ts: true, event: {}, data: 'plain string note' },
+        { ts: 't3', event: 'e3', data: [1, 2] },
+        { ts: 4, event: 'e4', data: { long: 'z'.repeat(100) } },
+        { ts: 5, event: 'e5', data: { skip: null, keep: 'v' } },
+      ],
+    })
+    const lines = out.split('\n')
+    // 1) null ts + numeric event + null data: the sentinels — and
+    //    null data rides the JSON note (the guard is !== undefined)
+    assert.equal(lines[1], '? (no event) — null')
+    // 2) boolean ts, object event, STRING data: string rides as-is
+    assert.equal(lines[2], '? (no event) — plain string note')
+    // 3) string ts (the other accepted spelling), ARRAY data: the
+    //    array falls through the object guard and stringifies
+    assert.equal(lines[3], 't3 e3 — [1,2]')
+    // 4) an object member past the 60-char cap truncates with the …
+    assert.match(lines[4] as string, /e4 — long=zzz/)
+    assert.equal((lines[4] as string).includes('z'.repeat(100)), false)
+    // 5) a null member is skipped, its sibling keeps the line
+    assert.equal(lines[5], '5 e5 — keep=v')
+  })
+
+  test('a scalar data rides the 80-cap note — the JSON spelling, never dropped', () => {
+    const out = text({
+      shown: 2,
+      matched: 2,
+      entries: [
+        { ts: 1, event: 'num', data: 42 },
+        { ts: 2, event: 'str', data: 'w'.repeat(200) },
+      ],
+    })
+    const lines = out.split('\n')
+    // JSON.stringify spelling for the scalar
+    assert.equal(lines[1], '1 num — 42')
+    // the 80-cap with the … on the string
+    assert.match(lines[2] as string, /2 str — www/)
+    assert.equal((lines[2] as string).includes('w'.repeat(200)), false)
+    assert.equal(((lines[2] as string).match(/w+/) as RegExpMatchArray)[0].length <= 80, true)
+  })
+
+  test('the CHARACTER cap breaks the loop and says where the rest rides', () => {
+    // wide object rows (6 members × 57 chars ≈ 430/line) exhaust the
+    // 6000-char budget around the 13th row — well under the 20-row
+    // cap: the loop breaks, the cap line names the structured result
+    const rows = Array.from({ length: 40 }, (_v, i) => ({
+      ts: i,
+      event: 'wide',
+      data: {
+        a: 'x'.repeat(57), b: 'x'.repeat(57), c: 'x'.repeat(57),
+        d: 'x'.repeat(57), e: 'x'.repeat(57), f: 'x'.repeat(57),
+      },
+    }))
+    const out = text({ shown: 40, matched: 40, entries: rows })
+    const lines = out.split('\n')
+    // head + 15 wide rows + the char-cap line + the rows-shown pointer
+    assert.equal(lines.length, 18)
+    assert.match(lines[lines.length - 2] as string, /row cap reached/)
+    assert.match(lines[lines.length - 1] as string, /20 more row\(s\) in the structured result/)
+  })
 })

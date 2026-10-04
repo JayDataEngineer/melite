@@ -787,6 +787,24 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     assert.deepEqual(readdirSync(join(root, 'output', 'run-a0d10-tone')), ['line.wav'])
   })
 
+  test('THE TEXT-ONLY AUDIO TWIN: a route without image input gets the clip facts, and no ffmpeg waveform is spent', async () => {
+    const { ctx, attachments } = fakeCtx({ visual: false })
+    const tool = meliteView(ctx)
+    const value = await tool.execute({ run_id: 'run-a0d10-tone' }, visualExec as never)
+    const text = String((value as { textObservation?: unknown }).textObservation)
+    // the probe verdict rides whole: name, duration, bytes, streams
+    assert.match(text, /melite_view audio: line\.wav, 0\.5s, 8078 bytes/)
+    assert.match(text, /streams: pcm_s16le 8000Hz 1ch/)
+    assert.match(text, /TEXT-ONLY observation/)
+    assert.match(text, /no waveform sheet was rendered/)
+    assert.match(text, /The measurements above are complete\./)
+    // and NOTHING image-shaped was built or attached
+    assert.equal((value as { image?: unknown }).image, undefined)
+    assert.equal(attachments.saved.length, 0)
+    // the run tree stays exactly the clip
+    assert.deepEqual(readdirSync(join(root, 'output', 'run-a0d10-tone')), ['line.wav'])
+  })
+
   test('THE STUB DETECTOR: a near-zero duration reads in the verdict (the 032 receipt closes natively)', async () => {
     const { ctx } = fakeCtx()
     const tool = meliteView(ctx)

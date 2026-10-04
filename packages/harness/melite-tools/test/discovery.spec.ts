@@ -592,6 +592,79 @@ describe('live door arms', () => {
     )
   })
 
+  // THE SERVE-NARROW REFUSALS (batch-5 closure, 2026-10-14 — O25s):
+  // every engine-plane row arrives as unknown, and the served
+  // contract refuses a lie at the boundary instead of riding it —
+  // the malformed envelope names its card, the malformed mod
+  // envelope names the same card, and the field/option rows name
+  // their kind and index.
+  test('specBody refuses a malformed schema envelope LOUD — the card and both shapes named', async () => {
+    const svc = theService()
+    const defs = new Map([['__badenv__', card({
+      identity: { label: 'Env', description: 'malformed envelope', genre: 'image' },
+      flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+    })]])
+    const realFormSchemas = svc.formSchemas.bind(svc)
+    const serve = (schemas: unknown): ReturnType<typeof theService> =>
+      ({
+        formSchemas: (c: string, key: string): unknown => {
+          if (c !== '__badenv__') return realFormSchemas(c, key)
+          return schemas
+        },
+        modCatalog: (): unknown => ({ shared: false, rows: [] }),
+        cardModFields: (): unknown[] => [],
+        packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+          packs.map((id) => ({ id, present: null })),
+      }) as unknown as ReturnType<typeof theService>
+    const key = { card: '__badenv__', service: '__badenv__', model: '__badenv__' }
+    // 1) the MAIN envelope without refs: uid number + refs object
+    assert.throws(
+      () => specBody(serve({ schema: { uid: 1 }, mods: {} }), defs, key),
+      /form-spec: card '__badenv__' serialized a malformed schema envelope \(uid number \+ refs object\)/,
+    )
+    // 2) the MOD envelope carries the same law (per pack)
+    assert.throws(
+      () => specBody(serve({ schema: { uid: 0, refs: {} }, mods: { packx: { uid: 1 } } }), defs, key),
+      /form-spec: card '__badenv__' serialized a malformed schema envelope \(uid number \+ refs object\)/,
+    )
+  })
+
+  test('specBody refuses malformed mod-kind field and option rows LOUD (the kind and index named)', async () => {
+    const svc = theService()
+    const mk = (row: Record<string, unknown>): { defs: Map<string, CardDefinition>, svc: ReturnType<typeof theService> } => {
+      const defs = new Map([['__badrow__', card({
+        identity: { label: 'Row', description: 'malformed row', genre: 'image' },
+        flowKinds: { inputs: {}, outputs: {}, requiresModel: false },
+        mods: [{ kind: 'x', label: 'X', param_key: 'x_key', cardinality: 'list', ...row }] as never,
+      })]])
+      const realFormSchemas = svc.formSchemas.bind(svc)
+      const fakeSvc = {
+        formSchemas: (c: string, key: string): unknown => {
+          if (c !== '__badrow__') return realFormSchemas(c, key)
+          return { schema: { uid: 0, refs: { 0: { type: 'object', dict: {} } } }, mods: {} }
+        },
+        modCatalog: (): unknown => ({ shared: false, rows: [] }),
+        cardModFields: (): unknown[] => [],
+        packPresence: (packs: readonly string[]): Array<{ id: string, present: boolean | null }> =>
+          packs.map((id) => ({ id, present: null })),
+      } as unknown as ReturnType<typeof theService>
+      return { defs, svc: fakeSvc }
+    }
+    const key = { card: '__badrow__', service: '__badrow__', model: '__badrow__' }
+    // 1) a field row without string name/label/type
+    const f = mk({ fields: [{ name: 7, label: 'L', type: 't' }] as never })
+    assert.throws(
+      () => specBody(f.svc, f.defs, key),
+      /form-spec: mod kind x field 0 must carry string name\/label\/type/,
+    )
+    // 2) an option row without string value/label
+    const o = mk({ options: [{ value: 7, label: 'L' }] as never })
+    assert.throws(
+      () => specBody(o.svc, o.defs, key),
+      /form-spec: mod kind x option 0 must carry string value\/label/,
+    )
+  })
+
   test('specBody serves the preview claims verbatim (gap 4 — the h3 family claims the bar; others serve nothing)', async () => {
     const defs = await loadCardDefs()
     const h3 = await formSpecSweep('h3') // the checkpoint id (survivor-id correction 2026-09-22; was h3-timeline)

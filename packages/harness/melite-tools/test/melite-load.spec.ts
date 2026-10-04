@@ -418,6 +418,30 @@ describe('melite_load render — THE INTERFACE LAW (the agent-mode breakdown, 20
     const text = parts.map((p) => p?.text ?? '').join('\n')
     assert.ok(text.startsWith('loaded card c — open with melite_flow'), text)
   })
+
+  // THE FLOW SENTENCE (batch-5 closure, 2026-10-14 — O25l): a flow
+  // load in the compose face tells the agent the honest split — run
+  // doors, not add_stage hunting — while its card stages stay
+  // benchable. The empty lane and the bare signature model ride the
+  // same render block.
+  test('a flow load speaks the run-door split; an empty lane speaks its refusal law; a bare model speaks', () => {
+    const tool = meliteLoad((async () => ({})) as unknown as EstateRequest)
+    const render = (bundle: unknown): string =>
+      (tool.output.render({ name: 'x', inference_type: 'flow' }, { name: 'x', inference_type: 'flow', bundle } as never) as Array<{ text?: string }>)
+        .map((p) => p?.text ?? '').join('\n')
+    // 1) the flow split, verbatim
+    const flow = render({ kind: 'flow', name: 'f' })
+    assert.ok(flow.startsWith('loaded flow f — it is a flow, not a card — drive it through the run doors; its card stages may also be benched with melite_construct (add_stage), and its family.action stages compose when the flow runs'), flow)
+    // 2) a lane that declares NOTHING still names the refusal law
+    const empty = render({ kind: 'card', name: 'c', signature: { lanes: { fam: {} } } })
+    const laneLine = empty.split('\n').find((l) => l.startsWith('lane fam:')) ?? ''
+    assert.equal(laneLine, 'lane fam: no declared base — a field outside this lane REFUSES at the bench door (add_stage/patch), named, with the cure')
+    // 3) a signature with only a model: the model line serves, and
+    //    no lane line renders when lanes are absent
+    const model = render({ kind: 'card', name: 'c', signature: { model: 'qwen-x' } })
+    assert.ok(model.includes('signature model: qwen-x'), model)
+    assert.equal(model.split('\n').some((l) => l.startsWith('lane ')), false)
+  })
 })
 
 test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)', () => {

@@ -118,6 +118,62 @@ describe('summarizeMesh — a bad container refuses, never reports zero', () => 
     view.setUint32(16, 0x004e4942, true) // BIN only
     expect(() => summarizeMesh(out, 'x.glb')).toThrow(/no JSON chunk/)
   })
+
+  // THE DEGRADE ROWS (batch-5 closure, 2026-10-14 — O25k): every
+  // Array.isArray / typeof guard in the walk exists for a producer
+  // that emitted a keyless or shapeless doc — the summary serves
+  // zeros for what is absent instead of throwing or inventing.
+  it('degrades over absent keys and malformed rows (zeros, never a throw, never invented counts)', () => {
+    // no accessors key, meshes present but empty: the whole walk
+    // serves zeros
+    const bare = summarizeMesh(glb({ asset: { version: '2.0' } }), 'bare.glb')
+    expect(bare.meshes).toBe(0)
+    expect(bare.primitives).toBe(0)
+    expect(bare.vertices).toBe(0)
+    expect(bare.triangles).toBe(0)
+    expect(bare.generator).toBeUndefined()
+    // malformed rows: primitives not an array, a prim without
+    // attributes, POSITION absent, POSITION pointing past the
+    // accessors, a non-numeric count — each row skips or degrades
+    const ugly = summarizeMesh(glb({
+      asset: 'not-an-object',
+      meshes: [
+        { primitives: 'no' },
+        { primitives: [{}, { attributes: {} }, { attributes: { POSITION: 99 } }, { attributes: { POSITION: 0, TEXCOORD_0: 0 } }] },
+      ],
+      accessors: [{ count: 'x', min: ['a', 0, 0], max: [1, 'b', 2] }],
+    }), 'ugly.glb')
+    expect(ugly.meshes).toBe(2)
+    // only the last prim walked a POSITION accessor (count 'x' → 0)
+    expect(ugly.vertices).toBe(0)
+    expect(ugly.triangles).toBe(0)
+    expect(ugly.textured).toBe(true)
+    // only the THIRD axis carries numeric min/max members — it
+    // unions alone; the first two never invent bounds
+    expect(ugly.bounds).toBeDefined()
+    expect(ugly.bounds!.min[0]).toBe(Infinity)
+    expect(ugly.bounds!.max[0]).toBe(-Infinity)
+    expect(ugly.bounds!.min[2]).toBe(0)
+    expect(ugly.bounds!.max[2]).toBe(2)
+  })
+
+  it('reads a JSON chunk whose header runs past the buffer (the OOB reads coerce to zero)', () => {
+    // hand-build: header carries a JSON chunk with no BIN chunk and
+    // no padding after it — the chunk walk's byte reads run to the
+    // very edge and coerce instead of throwing out-of-range
+    const json = new TextEncoder().encode('{"asset":{}}')
+    const out = new Uint8Array(12 + 8 + json.length) // no BIN chunk, no padding
+    const view = new DataView(out.buffer)
+    view.setUint32(0, 0x46546c67, true)
+    view.setUint32(4, 2, true)
+    view.setUint32(8, out.length, true)
+    view.setUint32(12, json.length, true)
+    view.setUint32(16, 0x4e4f534a, true)
+    out.set(json, 20)
+    const s = summarizeMesh(out, 'edge.glb')
+    expect(s.generator).toBeUndefined()
+    expect(s.meshes).toBe(0)
+  })
 })
 
 describe('meshVoice — the sentence the model reads', () => {
