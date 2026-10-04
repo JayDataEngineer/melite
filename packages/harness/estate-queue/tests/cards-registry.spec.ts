@@ -669,3 +669,161 @@ describe("phase1Card + armWiringFromDoc (the run-seat refusal and the disarm)", 
     expect(disarm).toHaveBeenCalledTimes(1);
   });
 });
+
+// ── THE FAMILY-INTERSECTION FOLD (batch-8 closure, 2026-10-14,
+// re-audit's ranked #1): a card boarded on TWO declaring families
+// is judged by what BOTH state — rows AGREE by their members (the
+// cure prose may differ; arrays sort before the key), and the
+// bounds intersect to the tightest common span, deleting the
+// fields only one side declares or the spans that cannot overlap.
+describe("modellessDraftVerdict (the family-intersection fold)", () => {
+  /** boards a throwaway card on two crafted families, restoring
+   *  both caches after — the same temporary-override seat the
+   *  producer-throw test rides. */
+  const withXsect = (
+    run: (card: string) => void,
+    famA: Record<string, unknown>,
+    famB: Record<string, unknown>,
+  ): void => {
+    const defs = svc.defsSync();
+    const facts = svc.modelFacts();
+    const template = defs.get("tts")!;
+    const origA = facts["xsect-a"];
+    const origB = facts["xsect-b"];
+    // the fold's fixture fields ride the admission surface via the
+    // card's admits list (the undeclared-key gate owns its own seat
+    // before the lane judgment — the fold is judged over the params
+    // the card already declares)
+    const FIXTURE_FIELDS = [
+      "text", "speaker", "style", "alpha", "gamma", "beta", "delta",
+      "a", "b", "x1", "x2", "steps", "cfg", "rate",
+    ];
+    defs.set("xsect", {
+      ...template,
+      boarded: ["xsect-a", "xsect-b"],
+      admits: [...new Set([...(template.admits ?? []), ...FIXTURE_FIELDS])],
+    });
+    const base = facts["qwen3-tts"] ?? { params: {} } as ModelFactsRow;
+    facts["xsect-a"] = { ...base, ...famA } as ModelFactsRow;
+    facts["xsect-b"] = { ...base, ...famB } as ModelFactsRow;
+    // the decl projection caches on first read and exposes no
+    // public invalidation — stand the cache down so the throwaway
+    // card is aboard for admissionRefusal's surface gate (the defs
+    // map and the facts object are the same references the
+    // re-derivation reads)
+    (svc as unknown as { decls: unknown }).decls = null;
+    svc.cardDecls();
+    try {
+      run("xsect");
+    } finally {
+      defs.delete("xsect");
+      if (origA === undefined) delete facts["xsect-a"];
+      else facts["xsect-a"] = origA;
+      if (origB === undefined) delete facts["xsect-b"];
+      else facts["xsect-b"] = origB;
+      // and re-derive again so no later test sees the throwaway card
+      (svc as unknown as { decls: unknown }).decls = null;
+      svc.cardDecls();
+    }
+  };
+
+  it("rows agree by MEMBERS (prose differs, arrays sort) and words one side states never judge", () => {
+    withXsect(
+      (card) => {
+        // requires: BOTH families state it (same members, different
+        // cure prose) — the intersection keeps it, so a draft
+        // stating the field without its need refuses naming the need
+        const miss = svc.admitStageRelations(card, { text: "t" });
+        expect(miss.ok).toBe(false);
+        if (miss.ok === false) expect(miss.error).toMatch(/speaker/);
+        // the need stated → the word is satisfied
+        expect(svc.admitStageRelations(card, { text: "t", speaker: "Cherry" }).ok).toBe(true);
+        // together: only famA states it — NOT in the intersection,
+        // so a half-stated group sails (the run door owns it)
+        expect(svc.admitStageRelations(card, { text: "t", speaker: "c", alpha: 1 }).ok).toBe(true);
+        // either_or: only famB states it — same tolerance
+        expect(svc.admitStageRelations(card, { text: "t", speaker: "c", beta: 2 }).ok).toBe(true);
+      },
+      {
+        relations: {
+          requires: [{ field: "text", needs: ["speaker"], cure: "say it" }],
+          together: [{ fields: ["alpha", "gamma"], cure: "both or neither" }],
+        },
+      },
+      {
+        relations: {
+          // the cure prose differs — the row still agrees (members)
+          requires: [{ field: "text", needs: ["speaker"], cure: "entirely different prose" }],
+          either_or: [{ groups: [["beta"], ["delta"]], cure: "pick a source" }],
+        },
+      },
+    );
+  });
+
+  it("an array row agrees regardless of member order (the key sorts arrays)", () => {
+    withXsect(
+      (card) => {
+        // requires with the same members in DIFFERENT array order in
+        // the two declarations — the sorted key agrees, so stating
+        // the field without its needs refuses in both directions
+        const miss1 = svc.admitStageRelations(card, { text: "t" });
+        expect(miss1.ok).toBe(false);
+        if (miss1.ok === false) expect(miss1.error).toMatch(/speaker|style/);
+        const miss2 = svc.admitStageRelations(card, { text: "t", speaker: "s" });
+        expect(miss2.ok).toBe(false);
+        if (miss2.ok === false) expect(miss2.error).toMatch(/style/);
+        // every need stated → satisfied
+        expect(svc.admitStageRelations(card, { text: "t", speaker: "s", style: "x" }).ok).toBe(true);
+      },
+      { relations: { requires: [{ field: "text", needs: ["speaker", "style"] }] } },
+      { relations: { requires: [{ field: "text", needs: ["style", "speaker"] }] } },
+    );
+  });
+
+  it("bounds intersect to the tightest span; disjoint or one-sided fields fall away", () => {
+    withXsect(
+      (card) => {
+        // steps: [2,8] ∩ [4,12] = [4,8]
+        expect(svc.admitStageRelations(card, { steps: 6 }).ok).toBe(true);
+        const over = svc.admitStageRelations(card, { steps: 9 });
+        expect(over.ok).toBe(false);
+        if (over.ok === false) expect(over.error).toMatch(/steps/);
+        // cfg: only famA declares it — deleted from the fold
+        expect(svc.admitStageRelations(card, { cfg: 999 }).ok).toBe(true);
+      },
+      { bounds: { steps: { min: 2, max: 8 }, cfg: { min: 1, max: 4 } } },
+      { bounds: { steps: { min: 4, max: 12 } } },
+    );
+    withXsect(
+      (card) => {
+        // disjoint spans ([2,3] ∩ [8,12] cannot overlap) — the
+        // field is deleted, so the value sails
+        expect(svc.admitStageRelations(card, { steps: 99 }).ok).toBe(true);
+      },
+      { bounds: { steps: { min: 2, max: 3 } } },
+      { bounds: { steps: { min: 8, max: 12 } } },
+    );
+    withXsect(
+      (card) => {
+        // one side open-ended: famB's max 6 caps, famA's min is
+        // -Infinity (dropped key) — the fold keeps {max: 6}
+        expect(svc.admitStageRelations(card, { rate: 5 }).ok).toBe(true);
+        const over = svc.admitStageRelations(card, { rate: 7 });
+        expect(over.ok).toBe(false);
+        if (over.ok === false) expect(over.error).toMatch(/rate/);
+      },
+      { bounds: { rate: { min: 0 } } },
+      { bounds: { rate: { max: 6 } } },
+    );
+  });
+
+  it("a family with no bounds at all stands the whole span down (null breaks the fold)", () => {
+    withXsect(
+      (card) => {
+        expect(svc.admitStageRelations(card, { steps: 99 }).ok).toBe(true);
+      },
+      { bounds: { steps: { min: 1, max: 4 } } },
+      { relations: { requires: [] } }, // no bounds key — famBounds === null
+    );
+  });
+});

@@ -248,10 +248,13 @@ export function normalizeBenchStages(stages: unknown): Array<Record<string, unkn
     const children = normalized["children"];
     if (Array.isArray(children)) {
       delete normalized["engine"];
-      if (
-        (typeof normalized["params"] !== "object" || normalized["params"] === null) &&
-        Object.keys(normalized["params"] as Record<string, unknown> ?? {}).length === 0
-      ) {
+      // normalizeBenchStage already healed params to a Record (a
+      // non-object or null input became {}), so the only honest
+      // question left is emptiness: a group row with NO param keys
+      // of its own carries no params at all (the row's own law —
+      // the shape checks were dead post-heal, 2026-10-14)
+      const healedParams = normalized["params"] as Record<string, unknown>;
+      if (Object.keys(healedParams).length === 0) {
         delete normalized["params"];
       }
     }
