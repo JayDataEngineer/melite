@@ -63,9 +63,9 @@ window.__ModuleLoader__.load({
 			guard.release();
 		}
 		//#endregion
-		//#region \0dsh-css:melite-card-deck/src/client/assets.module.css.mjs
-		const css = ".ZRfIha_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.ZRfIha_root,.ZRfIha_root *{box-sizing:border-box}.ZRfIha_head,.ZRfIha_healthTop,.ZRfIha_resultHead,.ZRfIha_resultRecordHead,.ZRfIha_nextRow,.ZRfIha_resourceMain,.ZRfIha_resultItem,.ZRfIha_resourceItem,.ZRfIha_lifecycleActions,.ZRfIha_checkRow,.ZRfIha_device{min-width:0}.ZRfIha_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.ZRfIha_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.ZRfIha_sub,.ZRfIha_freshness,.ZRfIha_resultKind,.ZRfIha_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.ZRfIha_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.ZRfIha_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.ZRfIha_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.ZRfIha_healthPanel{gap:7px}.ZRfIha_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.ZRfIha_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.ZRfIha_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.ZRfIha_healthLabel{overflow-wrap:anywhere;font-size:13px}.ZRfIha_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.ZRfIha_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.ZRfIha_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.ZRfIha_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.ZRfIha_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.ZRfIha_row>label{flex:150px;min-width:0;max-width:100%}.ZRfIha_field{flex-direction:column;gap:3px;min-width:0;display:flex}.ZRfIha_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.ZRfIha_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.ZRfIha_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.ZRfIha_mono,.ZRfIha_hash{font-family:ui-monospace,monospace;font-size:11px}.ZRfIha_wrapText,.ZRfIha_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.ZRfIha_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_dot{border-radius:50%;flex:none;width:9px;height:9px}.ZRfIha_dotOk{background:var(--dsw-alias-state-business-primary);}.ZRfIha_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.ZRfIha_dotBad{background:var(--dsw-alias-state-error-primary);}.ZRfIha_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.ZRfIha_deviceList{flex-direction:column;gap:5px;display:flex}.ZRfIha_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.ZRfIha_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.ZRfIha_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.ZRfIha_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.ZRfIha_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.ZRfIha_advanced[open]{flex-direction:column;gap:8px;display:flex}.ZRfIha_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.ZRfIha_operatorNote,.ZRfIha_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_dangerNote,.ZRfIha_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.ZRfIha_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.ZRfIha_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.ZRfIha_resultRecord+.ZRfIha_resultRecord{margin-top:7px}.ZRfIha_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.ZRfIha_resultAction,.ZRfIha_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.ZRfIha_resultKind{margin-left:auto}.ZRfIha_resultOk,.ZRfIha_resultWarn,.ZRfIha_resultBad,.ZRfIha_stateOk,.ZRfIha_stateWarn,.ZRfIha_stateBad,.ZRfIha_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.ZRfIha_resultOk,.ZRfIha_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.ZRfIha_resultWarn,.ZRfIha_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.ZRfIha_resultBad,.ZRfIha_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.ZRfIha_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.ZRfIha_resultMeta>span,.ZRfIha_resultFlags>span{overflow-wrap:anywhere;min-width:0}.ZRfIha_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.ZRfIha_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.ZRfIha_resultItem,.ZRfIha_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.ZRfIha_resultItem+.ZRfIha_resultItem,.ZRfIha_resourceItem+.ZRfIha_resourceItem{margin-top:4px}.ZRfIha_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.ZRfIha_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.ZRfIha_resourceList,.ZRfIha_resourceItems,.ZRfIha_list{min-width:0;margin:0;padding:0;list-style:none}.ZRfIha_resourceList,.ZRfIha_list{flex-direction:column;gap:5px;display:flex}.ZRfIha_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.ZRfIha_resourceMain{flex-wrap:wrap;align-items:center;gap:5px 8px;display:flex}.ZRfIha_resourceRow>.ZRfIha_sub{margin-top:4px}.ZRfIha_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.ZRfIha_resourceItem{padding:4px 5px}.ZRfIha_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.ZRfIha_snapshotRow>.ZRfIha_wrapText{flex:150px}.ZRfIha_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.ZRfIha_root{gap:8px;padding:8px}.ZRfIha_section{padding:8px}.ZRfIha_healthGrid,.ZRfIha_resultMeta,.ZRfIha_resultFlags{grid-template-columns:minmax(0,1fr)}.ZRfIha_row>label,.ZRfIha_healthCopy{flex-basis:100%}.ZRfIha_device{grid-template-columns:minmax(0,1fr)}.ZRfIha_bar{grid-row:2}.ZRfIha_resultKind{width:100%;margin-left:0}}";
-		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@d320200e";
+		//#region \0dsh-css:packages/web/melite-card-deck/src/client/assets.module.css.mjs
+		const css = ".zcZoIq_root{box-sizing:border-box;width:100%;min-width:0;max-width:100%;height:100%;min-height:0;color:var(--dsw-alias-label-primary);flex-direction:column;gap:10px;padding:clamp(8px,3cqi,12px);font-size:12px;line-height:1.4;display:flex;overflow:hidden auto;container-type:inline-size}.zcZoIq_root,.zcZoIq_root *{box-sizing:border-box}.zcZoIq_head,.zcZoIq_healthTop,.zcZoIq_resultHead,.zcZoIq_resultRecordHead,.zcZoIq_nextRow,.zcZoIq_resourceMain,.zcZoIq_resultItem,.zcZoIq_resourceItem,.zcZoIq_lifecycleActions,.zcZoIq_checkRow,.zcZoIq_device{min-width:0}.zcZoIq_head{flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px;display:flex}.zcZoIq_title{letter-spacing:.02em;margin:0;font-size:14px;font-weight:650}.zcZoIq_sub,.zcZoIq_freshness,.zcZoIq_resultKind,.zcZoIq_resultDataLabel{opacity:.72;overflow-wrap:anywhere;font-size:11px}.zcZoIq_section{border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);border-radius:10px;flex-direction:column;gap:8px;min-width:0;padding:10px;display:flex}.zcZoIq_sectionTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.68;align-items:center;gap:6px;margin:0;font-size:11px;font-weight:650;display:flex}.zcZoIq_count{background:color-mix(in srgb, var(--dsw-alias-label-primary) 10%, transparent);border-radius:999px;justify-content:center;align-items:center;min-width:20px;padding:1px 6px;font-size:10px;display:inline-flex}.zcZoIq_healthPanel{gap:7px}.zcZoIq_healthTop{flex-wrap:wrap;align-items:center;gap:8px;display:flex}.zcZoIq_healthCopy{flex-direction:column;flex:150px;min-width:0;display:flex}.zcZoIq_healthTitle{text-transform:uppercase;letter-spacing:.08em;opacity:.58;margin:0;font-size:10px;font-weight:600}.zcZoIq_healthLabel{overflow-wrap:anywhere;font-size:13px}.zcZoIq_healthGrid{grid-template-columns:repeat(auto-fit,minmax(min(128px,100%),1fr));gap:6px 10px;margin:0;display:grid}.zcZoIq_healthItem{border:1px solid color-mix(in srgb, var(--dsw-alias-border-l2) 75%, transparent);background:color-mix(in srgb, var(--dsw-alias-bg-base) 55%, transparent);border-radius:7px;min-width:0;padding:5px 7px}.zcZoIq_healthItem dt{text-transform:uppercase;letter-spacing:.05em;opacity:.58;margin-bottom:2px;font-size:10px;font-weight:600}.zcZoIq_healthItem dd{overflow-wrap:anywhere;min-width:0;margin:0;font-size:11px}.zcZoIq_row{flex-flow:wrap;align-items:flex-end;gap:6px;min-width:0;display:flex}.zcZoIq_row>label{flex:150px;min-width:0;max-width:100%}.zcZoIq_field{flex-direction:column;gap:3px;min-width:0;display:flex}.zcZoIq_fieldLabel{opacity:.74;font-size:11px;font-weight:550}.zcZoIq_input{box-sizing:border-box;background:var(--dsw-alias-bg-base);border:1px solid var(--dsw-alias-border-l2);width:100%;min-width:0;max-width:100%;color:inherit;border-radius:7px;padding:6px 8px;font-family:inherit;font-size:12px}.zcZoIq_input:focus{outline:1px solid var(--dsw-alias-state-business-primary);border-color:#0000}.zcZoIq_mono,.zcZoIq_hash{font-family:ui-monospace,monospace;font-size:11px}.zcZoIq_wrapText,.zcZoIq_hash{overflow-wrap:anywhere;word-break:break-word;min-width:0;max-width:100%}.zcZoIq_btnDanger{border:1px solid color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_dot{border-radius:50%;flex:none;width:9px;height:9px}.zcZoIq_dotOk{background:var(--dsw-alias-state-business-primary);}.zcZoIq_dotWarn{background:color-mix(in srgb, var(--dsw-alias-label-primary) 55%, transparent);}.zcZoIq_dotBad{background:var(--dsw-alias-state-error-primary);}.zcZoIq_kvKey{overflow-wrap:anywhere;min-width:0;font-weight:600}.zcZoIq_deviceList{flex-direction:column;gap:5px;display:flex}.zcZoIq_device{grid-template-columns:minmax(54px,auto) minmax(40px,1fr) auto;align-items:center;gap:7px;display:grid}.zcZoIq_bar{background:color-mix(in srgb, var(--dsw-alias-label-primary) 14%, transparent);border-radius:3px;min-width:0;height:5px;display:block;overflow:hidden}.zcZoIq_barFill{background:var(--dsw-alias-state-business-primary);border-radius:3px;height:100%;display:block}.zcZoIq_advanced{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent);border-radius:8px;min-width:0;padding:7px 8px}.zcZoIq_advanced>summary{min-width:0;color:var(--dsw-alias-label-primary);overflow-wrap:anywhere;cursor:pointer;font-size:11px;font-weight:600}.zcZoIq_advanced[open]{flex-direction:column;gap:8px;display:flex}.zcZoIq_operatorBadge{border:1px solid var(--dsw-alias-state-error-primary);color:var(--dsw-alias-state-error-primary);letter-spacing:.04em;text-transform:uppercase;border-radius:999px;margin-right:5px;padding:1px 6px;font-size:9px;font-weight:700;display:inline-block}.zcZoIq_operatorNote,.zcZoIq_warningNote{color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary));overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_dangerNote,.zcZoIq_errorCode{color:var(--dsw-alias-state-error-primary);overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_resultDock{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, var(--dsw-alias-border-l1))}.zcZoIq_resultHead{flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px;display:flex}.zcZoIq_resultRecord{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;flex-direction:column;gap:6px;min-width:0;padding:8px;display:flex}.zcZoIq_resultRecord+.zcZoIq_resultRecord{margin-top:7px}.zcZoIq_resultRecordHead{flex-wrap:wrap;align-items:center;gap:6px;display:flex}.zcZoIq_resultAction,.zcZoIq_resourceName{overflow-wrap:anywhere;min-width:0;font-family:ui-monospace,monospace;font-size:11px;font-weight:600}.zcZoIq_resultKind{margin-left:auto}.zcZoIq_resultOk,.zcZoIq_resultWarn,.zcZoIq_resultBad,.zcZoIq_stateOk,.zcZoIq_stateWarn,.zcZoIq_stateBad,.zcZoIq_stateNeutral{border:1px solid var(--dsw-alias-border-l2);letter-spacing:.05em;overflow-wrap:anywhere;border-radius:999px;align-items:center;max-width:100%;padding:2px 7px;font-size:9px;font-weight:700;line-height:1.25;display:inline-flex}.zcZoIq_resultOk,.zcZoIq_stateOk{border-color:color-mix(in srgb, var(--dsw-alias-state-business-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-business-primary) 14%, transparent);color:var(--dsw-alias-state-business-primary)}.zcZoIq_resultWarn,.zcZoIq_stateWarn{border-color:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 65%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary)) 12%, transparent);color:var(--dsw-alias-state-warning-primary,var(--dsw-alias-label-primary))}.zcZoIq_resultBad,.zcZoIq_stateBad{border-color:color-mix(in srgb, var(--dsw-alias-state-error-primary) 55%, transparent);background:color-mix(in srgb, var(--dsw-alias-state-error-primary) 12%, transparent);color:var(--dsw-alias-state-error-primary)}.zcZoIq_stateNeutral{background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr));gap:4px 8px;min-width:0;font-size:11px;display:grid}.zcZoIq_resultMeta>span,.zcZoIq_resultFlags>span{overflow-wrap:anywhere;min-width:0}.zcZoIq_resultDetail{overflow-wrap:anywhere;margin:0;font-size:11px}.zcZoIq_nextRow{flex-wrap:wrap;align-items:center;gap:7px;display:flex}.zcZoIq_resultItem,.zcZoIq_resourceItem{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 72%, transparent);border-radius:7px;flex-wrap:wrap;align-items:center;gap:5px 8px;padding:5px 6px;display:flex}.zcZoIq_resultItem+.zcZoIq_resultItem,.zcZoIq_resourceItem+.zcZoIq_resourceItem{margin-top:4px}.zcZoIq_resultData{flex-direction:column;gap:4px;min-width:0;display:flex}.zcZoIq_pre{border:1px solid var(--dsw-alias-border-l2);background:color-mix(in srgb, var(--dsw-alias-bg-layer-1) 70%, transparent);white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;border-radius:7px;min-width:0;max-width:100%;max-height:min(42vh,360px);margin:0;padding:7px;font-family:ui-monospace,monospace;font-size:11px;line-height:1.45;overflow:auto}.zcZoIq_resourceList,.zcZoIq_resourceItems,.zcZoIq_list{min-width:0;margin:0;padding:0;list-style:none}.zcZoIq_resourceList,.zcZoIq_list{flex-direction:column;gap:5px;display:flex}.zcZoIq_resourceRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:8px;min-width:0;padding:7px}.zcZoIq_resourceMain{flex-wrap:wrap;align-items:center;gap:5px 8px;display:flex}.zcZoIq_resourceRow>.zcZoIq_sub{margin-top:4px}.zcZoIq_resourceItems{flex-direction:column;gap:4px;margin-top:5px;display:flex}.zcZoIq_resourceItem{padding:4px 5px}.zcZoIq_listRow{border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-base);border-radius:7px;justify-content:space-between;align-items:center;gap:6px 8px;min-width:0;padding:5px 7px;display:flex}.zcZoIq_snapshotRow>.zcZoIq_wrapText{flex:150px}.zcZoIq_lifecycleActions{flex-wrap:wrap;gap:6px;display:flex}@container (width<=330px){.zcZoIq_root{gap:8px;padding:8px}.zcZoIq_section{padding:8px}.zcZoIq_healthGrid,.zcZoIq_resultMeta,.zcZoIq_resultFlags{grid-template-columns:minmax(0,1fr)}.zcZoIq_row>label,.zcZoIq_healthCopy{flex-basis:100%}.zcZoIq_device{grid-template-columns:minmax(0,1fr)}.zcZoIq_bar{grid-row:2}.zcZoIq_resultKind{width:100%;margin-left:0}}";
+		const tagId = "@melite-plugin/dsh-card-deck/assets.module.css@cd7d5146";
 		if (typeof document !== "undefined" && document.querySelector("style[data-plugin-css=" + JSON.stringify(tagId) + "]") === null) {
 			const tag = document.createElement("style");
 			tag.dataset.plugin = "@melite-plugin/dsh-card-deck";
@@ -74,76 +74,76 @@ window.__ModuleLoader__.load({
 			document.head.appendChild(tag);
 		}
 		var assets_module_css_default = {
-			"advanced": "ZRfIha_advanced",
-			"bar": "ZRfIha_bar",
-			"barFill": "ZRfIha_barFill",
-			"btnDanger": "ZRfIha_btnDanger",
-			"checkRow": "ZRfIha_checkRow",
-			"count": "ZRfIha_count",
-			"dangerNote": "ZRfIha_dangerNote",
-			"device": "ZRfIha_device",
-			"deviceList": "ZRfIha_deviceList",
-			"dot": "ZRfIha_dot",
-			"dotBad": "ZRfIha_dotBad",
-			"dotOk": "ZRfIha_dotOk",
-			"dotWarn": "ZRfIha_dotWarn",
-			"errorCode": "ZRfIha_errorCode",
-			"field": "ZRfIha_field",
-			"fieldLabel": "ZRfIha_fieldLabel",
-			"freshness": "ZRfIha_freshness",
-			"hash": "ZRfIha_hash",
-			"head": "ZRfIha_head",
-			"healthCopy": "ZRfIha_healthCopy",
-			"healthGrid": "ZRfIha_healthGrid",
-			"healthItem": "ZRfIha_healthItem",
-			"healthLabel": "ZRfIha_healthLabel",
-			"healthPanel": "ZRfIha_healthPanel",
-			"healthTitle": "ZRfIha_healthTitle",
-			"healthTop": "ZRfIha_healthTop",
-			"input": "ZRfIha_input",
-			"kvKey": "ZRfIha_kvKey",
-			"lifecycleActions": "ZRfIha_lifecycleActions",
-			"list": "ZRfIha_list",
-			"listRow": "ZRfIha_listRow",
-			"mono": "ZRfIha_mono",
-			"nextRow": "ZRfIha_nextRow",
-			"operatorBadge": "ZRfIha_operatorBadge",
-			"operatorNote": "ZRfIha_operatorNote",
-			"pre": "ZRfIha_pre",
-			"resourceItem": "ZRfIha_resourceItem",
-			"resourceItems": "ZRfIha_resourceItems",
-			"resourceList": "ZRfIha_resourceList",
-			"resourceMain": "ZRfIha_resourceMain",
-			"resourceName": "ZRfIha_resourceName",
-			"resourceRow": "ZRfIha_resourceRow",
-			"resultAction": "ZRfIha_resultAction",
-			"resultBad": "ZRfIha_resultBad",
-			"resultData": "ZRfIha_resultData",
-			"resultDataLabel": "ZRfIha_resultDataLabel",
-			"resultDetail": "ZRfIha_resultDetail",
-			"resultDock": "ZRfIha_resultDock",
-			"resultFlags": "ZRfIha_resultFlags",
-			"resultHead": "ZRfIha_resultHead",
-			"resultItem": "ZRfIha_resultItem",
-			"resultKind": "ZRfIha_resultKind",
-			"resultMeta": "ZRfIha_resultMeta",
-			"resultOk": "ZRfIha_resultOk",
-			"resultRecord": "ZRfIha_resultRecord",
-			"resultRecordHead": "ZRfIha_resultRecordHead",
-			"resultWarn": "ZRfIha_resultWarn",
-			"root": "ZRfIha_root",
-			"row": "ZRfIha_row",
-			"section": "ZRfIha_section",
-			"sectionTitle": "ZRfIha_sectionTitle",
-			"snapshotRow": "ZRfIha_snapshotRow",
-			"stateBad": "ZRfIha_stateBad",
-			"stateNeutral": "ZRfIha_stateNeutral",
-			"stateOk": "ZRfIha_stateOk",
-			"stateWarn": "ZRfIha_stateWarn",
-			"sub": "ZRfIha_sub",
-			"title": "ZRfIha_title",
-			"warningNote": "ZRfIha_warningNote",
-			"wrapText": "ZRfIha_wrapText"
+			"advanced": "zcZoIq_advanced",
+			"bar": "zcZoIq_bar",
+			"barFill": "zcZoIq_barFill",
+			"btnDanger": "zcZoIq_btnDanger",
+			"checkRow": "zcZoIq_checkRow",
+			"count": "zcZoIq_count",
+			"dangerNote": "zcZoIq_dangerNote",
+			"device": "zcZoIq_device",
+			"deviceList": "zcZoIq_deviceList",
+			"dot": "zcZoIq_dot",
+			"dotBad": "zcZoIq_dotBad",
+			"dotOk": "zcZoIq_dotOk",
+			"dotWarn": "zcZoIq_dotWarn",
+			"errorCode": "zcZoIq_errorCode",
+			"field": "zcZoIq_field",
+			"fieldLabel": "zcZoIq_fieldLabel",
+			"freshness": "zcZoIq_freshness",
+			"hash": "zcZoIq_hash",
+			"head": "zcZoIq_head",
+			"healthCopy": "zcZoIq_healthCopy",
+			"healthGrid": "zcZoIq_healthGrid",
+			"healthItem": "zcZoIq_healthItem",
+			"healthLabel": "zcZoIq_healthLabel",
+			"healthPanel": "zcZoIq_healthPanel",
+			"healthTitle": "zcZoIq_healthTitle",
+			"healthTop": "zcZoIq_healthTop",
+			"input": "zcZoIq_input",
+			"kvKey": "zcZoIq_kvKey",
+			"lifecycleActions": "zcZoIq_lifecycleActions",
+			"list": "zcZoIq_list",
+			"listRow": "zcZoIq_listRow",
+			"mono": "zcZoIq_mono",
+			"nextRow": "zcZoIq_nextRow",
+			"operatorBadge": "zcZoIq_operatorBadge",
+			"operatorNote": "zcZoIq_operatorNote",
+			"pre": "zcZoIq_pre",
+			"resourceItem": "zcZoIq_resourceItem",
+			"resourceItems": "zcZoIq_resourceItems",
+			"resourceList": "zcZoIq_resourceList",
+			"resourceMain": "zcZoIq_resourceMain",
+			"resourceName": "zcZoIq_resourceName",
+			"resourceRow": "zcZoIq_resourceRow",
+			"resultAction": "zcZoIq_resultAction",
+			"resultBad": "zcZoIq_resultBad",
+			"resultData": "zcZoIq_resultData",
+			"resultDataLabel": "zcZoIq_resultDataLabel",
+			"resultDetail": "zcZoIq_resultDetail",
+			"resultDock": "zcZoIq_resultDock",
+			"resultFlags": "zcZoIq_resultFlags",
+			"resultHead": "zcZoIq_resultHead",
+			"resultItem": "zcZoIq_resultItem",
+			"resultKind": "zcZoIq_resultKind",
+			"resultMeta": "zcZoIq_resultMeta",
+			"resultOk": "zcZoIq_resultOk",
+			"resultRecord": "zcZoIq_resultRecord",
+			"resultRecordHead": "zcZoIq_resultRecordHead",
+			"resultWarn": "zcZoIq_resultWarn",
+			"root": "zcZoIq_root",
+			"row": "zcZoIq_row",
+			"section": "zcZoIq_section",
+			"sectionTitle": "zcZoIq_sectionTitle",
+			"snapshotRow": "zcZoIq_snapshotRow",
+			"stateBad": "zcZoIq_stateBad",
+			"stateNeutral": "zcZoIq_stateNeutral",
+			"stateOk": "zcZoIq_stateOk",
+			"stateWarn": "zcZoIq_stateWarn",
+			"sub": "zcZoIq_sub",
+			"title": "zcZoIq_title",
+			"warningNote": "zcZoIq_warningNote",
+			"wrapText": "zcZoIq_wrapText"
 		};
 		//#endregion
 		//#region ../../web-kit/formats/src/readFile.ts
@@ -196,6 +196,14 @@ window.__ModuleLoader__.load({
 				setRefusal(null);
 				try {
 					const reply = await postManage("lora_list", {});
+					if (reply.ok !== true) {
+						/* v8 ignore next -- postManage folds a refusal through
+						* nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+						* the default text is a belt for a lane that answers
+						* differently. */
+						setRefusal(reply.detail ?? "the engine refused the LoRA list");
+						return;
+					}
 					setData(reply.data ?? {});
 				} catch (e) {
 					setRefusal(e instanceof Error ? e.message : String(e));
@@ -207,6 +215,9 @@ window.__ModuleLoader__.load({
 			const openAndLoad = react.useCallback(() => {
 				setOpen((was) => {
 					const next = !was;
+					/* v8 ignore next 3 -- the block has NO close affordance: the
+					* open state renders Refresh as its only button (:151-153), so
+					* openAndLoad's close half cannot be driven from the UI. */
 					if (next && openedRef.current !== true) {
 						openedRef.current = true;
 						refresh();
@@ -215,14 +226,25 @@ window.__ModuleLoader__.load({
 				});
 			}, [refresh]);
 			const install = react.useCallback(async () => {
+				/* v8 ignore next 3 -- the Copy button is DISABLED while the path
+				* is blank (:206), so install cannot run with one; the guard is a
+				* belt for a keyboard/programmatic activation. */
 				if (path.trim() === "") return;
 				setBusy(true);
 				setRefusal(null);
 				try {
-					await postManage("lora_install", {
+					const installed = await postManage("lora_install", {
 						path: path.trim(),
 						families: families.split(",").map((f) => f.trim()).filter((f) => f !== "")
 					});
+					if (installed.ok !== true) {
+						/* v8 ignore next -- postManage folds a refusal through
+						* nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+						* the default text is a belt for a lane that answers
+						* differently. */
+						setRefusal(installed.detail ?? "the engine refused the install");
+						return;
+					}
 					await refresh();
 				} catch (e) {
 					setRefusal(e instanceof Error ? e.message : String(e));
@@ -293,7 +315,17 @@ window.__ModuleLoader__.load({
 				onClick: () => void install(),
 				disabled: busy || path.trim() === ""
 			}, "Copy LoRA in")), react.createElement("p", { className: "hint" }, "A copied file enters the engine list only after a restart — the button below asks for one."), react.createElement("div", { className: "row" }, react.createElement("button", {
-				onClick: () => void postManage("restart", {}).then(refresh).catch((e) => {
+				onClick: () => void postManage("restart", {}).then((reply) => {
+					if (reply.ok !== true) {
+						/* v8 ignore next -- postManage folds a refusal through
+						* nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+						* the default text is a belt for a lane that answers
+						* differently. */
+						setRefusal(reply.detail ?? "the engine refused the restart");
+						return;
+					}
+					return refresh();
+				}).catch((e) => {
 					setRefusal(e instanceof Error ? e.message : String(e));
 				}),
 				disabled: busy

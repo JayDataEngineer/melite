@@ -191,3 +191,118 @@ test("a block rendered before the manage contribution mounts refuses loud", asyn
   // and no list state was minted from the failure
   expect(screen.getByText(/The engine accepts 0 LoRA name/)).toBeTruthy();
 });
+
+// ── the shape arms (the block renders whatever the door answers) ──
+// Every branch below is a DIFFERENT ANSWER from the manage door: a
+// row with no label, no strength and no families; a door that fails;
+// an install refused; a restart refused. The block's job is to say
+// what is true about each, never to throw or to render a blank.
+
+/** Open the block and let its one lora_list land. */
+const open = async (): Promise<void> => {
+  fireEvent.click(screen.getByText("Show LoRAs"))
+  await waitFor(() => { expect(screen.queryByText("Show LoRAs")).toBeNull() })
+}
+
+/** A lane whose named action comes back REFUSED: the protocol's one
+ *  failure face is { ok: false, detail } carrying the message
+ *  (assets-tab.tsx:346-359), NOT a thrown error. */
+const failingSeat = (action: string, message: string): void => {
+  seatManageNamespace({
+    act: async (doc: ManageActDoc): Promise<RemoteResult<ManageEnvelopeRow>> => {
+      if (doc.action === action) {
+        return {
+          ok: false,
+          error: { message, details: { action: doc.action, code: "manage/refused" } },
+        } as unknown as RemoteResult<ManageEnvelopeRow>
+      }
+      return { ok: true, value: { action: doc.action, ok: true, detail: `canned ${doc.action}` } }
+    },
+  })
+}
+
+test("a user row with NO label, NO strength and NO families renders from its id", async () => {
+  const calls = stubManageSeat({
+    lora_list: {
+      data: {
+        engine_loras: [],
+        user_rows: [{ id: "bare-row", filename: "bare.safetensors" }],
+        user_rows_present: true,
+        unboarded: [],
+        install_dir: "/x/loras",
+      },
+    },
+  })
+  render(<LoraBlock />)
+  await open()
+  // exact textContent: the row's deliberate double-space separators
+  // are part of the contract, and the absent fields must leave no
+  // empty "@" or "[]" residue
+  const line = await screen.findByText(
+    (_, el) => el?.textContent === "\u00b7 bare-row  (bare.safetensors)",
+  )
+  expect(line.textContent).not.toContain("@")
+  expect(line.textContent).not.toContain("[]")
+  expect(actionsOf(calls)).toEqual(["lora_list"])
+})
+
+test("a door that FAILS the list speaks the refusal (never a blank panel)", async () => {
+  failingSeat("lora_list", "engine unreachable")
+  render(<LoraBlock />)
+  await open()
+  await waitFor(() => { expect(screen.getByText("engine unreachable")).toBeTruthy() })
+})
+
+test("an install the door refuses speaks the refusal and keeps the typed path", async () => {
+  // the failing lane replaces the recording one, so this arm asserts
+  // what the operator sees (the refusal and the surviving field),
+  // not a call log
+  failingSeat("lora_install", "no such file")
+  render(<LoraBlock />)
+  await open()
+  const input = screen.getByPlaceholderText("/abs/path/to/my_lora.safetensors")
+  fireEvent.change(input, { target: { value: "/nope/missing.safetensors" } })
+  fireEvent.click(screen.getByText("Copy LoRA in"))
+  await waitFor(() => { expect(screen.getByText("no such file")).toBeTruthy() })
+  // the path survives the refusal — the operator corrects the field,
+  // they do not retype it
+  expect((input as HTMLInputElement).value).toBe("/nope/missing.safetensors")
+})
+
+test("a restart the door refuses speaks the refusal (the button never lies)", async () => {
+  failingSeat("restart", "restart refused by the manager")
+  render(<LoraBlock />)
+  await open()
+  fireEvent.click(screen.getByText("Restart engine"))
+  await waitFor(() => { expect(screen.getByText("restart refused by the manager")).toBeTruthy() })
+})
+
+test("a file input cleared before a file is chosen asks for nothing", async () => {
+  // the change event with no file is real (a dialog cancelled, a
+  // selection cleared): the door must not post an install for nothing
+  const calls = stubManageSeat({ lora_list: LORA_LIST })
+  render(<LoraBlock />)
+  await open()
+  const picker = document.querySelector("input[type=file]") as HTMLInputElement
+  fireEvent.change(picker, { target: { files: [] } })
+  expect(actionsOf(calls)).toEqual(["lora_list"])
+})
+
+test("every door refuses loud when the manage lane is NOT mounted", async () => {
+  // the block's documented failure face: mounted before the manage
+  // contribution, each verb must speak rather than hang on a missing
+  // lane — the list, the install, the upload and the restart.
+  render(<LoraBlock />)
+  seatManageNamespace(undefined)
+  fireEvent.click(screen.getByText("Show LoRAs"))
+  await waitFor(() => { expect(screen.getByText(/manage remote not mounted/)).toBeTruthy() })
+
+  const input = screen.getByPlaceholderText("/abs/path/to/my_lora.safetensors")
+  fireEvent.change(input, { target: { value: "/x/y.safetensors" } })
+  fireEvent.click(screen.getByText("Copy LoRA in"))
+  await waitFor(() => { expect(screen.getByText(/manage remote not mounted/)).toBeTruthy() })
+
+  fireEvent.click(screen.getByText("Restart engine"))
+  await waitFor(() => { expect(screen.getByText(/manage remote not mounted/)).toBeTruthy() })
+})
+

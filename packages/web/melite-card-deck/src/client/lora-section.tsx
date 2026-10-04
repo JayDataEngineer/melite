@@ -73,6 +73,18 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
     setRefusal(null)
     try {
       const reply: ManageReply = await postManage('lora_list', {})
+      // A REFUSED DOOR IS NOT A THROW: postManage folds the protocol's
+      // failure face into { ok: false, detail } (assets-tab.tsx:346),
+      // so reading only `.data` rendered an EMPTY panel over a refusal
+      // and said nothing — the one thing this block must never do.
+      if (reply.ok !== true) {
+        /* v8 ignore next -- postManage folds a refusal through
+           * nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+           * the default text is a belt for a lane that answers
+           * differently. */
+        setRefusal(reply.detail ?? 'the engine refused the LoRA list')
+        return
+      }
       setData((reply.data ?? {}) as LoraListData)
     } catch (e) {
       setRefusal(e instanceof Error ? e.message : String(e))
@@ -85,6 +97,9 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
   const openAndLoad = React.useCallback((): void => {
     setOpen((was) => {
       const next = !was
+      /* v8 ignore next 3 -- the block has NO close affordance: the
+       * open state renders Refresh as its only button (:151-153), so
+       * openAndLoad's close half cannot be driven from the UI. */
       if (next && openedRef.current !== true) {
         openedRef.current = true
         void refresh()
@@ -94,14 +109,25 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
   }, [refresh])
 
   const install = React.useCallback(async (): Promise<void> => {
+    /* v8 ignore next 3 -- the Copy button is DISABLED while the path
+     * is blank (:206), so install cannot run with one; the guard is a
+     * belt for a keyboard/programmatic activation. */
     if (path.trim() === '') return
     setBusy(true)
     setRefusal(null)
     try {
-      await postManage('lora_install', {
+      const installed: ManageReply = await postManage('lora_install', {
         path: path.trim(),
         families: families.split(',').map((f) => f.trim()).filter((f) => f !== ''),
       })
+      if (installed.ok !== true) {
+        /* v8 ignore next -- postManage folds a refusal through
+           * nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+           * the default text is a belt for a lane that answers
+           * differently. */
+        setRefusal(installed.detail ?? 'the engine refused the install')
+        return
+      }
       await refresh()
     } catch (e) {
       setRefusal(e instanceof Error ? e.message : String(e))
@@ -204,7 +230,19 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       'A copied file enters the engine list only after a restart — the button below asks for one.'),
     React.createElement('div', { className: 'row' },
       React.createElement('button', {
-        onClick: () => void postManage('restart', {}).then(refresh).catch((e: unknown) => {
+        onClick: () => void postManage('restart', {}).then((reply: ManageReply) => {
+          // same law as the list and the install: a refused restart is
+          // a VALUE, and the button must not read as if it worked
+          if (reply.ok !== true) {
+            /* v8 ignore next -- postManage folds a refusal through
+           * nonEmptyOr, so detail is NEVER empty (assets-tab.tsx:346);
+           * the default text is a belt for a lane that answers
+           * differently. */
+        setRefusal(reply.detail ?? 'the engine refused the restart')
+            return
+          }
+          return refresh()
+        }).catch((e: unknown) => {
           setRefusal(e instanceof Error ? e.message : String(e))
         }),
         disabled: busy,
