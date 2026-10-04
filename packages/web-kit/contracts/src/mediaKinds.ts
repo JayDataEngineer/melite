@@ -39,7 +39,11 @@ export interface MediaVocab {
 export function mediaVocab(): MediaVocab {
   return {
     image: ["png", "jpg", "jpeg", "webp", "gif", "svg", "bmp", "avif"],
-    audio: ["wav", "flac", "mp3", "ogg", "m4a", "aac"],
+    // qvoice is the voice bank's own container: the tts lane saves a
+    // voice as one, and a vocabulary without it classified a preserved
+    // voice as non-media — it was served but never listed
+    // (the TTS chain audit, 2026-10-15).
+    audio: ["wav", "flac", "mp3", "ogg", "m4a", "aac", "qvoice"],
     video: ["mp4", "webm", "mkv", "mov", "m4v", "avi"],
     model: ["glb", "gltf"],
     galleryImage: ["png", "jpg", "jpeg", "webp", "gif"],

@@ -87,7 +87,7 @@ export function apply(ctx: Context): void {
       outputs: { default: 'image' },
       requiresModel: true,
     },
-    requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'comfyui_nvidia_rtx_nodes'],
+    requires: ['ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-KJNodes', 'Nvidia_RTX_Nodes_ComfyUI'],
     // ADMISSION EXTRAS + SPELLS (the class-attr halves verbatim:
     // admits minus studio writes, and the $spell-eligible file slot
     // for two-card-flow handoff).

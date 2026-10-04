@@ -55,6 +55,12 @@ export const UPLOAD_EXTS: readonly string[] = [
   ".obj",
   ".ogg",
   ".png",
+  // the voice bank's own container (the preview_voice lane's .qvoice
+  // artifacts): this table's header claimed qvoice rode the walk and
+  // the extension was missing, so a voice saved from a run was never
+  // staged and the pack opened a path that was not on disk
+  // (the TTS chain audit, 2026-10-15).
+  ".qvoice",
   ".tiff",
   ".usd",
   ".usdz",

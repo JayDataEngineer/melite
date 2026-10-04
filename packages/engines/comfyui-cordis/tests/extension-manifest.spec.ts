@@ -148,6 +148,66 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     }
   });
 
+  it("every pack a CARD requires is a declared row (the fresh-clone gap)", () => {
+    // A card's requires is a contract the compose gate enforces
+    // (assertModRequires): if no manifest row declares the pack, a
+    // fresh clone cannot install what the card demands and the card
+    // is unrunnable there. The TTS audit found three such rows in the
+    // opposite direction — cards requiring packs nothing declares.
+    // This list IS the open item: each entry needs an operator-chosen
+    // upstream (url + pinned ref) before it can be declared, and
+    // deleting an entry that has been cured fails this wall.
+    const UNPROVIDED: readonly string[] = [
+      "ComfyUI-Frame-Interpolation", // upscale-tools — no upstream identified
+      "ComfyUI-LTXVideo",            // h3-timeline — no upstream identified
+      "comfyui-core-trellis2",       // img-to-mesh — no upstream identified
+    ];
+    const required = new Set<string>();
+    for (const def of defs.values()) {
+      for (const name of [
+        ...(def.requires ?? []),
+        ...Object.values(def.requiresByFamily ?? {}).flat(),
+      ]) {
+        required.add(name);
+      }
+    }
+    const declared = new Set(manifest.map((row) => row.name));
+    const missing = [...required].filter((name) => !declared.has(name)).sort();
+    assert.deepEqual(
+      missing,
+      [...UNPROVIDED].sort(),
+      `cards require packs no row declares: ${missing.join(", ")} — add the declared row (url + pinned ref) and delete the entry here`,
+    );
+  });
+
+  it("the roster's pack names and the manifest's row names are one vocabulary", () => {
+    // Two spellings of one pack (the roster said comfyui_nvidia_rtx_nodes
+    // where the row said Nvidia_RTX_Nodes_ComfyUI) meant the install
+    // door and the compose gate looked at two different names for the
+    // same pack — the RTX row is now declared under the repo name, and
+    // this wall keeps the two lists from drifting apart again.
+    const rostered = Object.keys(facts.extension_node_types);
+    const declared = new Set(manifest.map((row) => row.name));
+    // The roster entries with no declared row ARE the open gap — each
+    // needs an operator-chosen upstream (url + pinned ref) and its
+    // deletion here. Three of them are also card requirements (the
+    // wall above), so they block those cards on a fresh clone.
+    const UNDECLARED_ROSTER: readonly string[] = [
+      "ComfyUI-Frame-Interpolation",
+      "ComfyUI-GGUF",
+      "ComfyUI-LTXVideo",
+      "comfyui-core-trellis2",
+      "comfyui-lanpaint",
+      "vnccs_utils",
+    ];
+    const drifted = rostered.filter((name) => !declared.has(name)).sort();
+    assert.deepEqual(
+      drifted,
+      [...UNDECLARED_ROSTER].sort(),
+      `the roster names packs no row declares: ${drifted.join(", ")} — declare the row, then delete the entry here`,
+    );
+  });
+
   it("the first-party packs' pins equal their vendored submodule commits", () => {
     // ONE TRUTH: the manifest pin and .gitmodules' commit are the
     // same line of the estate's history. If they drift, the vendored

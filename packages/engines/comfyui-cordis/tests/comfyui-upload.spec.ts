@@ -190,6 +190,30 @@ describe("uploadReferenced (the staging walk)", () => {
       expect((graph["n"] as { inputs: { image: string } }).inputs["image"]).toMatch(/_[0-9a-f]{12}(?:\.[a-z0-9]+)?$/);
     }
   });
+  it("a .qvoice from a run's media bag STAGES (the voice lane's own container)", async () => {
+    // THE T5 WALL (the TTS chain audit, 2026-10-15): the voice lane
+    // saves a voice as a .qvoice under the run's media bag and hands
+    // preview_voice that path. UPLOAD_EXTS had no .qvoice — the table's
+    // own header claimed it did — so the path rode into the graph
+    // verbatim and the pack opened a file the engine had never seen.
+    // This asserts the substitution the engine needs: a staged,
+    // content-addressed name, never the estate URL.
+    // the voice file really sits in the run's media bag: the walk
+    // resolves the URL on disk, so the wall needs the artifact.
+    mkdirSync(join(ROOT, "run-1", "voices"), { recursive: true });
+    writeFileSync(join(ROOT, "run-1", "voices", "coral.qvoice"), "QVOICE");
+    const { graph, uploaded } = await uploadReferenced(fakeClient(), {
+      n: {
+        class_type: "AudiocoreVoiceStudio",
+        inputs: { voice: "/melite-media/runs/run-1/voices/coral.qvoice" },
+      },
+    }, { runsRoot: ROOT });
+    const voice = (graph["n"] as { inputs: { voice: string } }).inputs.voice;
+    expect(voice).toMatch(/coral_[0-9a-f]{12}\.qvoice$/);
+    expect(voice).not.toContain("/melite-media/");
+    expect(Object.keys(uploaded)).toHaveLength(1);
+  });
+
   it("stages every source in a film clips_json manifest and preserves row fields", async () => {
     const data = "data:audio/flac;base64," + Buffer.from("manifest-flac").toString("base64");
     const source = "/melite-media/runs/run-1/local.flac";

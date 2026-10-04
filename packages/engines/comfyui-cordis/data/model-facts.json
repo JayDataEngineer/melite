@@ -259,7 +259,7 @@
       "LanPaintInpaint",
       "LanPaintSampler"
     ],
-    "comfyui_nvidia_rtx_nodes": [
+    "Nvidia_RTX_Nodes_ComfyUI": [
       "RTXVideoSuperResolution"
     ],
     "joycaption_comfyui": [
@@ -331,7 +331,7 @@
       "MeliteConcatVideos",
       "MeliteUnload"
     ],
-    "qweneditutils": [
+    "Comfyui-QwenEditUtils": [
       "TextEncodeQwenImageEditPlus"
     ],
     "vnccs_utils": [
