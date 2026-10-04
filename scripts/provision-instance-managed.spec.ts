@@ -5,7 +5,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { pinManagerConfig } from "../packages/engines/comfyui-cordis/scripts/provision-instance-managed.ts";
 
-const CHANNEL_URL = "https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/main";
+// the estate-proven channel — Manager 3.41's own Comfy-Org default
+// raises InvalidChannel in its cache-update thread (the channel
+// cache never warms; every git-url install refuses)
+const CHANNEL_URL = "https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main";
 const PINNED_CONFIG = [
   "[default]",
   "security_level = normal-",
@@ -25,7 +28,7 @@ const configFile = (runtime: string): string =>
   join(runtime, "user", "__manager", "config.ini");
 
 describe("pinManagerConfig", () => {
-  it("writes the Comfy-Org channel on a fresh install", () => {
+  it("writes the estate-proven ltdrdata channel on a fresh install", () => {
     const runtime = tempRuntime();
     pinManagerConfig(runtime);
     assert.equal(readFileSync(configFile(runtime), "utf8"), PINNED_CONFIG);

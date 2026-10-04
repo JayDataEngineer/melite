@@ -151,7 +151,12 @@ export function pinManagerConfig(runtime: string = RUNTIME): void {
     "security_level = normal-",
     "allow_git_url_install = true",
     "allow_pip_install = true",
-    "channel_url = https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/main",
+    // the estate-proven channel, NOT Manager 3.41's own Comfy-Org
+    // default: that one raises InvalidChannel in Manager's
+    // cache-update thread, the channel cache never warms, and every
+    // git-url install is refused with an empty-body 400 (the
+    // fresh-clone probe's pass-6 receipt)
+    "channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main",
   ];
   if (!existsSync(f)) {
     mkdirSync(dirname(f), { recursive: true });
