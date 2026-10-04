@@ -648,3 +648,24 @@ describe("resolveCardFamily — THE ROUTE-ADDRESS FOLD (ROADMAP §36.5)", () => 
     expect(svc.resolveCardFamily("not-a-model")).toBe("not-a-model");
   });
 });
+
+// ── THE RUN SEAT'S BOARD REFUSAL (batch-6 closure, 2026-10-14 —
+// O25e): phase1Card re-checks the board before it composes, and its
+// refusal is the write door's own voice — CardArmError 400
+// invalid_request, the same code the write door stamps. The wiring
+// arm's DISARM ride is here too: a null doc stands the wiring down.
+describe("phase1Card + armWiringFromDoc (the run-seat refusal and the disarm)", () => {
+  it("phase1Card refuses a model off the board with the write door's voice", async () => {
+    await expect(
+      svc.phase1Card({ model: "zzz-no-such-model", text: "a" }, "tts"),
+    ).rejects.toThrow(/not offered|no registered|not boarded/);
+  });
+  it("armWiringFromDoc(null) stands the wiring down (a cleared bench disarms)", () => {
+    const disarm = vi.fn();
+    const ctx2 = new Context();
+    ctx2.provide("comfyuiWiring" as never, { disarm } as never);
+    const svc2 = new CardRegistryService(ctx2);
+    svc2.armWiringFromDoc(null);
+    expect(disarm).toHaveBeenCalledTimes(1);
+  });
+});

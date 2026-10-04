@@ -1259,6 +1259,27 @@ describe("the bench @Remote adapters delegate with row fidelity", () => {
     assert.match(await codeOf(svc.remoteExportUngroup("x", {}, sig)), /^bench\/store-failed\|/);
     assert.match(await codeOf(svc.remoteExportUndo("x", {}, sig)), /^bench\/store-failed\|/);
   });
+
+  // ── the clear adapter (batch-6 closure, 2026-10-14 — O25o): the
+  // nuclear seat is a thin delegate like its siblings — row
+  // fidelity in-process, and the store-failed wrap on a bare ctx.
+  test("the clear adapter delegates with row fidelity (and wraps the open failure)", async () => {
+    const { ctx } = await bootCtx();
+    const svc = new BenchRemoteService(ctx);
+    await svc.remoteExportEnsure({ session: "cl" }, sig);
+    await svc.remoteExportAddStage("cl", { card: "hero", expect_rev: 0 }, sig);
+    await svc.remoteExportAddStage("cl", { card: "hero", expect_rev: 1 }, sig);
+    const cleared = await svc.remoteExportClear("cl", { expect_rev: 2 }, sig);
+    assert.equal(cleared.session, "cl");
+    assert.equal(cleared.rev, 3);
+    assert.equal(cleared.cleared, 2);
+    // the bench stands empty and still serves
+    const after = await svc.remoteExportGet("cl", sig);
+    assert.deepEqual(after.stages, []);
+    // the bare-ctx wrap
+    const bare = new BenchRemoteService(new Context());
+    assert.match(await codeOf(bare.remoteExportClear("x", {}, sig)), /^bench\/store-failed\|/);
+  });
 });
 
 // ── bench/subscribe (the push source: zero-state + rethrow arms) ───

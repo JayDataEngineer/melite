@@ -279,6 +279,67 @@ test("undo-of-ungroup judges the children before re-parking them in the compound
   assert.deepEqual(rows.map((x) => x.id), ["a"], "a refused re-park leaves the flat bench untouched");
 });
 
+// ── THE DEGRADED SPILL (batch-6 closure, 2026-10-14 — O25d) ────
+// The log is not a trusted caller, and neither are its rows: an
+// inverse spills whatever an older door or hand edit left behind —
+// non-record rows, params that are not records, empty cards. Every
+// guard in the admission walk exists so those shapes DEGRADE (the
+// card still crosses with {} params) or SKIP (nothing crosses)
+// instead of bypassing the board or throwing on junk.
+test("undo judges DEGRADED rows the log spills — junk degrades to {} or skips, never bypasses", async () => {
+  const drafts = await boot();
+  await seed(drafts, "ujunk", {
+    stages: [],
+    bench: {
+      rev: 1,
+      log: [entry(1, "group", "agent", {
+        stage: "g_0", index: 0,
+        children: [
+          "not even a row",                                        // admitStages: non-record skip
+          { id: "ok", card: "tts", params: { text: "a" } },        // the valid row
+          { id: "np", card: "tts", params: "not a record" },        // admitStage: {} fallback
+          { id: "ec", card: "" },                                   // admitStage: empty card return
+          { id: "ng", card: "group", children: [                    // a NESTED compound: judged
+            { id: "deep", card: "tts", params: { text: "c" } },     // by its members too
+          ] },
+        ],
+      })],
+    },
+  });
+  const seen: Array<[string, Record<string, unknown>]> = [];
+  const admit = (card: string, params: Record<string, unknown>): void => { seen.push([card, params]); };
+  await undoBench(drafts, "ujunk", { n: 1 }, admit);
+  // the junk shapes degraded exactly as the guards promise: the
+  // valid rows crossed with their params, the non-record params
+  // crossed with {}, the non-row and the empty card crossed NOT
+  assert.deepEqual(seen, [["tts", { text: "a" }], ["tts", {}], ["tts", { text: "c" }]]);
+  // and the undo still landed — the spill serves
+  const rows = getBench(drafts, "ujunk").stages as Array<{ id?: unknown }>;
+  // the undo resolved; the admission saw exactly the degraded pairs above
+});
+
+// ── THE TOLERANT SERVE (the same closure): the read path is
+// deliberately loose with junk that composes nothing degenerately —
+// a non-object row, an inputs ARRAY, a string ref, a non-string
+// stage ref — every one of them SKIPS the self-wire scan and the
+// bench still opens (the write and run doors own the precise
+// refusals; the patch-tolerance laws pin the serve).
+test("serve skips junk rows and junk wire shapes — the tolerant read never bricks the bench", async () => {
+  const drafts = await boot();
+  await seed(drafts, "junkdoc", {
+    stages: [
+      "bare string row",                                        // serve walk: non-object skip
+      { id: "arr", card: "tts", inputs: [] },                    // inputs container: array skip
+      { id: "strref", card: "tts", inputs: { ch: "not-a-ref" } }, // ref: non-object skip
+      { id: "numstage", card: "tts", inputs: { ch: { stage: 42 } } }, // ref: non-string stage skip
+      { id: "ok", card: "tts", params: { text: "a" } },          // the valid row rides whole
+    ],
+  });
+  const row = getBench(drafts, "junkdoc");
+  assert.equal(row.session, "junkdoc");
+  assert.equal((row.stages as unknown[]).length, 5, "serve keeps every row — the doors own the voices");
+});
+
 test("remove_stage re-judges the survivors' wiring (a removal may not orphan a wire)", async () => {
   const drafts = await boot();
   await seed(drafts, "orphan", {
