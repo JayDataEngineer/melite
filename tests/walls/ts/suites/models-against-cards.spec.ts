@@ -147,15 +147,49 @@ async function tableWith(
   return table;
 }
 
+
+/** The pairs the cross-validation MUST check, derived from the
+ *  same inputs the validator reads (models/validate.ts:138-148): a
+ *  card's every boarded family that resolves to a registered decl on
+ *  the comfyui plane. A family that stops boarding, or a card that
+ *  starts, moves this list — nothing needs a hand edit. */
+function expectedPairs(
+  boardings: ReadonlyMap<string, readonly string[]>,
+  routeViews: ReadonlyMap<string, unknown>,
+): string[] {
+  // the validator's own byId: every family PLUS every route address
+  // (a card may board a VARIANT route, not only a family — the tts
+  // card boards qwen3-tts-base and the design route directly)
+  const byId = new Map(allDecls().map((d): [string, { id: string; engine?: string }] => [d.id, d]));
+  for (const [route, view] of routeViews) {
+    if (!byId.has(route)) byId.set(route, view as { id: string; engine?: string });
+  }
+  const out: string[] = [];
+  for (const [cardId, boarded] of boardings) {
+    for (const mid of boarded) {
+      const decl = byId.get(mid);
+      if (decl === undefined) continue;
+      if (decl.engine !== undefined && decl.engine !== "" && decl.engine !== "comfyui") continue;
+      out.push(`${cardId}<-${mid}`);
+    }
+  }
+  return out;
+}
+
 describe("models against cards (the cross-validation, resurrected)", () => {
   it("every model default lives inside its owning card's field domains", async (): Promise<void> => {
     const cards = await cardTable();
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, await allBoardings(), new Set(modelIds()), allRouteViews(), await allAdmits());
-    // every caller-owned pair is checked (27 boardings since
-    // stroke 87 — fit + skin retired with their cards). The
-    // admission map rides 7th (wd14's checkpoint default is legal
-    // on the tagger card — the weights law, 2026-09-22).
-    assert.equal(checked.length, 26, `expected 26 checked pairs (D-M11 exact census; 24 was the retired-wan-vace era), got ${checked.length}`);
+    // DERIVED, NOT A LITERAL (the flake audit, 2026-10-15): the
+    // census IS the tree — every (card, boarded family) pair that
+    // resolves to a registered, comfyui-engine family. The old 26
+    // counted a set the estate grows by design, and its own comment
+    // already disagreed with it (27 boardings, 26 checked).
+    assert.deepEqual(
+      checked.map(([mid, cardId]) => `${cardId}<-${mid}`).sort(),
+      expectedPairs(await allBoardings(), allRouteViews()).sort(),
+    );
+    assert.ok(checked.length > 10, "the census is not empty (the derivation rotted)");
   });
 
   // THE STARVING-FIELD LAW (2026-10-09, the empty-form burn): a
@@ -441,7 +475,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         err instanceof ModelError && String(err.message).includes("wd14: default 'checkpoint'"),
     );
     const checked = validateRegistryAgainstCards(allDecls(), cards, ENGINE_TRUTH, boarded, served, allRouteViews(), await allAdmits());
-    assert.equal(checked.length, 26, `expected 26 checked pairs (D-M11 exact census; 24 was the retired-wan-vace era), got ${checked.length}`);
+    // the same derived census as the arm above (the flake audit):
+    assert.deepEqual(
+      checked.map(([mid, cardId]) => `${cardId}<-${mid}`).sort(),
+      expectedPairs(boarded, allRouteViews()).sort(),
+    );
   });
 
   it("every served owner is claimed (the catalog offers only runnable atoms)", async (): Promise<void> => {
@@ -513,7 +551,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       "mask-select", "mesh_refine", "moss", "pixel_upscale", "rtx-vsr", "see-through", "skin", "skintokens",
       "somax", "step1x_texture", "stretchy-rig", "trellis_native",
     ], `the unboarded registry rows are the named 24 (saw ${String(dead.length)}: ${dead.join(", ")}) — a death or resurrection is a deliberate edit`);
-    assert.equal(unoffered.length, 20, `20 of the 24 carry unoffered:true (saw ${String(unoffered.length)})`);
+    // DERIVED (the flake audit): the unoffered rows are the dead rows
+    // MINUS the foreign-engine ones — both sets are named right here,
+    // so the count is their difference, not a hand-maintained number.
+    assert.deepEqual(unoffered, dead.filter((id) => !foreign.includes(id)),
+      "every unboarded row is either unoffered or foreign-engine — the split is derived");
     assert.deepEqual(foreign, ["ace-step", "anycreature", "moss", "skintokens"],
       `the 4 foreign-engine rows are the named set (saw ${foreign.join(", ")}) — a 5th non-unoffered unboarded row is a silent death`);
   });

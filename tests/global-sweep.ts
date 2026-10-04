@@ -48,7 +48,7 @@ const SUITE_PREFIXES = [
   "estate-seam-", "facts-", "fakebin-", "film-mux-", "film-mux-bad-",
   "film-mux-na-", "film-mux-ro-", "flows-", "flows-state-", "leaf-",
   "leaf2-", "ledger-tail-", "manage-", "manage-remote-", "models-svc-",
-  "mount-", "place-", "place-out-", "pnpm-health-",
+  "melite-agent-audit-", "mount-", "place-", "place-out-", "pnpm-health-",
   "provisioner-wall-", "pyvalue-", "queue-", "runs-list-",
   "runs-list-model-", "runs-remote-", "runs-seat-", "runs-start-",
   "runstypes-", "skills-", "skills-seat-", "state-",

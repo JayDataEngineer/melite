@@ -35,10 +35,17 @@ import { join, dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { tmpdir } from 'node:os'
 import process from 'node:process'
+import { mkdtempSync, rmSync } from 'node:fs'
 
 const REPO = dirname(dirname(fileURLToPath(import.meta.url)))
-const HOME = join(tmpdir(), 'melite-agent-audit')
-const RUN_CWD = join(tmpdir(), 'melite-agent-audit-run')
+// MINT, NEVER A FIXED NAME (the flake audit, 2026-10-15): both were
+// join(tmpdir(), 'melite-agent-audit') and '...-run', so two
+// concurrent invocations shared ONE scratch DSH home and one cwd —
+// and neither name is in the sweeper's prefix table, so neither was
+// ever reclaimed. mkdtemp gives each run its own tree.
+const RUN_ROOT = mkdtempSync(join(tmpdir(), 'melite-agent-audit-'))
+const HOME = join(RUN_ROOT, 'home')
+const RUN_CWD = join(RUN_ROOT, 'cwd')
 const DSH = process.env.DSH_BIN ?? 'dsh'
 
 const TASK = 'AUDIT RUN — no generation, no runs, no melite_flow. '
@@ -163,3 +170,10 @@ if (!skipProvision && !existsSync(join(HOME, 'profiles/headless/node_modules')))
 else if (!skipProvision) provision()
 runAgent()
 audit()
+
+// The run's own tree is the caller's to reclaim: MTRACE_KEEP=1 keeps
+// it for inspection. Every other exit path (a refusal mid-run) leaves
+// the tree for the sweeper, whose prefix table carries this name.
+if (process.env.MTRACE_KEEP !== '1') {
+  rmSync(RUN_ROOT, { recursive: true, force: true })
+}
