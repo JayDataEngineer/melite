@@ -8,7 +8,9 @@
 // (the fresh-clone probe's pass-6 receipt).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { engineField, mergeOverlay } from "../scripts/provision-config.ts";
+import { join, relative } from "node:path";
+import { engineField, mergeOverlay, anchorDir } from "../scripts/provision-config.ts";
+import { REPO } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
 describe("engineField (root wins, endpoint file is the fallback)", () => {
@@ -47,5 +49,24 @@ describe("loadRoot + mergeOverlay (the overlay shadows keys, never the file)", (
     assert.equal(
       engineField(merged, "url", "http://127.0.0.1:8188"),
       "http://127.0.0.1:35455");
+  });
+});
+
+describe("anchorDir (explicit overrides anchor like the root config)", () => {
+  it("anchors a relative value to the repository, not the caller's CWD", () => {
+    assert.equal(anchorDir("data/models/store"),
+      anchorDir(anchorDir("data/models/store")));
+    assert.ok(anchorDir("data/x").endsWith(join("data", "x")));
+  });
+  it("keeps an absolute value unchanged", () => {
+    assert.equal(anchorDir("/mnt/store"), "/mnt/store");
+  });
+  it("makes the endpointWritable round trip stable (ledger li-paths-idempotence)", () => {
+    // absolute under repo -> stored repo-relative -> read back ->
+    // anchored to the SAME absolute: the pointer never dangles
+    const abs = anchorDir("data/models/image-gen");
+    const written = relative(REPO, abs);
+    assert.ok(abs.startsWith(REPO + "/"));
+    assert.equal(anchorDir(written), abs);
   });
 });

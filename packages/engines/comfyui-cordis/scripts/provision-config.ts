@@ -156,11 +156,17 @@ export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
     }
   }
   const root = loadRoot();
-  const base = rootStr(cfg.model_base_path) ||
+  // explicit endpoint overrides anchor EXACTLY like the root config
+  // (ledger li-paths-idempotence: raw rootStr left a relative
+  // override relative — a pointer dangling from whatever CWD ran the
+  // provisioner — and endpointWritable's under-repo rewrite then
+  // re-broke it on the next paths run; anchoring makes the round
+  // trip stable)
+  const base = anchorDir(rootStr(cfg.model_base_path)) ||
     joinBase(anchorDir(rootStr(root.models?.read_root)),
       rootStr(root.engines?.comfyui?.base));
-  const download = rootStr(cfg.model_download_path) ||
-    rootStr(cfg.model_base_path) ||
+  const download = anchorDir(rootStr(cfg.model_download_path)) ||
+    anchorDir(rootStr(cfg.model_base_path)) ||
     joinBase(anchorDir(rootStr(root.models?.download_root)),
       rootStr(root.engines?.comfyui?.base));
   if (!rootStr(root.models?.read_root)) {

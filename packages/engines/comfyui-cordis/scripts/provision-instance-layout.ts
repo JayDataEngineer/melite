@@ -2,7 +2,7 @@
 // Split from scripts/provision.ts (pure move — no logic changes).
 
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import { lstatSync, existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
 import { isAbsolute, join, relative, sep } from "node:path";
 import { DEFAULT_CONFIG, REPO, RUNTIME } from "./provision-shared.ts";
 import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot, rootStr } from "./provision-config.ts";
@@ -71,13 +71,13 @@ export function cmdPaths(cfg: EndpointConfig): void {
 }
 
 export function layDownloadPointers(downloadBase: string,
-    folders: Record<string, string>): void {
+    folders: Record<string, string>,
+    modelsDir: string = join(RUNTIME, "models")): void {
   // Every category dir inside the runtime is a symlink onto the
   // CONFIGURED destination, so every writer (comfy-cli, pack
   // auto-download, core) lands exactly where the endpoint config
   // says. Self-healing: real content moves first, then the pointer
   // is laid.
-  const modelsDir = join(RUNTIME, "models");
   mkdirSync(modelsDir, { recursive: true });
   for (const cat of Object.keys(folders).sort()) {
     const local = join(modelsDir, cat);
@@ -85,18 +85,22 @@ export function layDownloadPointers(downloadBase: string,
     try {
       if (realpathSync(local) === target) continue;
     } catch { /* not a correct pointer */ }
-    try {
-      const st = statSync(local, { throwIfNoEntry: false });
-      if (st?.isSymbolicLink?.() ?? false) unlinkSync(local);
-      else if (st?.isDirectory()) {
-        mkdirSync(target, { recursive: true });
-        for (const f of readdirSync(local)) {
-          const dest = join(target, f);
-          if (!existsSync(dest)) renameSync(join(local, f), dest);
-        }
-        rmSync(local, { recursive: true });
+    // lstat, not stat: stat follows the pointer, so a DANGLING link
+    // (target moved or deleted) reads as absent and the relink below
+    // dies EEXIST — the second `paths` run was fatal (ledger
+    // li-paths-idempotence). lstat sees the link itself: dangling or
+    // healthy, it is unlinked and re-laid; a stray plain file blocks
+    // the pointer the same way and is removed too.
+    const st = lstatSync(local, { throwIfNoEntry: false });
+    if (st?.isSymbolicLink() || st?.isFile()) unlinkSync(local);
+    else if (st?.isDirectory()) {
+      mkdirSync(target, { recursive: true });
+      for (const f of readdirSync(local)) {
+        const dest = join(target, f);
+        if (!existsSync(dest)) renameSync(join(local, f), dest);
       }
-    } catch { /* absent — lay below */ }
+      rmSync(local, { recursive: true });
+    }
     mkdirSync(target, { recursive: true });
     if (!existsSync(local)) symlinkSync(target, local);
   }
