@@ -7,7 +7,7 @@
 // the interlock halves are pure units over synthetic sets.
 import { describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -834,5 +834,119 @@ describe("the either_or floor is refused where the row is WRITTEN (the schema au
       assert.doesNotThrow(() => svc.registerFamily(decl),
         "two alternatives is the word's own shape — the gate refuses only below it");
     });
+  });
+});
+
+describe("the nested drift gates (each level names its own coordinates)", () => {
+  // The NESTED DRIFT LAW's uncovered half: the family-level strip
+  // test and the either_or floor have arms; the VARIANT-level strip
+  // test, the VARIANT's own relations, the family relations' unknown
+  // WORD, and the word-row's own unknown KEY did not. Each is the
+  // same law one level down — a typo MERGED instead of refused.
+  it("a variant row's unknown key refuses with the variant's coordinates", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ variants: [variant({ parmas: ["voice"] })] })),
+      /model row krea-2 variant v1: unknown key\(s\) refused.*parmas/,
+    );
+  });
+
+  it("a variant's own relations refuse an unknown word, naming the variant", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        variants: [variant({ relations: { requiers: [{ fields: ["a"] }] } })],
+      })),
+      /variant v1 relations: unknown relation word\/key refused.*requiers/,
+    );
+  });
+
+  it("the family's relations refuse an unknown word (the word list is read from the grammar)", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ relations: { requiers: [{ fields: ["a"] }] } })),
+      /relations: unknown relation word\/key refused.*requiers/,
+    );
+  });
+
+  it("a relation ROW's unknown key refuses with the row's own index", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({
+        relations: { required: [{ fields: ["a"], bogus: 1 }] },
+      })),
+      /relations: unknown relation word\/key refused.*required\[0\]\.bogus/,
+    );
+  });
+
+  it("a top-level params that is not an array refuses at the schema leg", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ params: "prompt" })),
+      /\$.params expected array but got prompt/,
+    );
+  });
+
+  // THE PRECEDENCE PINS (machine-checked proofs for the v8-ignored
+  // dead arms in validateDecl/relationDrift): each malformed shape
+  // below is refused by the SCHEMA leg before the hand check could
+  // see it, so the hand check's else-arm is unreachable through the
+  // public API. The arms are the proof the ignore markers name.
+  it("PRECEDENCE PIN: a non-array word value is refused by the schema, not the hand check", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ relations: { required: "nope" } })),
+      /\$.relations\.required expected array but got nope/,
+    );
+  });
+
+  it("PRECEDENCE PIN: a null row member is refused by the schema, not the hand check", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ relations: { required: [null] } })),
+      /\$.relations\.required/,
+    );
+  });
+
+  it("PRECEDENCE PIN: a non-array either_or groups is refused by the schema, not the hand check", () => {
+    assert.throws(
+      () => fresh().registerFamily(clone({ relations: { either_or: [{ groups: "nope" }] } })),
+      /\$.relations\.either_or/,
+    );
+  });
+
+  it("a cell artifact whose url ends in / skips the weights interlock (no filename to load)", () => {
+    // the continue arm of the recipe↔weights law: a source_url with
+    // no last segment names no file, so there is nothing the lane
+    // could fail to load — the row registers clean.
+    const art = { source_url: "https://x/", size_bytes: 1, sha256: "a".repeat(64), dest_root: "COMFYUI_ROOT", dest_sub: "" };
+    assert.doesNotThrow(() =>
+      fresh().registerFamily(clone({ variants: [variant({ cells: [cell({ artifact: art })] })] })));
+  });
+});
+
+describe("owningAtom (the fold read)", () => {
+  it("a route folds to its owning model; an atom owns itself; an unknown id passes through", () => {
+    const svc = fresh();
+    svc.registerFamily(clone({
+      id: "synth-a",
+      variants: [{ ...variant({ id: "v", route: "v-route" }) }],
+    }));
+    assert.equal(svc.owningAtom("v-route"), "synth-a", "a variant route folds to its family");
+    assert.equal(svc.owningAtom("synth-a"), "synth-a", "an atom owns itself");
+    assert.equal(svc.owningAtom("never-registered"), "never-registered", "unknown ids return as given — the callers' own filters refuse");
+  });
+});
+
+describe("checkModelPathPresent (the plugin-facing door)", () => {
+  it("finds a file on the runtime tree and misses an absent one, through the service method", () => {
+    const root = mintRoot();
+    const svc = fresh();
+    const rel = "checkpoints/probe.safetensors";
+    mkdirSync(join(root, "data", "runtime", "comfyui", "models", "checkpoints"), { recursive: true });
+    writeFileSync(join(root, "data", "runtime", "comfyui", "models", rel), "bytes");
+    assert.equal(
+      svc.checkModelPathPresent(rel, root),
+      join(root, "data", "runtime", "comfyui", "models", rel),
+      "the runtime tree answers first",
+    );
+    assert.equal(svc.checkModelPathPresent("checkpoints/absent.safetensors", root), null);
+  });
+
+  it("a bare call defaults to this repository's root and misses cleanly", () => {
+    assert.equal(fresh().checkModelPathPresent("no-such-dir-anywhere/x.safetensors"), null);
   });
 });

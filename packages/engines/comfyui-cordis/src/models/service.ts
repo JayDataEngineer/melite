@@ -271,6 +271,10 @@ function validateDecl(decl: ModelDecl): void {
       );
     });
   }
+  /* v8 ignore next 3 -- dead by precedence: the schema leg refuses
+   * a non-array $.params before this check can see it (pinned by
+   * the spec arm "a top-level params that is not an array refuses
+   * at the schema leg"). */
   if (decl.params !== undefined && !Array.isArray(decl.params)) {
     throw new ModelError(`${String(decl.id)}: params must be an array of field names`);
   }
@@ -355,8 +359,15 @@ function relationDrift(relations: Record<string, unknown>, where: string): strin
     const schema = words[key];
     if (schema === undefined) { out.push(key); continue }
     const rows = relations[key];
+    /* v8 ignore next 2 -- dead by precedence: the schema leg refuses
+     * a non-array word value before this check can see it (pinned by
+     * the spec arm "PRECEDENCE PIN: a non-array word value"). */
     if (!Array.isArray(rows)) continue;
     rows.forEach((row, i) => {
+      /* v8 ignore next 2 -- dead by precedence: the schema leg
+       * refuses a null row member before this check can see it
+       * (pinned by the spec arm "PRECEDENCE PIN: a null row
+       * member"). */
       if (row === null || typeof row !== 'object') return;
       for (const k of strippedKeys(row as Record<string, unknown>, schema, `${where}/${key}[${String(i)}]`)) {
         out.push(`${key}[${String(i)}].${k}`);
@@ -373,6 +384,10 @@ function relationDrift(relations: Record<string, unknown>, where: string): strin
       // it never invents a claim. One admission per door.)
       if (key === "either_or") {
         const groups = (row as { groups?: unknown }).groups;
+        /* v8 ignore next 2 -- dead by precedence: the schema leg
+         * refuses a non-array groups before this ternary's false arm
+         * can fire (pinned by the spec arm "PRECEDENCE PIN: a
+         * non-array either_or groups"). */
         const n = Array.isArray(groups) ? groups.length : 0;
         if (n < 2) {
           out.push(`${key}[${String(i)}].groups (${String(n)} alternative${n === 1 ? "" : "s"} — either_or is a choice between at least two sources; one source is the 'required' word)`);
