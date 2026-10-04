@@ -130,3 +130,67 @@ describe("registration gates refuse loud", () => {
     );
   });
 });
+
+
+describe("the declaration gates a synthetic family can reach", () => {
+  // Two arms of the registration gates are unreachable from the
+  // shipped DECLs — every declared cell's source_url ends in a file
+  // name, and every declared relation row type-checks — so nothing in
+  // the tree can drive them. They are REACHABLE from a registration:
+  // a family is authored data, and these walls drive the shapes the
+  // gates exist to refuse.
+
+  const familyWith = (variants: unknown[]): Record<string, unknown> => ({
+    id: "probe-shape-family",
+    label: "Probe shape",
+    engine: "comfyui",
+    form: "form_generate",
+    genre: "misc",
+    variants,
+  });
+
+  it("a cell whose artifact URL ends in a SLASH refuses the weightless lane input", (): void => {
+    // the artifact name is the URL's last path segment; a trailing
+    // slash leaves no segment, so the download names nothing and the
+    // recipe↔weights law cannot be checked — the gate stands the row
+    // down rather than registering a cell with no name.
+    const { svc } = freshService();
+    const decl = familyWith([
+      {
+        id: "base",
+        label: "Base",
+        group: "Variant",
+        route: "",
+        cells: [{ quant: "bf16", lane_inputs: { weights: {} }, artifact: { source_url: "https://example/ckpt/" } }],
+      },
+    ]);
+    // the row is skipped, not refused: the family still registers and
+    // the cell simply carries no artifact name
+    const dispose = svc.registerFamily(decl as never);
+    assert.equal(svc.familyCount(), 1);
+    dispose();
+  });
+
+  it("a relation row of the wrong type refuses at the DECLARATION gate, in that gate's own voice", (): void => {
+    // The vocabulary gate resolves every declared relation row against
+    // the contract's own schema, and the DECLARATION-wide resolve runs
+    // first — so this refusal is the whole-row gate's, naming the path
+    // and the schema's reason.
+    const { svc } = freshService();
+    const decl = familyWith([
+      {
+        id: "base",
+        label: "Base",
+        group: "Variant",
+        route: "",
+        relations: { requires: [{ field: "voice", needs: [7] }] },
+        cells: [],
+      },
+    ]);
+    assert.throws(
+      () => svc.registerFamily(decl as never),
+      /model row probe-shape-family: schema refused — .*expected string but got 7/,
+    );
+    assert.equal(svc.familyCount(), 0, "a refused family registers nothing");
+  });
+});

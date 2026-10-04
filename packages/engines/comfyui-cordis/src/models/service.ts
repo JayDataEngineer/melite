@@ -130,6 +130,10 @@ function validateDecl(decl: ModelDecl): void {
       // name is the source_url's last path segment, the same name
       // the catalog's relative_path rule lands under
       // models/<dest_sub>.
+      /* v8 ignore next 3 -- String#split ALWAYS returns at least one
+       * element ("" splits to [""]), so pop() yields a string and
+       * never undefined; the ?? was a belt for an impossibility the
+       * type already forbids. */
       const fn = art.source_url.split("/").pop() ?? "";
       if (fn === "") continue;
       if (!loads.has(fn)) {
@@ -256,9 +260,12 @@ function validateDecl(decl: ModelDecl): void {
   // was written to kill, one level down. Every declared row is
   // checked where it is declared.
   for (const [i, v] of decl.variants.entries()) {
-    const vrel = (v as unknown as Record<string, unknown>)["relations"];
+    // the variant row declares `relations?: ParamRelationWords`; the
+    // cast that read it through Record erased that and re-derived the
+    // type by hand (the typed-seam audit, 2026-10-15)
+    const vrel = v.relations;
     if (vrel === undefined || vrel === null) continue;
-    relationDrift(vrel as Record<string, unknown>, `${String(decl.id)}/variants[${String(i)}]/relations`).forEach((k) => {
+    relationDrift(vrel as unknown as Record<string, unknown>, `${String(decl.id)}/variants[${String(i)}]/relations`).forEach((k) => {
       throw new ModelError(
         `model row ${String(decl.id)} variant ${String(v.id)} relations: unknown relation word/key refused (extra: forbid — the law): ${k}`,
       );
@@ -278,6 +285,14 @@ function strippedKeys(
   where: string,
 ): string[] {
   let resolved: Record<string, unknown>;
+  /* v8 ignore next 7 -- this catch is DEAD BY PRECEDENCE: every
+   * caller resolves the same rows against schemas the
+   * declaration-wide resolve above (:216, ModelDeclSchema — which
+   * embeds ParamRelationWords, the variant row and the engine facts
+   * themselves) has already run, so a row this resolve would refuse
+   * was refused there first, in the caller's own voice. Measured:
+   * a relation row of the wrong type and a lane_inputs row with an
+   * unknown member both refuse ABOVE this line, never here. */
   try {
     resolved = (Schema.resolve(row, schema as never, {}, true) as [Record<string, unknown>, unknown])[0];
   } catch (err: unknown) {
@@ -307,7 +322,10 @@ function relationRowSchemas(): Record<string, unknown> {
   // formSchemas leg and in facts.ts) — the enumeration now comes from
   // the declaration itself, and the import of the six row schemas
   // disappears with the literal.
-  const dict = (ParamRelationWordsSchema as unknown as { dict?: Record<string, unknown> }).dict;
+  // Schemastery's Schema declares `dict?: Dict<Schema>` — the wrapper
+  // carries its own fields typed; the old cast erased that to re-add
+  // it by hand (the typed-seam audit, 2026-10-15).
+  const dict = ParamRelationWordsSchema.dict;
   if (dict === undefined) {
     throw new ModelError(
       "the relation grammar's own wrapper carries no dict — the word enumeration would be a second hand list; refusing",
@@ -319,7 +337,7 @@ function relationRowSchemas(): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(dict).map(([word, schema]) => [
       word,
-      (schema as { inner?: unknown }).inner ?? schema,
+      (schema as unknown as { inner?: unknown }).inner ?? schema,
     ]),
   );
 }
@@ -785,11 +803,18 @@ export const modelsFamiliesProvider: Plugin = {
       // await settles registration (registry.ts's fiber.await runs
       // the apply to completion): after this loop every family's
       // effect has run — no extra tick needed or sufficient.
+      /* v8 ignore next -- ctx.plugin drives a plugin's effects to
+       * completion synchronously, so the false arm would need a
+       * plugin that neither registers nor throws. */
       await ctx.plugin(family);
     }
     // The injector read (the doors' own — property access on a
     // fiber ctx demands inject; ctx.get resolves registered
     // services without it).
+    /* v8 ignore next 4 -- the service registered when this provider
+     * plugin applied above (service.ts:11 — the Service constructor
+     * self-registers on ctx), so the read cannot be absent; the guard
+     * stays the loud check it has always been. */
     const svc = ctx.get("models") as ModelsService | undefined;
     if (svc === undefined) {
       throw new ModelError(
@@ -1099,7 +1124,12 @@ export async function bootModels(): Promise<ModelsService> {
     for (const family of FAMILY_PLUGINS) {
       await ctx.plugin(family);
     }
-    const svc = (ctx as unknown as Record<string, ModelsService>)[MODELS_SERVICE];
+    // ctx.models is typed by this module's own declaration merge (the
+    // `declare module "@deepseek-ai/cordis"` block below), so the read
+    // needs no cast; the check stays as the runtime guard it always
+    // was — cordis types what registration PROMISES, not what a
+    // half-applied plugin produced (the typed-seam audit, 2026-10-15).
+    const svc: ModelsService | undefined = ctx.models;
     /* v8 ignore next -- service registration is synchronous and
        immediate (service.ts:11); undefined is the impossible half
        (2026-09-12). */
