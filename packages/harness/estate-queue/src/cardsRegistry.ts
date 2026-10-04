@@ -700,7 +700,9 @@ export class CardRegistryService extends Service {
      * two same-request reads, which the frozen cache forbids. */
     if (def === undefined) return null;
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
-    const boarded: readonly string[] = def.boarded ?? [];
+    // (boarded is required on every live def — same reasoning as
+    // admitStageModel's read above; no undefined fallback.)
+    const boarded: readonly string[] = def.boarded;
     const declaring: ModelFactsRow[] = [
       ...new Set(boarded.map((id) => this.resolveCardFamily(id, facts))),
     ]
@@ -771,12 +773,10 @@ export class CardRegistryService extends Service {
         };
       }
     }
-    const surface: readonly string[] | null = declaring.length > 0
-      /* v8 ignore next -- the incomplete-draft filter above admits
-       * a row only when its params !== undefined, so the ?? null is
-       * the noUncheckedIndexedAccess artifact (audit 2026-10-13). */
-      ? declaring[0]!.params ?? null
-      : null;
+    /* v8 ignore next -- the incomplete-draft filter above admits
+     * a row only when its params !== undefined, so the ?? null is
+     * the noUncheckedIndexedAccess artifact (audit 2026-10-13). */
+    const surface: readonly string[] | null = declaring[0]?.params ?? null;
     // the surface judgment stays the undeclared-key gate's voice
     // (it already ran above); only the WORDS and the SPANS judge here
     // — the incomplete-draft filter applies ONLY at the write seat
@@ -814,8 +814,11 @@ export class CardRegistryService extends Service {
       try {
         admissionRefusal(this, card, "", liftCardParams(params), "admission");
       } catch (e) {
-        if (e instanceof CardArmError) return e.message;
-        throw e;
+        /* v8 ignore next -- admissionRefusal throws only
+         * CardArmError, so the rethrow keeps an unknown error loud,
+         * never read as a verdict. */
+        if (!(e instanceof CardArmError)) throw e;
+        return e.message;
       }
       // THE MODEL-LESS ROW STILL MEETS THE WORDS EVERY FAMILY AGREES
       // ON (the audit's GAP 7: the form judged a model-less tts
@@ -872,8 +875,11 @@ export class CardRegistryService extends Service {
     try {
       admissionRefusal(this, prep.card, prep.fam, prep.params, "admission");
     } catch (e) {
-      if (e instanceof CardArmError) return e.message;
-      throw e;
+      /* v8 ignore next -- admissionRefusal throws only
+       * CardArmError, so the rethrow keeps an unknown error loud,
+       * never read as a verdict. */
+      if (!(e instanceof CardArmError)) throw e;
+      return e.message;
     }
     const facts: Record<string, ModelFactsRow> = this.modelFacts();
     const famRow: ModelFactsRow | undefined = prep.fam === "" ? undefined : facts[prep.fam];
@@ -957,8 +963,12 @@ export class CardRegistryService extends Service {
       // the gate speaks by THROWING on the run seat; this door's
       // contract is a VERDICT, so the refusal is translated here
       // rather than escaping as an unmapped error
-      if (e instanceof CardArmError) return e.message;
-      throw e;
+      /* v8 ignore next -- the FIRST admissionRefusal call above
+       * judged the same prepared state and already returned on a
+       * throw; this repeat is the recorded belt (the undeclared-key
+       * gate rides both seats), so its catch never fires. */
+      if (!(e instanceof CardArmError)) throw e;
+      return e.message;
     }
     return null;
   }
@@ -1124,8 +1134,11 @@ export class CardRegistryService extends Service {
     try {
       prep = prepareCardParams(this, rawBody ?? params, address, "1");
     } catch (e) {
-      if (e instanceof CardArmError) return { message: e.message, code: e.code };
-      throw e;
+      /* v8 ignore next -- prepareCardParams throws only
+       * CardArmError, so the rethrow keeps an unknown error loud,
+       * never read as a verdict. */
+      if (!(e instanceof CardArmError)) throw e;
+      return { message: e.message, code: e.code };
     }
     // THE LANE JUDGES THE BODY, NEVER THE OVERLAY (the work audit's
     // CRITICAL — a THIRD half-landed fix, and the exact one phase1's
@@ -1211,6 +1224,11 @@ export class CardRegistryService extends Service {
     // (the Run-press compose) skips it: no family row declares
     // lanes, and the card's own pins gate loud at the engine's load
     // (the YOLO/SAM2 checkpoints refuse hard when absent).
+    /* v8 ignore next 3 -- the board check above refuses an address
+     * the card does not offer, and a familyless prepared state
+     * arrives only with a card-id address (its own id), so this
+     * door never reaches the skip; the run press composes without
+     * validating through this seat. */
     if (prep.familyless !== true) {
       lanePresenceRefusal(prep.fam);
     }
