@@ -13,6 +13,7 @@ import {
   clearStaleInstall,
   ensureManagerGitUrlAllowed,
   installedHead,
+  landedVerdict,
   urlInstalled,
 } from "../scripts/provision-extensions-install.ts";
 import { symlinkSync, existsSync } from "node:fs";
@@ -130,4 +131,64 @@ describe("clearStaleInstall", () => {
   });
 
   it("cleans up", () => { rmSync(dir, { recursive: true, force: true }); });
+});
+
+describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
+  // The runtime provider fails closed on the landed commit
+  // (manager-provider.ts:415-432) and the CLI step now speaks the
+  // same law: a declared pin is checked against the commit on disk,
+  // and a row that reports none is unverifiable, not a pass.
+  const workspace = mkdtempSync(join(tmpdir(), "melite-ext-verdict-"));
+  const url = "https://github.com/JayDataEngineer/melite-tts-nodes";
+
+  // the dir is DERIVED from the url (the door's own rule), so a row
+  // is only ever read at custom_nodes/<repo-name>.
+  const landAClone = (dir: string, head: string): void => {
+    const path = join(workspace, "custom_nodes", dir);
+    mkdirSync(path, { recursive: true });
+    execSync("git init -q . && git config user.email t@t && git config user.name t && " +
+      "git commit -q --allow-empty -m seed", { cwd: path, encoding: "utf8" });
+    execSync("git remote add origin " + url, { cwd: path, encoding: "utf8" });
+    if (head !== "") execSync("git reset -q --hard " + head, { cwd: path, encoding: "utf8" });
+  };
+
+  const commit = (dir: string): string => execSync("git rev-parse HEAD", {
+    cwd: join(workspace, "custom_nodes", dir),
+    encoding: "utf8",
+  }).trim();
+
+  it("a clone at the declared ref passes — the step's own equality", () => {
+    landAClone("melite-tts-nodes", "");
+    const head = commit("melite-tts-nodes");
+    assert.equal(landedVerdict("melite-tts-nodes", url, head, workspace), "");
+  });
+
+  it("the SAME clone, advanced one commit, is drift — named with both shas", () => {
+    const clone = join(workspace, "custom_nodes", "melite-tts-nodes");
+    const atPin = commit("melite-tts-nodes");
+    execSync("git commit -q --allow-empty -m drift && git rev-parse HEAD", {
+      cwd: clone,
+      encoding: "utf8",
+    }).trim();
+    const verdict = landedVerdict("melite-tts-nodes", url, atPin, workspace);
+    assert.match(verdict, /landed at/);
+    assert.match(verdict, /but the declaration pins/);
+  });
+
+  it("a row that reports no landed commit is unverifiable — never a pass", () => {
+    // the impact packs' shape: Manager installed a zip (a version,
+    // no .git), so nothing landed that could be compared.
+    mkdirSync(join(workspace, "custom_nodes", "zip-only"), { recursive: true });
+    assert.match(
+      landedVerdict("comfyui-impact-pack",
+        "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+        "5bed9d5545ef430406a5d6d7233e5c0a5e75051a", workspace),
+      /reports no landed commit/,
+    );
+  });
+
+  it("a row with no declared ref carries no verdict (the registry install)", () => {
+    assert.equal(landedVerdict("comfyui-impact-pack",
+      "https://github.com/ltdrdata/ComfyUI-Impact-Pack", "", workspace), "");
+  });
 });

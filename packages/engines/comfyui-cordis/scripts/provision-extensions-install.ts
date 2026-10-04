@@ -55,6 +55,33 @@ export function installedHead(workspace: string, dir: string): string {
   } catch { return ""; }
 }
 
+/** The landed-HEAD verdict for one row, in the runtime provider's
+ *  law (manager-provider.ts:415-432): a declared pin is verified
+ *  against the commit on disk, and a row that cannot report one is
+ *  unverifiable — its own refusal, not a pass. A row with no pin is
+ *  a registry install (the impact packs) and carries no commit by
+ *  design.
+ *  @returns "" when the row's landed state is the declared one. */
+export function landedVerdict(
+  name: string,
+  url: string,
+  ref: string,
+  workspace: string,
+): string {
+  if (ref === undefined || ref === "") return "";
+  const dir = url.replace(/\/+$/, "").replace(/\.git$/, "").split("/").pop() ?? "";
+  const head = installedHead(workspace, dir);
+  if (head === "") {
+    return "reports no landed commit — the declared ref " + ref +
+      " cannot be verified (the pack did not land as a git clone)";
+  }
+  if (!head.startsWith(ref) && !ref.startsWith(head)) {
+    return "landed at " + head.slice(0, 10) + " but the declaration pins " +
+      ref.slice(0, 10) + " (the pin is the truth)";
+  }
+  return "";
+}
+
 /** Idempotently pin allow_git_url_install = true in the manager's
  *  config.ini — the flag gate for unknown-URL queue installs
  *  (read once at engine startup; a change needs a restart).
@@ -143,8 +170,17 @@ export async function stepExtensions(): Promise<boolean> {
       continue;
     }
     if (urlInstalled(url, workspace)) {
+      // AN ALREADY-PRESENT ROW IS STILL A DECLARED ROW: the law is
+      // that every pinned row's LANDED HEAD is verified, not only the
+      // ones this run installed.
+      const drift = landedVerdict(name, url, ref, workspace);
+      if (drift !== "") {
+        warn("  [" + name + "] " + drift);
+        counts.failed += 1;
+        continue;
+      }
       counts.skipped += 1;
-      info("  [" + name + "] already in custom_nodes — skipping");
+      info("  [" + name + "] already in custom_nodes at the declared ref — skipping");
       continue;
     }
     if (DRY) {
@@ -194,11 +230,18 @@ export async function stepExtensions(): Promise<boolean> {
           " at custom_nodes/" + row.url.split("/").pop() +
           " — Manager owns this path now");
       }
-      info("  [" + row.name + "] manager git_url install — " + row.url);
+      // THE PIN RIDES THE DOOR (the same spelling the estate's
+      // runtime provider uses, manager-provider.ts:402): Manager
+      // checks the @suffix out, so a URL without it installs whatever
+      // the branch points at today and floats.
+      const target = row.ref === undefined || row.ref === ""
+        ? row.url
+        : row.url + "@" + row.ref;
+      info("  [" + row.name + "] manager git_url install — " + target);
       const res = await fetch(endpoint + "/customnode/install/git_url", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: row.url }),
+        body: JSON.stringify({ url: target }),
         signal: AbortSignal.timeout(900_000),
       });
       if (!res.ok) {
@@ -216,15 +259,10 @@ export async function stepExtensions(): Promise<boolean> {
         continue;
       }
       counts.installed += 1;
-      if (row.ref) {
-        const dir = row.url.replace(/\/+$/, "").replace(/\.git$/, "")
-          .split("/").pop() ?? "";
-        const head = installedHead(workspace, dir);
-        if (head !== "" && head !== row.ref) {
-          warn("  [" + row.name + "] installed at " + head.slice(0, 10) +
-            " but the declaration pins " + row.ref.slice(0, 10) +
-            " — audit the drift deliberately (the pin is the truth)");
-        }
+      const drift = landedVerdict(row.name, row.url, row.ref, workspace);
+      if (drift !== "") {
+        warn("  [" + row.name + "] " + drift);
+        counts.failed += 1;
       }
     }
   }

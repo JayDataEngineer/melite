@@ -23,7 +23,7 @@
 extensions:
   - name: melite-kimodo-nodes
     url: https://github.com/JayDataEngineer/melite-kimodo-nodes
-    version: 0.1.0
+    ref: 4a15bf4d2e72405116d1ac56a190e9daec0442ee
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:
@@ -41,7 +41,7 @@ extensions:
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
     version: 0.1.0
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
-    ref: 26ee7e0ee456177817a77dc3885ef4957d37b7fd
+    ref: ad93b67e15102301c9e013fe689b2a2ebd7288f6
     required: false
     desc: >-
       In-tree quad-remesh pack: vendored huxingyi/autoremesher CLI
@@ -58,11 +58,11 @@ extensions:
   # estate refused 3d lanes it had no way to satisfy.
   - name: melite-blender-proxy-nodes
     url: https://github.com/JayDataEngineer/melite-blender-proxy-nodes
-    version: 0.1.0
+    ref: c550e7f024a6291a8221bd5f869d9fb36fdfa0df
     required: true
     desc: Blender bridge (MeliteBlenderExport/MCPCall/RunScript/RenderShot) — the Blender export lane.
   - name: melite-unity-nodes
     url: https://github.com/JayDataEngineer/melite-unity-nodes
-    version: 0.1.0
+    ref: e0608551a71d2e60e91f809e0477a40f2c5aac69
     required: true
     desc: Unity bridge (MeliteUnityBatch) — the Unity batch lane.

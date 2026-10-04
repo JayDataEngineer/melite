@@ -10,6 +10,23 @@
 // is written, imported, or executed by this tool; no external
 // manager binary, MCP server, or comfy-cli is spawned.
 //
+// THE CARVE-OUTS, named (the law, 2026-10-15): ComfyUI-Manager is the
+// only vendor of EXTENSIONS, with exactly two seats that install the
+// door itself or work outside the lane, both pinned and both gated:
+//   1. the manager itself — `sync` vendors ComfyUI-Manager into
+//      custom_nodes at manager.pin and installs its own requirements,
+//      because a vendor cannot install itself; cmdVerify fails when the
+//      landed manager ref drifts from the pin;
+//   2. the commercial venv (provision-commercial.ts) — a SEPARATE
+//      engine the anny-commercial lane runs, cloned outside the managed
+//      runtime and never served by this estate's doors.
+// Nothing else clones, copies, or symlinks an extension into
+// custom_nodes: every declared row rides POST
+// /customnode/install/git_url with its ref in the URL, and its landed
+// HEAD is verified against that ref (fail-closed — a row that reports
+// no commit is unverifiable, not a pass). A row Manager installs from
+// the REGISTRY carries no commit by design and declares no ref.
+//
 // Instance provisioning — one interface, two modes:
 //   byo (default)  the user's own ComfyUI, anywhere. VERIFIED, never installed.
 //   managed        a lockfile-pinned ComfyUI under data/runtime/comfyui/

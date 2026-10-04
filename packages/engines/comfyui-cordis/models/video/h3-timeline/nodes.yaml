@@ -13,13 +13,13 @@ extensions:
     url+ref the reference estate executes.'
 - name: Comfyui-PlagueKind-Nodes
   url: https://github.com/PlagueKind/Comfyui-PlagueKind-Nodes.git
-  ref: 01f186e
+  ref: 01f186eefedbb607503a0b207d6f66aa8a5f4b5a
   required: true
   pip:
   - comfy-kitchen==0.2.31
   desc: "H3SLAAttention (SLA sparse attention), H3AdaLNLoRAFix, ComfySwitchNode, PlagueKindBundleIn/Out\
     \ (the 20-slot reference-media bus, load-bearing since move C), unified resize.\
-    \ Pinned v1.4.2 (01f186e) \u2014 the ref the estate EXECUTED for the 2026-09-01\
+    \ Pinned v1.4.2 (01f186eefedbb607503a0b207d6f66aa8a5f4b5a) \u2014 the ref the estate EXECUTED for the 2026-09-01\
     \ contest piece (run-6a96c100); container copy verified pristine at this ref.\
     \ Upstream has since tagged v1.4.3 (066ada9); re-pin only with a lane re-render."
 - name: ComfyUI-VideoHelperSuite
@@ -55,7 +55,7 @@ extensions:
   desc: RTXVideoSuperResolution (bypassed group; class must register).
 - name: melite-utility-nodes
   url: https://github.com/JayDataEngineer/melite-utility-nodes
-  version: 0.1.0
+  ref: e5e5e610f0a8236adedc9c30656a75e2896f5919
   required: true
   desc: >-
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary

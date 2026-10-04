@@ -11,6 +11,6 @@
 extensions:
 - name: melite-autorig-nodes
   url: https://github.com/JayDataEngineer/melite-autorig-nodes
-  version: 0.1.0
+  ref: b4f86c78d9e03e7da3f6ad561022263d2bb3e91b
   required: true
   desc: KimodoTransferWeights (GPU KNN weight transfer) + SaveRiggedModel (persist). Requires Blender binary on PATH (FBX export).

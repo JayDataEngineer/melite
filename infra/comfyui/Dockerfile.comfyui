@@ -1,12 +1,13 @@
 # ============================================================================
 # ComfyUI executor image — docker WRAPS the self-bootstrap.
 #
-# The image carries only the engine runtime (python + comfy-cli + a ComfyUI
-# workspace). The bootstrap itself (bootstrap.py + plugins/ declarations +
-# infra/patches) is bind-mounted from the repo at /opt/inference-src, and the
-# entrypoint runs the EXACT commands bare metal runs:
+# The image carries only the engine runtime (python + comfy-cli + node + a
+# ComfyUI workspace). The bootstrap itself (the provisioner + nodes.yaml
+# declarations + infra/patches) is bind-mounted from the repo at
+# /opt/inference-src, and the entrypoint runs the EXACT commands bare metal
+# runs:
 #
-#     python3 tools/provision.py all   (comfy-mcp in-process)
+#     pnpm run provision -- all       (the typescript provisioner)
 #     exec .venv/bin/python main.py --listen 0.0.0.0 --port 18465
 #
 # Extensions land pinned, models land sha256-verified into the models volume.

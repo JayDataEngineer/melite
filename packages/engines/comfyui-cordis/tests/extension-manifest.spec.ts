@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { execFileSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { IMPACT_PACKS } from "@melite/comfyui-card-kit/impact";
@@ -109,6 +110,64 @@ describe("Impact extension declaration SSOT", () => {
   it("both manifest rows carry their required activation node types", () => {
     for (const name of requirements) {
       assert.deepEqual(facts.extension_node_types[name], [...pins[name as keyof typeof pins].nodeTypes]);
+    }
+  });
+});
+
+describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
+  // Manager is the only vendor, and the estate verifies the LANDED
+  // HEAD of every row it installed. A row the runtime installs by
+  // git_url but declares WITHOUT a ref can never be verified — the
+  // runtime arm returns "installed" on trust. So every git_url row
+  // declares its ref, and only a row Manager installs from the
+  // REGISTRY (no .git, no sha — the 2026-10-13 Impact decision) may
+  // go without one, named in one place.
+  const REGISTRY_ROWS: readonly string[] = [...IMPACT_PACKS];
+
+  it("every git_url row declares the ref its landed HEAD is verified against", () => {
+    const unpinned = manifest
+      .filter((row) => row.url !== undefined && (row.ref === undefined || row.ref === ""))
+      .map((row) => row.name);
+    assert.deepEqual(
+      unpinned,
+      REGISTRY_ROWS.filter((name) => unpinned.includes(name)),
+      `unpinned rows outside the registry install set: ${unpinned
+        .filter((name) => !REGISTRY_ROWS.includes(name))
+        .join(", ")}`,
+    );
+  });
+
+  it("a declared ref is a full commit sha — a branch or a tag is not a landed HEAD", () => {
+    for (const row of manifest) {
+      if (row.ref === undefined || row.ref === "") continue;
+      assert.match(
+        row.ref,
+        /^[0-9a-f]{40}$/u,
+        `row ${row.name} declares ref ${row.ref}, which is not a commit sha`,
+      );
+    }
+  });
+
+  it("the first-party packs' pins equal their vendored submodule commits", () => {
+    // ONE TRUTH: the manifest pin and .gitmodules' commit are the
+    // same line of the estate's history. If they drift, the vendored
+    // tree and the door that installs it name different commits.
+    const declared = new Map(
+      manifest.filter((row) => row.url?.startsWith("https://github.com/JayDataEngineer/") === true)
+        .map((row) => [row.name, row.ref]),
+    );
+    for (const [name, ref] of declared) {
+      if (ref === undefined || ref === "") continue;
+      const path = `vendor/comfyui_extensions/${name}`;
+      const vendored = execFileSync("git", ["submodule", "status", path], {
+        cwd: repoRoot,
+        encoding: "utf8",
+      }).trim().split(" ")[0] ?? "";
+      assert.equal(
+        vendored.startsWith("-") || vendored.startsWith("+") ? vendored.slice(1) : vendored,
+        ref,
+        `${name}: the manifest pins ${ref.slice(0, 8)} but .gitmodules vendors ${vendored.slice(0, 8)}`,
+      );
     }
   });
 });

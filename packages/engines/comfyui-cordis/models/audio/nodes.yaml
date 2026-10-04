@@ -8,17 +8,17 @@ extensions:
   # extension_lane manifest refused to serve.
   - name: melite-tts-nodes
     url: https://github.com/JayDataEngineer/melite-tts-nodes
-    version: 0.1.0
+    ref: ac72e6a86db65699c01ed966cd79a6039dc42f6e
     required: true
     desc: Qwen3-TTS synthesis, voice embeddings, Voice Studio (.qvoice) — tts/voice-lock lanes.
   - name: melite-sfx-nodes
     url: https://github.com/JayDataEngineer/melite-sfx-nodes
-    version: 0.1.0
+    ref: 86b169b0978f7d97f6222dad33748ffcc5bd0f55
     required: true
     desc: MOSS-SFX v2 diffusion — the sfx lane.
   - name: melite-audio-nodes
     url: https://github.com/JayDataEngineer/melite-audio-nodes
-    version: 0.1.0
+    ref: 30f1f604d53513c848fbd924642fe52835f311da
     required: true
     desc: >-
       The audio core pack, and the ONLY owner of MeliteQVoiceCopy — the
