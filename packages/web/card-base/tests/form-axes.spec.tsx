@@ -7,6 +7,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
+import { composeCandidateDoc, composeValidate } from '../src/spec.ts'
 import type { FormSpecDoc, SpecValues, VariantRow } from '../src/spec.ts'
 
 import { ModelAxes, PackPrompt, useFormSpec } from '../src/form.tsx'
@@ -585,7 +586,6 @@ test('THE VOCABULARY LAW: a Quant pick stamps the cell quant, never the catalog 
   expect(onSet).not.toHaveBeenCalled()
   // AND the composed doc is CLEAN under the door's own law — the
   // seat's refusal can never compose again
-  const { composeValidate, composeCandidateDoc } = require('../src/spec.ts') as typeof import('../src/spec.ts')
   const candidate = composeCandidateDoc(
     { model: 'krea-2', variant: 'turbo', quant: 'int8', steps: 4, cfg: 1 },
     {},
