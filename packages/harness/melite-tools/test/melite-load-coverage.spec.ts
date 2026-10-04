@@ -99,3 +99,112 @@ describe('melite_load family pack seats', () => {
     expect(text).not.toContain('controlnet[]')
   })
 })
+
+// The lane-law words are rendered from DECL-declared relation rows, and
+// every word arm is a shape arm: a row whose fields are not an array,
+// an empty field list, a bounds row with no floor. A JSON-authored
+// bundle can carry all of them, so the renderer's tolerance is the
+// behavior under test — an agent composing from this bundle must be
+// told the laws that ARE declared and never handed a crash or a word
+// built from undefined.
+describe('the lane-law words render from sparse relation rows', () => {
+  test('a declared word with its full shape rides the line', () => {
+    const text = render({
+      signature: {
+        params_schema: { properties: {} },
+        modifiers: [],
+        lanes: {
+          qwen3_tts: {
+            base: ['text'],
+            relations: {
+              requires: [{ field: 'voice', needs: ['vivian'] }],
+              together: [{ fields: ['steps', 'cfg'] }],
+              conflicts: [{ a: 'ref_audio', b: 'ref_video' }],
+              either_or: [{ groups: [['steps'], ['cfg']] }],
+              required: [{ fields: ['text'] }],
+              at_most_one: [{ fields: ['loft', 'depth'] }],
+            },
+            bounds: { steps: { min: 4, max: 8 } },
+          },
+        },
+      },
+    })
+    expect(text).toContain('requires(voice → vivian)')
+    expect(text).toContain('together(steps × cfg)')
+    expect(text).toContain('conflicts(ref_audio × ref_video)')
+    expect(text).toContain('either_or((steps) | (cfg))')
+    expect(text).toContain('required(text)')
+    expect(text).toContain('at_most_one(loft | depth)')
+    expect(text).toContain('bounds(steps 4…8)')
+  })
+
+  test('a sparse row never becomes a word built from undefined', () => {
+    // each row here breaks one shape: needs not an array, fields not an
+    // array, groups not an array, an EMPTY field list, and a bounds row
+    // with neither a floor nor a ceiling
+    const text = render({
+      signature: {
+        params_schema: { properties: {} },
+        modifiers: [],
+        lanes: {
+          qwen3_tts: {
+            base: ['text'],
+            relations: {
+              requires: [{ field: 'voice', needs: 'vivian' }],
+              together: [{ fields: 'steps' }],
+              either_or: [{ groups: 'nope' }],
+              required: [{ fields: [] }, { fields: 'text' }],
+              at_most_one: [{ fields: [] }, { fields: 'loft' }],
+            },
+            bounds: { top_p: {} },
+          },
+        },
+      },
+    })
+    expect(text).toContain("requires(voice → )")
+    expect(text).not.toContain('together(')
+    expect(text).not.toContain('either_or(')
+    expect(text).not.toContain('required(')
+    expect(text).not.toContain('at_most_one(')
+    expect(text).toContain('bounds(top_p ..…..)')
+  })
+
+  test('a variant with an EMPTY bounds map says no bounds at all', () => {
+    // an empty object is not a span: the word would read "bounds()"
+    const text = render({
+      signature: {
+        params_schema: { properties: {} },
+        modifiers: [],
+        lanes: {
+          qwen3_tts: {
+            base: [],
+            variants: { turbo: { bounds: {} } },
+          },
+        },
+      },
+    })
+    expect(text).toContain('turbo')
+    expect(text).not.toContain('bounds(')
+  })
+
+  test('a variant row with no params rides as its bare name', () => {
+    const text = render({
+      signature: {
+        params_schema: { properties: {} },
+        modifiers: [],
+        lanes: {
+          qwen3_tts: {
+            base: [],
+            variants: {
+              turbo: { bounds: { speed: { min: 1, max: 3 } } },
+              plain: { params: 'not-a-list', relations: {} },
+            },
+          },
+        },
+      },
+    })
+    expect(text).toContain('turbo')
+    expect(text).toContain('bounds(speed 1…3)')
+    expect(text).not.toContain('+not-a-list')
+  })
+})
