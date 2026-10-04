@@ -14,6 +14,7 @@ import {
   axisGroups,
   axisKey,
   axisPickPatch,
+  composeValidate,
   composingRows,
   fieldVisible,
   fieldsOf,
@@ -446,4 +447,75 @@ test('THE EDIT COERCION: blank and unparseable strings ride verbatim', () => {
   expect(coerceFieldEdit(num, '12')).toBe(12)
   expect(coerceFieldEdit(num, 'abc')).toBe('abc') // unparseable rides verbatim (the loud backstop)
   expect(coerceFieldEdit(undefined, '')).toBe('') // undeclared keys ride untouched (the mod bag's own law)
+})
+
+// ── composeValidate — THE DOOR-MIRRORED GATE (#37's second half):
+// the client's a-priori compose lint must spell the SAME three
+// clauses the run door judges: unknown variant (against the door's
+// pool, Recipe/Quant rows excluded), unknown quant (against the
+// RESOLVED variant's cells — never the still-held variant), and the
+// sampler envelope (against the resolved variant's own domain).
+// Every arm here constructs the refusal it names. ──
+
+// the fixture with the two clauses the shared doc() lacks: an
+// envelope-carrying variant and a Quant cell owned by the FIRST
+// pool row (the unstated-variant default).
+function gateDoc(): FormSpecDoc {
+  const base = doc()
+  return {
+    ...base,
+    variants: [
+      ...(base.variants ?? []),
+      V('r-env', 'Variant', { sampler_envelope: { steps: [1, 64], cfg: [1, 2] } }),
+      V('q-env-only', 'Quant', { owner: 'r-hd' }),
+    ],
+  } as unknown as FormSpecDoc
+}
+
+test('composeValidate: an off-pool variant refuses naming the door pool (Recipe excluded)', () => {
+  const out = composeValidate(gateDoc(), { variant: 'nope' })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toBe(
+    'card_compose: unknown variant "nope" for model "krea-2" (known: r-hd, r-sd, r-empty, r-env)',
+  )
+})
+
+test('composeValidate: an unknown quant refuses against the RESOLVED variant, cells named', () => {
+  const out = composeValidate(gateDoc(), { variant: 'r-hd', quant: 'zzz' })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toBe(
+    'card_compose: unknown quant "zzz" for model "krea-2" variant "r-hd" (known: q-hd-only, q-env-only)',
+  )
+})
+
+test('composeValidate: an unstated variant is a RESOLUTION (pool[0]), never a skip — the quant is judged against it', () => {
+  // unstated variant resolves r-hd; a stated quant that is no cell
+  // of r-hd refuses, exactly as the door does after a half-switch
+  const out = composeValidate(gateDoc(), { quant: 'zzz' })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toContain('unknown quant "zzz" for model "krea-2" variant "r-hd"')
+})
+
+test('composeValidate: a route-spelled variant is legal at the door and legal here', () => {
+  // every fixture row carries route 'krea-2' — the door matches id
+  // OR route, and so must the mirror
+  expect(composeValidate(gateDoc(), { variant: 'krea-2', quant: 'q-hd-only' })).toEqual([])
+})
+
+test('composeValidate: the envelope clause fires against the RESOLVED variant, cure appended', () => {
+  const out = composeValidate(gateDoc(), { variant: 'r-env', cfg: 9 })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toBe(
+    'card_compose: stated cfg 9 is OUTSIDE the route envelope for variant "r-env" (route krea-2) — the declared envelope is [1, 2]. '
+      + 'The variant rail owns its sampler marriage: state values inside the envelope, or pick a different route.',
+  )
+  // inside the envelope: caller agency, no refusal
+  expect(composeValidate(gateDoc(), { variant: 'r-env', cfg: 1.5 })).toEqual([])
+})
+
+test('composeValidate: a doc held by ANOTHER model is not this spec\'s law; a null spec judges nothing', () => {
+  expect(composeValidate(gateDoc(), { model: 'other-model', variant: 'nope' })).toEqual([])
+  // an EMPTY held model keeps judging (blank is not a handoff)
+  expect(composeValidate(gateDoc(), { model: '', variant: 'nope' }).length).toBe(1)
+  expect(composeValidate(null, { variant: 'nope' })).toEqual([])
 })
