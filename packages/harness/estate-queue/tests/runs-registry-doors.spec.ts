@@ -14,7 +14,7 @@ import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 import { DECL as FIT_DECL } from "../../../models/fit/src/index.ts";
 import { DECL as SKIN_DECL } from "../../../models/skin/src/index.ts";
-import { RunsRuntimeService } from "../src/runsRegistry.ts";
+import { RunsRuntimeService, benchWiring } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
@@ -1534,5 +1534,193 @@ describe("the wired-bench law — the run is real, and authorship makes no diffe
       sig(),
     )) as { run_id: string };
     assert.ok(ans.run_id !== "", "an engine-less card stage composes — the door derives the card plane's engine");
+  });
+});
+
+// ── THE WIRE CENSUS (benchWiring, the pure projection): the door's
+//    self-wire and cross-wire discrimination reads THIS fold, so its
+//    own tolerances are law — junk rows, junk inputs, and entries
+//    that are not stage wires contribute NOTHING, and a wire's label
+//    carries the output port only when it names one. ──────────────
+
+describe("benchWiring (the pure wire census)", () => {
+  it("junk rows and junk inputs contribute nothing, never throw", () => {
+    const w = benchWiring({
+      stages: [
+        null,
+        "a bare string row",
+        { id: "s_0" },
+        { id: "s_1", inputs: null },
+        { id: "s_2", inputs: "junk" },
+        { id: "s_3", inputs: ["array"] },
+        { id: "s_4", inputs: {} },
+      ],
+    });
+    assert.deepEqual(w, { cross: [], self: [] });
+  });
+
+  it("entries that are not stage wires are skipped, never guessed", () => {
+    const w = benchWiring({
+      stages: [
+        {
+          id: "s_0",
+          inputs: {
+            a: null,
+            b: "a string binding",
+            c: 42,
+            d: { weird: true },
+            e: { stage: 42, output: "x" },
+          },
+        },
+      ],
+    });
+    assert.deepEqual(w, { cross: [], self: [] });
+  });
+
+  it("a wire's label names the output port only when it carries one, and self/cross split by target", () => {
+    const w = benchWiring({
+      stages: [
+        {
+          id: "s_1",
+          inputs: {
+            with_port: { stage: "s_0", output: "default" },
+            bare: { stage: "s_0" },
+            own: { stage: "s_1" },
+          },
+        },
+      ],
+    });
+    assert.deepEqual(w.cross, ["with_port <- s_0.default", "bare <- s_0"]);
+    assert.deepEqual(w.self, ["own <- s_1"]);
+  });
+});
+
+// ── THE BENCH COMPOSE'S OWN TOLERANCES (composeBenchStages through
+//    the start door): a junk row among the stages is skipped (the
+//    good stages still compose), an id-less row is MINTED the
+//    positional spelling, an array-shaped params bag reads as empty,
+//    and a row that names no card REFUSES naming the stage. ────────
+
+describe("the bench compose's tolerances", () => {
+  it("a junk row is skipped; the good stage composes and the run registers", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          null,
+          "junk row",
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the junk rows cost nothing — the bench ran");
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("an id-less row and an array-shaped params bag both ride (minted id, empty params)", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          // the wire promotes the start to the bench run (the
+          // single-card arm would never read the minted id)
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            card: "image-edit",
+            params: ["array-shaped"],
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the minted id and emptied params compose");
+    assert.equal(s.core.runs.size, 1);
+  });
+
+  it("a stage that names no card REFUSES naming the stage — the bench composes card stages only", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+          { id: "s_2", params: { tool: "mcp-row" } },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /bench stage "s_2" names no card/);
+    assert.match(err.message, /belongs in a flow, not the bench/);
+    assert.equal(s.core.runs.size, 0);
+  });
+
+  it("a row whose card is not a string REFUSES the same way (never coerced)", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+      {
+        stages: [
+          // the wire promotes the start to the bench run (the
+          // single-card arm would never read the junk row)
+          { id: "s_0", card: "image-gen", params: { model: "m1", prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+          { id: "s_2", card: 42, params: { tool: "coerced" } },
+        ],
+      },
+    );
+    const err = await remote(() =>
+      s.svc.start({ draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } }, sig()),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /bench stage "s_2" names no card/);
+  });
+
+  it("a junk row in a hand-authored flow_inline is skipped by the derive, then REFUSED by the compile gate — never a half flow", async () => {
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: { filename_prefix: "gen" } } },
+    );
+    const err = await remote(() =>
+      s.svc.start(
+        inlineBody({
+          flow_inline: {
+            id: "x",
+            stages: [
+              null,
+              "junk row",
+              { id: "s", card: "image-gen", engine: "comfyui", params: {} },
+            ],
+          },
+        }),
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.equal(s.core.runs.size, 0, "the junk row costs the whole flow its start");
   });
 });
