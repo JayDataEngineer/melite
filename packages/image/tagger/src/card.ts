@@ -90,7 +90,7 @@ const schema = z.object({
   // one entry had ALREADY drifted into a truncated fork of the
   // upstream canned string, which rode verbatim into the node
   // (the card-plane audit's H2 — the one entry proved it)
-  extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 28-option list rides bare/API bodies). Ignored by other families.", wtype: 'select' })),
+  extra_option: vocabulary([...TAGGER_EXTRA_OPTIONS]).description("Extra instruction").extra('extra', bag({ order: 11, group: "tagger", width: 1, tooltip: "JoyCaption: one appended instruction (the full 27-option list rides bare/API bodies; the engine's own vulgar-caption row is dropped at this surface — release hygiene). Ignored by other families.", wtype: 'select' })),
   // NO filename_prefix (card: "the run routes outputs by run id
   // (compose stamps `<run>/tags`) — a user knob here was silently
   // overwritten, a dead promise"). Old drafts naming it still parse

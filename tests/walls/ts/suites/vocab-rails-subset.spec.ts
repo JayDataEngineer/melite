@@ -65,10 +65,13 @@ const JOINED: Joined[] = [
 // Inverted join — the engine combo (the dropdown the node's UI
 // offers) must stay a subset of the card's fuller literal (the
 // API accepts more than the combo lists; the card's leading ""
-// sentinel and full instruction list are deliberate).
-const JOINED_INVERTED: Joined[] = [
-  { site: "tagger:extra_option", join: "JJC_JoyCaption.extra_option1", values: TAGGER_EXTRA_OPTIONS },
-];
+// sentinel and full instruction list are deliberate). The
+// tagger:extra_option site left this rail on 2026-10-16: the
+// engine's own combo carries an upstream vulgar-caption
+// instruction row, and the card's roster deliberately drops that
+// one row (release hygiene — the tree keeps no profanity); the
+// site is declared model-local below with that reason.
+const JOINED_INVERTED: Joined[] = [];
 
 // Only DECLs whose VARIANTS array stamps a checkpoint ride here
 // (yue2 and joycaption carry theirs in lane_inputs / the mods
@@ -86,6 +89,7 @@ const LOCAL: { site: string; values: () => readonly string[]; reason: string }[]
   { site: "tts:voice", values: () => PRESET_SPEAKERS, reason: "the model's own built-in CustomVoice roster (the engine node declares no speaker combo)" },
   { site: "music:mode", values: () => inlineVocab("audio/music/src/card.ts", "mode"), reason: "the MMAudio lane's prompt-side mode toggle (no engine combo declares it)" },
   { site: "anny:transparent", values: () => inlineVocab("3d/anny/src/card.ts", "transparent"), reason: "wire-string toggle under the loose anny law (str(x) != 'false' — the vendor step-doc, not an engine combo)" },
+  { site: "tagger:extra_option", values: () => TAGGER_EXTRA_OPTIONS, reason: "the JoyCaption instruction list minus the engine's own vulgar-caption row — the card deliberately drops that one upstream combo entry (release hygiene, 2026-10-16: the tracked tree keeps no profanity); the engine node keeps its full dropdown" },
   { site: "input-prep:media_type", values: () => inlineVocab("image/input-prep/src/card.ts", "media_type"), reason: "card-local media-kind toggle" },
   { site: "h3:attention_backend", values: () => inlineVocab("models/h3/src/schema.ts", "attention_backend"), reason: "the h3 family's own model vocabulary (its kitchen's attention modes)" },
   { site: "h3:interp_model", values: () => inlineVocab("models/h3/src/schema.ts", "interp_model"), reason: "the h3 family's bundled interp weights (provisioned files, not engine combos)" },

@@ -146,7 +146,6 @@ export const TAGGER_EXTRA_OPTIONS = [
   'Mention whether the image depicts an extreme close-up, close-up, medium close-up, medium shot, cowboy shot, medium wide shot, wide shot, or extreme wide shot.',
   'ONLY describe the most important elements of the image.',
   'Specify the depth of field and whether the background is in focus or blurred.',
-  'Use vulgar slang and profanity, such as (but not limited to) "[REDACTED 2026-11-05]," "[REDACTED 2026-11-05]," "[REDACTED 2026-11-05]," etc.',
   'You MUST include information about the subjective aesthetic quality of the image from low to very high.',
   'Your response will be used by a text-to-image model, so avoid useless meta phrases like “This image shows…”, "You are looking at...", etc.',
 ]

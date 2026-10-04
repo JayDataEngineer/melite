@@ -341,7 +341,7 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3401,
+    "uid": 3400,
     "refs": {
       "315": {
         "type": "const",
@@ -613,11 +613,11 @@
         "meta": {},
         "value": "simple"
       },
-      "3335": {
+      "3334": {
         "type": "string",
         "meta": {}
       },
-      "3339": {
+      "3338": {
         "type": "array",
         "meta": {
           "default": [],
@@ -633,9 +633,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3335
+        "inner": 3334
       },
-      "3343": {
+      "3342": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -645,7 +645,7 @@
           "description": "Input Image"
         }
       },
-      "3347": {
+      "3346": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -655,7 +655,7 @@
           "description": "Image 2"
         }
       },
-      "3351": {
+      "3350": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -665,11 +665,11 @@
           "description": "Image 3"
         }
       },
-      "3352": {
+      "3351": {
         "type": "string",
         "meta": {}
       },
-      "3355": {
+      "3354": {
         "type": "array",
         "meta": {
           "default": [],
@@ -678,9 +678,9 @@
             "hidden": true
           }
         },
-        "inner": 3352
+        "inner": 3351
       },
-      "3359": {
+      "3358": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -690,7 +690,7 @@
           "description": "Region Mask"
         }
       },
-      "3362": {
+      "3361": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -705,7 +705,7 @@
           }
         }
       },
-      "3365": {
+      "3364": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -718,7 +718,7 @@
           }
         }
       },
-      "3368": {
+      "3367": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -733,7 +733,7 @@
           }
         }
       },
-      "3371": {
+      "3370": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -748,7 +748,7 @@
           }
         }
       },
-      "3376": {
+      "3375": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -762,7 +762,7 @@
           }
         }
       },
-      "3382": {
+      "3381": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -779,7 +779,7 @@
           }
         }
       },
-      "3388": {
+      "3387": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -796,7 +796,7 @@
           }
         }
       },
-      "3390": {
+      "3389": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -857,7 +857,7 @@
           359
         ]
       },
-      "3392": {
+      "3391": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -882,7 +882,7 @@
           369
         ]
       },
-      "3396": {
+      "3395": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -896,7 +896,7 @@
           }
         }
       },
-      "3400": {
+      "3399": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -910,29 +910,29 @@
           }
         }
       },
-      "3401": {
+      "3400": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3339,
-          "image1": 3343,
-          "image2": 3347,
-          "image3": 3351,
-          "reference_images": 3355,
-          "input_mask": 3359,
-          "prompt": 3362,
-          "negative_prompt": 3365,
-          "width": 3368,
-          "height": 3371,
-          "seed": 3376,
-          "steps": 3382,
-          "cfg": 3388,
-          "sampler": 3390,
-          "scheduler": 3392,
-          "use_stock_nodes": 3396,
-          "double_reference": 3400
+          "input_images": 3338,
+          "image1": 3342,
+          "image2": 3346,
+          "image3": 3350,
+          "reference_images": 3354,
+          "input_mask": 3358,
+          "prompt": 3361,
+          "negative_prompt": 3364,
+          "width": 3367,
+          "height": 3370,
+          "seed": 3375,
+          "steps": 3381,
+          "cfg": 3387,
+          "sampler": 3389,
+          "scheduler": 3391,
+          "use_stock_nodes": 3395,
+          "double_reference": 3399
         }
       }
     }
