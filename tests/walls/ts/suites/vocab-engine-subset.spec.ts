@@ -60,12 +60,30 @@ describe("THE ENGINE-SUBSET WALL — the kit's vocabularies name only what the e
     ).toEqual([]);
   });
 
-  it("the vocabularies are non-empty and duplicate-free (a broken regen cannot serve a hollow menu)", () => {
-    // F-L1 (the wall audit, 2026-09-28): `> 10` / `> 5` are floors
-    // against a real roster of 45 samplers and 9 schedulers — a
-    // regen that dropped twenty names passed. The censuses are exact.
-    expect(SAMPLER_OPTIONS.length).toBe(45);
-    expect(SCHEDULER_OPTIONS.length).toBe(9);
+  it("the vocabularies carry the fixture's whole roster, duplicate-free (a broken regen cannot hollow the menu)", () => {
+    // F-L1 (the wall audit, 2026-09-28) first made the censuses
+    // exact — but exact COUNTS are ratchets (the flake audit, A2:
+    // every regen that adds a name forced a manual 45→46 here). The
+    // roster's own source is derived instead: the kit serves the
+    // tracked fixture's KSampler combos EXACTLY — the first arm
+    // proves kit ⊆ engine; this arm proves the reverse inclusion, so
+    // a regen that drops names fails here and a regen that adds them
+    // forces the fixture re-projection in the same commit.
+    const vocab = JSON.parse(readFileSync(FIXTURE, "utf8")) as VocabFixture;
+    const missingSamplers = (vocab["KSampler.sampler_name"] ?? []).filter(
+      (n) => !SAMPLER_OPTIONS.includes(n),
+    );
+    const missingSchedulers = (vocab["KSampler.scheduler"] ?? []).filter(
+      (n) => !SCHEDULER_OPTIONS.includes(n),
+    );
+    expect(
+      missingSamplers,
+      `the engine runs samplers the kit no longer serves (${missingSamplers.join(", ")}) — a hollow regen dropped live names; re-run the regen door`,
+    ).toEqual([]);
+    expect(
+      missingSchedulers,
+      `the engine runs schedulers the kit no longer serves (${missingSchedulers.join(", ")}) — a hollow regen dropped live names; re-run the regen door`,
+    ).toEqual([]);
     expect(new Set(SAMPLER_OPTIONS).size).toBe(SAMPLER_OPTIONS.length);
     expect(new Set(SCHEDULER_OPTIONS).size).toBe(SCHEDULER_OPTIONS.length);
   });

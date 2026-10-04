@@ -42,7 +42,10 @@ import { dispatchManage, Refused } from "../src/managePlane.ts";
 import type { ManageCtx, ManageEnvelope } from "../src/managePlane.ts";
 
 const realFetch = globalThis.fetch;
-const realPath = process.env.PATH;
+// the ?? "" guard (the flake audit's A1 step 5, 2026-10-15): an
+// unset PATH captured as undefined writes back the literal string
+// "undefined" under a -t filter, poisoning every later spec's PATH
+const realPath = process.env.PATH ?? "";
 let root = "";
 
 const json = (value: unknown, status = 200): Response => new Response(JSON.stringify(value), { status });

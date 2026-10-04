@@ -68,6 +68,11 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
     let sandbox: { root: string; dispose(): void };
     let stateRoot: string;
 
+    // the restore (the flake audit's A1 step 7, 2026-10-15): the
+    // beforeAll SETS MELITE_STATE_ROOT over whatever the outer shell
+    // carried — a bare delete writes "absent" over a PRESENT value,
+    // so later suites in the same fork read a different world
+    const savedStateRoot = process.env["MELITE_STATE_ROOT"];
     beforeAll(async () => {
       sandbox = mintSandbox("melite-e2e-mcp-");
       stateRoot = join(sandbox.root, "state");
@@ -144,7 +149,8 @@ describe("inference mcp smoke (live blender through the estate door)", { timeout
     });
 
     afterAll(async () => {
-      delete process.env["MELITE_STATE_ROOT"];
+      if (savedStateRoot === undefined) delete process.env["MELITE_STATE_ROOT"];
+      else process.env["MELITE_STATE_ROOT"] = savedStateRoot;
       await ctx.fiber.dispose();
       sandbox.dispose();
     });
