@@ -247,6 +247,31 @@ describe("the benches the census does not walk", () => {
     );
   });
 
+  it("an UNWIRED bench rides the card arm's snapshot: junk rows pass through, params that are not a bag coerce to themselves", async () => {
+    // The card arm registers with the bench doc beside it, and that
+    // registration maps every row on a COPY: a null row is not a row
+    // and rides untouched, a row whose params is not an object skips
+    // its card's carrier (never coerced into a shape it never had).
+    const s = seat({}, {
+      stages: [
+        null,
+        "scalar row",
+        { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+        { id: "s_1", card: "image-gen", params: "not-a-bag" },
+      ],
+    });
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    assert.ok(ans.run_id !== "", "the card arm ran the caller's stage");
+    const snap = (s.core.runs.get(ans.run_id) as RunRecord | undefined)?.benchSnapshot as
+      { stages: unknown[] } | undefined;
+    assert.ok(snap !== undefined, "the bench snapshot is stamped beside the run");
+    assert.equal(snap.stages.length, 1, "unloadable rows drop under the contract");
+    assert.equal((snap.stages[0] as { id?: unknown }).id, "s_0", "the loadable row rides");
+  });
+
   it("a draft read that fails stamps NO bench snapshot — the card arm still runs the caller's stage", async () => {
     const s = seat({}, {}, true);
     const ans = (await s.svc.start(

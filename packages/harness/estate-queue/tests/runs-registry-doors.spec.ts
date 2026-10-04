@@ -1724,3 +1724,26 @@ describe("the bench compose's tolerances", () => {
     assert.equal(s.core.runs.size, 0, "the junk row costs the whole flow its start");
   });
 });
+
+describe("the declared initials ride the run", () => {
+  it("an initial the extractor refuses stops the run before any stage composes", async () => {
+    // THE GATE-BLESSED INITIALS: the extractor walks the flow's own
+    // initialValidators and refuses a value the kind cannot hold (a
+    // photo must be a path string or {path}). The refusal is the
+    // flow's own voice, carried at loc body — the run never reaches
+    // the merge that would resolve the $spell over this key.
+    const s = seat();
+    const err = await remote(() =>
+      s.svc.start(
+        { draft_id: "d1", test: false, flow: "anny-hmr-commercial", photo: 7 },
+        sig(),
+      ),
+    );
+    assert.equal(err.code, "runs/invalid-request");
+    assert.match(err.message, /initial "photo"/);
+    assert.match(err.message, /must be a file path string/);
+    const details = (err as unknown as { details?: Record<string, unknown> }).details ?? {};
+    assert.equal(details["loc"], "body", "the refusal rides the body, not a stage");
+    assert.equal(s.core.runs.size, 0);
+  });
+});

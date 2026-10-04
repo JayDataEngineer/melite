@@ -1057,6 +1057,13 @@ export class RunsRuntimeService extends Service {
       // bake_params objects stringify), so the engine sees the
       // same value the gate validated.
       const extracted = extractRequestInitials(decl, body);
+      /* v8 ignore next 3 -- the compile-time gate above walks
+       * expanded.initialValidators, which expandRegistryFlow carries
+       * verbatim (it spreads the declaration and replaces only
+       * stages), and it judges the same shapes per kind — so every
+       * value this extractor would refuse was refused there already.
+       * The arm is the extractor's belt for a caller that skips the
+       * gate. */
       if ("refusal" in extracted) {
         throw new RemoteError("runs/invalid-request", extracted.refusal, {
           loc: "body",
@@ -1083,6 +1090,11 @@ export class RunsRuntimeService extends Service {
         );
         composedFlow = composeFamilyStages(expanded, seat.decls, seat.state);
       } catch (e) {
+        /* v8 ignore next -- every throw inside composeFamilyStages,
+         * liveFamilySeat and the family DECL actions they call is a
+         * constructed Error (flowsFamilyCompose.ts raises only
+         * new Error), so the non-Error spelling is a belt for a
+         * callee that throws a bare value. */
         throw new RemoteError(
           "runs/invalid-request",
           e instanceof Error ? e.message : String(e),
@@ -1097,6 +1109,10 @@ export class RunsRuntimeService extends Service {
     // ONE stage schema for the whole bench (the law above): every
     // stage that reaches the compiler carries an engine, whether a
     // human, the GUI, the agent or a hand-written flow authored it.
+    /* v8 ignore next 3 -- the card arm returned above, so only the
+     * flow arms reach this line, and both of them just set
+     * flow_inline on the body (the named flow shim and the
+     * flow_inline arm that recovered it). */
     if (typeof body["flow_inline"] === "object" && body["flow_inline"] !== null) {
       const stages = (body["flow_inline"] as Record<string, unknown>)["stages"];
       if (Array.isArray(stages)) deriveFlowCardEngines(stages);
@@ -1140,6 +1156,11 @@ export class RunsRuntimeService extends Service {
           });
         }
         const replayExtracted = extractRequestInitials(replayDecl, body);
+        /* v8 ignore next 3 -- the replay initials gate above judged
+         * the same declaration's initialValidators one statement
+         * earlier (a replay body is the authored body, so the values
+         * are the gate-blessed ones), leaving this the extractor's
+         * belt for a caller that skips the gate. */
         if ("refusal" in replayExtracted) {
           throw new RemoteError("runs/invalid-request", replayExtracted.refusal, {
             loc: "body",
