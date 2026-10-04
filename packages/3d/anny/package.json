@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "the anny card (the 3d lane) \u2014 one card one package: the form card (schema groups \u2192 the base form's parameter submenu) + agents/ context",

@@ -1,5 +1,5 @@
 {
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "description": "the upscale-tools card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",

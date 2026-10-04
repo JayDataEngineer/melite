@@ -34,7 +34,7 @@
     "./applyGuard": "./src/applyGuard.ts",
     "./formSpec": "./src/formSpec.ts"
   },
-  "version": "0.2.0",
+  "version": "0.3.0",
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"
