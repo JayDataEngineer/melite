@@ -9,8 +9,14 @@
 // it exists to judge.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { Context } from "@deepseek-ai/cordis";
 import { ComposeRefusal } from "../src/errors.ts";
+import { cascadeInit } from "../src/models/models.ts";
+import { ComfyUIService } from "../src/service.ts";
+
+await cascadeInit();
 import {
+  ComfyUIWiringService,
   assertWiringAgainst,
   deriveWiringDoc,
   type WiringInputSpec,
@@ -257,5 +263,121 @@ describe("the malformed-shape refusals (the audit's two fail-opens, closed)", ()
     const nodes = new Set(["KSampler"]);
     assertWiringAgainst(nodes, new Map(), "c1", ks({ sampler_name: "banana" }));
     assertWiringAgainst(nodes, undefined, "c1", ks({ cfg: -999 }));
+  });
+});
+
+describe("THE SEAT (the doc-owner's fence: arm, judge, disarm)", () => {
+  async function seat(): Promise<{ wall: ComfyUIWiringService; ctx: Context }> {
+    const ctx = new Context();
+    let wall!: ComfyUIWiringService;
+    await ctx.plugin({
+      apply(c: Context) {
+        wall = new ComfyUIWiringService(c);
+      },
+    });
+    return { wall, ctx };
+  }
+
+  it("the wiring service mounts under its own name and starts unarmed", async () => {
+    const { ctx, wall } = await seat();
+    // (the seat read returns a traceable wrapper, so identity is
+    // asserted by availability, never by ===)
+    const mounted = ctx.comfyuiWiring;
+    assert.ok(mounted !== undefined, "the seat name is the doc's one home");
+    assert.equal(typeof mounted.armed, "function", "the mounted seat is the wiring wall");
+    assert.equal(wall.armed(), false, "a fresh seat owns no doc");
+    // unarmed, the fence call stands down for every shape
+    wall.assert("c1", null);
+    wall.assert("c1", ks({ sampler_name: "banana" }));
+  });
+
+  it("arm() judges through the same walk the free function runs, and null inputs ride as undefined", async () => {
+    const { wall } = await seat();
+    const { nodes, inputs } = armed();
+    wall.arm(nodes, inputs);
+    assert.equal(wall.armed(), true);
+    assert.throws(
+      () => wall.assert("c1", ks({ sampler_name: "banana" })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value",
+    );
+    // the names-only arm: null inputs keep the node gate alone
+    wall.arm(nodes, null);
+    wall.assert("c1", ks({ sampler_name: "banana" }));
+    assert.throws(
+      () => wall.assert("c1", { "1": { class_type: "NotANode" } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node",
+    );
+  });
+
+  it("disarm() stands the whole wall down (a doc-owner whose fetch failed)", async () => {
+    const { wall } = await seat();
+    const { nodes, inputs } = armed();
+    wall.arm(nodes, inputs);
+    wall.disarm();
+    assert.equal(wall.armed(), false, "the null doc never judges");
+    wall.assert("c1", null);
+    wall.assert("c1", { "1": { class_type: "NotANode" } });
+  });
+
+  it("ComfyUIService.setObjectInfo is the doc-owner: a doc arms the shared seat, null disarms it", async () => {
+    const ctx = new Context();
+    let wall!: ComfyUIWiringService;
+    await ctx.plugin({
+      apply(c: Context) {
+        wall = new ComfyUIWiringService(c);
+        new ComfyUIService(c);
+      },
+    });
+    ctx.comfyui.setObjectInfo(DOC);
+    assert.equal(wall.armed(), true, "the service derives and arms the ONE census");
+    ctx.comfyui.setObjectInfo(null);
+    assert.equal(wall.armed(), false, "a failed fetch disarms — the wall never judges a stale doc");
+  });
+});
+
+describe("the census degrades (a declaration the doc barely shapes)", () => {
+  it("an empty-array spec, a non-array/string head, and a missing detail all contribute what they actually say", () => {
+    const { nodes, inputs } = deriveWiringDoc({
+      WeirdNode: {
+        input: {
+          required: {
+            empty: [],
+            numbered: [42],
+            plain: ["MODEL"],
+            strdetail: ["INT", "not-an-object"],
+          },
+        },
+      },
+    });
+    assert.ok(nodes.has("WeirdNode"));
+    const row = inputs.get("WeirdNode")!;
+    // [] and [42]: no enum, no type — the required flag alone
+    assert.deepEqual(row.get("empty"), { required: true });
+    assert.deepEqual(row.get("numbered"), { required: true });
+    // ["MODEL"]: a type with no detail object carries no bounds
+    assert.deepEqual(row.get("plain"), { required: true, type: "MODEL", min: undefined, max: undefined });
+    assert.deepEqual(row.get("strdetail"), { required: true, type: "INT", min: undefined, max: undefined });
+  });
+
+  it("a value above the declared MAX refuses naming the ceiling (the bound string's other arm)", () => {
+    const { nodes, inputs } = armed();
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", ks({ cfg: 999 })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value"
+        && /the input is FLOAT and the value is above its declared max 100/.test(e.message),
+    );
+  });
+
+  it("an empty or non-string class_type refuses as unknown-node (the graph is not addressable)", () => {
+    const { nodes, inputs } = armed();
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: "" } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node"
+        && /node '1' with no class_type/.test(e.message),
+    );
+    assert.throws(
+      () => assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: 42 } }),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "unknown-node",
+    );
   });
 });

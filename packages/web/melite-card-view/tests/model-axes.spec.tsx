@@ -358,6 +358,77 @@ test('THE WIRE RESOLUTION: a wire row of an unknown shape REFUSES naming it — 
   }
 })
 
+test('THE WIRE RESOLUTION: an upstream RESULT with no url reads as no output — the refusal names the stage', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  // a result object that carries no url (an error row, a pending
+  // row): the resolver must read it as NO OUTPUT, never as a
+  // resolved-but-empty binding
+  const fakes = mountEstateFakes({ draftStages: wiredBenchStages({ ok: false, error: 'the engine refused' }) })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'], prompt: 'make the hair crimson' },
+      inputs: { input_images: { stage: 's_0', output: 'default' } },
+      result: null,
+    })
+    if (!('refused' in res)) throw new Error('expected a refusal, got ' + JSON.stringify(res))
+    expect(res.refused).toContain('s_0')
+    expect(res.refused).toContain('no output yet')
+    expect(fakes.calls.some((c) => c.method === 'runs/start')).toBe(false)
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
+test('THE SPEC-DOOR LAW: a downed form-spec door REFUSES the run, naming the door\'s own failure — never a silent verbatim compose', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  // unwired rows: the spec door is the FIRST thing this run asks
+  const fakes = mountEstateFakes({
+    draftStages: [
+      { id: 's_1', card: 'image-edit', title: 'edit', engine: 'comfyui', params: { prompt: 'make the hair crimson' } },
+    ],
+  })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url).includes('/v1/form-spec')) throw new Error('door down')
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { prompt: 'make the hair crimson' },
+      result: null,
+    })
+    if (!('refused' in res)) throw new Error('expected a refusal, got ' + JSON.stringify(res))
+    expect(res.refused).toContain('unreachable')
+    expect(res.refused).toContain('door down')
+    expect(fakes.calls.some((c) => c.method === 'runs/start')).toBe(false)
+    // a rejection carrying a NON-Error (the transport's own spelling)
+    // still names itself in the sentence — String(e) rides
+    ;(globalThis as Record<string, unknown>)['fetch'] = async (): Promise<unknown> => {
+      throw 'door down (a bare string)'
+    }
+    const res2 = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { prompt: 'make the hair crimson' },
+      result: null,
+    })
+    if (!('refused' in res2)) throw new Error('expected a refusal, got ' + JSON.stringify(res2))
+    expect(res2.refused).toContain('door down (a bare string)')
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
 // ── the multi-axis law (operator lane proof 2026-09-12: the hardcoded
 //    Quant-only list dropped seedvr2's Recipe axis and qwen's — the
 //    axes are the SERVED GROUPS, ALL of them, chained by owner). ──────

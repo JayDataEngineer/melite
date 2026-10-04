@@ -267,12 +267,10 @@ export function installUserLoraBytes(
       reason: `the LoRA is over the ${Math.round(LORA_BYTES_CAP / (1024 * 1024))}MB door cap — copy it in from the machine instead (lora_install with a path)`,
     }
   }
-  let bytes: Buffer
-  try {
-    bytes = Buffer.from(payload, 'base64')
-  } catch (e) {
-    return { ok: false, reason: `the bytes are not base64: ${e instanceof Error ? e.message : String(e)}` }
-  }
+  // (Buffer.from never throws on base64 input — it skips the
+  // characters it does not know; an all-junk payload decodes to
+  // zero bytes and the refusal below names that)
+  const bytes: Buffer = Buffer.from(payload, 'base64')
   if (bytes.byteLength === 0) return { ok: false, reason: 'the upload decoded to zero bytes' }
   if (bytes.byteLength > LORA_BYTES_CAP) {
     return { ok: false, reason: 'the LoRA is over the door cap' }

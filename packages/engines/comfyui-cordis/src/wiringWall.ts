@@ -321,7 +321,9 @@ export function assertWiringAgainst(
       // miniMax and remesh graph the estate has actually shipped.
       // The base segment IS the declaration; the suffix is the
       // widget's own addressing.
-      if (declared.has(key.split('.')[0] ?? key)) continue
+      // (split on a string always yields a first segment, so the
+      // base segment needs no fallback)
+      if (declared.has(key.split('.')[0])) continue
       // WIDGET-SERIALIZATION KEYS: a small, receipt-named set of
       // keys ComfyUI serializes but never declares (the same
       // receipt). Each one is listed with the node that carries it;

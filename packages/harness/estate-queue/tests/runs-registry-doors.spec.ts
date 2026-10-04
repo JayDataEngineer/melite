@@ -22,9 +22,20 @@ import type { RunRecord, RunStageRow } from "../src/runsTypes.ts";
 import type { RunId } from "../src/queueCore.ts";
 
 let TMP = "";
-afterEach(() => {
+afterEach(async () => {
   if (TMP !== "") {
-    for (const d of TMP.split(":")) rmSync(d, { recursive: true, force: true });
+    for (const d of TMP.split(":")) {
+      // a run-seat writer can still be appending when the sweep
+      // walks the tree (the battery's parallel load makes the
+      // window real): ENOTEMPTY is a race, not a leak — one
+      // retry after a tick, then the failure stands loud
+      try {
+        rmSync(d, { recursive: true, force: true });
+      } catch {
+        await new Promise((r) => setTimeout(r, 50));
+        rmSync(d, { recursive: true, force: true });
+      }
+    }
     TMP = "";
   }
 });

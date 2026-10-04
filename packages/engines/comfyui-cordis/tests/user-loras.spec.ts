@@ -160,6 +160,15 @@ describe("loraNamesFromObjectInfo — the engine's own fact, bounds-checked", ()
     for (const info of [null, 42, "x", [], {}, { LoraLoaderModelOnly: null }, { LoraLoaderModelOnly: {} }, node(null), node("nope"), node(42), node([42])]) {
       expect(loraNamesFromObjectInfo(info), JSON.stringify(info)).toEqual([]);
     }
+    // deeper truncations: a non-object node row, a junk input row,
+    // a junk required group — each answers empty at its own seat
+    for (const info of [{ LoraLoaderModelOnly: 42 }, { LoraLoaderModelOnly: { input: "junk" } }, { LoraLoaderModelOnly: { input: { required: "junk" } } }]) {
+      expect(loraNamesFromObjectInfo(info), JSON.stringify(info)).toEqual([]);
+    }
+  });
+
+  it("members that are not strings or are empty fall away; the real names ride", () => {
+    expect(loraNamesFromObjectInfo(node([42, "", "ok.safetensors", null]))).toEqual(["ok.safetensors"]);
   });
 });
 
@@ -197,6 +206,13 @@ describe("installUserLora — a COPY of the operator's own file, never a fetch",
     expect(out).toMatchObject({ filename: "mine.safetensors", bytes: 7 });
     expect(readFileSync(join(dir, "mine.safetensors"), "utf8")).toBe("weights");
   });
+
+  it("refuses when the copy cannot land, naming the directory", () => {
+    const src = write("mine.safetensors", "weights");
+    const blocker = write("blocker.txt", "x");
+    const out = installUserLora(src, join(blocker, "loras"));
+    expect(out).toMatchObject({ ok: false, reason: expect.stringMatching(/copy into .* failed/u) });
+  });
 });
 
 describe("installUserLoraBytes — the uploads rail's data-URL spelling", () => {
@@ -218,6 +234,45 @@ describe("installUserLoraBytes — the uploads rail's data-URL spelling", () => 
     expect(installUserLoraBytes("a.safetensors", "data:application/octet-stream;base64,@@@", root)).toMatchObject({ ok: false });
     // nothing landed for either refusal
     expect(existsSync(join(root, "a.safetensors"))).toBe(false);
+  });
+
+  it("refuses each mis-shaped data URL with its own naming", () => {
+    // a comma but no base64 marker: the meta is spelled wrong
+    expect(installUserLoraBytes("a.safetensors", "data:text/plain,QUJD", root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/only base64 data URLs/u),
+    });
+    // a base64 marker with no payload at all
+    expect(installUserLoraBytes("a.safetensors", "data:application/octet-stream;base64,", root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/carried no bytes/u),
+    });
+    // all-junk payload decodes to zero bytes (Buffer.from never
+    // throws on base64 — it skips what it does not know)
+    expect(installUserLoraBytes("a.safetensors", "data:application/octet-stream;base64,@", root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/decoded to zero bytes/u),
+    });
+    expect(existsSync(join(root, "a.safetensors"))).toBe(false);
+  });
+
+  it("refuses an oversize upload BEFORE any decode, by its declared length", () => {
+    // the transport's own length hint: an oversize upload must
+    // never become a decode (the OOM door) — the refusal names the
+    // copy-in alternative
+    const out = installUserLoraBytes("a.safetensors", "data:application/octet-stream;base64,QUJD", root, 1024 * 1024 * 1024);
+    expect(out).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/over the 512MB door cap .*copy it in from the machine/u),
+    });
+    expect(existsSync(join(root, "a.safetensors"))).toBe(false);
+  });
+
+  it("refuses when the engine's loras directory cannot be made, naming the write", () => {
+    // a target under a plain FILE: mkdir cannot run there
+    const blocker = write("blocker.txt", "x");
+    const out = installUserLoraBytes("a.safetensors", "data:application/octet-stream;base64,QUJD", join(blocker, "loras"));
+    expect(out).toMatchObject({ ok: false, reason: expect.stringMatching(/failed/u) });
   });
 
   it("writes the decoded bytes under the basename it was given", () => {

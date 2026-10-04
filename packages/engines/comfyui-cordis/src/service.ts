@@ -429,6 +429,7 @@ function assertFlowContract(def: CardDefinition): void {
 declare module '@deepseek-ai/cordis' {
   interface Context {
     comfyui: ComfyUIService
+    comfyuiWiring: ComfyUIWiringService
   }
 }
 
