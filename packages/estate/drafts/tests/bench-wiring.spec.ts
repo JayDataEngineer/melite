@@ -433,3 +433,75 @@ describe("a load never lands two rows under one stage id", () => {
     assert.equal(new Set(ids).size, ids.length, `the store now holds a duplicate id: ${JSON.stringify(ids)}`);
   });
 });
+
+// ── THE WIRING WALK'S OWN TOLERANCES (a doc is data): the schema
+//    promises record rows with string ids, but a doc that predates
+//    the promise (or one seeded behind the domain's back) still
+//    reads back as it was written — the walks judge what is there,
+//    skip the junk, and never crash the door on a row that carries
+//    nothing to judge. ─────────────────────────────────────────────
+
+describe("the wiring walk's own tolerances (a doc is data)", () => {
+  const junkDoc = (): Array<unknown> => [
+    null,
+    "a bare string row",
+    { params: { seed: 2 } },
+    {
+      id: "g_1",
+      card: "group",
+      children: [
+        null,
+        "a bare string member",
+        { card: "card-c", params: { seed: 3 } },
+        { id: "s_1", card: "card-b", params: { seed: 4 } },
+      ],
+    },
+    { id: "s_0", card: "card-a", params: { seed: 1 } },
+  ];
+
+  test("patch judges the live ids of a junk-carrying doc without crashing", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-patch", { stages: junkDoc() as never });
+    const out = await patchBench(drafts, "walk-patch", { stage: "s_0", params: { seed: 9 }, expect_rev: 0 });
+    assert.ok(out.rev >= 1, "the patch landed over the junk-carrying doc");
+    // and the walk stayed honest: the row's params hold the patch
+    // (the read-back still carries the junk rows the doc was seeded
+    // with — the assertion walks past them, as the door now does)
+    const after = getBench(drafts, "walk-patch").stages as unknown as Array<Record<string, unknown>>;
+    const row = after.find((r): boolean => typeof r === "object" && r !== null && r["id"] === "s_0");
+    assert.equal((row?.["params"] as Record<string, unknown>)["seed"], 9);
+  });
+
+  test("remove judges the survivors of a junk-carrying doc — junk skipped, members walked", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-remove", { stages: junkDoc() as never });
+    const out = await removeStageBench(drafts, "walk-remove", { stage: "s_0", expect_rev: 0 });
+    assert.ok(out.rev >= 1, "the removal landed over the junk-carrying doc");
+    const after = getBench(drafts, "walk-remove").stages as unknown as Array<Record<string, unknown>>;
+    const recs = after.filter((r): boolean => typeof r === "object" && r !== null);
+    assert.ok(!recs.some((r): boolean => r["id"] === "s_0"), "the row is gone");
+    assert.ok(recs.some((r): boolean => r["card"] === "group"), "the compound survived the walk");
+  });
+
+  test("a row carrying TWO pre-dead refs patches through the tolerance — both named, neither newly created", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-two-dead", {
+      stages: [
+        {
+          id: "s_0",
+          card: "card-a",
+          params: { a: "$a", b: "$b" },
+          inputs: {
+            a: { stage: "ghost-1", output: "image" },
+            b: { stage: "ghost-2", output: "image" },
+          },
+        },
+        { id: "s_1", card: "card-b", params: {} },
+      ] as never,
+    });
+    // patch the row: both refs pre-date the verb, so the tolerance
+    // set carries BOTH and the patch lands (the un-wedge law)
+    const out = await patchBench(drafts, "walk-two-dead", { stage: "s_0", params: { seed: 7 }, expect_rev: 0 });
+    assert.ok(out.rev >= 1, "the patch landed with both pre-dead refs tolerated");
+  });
+});

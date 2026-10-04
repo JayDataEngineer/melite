@@ -176,10 +176,16 @@ export function benchBlockOf(doc: Record<string, unknown>): BenchBlock {
 }
 
 function stagesOf(doc: Record<string, unknown>): Record<string, unknown>[] {
-  // The domain schema guarantees stages is an array of id-carrying
-  // objects (DraftDocSchema; schema-failing records are backed up and
-  // skipped at read) — no re-defense here.
-  return doc["stages"] as Record<string, unknown>[];
+  // The domain schema promises stages is an array of id-carrying
+  // objects (DraftDocSchema), but nothing enforces the promise on
+  // this path — a doc written behind the domain's back (an older
+  // door, a hand edit) reads back as it was written, and a reader
+  // that trusted the promise crashed on a null row. The read
+  // projection owns the guarantee: only record rows ride, and a
+  // row's id is read where it is used, never assumed.
+  const stages: unknown = doc["stages"];
+  if (!Array.isArray(stages)) return [];
+  return stages.filter((s: unknown): boolean => isRecord(s));
 }
 
 /** THE SEED RECEIPT (2026-09-21, ledger #41: a concrete seed rode
@@ -248,12 +254,11 @@ function nextStageId(max: number, taken: Set<string>): string {
   return fresh;
 }
 
-/** The ids already spoken for on the bench — the writer's own id plus
- *  every stage's. A mint that skips these cannot collide with a row
- *  the caller has not seen yet. */
-function takenStageIds(rows: readonly Record<string, unknown>[], extra: string = ""): Set<string> {
+/** The ids already spoken for on the bench — every stage's own. A
+ *  mint that skips these cannot collide with a row the caller has
+ *  not seen yet. */
+function takenStageIds(rows: readonly Record<string, unknown>[]): Set<string> {
   const taken = new Set<string>();
-  if (extra !== "") taken.add(extra);
   for (const row of rows) {
     const id: unknown = row["id"];
     if (typeof id === "string") taken.add(id);
@@ -350,9 +355,11 @@ function dedupeStageIds(
   // load and an add cannot disagree about what "next" means.
   let max = highestStageSuffix(named);
   for (const [i, row] of rows.entries()) {
-    const id = row["id"];
     if (arrivedWithId[i] === true) continue;
-    if (typeof id !== "string") continue;
+    // the id here is normalizeBenchStage's fill — always a string
+    // (a doc's non-string id heals to the minted form before this
+    // pass, so only a filled id rides)
+    const id = row["id"] as string;
     if (!taken.has(id)) {
       taken.add(id);
       continue;
@@ -826,8 +833,9 @@ function stageRow(
   doc: Record<string, unknown>,
   stageId: string,
 ): Record<string, unknown> | null {
-  // Schema law (see stagesOf): rows are records with string ids.
-  const stages = doc["stages"] as Record<string, unknown>[];
+  // Schema law (see stagesOf): the projection keeps only record
+  // rows — a junk row in the stored doc never crashes the find.
+  const stages = stagesOf(doc);
   return stages.find((st: Record<string, unknown>): boolean => st["id"] === stageId) ?? null;
 }
 
@@ -1246,7 +1254,6 @@ export function admitWiring(
 function liveIdsOf(stages: Array<Record<string, unknown>>): Set<string> {
   const out: Set<string> = new Set();
   for (const r of stages) {
-    if (!isRecord(r)) continue;
     out.add(String(r["id"] ?? ""));
     if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
       for (const child of r["children"] as unknown[]) {
@@ -1289,7 +1296,6 @@ function toleratedByRow(
     }
   };
   for (const r of stages) {
-    if (!isRecord(r)) continue;
     const id: string = String(r["id"] ?? "");
     rowOf(r, id);
     if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
@@ -1311,8 +1317,10 @@ function admitWiringList(
   // normalize contract's guarantees whenever the doc predates it. A
   // row without record params/inputs judges over {} (vacuous pass),
   // never crashes the door; the normalized callers are unaffected.
+  // (records themselves are the projection's guarantee — stagesOf
+  // keeps only record rows and normalizeStages filters its own — so
+  // no re-defense of record-ness here)
   const liveIds: string[] = stages
-    .filter((r): boolean => isRecord(r))
     .map((r: Record<string, unknown>): string => String(r["id"] ?? ""));
   // THE UN-WEDGE TOLERANCE: the map (per row id) carries the refs
   // that pre-date the verb — the walk refuses only the danglings
@@ -1321,7 +1329,6 @@ function admitWiringList(
   // seat states its own base for toleratedByRow.
   const tolerateAll: Map<string, Set<string>> | undefined = tolerate;
   for (const r of stages) {
-    if (!isRecord(r)) continue;
     // THE COMPOUND'S OWN WIRES ARE JUDGED (the bench audit's gap 7,
     // 2026-10-10): a compound row's inputs are {} by shape, so this
     // walk passed over it vacuously — a wire hidden INSIDE a group
@@ -1423,10 +1430,9 @@ export async function addStageBench(
   );
   admitStage(admit, admitted["card"], admitted["params"]);
   const loaded: LoadedBench = loadedForAdmit;
-  const card: unknown = body["card"];
-  if (typeof card !== "string" || card === "") {
-    throw new RemoteError("bench/bad-body", "card is required", {});
-  }
+  // (the card was already refused at the top of this door when it is
+  // not a non-empty string — the bound value here is one)
+  const card: string = body["card"] as string;
   const author: Author = authorOk(body["author"])
     ? (body["author"] as Author)
     : "agent";
@@ -1953,9 +1959,7 @@ export async function rewireBench(
     // the row's other pre-broken inputs tolerate so rewiring one
     // wire on a wounded row never wedges.
     toleratedByRow(
-      isRecord(loaded.doc["stages"]) && Array.isArray(loaded.doc["stages"])
-        ? [st]
-        : [st],
+      [st],
       liveIdsOf(stagesOf(loaded.doc)),
     ).get(stageId),
   );
@@ -2193,8 +2197,10 @@ function applyInverse(
       (s: Record<string, unknown>): boolean => s["id"] === inv["stage"],
     );
     const children: unknown = inv["children"];
+    // (the inverse is a payload the log recorded, never a promise —
+    // junk members degrade loudly-free: only record rows re-enter)
     const rows: Record<string, unknown>[] = Array.isArray(children)
-      ? (children as Record<string, unknown>[])
+      ? children.filter((r: unknown): boolean => isRecord(r))
       : [];
     // THE SPILL IS A WRITE HERE TOO (2026-10-10, the write-seat
     // audit's row 1): the children re-enter the flat bench from the
@@ -2220,18 +2226,23 @@ function applyInverse(
     const row: unknown = inv["row"];
     if (!isRecord(row)) return;
     const children: unknown = row["children"];
-    if (Array.isArray(children)) {
+    // (the inverse's members ride as the log recorded them — only
+    // record rows re-enter; junk degrades loudly-free)
+    const members: Record<string, unknown>[] = Array.isArray(children)
+      ? children.filter((c: unknown): boolean => isRecord(c))
+      : [];
+    if (members.length > 0) {
       // THE RE-PARK IS JUDGED (2026-10-10, the write-seat audit's
       // row 2): the compound hides its children from every patch
       // door — re-parking an inverse row re-opens the blind spot the
       // group door closed. Children walk admission BEFORE the
       // compound forms; a refusal aborts the undo whole.
-      for (const child of children as Record<string, unknown>[]) {
+      for (const child of members) {
         admitRestored(admit, child, isRecord(child["params"])
           ? (child["params"] as Record<string, unknown>)
           : {});
       }
-      for (const child of children as Record<string, unknown>[]) {
+      for (const child of members) {
         const idx: number = stages.findIndex(
           (s: Record<string, unknown>): boolean => s["id"] === child["id"],
         );
@@ -2264,9 +2275,12 @@ function applyInverse(
     return;
   }
   if (e.kind === "rewire") {
+    // (stageRow matches by identity of the string — the row it
+    // returns carries exactly this id, never a nullish one)
+    const stageId: string = String(inv["stage"] ?? "");
     const st: Record<string, unknown> | null = stageRow(
       doc,
-      String(inv["stage"] ?? ""),
+      stageId,
     );
     if (st === null) return;
     // COPY-ON-JUDGE (the write-seat audit's row 6, second half): the
@@ -2294,10 +2308,10 @@ function applyInverse(
       st,
       isRecord(st["params"]) ? (st["params"] as Record<string, unknown>) : {},
       inputs,
+      // (records are stagesOf's guarantee; an id-less row rides as "")
       stages
-        .filter((s: Record<string, unknown>): boolean => isRecord(s))
         .map((s: Record<string, unknown>): string => String(s["id"] ?? "")),
-      String(st["id"] ?? ""),
+      stageId,
       session,
     );
     st["inputs"] = inputs;

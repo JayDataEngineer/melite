@@ -11,6 +11,7 @@ import {
   groupBench,
   ungroupBench,
   undoBench,
+  clearBench,
 } from "../src/bench.ts";
 import { boot, seed, codeOf } from "./bench-helpers.ts";
 
@@ -410,4 +411,202 @@ describe("THE UNDOED BENCH IS WIRE-JUDGED WHOLE (the bench audit's gaps 4 + 5)",
       "nothing reinserted");
   });
 });
+});
+
+// ── THE UNDO WALK'S OWN TOLERANCES (the log is data): an inverse is
+//    a payload the log recorded, never a promise — the walks judge
+//    what the entries carry and degrade loudly-free on junk. ────────
+
+describe("the undo walk's own tolerances (the log is data)", () => {
+  test("a crafted clear-undo snapshot carrying junk rows restores only the records", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-clear-junk", {
+      stages: [{ id: "live" }],
+      bench: {
+        rev: 1,
+        log: [
+          entry(1, "clear", "agent", {
+            stages_before: [
+              null,
+              "a bare string row",
+              { id: "jp", params: "not-an-object bag" },
+              { id: "old-1" },
+            ],
+          }),
+        ],
+      },
+    });
+    const undone = await undoBench(drafts, "walk-clear-junk", { n: 1 });
+    assert.equal(undone.undone.length, 1);
+    const doc = getBench(drafts, "walk-clear-junk");
+    const ids = (doc.stages as Array<{ id?: string }>).filter((x) => typeof x === "object" && x !== null).map((x) => x.id);
+    assert.ok(ids.includes("old-1"), "the good row came back");
+    assert.ok(ids.includes("jp"), "the junk-params row came back as it was");
+  });
+
+  test("a crafted group-undo whose children carry junk params degrades loudly-free", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-group-junk", {
+      stages: [{ id: "keep" }],
+      bench: {
+        rev: 1,
+        log: [
+          entry(1, "group", "agent", {
+            stage: "ghost",
+            children: [{ id: "x", params: "not-an-object bag" }, null, "a bare string member"],
+          }),
+        ],
+      },
+    });
+    const undone = await undoBench(drafts, "walk-group-junk", { n: 1 });
+    assert.equal(undone.undone.length, 1);
+    const ids = (getBench(drafts, "walk-group-junk").stages as Array<{ id?: string }>).map((x) => x?.id);
+    assert.deepEqual(ids, ["keep"], "the ghost compound spliced nothing");
+  });
+
+  test("a crafted rewire-undo on a row whose params is junk judges over empty params", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-rewire-junk", {
+      stages: [{ id: "rw", params: "not-an-object bag", inputs: {} }],
+      bench: {
+        rev: 1,
+        log: [
+          entry(1, "rewire", "agent", { stage: "rw", input: "image", added: true }),
+        ],
+      },
+    });
+    await undoBench(drafts, "walk-rewire-junk", { n: 1 });
+    const row = (getBench(drafts, "walk-rewire-junk").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "rw")!;
+    assert.ok(!("image" in (row["inputs"] as Record<string, unknown>)), "the added wire came back off");
+  });
+
+  test("the restored walk reads an id-less row as no id, and the undo still lands", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-noid", {
+      stages: [{ params: { seed: 1 } }, { id: "a" }],
+      bench: {
+        rev: 1,
+        log: [entry(1, "patch", "agent", { params_before: { x: 1 }, stage: "a" })],
+      },
+    });
+    const undone = await undoBench(drafts, "walk-noid", { n: 1 });
+    assert.equal(undone.undone.length, 1, "the undo landed over the id-less row");
+  });
+});
+
+describe("the verb doors' own tolerances (a doc is data, the log is data)", () => {
+  test("a doc whose stages is not an array reads as an empty bench, never a crash", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-nonarray", { stages: "a bare string where the array lives" as never });
+    // the serve gate skips its walk (nothing is an array)
+    const read = getBench(drafts, "walk-nonarray");
+    assert.equal(read.stages, "a bare string where the array lives");
+    // and the verbs refuse by name, they do not crash
+    assert.match(
+      await codeOf(patchBench(drafts, "walk-nonarray", { stage: "s_0", params: {}, expect_rev: 0 })),
+      /stage not found: s_0/,
+    );
+  });
+
+  test("a load whose rows carry non-string cards walks the intent sync past them", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-intent", {
+      stages: [{ id: "s_0", card: "card-a", params: {} }],
+      intent: "card-a",
+    });
+    await ensureBench(drafts, {
+      session: "walk-intent",
+      stages: [{ id: "s_0", card: 42, params: {} }, { card: "", params: {} }],
+      overwrite: true,
+      expect_rev: 0,
+    });
+    const doc = getBench(drafts, "walk-intent");
+    assert.equal((doc as unknown as Record<string, unknown>)["intent"], "card-a", "the label survived: no card to re-derive from");
+  });
+
+  test("a doc whose intent is not a string keeps it — the sync never matches a held card", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-intent-junk", {
+      stages: [{ id: "s_0", card: "card-a", params: {} }],
+      intent: 42,
+    });
+    await addStageBench(drafts, "walk-intent-junk", { card: "card-b", expect_rev: 0 });
+    const doc = getBench(drafts, "walk-intent-junk");
+    assert.equal((doc as unknown as Record<string, unknown>)["intent"], 42, "junk intent rides untouched");
+  });
+
+  test("add_stage without a real card refuses by name", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "walk-card" });
+    assert.match(
+      await codeOf(addStageBench(drafts, "walk-card", { card: 42, expect_rev: 0 })),
+      /card is required/,
+    );
+    assert.match(
+      await codeOf(addStageBench(drafts, "walk-card", { card: "", expect_rev: 0 })),
+      /card is required/,
+    );
+  });
+
+  test("grouping and ungrouping a row whose params is junk judges it over empty params", async () => {
+    const drafts = await boot();
+    await seed(drafts, "walk-grp-junk", {
+      stages: [
+        { id: "s_0", card: "card-a", params: "not-an-object bag" },
+        { id: "s_1", card: "card-b", params: {} },
+      ],
+    });
+    await groupBench(drafts, "walk-grp-junk", { stages: ["s_0", "s_1"], expect_rev: 0 });
+    const grouped = getBench(drafts, "walk-grp-junk").stages as unknown as Array<Record<string, unknown>>;
+    const compound = grouped.find((r): boolean => r["card"] === "group");
+    assert.ok(compound, "the compound landed");
+    await ungroupBench(drafts, "walk-grp-junk", { stage: String(compound!["id"]), expect_rev: 1 });
+    const flat = getBench(drafts, "walk-grp-junk").stages as unknown as Array<Record<string, unknown>>;
+    assert.ok(flat.some((r): boolean => r["id"] === "s_0"), "the junk-params row spilled back flat");
+  });
+
+  test("clear with a stated author lands the entry under that author", async () => {
+    const drafts = await boot();
+    await ensureBench(drafts, { session: "walk-clear-auth" });
+    await addStageBench(drafts, "walk-clear-auth", { card: "card-a", expect_rev: 0 });
+    const cleared = await clearBench(drafts, "walk-clear-auth", { expect_rev: 1, author: "user" });
+    assert.ok(cleared.rev >= 2, "the clear landed");
+    const read = getBench(drafts, "walk-clear-auth");
+    assert.equal((read.stages as unknown[]).length, 0, "the bench is empty");
+  });
+});
+
+test("a load onto a doc whose intent is junk walks the sync past it", async () => {
+  const drafts = await boot();
+  await seed(drafts, "walk-intent-load", {
+    stages: [{ id: "s_0", card: "card-a", params: {} }],
+    intent: 42,
+  });
+  await ensureBench(drafts, {
+    session: "walk-intent-load",
+    stages: [{ id: "s_0", card: "card-a", params: {} }],
+    overwrite: true,
+    expect_rev: 0,
+  });
+  const doc = getBench(drafts, "walk-intent-load");
+  assert.equal((doc as unknown as Record<string, unknown>)["intent"], 42, "junk intent rides untouched through a load");
+});
+
+test("a rewire-undo over a bench holding an id-less row reads it as no id", async () => {
+  const drafts = await boot();
+  await seed(drafts, "walk-rewire-noid", {
+    stages: [
+      { params: { seed: 1 } },
+      { id: "rw", card: "card-a", params: {}, inputs: {} },
+    ],
+    bench: {
+      rev: 1,
+      log: [
+        entry(1, "rewire", "agent", { stage: "rw", input: "image", added: true }),
+      ],
+    },
+  });
+  await undoBench(drafts, "walk-rewire-noid", { n: 1 });
+  const row = (getBench(drafts, "walk-rewire-noid").stages as Array<Record<string, unknown>>).find((x) => x["id"] === "rw")!;
+  assert.ok(!("image" in (row["inputs"] as Record<string, unknown>)), "the added wire came back off over the id-less sibling");
 });
