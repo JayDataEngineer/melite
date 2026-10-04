@@ -122,26 +122,46 @@ export function landedVerdict(
   return "";
 }
 
-/** Idempotently pin allow_git_url_install = true in the manager's
- *  config.ini — the flag gate for unknown-URL queue installs
- *  (read once at engine startup; a change needs a restart).
+/** Idempotently pin the manager's config.ini to the estate-proven
+ *  install door: allow_git_url_install opens unknown-URL queue
+ *  installs, and the ltdrdata channel_url replaces Manager 3.41's
+ *  own default (Comfy-Org) — the default raises InvalidChannel in
+ *  Manager's cache-update thread, the channel cache never warms,
+ *  and every git-url install is refused with an empty-body 400
+ *  (the fresh-clone probe's pass-6 receipt; the live estate works
+ *  only because its config.ini carries the older ltdrdata line).
+ *  Both keys are read once at engine startup; a change needs a
+ *  restart.
  *  @param configPath the manager config.ini path.
- *  @returns true when the file already carried the flag. */
-export function ensureManagerGitUrlAllowed(configPath: string): boolean {
-  const wanted = "allow_git_url_install = true";
+ *  @returns true when the file already carried every pinned line. */
+export function ensureManagerPinnedConfig(configPath: string): boolean {
+  const pinned = [
+    "allow_git_url_install = true",
+    "channel_url = https://raw.githubusercontent.com/ltdrdata/ComfyUI-Manager/main",
+  ];
   if (!existsSync(configPath)) {
     mkdirSync(dirname(configPath), { recursive: true });
-    writeFileSync(configPath, "[default]\n" + wanted + "\n");
+    writeFileSync(configPath, "[default]\n" + pinned.join("\n") + "\n");
     return false;
   }
-  const text = readFileSync(configPath, "utf8");
-  if (/^\s*allow_git_url_install\s*=/m.test(text)) {
-    const line = text.split("\n").find(
-      (l) => /^\s*allow_git_url_install\s*=/.test(l));
-    return line?.trim() === wanted;
+  let text = readFileSync(configPath, "utf8");
+  let stable = true;
+  for (const line of pinned) {
+    const key = line.slice(0, line.indexOf(" "));
+    const current = text.split("\n").find(
+      (l) => new RegExp("^[ \\t]*" + key + "[ \\t]*=").test(l));
+    if (current === undefined) {
+      text = text.replace(/\n*$/u, "\n") + line + "\n";
+      stable = false;
+      continue;
+    }
+    if (current.trim() === line) continue;
+    text = text.replace(
+      new RegExp("^[ \\t]*" + key + "[ \\t]*=.*$", "m"), line);
+    stable = false;
   }
-  writeFileSync(configPath, text.replace(/\n*$/u, "\n") + wanted + "\n");
-  return false;
+  if (!stable) writeFileSync(configPath, text);
+  return stable;
 }
 
 /** Clear a stale install shape at a url row's custom_nodes path —
@@ -302,11 +322,11 @@ export async function stepExtensions(): Promise<boolean> {
         "extensions install through Manager's git-url door: " +
         (error instanceof Error ? error.message : String(error)));
     }
-    const flagStable = ensureManagerGitUrlAllowed(
+    const flagStable = ensureManagerPinnedConfig(
       join(RUNTIME, "user", "__manager", "config.ini"));
     if (!flagStable) {
-      die("allow_git_url_install written to the manager config — the " +
-        "engine reads it once at startup: restart the engine, then " +
+      die("manager config pinned (allow_git_url_install, channel_url) — " +
+        "the engine reads it once at startup: restart the engine, then " +
         "rerun this step");
     }
     // Install each row through Manager's own git-url door — the

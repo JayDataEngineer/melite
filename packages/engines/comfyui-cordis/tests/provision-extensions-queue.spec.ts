@@ -1,8 +1,11 @@
-// provision-extensions manager channel — the allow_git_url_install
-// flag writer that admits git-url installs, and the on-disk remote
-// verification (the estate's operator law 2026-10-13: Manager is
-// the ONE extension vendor; the CLI never clones — installs ride
-// POST /customnode/install/git_url, verified by the clone's remote).
+// provision-extensions manager channel — the config pin that admits
+// git-url installs and holds the estate-proven channel (Manager
+// 3.41's own Comfy-Org default raises InvalidChannel, its cache
+// never warms, and every git-url install is refused), and the
+// on-disk remote verification (the estate's operator law
+// 2026-10-13: Manager is the ONE extension vendor; the CLI never
+// clones — installs ride POST /customnode/install/git_url,
+// verified by the clone's remote).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -11,7 +14,7 @@ import { execSync } from "node:child_process";
 import { join } from "node:path";
 import {
   clearStaleInstall,
-  ensureManagerGitUrlAllowed,
+  ensureManagerPinnedConfig,
   installedDirFor,
   installedHead,
   landedVerdict,
@@ -19,22 +22,23 @@ import {
 } from "../scripts/provision-extensions-install.ts";
 import { symlinkSync, existsSync } from "node:fs";
 
-describe("ensureManagerGitUrlAllowed", () => {
+describe("ensureManagerPinnedConfig", () => {
   const dir = mkdtempSync(join(tmpdir(), "melite-ext-flag-"));
   const cfg = join(dir, "config.ini");
 
-  it("creates the config with the flag and reports it unstable", () => {
-    assert.equal(ensureManagerGitUrlAllowed(cfg), false);
-    assert.match(readFileSync(cfg, "utf8"),
-      /allow_git_url_install = true/);
+  it("creates the config with both pins and reports it unstable", () => {
+    assert.equal(ensureManagerPinnedConfig(cfg), false);
+    const text = readFileSync(cfg, "utf8");
+    assert.match(text, /allow_git_url_install = true/);
+    assert.match(text, /channel_url = https:\/\/raw\.githubusercontent\.com\/ltdrdata\/ComfyUI-Manager\/main/);
   });
-  it("is idempotent once the flag is pinned", () => {
-    assert.equal(ensureManagerGitUrlAllowed(cfg), true);
+  it("is idempotent once both pins are in place", () => {
+    assert.equal(ensureManagerPinnedConfig(cfg), true);
   });
-  it("appends the flag to an existing config without touching it otherwise", () => {
+  it("appends the pins to an existing config without touching it otherwise", () => {
     const cfg2 = join(dir, "existing.ini");
     writeFileSync(cfg2, "[default]\nsecurity_level = weak\n");
-    assert.equal(ensureManagerGitUrlAllowed(cfg2), false);
+    assert.equal(ensureManagerPinnedConfig(cfg2), false);
     const text = readFileSync(cfg2, "utf8");
     assert.match(text, /security_level = weak/);
     assert.match(text, /allow_git_url_install = true/);
@@ -42,7 +46,21 @@ describe("ensureManagerGitUrlAllowed", () => {
   it("refuses to bless a flag set to false", () => {
     const cfg3 = join(dir, "false.ini");
     writeFileSync(cfg3, "[default]\nallow_git_url_install = false\n");
-    assert.equal(ensureManagerGitUrlAllowed(cfg3), false);
+    assert.equal(ensureManagerPinnedConfig(cfg3), false);
+  });
+  it("replaces Manager's own Comfy-Org default channel with the estate-proven one", () => {
+    // the stranger's fresh boot: Manager 3.41 writes its default
+    // channel, its cache-update thread raises InvalidChannel, and
+    // every git-url install is refused until the pin rewrites it
+    const cfg4 = join(dir, "comfyorg.ini");
+    writeFileSync(cfg4,
+      "[default]\nsecurity_level = normal-\nchannel_url = https://raw.githubusercontent.com/Comfy-Org/ComfyUI-Manager/main\n");
+    assert.equal(ensureManagerPinnedConfig(cfg4), false);
+    const text = readFileSync(cfg4, "utf8");
+    assert.doesNotMatch(text, /Comfy-Org/);
+    assert.match(text, /channel_url = https:\/\/raw\.githubusercontent\.com\/ltdrdata\/ComfyUI-Manager\/main/);
+    assert.match(text, /security_level = normal-/);
+    assert.equal(ensureManagerPinnedConfig(cfg4), true);
   });
 
   it("cleans up", () => { rmSync(dir, { recursive: true, force: true }); });

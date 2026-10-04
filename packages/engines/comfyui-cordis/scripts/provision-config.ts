@@ -36,7 +36,7 @@ export interface RootConfig {
  *  @param tracked the parsed inference.config.json value
  *  @param overlay the parsed data/inference.local.json value
  *  @returns the merged configuration value */
-function mergeOverlay(tracked: unknown, overlay: unknown): unknown {
+export function mergeOverlay(tracked: unknown, overlay: unknown): unknown {
   if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
       typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
     return overlay;
@@ -80,12 +80,26 @@ export function rootStr(v: unknown): string {
   return String(v ?? "").trim();
 }
 
+/** The merged root (tracked inference.config.json + machine
+ *  overlay) is the authority for an engine field; the tracked
+ *  endpoint file's value is the fallback when the root names
+ *  none. Override-order flipped 2026-10-04: the tracked
+ *  comfyui_endpoint.json ships url 127.0.0.1:8188, so override-
+ *  first made every fresh clone talk to whatever runs at 8188 —
+ *  on the developer estate, the LIVE engine (its Manager answered
+ *  every git-url install with an empty-body 400 "Already exists");
+ *  on a stranger's machine, nothing. The machine overlay's pin is
+ *  the truth (the merge law, batch 33).
+ *  @param root the merged root config.
+ *  @param key the engines.comfyui field name.
+ *  @param fallback the tracked endpoint file's value for the key.
+ *  @returns the effective field value; "" when both name none. */
 export function engineField(root: RootConfig, key: string,
-    override: unknown): string {
-  const ov = rootStr(override);
-  if (ov) return ov;
+    fallback: unknown): string {
   const eng = root.engines?.comfyui ?? {};
-  return rootStr(eng[key]);
+  const fromRoot = rootStr(eng[key]);
+  if (fromRoot) return fromRoot;
+  return rootStr(fallback);
 }
 
 // the fixed folder set every ComfyUI install scans on a bound base
