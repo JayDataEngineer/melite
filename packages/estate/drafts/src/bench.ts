@@ -1097,8 +1097,11 @@ function admitStage(
   // A param-less row still names its card (2026-09-15: a stageless
   // add sailed past admission entirely) — admit the card against
   // empty params; the model check passes vacuous, the card check
-  // still bites.
-  admit(card, strippedForAdmission(card, isRecord(params) ? params : {}), provenance);
+  // still bites. Every caller hands this seat a record: the load and
+  // birth arms pass normalizeStages' rows, whose params normalizeBenchStage
+  // has already healed to {} when the doc carried anything else, and the
+  // patch arm passes strippedForAdmission's own copy.
+  admit(card, strippedForAdmission(card, params as Record<string, unknown>), provenance);
 }
 
 /** The compound row's card literal — the bench's own shape, never a
@@ -1107,11 +1110,12 @@ function admitStage(
 const GROUP_CARD = "group";
 
 /** Admission over a wholesale stage list (the load arm — every row
- *  passes the same door an add passes). */
+ *  passes the same door an add passes). Both callers hand it
+ *  normalizeStages' own output, which keeps only records, so a row
+ *  here is a record and the members of a compound are its own. */
 function admitStages(admit: StageAdmission | undefined, stages: unknown): void {
   if (admit === undefined || !Array.isArray(stages)) return;
-  for (const s of stages) {
-    if (!isRecord(s)) continue;
+  for (const s of stages as Array<Record<string, unknown>>) {
     // THE COMPOUND IS NOT A CARD (the bench audit's gap 9,
     // 2026-10-10): groupBench writes a row whose card is the literal
     // "group" and whose members ride in `children` — so loading the

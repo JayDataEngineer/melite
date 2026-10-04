@@ -631,3 +631,181 @@ describe("a compound is judged by its MEMBERS, never as a row of its own", () =>
       "the literal 'group' never reached the board");
   });
 });
+
+// ── THE ADMISSION'S OWN TOLERANCES (the rows every judging seat
+//    shares): a doc is DATA, so a junk row, a member whose card is
+//    not a string, and a params bag that is not an object each get
+//    their own honest reading — nothing is guessed, nothing throws
+//    where the doc merely degrades. ────────────────────────────────
+
+describe("the admission's own tolerances (a doc is data)", () => {
+  test("the load arm skips a junk row and judges the rest", async () => {
+    const drafts = await boot();
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await ensureBench(drafts, {
+      session: "junk-rows",
+      stages: [
+        null,
+        "a bare string row",
+        { card: "card-a", params: { seed: 1 } },
+      ],
+    }, admit);
+    assert.deepEqual(judged, ["card-a"], "the junk rows never reached the seat");
+  });
+
+  test("a row whose card is not a string never reaches the seat, and never composes", async () => {
+    const drafts = await boot();
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await ensureBench(drafts, {
+      session: "junk-card",
+      stages: [
+        { card: 42, params: { seed: 1 } },
+        { card: "", params: { seed: 2 } },
+        { card: "card-a", params: { seed: 3 } },
+      ],
+    }, admit);
+    assert.deepEqual(judged, ["card-a"], "only the row that named a card was judged");
+  });
+
+  test("a params bag that is not an object is judged as empty params (never coerced)", async () => {
+    const drafts = await boot();
+    const seen: Array<Record<string, unknown>> = [];
+    const admit = (card: string, params: Record<string, unknown>): void => {
+      seen.push({ card, params: { ...params } });
+    };
+    await ensureBench(drafts, {
+      session: "junk-params",
+      stages: [
+        { card: "card-a", params: ["array-shaped"] },
+        { card: "card-b", params: "string-shaped" },
+      ],
+    }, admit);
+    assert.equal(seen.length, 2, "both rows crossed the door");
+    for (const row of seen) assert.deepEqual(row.params, {}, "nothing was read out of a non-object bag");
+  });
+
+  test("a compound whose children is not an array is judged as the row it is, and its junk members are skipped", async () => {
+    const drafts = await boot();
+    await seed(drafts, "grp-tolerances", {
+      stages: [
+        { id: "s_0", card: "card-a", params: { seed: 1 } },
+        {
+          id: "g_r0c0_0",
+          card: "group",
+          // the compound literal with a params bag of its own: the
+          // members do not exist, so this row is judged as itself
+          params: { seed: 9 },
+        },
+      ],
+    });
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await patchBench(drafts, "grp-tolerances", { stage: "s_0", params: { seed: 2 }, expect_rev: 0 }, admit);
+    assert.deepEqual(judged, ["card-a"], "the flat row composed; the compound was never read");
+  });
+
+  test("a patch of a compound walks its members and skips the junk ones", async () => {
+    const drafts = await boot();
+    await seed(drafts, "grp-members", {
+      stages: [
+        { id: "s_0", card: "card-a", params: { seed: 1 } },
+        {
+          id: "g_r0c0_0",
+          card: "group",
+          children: [
+            null,
+            "a bare string member",
+            { id: "s_1", card: "card-b", params: { seed: 2 } },
+            { id: "s_2", card: "card-c", params: ["not-an-object bag"] },
+          ],
+        },
+      ],
+    });
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await patchBench(drafts, "grp-members", { stage: "g_r0c0_0", params: { seed: 9 }, expect_rev: 0 }, admit);
+    // the literal 'group' never reaches the seat, and the junk
+    // members are skipped without inventing a card for them
+    assert.ok(!judged.includes("group"), "the compound literal never reached the board");
+    assert.ok(judged.includes("card-b") && judged.includes("card-c"), "both real members were judged");
+    assert.ok(!judged.includes("undefined"), "no junk member was coerced into a card");
+  });
+});
+
+describe("the load arm judges a compound by its members", () => {
+  test("a group row crossing the load door is judged as its members, never as the literal", async () => {
+    const drafts = await boot();
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await ensureBench(drafts, {
+      session: "grp-load-walk",
+      stages: [
+        {
+          id: "g_1",
+          card: "group",
+          children: [
+            { id: "s_0", card: "card-a", params: { seed: 1 } },
+            { id: "s_1", card: "card-b", params: { seed: 2 } },
+          ],
+        },
+      ],
+    }, admit);
+    assert.ok(!judged.includes("group"), "the literal never reached the board");
+    assert.deepEqual(judged, ["card-a", "card-b"], "both members crossed the door the load uses");
+  });
+});
+
+describe("the judged view of a doc's own junk (a doc is data, the seat still judges it)", () => {
+  test("patching a compound whose own params is not an object judges the members anyway", async () => {
+    const drafts = await boot();
+    await seed(drafts, "grp-own-params", {
+      stages: [
+        {
+          id: "g_1",
+          card: "group",
+          params: "not-an-object bag",
+          children: [{ id: "s_0", card: "card-a", params: { seed: 1 } }],
+        },
+      ],
+    });
+    const judged: string[] = [];
+    const admit = (card: string): void => { judged.push(card); };
+    await patchBench(drafts, "grp-own-params", { stage: "g_1", params: { seed: 2 }, expect_rev: 0 }, admit);
+    assert.ok(!judged.includes("group"), "the literal never reached the board");
+    assert.ok(judged.includes("card-a"), "the member was judged");
+  });
+
+  test("patching a flat row whose own params is not an object judges the card with empty params", async () => {
+    const drafts = await boot();
+    await seed(drafts, "flat-junk-params", {
+      stages: [{ id: "s_0", card: "card-a", params: ["not-an-object bag"] }],
+    });
+    const seen: Array<Record<string, unknown>> = [];
+    const admit = (card: string, params: Record<string, unknown>): void => {
+      seen.push({ card, params: { ...params } });
+    };
+    await patchBench(drafts, "flat-junk-params", { stage: "s_0", params: { seed: 2 }, expect_rev: 0 }, admit);
+    assert.ok(seen.some((r) => r.card === "card-a"), "the card was still judged");
+  });
+});
+
+test("patching a compound that carries its own params judges the members from that view", async () => {
+  const drafts = await boot();
+  await seed(drafts, "grp-with-params", {
+    stages: [
+      {
+        id: "g_1",
+        card: "group",
+        params: { seed: 7 },
+        children: [{ id: "s_0", card: "card-a", params: { seed: 1 } }],
+      },
+    ],
+  });
+  const judged: string[] = [];
+  const admit = (card: string): void => { judged.push(card); };
+  await patchBench(drafts, "grp-with-params", { stage: "g_1", params: { seed: 8 }, expect_rev: 0 }, admit);
+  assert.ok(!judged.includes("group"), "the literal never reached the board");
+  assert.ok(judged.includes("card-a"), "the member was judged");
+});
