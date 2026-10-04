@@ -646,6 +646,16 @@ export const ModelDecl: z<ModelDecl> = z.object({
   variants: z.array(VariantRow),
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
+  // THE OPTION-3 CHANNEL (TTS chain audit T3, 2026-10-15): weights
+  // trees the operator hand-places — no public per-file URL exists
+  // (the merged TTS trees, the MOSS-SoundEffect source tree), so no
+  // provisions row can honestly name them. An entry here DECLARES
+  // the placement instead of leaving the lane's model_path
+  // silently claiming the estate fetches it. Judged by the ghost
+  // wall (models-against-cards): every lane model_path leaf must be
+  // covered by a provisions name, a variant artifact basename, a
+  // source repo id, or an entry here.
+  hand_placed_weights: z.array(z.string()).default([]),
   prompt_guide: z.union([z.dict(z.any()), z.const(null)]).required(false),
   // (D-C7, 2026-09-28: base_body KILLED with its last declarer —
   // one declaration, zero readers, superseded by the parametric
@@ -746,6 +756,12 @@ export interface ModelDecl {
   variants: VariantRow[];
   variant_groups?: VariantGroupRow[];
   provisions?: ProvisionRow[];
+  /** Weights trees the operator hand-places — no public per-file
+   *  URL exists (merged TTS trees, the MOSS-SoundEffect source
+   *  tree), so no provisions row can honestly name them; declaring
+   *  the placement stops the lanes silently claiming the estate
+   *  fetches them. Judged by the ghost wall's model_path arm. */
+  hand_placed_weights?: string[];
   prompt_guide?: Record<string, unknown> | null;
   accepts?: string[];
   timeout_floor?: number;

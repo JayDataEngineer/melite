@@ -45,6 +45,20 @@ export const DECL: ModelDecl = {
     "variant": "customvoice"
   },
   "genre": "audio",
+  // HAND-PLACED WEIGHTS (the TTS chain audit T3, option 3 — the
+  // 1.7B mirror of qwen3-tts's row): all three trees this family's
+  // lanes load are merged/snapshot builds with no public per-file
+  // URL — two merged trees (base + speaker tensors, the operator's
+  // placed bytes) and the VoiceDesign checkpoint riding the HF
+  // cache snapshot layout. Declared here so the lanes never
+  // silently claim the estate fetches them; the ghost wall
+  // (models-against-cards) judges every model_path leaf against
+  // this row.
+  "hand_placed_weights": [
+    "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
+    "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+    "Qwen3-TTS-12Hz-1.7B-Base-merged",
+  ],
   "mods": [
     "qvoice",
     "qvoice_save"

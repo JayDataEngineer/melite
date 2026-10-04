@@ -9,6 +9,7 @@ import { boundModelFolders, enginePort, engineUrl } from "./provision-config.ts"
 import type { EndpointConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 import { cmdPaths, probe } from "./provision-instance-layout.ts";
+import { AUDIOCORE_LIB, provisionAudiocore } from "./provision-audiocore.ts";
 
 export function cmdSync(cfg: EndpointConfig): void {
   if (cfg.provision !== "managed") {
@@ -57,6 +58,7 @@ export function cmdSync(cfg: EndpointConfig): void {
       info("core already at pin " + pin.slice(0, 12));
       cmdPaths(cfg);
       vendorManager();
+      provisionAudiocore();
       return;
     }
   }
@@ -76,6 +78,7 @@ export function cmdSync(cfg: EndpointConfig): void {
     RUNTIME + ")");
   cmdPaths(cfg);
   vendorManager();
+  provisionAudiocore();
 }
 
 // ── the built-in manager (auto-build; no external dependency) ──────
@@ -185,9 +188,13 @@ export function cmdBootCmd(cfg: EndpointConfig): void {
   if (cfg.provision === "managed") {
     const port = enginePort(cfg);
     console.log("# managed launch (cwd resolves custom_nodes; weights via " +
-      "extra_model_paths; estate streams for input/output; one line — " +
-      "paste into any shell):");
-    console.log("cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
+      "extra_model_paths; estate streams for input/output; the native " +
+      "audio core via AUDIOCORE_NATIVE_LIB — provision sync installs " +
+      "it; one line — paste into any shell):");
+    // a bare assignment (semicolon-terminated) persists in the pasted
+    // shell — a `VAR=x cmd && cmd2` prefix would scope to cmd only
+    console.log("AUDIOCORE_NATIVE_LIB=" + AUDIOCORE_LIB + "; " +
+      "cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
       " main.py --listen 127.0.0.1 --port " + port +
       " --extra-model-paths-config extra_model_paths.yaml" +
       " --input-directory " + join(REPO, "data", "input") +

@@ -18,6 +18,16 @@ export const DECL: ModelDecl = {
   "description": "MOSS-SFX v2 sound-effect generation — describe the SOUND not the scene",
   "engine": "comfyui",
   "genre": "audio",
+  // HAND-PLACED WEIGHTS: the MOSS-SoundEffect v2 source tree (the
+  // checkpoint + its code layout, upstream's src distribution) has
+  // no per-file download URL a provisions row could name — the
+  // operator places the tree; this row declares it so the lane's
+  // model_path never silently claims the estate fetches it. The
+  // ghost wall (models-against-cards) judges the leaf against this
+  // entry.
+  "hand_placed_weights": [
+    "MOSS-SoundEffect-v2.0-src",
+  ],
   "variants": [
     {
       "id": "standard",

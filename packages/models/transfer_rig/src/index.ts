@@ -46,6 +46,21 @@ export const DECL: ModelDecl = {
   "lane_inputs": {
     "model_path": "somaskel77/skin_standard.npz"
   },
+  // THE CROSS-FAMILY RECEIPT (the ghost wall's directory-form
+  // judgment, 2026-10-16): the skin npz this lane loads is
+  // publicly fetchable, but the row lived only on kimodo's DECL —
+  // per-family ownership means the family whose LANE loads a file
+  // declares it (mirrored row; same digest the kimodo receipt
+  // minted).
+  "provisions": [
+    {
+      "name": "skin_standard.npz",
+      "url": "https://raw.githubusercontent.com/nv-tlabs/kimodo/main/kimodo/assets/skeletons/somaskel77/skin_standard.npz",
+      "folder": "somaskel77",
+      "sha256": "90ee2cdf50f168382a7dd7e9c88b118298aba0aca4b72022080c89c4bab0ceb2",
+      "size_bytes": 531434
+    }
+  ],
   // the transfer action the img-to-mesh card binds (the rig-copy
   // lane tree).
   "actions": [transfer],

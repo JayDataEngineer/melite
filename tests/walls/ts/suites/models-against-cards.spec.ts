@@ -572,16 +572,20 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
+    // 2026-10-16, the ghost-tree judgment: 16 -> 17 (transfer_rig's
+    // mirrored skin npz row — its lane loads the file kimodo's
+    // receipt minted) and 60 -> 61 rows.
     const PROVISION_DECLARERS = ["anima", "anny", "h3", "joytag", "kimodo",
       "krea-2", "music3", "pixal3d", "qwen-img-21", "qwen-img-edit-21",
-      "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "trellis2-native",
-      "yue2", "z-image"];
-    // the rows those sixteen declare, exactly (D-M12: a floor let a
+      "qwen-img-edit-2511", "rtx-vsr", "seedvr2_ema", "transfer_rig",
+      "trellis2-native", "yue2", "z-image"];
+    // the rows those families declare, exactly (D-M12: a floor let a
     // family's whole table go unjudged) — 2026-10-12, the ghost-debt
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
     // swap is net-zero); the §4c closing: 59 -> 60 (joytag's
-    // model.safetensors, the pack weights the audit ghosted)
-    const PROVISION_ROW_COUNT = 60;
+    // model.safetensors, the pack weights the audit ghosted); the
+    // ghost-tree judgment: 60 -> 61 (transfer_rig's mirrored npz)
+    const PROVISION_ROW_COUNT = 61;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {
@@ -1171,5 +1175,68 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       }
     }
     assert.deepEqual(offenders, [], `ghost weights (the audit's fix 3; hand-placed bytes are not a provision):\n${offenders.join("\n")}`);
+  });
+
+  // THE DIRECTORY-FORM HOLE (the TTS chain audit T3, 2026-10-15):
+  // the judgment above keys on weight-file extensions, so a lane
+  // pointing at a weights TREE (a directory model_path) never got
+  // judged at all — the TTS lanes' five trees and the MOSS-SoundEffect
+  // source tree were silent ghosts. A tree no row fetches and no
+  // declaration names is the same disease; the cure channels are
+  // provisions names, variant artifacts, source repo ids, or the
+  // hand_placed_weights declaration (option 3: the placement stated,
+  // never silently implied fetchable).
+  it("every lane model_path tree is declared by some channel (or hand_placed_weights)", async () => {
+    const { loadCardDefs, provisionsByFamily } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const byFamily = await provisionsByFamily(await loadCardDefs());
+    /** String values under a "model_path" key at any dict depth. */
+    const modelPaths = (value: unknown, into: string[] = []): string[] => {
+      if (Array.isArray(value)) {
+        for (const v of value) modelPaths(v, into);
+      } else if (value !== null && typeof value === "object") {
+        for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+          if (k === "model_path" && typeof v === "string") into.push(v);
+          else modelPaths(v, into);
+        }
+      }
+      return into;
+    };
+    const base = (s: string): string => s.split("/").pop() ?? s;
+    const offenders: string[] = [];
+    for (const id of modelIds()) {
+      const view = getModel(id);
+      const declared = new Set<string>();
+      const add = (s: string): void => { declared.add(s); declared.add(base(s)); };
+      for (const row of byFamily[id]?.provisions ?? []) add(row.name);
+      for (const w of view.hand_placed_weights ?? []) add(w);
+      if (view.source?.repo_id) add(view.source.repo_id);
+      for (const variant of view.variants ?? []) {
+        for (const cell of variant.cells) {
+          const artifact = cell.artifact;
+          if (artifact === undefined || artifact === null) continue;
+          let name = artifact.source_url.split("/").pop() ?? "";
+          const cut = Math.max(name.indexOf("?"), name.indexOf("#"));
+          if (cut >= 0) name = name.slice(0, cut);
+          add(name);
+        }
+      }
+      const paths: Array<string> = [
+        ...modelPaths(view.lane_inputs ?? {}),
+        ...(view.variants ?? []).flatMap((v) => modelPaths(v.lane_inputs ?? {})),
+      ];
+      for (const p of paths) {
+        if (!declared.has(p) && !declared.has(base(p))) {
+          offenders.push(
+            `${id}: lane model_path ${p} — no provisions row, artifact, source repo, or hand_placed_weights entry names it`,
+          );
+        }
+      }
+    }
+    assert.deepEqual(
+      offenders, [],
+      `ghost weight trees (directory-form model_path; hand-placed bytes are not a provision):\n${offenders.join("\n")}`,
+    );
   });
 });

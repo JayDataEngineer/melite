@@ -37,6 +37,20 @@ export const DECL: ModelDecl = {
     "variant": "customvoice"
   },
   "genre": "audio",
+  // HAND-PLACED WEIGHTS (the TTS chain audit T3, option 3): the two
+  // trees this family's lanes load have no public per-file URL — the
+  // CustomVoice tree is a merged build (base + speaker tensors) that
+  // exists only as the operator's placed bytes plus its
+  // estate-authored model_specs row; the Base tree rides the HF
+  // cache snapshot layout. No provisions row can honestly name
+  // either, so the placement is DECLARED here instead of the lanes
+  // silently claiming the estate fetches them. The ghost wall
+  // (models-against-cards) judges every model_path leaf against
+  // this row.
+  "hand_placed_weights": [
+    "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
+    "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+  ],
   // THE LANE DECLARATION (2026-10-10, the YOU_ARE_A_LIAR fix
   // shapes 1+2: the model is the author of what it accepts — no
   // per-model field table in the card, no visible_when guard list).
