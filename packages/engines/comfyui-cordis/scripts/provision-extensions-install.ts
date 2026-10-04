@@ -19,6 +19,19 @@ import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision
 import { engineUrl, loadConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 
+/** The cold-cache retry window for Manager git-url installs: a
+ *  just-booted Manager refuses installs (empty-body 400, or a 200
+ *  that installs nothing) until its channel cache fetch lands —
+ *  observed at ~13s on a warm box and minutes on a cold one. Each
+ *  row retries this many times with this delay before failing. */
+const INSTALL_RETRY = { attempts: 12, delayMs: 15_000 } as const;
+
+/** @param ms milliseconds to wait.
+ *  @returns a promise that resolves after the wait. */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Normalize a git remote for identity comparison — case, a
  *  trailing slash and a .git suffix carry no identity.
  *  @param url a remote url in any of its spellings.
@@ -319,24 +332,59 @@ export async function stepExtensions(): Promise<boolean> {
       const target = row.ref === undefined || row.ref === ""
         ? row.url
         : row.url + "@" + row.ref;
-      info("  [" + row.name + "] manager git_url install — " + target);
-      const res = await fetch(endpoint + "/customnode/install/git_url", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ url: target }),
-        signal: AbortSignal.timeout(900_000),
-      });
-      if (!res.ok) {
-        warn("  [" + row.name + "] install refused (status " + res.status +
-          ") — the engine log has the failure");
-        counts.failed += 1;
-        continue;
+      // THE COLD-CACHE WINDOW: a just-booted Manager answers git-url
+      // installs with an empty-body 400 (or a 200 that installs
+      // nothing) until its channel cache fetch lands — the engine
+      // log reads "The ComfyRegistry cache update is still in
+      // progress". The refusal is transient, so each row retries a
+      // bounded window instead of failing the whole stranger path
+      // (the fresh-clone probe's pass-5 receipt: 25/25 refused
+      // seconds after boot; the same rows installed minutes later).
+      let landed = false;
+      for (let attempt = 1; attempt <= INSTALL_RETRY.attempts; attempt += 1) {
+        if (attempt > 1) {
+          info("  [" + row.name + "] retrying install in " +
+            INSTALL_RETRY.delayMs + "ms (attempt " + attempt + " of " +
+            INSTALL_RETRY.attempts + " — Manager's cache may still be warming)");
+          await sleep(INSTALL_RETRY.delayMs);
+        }
+        info("  [" + row.name + "] manager git_url install — " + target);
+        const res = await fetch(endpoint + "/customnode/install/git_url", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ url: target }),
+          signal: AbortSignal.timeout(900_000),
+        });
+        if (!res.ok) {
+          // Manager states its reason in the response body (JSON or
+          // plain text); surfacing it here is the diagnosis seam —
+          // "the engine log has the failure" is true but the body is
+          // the failure, verbatim
+          let reason = "";
+          try {
+            reason = (await res.text()).trim().slice(0, 300);
+          } catch {
+            reason = "(body unreadable)";
+          }
+          if (attempt === INSTALL_RETRY.attempts) {
+            warn("  [" + row.name + "] install refused (status " + res.status +
+              ") — " + (reason === "" ? "the engine log has the failure" : reason));
+          }
+          continue;
+        }
+        // Verify the outcome on disk: the clone's git remote IS the
+        // row (a 200 with action=skip means it was already there).
+        if (!urlInstalled(row.url, workspace)) {
+          if (attempt === INSTALL_RETRY.attempts) {
+            warn("  [" + row.name + "] not present after a 200 — the " +
+              "engine log has the failure");
+          }
+          continue;
+        }
+        landed = true;
+        break;
       }
-      // Verify the outcome on disk: the clone's git remote IS the
-      // row (a 200 with action=skip means it was already there).
-      if (!urlInstalled(row.url, workspace)) {
-        warn("  [" + row.name + "] not present after a 200 — the " +
-          "engine log has the failure");
+      if (!landed) {
         counts.failed += 1;
         continue;
       }
