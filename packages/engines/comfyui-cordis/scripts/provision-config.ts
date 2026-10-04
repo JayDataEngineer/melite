@@ -26,19 +26,48 @@ export interface RootConfig {
   engines?: { comfyui?: Record<string, unknown> };
 }
 
+/** Merges the machine-local overlay OVER the tracked root config:
+ *  object branches merge, scalars and arrays replace. The overlay
+ *  shadows KEYS, never the whole file — a fresh machine pinning one
+ *  port or one absolute keeps every tracked default (the
+ *  fresh-clone probe's pass-4 receipt: a minimal overlay erased
+ *  models.read_root and sync refused, blaming the tracked file that
+ *  still carried it).
+ *  @param tracked the parsed inference.config.json value
+ *  @param overlay the parsed data/inference.local.json value
+ *  @returns the merged configuration value */
+function mergeOverlay(tracked: unknown, overlay: unknown): unknown {
+  if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
+      typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
+    return overlay;
+  }
+  const out: Record<string, unknown> = { ...(tracked as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(overlay as Record<string, unknown>)) {
+    out[k] = mergeOverlay(out[k], v);
+  }
+  return out;
+}
+
 export function loadRoot(): RootConfig {
-  // Machine-local overlay first (untracked, gitignored): developer
-  // estates pin absolute model roots here; the tracked file ships
-  // portable repo-relative defaults.
+  // Machine-local overlay merged over the tracked defaults
+  // (untracked, gitignored): developer estates pin absolute model
+  // roots and ports here; the tracked file ships portable
+  // repo-relative defaults, and an overlay that names only some
+  // keys inherits the rest.
   const local = join(REPO, "data", "inference.local.json");
-  if (existsSync(local)) {
-    return JSON.parse(readFileSync(local, "utf8")) as RootConfig;
-  }
+  const overlay = existsSync(local)
+    ? JSON.parse(readFileSync(local, "utf8")) as RootConfig
+    : null;
   if (!existsSync(ROOT_CONFIG)) {
-    die("no root config at inference.config.json — model storage is " +
-      "configured from the project root (never guessed)");
+    if (overlay === null) {
+      die("no root config at inference.config.json — model storage is " +
+        "configured from the project root (never guessed)");
+    }
+    return overlay;
   }
-  return JSON.parse(readFileSync(ROOT_CONFIG, "utf8")) as RootConfig;
+  const tracked = JSON.parse(readFileSync(ROOT_CONFIG, "utf8")) as RootConfig;
+  if (overlay === null) return tracked;
+  return mergeOverlay(tracked, overlay) as RootConfig;
 }
 
 export function loadConfig(path: string): EndpointConfig {
@@ -84,6 +113,23 @@ export function anchorDir(value: string): string {
   return isAbsolute(value) ? value : resolve(REPO, value);
 }
 
+/** Joins the engine base under a models root, never twice: overlays
+ *  written under the old replacement semantics bake the base into
+ *  read_root/download_root (an absolute already pointing INSIDE the
+ *  engine dir), and the merge law must not re-append it. The base
+ *  names a subdirectory, never a repeatable suffix.
+ *  @param root the models root (already anchored)
+ *  @param base the engines.comfyui.base subdirectory ("" = no base)
+ *  @returns the joined store root, unchanged when it already ends
+ *           with the base */
+export function joinBase(root: string, base: string): string {
+  const b = base.trim();
+  if (b === "") return root;
+  if (root === "" || root === "." ) return b;
+  if (root === b || root.endsWith("/" + b) || root.endsWith("\\" + b)) return root;
+  return join(root, b);
+}
+
 export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
   // THE ONE derivation: ROOT config + endpoint overrides
   // -> {folder: mount subdir}. Refuses an unconfigured root LOUD.
@@ -97,11 +143,11 @@ export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
   }
   const root = loadRoot();
   const base = rootStr(cfg.model_base_path) ||
-    join(anchorDir(rootStr(root.models?.read_root)),
+    joinBase(anchorDir(rootStr(root.models?.read_root)),
       rootStr(root.engines?.comfyui?.base));
   const download = rootStr(cfg.model_download_path) ||
     rootStr(cfg.model_base_path) ||
-    join(anchorDir(rootStr(root.models?.download_root)),
+    joinBase(anchorDir(rootStr(root.models?.download_root)),
       rootStr(root.engines?.comfyui?.base));
   if (!rootStr(root.models?.read_root)) {
     die("models.read_root is unset in inference.config.json — " +

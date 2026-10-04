@@ -365,4 +365,95 @@ describe("root-config inheritance (read_root law)", () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+  it("THE MERGE LAW: an overlay pinning one key keeps every tracked default (the fresh-clone receipt)", () => {
+    // pass-4 of the fresh-clone probe (2026-10-15): a stranger's
+    // minimal overlay — a private port and url, nothing else —
+    // ERASED models.read_root under replacement semantics, and the
+    // engine blamed the tracked file that still carried it. The
+    // overlay shadows KEYS, never the whole file.
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "data", "models", "image-gen", "comfyui", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "data", "models", "image-gen", "comfyui", "checkpoints", "m.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui", port: 8188 } },
+      }));
+      writeFileSync(join(root, "data", "inference.local.json"), JSON.stringify({
+        engines: { comfyui: { port: 42323, url: "http://127.0.0.1:42323" } },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "m.safetensors", root, {} as never),
+        join(root, "data/models/image-gen/comfyui/checkpoints/m.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("THE MERGE LAW, the other cut: an overlay read_root shadows the tracked one", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      // the tracked base joins beneath an overlay root that does not
+      // already end with it (joinBaseOnce — the base is a
+      // subdirectory, never a repeatable suffix)
+      mkdirSync(join(root, "abs-store", "image-gen", "comfyui", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "abs-store", "image-gen", "comfyui", "checkpoints", "o.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui" } },
+      }));
+      mkdirSync(join(root, "data"), { recursive: true });
+      writeFileSync(join(root, "data", "inference.local.json"), JSON.stringify({
+        models: { read_root: join(root, "abs-store") },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "o.safetensors", root, {} as never),
+        join(root, "abs-store/image-gen/comfyui/checkpoints/o.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("an overlay with NO tracked root stands alone, and a comfyui block without a base leaves it bare", () => {
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "solo-store", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "solo-store", "checkpoints", "q.safetensors"), "x");
+      mkdirSync(join(root, "data"), { recursive: true });
+      writeFileSync(join(root, "data", "inference.local.json"), JSON.stringify({
+        models: { read_root: join(root, "solo-store") },
+        engines: { comfyui: {} },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "q.safetensors", root, {} as never),
+        join(root, "solo-store/checkpoints/q.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it("THE MERGE LAW, the old convention: a base-inclusive overlay root never double-appends", () => {    // the live estate's overlay bakes the base into read_root
+    // (written under the old replacement semantics); merged over the
+    // tracked base, a bare join would resolve
+    // /mnt/…/comfyui/image-gen/comfyui — joinBaseOnce keeps the root
+    const root = mkdtempSync(join(tmpdir(), "melite-cat-"));
+    try {
+      mkdirSync(join(root, "old-store", "image-gen", "comfyui", "checkpoints"), { recursive: true });
+      writeFileSync(join(root, "old-store", "image-gen", "comfyui", "checkpoints", "p.safetensors"), "x");
+      writeFileSync(join(root, "inference.config.json"), JSON.stringify({
+        models: { read_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui" } },
+      }));
+      mkdirSync(join(root, "data"), { recursive: true });
+      writeFileSync(join(root, "data", "inference.local.json"), JSON.stringify({
+        models: { read_root: join(root, "old-store", "image-gen", "comfyui") },
+      }));
+      assert.equal(
+        findModelPresent("checkpoints", "p.safetensors", root, {} as never),
+        join(root, "old-store/image-gen/comfyui/checkpoints/p.safetensors"),
+      );
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });

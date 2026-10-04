@@ -363,24 +363,66 @@ export function checkModelPathPresent(
   return findModelPathPresent(modelPath, repoRoot, cfg);
 }
 
+/** Joins the engine base under a models root, never twice: overlays
+ *  written under the old replacement semantics bake the base into
+ *  read_root, and the merge law must not re-append it (mirrors
+ *  provision-config.ts joinBase — the twin law). The caller
+ *  guarantees a non-empty root and a non-empty base.
+ *  @param root the models root (non-empty)
+ *  @param base the engines.comfyui.base subdirectory (non-empty)
+ *  @returns the joined store, unchanged when it already ends with
+ *           the base */
+function joinBaseOnce(root: string, base: string): string {
+  if (root === base || root.endsWith("/" + base) || root.endsWith("\\" + base)) return root;
+  return join(root, base);
+}
+
+/** Merges the machine-local overlay OVER the tracked root config:
+ *  object branches merge, scalars and arrays replace. The overlay
+ *  shadows KEYS, never the whole file (mirrors provision-config.ts
+ *  mergeOverlay — the twin law).
+ *  @param tracked the parsed inference.config.json value
+ *  @param overlay the parsed data/inference.local.json value
+ *  @returns the merged configuration value */
+function mergeRootOverlay(tracked: unknown, overlay: unknown): unknown {
+  if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
+      typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
+    return overlay;
+  }
+  const out: Record<string, unknown> = { ...(tracked as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(overlay as Record<string, unknown>)) {
+    out[k] = mergeRootOverlay(out[k], v);
+  }
+  return out;
+}
+
 /** The root inheritance base: the OVERLAY law (the portability fix,
- *  2026-10-12) — data/inference.local.json when present, else the
- *  tracked inference.config.json; models.read_root joined with
- *  engines.comfyui.base, anchored to the repo root when relative.
- *  Machine-local absolutes live in the untracked overlay ONLY (the
- *  provision script's loadRoot + the estate door's loadStoreRoot
- *  are the twins); the tracked tree ships portable repo-relative
- *  defaults, so a fresh clone never inherits another machine's
- *  /mnt. Empty string = no root statement (missing files, no
- *  models block, non-string read_root) — the mount leg then needs
- *  the endpoint's own base. One deterministic read, no cache. */
+ *  2026-10-12) — data/inference.local.json merged OVER the tracked
+ *  inference.config.json (the overlay shadows keys, never the whole
+ *  file); models.read_root joined with engines.comfyui.base,
+ *  anchored to the repo root when relative. Machine-local absolutes
+ *  live in the untracked overlay ONLY (the provision script's
+ *  loadRoot + the estate door's loadStoreRoot are the twins); the
+ *  tracked tree ships portable repo-relative defaults, so a fresh
+ *  clone never inherits another machine's /mnt. Empty string = no
+ *  root statement (missing files, no models block, non-string
+ *  read_root) — the mount leg then needs the endpoint's own base.
+ *  One deterministic read, no cache. */
 function rootModelsReadRoot(repoRoot: string): string {
   try {
     const overlayPath = join(repoRoot, "data", "inference.local.json");
     const rootPath = join(repoRoot, "inference.config.json");
-    const raw: unknown = JSON.parse(
-      readFileSync(existsSync(overlayPath) ? overlayPath : rootPath, "utf8"),
-    );
+    let raw: unknown;
+    if (existsSync(overlayPath) && existsSync(rootPath)) {
+      raw = mergeRootOverlay(
+        JSON.parse(readFileSync(rootPath, "utf8")),
+        JSON.parse(readFileSync(overlayPath, "utf8")),
+      );
+    } else {
+      raw = JSON.parse(
+        readFileSync(existsSync(overlayPath) ? overlayPath : rootPath, "utf8"),
+      );
+    }
     if (typeof raw !== "object" || raw === null || Array.isArray(raw)) return "";
     const models: unknown = (raw as Record<string, unknown>)["models"];
     if (typeof models !== "object" || models === null || Array.isArray(models)) return "";
@@ -392,7 +434,7 @@ function rootModelsReadRoot(repoRoot: string): string {
       const comfy: unknown = (engines as Record<string, unknown>)["comfyui"];
       if (typeof comfy === "object" && comfy !== null && !Array.isArray(comfy)) {
         const base: unknown = (comfy as Record<string, unknown>)["base"];
-        if (typeof base === "string" && base.trim() !== "") store = join(store, base.trim());
+        if (typeof base === "string" && base.trim() !== "") store = joinBaseOnce(store, base.trim());
       }
     }
     return isAbsolute(store) ? store : join(repoRoot, store);

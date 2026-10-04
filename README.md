@@ -28,9 +28,19 @@ changing the harness or composing media.
 Requirements:
 
 - Node.js and pnpm
+- git (with network access for submodules — the vendored engine
+  extensions and reference trees ride submodules)
 - a reachable ComfyUI instance, or the managed-instance recipe
 - `dsh` on `PATH` for profile boot
 - the Cordis/DSH reference checkout when implementing framework behavior
+
+Clone with submodules, or initialize them inside an existing checkout:
+
+```sh
+git clone --recurse-submodules <repository-url>
+# or, inside a plain clone:
+git submodule update --init --recursive
+```
 
 Install workspace dependencies and render the supported DSH profiles:
 

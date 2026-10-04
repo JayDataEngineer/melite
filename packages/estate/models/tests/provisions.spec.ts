@@ -350,6 +350,66 @@ describe("loadStoreRoot + resolveStoreRoot", () => {
       rmSync(dir, { recursive: true, force: true });
     }
   });
+  test("a download_root without a base stays bare (the merge law never invents a base)", () => {
+    const dir = repoDir(
+      {},
+      { models: { read_root: "/r", download_root: "/d" }, engines: { comfyui: {} } },
+    );
+    try {
+      assert.equal(loadStoreRoot(dir), "/d");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  test("an overlay with NO tracked root stands alone (the machines without a checkout seam)", () => {
+    const dir = tmpRoot();
+    try {
+      mkdirSync(join(dir, "packages", "engines", "comfyui-cordis", "data"), {
+        recursive: true,
+      });
+      writeFileSync(
+        join(dir, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"),
+        JSON.stringify({}),
+      );
+      mkdirSync(join(dir, "data"), { recursive: true });
+      writeFileSync(
+        join(dir, "data", "inference.local.json"),
+        JSON.stringify({
+          models: { read_root: "/ro", download_root: "/do" },
+          engines: { comfyui: { base: "eng" } },
+        }),
+      );
+      assert.equal(loadStoreRoot(dir), "/do/eng");
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+  test("THE MERGE LAW: an overlay pinning one key keeps the tracked defaults (the fresh-clone receipt)", () => {
+    // pass-4 of the fresh-clone probe (2026-10-15): a stranger's
+    // minimal overlay — a private port, nothing else — erased
+    // models.read_root under replacement semantics; the door blamed
+    // the tracked file that still carried it
+    const dir = repoDir(
+      {},
+      {
+        models: { read_root: "data/models", download_root: "data/models" },
+        engines: { comfyui: { base: "image-gen/comfyui", port: 8188 } },
+      },
+    );
+    try {
+      mkdirSync(join(dir, "data"), { recursive: true });
+      writeFileSync(
+        join(dir, "data", "inference.local.json"),
+        JSON.stringify({ engines: { comfyui: { port: 42323 } } }),
+      );
+      assert.equal(
+        loadStoreRoot(dir),
+        join(dir, "data/models/image-gen/comfyui"),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
   test("null endpoint keys inherit the root", () => {
     const dir = repoDir(
       { model_download_path: null, model_base_path: null },

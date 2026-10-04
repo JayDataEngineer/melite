@@ -128,6 +128,41 @@ function rootStr(v: unknown): string {
   return String(v ?? "").trim();
 }
 
+/** Joins the engine base under a models root, never twice: overlays
+ *  written under the old replacement semantics bake the base into
+ *  read_root/download_root, and the merge law must not re-append it
+ *  (mirrors provision-config.ts joinBase — the twin law).
+ *  @param root the models root
+ *  @param base the engines.comfyui.base subdirectory ("" = no base)
+ *  @returns the joined store root, unchanged when it already ends
+ *           with the base */
+function joinBaseOnce(root: string, base: string): string {
+  const b = base.trim();
+  if (b === "") return root;
+  if (root === "" || root === ".") return b;
+  if (root === b || root.endsWith("/" + b) || root.endsWith("\\" + b)) return root;
+  return join(root, b);
+}
+
+/** Merges the machine-local overlay OVER the tracked root config:
+ *  object branches merge, scalars and arrays replace. The overlay
+ *  shadows KEYS, never the whole file (mirrors provision-config.ts
+ *  mergeOverlay — the twin law).
+ *  @param tracked the parsed inference.config.json value
+ *  @param overlay the parsed data/inference.local.json value
+ *  @returns the merged configuration value */
+function mergeRootOverlay(tracked: unknown, overlay: unknown): unknown {
+  if (typeof tracked !== "object" || tracked === null || Array.isArray(tracked) ||
+      typeof overlay !== "object" || overlay === null || Array.isArray(overlay)) {
+    return overlay;
+  }
+  const out: Record<string, unknown> = { ...(tracked as Record<string, unknown>) };
+  for (const [k, v] of Object.entries(overlay as Record<string, unknown>)) {
+    out[k] = mergeRootOverlay(out[k], v);
+  }
+  return out;
+}
+
 interface EndpointConfig {
   model_base_path?: string;
   model_download_path?: string;
@@ -176,13 +211,25 @@ export function loadStoreRoot(repoDir: string): string {
         `${k} is EMPTY in the endpoint config — unset the key to inherit the root config (inference.config.json), or name it explicitly (never guessed)`,
       );
   }
-  // overlay first (untracked, gitignored): the machine-local pin —
-  // mirrors provision-config.ts loadRoot exactly
+  // overlay merged over the tracked defaults (untracked,
+  // gitignored): the machine-local pin shadows KEYS, never the
+  // whole file — mirrors provision-config.ts loadRoot exactly
   const overlayPath = join(repoDir, "data", "inference.local.json");
   const rootPath = join(repoDir, "inference.config.json");
-  const root = JSON.parse(
-    readFileSync(existsSync(overlayPath) ? overlayPath : rootPath, "utf8"),
-  ) as RootConfig;
+  const overlay: RootConfig | null = existsSync(overlayPath)
+    ? (JSON.parse(readFileSync(overlayPath, "utf8")) as RootConfig)
+    : null;
+  let root: RootConfig;
+  if (overlay !== null && existsSync(rootPath)) {
+    root = mergeRootOverlay(
+      JSON.parse(readFileSync(rootPath, "utf8")) as RootConfig,
+      overlay,
+    ) as RootConfig;
+  } else if (overlay !== null) {
+    root = overlay;
+  } else {
+    root = JSON.parse(readFileSync(rootPath, "utf8")) as RootConfig;
+  }
   if (rootStr(root.models?.read_root) === "")
     throw new ModelsDoorError(
       502,
@@ -193,10 +240,11 @@ export function loadStoreRoot(repoDir: string): string {
   const epBase = rootStr(ep.model_base_path);
   const rootDl = rootStr(root.models?.download_root);
   const rootBase = rootStr(root.engines?.comfyui?.base);
-  // join("","") is "." (never an empty refusal) — the derived leg
-  // only joins when a root half names something.
+  // joinBase, never a bare join: overlays written under the old
+  // replacement semantics bake the base into the root — the merge
+  // law must not re-append it (mirrors provision-config joinBase)
   const store =
-    epDl || epBase || (rootDl !== "" || rootBase !== "" ? join(rootDl, rootBase) : "");
+    epDl || epBase || (rootDl !== "" || rootBase !== "" ? joinBaseOnce(rootDl, rootBase) : "");
   if (store === "")
     throw new ModelsDoorError(
       502,
