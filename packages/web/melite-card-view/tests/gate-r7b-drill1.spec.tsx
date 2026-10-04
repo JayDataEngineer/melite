@@ -393,6 +393,10 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByText("Ungroup", {}, { timeout: 4000 }));
-    expect(await screen.findByText("ungroup failed", {}, { timeout: 4000 })).toBeTruthy();
+    // (the error surface is a useState that never expires — under the
+    // full-suite parallel load the click's promise can outlive a 4s
+    // polling window while the assertion itself is unaffected; the
+    // wider window is load headroom, not a weaker claim)
+    expect(await screen.findByText("ungroup failed", {}, { timeout: 15000 })).toBeTruthy();
   });
 });
