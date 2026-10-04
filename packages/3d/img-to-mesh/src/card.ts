@@ -185,11 +185,14 @@ export function apply(ctx: Context): void {
     ],
     // Per-family truth (requires_by_family declaration — the door
     // gates the ACTIVE family's slice; the flat list carries the
-    // UNION for flat consumers, see file header).
-    requires: ['comfyui-core-trellis2', 'ComfyUI-MoGe', 'melite-autorig-nodes'],
+    // UNION for flat consumers, see file header). trellis2 rides
+    // the ENGINE CORE (core_node_types: nodes_trellis2.py — served
+    // by the pinned core, never an extension row), so its families
+    // declare no pack: an empty slice gates nothing, by construction.
+    requires: ['ComfyUI-MoGe', 'melite-autorig-nodes'],
     requiresByFamily: {
-      'trellis2-native': ['comfyui-core-trellis2'],
-      pixal3d: ['comfyui-core-trellis2', 'ComfyUI-MoGe'],
+      'trellis2-native': [],
+      pixal3d: ['ComfyUI-MoGe'],
       transfer_rig: ['melite-autorig-nodes'],
     },
     schema: schemaFn,

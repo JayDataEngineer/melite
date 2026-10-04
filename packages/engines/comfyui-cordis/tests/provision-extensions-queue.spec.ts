@@ -12,6 +12,7 @@ import { join } from "node:path";
 import {
   clearStaleInstall,
   ensureManagerGitUrlAllowed,
+  installedDirFor,
   installedHead,
   landedVerdict,
   urlInstalled,
@@ -130,6 +131,34 @@ describe("clearStaleInstall", () => {
     assert.equal(existsSync(join(keep, ".git")), true);
   });
 
+  it("removes a foreign-remote clone squatting a renamed casing of the row's name", () => {
+    // the impact packs' live shape (2026-10-15): a clone of
+    // comfyanonymous/ComfyUI.git sat at "comfyui-impact-pack", so
+    // Manager answered "Already exists" over it and installed
+    // nothing — the declaration is the truth, the squatter goes.
+    rmSync(join(cn, "melite-sfx-nodes"), { recursive: true, force: true });
+    const other = join(dir, "foreign-origin.git");
+    execSync("git init --quiet --bare " + JSON.stringify(other),
+      { encoding: "utf8" });
+    execSync("git clone --quiet " + JSON.stringify(other) +
+      " MELITE-SFX-NODES", { cwd: cn, encoding: "utf8" });
+    assert.equal(clearStaleInstall(url, dir), "stale clone");
+    assert.equal(existsSync(join(cn, "MELITE-SFX-NODES")), false);
+  });
+
+  it("keeps a renamed dir that carries the row's own remote", () => {
+    const keep = join(cn, "Melite-Sfx-Nodes");
+    const origin = join(dir, "pack-origin-2.git");
+    execSync("git init --quiet --bare " + JSON.stringify(origin),
+      { encoding: "utf8" });
+    execSync("git clone --quiet " + JSON.stringify(origin) +
+      " Melite-Sfx-Nodes", { cwd: cn, encoding: "utf8" });
+    execSync("git remote set-url origin " + url,
+      { cwd: keep, encoding: "utf8" });
+    assert.equal(clearStaleInstall(url, dir), "");
+    assert.equal(existsSync(join(keep, ".git")), true);
+  });
+
   it("cleans up", () => { rmSync(dir, { recursive: true, force: true }); });
 });
 
@@ -141,14 +170,14 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
   const workspace = mkdtempSync(join(tmpdir(), "melite-ext-verdict-"));
   const url = "https://github.com/JayDataEngineer/melite-tts-nodes";
 
-  // the dir is DERIVED from the url (the door's own rule), so a row
-  // is only ever read at custom_nodes/<repo-name>.
-  const landAClone = (dir: string, head: string): void => {
+  // a row is verified in the directory whose git remote IS the url —
+  // Manager renames install dirs, so the repo name is not the dir.
+  const landAClone = (dir: string, head: string, atUrl: string = url): void => {
     const path = join(workspace, "custom_nodes", dir);
     mkdirSync(path, { recursive: true });
     execSync("git init -q . && git config user.email t@t && git config user.name t && " +
       "git commit -q --allow-empty -m seed", { cwd: path, encoding: "utf8" });
-    execSync("git remote add origin " + url, { cwd: path, encoding: "utf8" });
+    execSync("git remote add origin " + atUrl, { cwd: path, encoding: "utf8" });
     if (head !== "") execSync("git reset -q --hard " + head, { cwd: path, encoding: "utf8" });
   };
 
@@ -161,6 +190,18 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
     landAClone("melite-tts-nodes", "");
     const head = commit("melite-tts-nodes");
     assert.equal(landedVerdict("melite-tts-nodes", url, head, workspace), "");
+  });
+
+  it("verifies the head in the dir whose remote IS the url — Manager renames install dirs", () => {
+    // the live seven-pack shape (2026-10-15): Manager landed
+    // lrzjason/Comfyui-QwenEditUtils as "qweneditutils" while the
+    // name-derived lookup read the absent "Comfyui-QwenEditUtils" —
+    // seven rows pinned exactly were failed as unverifiable.
+    const qu = "https://github.com/lrzjason/Comfyui-QwenEditUtils";
+    landAClone("qweneditutils", "", qu);
+    const head = commit("qweneditutils");
+    assert.equal(installedDirFor(qu, workspace), "qweneditutils");
+    assert.equal(landedVerdict("Comfyui-QwenEditUtils", qu, head, workspace), "");
   });
 
   it("the SAME clone, advanced one commit, is drift — named with both shas", () => {

@@ -360,14 +360,10 @@ function apply(ctx) {
 			nodeClass: "SaveRiggedModel",
 			when: (params) => String(params.rigged_glb ?? "").trim() !== "" && String(params.target_glb ?? "").trim() !== ""
 		}],
-		requires: [
-			"comfyui-core-trellis2",
-			"ComfyUI-MoGe",
-			"melite-autorig-nodes"
-		],
+		requires: ["ComfyUI-MoGe", "melite-autorig-nodes"],
 		requiresByFamily: {
-			"trellis2-native": ["comfyui-core-trellis2"],
-			pixal3d: ["comfyui-core-trellis2", "ComfyUI-MoGe"],
+			"trellis2-native": [],
+			pixal3d: ["ComfyUI-MoGe"],
 			transfer_rig: ["melite-autorig-nodes"]
 		},
 		schema: schemaFn,

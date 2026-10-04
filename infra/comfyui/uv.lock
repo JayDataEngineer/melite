@@ -1375,8 +1375,8 @@ requires-dist = [
     { name = "einops" },
     { name = "filelock" },
     { name = "kornia", specifier = ">=0.7.1" },
-    { name = "melite-model-base", directory = "../../vendor/comfyui_extensions/melite-model-base" },
-    { name = "motion-correction", directory = "../../vendor/comfyui_extensions/MotionCorrection" },
+    { name = "melite-model-base", git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=8444fe5dd9b57e75ec24902158b31858d3fa3b6d" },
+    { name = "motion-correction", git = "https://github.com/JayDataEngineer/MotionCorrection.git?rev=7a070f740eea9e1a35c11007cd1230e7a5bdc91c" },
     { name = "numpy", specifier = ">=1.25.0" },
     { name = "pillow" },
     { name = "psutil" },
@@ -1408,7 +1408,7 @@ requires-dist = [
 [[package]]
 name = "melite-model-base"
 version = "1.0.0"
-source = { directory = "../../vendor/comfyui_extensions/melite-model-base" }
+source = { git = "https://github.com/JayDataEngineer/melite-model-base.git?rev=8444fe5dd9b57e75ec24902158b31858d3fa3b6d#8444fe5dd9b57e75ec24902158b31858d3fa3b6d" }
 
 [[package]]
 name = "mixpanel"
@@ -1425,16 +1425,10 @@ wheels = [
 [[package]]
 name = "motion-correction"
 version = "1.0.0"
-source = { directory = "../../vendor/comfyui_extensions/MotionCorrection" }
+source = { git = "https://github.com/JayDataEngineer/MotionCorrection.git?rev=7a070f740eea9e1a35c11007cd1230e7a5bdc91c#7a070f740eea9e1a35c11007cd1230e7a5bdc91c" }
 dependencies = [
     { name = "numpy" },
     { name = "torch" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "numpy", specifier = ">=1.19.0" },
-    { name = "torch", specifier = ">=1.10.0" },
 ]
 
 [[package]]

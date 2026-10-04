@@ -5,6 +5,6 @@
 extensions:
 - name: melite-poser-nodes
   url: https://github.com/JayDataEngineer/melite-poser-nodes
-  ref: 64ad51c47071845d13c04e4dd9a36fd3e3f0e0f1
+  ref: bf268458600c702c71e2d80b7acda33229c08de0
   required: true
   desc: SkinPack (deterministic detail maps, CPU) + SkinApply (GLB texture surgery) + RayRenderGLBViews (proof turnaround).

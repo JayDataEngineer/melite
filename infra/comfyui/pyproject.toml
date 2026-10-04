@@ -99,14 +99,23 @@ dependencies = [
 torch = { index = "pytorch-cu128" }
 torchvision = { index = "pytorch-cu128" }
 torchaudio = { index = "pytorch-cu128" }
-melite-model-base = { path = "../../vendor/comfyui_extensions/melite-model-base" }
-# kimodo's motion lib, VENDORED (Apache-2.0): the PyPI 0.2.2 pins a
-# dead stack (scikit-image==0.21 + matplotlib==3.7.2 + astropy==6.0.0
-# — none ship cp312 wheels), so a --frozen sync built them from
-# source and died under Cython 3 on every fresh machine; the live
-# estate's working venv runs THIS tree's 1.0.0 (torch+numpy only,
-# CMake C++ ext — cmake + g++ are provisioning prerequisites)
-motion-correction = { path = "../../vendor/comfyui_extensions/MotionCorrection" }
+# melite-model-base at a frozen rev (2026-10-15, F1's other half):
+# the old path dep died on every fresh clone — it pointed into a
+# submodule nothing initializes (no --recurse-submodules, no doc
+# step, no provision door); the pinned git fetch needs none of that.
+# Same tree as the vendored submodule (the walls pin that equality).
+melite-model-base = { git = "https://github.com/JayDataEngineer/melite-model-base.git", rev = "8444fe5dd9b57e75ec24902158b31858d3fa3b6d" }
+# kimodo's motion lib (Apache-2.0, NVIDIA's correct_motion standalone
+# tree): the PyPI 0.2.2 pins a dead stack (scikit-image==0.21 +
+# matplotlib==3.7.2 + astropy==6.0.0 — none ship cp312 wheels), so a
+# --frozen sync built them from source and died under Cython 3 on
+# every fresh machine; the 1.0.0 we run is torch+numpy only (CMake
+# C++ ext — cmake + g++ are provisioning prerequisites). 2026-10-15:
+# the vendor path is GONE (it blocked every fresh clone — the dir
+# never shipped) and the published pin replaces it: the same 1.0.0
+# tree, fetched at a frozen rev by the lock (the extensions law for
+# pip-level Layer C: a ref-pinned repo, never a floating clone).
+motion-correction = { git = "https://github.com/JayDataEngineer/MotionCorrection.git", rev = "7a070f740eea9e1a35c11007cd1230e7a5bdc91c" }
 
 [[tool.uv.index]]
 name = "pytorch-cu128"

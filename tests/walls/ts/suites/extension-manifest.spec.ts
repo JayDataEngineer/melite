@@ -37,12 +37,14 @@ const FACTS = join(ROOT, "packages/engines/comfyui-cordis/data/model-facts.json"
  *  no pinned registry identity in this tree yet, so the install side
  *  cannot be written honestly until one is chosen (the
  *  ref-pinned-git-url law). Melite-owned packs must NOT appear here —
- *  they are real GitHub repos and get a manifest row. */
+ *  they are real GitHub repos and get a manifest row.
+ *  (2026-10-15: ComfyUI-Frame-Interpolation, ComfyUI-LTXVideo and
+ *  comfyui-core-trellis2 left this list — they were phantom packs.
+ *  Every class they were keyed against is core-served or belongs to
+ *  an already-declared pack; core classes live in core_node_types
+ *  now, and no graph addresses a pack-owned class of theirs.) */
 const NOT_YET_INSTALLED: Readonly<Record<string, string>> = {
-  "ComfyUI-Frame-Interpolation": "third-party; no pinned registry identity in this tree",
   "ComfyUI-GGUF": "third-party; no pinned registry identity in this tree",
-  "ComfyUI-LTXVideo": "third-party; no pinned registry identity in this tree",
-  "comfyui-core-trellis2": "third-party; no pinned registry identity in this tree",
   "comfyui-lanpaint": "third-party; no pinned registry identity in this tree",
   "vnccs_utils": "third-party; no pinned registry identity in this tree",
 };
@@ -70,8 +72,10 @@ const extensionNodeTypes = (): Record<string, readonly string[]> => {
   return facts.extension_node_types ?? {};
 };
 
-/** Every extension row name across the manifests (recursively). */
-function manifestRows(dir: string, out: Array<{ name: string; file: string }> = []): Array<{ name: string; file: string }> {
+/** Every extension row across the manifests (recursively): name plus
+ *  the declared url/ref when the row carries them. */
+interface ManifestRow { name: string; file: string; url?: string; ref?: string }
+function manifestRows(dir: string, out: ManifestRow[] = []): ManifestRow[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
     if (statSync(full).isDirectory()) {
@@ -80,8 +84,10 @@ function manifestRows(dir: string, out: Array<{ name: string; file: string }> = 
       manifestRows(full, out);
     } else if (entry === "nodes.yaml" || entry === "extensions.yaml") {
       const text = readFileSync(full, "utf8");
-      for (const m of text.matchAll(/^\s*-\s+name:\s*([^\s#]+)/gmu)) {
-        out.push({ name: m[1]!, file: full.slice(ROOT.length + 1) });
+      for (const m of text.matchAll(/^[ \t]*-[ \t]+name:[ \t]*([^\s#]+)([\s\S]*?)(?=^[ \t]*-[ \t]+name:|(?![\s\S]))/gmu)) {
+        const url = /^[ \t]*url:[ \t]*(\S+)/mu.exec(m[2] ?? "");
+        const ref = /^[ \t]*ref:[ \t]*(\S+)/mu.exec(m[2] ?? "");
+        out.push({ name: m[1]!, file: full.slice(ROOT.length + 1), url: url?.[1], ref: ref?.[1] });
       }
     }
   }
@@ -159,5 +165,44 @@ describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)",
       .filter(([, nodes]) => !Array.isArray(nodes) || nodes.length === 0)
       .map(([pack]) => pack);
     expect(empty, "an empty node list is the silent gate: the check can never pass or fail").toEqual([]);
+  });
+
+  // THE REGISTRY-ZIP LAW (2026-10-15, the live impact-pack receipt):
+  // an unpinned url matches Manager's channel registry map, the ZIP
+  // arm runs, and the install lands a version with NO .git — the
+  // landed-HEAD verify can then never close. An @<sha>-suffixed url
+  // cannot match the registry map, so the git arm always runs.
+  it("every url row pins a 40-hex commit sha (the registry-ZIP law)", () => {
+    const unpinned = manifestRows(PACKAGES)
+      .filter((r) => r.url !== undefined && !/^[0-9a-f]{40}$/iu.test(r.ref ?? ""))
+      .map((r) => `${r.name} (${r.file}) url=${r.url} ref=${r.ref ?? "none"}`);
+    expect(
+      unpinned,
+      "an unpinned url rides Manager's registry ZIP arm — the install lands with no .git and no landed HEAD can be verified",
+    ).toEqual([]);
+  });
+
+  // THE CORE-SERVED LAW (2026-10-15, the phantom-pack cure): a node
+  // class the pinned engine CORE serves is keyed in core_node_types,
+  // never in extension_node_types — a phantom extension key lies
+  // about provenance and blocks fresh estates from packs they do not
+  // need (the comfyui-core-trellis2 / FrameInterpolate / CreateVideo
+  // receipts).
+  it("no core-served class rides an extension key (the phantom-pack law)", () => {
+    const facts = JSON.parse(readFileSync(FACTS, "utf8")) as {
+      core_node_types?: Record<string, readonly string[]>;
+    };
+    const coreFiles = facts.core_node_types ?? {};
+    const shape = Object.entries(coreFiles)
+      .filter(([file]) => !file.startsWith("comfy_extras/") || !Array.isArray(coreFiles[file]) || coreFiles[file].length === 0)
+      .map(([file]) => file);
+    expect(shape, "core_node_types keys are engine-core file paths, each with at least one class").toEqual([]);
+    const coreClasses = new Set(Object.values(coreFiles).flat());
+    const phantoms = Object.entries(extensionNodeTypes())
+      .flatMap(([pack, nodes]) => nodes.filter((n) => coreClasses.has(n)).map((n) => `${pack} -> ${n}`));
+    expect(
+      phantoms,
+      "these extension keys claim core-served classes — move them to core_node_types",
+    ).toEqual([]);
   });
 });

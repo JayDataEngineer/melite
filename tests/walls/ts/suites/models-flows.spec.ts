@@ -245,6 +245,7 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
   const raw = JSON.parse(readFileSync(FACTS_PATH, "utf8")) as {
     rows?: Record<string, { card?: string; frozen?: unknown }>;
     cards?: Record<string, { outputs?: Array<{ label?: string; patterns?: string[] }>; requires_by_family?: Record<string, string[]> }>;
+    core_node_types?: Record<string, string[]>;
   };
   const FACTS_ROW_CENSUS = 29;
 
@@ -310,6 +311,16 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
     // requires_by_family: keys must be registry families (a typo
     // starves the pack silently); the carrying pair is named
     const carriers: string[] = [];
+    // A family may declare an EXPLICIT empty array only when the
+    // engine core serves its whole graph (the phantom-pack cure,
+    // 2026-10-15): service.ts reads `requiresByFamily?.[fam] ??
+    // requires`, so [] is the honest "no packs beyond the base
+    // requires" — an absent key would fall back and demand packs the
+    // core does not need. Each entry names its core_node_types
+    // evidence; anything empty outside this set is a starvation bug.
+    const CORE_SERVED_FAMILIES: Readonly<Record<string, string>> = {
+      "trellis2-native": "comfy_extras/nodes_trellis2.py",
+    };
     for (const key of sliceKeys) {
       const rbf = slices[key]?.requires_by_family;
       if (rbf === undefined) continue;
@@ -317,7 +328,18 @@ describe("the facts FILE is pinned against the registry (E-C2)", () => {
       for (const fam of Object.keys(rbf)) {
         assert.ok(registryIds().includes(fam),
           `card slice '${key}' requires_by_family names '${fam}', which the registry does not hold — a typo starves the pack`);
-        assert.ok(Array.isArray(rbf[fam]) && rbf[fam]!.length > 0, `card slice '${key}' requires_by_family['${fam}'] is empty`);
+        const coreServed = Object.prototype.hasOwnProperty.call(CORE_SERVED_FAMILIES, fam);
+        assert.ok(Array.isArray(rbf[fam]) && (coreServed || rbf[fam]!.length > 0),
+          `card slice '${key}' requires_by_family['${fam}'] is empty` +
+          (coreServed ? " but no longer carries core_node_types evidence in the facts file" : ""));
+        // the evidence itself must hold: the named core file carries
+        // at least one class in the facts' core_node_types section
+        if (coreServed) {
+          const evidence = CORE_SERVED_FAMILIES[fam] ?? "";
+          const classes = raw.core_node_types?.[evidence];
+          assert.ok(Array.isArray(classes) && classes.length > 0,
+            `core-served family '${fam}' cites core_node_types['${evidence}'], which the facts file does not hold`);
+        }
       }
     }
     assert.deepEqual(carriers, ["img-to-mesh", "tagger"],

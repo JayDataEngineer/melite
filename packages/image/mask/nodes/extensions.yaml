@@ -1,13 +1,15 @@
 extensions:
-  # 2026-10-13: the commit pin is GONE, deliberately. Manager installs
-  # this pack as a registry ZIP — the live engine reports ver "8.28.3"
-  # with no .git and no sha, so a declared commit could never be
-  # verified by any means and the declaration was a lie about what
-  # Manager installed. Under the Manager-only + verify-landed-HEAD law
-  # an unverifiable pin must not be declared; the registry version is
-  # the honest pin for a zip install.
+  # 2026-10-15: the commit pin is BACK, and the 2026-10-13 unpin was
+  # the wrong cure. The zip landing was never Manager's choice: an
+  # unpinned url matches Manager's channel registry map, so the ZIP
+  # arm runs and lands a version with no .git (urlInstalled can then
+  # never verify). An @<sha>-suffixed url cannot match the registry
+  # map (manager-provider.ts: the git arm always runs), lands a real
+  # clone at the sha, and the landed-HEAD verify closes. The live
+  # engine proved the git arm for every @-suffixed row this date.
   - name: comfyui-impact-pack
     url: https://github.com/ltdrdata/ComfyUI-Impact-Pack
+    ref: 429d0159ad429e64d2b3916e6e7be9c22d025c3c
     required: true
     desc: Impact Pack detector and segmentation nodes used by the mask card.
     pip:
@@ -23,6 +25,7 @@ extensions:
       - git+https://github.com/facebookresearch/sam2
   - name: comfyui-impact-subpack
     url: https://github.com/ltdrdata/ComfyUI-Impact-Subpack
+    ref: 50c7b71a6a224734cc9b21963c6d1926816a97f1
     required: true
     desc: Impact Subpack detector provider used by the mask card.
     pip:

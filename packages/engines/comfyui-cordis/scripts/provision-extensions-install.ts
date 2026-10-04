@@ -19,28 +19,51 @@ import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision
 import { engineUrl, loadConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 
+/** Normalize a git remote for identity comparison — case, a
+ *  trailing slash and a .git suffix carry no identity.
+ *  @param url a remote url in any of its spellings.
+ *  @returns the comparable form. */
+function normRemote(url: string): string {
+  return url.replace(/\/$/, "").toLowerCase().replace(/\.git$/, "");
+}
+
+/** Every remote url declared in one clone's .git/config.
+ *  @param cloneDir the custom_nodes directory to read.
+ *  @returns the normalized remotes; empty when the dir is no clone. */
+function remotesOf(cloneDir: string): string[] {
+  const cfgF = join(cloneDir, ".git", "config");
+  if (!existsSync(cfgF)) return [];
+  const text = readFileSync(cfgF, "utf8");
+  return [...text.matchAll(/url\s*=\s*(\S+)/g)].map((m) => normRemote(m[1]!));
+}
+
+/** The custom_nodes directory whose git remote IS this url — the only
+ *  reliable identity of a Manager install. Manager renames install
+ *  dirs (lrzjason/Comfyui-QwenEditUtils landed as "qweneditutils",
+ *  numz/ComfyUI-SeedVR2_VideoUpscaler as "seedvr2_videoupscaler"), so
+ *  a row's repo name is NOT its directory name; the remote is exact.
+ *  @param url the declared git remote.
+ *  @param workspace the engine workspace root.
+ *  @returns the matching directory name, or "" when none is. */
+export function installedDirFor(url: string, workspace: string): string {
+  const want = normRemote(url);
+  let kids: string[] = [];
+  try {
+    kids = readdirSync(join(workspace, "custom_nodes")).sort();
+  } catch { return ""; }
+  for (const k of kids) {
+    if (remotesOf(join(workspace, "custom_nodes", k)).includes(want)) return k;
+  }
+  return "";
+}
+
 /** True if some custom_nodes clone's git remote IS this url (the
  *  Manager renames install dirs; matching the remote is exact).
  *  @param url the declared git remote.
  *  @param workspace the engine workspace root.
  *  @returns true when a clone with this remote is installed. */
 export function urlInstalled(url: string, workspace: string): boolean {
-  const want = url.replace(/\/$/, "").toLowerCase()
-    .replace(/\.git$/, "");
-  let kids: string[] = [];
-  try {
-    kids = readdirSync(join(workspace, "custom_nodes")).sort();
-  } catch { return false; }
-  for (const k of kids) {
-    const cfgF = join(workspace, "custom_nodes", k, ".git", "config");
-    if (!existsSync(cfgF)) continue;
-    const text = readFileSync(cfgF, "utf8");
-    for (const m of text.matchAll(/url\s*=\s*(\S+)/g)) {
-      if (m[1].replace(/\/$/, "").toLowerCase().replace(/\.git$/, "") ===
-          want) return true;
-    }
-  }
-  return false;
+  return installedDirFor(url, workspace) !== "";
 }
 
 /** The installed clone's HEAD commit, for ref-pin verification.
@@ -60,7 +83,11 @@ export function installedHead(workspace: string, dir: string): string {
  *  against the commit on disk, and a row that cannot report one is
  *  unverifiable — its own refusal, not a pass. A row with no pin is
  *  a registry install (the impact packs) and carries no commit by
- *  design.
+ *  design. The head is read from the directory whose git remote IS
+ *  the declared url (installedDirFor), never from a name derived
+ *  from the url — Manager renames install dirs, so a name-derived
+ *  lookup verified a directory that does not exist and failed seven
+ *  rows that had landed exactly at their pins (2026-10-15).
  *  @returns "" when the row's landed state is the declared one. */
 export function landedVerdict(
   name: string,
@@ -69,11 +96,11 @@ export function landedVerdict(
   workspace: string,
 ): string {
   if (ref === undefined || ref === "") return "";
-  const dir = url.replace(/\/+$/, "").replace(/\.git$/, "").split("/").pop() ?? "";
-  const head = installedHead(workspace, dir);
+  const dir = installedDirFor(url, workspace);
+  const head = dir === "" ? "" : installedHead(workspace, dir);
   if (head === "") {
     return "reports no landed commit — the declared ref " + ref +
-      " cannot be verified (the pack did not land as a git clone)";
+      " cannot be verified (no custom_nodes clone carries remote " + url + ")";
   }
   if (!head.startsWith(ref) && !ref.startsWith(head)) {
     return "landed at " + head.slice(0, 10) + " but the declaration pins " +
@@ -110,7 +137,13 @@ export function ensureManagerGitUrlAllowed(configPath: string): boolean {
  *  era left links and plain directories that Manager correctly
  *  refuses to install over ("Already exists"). A symlink unlinks
  *  without touching its target; a git dir with a different remote
- *  is a declaration conflict — the declaration is the truth.
+ *  is a declaration conflict — the declaration is the truth. The
+ *  derived name is only the FIRST place to look: Manager renames
+ *  install dirs, so a squatter can sit at any other casing of the
+ *  repo name with a foreign remote (the impact packs' live shape —
+ *  a clone of comfyanonymous/ComfyUI.git under "comfyui-impact-pack"
+ *  — over which Manager answers "Already exists" and installs
+ *  nothing).
  *  @param url the declared git remote.
  *  @param workspace the engine workspace root.
  *  @returns "" when nothing was removed, else the removed shape
@@ -119,22 +152,57 @@ export function clearStaleInstall(url: string, workspace: string): string {
   const dir = url.replace(/\/+$/, "").replace(/\.git$/, "")
     .split("/").pop() ?? "";
   const target = join(workspace, "custom_nodes", dir);
-  let st;
+  let removed = "";
   try {
-    st = lstatSync(target);
+    const st = lstatSync(target);
+    if (st.isSymbolicLink()) {
+      rmSync(target, { force: true });
+      removed = "symlink";
+    } else if (!st.isDirectory()) {
+      rmSync(target, { force: true });
+      removed = "file";
+    } else {
+      if (urlInstalled(url, workspace)) return "";
+      removed = existsSync(join(target, ".git")) ? "stale clone" : "directory";
+      rmSync(target, { recursive: true, force: true });
+    }
+  } catch {
+    // the derived name is absent — the squatter, if any, is renamed.
+  }
+  // Manager's name for the row may be ANY casing of the repo name,
+  // so the renamed scan runs after every removal too: a squatter left
+  // behind makes Manager answer "Already exists" and install nothing
+  // (the impact packs' live failure — the exact-name dir came off,
+  // the lowercase junk clone stayed, and the install never landed).
+  const squatter = clearRenamedSquatter(url, dir, workspace);
+  return squatter !== "" ? squatter : removed;
+}
+
+/** Remove a directory whose name collides with the row's repo name
+ *  case-insensitively while carrying a different git remote (or no
+ *  git at all) — the shape Manager refuses to install over because
+ *  its own name for the row is already occupied. A dir that carries
+ *  the row's own remote is Manager's install and stays.
+ *  @param url the declared git remote.
+ *  @param dir the repo name derived from the url.
+ *  @param workspace the engine workspace root.
+ *  @returns "" when no squatter was found, else the removed shape
+ *           ("stale clone" | "directory"). */
+function clearRenamedSquatter(url: string, dir: string, workspace: string): string {
+  let kids: string[] = [];
+  try {
+    kids = readdirSync(join(workspace, "custom_nodes"));
   } catch { return ""; }
-  if (st.isSymbolicLink()) {
-    rmSync(target, { force: true });
-    return "symlink";
+  const want = normRemote(url);
+  for (const k of kids) {
+    if (k.toLowerCase() !== dir.toLowerCase()) continue;
+    const squatter = join(workspace, "custom_nodes", k);
+    const wasClone = existsSync(join(squatter, ".git", "config"));
+    if (wasClone && remotesOf(squatter).includes(want)) continue;
+    rmSync(squatter, { recursive: true, force: true });
+    return wasClone ? "stale clone" : "directory";
   }
-  if (!st.isDirectory()) {
-    rmSync(target, { force: true });
-    return "file";
-  }
-  if (urlInstalled(url, workspace)) return "";
-  const shape = existsSync(join(target, ".git")) ? "stale clone" : "directory";
-  rmSync(target, { recursive: true, force: true });
-  return shape;
+  return "";
 }
 
 export async function stepExtensions(): Promise<boolean> {
@@ -175,8 +243,22 @@ export async function stepExtensions(): Promise<boolean> {
       // ones this run installed.
       const drift = landedVerdict(name, url, ref, workspace);
       if (drift !== "") {
-        warn("  [" + name + "] " + drift);
-        counts.failed += 1;
+        // THE PIN IS THE TRUTH, SO THE ESTATE CONVERGES (the IaC
+        // law, operator 2026-10-15): a drifted head is re-queued
+        // through Manager's git-url door at the declared ref — the
+        // run ends either at the pin or red, never at a silent
+        // acceptance of the drift.
+        warn("  [" + name + "] " + drift + " — converging to the declared ref");
+        if (DRY) {
+          planned += 1;
+          continue;
+        }
+        const drifted = installedDirFor(url, workspace);
+        if (drifted !== "") {
+          rmSync(join(workspace, "custom_nodes", drifted),
+            { recursive: true, force: true });
+        }
+        pending.push({ name, url, ref });
         continue;
       }
       counts.skipped += 1;

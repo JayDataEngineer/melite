@@ -2992,15 +2992,12 @@ window.__ModuleLoader__.load({
 				const children = normalized["children"];
 				if (Array.isArray(children)) {
 					delete normalized["engine"];
-					if ((typeof normalized["params"] !== "object" || normalized["params"] === null) && Object.keys(normalized["params"] ?? {}).length === 0) delete normalized["params"];
+					const healedParams = normalized["params"];
+					if (Object.keys(healedParams).length === 0) delete normalized["params"];
 				}
 				out.push(normalized);
 			}
 			return out;
-		}
-		/** Is this a run id? */
-		function runIdOk(id) {
-			return RUN_ID_RE.test(id);
 		}
 		/** Sanitize one candidate id onto a legal bench session key —
 		* 'main' for anything the grammar refuses. THE ONE SPELLING of the
@@ -3216,7 +3213,6 @@ window.__ModuleLoader__.load({
 			revokeAll: () => revokeAll,
 			revokeObjectUrlFor: () => revokeObjectUrlFor,
 			rootsManifest: () => rootsManifest,
-			runIdOk: () => runIdOk,
 			runMediaPrefixOf: () => runMediaPrefixOf,
 			runTailOf: () => runTailOf,
 			samplerEnvelopeCure: () => samplerEnvelopeCure,

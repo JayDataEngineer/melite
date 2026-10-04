@@ -85,14 +85,22 @@ describe("Impact extension declaration SSOT", () => {
       required: true,
       pip: [...pins[name as keyof typeof pins].pip],
     })));
-    // NO commit pin is declared for either pack (2026-10-13): Manager
-    // installs them as registry ZIPs — the live engine reports ver
-    // "8.28.3" with no .git and no sha — so a declared commit could
-    // never be verified and the declaration was a lie about what
-    // Manager installed. Under the Manager-only + verify-landed-HEAD
-    // law an unverifiable pin must not be declarable at all.
-    // (an absent ref reads as "" through the manifest reader)
-    assert.deepEqual(rows.map((row) => row.ref), ["", ""], "no unverifiable pin is declared");
+    // The commit pins ARE declared (2026-10-15, reversing the
+    // 2026-10-13 unpin): the unpinned url matched Manager's channel
+    // registry map, the ZIP arm ran, and the install landed with no
+    // .git — so no landed HEAD could ever be verified (the "not
+    // present after a 200" receipt, seven packs over). An @<sha>-
+    // suffixed url cannot match the registry map, the git arm always
+    // runs, and the landed HEAD verifies — both rows install as real
+    // clones at exactly these shas now.
+    assert.deepEqual(
+      rows.map((row) => row.ref),
+      [
+        "429d0159ad429e64d2b3916e6e7be9c22d025c3c",
+        "50c7b71a6a224734cc9b21963c6d1926816a97f1",
+      ],
+      "the impact rows land as pinned clones through Manager's git arm",
+    );
   });
 
   it("each mask requirement has exactly one card-owned manifest declaration", () => {
@@ -118,11 +126,12 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
   // Manager is the only vendor, and the estate verifies the LANDED
   // HEAD of every row it installed. A row the runtime installs by
   // git_url but declares WITHOUT a ref can never be verified — the
-  // runtime arm returns "installed" on trust. So every git_url row
-  // declares its ref, and only a row Manager installs from the
-  // REGISTRY (no .git, no sha — the 2026-10-13 Impact decision) may
-  // go without one, named in one place.
-  const REGISTRY_ROWS: readonly string[] = [...IMPACT_PACKS];
+  // runtime arm returns "installed" on trust. (2026-10-15: the
+  // registry-ZIP exception is RETIRED — the impact receipts proved
+  // an unpinned url lands Manager's registry ZIP with no .git, so
+  // EVERY git_url row pins a ref; the walls tier enforces the same
+  // law as the registry-ZIP wall.)
+  const REGISTRY_ROWS: readonly string[] = [];
 
   it("every git_url row declares the ref its landed HEAD is verified against", () => {
     const unpinned = manifest
@@ -157,11 +166,11 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     // This list IS the open item: each entry needs an operator-chosen
     // upstream (url + pinned ref) before it can be declared, and
     // deleting an entry that has been cured fails this wall.
-    const UNPROVIDED: readonly string[] = [
-      "ComfyUI-Frame-Interpolation", // upscale-tools — no upstream identified
-      "ComfyUI-LTXVideo",            // h3-timeline — no upstream identified
-      "comfyui-core-trellis2",       // img-to-mesh — no upstream identified
-    ];
+    // (2026-10-15: EMPTY — the three phantom cures closed it:
+    // trellis2 is core-served (core_node_types), Frame-Interpolation
+    // and LTXVideo keys died with their mis-attributed classes — the
+    // graphs address only core and PlagueKind nodes from that set.)
+    const UNPROVIDED: readonly string[] = [];
     const required = new Set<string>();
     for (const def of defs.values()) {
       for (const name of [
@@ -190,13 +199,10 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     const declared = new Set(manifest.map((row) => row.name));
     // The roster entries with no declared row ARE the open gap — each
     // needs an operator-chosen upstream (url + pinned ref) and its
-    // deletion here. Three of them are also card requirements (the
-    // wall above), so they block those cards on a fresh clone.
+    // deletion here. (2026-10-15: the three phantom keys left this
+    // list with the cards that no longer require them.)
     const UNDECLARED_ROSTER: readonly string[] = [
-      "ComfyUI-Frame-Interpolation",
       "ComfyUI-GGUF",
-      "ComfyUI-LTXVideo",
-      "comfyui-core-trellis2",
       "comfyui-lanpaint",
       "vnccs_utils",
     ];

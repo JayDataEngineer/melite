@@ -173,11 +173,16 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // MeliteConcatVideos) + the film audio (melite-audio-nodes: the
     // clips arm's post-generation MeliteFilmAudioMix; the retired
     // in-graph Delay/Mix/Duck chain needed no declaration beyond the
-    // same pack).
+    // same pack). (2026-10-15: ComfyUI-Frame-Interpolation and
+    // ComfyUI-LTXVideo are GONE — every class this card's graphs
+    // address from them is mis-attributed: FrameInterpolate,
+    // FrameInterpolationModelLoader and CreateVideo are ENGINE CORE
+    // (core_node_types), LTX_lora_loader is PlagueKind's, already
+    // required above. Neither pack owns a class any graph uses.)
     requires: [
       'comfyui-h3-motion-context', 'Comfyui-PlagueKind-Nodes',
-      'ComfyUI-Frame-Interpolation', 'ComfyUI-KJNodes',
-      'ComfyUI-SeedVR2_VideoUpscaler', 'ComfyUI-LTXVideo',
+      'ComfyUI-KJNodes',
+      'ComfyUI-SeedVR2_VideoUpscaler',
       'melite-utility-nodes', 'melite-audio-nodes',
     ],
     schema,
