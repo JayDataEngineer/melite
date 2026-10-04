@@ -7,14 +7,15 @@ description: "Full H3 video-studio workflow — pre-flight spec, AV prompt shape
 
 ## 1. Pre-flight — ALWAYS
 
-Call `tools.get_flow_spec("h3")` first. It returns the live form
-fields + defaults; the compile layer rejects unknown params loudly, so the
-spec IS the vocabulary.
+Open the card with `melite_load` first. Its served doc carries the live
+form fields + defaults; the compile layer rejects unknown params loudly,
+so the loaded card IS the vocabulary.
 
 ## 2. The prompt — H3's native three-field format
 
 H3 is a JOINT video+audio model: one prompt conditions both tracks. The
-native shape (official guide, served by `h3_prompt_library`):
+native shape (official guide, served as skill row
+`model:h3:h3-guide-base.md`):
 
 - `integrated_multimodal_description:` the timeline — `[Shot 1] <style,
   composition, subjects, actions, camera, dialogue, diegetic sound>`,
@@ -40,13 +41,13 @@ The `h3-prompt-writing` skill carries the full guides; the
 - **Reference images / videos / guides** — via the spec's weave-slot
   params; media must be artifact ids from the editor's media library.
 
-## 4. Submit + poll
+## 4. Compose — the run is the user's
 
-```python
-res = tools.submit_video_run(prompt=prompt, audio_mode="auto")  # or defaults
-run_id = res["run_id"]
-tools.get_run_status(run_id)   # until done — output is an MP4/WebM artifact
-```
+Stage the generation with `melite_construct` (`add_stage`, then
+`patch`/`rewire` as the user refines); the flow lands live on the
+shared bench in the user's cards tab. RUNS START AT THE USER'S RUN
+PRESS on the card — never at yours. The finished MP4/WebM artifact
+lands on the bench beside it.
 
 ## Gotchas
 

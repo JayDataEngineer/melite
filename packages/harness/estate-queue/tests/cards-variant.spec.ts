@@ -212,6 +212,82 @@ describe("liftCardParams (the params stanza)", () => {
     });
     expect(out).toEqual({ seed: 7, notes: "keep" });
   });
+  it("the stanza fills what siblings leave out (siblings win, gaps fill)", () => {
+    const out = liftCardParams({
+      text: "sibling",
+      params: { text: "inner", style: "gentle" },
+    });
+    // the sibling text wins; the stanza's ABSENT-everywhere key rides
+    expect(out).toEqual({ text: "sibling", style: "gentle" });
+  });
+});
+
+// THE EDGE SEATS (the coverage queue's cardsVariant batch,
+// 2026-10-16): a family with NO variant rows at all, and a hidden
+// row that matches nothing — both are real estate shapes (the
+// model-base packs declare empty variants arrays; a hidden route
+// next to an offered one is the dropdown's everyday layout). The
+// rows are runtime-minimal ON PURPOSE (the arms prove the ?? legs
+// fire when a member is absent), so they ride the same wholesale
+// cast as the default `row()` above — the type stays ModelFactsRow.
+const vrow = (variants: unknown[]): ModelFactsRow =>
+  ({ variants, defaults: { seed: 42, notes: "" } }) as unknown as ModelFactsRow;
+
+describe("selectCardVariant (the edge seats)", () => {
+  it("a hidden row that matches NOTHING evaluates past the hidden gate (no refusal)", () => {
+    const withHidden = vrow([
+      { id: "base", group: "", cells: [{ quant: "fp16" }], resolver_defaults: {} },
+      { id: "ghost", hide_from_dropdown: true, route: "ghost-route", cells: [], resolver_defaults: {} },
+    ]);
+    // mid "m" names no hidden route/id/cell — the hidden gate reads
+    // the row and falls through to normal selection
+    const sel = selectCardVariant("m", withHidden, {}, "1");
+    expect(sel.variantId).toBe("base");
+    expect(sel.quant).toBe("fp16");
+  });
+  it("a variants-less family returns the unstated selection with empty coordinates", () => {
+    const sel = selectCardVariant("m", vrow([]), {}, "1");
+    expect(sel).toEqual({
+      variantId: "", variantRoute: "", quant: "",
+      resolverDefaults: {}, samplerEnvelope: null,
+    });
+  });
+  it("a variants-less family with a stated quant refuses naming the empty variant", () => {
+    try {
+      selectCardVariant("m", vrow([]), { quant: "fp8" }, "1");
+      throw new Error("no refusal rode");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CardArmError);
+      const msg = String((e as Error).message);
+      // the voice names the empty variant seat ("" — no row exists)
+      expect(msg).toContain('quant "fp8"');
+      expect(msg).toContain('variant ""');
+    }
+  });
+  // the NULLISH seats: a variant row may omit cells and
+  // resolver_defaults entirely (the model-base shape) — every read
+  // coalesces, and a cell row may omit quant (the first cell leaves
+  // quant empty rather than "undefined")
+  it("a variant omitting cells + resolver_defaults selects with empty coordinates", () => {
+    const bare = vrow([{ id: "bare", group: "" }]);
+    const sel = selectCardVariant("m", bare, {}, "1");
+    expect(sel).toEqual({
+      variantId: "bare", variantRoute: "", quant: "",
+      resolverDefaults: {}, samplerEnvelope: null,
+    });
+    // the same bare row with a STATED quant refuses (no cells to hit)
+    try {
+      selectCardVariant("m", bare, { quant: "fp8" }, "1");
+      throw new Error("no refusal rode");
+    } catch (e) {
+      expect(e).toBeInstanceOf(CardArmError);
+    }
+  });
+  it("a first cell omitting quant leaves the selection's quant empty", () => {
+    const sel = selectCardVariant("m", vrow([{ id: "cq", group: "", cells: [{}], resolver_defaults: {} }]), {}, "1");
+    expect(sel.variantId).toBe("cq");
+    expect(sel.quant).toBe("");
+  });
 });
 
 // THE ROUTE ENVELOPE (the skill-system rework wave 2, 2026-09-21 —

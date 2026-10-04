@@ -6,21 +6,22 @@ compatibility: Portable to any agent that can read local files — no external A
 
 # H3 Prompt Writing
 
-## File access in this environment
+## Reading the guides in this environment
 
-You have NO filesystem tool: every "read `references/<file>`"
-instruction below means one call to this bundle's guide tool —
-`h3_prompt_library(path="references/<file>")`. Exactly two guides exist:
+The two official guides are vendored in this bundle, each as its own
+skill row — read them with `melite_skill_read` by id, exactly when
+the workflow below calls for one:
 
-- `h3_prompt_library(path="references/base-en.txt")` — T2VA / I2VA /
+- `melite_skill_read model:h3:h3-guide-base.md` — T2VA / I2VA /
   FL2VA / L2VA (base text/keyframe modes)
-- `h3_prompt_library(path="references/ref-en.txt")` — Ref2VA
+- `melite_skill_read model:h3:h3-guide-ref.md` — Ref2VA
   (full-reference mode)
 
-Omit the path (or pass `list`) to get the manifest first. The tool serves
-the repo's single vendored copy of these guides
-(`dev_docs/prompt-guides/minimax-h3/`), byte-identical to the upstream skill's
-`references/` — there is no bundle-local duplicate.
+Both rows are byte-identical to the upstream skill's `references/`
+(minus the row frontmatter; vendored from upstream tree
+`35491cdb` — the skill dir's last content commit). There is no
+guide-lookup tool and no filesystem read — the two rows above are
+the only spelling.
 
 Ported verbatim from MiniMax-AI/MiniMax-H3
 `skills/h3-prompt-writing@main` (the model's own prompting skill; static
@@ -29,8 +30,8 @@ text guides — no scripts, no APIs).
 ## Workflow
 
 1. Identify the input mode: T2VA, I2VA, FL2VA, L2VA, or full-reference Ref2VA.
-2. For base text/keyframe modes, read `references/base-en.txt` and follow its final prompt structure.
-3. For full-reference mode, read `references/ref-en.txt` and follow its six-section rewrite format.
+2. For base text/keyframe modes, read `model:h3:h3-guide-base.md` and follow its final prompt structure.
+3. For full-reference mode, read `model:h3:h3-guide-ref.md` and follow its six-section rewrite format.
 4. Preserve the exact field names, section order, labels, and timing notation from the selected guide.
 
 ## Base Modes
@@ -40,13 +41,13 @@ text guides — no scripts, no APIs).
 - FL2VA: describe the continuous path between the first and last frames.
 - L2VA: infer a plausible opening and converge to the supplied last frame.
 
-Use `integrated_multimodal_description`, `overall_soundscape`, and `non_diegetic_music` in the order shown in `references/base-en.txt`.
+Use `integrated_multimodal_description`, `overall_soundscape`, and `non_diegetic_music` in the order shown in `model:h3:h3-guide-base.md`.
 
 ## Full-Reference Mode
 
 Ref2VA rewrites use `subject_definitions`, `summary`, `retention_analysis`, `detailed_description`, `overall_soundscape`, and `non_diegetic_music` in that order. Reference labels stay consistent across all sections.
 
-Read `references/ref-en.txt` for label rules, retention analysis, and complete examples.
+Read `model:h3:h3-guide-ref.md` for label rules, retention analysis, and complete examples.
 
 ## Output Rules
 

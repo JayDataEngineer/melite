@@ -8,8 +8,8 @@ Static (non-creature) 3D assets: weapons, props, tools, containers. Live-proven 
 ## Lane shape (the reference is `flows/prop-flow/`, NOT a YAML to copy)
 z-image (concept render) -> trellis/pixal3d (image->mesh) -> quad remesh (prop preset) -> render_glb_views (turntable review).
 There is NO single-shot YAML door anymore: the prop flow is an AGENT-DRIVEN card
-chain (its own `flows/prop-flow/tool.json` says so, and points at
-`dev_docs/queue/flows.md`) — drive each stage card through the queue door
+chain (its own `flows/prop-flow/tool.json` says so) — drive each stage card
+through the queue door
 (`melite_construct` `add_stage` with `card=` + `model=`, then `melite_flow`).
 The old `flows/scrap_machete/flow.yaml` this section used to name does not exist
 in this checkout, and an agent that followed it burned a read chasing a file
@@ -28,6 +28,4 @@ model="trellis2-native"` + your prompt/views params (no curl); the run starts at
 Run press, the progress rides the card, artifacts listed under the
 run. GLB goes to Unity delivery (FBX via blender headless or glTFast — the
 unity-delivery lane lives at
-`flows/humanoid-flow/agents/skills/gamekit-unity-delivery/`; the
-legacy `dev_docs/asset-flows/delivery-unity.md` path was retired with
-the dev_docs/plans consolidation 2026-09-04).
+`flows/humanoid-flow/agents/skills/gamekit-unity-delivery/`).

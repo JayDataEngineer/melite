@@ -10,12 +10,9 @@ joint video + audio generation. Describe both motion and sound — the
 output is a native AV clip (MP4 default, WebM available).
 
 For a whole SEQUENCE (multiple shots, ordered keyframes, a music bed,
-dialogue) use the **h3-timeline card** instead — it is an action card
-with its own bundle at
-`packages/engines/comfyui/action_cards/video/h3-timeline/agents/`
+dialogue) use the **h3-timeline card** instead — it has its own bundle
+at `models/video/h3-timeline/agents/` in this engine tree
 (the N-window law: one card = N calls = one run = one film).
-The legacy `packages/melite-core/studios/video_timeline/agents/` path
-was retired with the melite-core consolidation (2026-09-02).
 
 ## When to use this card
 
@@ -43,27 +40,29 @@ implies a directed scene with AV output.
    motion guides. Which slots are filled selects the mode: none = T2VA,
    first = I2VA, first+last = FL2VA (the head route), last = L2VA;
    a reference set = Ref2VA (route `h3-ref2va`).
-3. **Generation** — submit through the run door; poll status; the output
-   is an MP4 (default) or WebM artifact.
+3. **Generation** — compose the staged flow (`melite_construct`); the
+   run itself starts at the USER'S RUN PRESS on the card, and the
+   output lands on the bench as an MP4 (default) or WebM artifact.
 
 ## How to use this bundle
 
 - `skills/h3-prompt-writing/SKILL.md` — the model's own prompting skill,
   ported verbatim from MiniMax-AI/MiniMax-H3. Its two guides (base modes
-  + Ref2VA) are read ONLY through `h3_prompt_library` — no filesystem
-  tool exists; the tool serves the repo's vendored copy at
-  `dev_docs/prompt-guides/minimax-h3/` (byte-identical, single source of
-  truth).
+  + Ref2VA) are vendored as their own skill rows, read with
+  `melite_skill_read`: `model:h3:h3-guide-base.md` and
+  `model:h3:h3-guide-ref.md` (byte-identical to the upstream skill's
+  references/, single source of truth).
 - `skills/prompt-enhance/SKILL.md` — the Enhance-button recipes
   (condensed native format for routes `h3` and `h3-ref2va`).
 - `skills/advanced-usage/SKILL.md` — the full generation workflow.
-- `tools.ts` — `h3_prompt_library` (the guide lookup),
-  `get_flow_spec` (pre-flight: authoritative fields + defaults),
-  `submit_video_run` (the run door), `get_run_status` (polling).
+
+There is no bundle-local tool file: the estate doors (`melite_discover`,
+`melite_load`, `melite_construct`, `melite_skill_read`) are the only
+interface, and the run press belongs to the user.
 
 ## Delegation
 
 This bundle is self-contained: it can be delegated as a subagent with
-isolated context, passing `tools.ts` as its tool set — the workflow lives
-in the `advanced-usage` skill, the vocabulary in the `prompt-enhance`
-skill, and the entry point is this file.
+isolated context — the workflow lives in the `advanced-usage` skill,
+the vocabulary in the `prompt-enhance` skill, the guides in their two
+skill rows, and the entry point is this file.

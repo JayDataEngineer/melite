@@ -75,7 +75,10 @@ interface SkillLine { id?: string }
 // every one of them round-tripped, so this number is the truth of
 // the tree, not a guess). A card or flow that loses its skill line
 // moves this and says so.
-const EXPECTED_CARD_SKILLS = 24;
+// 26 (2026-10-16): the h3 bundle's two vendored guide rows
+// (model:h3:h3-guide-base.md / h3-guide-ref.md) ride the card's
+// advertised skill set — the phantom-tool cure's serve side.
+const EXPECTED_CARD_SKILLS = 26;
 const EXPECTED_FLOW_SKILLS = 8;
 
 describe("the id namespace law: load-advertised ids round-trip through the read door", () => {
