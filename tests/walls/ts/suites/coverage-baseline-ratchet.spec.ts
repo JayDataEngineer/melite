@@ -82,12 +82,19 @@ function excludedFiles(): RegExp[] {
 
 // A path glob becomes a RegExp: double-star stands for zero or more
 // directories, a single star for one segment. Both the baseline row
-// keys and the config's exclude entries use this form.
+// keys and the config's exclude entries use this form. The
+// double-star is parked on a sentinel FIRST (the vendor glob's
+// 2026-10-14 lesson: rebuilding `(?:.*/)?` before the single-star
+// pass let that pass re-replace the star INSIDE the insert, so
+// `packages/vendor/**/*` silently matched one level only — the wall
+// would have blessed a broken exclusion).
 function globMatcher(glob: string): RegExp {
   const escaped = glob
     .replace(/[.+^${}()|[\]\\]/gu, "\\$&")
-    .replace(/\*\*\//gu, "(?:.*/)?")
-    .replace(/\*/gu, "[^/]*");
+    .replace(/\*\*/gu, "\u0000")
+    .replace(/\*/gu, "[^/]*")
+    .replace(/\u0000\//gu, "(?:.*/)?")
+    .replace(/\u0000/gu, ".*");
   return new RegExp(`^${escaped}$`, "u");
 }
 

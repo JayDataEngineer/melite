@@ -491,9 +491,13 @@ export default defineConfig({
         // to per-file 100x4 with honest behavioral arms (the ledger
         // rows carry the proofs). One permanent exemption remains,
         // documented below (loadPlane's prod-only degrade catch).
-        // vendored (Layer C law: not ours to test):
-        'packages/vendor/typert-protocol/src/index.ts',
-        'packages/vendor/typert-protocol/src/remote-error.ts',
+        // vendored (Layer C law: not ours to test) — the WHOLE vendor
+        // tree rides one glob (S1's cure, 2026-10-14): the two literal
+        // entries below used to gate only themselves, leaving the
+        // sibling vendor files held by vacuous 0/0/0/0 rows. The glob
+        // ungates every vendored src at once and stays true when a new
+        // vendor package lands.
+        'packages/vendor/**/*',
                 // card compose/kit fallback branches:
                                         // cordis service-plane error arms (api failures, enhance
         // fallbacks, spec sweeps):

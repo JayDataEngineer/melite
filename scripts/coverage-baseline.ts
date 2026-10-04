@@ -356,8 +356,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/motion/motion/src/ui/studio/usePoseEditing.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineAuthoring.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/motion/motion/src/ui/studio/useTimelineEnvelope.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/vendor/typert-protocol/src/json-value.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
-  '**/packages/vendor/typert-protocol/src/owned-value.ts': { statements: 0, branches: 0, functions: 0, lines: 0 },
   '**/packages/video/h3-timeline/src/card.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/video/h3-timeline/src/client/index.ts': { statements: 98.78, branches: 99.07, functions: 92.85, lines: 98.52 },
   '**/packages/video/h3-timeline/src/css-modules.d.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -346,11 +346,6 @@ export const BENCH_DRAFT_RE: RegExp = /^bench-([A-Za-z0-9_-]{1,64})$/;
 
 export const RUN_ID_RE: RegExp = /^run-[0-9a-f]+-[A-Za-z0-9_-]+$/;
 
-/** Is this a run id? */
-export function runIdOk(id: string): boolean {
-  return RUN_ID_RE.test(id);
-}
-
 /** Sanitize one candidate id onto a legal bench session key —
  * 'main' for anything the grammar refuses. THE ONE SPELLING of the
  * routing decision (the li-ay stroke, 2026-10-11): the decision
