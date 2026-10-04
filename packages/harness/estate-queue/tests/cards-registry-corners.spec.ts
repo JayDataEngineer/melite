@@ -90,6 +90,18 @@ describe("the selection tolerance (a wrong selection is the run door's voice)", 
     });
     expect(verdict).toEqual({ ok: true });
   });
+  it("a NON-STRING variant takes the same door — the selector's own refusal is absorbed", () => {
+    // selectCardVariant refuses a non-string variant ("variant must
+    // be a string"); the run door's tolerance absorbs that refusal
+    // whole — the same voice as the unknown-name case above, never a
+    // write-seat verdict.
+    const verdict = svc.admitStageRelations("tts", {
+      model: "qwen3-tts",
+      variant: 7,
+      text: "speak",
+    });
+    expect(verdict).toEqual({ ok: true });
+  });
   it("an unknown quant ADMITS the same way — one tolerance, both coordinates", () => {
     const verdict = svc.admitStageRelations("tts", {
       model: "qwen3-tts",

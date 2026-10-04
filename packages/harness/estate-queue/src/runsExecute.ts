@@ -82,6 +82,8 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
       } catch (exc: unknown) {
         const text: string = errText(exc);
         for (const stage of run.stages) {
+          // (every stage reads running — runOne stamps them before
+          // the engine call, so this fence never filters.)
           /* v8 ignore next */
           if (stage["status"] === "running") {
             stage["status"] = "failed";
@@ -215,6 +217,8 @@ export type SettleFn = (run: RunRecord) => void | Promise<void>;
         } catch (exc: unknown) {
           const text: string = errText(exc);
           for (const st of run.stages) {
+            // (same fence as the splice-catch above — every stage is
+            // still running when this splice reports.)
             /* v8 ignore next */
             if (st["status"] === "running") {
               st["status"] = "failed";

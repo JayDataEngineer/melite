@@ -773,10 +773,6 @@ export class CardRegistryService extends Service {
         };
       }
     }
-    /* v8 ignore next -- the incomplete-draft filter above admits
-     * a row only when its params !== undefined, so the ?? null is
-     * the noUncheckedIndexedAccess artifact (audit 2026-10-13). */
-    const surface: readonly string[] | null = declaring[0]?.params ?? null;
     // the surface judgment stays the undeclared-key gate's voice
     // (it already ran above); only the WORDS and the SPANS judge here
     // — the incomplete-draft filter applies ONLY at the write seat
@@ -787,7 +783,6 @@ export class CardRegistryService extends Service {
     const violations: LaneViolation[] = admitIncomplete
       ? incompleteDraftViolations(judged)
       : [...judged];
-    void surface;
     if (violations.length > 0) {
       return "lane (draft, model-less) refuses the state: " +
         violations.map((v) => v.message).join("; ");
@@ -814,9 +809,9 @@ export class CardRegistryService extends Service {
       try {
         admissionRefusal(this, card, "", liftCardParams(params), "admission");
       } catch (e) {
-        /* v8 ignore next -- admissionRefusal throws only
-         * CardArmError, so the rethrow keeps an unknown error loud,
-         * never read as a verdict. */
+        // a CardArmError is this seat's own refusal; anything else —
+        // a facts file that will not read, a shape fault — stays loud
+        // and keeps its identity instead of becoming a verdict string
         if (!(e instanceof CardArmError)) throw e;
         return e.message;
       }
@@ -895,6 +890,11 @@ export class CardRegistryService extends Service {
     try {
       sel = selectCardVariant(mid, famRow, params, "admission");
     } catch {
+      /* v8 ignore next -- prepareCardParams already ran the SAME
+       * selection on the same mid/famRow/body (cardsCompose.ts:296)
+       * one statement above; every refusal it can raise was raised
+       * there and absorbed by the tolerance catch above, so a throw
+       * here is the same refusal arriving twice. */
       return null; // the run door's voice, same tolerance as above
     }
     // THE LANE IS THE SELECTED VARIANT (probe receipt, corrected
@@ -962,12 +962,16 @@ export class CardRegistryService extends Service {
     } catch (e) {
       // the gate speaks by THROWING on the run seat; this door's
       // contract is a VERDICT, so the refusal is translated here
-      // rather than escaping as an unmapped error
-      /* v8 ignore next -- the FIRST admissionRefusal call above
-       * judged the same prepared state and already returned on a
-       * throw; this repeat is the recorded belt (the undeclared-key
-       * gate rides both seats), so its catch never fires. */
+      // rather than escaping as an unmapped error. The FIRST
+      // admissionRefusal call above judged the same prepared state
+      // and already returned on a throw; this repeat is the recorded
+      // belt (the undeclared-key gate rides both seats), so neither
+      // line below runs: the gate throws only CardArmError — its
+      // decls and facts are loaded and cached by the first call —
+      // and that refusal would have left this function above.
+      /* v8 ignore next -- the belt's unknown-error guard. */
       if (!(e instanceof CardArmError)) throw e;
+      /* v8 ignore next -- the belt's verdict line. */
       return e.message;
     }
     return null;
@@ -1134,9 +1138,9 @@ export class CardRegistryService extends Service {
     try {
       prep = prepareCardParams(this, rawBody ?? params, address, "1");
     } catch (e) {
-      /* v8 ignore next -- prepareCardParams throws only
-       * CardArmError, so the rethrow keeps an unknown error loud,
-       * never read as a verdict. */
+      // no factsArg is passed to composeValidateCard, so prepare's own
+      // strict facts load sits inside this try: a CardArmError is this
+      // seat's refusal, and every other throw keeps its identity
       if (!(e instanceof CardArmError)) throw e;
       return { message: e.message, code: e.code };
     }
@@ -1224,11 +1228,6 @@ export class CardRegistryService extends Service {
     // (the Run-press compose) skips it: no family row declares
     // lanes, and the card's own pins gate loud at the engine's load
     // (the YOLO/SAM2 checkpoints refuse hard when absent).
-    /* v8 ignore next 3 -- the board check above refuses an address
-     * the card does not offer, and a familyless prepared state
-     * arrives only with a card-id address (its own id), so this
-     * door never reaches the skip; the run press composes without
-     * validating through this seat. */
     if (prep.familyless !== true) {
       lanePresenceRefusal(prep.fam);
     }
