@@ -1113,12 +1113,16 @@ export function narrowStackCap (schema: unknown, cap: number): unknown {
   const next: Record<number, typeof refs[number]> = {}
   let touched = false
   for (const [id, ref] of Object.entries(refs)) {
-    const extra = ref.meta?.extra
-    const bare = ref.meta?.max_stack
+    // a ref with no meta carries no stack cap to narrow — it rides
+    // verbatim (both cur sources live under meta; the explicit guard
+    // keeps the narrowing path free of unreachable fallback arms)
+    if (ref.meta === undefined) { next[Number(id)] = ref; continue }
+    const extra = ref.meta.extra
+    const bare = ref.meta.max_stack
     const cur = typeof extra?.max_stack === 'number' ? extra.max_stack : typeof bare === 'number' ? bare : undefined
     if (cur === undefined || cur <= cap) { next[Number(id)] = ref; continue }
     touched = true
-    const meta = { ...(ref.meta ?? {}), max_stack: cap }
+    const meta = { ...ref.meta, max_stack: cap }
     if (extra !== undefined) meta.extra = { ...extra, max_stack: cap }
     next[Number(id)] = { ...ref, meta }
   }

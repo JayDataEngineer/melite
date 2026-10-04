@@ -8,7 +8,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 import assert from "node:assert/strict";
 import { Context } from "@deepseek-ai/cordis";
-import { ComfyUIService, ComposeRefusal, cardWireName, resolveCardFlowOutputs } from "../src/service.ts";
+import { ComfyUIService, ComposeRefusal, cardWireName, narrowStackCap, resolveCardFlowOutputs } from "../src/service.ts";
 import type { CardDefinition } from "../src/service.ts";
 import type { ModFields } from "../src/serviceMods.ts";
 import type { FactsFile, ModelFacts } from "@melite/comfyui-card-kit/facts";
@@ -1498,4 +1498,86 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
       (e: unknown) => e instanceof ComposeRefusal && e.code === 'unknown-input' && /uplod/.test(e.message),
     )
   })
+});
+
+describe("resolveCardFlowOutputs (a card with no output bindings)", () => {
+  it("an undefined flowOutputBindings array resolves to empty selections, not a crash", () => {
+    const def = card();
+    assert.deepEqual(resolveCardFlowOutputs(def, {}, { "SaveImage.0": { class_type: "SaveImage", inputs: {} } }), {
+      outputs: {},
+      outputNodes: {},
+    }, "no bindings = no outputs; the graph rides unselected");
+  });
+});
+
+describe("the flow-port legacy alias gate", () => {
+  it("a legacy alias absent from the card's schema refuses at registration", async () => {
+    const svc = await boot();
+    assert.throws(
+      () => svc.registerCard(card({
+        flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: true, legacyAliases: { ghost_alias: "prompt" } },
+      })),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "flow-port" && /legacy aliases ghost_alias/.test(e.message),
+    );
+  });
+});
+
+describe("requiresModel defaults (no declaration anywhere)", () => {
+  it("a card declaring requiresModel NOWHERE demands a model (the true default)", async () => {
+    const svc = await boot();
+    // the runtime reads requiresModel as optional (the ?? cascade at
+    // registration); the declared type keeps it required, so this one
+    // arm states the undeclared shape through the same cast the
+    // missing-contract arm uses
+    svc.registerCard(card({
+      flowKinds: { inputs: {}, outputs: { image: "image" }, requiresModel: undefined } as unknown as CardDefinition["flowKinds"],
+    }));
+    assert.throws(
+      () => svc.compose("card1", null, {}, "r"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "no-model",
+      "the ?? true fallback is live: silence is not a model-less card",
+    );
+  });
+});
+
+describe("compose (a route's owning family admits the board)", () => {
+  it("a route id whose owner family is boarded composes (the bypass's own case)", async () => {
+    const svc = await boot();
+    svc.registerCard(card());
+    const ff = factsFor({ "fam1-route": {} });
+    ff.owners = { "fam1-route": "fam1" };
+    svc.setFacts(ff);
+    assert.doesNotThrow(() => svc.compose("card1", "fam1-route", {}, "r"),
+      "the route itself is not on the board; its owning family is, and that is the admission");
+  });
+});
+
+describe("narrowStackCap (the stack-cap narrowing, pure)", () => {
+  it("non-envelope and refs-less envelopes ride verbatim", () => {
+    assert.equal(narrowStackCap(null, 2), null, "a null schema is not an envelope");
+    assert.deepEqual(narrowStackCap({ uid: "x" }, 2), { uid: "x" }, "no refs = nothing to narrow");
+    assert.deepEqual(narrowStackCap("plain", 2), "plain", "a non-object passes through");
+  });
+
+  it("a bare meta.max_stack narrows to the cap; an already-low one rides untouched", () => {
+    const low = { uid: "u", refs: { 1: { meta: { max_stack: 1 } } } };
+    assert.equal(narrowStackCap(low, 2), low, "below the cap, the SAME object rides");
+    const high = narrowStackCap({ uid: "u", refs: { 1: { meta: { max_stack: 9 } } } }, 2);
+    assert.equal((high as { refs: Record<number, { meta: { max_stack: number } }> }).refs[1]!.meta.max_stack, 2,
+      "the bare spelling narrows in place");
+  });
+
+  it("a non-number cap and a meta-less ref ride verbatim (nothing to narrow)", () => {
+    const odd = { uid: "u", refs: { 1: { meta: { max_stack: "nine" } }, 2: {} } };
+    assert.equal(narrowStackCap(odd, 2), odd, "a string cap is not a cap; a ref without meta carries none");
+  });
+
+  it("the extra-bag spelling narrows and preserves the bag's siblings", () => {
+    const out = narrowStackCap({
+      uid: "u",
+      refs: { 1: { meta: { extra: { max_stack: 9, other: 1 } } } },
+    }, 2) as { refs: Record<number, { meta: { extra: Record<string, unknown> } }> };
+    assert.equal(out.refs[1]!.meta.extra["max_stack"], 2, "the extra spelling narrows");
+    assert.equal(out.refs[1]!.meta.extra["other"], 1, "siblings ride");
+  });
 });
