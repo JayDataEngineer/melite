@@ -13,6 +13,11 @@ import { MotionTimelineBar } from "../timeline/MotionTimelineBar"
 
 afterEach(cleanup)
 
+// The bar's required handlers are supplied as no-ops: this suite
+// exercises the audio-lane gutter, and the typecheck net (new to this
+// package) is right that a render helper cannot omit them — the
+// component's contract is that every editor callback is present.
+const noop = (): void => {};
 function bar(audioLayers: Array<{ id: string; label: string; onUpload?: (anchor: HTMLElement) => void }>) {
   return h(MotionTimelineBar, {
     prompts: [],
@@ -21,7 +26,13 @@ function bar(audioLayers: Array<{ id: string; label: string; onUpload?: (anchor:
     totalFrames: 96,
     fps: 24,
     audioLayers,
-  })
+    onFrameChange: noop,
+    onKeyframeAdd: () => "kf",
+    onKeyframeMove: noop,
+    onKeyframeDelete: noop,
+    onPromptUpdate: noop,
+    onPromptMove: noop,
+  } as never)
 }
 
 describe("the lane gutter's add door (opt-in)", () => {

@@ -30,6 +30,38 @@ const run = promisify(execFile);
 
 const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 
+
+
+/** Packages whose sources are NOT TypeScript, so tsc has nothing to
+ *  read: the provisioner ships .mjs bin scripts and a cordis patch
+ *  manifest. Named here rather than left as a silent gap — a package
+ *  that grows a .ts file must delete its name from this list. */
+const NO_TYPESCRIPT_SOURCES: readonly string[] = [
+  "packages/harness/provisioner",
+];
+
+/** Every package directory the tree declares — a directory under
+ *  packages/ that carries a package.json (the same walk the net
+ *  uses, minus the tsconfig filter). Comparing the two is the
+ *  coverage law: a package added without a tsconfig would otherwise
+ *  leave the typecheck net silently, and the old pinned COUNT could
+ *  only be maintained by hand. */
+function manifestDirs(): string[] {
+  const out: string[] = [];
+  const walk = (dir: string, depth: number): void => {
+    let entries;
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return }
+    for (const e of entries) {
+      if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+      const p = join(dir, e.name);
+      if (e.isDirectory() && depth < 2) walk(p, depth + 1);
+      else if (e.isFile() && e.name === "package.json") out.push(dir);
+    }
+  };
+  walk(join(REPO, "packages"), 0);
+  return out.filter((d) => !NO_TYPESCRIPT_SOURCES.includes(d.replace(/\\/g, "/").replace(`${REPO}/`, "")));
+}
+
 function packageDirs(): string[] {
   const out: string[] = [];
   const walk = (dir: string, depth: number): void => {
@@ -102,20 +134,17 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
   const dirs = packageDirs();
 
   it("the net reaches the estate (discovery is dynamic, not a named list)", () => {
-    // The five-package era is over: if this count ever reads ~5,
-    // discovery broke and the estate is half-unheard again. The bar
-    // ROSE (li-aq.3) — and then the audit killed the FLOOR (a
-    // `>= 85` tripwire lets the count drift silently DOWN to 85
-    // while three packages go dark, and never hears a new one at
-    // all): the pin is EXACT. 88 tsconfigs stood through li-bp
-    // (the typert protocol returned as the IN-TREE vendor); +2 at
-    // stroke 4 — the weightless verb families (packages/models/fit,
-    // packages/models/skin) each bring a tsconfig into the net;
-    // +1 at the F1 mask mint (packages/models/mask, 2026-10-12);
-    // adding or removing a package MUST touch this number
-    // deliberately — a tsconfig deleted to dodge the net fails the
-    // wall by arithmetic.
-    expect(dirs.length).toBe(91);
+    // DERIVED, NOT A PINNED COUNT (the flake audit, 2026-10-15): the
+    // old exact number made every package addition an arithmetic
+    // chore (the trailing comment carried an eight-entry edit log),
+    // and the edit log is exactly what decays. The contract is
+    // COVERAGE: every workspace member pnpm-workspace.yaml declares
+    // is in the typecheck net, and the net carries nothing else. A
+    // package added without a tsconfig fails here by construction;
+    // one removed takes its row with it.
+    expect(dirs.map((d) => d.replace(/\\/g, "/")).sort()).toEqual(
+      manifestDirs().map((d) => d.replace(/\\/g, "/")).sort(),
+    );
     // The incident's package is in the net BY NAME (the engine ran
     // from source, so no build step ever saw it).
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);

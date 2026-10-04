@@ -182,8 +182,14 @@ function mkSeg(over: Record<string, unknown> = {}): TimelineSegment {
     ...over,
   } as unknown as TimelineSegment;
 }
-function mkCue(over: Record<string, unknown> = {}): Record<string, unknown> {
+// The fixture is TYPED as the store's own cue shape (the typecheck
+// net is new to this package — the wall found the untyped helper
+// feeding addAudioCue four incomplete objects): a test-built cue that
+// does not satisfy the store's contract is a defect in the TEST, not
+// something the store should accept.
+function mkCue(over: Partial<AudioCue> = {}): AudioCue {
   return {
+    id: "",
     track: "t1",
     start: 0,
     duration: 2,
@@ -195,6 +201,14 @@ function mkCue(over: Record<string, unknown> = {}): Record<string, unknown> {
     sourceStepId: null,
     ...over,
   };
+}
+
+/** A cue with the store's own id omitted — the store mints it, so
+ *  every addAudioCue call passes the shape the door accepts. */
+function cueOf(cue: AudioCue): Omit<AudioCue, "id"> {
+  const { id: _minted, ...rest } = cue;
+  void _minted;
+  return rest;
 }
 
 afterEach(async () => {
@@ -542,7 +556,7 @@ describe("variants", () => {
   it("promoteVariant defaults a missing seed via the params chain (param-less raw import)", () => {
     S().reset();
     const raw = mkSeg({ id: "noparams", videoUrl: "http://p" });
-    delete (raw as Record<string, unknown>).params;
+    delete (raw as { params?: unknown }).params;
     (raw as unknown as { variants: unknown }).variants = [{ id: "w", seed: 9, videoUrl: "http://w" }];
     assert.equal(S().importTimeline(JSON.stringify({ segments: [raw] })), true);
     S().promoteVariant("noparams", "w");
@@ -611,8 +625,8 @@ describe("audio tracks and cues", () => {
     S().reset();
     const t1 = S().addAudioTrack();
     const t2 = S().addAudioTrack();
-    const c1 = S().addAudioCue({ ...mkCue({ track: t1.id }), label: "one" });
-    const c2 = S().addAudioCue({ ...mkCue({ track: t2.id }), label: "two" });
+    const c1 = S().addAudioCue(cueOf(mkCue({ track: t1.id, label: "one" })));
+    const c2 = S().addAudioCue(cueOf(mkCue({ track: t2.id, label: "two" })));
     S().setSelectedAudioCue(c1.id);
     S().removeAudioTrack(t1.id);
     assert.ok(!S().audioCues.some((c) => c.id === c1.id));
@@ -631,8 +645,8 @@ describe("audio tracks and cues", () => {
   });
   it("adds, updates, and removes cues (selection follows)", () => {
     S().reset();
-    const cue = S().addAudioCue(mkCue({}));
-    const spare = S().addAudioCue(mkCue({ label: "spare" }));
+    const cue = S().addAudioCue(cueOf(mkCue({})));
+    const spare = S().addAudioCue(cueOf(mkCue({ label: "spare" })));
     assert.ok(cue.id.length > 0);
     S().updateAudioCue(cue.id, { volume: 0.5 });
     assert.equal(S().audioCues.find((c) => c.id === cue.id)?.volume, 0.5);
@@ -696,8 +710,8 @@ describe("splitSegmentAtPlayhead", () => {
   it("splits segments lacking beats/keyframes arrays", () => {
     S().reset();
     const raw = mkSeg({ id: "bare" });
-    delete (raw as Record<string, unknown>).promptBeats;
-    delete (raw as Record<string, unknown>).keyframes;
+    delete (raw as { promptBeats?: unknown }).promptBeats;
+    delete (raw as { keyframes?: unknown }).keyframes;
     assert.equal(S().importTimeline(JSON.stringify({ segments: [raw] })), true);
     S().setPlayback({ currentTime: 2.5 });
     S().splitSegmentAtPlayhead();

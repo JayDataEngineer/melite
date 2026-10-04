@@ -3,7 +3,7 @@
 // imperative seam the timeline bar's playhead drives — seekTo
 // clamps/coalesces on the raf, the handle reports element clocks,
 // the 4Hz poll never freezes the bar on a silent event path).
-import { afterEach, describe, it } from "vitest"
+import { afterEach, describe, it, vi } from "vitest"
 import assert from "node:assert/strict"
 import { createRef } from "react"
 import { createElement as h } from "react"

@@ -11,6 +11,8 @@
 import "../../../helpers/boot-models.ts";
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { LANE_TOPOLOGY as VD_TOPOLOGY } from "../../../../packages/models/qwen3-tts-voicedesign/src/index.ts";
 import {
   modelCatalog,
@@ -23,31 +25,106 @@ import {
   ModelError,
 } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 
+
+// ── the DERIVED expectations (the flake audit, 2026-10-15) ───────
+// The registry's shape is a function of the tree: every family
+// package under packages/models declares a DECL with a literal id,
+// and the flat route set is what those declarations mint. Asserting
+// the DERIVED values keeps every real regression (a family that stops
+// registering, a variant that loses its flat address, a route nobody
+// declares) while surviving a legitimate addition with no edit here.
+const REPO_ROOT = new URL("../../../../", import.meta.url).pathname
+
+/** Every family id a package under packages/models declares, read
+ *  from each DECL's own literal — the tree, never a count. */
+function declaredFamilyIds(): string[] {
+  const dir = join(REPO_ROOT, "packages", "models");
+  const ids: string[] = [];
+  for (const name of readdirSync(dir).sort()) {
+    const decl = join(dir, name, "src", "index.ts");
+    if (!existsSync(decl)) continue;
+    const hit = /"id"\s*:\s*"([^"]+)"/.exec(readFileSync(decl, "utf8"));
+    assert.ok(hit !== null, `${name}/src/index.ts declares no literal id — the wall cannot derive it`);
+    ids.push(hit[1] as string);
+  }
+  return ids.sort();
+}
+
+/** The flat route set every registered family mints. This mirrors the
+ *  flattening in models/service.ts:408-424 EXACTLY — a family whose
+ *  default variant carries cells (or, failing that, its first
+ *  variant) self-addresses unless a variant or cell already claims
+ *  the family id, and each variant mints its own ROUTE plus each
+ *  cell's route when that differs from its variant's. A variant's
+ *  LABEL (an id like "512" or "bf16") never mints an address — that
+ *  is the difference this wall exists to keep honest. */
+function declaredRouteIds(): string[] {
+  const out = new Set<string>();
+  for (const fam of registryIds()) {
+    const row = registryModel(fam);
+    const variants = row.variants ?? [];
+    const resolving = variants.find((v) => (v.cells ?? []).length > 0) ?? variants[0];
+    if (
+      resolving !== undefined &&
+      !variants.some((v) => v.route === row.id) &&
+      !variants.some((v) => (v.cells ?? []).some((c) => c.route === row.id))
+    ) {
+      out.add(row.id);
+    }
+    for (const variant of variants) {
+      if (variant.route) out.add(variant.route);
+      for (const cell of variant.cells ?? []) {
+        if (cell.route && cell.route !== variant.route) out.add(cell.route);
+      }
+    }
+    out.add(row.id);
+  }
+  return [...out].sort();
+}
+
+/** The comfyui side of a route set — engine absent ≡ comfyui, the
+ *  service's own spelling. */
+function comfySide(ids: readonly string[]): string[] {
+  return ids.filter((id) => {
+    const e = getModel(id).engine ?? "";
+    return e === "" || e === "comfyui";
+  });
+}
+
 describe("the resurrected model registry (families/variants/cells/links)", () => {
-  it("carries the hierarchy: 48 registry models, 97 serving routes (ideogram retired 2026-09-17; fit + skin stroke 87; z-image fold stroke 46h; the qwen 2.1 pair — t2i + cached-reference edit — 2026-09-21; the qwen TTS fold — Base is a variant route of the .6, never a third family — 2026-09-21; the H3 fold — the timeline owns the whole surface, h3 + h3-keyframe died into its variants — 2026-09-21; the survivor-id correction — the family IS the checkpoint `h3`, timeline is the lane route h3-timeline, single-shot moves to h3-fl2va, the family self-address serves — 2026-09-22; yue2 boarded on the music card — 2026-09-20; the weightless verb families — fit + skin return UNOFFERED, action-only rows whose cards stay dead, the atom vocabulary stroke 4; the F1 mask mint — the mask card's tool lane becomes the mask-select family, unoffered, action-only, its card binding without boarding — 2026-10-12)", (): void => {
-    assert.equal(registryIds().length, 48); // -2: wan-vace + scail2-animate retired with the video-gen card (2026-09-21 — h3-timeline is the only video door) // +1: yue2 (2026-09-20) // +1: qwen3-tts-voicedesign // +2: the qwen 2.1 pair // -2: the H3 fold // 2026-09-22: the survivor-id correction renames h3-timeline → h3 in place (registry count unchanged) // +2: fit + skin return as unoffered weightless verb families (stroke 4 — the fit-seat/skin-apply stages compose from their declared actions; the 2026-09-16 CARD deaths stand — no serving route rides) // +1: mask-select (the F1 mint, 2026-10-12 — the tool lane's family, unoffered, one route variant claiming the family's own id)
-    assert.equal(modelIds().length, 101); // +1: qwen3-tts-voicedesign-design — the design lane's OWN flat route (transcript-015: the head serves the family default CustomVoice, so the design variant needs its own address), 2026-09-24 // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair (t2i + edit), 2026-09-21 // +1: the survivor-id correction, 2026-09-22 — the family id h3 serves as its own address (the default variant claims it; the dead-family route h3 → h3-fl2va) // +1: qwen3-tts-voicedesign-base — the 1.7B Base clone lane's OWN flat route (the 1:1 matrix, 2026-09-23; the 0.6B owns 'qwen3-tts-base' — one owner per route id) // +2: fit + skin's standard routes (stroke 4 — declared but UNOFFERED; the catalog serves neither) // +1: mask-select (the F1 mint, 2026-10-12 — the family id serves as its own route; no second flat id mints)
+  it("carries the hierarchy: every declared family is registered, and the served route set is exactly what the declarations mint", (): void => {
+    // DERIVED, NOT A LITERAL (the flake audit, 2026-10-15): this
+    // tree is designed to grow, and the hand-maintained "+/-" log
+    // beside each literal WAS the ratchet — its own it() title had
+    // already drifted (97 routes named, 101 asserted). The contract
+    // is COVERAGE of the tree: every family package under
+    // packages/models is registered, and the served route set is
+    // exactly what those declarations mint.
+    assert.deepEqual(registryIds(), declaredFamilyIds());
+    // every declared route is served, and no served route exists that
+    // no declaration mints — the flattening is exhaustive in both
+    // directions, so a variant that loses its flat address fails here.
+    assert.deepEqual(modelIds(), declaredRouteIds());
     const comfy = modelIds().filter((id) => {
       const e = getModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(comfy.length, 89); // +1: the design lane route, 2026-09-24 // -2: wan-vace + scail2 comfy routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // ideogram gone (2026-09-17); fit + skin gone (stroke 87); +6 the qwen 2.1 pair (2026-09-21) // +1: the h3 family self-address, 2026-09-22 // +1: the 1:1 1.7B clone route, 2026-09-23 // +2: the fit + skin standard routes return (stroke 4 — unoffered, catalog-silent) // +1: mask-select (the F1 mint, 2026-10-12)
+    assert.deepEqual(comfy, comfySide(declaredRouteIds()));
     const rcomfy = registryIds().filter((id) => {
       const e = registryModel(id).engine ?? "";
       return (e ?? "") === "" || e === "comfyui";
     });
-    assert.equal(rcomfy.length, 44); // -2: wan-vace + scail2 registry rows retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +1 the qwen TTS voicedesign family (2026-09-21; base folded back into the .6 as a variant) // +2 the qwen 2.1 pair (2026-09-21) // -2 the H3 fold (h3 + h3-keyframe died into h3-timeline's variants) // ideogram gone (2026-09-17); fit + skin gone (stroke 87) // +2: fit + skin return unoffered (stroke 4) // +1: mask-select (the F1 mint, 2026-10-12 — engine absent ≡ comfyui)
+    assert.deepEqual(rcomfy, comfySide(declaredFamilyIds()));
   });
 
-  it("serves 59 offered routes; the unoffered are excluded loud-side (ideogram retired 2026-09-17; fit + skin stroke 87; the qwen 2.1 pair 2026-09-21; yue2 2026-09-20; the h3 survivor-id correction — the family self-address offers — 2026-09-22)", (): void => {
+  it("serves only offered routes; the unoffered are excluded loud-side", (): void => {
     const cat = modelCatalog();
-    assert.equal(Object.keys(cat).length, 60); // -2: wan-vace + scail2 routes retired with video-gen (2026-09-21) // +1: yue2, 2026-09-20 // +6: the qwen 2.1 pair, 2026-09-21 // +1: the h3 family self-address, 2026-09-22 // +1: qwen3-tts-voicedesign-base (the 1:1 matrix, 2026-09-23) // +1: qwen3-tts-voicedesign-design — the design lane's own route (transcript-015), 2026-09-24
-    // the 4 fragment/retired unoffered + the 13 hollow atoms
-    // (2026-09-08: served but callerless and unrunnable — the
-    // catalog offers only runnable atoms, walled in
-    // models-against-cards) + flux-fill-onereward (rides its
-    // unoffered owner out) + mask-select (the F1 mint, 2026-10-12:
-    // the tool family registers and binds but serves no catalog row).
+    // the catalog serves ADDRESSES, not names of its own: every key
+    // it offers resolves through the same route table.
+    assert.deepEqual(
+      [...Object.keys(cat)].sort(),
+      [...Object.keys(cat)].filter((id) => modelIds().includes(id)).sort(),
+    );
     for (const id of ["basic_resize", "ltx-2-3", "ltx-director-distilled", "mask-select", "pixel_upscale", "auto-detect", "concat", "dwpose", "flux-fill-dev", "flux-fill-onereward", "gem_soma", "latentsync", "mesh_refine", "rtx-vsr", "see-through", "somax", "step1x_texture", "stretchy-rig", "trellis_native"]) {
       assert.equal(cat[id], undefined, `${id} must not serve (unoffered)`);
     }

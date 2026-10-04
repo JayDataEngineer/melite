@@ -207,6 +207,13 @@ describe("THE DRIFT FLOOR (>= 85 let packages go dark)", () => {
     // fails HERE, with the arithmetic spelled out.
     const gate = read("tests/walls/ts/suites/typecheck-gate.spec.ts");
     expect(gate, "no numeric floor may replace the exact pin (any decade)").not.toMatch(/toBeGreaterThanOrEqual\(\d+\)/);
+    // The pin became a DERIVED EQUALITY (the flake audit, 2026-10-15):
+    // the gate compares the discovered net against every package
+    // directory in the tree, so a package added without a tsconfig
+    // fails by construction and nothing needs hand-editing. What must
+    // not come back is a COUNT: any `toBe(<number>)` on the census
+    // would reintroduce the arithmetic chore this wall policed.
+    expect(gate, "the census is derived — a pinned count must not return").not.toMatch(/toBe\(\d+\)/);
     // derive the live count exactly as the gate does
     const live: string[] = [];
     const walk = (dir: string, depth: number): void => {
@@ -221,7 +228,9 @@ describe("THE DRIFT FLOOR (>= 85 let packages go dark)", () => {
     };
     walk(join(REPO, "packages"), 0);
     expect(live.length, "census floor: the walk sees the estate (the derivation rotted)").toBeGreaterThan(10);
-    expect(gate, `the gate pins the LIVE tsconfig count (${live.length}) — touch its literal when the estate grows`).toContain(`).toBe(${live.length})`);
+    // the gate must compare that SAME walk against the package set —
+    // the equality is the pin now, and it is derived from the tree
+    expect(gate, "the gate derives its census from the package tree").toMatch(/manifestDirs/);
   });
 });
 
