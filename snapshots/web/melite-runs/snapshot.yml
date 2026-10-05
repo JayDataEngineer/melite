@@ -1,0 +1,13 @@
+# snapshot.yml — keyless web scenario (DSH tier 7). This scenario owns
+# no local session fixture: it borrows the canonical session from
+# snapshots/session/hello and reads that owner's selected parent
+# generation read-only (the same law as web/cards-tab). The
+# /melite-runs face is a pure mount against a commands-registry fake
+# (the seam dsh's inject('commands') fires on browser lanes); the
+# live composer surface is the operator's lane. CI forces read-only
+# DSH_SNAPSHOT=replay.
+profile: melite-test
+composition: engine-tier
+headerClass: v0
+recordingPolicy: replay
+borrows: session/hello
