@@ -42,5 +42,11 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.module.css"
-  ]
+  ],
+  "melite": {
+    "publish": {
+      "subpathOnly": true,
+      "reason": "genre host plugins load by subpath (./form-fields, ./poster-shell); no root entry exists by design"
+    }
+  }
 }

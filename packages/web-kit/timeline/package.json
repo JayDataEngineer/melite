@@ -42,5 +42,11 @@
     "timeline/**/*.module.css",
     "store/**/*.module.css",
     "playback/**/*.module.css"
-  ]
+  ],
+  "melite": {
+    "publish": {
+      "subpathOnly": true,
+      "reason": "cordis plugin loaded by the host runtime, not imported by root"
+    }
+  }
 }
