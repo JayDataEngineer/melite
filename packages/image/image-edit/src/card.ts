@@ -213,8 +213,10 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
     // stock-only lane (the python_module verdict, image-gen's card-1
     // lesson): TextEncodeQwenImageEditPlus is comfy_extras.nodes_qwen
     // and ModelSamplingAuraFlow is comfy_extras.nodes_model_advanced
-    // — both core; the qweneditutils/vnccs_utils rows in the
-    // extension map over-claim core nodes. No requires to declare.
+    // — both core. The Comfyui-QwenEditUtils row died with
+    // vnccs_utils (2026-10-16): its roster key listed this core
+    // class while the pack serves only *_lrzjason variants no
+    // estate graph composes. No requires to declare.
     boarded: [...BOARDED],
     tags: ['image', 'edit'],
     // THE DECLARED DETECTORS (the crop_stitch law — "declared, then

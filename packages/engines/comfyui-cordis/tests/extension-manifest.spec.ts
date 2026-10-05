@@ -207,7 +207,11 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     // MOD-ONLY, installed by hand on the box, never estate-provisioned,
     // so no row will ever declare it and the key dies; vnccs_utils
     // deleted — ModelSamplingAuraFlow is comfy_extras core and
-    // UniCanvasNode has no provider on disk and no requiring card.)
+    // UniCanvasNode has no provider on disk and no requiring card.
+    // 2026-10-16b, the qwen-edit batch: Comfyui-QwenEditUtils
+    // deleted — TextEncodeQwenImageEditPlus is comfy_extras core
+    // (nodes_qwen.py); the pack serves only *_lrzjason variants
+    // nothing composes, and its model-scoped row died with it.)
     const UNDECLARED_ROSTER: readonly string[] = [];
     const drifted = rostered.filter((name) => !declared.has(name)).sort();
     assert.deepEqual(

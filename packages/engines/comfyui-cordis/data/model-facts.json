@@ -305,9 +305,6 @@
     "melite-utility-nodes": [
       "MeliteConcatVideos",
       "MeliteUnload"
-    ],
-    "Comfyui-QwenEditUtils": [
-      "TextEncodeQwenImageEditPlus"
     ]
   },
   "core_node_types": {

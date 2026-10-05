@@ -110,7 +110,9 @@ export const cardPackages: string[] = [
   // RETIRED 2026-09-15 (superseded by the MCP card, operator
   // order): 3d-unity, 3d-blender, 3d-blender-shot — the CLI-era
   // proxy-node cards. The MCP lane (mcp:<server>) owns the 3d
-  // compose surface now; the vendored node packs stay (Layer C).
+  // compose surface now; the remaining vendored packs stay (Layer
+  // C) — melite-blender-proxy-nodes left with the MCP ruling
+  // (2026-10-04, audit 008 M12).
   '@melite/image-image-gen',
 ]
 

@@ -1,7 +1,0 @@
-# img-edit ComfyUI extension dependencies
-extensions:
-  - name: Comfyui-QwenEditUtils
-    url: https://github.com/lrzjason/Comfyui-QwenEditUtils
-    ref: cdd4d028c6491d27a40092d7795158668cec9189
-    required: false
-    desc: Qwen-Image-Edit helper nodes (img-edit family).
