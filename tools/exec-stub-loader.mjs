@@ -114,6 +114,9 @@ export async function load (url, context, nextLoad) {
     "const stubObj = new Proxy(stubFn, { get: (t, k) => k === Symbol.toPrimitive ? () => 'stub' : stubObj, apply: () => stubObj, construct: () => ({}) })",
     'export default stubObj',
   ]
-  for (const n of named) lines.push(`export const ${n} = stubObj`)
+  // NAMESPACE `.default` accesses and other reserved words cannot be
+  // `export const` declarations — the default binding already ships.
+  const declarable = (n) => /^[$A-Z_][\w$]*$/i.test(n) && !['default', 'class', 'function', 'var', 'let', 'const', 'export', 'import'].includes(n)
+  for (const n of named) if (declarable(n)) lines.push(`export const ${n} = stubObj`)
   return { format: 'module', shortCircuit: true, source: lines.join('\n') + '\n' }
 }
