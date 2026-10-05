@@ -10,6 +10,7 @@ import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
+import { rejectionVoice } from './rejection-voice'
 
 /** The generic MCP card's id (the ONE engine-served card the run
  * press routes on — the subagent-spawn card, engine 'agent'). */
@@ -175,7 +176,7 @@ export async function runCardStage(
     // spoken, naming the door's own failure, never a silent degrade.
     return {
       refused: 'the form-spec door for ' + JSON.stringify(card) + ' is unreachable ('
-        + (e instanceof Error ? e.message : String(e)) + ') — the run refuses rather than compose unverified params',
+        + (rejectionVoice(e)) + ') — the run refuses rather than compose unverified params',
     }
   }
   let doc = resolved

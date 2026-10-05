@@ -66,6 +66,7 @@ import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 import { BenchView } from './bench-view.tsx'
 import { DraftView, RunView } from './draft-run-views.tsx'
+import { rejectionVoice } from './rejection-voice'
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
  *  UseSidebarRightTabInfo, spelled locally). */
 interface TabInfo {
@@ -404,7 +405,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       // a THROWN start (wire down, 500, read-back failure) is a
       // rejection too — the old code had NO catch here: the promise
       // died unhandled, running stuck, and the operator saw NOTHING
-      carryFailure(e instanceof Error ? e.message : 'run start failed')
+      carryFailure(rejectionVoice(e))
     })
   }, [snapshot, onStarted, touchBench])
   // THE TILE CHROME'S STOP + REMOVE (the chat-input law's verbs):
@@ -417,7 +418,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void stopRun(rid)
       .then(() => { setLocalRunError(clearVerb('stop')) })
       .catch((e: unknown) => {
-        setLocalRunError(verbClaim('stop', e instanceof Error ? e.message : 'stop failed'))
+        setLocalRunError(verbClaim('stop', rejectionVoice(e)))
       })
   }, [stageRuns])
   /* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
@@ -428,7 +429,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
       // other half — a remove that lands retires the remove refusal)
       .then(() => { setLocalRunError(clearVerb('remove')); touchBench() })
       .catch((e: unknown) => {
-        setLocalRunError(verbClaim('remove', e instanceof Error ? e.message : 'remove failed'))
+        setLocalRunError(verbClaim('remove', rejectionVoice(e)))
       })
   }, [snapshot, touchBench])
   // PARAMS PATCH for surface views (the slot's onPatch currency):
@@ -443,7 +444,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void patchStageParams(snapshot.value.draftId, stage.id, patch, snapshot.value.rev)
       .then(() => { setLocalRunError(clearVerb('patch')); touchBench() })
       .catch((e: unknown) => {
-        setLocalRunError(verbClaim('patch', e instanceof Error ? e.message : 'patch failed'))
+        setLocalRunError(verbClaim('patch', rejectionVoice(e)))
         touchBench()
       })
   }, [snapshot, touchBench])
@@ -496,7 +497,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void patchStageParams(value.draftId, value.stageId, patch, value.rev)
       .then(() => { setLocalRunError(clearVerb('patch')) })
       .catch((e: unknown) => {
-        setLocalRunError(verbClaim('patch', e instanceof Error ? e.message : 'patch failed'))
+        setLocalRunError(verbClaim('patch', rejectionVoice(e)))
       })
   }, [snapshot])
 
@@ -506,7 +507,7 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
     void stopRun(runId)
       .then(() => { setLocalRunError(clearVerb('cancel')) })
       .catch((e: unknown) => {
-        setLocalRunError(verbClaim('cancel', e instanceof Error ? e.message : 'cancel failed'))
+        setLocalRunError(verbClaim('cancel', rejectionVoice(e)))
       })
   }, [])
 

@@ -16,6 +16,7 @@ import { createElement as h, useState } from 'react'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
 import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue.ts'
+import { rejectionVoice } from './rejection-voice'
 
 export function RunRescue({ error, stages, onRun }: {
   error: string
@@ -67,7 +68,7 @@ export function RunRescue({ error, stages, onRun }: {
               setRestarted(true)
             }).catch((e: unknown) => {
               setRestarting(false)
-              setNote(e instanceof Error ? e.message : 'restart failed')
+              setNote(rejectionVoice(e))
             })
           },
         }, restarting ? 'Restarting…' : 'Restart to activate'),
@@ -93,7 +94,7 @@ export function RunRescue({ error, stages, onRun }: {
         setNote(null)
         runRescueCall(rescue, target)
           .then((result) => { setBusy(false); setDone(result) })
-          .catch((e: unknown) => { setBusy(false); setNote(e instanceof Error ? e.message : 'install failed') })
+          .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
       },
     }, busy ? 'installing…' : 'Install & continue'),
     note !== null ? h('p', { className: css.rescueErr }, note) : null,

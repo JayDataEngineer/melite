@@ -199,13 +199,14 @@ describe("the tile trash — remove rides the revision fence", () => {
     expect(await screen.findByText("rev moved under you", {}, { timeout: 5000 })).toBeTruthy();
   });
 
-  test("a throwing trash voices the fallback (never empty)", async () => {
+  test("a throwing trash voices the throw's own words (never empty)", async () => {
     // the door throws the foreign string "gone" verbatim (the old
-    // envelope stub's shape) — the client voices "remove failed".
+    // envelope stub's shape) — the face speaks it verbatim (the
+    // failureText law), never a fixed fallback that masks it.
     mountBench({ throws: [{ method: "bench/remove-stage", value: "gone" }] });
     const trash = await screen.findByTestId("tile-remove", {}, { timeout: 5000 });
     fireEvent.click(trash);
-    expect(await screen.findByText("remove failed", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("gone", {}, { timeout: 5000 })).toBeTruthy();
   });
 });
 
@@ -231,13 +232,13 @@ describe("the bench slot patch currency — the zoom's onPatchParams ride", () =
     expect(await screen.findAllByText(/rev moved under you/, {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
-  test("a throwing slot patch voices the fallback (never empty)", async () => {
-    // the foreign string "gone" rides verbatim — the "patch failed"
-    // fallback voices (the old stub's shape, verbatim).
+  test("a throwing slot patch voices the throw's own words (never empty)", async () => {
+    // the foreign string "gone" surfaces verbatim (the failureText
+    // law), never a fixed fallback that masks it
     mountBench({ throws: [{ method: "drafts/patch", value: "gone" }] });
     await openZoom();
     fireEvent.click(screen.getByText("slot patch"));
-    expect(await screen.findAllByText(/patch failed/, {}, { timeout: 5000 })).not.toHaveLength(0);
+    expect(await screen.findAllByText("gone", {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 });
 
@@ -262,13 +263,13 @@ describe("the draft slot currency — patch and run ride the draft's own rev", (
     expect(await screen.findByText("draft moved", {}, { timeout: 5000 })).toBeTruthy();
   });
 
-  test("a throwing draft patch voices the fallback (never empty)", async () => {
-    // the foreign number 42 rides verbatim (the old stub's shape) —
-    // the "patch failed" fallback voices.
+  test("a throwing draft patch voices the throw's own words (never empty)", async () => {
+    // the foreign number 42 surfaces as "42" (the failureText law),
+    // never a fixed fallback that masks it
     mountDraft({ throws: [{ method: "drafts/patch", value: 42 }] });
     await screen.findByText("slot patch", {}, { timeout: 5000 });
     fireEvent.click(screen.getByText("slot patch"));
-    expect(await screen.findByText("patch failed", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("42", {}, { timeout: 5000 })).toBeTruthy();
   });
 
   test("a draft slot run starts the pass (runs/start carries the draft)", async () => {

@@ -321,13 +321,16 @@ describe("the drill's mount arms — every row opens its truth", () => {
     expect(await screen.findByText("Prompt", {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  test("a spec failure renders its own words (never a JSON stack)", async () => {
+  test("a spec failure renders its own words (even a thrown string, never a JSON stack)", async () => {
     doors.formSpec = "reject-string";
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }]);
     doors.formSpec = "reject-string";
     const user = userEvent.setup();
     await user.click(firstTile());
-    expect(await screen.findByText("form-spec unavailable", {}, { timeout: 4000 })).toBeTruthy();
+    // the harness throws the plain string "kablam" — the face speaks
+    // the thrower's words verbatim (the failureText law), not a
+    // fixed fallback that masks them
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 });
 

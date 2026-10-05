@@ -412,7 +412,7 @@ describe("the enhance failures — the door's words, never a stack", () => {
     expect(await screen.findByText("the enhancer returned no declared fields ()", {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  test("a transport throw that is no Error voices the fallback (never a throw past the press)", async () => {
+  test("a transport throw that is no Error voices its own words (never a throw past the press)", async () => {
     doors.enhanceMode = "throw-string";
     mountBench([{ id: "s_0", card: "image-gen", engine: "comfyui", params: { model: "image-gen" } }]);
     doors.enhanceMode = "throw-string";
@@ -423,6 +423,9 @@ describe("the enhance failures — the door's words, never a stack", () => {
     await screen.findByText("Prompt", {}, { timeout: 4000 });
     await typePrompt("a red cube");
     pressEnhance();
-    expect(await screen.findByText("enhance failed", {}, { timeout: 4000 })).toBeTruthy();
+    // the fake throws the plain string "boom" — the note speaks the
+    // thrown words verbatim (the failureText law), never a fixed
+    // fallback that masks them
+    expect(await screen.findByText("boom", {}, { timeout: 4000 })).toBeTruthy();
   });
 });

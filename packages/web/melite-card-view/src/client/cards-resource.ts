@@ -59,6 +59,7 @@ import { estateRemote, isEstateRefusal, unwrapRemote, type BenchNamespace } from
 export type { BenchNamespace }
 import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
+import { rejectionVoice } from './rejection-voice'
 
 // the draft tail's delay (module scope: the other sleeps in this
 // file are locals of other generator scopes)
@@ -376,7 +377,7 @@ export function emptyBench(sessionKey: string): CardsBenchValue {
 }
 
 function isMissingBench(e: unknown): boolean {
-  const message = e instanceof Error ? e.message : String(e)
+  const message = rejectionVoice(e)
   return message.includes('no such bench')
 }
 
@@ -1008,7 +1009,7 @@ export async function restoreRunToBench(
   try {
     draft = await unwrapRemote(estateRemote().drafts.get(run.draftId, signal), 'drafts/get') as unknown as Record<string, unknown>
   } catch (e) {
-    throw new Error('the producing draft is unreadable: ' + (e instanceof Error ? e.message : String(e)))
+    throw new Error('the producing draft is unreadable: ' + (rejectionVoice(e)))
   }
   const raw = draft['stages']
   const stages: Record<string, unknown>[] = Array.isArray(raw)
@@ -1021,7 +1022,7 @@ export async function restoreRunToBench(
   try {
     bench = await unwrapRemote(estateRemote().bench.get(key, signal), 'bench/get') as unknown as Record<string, unknown>
   } catch (e) {
-    throw new Error('the bench is unreadable: ' + (e instanceof Error ? e.message : String(e)))
+    throw new Error('the bench is unreadable: ' + (rejectionVoice(e)))
   }
   let rev = typeof bench['rev'] === 'number' ? (bench['rev'] as number) : 0
   const report: RestoreReport = { added: 0, skipped: 0, carried: 0, notes: [] }
@@ -1045,7 +1046,7 @@ export async function restoreRunToBench(
       report.added += 1
       await carryOutcome(run, key, id, row, report, signal)
     } catch (e) {
-      const message = e instanceof Error ? e.message : String(e)
+      const message = rejectionVoice(e)
       if (id !== null && message.includes('already on the bench')) {
         // The id is taken (restoring twice, or the bench kept it) —
         // retry once without the id; the bench auto-ids s_<n>.
@@ -1059,7 +1060,7 @@ export async function restoreRunToBench(
           await carryOutcome(run, key, id, row, report, signal)
         } catch (e2) {
           throw new Error('restore stopped after ' + String(report.added) + ' stage(s): '
-            + (e2 instanceof Error ? e2.message : String(e2)))
+            + (rejectionVoice(e2)))
         }
       } else {
         throw new Error('restore stopped after ' + String(report.added) + ' stage(s): ' + message)
@@ -1106,7 +1107,7 @@ async function carryOutcome(
     await patchStageOutcome(benchKey, seated, { runStatus: outcome.terminal, result: outcome.result })
     report.carried += 1
   } catch (e) {
-    report.notes.push('could not carry ' + draftStageId + "'s outcome: " + (e instanceof Error ? e.message : String(e)))
+    report.notes.push('could not carry ' + draftStageId + "'s outcome: " + (rejectionVoice(e)))
   }
 }
 
@@ -1163,7 +1164,7 @@ export function openCardsResource(
           value = readBench(await unwrapRemote(estateRemote().bench.get(benchKey), 'bench/get') as unknown as Record<string, unknown>, benchKey)
         } catch (e) {
           if (!isMissingBench(e)) {
-            yield failure(address, e instanceof Error ? e.message : String(e))
+            yield failure(address, rejectionVoice(e))
             return
           }
           value = emptyBench(benchKey)
@@ -1200,7 +1201,7 @@ export function openCardsResource(
       try {
         value = readDraft(draftTarget.draft, draftTarget.stage, await unwrapRemote(estateRemote().drafts.get(draftTarget.draft), 'drafts/get') as unknown as Record<string, unknown>)
       } catch (e) {
-        yield failure(address, e instanceof Error ? e.message : String(e))
+        yield failure(address, rejectionVoice(e))
         return
       }
       yield { ok: true, value }
@@ -1243,7 +1244,7 @@ export function openCardsResource(
     try {
       value = readRun(runId, await unwrapRemote(estateRemote().runs.status(runId), 'runs/status') as unknown as Record<string, unknown>)
     } catch (e) {
-      yield failure(address, e instanceof Error ? e.message : String(e))
+      yield failure(address, rejectionVoice(e))
       return
     }
     yield { ok: true, value }
@@ -1410,7 +1411,7 @@ async function* streamRunFrames(
   } catch (e) {
     // terminal supervisor failure — one final voice, then the tail
     // ends; the holder (the resource seat) can reopen the address
-    yield failure(address, 'run stream failed: ' + (e instanceof Error ? e.message : String(e)))
+    yield failure(address, 'run stream failed: ' + (rejectionVoice(e)))
     return
   } finally {
     signal.removeEventListener('abort', onAbort)
@@ -1524,7 +1525,7 @@ async function* streamBenchFrames(
   } catch (e) {
     // terminal supervisor failure — one final voice, then the tail
     // ends; the holder (the resource seat) can reopen the address
-    yield failure(address, 'bench stream failed: ' + (e instanceof Error ? e.message : String(e)))
+    yield failure(address, 'bench stream failed: ' + (rejectionVoice(e)))
     return
   } finally {
     signal.removeEventListener('abort', onAbort)

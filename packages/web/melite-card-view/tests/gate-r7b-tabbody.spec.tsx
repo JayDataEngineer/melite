@@ -92,7 +92,7 @@ function mount(estate?: EstateOpts): void {
 }
 
 describe("the tile stop's foreign voice — a down wire still names the face", () => {
-  test("a foreign runs/stop throw voices 'stop failed' (never a throw past the gesture)", async () => {
+  test("a foreign runs/stop throw voices its own words (never a throw past the gesture)", async () => {
     mount({
       startDocs: [{ run_id: "r_1" }],
       throws: [{ method: "runs/stop", value: "kablam" }],
@@ -109,9 +109,9 @@ describe("the tile stop's foreign voice — a down wire still names the face", (
     const stop = await screen.findByTestId("tile-stop", {}, { timeout: 4000 });
     expect((stop as HTMLButtonElement).disabled).toBe(false);
     fireEvent.click(stop);
-    // the foreign throw lands as the fallback text (the Error arm
-    // would voice the thrown message instead)
-    expect(await screen.findByText("stop failed", {}, { timeout: 4000 })).toBeTruthy();
+    // the foreign throw surfaces verbatim (the failureText law),
+    // never a fixed fallback that masks it
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "runs/stop"
       && (p.args as Record<string, unknown>)["runId"] === "r_1")).toBe(true);
   });

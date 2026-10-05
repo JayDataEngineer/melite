@@ -9,6 +9,7 @@ import css from './card.module.css'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { fetchBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
+import { rejectionVoice } from './rejection-voice'
 
 /** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
  *  + tile → the picker (the catalog's action cards, search + genre
@@ -49,7 +50,7 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
     let alive = true
     fetchCardCatalog()
       .then((list) => { if (alive) setCards(list) })
-      .catch((e: unknown) => { if (alive) setCatalogError(e instanceof Error ? e.message : 'catalog unavailable') })
+      .catch((e: unknown) => { if (alive) setCatalogError(rejectionVoice(e)) })
     return () => { alive = false }
   }, [])
   const pick = (card: CatalogCard): void => {
@@ -62,7 +63,7 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
     const family = card.families[0] ?? card.id
     void fetchFormSpec(family).then((doc) => add(card, doc), (e: unknown) => {
       setBusyId(null)
-      setAddError(card.label + ': ' + (e instanceof Error ? e.message : 'form-spec unavailable'))
+      setAddError(card.label + ': ' + (rejectionVoice(e)))
     })
   }
   const add = async (picked: CatalogCard, spec: FormSpecDoc): Promise<void> => {
@@ -105,7 +106,7 @@ export function AddCardDoor({ bench, sessionKey, onAdded, onClose, onAddedRow }:
       }
     } catch (e: unknown) {
       setBusyId(null)
-      setAddError(picked.label + ': ' + (e instanceof Error ? e.message : 'add refused'))
+      setAddError(picked.label + ': ' + (rejectionVoice(e)))
     }
   }
   const filtered = (cards ?? []).filter((c) => {

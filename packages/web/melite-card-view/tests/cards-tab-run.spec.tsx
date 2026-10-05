@@ -188,8 +188,8 @@ describe("the run verb — the flush-then-start law", () => {
 
   test("a dead patch voices instead of starting (never a silent drop)", async () => {
     // only the patch door throws the foreign string "kablam" verbatim
-    // (the old stub's shape) — the "run failed" fallback voices and
-    // the start never fires.
+    // (the old stub's shape) — the face speaks the thrown words (the
+    // failureText law) and the start never fires.
     mountBench(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: { prompt: "p", recipe: "old" } }],
       { throws: [{ method: "drafts/patch", value: "kablam" }] },
@@ -201,7 +201,7 @@ describe("the run verb — the flush-then-start law", () => {
     if (area === null) throw new Error("prompt field not found");
     await user.type(area, "!!!");
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
-    expect(await screen.findByText("run failed", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
     expect(posted.some((p) => p.method === "runs/start")).toBe(false);
   });
 });

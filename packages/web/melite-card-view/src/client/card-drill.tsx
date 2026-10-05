@@ -19,6 +19,7 @@ import { Button, Modal, Pill, Input } from '@deepseek-ai/dsh-client-ui-primitive
 import css from './card.module.css'
 import type { EditMap, ParamField } from './draft.ts'
 import { editPatch } from './draft.ts'
+import { rejectionVoice } from './rejection-voice'
 
 export interface CardDrillProps {
   /** Modal title — the surface names its card. */
@@ -45,7 +46,7 @@ export function CardDrill({ title, fields, thumbUrl, running, onRun, onClose }: 
     try {
       await onRun(patch)
     } catch (e: unknown) {
-      setRunError(e instanceof Error ? e.message : 'run failed')
+      setRunError(rejectionVoice(e))
     }
   }
 

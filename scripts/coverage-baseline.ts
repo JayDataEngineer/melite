@@ -543,6 +543,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/css-modules.d.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/dnd-payloads.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/draft-run-views.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/melite-card-view/src/client/rejection-voice.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/env.d.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/filmSeam.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/forms-edge-meta.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

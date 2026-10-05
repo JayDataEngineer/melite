@@ -22,6 +22,7 @@ import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
 import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
+import { rejectionVoice } from './rejection-voice'
 
 export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
   sessionKey: string
@@ -94,7 +95,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
           setOpen(null)
         }
       })
-      .catch((e: unknown) => { setReloadError(e instanceof Error ? e.message : 'bench reload failed') })
+      .catch((e: unknown) => { setReloadError(rejectionVoice(e)) })
   }, [sessionKey])
   const onClear = useCallback((): void => {
     if (!clearing) { setClearing(true); return }
@@ -102,7 +103,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     setReloadError(null)
     clearBenchWire({ expect_rev: live.rev }, sessionKey)
       .then(() => { setOpen(null); reload() })
-      .catch((e: unknown) => { setReloadError('clear refused — ' + (e instanceof Error ? e.message : String(e))) })
+      .catch((e: unknown) => { setReloadError('clear refused — ' + (rejectionVoice(e))) })
   }, [clearing, live.rev, sessionKey, reload])
 
   const onAdded = useCallback((): void => {
@@ -138,7 +139,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         setLive((cur) => ({ ...cur, rev }))
       })
       .catch((err: unknown) => {
-        setReloadError(err instanceof Error ? err.message : 'reorder failed')
+        setReloadError(rejectionVoice(err))
         reload()
       })
   }, [live, reload])
@@ -186,7 +187,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         expect_rev: live.rev,
       }, sessionKey)
         .then(() => { reload() })
-        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
+        .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
       return
     }
     if (e.dataTransfer.types.includes(ASSET_DRAG_MIME)) {
@@ -204,7 +205,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         expect_rev: live.rev,
       }, sessionKey)
         .then(() => { reload() })
-        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'add refused') })
+        .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
       return
     }
     if (e.dataTransfer.files.length > 0) {
@@ -217,7 +218,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
           expect_rev: live.rev,
         }, sessionKey))
         .then(() => { reload() })
-        .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'drop refused') })
+        .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
     }
   }, [live, reload])
   // ── GROUP CARDS SUB-VIEW (2026-09-11, the old 2026-08-12 law):
@@ -273,7 +274,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     if (ordered.length < 2) return
     void groupStagesWire({ stages: ordered, expect_rev: live.rev }, sessionKey)
       .then(() => { exitGrouping(); reload() })
-      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'group refused') })
+      .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
   }, [live, selectedIds, exitGrouping, reload])
   // ── DROP-ON-CARD ATTACHES TO SLOT: the asset URL (or the uploaded
   //    file's input-dir name) patches the TARGET stage's OWN image
@@ -298,7 +299,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         : uploadInputFile(source).then(({ name }) => [field, name] as const)))
       .then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src }))
       .then(() => { reload({ keepOpen: true }) })
-      .catch((err: unknown) => { setReloadError(err instanceof Error ? err.message : 'attach refused') })
+      .catch((err: unknown) => { setReloadError(rejectionVoice(err)) })
   }, [live, reload])
   const benchRev = live.rev
   // SAVE (operator, stroke 46): mint the bench's stages as a NAMED
@@ -343,7 +344,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
         if (!res.ok) { setSaveError('save refused (' + (await res.json().catch(() => null) as { error?: string } | null)?.error + ')'); return }
         setSaving(false); setSaveName('')
       })
-      .catch((e: unknown) => { setSaveError('save failed — ' + (e instanceof Error ? e.message : String(e))) })
+      .catch((e: unknown) => { setSaveError('save failed — ' + (rejectionVoice(e))) })
   }, [bench, saveName])
 
   return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev },

@@ -60,6 +60,7 @@ import {
   cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
+import { rejectionVoice } from './rejection-voice'
 
 export interface FlowCardsProps {
   block: ToolCallBlockView
@@ -174,7 +175,7 @@ function useDraft(draftId: string | null): {
     let alive = true
     fetchDraft(draftId)
       .then((d) => { if (alive) setDoc(d) })
-      .catch((e: unknown) => { if (alive) setError(e instanceof Error ? e.message : 'draft hydration failed') })
+      .catch((e: unknown) => { if (alive) setError(rejectionVoice(e)) })
     return () => { alive = false }
   }, [draftId, tick])
 

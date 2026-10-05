@@ -141,10 +141,11 @@ describe("the catalog faces — list, refusal, and calm unmount", () => {
     expect(await screen.findAllByText(/HTTP 500/, {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
-  test("a throwing catalog voices the fallback (never empty)", async () => {
+  test("a throwing catalog voices the throw's own words (never empty)", async () => {
     mount({}, () => { doors.catalogThrown = "gone"; });
     await openPicker();
-    expect(await screen.findAllByText("catalog unavailable", {}, { timeout: 5000 })).not.toHaveLength(0);
+    // the thrown string surfaces verbatim (the failureText law)
+    expect(await screen.findAllByText("gone", {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
   test("an unmount mid-flight stays calm (the alive guard holds)", async () => {
@@ -183,14 +184,14 @@ describe("the pick faces — family, spec, and seed", () => {
     expect(await screen.findAllByText(/Lone: .*HTTP 500/, {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
-  test("a throwing spec voices the fallback (never empty)", async () => {
+  test("a throwing spec voices the throw's own words (never empty)", async () => {
     mount({}, () => {
       doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
       doors.specThrown = "gone";
     });
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
-    expect(await screen.findAllByText(/Lone: .*form-spec unavailable/, {}, { timeout: 5000 })).not.toHaveLength(0);
+    expect(await screen.findAllByText(/Lone: .*gone/, {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
   test("the axis seed rides the add (a card is born with its variant)", async () => {
@@ -253,15 +254,16 @@ describe("the landing faces — fresh opens, stale falls back", () => {
     expect(screen.queryByRole("button", { name: "Close picker" })).not.toBeNull();
   });
 
-  test("a throwing add voices the fallback (never empty)", async () => {
+  test("a throwing add voices the throw's own words (never empty)", async () => {
     // the door throws the foreign number 42 verbatim (the old stub's
-    // shape) — "Lone: add refused" voices, never an empty door.
+    // shape) — the face speaks it as "42" (the failureText law),
+    // never an empty door.
     mount({ throws: [{ method: "bench/add-stage", value: 42 }] }, () => {
       doors.catalog = { lone: { label: "Lone", genre: "image", families: ["lone"] } };
     });
     await openPicker();
     fireEvent.click(await screen.findByRole("button", { name: "Lone" }, { timeout: 5000 }));
-    expect(await screen.findAllByText(/Lone: .*add refused/, {}, { timeout: 5000 })).not.toHaveLength(0);
+    expect(await screen.findAllByText(/Lone: .*42/, {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 });
 

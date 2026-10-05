@@ -410,13 +410,14 @@ describe("the thrown start — carry the failure to the row", () => {
     expect(document.querySelector('div[class*="zoomCard"]')).not.toBeNull();
   });
 
-  test("a throwing lookup voices the fallback (never empty)", async () => {
+  test("a throwing lookup voices the throw's own words (never empty)", async () => {
     mount();
     await openZoom();
     resetCardFamiliesCache();
     doors.catalogThrown = "gone";
     fireEvent.click(within(zoomCard()).getByTestId("drill-run"));
-    expect(await screen.findAllByText("run start failed", {}, { timeout: 5000 })).not.toHaveLength(0);
+    // the thrown string surfaces verbatim (the failureText law)
+    expect(await screen.findAllByText("gone", {}, { timeout: 5000 })).not.toHaveLength(0);
   });
 
 });

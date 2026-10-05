@@ -7709,6 +7709,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			return (await fetchCardFamilies(signal))[cardId]?.[0] ?? cardId;
 		}
 		//#endregion
+		//#region src/client/rejection-voice.ts
+		/** The voice for a caught rejection, lossless by the estate's
+		* failureText law (cards-resource-open.spec): an Error speaks its
+		* message; any other thrown value (the transport fakes speak plain
+		* strings) surfaces verbatim, never a fixed fallback that masks the
+		* thrower's words. One voice for every catch face in this package —
+		* the silent-fallback audit's dead-fallback family folds here. */
+		function rejectionVoice(e) {
+			return e instanceof Error ? e.message : String(e);
+		}
+		//#endregion
 		//#region src/client/draft.ts
 		init_stageView();
 		/** The draft doc; throws the door's own named refusal on failure. */
@@ -8000,7 +8011,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (row.failedKeys.size === 0) row.lastError = null;
 				} catch (e) {
 					for (const k of keys) row.failedKeys.add(k);
-					row.lastError = e instanceof Error ? e.message : String(e);
+					row.lastError = rejectionVoice(e);
 					throw e;
 				} finally {
 					if (attempt !== void 0) row.inflight.delete(attempt);
@@ -8131,7 +8142,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				try {
 					await onRun(patch);
 				} catch (e) {
-					setRunError(e instanceof Error ? e.message : "run failed");
+					setRunError(rejectionVoice(e));
 				}
 			};
 			const fieldNode = (f) => {
@@ -8323,7 +8334,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			}, key);
 		}
 		function isMissingBench(e) {
-			return (e instanceof Error ? e.message : String(e)).includes("no such bench");
+			return rejectionVoice(e).includes("no such bench");
 		}
 		/** Re-read one conversation's bench — the consumer's reload
 		*  after its own edits (the provider's bench stream is a single
@@ -8746,7 +8757,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			try {
 				draft = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(run.draftId, signal), "drafts/get");
 			} catch (e) {
-				throw new Error("the producing draft is unreadable: " + (e instanceof Error ? e.message : String(e)));
+				throw new Error("the producing draft is unreadable: " + rejectionVoice(e));
 			}
 			const raw = draft["stages"];
 			const stages = Array.isArray(raw) ? raw.filter((s) => typeof s === "object" && s !== null) : [];
@@ -8755,7 +8766,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			try {
 				bench = await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(key, signal), "bench/get");
 			} catch (e) {
-				throw new Error("the bench is unreadable: " + (e instanceof Error ? e.message : String(e)));
+				throw new Error("the bench is unreadable: " + rejectionVoice(e));
 			}
 			let rev = typeof bench["rev"] === "number" ? bench["rev"] : 0;
 			const report = {
@@ -8786,7 +8797,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					report.added += 1;
 					await carryOutcome(run, key, id, row, report, signal);
 				} catch (e) {
-					const message = e instanceof Error ? e.message : String(e);
+					const message = rejectionVoice(e);
 					if (id !== null && message.includes("already on the bench")) {
 						const retry = { ...doc };
 						delete retry["id"];
@@ -8797,7 +8808,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							report.notes.push(id + " was already on the bench — added under a fresh id");
 							await carryOutcome(run, key, id, row, report, signal);
 						} catch (e2) {
-							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + (e2 instanceof Error ? e2.message : String(e2)));
+							throw new Error("restore stopped after " + String(report.added) + " stage(s): " + rejectionVoice(e2));
 						}
 					} else throw new Error("restore stopped after " + String(report.added) + " stage(s): " + message);
 				}
@@ -8836,7 +8847,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 				report.carried += 1;
 			} catch (e) {
-				report.notes.push("could not carry " + draftStageId + "'s outcome: " + (e instanceof Error ? e.message : String(e)));
+				report.notes.push("could not carry " + draftStageId + "'s outcome: " + rejectionVoice(e));
 			}
 		}
 		/** The provider registration body: `ctx.resources.register({ protocol:
@@ -8861,7 +8872,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							value = readBench(await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().bench.get(benchKey), "bench/get"), benchKey);
 						} catch (e) {
 							if (!isMissingBench(e)) {
-								yield failure(address, e instanceof Error ? e.message : String(e));
+								yield failure(address, rejectionVoice(e));
 								return;
 							}
 							value = emptyBench(benchKey);
@@ -8885,7 +8896,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					try {
 						value = readDraft(draftTarget.draft, draftTarget.stage, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().drafts.get(draftTarget.draft), "drafts/get"));
 					} catch (e) {
-						yield failure(address, e instanceof Error ? e.message : String(e));
+						yield failure(address, rejectionVoice(e));
 						return;
 					}
 					yield {
@@ -8919,7 +8930,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				try {
 					value = readRun(runId, await (0, _melite_card_base_client.unwrapRemote)((0, _melite_card_base_client.estateRemote)().runs.status(runId), "runs/status"));
 				} catch (e) {
-					yield failure(address, e instanceof Error ? e.message : String(e));
+					yield failure(address, rejectionVoice(e));
 					return;
 				}
 				yield {
@@ -9048,7 +9059,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (isTerminal(value.status)) return;
 				}
 			} catch (e) {
-				yield failure(address, "run stream failed: " + (e instanceof Error ? e.message : String(e)));
+				yield failure(address, "run stream failed: " + rejectionVoice(e));
 				return;
 			} finally {
 				signal.removeEventListener("abort", onAbort);
@@ -9134,7 +9145,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					};
 				}
 			} catch (e) {
-				yield failure(address, "bench stream failed: " + (e instanceof Error ? e.message : String(e)));
+				yield failure(address, "bench stream failed: " + rejectionVoice(e));
 				return;
 			} finally {
 				signal.removeEventListener("abort", onAbort);
@@ -9592,7 +9603,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				fetchDraft(draftId).then((d) => {
 					if (alive) setDoc(d);
 				}).catch((e) => {
-					if (alive) setError(e instanceof Error ? e.message : "draft hydration failed");
+					if (alive) setError(rejectionVoice(e));
 				});
 				return () => {
 					alive = false;
@@ -10050,7 +10061,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 								setRestarted(true);
 							}).catch((e) => {
 								setRestarting(false);
-								setNote(e instanceof Error ? e.message : "restart failed");
+								setNote(rejectionVoice(e));
 							});
 						}
 					}, restarting ? "Restarting…" : "Restart to activate"), restarting ? (0, react.createElement)("p", { className: card_module_css_default.rescueNote }, "Restarting… waiting for the engine to become active.") : null, note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
@@ -10074,7 +10085,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						setDone(result);
 					}).catch((e) => {
 						setBusy(false);
-						setNote(e instanceof Error ? e.message : "install failed");
+						setNote(rejectionVoice(e));
 					});
 				}
 			}, busy ? "installing…" : "Install & continue"), note !== null ? (0, react.createElement)("p", { className: card_module_css_default.rescueErr }, note) : null);
@@ -10165,7 +10176,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 			try {
 				spec = await (0, _melite_card_base_client.fetchFormSpec)(card);
 			} catch (e) {
-				return { refused: "the form-spec door for " + JSON.stringify(card) + " is unreachable (" + (e instanceof Error ? e.message : String(e)) + ") — the run refuses rather than compose unverified params" };
+				return { refused: "the form-spec door for " + JSON.stringify(card) + " is unreachable (" + rejectionVoice(e) + ") — the run refuses rather than compose unverified params" };
 			}
 			let doc = resolved;
 			const selects = (0, _melite_card_base_client.fieldsOf)(spec).filter((f) => f.type === "select" && Array.isArray(f.options));
@@ -43534,7 +43545,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					reportSurface(doc.size === "huge" ? "huge" : "");
 				}).catch((e) => {
 					if (!alive) return;
-					setError(e instanceof Error ? e.message : "form-spec unavailable");
+					setError(rejectionVoice(e));
 					setLoaded(true);
 				});
 				return () => {
@@ -43616,7 +43627,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						return;
 					}
 					patchStageParams(bench.draftId, stage.id, v === "" ? { [name]: null } : { [name]: v }, bench.rev).catch((e) => {
-						setError("THE WRITE DID NOT LAND — " + (e instanceof Error ? e.message : "slot write failed") + " (unlanded keys: " + name + ").");
+						setError("THE WRITE DID NOT LAND — " + rejectionVoice(e) + " (unlanded keys: " + name + ").");
 					});
 				}
 			}, [
@@ -43679,7 +43690,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						return;
 					}
 					patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev).catch((e) => {
-						setError(e instanceof Error ? e.message : "slot write failed");
+						setError(rejectionVoice(e));
 					});
 				}
 			}, [
@@ -43758,7 +43769,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 							const st = stageWriteState(bench.draftId, stage.id);
 							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
 						}).catch((e) => {
-							setWriteFace("THE ENHANCE DID NOT LAND — " + (e instanceof Error ? e.message : "the write was refused"));
+							setWriteFace("THE ENHANCE DID NOT LAND — " + rejectionVoice(e));
 						});
 					}
 					const swept = Object.keys(sweptPatch).length;
@@ -43776,7 +43787,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				} catch (e) {
 					setEnhanceNote({
 						err: true,
-						text: e instanceof Error ? e.message : "enhance failed"
+						text: rejectionVoice(e)
 					});
 				} finally {
 					setEnhancing(false);
@@ -43806,7 +43817,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 					onRun();
 				} catch (e) {
-					setError(e instanceof Error ? e.message : "run failed");
+					setError(rejectionVoice(e));
 					onResync?.();
 				}
 			};
@@ -43832,7 +43843,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}, bench.sessionKey);
 					onRemoved();
 				} catch (e) {
-					setError(e instanceof Error ? e.message : "remove failed");
+					setError(rejectionVoice(e));
 					setRemoving(false);
 					onResync?.();
 				}
@@ -43849,7 +43860,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}, bench.sessionKey);
 						onRemoved();
 					} catch (e) {
-						setError(e instanceof Error ? e.message : "ungroup failed");
+						setError(rejectionVoice(e));
 						setRemoving(false);
 						onResync?.();
 					}
@@ -44020,7 +44031,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						return;
 					}
 					patchStageParams(bench.draftId, stage.id, { [slotKey]: candidate !== void 0 ? candidate.url : null }, bench.rev).catch((wireError) => {
-						setError(wireError instanceof Error ? wireError.message : "wire failed");
+						setError(rejectionVoice(wireError));
 					});
 				},
 				onRun,
@@ -44069,7 +44080,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				(0, _melite_card_base_client.fetchCardCatalog)().then((list) => {
 					if (alive) setCards(list);
 				}).catch((e) => {
-					if (alive) setCatalogError(e instanceof Error ? e.message : "catalog unavailable");
+					if (alive) setCatalogError(rejectionVoice(e));
 				});
 				return () => {
 					alive = false;
@@ -44082,7 +44093,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				const family = card.families[0] ?? card.id;
 				(0, _melite_card_base_client.fetchFormSpec)(family).then((doc) => add(card, doc), (e) => {
 					setBusyId(null);
-					setAddError(card.label + ": " + (e instanceof Error ? e.message : "form-spec unavailable"));
+					setAddError(card.label + ": " + rejectionVoice(e));
 				});
 			};
 			const add = async (picked, spec) => {
@@ -44106,7 +44117,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 				} catch (e) {
 					setBusyId(null);
-					setAddError(picked.label + ": " + (e instanceof Error ? e.message : "add refused"));
+					setAddError(picked.label + ": " + rejectionVoice(e));
 				}
 			};
 			const filtered = (cards ?? []).filter((c) => {
@@ -44184,7 +44195,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (opts?.keepOpen === true) setOpen((cur) => cur === null ? null : next.stages.find((s) => s.id === cur.id) ?? null);
 					else setOpen(null);
 				}).catch((e) => {
-					setReloadError(e instanceof Error ? e.message : "bench reload failed");
+					setReloadError(rejectionVoice(e));
 				});
 			}, [sessionKey]);
 			const onClear = (0, react.useCallback)(() => {
@@ -44198,7 +44209,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setOpen(null);
 					reload();
 				}).catch((e) => {
-					setReloadError("clear refused — " + (e instanceof Error ? e.message : String(e)));
+					setReloadError("clear refused — " + rejectionVoice(e));
 				});
 			}, [
 				clearing,
@@ -44246,7 +44257,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						rev
 					}));
 				}).catch((err) => {
-					setReloadError(err instanceof Error ? err.message : "reorder failed");
+					setReloadError(rejectionVoice(err));
 					reload();
 				});
 			}, [live, reload]);
@@ -44279,7 +44290,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}, sessionKey).then(() => {
 						reload();
 					}).catch((err) => {
-						setReloadError(err instanceof Error ? err.message : "add refused");
+						setReloadError(rejectionVoice(err));
 					});
 					return;
 				}
@@ -44298,7 +44309,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}, sessionKey).then(() => {
 						reload();
 					}).catch((err) => {
-						setReloadError(err instanceof Error ? err.message : "add refused");
+						setReloadError(rejectionVoice(err));
 					});
 					return;
 				}
@@ -44312,7 +44323,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}, sessionKey)).then(() => {
 						reload();
 					}).catch((err) => {
-						setReloadError(err instanceof Error ? err.message : "drop refused");
+						setReloadError(rejectionVoice(err));
 					});
 				}
 			}, [live, reload]);
@@ -44368,7 +44379,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					exitGrouping();
 					reload();
 				}).catch((err) => {
-					setReloadError(err instanceof Error ? err.message : "group refused");
+					setReloadError(rejectionVoice(err));
 				});
 			}, [
 				live,
@@ -44389,7 +44400,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}).then((field) => typeof source === "string" ? Promise.resolve([field, source]) : (0, _melite_card_base_client.uploadInputFile)(source).then(({ name }) => [field, name])).then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src })).then(() => {
 					reload({ keepOpen: true });
 				}).catch((err) => {
-					setReloadError(err instanceof Error ? err.message : "attach refused");
+					setReloadError(rejectionVoice(err));
 				});
 			}, [live, reload]);
 			const benchRev = live.rev;
@@ -44427,7 +44438,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setSaving(false);
 					setSaveName("");
 				}).catch((e) => {
-					setSaveError("save failed — " + (e instanceof Error ? e.message : String(e)));
+					setSaveError("save failed — " + rejectionVoice(e));
 				});
 			}, [bench, saveName]);
 			return (0, react.createElement)("section", {
@@ -44617,7 +44628,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setRestoring(false);
 					onRestored();
 				}).catch((e) => {
-					setNote(e instanceof Error ? e.message : String(e));
+					setNote(rejectionVoice(e));
 					setRestoring(false);
 				});
 			}, [
@@ -44895,7 +44906,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					});
 					else carryFailure(res.refused);
 				}, (e) => {
-					carryFailure(e instanceof Error ? e.message : "run start failed");
+					carryFailure(rejectionVoice(e));
 				});
 			}, [
 				snapshot,
@@ -44908,7 +44919,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				(0, _melite_card_base_client.stopRun)(rid).then(() => {
 					setLocalRunError(clearVerb("stop"));
 				}).catch((e) => {
-					setLocalRunError(verbClaim("stop", e instanceof Error ? e.message : "stop failed"));
+					setLocalRunError(verbClaim("stop", rejectionVoice(e)));
 				});
 			}, [stageRuns]);
 			/* v8 ignore next 3 -- single-render law: the bench rows ride a bench-kind snapshot (probe 2026-09-19) */
@@ -44921,7 +44932,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLocalRunError(clearVerb("remove"));
 					touchBench();
 				}).catch((e) => {
-					setLocalRunError(verbClaim("remove", e instanceof Error ? e.message : "remove failed"));
+					setLocalRunError(verbClaim("remove", rejectionVoice(e)));
 				});
 			}, [snapshot, touchBench]);
 			/* v8 ignore next 2 -- single-render law: internal callers always satisfy the kind (probe 2026-09-19) */
@@ -44931,7 +44942,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					setLocalRunError(clearVerb("patch"));
 					touchBench();
 				}).catch((e) => {
-					setLocalRunError(verbClaim("patch", e instanceof Error ? e.message : "patch failed"));
+					setLocalRunError(verbClaim("patch", rejectionVoice(e)));
 					touchBench();
 				});
 			}, [snapshot, touchBench]);
@@ -44975,14 +44986,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				patchStageParams(value.draftId, value.stageId, patch, value.rev).then(() => {
 					setLocalRunError(clearVerb("patch"));
 				}).catch((e) => {
-					setLocalRunError(verbClaim("patch", e instanceof Error ? e.message : "patch failed"));
+					setLocalRunError(verbClaim("patch", rejectionVoice(e)));
 				});
 			}, [snapshot]);
 			const onStop = (0, react.useCallback)((runId) => {
 				(0, _melite_card_base_client.stopRun)(runId).then(() => {
 					setLocalRunError(clearVerb("cancel"));
 				}).catch((e) => {
-					setLocalRunError(verbClaim("cancel", e instanceof Error ? e.message : "cancel failed"));
+					setLocalRunError(verbClaim("cancel", rejectionVoice(e)));
 				});
 			}, []);
 			const onBack = (0, react.useCallback)(() => {

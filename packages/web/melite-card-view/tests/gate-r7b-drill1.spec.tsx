@@ -226,7 +226,7 @@ describe("the authoring contract — a typed field RIDES the row", () => {
 });
 
 describe("the slot flush's foreign voice — a down wire still names the face", () => {
-  test("a foreign slot-write throw voices 'slot write failed' (never a throw past the pick)", async () => {
+  test("a foreign slot-write throw voices its own words (never a throw past the pick)", async () => {
     doors.formsTable = "fail";
     doors.specFields = "prompt-image";
     mountBench([
@@ -246,11 +246,12 @@ describe("the slot flush's foreign voice — a down wire still names the face", 
     const pick = rows.find((el) => (el.textContent ?? "").includes("/b.png")) ?? rows[rows.length - 1];
     fireEvent.click(pick);
     // the pick wrote the bench row NOW (the slot flush law) — the
-    // wire's foreign throw lands as the fallback text
-    // W9 aligned this voice: the foreign throw now rides the same
-    // THE WRITE DID NOT LAND prefix as the other arms — the old
-    // words survive INSIDE it (never a third face again)
-    expect(await screen.findByText(/slot write failed/, {}, { timeout: 4000 })).toBeTruthy();
+    // wire's foreign throw lands as its own words inside the face
+    // W9 aligned this voice: the foreign throw rides the same
+    // THE WRITE DID NOT LAND prefix as the other arms, speaking its
+    // thrown string verbatim (the failureText law) — never a third
+    // face, never a fallback that masks the throw
+    expect(await screen.findByText(/kablam/, {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "drafts/patch")).toBe(true);
   });
 });
@@ -360,16 +361,17 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     expect(await screen.findByText("wire down", {}, { timeout: 4000 })).toBeTruthy()
   })
 
-  test("wire gives a foreign refusal the fallback voice", async () => {
+  test("wire gives a foreign refusal its own words", async () => {
     const owner = await openWireOwner([
       { id: "s_0", card: "image-gen", engine: "comfyui", params: {} },
       { id: "s_1", card: "image-gen", engine: "comfyui", params: {}, result: { url: "/source.png" } },
     ], { throws: [{ method: "drafts/patch", value: "foreign" }] })
     act(() => { owner.onWireSlot?.("input_image", "s_1") })
-    expect(await screen.findByText("wire failed", {}, { timeout: 4000 })).toBeTruthy()
+    // the foreign string surfaces verbatim (the failureText law)
+    expect(await screen.findByText("foreign", {}, { timeout: 4000 })).toBeTruthy()
   })
 
-  test("a foreign remove throw voices 'remove failed' (never a throw past the gesture)", async () => {
+  test("a foreign remove throw voices its own words (never a throw past the gesture)", async () => {
     mountClaimed(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       (owner) => h("button", {
@@ -381,10 +383,10 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     const user = userEvent.setup();
     await user.click(firstTile());
     fireEvent.click(await screen.findByTestId("slot-remove", {}, { timeout: 4000 }));
-    expect(await screen.findByText("remove failed", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  test("a foreign ungroup throw voices 'ungroup failed' (never a throw past the gesture)", async () => {
+  test("a foreign ungroup throw voices its own words (never a throw past the gesture)", async () => {
     mountBench(
       [{ id: "g_0", card: "group", engine: "comfyui", params: {}, children: [{ id: "s_0", card: "image-gen" }] } as never],
       undefined,
@@ -397,6 +399,6 @@ describe("the owners' foreign voices — remove and ungroup fall back loud", () 
     // full-suite parallel load the click's promise can outlive a 4s
     // polling window while the assertion itself is unaffected; the
     // wider window is load headroom, not a weaker claim)
-    expect(await screen.findByText("ungroup failed", {}, { timeout: 15000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 15000 })).toBeTruthy();
   });
 });

@@ -194,9 +194,9 @@ describe("the reload's foreign voice — a down wire still names the face", () =
     const { rerender } = mountView(three(), { throws: [{ method: "bench/get", value: "kablam" }] });
     await screen.findByText("rev 1");
     rerender(1);
-    // the refresh tick re-reads; the wire's foreign throw lands as
-    // the fallback text (the Error arm would voice the message)
-    expect(await screen.findByText("bench reload failed", {}, { timeout: 4000 })).toBeTruthy();
+    // the refresh tick re-reads; the wire's foreign throw surfaces
+    // verbatim (the failureText law), never a fixed fallback
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "bench/get")).toBe(true);
   });
 });
@@ -219,7 +219,7 @@ describe("the reorder's foreign voice — rewind, then the reload heals", () => 
 });
 
 describe("the grid's foreign voices — capability, asset, file", () => {
-  test("a foreign capability-add throw voices 'add refused' (never silent)", async () => {
+  test("a foreign capability-add throw voices its own words (never silent)", async () => {
     mountView(three(), { throws: [{ method: "bench/add-stage", value: "kablam" }] });
     await screen.findByText("rev 1");
     fireEvent.drop(grid(), {
@@ -229,7 +229,7 @@ describe("the grid's foreign voices — capability, asset, file", () => {
         setData: () => {}, files: [],
       },
     });
-    expect(await screen.findByText("add refused", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 
   // L9 (the fallback audit): a PRESENT-but-corrupt capability body
@@ -250,7 +250,7 @@ describe("the grid's foreign voices — capability, asset, file", () => {
     expect(calls().some((p) => p.method === "bench/add-stage")).toBe(false);
   });
 
-  test("a foreign asset-add throw voices 'add refused' (never a partial stage)", async () => {
+  test("a foreign asset-add throw voices its own words (never a partial stage)", async () => {
     mountView(three(), { throws: [{ method: "bench/add-stage", value: "kablam" }] });
     await screen.findByText("rev 1");
     fireEvent.drop(grid(), {
@@ -260,10 +260,10 @@ describe("the grid's foreign voices — capability, asset, file", () => {
         setData: () => {}, files: [],
       },
     });
-    expect(await screen.findByText("add refused", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  test("a foreign uploads throw voices 'drop refused' (never a partial stage)", async () => {
+  test("a foreign uploads throw voices its own words (never a partial stage)", async () => {
     mountView(three());
     doors.uploads = () => ({ thrown: "kablam" });
     await screen.findByText("rev 1");
@@ -271,13 +271,13 @@ describe("the grid's foreign voices — capability, asset, file", () => {
     fireEvent.drop(grid(), {
       dataTransfer: { types: ["Files"], getData: () => "", setData: () => {}, files: [file] },
     });
-    expect(await screen.findByText("drop refused", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
     expect(calls().some((p) => p.method === "bench/add-stage")).toBe(false);
   });
 });
 
 describe("the tile attach's foreign voice", () => {
-  test("a foreign attach write voices 'attach refused' (never a throw past the drop)", async () => {
+  test("a foreign attach write voices its own words (never a throw past the drop)", async () => {
     mountView(
       [{ id: "s_0", card: "image-gen", engine: "comfyui", params: {} }],
       { throws: [{ method: "drafts/patch", value: "kablam" }] },
@@ -293,7 +293,7 @@ describe("the tile attach's foreign voice", () => {
         setData: () => {}, files: [],
       },
     });
-    expect(await screen.findByText("attach refused", {}, { timeout: 4000 })).toBeTruthy();
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 });
 

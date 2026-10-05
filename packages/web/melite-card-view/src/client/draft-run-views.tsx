@@ -14,6 +14,7 @@ import { cardsRunAddress } from './cards-resource.ts'
 import { ScrollLockedDetail, StageDrill } from './stage-drill.tsx'
 import { STATUS_DOT } from './bench-row.ts'
 import { isLiveRunStatus, statusOf, RUN_STATUS_WORDS } from '@melite/contracts/stageView'
+import { rejectionVoice } from './rejection-voice'
 
 /**
  * THE DRAFT VIEW (the conversation card's target, 2026-09-12 — the
@@ -125,7 +126,7 @@ export function RunView({ run, sessionKey, onBack, onRestored, onStop }: {
       setRestoring(false)
       onRestored()
     }).catch((e: unknown) => {
-      setNote(e instanceof Error ? e.message : String(e))
+      setNote(rejectionVoice(e))
       setRestoring(false)
     })
   }, [run, onRestored, sessionKey])

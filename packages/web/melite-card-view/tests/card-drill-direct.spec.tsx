@@ -92,10 +92,12 @@ describe("the run-error seam — the press seat never dies silently", () => {
     expect(await screen.findByText("admission: nope", {}, { timeout: 4000 })).toBeTruthy();
   });
 
-  test("a foreign rejection renders 'run failed' (never a blank death)", async () => {
+  test("a foreign rejection renders the throw's own words (never a blank death)", async () => {
     mount({ onRun: async () => { throw "kablam"; } });
     fireEvent.click(await screen.findByText("Run", {}, { timeout: 4000 }));
-    expect(await screen.findByText("run failed", {}, { timeout: 4000 })).toBeTruthy();
+    // the prop threw a plain string — the face speaks it verbatim
+    // (the failureText law), never a fixed fallback that masks it
+    expect(await screen.findByText("kablam", {}, { timeout: 4000 })).toBeTruthy();
   });
 
   test("a later Run clears the earlier error", async () => {

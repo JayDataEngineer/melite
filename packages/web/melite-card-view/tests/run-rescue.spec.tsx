@@ -160,7 +160,8 @@ test('a non-Error restart rejection stays inline', async () => {
   )
   await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
   await userEvent.click(await screen.findByRole('button', { name: 'Restart to activate' }))
-  await waitFor(() => { expect(screen.getByText('restart failed')).toBeTruthy() })
+  // the rejected string surfaces verbatim (the failureText law)
+  await waitFor(() => { expect(screen.getByText('restart down')).toBeTruthy() })
   expect(screen.queryByRole('button', { name: 'Run again' })).toBe(null)
 })
 
@@ -170,5 +171,6 @@ test('a wire that rejects with a non-Error still surfaces a word', async () => {
     <RunRescue error="card 'x' requires 'P' (nodes A)" stages={STAGES} onRun={() => {}} />,
   )
   await userEvent.click(screen.getByRole('button', { name: 'Install & continue' }))
-  await waitFor(() => { expect(screen.getByText('install failed')).toBeTruthy() })
+  // the rejected string surfaces verbatim (the failureText law)
+  await waitFor(() => { expect(screen.getByText('gateway down')).toBeTruthy() })
 })

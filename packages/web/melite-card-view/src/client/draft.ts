@@ -72,6 +72,7 @@ export type FlowEventFrame =
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
 import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
+import { rejectionVoice } from './rejection-voice'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's
@@ -552,7 +553,7 @@ export async function patchStageParams(
       if (row.failedKeys.size === 0) row.lastError = null
     } catch (e: unknown) {
       for (const k of keys) row.failedKeys.add(k)
-      row.lastError = e instanceof Error ? e.message : String(e)
+      row.lastError = rejectionVoice(e)
       throw e
     } finally {
       // (settled ⇒ the initializer completed ⇒ attempt is assigned;

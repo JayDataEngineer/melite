@@ -27,6 +27,7 @@ import { freshStageRow } from './cards-resource.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
+import { rejectionVoice } from './rejection-voice'
 
 /** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
  *  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,
@@ -44,6 +45,7 @@ import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
  * EVERY update restores it when anything else moved it. The law
  * kills the whole mechanism class at the container, not per child.
  */
+
 export function ScrollLockedDetail(props: { children?: ReactNode, testid?: string }): ReturnType<typeof h> {
   const elRef = useRef<HTMLDivElement | null>(null)
   const userTop = useRef<number | null>(null)
@@ -270,7 +272,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       })
       .catch((e: unknown) => {
         if (!alive) return
-        setError(e instanceof Error ? e.message : 'form-spec unavailable')
+        setError(rejectionVoice(e))
         setLoaded(true)
       })
     return () => { alive = false }
@@ -413,7 +415,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // other two arms spoke the write-face voice — same stage,
           // same failure class, two faces. ONE voice.
           setError('THE WRITE DID NOT LAND — '
-            + (e instanceof Error ? e.message : 'slot write failed')
+            + rejectionVoice(e)
             + ' (unlanded keys: ' + name + ').')
         })
     }
@@ -499,7 +501,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       if (refused !== null) { setWriteFace(refused); return }
       void patchStageParams(bench.draftId, stage.id, { [name]: null }, bench.rev)
         .catch((e: unknown) => {
-          setError(e instanceof Error ? e.message : 'slot write failed')
+          setError(rejectionVoice(e))
         })
     }
   }, [spec, user, bench.draftId, bench.rev, stage.id])
@@ -615,7 +617,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
           // the sweep write is fire-and-forget; the verb's outer
           // catch cannot see it — the NO-SILENT-REJECT law holds
           // here too: the rejection renders its face.
-          setWriteFace('THE ENHANCE DID NOT LAND — ' + (e instanceof Error ? e.message : 'the write was refused'))
+          setWriteFace('THE ENHANCE DID NOT LAND — ' + rejectionVoice(e))
         })
       }
       // the note counts what the PATCH carries (the second audit's
@@ -633,7 +635,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         setEnhanceNote({ err: false, text: typeof via === 'string' && via !== '' ? 'enhanced via ' + via + ' (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' : 'enhanced (' + String(swept) + ' field' + (swept === 1 ? '' : 's') + ')' })
       }
     } catch (e: unknown) {
-      setEnhanceNote({ err: true, text: e instanceof Error ? e.message : 'enhance failed' })
+      setEnhanceNote({ err: true, text: rejectionVoice(e) })
     } finally {
       setEnhancing(false)
     }
@@ -673,7 +675,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       }
       onRun()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'run failed')
+      setError(rejectionVoice(e))
       onResync?.()
     }
   }
@@ -702,7 +704,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
       await removeStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
       onRemoved()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'remove failed')
+      setError(rejectionVoice(e))
       setRemoving(false)
       // THE RESYNC LAW: a final refusal (even post-rebase) means this
       // drill's bench view is stale truth — re-read so the next
@@ -724,7 +726,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         await ungroupStageWire({ stage: stage.id, expect_rev: bench.rev }, bench.sessionKey)
         onRemoved()
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : 'ungroup failed')
+        setError(rejectionVoice(e))
         setRemoving(false)
         onResync?.()
       }
@@ -1061,7 +1063,7 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         { [slotKey]: candidate !== undefined ? candidate.url : null },
         bench.rev,
       ).catch((wireError: unknown) => {
-        setError(wireError instanceof Error ? wireError.message : 'wire failed')
+        setError(rejectionVoice(wireError))
       })
     },
     onRun,
