@@ -190,6 +190,12 @@ gateway.lock
 packages/*/lib/.src-stamp
 packages/*/*/lib/.src-stamp
 .tsconfig.test.json
+# the test tier's per-worker SYNTHESIZED config: scripts/typecheck-tests.mjs
+# writes `.tsconfig.test.<pid>.json` beside each package tsconfig so parallel
+# tsc workers never share one file, and reaps the dead-pid ones on its NEXT
+# run. A killed or interrupted run leaves them behind (three did, 2026-10-05).
+# Build scratch, never a tracked artifact — same law as the stamp above.
+.tsconfig.test.*.json
 
 # tmp/ is scratch — never committed (history's two oracle files stay tracked).
 # HARD RULE: live lane tokens and dsh-auth cookies have landed here; they must
