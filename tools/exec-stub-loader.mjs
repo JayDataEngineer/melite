@@ -73,7 +73,9 @@ export async function load (url, context, nextLoad) {
   // access (import x, then x.y.z) stays constructible-callable.
   const lines = [
     'const stubFn = function stub () {}',
-    "const stubObj = new Proxy(stubFn, { get: () => stubObj, apply: () => stubObj, construct: () => ({}) })",
+    // toPrimitive: a stub used as a computed property key (vendor:
+    // static [EntryGroup.key]) must coerce, not throw.
+    "const stubObj = new Proxy(stubFn, { get: (t, k) => k === Symbol.toPrimitive ? () => 'stub' : stubObj, apply: () => stubObj, construct: () => ({}) })",
     'export default stubObj',
   ]
   for (const n of named) lines.push(`export const ${n} = stubObj`)
