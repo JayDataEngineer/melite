@@ -53,6 +53,14 @@ export async function load (url, context, nextLoad) {
         }
       }
       hasDefault = new RegExp(`import\\s+[^{*\\s][^\\s]*\\s*from\\s*['"]${spec}['"]`).test(src)
+      // NAMESPACE imports: `import * as yaml from 'js-yaml'` binds a
+      // REAL namespace whose members the stub cannot know — ESM
+      // namespaces are fixed at link. Scan the importer's own
+      // `yaml.<member>` accesses and export each as the constructible
+      // stub (vendor does new yaml.Type at module scope).
+      for (const m of src.matchAll(new RegExp(`import\\s*\\*\\s*as\\s+(\\w+)\\s*from\\s*['"]${spec}['"]`, 'g'))) {
+        for (const u of src.matchAll(new RegExp(`\\b${m[1]}\\.(\\w+)`, 'g'))) named.add(u[1])
+      }
     } catch {
       // unreadable importer — fall through to the default stub
     }
