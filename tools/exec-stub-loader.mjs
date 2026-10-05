@@ -14,6 +14,9 @@ import { fileURLToPath } from 'node:url'
 // The importer rides THROUGH resolve (the load hook's context has no
 // parentURL on modern Node — the G5 estate-call probe starved the
 // named-export synthesis and died on `defineTool` at link time).
+// specifier -> every importer URL that reached for it: a deep module
+// graph (loader's config/tree.js) imports the same dep NAMED from
+// several files, and the synthesis needs the UNION, not one parent.
 const stubImporters = new Map()
 
 export async function resolve (specifier, context, nextResolve) {
@@ -23,9 +26,17 @@ export async function resolve (specifier, context, nextResolve) {
     } catch (e) {
       if (e?.code === 'ERR_MODULE_NOT_FOUND') {
         if (typeof context.parentURL === 'string' && context.parentURL.startsWith('file:')) {
-          stubImporters.set(specifier, context.parentURL)
+          const set = stubImporters.get(specifier) ?? new Set()
+          set.add(context.parentURL)
+          stubImporters.set(specifier, set)
         }
-        return { url: 'stub:' + specifier, shortCircuit: true }
+        // PER-IMPORTER URL: one stub module per specifier loads BEFORE
+        // the graph's other importers resolve (loader's config/tree.js
+        // and index.js both reach for cosmokit), so a shared instance
+        // can never see the union. Minting importer-scoped URLs gives
+        // each importing module its own synthesized instance.
+        const parent = typeof context.parentURL === 'string' ? context.parentURL : ''
+        return { url: 'stub:' + specifier + '?importer=' + encodeURIComponent(parent), shortCircuit: true }
       }
       throw e
     }
@@ -40,11 +51,17 @@ export async function load (url, context, nextLoad) {
   if (!url.startsWith('stub:')) return nextLoad(url, context)
   const named = new Set()
   let hasDefault = false
-  const parentURL = stubImporters.get(url.slice(5))
-  if (typeof parentURL === 'string' && parentURL.startsWith('file:')) {
+  const q = url.indexOf('?importer=')
+  const specUrl = q === -1 ? url.slice(5) : url.slice(5, q)
+  const parentFromUrl = q === -1 ? null : decodeURIComponent(url.slice(q + '?importer='.length))
+  const importers = new Set(parentFromUrl ? [parentFromUrl] : (stubImporters.get(specUrl) ?? []))
+  const importerSrcs = [...importers]
+    .filter((u) => typeof u === 'string' && u.startsWith('file:'))
+    .map((u) => { try { return readFileSync(fileURLToPath(u), 'utf8') } catch { return '' } })
+  if (importerSrcs.length > 0) {
     try {
-      const src = readFileSync(fileURLToPath(parentURL), 'utf8')
-      const spec = esc(url.slice(5))
+      const src = importerSrcs.join('\n')
+      const spec = esc(specUrl)
       for (const m of src.matchAll(new RegExp(`import\\s*\\{([^}]+)\\}\\s*from\\s*['"]${spec}['"]`, 'g'))) {
         for (let part of m[1].split(',')) {
           part = part.trim()
