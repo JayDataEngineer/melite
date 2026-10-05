@@ -70,9 +70,34 @@ function mint (opts) {
   const dest = mkdtempSync(join(tmpdir(), 'melite-release-'))
   try {
     console.log(`packing workspace @ ${commit.slice(0, 8)} …`)
-    run(pnpmBin(), ['-r', 'pack', '--pack-destination', dest], { stdio: ['ignore', 'ignore', 'pipe'] })
+    execFileSync(pnpmBin(), ['-r', 'pack', '--pack-destination', dest], { stdio: 'inherit' })
     const files = run('bash', ['-c', `ls ${dest}/*.tgz`]).split('\n').filter(Boolean)
     if (files.length === 0) fail('pnpm packed zero tarballs — refusing an empty artifact set')
+    // THE ENTRY GATE (2026-10-16, the consumer-side receipt): a
+    // files allowlist that omits the package's own exports entry
+    // ships an importable-dead tarball — npm pack drops what the
+    // manifest does not list. Every tarball's manifest is read from
+    // INSIDE the tar and each literal exports target must be present
+    // in the listing. Refuse the whole mint on any miss.
+    for (const f of files) {
+      const listing = run('tar', ['-tzf', f]).split('\n').filter(Boolean)
+      const inner = JSON.parse(run('bash', ['-c',
+        `tar -xzOf ${f} package/package.json`]))
+      if (!inner.exports) continue
+      for (const [key, value] of Object.entries(inner.exports)) {
+        if (key === 'package.json') continue
+        const targets = typeof value === 'string' ? [value]
+          : typeof value === 'object' && value !== null ? Object.values(value).filter((t) => typeof t === 'string') : []
+        for (const t of targets) {
+          const norm = t.replace(/^\.\//, '')
+          if (norm === 'package.json' || norm.includes('*')) continue
+          if (!listing.includes(`package/${norm}`)) {
+            fail(`entry gate: ${f.split('/').pop()} exports "${t}" but the tarball does not contain it — fix package.json files`)
+          }
+        }
+      }
+    }
+    console.log(`entry gate: ${files.length} tarballs carry every exports target`)
     const manifest = {
       manifest: 1,
       tag,

@@ -40,10 +40,14 @@
     "typescript": "^5.9.3"
   },
   "files": [
-    "lib/typert.host.d.ts",
     "lib/typert.host.js",
+    "lib/typert.host.d.ts",
+    "lib/typert.remote-client.js",
     "lib/typert.remote-client.d.ts",
     "lib/typert.remote-client.d.ts.map",
-    "lib/typert.remote-client.js"
+    "lib/index.js",
+    "lib/index.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
   ]
 }
