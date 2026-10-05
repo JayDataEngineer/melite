@@ -36,28 +36,29 @@
     "yaml": "2.9.0"
   },
   "scripts": {
+    "knip": "node tools/knip-budget.mjs",
+    "lint": "node tools/arch-lint.ts",
+    "profile:regen": "node scripts/regen-profile-paths.mjs",
+    "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
+    "release:mint": "node tools/release-artifacts.mjs mint",
+    "release:verify": "node tools/release-artifacts.mjs verify",
     "test": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run",
+    "test:bench": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.bench.config.ts",
     "test:coverage": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --coverage",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "test:e2e:studio": "bash scripts/e2e-studio-lane.sh",
+    "test:expected": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.expected.config.ts",
+    "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
     "test:lane": "vitest run --config vitest.e2e.config.ts tests/lane/3088-lane.e2e.ts",
     "test:lane:analyse": "node --experimental-strip-types tests/lane/run.ts analyse",
     "test:lane:commission": "node --experimental-strip-types tests/lane/run.ts commission",
-    "test:expected": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.expected.config.ts",
-    "test:expected:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.expected.config.ts",
-    "test:bench": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.bench.config.ts",
     "test:snapshot": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.snapshot.config.ts",
     "test:snapshot:record": "DSH_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",
     "test:web": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.web.config.ts",
-    "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts",
     "test:web:browser": "pnpm --filter @melite-plugin/dsh-card-view exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
-    "lint": "node tools/arch-lint.ts",
-    "release:mint": "node tools/release-artifacts.mjs mint",
-    "release:verify": "node tools/release-artifacts.mjs verify",
-    "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
-    "profile:regen": "node scripts/regen-profile-paths.mjs"
+    "test:web:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.web.config.ts"
   },
   "license": "AGPL-3.0-or-later"
 }

@@ -85,6 +85,28 @@ jobs:
       - name: Boundary contracts
         run: pnpm run lint
 
+  # THE KNIP RATCHET SEAT (re-audit 2026-10-16b A1, 2026-10-17):
+  # knip + knip.json existed but were wired into nothing — the exact
+  # defect class lefthook.yml names for pnpm run lint. The ratchet
+  # (tools/knip-budget.mjs) pins the measured backlog; it fires when
+  # a category GROWS and the budgets only ratchet down, in the same
+  # commit as the cure. OS-independent — one ubuntu seat.
+  knip:
+    name: knip budget (dead-code ratchet)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Budget ratchet
+        run: pnpm run knip
+
   coverage:
     name: coverage gate (per-file 100%)
     runs-on: ubuntu-latest
