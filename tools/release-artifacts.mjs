@@ -197,6 +197,35 @@ export async function probeExecutability (innerFiles) {
   const probeDir = mkdtempSync(join(tmpdir(), 'melite-exec-probe-'))
   try {
     const loader = join(import.meta.dirname, 'exec-stub-loader.mjs')
+    // THE CLOSURE TREE (the data-derived seats): a card whose schema
+    // rides family DECLs (image-edit's EDIT_LIST_CAP) executes DOMAIN
+    // validation at import — a stubbed sibling can never satisfy it,
+    // and refusing the mint would outlaw the law. Every @melite /
+    // @melite-plugin / vendored @deepseek-ai tarball in the release
+    // extracts ONCE into probeDir/node_modules (recursive, bounded by
+    // the tarball set), so plain-node resolution finds the REAL
+    // packages. The stub stays the fallback for true externals.
+    const byName = new Map()
+    for (const [tarName, meta] of innerFiles) {
+      const inner = JSON.parse(run('bash', ['-c', `tar -xzOf ${meta.f} package/package.json`]))
+      byName.set(inner.name, meta.f)
+    }
+    const nmDir = join(probeDir, 'node_modules')
+    const extracted = new Set()
+    const extractPkg = (name) => {
+      if (extracted.has(name)) return
+      extracted.add(name)
+      const tgz = byName.get(name)
+      if (!tgz) return
+      const destDir = join(nmDir, name)
+      run('mkdir', ['-p', destDir])
+      run('tar', ['-xzf', tgz, '-C', destDir, '--strip-components=1'])
+      const inner = JSON.parse(run('bash', ['-c', `tar -xzOf ${tgz} package/package.json`]))
+      for (const dep of [...Object.keys(inner.dependencies ?? {}), ...Object.keys(inner.peerDependencies ?? {})]) {
+        if (byName.has(dep)) extractPkg(dep)
+      }
+    }
+    for (const name of byName.keys()) extractPkg(name)
     for (const [tarName, { f, literals }] of innerFiles) {
       const extract = join(probeDir, tarName.replace(/\.tgz$/, ''))
       run('mkdir', ['-p', extract])
