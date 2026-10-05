@@ -27,13 +27,15 @@
     }
   },
   "devDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-client-ui-slots": "0.2.0-rc.1",
+    "@testing-library/react": "^16.3.3",
+    "@testing-library/user-event": "^14.6.7",
     "@types/node": "^22.20.0",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.184.1",
-    "typescript": "~6.0.3",
-    "@deepseek-ai/cordis": "^4.0.4"
+    "typescript": "~6.0.3"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"

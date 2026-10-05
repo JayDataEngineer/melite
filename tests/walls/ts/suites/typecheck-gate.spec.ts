@@ -150,6 +150,30 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     expect(dirs.map((d) => d.replace(/\\/g, "/")).some((d) => d.endsWith("engines/comfyui-cordis"))).toBe(true);
   });
 
+  it("every NO_TYPESCRIPT_SOURCES package still ships no .ts (the exemption does not rot)", () => {
+    // A8c: the JSDoc said a package growing a .ts "must delete its
+    // name from this list" — nothing enforced it. The exemption is
+    // only honest while the named trees genuinely carry no .ts; the
+    // day one grows a source file, this arm refuses until the name
+    // leaves the list (and the package joins the net above).
+    const rotted: string[] = [];
+    for (const rel of NO_TYPESCRIPT_SOURCES) {
+      const dir = join(REPO, rel);
+      const ts: string[] = [];
+      const walk = (d: string): void => {
+        for (const e of readdirSync(d, { withFileTypes: true })) {
+          if (e.name === "node_modules" || e.name.startsWith(".")) continue;
+          const p = join(d, e.name);
+          if (e.isDirectory()) walk(p);
+          else if (/\.(ts|tsx|mts|cts)$/.test(e.name)) ts.push(p.slice(dir.length + 1));
+        }
+      }
+      walk(dir);
+      if (ts.length > 0) rotted.push(`${rel}: grew ${ts.join(", ")} — delete it from NO_TYPESCRIPT_SOURCES so tsc sees it`);
+    }
+    expect(rotted, "packages exempt from tsc that now carry TypeScript").toEqual([]);
+  });
+
   it("every package with a tsconfig typechecks clean", async () => {
     const settled = await pool(dirs, typecheck);
     const failures: string[] = [];

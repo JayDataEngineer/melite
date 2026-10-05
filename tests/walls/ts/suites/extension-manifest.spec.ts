@@ -53,11 +53,12 @@ const NOT_YET_INSTALLED: Readonly<Record<string, string>> = {
 /** Check-map key -> manifest row name, where the two name the SAME
  *  pack under two spellings. The check key is a free name; the manifest
  *  name is the installed directory Manager derives, and the two drifted.
- *  Each entry is a NAMED, accepted mismatch for one upstream repo. */
-const SAME_PACK_AS: Readonly<Record<string, string>> = {
-  comfyui_nvidia_rtx_nodes: "Nvidia_RTX_Nodes_ComfyUI",
-  qweneditutils: "Comfyui-QwenEditUtils",
-};
+ *  Each entry is a NAMED, accepted mismatch for one upstream repo.
+ *  (Deleted 2026-10-16, re-audit A8a: the roster now holds
+ *  Nvidia_RTX_Nodes_ComfyUI and Comfyui-QwenEditUtils directly —
+ *  both keys were gone from the check map, the arm was
+ *  unreachable, and the package twin enforces the same law with
+ *  no exemption list at all.) */
 
 /** Manifest rows whose pack nothing checks — installed with no
  *  refusal to back it. rgthree is a workflow-helper pack with no
@@ -75,7 +76,7 @@ const extensionNodeTypes = (): Record<string, readonly string[]> => {
 
 /** Every extension row across the manifests (recursively): name plus
  *  the declared url/ref when the row carries them. */
-interface ManifestRow { name: string; file: string; url?: string; ref?: string }
+interface ManifestRow { name: string; file: string; url?: string; ref?: string; desc?: string }
 function manifestRows(dir: string, out: ManifestRow[] = []): ManifestRow[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -88,7 +89,8 @@ function manifestRows(dir: string, out: ManifestRow[] = []): ManifestRow[] {
       for (const m of text.matchAll(/^[ \t]*-[ \t]+name:[ \t]*([^\s#]+)([\s\S]*?)(?=^[ \t]*-[ \t]+name:|(?![\s\S]))/gmu)) {
         const url = /^[ \t]*url:[ \t]*(\S+)/mu.exec(m[2] ?? "");
         const ref = /^[ \t]*ref:[ \t]*(\S+)/mu.exec(m[2] ?? "");
-        out.push({ name: m[1]!, file: full.slice(ROOT.length + 1), url: url?.[1], ref: ref?.[1] });
+        const descMatch = /^[ \t]*desc:[ \t]*(\S[\s\S]*?)(?=^[ \t]*(?:url|ref|version|required|name):|(?![\s\S]))/mu.exec(m[2] ?? "");
+        out.push({ name: m[1]!, file: full.slice(ROOT.length + 1), url: url?.[1], ref: ref?.[1], desc: descMatch?.[1] });
       }
     }
   }
@@ -137,11 +139,7 @@ describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)",
   it("every check-map pack is either installed by a manifest or named below with a reason", () => {
     const rows = new Set(manifestRows(PACKAGES).map((r) => r.name.toLowerCase()));
     const missing = Object.keys(extensionNodeTypes())
-      .filter((pack) => {
-        const installed = rows.has(pack.toLowerCase()) ||
-          (SAME_PACK_AS[pack] !== undefined && rows.has((SAME_PACK_AS[pack] ?? "").toLowerCase()));
-        return !installed && !(pack in NOT_YET_INSTALLED);
-      })
+      .filter((pack) => !rows.has(pack.toLowerCase()) && !(pack in NOT_YET_INSTALLED))
       .map((pack) => `${pack} (checked at runtime, installed by no manifest)`);
     expect(missing, "these packs can be refused on an estate that could never obtain them").toEqual([]);
   });
@@ -152,11 +150,28 @@ describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)",
     expect(stale, "these now HAVE a manifest row — delete them from NOT_YET_INSTALLED").toEqual([]);
   });
 
+  it("every NOT_CHECKED entry's reason still matches the tree (the reasons do not rot)", () => {
+    // A8b: rgthree's reason said "no node class our graphs address"
+    // while a nodes.yaml desc claimed "Fast Groups Bypasser nodes
+    // present in the window graphs" — stale prose contradicting a
+    // live wall. The rot gate: every NOT_CHECKED name's manifest
+    // desc must not claim a class presence our sources don't use.
+    const stale: string[] = [];
+    for (const name of Object.keys(NOT_CHECKED)) {
+      for (const row of manifestRows(PACKAGES)) {
+        if (row.name !== name) continue
+        if (/present in|used (by|in)|composed (by|in)/i.test(row.desc ?? "")) {
+          stale.push(`${name}: desc claims use ("${(row.desc ?? "").split("\n")[0]}") while NOT_CHECKED says nothing checks it`)
+        }
+      }
+    }
+    expect(stale, "descs claiming use a NOT_CHECKED row denies — reconcile the two").toEqual([]);
+  });
+
   it("every manifest row is either checked or named below with a reason", () => {
     const extMap = extensionNodeTypes();
-    const aliases = new Set(Object.values(SAME_PACK_AS).map((v) => v.toLowerCase()));
     const unchecked = manifestRows(PACKAGES)
-      .filter((r) => !(r.name in extMap) && !(r.name in NOT_CHECKED) && !aliases.has(r.name.toLowerCase()))
+      .filter((r) => !(r.name in extMap) && !(r.name in NOT_CHECKED))
       .map((r) => `${r.name} (${r.file})`);
     expect(unchecked, "these install a pack nothing checks — weight with no refusal to back it").toEqual([]);
   });

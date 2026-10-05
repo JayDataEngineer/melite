@@ -87,14 +87,25 @@ describe("ROUTE PRECEDENCE — the exact table beats the longest prefix", () => 
   it("the reference router consults the exact table before the prefix loop", () => {
     // The anti-self-fulfilling half. This suite transcribes the rule
     // above; if the reference ever changed the order, the transcription
-    // would still pass and the estate would break. When the vendored
-    // reference is absent (a clone without references/), the pin is
-    // unproven here and the two cases above are marked as such.
-    if (!existsSync(REFERENCE_MATCHER)) {
-      expect(true, "the vendored reference is absent — route precedence is unproven here");
-      return;
+    // would still pass and the estate would break. The pin runs against
+    // a TRACKED verbatim fixture (A8d: the reference tree is
+    // developer-local and untracked, so a CI checkout never had it and
+    // this arm passed vacuously there, every run, forever). When the
+    // live reference IS present, the fixture is re-synced first and a
+    // drift refuses — the fixture cannot silently age.
+    const FIXTURE = join(ROOT, "tests/walls/ts/suites/fixtures/reference-webserver-match.ts");
+    if (existsSync(REFERENCE_MATCHER)) {
+      const live = readFileSync(REFERENCE_MATCHER, "utf8");
+      const start = live.indexOf("  /** Longest-prefix-wins over the prefix table after an exact-table miss. */");
+      const end = live.indexOf("  /**", start + 10); // the next doc comment closes the excerpt
+      const liveExcerpt = live.slice(start, end).trimEnd();
+      const fixture = readFileSync(FIXTURE, "utf8");
+      const fixtureExcerpt = fixture.slice(fixture.indexOf("  /** Longest-prefix-wins")).trimEnd();
+      expect(fixtureExcerpt === liveExcerpt,
+        "the vendored matcher fixture drifted from the live reference — re-vendor " +
+        "tests/walls/ts/suites/fixtures/reference-webserver-match.ts from the reference's match()").toBe(true);
     }
-    const source = readFileSync(REFERENCE_MATCHER, "utf8");
+    const source = readFileSync(FIXTURE, "utf8");
     const exactAt = source.indexOf("this.exact.get(pathname)");
     const loopAt = source.indexOf("for (const [prefix, route] of this.prefixes)");
     expect(exactAt, "the exact-table lookup is present").toBeGreaterThan(-1);

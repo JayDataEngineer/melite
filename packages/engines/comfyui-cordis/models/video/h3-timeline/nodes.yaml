@@ -44,7 +44,13 @@ extensions:
   ref: 2c5342a8cb0eaecaabf61435a5f37dd594c510ba
   version: 1.0.2608210019
   required: true
-  desc: Fast Groups Bypasser nodes present in the window graphs.
+  desc: Workflow-helper pack; no node class our graphs address —
+    installed for the workflow conveniences only (re-audit
+    2026-10-16b A8b: the old "Fast Groups Bypasser nodes present
+    in the window graphs" was stale — Rgthree|ContextSwitch|AnySwitch|
+    Fast Groups grep to zero across packages/**; the NOT_CHECKED
+    reason in tests/walls/ts/suites/extension-manifest.spec.ts is
+    the truth).
     2026-10-12: registry id "rgthree-comfy" resolved in NO Manager
     cache (the cache spells it "rgthree") — redeclared as the exact
     url+ref the reference estate executes.
