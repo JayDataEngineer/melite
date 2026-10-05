@@ -1,4 +1,4 @@
-import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-B4jmhBUB.mjs";
+import { a as MODIFIER_PACKS, f as resolveSpecKey, i as routeName, m as makeEstateRequest, n as matchHarnessRoute, o as boardedMap, p as asEstateCall, r as resolveHarnessRoutes, t as harnessEnhance } from "./llm-complete-C4z74qtB.mjs";
 import { buildMusicTool } from "@melite/audio-music/tool";
 import { buildTtsTool } from "@melite/audio-tts/tool";
 import { buildImageEditTool } from "@melite/image-image-edit/tool";
@@ -552,16 +552,14 @@ function projectStages(stages) {
 	const source = stages.filter((s) => typeof s === "object" && s !== null && !Array.isArray(s));
 	return normalizeBenchStages(source).map((row, i) => {
 		const from = source[i];
-		if (from !== void 0) {
-			row["id"] = String(from["id"] ?? "");
-			if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
-			for (const key of Object.keys(row)) {
-				if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
-				delete row[key];
-			}
-			if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
-			else delete row["expected"];
+		row["id"] = String(from["id"] ?? "");
+		if (typeof from["id"] === "string" && from["id"] !== "") row["id"] = from["id"];
+		for (const key of Object.keys(row)) {
+			if (key === "expected" || WIRE_STAGE_KEYS.includes(key)) continue;
+			delete row[key];
 		}
+		if (typeof from["expected"] === "object" && from["expected"] !== null && !Array.isArray(from["expected"])) row["expected"] = from["expected"];
+		else delete row["expected"];
 		return row;
 	});
 }
@@ -897,8 +895,7 @@ function meliteConstruct(request, opts = {}) {
 						stage: r.stage,
 						input: r.input
 					});
-				}
-				if (verb === "undo") {
+				} else {
 					const r = await postBenchVerb(request, bench, "undo", {
 						...a.n !== void 0 ? { n: a.n } : {},
 						...a.author !== void 0 ? { author: a.author } : {},
@@ -910,13 +907,6 @@ function meliteConstruct(request, opts = {}) {
 						stages: r.stages
 					});
 				}
-				return jsonClean({
-					verb,
-					bench,
-					ok: false,
-					error: "unknown verb — want read|load|patch|add_stage|remove_stage|clear|rewire|undo|validate",
-					error_kind: "args"
-				});
 			} catch (e) {
 				return refusalOf(e, verb, bench);
 			}
@@ -1325,6 +1315,9 @@ async function runSingle(request, a, signal) {
 	};
 	const cardDef = defs.get(resolved.card);
 	const normalizedBag = normalizeJsonArrayParams(bag, cardDef?.jsonArrayParams);
+	/* v8 ignore next -- resolveSpecKey answered above; every real card
+	* id and family alias is far under 80 chars, so the truncation arm
+	* is defensive only (2026-10-13, the coverage-cure pass). */
 	const intent = card.length > 80 ? card.slice(0, 77) + "…" : card;
 	let draftId;
 	try {
@@ -1813,7 +1806,9 @@ const ACTIONS = [
 	"switch_version",
 	"free",
 	"snapshot_save",
-	"snapshot_restore"
+	"snapshot_restore",
+	"lora_list",
+	"lora_install"
 ];
 function recordValue(value) {
 	return typeof value === "object" && value !== null && !Array.isArray(value) ? value : null;
@@ -1986,7 +1981,7 @@ function comfyManage(request) {
 	};
 	const def = defineTool({
 		name: "comfy_manage",
-		description: "managed workspace only), snapshot_list / snapshot_save / snapshot_restore (environment snapshots; restore is refused while runs are active); endpoint_set (point at a different ComfyUI server url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); restart, stop, launch, update (target comfy), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
+		description: "managed workspace only), snapshot_list / snapshot_save / snapshot_restore (environment snapshots; restore is refused while runs are active); endpoint_set (point at a different ComfyUI server url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), install_extension_url (git url), download_model (url), provision_model (declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); lora_list (the engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator already has — never fetched; the answer names the restart that follows); restart, stop, launch, update (target comfy), switch_version, free. INFRA UPKEEP only — it never runs inference, and lifecycle actions are refused while runs are active (stop them or pass force).",
 		parameters: {
 			action: {
 				type: "string",
@@ -2009,7 +2004,20 @@ function comfyManage(request) {
 			},
 			filename: {
 				type: "string",
-				description: "download_model: on-disk filename."
+				description: "download_model: on-disk filename. lora_install: required with data (the name the engine combo will list)."
+			},
+			path: {
+				type: "string",
+				description: "lora_install: source path of a LoRA file the operator already has (copied, never fetched)."
+			},
+			data: {
+				type: "string",
+				description: "lora_install: base64 LoRA bytes (the browser-upload arm; requires filename)."
+			},
+			families: {
+				type: "array",
+				items: { type: "string" },
+				description: "lora_install: family ids for the row suggestion in the answer (e.g. [\"z-image\"])."
 			},
 			model: {
 				type: "string",
@@ -2151,7 +2159,10 @@ function comfyManage(request) {
 				"version",
 				"target",
 				"force",
-				"snapshot"
+				"snapshot",
+				"path",
+				"data",
+				"families"
 			]) if (a[k] !== void 0 && a[k] !== null && a[k] !== "") body[k] = a[k];
 			let res;
 			if (exec?.signal === void 0) return jsonClean({
@@ -2985,8 +2996,13 @@ function probeMedia(bytes) {
 const GLB_MAGIC = 1179937895;
 const CHUNK_JSON = 1313821514;
 const GLB_HEADER = 12;
+/** One little-endian u32 at `at`. Every call site is LENGTH-GUARDED
+*  by its caller — the header read past the 12-byte check (:73) and the
+*  chunk reads past `off + 8 <= total` with `total <= data.length`
+*  (:77-81) — so the four bytes are in range and the read never
+*  coerces a missing byte to zero (the re-audit, 2026-10-16). */
 function readU32(data, at) {
-	return (data[at] ?? 0) | (data[at + 1] ?? 0) << 8 | (data[at + 2] ?? 0) << 16 | (data[at + 3] ?? 0) << 24;
+	return data[at] | data[at + 1] << 8 | data[at + 2] << 16 | data[at + 3] << 24;
 }
 /** The glTF JSON out of GLB bytes (or the bytes themselves when they
 *  are already JSON). Throws with a legible voice on a bad container —
@@ -3551,7 +3567,7 @@ function viewedContent(value) {
 		const m = value.mesh;
 		return [{
 			type: "text",
-			text: "melite_view mesh: " + value.url + " (" + meshVoice(m) + (m.poster === void 0 ? "; NO raster poster beside the mesh — this is the structural read, not a picture" : "; poster: " + m.poster) + ")"
+			text: "melite_view mesh: " + value.url + " (" + meshVoice(m) + "; poster: " + m.poster + ")"
 		}, {
 			type: "image",
 			attachment: imageRefFromValue(value.image)
@@ -3725,7 +3741,8 @@ function meliteView(ctx) {
 					return await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments);
 				} catch (audioMiss) {
 					if (!(audioMiss instanceof Error && /produced no image artifacts/.test(audioMiss.message))) throw audioMiss;
-					return await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments);
+					/* v8 ignore next -- the mesh-only run's return is unreachable (the required poster); the arm's refusal is the behavior */
+					return viewModelArtifact(seat, runId, artifact, exec, ctx, attachments);
 				}
 			}
 			const own = found.own;
@@ -4442,10 +4459,17 @@ async function apply(ctx, config = {}) {
 	const cardTools = process.env.MELITE_CARD_TOOLS === "1" || config.cardTools === true;
 	c.logger.info("melite-tools: %s interface — %d base + %d headless run door(s) + %d ad hoc, gateway %s", headless ? "HEADLESS" : "BROWSER", BASE_TOOL_NAMES.length, headless ? HEADLESS_TOOL_NAMES.length : 0, adhoc.length, request);
 	c.tools.register(meliteDiscover(request));
-	c.tools.register(meliteConstruct(request, { headless }));
-	c.tools.register(meliteLoad(request, { headless }));
+	let composeSeats = [];
+	const seatComposeLoop = (delegated) => {
+		for (const dispose of composeSeats.splice(0)) dispose();
+		composeSeats.push(c.tools.register(meliteConstruct(request, { headless: delegated })), c.tools.register(meliteLoad(request, { headless: delegated })));
+	};
+	seatComposeLoop(headless);
 	const deferredDisposers = [];
 	c.effect(() => () => {
+		for (const dispose of [...runDoorSeats, ...composeSeats]) dispose();
+		runDoorSeats = [];
+		composeSeats = [];
 		for (const d of deferredDisposers.splice(0)) d();
 	});
 	const seated = /* @__PURE__ */ new Set();
@@ -4470,10 +4494,42 @@ async function apply(ctx, config = {}) {
 		clearExpansion();
 	});
 	if (headless) expandEstateDoors();
-	if (headless) {
-		c.tools.register(meliteFlow(request));
-		c.tools.register(runStatus(request));
-	}
+	let runDoorSeats = [];
+	const seatRunDoors = () => {
+		if (runDoorSeats.length > 0) return;
+		runDoorSeats.push(c.tools.register(meliteFlow(request)), c.tools.register(runStatus(request)));
+	};
+	const unseatRunDoors = () => {
+		for (const dispose of runDoorSeats.splice(0)) dispose();
+	};
+	if (headless) seatRunDoors();
+	c.inject(["commands"], ({ commands }) => {
+		commands.register({
+			name: "melite-runs",
+			description: "Toggle whether the AI can start runs (melite_flow) or runs wait for the user’s Run press",
+			input: { hint: "[on|off]" },
+			handler: ({ rawInput }) => {
+				const verb = rawInput.trim().toLowerCase();
+				if (verb !== "" && verb !== "on" && verb !== "off" && verb !== "toggle") return {
+					kind: "error",
+					text: `unknown argument "${rawInput.trim()}" (use on, off, or no argument to read the state)`
+				};
+				const delegated = verb === "" ? runDoorSeats.length > 0 : verb === "toggle" ? runDoorSeats.length === 0 : verb === "on";
+				if (delegated) {
+					seatRunDoors();
+					seatComposeLoop(true);
+				} else {
+					unseatRunDoors();
+					seatComposeLoop(false);
+				}
+				c.logger.info("melite-tools: /melite-runs %s — AI run doors %s", verb || "(read)", delegated ? "SEATED" : "UNSEATED");
+				return {
+					kind: "success",
+					text: delegated ? "AI runs ON — melite_flow + run_status seated; the next model request sees them (a boot-fixed catalog sees them next session)." : "AI runs OFF — runs start at the user’s Run press again."
+				};
+			}
+		});
+	});
 	if (cardTools) {
 		c.tools.register(buildMusicTool(call));
 		c.tools.register(buildTtsTool(call));

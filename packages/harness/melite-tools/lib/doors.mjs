@@ -1,4 +1,4 @@
-import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-B4jmhBUB.mjs";
+import { c as formSpecArm, d as modelCatalogArm, h as seatFamilyForPath, i as routeName, l as formsArm, m as makeEstateRequest, r as resolveHarnessRoutes, s as cardToolsArm, t as harnessEnhance, u as kindsDoorArm } from "./llm-complete-C4z74qtB.mjs";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { buildSkillIndex, disclosureRoot } from "@melite/estate-queue";
 import { resolveEngineBaseUrl, sdkClient } from "@melite/comfyui-cordis";
@@ -111,7 +111,8 @@ const ESTATE_PENDING_GRACE_MS = 12e4;
 *  from three hosts, 3379 remounts in one log) reset the stamp to
 *  null on every momentary lift and held the gate closed FOREVER.
 *  The stamp now lifts only after a SUSTAINED quiet — flapping
-*  cannot extend the grace window. */
+*  cannot extend the grace window. Exported for the re-arm wall
+*  (a later boot race gets a fresh window: doors.spec.ts). */
 const ESTATE_PENDING_REARM_MS = 1e4;
 let estatePendingSince = null;
 let estateQuietSince = null;
@@ -120,7 +121,7 @@ const estateStillActivating = (c) => {
 	for (const runtime of c.registry.values()) for (const fiber of runtime.fibers) if (fiber.uid !== null && (fiber.store === void 0 || fiber.inertia !== void 0)) activating = true;
 	if (!activating) {
 		if (estateQuietSince === null) estateQuietSince = Date.now();
-		if (estatePendingSince !== null && Date.now() - estateQuietSince >= ESTATE_PENDING_REARM_MS) estatePendingSince = null;
+		if (estatePendingSince !== null && Date.now() - estateQuietSince >= 1e4) estatePendingSince = null;
 		return false;
 	}
 	estateQuietSince = null;
@@ -375,6 +376,31 @@ function apply(c, config = {}) {
 		kind: "prefix",
 		path: "/v1",
 		handler: (req, res) => {
+			const connection = c.get?.("connection");
+			let rejection;
+			try {
+				rejection = connection?.requestRejection?.({ headers: req.headers });
+			} catch (e) {
+				const message = "connection/rejected: " + (e instanceof Error ? e.message : String(e));
+				res.writeHead(500, {
+					"content-type": "application/json",
+					"content-length": String(Buffer.byteLength(message))
+				});
+				res.end(Buffer.from(message));
+				return;
+			}
+			if (rejection !== void 0) {
+				const body = JSON.stringify({
+					error: "connection/" + (rejection === 403 ? "untrusted-request" : "unauthenticated"),
+					status: rejection
+				});
+				res.writeHead(rejection, {
+					"content-type": "application/json",
+					"content-length": String(Buffer.byteLength(body))
+				});
+				res.end(Buffer.from(body));
+				return;
+			}
 			const ok = (payload) => {
 				const body = JSON.stringify(payload);
 				res.writeHead(200, {
@@ -609,4 +635,4 @@ function apply(c, config = {}) {
 	}), "melite-tools: /v1 prefix door");
 }
 //#endregion
-export { DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, apply, inject, mcpToolsOf, seatedMcpServers };
+export { DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS, apply, inject, mcpToolsOf, seatedMcpServers };

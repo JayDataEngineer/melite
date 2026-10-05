@@ -71,6 +71,15 @@ interface CtxView {
  * activation — the gate opens and the seat probe's own honest voice
  * answers (serve, or the missing-seat 502 naming the family). */
 declare const ESTATE_PENDING_GRACE_MS = 120000;
+/** THE RE-ARM QUIET (li-l, the flap brick): a fiber cycling
+ *  activating→ready→activating (the multi-host blender-seat
+ *  collision, live proof 2026-10-10: three mcp_server.py children
+ *  from three hosts, 3379 remounts in one log) reset the stamp to
+ *  null on every momentary lift and held the gate closed FOREVER.
+ *  The stamp now lifts only after a SUSTAINED quiet — flapping
+ *  cannot extend the grace window. Exported for the re-arm wall
+ *  (a later boot race gets a fresh window: doors.spec.ts). */
+declare const ESTATE_PENDING_REARM_MS = 10000;
 declare function apply(c: CtxView, config?: Config): void;
 //#endregion
-export { Config, DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, apply, inject, mcpToolsOf, seatedMcpServers };
+export { Config, DEFAULT_ENHANCE_PREFERENCE, ESTATE_PENDING_GRACE_MS, ESTATE_PENDING_REARM_MS, apply, inject, mcpToolsOf, seatedMcpServers };

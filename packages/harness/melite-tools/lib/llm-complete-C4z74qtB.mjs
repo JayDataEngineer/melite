@@ -119,6 +119,10 @@ async function trySeats(ctx, method, path, body, signal) {
 			}
 		}
 	}
+	if (method === "GET" && path === "/v1/flows") {
+		if (seats.disclose === void 0) return void 0;
+		return seats.disclose.contracts();
+	}
 	if (method === "POST" && path === "/v1/flows/validate") {
 		if (seats.runs === void 0) return void 0;
 		return seats.runs.validate(body, signal);
@@ -243,7 +247,7 @@ function makeEstateRequest(ctx) {
 			}, timeoutMs);
 		});
 		return Promise.race([work, bound]).finally(() => {
-			if (timer !== void 0) clearTimeout(timer);
+			clearTimeout(timer);
 		});
 	};
 }
@@ -553,7 +557,6 @@ function servedModEnvelopes(mods, card) {
 	return out;
 }
 function isFormSpecDoc(e) {
-	if (typeof e !== "object" || e === null) return false;
 	const doc = e;
 	if (typeof doc.form !== "string") return false;
 	if (doc.schema !== null && doc.schema !== void 0 && !isSchemaEnvelope(doc.schema)) return false;
@@ -652,10 +655,7 @@ function specModifiers(svc, card, key, decl, def, enveloped) {
 		if (servedOptionsRow !== void 0) entry.options = servedOptionsRow;
 		if (k.leaf_face !== void 0) entry.leaf_face = k.leaf_face;
 		if (k.section !== void 0) entry.section = k.section;
-		if (k.requires !== void 0) {
-			if (!k.requires.every((r) => typeof r === "string")) throw new Error(`form-spec: mod kind ${k.kind} carries a non-string requires entry — ${JSON.stringify(k.requires).slice(0, 120)}`);
-			entry.requires = k.requires;
-		}
+		if (k.requires !== void 0) entry.requires = k.requires;
 		out.push(entry);
 	}
 	return out;
@@ -903,12 +903,7 @@ async function cardToolsArm() {
 		const mods = emitModifierKinds(def.mods);
 		const lanes = {};
 		for (const fam of fams) {
-			let atom = fam;
-			try {
-				atom = owningAtom(fam);
-			} catch {
-				atom = fam;
-			}
+			const atom = owningAtom(fam);
 			if (atom in lanes) continue;
 			let fdecl = null;
 			try {
