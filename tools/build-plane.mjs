@@ -545,25 +545,35 @@ function ensureFinalNewlines(libDir) {
   return touched
 }
 
-// Mirror every .css asset under src/ to the same relative path under
-// lib/ (see buildOne). Cheap and total: css files are few.
-function copyCssSidecars(srcDir, libDir) {
+// Mirror every .css asset to the path its emitted JS imports it from:
+// a css under src/ lands at lib/<rel-from-src> (the rootDir src
+// collapse), a css in a legacy source tree OUTSIDE src (the
+// action-card viewers faces, whose rootDir is the package dir) lands
+// at lib/<package-rel>. tsc emits JS/DTS only — without the mirror
+// every built css import dangles.
+function copyCssSidecars(pkgDir, libDir) {
   let copied = 0
   const walk = (dir) => {
     let entries
     try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
     for (const e of entries) {
       const full = join(dir, e.name)
-      if (e.isDirectory()) { walk(full); continue }
+      if (e.isDirectory()) {
+        if (e.name === 'lib' || e.name === 'node_modules' || e.name === 'dist') continue
+        walk(full)
+        continue
+      }
       if (!e.name.endsWith('.css')) continue
-      const rel = relative(srcDir, full)
-      const dest = join(libDir, rel)
+      const relFromPkg = relative(pkgDir, full)
+      const inSrc = relFromPkg.startsWith('src' + sep)
+      const libRel = inSrc ? relFromPkg.slice('src/'.length) : relFromPkg
+      const dest = join(libDir, libRel)
       mkdirSync(dirname(dest), { recursive: true })
       copyFileSync(full, dest)
       copied++
     }
   }
-  walk(srcDir)
+  walk(pkgDir)
   return copied
 }
 
@@ -620,8 +630,8 @@ export function buildOne(pkgDir) {
   // every src css asset must land at its mirrored lib path or the
   // served client's css import dangles (the media-sidebar byte probe
   // caught overlay.module.css missing from lib/client/).
-  if (code === 0 && existsSync(join(pkgDir, 'src'))) {
-    copyCssSidecars(join(pkgDir, 'src'), join(pkgDir, 'lib'))
+  if (code === 0 && existsSync(join(pkgDir, 'lib'))) {
+    copyCssSidecars(pkgDir, join(pkgDir, 'lib'))
   }
   // DECLARATION REWRITE FINISHER: rewriteRelativeImportExtensions
   // (TS 5.9) rewrites relative .ts/.tsx specifiers in emitted .js but

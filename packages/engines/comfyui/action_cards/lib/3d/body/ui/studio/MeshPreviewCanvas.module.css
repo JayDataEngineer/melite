@@ -1,0 +1,41 @@
+/* MeshPreviewCanvas — mesh load states (the Canvas scene is
+   three.js, exempt). */
+
+.root {
+  min-height: 200px;
+}
+
+.rootDefault {
+  width: 100%;
+  height: 100%;
+}
+
+.errorBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 80%, transparent);
+  padding: 16px;
+  text-align: center;
+}
+
+.loadingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  gap: 12px;
+}
+
+.loadingSkeleton {
+  height: 96px;
+  width: 128px;
+  border-radius: 8px;
+}
+
+.canvasClear {
+  background: transparent;
+}

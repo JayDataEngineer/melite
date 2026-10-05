@@ -1,0 +1,52 @@
+/* BodyCardEditor — rail presets + levers (the viewport is the
+   shared mesh canvas). */
+
+.railCol {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  flex-direction: column;
+}
+
+.presetHead {
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  padding: 10px 12px;
+}
+
+.presetTitle {
+  margin-bottom: 6px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 45%, transparent);
+}
+
+.presetRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.presetPill {
+  border-radius: 9999px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  background: var(--dsw-alias-border-l1);
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 500;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 55%, transparent);
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.presetPill:hover {
+  border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);
+  color: var(--dsw-alias-accent);
+}
+
+.leverWell {
+  min-height: 0;
+  flex: 1;
+  padding: 10px 12px 12px;
+}

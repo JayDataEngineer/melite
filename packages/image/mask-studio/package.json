@@ -43,7 +43,6 @@
     "lib/**/*.css",
     "lib/**/*.d.ts",
     "lib/**/*.js",
-    "lib/**/*.module.css",
-    "src/**/*.module.css"
+    "lib/**/*.module.css"
   ]
 }

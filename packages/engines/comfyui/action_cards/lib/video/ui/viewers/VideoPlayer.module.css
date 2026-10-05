@@ -1,0 +1,200 @@
+/* VideoPlayer — native <video> with control overlay chrome. */
+
+/* Root (group + relative + overflow-hidden + bg-black + outline-none). */
+.root {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+  outline: none;
+}
+
+.rootWindowed {
+  width: 100%;
+  border-radius: 8px;
+}
+
+.rootFullscreen {
+  height: 100vh;
+  width: 100vw;
+  border-radius: 0;
+}
+
+.videoWindowed {
+  background: #000;
+  width: 100%;
+}
+
+.videoFullscreen {
+  background: #000;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+/* Center play/pause button. */
+.centerPlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.2);
+  transition: opacity 0.15s ease;
+}
+
+.centerPlayDisc {
+  display: flex;
+  width: 80px;
+  height: 80px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  transition: transform 0.15s ease;
+}
+
+.centerPlayDisc:hover {
+  transform: scale(1.1);
+}
+
+.centerIcon {
+  width: 32px;
+  height: 32px;
+  color: #000;
+}
+
+.centerIconFill {
+  fill: #000;
+}
+
+.centerIconNudge {
+  margin-left: 4px;
+}
+
+/* Control bar. */
+.controlBar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.6), transparent);
+  padding: 32px 16px 12px;
+  transition: opacity 0.2s ease;
+}
+
+.controlBarShown {
+  opacity: 1;
+}
+
+.controlBarHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Seek bar. */
+.seekBar {
+  position: relative;
+  margin-bottom: 8px;
+  display: flex;
+  height: 6px;
+  cursor: pointer;
+  align-items: center;
+}
+
+.seekTrack {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.seekBuffered {
+  position: absolute;
+  height: 4px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.seekPlayed {
+  position: absolute;
+  height: 4px;
+  border-radius: 9999px;
+  background: var(--dsw-alias-accent, #3b82f6);
+}
+
+.seekKnob {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s ease;
+}
+
+.seekBar:hover .seekKnob {
+  transform: scale(1.25);
+}
+
+/* Buttons row. */
+.buttonsRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #fff;
+}
+
+.transportBtn {
+  border-radius: 4px;
+  padding: 4px;
+  transition: background-color 0.15s ease;
+}
+
+.transportBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.transportIcon {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+}
+
+.transportIconSm {
+  width: 16px;
+  height: 16px;
+}
+
+/* Volume (group/vol reveal). */
+.volumeWrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.volumeSlider {
+  width: 0;
+  height: 4px;
+  accent-color: #fff;
+  cursor: pointer;
+  opacity: 0;
+  transition: width 0.2s ease, opacity 0.2s ease;
+}
+
+.volumeWrap:hover .volumeSlider {
+  width: 80px;
+  opacity: 1;
+}
+
+.timeLabel {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.spacer {
+  flex: 1;
+}

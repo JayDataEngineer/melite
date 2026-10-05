@@ -1,0 +1,987 @@
+/* timeline.module.css — @melite-plugin/timeline: the MotionTimelineBar NLE
+ * skin, replacing every tailwind utility the bar used (DSH-pure UI law).
+ *
+ * COLOR LAW (2026-09-13): the bar rides the DSH design system — every
+ * color is a --dsw-alias-* token or a color-mix() over one. No literal
+ * palette, no var() fallbacks: the shell's tokens ARE the values. Kind
+ * identity (audio/refs/delete) rides the state tokens via color-mix.
+ */
+
+.root {
+  display: flex;
+  user-select: none;
+}
+
+/* ── Label gutter (pinned — never scrolls) ─────────────────────────── */
+.gutter {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  border-right: 1px solid var(--dsw-alias-border-l2);
+}
+
+.zoomRow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+}
+
+/* Icon zoom buttons (DSH Button, ghost/sm): exact 20px geometry. */
+.zoomBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-size: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+.zoomBtn:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-brand-primary);
+}
+.zoomBtn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* The % readout (DSH Button, ghost/sm): text-only, content height. */
+.zoomPct {
+  min-width: 32px;
+  height: auto;
+  padding: 0 2px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.zoomPct:hover {
+  color: var(--dsw-alias-brand-primary);
+}
+
+.laneHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.laneHeadBeats {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  background: var(--dsw-alias-bg-layer-1);
+}
+.laneHead > svg,
+.laneHeadBeats > svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  color: var(--dsw-alias-brand-primary);
+}
+.laneHeadBeats > svg {
+  color: var(--dsw-alias-brand-primary);
+}
+
+.gutterLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.audioHead {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.audioHead > svg {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  color: var(--dsw-alias-state-business-primary);
+}
+.gutterLabelDim {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+.detachBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  padding: 0;
+  flex: none;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.detachBtn:hover {
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary);
+}
+.detachBtn svg {
+  width: 10px;
+  height: 10px;
+}
+/* (2026-09-22, the lane-picker law) the gutter's add door — hugging
+ * the lane title (the detach keeps margin-left:auto: right edge). */
+.uploadBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  flex: none;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.uploadBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-label-tertiary) 14%, transparent);
+  color: var(--dsw-alias-label-primary);
+}
+.uploadBtn svg {
+  width: 10px;
+  height: 10px;
+}
+
+.laneRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.laneRow:last-child {
+  border-bottom: 0;
+}
+.laneDot {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+}
+.laneName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ── Scrollable content ────────────────────────────────────────────── */
+.contentWrap {
+  position: relative;
+  min-width: 0;
+  flex: 1;
+}
+.scroller {
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--dsw-alias-border-l3) transparent;
+}
+.scroller::-webkit-scrollbar {
+  height: 8px;
+}
+.scroller::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroller::-webkit-scrollbar-thumb {
+  background: var(--dsw-alias-border-l2);
+  border-radius: 4px;
+}
+.content {
+  position: relative;
+}
+
+/* ── Ruler ─────────────────────────────────────────────────────────── */
+.ruler {
+  position: relative;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  cursor: ew-resize;
+  touch-action: none;
+}
+.tick {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.tickLine {
+  height: 100%;
+  width: 1px;
+  background: var(--dsw-alias-border-l2);
+}
+.tickLabel {
+  position: absolute;
+  left: 4px;
+  top: 2px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--dsw-alias-label-tertiary);
+}
+.timecode {
+  position: sticky;
+  left: 0;
+  z-index: 10;
+  display: flex;
+  height: 100%;
+  align-items: center;
+  padding-left: 6px;
+  padding-right: 8px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* ── Prompts lane ──────────────────────────────────────────────────── */
+.promptsLane {
+  position: relative;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.canAdd {
+  cursor: copy;
+}
+.emptyCenter {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.emptyHint {
+  font-size: 10px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Prompt clip + its three states (default / selected ring / dragging). */
+.promptClip {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  touch-action: none;
+  overflow: hidden;
+  border-radius: 8px;
+  cursor: grab;
+  border: 1px solid var(--dsw-alias-border-l2);
+}
+.promptClip:hover {
+  border-color: var(--dsw-alias-border-l4);
+}
+.clipSelected {
+  z-index: 30;
+  border-color: var(--dsw-alias-brand-primary);
+  border-width: 0;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+}
+.clipSelected:hover {
+  border-color: var(--dsw-alias-brand-primary);
+}
+.clipMoving {
+  z-index: 30;
+  cursor: grabbing;
+  border: 1px solid var(--dsw-alias-brand-primary);
+  box-shadow:
+    0 20px 25px -5px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent),
+    0 8px 10px -6px color-mix(in srgb, var(--dsw-alias-bg-base) 50%, transparent),
+    0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 70%, transparent);
+}
+
+/* Edge grips. */
+.edgeL {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  width: 12px;
+  touch-action: none;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+}
+.edgeL:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+.edgeDead {
+  cursor: default;
+  opacity: 0.35;
+}
+.edgeDead:hover {
+  background: transparent;
+}
+.gripPill {
+  height: 20px;
+  width: 3px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);
+}
+.promptClip:hover .gripPill {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+}
+
+/* Seam indicator (extend glyph at the clip's left join). */
+.seamDot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 35;
+  height: 8px;
+  width: 8px;
+  transform: translate(-50%, -50%);
+  border-radius: 9999px;
+}
+
+.edgeR {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  top: 16px;
+  z-index: 30;
+  display: flex;
+  width: 12px;
+  touch-action: none;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+}
+.edgeR:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+.edgeWide {
+  width: 16px;
+}
+.gripPillR {
+  height: 20px;
+  width: 3px;
+  border-radius: 9999px;
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 25%, transparent);
+}
+.gripPillBright {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);
+}
+.promptClip:hover .gripPillR {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 60%, transparent);
+}
+.promptClip:hover .gripPillBright {
+  background: color-mix(in srgb, var(--dsw-alias-label-primary) 80%, transparent);
+}
+
+/* Inline prompt editor (DSH Input atom: className lands on the wrap). */
+.clipEditor {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 24px;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  padding: 0 6px;
+  border: none;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 60%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dsw-alias-brand-primary) 50%, transparent);
+  pointer-events: auto;
+}
+.clipEditor input {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--dsw-alias-label-primary);
+}
+.clipEditor input::placeholder {
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Clip body: preview strip vs plain text. */
+.previewWrap {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  overflow: hidden;
+  pointer-events: none;
+}
+.previewVideo {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+.scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, color-mix(in srgb, var(--dsw-alias-bg-base) 85%, transparent), color-mix(in srgb, var(--dsw-alias-bg-base) 45%, transparent) 50%, color-mix(in srgb, var(--dsw-alias-bg-base) 10%, transparent));
+}
+.clipTextCol {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 0 12px 6px;
+}
+.clipTextStack {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 0 12px;
+  pointer-events: none;
+}
+.clipTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+  font-weight: 500;
+}
+.clipEmpty {
+  font-style: italic;
+  color: var(--dsw-alias-label-tertiary);
+}
+.clipDur {
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* Per-call badges. */
+.knobDot {
+  position: absolute;
+  right: 6px;
+  top: 4px;
+  z-index: 20;
+  height: 6px;
+  width: 6px;
+  border-radius: 9999px;
+  background: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 6px color-mix(in srgb, var(--dsw-alias-brand-primary) 80%, transparent);
+  pointer-events: none;
+}
+.refAudioBadge {
+  position: absolute;
+  right: 4px;
+  top: 12px;
+  z-index: 20;
+  width: 10px;
+  height: 10px;
+  color: var(--dsw-alias-state-business-primary);
+  pointer-events: none;
+}
+.refBadge {
+  position: absolute;
+  right: 2px;
+  top: 22px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  pointer-events: none;
+}
+.refBadge svg {
+  width: 8px;
+  height: 8px;
+  color: var(--dsw-alias-state-success-primary);
+}
+.refCount {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 8px;
+  line-height: 1;
+  color: var(--dsw-alias-state-success-primary);
+}
+
+/* Hover delete (DSH Button, ghost): revealed by clip hover. */
+.promptDelete {
+  position: absolute;
+  right: 4px;
+  top: 4px;
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: var(--dsw-alias-state-error-primary);
+  opacity: 0;
+  cursor: pointer;
+}
+.promptDelete:hover {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary));
+}
+.promptClip:hover .promptDelete {
+  opacity: 1;
+}
+.promptDelete svg {
+  width: 8px;
+  height: 8px;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* ── Beats lane ────────────────────────────────────────────────────── */
+.beatsLane {
+  position: relative;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.beatsAdd {
+  cursor: crosshair;
+}
+.beatsEmpty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+.hintLine {
+  font-size: 10px;
+  color: var(--dsw-alias-label-tertiary);
+}
+.beatClip {
+  position: absolute;
+  bottom: 4px;
+  top: 4px;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--dsw-alias-border-l2);
+  cursor: pointer;
+}
+.beatClip:hover {
+  border-color: var(--dsw-alias-border-l4);
+}
+.beatSelected {
+  z-index: 30;
+  border-color: var(--dsw-alias-brand-primary);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+}
+.beatSelected:hover {
+  border-color: var(--dsw-alias-brand-primary);
+}
+.beatLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 1.25;
+  color: var(--dsw-alias-label-secondary);
+  pointer-events: none;
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.beatEmpty {
+  font-style: italic;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ── Audio lanes ───────────────────────────────────────────────────── */
+.audioLane {
+  position: relative;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.audioClip {
+  position: absolute;
+  bottom: 2px;
+  top: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 40%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);
+  cursor: grab;
+  touch-action: none;
+}
+.audioClip:active {
+  cursor: grabbing;
+}
+
+/* ── (2026-09-22, the D-M-E card law) audio clips as SMALL CALL CARDS
+   — the operator: "smaller versions of how cards look". Opt-in via the
+   bar's audioClipCards prop; the block look above stays the default
+   (byte-identical for every existing tenant). The accent gradient +
+   left edge ride inline styles from the layer's accent. */
+.audioCard {
+  top: 3px;
+  bottom: 3px;
+  border-radius: 6px;
+}
+.audioCardIcon {
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  pointer-events: none;
+}
+.audioCardIcon svg {
+  width: 13px;
+  height: 13px;
+}
+.audioCard .audioClipLabel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  left: 23px;
+  right: 4px;
+  font-size: 10px;
+}
+.audioCard .audioTime {
+  margin-left: 0;
+}
+.gainFill {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);
+  pointer-events: none;
+}
+.audioClipLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  font-size: 9px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-primary));
+  pointer-events: none;
+}
+.audioName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+}
+.audioTime {
+  margin-left: 4px;
+  flex: none;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 50%, var(--dsw-alias-label-tertiary));
+}
+.audioClipDelete {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: none;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 0 0 0 4px;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 40%, transparent);
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.audioClipDelete:hover {
+  background: var(--dsw-alias-state-error-primary);
+  color: var(--dsw-alias-label-primary);
+}
+.audioClip:hover .audioClipDelete {
+  display: flex;
+}
+.audioClipDelete svg {
+  width: 8px;
+  height: 8px;
+}
+.audioSlice {
+  position: absolute;
+  bottom: 2px;
+  top: 2px;
+  overflow: hidden;
+  border-radius: 2px;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-state-business-primary) 25%, transparent);
+  background: color-mix(in srgb, var(--dsw-alias-state-business-primary) 15%, transparent);
+}
+.sliceLabel {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 9px;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in srgb, var(--dsw-alias-state-business-primary) 70%, var(--dsw-alias-label-secondary));
+  pointer-events: none;
+}
+.audioDrop {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  top: 2px;
+  bottom: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  border: 1px dashed color-mix(in srgb, var(--dsw-alias-state-business-primary) 20%, transparent);
+  pointer-events: none;
+}
+.dropHint {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 0 8px;
+  font-size: 9px;
+  color: var(--dsw-alias-label-tertiary);
+}
+
+/* ── Keyframe lanes ────────────────────────────────────────────────── */
+.kfLane {
+  position: relative;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+.kfLane:last-child {
+  border-bottom: 0;
+}
+.laneHint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+  font-size: 10px;
+  color: var(--dsw-alias-label-tertiary);
+  pointer-events: none;
+}
+.kfWrap {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+}
+.kfBtn {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  display: flex;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%);
+  cursor: grab;
+}
+.kfBtn:active {
+  transform: translate(-50%, 0);
+  cursor: grabbing;
+}
+.kfDiamond {
+  display: block;
+  height: 10px;
+  width: 10px;
+  transform: rotate(45deg);
+  border: 1px solid;
+  box-shadow: 0 0 0 1px var(--dsw-alias-border-l4);
+}
+.kfMoving {
+  transform: rotate(45deg) scale(1.25);
+}
+.kfDelete {
+  position: absolute;
+  left: 6px;
+  top: 0;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: none;
+  border-radius: 9999px;
+  background: var(--dsw-alias-state-error-primary);
+  opacity: 0;
+  cursor: pointer;
+}
+.kfDelete:hover {
+  background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 85%, var(--dsw-alias-label-primary));
+}
+.kfWrap:hover .kfDelete {
+  opacity: 1;
+}
+.kfDelete svg {
+  width: 8px;
+  height: 8px;
+  color: var(--dsw-alias-label-primary);
+}
+
+/* ── Playhead ──────────────────────────────────────────────────────── */
+.playhead {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.playheadCap {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 8px;
+  width: 8px;
+  transform: translateX(-50%);
+  border-radius: 9999px;
+  border: 1px solid var(--dsw-alias-border-l4);
+}
+
+/* ── Viser-timeline zoom cluster (DSH Buttons, ghost) ──────────────── */
+.miniBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+}
+.miniBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent);
+}
+.miniFitBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  padding: 0 6px;
+  flex: none;
+  border: 1px solid color-mix(in srgb, var(--dsw-alias-brand-primary) 60%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 15%, transparent);
+  color: var(--dsw-alias-brand-primary);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.miniFitBtn:hover {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 25%, transparent);
+}
+
+/* ── TimelineScrubBar (the form card's optional bottom seam) ─────── */
+.scrubBar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.scrubToggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex: none;
+  font-size: 11px;
+  line-height: 1;
+  padding: 4px 2px;
+}
+.scrubTrack {
+  cursor: pointer;
+  flex: 1 1 0%;
+  height: 18px;
+  min-width: 0;
+  position: relative;
+  touch-action: none;
+}
+.scrubFill {
+  height: 4px;
+  top: 7px;
+  position: absolute;
+  left: 0;
+  background: var(--dsw-alias-interactive-bg-active);
+  border-radius: 2px;
+}
+.scrubHead {
+  position: absolute;
+  top: 4px;
+  width: 2px;
+  height: 10px;
+  margin-left: -1px;
+  background: var(--dsw-alias-label-primary);
+  border-radius: 1px;
+}
+.scrubReadout {
+  color: var(--dsw-alias-label-secondary);
+  flex: none;
+  font-size: 11px;
+  white-space: nowrap;
+}

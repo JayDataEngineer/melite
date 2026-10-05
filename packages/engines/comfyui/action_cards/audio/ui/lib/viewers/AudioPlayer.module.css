@@ -1,0 +1,60 @@
+/* AudioPlayer — WaveSurfer transport chrome. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trackPanel {
+  width: 100%;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 8px;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+
+.waveMount {
+  width: 100%;
+  cursor: pointer;
+}
+
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.playBtn {
+  display: flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background-color 0.15s ease;
+}
+
+.playBtn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.playIcon {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.playIconOffset {
+  margin-left: 2px;
+}
+
+.timeLabel {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  font-family: ui-monospace, monospace;
+  color: rgba(255, 255, 255, 0.6);
+}

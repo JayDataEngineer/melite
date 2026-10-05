@@ -1,0 +1,31 @@
+/* PoseViewer3D — mesh loading / error states (the Canvas scene is
+   three.js, exempt). */
+
+.loadingBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: var(--dsw-alias-bg-base);
+}
+
+.loadingIcon {
+  width: 32px;
+  height: 32px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 30%, transparent);
+}
+
+.loadingLabel {
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+}
+
+.errorBox {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--dsw-alias-bg-base);
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 60%, transparent);
+  font-size: 12px;
+}

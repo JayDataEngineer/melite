@@ -1,0 +1,283 @@
+/* BodyShapePanel — the parametric identity slider surface. */
+
+.panelRoot {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+/* ── SliderRow ── */
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+.sliderLabel {
+  width: 128px;
+  flex-shrink: 0;
+  font-size: 10px;
+  line-height: 1.25;
+  white-space: normal;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 55%, transparent);
+}
+
+.sliderField {
+  flex: 1;
+  min-width: 0;
+}
+
+.miniReset {
+  height: 20px;
+  width: 20px;
+  flex-shrink: 0;
+  border: 0;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+}
+
+.miniReset:hover {
+  color: var(--dsw-alias-bg-module);
+}
+
+.miniResetIcon {
+  width: 10px;
+  height: 10px;
+}
+
+/* ── RegionGroupList ── */
+
+.regionWrap {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.regionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+}
+
+.regionTrigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-left: 4px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 45%, transparent);
+}
+
+.regionTrigger:hover {
+  color: var(--dsw-alias-bg-module);
+}
+
+.regionTriggerFace {
+  color: color-mix(in srgb, var(--dsw-alias-state-warn-primary) 70%, transparent);
+}
+
+.triggerChevron {
+  width: 10px;
+  height: 10px;
+  transition: transform 0.15s ease;
+}
+
+.triggerChevronClosed {
+  transform: rotate(-90deg);
+}
+
+.regionCount {
+  margin-left: auto;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 35%, transparent);
+}
+
+.regionIndent {
+  padding-left: 12px;
+  border-left: 1px solid var(--dsw-alias-border-l1);
+  margin-left: 6px;
+}
+
+/* ── SOMA hint ── */
+
+.somaHint {
+  padding-top: 32px;
+  padding-bottom: 32px;
+  text-align: center;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 45%, transparent);
+}
+
+.somaHintStrong {
+  color: var(--dsw-alias-bg-module);
+}
+
+/* ── Loading skeleton ── */
+
+@keyframes panelPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.loadingRoot {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 8px 4px;
+  animation: panelPulse 2s ease-in-out infinite;
+}
+
+.loadingBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+}
+
+.loadingChip {
+  height: 28px;
+  border-radius: 6px;
+  background: var(--dsw-alias-border-l1);
+}
+
+.loadingSpacer {
+  flex: 1;
+}
+
+.loadingSpin {
+  width: 16px;
+  height: 16px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 35%, transparent);
+}
+
+.loadingTabs {
+  display: flex;
+  gap: 4px;
+}
+
+.loadingTab {
+  height: 32px;
+  border-radius: 6px;
+  background: var(--dsw-alias-border-l1);
+}
+
+.loadingRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.labelGhost {
+  height: 12px;
+  border-radius: 4px;
+  background: var(--dsw-alias-border-l1);
+}
+
+.trackGhost {
+  flex: 1;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--dsw-alias-border-l1);
+}
+
+.valueGhost {
+  height: 12px;
+  width: 32px;
+  border-radius: 4px;
+  background: var(--dsw-alias-border-l1);
+}
+
+/* ── Action bar ── */
+
+.actionBar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--dsw-alias-border-l1);
+  flex-shrink: 0;
+}
+
+.tipAnchor {
+  display: contents;
+}
+
+.actionBtn {
+  height: 28px;
+  font-size: 10px;
+  gap: 4px;
+}
+
+.actionIcon {
+  width: 12px;
+  height: 12px;
+}
+
+.actionCount {
+  margin-left: auto;
+  font-size: 9px;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+}
+
+/* ── Tabs ── */
+
+.tabsRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tabContent {
+  min-height: 0;
+}
+
+.scrollPad {
+  padding-right: 8px;
+}
+
+.groupHead {
+  padding: 4px;
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+}
+
+.groupList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.phenotypeList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.styleRow {
+  padding-top: 4px;
+  padding-bottom: 4px;
+}
+
+.styleDesc {
+  padding-left: 128px;
+  font-size: 9px;
+  line-height: 1.25;
+  color: color-mix(in srgb, var(--dsw-alias-bg-module) 40%, transparent);
+  padding-bottom: 4px;
+}
