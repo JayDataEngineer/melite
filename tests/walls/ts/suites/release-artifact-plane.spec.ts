@@ -24,7 +24,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   classifyEntry: (inner: unknown, tarName: string) => void
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
   stripPackedTarballs: (files: string[]) => void
-  overlayNameOffender: (packageName: string, overlay: string, packedNames: Set<string>) => string | null
+  overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -189,20 +189,30 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
   }
 
 
-  it('G6: an overlay row naming a package outside the packed set is an offender', () => {
+  it('G6: overlay rows must resolve against the packed set — package, or declared subpath (doors seam)', () => {
     // the infer-estate twin class: provisioner's overlay once mounted
     // @melite-plugin/melite-estate, a pre-rescope name absent from the
     // set — cold boots died on the import. The mint refuses the pack.
-    const packed = new Set(['@melite-plugin/dsh-estate', '@melite/harness-tools'])
+    // The doors seam mounts @melite/harness-tools/doors — valid only
+    // because the packed package declares ./doors in exports.
+    const packed = new Map<string, Set<string>>([
+      ['@melite-plugin/dsh-estate', new Set([''])],
+      ['@melite/harness-tools', new Set(['', 'package.json', 'doors'])],
+    ])
     const clean = [
       '- insert:',
       "    - id: melite-estate",
       "      name: '@melite-plugin/dsh-estate'",
+      "    - id: melite-tools-doors",
+      "      name: '@melite/harness-tools/doors'",
     ].join('\n')
     expect(gates.overlayNameOffender('@melite/harness-provisioner', clean, packed)).toBeNull()
-    const dead = clean.replace('dsh-estate', 'melite-estate')
+    const dead = clean.replace(/dsh-estate/g, 'melite-estate')
     expect(gates.overlayNameOffender('@melite/harness-provisioner', dead, packed))
       .toBe('@melite/harness-provisioner row melite-estate names "@melite-plugin/melite-estate"')
+    const ghost = clean.replace('@melite/harness-tools/doors', '@melite/harness-tools/nope')
+    expect(gates.overlayNameOffender('@melite/harness-provisioner', ghost, packed))
+      .toBe('@melite/harness-provisioner row melite-tools-doors names "@melite/harness-tools/nope"')
   })
 
   it('stays synchronized past regex literals holding quotes in classes (square.js law)', () => {

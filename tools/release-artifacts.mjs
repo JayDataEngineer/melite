@@ -123,18 +123,32 @@ export function validateTarballPayload (inner, listing, tarName) {
 
 /**
  * G6 — pure half of the overlay name law: scan one overlay's plugin
- * rows and return the first offender naming a package outside the
- * packed set (null when clean). Mint's driver extracts the packed
- * overlay and fails on any offender.
+ * rows and return the first offender whose name cannot resolve for a
+ * cold consumer (null when clean). Valid is an in-set package name,
+ * or an in-set package's declared exports subpath (the doors seam
+ * mounts @melite/harness-tools/doors, a real ./doors row). Anything
+ * else — a pre-rescope name, a typo, a dropped package, a bare
+ * subpath that no packed package declares — refuses the mint.
  * @param {string} packageName the overlay's owning package, for the message
  * @param {string} overlay the overlay YAML text as packed
- * @param {Set<string>} packedNames every name shipping in this set
+ * @param {Map<string, Set<string>>} packed name -> valid mount suffixes
+ *   ('' for the package root, plus each exports key without './')
  * @returns {string | null} "row <id> names \"<name>\"" or null
  */
-export function overlayNameOffender (packageName, overlay, packedNames) {
+export function overlayNameOffender (packageName, overlay, packed) {
   const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s']+)/gm)]
   for (const m of rows) {
-    if (!packedNames.has(m[2])) return `${packageName} row ${m[1]} names "${m[2]}"`
+    // a scoped name's FIRST '/' belongs to the scope; the subpath
+    // split lands at the SECOND ('@scope/pkg' is whole, '@scope/pkg/sub'
+    // splits into '@scope/pkg' + 'sub'); unscoped names split at the first
+    const parts = m[2].split('/')
+    const take = m[2].startsWith('@') ? 2 : 1
+    const head = parts.slice(0, take).join('/')
+    const tail = parts.slice(take).join('/')
+    const suffixes = packed.get(head)
+    if (!suffixes || !suffixes.has(tail)) {
+      return `${packageName} row ${m[1]} names "${m[2]}"`
+    }
   }
   return null
 }
@@ -238,13 +252,16 @@ async function mint (opts) {
     // naming anything else (a pre-rescope name, a typo, a dropped
     // package) cannot resolve for a cold consumer and kills the boot —
     // the infer-estate twin's whole failure class, caught at mint time.
-    const packedNames = new Set([...innerFiles.values()].map((x) => x.inner.name))
+    const packed = new Map([...innerFiles.values()].map((x) => [
+      x.inner.name,
+      new Set(['', ...Object.keys(x.inner.exports ?? {}).map((k) => k.replace(/^\.\//, ''))]),
+    ]))
     for (const { f, inner } of innerFiles.values()) {
       const patch = inner.dsh?.bundle?.patch
       if (typeof patch !== 'string') continue
       const overlay = run('bash', ['-c', `tar -xzOf ${f} package/${patch.replace(/^\.\//, '')}`])
-      const offender = overlayNameOffender(inner.name, overlay, packedNames)
-      if (offender) fail(`overlay gate: ${offender} — not in the packed set`)
+      const offender = overlayNameOffender(inner.name, overlay, packed)
+      if (offender) fail(`overlay gate: ${offender} — cannot resolve in the packed set`)
     }
     console.log('overlay gate: every packed overlay row names an in-set package')
     console.log(`entry gate: ${files.length} tarballs carry every exports target; payload plane clean`)

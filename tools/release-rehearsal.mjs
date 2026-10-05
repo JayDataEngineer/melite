@@ -163,10 +163,12 @@ rmSync(stripScratch, { recursive: true, force: true })
 check('strip law holds in the packed bytes (the mint tool itself)', stripHits === 0,
   stripHits === 0 ? `${Object.keys(inners).length} seats scanned` : stripOffenders.slice(0, 4).join(' '))
 
-// overlay law: every packed overlay's plugin rows name packages that
-// exist in this set (a `name:` outside the set cannot resolve for a
-// cold consumer — the infer-estate twin's whole failure class)
-const nameSet = new Set(Object.keys(inners))
+// overlay law (G6): every packed overlay's plugin row names its own
+// package, or an in-set package's declared exports subpath (the doors
+// seam mounts @melite/harness-tools/doors). Anything else cannot
+// resolve for a cold consumer — the infer-estate twin's class.
+const packedMap = new Map(Object.entries(inners).map(([name, inner]) => [name,
+  new Set(['', ...Object.keys(inner.exports ?? {}).map((k) => k.replace(/^\.\//, ''))])]))
 const overlayOffenders = []
 const bundleSeats = []
 for (const [name, inner] of Object.entries(inners)) {
@@ -174,9 +176,13 @@ for (const [name, inner] of Object.entries(inners)) {
   bundleSeats.push(name)
   const file = pkgs.find((p) => overrides[name].endsWith(p.file)).file
   const overlay = run(['bash', '-c', `tar -xzOf "${join(distDir, file)}" package/cordis.patch.yml`]).out
-  const names = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s'']+)/gm)]
-  for (const m of names) {
-    if (!nameSet.has(m[2])) overlayOffenders.push(`${name}: row ${m[1]} -> ${m[2]}`)
+  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s'']+)/gm)]
+  for (const m of rows) {
+    const parts = m[2].split('/')
+    const take = m[2].startsWith('@') ? 2 : 1
+    const head = parts.slice(0, take).join('/')
+    const tail = parts.slice(take).join('/')
+    if (!packedMap.get(head)?.has(tail)) overlayOffenders.push(`${name}: row ${m[1]} -> ${m[2]}`)
   }
 }
 check('every overlay row names an in-set package', overlayOffenders.length === 0,
