@@ -72,8 +72,10 @@ export async function load (url, context, nextLoad) {
       const src = importerSrcs.join('\n')
       const spec = esc(specUrl)
       // both import AND export-reexport clauses bind the module's
-      // names (chrome.js: export { readAsDataURL } from '@melite/...')
-      for (const m of src.matchAll(new RegExp(`(?:import|export)\\s*\\{([^}]+)\\}\\s*from\\s*['"]${spec}['"]`, 'g'))) {
+      // names (chrome.js: export { readAsDataURL } from '@melite/...').
+      // The MIXED clause `import React, { useEffect } from 'react'`
+      // binds a default AND named — the optional `<name>,` prefix.
+      for (const m of src.matchAll(new RegExp(`(?:import|export)\\s+(?:\\w+\\s*,\\s*)?\\{([^}]+)\\}\\s*from\\s*['"]${spec}['"]`, 'g'))) {
         for (let part of m[1].split(',')) {
           part = part.trim()
           if (!part) continue
@@ -83,7 +85,10 @@ export async function load (url, context, nextLoad) {
           named.add(part.split(/\s+as\s+/)[0].trim())
         }
       }
+      // default import: bare `import x from`, or the mixed clause's
+      // `import x, { y }` prefix
       hasDefault = new RegExp(`import\\s+[^{*\\s][^\\s]*\\s*from\\s*['"]${spec}['"]`).test(src)
+        || new RegExp(`import\\s+\\w+\\s*,\\s*\\{[^}]*\\}\\s*from\\s*['"]${spec}['"]`).test(src)
       // NAMESPACE imports: `import * as yaml from 'js-yaml'` binds a
       // REAL namespace whose members the stub cannot know — ESM
       // namespaces are fixed at link. Scan the importer's own
