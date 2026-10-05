@@ -176,7 +176,7 @@ for (const [name, inner] of Object.entries(inners)) {
   bundleSeats.push(name)
   const file = pkgs.find((p) => overrides[name].endsWith(p.file)).file
   const overlay = run(['bash', '-c', `tar -xzOf "${join(distDir, file)}" package/cordis.patch.yml`]).out
-  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s'']+)/gm)]
+  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*['\"]?([^'\"\s]+)/gm)]
   for (const m of rows) {
     const parts = m[2].split('/')
     const take = m[2].startsWith('@') ? 2 : 1

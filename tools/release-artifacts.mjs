@@ -136,7 +136,7 @@ export function validateTarballPayload (inner, listing, tarName) {
  * @returns {string | null} "row <id> names \"<name>\"" or null
  */
 export function overlayNameOffender (packageName, overlay, packed) {
-  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s']+)/gm)]
+  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*['\"]?([^'\"\s]+)/gm)]
   for (const m of rows) {
     // a scoped name's FIRST '/' belongs to the scope; the subpath
     // split lands at the SECOND ('@scope/pkg' is whole, '@scope/pkg/sub'
