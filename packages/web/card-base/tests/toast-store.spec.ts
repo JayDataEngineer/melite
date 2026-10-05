@@ -13,10 +13,22 @@
 //     Toast atom ships no action chrome, exactly like the kit store.
 //  4. info toasts voice console.info and dismiss at 5s like success.
 import { afterEach, expect, test, vi } from 'vitest'
+import { createElement as h } from 'react'
+import { act, cleanup, render } from '@testing-library/react'
 
-import { getSnapshot, removeToast, subscribe, useToastStore } from '../src/toastStore.ts'
+import {
+  acquireViewport,
+  getSnapshot,
+  mintViewportId,
+  releaseViewport,
+  removeToast,
+  subscribe,
+  useToastStore,
+  useViewportIds,
+} from '../src/toastStore.ts'
 
 afterEach(() => {
+  cleanup()
   useToastStore.setState({ toasts: [] })
   vi.restoreAllMocks()
   vi.useRealTimers()
@@ -112,5 +124,51 @@ test('info toasts voice console.info and dismiss at 5s', () => {
     expect(useToastStore.getState().toasts).toEqual([])
   } finally {
     vi.useRealTimers()
+  }
+})
+
+// ── THE MOUNT-CLAIM REGISTRY ──
+// The live viewport ids, read through the one hook every mounted
+// viewport subscribes to. Ids are minted process-unique and the
+// registry is module state, so each arm releases exactly what it
+// acquired.
+
+/** Render the live id set as text so the claim registry is
+ *  observable without reaching past the hook. */
+function liveIds(): () => string {
+  const probe = render(h(function Probe() { return h('span', null, useViewportIds().join(',')) }))
+  return () => probe.container.textContent ?? ''
+}
+
+test('an acquired claim joins the live set and its release leaves it', () => {
+  const read = liveIds()
+  const id = mintViewportId()
+  try {
+    act(() => { acquireViewport(id) })
+    expect(read()).toBe(String(id))
+    act(() => { releaseViewport(id) })
+    expect(read()).toBe('')
+  } finally {
+    act(() => { releaseViewport(id) })
+  }
+})
+
+test('THE NEVER-ACQUIRED RELEASE IS A NO-OP — it cannot drop a live claim', () => {
+  const read = liveIds()
+  const live = mintViewportId()
+  const never = mintViewportId()
+  try {
+    act(() => { acquireViewport(live) })
+    // The stranger id was minted but never acquired. The unguarded
+    // splice this guard replaces would read indexOf's -1 and drop the
+    // LAST live claim — the estate's own viewport would go dark.
+    act(() => { releaseViewport(never) })
+    expect(read()).toBe(String(live))
+    // and the live claim still releases through the same door
+    act(() => { releaseViewport(live) })
+    expect(read()).toBe('')
+  } finally {
+    act(() => { releaseViewport(never) })
+    act(() => { releaseViewport(live) })
   }
 })

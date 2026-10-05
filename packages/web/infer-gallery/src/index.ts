@@ -206,13 +206,10 @@ export function apply(ctx: Context, config: Config = {}): void {
       : [seat.stateRoot]
     // THE SAME ORDER THE MEDIA LIST TAKES (crossRootOrder — the
     // audit's H4): own tree first, then the manifest roots, deduped
-    const trees: string[] = crossRootOrder(
+    return crossRootOrder(
       flowDir,
       roots.map((r: string) => `${r}/output`),
     )
-    for (const tree of []) {
-    }
-    return trees
   }
   /** The first tree holding the target wins (the grammar was already
    *  proven by isRunRelative; containment re-proves per tree — the

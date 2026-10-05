@@ -200,7 +200,10 @@ export function H3TimelineStudio(props: StageViewOwnerProps): ReturnType<typeof 
   return h('div', { 'data-testid': 'h3-studio-tenant', style: { height: '100%', minHeight: 0 } },
     h(VideoTimelineStudio, {
       stage,
-      running: isLiveRunStatus(props.runStatus ?? ''),
+      // StageViewOwnerProps.runStatus is REQUIRED and typed `string`
+      // (stageView.ts:37 — the owner's own '' for never-run), so the
+      // word rides as given (the re-audit, 2026-10-16).
+      running: isLiveRunStatus(props.runStatus),
       onSave: props.onPatch,
       upstreams: projectUpstreamStages(props),
     }),

@@ -18,8 +18,12 @@
  *  path second (a directly-served file has no query). */
 export function artifactNameOf(url: string): string {
   const fromQuery = artifactPathOfUrl(url)
-  const path = fromQuery ?? url.split('?')[0] ?? ''
-  return path.split('/').pop() ?? path
+  // String.prototype.split always yields at least one part — the empty
+  // string splits to [''] — so the pre-'?' part is defined, and
+  // lastIndexOf answers -1 for a path holding no separator, leaving
+  // slice(0) as the whole string.
+  const path = fromQuery ?? url.split('?')[0]
+  return path.slice(path.lastIndexOf('/') + 1)
 }
 
 /** The run-relative artifact path behind one same-origin artifact

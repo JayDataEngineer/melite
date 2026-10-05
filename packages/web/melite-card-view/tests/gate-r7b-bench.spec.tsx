@@ -160,6 +160,33 @@ describe("the clear control — the demanded door, two-step", () => {
     // and the grid empties from the reloaded truth
     await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(0) });
   });
+
+  // THE CLEAR'S REFUSAL VOICE (bench-view.tsx:105) — the demanded
+  // door's catch. A clear that never lands must SAY so: the bench
+  // still holds its stages, so a silent button would read as a
+  // success that lost work.
+  test("a refused clear voices 'clear refused' and leaves the bench standing", async () => {
+    mountView(three(), { throws: [{ method: "bench/clear", message: "bench is locked" }] });
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm clear/i }));
+
+    expect(await screen.findByText("clear refused — bench is locked")).toBeTruthy();
+    // the truth is unchanged — nothing was cleared behind the refusal
+    expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3);
+    // the control disarms: a second press is a fresh two-step, never
+    // a silent retry of the refused write
+    expect(document.querySelector('[data-bench-clear]')?.getAttribute("data-bench-clear")).toBe("idle");
+  });
+
+  test("a FOREIGN clear throw voices the same face through String(e)", async () => {
+    mountView(three(), { throws: [{ method: "bench/clear", value: "kablam" }] });
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    fireEvent.click(screen.getByRole("button", { name: /clear/i }));
+    fireEvent.click(screen.getByRole("button", { name: /confirm clear/i }));
+
+    expect(await screen.findByText("clear refused — kablam")).toBeTruthy();
+  });
 });
 
 describe("the reload's foreign voice — a down wire still names the face", () => {

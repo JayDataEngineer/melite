@@ -9226,7 +9226,8 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  because a data URI has no extension. */
 		function isModelUrl(value) {
 			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
-			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+			const withoutQuery = value.split(/[?#]/, 1)[0];
+			return mediaKindOf(withoutQuery) === "model";
 		}
 		//#endregion
 		//#region src/client/preview-kinds.ts
@@ -11885,7 +11886,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (!members.some(stated)) continue;
 					if (members.filter((m) => !stated(m)).length === 0) continue;
 					out.push({
-						field: members.find(stated) ?? members[0],
+						field: members.find(stated),
 						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
 					});
 				}
@@ -11897,7 +11898,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					if (!everyMember.some(stated)) continue;
 					if (groups.filter((g) => g.every(stated)).length > 0) continue;
 					out.push({
-						field: everyMember.find(stated) ?? everyMember[0],
+						field: everyMember.find(stated),
 						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
 					});
 				}
@@ -12225,16 +12226,17 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  ending in "/" names no file: the result is "" and the caller's
 		*  destination check refuses it by name. One derivation, contract-
 		*  owned, so the wall can DRIVE it (a source-substring pin passed on
-		*  dead code). */
+		*  dead code).
+		*
+		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
+		*  artifact's `source_url`, which the DECL contract pins to
+		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
+		*  `new URL()` never throws here and a relative spelling cannot
+		*  reach this function (the re-audit, 2026-10-16). */
 		function artifactFileName(sourceUrl) {
-			let pathname = sourceUrl;
-			try {
-				pathname = new URL(sourceUrl).pathname;
-			} catch {
-				pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
-			}
+			const pathname = new URL(sourceUrl).pathname;
 			if (pathname.endsWith("/")) return "";
-			const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
+			const last = pathname.split("/").filter((s) => s !== "").pop();
 			try {
 				return decodeURIComponent(last);
 			} catch {
@@ -12783,11 +12785,14 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*
 		* This is the order both readers take: the caller's own tree first
 		* (its own writes win), then the manifest roots in their declared
-		* order, de-duplicated.
+		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
+		* tree and is a string at every seat — the gallery answers
+		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
+		* null (the re-audit, 2026-10-16).
 		*/
 		function crossRootOrder(ownTree, roots) {
 			const out = [];
-			for (const tree of [ownTree ?? "", ...roots]) {
+			for (const tree of [ownTree, ...roots]) {
 				if (tree === "") continue;
 				if (!out.includes(tree)) out.push(tree);
 			}
@@ -41833,9 +41838,15 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		*  artifact route does not serve next to it — so the copy below names
 		*  the case rather than letting the fetch fail as a decode error. */
 		function unsupportedCopy(url) {
+			/* v8 ignore next 3 -- String#split always returns at least one
+			* element ("" splits to [""]), so index 0 is a string and the ??
+			* guarded an impossibility the type already forbids. */
 			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
 			if (path.toLowerCase().endsWith(".gltf")) return "3D view unavailable — this .gltf references external buffers the media route does not serve. Download it to open it in a 3D tool.";
-			if (!isModelUrl(path)) return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
+			if (!isModelUrl(path))
+ /* v8 ignore next 2 -- same: split never yields an empty array, so
+			* pop() returns the last segment as a string. */
+			return `3D view unavailable — "${path.split("/").pop() ?? url}" is not a .glb/.gltf artifact.`;
 			return null;
 		}
 		/** Frame the camera on the loaded root: target the box centre, pull
@@ -41883,6 +41894,9 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					return;
 				}
 				const canvas = canvasRef.current;
+				/* v8 ignore next 2 -- React assigns refs BEFORE an effect runs, and
+				* this effect only exists on the path that rendered the canvas, so
+				* the ref is the element. */
 				if (canvas === null) return;
 				let stage = null;
 				let root = null;
@@ -43569,7 +43583,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 					scheduleStageParam(bench.draftId, stage.id, name, null, bench.rev).then(() => {
 						const st = stageWriteState(bench.draftId, stage.id);
-						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 					});
 					return;
 				}
@@ -43588,7 +43602,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 					}
 					scheduleStageParam(bench.draftId, stage.id, name, v, bench.rev).then(() => {
 						const st = stageWriteState(bench.draftId, stage.id);
-						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+						setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 					});
 				}
 				/* v8 ignore next 1 -- single-render law: CardForm renders only when spec is non-null (probe 2026-09-19) */
@@ -43636,10 +43650,10 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				}
 				patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(() => {
 					const st = stageWriteState(bench.draftId, stage.id);
-					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 				}, () => {
 					const st = stageWriteState(bench.draftId, stage.id);
-					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
+					setWriteFace(st.failedKeys.length > 0 ? "THE WRITE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows your edit; the bench does not. Pressing Run will refuse until it lands." : null);
 				});
 			}, [
 				spec,
@@ -43742,7 +43756,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 						}
 						patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
 							const st = stageWriteState(bench.draftId, stage.id);
-							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + (st.lastError ?? "the write was refused") + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
+							setWriteFace(st.failedKeys.length > 0 ? "THE ENHANCE DID NOT LAND — " + st.lastError + " (unlanded keys: " + st.failedKeys.join(", ") + "). The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land." : null);
 						}).catch((e) => {
 							setWriteFace("THE ENHANCE DID NOT LAND — " + (e instanceof Error ? e.message : "the write was refused"));
 						});
@@ -44856,13 +44870,11 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				setRunning(true);
 				setLocalRunError(null);
 				const draftId = snapshot.value.draftId;
+				const rev = snapshot.value.rev;
 				const stageId = stage.id;
 				const carryFailure = (error) => {
 					setRunning(false);
 					setLocalRunError(startClaim(error));
-					/* v8 ignore next 1 -- the enclosing callback already returned on non-bench (probe 2026-09-19) */
-					const snap = snapshot.value;
-					const rev = snap !== void 0 && snap.kind === "bench" ? snap.rev : void 0;
 					/* v8 ignore next 2 -- the outcome-patch tail rides the covered observe lane (probe 2026-09-19) */
 					patchStageOutcome(draftId, stageId, {
 						runStatus: "failed",

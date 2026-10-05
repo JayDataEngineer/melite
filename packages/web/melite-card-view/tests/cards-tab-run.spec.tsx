@@ -323,4 +323,52 @@ describe("the error face retires on an external success — an error is a claim,
       expect(screen.queryAllByText("bench/no-remove-today")).toEqual([]);
     });
   });
+  // The A STAGE ADDED BETWEEN FRAMES arm: `prev.get(id) ?? ''` is the
+  // stage the previous frame never saw — the bench is the server's
+  // document (the no-stale-tab law), so a stage can APPEAR already
+  // terminal. Its word has no prior reading, and an absent reading is
+  // not 'done' — so it retires the claim exactly like a transition.
+  test("a stage ADDED already-done retires the claim — no prior reading is not 'done'", async () => {
+    formCtl.formSpec = "ok";
+    const idle = { id: "s_0", card: "image-gen", engine: "comfyui", params: {} };
+    const landed = {
+      id: "s_2", card: "image-gen", engine: "comfyui", params: {}, runStatus: "done",
+      result: { run_id: "r_ext", url: "/v1/runs/r_ext/media/out.png" },
+    };
+    let benchValue: CardsBenchValue = {
+      kind: "bench", draftId: "bench-p", rev: 1, log: [], stages: [idle],
+    } as unknown as CardsBenchValue;
+    stubDoors({
+      benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: [{ ...idle }] },
+      draftStages: [{ ...idle } as unknown as Record<string, unknown>],
+      draftBenchRev: 1,
+      refusals: [{ method: "runs/start", message: "card 'image-gen' refuses the state" }],
+    });
+    const props = {
+      useTabInfo: () => ({ tab: {
+        kind: "sidebar.right.pane.tab", contentId: undefined,
+        navigation: { address: "dsh-resource://cards/bench" },
+        actions: { openResource: () => {} },
+      } }),
+      useResource: (): { status: "live", value: CardsBenchValue } => ({ status: "live", value: benchValue }),
+    };
+    const view = render(h(CardsTab, props));
+    await openFirstTile();
+    fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
+    await waitFor(() => {
+      expect(screen.getAllByText(/refuses the state/).length).toBeGreaterThan(0);
+    });
+    // THE OTHER HAND adds a stage the estate had already settled —
+    // s_2 was never in the frame that set the baseline
+    benchValue = {
+      kind: "bench", draftId: "bench-p", rev: 2, log: [], stages: [idle, landed],
+    } as unknown as CardsBenchValue;
+    view.rerender(h(CardsTab, props));
+    await waitFor(() => {
+      expect(document.querySelector('[data-stage-id="s_2"]')?.getAttribute("data-stage-status")).toBe("done");
+    });
+    await waitFor(() => {
+      expect(screen.queryAllByText(/refuses the state/)).toEqual([]);
+    });
+  });
 });

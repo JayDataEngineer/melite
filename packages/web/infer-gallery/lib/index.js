@@ -110,9 +110,7 @@ function apply(ctx, config = {}) {
 		const seat = ctx.get("queue", false);
 		if (seat === void 0) return [flowDir];
 		const roots = seat.stateRoots !== void 0 && seat.stateRoots.length > 0 ? [...seat.stateRoots] : [seat.stateRoot];
-		const trees = crossRootOrder(flowDir, roots.map((r) => `${r}/output`));
-		for (const tree of []);
-		return trees;
+		return crossRootOrder(flowDir, roots.map((r) => `${r}/output`));
 	};
 	/** The first tree holding the target wins (the grammar was already
 	*  proven by isRunRelative; containment re-proves per tree — the

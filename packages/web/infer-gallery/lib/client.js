@@ -25630,7 +25630,8 @@ window.__ModuleLoader__.load({
 		*  because a data URI has no extension. */
 		function isModelUrl(value) {
 			if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true;
-			return mediaKindOf(value.split(/[?#]/, 1)[0] ?? value) === "model";
+			const withoutQuery = value.split(/[?#]/, 1)[0];
+			return mediaKindOf(withoutQuery) === "model";
 		}
 		//#endregion
 		//#region src/client/artifact-ops.ts
@@ -25652,8 +25653,8 @@ window.__ModuleLoader__.load({
 		*  read the ROUTE's last path segment). `?path=` first, the plain URL
 		*  path second (a directly-served file has no query). */
 		function artifactNameOf(url) {
-			const path = artifactPathOfUrl(url) ?? url.split("?")[0] ?? "";
-			return path.split("/").pop() ?? path;
+			const path = artifactPathOfUrl(url) ?? url.split("?")[0];
+			return path.slice(path.lastIndexOf("/") + 1);
 		}
 		/** The run-relative artifact path behind one same-origin artifact
 		*  URL (`/infer-gallery/artifact?path=run-<id>/<file>`) — null when
@@ -29676,7 +29677,7 @@ window.__ModuleLoader__.load({
 					if (!members.some(stated)) continue;
 					if (members.filter((m) => !stated(m)).length === 0) continue;
 					out.push({
-						field: members.find(stated) ?? members[0],
+						field: members.find(stated),
 						message: "fields " + quote(members) + " ride together on this lane (state all or none)" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state " + quote(members) + " together, or drop " + quote(members))
 					});
 				}
@@ -29688,7 +29689,7 @@ window.__ModuleLoader__.load({
 					if (!everyMember.some(stated)) continue;
 					if (groups.filter((g) => g.every(stated)).length > 0) continue;
 					out.push({
-						field: everyMember.find(stated) ?? everyMember[0],
+						field: everyMember.find(stated),
 						message: "this lane takes one of " + groups.map((g) => "(" + quote(g) + ")").join(" or ") + " — the stated combination completes none of them" + (row.cure !== void 0 && row.cure !== "" ? " — " + row.cure : " — state one complete source, or drop the stated half")
 					});
 				}
@@ -30016,16 +30017,17 @@ window.__ModuleLoader__.load({
 		*  ending in "/" names no file: the result is "" and the caller's
 		*  destination check refuses it by name. One derivation, contract-
 		*  owned, so the wall can DRIVE it (a source-substring pin passed on
-		*  dead code). */
+		*  dead code).
+		*
+		*  THE INPUT IS ABSOLUTE, ALWAYS: the sole caller hands it a cell
+		*  artifact's `source_url`, which the DECL contract pins to
+		*  `/^https?:\/\//` (models/families/contract.ts, CellArtifact), so
+		*  `new URL()` never throws here and a relative spelling cannot
+		*  reach this function (the re-audit, 2026-10-16). */
 		function artifactFileName(sourceUrl) {
-			let pathname = sourceUrl;
-			try {
-				pathname = new URL(sourceUrl).pathname;
-			} catch {
-				pathname = sourceUrl.split("#")[0]?.split("?")[0] ?? sourceUrl;
-			}
+			const pathname = new URL(sourceUrl).pathname;
 			if (pathname.endsWith("/")) return "";
-			const last = pathname.split("/").filter((s) => s !== "").pop() ?? "";
+			const last = pathname.split("/").filter((s) => s !== "").pop();
 			try {
 				return decodeURIComponent(last);
 			} catch {
@@ -30574,11 +30576,14 @@ window.__ModuleLoader__.load({
 		*
 		* This is the order both readers take: the caller's own tree first
 		* (its own writes win), then the manifest roots in their declared
-		* order, de-duplicated.
+		* order, de-duplicated. `ownTree` is the caller's own CONFIGURED
+		* tree and is a string at every seat — the gallery answers
+		* `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
+		* null (the re-audit, 2026-10-16).
 		*/
 		function crossRootOrder(ownTree, roots) {
 			const out = [];
-			for (const tree of [ownTree ?? "", ...roots]) {
+			for (const tree of [ownTree, ...roots]) {
 				if (tree === "") continue;
 				if (!out.includes(tree)) out.push(tree);
 			}

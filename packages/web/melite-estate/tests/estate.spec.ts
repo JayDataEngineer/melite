@@ -19,30 +19,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join, resolve } from 'node:path'
-// the real checkout's vendored blender server, as the defaults anchor
-// it (src/index.ts resolves the same way — file-anchored, not literal)
-const REPO_ROOT = resolve(import.meta.dirname, '..', '..', '..', '..')
-const BLENDER_SERVER = join(REPO_ROOT, 'vendor', 'comfyui_extensions', 'melite-blender-proxy-nodes', 'mcp_server.py')
+import { join, resolve } from 'node:path'
 import estateDefault, { apply, name } from '../src/index.ts'
-
-const mcpBridge = vi.hoisted(() => ({
-  mode: 'resolve' as 'undefined' | 'sync' | 'resolve' | 'reject',
-  reason: undefined as unknown,
-  calls: [] as Array<{ cfg: unknown }>,
-  tools: undefined as Record<string, unknown> | undefined,
-}))
-vi.mock('@deepseek-ai/dsh-mcp-client', () => ({
-  inject: ['tools'],
-  Config: {},
-  apply: (_ctx: unknown, cfg: unknown) => {
-    mcpBridge.calls.push({ cfg })
-    if (mcpBridge.mode === 'undefined') return undefined
-    if (mcpBridge.mode === 'sync') return 'sync-value'
-    if (mcpBridge.mode === 'reject') return Promise.reject(mcpBridge.reason)
-    return Promise.resolve('bridge-value')
-  },
-}))
 
 const craftLane = vi.hoisted(() => ({
   mode: 'false' as 'false' | 'true' | 'reject' | 'pending',
@@ -207,56 +185,16 @@ describe('dispatch — mount order is load order', () => {
     const queue = ctx.plugins.find((p) => p.name === 'estate-queue')
     expect(queue?.cfg).toEqual({ repoRoot: '/tmp/pin' })
     const blender = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
-    expect(blender?.cfg).toMatchObject({
-      transport: 'stdio',
-      serverName: 'blender',
-      failOnStartupError: false,
-    })
+    // No blender seat (operator ruling 2026-10-04, audit 008 M12):
+    // melite mounts no MCP client of its own — the bench is a DSH
+    // profile concern (dsh-provision presets: melite-foundry, game,
+    // mega-blender, mega-unity).
+    expect(blender).toBe(undefined)
     const mcpRow = ctx.plugins.find((p) => p.name === 'melite-engine-mcp-row')
      // optional/experimental (2026-10-12): the default seats nothing
      expect(mcpRow?.cfg).toEqual({ engines: [] })
   })
 
-  it('blenderPath overrides the stdio command — the declared default carries it otherwise', async () => {
-    // no blenderPath and no MELITE_ESTATE_BLENDER: the mounted cfg IS
-    // the declared defaults — PATH `blender`, repo-anchored
-    // mcp_server.py args and cwd (portable: no machine literals)
-    const saved = process.env.MELITE_ESTATE_BLENDER
-    delete process.env.MELITE_ESTATE_BLENDER
-    const plain = await mount({ repoRoot: '/tmp/pin' })
-    const plainRow = plain.plugins.find((p) => p.name === 'mcp-client-blender')
-    expect(plainRow?.cfg).toMatchObject({
-      command: 'blender',
-      args: ['-b', '--python', BLENDER_SERVER],
-    })
-    // a blenderPath from the config face (the cordis.yml surface)
-    // replaces ONLY the command — args/cwd stay the repo-anchored
-    // vendored tree
-    const lines = silence()
-    try {
-      const ctx = await mount({ repoRoot: '/tmp/pin', blenderPath: '/opt/blender/blender' })
-      const row = ctx.plugins.find((p) => p.name === 'mcp-client-blender')
-      expect(row?.cfg).toMatchObject({
-        transport: 'stdio',
-        command: '/opt/blender/blender',
-        args: ['-b', '--python', BLENDER_SERVER],
-        cwd: dirname(BLENDER_SERVER),
-      })
-      expect(lines.join('\n')).toContain('[melite-estate] blender binary overridden: /opt/blender/blender')
-    } finally {
-      vi.restoreAllMocks()
-    }
-    // MELITE_ESTATE_BLENDER rides the same one-knob contract
-    process.env.MELITE_ESTATE_BLENDER = '/opt/custom/blender'
-    try {
-      const envRow = (await mount({ repoRoot: '/tmp/pin' }))
-        .plugins.find((p) => p.name === 'mcp-client-blender')
-      expect(envRow?.cfg).toMatchObject({ command: '/opt/custom/blender' })
-    } finally {
-      if (saved === undefined) delete process.env.MELITE_ESTATE_BLENDER
-      else process.env.MELITE_ESTATE_BLENDER = saved
-    }
-  })
 
   it('applies bare rows naked and defaults the config face', async () => {
     const ctx = await mount()
@@ -309,77 +247,6 @@ function toolsCtx(tools?: Record<string, unknown>) {
   return { ctx, cleanups, listeners, unsubs }
 }
 
-describe('mcp-client-blender row — the witnessed bridge apply', () => {
-  it('a sync bridge apply rides through untouched', async () => {
-    mcpBridge.mode = 'sync'
-    const { fn, cfg } = await rowApply('mcp-client-blender')
-    expect(fn(toolsCtx().ctx, cfg)).toBe('sync-value')
-  })
-
-  it('an undefined bridge apply rides through untouched', async () => {
-    mcpBridge.mode = 'undefined'
-    const { fn, cfg } = await rowApply('mcp-client-blender')
-    expect(fn(toolsCtx().ctx, cfg)).toBe(undefined)
-  })
-
-  it('a settled bridge censuses the blender namespace (absent seats read absent)', async () => {
-    mcpBridge.mode = 'resolve'
-    mcpBridge.calls = []
-    const lines = silence()
-    try {
-      const { fn, cfg } = await rowApply('mcp-client-blender')
-      await expect(fn(toolsCtx().ctx, cfg)).resolves.toBe('bridge-value')
-      expect(mcpBridge.calls[0]?.cfg).toMatchObject({ transport: 'stdio', serverName: 'blender' })
-      expect(lines.join('\n')).toContain(
-        '[melite-estate] mcp-client-blender ready: mcp__blender__scene_info=absent mcp__blender__render_shot=absent',
-      )
-    } finally {
-      vi.restoreAllMocks()
-    }
-  })
-
-  it('a partially published namespace censuses PRESENT per tool', async () => {
-    mcpBridge.mode = 'resolve'
-    const lines = silence()
-    try {
-      const { fn, cfg } = await rowApply('mcp-client-blender')
-      await expect(
-        fn(toolsCtx({ mcp__blender__scene_info: {} }).ctx, cfg),
-      ).resolves.toBe('bridge-value')
-      expect(lines.join('\n')).toContain('mcp__blender__scene_info=PRESENT mcp__blender__render_shot=absent')
-    } finally {
-      vi.restoreAllMocks()
-    }
-  })
-
-  it('a rejected bridge logs its cause chain, then rethrows identical', async () => {
-    const lines = silence()
-    try {
-      const { fn, cfg } = await rowApply('mcp-client-blender')
-      const nested = new Error('outer', {
-        cause: { message: 'mid', cause: { cause: { message: 'deep' } } },
-      } as ErrorOptions)
-      mcpBridge.mode = 'reject'
-      mcpBridge.reason = nested
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(nested)
-      expect(lines.join('\n')).toContain('REJECTED: outer | caused by: mid | caused by: [object Object]')
-
-      mcpBridge.reason = new Error('x', { cause: null } as ErrorOptions)
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(mcpBridge.reason)
-      expect(lines.join('\n')).toContain('REJECTED: x | caused by: ')
-
-      mcpBridge.reason = 'bare string failure'
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe('bare string failure')
-      expect(lines.join('\n')).toContain('REJECTED: bare string failure')
-
-      mcpBridge.reason = 42
-      await expect(fn(toolsCtx().ctx, cfg)).rejects.toBe(42)
-    } finally {
-      vi.restoreAllMocks()
-    }
-  })
-})
-
 describe('Unity MCP row — intentionally not composed', () => {
   it('is absent from the estate composition', async () => {
     const ctx = await mount({ repoRoot: '/tmp/pin' })
@@ -416,6 +283,39 @@ describe('melite-engine-mcp-row — the gated seat read', () => {
       expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
     } finally {
       delete process.env['MELITE_MCP_ENGINES']
+      vi.restoreAllMocks()
+    }
+  })
+
+  // THE CONFIG OVERRIDE HALF (index.ts:223). MELITE_MCP_ENGINES is
+  // the operator's gate; when the environment names nothing, the row
+  // reads its own cordis.yml config face — the OTHER door the same
+  // comment advertises ("MELITE_MCP_ENGINES or config").
+  it('an unset MELITE_MCP_ENGINES seats the row from its own config', async () => {
+    const lines = silence()
+    vi.clearAllMocks()
+    delete process.env['MELITE_MCP_ENGINES']
+    try {
+      const { fn } = await rowApply('melite-engine-mcp-row')
+      const ctx = toolsCtx().ctx
+      fn(ctx, { engines: ['mcp:blender'] })
+      expect(lines.join('\n')).toContain('{"engines":["mcp:blender"]}')
+      expect(vi.mocked(mcpEngines)).toHaveBeenCalledWith(ctx, { engines: ['mcp:blender'] })
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  it('an unconfigured row (no env, no config) announces OFF — never a bare seat', async () => {
+    const lines = silence()
+    vi.clearAllMocks()
+    delete process.env['MELITE_MCP_ENGINES']
+    try {
+      const { fn } = await rowApply('melite-engine-mcp-row')
+      fn(toolsCtx().ctx, undefined)
+      expect(lines.join('\n')).toContain('mcp row OFF (no engine named')
+      expect(vi.mocked(mcpEngines)).not.toHaveBeenCalled()
+    } finally {
       vi.restoreAllMocks()
     }
   })

@@ -358,6 +358,109 @@ test('THE WIRE RESOLUTION: a wire row of an unknown shape REFUSES naming it — 
   }
 })
 
+// A NULL wire entry is legal on the bench row's own type
+// (cards-resource.ts:89 — inputs is Record<string, unknown>) and the
+// bench's wiring law can write it while an upstream is being picked.
+// The resolver must NAME the entry it cannot map, and the null word
+// it prints is the row's own value — never an empty string and never
+// a silent skip.
+test('THE WIRE RESOLUTION: a NULL wire entry refuses naming it — the voice prints the null', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const fakes = mountEstateFakes({
+    draftStages: [
+      { id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a cat' }, result: { url: '/x/out.png' } },
+      {
+        id: 's_1', card: 'image-edit', title: 'edit', engine: 'comfyui',
+        params: { input_images: ['$input_images'] },
+        inputs: { input_images: null },
+      },
+    ],
+  })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url) === '/v1/model-catalog') {
+      return { ok: true, json: async () => ({ cards: { 'image-edit': { id: 'image-edit', families: ['krea-2'] } } }) }
+    }
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { input_images: ['$input_images'] },
+      inputs: { input_images: null },
+      result: null,
+    })
+    if (!('refused' in res)) throw new Error('expected a refusal, got ' + JSON.stringify(res))
+    expect(res.refused).toContain('input "input_images" is neither {stage, output} nor a resolvable binding')
+    // the printed value is the row's own null — `got null`, not `got ""`
+    expect(res.refused).toContain('(got null)')
+    expect(fakes.calls.some((c) => c.method === 'runs/start')).toBe(false)
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
+// THE EVERY-DEPTH SUBSTITUTION. The resolver walks a param value, not
+// just a top-level key: a spell nested in an OBJECT param, in an
+// ARRAY param, and bare. The wire means ONE THING at every depth —
+// this input IS that stage's output — so no depth may cross to the
+// door with the $spell still in it.
+test('THE WIRE RESOLUTION: a spell nested in an OBJECT param resolves at every depth', async () => {
+  const { runCardStage } = await import('../src/client/CardsTab.tsx')
+  const { mountEstateFakes } = await import('./estate-harness.ts')
+  const artifact = '/melite-media/runs/run-880aaa85d928-dfa2dc59/generate/SaveImage.0_gen_00001_.png'
+  // The composing door reads the estate row BEFORE composing (the
+  // fresh-read law), so the spell rides the SERVED s_1 params — the
+  // held row only names the stage.
+  const nested: Record<string, unknown> = {
+    mask: { image: '$input_images' },
+    list: ['$input_images'],
+    bare: '$input_images',
+    keep: 'a literal $input_images suffix is not the spell',
+  }
+  const fakes = mountEstateFakes({
+    draftStages: [
+      { id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { prompt: 'a cat' }, result: { url: artifact } },
+      {
+        id: 's_1', card: 'image-edit', title: 'edit', engine: 'comfyui',
+        params: { ...nested, prompt: 'make the hair crimson', model: 'krea-2' },
+        inputs: { input_images: { stage: 's_0', output: 'default' } },
+      },
+    ],
+  })
+  const realFetch = globalThis.fetch
+  ;(globalThis as Record<string, unknown>)['fetch'] = async (url: unknown): Promise<unknown> => {
+    if (String(url).includes('/v1/form-spec')) return { ok: true, json: async () => KREA }
+    throw new Error('estate door on the fetch lane: ' + String(url))
+  }
+  try {
+    const res = await runCardStage('bench-main', {
+      id: 's_1', title: 'edit', card: 'image-edit', engine: 'comfyui',
+      params: { ...nested },
+      inputs: { input_images: { stage: 's_0', output: 'default' } },
+      result: null,
+    })
+    expect(res).toEqual({ runId: 'run-1' })
+    const start = fakes.calls.find((c) => c.method === 'runs/start')
+    const doc = (start?.args['doc'] as Record<string, unknown>) ?? {}
+    // THE OBJECT DEPTH — the arm the bare/array walks never reached
+    expect(doc['mask']).toEqual({ image: artifact })
+    // ...and the two shallower depths still resolve from the same walk
+    expect(doc['list']).toEqual([artifact])
+    expect(doc['bare']).toBe(artifact)
+    // substitution is exact-match only: a string that merely CONTAINS
+    // the spell is not a wire and rides verbatim
+    expect(doc['keep']).toBe('a literal $input_images suffix is not the spell')
+    expect(JSON.stringify(doc['mask'])).not.toContain('$input_images')
+  } finally {
+    ;(globalThis as Record<string, unknown>)['fetch'] = realFetch
+    fakes.unmount()
+  }
+})
+
 test('THE WIRE RESOLUTION: an upstream RESULT with no url reads as no output — the refusal names the stage', async () => {
   const { runCardStage } = await import('../src/client/CardsTab.tsx')
   const { mountEstateFakes } = await import('./estate-harness.ts')

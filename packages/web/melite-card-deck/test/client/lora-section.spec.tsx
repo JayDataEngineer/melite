@@ -306,3 +306,67 @@ test("every door refuses loud when the manage lane is NOT mounted", async () => 
   await waitFor(() => { expect(screen.getByText(/manage remote not mounted/)).toBeTruthy() })
 })
 
+
+// ── the thrown-verb arms ──
+// postManage raises Error values ONLY (assets-tab.tsx:326-368): a
+// lane that throws anything else is folded into {ok: false, detail}
+// before it leaves the door, and the one rethrow is the lane's
+// AbortError. thrownVoice reads that fact off the one seam.
+
+test("a lane that throws a NON-Error is folded into a refusal, never a throw", async () => {
+  // The proof the block's four catches rest on: the hostile value
+  // arrives as postManage's transport REFUSAL (its own String(e)
+  // detail), so it lands in the `reply.ok !== true` arm and not in a
+  // catch — which is why thrownVoice can read e.message.
+  seatManageNamespace({
+    act: async (): Promise<RemoteResult<ManageEnvelopeRow>> => { throw "kablam" },
+  })
+  render(<LoraBlock />)
+  fireEvent.click(screen.getByText("Show LoRAs"))
+  await waitFor(() => { expect(screen.getByText("kablam")).toBeTruthy() })
+})
+
+test("the UPLOAD verb's catch speaks — a file chosen with no lane seated", async () => {
+  // uploadChosen's catch was never driven: the no-lane path reaches it
+  // through the bytes' own postManage call, the one verb arm the
+  // not-mounted battery forgot because it clicked no file input.
+  render(<LoraBlock />)
+  seatManageNamespace(undefined)
+  const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
+  const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" })
+  fireEvent.change(fileInput, { target: { files: [file] } })
+
+  await waitFor(() => {
+    expect(screen.getByText(/manage remote not mounted/)).toBeTruthy()
+  })
+})
+
+test("the upload's own read failure speaks too — the browser refused the bytes", async () => {
+  // The other arm of the same catch: the file read is inside the try,
+  // so a FileReader that errors reaches setRefusal before any manage
+  // verb is posted (the wire.spec read-failure precedent).
+  const RealReader = globalThis.FileReader
+  class FailingReader {
+    onload: (() => void) | null = null
+    onerror: (() => void) | null = null
+    result: string | null = null
+    error: Error | null = new Error("read failed")
+    readAsDataURL(_file: Blob): void {
+      queueMicrotask(() => { this.onerror?.() })
+    }
+  }
+  globalThis.FileReader = FailingReader as unknown as typeof RealReader
+  const calls = stubManageSeat({ lora_list: LORA_LIST })
+  try {
+    render(<LoraBlock />)
+    await open()
+    const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
+    const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" })
+    fireEvent.change(fileInput, { target: { files: [file] } })
+    await waitFor(() => { expect(screen.getByText("read failed")).toBeTruthy() })
+    // the read died before the door: no install was posted
+    expect(actionsOf(calls)).toEqual(["lora_list"])
+  } finally {
+    globalThis.FileReader = RealReader
+  }
+})

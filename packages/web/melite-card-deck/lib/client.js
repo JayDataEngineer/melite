@@ -184,6 +184,16 @@ window.__ModuleLoader__.load({
 		* The install is a COPY of a file the operator already has — never a
 		* fetch ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S ALL BUILT IN").
 		*/
+		/** The voice for a THROWN manage verb. postManage raises Error values
+		*  only: a lane that throws anything else (a string, a number) is
+		*  folded into {ok: false, detail} before it leaves the door
+		*  (assets-tab.tsx:360-367), a missing lane raises its own Error
+		*  (:329), and the one rethrow is the lane's AbortError — an Error
+		*  instance. So the cast below reads a proven reachability fact, and
+		*  every catch in this block speaks the same voice from it. */
+		function thrownVoice(e) {
+			return e.message;
+		}
 		function LoraBlock() {
 			const [data, setData] = react.useState(null);
 			const [busy, setBusy] = react.useState(false);
@@ -206,7 +216,7 @@ window.__ModuleLoader__.load({
 					}
 					setData(reply.data ?? {});
 				} catch (e) {
-					setRefusal(e instanceof Error ? e.message : String(e));
+					setRefusal(thrownVoice(e));
 				} finally {
 					setBusy(false);
 				}
@@ -247,7 +257,7 @@ window.__ModuleLoader__.load({
 					}
 					await refresh();
 				} catch (e) {
-					setRefusal(e instanceof Error ? e.message : String(e));
+					setRefusal(thrownVoice(e));
 				} finally {
 					setBusy(false);
 				}
@@ -268,7 +278,7 @@ window.__ModuleLoader__.load({
 					});
 					await refresh();
 				} catch (e) {
-					setRefusal(e instanceof Error ? e.message : String(e));
+					setRefusal(thrownVoice(e));
 				} finally {
 					setBusy(false);
 				}
@@ -326,7 +336,7 @@ window.__ModuleLoader__.load({
 					}
 					return refresh();
 				}).catch((e) => {
-					setRefusal(e instanceof Error ? e.message : String(e));
+					setRefusal(thrownVoice(e));
 				}),
 				disabled: busy
 			}, "Restart engine")), refusal === null ? null : react.createElement("div", { className: "warn" }, refusal));

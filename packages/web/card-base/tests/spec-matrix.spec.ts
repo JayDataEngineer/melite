@@ -502,6 +502,28 @@ test('composeValidate: a route-spelled variant is legal at the door and legal he
   expect(composeValidate(gateDoc(), { variant: 'krea-2', quant: 'q-hd-only' })).toEqual([])
 })
 
+// A SERVED DOC WITH NO MODEL. FormSpecDoc.model is `string | null`
+// (formSpec.ts:283 — "the Model axis' resting value and the run's
+// family when no variant re-point has ridden"), so a doc whose family
+// resolution left it unset is a legal served shape. The refusal must
+// still speak, and it speaks the EMPTY model word — never "null",
+// never a dropped clause.
+test('composeValidate: a doc whose model is null refuses the variant with an empty model word', () => {
+  const out = composeValidate({ ...gateDoc(), model: null } as unknown as FormSpecDoc, { variant: 'nope' })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toBe(
+    'card_compose: unknown variant "nope" for model "" (known: r-hd, r-sd, r-empty, r-env)',
+  )
+})
+
+test('composeValidate: a doc whose model is null refuses the quant with an empty model word', () => {
+  const out = composeValidate({ ...gateDoc(), model: null } as unknown as FormSpecDoc, { variant: 'r-hd', quant: 'zzz' })
+  expect(out.length).toBe(1)
+  expect(out[0]?.message).toBe(
+    'card_compose: unknown quant "zzz" for model "" variant "r-hd" (known: q-hd-only, q-env-only)',
+  )
+})
+
 test('composeValidate: the envelope clause fires against the RESOLVED variant, cure appended', () => {
   const out = composeValidate(gateDoc(), { variant: 'r-env', cfg: 9 })
   expect(out.length).toBe(1)

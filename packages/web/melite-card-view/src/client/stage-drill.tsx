@@ -342,8 +342,12 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins)
         const st = stageWriteState(bench.draftId, stage.id)
+        // lastError is a string whenever failedKeys is non-empty: the
+        // ledger adds a key and stamps lastError in the same step
+        // (draft.ts:554-555) and clears it only as the set empties
+        // (draft.ts:551-552, draft.ts:470-475).
         setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+          ? 'THE WRITE DID NOT LAND — ' + st.lastError
             + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
             + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
           : null)
@@ -374,8 +378,10 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // resolves either way — the failure memory is the ledger's,
         // per-key and latest-wins)
         const st = stageWriteState(bench.draftId, stage.id)
+        // non-null while failedKeys is non-empty — the ledger's own
+        // invariant (draft.ts:554-555, draft.ts:551-552)
         setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+          ? 'THE WRITE DID NOT LAND — ' + st.lastError
             + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
             + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
           : null)
@@ -450,8 +456,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
     void patchStageParams(bench.draftId, stage.id, frame, bench.rev).then(
       () => {
         const st = stageWriteState(bench.draftId, stage.id)
+        // non-null while failedKeys is non-empty (draft.ts:554-555)
         setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+          ? 'THE WRITE DID NOT LAND — ' + st.lastError
             + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
             + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
           : null)
@@ -460,8 +467,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         // the promise REJECTS on refusal (the ledger keeps the
         // memory); the write face speaks the same voice as onSet
         const st = stageWriteState(bench.draftId, stage.id)
+        // non-null while failedKeys is non-empty (draft.ts:554-555)
         setWriteFace(st.failedKeys.length > 0
-          ? 'THE WRITE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+          ? 'THE WRITE DID NOT LAND — ' + st.lastError
             + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
             + 'The studio shows your edit; the bench does not. Pressing Run will refuse until it lands.'
           : null)
@@ -597,8 +605,9 @@ export function StageDrill({ stage, bench, running, onRun, onStop, onClose, onRe
         if (refused !== null) { setWriteFace(refused); return }
         void patchStageParams(bench.draftId, stage.id, sweptPatch, bench.rev).then(() => {
           const st = stageWriteState(bench.draftId, stage.id)
+          // non-null while failedKeys is non-empty (draft.ts:554-555)
           setWriteFace(st.failedKeys.length > 0
-            ? 'THE ENHANCE DID NOT LAND — ' + (st.lastError ?? 'the write was refused')
+            ? 'THE ENHANCE DID NOT LAND — ' + st.lastError
               + ' (unlanded keys: ' + st.failedKeys.join(', ') + '). '
               + 'The studio shows the enhanced fields; the bench does not. Pressing Run will refuse until they land.'
             : null)

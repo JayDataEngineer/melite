@@ -54,6 +54,17 @@ export interface LoraInstallData {
   row_suggestion?: Record<string, unknown>
 }
 
+/** The voice for a THROWN manage verb. postManage raises Error values
+ *  only: a lane that throws anything else (a string, a number) is
+ *  folded into {ok: false, detail} before it leaves the door
+ *  (assets-tab.tsx:360-367), a missing lane raises its own Error
+ *  (:329), and the one rethrow is the lane's AbortError — an Error
+ *  instance. So the cast below reads a proven reachability fact, and
+ *  every catch in this block speaks the same voice from it. */
+function thrownVoice(e: unknown): string {
+  return (e as Error).message
+}
+
 function LoraBlock(): ReturnType<typeof React.createElement> {
   const [data, setData] = React.useState<LoraListData | null>(null)
   const [busy, setBusy] = React.useState(false)
@@ -87,7 +98,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       }
       setData((reply.data ?? {}) as LoraListData)
     } catch (e) {
-      setRefusal(e instanceof Error ? e.message : String(e))
+      setRefusal(thrownVoice(e))
     } finally {
       setBusy(false)
     }
@@ -130,7 +141,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       }
       await refresh()
     } catch (e) {
-      setRefusal(e instanceof Error ? e.message : String(e))
+      setRefusal(thrownVoice(e))
     } finally {
       setBusy(false)
     }
@@ -148,7 +159,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
       })
       await refresh()
     } catch (e) {
-      setRefusal(e instanceof Error ? e.message : String(e))
+      setRefusal(thrownVoice(e))
     } finally {
       setBusy(false)
     }
@@ -243,7 +254,7 @@ function LoraBlock(): ReturnType<typeof React.createElement> {
           }
           return refresh()
         }).catch((e: unknown) => {
-          setRefusal(e instanceof Error ? e.message : String(e))
+          setRefusal(thrownVoice(e))
         }),
         disabled: busy,
       }, 'Restart engine')),

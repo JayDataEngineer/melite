@@ -1036,15 +1036,14 @@ var card_module_default = {
 *  layout box (a display:contents or fragment child measures a zero
 *  rect and pins the bubble to the viewport corner).
 * @param props.tip - bubble text; absent renders the child bare.
-* @param props.shortcut - keyboard shortcut, appended to the bubble text.
 * @param props.side - bubble placement, default 'top'.
 * @param props.delayDuration - hover delay in ms, default 300.
 * @param props.children - the single anchor element. */
-function Tip({ tip, shortcut, side = "top", delayDuration = 300, children }) {
+function Tip({ tip, side = "top", delayDuration = 300, children }) {
 	if (tip === void 0) return children;
 	return /* @__PURE__ */ jsx(Tooltip, {
-		label: shortcut ? `${tip} (${shortcut})` : tip,
-		side: side === "left" ? "right" : side,
+		label: tip,
+		side,
 		delayMs: delayDuration,
 		children: /* @__PURE__ */ jsx("span", {
 			className: card_module_default.tipAnchor,

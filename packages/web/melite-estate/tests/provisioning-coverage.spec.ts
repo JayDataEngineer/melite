@@ -421,6 +421,33 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.deepEqual(readFileSync(join(store, "checkpoints", "model.bin")), MODEL_BYTES);
   });
 
+  // THE LAZY MANAGER'S installModel DELEGATE (provisioning.ts:260).
+  // The declared model arms in this composition are all provider
+  // "direct" (the DECL url IS the fetch url), so the Manager's MODEL
+  // installer is reachable only through the operator-confirmed
+  // external acquisition — the one door where a url comes from the
+  // operator rather than a declaration.
+  test("the external model arm downloads through ComfyUI-Manager and verifies the landed bytes", async () => {
+    const store = tempRoot("web-external-store-");
+    const mounted = await mount({ store });
+    const result = await mounted.ctx.provisioning.acquireExternal(
+      {
+        kind: "model",
+        url: "https://example.invalid/model.bin",
+        relativePath: "checkpoints",
+        filename: "model.bin",
+        sha256: MODEL_SHA,
+      },
+      { operatorConfirmed: true },
+    );
+    assert.equal(result.state, "active", JSON.stringify(result));
+    // the door the delegate owns — and the composition's own fetcher
+    // never stood in for it (the direct arm is the DECL's own lane)
+    assert.equal(mounted.state.calls.some((path) => path === "/manager/queue/install_model"), true);
+    assert.equal(mounted.state.calls.some((path) => path === "/model.bin"), false);
+    assert.deepEqual(readFileSync(join(store, "checkpoints", "model.bin")), MODEL_BYTES);
+  });
+
   test("lazy Manager covers registry, URL, and pinned git post-install paths", async () => {
     const mounted = await mount({
       extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n  - name: registry-only\n    registry: demo\n    version: 1.0.0\n    url: ''\n  - name: pinned\n    registry: ''\n    version: ''\n    url: https://example.invalid/pinned.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n  - name: operator\n    registry: ''\n    version: ''\n    url: https://example.invalid/operator.git\n  - name: local\n    registry: ''\n    version: ''\n    url: ''\n",

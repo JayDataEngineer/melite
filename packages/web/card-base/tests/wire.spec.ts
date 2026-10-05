@@ -8,6 +8,7 @@
 import { afterEach, expect, test } from 'vitest'
 
 import {
+  assertFormSpecDoc,
   fetchCardCatalog,
   fetchFormsTable,
   fetchFormSpec,
@@ -291,4 +292,42 @@ test('uploadInputFile: a refusing door + a pathless answer both REFUSE loud', as
   useFake({ '/v1/uploads': () => json({ path: 7 }) })
   await expect(uploadInputFile(new File(['x'], 'a.png', { type: 'image/png' })))
     .rejects.toThrow(/upload answered without a path/)
+})
+
+// THE BOUNDARY JUDGMENT'S OWN SKIPS (assertFormSpecDoc, wire.ts).
+// The base envelope's shape is refused by the envelope gate above it,
+// but a MOD envelope is judged only by judgeEnvelope — so these two
+// skips are live decisions on a served mod row, not dead branches.
+
+test('a mod envelope whose refs is not an object is SKIPPED, not refused', () => {
+  // mod_schemas values are typed SchemaEnvelope | null, and the served
+  // doc is untrusted: the mod row carries a string where the ref bag
+  // belongs. The base gate never sees it (it judges `schema` alone), so
+  // judgeEnvelope's own skip is the whole judgment — the doc passes.
+  const doc = {
+    schema: { uid: 1, refs: {} },
+    mod_schemas: { pose: { uid: 2, refs: 'not-a-ref-bag' } },
+  }
+  expect(assertFormSpecDoc(doc, 'cast-only')).toBe(doc)
+})
+
+test('a null refs bag on a mod envelope is the same skip', () => {
+  const doc = {
+    schema: { uid: 1, refs: {} },
+    mod_schemas: { pose: { uid: 2, refs: null } },
+  }
+  expect(assertFormSpecDoc(doc, 'cast-only')).toBe(doc)
+})
+
+test('a non-object node INSIDE a mod refs bag is skipped; its siblings still judge', () => {
+  // The walk is per node: a scalar row contributes no wtype, so it
+  // retires nothing, and the sibling that DOES carry a foreign wtype
+  // still refuses — the skip never swallows the envelope's judgment.
+  const doc = {
+    schema: { uid: 1, refs: {} },
+    mod_schemas: { pose: { uid: 2, refs: { n1: 'scalar-row', n2: null, n3: { meta: { extra: { wtype: 'switch' } } } } } },
+  }
+  expect(() => assertFormSpecDoc(doc, 'cast-only')).toThrow(
+    "mod:pose ref n3: wtype 'switch' is not in WTYPE_SET",
+  )
 })
