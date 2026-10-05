@@ -9,6 +9,7 @@ import { checkModelPresent } from "./catalog.js";
 import { loadFacts } from '@melite/comfyui-card-kit/facts';
 import { liveObjectInfo } from "./comfyui-transport.js";
 import { resolveEngineBaseUrl } from "./comfyui-config.js";
+import { pathToFileURL } from 'node:url';
 function die(msg) {
     process.stderr.write(`compose-door: ${msg}\n`);
     process.exit(1);
@@ -133,13 +134,19 @@ async function main() {
 // reads the last stderr line as the refusal detail, so an uncaught
 // trace (which ends in node's version footer) would swallow the
 // cause. Every failure exits through here, never a bare throw.
-try {
-    await main();
-}
-catch (err) {
-    const code = err.code;
-    const msg = err instanceof Error ? err.message : String(err);
-    process.stderr.write(code ? `${code}: ${msg}\n` : `${msg}\n`);
-    process.exit(1);
+// SELF-EXECUTE GUARD: ./cli is an exports row, not just a bin — a
+// consumer importing it (the G5 probe, a gateway composing the door)
+// links the graph without running the command loop. The process-entry
+// test is the standard ESM main-module check.
+if (process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href) {
+    try {
+        await main();
+    }
+    catch (err) {
+        const code = err.code;
+        const msg = err instanceof Error ? err.message : String(err);
+        process.stderr.write(code ? `${code}: ${msg}\n` : `${msg}\n`);
+        process.exit(1);
+    }
 }
 //# sourceMappingURL=cli.js.map
