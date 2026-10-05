@@ -217,7 +217,7 @@ export function apply(ctx: Context): void {
         const seat = ctx.get("queue", false) as QueueSeat | undefined;
         if (seat === undefined) {
           res.writeHead(502, { "content-type": "application/json", "cache-control": "no-store" });
-          res.end('{"error":"estate-media/no-queue-seat","message":"mount @melite-plugin/melite-estate (the queue seat owns the runs tree root)"}');
+          res.end('{"error":"estate-media/no-queue-seat","message":"mount @melite-plugin/dsh-estate (the queue seat owns the runs tree root)"}');
           return;
         }
         // §23 CROSS-ROOTS: the first manifest root holding the run
@@ -527,7 +527,7 @@ export class MediaRemoteService extends TypertRemoteService {
     }
     const seat = this.ctx.get("queue", false) as QueueSeat | undefined;
     if (seat === undefined) {
-      throw new RemoteError("media/no-seat", "media/list: the queue seat owns the runs tree root — mount @melite-plugin/melite-estate", {});
+      throw new RemoteError("media/no-seat", "media/list: the queue seat owns the runs tree root — mount @melite-plugin/dsh-estate", {});
     }
     // §23 CROSS-ROOTS: the seat's manifest (own root first) — the
     // Infer Media bar sees every lane's runs on one box.

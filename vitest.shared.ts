@@ -101,7 +101,7 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   // condition names, so typecheck and runtime resolve ONE graph, and
   // the row's own sink wiring executes under test.
   '@melite/card-base/client': path.join(import.meta.dirname, 'packages/web/card-base/src/client/index.ts'),
-  '@melite-plugin/dsh-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
+  '@melite/harness-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
   '@melite-plugin/melite-run-wire': path.join(import.meta.dirname, 'packages/web/melite-run-wire/src/index.ts'),
   // the drafts REMOTE subpath — MUST sit BEFORE the parent row
   // (rollup alias matches boundary-prefixes in iteration order; the

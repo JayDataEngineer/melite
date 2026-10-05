@@ -15,7 +15,7 @@
 
 - insert:
     - id: infer-estate
-      name: '@melite-plugin/melite-estate'
+      name: '@melite-plugin/dsh-estate'
     - id: infer-tools-doors
       name: '@melite/harness-tools/doors'
     - id: melite-card-view-host

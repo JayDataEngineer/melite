@@ -10,7 +10,7 @@ The workspace-linked bundle mounts the estate host row and its DSH surfaces:
 
 | Surface | Current package |
 | --- | --- |
-| Estate composition | `@melite-plugin/dsh-estate` (the package manifest; a legacy `@melite-plugin/melite-estate` link/row may remain as a compatibility alias until the composition rename is completed) |
+| Estate composition | `@melite-plugin/dsh-estate` |
 | Tool plane | `@melite/harness-tools` |
 | Card view | `@melite-plugin/dsh-card-view` |
 | Card deck | `@melite-plugin/dsh-card-deck` |

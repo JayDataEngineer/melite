@@ -34,6 +34,12 @@ for (const file of order) {
   if (!row) fail(`${file} is not in the manifest — refusing to publish ungated bytes`)
   if (sha256(join(from, file)) !== row.sha256) fail(`${file} sha256 ≠ manifest — the bytes drifted since the mint`)
 }
+// order.txt completeness: a truncated artifact set would publish a
+// subset and exit 0 — the order must cover EVERY manifest row
+const missing = manifest.packages.filter((p) => !order.includes(p.file)).map((p) => p.file)
+if (missing.length > 0) {
+  fail(`order.txt omits ${missing.length} manifest rows (first: ${missing[0]}) — refusing to publish a subset`)
+}
 
 let published = 0
 let skipped = 0

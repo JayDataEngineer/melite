@@ -155,7 +155,7 @@ export function apply(ctx, config = {}) {
             return JSON.parse(body);
         }
         if (seat === undefined) {
-            throw new GallerySeatError(`infer-gallery: no estate seat for ${lane} in this tree — mount @melite-plugin/melite-estate or pin gatewayUrl (the owning DSH)`);
+            throw new GallerySeatError(`infer-gallery: no estate seat for ${lane} in this tree — mount @melite-plugin/dsh-estate or pin gatewayUrl (the owning DSH)`);
         }
         return call();
     };

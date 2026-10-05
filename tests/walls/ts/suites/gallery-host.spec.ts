@@ -89,7 +89,7 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
   await byPath('/runs').handler({ url: '/infer-gallery/runs' }, res1 as never)
   assert.equal(res1.status, 502)
   assert.match(String(res1.body), /no estate seat/)
-  assert.match(String(res1.body), /melite-estate/)
+  assert.match(String(res1.body), /dsh-estate/)
 
   // 2. IN-TREE, the runs seat present: the list answers, artifact
   //    names rewrite to the same-origin route.

@@ -56,9 +56,32 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  rehearse:
+    name: Cold-consumer rehearsal
+    needs: pack
+    runs-on: ubuntu-24.04
+    steps:
+      # The rehearsal script is the tag's own (same law as publish).
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.PRIMARY_NODE_VERSION }}
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: melite-npm-tarballs
+          path: dist/npm
+
+      - name: Rehearsal (fresh container, official install, 10 receipts)
+        run: node tools/release-rehearsal.mjs --dist dist/npm
+
   publish:
     name: Publish to npm
-    needs: pack
+    needs: rehearse
     runs-on: ubuntu-24.04
     # Required reviewers and the allowed tags live on the environment; this
     # is the only job in the sequence that can write to the registry.
@@ -71,8 +94,12 @@ jobs:
     steps:
       # Checkout and install carry the release scripts only. There is no
       # build step: publication uploads the bytes the pack job produced.
+      # ref: the publish script that runs must be the tag's own — a
+      # default-branch checkout could run a changed publisher over the
+      # minted bytes.
       - uses: actions/checkout@v6
         with:
+          ref: ${{ inputs.tag }}
           persist-credentials: false
 
       - uses: actions/setup-node@v6

@@ -44,7 +44,7 @@ import {
 
 const NOT_FOUND_BODY = '{"error":"media/not-found"}';
 const NO_QUEUE_BODY =
-  '{"error":"estate-media/no-queue-seat","message":"mount @melite-plugin/melite-estate (the queue seat owns the runs tree root)"}';
+  '{"error":"estate-media/no-queue-seat","message":"mount @melite-plugin/dsh-estate (the queue seat owns the runs tree root)"}';
 const METHOD_BODY = '{"error":"media/method-not-allowed"}';
 const sig = new AbortController().signal;
 

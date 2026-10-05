@@ -344,8 +344,8 @@
     # cannot answer breaks every turn that falls back to it, which is
     # how a healthy selected model still looked broken.
     # Verified live: openrouter/stealth/space-bunny-alpha -> HTTP 200.
-    provider: openrouter
-    model: stealth/space-bunny-alpha
+    provider: opencode-go-chat
+    model: space-bunny-free
     reasoningEffort: high
 - id: agent-loop
   name: "@deepseek-ai/dsh-agent-loop"

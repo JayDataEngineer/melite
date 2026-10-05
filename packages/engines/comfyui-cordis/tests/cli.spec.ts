@@ -1,18 +1,28 @@
 // @melite/comfyui-cordis — the compose door (cli.ts) as a subprocess
-// battery (TEST-2 breadth, 2026-09-12). The door is a process
-// boundary: graph JSON on stdout ONLY, refusals LOUD on stderr with
-// exit 1 — so the battery spawns it for real (no in-process
-// import: the module self-executes on load AND calls process.exit).
-//
-// REPAIR RIDING ALONG (2026-09-12): the door's own comments
-// describe the card sweep ("cards compose through cardDefs'
-// package table... the registry boots first") but main() never
-// invoked it — every compose died `unknown card (registered:
-// none)`. main() now mirrors loadCardDefs' boot (composeCards +
-// composeModPlane); the happy paths below pin the restored door.
+// battery. The door is a process boundary: graph JSON on stdout ONLY,
+// refusals LOUD on stderr with exit 1 — so the battery spawns it for
+// real. An in-process import is safe: the entry guard (the standard
+// ESM main-module check) runs main() only when process.argv[1]
+// resolves to this module, and the import arm below pins that —
+// requiring the module fires nothing. main() boots the card registry
+// (composeCards + composeModPlane) before composing; the happy paths
+// pin that boot.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+
+/** The entry-guard law: importing the CLI module executes nothing.
+ *  cli.ts is an exports row the walls suite requires; a self-executing
+ *  load would fire compose/exit under vitest. */
+describe("cli import (the entry guard holds)", () => {
+  it("imports clean — no main(), no exit", async () => {
+    const before = process.exitCode;
+    const mod = await import("../src/cli.ts");
+    assert.ok(mod, "module namespace resolves");
+    assert.equal(process.exitCode, before, "import must not touch the exit code");
+  });
+});
+
 
 const CLI = "packages/engines/comfyui-cordis/src/cli.ts";
 const FACTS = "packages/engines/comfyui-cordis/data/model-facts.json";

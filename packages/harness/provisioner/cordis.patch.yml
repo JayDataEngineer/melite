@@ -50,16 +50,14 @@
 - id: skill-filesystem
   disabled: true
 
-- insert:
-    # THE ESTATE ROW (REBUILD-9): the runs plane as host services —
-    # card registry (primed defs + facts + in-process compose), the
-    # runs registry (start/status/stop/list/validate, both doors),
-    # and the Typert adapters. Mounts FIRST: the tools' seats
-    # (draftsRemote/runsRemote) resolve from here. State root =
-    # MELITE_STATE_ROOT else <cwd>/data/runs.
-    - id: infer-estate
-      name: '@melite-plugin/melite-estate'
+# infer-estate: NO row here (channel law: every web plugin owns its
+# existence row in ITS OWN package — the dsh-estate cordis.patch.yml
+# inserts melite-estate, the runs plane as host services: card
+# registry, runs registry, and the Typert adapters). A twin row here
+# double-mounted the package and its registrations ("melite_discover
+# already registered") killing every fresh boot.
 
+- insert:
     # infer-tools / infer-tools-doors: NO rows here (channel law,
     # 2026-09-09: every web plugin owns its existence row in ITS OWN
     # package — the melite-tools cordis.patch.yml inserts
@@ -93,8 +91,10 @@
     # (2026-09-17). Rows stay ONLY for studios not bundled by the
     # profile (their self-patch never applies there).
 
-    - id: card-studio-h3-timeline
-      name: '@melite/video-h3-timeline'
+    # card-studio-h3-timeline: NO row here — @melite/video-h3-timeline
+    # self-registers (its own cordis.patch.yml); a twin row here
+    # double-mounted the package in every profile bundling both
+    # (same crash law as card-studio-anny).
 
     # card-studio-ideogram4 RETIRED with its card (the form-seams
     # stroke 2026-09-17 — the operator's order; lane profiles drop
@@ -108,8 +108,10 @@
     # surface; the package survives as the paint leaf-face carrier
     # (ui/), unmounted.
 
-    - id: card-studio-motion
-      name: '@melite/motion-motion'
+    # card-studio-motion: NO row here — @melite/motion-motion
+    # self-registers (its own cordis.patch.yml); a twin row here
+    # double-mounted the package in every profile bundling both
+    # (same crash law as card-studio-anny).
 
 
     # infer-card-deck: NO row here (channel law, 2026-09-09) — the

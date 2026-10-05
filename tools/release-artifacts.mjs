@@ -111,8 +111,7 @@ export function validateTarballPayload (inner, listing, tarName) {
   }
   // BUNDLE OVERLAY LAW: a manifest declaring dsh.bundle.patch makes
   // the plugin loader read that file at the INSTALLED root — a
-  // tarball that omits it boots to ENOENT (the cold-consumer proof,
-  // 2026-10-13: all eight bundle seats declared, none packed).
+  // tarball that omits it boots to ENOENT.
   const patch = inner.dsh?.bundle?.patch
   if (typeof patch === 'string') {
     const rel = patch.replace(/^\.\//, '')
@@ -120,6 +119,24 @@ export function validateTarballPayload (inner, listing, tarName) {
       throw new Error(`payload gate: ${tarName} declares dsh.bundle.patch "${patch}" but does not pack it`)
     }
   }
+}
+
+/**
+ * G6 — pure half of the overlay name law: scan one overlay's plugin
+ * rows and return the first offender naming a package outside the
+ * packed set (null when clean). Mint's driver extracts the packed
+ * overlay and fails on any offender.
+ * @param {string} packageName the overlay's owning package, for the message
+ * @param {string} overlay the overlay YAML text as packed
+ * @param {Set<string>} packedNames every name shipping in this set
+ * @returns {string | null} "row <id> names \"<name>\"" or null
+ */
+export function overlayNameOffender (packageName, overlay, packedNames) {
+  const rows = [...overlay.matchAll(/^\s*-\s*id:\s*(\S+)[\s\S]*?^\s*name:\s*'?([^\s']+)/gm)]
+  for (const m of rows) {
+    if (!packedNames.has(m[2])) return `${packageName} row ${m[1]} names "${m[2]}"`
+  }
+  return null
 }
 
 /** G4 — ENTRY CLASSIFICATION: no `.` row is importable-dead for a
@@ -215,6 +232,21 @@ async function mint (opts) {
         innerFiles.set(tarName, { f, literals: exportsRows(inner, listing, tarName), inner })
       } catch (e) { fail(e.message) }
     }
+
+    // G6 — OVERLAY NAME LAW (release-plane re-audit): a packed overlay's
+    // plugin rows must name packages that ship in this same set. A row
+    // naming anything else (a pre-rescope name, a typo, a dropped
+    // package) cannot resolve for a cold consumer and kills the boot —
+    // the infer-estate twin's whole failure class, caught at mint time.
+    const packedNames = new Set([...innerFiles.values()].map((x) => x.inner.name))
+    for (const { f, inner } of innerFiles.values()) {
+      const patch = inner.dsh?.bundle?.patch
+      if (typeof patch !== 'string') continue
+      const overlay = run('bash', ['-c', `tar -xzOf ${f} package/${patch.replace(/^\.\//, '')}`])
+      const offender = overlayNameOffender(inner.name, overlay, packedNames)
+      if (offender) fail(`overlay gate: ${offender} — not in the packed set`)
+    }
+    console.log('overlay gate: every packed overlay row names an in-set package')
     console.log(`entry gate: ${files.length} tarballs carry every exports target; payload plane clean`)
 
     // G5 — EXECUTABILITY PROBE (the alpha.2 killer): every literal

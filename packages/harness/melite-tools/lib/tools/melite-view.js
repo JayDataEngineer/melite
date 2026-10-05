@@ -602,7 +602,7 @@ export function meliteView(ctx) {
             }
             const seat = ctx.get('queue', false);
             if (seat === undefined) {
-                throw new Error('cannot view run "' + runId + '": the queue seat owns the runs tree root — mount @melite-plugin/melite-estate');
+                throw new Error('cannot view run "' + runId + '": the queue seat owns the runs tree root — mount @melite-plugin/dsh-estate');
             }
             // THE WALK (listMedia over the §23 manifest — same trees the
             // media/list door walks, own root first): run-filtered,

@@ -15,6 +15,7 @@ import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createRequire } from 'node:module'
+import { pathToFileURL } from 'node:url'
 
 const req = createRequire(import.meta.url)
 const gates = req('../../../../tools/release-artifacts.mjs') as {
@@ -23,6 +24,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   classifyEntry: (inner: unknown, tarName: string) => void
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
   stripPackedTarballs: (files: string[]) => void
+  overlayNameOffender: (packageName: string, overlay: string, packedNames: Set<string>) => string | null
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -186,6 +188,42 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     stripLeakageComments: (src: string) => string
   }
 
+
+  it('G6: an overlay row naming a package outside the packed set is an offender', () => {
+    // the infer-estate twin class: provisioner's overlay once mounted
+    // @melite-plugin/melite-estate, a pre-rescope name absent from the
+    // set — cold boots died on the import. The mint refuses the pack.
+    const packed = new Set(['@melite-plugin/dsh-estate', '@melite/harness-tools'])
+    const clean = [
+      '- insert:',
+      "    - id: melite-estate",
+      "      name: '@melite-plugin/dsh-estate'",
+    ].join('\n')
+    expect(gates.overlayNameOffender('@melite/harness-provisioner', clean, packed)).toBeNull()
+    const dead = clean.replace('dsh-estate', 'melite-estate')
+    expect(gates.overlayNameOffender('@melite/harness-provisioner', dead, packed))
+      .toBe('@melite/harness-provisioner row melite-estate names "@melite-plugin/melite-estate"')
+  })
+
+  it('stays synchronized past regex literals holding quotes in classes (square.js law)', () => {
+    // A regex literal like /^(?:https?:)?\/[^"'<>]*\./i once desynced the
+    // scanner: the quote inside the character class opened a phantom
+    // string that swallowed every later comment. The strip must see
+    // through the literal and still reach the dated comment after it.
+    const src = [
+      `const A = (/^(?:https?:)?\\/[^"'<>]*\\./i.test(value) && EXT.test(value));`,
+      '/** THE MESH FACE of the same rule (2026-09-21): */',
+      'export function isMeshUrl(value) {',
+      '    // THE CONTRACT OWNS THIS (2026-10-13): four seats.',
+      '    return !!value;',
+      '}',
+    ].join('\n')
+    const out = stripper.stripLeakageComments(src)
+    expect(out).not.toMatch(/2026-09-21|2026-10-13/)
+    expect(out).toContain('^(?:https?:)?\\/[^')
+    expect(out).toContain('export function isMeshUrl')
+  })
+
   it('strips dated, audit-coded, and narration comments; keeps clean contracts', () => {
     const src = [
       '// (decision 3) the old ring',
@@ -229,5 +267,120 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
       expect(manifest.private).toBeUndefined()
       expect(manifest.publishConfig).toEqual({ access: 'public' })
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+})
+
+describe('G2 — bundle overlay law (a declared patch must ship)', () => {
+  it('refuses a manifest declaring dsh.bundle.patch without packing the overlay', () => {
+    const fx = fixture({
+      'package.json': okManifest({ dsh: { bundle: { patch: './cordis.patch.yml' } } }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz'))
+        .toThrow('declares dsh.bundle.patch "./cordis.patch.yml" but does not pack it')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('accepts the same manifest when the overlay ships in the tarball', () => {
+    const fx = fixture({
+      'package.json': okManifest({ dsh: { bundle: { patch: './cordis.patch.yml' } } }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'cordis.patch.yml': 'plugins: []\n',
+    })
+    try {
+      expect(() => gates.validateTarballPayload(fx.inner, fx.listing, 'fx.tgz')).not.toThrow()
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+})
+
+describe('G5 — the closure tree (in-set siblings extract as real bytes)', () => {
+  it('resolves a sibling dependency from the extracted tarball, not a stub', async () => {
+    // a imports the sibling by its manifest name; the probe extracts
+    // both into probeDir/node_modules so plain node links REAL bytes
+    // (a stub could never satisfy a value the importer computes on).
+    const b = fixture({
+      'package.json': okManifest({ name: '@melite/fx-closure-real' }),
+      'lib/index.js': 'export const real = 41\n',
+      'lib/index.d.ts': 'export declare const real: number\n',
+    })
+    const a = fixture({
+      'package.json': okManifest({ name: '@melite/fx-closure-peer', dependencies: { '@melite/fx-closure-real': '0.0.0' } }),
+      'lib/index.js': "import { real } from '@melite/fx-closure-real'\nif (real !== 41) throw new Error('stub linked — closure tree broken')\nexport const x = real + 1\n",
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      await gates.probeExecutability(new Map([
+        ['a.tgz', { f: a.f, literals: ['./lib/index.js'] }],
+        ['b.tgz', { f: b.f, literals: ['./lib/index.js'] }],
+      ]))
+    } finally {
+      rmSync(a.dir, { recursive: true, force: true })
+      rmSync(b.dir, { recursive: true, force: true })
+    }
+  })
+
+  it('records (never refuses) a true external the closure will install', async () => {
+    const fx = fixture({
+      'package.json': okManifest(),
+      'lib/index.js': "import 'fx-true-external-pkg'\nexport const x = 1\n",
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      await gates.probeExecutability(new Map([['fx.tgz', { f: fx.f, literals: ['./lib/index.js'] }]]))
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+})
+
+describe('G5 — stub-loader synthesis (exec-stub-loader.mjs laws)', () => {
+  /** Register the probe's loader and import `file` under plain node,
+   *  exactly the way probeExecutability boots every exports row. */
+  const probeImport = (dir: string, file: string) => {
+    const loader = join(ROOT, 'tools', 'exec-stub-loader.mjs')
+    const boot = `import { register } from 'node:module'; import { pathToFileURL } from 'node:url'; ` +
+      `register(${JSON.stringify(pathToFileURL(loader).href)}, pathToFileURL(${JSON.stringify(dir + '/')})); ` +
+      `await import(pathToFileURL(${JSON.stringify(join(dir, file))}).href);`
+    return spawnSync(process.execPath, ['--no-warnings', '--import', `data:text/javascript,${encodeURIComponent(boot)}`],
+      { encoding: 'utf8', cwd: dir, timeout: 120000 })
+  }
+
+  it('synthesizes linkable, constructible, coercible stubs for every clause shape', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-stub-law-'))
+    try {
+      // one importer carrying every clause the loader's scanner knows:
+      // default + construct, alias law (DECL as local), namespace
+      // member (new yaml.Type at module scope), computed key
+      // (toPrimitive coercion), re-export clause, mixed clause.
+      writeFileSync(join(dir, 'importer.js'), [
+        "import Ext from 'fx-absent-ext'",
+        "import { DECL as localDecl } from 'fx-absent-ext'",
+        "import * as yaml from 'fx-absent-yaml'",
+        "import Def, { named } from 'fx-absent-mixed'",
+        "export { reexported } from 'fx-absent-reexport'",
+        'const built = new Ext()',
+        'const type = new yaml.Type("str")',
+        'const key = { [Ext]: "coerced" }',
+        'if (localDecl === undefined) throw new Error("alias law broken: DECL not exported")',
+        'if (typeof named !== "function" && named !== undefined) throw new Error("mixed clause broken")',
+        'if (Def === undefined) throw new Error("default broken")',
+        'if (key.stub !== "coerced") throw new Error("toPrimitive law broken")',
+        'export const done = true',
+      ].join('\n'))
+      const r = probeImport(dir, 'importer.js')
+      expect(r.stderr).toBe('')
+      expect(r.status).toBe(0)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
+  it('stubs css-module sidecars plain node cannot load', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-stub-css-'))
+    try {
+      writeFileSync(join(dir, 'importer.js'), "import './x.module.css'\nexport const done = true\n")
+      const r = probeImport(dir, 'importer.js')
+      expect(r.stderr).toBe('')
+      expect(r.status).toBe(0)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 })

@@ -43,26 +43,30 @@ export function stripLeakageComments(src) {
     let out = "";
     let i = 0;
     const n = text.length;
+    // last significant char + last identifier word, for regex-vs-division
+    let prevChar = "";
+    let prevWord = "";
     while (i < n) {
       const c = text[i];
+      if (/\s/.test(c)) { out += c; i++; continue; }
+      const wordStart = /^[A-Za-z_$][A-Za-z0-9_$]*/.exec(text.slice(i));
+      if (wordStart) {
+        prevWord = wordStart[0]; prevChar = prevWord.slice(-1);
+        out += prevWord; i += prevWord.length;
+        continue;
+      }
       // plain string literals — copy verbatim (handles \-escapes)
       if (c === '"' || c === "'") {
         const quote = c;
-        out += c;
+        out += c; prevChar = quote === '"' ? '"' : "'";
         i++;
         while (i < n) {
-          if (text[i] === "\\") {
-            out += text[i] + (text[i + 1] ?? "");
-            i += 2;
-            continue;
-          }
+          if (text[i] === "\\") { out += text[i] + (text[i + 1] ?? ""); i += 2; continue; }
           out += text[i];
-          if (text[i] === quote) {
-            i++;
-            break;
-          }
+          if (text[i] === quote) { i++; break; }
           i++;
         }
+        prevWord = "";
         continue;
       }
       // template literal — verbatim except ${ } interiors are rescanned
@@ -110,6 +114,38 @@ export function stripLeakageComments(src) {
         }
         continue;
       }
+      // regex literal — copy verbatim when a `/` sits in expression
+      // position (after an operator/`(`/`,`/start, or after keywords like
+      // return); character classes may hold quotes and `/` without
+      // closing the literal. Division position falls through untouched.
+      if (c === "/" && text[i + 1] !== "/" && text[i + 1] !== "*") {
+        const afterValue =
+          prevChar === "" || prevChar === ")" || prevChar === "]" ||
+          (prevChar !== "" && /[A-Za-z0-9_$."'`]/.test(prevChar));
+        const keywordBefore =
+          ["return", "typeof", "instanceof", "in", "of", "new", "delete",
+           "void", "throw", "case", "do", "else", "yield", "await"].includes(prevWord);
+        if (!afterValue || keywordBefore) {
+          let j = i + 1;
+          let inClass = false;
+          while (j < n) {
+            if (text[j] === "\\") { j += 2; continue; }
+            if (inClass) { if (text[j] === "]") inClass = false; j++; continue; }
+            if (text[j] === "[") { inClass = true; j++; continue; }
+            if (text[j] === "/") break;
+            if (text[j] === "\n") break; // unterminated — treat as not-a-literal
+            j++;
+          }
+          if (j < n && text[j] === "/") {
+            let k = j + 1;
+            while (k < n && /[a-z]/.test(text[k])) k++;
+            const body = text.slice(i, k);
+            out += body; prevChar = body.slice(-1); prevWord = "";
+            i = k;
+            continue;
+          }
+        }
+      }
       // line comment
       if (c === "/" && text[i + 1] === "/") {
         let j = i;
@@ -134,6 +170,8 @@ export function stripLeakageComments(src) {
         continue;
       }
       out += c;
+      prevChar = c;
+      prevWord = "";
       i++;
     }
     return out;
@@ -153,8 +191,10 @@ if (invokedDirectly) {
     const next = stripLeakageComments(raw)
     if (next !== raw) {
       changed++
-      if (!check) writeFileSync(f, next)
-      console.error(`stripped: ${f}`)
+      if (!check) {
+        writeFileSync(f, next)
+        console.error(`stripped: ${f}`)
+      }
     }
   }
   console.log(`${check ? "would strip" : "stripped"} ${changed}/${files.length} files`)

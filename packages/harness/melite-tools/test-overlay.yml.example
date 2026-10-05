@@ -14,7 +14,7 @@
     port: 3082
 
 - insert:
-    - id: infer-estate
-      name: '@melite-plugin/melite-estate'
-    - id: infer-tools-doors
-      name: '@melite-plugin/dsh-tools/doors'
+    - id: melite-estate
+      name: '@melite-plugin/dsh-estate'
+    - id: melite-tools-doors
+      name: '@melite/harness-tools/doors'
