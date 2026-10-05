@@ -19,10 +19,11 @@
 // gate already rides). Exit 0 = verified; exit 1 = anything short.
 import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
+import { stripLeakageComments } from './strip-artifact-comments.mjs'
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts }).trim()
 const git = (...a) => run('git', a)
@@ -134,6 +135,42 @@ export function classifyEntry (inner, tarName) {
   }
 }
 
+/** G1.5: rewrite every packed tarball for publication. Two rewrites in
+ *  one repack, so the gates below and the manifest sha256s describe the
+ *  exact published bytes:
+ *  - leakage comments stripped from js/mjs/cjs/css/.d.ts members;
+ *  - package/package.json: drop `private` (a workspace invariant, not a
+ *    publish fact), set publishConfig.access=public — the registry
+ *    shape, produced at the same door DSH's release pack produces it.
+ *  Exported for the wall suite (release-artifact-plane.spec.ts). */
+export function stripPackedTarballs (files) {
+  const walk = (dir, out) => {
+    for (const ent of readdirSync(dir, { withFileTypes: true })) {
+      const p = join(dir, ent.name)
+      if (ent.isDirectory()) walk(p, out)
+      else if (/\.(js|mjs|cjs|css|d\.ts)$/.test(ent.name)) out.push(p)
+    }
+    return out
+  }
+  for (const f of files) {
+    const dir = mkdtempSync(join(tmpdir(), 'melite-strip-'))
+    try {
+      run('tar', ['-xzf', f, '-C', dir])
+      for (const p of walk(join(dir, 'package'), [])) {
+        const raw = readFileSync(p, 'utf8')
+        const next = stripLeakageComments(raw)
+        if (next !== raw) writeFileSync(p, next)
+      }
+      const manifestPath = join(dir, 'package', 'package.json')
+      const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      delete manifest.private
+      manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
+      writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
+      run('bash', ['-c', `tar -czf ${f}.new -C ${dir} package && mv ${f}.new ${f}`])
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  }
+}
+
 async function mint (opts) {
   const dirty = git('status', '--porcelain')
   if (dirty) fail(`work tree is dirty — commit first:\n${dirty}`)
@@ -157,6 +194,14 @@ async function mint (opts) {
     execFileSync(pnpmBin(), ['-r', 'pack', '--pack-destination', dest], { stdio: 'inherit' })
     const files = run('bash', ['-c', `ls ${dest}/*.tgz`]).split('\n').filter(Boolean)
     if (files.length === 0) fail('pnpm packed zero tarballs — refusing an empty artifact set')
+    // G1.5 — COMMENT HYGIENE (publish plane): compiled lib inherits the
+    // source plane's dated rationale comments; the artifact must not ship
+    // development history. Strip leakage markers from every packed
+    // js/mjs/css/declaration BEFORE the gates below run, so G2/G5 assert
+    // the stripped bytes — the executability probe is the proof the
+    // strip is behavior-neutral.
+    console.log('G1.5: stripping leakage comments from packed artifacts …')
+    stripPackedTarballs(files)
     const innerFiles = new Map()
 
     for (const f of files) {
@@ -167,7 +212,7 @@ async function mint (opts) {
       try {
         validateTarballPayload(inner, listing, tarName)
         classifyEntry(inner, tarName)
-        innerFiles.set(tarName, { f, literals: exportsRows(inner, listing, tarName) })
+        innerFiles.set(tarName, { f, literals: exportsRows(inner, listing, tarName), inner })
       } catch (e) { fail(e.message) }
     }
     console.log(`entry gate: ${files.length} tarballs carry every exports target; payload plane clean`)
@@ -178,6 +223,27 @@ async function mint (opts) {
     try {
       await probeExecutability(innerFiles)
     } catch (e) { fail(e.message) }
+
+    // The publish order: dependencies before consumers (depth-first
+    // postorder over in-set dependencies + peerDependencies), one
+    // tarball name per line. tools/publish-npm.mjs consumes it so the
+    // registry never sees a consumer whose dependency is still missing.
+    const byName = new Map([...innerFiles.values()].map((v) => [v.inner.name, v.f.split('/').pop()]))
+    const ordered = []
+    const seen = new Set()
+    const visit = (name) => {
+      if (seen.has(name)) return
+      seen.add(name)
+      const entry = [...innerFiles].find(([, v]) => v.inner.name === name)
+      if (!entry) return
+      const deps = [...Object.keys(entry[1].inner.dependencies ?? {}), ...Object.keys(entry[1].inner.peerDependencies ?? {})]
+      for (const d of deps.sort()) if (byName.has(d)) visit(d)
+      ordered.push(byName.get(name))
+    }
+    for (const name of [...byName.keys()].sort()) visit(name)
+    if (ordered.length !== files.length) fail(`publish order covers ${ordered.length}/${files.length} tarballs — refusing an incomplete order`)
+    const orderPath = join(dest, 'order.txt')
+    writeFileSync(orderPath, ordered.join('\n') + '\n')
 
     const manifest = {
       manifest: 1,
@@ -192,6 +258,16 @@ async function mint (opts) {
     }
     const manifestPath = join(dest, 'release-manifest.json')
     writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
+    if (opts.out) {
+      // The publish plane's copy of the exact gated bytes: tarballs +
+      // manifest + order. The release-publish workflow feeds this dir
+      // to tools/publish-npm.mjs unchanged.
+      mkdirSync(opts.out, { recursive: true })
+      for (const f of [...files, manifestPath, orderPath]) {
+        copyFileSync(f, join(opts.out, f.split('/').pop()))
+      }
+      console.log(`gated publish set copied to ${opts.out}`)
+    }
     console.log(`uploading ${files.length} tarballs + manifest to ${tag} …`)
     run('gh', ['release', 'upload', tag, ...files.map((f) => f), manifestPath, '--clobber'])
     console.log(`✓ ${tag}: ${files.length} tarballs + release-manifest.json @ ${commit.slice(0, 8)}`)
@@ -324,8 +400,11 @@ const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(pro
 if (invokedDirectly) {
   const [verb, ...rest] = process.argv.slice(2)
   const opts = {}
-  for (let i = 0; i < rest.length; i += 2) if (rest[i] === '--tag') opts.tag = rest[i + 1]
+  for (let i = 0; i < rest.length; i++) {
+    if (rest[i] === '--tag') opts.tag = rest[++i]
+    else if (rest[i] === '--out') opts.out = rest[++i]
+  }
   if (verb === 'mint') mint(opts).catch((err) => { console.error(err); process.exitCode = 1 })
   else if (verb === 'verify') verify(opts)
-  else fail('usage: node tools/release-artifacts.mjs <mint|verify> [--tag vX.Y.Z]')
+  else fail('usage: node tools/release-artifacts.mjs <mint|verify> [--tag vX.Y.Z] [--out DIR]')
 }

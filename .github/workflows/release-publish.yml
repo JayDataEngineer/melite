@@ -1,0 +1,91 @@
+# Publish the melite release sequence to npm. This workflow is manual-only
+# (workflow_dispatch) and intentionally does not listen to pull_request or
+# push: publication must always be an explicit, reviewed act from a v* tag,
+# and it must never appear as a PR check. The pack job mints from the tag
+# (build, pack, hygiene strip, payload/entry/executability gates, manifest
+# digests); the publish job uploads exactly those gated bytes — it has no
+# build step.
+name: Release publish (melite)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to mint and publish (must point at a commit)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+env:
+  PRIMARY_NODE_VERSION: '24'
+
+jobs:
+  pack:
+    name: Mint gated npm tarballs
+    runs-on: ubuntu-24.04
+    steps:
+      # Complete history: the release scripts read tags.
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.tag }}
+          persist-credentials: false
+
+      - uses: pnpm/action-setup@v4
+        with:
+          dest: ${{ runner.temp }}/setup-pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.PRIMARY_NODE_VERSION }}
+
+      - name: Install (immutable)
+        run: pnpm install --frozen-lockfile
+
+      - name: Mint (build + pack + gates + publish rewrite)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node tools/release-artifacts.mjs mint --tag ${{ inputs.tag }} --out dist/npm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: melite-npm-tarballs
+          path: dist/npm/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish to npm
+    needs: pack
+    runs-on: ubuntu-24.04
+    # Required reviewers and the allowed tags live on the environment; this
+    # is the only job in the sequence that can write to the registry.
+    environment: npm-publish
+    concurrency:
+      group: Release-publish
+      cancel-in-progress: false
+    permissions:
+      contents: read
+    steps:
+      # Checkout and install carry the release scripts only. There is no
+      # build step: publication uploads the bytes the pack job produced.
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.PRIMARY_NODE_VERSION }}
+          registry-url: https://registry.npmjs.org
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: melite-npm-tarballs
+          path: dist/npm
+
+      - name: Publish tarballs
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node tools/publish-npm.mjs --from dist/npm

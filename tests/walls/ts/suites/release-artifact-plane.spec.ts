@@ -22,6 +22,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   validateTarballPayload: (inner: unknown, listing: string[], tarName: string) => void
   classifyEntry: (inner: unknown, tarName: string) => void
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
+  stripPackedTarballs: (files: string[]) => void
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -178,4 +179,55 @@ describe('G5 — live-tree smoke (audit case 5, guarded on built lib/)', () => {
       expect(listed.length).toBeGreaterThanOrEqual(3)
     } finally { rmSync(dest, { recursive: true, force: true }) }
   }, 120_000)
+})
+
+describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
+  const stripper = req('../../../../tools/strip-artifact-comments.mjs') as {
+    stripLeakageComments: (src: string) => string
+  }
+
+  it('strips dated, audit-coded, and narration comments; keeps clean contracts', () => {
+    const src = [
+      '// (decision 3) the old ring',
+      '/* M4 audit note */',
+      '// the operator law, li-bu, 2026-09-10',
+      '/** Returns the sum of both operands. */',
+      'const url = "https://x//y" // dated 2026-03-04',
+      'const t = `a ${/* mint12 marker 2026-01-02 */ 1} b`',
+      'export const f = (a: number) => a + 1 // plain tail',
+    ].join('\n')
+    const out = stripper.stripLeakageComments(src)
+    expect(out).toContain('/** Returns the sum of both operands. */')
+    expect(out).toContain('"https://x//y"')
+    expect(out).toContain('plain tail')
+    expect(out).toContain('`a ${ 1} b`')
+    expect(out).not.toContain('decision 3')
+    expect(out).not.toContain('M4 audit')
+    expect(out).not.toContain('li-bu')
+    expect(out).not.toContain('dated 2026-03-04')
+    expect(out).not.toContain('mint12')
+  })
+
+  it('leaves user-facing string prose untouched — strings are product text', () => {
+    const src = 'const msg = "workflow_file retired 2026-09-07; no silent empty render"\nconst t = `no longer ${1} here`'
+    const out = stripper.stripLeakageComments(src)
+    expect(out).toBe(src)
+  })
+
+  it('rewrites a packed tarball: comments stripped, private dropped, access=public', () => {
+    const fx = fixture({
+      'package.json': okManifest({ private: true }),
+      'lib/index.js': '// dated 2026-01-01 note\n/** Contract line stays. */\nexport const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const js = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/lib/index.js`], { encoding: 'utf8' })
+      const manifest = JSON.parse(execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/package.json`], { encoding: 'utf8' }))
+      expect(js).not.toContain('dated 2026-01-01')
+      expect(js).toContain('Contract line stays.')
+      expect(manifest.private).toBeUndefined()
+      expect(manifest.publishConfig).toEqual({ access: 'public' })
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
 })
