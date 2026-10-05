@@ -46,6 +46,16 @@ const BUNDLES = [
   '@melite/motion-motion',
   '@melite/video-h3-timeline',
 ]
+// profile-template members whose template rows pin the previous rc
+// (the shipped rc.2 template still names rc.1 for these four); pinned
+// at the runtime version so the peer check never disables them
+const SKEW_PINNED = [
+  'dsh-api-gateway',
+  'dsh-storage-json',
+  'dsh-storage-domain',
+  'dsh-subprocess-local',
+]
+
 const WEB_PORT = '3217'
 const STRIP_EXT = /\.(js|mjs|cjs|css|d\.ts)$/
 
@@ -222,11 +232,23 @@ const profileDir = `/home/node/.dsh/profiles/${PROFILE}`
 const dependencies = Object.fromEntries(
   Object.entries(versions).filter(([name]) =>
     name.startsWith('@melite/') || name.startsWith('@melite-plugin/')))
+// the base bundle + the profile-template members that skew are pinned
+// to the CLI's own version: an unversioned or template-pinned row
+// resolves the registry's stale tag (rc.1 against the rc.2 runtime)
+// and the peer-skew wall disables the member — storage-domain took
+// storageDomain down, api-gateway took the web app's connection down,
+// and the boot died with entries pending on services that never came
+dependencies['@deepseek-ai/dsh-base'] = DSH_VERSION
+// the web app plugin is the webServer provider every real web profile
+// carries — without it `dsh web` activates nothing to serve and the
+// melite web plugins sit pending forever
+dependencies['@deepseek-ai/dsh-web-app'] = DSH_VERSION
+for (const m of SKEW_PINNED) dependencies['@deepseek-ai/' + m] = DSH_VERSION
 const seed = {
   name: `dsh-profile-${PROFILE}`,
   private: true,
   dependencies,
-  dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', ...BUNDLES] } },
+  dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', ...BUNDLES] } },
 }
 const seedPath = join(tmpdir(), 'melite-rehearsal-seed.json')
 writeFileSync(seedPath, JSON.stringify(seed, null, 2))
@@ -241,7 +263,8 @@ writeFileSync(workspacePath, [
   'nodeLinker: hoisted', 'autoInstallPeers: false', '',
   '# every manifest row pins its tarball (self-contained-closure law)',
   'overrides:', ...Object.entries(overrides).map(([name, path]) =>
-    `  ${JSON.stringify(name)}: ${path}`), '',
+    `  ${JSON.stringify(name)}: ${path}`),
+  ...SKEW_PINNED.map((m) => `  '@deepseek-ai/${m}': ${DSH_VERSION}`), '',
 ].join('\n'))
 r = docker(['cp', workspacePath, `${CONTAINER}:${profileDir}/pnpm-workspace.yaml`])
 if (r.code !== 0) die(`seeding workspace failed: ${r.out.slice(0, 400)}`)
@@ -295,18 +318,39 @@ if (dump.code === 0) {
 }
 
 // web boot: bring it up, poll, tear down
-const boot = inBox(`${PATH}; nohup dsh --profile ${PROFILE} web --port ${WEB_PORT} >/tmp/web.log 2>&1 & echo started`)
+// with dsh-web-app layered, `dsh --profile X` boots the browser UI
+// directly — a `web` app-arg is rejected ("Expected 0 arguments").
+// --no-open: the container is headless; the default browser-open
+// attempt is what silently killed the boot process
+const boot = inBox(`${PATH}; nohup dsh --profile ${PROFILE} --no-open --port ${WEB_PORT} >/tmp/web.log 2>&1 & echo started`)
+// the web receipt is the browser-trust fence's own contract: the boot
+// prints the token holder's URL (the server is up and serving), the
+// token URL answers 303 (token accepted, session cookie issued — the
+// exact hop a browser makes), and bare / answers 401 to a stranger
+// (the fence fencing). Following past the 303 requires a real browser
+// handshake by design; a cold-consumer receipt stops at the door.
 let webOk = false
+let webDetail = 'no served URL within 60s'
 if (boot.code === 0) {
   for (let i = 0; i < 30; i++) {
     await new Promise((res) => setTimeout(res, 2000))
-    const p = inBox(`curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:${WEB_PORT}/ || true`)
-    if (p.out.trim() === '200') { webOk = true; break }
+    const url = inBox(`grep -o 'http://[^ ]*' /tmp/web.log | tail -1`).out.trim()
+    if (!url) continue
+    const token = inBox(`curl -s -o /dev/null -w '%{http_code}' '${url}' || true`).out.trim()
+    const stranger = inBox(`curl -s -o /dev/null -w '%{http_code}' 'http://127.0.0.1:${WEB_PORT}/' || true`).out.trim()
+    if (token === '303' && stranger === '401') {
+      webOk = true
+      webDetail = `serving :${WEB_PORT} — token 303, stranger 401`
+      break
+    }
+    webDetail = `token ${token}, stranger ${stranger}`
   }
-  inBox(`pkill -f "dsh.*web" 2>/dev/null; true`)
+  const log = inBox(`cat /tmp/web.log`).out
+  const badBoot = /did not activate|startup failed|disabling profile plugin row/.test(log)
+  if (badBoot) { webOk = false; webDetail = 'activation failures in the boot log' }
+  inBox(`pkill -f "dsh --profile" 2>/dev/null; true`)
 }
-check('dsh web boots clean on the stack', webOk,
-  webOk ? `HTTP 200 on :${WEB_PORT}` : 'no 200 within 60s')
+check('dsh web boots clean on the stack', webOk, webDetail)
 
 function existsInBox(p) {
   return inBox(`test -e ${p}`).code === 0
