@@ -71,7 +71,9 @@ export async function load (url, context, nextLoad) {
     try {
       const src = importerSrcs.join('\n')
       const spec = esc(specUrl)
-      for (const m of src.matchAll(new RegExp(`import\\s*\\{([^}]+)\\}\\s*from\\s*['"]${spec}['"]`, 'g'))) {
+      // both import AND export-reexport clauses bind the module's
+      // names (chrome.js: export { readAsDataURL } from '@melite/...')
+      for (const m of src.matchAll(new RegExp(`(?:import|export)\\s*\\{([^}]+)\\}\\s*from\\s*['"]${spec}['"]`, 'g'))) {
         for (let part of m[1].split(',')) {
           part = part.trim()
           if (!part) continue
