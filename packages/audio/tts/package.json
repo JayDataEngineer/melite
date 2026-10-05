@@ -7,8 +7,7 @@
     ".": "./src/index.ts",
     "./card": "./src/card.ts",
     "./package.json": "./package.json",
-    "./tool": "./src/tool.ts",
-    "./ui/*": "./src/ui/*"
+    "./tool": "./src/tool.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
@@ -29,5 +28,5 @@
     "typescript": "^5.9.3"
   },
   "name": "@melite/audio-tts",
-  "description": "the tts card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context"
+  "description": "the tts card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context"
 }

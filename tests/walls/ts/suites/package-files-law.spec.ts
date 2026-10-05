@@ -150,7 +150,13 @@ describe('package-files law — every exports target ships', () => {
           : typeof value === 'object' && value !== null ? Object.values(value).filter((t) => typeof t === 'string') : []
         for (const t of targets) {
           const norm = t.replace(/^\.\//, '')
-          if (norm === 'package.json' || norm.includes('*')) continue
+          if (norm === 'package.json') continue
+          if (norm.includes('*')) {
+            // the wildcard's base dir is the promise — it must exist
+            const base = norm.split('*')[0].replace(/\/$/, '')
+            if (!existsSync(join(dir, base))) liars.push(`${pkg.name}: ${key} -> ${t} (no ${base}/ tree)`)
+            continue
+          }
           if (!existsSync(join(dir, norm))) liars.push(`${pkg.name}: ${key} -> ${t} (no such file)`)
         }
       }

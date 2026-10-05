@@ -7,8 +7,7 @@
     ".": "./src/index.ts",
     "./card": "./src/card.ts",
     "./package.json": "./package.json",
-    "./tool": "./src/tool.ts",
-    "./ui/*": "./src/ui/*"
+    "./tool": "./src/tool.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit"
