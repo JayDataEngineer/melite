@@ -298,6 +298,42 @@
             input:
               - text
 
+      opencode-go-chat:
+        apiKeyEnv: OPENCODE_API_KEY
+        api: openai-completions
+        baseURL: https://opencode.ai/zen/go/v1
+        retryPolicy:
+          mode: normal
+          maxRetries: 15
+          retryableCodes: [EMPTY_RESPONSE, RATE_LIMIT, SERVER, TIMEOUT, TRANSPORT, PI_AI_ERROR]
+          backoff: {initialDelayMs: 300, maxDelayMs: 5000, jitterRatio: 0.3}
+        headers:
+          User-Agent: Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like
+            Gecko) Chrome/126.0 Safari/537.36
+          x-opencode-session: estate-job-server
+        models:
+          - id: space-bunny-free
+            name: Space Bunny Free (Go, limited time)
+            input: [text, image]
+            contextWindow: 1048576
+            maxTokens: 131072
+            reasoningEfforts:
+              "off": null
+              low: low
+              medium: medium
+              high: high
+              max: max
+          - id: longcat-2.5-preview-free
+            name: LongCat 2.5 Preview Free (Go, limited time)
+            input: [text, image]
+            contextWindow: 1000000
+            maxTokens: 131072
+            reasoningEfforts:
+              "off": null
+              low: low
+              medium: medium
+              high: high
+              max: max
 - id: agent-default-model
   name: "@deepseek-ai/dsh-agent-default-model"
   config:
