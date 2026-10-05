@@ -37,19 +37,26 @@ extensions:
       on both upstreams; Anny itself Apache 2.0.
     pip:
       - "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
+  # SYSTEM REQUIREMENT (Law 0, carried from the model-scoped row the
+  # 2026-10-16 consolidation deleted — one pack, one row): the pack
+  # shells the autoremesher BINARY, resolved engine-side through
+  # AUTOREMESHER_BIN (the boot line exports it) or the estate
+  # provision landing; the pack fails LOUD at node time when it
+  # cannot.
   - name: melite-autoremesher-nodes
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
-    version: 0.1.0
-    url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
-    ref: ad93b67e15102301c9e013fe689b2a2ebd7288f6
-    required: false
+    ref: d9ab386cb747c863fa01237c64d4721036ea0957
+    required: true
     desc: >-
-      In-tree quad-remesh pack: vendored huxingyi/autoremesher CLI
-      (references/autoremesher, offscreen subprocess) with in-process
-      trimesh GLB<->OBJ conversion. Budget classes stay DATA in
-      melite-3d presets yaml; resolution chain explicit > preset >
-      defaults, loud on missing budgets. Phase 0 of the consolidation
-      plan.
+      Quad-remesh pack: huxingyi/autoremesher as a subprocess node
+      (GLB in, remeshed GLB out) with in-process trimesh GLB<->OBJ
+      conversion. The engine binary rides provision sync as the
+      pinned release asset autoremesher-d9ef96bd (2026-10-16, the
+      provision-sharing audit's cure — the gitignored
+      references/autoremesher build taught by the old refusal ships
+      with no clone); the boot line exports AUTOREMESHER_BIN.
+      Budget classes stay DATA in melite-3d presets yaml; resolution
+      chain explicit > preset > defaults, loud on missing budgets.
     pip:
       - trimesh
   # 2026-10-13 (the extension census): the pack is checked at

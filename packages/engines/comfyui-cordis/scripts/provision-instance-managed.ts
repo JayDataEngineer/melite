@@ -10,6 +10,7 @@ import type { EndpointConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
 import { cmdPaths, probe } from "./provision-instance-layout.ts";
 import { AUDIOCORE_LIB, provisionAudiocore } from "./provision-audiocore.ts";
+import { AUTOREMESHER_BIN, provisionAutoremesher } from "./provision-autoremesher.ts";
 
 export function cmdSync(cfg: EndpointConfig): void {
   if (cfg.provision !== "managed") {
@@ -59,6 +60,7 @@ export function cmdSync(cfg: EndpointConfig): void {
       cmdPaths(cfg);
       vendorManager();
       provisionAudiocore();
+      provisionAutoremesher();
       return;
     }
   }
@@ -79,6 +81,7 @@ export function cmdSync(cfg: EndpointConfig): void {
   cmdPaths(cfg);
   vendorManager();
   provisionAudiocore();
+  provisionAutoremesher();
 }
 
 // ── the built-in manager (auto-build; no external dependency) ──────
@@ -189,11 +192,13 @@ export function cmdBootCmd(cfg: EndpointConfig): void {
     const port = enginePort(cfg);
     console.log("# managed launch (cwd resolves custom_nodes; weights via " +
       "extra_model_paths; estate streams for input/output; the native " +
-      "audio core via AUDIOCORE_NATIVE_LIB — provision sync installs " +
-      "it; one line — paste into any shell):");
+      "audio core via AUDIOCORE_NATIVE_LIB and the quad-remesh binary " +
+      "via AUTOREMESHER_BIN — provision sync installs both; one line — " +
+      "paste into any shell):");
     // a bare assignment (semicolon-terminated) persists in the pasted
     // shell — a `VAR=x cmd && cmd2` prefix would scope to cmd only
     console.log("AUDIOCORE_NATIVE_LIB=" + AUDIOCORE_LIB + "; " +
+      "AUTOREMESHER_BIN=" + AUTOREMESHER_BIN + "; " +
       "cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
       " main.py --listen 127.0.0.1 --port " + port +
       " --extra-model-paths-config extra_model_paths.yaml" +
