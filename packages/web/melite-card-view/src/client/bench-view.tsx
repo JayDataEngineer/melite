@@ -22,7 +22,7 @@ import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
 import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice, refusalVoice } from './rejection-voice'
 
 export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
   sessionKey: string
@@ -341,7 +341,7 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     attempt(null)
       .catch(() => attempt(0))
       .then(async (res) => {
-        if (!res.ok) { setSaveError('save refused (' + (await res.json().catch(() => null) as { error?: string } | null)?.error + ')'); return }
+        if (!res.ok) { setSaveError('save refused (' + (await refusalVoice(res)) + ')'); return }
         setSaving(false); setSaveName('')
       })
       .catch((e: unknown) => { setSaveError('save failed — ' + (rejectionVoice(e))) })

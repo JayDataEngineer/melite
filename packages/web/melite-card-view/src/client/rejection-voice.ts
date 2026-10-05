@@ -7,3 +7,20 @@
 export function rejectionVoice(e: unknown): string {
   return e instanceof Error ? e.message : String(e)
 }
+
+/** The voice for a refused HTTP response, the same lossless law: a
+ * JSON body's error field speaks itself; any other body names the
+ * status and carries the raw text verbatim — never "undefined" for
+ * a body the door never wrote as JSON.
+ * @param res the refused response (already known !res.ok)
+ * @returns the refusal's own words, for the operator's error line */
+export async function refusalVoice(res: Response): Promise<string> {
+  const raw = await res.text().catch(() => '')
+  try {
+    const parsed = JSON.parse(raw) as { error?: unknown }
+    if (typeof parsed.error === 'string' && parsed.error !== '') return parsed.error
+  } catch {
+    // not JSON — the raw body below is the door's own words
+  }
+  return `HTTP ${res.status}${raw === '' ? '' : `: ${raw}`}`
+}

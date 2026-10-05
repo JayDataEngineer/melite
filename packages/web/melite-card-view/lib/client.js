@@ -7719,6 +7719,20 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 		function rejectionVoice(e) {
 			return e instanceof Error ? e.message : String(e);
 		}
+		/** The voice for a refused HTTP response, the same lossless law: a
+		* JSON body's error field speaks itself; any other body names the
+		* status and carries the raw text verbatim — never "undefined" for
+		* a body the door never wrote as JSON.
+		* @param res the refused response (already known !res.ok)
+		* @returns the refusal's own words, for the operator's error line */
+		async function refusalVoice(res) {
+			const raw = await res.text().catch(() => "");
+			try {
+				const parsed = JSON.parse(raw);
+				if (typeof parsed.error === "string" && parsed.error !== "") return parsed.error;
+			} catch {}
+			return `HTTP ${res.status}${raw === "" ? "" : `: ${raw}`}`;
+		}
 		//#endregion
 		//#region src/client/draft.ts
 		init_stageView();
@@ -44432,7 +44446,7 @@ Set the \`cycles\` parameter to \`"ref"\` to resolve cyclical schemas with defs.
 				});
 				attempt(null).catch(() => attempt(0)).then(async (res) => {
 					if (!res.ok) {
-						setSaveError("save refused (" + (await res.json().catch(() => null))?.error + ")");
+						setSaveError("save refused (" + await refusalVoice(res) + ")");
 						return;
 					}
 					setSaving(false);

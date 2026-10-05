@@ -352,14 +352,15 @@ describe("the save door's remainder — empty names, opaque refusals, thrown sav
     expect(screen.getByPlaceholderText("flow name")).toBeTruthy();
   });
 
-  test("an opaque refusal voices undefined (never a crash on a bare body)", async () => {
+  test("an opaque refusal names status and body (never 'undefined')", async () => {
     mount();
     await screen.findByText("rev 1");
     doors.ensureAnswer = { status: 409, body: "taken" };
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     fireEvent.change(screen.getByPlaceholderText("flow name"), { target: { value: "x" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
-    expect(await screen.findByText("save refused (undefined)", {}, { timeout: 5000 })).toBeTruthy();
+    expect(await screen.findByText("save refused (HTTP 409: taken)", {}, { timeout: 5000 })).toBeTruthy();
+    expect(screen.queryByText(/undefined/)).toBeNull();
   });
 
   test("a throwing save voices the fallback (never empty)", async () => {
