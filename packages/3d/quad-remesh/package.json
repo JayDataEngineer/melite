@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
-  "description": "the quad-remesh card (the 3d lane) — one card one package: card.ts host face + schema/composition",
+  "description": "the quad-remesh card (the 3d lane) \u2014 one card one package: card.ts host face + schema/composition",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

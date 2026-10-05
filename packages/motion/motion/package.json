@@ -1,5 +1,5 @@
 {
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -57,7 +57,7 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web",

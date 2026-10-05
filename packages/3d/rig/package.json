@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
-  "description": "the rig card (the 3d lane) — skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor→target), species (anyCreature bridge)",
+  "description": "the rig card (the 3d lane) \u2014 skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor\u2192target), species (anyCreature bridge)",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

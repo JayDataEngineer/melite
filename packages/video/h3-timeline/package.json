@@ -1,5 +1,5 @@
 {
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
   "exports": {
@@ -53,7 +53,7 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web",

@@ -25,6 +25,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
   stripPackedTarballs: (files: string[]) => void
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
+  versionCoherenceOffender: (innerFiles: Map<string, { inner: { name: string, version: string } }>, tag: string) => string | null
 }
 const ROOT = join(__dirname, '..', '..', '..', '..')
 
@@ -188,6 +189,28 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
     stripLeakageComments: (src: string) => string
   }
 
+
+  it('G7: one melite version, and the tag is that version (channel coherence)', () => {
+    // GitHub releases, tarball filenames, and the registry must all
+    // say the same string; the v0.4.0-alpha tags shipping 0.3.1
+    // packages told different stories per channel (operator 2026-10-13)
+    const mk = (rows: [string, string, string][]) =>
+      new Map(rows.map(([t, name, version]) => [t, { inner: { name, version } }]))
+    const coherent = mk([
+      ['a.tgz', '@melite/x', '0.1.0-alpha.1'],
+      ['b.tgz', '@melite-plugin/y', '0.1.0-alpha.1'],
+      ['c.tgz', '@deepseek-ai/vendored', '9.9.9'],
+    ])
+    expect(gates.versionCoherenceOffender(coherent, 'v0.1.0-alpha.1')).toBeNull()
+    const mixed = mk([
+      ['a.tgz', '@melite/x', '0.3.1'],
+      ['b.tgz', '@melite-plugin/y', '0.1.0-alpha.1'],
+    ])
+    expect(gates.versionCoherenceOffender(mixed, 'v0.1.0-alpha.1'))
+      .toBe('melite packages carry 2 versions (0.3.1×1, 0.1.0-alpha.1×1)')
+    expect(gates.versionCoherenceOffender(coherent, 'v0.4.0-alpha.6'))
+      .toBe('tag v0.4.0-alpha.6 does not match the set version v0.1.0-alpha.1')
+  })
 
   it('G6: overlay rows must resolve against the packed set — package, or declared subpath (doors seam)', () => {
     // the infer-estate twin class: provisioner's overlay once mounted

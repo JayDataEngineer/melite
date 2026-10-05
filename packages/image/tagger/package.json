@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "private": true,
   "type": "module",
-  "description": "the tagger card (the image lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the tagger card (the image lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",

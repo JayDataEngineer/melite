@@ -1,7 +1,7 @@
 {
   "name": "@melite-plugin/dsh-estate",
   "private": true,
-  "version": "0.3.1",
+  "version": "0.1.0-alpha.1",
   "type": "module",
   "exports": {
     ".": {

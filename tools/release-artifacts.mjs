@@ -122,6 +122,36 @@ export function validateTarballPayload (inner, listing, tarName) {
 }
 
 /**
+ * G7 — CHANNEL COHERENCE (operator 2026-10-13): every melite-owned
+ * package in the set carries ONE identical version, and the release
+ * tag is exactly v<that version>. A tag claiming one number while
+ * tarballs ship another (the v0.4.0-alpha tags around 0.3.1 packages)
+ * shows consumers a different story per channel — GitHub releases,
+ * tarball filenames, and the registry must all say the same string.
+ * @param {Map<string, {inner: {name: string, version: string}}>} innerFiles
+ * @param {string} tag the release tag being minted
+ * @returns {string | null} the coherence offender, or null
+ */
+export function versionCoherenceOffender (innerFiles, tag) {
+  const versions = new Map()
+  for (const { inner } of innerFiles.values()) {
+    if (!inner.name?.startsWith('@melite')) continue
+    versions.set(inner.name, inner.version)
+  }
+  const set = new Set(versions.values())
+  if (set.size !== 1) {
+    const counts = {}
+    for (const v of versions.values()) counts[v] = (counts[v] ?? 0) + 1
+    return `melite packages carry ${set.size} versions (${Object.entries(counts).map(([v, n]) => `${v}×${n}`).join(', ')})`
+  }
+  const only = set.values().next().value
+  if (tag !== `v${only}`) {
+    return `tag ${tag} does not match the set version v${only}`
+  }
+  return null
+}
+
+/**
  * G6 — pure half of the overlay name law: scan one overlay's plugin
  * rows and return the first offender whose name cannot resolve for a
  * cold consumer (null when clean). Valid is an in-set package name,
@@ -264,6 +294,11 @@ async function mint (opts) {
       if (offender) fail(`overlay gate: ${offender} — cannot resolve in the packed set`)
     }
     console.log('overlay gate: every packed overlay row names an in-set package')
+
+    // G7 — CHANNEL COHERENCE: one version for every melite seat, and
+    // the tag is that version
+    const coherence = versionCoherenceOffender(innerFiles, tag)
+    if (coherence) fail(`version gate: ${coherence}`)
     console.log(`entry gate: ${files.length} tarballs carry every exports target; payload plane clean`)
 
     // G5 — EXECUTABILITY PROBE (the alpha.2 killer): every literal
