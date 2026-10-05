@@ -235,7 +235,12 @@ describe("debounced server PUT", () => {
     globalThis.fetch = (async () => json({ tags: {}, map: {} })) as typeof fetch;
     await initTagSync();
     const realRandom = Math.random;
-    Math.random = () => 0;
+    const realWarn = console.warn;
+    const warns: string[] = [];
+    Math.random = () => 0; // full-jitter backoff → the ladder's shortest waits
+    console.warn = (...args: unknown[]) => {
+      warns.push(args.map((a) => String(a)).join(" "));
+    };
     try {
       let putAttempts = 0;
       globalThis.fetch = (async () => {
@@ -243,17 +248,28 @@ describe("debounced server PUT", () => {
         throw new Error("server down");
       }) as typeof fetch;
       useTagMap.getState().createTag("Doomed");
-      // 750ms = SYNC_DEBOUNCE_MS (500) + margin. The wait is
-      // LOAD-BEARING: the debounced PUT must have FIRED and failed
-      // by the check (putAttempts >= 1) — at 0ms the store write
-      // alone would pass the tag assertion, so the counter is what
-      // proves the failed sync (not the store) kept the tag. The
-      // old 4500ms waited for nine cycles.
-      await new Promise((r) => setTimeout(r, 750));
-      assert.ok(putAttempts >= 1, "the debounced PUT fired (and failed) before the check");
+      // The wait is LOAD-BEARING and it must outlast the RETRY
+      // LADDER: apiFetch makes 5 attempts (4 retries) and only then
+      // rejects, which is what reaches the PUT's .catch — a 750ms
+      // wait ended the arm before its own path ran. Poll the attempt
+      // counter (never a fixed sleep) so the arm waits exactly as
+      // long as the ladder needs and no longer.
+      const deadline = Date.now() + 10_000;
+      while (putAttempts < 5 && Date.now() < deadline) {
+        await new Promise((r) => setTimeout(r, 25));
+      }
+      assert.ok(putAttempts >= 5, "the ladder exhausted its 5 attempts before the check");
+      // the rejection reached the .catch: the warn names the failure
+      // and the local state (the offline fallback) is intact
+      await new Promise((r) => setTimeout(r, 0));
+      assert.ok(
+        warns.some((w) => w.includes("[tagMap] server sync failed:") && w.includes("server down")),
+        `expected the sync-failure warn, got ${JSON.stringify(warns)}`,
+      );
       assert.ok("doomed" in state().tags);
     } finally {
       Math.random = realRandom;
+      console.warn = realWarn;
     }
   }, 20_000);
 });

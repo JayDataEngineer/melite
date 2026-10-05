@@ -104,6 +104,19 @@ describe('bag: the write-side value-shape and grammar refusals', () => {
     )
   })
 
+  test('wtype is a closed set too — a foreign STRING spelling refuses naming the renderer arm it has none of', () => {
+    // 'slidr' passes the string shape guard and dies on the closed
+    // set: the renderer has no arm for it, so it would render as a
+    // plain text input forever.
+    expect(() => bag({ wtype: 'slidr' } as never)).toThrow(
+      /extra bag carries wtype 'slidr' — not in WTYPE_SET\. The renderer has no arm for it/,
+    )
+    // every set member rides the write
+    for (const w of WTYPE_SET) {
+      expect(bag({ wtype: w })).toEqual({ wtype: w })
+    }
+  })
+
   test('options grammar: empty values, empty labels, and duplicate values refuse at the write', () => {
     expect(() => bag({ options: [{ value: '', label: 'x' }] })).toThrow(
       /extra bag\.options carries an empty value/,

@@ -201,7 +201,11 @@ export function judgeLaneRelations(
       const missing = members.filter((m) => !stated(m))
       if (missing.length === 0) continue
       out.push({
-        field: members.find(stated) ?? members[0],
+        // the stated member always exists: this block is reached
+        // only past the `some(stated)` guard above, which left at
+        // least one member stated — the `?? members[0]` fallback was
+        // a dead leg
+        field: members.find(stated) as string,
         message:
           'fields ' + quote(members) + ' ride together on this lane (state all or none)' +
           (row.cure !== undefined && row.cure !== ''
@@ -227,7 +231,10 @@ export function judgeLaneRelations(
       const complete = groups.filter((g) => g.every(stated))
       if (complete.length > 0) continue
       out.push({
-        field: everyMember.find(stated) ?? everyMember[0],
+        // same law as the together arm: the `everyMember.some(stated)`
+        // guard above left at least one member stated, so the
+        // `?? everyMember[0]` fallback was a dead leg
+        field: everyMember.find(stated) as string,
         message:
           'this lane takes one of ' +
           groups.map((g) => '(' + quote(g) + ')').join(' or ') +

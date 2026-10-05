@@ -60,6 +60,17 @@ describe("familyProvenance", () => {
     ]);
     assert.deepEqual(out, {});
   });
+
+  it("a run carrying NO status contributes nothing (MediaRun.status is optional on the wire)", () => {
+    // `status ?? ""` is the absent-status seat: a run summary whose
+    // status never rode the wire folds to the same no-information
+    // word an unreadable one does — never a throw, never a count.
+    const out = familyProvenance([
+      run({ status: undefined, families: ["a"], created_at: 100 }),
+      run({ status: undefined, families: ["a"], created_at: 200 }),
+    ]);
+    assert.deepEqual(out, {});
+  });
 });
 
 describe("formatLastRun", () => {

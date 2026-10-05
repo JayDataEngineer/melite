@@ -22,7 +22,8 @@
 //     debounced effect pushes the full document via PUT. localStorage is
 //     written synchronously on every mutation so the cache is never stale.
 //   • Server sync is GATED: it only activates after `initTagSync()` is called
-//     (by the app shell on mount). Tests never call it, so no PUTs fire.
+//     (by the app shell on mount) — the tag-map suites that exercise the
+//     server seat call it deliberately.
 import { createClientStore, type GetState, type SetState } from "./clientStore"
 import { apiFetch } from "./api"
 
@@ -161,9 +162,12 @@ function loadPersisted(): PersistedShape {
 }
 
 // ── Server sync ──────────────────────────────────────────────────────────
-// Gated: server pushes only fire after initTagSync() flips this flag. Tests
-// never call initTagSync, so no PUTs/timers leak into the test suite — the
-// store behaves exactly as the pre-sync localStorage-only version.
+// Gated: server pushes only fire after initTagSync() flips this flag,
+// which every tag-map suite that exercises the sync calls on purpose
+// (tag-map.spec.ts's hydrate + debounced-PUT arms); the init-*.spec.ts
+// files each mount one module so the first successful hydrate does not
+// latch the flag for their siblings. A suite that never calls it fires
+// no PUT and leaves no timer behind.
 let serverSyncEnabled = false
 let syncTimer: ReturnType<typeof setTimeout> | null = null
 

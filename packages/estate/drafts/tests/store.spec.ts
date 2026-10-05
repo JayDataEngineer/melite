@@ -12,7 +12,7 @@
 // objects keep theirs, and the store's WeakMap keys on that identity.
 import { onTestFinished, test } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Context } from "@deepseek-ai/cordis";
@@ -124,14 +124,21 @@ test("no storage facility mounted: the loud earliest refusal", async () => {
 });
 
 test("the one-time legacy import: good rows land, corrupt and non-object rows skip", async () => {
-  const root = legacyRoot({
+  const legacy = {
     "d_good.json": JSON.stringify({ intent: "keep me" }),
     "corrupt.json": "{not json",
     "arr.json": "[1,2]",
     "d_noname.json": JSON.stringify({ note: "no draft_id here" }),
     "notes.txt": "not a draft row",
     "d_pre.json": JSON.stringify({ intent: "already inside" }),
-  });
+  };
+  const root = legacyRoot(legacy);
+  // THE BYTES AS FOUND, read BEFORE the import runs — the comparison
+  // below is against what the tree held, not against what the import
+  // rewrote it into
+  const legacyBytes: Record<string, string> = Object.fromEntries(
+    Object.keys(legacy).map((name) => [name, readFileSync(join(root, "drafts", name), "utf8")]),
+  );
   env(root);
   const ctx = new Context();
   const facility = mountFacility(ctx);
@@ -153,6 +160,18 @@ test("the one-time legacy import: good rows land, corrupt and non-object rows sk
   // corrupt.json / arr.json skipped loudly-silently (evidence on disk,
   // never truth); d_pre untouched (no put row for it).
   assert.equal(drafts.puts.some((p) => p.id === "d_pre"), false);
+  // EVIDENCE, NEVER TRUTH (store.ts:10-11): the import READS the
+  // legacy tree and writes only the domain — the files themselves are
+  // left exactly as they were, byte for byte, and none is moved
+  // aside. (Every legacy row above, imported or skipped, keeps its
+  // bytes; d_pre's file was never even read.)
+  for (const name of ["d_good.json", "d_noname.json", "corrupt.json", "arr.json", "notes.txt"]) {
+    assert.deepEqual(
+      readFileSync(join(root, "drafts", name), "utf8"),
+      legacyBytes[name],
+      name + " is untouched by the import",
+    );
+  }
 });
 
 test("same facility + same root reuses the open; a foreign root refuses", async () => {

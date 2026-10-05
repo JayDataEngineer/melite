@@ -849,6 +849,112 @@ describe("drafts/patch writes: per-key merge, inputs arms, history edges", () =>
   });
 });
 
+// ── the DURABLE doc's malformed rows (the wiring arm's fallbacks) ──
+// The wiring admission walks the live stage set out of the bench doc
+// this door reads, and every row shape it maps has a spelling for a
+// doc that lost its shape. The domain schema validates at OPEN only
+// (invalidRecords: 'backup-and-skip'), so a record written in this
+// process is walked as it sits — these arms pin what each malformed
+// row becomes, so the refusals they feed stay deterministic.
+
+describe("drafts/patch on a malformed durable bench doc: the wiring arm's row shapes", () => {
+  test("a non-object stage row, and rows with no id / a null id, all ride the live set as the EMPTY id", async () => {
+    const { ctx, domain } = await bootCtx();
+    await domain.table("docs").put("bench-mal", {
+      updated_at: 1,
+      doc: {
+        draft_id: "bench-mal",
+        intent: "seeded",
+        status: "ready",
+        createdAt: 1,
+        completedAt: null,
+        // s_0 is the row under patch; s_1 the one legal upstream;
+        // the three malformed rows are the ones under test
+        stages: [
+          { id: "s_0", params: { image: "$image" } },
+          { id: "s_1" },
+          "not-a-row",
+          { card: "no-id-at-all" },
+          { id: null },
+        ],
+        bench: { rev: 0, log: [] },
+      } as never,
+    });
+    const svc = new DraftsRemoteService(ctx);
+    // a phantom upstream: the refusal NAMES the live set it searched,
+    // and the three malformed rows show up as the empty id
+    const refusal = await codeOf(svc.patch(
+      "bench-mal",
+      "s_0",
+      { inputs: { image: { stage: "ghost", output: "image" } } },
+      null,
+      sig,
+    ));
+    assert.ok(refusal.startsWith("bench/wire-stage-not-found|"), refusal);
+    assert.match(refusal, /\(live: s_1, , , \)$/);
+    // the patched row itself never enters its own live set
+    assert.equal((refusal.match(/s_0/g) ?? []).length, 0, "the row under patch is excluded");
+  });
+
+  test("a non-object params row is judged as an EMPTY spell set — a bare-string params that spells the channel still binds nothing", async () => {
+    const { ctx, domain } = await bootCtx();
+    await domain.table("docs").put("bench-mp2", {
+      updated_at: 1,
+      doc: {
+        draft_id: "bench-mp2",
+        intent: "seeded",
+        status: "ready",
+        createdAt: 1,
+        completedAt: null,
+        // the row's params lost its shape on the way in — and it is a
+        // bare "$image", a string that spells the channel by itself,
+        // so reading it as a bag instead of an object is the whole
+        // difference between this wire landing and this refusal
+        stages: [{ id: "s_0", params: "$image" }, { id: "s_1" }],
+        bench: { rev: 0, log: [] },
+      } as never,
+    });
+    const svc = new DraftsRemoteService(ctx);
+    // an inputs-only patch reads the STORED params as the spell set —
+    // a non-object one spells nothing, so the wire dies by name
+    const refusal = await codeOf(svc.patch(
+      "bench-mp2",
+      "s_0",
+      { inputs: { image: { stage: "s_1", output: "image" } } },
+      null,
+      sig,
+    ));
+    assert.ok(refusal.startsWith("bench/dead-wire|"), refusal);
+    assert.match(refusal, /input 'image' is bound by no '\$image' spell in params/);
+    // the malformed row is left exactly as it was found: an
+    // inputs-only patch never rewrites params
+    const doc = await svc.get("bench-mp2", sig);
+    assert.equal((doc["stages"] as Array<Record<string, unknown>>)[0]?.["params"], "$image");
+    // the control: the same body against a row whose params SPELL the
+    // channel is admitted (s_1 is live, the spell is bound)
+    await domain.table("docs").put("bench-mp3", {
+      updated_at: 1,
+      doc: {
+        draft_id: "bench-mp3",
+        intent: "seeded",
+        status: "ready",
+        createdAt: 1,
+        completedAt: null,
+        stages: [{ id: "s_0", params: { image: "$image" } }, { id: "s_1" }],
+        bench: { rev: 0, log: [] },
+      } as never,
+    });
+    const landed = await svc.patch(
+      "bench-mp3",
+      "s_0",
+      { inputs: { image: { stage: "s_1", output: "image" } } },
+      null,
+      sig,
+    );
+    assert.equal(landed.delivered, true);
+  });
+});
+
 // ── the registry seat behind the remote (resolve + admission) ──────
 
 describe("the remote registry seat: resolve attaches, admission refuses", () => {

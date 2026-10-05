@@ -73,7 +73,10 @@ const KIND_BY_EXT: Readonly<Record<string, MediaKind>> = (() => {
   const vocab = mediaVocab();
   // fixed order: video, image, audio, model (the client's documented
   // precedence — moot while the ext sets are disjoint, pinned by the
-  // disjointness wall so it stays moot)
+  // disjointness wall so it stays moot). The `=== undefined` arm is
+  // unreachable by data over the four disjoint vocabularies; it is
+  // KEPT as the first-wins precedence that becomes load-bearing the
+  // day the sets stop being disjoint (mediaKindsDisjoint says so).
   (["video", "image", "audio", "model"] as const).forEach((kind) => {
     for (const ext of vocab[kind]) {
       if (table[ext] === undefined) table[ext] = kind;
@@ -100,7 +103,9 @@ export function mediaKindOf(name: string): MediaKind | undefined {
  *  because a data URI has no extension. */
 export function isModelUrl(value: string): boolean {
   if (/^data:model\/gltf(?:-binary|\+json)[;,]/i.test(value)) return true
-  const withoutQuery = value.split(/[?#]/, 1)[0] ?? value
+  // split with a limit always returns one element, so the `[0]` read
+  // is total (the `?? value` fallback was a dead leg)
+  const withoutQuery = value.split(/[?#]/, 1)[0]
   return mediaKindOf(withoutQuery) === "model";
 }
 
@@ -119,6 +124,10 @@ export function mediaKindsDisjoint(): boolean {
   const seen = new Set<string>();
   for (const kind of ["video", "image", "audio", "model"] as const) {
     for (const ext of vocab[kind]) {
+      // the overlap arm is unreachable by data over the four
+      // disjoint vocabularies and KEPT as the wall that says so —
+      // the day an ext lands in two kinds, this returns false and the
+      // first-wins precedence above becomes load-bearing
       if (seen.has(ext)) return false;
       seen.add(ext);
     }

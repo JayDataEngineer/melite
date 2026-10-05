@@ -268,6 +268,12 @@ describe('judgeLaneBounds (the RANGE RULE)', () => {
     assert.deepEqual(merged, { steps: { max: 12 }, width: { min: 256, max: 1536 } })
     assert.deepEqual(laneBoundsOf(null, { steps: { max: 12 } }), { steps: { max: 12 } })
     assert.equal(laneBoundsOf(null, null), null)
+    // a variant naming a field the FAMILY declares no row for: the
+    // variant's row is whole — there is no family endpoint to hold
+    assert.deepEqual(
+      laneBoundsOf({ steps: { min: 1, max: 50 } }, { cfg: { max: 2 } }),
+      { steps: { min: 1, max: 50 }, cfg: { max: 2 } },
+    )
   })
 
   it('per-ENDPOINT merge: a variant tightening only the ceiling holds the family floor (F9)', () => {
@@ -337,5 +343,34 @@ describe('laneContractOf projects the route envelope into bounds', () => {
     const violations = judgeLaneBounds(bounds, { cfg: 3.5, steps: 6 })
     assert.equal(violations.length, 1)
     assert.match(violations[0]!.message, /'cfg': 3.5 is outside this lane's range \(1–2\)/)
+  })
+
+  it('a steps envelope that is not a [min,max] pair projects nothing — the DECLARED rows keep judging, loud', () => {
+    // The DECL schema accepts any-length steps arrays
+    // (models/families/contract.ts:434-437), so a three-element
+    // envelope reaches the projection. A pair is the only shape the
+    // projection may read endpoints from; a longer one leaves the
+    // variant's own row verbatim (a malformed envelope cannot own an
+    // endpoint) while the well-formed cfg sibling still projects.
+    const contract = laneContractOf({
+      params: ['prompt'],
+      bounds: { steps: { min: 1, max: 50 } },
+      variants: [
+        {
+          id: 'wide',
+          bounds: { steps: { min: 4, max: 30 } },
+          sampler_envelope: { steps: [1, 8, 12], cfg: [1, 2] },
+        },
+      ],
+    } as never)
+    const row = contract.variants.wide!
+    assert.deepEqual(row.bounds, { steps: { min: 4, max: 30 }, cfg: { min: 1, max: 2 } })
+    assert.deepEqual(row.sampler_envelope, { steps: [1, 8, 12], cfg: [1, 2] })
+    // the family ⨯ variant merge a seat takes still refuses: the
+    // malformed envelope opened no door
+    const bounds = laneBoundsOf(contract.bounds ?? null, row.bounds ?? null)
+    const violations = judgeLaneBounds(bounds, { steps: 40, cfg: 1.5 })
+    assert.equal(violations.length, 1)
+    assert.match(violations[0]!.message, /'steps': 40 is outside this lane's range \(4–30\)/)
   })
 })

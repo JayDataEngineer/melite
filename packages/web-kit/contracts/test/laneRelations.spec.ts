@@ -242,6 +242,17 @@ describe("judgeLaneRelations (the six relation words)", () => {
       judgeLaneRelations([{ at_most_one: [{ fields: ["v1", "v2", "v3"] }] }], { v3: 3 }),
       [],
     );
+    // the row's OWN cure rides the refusal in place of the default
+    // tail (the declaration authors the sentence with the law)
+    const cured = judgeLaneRelations(
+      [{ at_most_one: [{ fields: ["v1", "v2"], cure: "one slot, one lane step" }] }],
+      { v1: 1, v2: 2 },
+    );
+    assert.equal(cured.length, 1);
+    assert.equal(
+      cured[0]?.message,
+      "this lane takes at most one of 'v1' + 'v2' — the state carries 2 ('v1' + 'v2') — one slot, one lane step",
+    );
   });
 
   it("required demands the whole list; any_of demands one of it", () => {

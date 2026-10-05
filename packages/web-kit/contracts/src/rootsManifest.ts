@@ -45,11 +45,14 @@ export function searchedVoice(roots: string[]): string {
  *
  * This is the order both readers take: the caller's own tree first
  * (its own writes win), then the manifest roots in their declared
- * order, de-duplicated.
+ * order, de-duplicated. `ownTree` is the caller's own CONFIGURED
+ * tree and is a string at every seat — the gallery answers
+ * `config.flowDir ?? DEFAULT_FLOW_DIR` — so the parameter declares no
+ * null (the re-audit, 2026-10-16).
  */
-export function crossRootOrder(ownTree: string | null, roots: readonly string[]): string[] {
+export function crossRootOrder(ownTree: string, roots: readonly string[]): string[] {
   const out: string[] = []
-  for (const tree of [ownTree ?? '', ...roots]) {
+  for (const tree of [ownTree, ...roots]) {
     if (tree === '') continue
     if (!out.includes(tree)) out.push(tree)
   }

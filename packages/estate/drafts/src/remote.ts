@@ -933,9 +933,16 @@ export class DraftsRemoteService extends TypertRemoteService {
       // half of the pair changes, over the PENDING params (the row's
       // next view) and the merged inputs, BEFORE either lands.
       if (pendingParams !== undefined || "inputs" in patch) {
-        const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] as unknown[] : [])
+        // THE LIVE SET READS THE STAGES THE LOOKUP ABOVE ALREADY
+        // WALKED (the re-audit, 2026-10-16): `doc["stages"]` is the
+        // same value `stages.find` answered one screen up — a value
+        // that answers `find` is the array it walked — so the
+        // non-array arm and this row's own `?? ""` were dead legs
+        // (the row is the very one the finder selected BECAUSE its
+        // `id` equals the stage id asked for).
+        const liveIds = (doc["stages"] as unknown[])
           .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
-          .filter((id) => id !== String(stage["id"] ?? ""));
+          .filter((id) => id !== stageId);
         admitWiring(
           stage,
           pendingParams !== undefined
@@ -943,7 +950,7 @@ export class DraftsRemoteService extends TypertRemoteService {
             : (isObj(stage["params"]) ? stage["params"] as Record<string, unknown> : {}),
           mergedInputs,
           liveIds,
-          String(stage["id"] ?? ""),
+          stageId,
           draftId.replace(/^bench-/, ""),
         );
       }

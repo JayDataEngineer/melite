@@ -9,7 +9,7 @@
 // doubled-rowset catch — not an invented fixture).
 import { test } from "vitest";
 import assert from "node:assert/strict";
-import { benchResultDefects } from "../src/benchResult.ts";
+import { benchResultDefects, artifactFileName } from "../src/benchResult.ts";
 
 /** THE LEGACY LIVE ROW (live lane receipt, 2026-09-20 ~03:00, bench
  * doc rev 404, stage s_0 image-gen): the run observer's terminal
@@ -158,4 +158,16 @@ test("REPORTS: degenerate display sections are named (chips not an array / rows 
     benchResultDefects({ run_id: "r", reports: { a: { kind: "report", status: "pass", rows: ["x"] } } }),
     ["reports.a.rows: not an object (the key-value body)"],
   );
+});
+
+test("artifactFileName: a truncated %-escape in an ABSOLUTE url names the raw segment (the decode refuses, the raw bytes win)", () => {
+  // "x%zz" is not a percent-escape, so decodeURIComponent throws on
+  // the segment the URL parser hands over intact — a HF path with a
+  // literal "%zz" names the download "x%zz", never a mangled one.
+  assert.equal(artifactFileName("https://h.test/models/x%zz"), "x%zz");
+  // a well-formed escape decodes (the serving counterpart, so the
+  // arm reads as one pair)
+  assert.equal(artifactFileName("https://h.test/models/my%20model.safetensors"), "my model.safetensors");
+  // the query and fragment still never ride the name
+  assert.equal(artifactFileName("https://h.test/models/x%zz?download=1#frag"), "x%zz");
 });

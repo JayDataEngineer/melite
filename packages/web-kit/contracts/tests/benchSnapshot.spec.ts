@@ -96,6 +96,17 @@ describe("parseBenchSnapshot / parseCardSnapshot — the top-level law", () => {
       ok: false,
       problems: ["card_snapshot.params: must be an object"],
     });
+    // The loader admits an array as an object body (typeof [] ===
+    // "object", bench-load.ts), so the card face must NAME the
+    // refusal rather than index a missing key.
+    assert.deepEqual(parseCardSnapshot([]), {
+      ok: false,
+      problems: ["card_snapshot: not an object"],
+    });
+    assert.deepEqual(parseCardSnapshot(null), {
+      ok: false,
+      problems: ["card_snapshot: not an object"],
+    });
   });
 });
 
