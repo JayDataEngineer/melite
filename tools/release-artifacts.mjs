@@ -108,6 +108,17 @@ export function validateTarballPayload (inner, listing, tarName) {
   if (typeof inner.main === 'string' && sourceTarget(inner.main)) {
     throw new Error(`payload gate: ${tarName} main targets source "${inner.main}"`)
   }
+  // BUNDLE OVERLAY LAW: a manifest declaring dsh.bundle.patch makes
+  // the plugin loader read that file at the INSTALLED root — a
+  // tarball that omits it boots to ENOENT (the cold-consumer proof,
+  // 2026-10-13: all eight bundle seats declared, none packed).
+  const patch = inner.dsh?.bundle?.patch
+  if (typeof patch === 'string') {
+    const rel = patch.replace(/^\.\//, '')
+    if (!listing.includes(`package/${rel}`)) {
+      throw new Error(`payload gate: ${tarName} declares dsh.bundle.patch "${patch}" but does not pack it`)
+    }
+  }
 }
 
 /** G4 — ENTRY CLASSIFICATION: no `.` row is importable-dead for a
