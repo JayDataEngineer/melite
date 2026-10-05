@@ -52,6 +52,7 @@
     "test:lane": "vitest run --config vitest.e2e.config.ts tests/lane/3088-lane.e2e.ts",
     "test:lane:analyse": "node --experimental-strip-types tests/lane/run.ts analyse",
     "test:lane:commission": "node --experimental-strip-types tests/lane/run.ts commission",
+    "test:py": "python3 -m pytest tests/ -q",
     "test:snapshot": "env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE vitest run --config vitest.snapshot.config.ts",
     "test:snapshot:record": "DSH_SNAPSHOT=record vitest run --config vitest.snapshot.config.ts --update",
     "test:snapshot:refresh": "DSH_SNAPSHOT=refresh vitest run --config vitest.snapshot.config.ts",

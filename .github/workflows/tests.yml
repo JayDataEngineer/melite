@@ -107,6 +107,26 @@ jobs:
       - name: Budget ratchet
         run: pnpm run knip
 
+  # THE PYTHON SEAT (re-audit 2026-10-16b A3, 2026-10-17): four
+  # pytest files test vendored Layer C python (melite-audio-nodes'
+  # nodes/film_mix/core/moss engines) that no TS wall can reach —
+  # they were installed, green, and wired to NOTHING. The blender
+  # fifth (pointed at the deleted mcp_server.py) is deleted, not
+  # ported. ubuntu-latest ships python3; the job installs pytest.
+  pytest:
+    name: pytest seat (vendored layer C)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python3 -m pip install pytest
+      - name: Vendored-python tests
+        run: pnpm run test:py
+
   coverage:
     name: coverage gate (per-file 100%)
     runs-on: ubuntu-latest
