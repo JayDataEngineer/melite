@@ -481,27 +481,65 @@ if [ "$CHECK_ONLY" -eq 0 ]; then
   printf '%s' "$node_now" > "$SHIPPED_MARKER"
 fi
 
+# ------------------------------------------------------- operator session
+# THE /v1 FENCE (li-eo, 2026-10-16): the run plane is fenced with
+# DSH's own connection.requestRejection — the anonymous curl the
+# earlier ship relied on now answers 401 connection/unauthenticated.
+# The sanctioned non-browser path is the lane's own launch token
+# (connection/src/browser-auth.ts:241-258): GET /?token=<launch>
+# mints the authority-bound session cookie, and that cookie speaks
+# for the operator on every later request. The token is the lane's
+# own authentication input, printed to the operator's lane log at
+# boot — no second auth surface is invented here. The mint rides
+# INSIDE the activation wait: while the estate composes, even the
+# index answers with the not-yet voice, so an early one-shot mint
+# races the boot and fails 401. The lane log is DISCOVERED, never
+# assumed: $DSH_HOME names the caller's dsh home (a GUI-launched
+# ship inherits the GUI's), which may hold a STALE lane log whose
+# tokens died with an old process — so every candidate is tried by
+# MINTING, and only a 303 pins the session.
+lane_logs() {
+  systemctl --user show "$UNIT" -p Environment --value 2>/dev/null \
+    | grep -o 'DSH_HOME=[^ ]*' | cut -d= -f2 | sed 's|\$|/melite-test-3088.log|'
+  printf '%s\n' "$HOME/.dsh-dev/melite-test-3088.log" "$HOME/.dsh/melite-test-3088.log"
+  [ -n "${DSH_HOME:-}" ] && printf '%s\n' "${DSH_HOME%/}/melite-test-3088.log"
+  true
+}
+COOKIE_JAR=$(mktemp)
+trap 'rm -f "$COOKIE_JAR"' EXIT
+
 # ----------------------------------------------------------------- wait
-say "WAIT for the activation gate"
+say "WAIT for the activation gate (minting the operator session as it settles)"
 settled=0
 for i in $(seq 1 24); do
   sleep 10
-  code=$(curl -sk -m 20 -o /tmp/ship-ensure.json -w '%{http_code}' \
-    -X POST "$ORIGIN/v1/bench/ensure" \
-    -H 'content-type: application/json' -d '{"session":"main"}' 2>/dev/null)
-  if [ "$code" = "200" ]; then
-    ok "bench plane answered after ~$((i * 10))s"
-    settled=1
+  for log in $(lane_logs | awk '!seen[$0]++' ); do
+    [ -f "$log" ] || continue
+    token=$(grep -o 'dsh web: http://[^ ]*[?]token=[^ ]*' "$log" 2>/dev/null | tail -1 | sed 's/.*[?]token=//')
+    [ -n "$token" ] || continue
+    mint=$(curl -sk -m 20 -c "$COOKIE_JAR" -o /dev/null -w '%{http_code}' "$ORIGIN/?token=$token" 2>/dev/null)
+    if [ "$mint" != "303" ] && [ "$mint" != "200" ]; then
+      continue
+    fi
+    code=$(curl -sk -m 20 -b "$COOKIE_JAR" -o /tmp/ship-ensure.json -w '%{http_code}' \
+      -X POST "$ORIGIN/v1/bench/ensure" \
+      -H 'content-type: application/json' -d '{"session":"main"}' 2>/dev/null)
+    if [ "$code" = "200" ]; then
+      ok "operator session minted (from $log); bench plane answered after ~$((i * 10))s"
+      settled=1
+      break
+    fi
+    printf '   ... %3ds: mint %s, ensure %s (from %s)\n' "$((i * 10))" "$mint" "$code" "$log"
     break
-  fi
-  printf '   ... %3ds: %s\n' "$((i * 10))" "$code"
+  done
+  [ "$settled" -eq 1 ] && break
 done
 if [ "$settled" -eq 0 ]; then
   bad "the bench plane never answered."
   echo "        The estate stays 'activating' when a row keeps re-applying."
   echo "        Read the lane log for the repeating row (the usual culprit is"
-  echo "        an MCP client row that flaps):"
-  echo "          grep -v Blender ~/.dsh/melite-test-3088.log | tail -40"
+  echo "        an MCP client row that flaps) — candidates, unit home first:"
+  lane_logs | sed 's/^/          grep -vE "^\$|Blender" /'
   exit 1
 fi
 
@@ -511,7 +549,7 @@ fi
 say "PROVE the lane runs this tree (behaviour, not face_stamp)"
 
 post() { # post <path> <json>
-  curl -sk -m 30 -o /tmp/ship-probe.json -w '%{http_code}' \
+  curl -sk -m 30 -b "$COOKIE_JAR" -o /tmp/ship-probe.json -w '%{http_code}' \
     -X POST "$ORIGIN$1" -H 'content-type: application/json' -d "$2"
 }
 
@@ -587,21 +625,21 @@ fi
 # agent's PRIMARY face (the melite_load bundle) is checked here too —
 # that is the face the DECL audit found carrying no lanes at all.
 say "CHECK the served declaration"
-if curl -sk -m 20 "$ORIGIN/v1/form-spec?model=qwen3-tts" \
+if curl -sk -b "$COOKIE_JAR" -m 20 "$ORIGIN/v1/form-spec?model=qwen3-tts" \
    | python3 -c "import json,sys;sys.exit(0 if 'lanes' in json.load(sys.stdin) else 1)" 2>/dev/null; then
   ok "/v1/form-spec serves the lanes block (the form gates from the DECL)"
 else
   bad "the form-spec has no lanes block — the form cannot gate"
   exit 1
 fi
-if curl -sk -m 20 "$ORIGIN/v1/card-tools" \
+if curl -sk -b "$COOKIE_JAR" -m 20 "$ORIGIN/v1/card-tools" \
    | python3 -c "import json,sys;sys.exit(0 if any('lanes' in r for r in json.load(sys.stdin)) else 1)" 2>/dev/null; then
   ok "/v1/card-tools carries the agent's lane contract"
 else
   bad "the card-tools manifest has no lanes — the agent composes blind"
   exit 1
 fi
-if curl -sk -m 30 "$ORIGIN/v1/load?name=tts&inference_type=card" \
+if curl -sk -b "$COOKIE_JAR" -m 30 "$ORIGIN/v1/load?name=tts&inference_type=card" \
    | python3 -c "import json,sys;sys.exit(0 if 'lanes' in json.load(sys.stdin).get('bundle',{}).get('signature',{}) else 1)" 2>/dev/null; then
   ok "/v1/load carries the lane contract (melite_load's primary face)"
 else
