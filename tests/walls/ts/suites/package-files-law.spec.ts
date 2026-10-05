@@ -132,6 +132,32 @@ describe('package-files law — every exports target ships', () => {
     expect(filesCover(['lib/*.js'], 'lib/deep/x.js')).toBe(false)
   })
 
+  it('no exports row is a dangling promise — every literal target exists on disk', () => {
+    // 39 rows died for this (2026-10-16): 36 model families carried
+    // template "./mods/loras" rows with no mods tree (mods is
+    // OPTIONAL per make-model), comfyui-cordis named a src/graph.ts
+    // that never existed, formats named two. An exports row is a
+    // promise to the importer; the mint entry gate reads it from
+    // inside every tarball. This wall catches the lie at commit time.
+    const liars: string[] = []
+    for (const pj of workspaceMembers()) {
+      const pkg = JSON.parse(readFileSync(pj, 'utf8')) as Manifest
+      if (!pkg.exports) continue
+      const dir = dirname(pj)
+      for (const [key, value] of Object.entries(pkg.exports)) {
+        if (key === 'package.json') continue
+        const targets = typeof value === 'string' ? [value]
+          : typeof value === 'object' && value !== null ? Object.values(value).filter((t) => typeof t === 'string') : []
+        for (const t of targets) {
+          const norm = t.replace(/^\.\//, '')
+          if (norm === 'package.json' || norm.includes('*')) continue
+          if (!existsSync(join(dir, norm))) liars.push(`${pkg.name}: ${key} -> ${t} (no such file)`)
+        }
+      }
+    }
+    expect(liars, liars.join('\n')).toEqual([])
+  })
+
   it('the member walk mirrors pnpm: private siblings included, the excluded vendor not', () => {
     const names = workspaceMembers().map((p) => JSON.parse(readFileSync(p, 'utf8')).name)
     expect(names).toContain('@melite/estate-manage') // private:true, still packed by pnpm -r

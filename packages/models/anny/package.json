@@ -6,7 +6,6 @@
   "exports": {
     ".": "./src/index.ts",
     "./package.json": "./package.json",
-    "./mods/loras": "./mods/loras.ts",
     "./mods/verbs": "./mods/verbs.ts"
   },
   "dependencies": {

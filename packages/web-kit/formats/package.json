@@ -16,7 +16,6 @@
     "./cardMutations": "./src/cardMutations.ts",
     "./downloads": "./src/downloads.ts",
     "./extractVideoFrame": "./src/extractVideoFrame.ts",
-    "./formZones": "./src/formZones.ts",
     "./glbLoad": "./src/glbLoad.ts",
     "./glbSkin": "./src/glbSkin.ts",
     "./handPose": "./src/handPose.ts",
@@ -38,7 +37,6 @@
     "./readFile": "./src/readFile.ts",
     "./renderSnapshot": "./src/renderSnapshot.ts",
     "./somaSkin": "./src/somaSkin.ts",
-    "./specContract": "./src/specContract.ts",
     ".": "./src/index.ts"
   },
   "version": "0.3.1",
