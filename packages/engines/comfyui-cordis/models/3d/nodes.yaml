@@ -52,15 +52,16 @@ extensions:
       plan.
     pip:
       - trimesh
-  # 2026-10-13 (the extension census): both packs are checked at
-  # runtime — extension_node_types names their classes, so a missing
-  # pack is a refusal — yet NO manifest ever installed them, so a fresh
+  # 2026-10-13 (the extension census): the pack is checked at
+  # runtime — extension_node_types names its classes, so a missing
+  # pack is a refusal — yet NO manifest ever installed it, so a fresh
   # estate refused 3d lanes it had no way to satisfy.
-  - name: melite-blender-proxy-nodes
-    url: https://github.com/JayDataEngineer/melite-blender-proxy-nodes
-    ref: c550e7f024a6291a8221bd5f869d9fb36fdfa0df
-    required: true
-    desc: Blender bridge (MeliteBlenderExport/MCPCall/RunScript/RenderShot) — the Blender export lane.
+  # 2026-10-04 (operator ruling, audit 008 M12): melite-blender-
+  # proxy-nodes LEFT this manifest. Its four nodes were composed by
+  # zero graphs and its mcp_server.py duplicated the 72-tool bench
+  # dsh-provision seats on the game preset — a Blender bench is a DSH
+  # profile concern. MeliteUnityBatch has the same zero-consumer
+  # shape and rides the next row (M15, pending the operator's word).
   - name: melite-unity-nodes
     url: https://github.com/JayDataEngineer/melite-unity-nodes
     ref: e0608551a71d2e60e91f809e0477a40f2c5aac69

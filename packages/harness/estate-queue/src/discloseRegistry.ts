@@ -115,6 +115,53 @@ export function flowSummaryRows(repo: string): FlowSummary[] {
   return out;
 }
 
+/** ONE flow's machine-readable contract (the 2026-10-04 app door).
+ *  A summary row counts stages; a CONTRACT states them — id, engine,
+ *  card, the declared inputs/params, the outputs and the tool
+ *  signature — so a programmatic caller learns what a flow takes
+ *  WITHOUT composing it. Derived live from the registry, the same
+ *  truth the compile reads (QUEUE LANE LAW: no frozen blob). */
+export interface FlowContract {
+  readonly id: string;
+  readonly description: string;
+  readonly stages: ReadonlyArray<{
+    readonly id: string;
+    readonly engine: string;
+    readonly card: string;
+    readonly inputs: unknown;
+    readonly outputs: unknown;
+    readonly params: unknown;
+  }>;
+  readonly initialValidators: unknown;
+  readonly tool: unknown;
+}
+
+/** The contract rows, one per registry flow, in registry order. */
+export function flowContractRows(): FlowContract[] {
+  const out: FlowContract[] = [];
+  for (const name of registryFlowNames()) {
+    const flow = getRegistryFlow(name);
+    /* v8 ignore next -- names come from the same registry (no-else,
+       defensive against a mid-reload skew) (2026-09-12) */
+    if (flow === undefined) continue;
+    out.push({
+      id: flow.id,
+      description: flow.description,
+      stages: flow.stages.map((st) => ({
+        id: st.id,
+        engine: st.engine,
+        card: st.card,
+        inputs: st.inputs,
+        outputs: st.outputs,
+        params: st.params,
+      })),
+      initialValidators: flow.initialValidators,
+      tool: flow.tool,
+    });
+  }
+  return out;
+}
+
 // ── the seat ─────────────────────────────────────────────────────
 
 /** The disclosure service: ONE disclosure system over both planes.
@@ -126,6 +173,14 @@ export class DiscloseDirectoryService extends Service {
 
   constructor(ctx: Context) {
     super(ctx, "disclose");
+  }
+
+  /** GET /v1/flows: the machine-readable FLOW CONTRACTS — every
+   *  registry flow with its declared stages, inputs, outputs and tool
+   *  signature. The programmatic door an app reads to learn what a
+   *  named flow takes before it starts one (2026-10-04). */
+  contracts(): { flows: FlowContract[] } {
+    return { flows: flowContractRows() };
   }
 
   /** GET /v1/discover: unknown

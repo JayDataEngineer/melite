@@ -47,17 +47,18 @@ const dropRoots = (): void => {
 
 const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
   // the retired anny-hmr row's shape verbatim (the 2026-10-13
-  // template cut removed the ROW; the family's estimate ACTION and
-  // this interpreter stay live — the anny card's hmr-estimate chip
-  // drives the same action through the commercial lane's verbs)
+  // template cut removed the ROW; the interpreter stays live and the
+  // 2026-10-04 commercial-only ruling re-pointed the probe at the
+  // surviving action — the anny card's hmr-estimate chip drives it
+  // through the commercial lane's verbs)
   id: "anny-estimate-probe",
   description: "d",
   stages: [plainStage({
     id: "estimate",
     engine: CARD_PLANE_ENGINE,
     family: "anny",
-    action: "estimate",
-    description: "MultiHMR2 regression + loud single-person lock",
+    action: "estimate_commercial",
+    description: "SAM 3D Body → grounded anny (the commercial estimator)",
     inputs: { photo: { initial: "photo" } },
     expected: { photo: "image" },
     params: { photo: "$photo" },
@@ -362,7 +363,9 @@ describe("registryFlowToInline", () => {
       stages: Array<Record<string, unknown>>;
     };
     assert.deepEqual(tts.stages[0]!["card_io"], { wav: "audio" });
-    assert.deepEqual(tts.stages[0]!["inputs"], { text: { initial: "prompt" } });
+    // the initial is named for the channel it feeds (2026-10-04): the
+    // row's `$text` spell resolves against a `text` initial, not `prompt`
+    assert.deepEqual(tts.stages[0]!["inputs"], { text: { initial: "text" } });
     assert.deepEqual(tts.stages[0]!["outputs"], { wav: "audio" });
     assert.equal(tts.stages[0]!["card"], "tts");
     // (the atom vocabulary, stroke 3): the motion card stage — the
@@ -414,7 +417,9 @@ describe("registryFlowToInline", () => {
     assert.ok(
       typeof annyParams.workflow === "object" &&
         annyParams.workflow !== null &&
-        "MultiHMR2ImageToAnny.0" in annyParams.workflow,
+        // the commercial estimator's node (the MultiHMR2 arm was
+        // deleted 2026-10-04 — operator: commercial route only)
+        "Sam3dBodyImageToAnny.0" in annyParams.workflow,
     );
     assert.ok(!("skip_when" in tts.stages[0]!));
   });
@@ -593,6 +598,46 @@ describe("extractRequestInitials — the engine merge's linkable form", () => {
     assert.deepEqual(extractRequestInitials(ansy, { photo: null }), { initials: {} });
   });
 
+  it("every CARD flow declares the initials its $spell names (2026-10-04)", () => {
+    // The merge-hole cure. A card flow's stage wires
+    // `initial("prompt")` and spells `$prompt` in its params, so its
+    // row MUST declare `initialValidators: { prompt: "text" }` — the
+    // extractor walks ONLY that map, so an undeclared initial is never
+    // lifted and the run dies at the merge with "workflow carries
+    // $prompt — neither a FromStage-wired input name nor a request
+    // initial". This walks the registry and pins the law for every
+    // card-bearing row, so a future row cannot repeat the hole.
+    const cardFlows = ["audio-native-tts", "image-upscale", "music-native", "body-to-somax"];
+    for (const id of cardFlows) {
+      const flow = getRegistryFlow(id)!;
+      const declared = Object.keys(flow.initialValidators);
+      for (const st of flow.stages) {
+        for (const edge of Object.values(st.inputs)) {
+          // ONLY initial-fed channels need a validator: a FromStage
+          // channel ($image in image-upscale's polish) is resolved by
+          // the merge's LINKS, and demanding an initial for it would
+          // be a false law.
+          if (!("initial" in edge)) continue;
+          assert.ok(
+            declared.includes(edge.initial),
+            id + "/" + st.id + " wires initial(\"" + edge.initial +
+              "\") but the row declares no validator for it — the extractor " +
+              "walks initialValidators only, so the run would die at the merge",
+          );
+        }
+      }
+    }
+    // and the tts flow's own text initial LIFTS end to end (the key the
+    // tool face advertises — channel, initial, spell and caller key are
+    // all `text`, the anny-hmr convention)
+    const tts = getRegistryFlow("audio-native-tts")!;
+    assert.deepEqual(extractRequestInitials(tts, { text: "hello world" }), {
+      initials: { text: "hello world" },
+    });
+    const toolRow = tts.tool as unknown as { required?: string[] } | null;
+    assert.deepEqual(toolRow?.required, ["text"]);
+  });
+
   it("names the refusing initial in the door's own voice", () => {
     const ansy = getRegistryFlow("anny-hmr-commercial")!;
     const refused = extractRequestInitials(ansy, { photo: 12 });
@@ -697,7 +742,7 @@ describe("registrySkillBody", () => {
     assert.ok(text.includes("from anny-hmr-commercial/estimate"));
     const tts = registrySkillBody(getRegistryFlow("audio-native-tts")!);
     assert.ok(tts.includes("card_io wav: audio"));
-    assert.ok(tts.includes("initial 'prompt'"));
+    assert.ok(tts.includes("initial 'text'"), "the initial is named for the channel (2026-10-04)");
     const up = registrySkillBody(expandRegistryFlow(getRegistryFlow("image-upscale")!));
     assert.ok(up.includes("stage "));
   });

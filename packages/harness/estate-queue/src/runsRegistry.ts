@@ -24,6 +24,7 @@ import {
   extractRequestInitials,
   getRegistryFlow,
   registryFlowToInline,
+  inlineStagesNameCards,
   registryInitialsError,
 } from "./flowsData.ts";
 import { composeFamilyStages, liveFamilySeat } from "./flowsFamilyCompose.ts";
@@ -512,11 +513,149 @@ export class RunsRuntimeService extends Service {
    *
    * Returns the composed stage rows for the flow_inline wire.
    */
+  /** ONE card stage, composed (the shared compose core — the bench
+   *  run and the registry-flow arm both ride it, so a card composes
+   *  through exactly ONE implementation and one refusal voice).
+   *  `label` names the seat in a refusal ("bench stage " / "flow
+   *  stage "). */
+  private async composeCardStageRow(
+    row: Record<string, unknown>,
+    id: string,
+    runId: RunId,
+    label: string,
+  ): Promise<Record<string, unknown>> {
+    const cards = this.ctx.cardRegistry;
+    const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
+      ? { ...(row["params"] as Record<string, unknown>) }
+      : {};
+    const card = String(row["card"] ?? "");
+    const mid = String(params["model"] ?? row["service"] ?? "");
+    let p1: Phase1Card;
+    let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
+    try {
+      p1 = await cards.phase1Card({ ...params, card }, mid);
+      composed = await cards.phase2Card(p1, runId);
+    } catch (e) {
+      if (e instanceof CardArmError) {
+        // QueueRefusal carries {status, payload} — the message
+        // lives at payload.error (`.message` was undefined at
+        // runtime; tsc had never run over this file).
+        const refusal = cardRefusal(e);
+        const p = refusal.payload as { error: string; code: string };
+        // THE CARD ARM'S CLASSIFICATION AND EVIDENCE, KEPT (one
+        // voice per refusal): a card refusal composes here exactly
+        // as it does on the card arm — the card plane's own code
+        // (lane_input_missing carries the provision fetch URL) and
+        // its loc/expected/got, which are what make it actionable.
+        // Only the stage name is added, because only this arm knows
+        // which bench stage failed.
+        const mapped: RemoteError = toRemoteError(refusal);
+        // THE WHOLE REFUSAL RIDES, not just its code: the card
+        // plane's own loc/expected/got are what make a
+        // lane_input_missing actionable (which model, which folder,
+        // what was expected). This arm keeps them and adds the
+        // bench stage, so the two arms differ by the stage name
+        // and by nothing else.
+        // toRemoteError always builds a details object (it fills the
+      // three keys it has and omits the rest), so no fallback is
+      // owed here — a refusal with no evidence carries no keys.
+      const carried: Record<string, unknown> = { ...mapped.details };
+        const cardLoc: unknown = carried["loc"];
+        carried["loc"] =
+        "stages/" + JSON.stringify(id) +
+        (typeof cardLoc === "string" && cardLoc !== "" ? " (" + cardLoc + ")" : "");
+        throw new RemoteError(
+        mapped.code,
+        label + JSON.stringify(id) + ": " + p.error,
+        carried as { loc?: string; expected?: string; got?: string },
+        );
+      }
+      throw e;
+    }
+    const stage: Record<string, unknown> = {
+      id,
+      engine: stageEngineOf(row),
+      params: {
+        workflow: composed.graph as unknown as EngineJson,
+        output_nodes: composed.outputNodes as unknown as EngineJson,
+      },
+      // THE DECLARED INPUT KINDS RIDE (2026-10-04): the compiler reads
+      // `expected` for its kindsOk walk and defaults an absent bag to
+      // {} — so a composed stage that dropped it would compile with NO
+      // kind assertion on its own inputs. The registry rows declare
+      // them (audio-native-tts: { text: "text" }), and the check is
+      // theirs, not the composer's to discard.
+      ...(typeof row["expected"] === "object" && row["expected"] !== null && !Array.isArray(row["expected"])
+        ? { expected: { ...(row["expected"] as Record<string, unknown>) } }
+        : {}),
+      // THE WIRES RIDE (the whole point): the bench's own edges,
+      // verbatim, for the merged worker to link.
+      ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
+        ? { inputs: { ...(row["inputs"] as Record<string, unknown>) } }
+        : {}),
+      // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
+      // (the work audit's R1 — a regression the card-ports law
+      // introduced here): a card stage's stored outputs are `{}` by
+      // design (the channels derive from the card's own ports at
+      // compose), and this line kept that `{}` verbatim — so the
+      // merged worker published ZERO channels and every $spell
+      // consumer downstream got nothing where the old fabricated
+      // `{default: 'image'}` at least published one. An EMPTY
+      // channel map means "unfilled": the compose's own ports
+      // answer, exactly as the single-card path already does.
+      outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
+        && Object.keys(row["outputs"] as Record<string, unknown>).length > 0)
+        ? { ...(row["outputs"] as Record<string, unknown>) }
+        : composed.outputs,
+    };
+    return stage;
+  }
+
+  /** A REGISTRY FLOW's card stages, composed (the 2026-10-04 cure —
+   *  the VALIDATE-ONLY stamp's end). A registry row projects through
+   *  registryFlowToInline with its `card` references INTACT, and the
+   *  inline compiler refuses a `card=` stage (runsStart.ts:184-192,
+   *  the 2026-09-25 multi-stage boundary stamp) — so every card-
+   *  bearing flow (audio-native-tts, image-upscale, music-native,
+   *  body-to-somax) could validate but never start, and an app
+   *  calling a named flow got 400 runs/preview-scope.
+   *
+   *  The bench run already proved multi-stage card execution on the
+   *  merged worker, so this composes the SAME stages through the SAME
+   *  card walk (composeCardStageRow) rather than admitting a second
+   *  execution path: card stages become compiled graph stages, the
+   *  row's `inputs` edges ride verbatim, and a stage naming NO card
+   *  (an engine row — craft-loop's `craft`, an `mcp:<server>` row)
+   *  passes through untouched, which is what makes a MIXED flow legal.
+   */
+  private async composeRegistryFlowStages(
+    inlineDoc: Record<string, unknown>,
+    runId: RunId,
+  ): Promise<Record<string, unknown>> {
+    const rows = inlineDoc["stages"];
+    // registryFlowToInline always projects an array of object rows, so
+    // the non-array answer needs no second shape (the compile-time
+    // gate below judges the same value).
+    if (!Array.isArray(rows)) return inlineDoc;
+    const out: Array<Record<string, unknown>> = [];
+    for (const [i, st] of rows.entries()) {
+      if (typeof st !== "object" || st === null) continue;
+      const row = st as Record<string, unknown>;
+      const card = typeof row["card"] === "string" ? row["card"] : "";
+      const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
+      out.push(
+        card === ""
+          ? { ...row }
+          : await this.composeCardStageRow(row, id, runId, "flow stage "),
+      );
+    }
+    return { ...inlineDoc, stages: out };
+  }
+
   private async composeBenchStages(
     benchDoc: Record<string, unknown>,
     runId: RunId,
   ): Promise<Array<Record<string, unknown>>> {
-    const cards = this.ctx.cardRegistry;
     // the sole caller arrives gated on benchWiring(...).cross being
     // non-empty, and benchWiring answers [] unless stages is an
     // array — the non-array fallback here was a dead leg, pruned
@@ -526,90 +665,16 @@ export class RunsRuntimeService extends Service {
       if (typeof st !== "object" || st === null) continue;
       const row = st as Record<string, unknown>;
       const id = typeof row["id"] === "string" && row["id"] !== "" ? row["id"] : "s_" + String(i);
-      const params = (typeof row["params"] === "object" && row["params"] !== null && !Array.isArray(row["params"]))
-        ? { ...(row["params"] as Record<string, unknown>) }
-        : {};
-      const card = typeof row["card"] === "string" ? row["card"] : "";
       // A STAGE WITH NO CARD (an mcp/flow row) composes nowhere here
       // — the bench run is the CARD bench; a foreign stage is named
       // rather than silently dropped (no silent behavior).
-      if (card === "") {
+      if (typeof row["card"] !== "string" || row["card"] === "") {
         throw new RemoteError("runs/invalid-request",
           "bench stage " + JSON.stringify(id) +
           " names no card — the bench run composes card stages; an mcp/flow stage belongs in a flow, not the bench",
           { loc: "stages" });
       }
-      const mid = String(params["model"] ?? row["service"] ?? "");
-      let p1: Phase1Card;
-      let composed: Awaited<ReturnType<typeof cards.phase2Card>>;
-      try {
-        p1 = await cards.phase1Card({ ...params, card }, mid);
-        composed = await cards.phase2Card(p1, runId);
-      } catch (e) {
-        if (e instanceof CardArmError) {
-          // QueueRefusal carries {status, payload} — the message
-          // lives at payload.error (`.message` was undefined at
-          // runtime; tsc had never run over this file).
-          const refusal = cardRefusal(e);
-          const p = refusal.payload as { error: string; code: string };
-          // THE CARD ARM'S CLASSIFICATION AND EVIDENCE, KEPT (one
-          // voice per refusal): a card refusal composes here exactly
-          // as it does on the card arm — the card plane's own code
-          // (lane_input_missing carries the provision fetch URL) and
-          // its loc/expected/got, which are what make it actionable.
-          // Only the stage name is added, because only this arm knows
-          // which bench stage failed.
-          const mapped: RemoteError = toRemoteError(refusal);
-          // THE WHOLE REFUSAL RIDES, not just its code: the card
-          // plane's own loc/expected/got are what make a
-          // lane_input_missing actionable (which model, which folder,
-          // what was expected). This arm keeps them and adds the
-          // bench stage, so the two arms differ by the stage name
-          // and by nothing else.
-          // toRemoteError always builds a details object (it fills the
-        // three keys it has and omits the rest), so no fallback is
-        // owed here — a refusal with no evidence carries no keys.
-        const carried: Record<string, unknown> = { ...mapped.details };
-          const cardLoc: unknown = carried["loc"];
-          carried["loc"] =
-            "stages/" + JSON.stringify(id) +
-            (typeof cardLoc === "string" && cardLoc !== "" ? " (" + cardLoc + ")" : "");
-          throw new RemoteError(
-            mapped.code,
-            "bench stage " + JSON.stringify(id) + ": " + p.error,
-            carried as { loc?: string; expected?: string; got?: string },
-          );
-        }
-        throw e;
-      }
-      const stage: Record<string, unknown> = {
-        id,
-        engine: stageEngineOf(row),
-        params: {
-          workflow: composed.graph as unknown as EngineJson,
-          output_nodes: composed.outputNodes as unknown as EngineJson,
-        },
-        // THE WIRES RIDE (the whole point): the bench's own edges,
-        // verbatim, for the merged worker to link.
-        ...(typeof row["inputs"] === "object" && row["inputs"] !== null && !Array.isArray(row["inputs"])
-          ? { inputs: { ...(row["inputs"] as Record<string, unknown>) } }
-          : {}),
-        // THE BENCH'S OUTPUTS WIN ONLY WHEN THEY CARRY CHANNELS
-        // (the work audit's R1 — a regression the card-ports law
-        // introduced here): a card stage's stored outputs are `{}` by
-        // design (the channels derive from the card's own ports at
-        // compose), and this line kept that `{}` verbatim — so the
-        // merged worker published ZERO channels and every $spell
-        // consumer downstream got nothing where the old fabricated
-        // `{default: 'image'}` at least published one. An EMPTY
-        // channel map means "unfilled": the compose's own ports
-        // answer, exactly as the single-card path already does.
-        outputs: (typeof row["outputs"] === "object" && row["outputs"] !== null && !Array.isArray(row["outputs"])
-          && Object.keys(row["outputs"] as Record<string, unknown>).length > 0)
-          ? { ...(row["outputs"] as Record<string, unknown>) }
-          : composed.outputs,
-      };
-      out.push(stage);
+      out.push(await this.composeCardStageRow(row, id, runId, "bench stage "));
     }
     /* v8 ignore next 4 -- this bench is only composed when
      * benchWiring found a CROSS wire, and benchWiring reaches wires
@@ -1104,7 +1169,20 @@ export class RunsRuntimeService extends Service {
           { loc: "stages" },
         );
       }
-      const inlineDoc = registryFlowToInline(composedFlow);
+      let inlineDoc = registryFlowToInline(composedFlow);
+      // THE CARD STAGES COMPOSE (2026-10-04): the projection keeps
+      // `card` on every card-bearing stage, and the compiler refuses
+      // those — which is why every card flow was validate-only. The
+      // card walk composes them here, so a named flow RUNS the way the
+      // bench runs, and the compiler only ever sees compiled stages.
+      if (inlineStagesNameCards(inlineDoc)) {
+        inlineDoc = await this.composeRegistryFlowStages(inlineDoc, runId);
+        console.log(
+          "[runs] the flow " + name +
+          " composes its card stages through the card plane (" +
+          (inlineDoc["stages"] as unknown[]).length + " stages)",
+        );
+      }
       const rest: Record<string, unknown> = { ...body };
       delete rest["flow"];
       body = { ...rest, flow_inline: inlineDoc };

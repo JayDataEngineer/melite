@@ -32,23 +32,25 @@ import {
   liveFamilySeat,
 } from "../src/flowsFamilyCompose.ts";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
-import { estimate } from "../../../models/anny/src/actions.ts";
+import { estimate_commercial } from "../../../models/anny/src/actions.ts";
 
 const decls = [ANNY_DECL];
 
 const ANNY_ESTIMATE_FLOW = (): RegistryFlow => ({
-  // the retired anny-hmr row's shape verbatim (the 2026-10-13
-  // template cut removed the ROW; the family's estimate ACTION and
-  // this interpreter stay live — the anny card's hmr-estimate chip
-  // drives the same action through the commercial lane's verbs)
+  // the retired anny-hmr row's shape, re-pointed at the surviving
+  // action (2026-10-04, operator: "keep the commercial route and get
+  // rid of the non-commercial route" — the MultiHMR2 `estimate`
+  // action was deleted, composed by nothing). This probe's value is
+  // the INTERPRETER on a locally-declared row; the registry rows'
+  // own wires are pinned separately below.
   id: "anny-estimate-probe",
   description: "d",
   stages: [plainStage({
     id: "estimate",
     engine: CARD_PLANE_ENGINE,
     family: "anny",
-    action: "estimate",
-    description: "MultiHMR2 regression + loud single-person lock",
+    action: "estimate_commercial",
+    description: "SAM 3D Body → grounded anny (the commercial estimator)",
     inputs: { photo: { initial: "photo" } },
     expected: { photo: "image" },
     params: { photo: "$photo" },
@@ -83,26 +85,9 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
         class_type: "LoadImage",
         inputs: { image: "$photo" },
       },
-      "MultiHMR2ImageToAnny.0": {
-        class_type: "MultiHMR2ImageToAnny",
-        inputs: {
-          image: ["LoadImage.0", 0],
-          conf_thresh: 0.4,
-          dist_thresh_nms: 0.25,
-          lowres: false,
-          save_anny_params: true,
-          save_mesh: true,
-          render: false,
-          filename_prefix: "anny/multihmr2",
-        },
-      },
-      "AnnySelectPerson.0": {
-        class_type: "AnnySelectPerson",
-        inputs: { mesh_paths: ["MultiHMR2ImageToAnny.0", 2], index: 0 },
-      },
-      "AnnyGroundBody.0": {
-        class_type: "AnnyGroundBody",
-        inputs: { glb_path: ["AnnySelectPerson.0", 0] },
+      "Sam3dBodyImageToAnny.0": {
+        class_type: "Sam3dBodyImageToAnny",
+        inputs: { image: ["LoadImage.0", 0], person_index: 0 },
       },
     });
     // outputs DERIVE from the action's declaration (the row omits
@@ -152,7 +137,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls),
-      /unknown param\(s\) on the anny\.estimate action: out_dir/,
+      /unknown param\(s\) on the anny\.estimate_commercial action: out_dir/,
     );
   });
 
@@ -259,7 +244,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     };
     assert.throws(
       () => composeFamilyStages(bad, decls),
-      /hand-writes output 'body' as 'image' but the anny\.estimate action declares 'mesh'/,
+      /hand-writes output 'body' as 'image' but the anny\.estimate_commercial action declares 'mesh'/,
     );
   });
 
@@ -307,7 +292,7 @@ describe("the family-action stage interpreter (flowsFamilyCompose)", () => {
     // the derivation law's empty half: outputs derive from the
     // declaration, so an action declaring none contributes a graph
     // with no first-output producer — the merge resolves nothing.
-    const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate, outputs: [] }] }] as typeof decls
+    const quiet = [{ ...ANNY_DECL, actions: [{ ...estimate_commercial, outputs: [] }] }] as typeof decls
     const probe = ANNY_ESTIMATE_FLOW()
     const composed = composeFamilyStages(expandRegistryFlow(probe), quiet)
     const wf = (composed.stages[0]!.params as { workflow: Record<string, unknown> }).workflow

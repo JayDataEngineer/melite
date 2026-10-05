@@ -21,11 +21,13 @@ Cordis is the sole framework and architecture of layer A, any deviation from thi
   * A complete cordis application you should be mirroring: references/deepseek-harness
 * In code comments, make direct references with line numbers to the deepseek harness repo
 
-## Layer B: The Engine: ComfyUI, MCP servers
+## Layer B: The Engine: ComfyUI
 * Layer A exists to call Layer B.
 * The current phase of the project is currently focused on Comfyui.
   * Layer A directly calls the ComfyUI Api as well as ComfyUI Manager API to infer and manage based on ComfyUI
-* The next phase is adding in the MCP servers of Unity, Blender, and AutoRemesh.
+* MCP servers are NOT melite's to seat (operator ruling 2026-10-04, audit `dev_docs/audits/features/008-image-to-3d-unity-2026-10-04.md` M12/M14). Blender and Unity ride DSH PROFILES, provisioned by dsh-provision (`melite-foundry` = melite only, `game` = melite + bench + editor, `mega-blender`, `mega-unity`). The estate's own `mcp-client-blender` stdio seat and the vendored `melite-blender-proxy-nodes` pack are deleted: four tools against the bench's 72, and four nodes composed by zero graphs.
+* Melite is a COMPONENT of a DSH profile, never a mega-tool that orchestrates the whole chain. Consumers install the DSH way; melite rides inside as its tools + web estate.
+* A Blender capability inside melite is a graph NODE (Layer C), never a server: a node runs inside the engine's own process and a server is an agent-harness seam.
 
 ## Layer C: Engine Extensions
 	* This layer features the VENDORED tooling that the engines use, that extend engine capabilites without touching engine source code.

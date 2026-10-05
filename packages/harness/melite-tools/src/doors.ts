@@ -564,6 +564,55 @@ export function apply(c: CtxView, config: Config = {}): void {
     kind: 'prefix',
     path: '/v1',
     handler: (req, res) => {
+      // THE AUTH GATE (2026-10-04, the operator's "fix ALL blockers"):
+      // /v1 carries run submission — an anonymous POST /v1/flows/start
+      // queued GPU work. DSH's own carrier answers /api/* with 401
+      // while this prefix answered an unauthenticated curl 200
+      // (measured on the dev lane), so the run plane was the one door
+      // with no fence.
+      //
+      // The gate is DSH's OWN seam, not an invention: ctx.connection's
+      // requestRejection is Host/Origin first (403), browser-session
+      // second (401) — packages/client/connection/src/rpc-host.ts.
+      // Probed, never injected (the tutorial's documented pattern,
+      // estate.ts's seats law): a lane with no browser carrier (the
+      // headless commission estate, the SDK app) keeps serving /v1,
+      // and a lane that HAS one fences it with that lane's own
+      // config. No melite-owned token scheme: DSH's note records the
+      // decision that API tokens are not accepted on API paths.
+      const connection = (c as unknown as {
+        get?: (name: string) => unknown
+      }).get?.('connection') as {
+        requestRejection?: (request: { headers: unknown }) => number | undefined
+      } | undefined
+      // THE SEAM TAKES THE REQUEST, NOT ITS HEADERS (the 2026-10-04
+      // audit's catch): ConnectionTrustRequest is `{ headers }`
+      // (packages/client/connection/src/rpc.ts:98-101) and DSH's own
+      // node caller passes the whole req
+      // (packages/host/open-in-app/src/index.ts:186). Handing it
+      // `req.headers` made request.headers undefined INSIDE
+      // isTrustedApiRequest — a TypeError the web server caught as a
+      // bare 400, so the gate broke /v1 instead of fencing it.
+      // The try exists so a carrier that ever throws fails with a
+      // NAMED body, never an empty 400.
+      let rejection: number | undefined
+      try {
+        rejection = connection?.requestRejection?.({ headers: req.headers })
+      } catch (e) {
+        const message = 'connection/rejected: ' + (e instanceof Error ? e.message : String(e))
+        res.writeHead(500, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(message)) })
+        res.end(Buffer.from(message))
+        return
+      }
+      if (rejection !== undefined) {
+        const body = JSON.stringify({
+          error: 'connection/' + (rejection === 403 ? 'untrusted-request' : 'unauthenticated'),
+          status: rejection,
+        })
+        res.writeHead(rejection, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })
+        res.end(Buffer.from(body))
+        return
+      }
       const ok = (payload: unknown): void => {
         const body = JSON.stringify(payload)
         res.writeHead(200, { 'content-type': 'application/json', 'content-length': String(Buffer.byteLength(body)) })

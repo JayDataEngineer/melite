@@ -5,12 +5,14 @@ description: Static 3D prop/weapon lane — z-image concept to TRELLIS mesh to t
 
 Static (non-creature) 3D assets: weapons, props, tools, containers. Live-proven lane 2026-08-25.
 
-## Lane shape (the reference is `flows/prop-flow/`, NOT a YAML to copy)
+## Lane shape (live card ids, NOT a YAML to copy)
 z-image (concept render) -> trellis/pixal3d (image->mesh) -> quad remesh (prop preset) -> render_glb_views (turntable review).
-There is NO single-shot YAML door anymore: the prop flow is an AGENT-DRIVEN card
-chain (its own `flows/prop-flow/tool.json` says so) — drive each stage card
-through the queue door
-(`melite_construct` `add_stage` with `card=` + `model=`, then `melite_flow`).
+There is NO single-shot YAML door and NO named `prop-flow` row: the prop lane is an
+AGENT-DRIVEN card chain — drive each stage card through the queue door
+(`melite_construct` `add_stage` with `card=` + `model=`, then `melite_flow`). The
+cards are `img-to-mesh` (model `trellis2-native` or `pixal3d`) and `quad-remesh`.
+(2026-10-04: the `flows/prop-flow/` authoring leaf is GONE — it was never an
+executable row and this skill is the only served statement of the lane.)
 The old `flows/scrap_machete/flow.yaml` this section used to name does not exist
 in this checkout, and an agent that followed it burned a read chasing a file
 that was never there (the 3D lane's first live commission, 2026-09-26).
@@ -26,6 +28,7 @@ that was never there (the 3D lane's first live commission, 2026-09-26).
 Compose with `melite_construct` `add_stage`, `card="img-to-mesh",
 model="trellis2-native"` + your prompt/views params (no curl); the run starts at the user's
 Run press, the progress rides the card, artifacts listed under the
-run. GLB goes to Unity delivery (FBX via blender headless or glTFast — the
-unity-delivery lane lives at
-`flows/humanoid-flow/agents/skills/gamekit-unity-delivery/`).
+run. GLB goes to Unity delivery: the game-factory projects declare
+`com.unity.cloud.gltfast`, so a `.glb` imports directly (measured 2026-10-04);
+FBX is the fallback, not the rule. A melite run id is NOT delivery evidence —
+the artifact and the project's own import receipt are.

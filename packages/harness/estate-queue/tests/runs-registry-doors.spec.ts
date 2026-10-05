@@ -1337,12 +1337,80 @@ describe("the multi-stage boundary (2026-09-25 — curated lane lifts the length
     );
   });
 
-  it("the registry's CARD flows are validate-only on the {flow:} door — card= stages refuse at start, loud", async () => {
-    const s = seat();
+  it("the registry's CARD flows RUN on the {flow:} door (2026-10-04: the card stages compose)", async () => {
+    // The VALIDATE-ONLY stamp is GONE. A registry row projects with
+    // its `card` references intact and the inline compiler refuses
+    // those, so every card flow (audio-native-tts, image-upscale,
+    // music-native, body-to-somax) could validate but never start —
+    // an app calling a named flow got 400 runs/preview-scope. The
+    // start door now composes them through the SAME card walk the
+    // bench run uses, so the compiler only ever sees compiled stages.
+    const graph = { nodes: [{ id: "1", class_type: "SaveImage" }] };
+    const s = seat({
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      phase1Card: async (body: Record<string, unknown>): Promise<unknown> => ({
+        skeleton: "up",
+        card: String(body["card"] ?? ""),
+        // the composed stage keeps the row's own params, so the card
+        // arm's admission sees exactly what the flow declared
+        params: body["params"] ?? {},
+      }),
+      phase2Card: async (): Promise<unknown> => ({
+        graph,
+        outputs: {},
+        outputNodes: {},
+      }),
+    });
+    const engine = engineSeat(s);
+    const ctx = (s.svc as unknown as { ctx: Context }).ctx;
+    (ctx as unknown as Record<string, unknown>)["engines"] = {
+      ids: (): string[] => ["comfyui"],
+      resolve: (): { executor: FakeEngine } => ({ executor: engine }),
+    };
+    let seenRows: MergeRow[] | null = null;
+    // the worker's write is invisible to CFA (a direct read narrows to
+    // never), so the count rides a reader — the curated-lane arm's law
+    const seenRowCount = (): number => (seenRows === null ? 0 : seenRows.length);
+    engine.onFlow = async (rows): Promise<FlowResult> => {
+      seenRows = rows;
+      return { stages: {}, promptId: "p1" };
+    };
+    const r = (await s.svc.start(
+      { draft_id: "d1", test: false, flow: "image-upscale" },
+      sig(),
+    )) as { run_id?: string };
+    const run = await settleWait(s, String(r["run_id"]));
+    assert.equal(run.status, "completed", "the named card flow RUNS");
+    // both registry stages ran as ONE merged submit
+    assert.equal(seenRowCount(), 2, "BOTH stages land in the one merged submit");
+    const stages = run.stages.map((st) => st.id);
+    assert.deepEqual(stages, ["make", "polish"]);
+  });
+
+  it("a card flow whose card compose refuses names the FLOW stage and keeps the card plane's evidence", async () => {
+    const s = seat({
+      modelFacts: (): unknown => ({ m1: {} }),
+      resolveCardFamily: (): unknown => "m1",
+      modelMids: (): unknown => new Set<string>(),
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(
+          400,
+          "lane presence: family 'z-image' declares checkpoint 'x.safetensors' but no store copy exists — fetch it: https://example/x",
+          "lane_input_missing",
+        );
+      },
+      phase2Card: async (): Promise<unknown> => {
+        throw new Error("unreached phase2");
+      },
+    });
     const err = await remote(() =>
       s.svc.start({ draft_id: "d1", test: false, flow: "image-upscale" }, sig()),
     );
-    assert.match(err.message, /card= stages are unported/);
+    assert.match(err.message, /flow stage "make"/, "the flow's own stage is named");
+    assert.match(err.message, /fetch it: https:\/\/example\/x/, "the card plane's actionable message rides whole");
+    assert.equal(err.code, "runs/lane-input-missing", "the card plane's own code classifies it, not a flows-only code");
   });
 });
 

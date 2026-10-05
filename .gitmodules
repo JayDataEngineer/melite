@@ -22,9 +22,6 @@
 [submodule "vendor/comfyui_extensions/melite-autorig-nodes"]
 	path = vendor/comfyui_extensions/melite-autorig-nodes
 	url = https://github.com/JayDataEngineer/melite-autorig-nodes.git
-[submodule "vendor/comfyui_extensions/melite-blender-proxy-nodes"]
-	path = vendor/comfyui_extensions/melite-blender-proxy-nodes
-	url = https://github.com/JayDataEngineer/melite-blender-proxy-nodes.git
 [submodule "vendor/comfyui_extensions/melite-kimodo-nodes"]
 	path = vendor/comfyui_extensions/melite-kimodo-nodes
 	url = https://github.com/JayDataEngineer/melite-kimodo-nodes.git

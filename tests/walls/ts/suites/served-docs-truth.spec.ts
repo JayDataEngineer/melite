@@ -55,8 +55,17 @@ function servedFiles(dir: string, out: string[] = []): string[] {
 const SERVED: string[] = [...servedFiles(MODELS), ...servedFiles(FLOWS)];
 
 describe("THE SERVED-DOC TRUTH WALL (phantom tools, dead paths, unreachable rows)", () => {
-  it("the served tree is non-empty (the walk sees the bundles)", () => {
-    expect(SERVED.length).toBeGreaterThan(50);
+  it("the served tree carries EXACTLY the docs a model can be handed", () => {
+    // The exact pin replaced a `> 50` floor on 2026-10-04: the floor
+    // was being propped up by five UNREACHABLE authoring leaves
+    // (flows/{prop,creature,humanoid,non-humanoid,sprite-sheet}-flow
+    // and sprite-sheet — 25 files, 12 of them SKILL.md under
+    // flows/*/agents/skills/, which NO walker serves: only
+    // flows/<registry-id>/SKILL.md is a served row, and only for a
+    // registry row). Deleting the cruft dropped the walk from 56 to
+    // 46. An exact pin now catches an accidental DELETION and a
+    // silent ADDITION alike — a floor could not.
+    expect(SERVED.length).toBe(46);
   });
 
   it("no served doc names a phantom tool carrier or tool call", () => {

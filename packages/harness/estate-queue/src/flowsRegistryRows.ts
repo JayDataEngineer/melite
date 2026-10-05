@@ -64,16 +64,24 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
   description:
     "Phase 1b gate: Qwen3-TTS 12Hz CustomVoice via the live melite-audio-nodes " +
     "island pack in the serving ComfyUI container (pure-ComfyUI audio lane; " +
-    "retires the C audio engine for TTS). VALIDATE-ONLY on the queue's " +
-    "{flow:} door (2026-09-25 multi-stage boundary stamp): card= stages " +
-    "refuse at start — drive the tts card through the bench or {model:}.",
+    "retires the C audio engine for TTS). RUNS on the {flow:} door " +
+    "(2026-10-04: the VALIDATE-ONLY stamp is GONE — the start door " +
+    "composes the row's card stages through the card plane); the {model:} " +
+    "door drives the same card directly.",
   stages: [
     plainStage({
       id: "tts",
       engine: CARD_PLANE_ENGINE,
       card: "tts",
       description: "Qwen3-TTS text to speech via the tts card",
-      inputs: { text: initial("prompt") },
+      // THE INITIAL IS NAMED FOR THE CHANNEL IT FEEDS (2026-10-04, the
+      // merge-hole cure): the wiring law spells every wired channel
+      // `$<channel>`, and the merge resolves a $spell against links ∪
+      // request INITIALS — so a channel `text` fed by initial("prompt")
+      // spelled `$text` resolved against neither and the run died at
+      // the merge. anny-hmr names all three the same (photo/photo/
+      // $photo); so does this row now.
+      inputs: { text: initial("text") },
       // every wired input needs its expected Kind (kindsOk's own
       // law) — this row shipped without it and only the LIVE
       // /v1/flows/validate path tripped it; completed at the
@@ -85,7 +93,7 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
       params: { model: "qwen3-tts", text: "$text", seed: 42 },
     }),
   ],
-  initialValidators: {},
+  initialValidators: { text: "text" },
   tool: {
     name: "speak",
     version: 1,
@@ -93,7 +101,10 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
       "Qwen3-TTS 12Hz CustomVoice speech in one call — text in, wav out " +
       "(pure-ComfyUI audio lane).",
     properties: {
-      prompt: {
+      // the caller key IS the initial name (2026-10-04): the extractor
+      // lifts declared validators only, so a `prompt` property over a
+      // `text` initial would advertise a key the door never reads.
+      text: {
         ptype: "string",
         description: "what to say",
         default: null,
@@ -112,7 +123,7 @@ export const AUDIO_NATIVE_TTS: RegistryFlow = {
         enum: null,
       },
     },
-    required: ["prompt"],
+    required: ["text"],
     overlays: [{ param: "seed", stage: "tts", path: ["seed"], choices: null }],
   },
   skillRefs: [],
@@ -124,8 +135,9 @@ export const BODY_TO_SOMAX: RegistryFlow = {
     "SOMA-77 template weight transfer, standalone-rig mode — no Blender). The " +
     "motion studio posts this behind the scenes when a wired body isn't SOMAX; " +
     "any bare human mesh (anny bake, TRELLIS, upload) rides the same door. " +
-    "VALIDATE-ONLY on the queue's {flow:} door (2026-09-30 multi-stage " +
-    "boundary stamp): card= stages refuse at start — drive the rig card " +
+    "RUNS on the {flow:} door (2026-10-04: the VALIDATE-ONLY stamp is " +
+    "GONE — the start door composes the row's card stages through the " +
+    "card plane); drive the rig card " +
     "through the bench or {model:}.",
   stages: [
     plainStage({
@@ -155,7 +167,7 @@ export const BODY_TO_SOMAX: RegistryFlow = {
       },
     }),
   ],
-  initialValidators: {},
+  initialValidators: { glb: "glb" },
   tool: null,
   skillRefs: [],
 };
@@ -206,9 +218,9 @@ export const IMAGE_UPSCALE: RegistryFlow = {
   description:
     "Prompt → image → 1080p SeedVR2 upscale, one card per stroke (the first " +
     "two-card flow: image-gen + upscale-tools card= stages; image_model picks " +
-    "the generator). VALIDATE-ONLY on the queue's {flow:} door (2026-09-25 " +
-    "multi-stage boundary stamp): card= stages refuse at start — drive the " +
-    "cards through the bench (construct chaining) or the {model:} door.",
+    "the generator). RUNS on the {flow:} door (2026-10-04: the VALIDATE-ONLY " +
+    "stamp is GONE — both card stages compose through the card plane and " +
+    "submit as one merged run); the {model:} door drives a single card.",
   stages: [
     plainStage({
       id: "make",
@@ -237,7 +249,7 @@ export const IMAGE_UPSCALE: RegistryFlow = {
       },
     }),
   ],
-  initialValidators: {},
+  initialValidators: { prompt: "text" },
   tool: {
     name: "image_upscale",
     version: 1,
@@ -301,10 +313,10 @@ export const MUSIC_NATIVE: RegistryFlow = {
     "card (MiniMax Music 3, the boarded row; see GET /v1/models). Repointed " +
     "at the mono-engine law by the wiring wall 2026-09-20: the row still " +
     "named the retired audio_cpp tier and a card id that no longer exists — " +
-    "a fossil only the live validate path ever tripped. VALIDATE-ONLY on " +
-    "the queue's {flow:} door (2026-09-25 multi-stage boundary stamp): " +
-    "card= stages refuse at start — drive the music card through the " +
-    "bench or {model:}.",
+    "a fossil only the live validate path ever tripped. RUNS on the " +
+    "{flow:} door (2026-10-04: the VALIDATE-ONLY stamp is GONE — the " +
+    "start door composes the row's card stages through the card plane); " +
+    "the {model:} door drives the same card directly.",
   stages: [
     plainStage({
       id: "music",
@@ -324,7 +336,7 @@ export const MUSIC_NATIVE: RegistryFlow = {
       },
     }),
   ],
-  initialValidators: {},
+  initialValidators: { prompt: "text" },
   tool: {
     name: "compose_music",
     version: 1,

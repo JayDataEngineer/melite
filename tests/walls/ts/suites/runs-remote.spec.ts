@@ -7,7 +7,7 @@
 import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, existsSync, readdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { onTestFinished, test } from "vitest";
+import { onTestFinished, test, vi } from "vitest";
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import { RemoteError, remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
@@ -770,23 +770,52 @@ test("runs {flow:} — the named-flow shim: live expansion, the door's voices (R
   )) as Record<string, unknown>;
   assert.match(String(started["run_id"]), /^run-/);
   // 4. a MULTI-stage registry flow (image-upscale — two card stages)
-  //    serves at validate: the real pin carries its classes, so the
-  //    multi-stage compile is ok. START refuses card= stages
-  //    explicitly (the multi-stage boundary stamp, 2026-09-30) — the
-  //    refusal text is the contract, never a quiet widening.
+  //    serves at validate AND starts (2026-10-04: the VALIDATE-ONLY
+  //    stamp is GONE — the start door composes the row's card stages
+  //    through the card plane, so the compiler never sees a `card=`
+  //    and the multi-stage boundary refusal is unreachable).
+  //
+  //    The wall pins the LAW, not this fixture's model state: whatever
+  //    the real card compose answers (a queued run, or a card-plane
+  //    refusal naming a stage + its own code), it is NEVER the old
+  //    boundary voice. That refusal's disappearance IS the change.
   const upscale = (await runs.validate({ flow: "image-upscale" }, sig)) as {
     ok?: boolean;
   };
   assert.equal(upscale["ok"], true);
-  await assert.rejects(
-    runs.start({ flow: "image-upscale", test: true, draft_id: "d_ok" }, sig),
-    (e: unknown) => {
-      const re = remoteErrorOf(e);
-      assert.ok(re, "a RemoteError");
-      assert.match(re.message, /card=|multi-stage/);
-      return true;
-    },
+  let startAnswer: { queued: boolean; message: string } | null = null;
+  try {
+    const r = (await runs.start(
+      { flow: "image-upscale", test: true, draft_id: "d_ok" }, sig,
+    )) as Record<string, unknown>;
+    startAnswer = { queued: true, message: String(r["run_id"] ?? "") };
+  } catch (e) {
+    const re = remoteErrorOf(e);
+    startAnswer = { queued: false, message: re?.message ?? String(e) };
+  }
+  assert.ok(startAnswer !== null);
+  assert.doesNotMatch(
+    startAnswer.message,
+    /card= stages are unported|multi-stage graphs are unported/,
+    "the multi-stage boundary refusal is GONE (2026-10-04)",
   );
+  // THE POSITIVE PIN (the 2026-10-04 audit's catch: a negative
+  // assertion passes on ANY answer, so it proved nothing). The door
+  // either RUNS the named flow or fails INSIDE the card plane naming a
+  // FLOW STAGE with that plane's own evidence — never at the old
+  // boundary. Either outcome proves the compose branch ran.
+  if (startAnswer.queued) {
+    assert.match(startAnswer.message, /^run-/, "a queued run registers under a run id");
+  } else {
+    assert.match(
+      startAnswer.message,
+      /flow stage "(make|polish)"/,
+      "a card-plane refusal names the FLOW STAGE (the compose branch's own label)",
+    );
+    // and the card plane's evidence rides whole (this fixture refuses
+    // because SeedVR2 is not installed — environmental, and named)
+    assert.match(startAnswer.message, /card_compose|missing-extension|card '/);
+  }
 });
 
 test("the compile-time initial gate — both {flow:} doors refuse before registration (REBUILD-21)", async () => {

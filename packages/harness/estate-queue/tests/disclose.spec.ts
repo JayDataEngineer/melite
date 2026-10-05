@@ -10,6 +10,7 @@ import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import {
   DiscloseDirectoryService,
   discloseProvider,
+  flowContractRows,
   flowSummaryRows,
   searchCards,
   searchFlows,
@@ -139,5 +140,37 @@ describe("DiscloseDirectoryService", () => {
     const ctx = new Context();
     discloseProvider.apply(ctx);
     assert.ok((ctx as unknown as { disclose: unknown }).disclose instanceof DiscloseDirectoryService);
+  });
+});
+
+describe("flowContractRows (the app door: what a named flow TAKES)", () => {
+  it("states every registry flow's stages, inputs, outputs and tool signature", () => {
+    const rows = flowContractRows();
+    assert.ok(rows.length > 0, "the registry has flows to describe");
+    const tts = rows.find((r) => r.id === "audio-native-tts");
+    assert.ok(tts !== undefined, "audio-native-tts carries a contract");
+    // the stage is STATED, not counted — an app reads the card + params
+    assert.equal(tts.stages.length, 1);
+    assert.equal(tts.stages[0]?.card, "tts");
+    assert.equal(tts.stages[0]?.engine, "comfyui", "the card plane's engine id");
+    // the tool signature is the JSON-Schema face the flow declares
+    const tool = tts.tool as { name?: string; required?: string[] } | null;
+    assert.equal(tool?.name, "speak");
+    // the caller key IS the initial name (2026-10-04) — a contract that
+    // advertised a key the door never reads would be a lying API
+    assert.deepEqual(tool?.required, ["text"]);
+    // and the validate-time gate rides, so a caller knows what must hold
+    assert.deepEqual(tts.initialValidators, { text: "text" });
+    // every row names itself; none is anonymous
+    for (const r of rows) assert.equal(r.id, r.id.trim() === "" ? "" : r.id);
+  });
+
+  it("the seat answers contracts() without a lookup argument", () => {
+    // the seat's own ctor needs the cardRegistry inject present; the
+    // contracts arm never reads it (a flow contract is registry-only).
+    const svc = new DiscloseDirectoryService(new Context());
+    const body = svc.contracts();
+    assert.ok(Array.isArray(body.flows));
+    assert.equal(body.flows.length, flowContractRows().length);
   });
 });

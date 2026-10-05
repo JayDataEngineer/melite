@@ -3,7 +3,7 @@
 
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { REPO, die, info, venvPython } from "./provision-shared.ts";
 
@@ -184,10 +184,27 @@ export function cmdCommercial(warmup: boolean): void {
     "--no-build-isolation", "--no-deps"]);
   run([...uv, "-q", "-e", join(root, "SOMA-X"),
     "git+https://github.com/microsoft/MoGe.git"]);
-  copyFileSync(join(REPO, "flows", "anny-hmr-commercial", "worker.py"),
-    join(root, "commercial_chain.py"));
-  copyFileSync(join(REPO, "flows", "anny-params", "bake_params.py"),
-    join(root, "bake_params.py"));
+  // THE CHAIN PYTHON IS NOT OURS TO COPY (2026-10-04, cruft sweep).
+  // This step copied `flows/anny-hmr-commercial/worker.py` and
+  // `flows/anny-params/bake_params.py` — both DELETED in 7b515901
+  // ("NO-ESTATE-PYTHON third cut: zero estate-authored Python stands").
+  // The path only ever survived because a provisioned runtime
+  // short-circuits above; on a fresh machine it died with a raw
+  // ENOENT from copyFileSync. Per the estate-Python law the chain
+  // lives in its PACK repo (github.com/JayDataEngineer/<pack>) or the
+  // upstream checkout — this tool does not author it and must not
+  // pretend to. Named refusal, not a stack trace.
+  const chainPy = join(root, "commercial_chain.py");
+  const bakePy = join(root, "bake_params.py");
+  for (const [dest, what] of [[chainPy, "commercial_chain.py"],
+    [bakePy, "bake_params.py"]] as const) {
+    if (!existsSync(dest)) {
+      die("[commercial] " + root + " is not provisioned and this repo no " +
+        "longer authors " + what + " (7b515901 removed the estate Python). " +
+        "Provision it from its pack repo / the upstream SOMA-X checkout, or " +
+        "place it at " + dest + " yourself; then re-run. Nothing was written.");
+    }
+  }
   if (warmup) {
     // The warmup runner is flows-lane Python (condemned with
     // S-flows) — it is orchestration-invoked here, never estate

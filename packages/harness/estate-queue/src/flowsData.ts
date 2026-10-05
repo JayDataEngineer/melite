@@ -374,6 +374,19 @@ export function expandRegistryFlow(flow: RegistryFlow): RegistryFlow {
   return { ...flow, stages };
 }
 
+/** Does a projected inline doc carry at least one CARD-bearing stage?
+ *  (the 2026-10-04 admission for the card-flow cure: such a doc is
+ *  the one shape the inline compiler refuses, so the start door
+ *  composes its card stages through the card plane first). */
+export function inlineStagesNameCards(doc: Record<string, unknown>): boolean {
+  const rows = doc["stages"];
+  if (!Array.isArray(rows)) return false;
+  return rows.some((r): boolean =>
+    typeof r === "object" && r !== null &&
+    typeof (r as Record<string, unknown>)["card"] === "string" &&
+    (r as Record<string, unknown>)["card"] !== "");
+}
+
 /** The registry flow as a flow_from_body-shaped inline doc (the
  *  validate compile + start shim both ride the EXISTING inline
  *  pipelines — no second validator). Card rows ride card/card_io;

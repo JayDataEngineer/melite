@@ -408,6 +408,26 @@ describe('disclose/manage/skills/load/ledger lanes', () => {
     await assert.rejects(req({})('GET', '/v1/discover', undefined, SIG, 1000))
   })
 
+  test('GET /v1/flows serves the machine-readable flow CONTRACTS; seatless refuses', async () => {
+    // The app door (2026-10-04): a programmatic caller reads what a
+    // named flow TAKES before it starts one. The exact path is free —
+    // every runs arm below matches a trailing segment.
+    let calls = 0
+    const r = req({ disclose: {
+      discover: (): unknown => ({}),
+      contracts: () => { calls += 1; return { flows: [{ id: 'audio-native-tts' }] } },
+    } })
+    assert.deepEqual(
+      await r('GET', '/v1/flows', undefined, SIG, 1000),
+      { flows: [{ id: 'audio-native-tts' }] },
+    )
+    assert.equal(calls, 1)
+    // the submit lanes keep their own paths — the contract arm steals none
+    await assert.rejects(req({})('GET', '/v1/flows', undefined, SIG, 1000))
+    const start = req({ runs: { start: async (): Promise<unknown> => ({ run_id: 'r1' }) } })
+    assert.deepEqual(await start('POST', '/v1/flows/start', {}, SIG, 1000), { run_id: 'r1' })
+  })
+
   test('manage rides the doc; seatless refuses', async () => {
     const r = req({ manage: { act: async (doc: unknown) => ({ acted: doc }) } })
     assert.deepEqual(await r('POST', '/v1/manage', { action: 'x' }, SIG, 1000), { acted: { action: 'x' } })
