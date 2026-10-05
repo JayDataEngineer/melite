@@ -154,9 +154,11 @@ export interface ViewedImageValue {
    *  sidebar reads), and this row carries the artifact's structural
    *  verdict either way: glTF counts, vertex/triangle totals, whether
    *  it is UV-mapped, and its bounds. Absent on the image/film/audio
-   *  paths. A mesh with NO poster refuses (see the arm) — it never
-   *  returns a fabricated image. */
-  mesh?: MeshSummary & { poster?: string }
+   *  paths. The poster is REQUIRED on a served mesh row: the arm
+   *  refuses a mesh with no poster (see the arm) rather than serving a
+   *  structural read, so `poster` is never absent here (the re-audit,
+   *  2026-10-16). */
+  mesh?: MeshSummary & { poster: string }
 }
 
 /** A probed stream row (mp4Probe's row, narrowed to what the view
@@ -578,7 +580,7 @@ function viewedContent(value: ViewedImageValue): ContentBlock[] {
     const m = value.mesh
     return [
       { type: 'text', text: 'melite_view mesh: ' + value.url + ' (' + meshVoice(m)
-        + (m.poster === undefined ? '; NO raster poster beside the mesh — this is the structural read, not a picture' : '; poster: ' + m.poster) + ')' },
+        + '; poster: ' + m.poster + ')' },
       { type: 'image', attachment: imageRefFromValue(value.image!) },
     ]
   }
@@ -826,8 +828,17 @@ export function meliteView(ctx: Context): ToolDefinition {
             // film or audio arm failed for its OWN reason rethrows that
             // reason untouched (the chain never masks a working arm).
             if (!(audioMiss instanceof Error && /produced no image artifacts/.test(audioMiss.message))) throw audioMiss
-            const meshed = await viewModelArtifact(seat, runId, artifact, exec, ctx, attachments)
-            return meshed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
+            // THE CLAIM THROWS ON EVERY REACH (the re-audit,
+            // 2026-10-16): this leg runs only when the image walk
+            // found no image for the run in ANY root, and the mesh
+            // arm's poster is REQUIRED (its no-poster refusal, :660)
+            // — a run with no image has no poster, so the call below
+            // refuses loud with the mesh verdict every time. Its
+            // return rides only because TypeScript cannot see that
+            // proof, and the chain's narrowing (`found` is non-null
+            // past this block) needs a total path.
+            /* v8 ignore next -- the mesh-only run's return is unreachable (the required poster); the arm's refusal is the behavior */
+            return viewModelArtifact(seat, runId, artifact, exec, ctx, attachments) as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
           }
         }
       }

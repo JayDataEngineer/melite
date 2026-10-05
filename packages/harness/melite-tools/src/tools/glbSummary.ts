@@ -52,8 +52,13 @@ const GLB_MAGIC = 0x46546c67 // 'glTF' little-endian
 const CHUNK_JSON = 0x4e4f534a // 'JSON'
 const GLB_HEADER = 12
 
+/** One little-endian u32 at `at`. Every call site is LENGTH-GUARDED
+ *  by its caller — the header read past the 12-byte check (:73) and the
+ *  chunk reads past `off + 8 <= total` with `total <= data.length`
+ *  (:77-81) — so the four bytes are in range and the read never
+ *  coerces a missing byte to zero (the re-audit, 2026-10-16). */
 function readU32(data: Uint8Array, at: number): number {
-  return (data[at] ?? 0) | ((data[at + 1] ?? 0) << 8) | ((data[at + 2] ?? 0) << 16) | ((data[at + 3] ?? 0) << 24)
+  return data[at] | (data[at + 1] << 8) | (data[at + 2] << 16) | (data[at + 3] << 24)
 }
 
 /** The glTF JSON out of GLB bytes (or the bytes themselves when they

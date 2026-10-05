@@ -364,6 +364,50 @@ describe('melite_flow card — the live allowlist', () => {
     assert.equal(starts.length, 1, 'the refusal retried the start')
   })
 
+  test('an empty run_id on the wired bench rides the flow arm with NO observation (the empty-error trap\'s twin)', async () => {
+    // startRun's twin trap (melite-flow.ts:245): an answer carrying
+    // `error: ''` is not a refusal, so the wired leg falls past it to
+    // the run_id gate — an EMPTY run id names no run, so the observer
+    // never starts and the receipt carries exactly what the door said
+    // (the re-audit, 2026-10-16).
+    const wiredBench = {
+      session: 'main', rev: 3, log: [],
+      stages: [
+        { id: 's_0', card: 'image-gen', params: { prompt: 'a cat' } },
+        { id: 's_1', card: 'image-edit', params: { input_images: '$input_images' },
+          inputs: { input_images: { stage: 's_0', output: 'default' } } },
+      ],
+    }
+    const seen = mockFetch([
+      (u: string) => {
+        if (String(u).endsWith('/v1/bench/main')) return { status: 200, body: wiredBench }
+        if (String(u).endsWith('/v1/bench/ensure')) {
+          return { status: 200, body: { bench: 'main', draft_id: 'd-w', stages: wiredBench.stages } }
+        }
+        if (String(u).endsWith('/v1/flows/start')) {
+          return { status: 202, body: { error: '', run_id: '' } }
+        }
+        return undefined
+      },
+    ])
+    const tool = meliteFlow(seen.request)
+    const out = await tool.execute({
+      card: 'image-edit', model: 'image-edit-21',
+      params: { prompt: 'edit this' },
+    }, fakeExec(AbortSignal.timeout(2000))) as Record<string, unknown>
+    assert.match(String(out.rode), /flow-arm/)
+    assert.equal(out.error, undefined, 'an empty error string is not a refusal')
+    assert.equal(out.run_id, '', 'the door named no run — the receipt invents none')
+    // the observer is fired ONLY on a real run id: give the fire-and-
+    // forget a beat, then prove the poll never went out
+    await new Promise((r): void => { setTimeout(r, 100) })
+    assert.equal(
+      seen.calls.some((c) => String(c.url).includes('/v1/flows/status/')),
+      false,
+      'an empty run_id must never start an observation',
+    )
+  })
+
   test('a bench read whose row carries no stages array falls to the single-card arm (the advisory read never lies)', async () => {
     // the wired-bench contract's read arm: a 200 row WITHOUT a
     // stages array (the shape drift the door could answer mid-roll)

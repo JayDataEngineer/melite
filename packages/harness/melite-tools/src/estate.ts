@@ -98,6 +98,9 @@ interface Seats {
    *  derived live (the flows registry + the card registry). */
   disclose?: {
     discover(lookup: string, q: string, tags: string): unknown
+    /** GET /v1/flows — the machine-readable flow contracts (the app
+     *  door: what a named flow takes, before starting one). */
+    contracts(): unknown
   }
 
   /** The management seat (REBUILD-15): the ComfyUI-Manager plane —
@@ -268,6 +271,16 @@ async function trySeats(
       }
     }
   }
+  // THE FLOW CONTRACTS (2026-10-04): GET /v1/flows answers every
+  // registry flow with its declared stages/inputs/outputs/tool — the
+  // machine-readable door a programmatic caller reads to learn what a
+  // named flow takes. Placed BEFORE the runs lanes: every arm below
+  // matches a trailing segment, so the exact path is free, and the
+  // contract read precedes any submit (discover, then run).
+  if (method === 'GET' && path === '/v1/flows') {
+    if (seats.disclose === undefined) return undefined
+    return seats.disclose.contracts()
+  }
   // The validate lane (REBUILD-8): the pure compile over the runs
   // seat — the door's arm order lives in the registry.
   if (method === 'POST' && path === '/v1/flows/validate') {
@@ -406,13 +419,17 @@ export function makeEstateRequest(ctx: unknown): EstateRequest {
   return (method, path, body, execSignal, timeoutMs) => {
     const work = performEstateRequest(ctx, method, path, body, execSignal)
     if (timeoutMs === undefined || !Number.isFinite(timeoutMs) || timeoutMs <= 0) return work
-    let timer: ReturnType<typeof setTimeout> | undefined
+    let timer: ReturnType<typeof setTimeout>
     const bound = new Promise<never>((_, reject) => {
+      // A Promise executor runs SYNCHRONOUSLY: `timer` is assigned
+      // before the constructor returns, so the race's finally always
+      // sees it and the "may be undefined" guard was dead (the
+      // re-audit, 2026-10-16).
       timer = setTimeout(() => {
         reject(new Error(`estate request ${method} ${path} outlived its ${String(timeoutMs)}ms bound`))
       }, timeoutMs)
     })
-    return Promise.race([work, bound]).finally(() => { if (timer !== undefined) clearTimeout(timer) })
+    return Promise.race([work, bound]).finally(() => { clearTimeout(timer) })
   }
 }
 

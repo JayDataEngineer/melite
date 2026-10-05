@@ -407,6 +407,27 @@ describe('specBody primary envelope', () => {
 })
 
 describe('specBody non-primary envelope', () => {
+  test('THE NULL ENVELOPE (service.ts:735/740): a carrier with no toJSON serves null, never a throw', () => {
+    // the engine answers `schema = null` when the card's carrier has no
+    // toJSON (and the same per pack for an absorbed mod contract), so
+    // the served form must ride that null — a malformed envelope
+    // refuses, an ABSENT one does not (the client walks mod_schemas
+    // and finds no rows to render).
+    reset()
+    mockState.decls = { 'syn-n': decl({}) }
+    const defs = new Map<string, CardDefinition>([
+      ['syn-card', card({
+        boarded: ['syn-n'],
+        identity: { label: 'Syn', description: 's', genre: 'image' },
+      })],
+    ])
+    mockState.svc = svc({ formSchemas: () => ({ schema: null, mods: { loras: null } }) })
+    const spec = specBody(mockState.svc as ComfyUIService, defs, {
+      card: 'syn-card', service: 'syn-n', model: 'syn-n',
+    })
+    assert.equal(spec['schema'], null)
+    assert.deepEqual(spec['mod_schemas'], { loras: null })
+  })
   test('unrouted cells drop when the key is not primary', () => {
     reset()
     mockState.decls = {

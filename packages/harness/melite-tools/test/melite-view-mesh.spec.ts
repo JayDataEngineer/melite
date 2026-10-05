@@ -136,6 +136,16 @@ const visualExec = {
   },
 }
 
+/** A route the host cannot resolve: no session header and no options
+ *  provider/model — the shape assertImageCapableRoute refuses on
+ *  (the re-audit, 2026-10-16: the mesh arm is its only caller, so its
+ *  unresolvable-route throw was unreachable from any mesh spec — every
+ *  one of them passes the full route header). */
+const unroutableExec = {
+  signal: AbortSignal.timeout(2000),
+  agent: { options: {} },
+}
+
 describe('melite_view — the mesh arm (3D in the media plane)', () => {
   test('a mesh-only run refuses with the STRUCTURE, not a dead end', async () => {
     // THE DEFECT: this run has a finished 1000-vertex textured mesh and
@@ -203,6 +213,20 @@ describe('melite_view — the mesh arm (3D in the media plane)', () => {
     await assert.rejects(
       () => tool.execute({ run_id: 'run-9a1b2c3d4e5f-aabbccdd' }, visualExec as never),
       /image input|image capability|visual/i,
+    )
+    assert.equal(saved.length, 0)
+  })
+
+  test('an UNRESOLVABLE route refuses on the mesh poster — nothing is attached', async () => {
+    // The strict gate speaks BEFORE the bytes are committed: with no
+    // session header and no options provider/model, the route cannot
+    // be resolved, so the arm refuses naming the run — the poster on
+    // disk is never read into an attachment.
+    const { ctx, saved } = fakeCtx()
+    const tool = meliteView(ctx)
+    await assert.rejects(
+      () => tool.execute({ run_id: 'run-9a1b2c3d4e5f-aabbccdd' }, unroutableExec as never),
+      /cannot view run "run-9a1b2c3d4e5f-aabbccdd": the current model route could not be resolved/,
     )
     assert.equal(saved.length, 0)
   })

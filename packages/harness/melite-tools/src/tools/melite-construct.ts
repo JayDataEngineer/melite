@@ -303,31 +303,33 @@ export function projectStages(stages: unknown): Record<string, unknown>[] {
   const source = stages
     .filter((s): s is Record<string, unknown> => typeof s === 'object' && s !== null && !Array.isArray(s))
   return normalizeBenchStages(source).map((row, i) => {
-    const from = source[i] as Record<string, unknown> | undefined
-    if (from !== undefined) {
-      // the view's id is the SOURCE's id, stringified (an absent id
-      // reports as ''), never the contract's birth mint — the view
-      // reports what the bench holds, it does not mint
-      row['id'] = String(from['id'] ?? '')
-      // the caller's own id rides (the projection is a VIEW, not a
-      // mint): a row with NO id stays id-less rather than gaining the
-      // contract's birth mint — the view reports what the bench holds
-      if (typeof from['id'] === 'string' && from['id'] !== '') row['id'] = from['id']
-      // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
-      // gate's own list): the bench's bookkeeping (title, result,
-      // runStatus, provenance) is not a wire field and never compiled
-      for (const key of Object.keys(row)) {
-        if (key === 'expected' || WIRE_STAGE_KEYS.includes(key)) continue
-        delete row[key]
-      }
-      // `expected` is a compile-only field and must be a record: the
-      // contract carries whatever the source held, so a junk value
-      // ('nope', an array) is DROPPED here rather than compiled
-      if (typeof from['expected'] === 'object' && from['expected'] !== null && !Array.isArray(from['expected'])) {
-        row['expected'] = from['expected']
-      } else {
-        delete row['expected']
-      }
+    // normalizeBenchStages is 1:1 over its input — one normalized row
+    // pushed per source row, never a skip (benchStage.ts:243-263) — so
+    // index i of the projection always has a source row behind it (the
+    // re-audit, 2026-10-16).
+    const from = source[i] as Record<string, unknown>
+    // the view's id is the SOURCE's id, stringified (an absent id
+    // reports as ''), never the contract's birth mint — the view
+    // reports what the bench holds, it does not mint
+    row['id'] = String(from['id'] ?? '')
+    // the caller's own id rides (the projection is a VIEW, not a
+    // mint): a row with NO id stays id-less rather than gaining the
+    // contract's birth mint — the view reports what the bench holds
+    if (typeof from['id'] === 'string' && from['id'] !== '') row['id'] = from['id']
+    // THE VIEW ADMITS THE WIRE'S OWN KEYS (STAGE_KEYS, the flow
+    // gate's own list): the bench's bookkeeping (title, result,
+    // runStatus, provenance) is not a wire field and never compiled
+    for (const key of Object.keys(row)) {
+      if (key === 'expected' || WIRE_STAGE_KEYS.includes(key)) continue
+      delete row[key]
+    }
+    // `expected` is a compile-only field and must be a record: the
+    // contract carries whatever the source held, so a junk value
+    // ('nope', an array) is DROPPED here rather than compiled
+    if (typeof from['expected'] === 'object' && from['expected'] !== null && !Array.isArray(from['expected'])) {
+      row['expected'] = from['expected']
+    } else {
+      delete row['expected']
     }
     return row
   })
@@ -658,8 +660,14 @@ export function meliteConstruct(
               expect_rev: a.expect_rev,
             }, signal)
           return out({ rev: r.rev, stage: r.stage, input: r.input })
-        }
-        if (verb === 'undo') {
+        } else {
+          // THE LAST ARM IS THE ELSE (the re-audit, 2026-10-16): the
+          // verb is a literal enum in this tool's parameter schema,
+          // so the wrapper refuses an undeclared verb with
+          // ToolArgsError BEFORE this body (pinned by
+          // melite-construct.spec.ts:480-494) — the chain above is
+          // total over the declared vocabulary and an execute-side
+          // duplicate unknown-verb refusal was dead.
           const r = await postBenchVerb(request, bench, 'undo',
             {
               ...(a.n !== undefined ? { n: a.n } : {}),
@@ -668,11 +676,6 @@ export function meliteConstruct(
             }, signal)
           return out({ rev: r.rev, undone: r.undone, stages: r.stages })
         }
-        return jsonClean<ConstructResult>({
-          verb, bench, ok: false,
-          error: 'unknown verb — want read|load|patch|add_stage|remove_stage|clear|rewire|undo|validate',
-          error_kind: 'args',
-        })
       } catch (e) {
         return refusalOf(e, verb, bench)
       }

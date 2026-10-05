@@ -245,6 +245,30 @@ describe('ledger_tail render — the human line', () => {
     assert.equal(((lines[2] as string).match(/w+/) as RegExpMatchArray)[0].length <= 80, true)
   })
 
+  test('an object member rides its JSON spelling; an all-null bag and a dataless row ride bare', () => {
+    // Three render rows the durable file boundary can really deliver
+    // (the re-audit, 2026-10-16):
+    // 1) a nested object member stringifies as JSON, never "[object Object]"
+    // 2) a bag whose every member is null skips them all — the row
+    //    prints no detail marker at all (an empty " — " would lie
+    //    about holding data)
+    // 3) a row with NO data key rides the same bare line (undefined
+    //    is not the null the JSON note speaks for)
+    const out = text({
+      shown: 3,
+      matched: 3,
+      entries: [
+        { ts: 1, event: 'run.meta', data: { card: { id: 'image-gen', rev: 3 } } },
+        { ts: 2, event: 'run.empty', data: { skip: null, also: null } },
+        { ts: 3, event: 'run.bare' },
+      ],
+    })
+    const lines = out.split('\n')
+    assert.equal(lines[1], '1 run.meta — card={"id":"image-gen","rev":3}')
+    assert.equal(lines[2], '2 run.empty')
+    assert.equal(lines[3], '3 run.bare')
+  })
+
   test('the CHARACTER cap breaks the loop and says where the rest rides', () => {
     // wide object rows (6 members × 57 chars ≈ 430/line) exhaust the
     // 6000-char budget around the 13th row — well under the 20-row

@@ -157,10 +157,27 @@ describe('summarizeMesh — a bad container refuses, never reports zero', () => 
     expect(ugly.bounds!.max[2]).toBe(2)
   })
 
-  it('reads a JSON chunk whose header runs past the buffer (the OOB reads coerce to zero)', () => {
-    // hand-build: header carries a JSON chunk with no BIN chunk and
-    // no padding after it — the chunk walk's byte reads run to the
-    // very edge and coerce instead of throwing out-of-range
+  it('degrades an indices accessor whose count is NOT a number (the triangle source is zero, never NaN)', () => {
+    // The POSITION degrade above poisons the vertex accessor; the
+    // INDICES accessor is its own read — a non-numeric count there
+    // serves zero triangles instead of a NaN claim to the model.
+    const s = summarizeMesh(glb({
+      asset: {},
+      meshes: [{ primitives: [{ attributes: { POSITION: 0 }, indices: 1 }] }],
+      accessors: [{ count: 12 }, { count: 'many' }],
+    }), 'idx.glb')
+    expect(s.vertices).toBe(12)
+    expect(s.triangles).toBe(0)
+  })
+
+  it('reads a JSON chunk that ends exactly at the buffer edge (no BIN chunk, no padding)', () => {
+    // hand-built: the header carries one JSON chunk with no BIN chunk
+    // and no padding after it, so the chunk walk's LAST read sits at
+    // the final byte — the chunk header reads stay in range by the
+    // `off + 8 <= total` + `total <= data.length` guards, and the JSON
+    // decodes (the re-audit, 2026-10-16: this arm's old name claimed
+    // an out-of-bounds coercion that the guards make unreachable, so
+    // readU32 carries no such fallback).
     const json = new TextEncoder().encode('{"asset":{}}')
     const out = new Uint8Array(12 + 8 + json.length) // no BIN chunk, no padding
     const view = new DataView(out.buffer)

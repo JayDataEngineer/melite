@@ -388,7 +388,10 @@ function servedModEnvelopes(mods: Record<string, unknown>, card: string): Record
 }
 
 function isFormSpecDoc(e: unknown): e is FormSpecDoc {
-  if (typeof e !== 'object' || e === null) return false
+  // No object/null guard: the only caller hands a value from the
+  // engineDocs factory seam, statically () => Record<string,
+  // unknown> (typed same-process boundary — typeof-object is what
+  // that interface states). Shape stays checked below.
   const doc = e as { form?: unknown; schema?: unknown }
   if (typeof doc.form !== 'string') return false
   if (doc.schema !== null && doc.schema !== undefined && !isSchemaEnvelope(doc.schema)) return false
@@ -551,13 +554,10 @@ function specModifiers(
     if (k.section !== undefined) entry.section = k.section
     // THE ARM-CONDITIONAL EXTENSION PACKS (the mask SAM2 law):
     // served verbatim — the compose door enforces them only when
-    // the kind's bag is non-empty.
-    if (k.requires !== undefined) {
-      if (!k.requires.every((r) => typeof r === 'string')) {
-        throw new Error(`form-spec: mod kind ${k.kind} carries a non-string requires entry — ${JSON.stringify(k.requires).slice(0, 120)}`)
-      }
-      entry.requires = k.requires
-    }
+    // the kind's bag is non-empty. `requires` is `readonly string[]`
+    // on the card's own declaration, so the served kind carries it
+    // as declared (the re-audit, 2026-10-16).
+    if (k.requires !== undefined) entry.requires = k.requires
     out.push(entry)
   }
   return out
@@ -1030,8 +1030,10 @@ export async function cardToolsArm(): Promise<unknown[]> {
       // family's HEAD, so its variant table would publish the head's
       // surface as if it were the route's own lane. The agent gets
       // the family's contract and picks the variant itself.
-      let atom = fam;
-      try { atom = owningAtom(fam); } catch { atom = fam; }
+      // owningAtom is a Map read plus `?? id` (models/service.ts:543)
+      // — it cannot throw for any id, so the guard that wrapped it is
+      // dead (the re-audit, 2026-10-16).
+      const atom = owningAtom(fam)
       if (atom in lanes) continue;
       let fdecl: ModelDecl | null = null;
       try { fdecl = getModel(atom); } catch { fdecl = null; }

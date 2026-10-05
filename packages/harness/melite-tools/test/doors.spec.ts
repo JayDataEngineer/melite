@@ -82,6 +82,9 @@ function fakeHost(opts?: {
   defaultModel?: unknown
   getThrows?: boolean
   schemas?: Array<{ name: string; description?: string }>
+  /** the browser carrier's own verdict: 403 untrusted, 401
+   *  unauthenticated, undefined admits (the auth-gate arms) */
+  connectionRejection?: number
 }): { host: unknown; routes: Route[]; labels: string[] } {
   const routes: Route[] = []
   const labels: string[] = []
@@ -109,6 +112,22 @@ function fakeHost(opts?: {
     get: (serviceName: string) => {
       if (opts?.getThrows) throw new Error('no such service')
       if (serviceName === 'agentDefaultModel') return opts?.defaultModel
+      // the DSH browser carrier (the /v1 auth gate probes for it)
+      if (serviceName === 'connection' && opts?.connectionRejection !== undefined) {
+        // the stub READS the argument the way the real seam does: the
+        // audit's catch was a stub that ignored it, so passing
+        // `req.headers` instead of `{ headers }` stayed invisible here
+        // while every real lane 400'd.
+        return {
+          requestRejection: (request: { headers?: Record<string, string> }): number => {
+            const host = request.headers?.['host']
+            if (request.headers === undefined || host === undefined) {
+              throw new TypeError('Cannot read properties of undefined (reading "host")')
+            }
+            return opts.connectionRejection as number
+          },
+        }
+      }
       return undefined
     },
   }
@@ -140,11 +159,15 @@ interface ReqOpts {
   emitError?: string
   emitRawError?: unknown
   junkData?: boolean
+  /** the request headers (the auth gate hands these to the browser
+   *  carrier, which reads `host` — a request without one is what the
+   *  real seam throws on) */
+  headers?: Record<string, string>
 }
 
 function fakeReq(opts: ReqOpts = {}): EventEmitter & { method?: string; url?: string; headers: Record<string, string> } {
   const req = new EventEmitter() as EventEmitter & { method?: string; url?: string; headers: Record<string, string> }
-  req.headers = {}
+  req.headers = opts.headers ?? {}
   if (opts.method !== undefined) req.method = opts.method
   if (opts.url !== undefined) req.url = opts.url
   process.nextTick(() => {
@@ -664,6 +687,40 @@ describe('catalog route', () => {
     assert.equal(rows['mcp:blender'], undefined)
     const spec = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp' })
     assert.equal(spec.status, 404)
+  })
+
+  test('a server whose NAME opens with the separator is never seated (the empty-segment refusal)', async () => {
+    // THE WIRE GRAMMAR (references/deepseek-harness/docs/config-catalog.md:2027):
+    // serverName matches `[A-Za-z0-9_-]{1,32}`, so '_' and '__probe'
+    // are legal and DSH mints `mcp__<serverName>__<raw>` verbatim —
+    // `mcp____view_scene` for serverName '_'. The census's
+    // `indexOf('__')` then lands on index 0, an EMPTY server segment:
+    // seating it would offer an `mcp:` doc whose tools the executor
+    // could never compose, so the door drops it (the re-audit,
+    // 2026-10-16). A '-' name is NOT this case — the segment is
+    // '-unity' and it rides like any other server.
+    const h = fakeHost({ schemas: [
+      { name: 'melite_discover', description: 'discover things' },
+      { name: 'mcp__blender__scene_info', description: 'Scene contents' },
+      { name: 'mcp____view_scene', description: 'serverName is "_"' },
+      { name: 'mcp____probe__ping', description: 'serverName is "__probe"' },
+      { name: 'mcp__-unity__build', description: 'serverName is "-unity"' },
+    ] })
+    apply(h.host as never)
+    const generic = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp' })
+    assert.equal(generic.status, 200)
+    const kinds = ((generic.body as Record<string, unknown>)['features']) as { modifiers: Array<Record<string, unknown>> }
+    const opts = ((kinds.modifiers[0]!['fields'] as Array<{ options: Array<{ value: string }> }>)[0]!.options)
+    assert.deepEqual(
+      opts.map((o) => o.value),
+      ['-unity', 'blender'],
+      'separator-opening servers are refused; a dash-opening one is an ordinary seat',
+    )
+    // and the refused names never resolve as direct-call specs
+    const empty = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:' })
+    assert.equal(empty.status, 404)
+    const dash = await call(h.routes, '/v1', { method: 'GET', url: 'http://localhost/v1/form-spec?model=mcp:-unity' })
+    assert.equal(dash.status, 200)
   })
 
   test('serves live tool schemas plus the live llm routes', async () => {
@@ -1237,6 +1294,99 @@ describe('input preview', () => {
 })
 
 // ── /v1 prefix door ───────────────────────────────────────────────
+
+describe('the /v1 auth gate (2026-10-04: /v1 submits runs)', () => {
+  // The run plane was the one fence-free door: DSH's own carrier
+  // answers /api/* with 401 while an anonymous curl POSTed
+  // /v1/flows/start with 200. The gate is DSH's own seam
+  // (connection.requestRejection — Host/Origin 403, session 401),
+  // PROBED so a lane with no browser carrier keeps serving.
+
+  test('a lane WITH the browser carrier fences /v1 with its own verdict', async () => {
+    for (const status of [403, 401] as const) {
+      const h = boot({ connectionRejection: status })
+      const r = await call(h.routes, '/v1', {
+        method: 'GET',
+        url: 'http://localhost/v1/discover',
+        headers: { host: 'localhost:3080' },
+      })
+      assert.equal(r.status, status, 'the carrier\'s status rides verbatim')
+      const body = r.body as { error?: string; status?: number }
+      assert.equal(body.status, status)
+      assert.match(String(body.error), /^connection\//)
+      assert.match(
+        String(body.error),
+        status === 403 ? /untrusted-request/ : /unauthenticated/,
+      )
+    }
+  })
+
+  test('a lane WITHOUT the carrier is never fenced (the probe, not a new wall)', async () => {
+    // this harness seats no disclose lane, so the door answers its own
+    // seat-absent 502 — the point is the fence never fired: no 401, no
+    // 403, the request reached the seat lanes.
+    const h = boot()
+    const r = await call(h.routes, '/v1', {
+      method: 'GET',
+      url: 'http://localhost/v1/discover',
+      headers: { host: 'localhost:3080' },
+    })
+    assert.equal(r.status, 502)
+  })
+
+  test('the carrier that ADMITS (no rejection) passes the request through', async () => {
+    // the admit arm is the seat present but satisfied — the gate must
+    // not swallow a request just because a carrier exists
+    const h = fakeHost()
+    ;(h.host as unknown as { get: (n: string) => unknown }).get = (serviceName: string): unknown => {
+      if (serviceName === 'connection') {
+        return {
+          requestRejection: (request: { headers?: Record<string, string> }): undefined => {
+            // the shape check the audit's catch demands, on the admit arm too
+            if (request.headers === undefined) throw new TypeError('no headers')
+            return undefined
+          },
+        }
+      }
+      return undefined
+    }
+    apply(h.host as never, {})
+    const r = await call(h.routes, '/v1', {
+      method: 'GET',
+      url: 'http://localhost/v1/discover',
+      headers: { host: 'localhost:3080' },
+    })
+    assert.equal(r.status, 502, 'a satisfied carrier passes the request to the seat lanes')
+  })
+
+  test('a carrier that THROWS answers 500 with a named body, never a bare 400', async () => {
+    // the seam's failure voice: a carrier raising inside requestRejection
+    // (the audit's TypeError class) must surface as connection/rejected
+    // with the error's own message — the web server's bare-400 catch is
+    // what the named 500 replaces. Both throw shapes ride the arm: an
+    // Error carries its message, a non-Error stringifies.
+    const throws = (thrown: unknown): { requestRejection: (request: { headers?: Record<string, string> }) => number } => ({
+      requestRejection: (): number => {
+        throw thrown
+      },
+    })
+    for (const thrown of [new Error('carrier exploded'), 'a raw string throw'] as const) {
+      const h = fakeHost()
+      ;(h.host as unknown as { get: (n: string) => unknown }).get = (serviceName: string): unknown => {
+        if (serviceName === 'connection') return throws(thrown)
+        return undefined
+      }
+      apply(h.host as never, {})
+      const r = await call(h.routes, '/v1', {
+        method: 'GET',
+        url: 'http://localhost/v1/discover',
+        headers: { host: 'localhost:3080' },
+      })
+      assert.equal(r.status, 500, 'a throwing carrier is a named 500, never the bare 400')
+      assert.equal(r.text, 'connection/rejected: ' + (thrown instanceof Error ? thrown.message : String(thrown)))
+    }
+  })
+})
 
 describe('/v1 prefix discovery arms', () => {
   test('card-tools, model-catalog, forms, kinds serve live', async () => {
