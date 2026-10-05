@@ -4,22 +4,40 @@
   "private": true,
   "type": "module",
   "description": "The engine Service Definition (stroke 53, the engine-generics seam): one registry seat every engine provider registers into and every run-path consumer resolves through — ComfyUI today, MCP servers (blender/unity/godot) next. Stage rows are engine-agnostic; graph surgery (spliceWorkflow) stays inside the owning engine's executor. Source-plane TS (erasable syntax, no build step).",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./engines": "./src/engines.ts",
-    "./types": "./src/types.ts",
-    "./vocabulary": "./src/vocabulary.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./engines": {
+      "types": "./lib/engines.d.ts",
+      "default": "./lib/engines.js"
+    },
+    "./types": {
+      "types": "./lib/types.d.ts",
+      "default": "./lib/types.js"
+    },
+    "./vocabulary": {
+      "types": "./lib/vocabulary.d.ts",
+      "default": "./lib/vocabulary.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
   }
 }

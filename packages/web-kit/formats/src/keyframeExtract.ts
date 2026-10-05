@@ -21,7 +21,7 @@
  * Both paths return frame indices, deduped and sorted, with endpoints and a
  * minimum spacing enforced.
  */
-import type { PromptSegmentOutput } from "@melite/catalog"
+import type { PromptSegmentOutput } from "./textToPose.ts"
 
 export interface ExtractOptions {
   /** Minimum frames between extracted keyframes (anti-clustering). */

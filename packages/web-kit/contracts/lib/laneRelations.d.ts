@@ -1,0 +1,274 @@
+/** One requires row: `field` fires only when every `needs` member
+ *  is stated non-blank. `cure` is the refusal's second half — the
+ *  sentence that names the cure, authored with the declaration. */
+export interface LaneRequiresRow {
+    readonly field: string;
+    readonly needs: readonly string[];
+    readonly cure?: string;
+}
+/** One conflicts row: `a` and `b` cannot both be stated. */
+export interface LaneConflictsRow {
+    readonly a: string;
+    readonly b: string;
+    readonly cure?: string;
+}
+/** One together row: the all-or-nothing group. */
+export interface LaneTogetherRow {
+    readonly fields: readonly string[];
+    readonly cure?: string;
+}
+/** One either_or row: at least one group fully stated. */
+export interface LaneEitherOrRow {
+    readonly groups: readonly (readonly string[])[];
+    readonly cure?: string;
+}
+/** One at_most_one row: AT MOST one member of a slot family may be
+ *  stated (the design audit's Q2 — the sharpest gap in the
+ *  vocabulary: `either_or` says "one of these SOURCES, at least
+ *  one", so a six-field slot family read as "any one of six sources"
+ *  and let two ride together, which no card meant. The word is
+ *  additive and purely local: the judge is a set intersection). */
+export interface LaneAtMostOneRow {
+    readonly fields: readonly string[];
+    readonly cure?: string;
+}
+/** One required row: these fields must be STATED on this lane
+ *  (the design audit's Q2 — "prompt is required" was unutterable:
+ *  `requires` demands a SIBLING, and blank-always-admits is the
+ *  authoring-in-progress law. This word is the one exception to that
+ *  law, and only for the fields it names: a declaration that means
+ *  "required" says so here, and every other field keeps its
+ *  tolerance). */
+export interface LaneRequiredRow {
+    readonly fields: readonly string[];
+    /** ONE-OF (2026-10-10, the DECL audit's row 2 — the vocabulary
+     *  could not say "at least one of these must be stated": the
+     *  image-edit anchor is ONE list OR any legacy key, and either_or
+     *  holds the blank tolerance by law). any_of: true turns the
+     *  fields into a one-of anchor: the refusal fires only when NONE
+     *  is stated, and the voice names the alternatives. */
+    readonly any_of?: boolean;
+    readonly cure?: string;
+}
+/** THE DECLARED WORDS, DERIVED (2026-10-10, the four-agent contract
+ *  audit): every seat that needs to ENUMERATE the vocabulary — the
+ *  boot drift gate, the model-less intersection, the agent render —
+ *  reads this list instead of retyping it. Three hand lists meant a
+ *  seventh word could land in the grammar and bind in two seats. The
+ *  keys are the interface's own, so the list cannot fall behind. */
+export declare const RELATION_WORDS: {
+    readonly requires: true;
+    readonly conflicts: true;
+    readonly together: true;
+    readonly either_or: true;
+    readonly at_most_one: true;
+    readonly required: true;
+};
+export type RelationWord = keyof typeof RELATION_WORDS;
+/** The four relation words — the DECL's relation declaration (the
+ *  wire shape; the ModelDecl grammar in comfyui-cordis authors
+ *  exactly this). Absent ≡ none (the absent-equals-empty law). */
+export interface LaneRelations {
+    readonly requires?: readonly LaneRequiresRow[];
+    readonly conflicts?: readonly LaneConflictsRow[];
+    readonly together?: readonly LaneTogetherRow[];
+    readonly either_or?: readonly LaneEitherOrRow[];
+    readonly at_most_one?: readonly LaneAtMostOneRow[];
+    readonly required?: readonly LaneRequiredRow[];
+}
+/** One violation — the refusal in the field's voice: the field
+ *  named, the law named, the cure stated. */
+export interface LaneViolation {
+    readonly field: string;
+    readonly message: string;
+}
+/** THE BLANK LAW (the estate's own): undefined, null, empty or
+ *  whitespace string, empty array, empty object = NOT stated. A
+ *  number (0 included), a boolean, a non-empty array (mod bag) or
+ *  object = stated. Pure, shared by every word. */
+export declare function laneBlank(v: unknown): boolean;
+/** Judge the four words over one stated state. PURE: no I/O, no
+ *  card code — the same call the bench door refuses with and the
+ *  form renders inline. Every row fires only on the STATED side of
+ *  the law (blank fields never violate requires/together; either_or
+ *  stays unarmed until a member is stated — authoring-in-progress
+ *  is never a write refusal). */
+export declare function judgeLaneRelations(relations: readonly LaneRelations[], values: Record<string, unknown>): LaneViolation[];
+/** Judge the LANE SURFACE (the parameter-surface half of the same
+ *  declaration): a STATED card-schema field outside the lane's
+ *  declared surface fires nothing at compose — refuse it here, in
+ *  the field's voice, a priori. `schemaFields` are the card's own
+ *  field names (the walk the claim law already owns); fields the
+ *  surface declares but the card does not carry are the claim
+ *  law's refusal, never this one. A null surface (the family
+ *  declares none) judges nothing — legacy families keep the card's
+ *  union table until they declare. */
+export declare function judgeLaneSurface(surface: readonly string[] | null | undefined, schemaFields: readonly string[], values: Record<string, unknown>): LaneViolation[];
+/** The effective surface for one (family × variant) lane: the
+ *  family base plus the variant's additions (the cascade law —
+ *  later layers add, never subtract). Null family params = the
+ *  family declares no surface (the legacy card-authored truth). */
+export declare function laneSurfaceOf(familyParams: readonly string[] | null | undefined, variantParams: readonly string[] | null | undefined): readonly string[] | null;
+/** One bounds row: the model's own floor/ceiling for ONE numeric
+ *  param. At least one endpoint must be stated (a bound that names
+ *  neither is a typo, not a law). THE RANGE RULE (the 2.1 width
+ *  burn, 2026-10-10): whoever owns the default owns the floor —
+ *  the card's schema may bound what the CARD author knows, but the
+ *  resolution a LANE accepts is the MODEL's truth, and it lived
+ *  nowhere (width -50 admitted at every door; the engine produced
+ *  garbage). Declared on the DECL, judged at bench-write with the
+ *  same voice as the relation words. */
+export interface ParamBound {
+    readonly min?: number;
+    readonly max?: number;
+}
+/** Bounds for the lane: family-level rows, per-field REPLACED by
+ *  the variant's own when the variant states one (a lane may
+ *  tighten its own ceiling — the lightning recipe's step budget is
+ *  not the standard's; two independent rows would contradict, so
+ *  the nearer layer wins, the surface cascade's add-law does not
+ *  apply to numbers). */
+export type LaneBounds = Readonly<Record<string, ParamBound>>;
+export declare function laneBoundsOf(familyBounds: LaneBounds | null | undefined, variantBounds: LaneBounds | null | undefined): LaneBounds | null;
+/** Judge the bounds over one stated state. PURE. Blank fields never
+ *  violate (the blank law: unstated is the family default's
+ *  business, not a refusal); non-numbers are the card schema's own
+ *  refusal, never re-voiced here; a stated number outside its row
+ *  refuses IN THE FIELD'S VOICE, cure included. */
+export declare function judgeLaneBounds(bounds: LaneBounds | null, values: Record<string, unknown>): LaneViolation[];
+/** A variant's ROUTE ENVELOPE, the DECL's own spelling (the
+ *  contract audit's row 3): closed steps/cfg domains, [min, max].
+ *  Both members ride together — the DECL schema refuses a partial
+ *  envelope, and every seat that reads one judges the same shape.
+ *  The one home; the kit/facts read seats wrap it in Partial for
+ *  their unknown-source rows. */
+export interface SamplerEnvelope {
+    steps: number[];
+    cfg: number[];
+}
+/** The envelope as the JUDGE reads it: every member optional (a
+ *  seat may know one bound — the kit/facts rows wrap it in
+ *  Partial for the same reason), every bound a read-only span.
+ *  DERIVED from the interface by map, never re-spelled: the door
+ *  feeds it the rail's normalized `readonly [number, number]`
+ *  tuples and the mirror feeds it the served mutable arrays —
+ *  both are the same facts to the judge. */
+export type SamplerEnvelopeInput = Readonly<{
+    [K in keyof SamplerEnvelope]?: readonly number[];
+}>;
+/** The variant rail's unknown-variant refusal body — the one
+ *  spelling, composed by the door (cardsVariant) and the client
+ *  mirror (card-base composeValidate) alike; the FRAME rides the
+ *  caller (`card_compose phase N:` at the door, the phase-less
+ *  `card_compose:` on the client).
+ *
+ * @param stated the variant the caller stated, verbatim.
+ * @param model the model id the variant pool belongs to.
+ * @param known the offered variant ids, door order.
+ * @returns the refusal body, frame-free. */
+export declare function unknownVariantVoice(stated: string, model: string, known: readonly string[]): string;
+/** The variant rail's unknown-quant refusal body — same contract as
+ *  {@link unknownVariantVoice}: one spelling, frame at the caller.
+ *
+ * @param stated the quant the caller stated, verbatim.
+ * @param model the model id the cells belong to.
+ * @param variant the variant whose cells were searched.
+ * @param known the variant's offered quants, door order; empty
+ *  yields the declares-no-cells tail.
+ * @returns the refusal body, frame-free. */
+export declare function unknownQuantVoice(stated: string, model: string, variant: string, known: readonly string[]): string;
+/** A stated knob the envelope gate refused.
+ *
+ *  - `voice` is the refusal BODY, frame-free: the frame rides the
+ *    caller (the phase-consistent `card_compose phase N:` at the
+ *    door, the phase-less `card_compose:` on the client mirror). */
+export interface SamplerEnvelopeOffence {
+    knob: 'steps' | 'cfg';
+    stated: number;
+    lo: number;
+    hi: number;
+    voice: string;
+}
+/** THE ROUTE ENVELOPE GATE'S ONE JUDGE (the voice audit, 2026-10-11:
+ *  six hand-mirrored spellings, two frames): a stated numeric
+ *  steps/cfg outside the selected variant's closed envelope is the
+ *  one refusal — the door (cardsVariant's envelopeRefusal) and the
+ *  client mirror (card-base composeValidate clause 3) both ask this
+ *  judge, never a divergent copy. The skips ride verbatim: a null
+ *  envelope, an absent bound, a non-numeric or non-finite statement
+ *  never refuse; a stated value inside the closed interval is
+ *  caller agency. The married clause and the lane-read tail are the
+ *  DOOR's own decorations — callers append what their seat knows.
+ *
+ * @param stated the caller's raw body — only numeric steps/cfg ride.
+ * @param envelope the selected variant's declared envelope, null
+ *  when the variant declares none; each bound is the closed
+ *  [min, max] pair the DECL law writes.
+ * @param variant the selected variant's id and route.
+ * @returns the first offending knob with its composed voice, or
+ *  null when every stated value sits inside. */
+export declare function judgeSamplerEnvelope(stated: Readonly<Record<string, unknown>>, envelope: SamplerEnvelopeInput | null, variant: Readonly<{
+    id: string;
+    route?: string;
+}>): SamplerEnvelopeOffence | null;
+/** The envelope refusal's CURE — the sentence that tells the
+ *  operator what to do about it. Both seats append it verbatim
+ *  after the judge's voice (the door interleaves its marriage
+ *  clause between); the cure is one spelling because it is the
+ *  half the operator reads.
+ *
+ * @returns the cure sentence, unpunctuated at both ends. */
+export declare function samplerEnvelopeCure(): string;
+export interface LaneContractVariantRow {
+    params?: readonly string[];
+    relations?: LaneRelations;
+    bounds?: Record<string, {
+        min?: number;
+        max?: number;
+    }>;
+    sampler_envelope?: SamplerEnvelope;
+}
+export interface LaneContractRow {
+    /** The declared surface — ABSENT when the family declares no
+     *  params at all (2026-10-11, the envelope wall: a family may
+     *  judge relations/bounds/envelopes while owning no surface —
+     *  krea-2's shape. Absent base = the form falls back to the
+     *  card's own visibility; `base: []` stays the explicit
+     *  black-form statement). */
+    base?: readonly string[];
+    relations?: LaneRelations;
+    bounds?: Record<string, {
+        min?: number;
+        max?: number;
+    }>;
+    variants: Record<string, LaneContractVariantRow>;
+}
+export interface LaneContractDecl {
+    params?: readonly string[];
+    relations?: LaneRelations;
+    bounds?: Record<string, {
+        min?: number;
+        max?: number;
+    }>;
+    variants?: ReadonlyArray<{
+        id: string;
+        params?: readonly string[];
+        relations?: LaneRelations;
+        bounds?: Record<string, {
+            min?: number;
+            max?: number;
+        }>;
+        sampler_envelope?: SamplerEnvelope;
+    }>;
+}
+/** One family's declared lane surface + laws, verbatim. Absent
+ *  members stay absent (the absent-equals-empty law: nothing is
+ *  invented, and a family that declares nothing yields an empty
+ *  base with no relations key). */
+export declare function laneContractOf(decl: LaneContractDecl): LaneContractRow;
+/** THE CONTRACT MAP for a card's declared families: family id → its
+ *  lane contract. Families that declare no params and no laws are
+ *  omitted (legacy families judge nothing; serving an empty row
+ *  would only cost the agent tokens). */
+export declare function laneContractsFor(familyIds: Iterable<string>, declOf: (family: string) => LaneContractDecl | undefined): Record<string, LaneContractRow>;
+//# sourceMappingURL=laneRelations.d.ts.map

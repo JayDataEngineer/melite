@@ -1,0 +1,385 @@
+import { createHash, randomBytes } from "node:crypto";
+import { lstat, mkdir, open, realpath, rename, rm, stat, } from "node:fs/promises";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+export class ProvisioningError extends Error {
+    code;
+    constructor(code, message, cause) {
+        super(message, cause === undefined ? undefined : { cause });
+        this.name = "ProvisioningError";
+        this.code = code;
+    }
+}
+const SHA256 = /^[0-9a-f]{64}$/i;
+const SAFE_OPERATION_ID = /^[A-Za-z0-9._-]+$/;
+const HASH_CHUNK_BYTES = 1024 * 1024;
+function abortError(signal) {
+    const reason = signal.reason;
+    if (reason instanceof Error) {
+        return reason;
+    }
+    const error = new Error("artifact operation cancelled");
+    error.name = "AbortError";
+    return error;
+}
+function throwIfAborted(signal) {
+    if (signal?.aborted === true) {
+        throw abortError(signal);
+    }
+}
+function errorMessage(error) {
+    return error instanceof Error ? error.message : String(error);
+}
+export function isValidSha256(value) {
+    return SHA256.test(value.trim());
+}
+function normalizeDigest(value) {
+    const digest = value.trim().toLowerCase();
+    if (!SHA256.test(digest)) {
+        throw new ProvisioningError("invalid-digest", "artifact SHA-256 must be 64 hexadecimal characters");
+    }
+    return digest;
+}
+function safeOperationId(value) {
+    if (!SAFE_OPERATION_ID.test(value) || value === "." || value === "..") {
+        throw new ProvisioningError("invalid-path", "artifact operation id is not a safe path segment");
+    }
+    return value;
+}
+export function resolveConfinedPath(root, relativePath) {
+    if (root.trim() === "" || relativePath.trim() === "") {
+        throw new ProvisioningError("invalid-path", "artifact root and path are required");
+    }
+    if (relativePath.includes("\0") || relativePath.includes("\\")) {
+        throw new ProvisioningError("invalid-path", "artifact path contains an invalid segment");
+    }
+    if (isAbsolute(relativePath)) {
+        throw new ProvisioningError("invalid-path", "artifact path must be relative to its root");
+    }
+    const segments = relativePath.split("/");
+    for (const segment of segments) {
+        if (segment === "" || segment === "." || segment === "..") {
+            throw new ProvisioningError("invalid-path", "artifact path contains an unsafe segment");
+        }
+    }
+    const rootPath = resolve(root);
+    const destination = resolve(rootPath, ...segments);
+    return destination;
+}
+function within(root, candidate) {
+    const rel = relative(root, candidate);
+    return rel === "" || (rel !== ".." && !rel.startsWith(`..${sep}`) && !isAbsolute(rel));
+}
+async function existingKind(path) {
+    try {
+        const stat = await lstat(path);
+        if (stat.isSymbolicLink())
+            return "symlink";
+        if (stat.isFile())
+            return "file";
+        if (stat.isDirectory())
+            return "directory";
+        return "other";
+    }
+    catch (error) {
+        if (error.code === "ENOENT")
+            return "missing";
+        throw error;
+    }
+}
+async function assertNoSymlink(root, destination) {
+    const rel = relative(root, destination);
+    const segments = rel.split(sep);
+    let current = root;
+    for (const segment of segments) {
+        current = join(current, segment);
+        const kind = await existingKind(current);
+        if (kind === "symlink") {
+            throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
+        }
+        if (kind !== "missing" && current !== destination && kind !== "directory") {
+            throw new ProvisioningError("invalid-path", "artifact path traverses a non-directory");
+        }
+    }
+}
+async function createConfinedDirectory(root, directory) {
+    const rel = relative(root, directory);
+    if (rel === "")
+        return;
+    const segments = rel.split(sep);
+    let current = root;
+    for (const segment of segments) {
+        current = join(current, segment);
+        let kind = await existingKind(current);
+        if (kind === "symlink") {
+            throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
+        }
+        if (kind === "missing") {
+            await mkdir(current, { recursive: true });
+            kind = await existingKind(current);
+        }
+        if (kind === "symlink") {
+            throw new ProvisioningError("invalid-path", "artifact path traverses a symbolic link");
+        }
+        if (kind !== "directory") {
+            throw new ProvisioningError("invalid-path", "artifact path traverses a non-directory");
+        }
+    }
+}
+async function preparePath(root, destination) {
+    const rootPath = resolve(root);
+    await mkdir(rootPath, { recursive: true });
+    const realRoot = await realpath(rootPath);
+    const parent = dirname(destination);
+    await createConfinedDirectory(rootPath, parent);
+    await assertNoSymlink(rootPath, destination);
+    const realParent = await realpath(parent);
+    if (!within(realRoot, realParent)) {
+        throw new ProvisioningError("invalid-path", "artifact destination escapes its root");
+    }
+    const destinationKind = await existingKind(destination);
+    if (destinationKind === "directory" || destinationKind === "other") {
+        throw new ProvisioningError("invalid-path", "artifact destination is not a file");
+    }
+    return realRoot;
+}
+function iteratorFor(input) {
+    if (typeof input === "object" && input !== null) {
+        const asyncIterable = input;
+        if (typeof asyncIterable[Symbol.asyncIterator] === "function") {
+            const iterator = asyncIterable[Symbol.asyncIterator]();
+            return {
+                next: () => Promise.resolve(iterator.next()),
+                return: async () => {
+                    if (iterator.return !== undefined)
+                        await iterator.return();
+                    return { done: true, value: undefined };
+                },
+            };
+        }
+        const iterable = input;
+        if (typeof iterable[Symbol.iterator] === "function") {
+            const iterator = iterable[Symbol.iterator]();
+            return {
+                next: async () => iterator.next(),
+                return: async () => {
+                    if (iterator.return !== undefined)
+                        iterator.return();
+                    return { done: true, value: undefined };
+                },
+            };
+        }
+        const stream = input;
+        if (typeof stream.getReader === "function") {
+            const reader = stream.getReader();
+            return {
+                next: () => reader.read(),
+                return: async () => {
+                    await reader.cancel();
+                    return { done: true, value: undefined };
+                },
+            };
+        }
+    }
+    throw new ProvisioningError("source-invalid", "artifact source is not a byte stream");
+}
+async function nextChunk(iterator, signal) {
+    if (signal === undefined) {
+        return await iterator.next();
+    }
+    throwIfAborted(signal);
+    return await new Promise((resolvePromise, rejectPromise) => {
+        let settled = false;
+        const finish = (fn) => {
+            if (settled)
+                return;
+            settled = true;
+            signal.removeEventListener("abort", onAbort);
+            fn();
+        };
+        const onAbort = () => {
+            finish(() => {
+                void Promise.resolve(iterator.return()).catch(() => undefined);
+                rejectPromise(abortError(signal));
+            });
+        };
+        signal.addEventListener("abort", onAbort, { once: true });
+        Promise.resolve()
+            .then(() => iterator.next())
+            .then((value) => finish(() => resolvePromise(value)), (error) => finish(() => rejectPromise(error)));
+    });
+}
+async function closeIterator(iterator) {
+    try {
+        await iterator.return();
+    }
+    catch {
+        return;
+    }
+}
+async function writeAll(handle, bytes) {
+    let offset = 0;
+    while (offset < bytes.byteLength) {
+        const result = await handle.write(bytes, offset, bytes.byteLength - offset);
+        if (result.bytesWritten <= 0) {
+            throw new Error("artifact write made no progress");
+        }
+        offset += result.bytesWritten;
+    }
+}
+export async function sha256File(path, signal) {
+    const handle = await open(path, "r");
+    const hash = createHash("sha256");
+    const buffer = Buffer.allocUnsafe(HASH_CHUNK_BYTES);
+    try {
+        for (;;) {
+            throwIfAborted(signal);
+            const result = await handle.read(buffer, 0, buffer.length, null);
+            if (result.bytesRead === 0)
+                break;
+            hash.update(buffer.subarray(0, result.bytesRead));
+        }
+    }
+    finally {
+        await handle.close();
+    }
+    return hash.digest("hex");
+}
+export const hashFile = sha256File;
+export class VerifiedArtifactWriter {
+    root;
+    constructor(root) {
+        this.root = root;
+    }
+    async write(request, signal) {
+        const expectedSha256 = request.expectedSha256 === undefined
+            ? undefined
+            : normalizeDigest(request.expectedSha256);
+        const operationId = safeOperationId(request.operationId);
+        const destination = resolveConfinedPath(request.root, request.relativePath);
+        await preparePath(request.root, destination);
+        throwIfAborted(signal);
+        const temporary = `${destination}.part-${operationId}`;
+        await rm(temporary, { force: true });
+        const iterator = iteratorFor(request.source);
+        let handle;
+        let landed = false;
+        let sizeBytes = 0;
+        try {
+            handle = await open(temporary, "wx", 0o600);
+            for (;;) {
+                const chunk = await nextChunk(iterator, signal);
+                if (chunk.done)
+                    break;
+                if (!(chunk.value instanceof Uint8Array)) {
+                    throw new ProvisioningError("source-invalid", "artifact source yielded a non-byte chunk");
+                }
+                if (chunk.value.byteLength === 0)
+                    continue;
+                throwIfAborted(signal);
+                await writeAll(handle, chunk.value);
+                sizeBytes += chunk.value.byteLength;
+            }
+            await handle.sync();
+            await handle.close();
+            handle = undefined;
+            throwIfAborted(signal);
+            const temporarySha256 = await sha256File(temporary, signal);
+            if (expectedSha256 !== undefined && temporarySha256 !== expectedSha256) {
+                throw new ProvisioningError("hash-mismatch", `artifact SHA-256 mismatch: expected ${expectedSha256}, got ${temporarySha256}`);
+            }
+            if (request.sizeBytes !== undefined && request.sizeBytes !== sizeBytes) {
+                throw new ProvisioningError("size-mismatch", `artifact size mismatch: expected ${String(request.sizeBytes)}, got ${String(sizeBytes)}`);
+            }
+            throwIfAborted(signal);
+            await rename(temporary, destination);
+            landed = true;
+            throwIfAborted(signal);
+            const finalKind = await existingKind(destination);
+            if (finalKind !== "file") {
+                throw new ProvisioningError("landing-failed", "artifact destination is not a file after landing");
+            }
+            const finalSha256 = await sha256File(destination, signal);
+            if (expectedSha256 !== undefined && finalSha256 !== expectedSha256) {
+                throw new ProvisioningError("landing-failed", "artifact destination changed after landing");
+            }
+            const finalStat = await stat(destination);
+            if (request.sizeBytes !== undefined && finalStat.size !== request.sizeBytes) {
+                throw new ProvisioningError("landing-failed", "artifact destination size changed after landing");
+            }
+            return {
+                path: destination,
+                sha256: finalSha256,
+                sizeBytes: finalStat.size,
+                integrity: expectedSha256 === undefined ? "operator-unverified" : "declared-sha256",
+            };
+        }
+        catch (error) {
+            if (handle !== undefined) {
+                await handle.close().catch(() => undefined);
+            }
+            if (!landed) {
+                await rm(temporary, { force: true }).catch(() => undefined);
+            }
+            if (error instanceof ProvisioningError)
+                throw error;
+            if (signal?.aborted === true || (error instanceof Error && error.name === "AbortError")) {
+                throw new ProvisioningError("cancelled", "artifact operation cancelled", error);
+            }
+            throw new ProvisioningError("write-failed", `artifact write failed: ${errorMessage(error)}`, error);
+        }
+        finally {
+            await closeIterator(iterator);
+        }
+    }
+    async inspect(request, signal) {
+        // READ law (2026-10-12, the krea-2 clip symlink): inspection
+        // never writes, so it takes no mkdir side effect and no
+        // write-side symlink refusal — an operator may satisfy a
+        // declared row through a symlink laid out inside the store
+        // (clip/qwen3vl_4b_fp8_scaled.safetensors -> text_encoders/).
+        // Confinement stays real: the RESOLVED destination may never
+        // read outside the root, enforced on the realpath.
+        const destination = resolveConfinedPath(request.root, request.relativePath);
+        const kind = await existingKind(destination);
+        if (kind === "missing")
+            return { present: false, path: destination };
+        let realDestination;
+        try {
+            realDestination = await realpath(destination);
+        }
+        catch (error) {
+            // a symlink whose target is gone reads as absent, never fatal
+            if (error.code === "ENOENT") {
+                return { present: false, path: destination };
+            }
+            throw error;
+        }
+        const rootPath = resolve(request.root);
+        let realRoot = rootPath;
+        try {
+            realRoot = await realpath(rootPath);
+        }
+        catch {
+            // a missing root cannot contain the destination that exists
+        }
+        if (!within(realRoot, realDestination)) {
+            throw new ProvisioningError("invalid-path", "artifact inspection escapes its root");
+        }
+        const stats = await stat(realDestination);
+        if (!stats.isFile()) {
+            throw new ProvisioningError("invalid-path", "artifact inspection target is not a file");
+        }
+        const sha256 = await sha256File(realDestination, signal);
+        if (request.expectedSha256 !== undefined && normalizeDigest(request.expectedSha256) !== sha256) {
+            return { present: false, path: destination, sha256 };
+        }
+        return { present: true, path: destination, sha256, sizeBytes: stats.size };
+    }
+}
+export async function writeVerifiedArtifact(request, signal) {
+    return await new VerifiedArtifactWriter(request.root).write(request, signal);
+}
+export function newOperationId() {
+    return randomBytes(16).toString("hex");
+}
+//# sourceMappingURL=artifact-writer.js.map

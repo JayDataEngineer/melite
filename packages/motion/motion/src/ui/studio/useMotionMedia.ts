@@ -24,9 +24,9 @@ import {
 import { useMotionImageStore } from "@melite-plugin/motion/ui/viewers/motionImageStore"
 import { isModelUrl } from '@melite/contracts/mediaKinds'
 import { ASSET_DRAG_MIME, parseAssetDrop, readAsDataURL, STAGE_BACKGROUND_DARK } from '@melite/card-base/client'
-import { MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
-import type { ThreeCtx } from "./MotionExportDialog"
-import type { ToastFn } from "./useMotionStage"
+import { MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM } from "./motionParams.ts"
+import type { ThreeCtx } from "./MotionExportDialog.tsx"
+import type { ToastFn } from "./useMotionStage.ts"
 
 export interface MotionMediaArgs {
   stage: CardStage

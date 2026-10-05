@@ -3,10 +3,8 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",
-  "main": "./src/index.ts",
+  "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port — the runs remote exposes the lanes over this seat.",
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/cordis-plugin-timer": "workspace:*",
     "@deepseek-ai/dsh-atomic-write": "0.2.0-rc.1",
     "@deepseek-ai/dsh-brand": "0.2.0-rc.1",
@@ -23,9 +21,26 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
-  }
+  },
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

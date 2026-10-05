@@ -13,7 +13,7 @@ export function normalizeSegmentStatus(raw: unknown): SegmentStatus {
  : 'empty'
 }
 
-import type { LoRAEntry } from "./loraTypes"
+import type { LoRAEntry } from "./loraTypes.ts"
 
 // E3.14: waveform LOD cache type — declared here to avoid a cycle
 // (lib/waveform-peaks.ts imports nothing from this file, but the AudioCue

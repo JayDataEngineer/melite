@@ -465,6 +465,10 @@ export default defineConfig({
       provider: 'v8',
       include: ['packages/*/*/src/**/*.{ts,tsx}'],
       exclude: [
+        // Declaration-only files carry no executable statements — the
+        // src-plane typert twins and the css-modules declarations are
+        // typecheck-proven (the walls tier), never coverage-proven.
+        'packages/*/*/src/**/*.d.ts',
         // GUI-debt exemptions (ledger §TEST-2). The .test.ts→.spec.ts
         // migration is DONE (2026-09-11, §TEST-4) — these trees run
         // under root vitest now but are not yet at per-file 100%, so

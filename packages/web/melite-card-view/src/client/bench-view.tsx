@@ -22,7 +22,7 @@ import { SortableTile } from './sortable-tile.tsx'
 import { StageDrill } from './stage-drill.tsx'
 import { AddCardDoor } from './add-card-door.tsx'
 import { previewKindFor, previewArtifactsFor } from './preview-kinds.ts'
-import { rejectionVoice, refusalVoice } from './rejection-voice'
+import { rejectionVoice, refusalVoice } from './rejection-voice.ts'
 
 export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }: {
   sessionKey: string

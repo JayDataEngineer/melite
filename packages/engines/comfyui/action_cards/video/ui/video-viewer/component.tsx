@@ -3,7 +3,7 @@
  * for full/dialog mode. Props: AssetViewerProps (src ← url).
  */
 import type { AssetViewerProps } from "@melite/contracts"
-import { VideoPlayer } from "../viewers"
+import { VideoPlayer } from "../viewers/index.ts"
 import styles from "./component.module.css"
 
 export default function VideoViewerClaim({ url, mode, className }: AssetViewerProps) {

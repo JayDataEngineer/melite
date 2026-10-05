@@ -2,7 +2,6 @@
   "name": "@melite/catalog",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
   "dependencies": {
     "@deepseek-ai/dsh-client-store": "0.2.0-rc.1",
     "@melite/contracts": "workspace:*",
@@ -10,28 +9,80 @@
     "react": "^19.3.0"
   },
   "exports": {
-    ".": "./src/index.ts",
-    "./api": "./src/api.ts",
-    "./clientStore": "./src/clientStore.ts",
-    "./catalogContract": "./src/catalogContract.ts",
-    "./catalogContractStore": "./src/catalogContractStore.ts",
-    "./cardBirth": "./src/cardBirth.ts",
-    "./enhance": "./src/enhance.ts",
-    "./familyParamContract": "./src/familyParamContract.ts",
-    "./familyProvenance": "./src/familyProvenance.ts",
-    "./modelCatalog": "./src/modelCatalog.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./api": {
+      "types": "./lib/api.d.ts",
+      "default": "./lib/api.js"
+    },
+    "./sleep": {
+      "types": "./lib/sleep.d.ts",
+      "default": "./lib/sleep.js"
+    },
+    "./clientStore": {
+      "types": "./lib/clientStore.d.ts",
+      "default": "./lib/clientStore.js"
+    },
+    "./catalogContract": {
+      "types": "./lib/catalogContract.d.ts",
+      "default": "./lib/catalogContract.js"
+    },
+    "./catalogContractStore": {
+      "types": "./lib/catalogContractStore.d.ts",
+      "default": "./lib/catalogContractStore.js"
+    },
+    "./cardBirth": {
+      "types": "./lib/cardBirth.d.ts",
+      "default": "./lib/cardBirth.js"
+    },
+    "./enhance": {
+      "types": "./lib/enhance.d.ts",
+      "default": "./lib/enhance.js"
+    },
+    "./familyParamContract": {
+      "types": "./lib/familyParamContract.d.ts",
+      "default": "./lib/familyParamContract.js"
+    },
+    "./familyProvenance": {
+      "types": "./lib/familyProvenance.d.ts",
+      "default": "./lib/familyProvenance.js"
+    },
+    "./modelCatalog": {
+      "types": "./lib/modelCatalog.d.ts",
+      "default": "./lib/modelCatalog.js"
+    },
     "./package.json": "./package.json",
-    "./FlowProtocol": "./src/FlowProtocol.ts",
-    "./runStatusContract": "./src/runStatusContract.ts",
-    "./runStatusContractStore": "./src/runStatusContractStore.ts",
-    "./serviceForms": "./src/serviceForms.ts",
-    "./tagMap": "./src/tagMap.ts",
-    "./text-to-pose": "./src/text-to-pose.ts",
-    "./waveform-peaks": "./src/waveform-peaks.ts"
+    "./FlowProtocol": {
+      "types": "./lib/FlowProtocol.d.ts",
+      "default": "./lib/FlowProtocol.js"
+    },
+    "./runStatusContract": {
+      "types": "./lib/runStatusContract.d.ts",
+      "default": "./lib/runStatusContract.js"
+    },
+    "./runStatusContractStore": {
+      "types": "./lib/runStatusContractStore.d.ts",
+      "default": "./lib/runStatusContractStore.js"
+    },
+    "./serviceForms": {
+      "types": "./lib/serviceForms.d.ts",
+      "default": "./lib/serviceForms.js"
+    },
+    "./tagMap": {
+      "types": "./lib/tagMap.d.ts",
+      "default": "./lib/tagMap.js"
+    },
+    "./waveform-peaks": {
+      "types": "./lib/waveform-peaks.d.ts",
+      "default": "./lib/waveform-peaks.js"
+    }
   },
   "version": "0.3.1",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -39,5 +90,10 @@
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "typescript": "~6.0.3"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

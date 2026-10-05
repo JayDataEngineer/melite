@@ -4,10 +4,10 @@
  */
 import type { AudioCue, AudioTrackDef } from "@melite/contracts"
 import { TRACK_COLORS } from "@melite/contracts"
-import type { GetState, SetState } from "./createStore"
-import { uid } from "./timelineIds"
-import { schedulePersist } from "./timelinePersistence"
-import type { TimelineStore } from "./timelineStoreTypes"
+import type { GetState, SetState } from "./createStore.ts"
+import { uid } from "./timelineIds.ts"
+import { schedulePersist } from "./timelinePersistence.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export function createAudioSlice(
   set: SetState<TimelineStore>,

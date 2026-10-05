@@ -13,21 +13,21 @@
  * `flushPersist`, `_persistRunCount`, `_tlDelete`, `MAX_VARIANTS_PER_SEGMENT`,
  * `VariantInput`. It never moves from here — only the internals moved out.
  */
-import { create } from "./createStore"
-import { DEFAULT_DRAG, DEFAULT_PLAYBACK, DEFAULT_VIEWPORT } from "./timelineStoreTypes"
-import type { TimelineStore } from "./timelineStoreTypes"
-import { createAudioSlice } from "./timelineAudio"
-import { createHistorySlice } from "./timelineHistory"
-import { createSegmentSlice } from "./timelineSegments"
-import { createUiSlice } from "./timelineUi"
-import { createVariantSlice } from "./timelineVariants"
+import { create } from "./createStore.ts"
+import { DEFAULT_DRAG, DEFAULT_PLAYBACK, DEFAULT_VIEWPORT } from "./timelineStoreTypes.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
+import { createAudioSlice } from "./timelineAudio.ts"
+import { createHistorySlice } from "./timelineHistory.ts"
+import { createSegmentSlice } from "./timelineSegments.ts"
+import { createUiSlice } from "./timelineUi.ts"
+import { createVariantSlice } from "./timelineVariants.ts"
 
 // ── Public re-export surface (unchanged) ──
-export { MAX_VARIANTS_PER_SEGMENT } from "./timelineIds"
-export type { VariantInput } from "./timelineIds"
-export { _tlDelete } from "./timelineBlobs"
-export { _persistRunCount, flushPersist } from "./timelinePersistence"
-export type { TimelineStore } from "./timelineStoreTypes"
+export { MAX_VARIANTS_PER_SEGMENT } from "./timelineIds.ts"
+export type { VariantInput } from "./timelineIds.ts"
+export { _tlDelete } from "./timelineBlobs.ts"
+export { _persistRunCount, flushPersist } from "./timelinePersistence.ts"
+export type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export const useTimelineStore = create<TimelineStore>((set, get) => ({
   segments: [],

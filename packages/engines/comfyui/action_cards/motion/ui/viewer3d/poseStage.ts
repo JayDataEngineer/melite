@@ -25,11 +25,11 @@
 
 import * as THREE from "three"
 import { mountStage3D, type Stage3D } from "@melite/card-base/client"
-import { CM_TO_M } from "./poseStageSkeleton"
-import { framedCameraPos } from "./poseStageCamera"
-import { computeMeshLiftY } from "./poseStageMesh"
-import { createAnimClock, createSkeletonOverlay, createSkinCarrier } from "./poseStageCarriers"
-import { createJointManipulator, createReferenceManipulator } from "./poseStageManipulators"
+import { CM_TO_M } from "./poseStageSkeleton.ts"
+import { framedCameraPos } from "./poseStageCamera.ts"
+import { computeMeshLiftY } from "./poseStageMesh.ts"
+import { createAnimClock, createSkeletonOverlay, createSkinCarrier } from "./poseStageCarriers.ts"
+import { createJointManipulator, createReferenceManipulator } from "./poseStageManipulators.ts"
 import {
   createAltSamples,
   createConstraintOverlays,
@@ -38,14 +38,14 @@ import {
   createFootContacts,
   createKeyframeGhost,
   createLightingOrbs,
-} from "./poseStageOverlays"
-import { createReferenceCarrier } from "./poseStageReference"
-import type { CameraFraming, PoseStageProps } from "./poseStageTypes"
+} from "./poseStageOverlays.ts"
+import { createReferenceCarrier } from "./poseStageReference.ts"
+import type { CameraFraming, PoseStageProps } from "./poseStageTypes.ts"
 import { STAGE_BACKGROUND_DARK, STAGE_BACKGROUND_LIGHT } from '@melite/card-base/client'
 
-export { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton"
-export { cameraPosFor, framedCameraPos } from "./poseStageCamera"
-export { buildGeometry, computeMeshLiftY, fetchBindMesh } from "./poseStageMesh"
+export { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton.ts"
+export { cameraPosFor, framedCameraPos } from "./poseStageCamera.ts"
+export { buildGeometry, computeMeshLiftY, fetchBindMesh } from "./poseStageMesh.ts"
 export type {
   AltSampleDecoded,
   CameraFraming,
@@ -55,7 +55,7 @@ export type {
   ReferenceBundle,
   ReferenceMeshSpec,
   SkinMeshData,
-} from "./poseStageTypes"
+} from "./poseStageTypes.ts"
 
 // ══ THE STAGE ═════════════════════════════════════════════════════════════
 

@@ -28,9 +28,9 @@
  * and gizmos all apply CM_TO_M internally). Callers convert explicitly.
  */
 import * as THREE from "three"
-import { parseNpz, type NpyArray } from "./npz"
-import { loadSomaSkin, deformFrame, type SomaSkin } from "./somaSkin"
-import { encodeBufferToB64, SOMA77_BONE_CONNECTIONS } from "./poseCodec"
+import { parseNpz, type NpyArray } from "./npz.ts"
+import { loadSomaSkin, deformFrame, type SomaSkin } from "./somaSkin.ts"
+import { encodeBufferToB64, SOMA77_BONE_CONNECTIONS } from "./poseCodec.ts"
 
 const J = 77 // SOMA-77 joints
 

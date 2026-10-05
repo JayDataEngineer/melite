@@ -37,7 +37,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useMemo, useRef, 
 import { Button, IconLoadingOutlineRegular, IconPlayOutlineRegular, IconStopFillRegular, IconTrashOutlineRegular, Input, Menu, Modal, Pill, StateDot, Tag } from '@deepseek-ai/dsh-client-ui-primitives'
 import { CardDrill } from './card-drill.tsx'
 import { RunRescue } from './run-rescue.tsx'
-import { terminalStageErrorOf } from './run-rescue.ts'
+import { terminalStageErrorOf } from './run-rescue-core.ts'
 import { MediaDrilldown, type MediaDrilldownItem } from '@melite-plugin/dsh-gallery/drilldown'
 import type { StageViewOwnerProps } from './types.ts'
 import { fetchCardCatalog, fetchFormSpec, fieldsOf, resolveValue, seedUser } from '@melite/card-base/client'
@@ -66,7 +66,7 @@ import { CardZoomOverlay } from './zoom.tsx'
 import { mediaUrl } from './draft.ts'
 import { BenchView } from './bench-view.tsx'
 import { DraftView, RunView } from './draft-run-views.tsx'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 /** The injected tab information hook's shape (dsh-client-ui-sidebar-right's
  *  UseSidebarRightTabInfo, spelled locally). */
 interface TabInfo {

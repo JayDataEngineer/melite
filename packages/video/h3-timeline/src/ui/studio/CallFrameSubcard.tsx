@@ -22,7 +22,7 @@ import { cn, readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import type { LinkArtifact } from "./refUtils"
+import type { LinkArtifact } from "./refUtils.ts"
 
 /** The anchor slot — ONE image square in the bus grammar
  * (2026-08-24 affordance law: "first frame / last frame are weak

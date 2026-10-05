@@ -11,8 +11,8 @@ import type { SpecField } from '@melite/card-base/client'
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { PaneHeader, PaneShell } from "@melite/card-base/client"
 import s from "./studio.module.css"
-import { VIDEO_TIMELINE_TRACKS } from "./docModel"
-import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel"
+import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import type { DocCall, DocKeyframe, LayerA, SetLayerAKey } from "./docModel.ts"
 
 /** Pinned strip: the bar IS the document (monolith lines 4078–4162).
  *

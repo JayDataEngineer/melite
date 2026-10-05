@@ -54,6 +54,7 @@ import {
 import { validateWriteRowsAgainstActions, type WriteRow } from "./validate.ts";
 import Schema from "@deepseek-ai/schemastery";
 import { buildCatalog } from "./catalogEmission.ts";
+import { loadFamilies } from "./families/index.ts";
 
 export const MODELS_SERVICE = "models";
 
@@ -813,8 +814,8 @@ export const modelsFamiliesProvider: Plugin = {
   name: "engine-model-catalog-families",
   async apply(ctx: Context): Promise<void> {
     await ctx.plugin(modelsProvider);
-    const { FAMILY_PLUGINS } = await import("./families/index.ts");
-    for (const family of FAMILY_PLUGINS) {
+    const families = await loadFamilies();
+    for (const family of families) {
       // await settles registration (registry.ts's fiber.await runs
       // the apply to completion): after this loop every family's
       // effect has run — no extra tick needed or sufficient.
@@ -839,10 +840,10 @@ export const modelsFamiliesProvider: Plugin = {
     /* v8 ignore next 5 -- every family plugin body is an unconditional
      * registerFamily(DECL) inside ctx.effect, and the loop above awaited
      * each apply to completion, so familyCount() equals
-     * FAMILY_PLUGINS.length whenever the mount returns. */
-    if (svc.familyCount() !== FAMILY_PLUGINS.length) {
+     * families.length whenever the mount returns. */
+    if (svc.familyCount() !== families.length) {
       throw new ModelError(
-        `the families provider registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,
+        `the families provider registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`,
       );
     }
     await validateBootContracts(svc);
@@ -1139,8 +1140,8 @@ export async function bootModels(): Promise<ModelsService> {
   const ctx = new Context();
   try {
     await ctx.plugin(modelsProvider);
-    const { FAMILY_PLUGINS } = await import("./families/index.ts");
-    for (const family of FAMILY_PLUGINS) {
+    const families = await loadFamilies();
+    for (const family of families) {
       await ctx.plugin(family);
     }
     // ctx.models is typed by this module's own declaration merge (the
@@ -1159,9 +1160,9 @@ export async function bootModels(): Promise<ModelsService> {
        registers exactly one family through its effect (a silent
        family breaks its own wall first); the mismatch half never
        fires in a green tree (2026-09-12). */
-    if (svc.familyCount() !== FAMILY_PLUGINS.length) {
+    if (svc.familyCount() !== families.length) {
       throw new ModelError(
-        `boot registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,
+        `boot registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`,
       );
     }
     await validateBootContracts(svc);

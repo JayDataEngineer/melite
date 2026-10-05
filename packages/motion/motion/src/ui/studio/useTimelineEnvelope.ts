@@ -25,7 +25,7 @@ import {
   type MotionConstraint,
 } from "@melite/formats/motionConstraints"
 import type { CardStage } from "@melite/contracts"
-import type { ToastFn } from "./useMotionStage"
+import type { ToastFn } from "./useMotionStage.ts"
 
 export interface TimelineEnvelopeArgs {
   stage: CardStage

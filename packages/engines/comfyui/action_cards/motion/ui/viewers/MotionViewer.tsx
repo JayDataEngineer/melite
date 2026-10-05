@@ -39,7 +39,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import * as THREE from "three"
 import { AlertTriangle, mountStage3D, Pause, Play, Skeleton, Tip, type Stage3D } from "@melite/card-base/client"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { ScrubInput } from "../../../form-fields"
+import { ScrubInput } from '@melite/cards/form-fields'
 import { loadSomaSkin, type SomaSkin } from "@melite/formats"
 import { loadMotionNpz, precomputeDeformedVerts } from "@melite/formats"
 import styles from "./MotionViewer.module.css"

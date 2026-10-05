@@ -4,26 +4,53 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json",
-    "./mods/loras": "./mods/loras.ts",
-    "./timelineContract": "./src/timelineContract.ts",
-    "./filmMix": "./src/filmMix.ts",
-    "./actions": "./src/actions.ts",
-    "./schema": "./src/schema.ts"
+    "./mods/loras": {
+      "types": "./lib/mods/loras.d.ts",
+      "default": "./lib/mods/loras.js"
+    },
+    "./timelineContract": {
+      "types": "./lib/timelineContract.d.ts",
+      "default": "./lib/timelineContract.js"
+    },
+    "./filmMix": {
+      "types": "./lib/filmMix.d.ts",
+      "default": "./lib/filmMix.js"
+    },
+    "./actions": {
+      "types": "./lib/actions.d.ts",
+      "default": "./lib/actions.js"
+    },
+    "./schema": {
+      "types": "./lib/schema.d.ts",
+      "default": "./lib/schema.js"
+    }
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
-    "@deepseek-ai/schemastery": "workspace:*",
+    "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/contracts": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build-mods.json && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
   }
 }

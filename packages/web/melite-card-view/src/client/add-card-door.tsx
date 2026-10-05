@@ -9,7 +9,7 @@ import css from './card.module.css'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { fetchBench } from './cards-resource.ts'
 import { addStageWire } from './add-stage.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** THE ADD-CARD DOOR (the old system's power, DSH-native): the trailing
  *  + tile → the picker (the catalog's action cards, search + genre

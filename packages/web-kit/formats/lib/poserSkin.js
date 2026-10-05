@@ -1,0 +1,126 @@
+/**
+ * poserSkin — THE shared bind-mesh module for the body studio lanes
+ * (2026-09-05 dedup order).
+ *
+ * The /poser/skin/mesh surface feeds both studios that shape bodies:
+ *   • Body Studio (3d/body — MeshPreviewCanvas, BodyShapePanel)
+ *   • Pose Studio's viewer (motion/viewer3d — PoseViewer3D)
+ * Two byte-adjacent copies of fetchBindMesh + per-coefficient caches
+ * lived one plugin apart, drifting already (the 3d copy carried the
+ * Anny always-send-custom_targets fix and preview_pose support; the
+ * motion copy had neither — the same mesh dragged in Pose Studio
+ * could render differently than in Body Studio). One module, one
+ * cache, one behavior; the studios import it from here.
+ *
+ * The /poser prefix reaches the poser pack through the gateway's
+ * studio bridge (rebuilt 2026-09-05; vite proxies
+ * /poser → gateway → the engine endpoint's poser routes).
+ */
+import { apiFetch } from "@melite/catalog";
+// Per-coefficient-signature cache — ONE for the whole estate (both
+// studios share it: previewing a shape in Body Studio primes the exact
+// entry Pose Studio needs, zero network). All shaped meshes share SOMA's
+// 18056-vertex layout; the cache key incorporates identity_model +
+// coeffs + local_changes + custom_targets + preview_pose so identical
+// shapes hit the cache on re-fetch.
+const _meshCache = new Map();
+export async function fetchBindMesh(query = {}) {
+    const { identityModel, identityCoeffs, localChanges, previewPose, customTargets, } = query;
+    const key = identityModel || "anny";
+    // Round coeffs to 1 decimal for the signature - visually-identical shapes
+    // share a cache entry without exploding it on every micro-drag.
+    const coeffsSig = identityCoeffs && identityCoeffs.length > 0
+        ? identityCoeffs.map(v => v.toFixed(1)).join(",")
+        : null;
+    const lcEntries = localChanges && Object.keys(localChanges).length > 0
+        ? Object.entries(localChanges)
+            // Object keys are unique, so the equal-key arm is unreachable:
+            // a two-arm comparator sorts identically here (proof: distinct
+            // strings are always ordered one way or the other).
+            .sort(([a], [b]) => (a < b ? -1 : 1))
+            .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
+        : null;
+    // Custom .target blendshape weights (e.g. {"anime_stylized_enhanced": 0.5}).
+    // Rounded to 2 decimals - same convention as localChanges.
+    const ctEntries = customTargets && Object.keys(customTargets).length > 0
+        ? Object.entries(customTargets)
+            // Same unique-keys proof as lcEntries above: two arms suffice.
+            .sort(([a], [b]) => (a < b ? -1 : 1))
+            .map(([k, v]) => `${k}=${v.toFixed(2)}`).join(",")
+        : null;
+    const poseSig = previewPose && previewPose !== "tpose" ? previewPose : null;
+    const cacheKey = [key, coeffsSig, lcEntries, ctEntries, poseSig].filter(Boolean).join("|");
+    const cached = _meshCache.get(cacheKey);
+    if (cached)
+        return cached;
+    const posePayload = poseSig ? { preview_pose: poseSig } : {};
+    let data;
+    if (coeffsSig || lcEntries || ctEntries) {
+        const res = await apiFetch("/v1/poser/mesh", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                identity_model: key,
+                ...posePayload,
+                ...(coeffsSig ? { identity_coeffs: identityCoeffs } : {}),
+                ...(lcEntries ? { local_changes: localChanges } : {}),
+                // Always send custom_targets for Anny POSTs, even when empty.
+                // The backend's set_identity treats a MISSING custom_targets
+                // field as "preserve previous state" (so phenotype-only edits
+                // don't wipe stylization). But the frontend always sends the
+                // full desired state - so omitting the field when the user
+                // drags a slider to 0 leaves the old weight active (the
+                // "slider at 0 shows ~50%" bug). Sending {} explicitly clears.
+                ...(key === "anny" ? { custom_targets: customTargets ?? {} } : {}),
+            }),
+        });
+        if (!res.ok)
+            throw new Error(`Failed to fetch shaped mesh (${key}): ${res.status}`);
+        data = (await res.json());
+    }
+    else {
+        const qs = new URLSearchParams({ identity_model: key });
+        if (poseSig)
+            qs.set("preview_pose", poseSig);
+        const res = await apiFetch(`/v1/poser/mesh?${qs.toString()}`);
+        if (!res.ok)
+            throw new Error(`Failed to fetch mesh (${key}): ${res.status}`);
+        data = (await res.json());
+    }
+    _meshCache.set(cacheKey, data);
+    return data;
+}
+export async function fetchIdentitySpace(model) {
+    const res = await apiFetch(`/v1/poser/identity-space?identity_model=${encodeURIComponent(model)}`);
+    if (!res.ok)
+        throw new Error(`Failed to fetch identity-space (${model}): ${res.status}`);
+    return (await res.json());
+}
+// Lift the bind pose so feet clear the floor (matches Kimodo scene.py:
+// bind_pos.y -= min_height; bind_pos.y += 0.02).
+const FLOOR_LIFT_Y = 0.02;
+// SOMA-X/ANNY mesh vertices arrive in centimeters (~170 units tall). The
+// Three.js scene (camera, grid, lights) is authored in meters (~1.7 units).
+// Convert at ingestion so downstream code never sees raw cm.
+const CM_TO_M = 0.01;
+/** SkinMeshData → flat Float32Array positions (V*3) in METERS with the
+ *  floor lift applied (the body-studio preview geometry path). */
+export function buildFlatPositions(meshData) {
+    const verts = meshData.vertices;
+    const arr = new Float32Array(verts.length * 3);
+    let minY = Infinity;
+    for (let i = 0; i < verts.length; i++) {
+        const yMeters = verts[i][1] * CM_TO_M;
+        if (yMeters < minY)
+            minY = yMeters;
+    }
+    if (!isFinite(minY))
+        minY = 0;
+    for (let i = 0; i < verts.length; i++) {
+        arr[i * 3] = verts[i][0] * CM_TO_M;
+        arr[i * 3 + 1] = verts[i][1] * CM_TO_M - minY + FLOOR_LIFT_Y;
+        arr[i * 3 + 2] = verts[i][2] * CM_TO_M;
+    }
+    return arr;
+}
+//# sourceMappingURL=poserSkin.js.map

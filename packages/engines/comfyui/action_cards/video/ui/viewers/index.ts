@@ -7,4 +7,4 @@
  * domain; kernel AssetMedia consumes it through the declared workspace
  * edge (editor → video, already law).
  */
-export * from "./VideoPlayer";
+export * from "./VideoPlayer.tsx";

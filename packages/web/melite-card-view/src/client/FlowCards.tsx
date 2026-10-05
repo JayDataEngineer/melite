@@ -60,7 +60,7 @@ import {
   cardRows, fetchDraft, paramFields, patchStageParams, refuseForUnlandedWrite, runFinished, startDraft,
 } from './draft.ts'
 import type { CardRow, DraftDoc, RunStatusDoc } from './draft.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 export interface FlowCardsProps {
   block: ToolCallBlockView

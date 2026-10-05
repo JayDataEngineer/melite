@@ -1,0 +1,30 @@
+export interface TimelineTheme {
+    timeCursorColor: string;
+    backgroundColor: string;
+    frameLabelColor: string;
+    frameTickColor: string;
+    promptBorderColor: string;
+    promptTextColor: string;
+    trackLabelColor: string;
+    trackSeparatorColor: string;
+    labelOverlayColor: string;
+    keyframeBorderColor: string;
+    intervalBorderColor: string;
+    headerShadowColor: string;
+    topBorderColor: string;
+}
+export declare const DARK_THEME: TimelineTheme;
+export declare const LIGHT_THEME: TimelineTheme;
+export declare const PROMPT_COLORS: [number, number, number][];
+export declare const DEFAULT_PROMPT_COLOR: [number, number, number];
+export declare const PROMPT_TEXT_SHADOW = "rgba(0, 0, 0, 0.5)";
+export declare const HIGHLIGHT_COLOR = "#F4D03F";
+export declare const HIGHLIGHT_BORDER_COLOR = "rgba(255, 255, 255, 0.9)";
+export declare const HIGHLIGHT_SHADOW_COLOR = "rgba(0, 0, 0, 0.3)";
+export declare const HIGHLIGHT_TEXT_COLOR = "#000000";
+export declare const HIGHLIGHT_FONT = "bold 10px Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+export declare const HIGHLIGHT_TEXT_SHADOW_COLOR = "rgba(255, 255, 255, 0.6)";
+export declare const HIGHLIGHT_SHADOW_BLUR = 5;
+export declare const HIGHLIGHT_SHADOW_OFFSET_Y = 2;
+export declare const HIGHLIGHT_BORDER_WIDTH = 1.5;
+export declare const HIGHLIGHT_TEXT_SHADOW_BLUR = 2;

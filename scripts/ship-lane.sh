@@ -164,7 +164,10 @@ for genre in sorted(os.listdir(os.path.join(root, "packages"))):
             continue
         client = (data.get("exports") or {}).get("./client")
         target = client.get("default") if isinstance(client, dict) else client
-        if isinstance(target, str) and target.replace("./", "") == "lib/client.js":
+        if isinstance(target, str) and (
+            target.replace("./", "") == "lib/client.js"
+            or target.replace("./", "") == "lib/client/index.js"
+        ):
             print(os.path.relpath(pdir, root))
 PYEOF
 then

@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "noEmit": false,
+    "noEmitOnError": true,
+    "declaration": true,
+    "emitDeclarationOnly": false,
+    "sourceMap": true,
+    "incremental": false,
+    "composite": false,
+    "outDir": "lib",
+    "rootDir": ".",
+    "paths": {}
+  },
+  "include": [
+    "scripts/**/*.ts",
+    "scripts/**/*.tsx"
+  ]
+}

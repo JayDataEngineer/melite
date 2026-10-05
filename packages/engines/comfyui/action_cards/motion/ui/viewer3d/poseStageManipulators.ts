@@ -2,8 +2,8 @@ import * as THREE from "three"
 import { TransformControls } from "three/addons/controls/TransformControls.js"
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
 import type { Stage3D } from "@melite/card-base/client"
-import { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton"
-import type { JointMoveEvent } from "./poseStageTypes"
+import { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton.ts"
+import type { JointMoveEvent } from "./poseStageTypes.ts"
 
 // SOMA-77 joint display sizes (verbatim).
 const JOINT_RADIUS: Record<number, number> = {}

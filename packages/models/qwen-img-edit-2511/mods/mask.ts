@@ -3,6 +3,9 @@
 // flow — the old lanpaint_mask slot WAS this mask). Bare flavor:
 // fields inherited from the mask pack contract.
 import type { Context } from '@deepseek-ai/cordis'
+// the Context merge (ctx.comfyui) lives in the service module —
+// pulling the type seats the augmentation in this program
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 export const inject = ['comfyui']
 

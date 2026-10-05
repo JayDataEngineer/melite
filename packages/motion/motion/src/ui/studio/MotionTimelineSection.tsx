@@ -15,9 +15,9 @@ import {
   type TimelineKeyframe, type TimelinePrompt,
 } from "@melite-plugin/timeline/ui/timeline"
 import { MotionTimelineBar } from "@melite-plugin/timeline/ui/timeline"
-import { PaneHeader, PaneShell, Tip, WirePickerModal } from "./kit"
+import { PaneHeader, PaneShell, Tip, WirePickerModal } from "./kit.tsx"
 import s from "./component.module.css"
-import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
+import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams.ts"
 
 export interface MotionTimelineSectionProps {
   npz: MotionNpz | null

@@ -6,9 +6,9 @@
 import { useCallback, useRef, useState } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import type { FilmPlayerHandle } from "@melite-plugin/timeline/ui/timeline"
-import { GUIDE_KINDS } from "./docModel"
-import type { DocCall, DocKeyframe } from "./docModel"
-import { hasKnobs } from "./docCalls"
+import { GUIDE_KINDS } from "./docModel.ts"
+import type { DocCall, DocKeyframe } from "./docModel.ts"
+import { hasKnobs } from "./docCalls.ts"
 
 /** Player↔bar playhead sync + rail readout stats (tenant §3). Verbatim lines 1592–1670. */
 export function useFilmSync(args: {

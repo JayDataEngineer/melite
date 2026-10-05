@@ -3,10 +3,12 @@
   "version": "0.3.1",
   "type": "module",
   "private": true,
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./lib/client.js",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client/index.js",
     "./package.json": "./package.json"
   },
   "dsh": {
@@ -26,9 +28,9 @@
     }
   },
   "scripts": {
-    "build": "bun node_modules/tsdown/dist/run.mjs -c tsdown.config.ts",
-    "typecheck": "tsc --noEmit",
-    "test:e2e": "playwright test"
+    "build": "tsc -p tsconfig.build.json",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
@@ -83,5 +85,11 @@
     "@melite/video-h3-timeline": "workspace:*",
     "three": "^0.184.0"
   },
-  "sideEffects": true
+  "sideEffects": true,
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css"
+  ]
 }

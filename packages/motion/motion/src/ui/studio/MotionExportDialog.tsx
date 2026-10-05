@@ -74,7 +74,7 @@ import { renderOpenPoseCanvas } from "@melite/formats"
 import { Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import { useToastStore } from '@melite/card-base/client'
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { Tip } from "./kit"
+import { Tip } from "./kit.tsx"
 import { cn } from '@melite/card-base/client'
 import s from "./export-dialog.module.css"
 import { STAGE_BACKGROUND_DARK } from '@melite/card-base/client'

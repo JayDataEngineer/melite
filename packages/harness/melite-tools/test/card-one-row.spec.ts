@@ -52,16 +52,20 @@ function readManifest(pdir: string): Record<string, unknown> | null {
 }
 
 /** A package ships a BUILT browser face when its ./client export
- *  resolves to ./lib/client.js (the ship-lane discovery rule — a
- *  hand list is the list that rots). */
-function shipsBuiltClient(manifest: Record<string, unknown>): boolean {
+ *  resolves to a real bundle under lib/ — the two legal shapes the
+ *  tsc module graph emits (lib/client.js flat, or the directory
+ *  module lib/client/index.js). The singleton-law and ship-lane
+ *  discovery arms accept both; this wall reads the same rule. */
+function clientTarget(manifest: Record<string, unknown>): string | null {
   const exports = manifest['exports']
-  if (exports === null || typeof exports !== 'object') return false
+  if (exports === null || typeof exports !== 'object') return null
   const client = (exports as Record<string, unknown>)['./client']
   const target = typeof client === 'object' && client !== null
     ? (client as Record<string, unknown>)['default']
     : client
-  return typeof target === 'string' && target.replace('./', '') === 'lib/client.js'
+  if (typeof target !== 'string') return null
+  const rel = target.replace('./', '')
+  return rel === 'lib/client.js' || rel === 'lib/client/index.js' ? rel : null
 }
 
 /** The dsh.client.external list of a manifest (missing = empty). */
@@ -85,16 +89,21 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
     for (const pdir of packageDirs()) {
       const manifest = readManifest(pdir)
       if (manifest === null) continue
-      if (!shipsBuiltClient(manifest)) continue
-      const bundlePath = join(pdir, 'lib/client.js')
+      const face = clientTarget(manifest)
+      if (face === null) continue
+      const bundlePath = join(pdir, face)
       const rel = relative(REPO, bundlePath)
       if (!existsSync(bundlePath)) continue // ship-lane's own gate owns the missing-bundle case
       const code = readFileSync(bundlePath, 'utf8')
       if (pdir === ROW_DIR) {
-        // The row itself: it must REGISTER under its own id (the
-        // loader wrapper) — not be a naked library build.
-        if (!code.includes(`id: "${ROW_ID}"`)) {
-          problems.push(`${rel}: the row bundle does not register as "${ROW_ID}" — rebuild with the client preset`)
+        // The row itself: it must REGISTER its identity — the tsc
+        // module graph exports `name` (the loader wrapper's `id:` was
+        // the tsdown preset's shape; the preset is dead).
+        const registered = code.includes(`export const name = '${ROW_ID}'`)
+          || code.includes(`export const name = "${ROW_ID}"`)
+          || code.includes(`id: "${ROW_ID}"`)
+        if (!registered) {
+          problems.push(`${rel}: the row bundle does not register as "${ROW_ID}" — rebuild the client face`)
         }
         continue
       }
@@ -111,7 +120,11 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
       if (region !== null) {
         problems.push(`${rel}: inlines card-base source (${region[0].trim()}) — add "${ROW_DOOR}" to dsh.client.external and rebuild`)
       }
+      // The tsc module graph leaves the door a bare external — a
+      // static import from it resolves to the row at serve time; the
+      // tsdown-era require() wrapper was the bundler interop shape.
       const requires = code.includes(`require("${ROW_DOOR}")`)
+        || importHits(code, ROW_DOOR)
       // deck ships a built client WITHOUT using the row — the require
       // is owed only by actual users (src imports the door).
       let usesRow = false
@@ -138,7 +151,7 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
     const problems: string[] = []
     for (const pdir of packageDirs()) {
       const manifest = readManifest(pdir)
-      if (manifest === null || !shipsBuiltClient(manifest)) continue
+      if (manifest === null || clientTarget(manifest) === null) continue
       const ext = externalList(manifest)
       // Does this package's src reach the row's door at all?
       let srcs = 0
@@ -203,9 +216,9 @@ describe('card-one-row walls (always pinned, pure fs over the committed tree)', 
           if (!/\.(ts|tsx)$/.test(entry.name)) continue
           if (!importHits(readFileSync(full, 'utf8'), ROW_DOOR)) continue
           // This src file requires the row — the package must ship
-          // the browser face the loader serves (exports['./client']
-          // → lib/client.js), or the browser require has no target.
-          if (!shipsBuiltClient(manifest)) {
+          // the browser face the loader serves (exports['./client'] →
+          // a lib/client bundle), or the browser require has no target.
+          if (clientTarget(manifest) === null) {
             problems.push(`${relative(REPO, pdir)}: src imports ${ROW_DOOR} but the package ships no built client face — add exports['./client'] (tsdown.client preset) or import the node-plane face`)
           }
           return

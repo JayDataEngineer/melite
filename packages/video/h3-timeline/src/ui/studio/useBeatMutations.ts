@@ -4,9 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { Dispatch, SetStateAction } from "react"
-import { KIND_OF_TRACK } from "./docModel"
-import type { DocKeyframe } from "./docModel"
-import { kfIndexOf } from "./docCalls"
+import { KIND_OF_TRACK } from "./docModel.ts"
+import type { DocKeyframe } from "./docModel.ts"
+import { kfIndexOf } from "./docCalls.ts"
 
 /** Legacy keyframe gestures (tenant §9) — prompt segments cut 2026-09-15. */
 export function useBeatMutations(

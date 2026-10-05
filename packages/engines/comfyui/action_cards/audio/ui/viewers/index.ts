@@ -8,5 +8,5 @@
  * AssetMedia dispatcher / card preview cells consume them through the
  * declared workspace edge, same as any curated-tier tenant.
  */
-export * from "./AudioPlayer";
-export * from "./AudioWaveform";
+export * from "./AudioPlayer.tsx";
+export * from "./AudioWaveform.tsx";

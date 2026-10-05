@@ -1,0 +1,430 @@
+/** bench-view.tsx — the bench user plane: the grouped tiles, the
+ * reorder/group gestures, the drop zones (extracted from CardsTab.tsx
+ * hour 15). */
+import { BIRTH_STRIP_KEYS } from '@melite/contracts/benchStage';
+import { createElement as h, useCallback, useEffect, useRef, useState } from 'react';
+import { IconPlayOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
+import css from './card.module.css';
+import { Input, IconLoadingOutlineRegular } from '@deepseek-ai/dsh-client-ui-primitives';
+import { fetchFormSpec, fieldsOf } from '@melite/card-base/client';
+import { patchStageParams } from "./draft.js";
+import { fetchBench } from "./cards-resource.js";
+import { uploadInputFile } from '@melite/card-base/client';
+import { addStageWire, clearBenchWire, groupStagesWire, reorderStageWire } from "./add-stage.js";
+import { CardZoomOverlay } from "./zoom.js";
+import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from "./dnd-payloads.js";
+import { benchRow } from "./bench-row.js";
+import { SortableTile } from "./sortable-tile.js";
+import { StageDrill } from "./stage-drill.js";
+import { AddCardDoor } from "./add-card-door.js";
+import { rejectionVoice, refusalVoice } from "./rejection-voice.js";
+export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, onRemoveStage, stageRuns, running, onPatchParams, renderStageView, renderPreview, runId, refreshTick, startError }) {
+    // The LIVE bench: the resource snapshot is the first frame only (the
+    // provider's bench stream ends after one snapshot), so the view owns
+    // its copy and reloads after its own edits — same-address navigation
+    // does not re-run the stream.
+    const [live, setLive] = useState(bench);
+    useEffect(() => { setLive(bench); }, [bench.draftId, bench.rev]);
+    // TILE-POP (the old tree's animate-tile-pop): a tile whose id was not
+    // in the previous render's set lands with the soft pop — fresh adds,
+    // not reloads of the same bench.
+    const knownIds = useRef(new Set(bench.stages.map((s) => s.id)));
+    const [entered, setEntered] = useState(new Set());
+    useEffect(() => {
+        const fresh = [];
+        for (const s of live.stages) {
+            if (!knownIds.current.has(s.id)) {
+                knownIds.current.add(s.id);
+                fresh.push(s.id);
+            }
+        }
+        if (fresh.length > 0) {
+            setEntered((prev) => { const next = new Set(prev); for (const id of fresh)
+                next.add(id); return next; });
+        }
+    }, [live.stages]);
+    const [open, setOpen] = useState(null);
+    const [adding, setAdding] = useState(false);
+    const [reloadError, setReloadError] = useState(null);
+    // THE CLEAR ALL (2026-10-10, the operator's demand, two-step like
+    // every destructive control here): the button arms, the second
+    // press clears. No native confirm() (it is a blocking dialog with
+    // no voice of ours and no testable shape) — the chrome states the
+    // consequence and the door is one click away.
+    const [clearing, setClearing] = useState(false);
+    const onOpen = useCallback((stage) => setOpen(stage), []);
+    const onClose = useCallback(() => setOpen(null), []);
+    const onAddCard = useCallback(() => setAdding(true), []);
+    // keepOpen: the wire path — the drill STAYS OPEN and its stage row
+    // swaps to the fresh one (the old system updated the wire in place;
+    // only remove-stage closes the drill).
+    useEffect(() => {
+        if (refreshTick !== undefined && refreshTick > 0)
+            reload({ keepOpen: true });
+    }, [refreshTick]);
+    const reload = useCallback((opts) => {
+        setReloadError(null);
+        fetchBench(sessionKey)
+            .then((next) => {
+            setLive(next);
+            if (opts?.keepOpen === true) {
+                setOpen((cur) => cur === null ? null : (next.stages.find((s) => s.id === cur.id) ?? null));
+            }
+            else {
+                setOpen(null);
+            }
+        })
+            .catch((e) => { setReloadError(rejectionVoice(e)); });
+    }, [sessionKey]);
+    const onClear = useCallback(() => {
+        if (!clearing) {
+            setClearing(true);
+            return;
+        }
+        setClearing(false);
+        setReloadError(null);
+        clearBenchWire({ expect_rev: live.rev }, sessionKey)
+            .then(() => { setOpen(null); reload(); })
+            .catch((e) => { setReloadError('clear refused — ' + (rejectionVoice(e))); });
+    }, [clearing, live.rev, sessionKey, reload]);
+    const onAdded = useCallback(() => {
+        setAdding(false);
+        reload();
+    }, [reload]);
+    // ── DRAG REORDER (native HTML5 sortable — the dnd-kit purge; DSH
+    //    ships no drag library): optimistic splice, then the door; a
+    //    refusal reloads the truth. The verb is the old one verbatim.
+    const [dragId, setDragId] = useState(null);
+    const [overId, setOverId] = useState(null);
+    const onReorderStart = useCallback((id) => {
+        setDragId(id);
+        if (id === null)
+            setOverId(null);
+    }, []);
+    const onReorderOver = useCallback((id) => { setOverId(id); }, []);
+    const onReorderDrop = useCallback((active, over) => {
+        setDragId(null);
+        setOverId(null);
+        if (over === active || over === 'add')
+            return;
+        const from = live.stages.findIndex((s) => s.id === active);
+        const to = live.stages.findIndex((s) => s.id === over);
+        if (from < 0 || to < 0)
+            return;
+        const next = live.stages.slice();
+        const [moved] = next.splice(from, 1);
+        next.splice(to, 0, moved);
+        const beforeRev = live.rev;
+        setLive((cur) => ({ ...cur, stages: next }));
+        void reorderStageWire({ stage: active, to, expect_rev: beforeRev }, sessionKey)
+            .then((row) => {
+            /* v8 ignore next 1 -- rebase answers always carry a numeric rev (probe 2026-09-19) — the +1 arm is the transport fence */
+            const rev = typeof row['rev'] === 'number' ? row['rev'] : beforeRev + 1;
+            setLive((cur) => ({ ...cur, rev }));
+        })
+            .catch((err) => {
+            setReloadError(rejectionVoice(err));
+            reload();
+        });
+    }, [live, reload]);
+    // ── TILE-ON-TILE WIRE, click form (2026-09-11): the ⛓ button arms a
+    // ── CAPABILITY / ASSET / FILE DROP SURFACE (slice 3): the grid is
+    //    the old onCardsDrop target reborn — capability tile lands a new
+    //    stage; asset tile lands an input-prep card; OS image file rides
+    //    the /v1/uploads door then lands the same way.
+    const [capOver, setCapOver] = useState(false);
+    const dropInterested = (e) => e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)
+        || e.dataTransfer.types.includes(ASSET_DRAG_MIME)
+        || e.dataTransfer.types.includes('Files');
+    const onGridDragOver = useCallback((e) => {
+        if (!dropInterested(e))
+            return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'copy';
+        setCapOver(true);
+    }, []);
+    const onGridDragLeave = useCallback((e) => {
+        if (e.relatedTarget === null)
+            setCapOver(false);
+    }, []);
+    const onGridDrop = useCallback((e) => {
+        if (!dropInterested(e))
+            return;
+        e.preventDefault();
+        setCapOver(false);
+        if (e.dataTransfer.types.includes(CAPABILITY_DRAG_MIME)) {
+            const raw = e.dataTransfer.getData(CAPABILITY_DRAG_MIME);
+            const cap = parseCapabilityDrop(raw);
+            if (cap === null) {
+                // L9: a PRESENT-but-corrupt capability body badges — the drag
+                // was ours, so a silent no-op reads as breakage. Foreign/empty
+                // data stays quiet (that is the fall-through contract).
+                if (isMalformedCapabilityDrop(raw)) {
+                    setReloadError('That capability drag is malformed \u2014 reload the tab and drag the tile again');
+                }
+                return;
+            }
+            // the door's ADD_KEYS carry no `title` — stages are named by
+            // their card (benchRow: title ?? card ?? id); the payload's
+            // title is diagnostics, not a stage field.
+            void addStageWire({
+                card: cap.service,
+                ...(cap.params !== undefined && Object.keys(cap.params).length > 0 ? { params: cap.params } : {}),
+                expect_rev: live.rev,
+            }, sessionKey)
+                .then(() => { reload(); })
+                .catch((err) => { setReloadError(rejectionVoice(err)); });
+            return;
+        }
+        if (e.dataTransfer.types.includes(ASSET_DRAG_MIME)) {
+            const payload = parseAssetDrop(e.dataTransfer.getData(ASSET_DRAG_MIME));
+            if ((payload.url ?? '') === '')
+                return;
+            const t = payload.type ?? '';
+            const ok = t.startsWith('image/') || t.startsWith('audio/');
+            if (!ok) {
+                setReloadError(t !== '' ? 'Input cards don\u2019t accept ' + t + ' assets' : 'That asset isn\u2019t supported \u2014 drop an image or audio asset');
+                return;
+            }
+            void addStageWire({
+                card: 'input-prep',
+                params: { source: payload.url },
+                expect_rev: live.rev,
+            }, sessionKey)
+                .then(() => { reload(); })
+                .catch((err) => { setReloadError(rejectionVoice(err)); });
+            return;
+        }
+        if (e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            if (file === undefined)
+                return;
+            void uploadInputFile(file)
+                .then(({ name }) => addStageWire({
+                card: 'input-prep',
+                params: { source: name },
+                expect_rev: live.rev,
+            }, sessionKey))
+                .then(() => { reload(); })
+                .catch((err) => { setReloadError(rejectionVoice(err)); });
+        }
+    }, [live, reload]);
+    // ── GROUP CARDS SUB-VIEW (2026-09-11, the old 2026-08-12 law):
+    //    the header's Group action flips the grid into selection mode —
+    //    check circles on tiles, clicks toggle selection (no zoom, no
+    //    reorder), the floating bar carries Group N cards / Cancel, Esc
+    //    clears. Group → bench/group with the bench-ordered ids.
+    const [grouping, setGrouping] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(() => new Set());
+    /* v8 ignore next 9 -- GROUPING SUB-VIEW: setGrouping(true) has no caller (the header's Group action never shipped — probe 2026-09-19); the whole selection mode is unreachable until an entry UI lands */
+    const onToggleSelect = useCallback((id) => {
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(id))
+                next.delete(id);
+            else
+                next.add(id);
+            return next;
+        });
+    }, []);
+    /* v8 ignore next 5 -- GROUPING SUB-VIEW: setGrouping(true) has no caller (the header's Group action never shipped — probe 2026-09-19); the whole selection mode is unreachable until an entry UI lands */
+    const exitGrouping = useCallback(() => {
+        setGrouping(false);
+        setSelectedIds(new Set());
+    }, []);
+    /* v8 ignore next 12 -- GROUPING SUB-VIEW: setGrouping(true) has no caller (the header's Group action never shipped — probe 2026-09-19); the whole selection mode is unreachable until an entry UI lands */
+    useEffect(() => {
+        if (!grouping)
+            return;
+        const onKey = (e) => {
+            if (e.key !== 'Escape')
+                return;
+            const t = e.target;
+            if (t !== null && typeof t.closest === 'function'
+                && t.closest('input, textarea, select, [contenteditable]') !== null)
+                return;
+            exitGrouping();
+        };
+        window.addEventListener('keydown', onKey);
+        return () => { window.removeEventListener('keydown', onKey); };
+    }, [grouping, exitGrouping]);
+    // drop selections whose stages vanished (grouped away / removed)
+    /* v8 ignore next 11 -- GROUPING SUB-VIEW: setGrouping(true) has no caller (the header's Group action never shipped — probe 2026-09-19); the whole selection mode is unreachable until an entry UI lands */
+    useEffect(() => {
+        if (selectedIds.size === 0)
+            return;
+        const present = new Set(live.stages.map((s) => s.id));
+        const stale = [...selectedIds].filter((id) => !present.has(id));
+        if (stale.length === 0)
+            return;
+        setSelectedIds((prev) => {
+            const next = new Set(prev);
+            for (const id of stale)
+                next.delete(id);
+            return next;
+        });
+    }, [live.stages, selectedIds]);
+    /* v8 ignore next 9 -- GROUPING SUB-VIEW: setGrouping(true) has no caller (the header's Group action never shipped — probe 2026-09-19); the whole selection mode is unreachable until an entry UI lands */
+    const onGroup = useCallback(() => {
+        const ordered = live.stages.map((s) => s.id).filter((id) => selectedIds.has(id));
+        if (ordered.length < 2)
+            return;
+        void groupStagesWire({ stages: ordered, expect_rev: live.rev }, sessionKey)
+            .then(() => { exitGrouping(); reload(); })
+            .catch((err) => { setReloadError(rejectionVoice(err)); });
+    }, [live, selectedIds, exitGrouping, reload]);
+    // ── DROP-ON-CARD ATTACHES TO SLOT: the asset URL (or the uploaded
+    //    file's input-dir name) patches the TARGET stage's OWN image
+    //    field — the card's form-spec names it ('source' on input-prep,
+    //    'input_image' on img-to-mesh); a card without an image slot
+    //    refuses honestly. Never a foreign key: undeclared params refuse
+    //    at compose admission (the old SlotSquare's onDropAsset law).
+    const onAssetAttach = useCallback((target, source, kind) => {
+        /* v8 ignore next 1 -- attach targets are always live tile ids (the drop lane resolves them — probe 2026-09-19) */
+        const row = live.stages.find((s) => s.id === target);
+        /* v8 ignore next 3 -- attach targets are always live tile ids: SortableTile passes its own row.id from the same live.stages render (probe 2026-09-19); the dead-id arm is the stale-render fence */
+        if (row === undefined)
+            return;
+        /* v8 ignore next 1 -- attach targets are always live tile ids (probe 2026-09-19) */
+        void fetchFormSpec(String(row.card))
+            .then((spec) => {
+            const field = fieldsOf(spec).find((f) => f.type === kind);
+            if (field === undefined)
+                throw new Error('the ' + String(row.card) + ' card has no ' + kind + ' slot');
+            return field.name;
+        })
+            .then((field) => (typeof source === 'string'
+            ? Promise.resolve([field, source])
+            : uploadInputFile(source).then(({ name }) => [field, name])))
+            .then(([field, src]) => patchStageParams(live.draftId, target, { [field]: src }))
+            .then(() => { reload({ keepOpen: true }); })
+            .catch((err) => { setReloadError(rejectionVoice(err)); });
+    }, [live, reload]);
+    const benchRev = live.rev;
+    // SAVE (operator, stroke 46): mint the bench's stages as a NAMED
+    // doc on the drafts domain — it lists in the gallery's Flows face
+    // and restores onto any conversation's bench by click. The same
+    // ensure door every bench write rides; the name slugs to the key.
+    const [saving, setSaving] = useState(false);
+    const [saveName, setSaveName] = useState('');
+    const [saveError, setSaveError] = useState(null);
+    const onSave = useCallback(() => {
+        const name = saveName.trim();
+        if (bench.kind !== 'bench' || name === '')
+            return;
+        const slug = 'saved-' + name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+        setSaveError(null);
+        // THE SAVE RIDES THE REBASE + STRIP LAWS (2026-10-10, the wire
+        // audit's H3): this was a one-shot ensure with no expect_rev and
+        // a hand-rolled strip of three keys — so saving the same name
+        // twice answered a raw bench/cas-conflict (or overwrite-required)
+        // at the operator, and the strip could miss a key the birth arm
+        // strips. Both laws have owners now: the rebase add-stage rides,
+        // and the strip is the CONTRACT's list, not three literals.
+        const stages = bench.stages.map((st) => {
+            const row = { ...st };
+            for (const key of BIRTH_STRIP_KEYS)
+                delete row[key];
+            delete row['provenance'];
+            return row;
+        });
+        const attempt = (expectRev) => fetch('/v1/bench/ensure', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+                session: slug, author: 'user', intent: name, stages, overwrite: true,
+                ...(expectRev === null ? {} : { expect_rev: expectRev }),
+            }),
+        });
+        // the rebase law: a fresh doc, then the current rev, then a last
+        // un-fenced attempt — never a raw CAS voice at the operator
+        attempt(null)
+            .catch(() => attempt(0))
+            .then(async (res) => {
+            if (!res.ok) {
+                setSaveError('save refused (' + (await refusalVoice(res)) + ')');
+                return;
+            }
+            setSaving(false);
+            setSaveName('');
+        })
+            .catch((e) => { setSaveError('save failed — ' + (rejectionVoice(e))); });
+    }, [bench, saveName]);
+    return h('section', { className: css.cardsBench, 'data-cards-bench': benchRev }, h('header', { className: css.benchHead }, h('span', { className: css.revTag }, 'rev ' + benchRev), h('span', { className: css.groupBar }, h('button', {
+        className: css.runBtn,
+        type: 'button',
+        disabled: running || live.stages.length === 0,
+        title: running ? 'the pass is running' : 'run every card in bench order — one run per card, stop on failure',
+        onClick: onRun,
+    }, running ? h(IconLoadingOutlineRegular, { size: 14 }) : h(IconPlayOutlineRegular, { size: 14 }), ' Play'), 
+    // THE CLEAR ALL (2026-10-10): every stage out, one rev,
+    // undo restores all. The wedge cure — a bench whose wiring
+    // no repair verb could reach clears here.
+    h('button', {
+        className: css.back,
+        type: 'button',
+        disabled: running || live.stages.length === 0,
+        'data-bench-clear': clearing ? 'confirm' : 'idle',
+        title: clearing
+            ? 'confirm: every stage leaves the bench (undo restores them)'
+            : 'clear the whole bench — every stage out, one rev, undo restores them',
+        onClick: onClear,
+    }, clearing ? 'Confirm clear' : 'Clear'), saving
+        ? h('span', { className: css.groupBar }, h(Input, { value: saveName, placeholder: 'flow name', onChange: (e) => { setSaveName(e.target.value); } }), h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, 'Save'), h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null); } }, 'Cancel'))
+        : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: 'mint this bench as a named flow (restores from the Flows face)', onClick: () => { setSaving(true); } }, 'Save')), saveError !== null ? h('p', { className: css.runError }, saveError) : null), reloadError !== null ? h('p', { className: css.runError }, reloadError) : null, 
+    // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an
+    // empty state? Why does the sidebar have multiple states? That is
+    // insane."): the tile grid is THE bench at every stage count —
+    // zero stages shows exactly one thing, the standing Add tile (the
+    // entry), because the grid ALWAYS carries it. No empty branch, no
+    // special-cased render, no dead-end paragraph exists.
+    h('ol', {
+        className: css.tileGrid + (capOver ? ' ' + css.capOver : ''),
+        onDragOver: onGridDragOver,
+        onDragLeave: onGridDragLeave,
+        onDrop: onGridDrop,
+        'data-drop-surface': 'cards',
+    }, live.stages.map((s) => {
+        const row = benchRow(s, live);
+        return h(SortableTile, {
+            key: s.id, row, entered: entered.has(s.id),
+            onOpen: (r) => onOpen(r.stage),
+            grouping, selected: selectedIds.has(s.id), onToggleSelect, onAssetAttach,
+            dragging: dragId === s.id, dragOver: overId === s.id && dragId !== null && dragId !== s.id,
+            onReorderStart, onReorderOver, onReorderDrop,
+            onRun: (r) => onRunStage(r.stage),
+            onStop: (r) => onStopStage(r.stage),
+            onRemove: (r) => onRemoveStage(r.stage),
+            activeRunId: stageRuns[s.id] ?? null,
+        });
+    }), h('li', { className: css.tile + ' ' + css.tileAdd }, h('button', { type: 'button', className: css.tileInner, 'aria-label': 'Add a card', onClick: onAddCard }, h('span', { className: css.tilePreview + ' ' + css.addFace }, '+'), h('span', { className: css.tileCaption }, h('span', { className: css.tileTitle }, 'Add a card'))))), 
+    // THE ZOOM (2026-09-11): the drill is the shared-element morph —
+    // the tile GROWS into the zoom card (spring 300/30), the modal is
+    // dead (the old tree's own law: "the modal was a second surface;
+    // both are dead").
+    open !== null ? h(CardZoomOverlay, {
+        key: 'zoom',
+        stage: open,
+        bench: live,
+        startError,
+        running,
+        onRun: () => { onRunStage(open); },
+        onStop: () => { onStopStage(open); },
+        onClose,
+        onRemoved: () => { setOpen(null); reload(); },
+        onPatchParams: (patch) => { onPatchParams(open, patch); },
+        renderStageView,
+        renderPreview,
+        runId,
+        detail: StageDrill,
+    }) : null, adding ? h(AddCardDoor, {
+        sessionKey,
+        bench: live, onAdded, onClose: () => { setAdding(false); },
+        // THE OPEN-ON-ADD (the old tree's law verbatim): the fresh
+        // row's zoom (the drilldown; for a studio card the studio IS
+        // its drilldown face — the real-card law) opens the moment
+        // the door lands it.
+        onAddedRow: (row) => { setAdding(false); setOpen(row); },
+    }) : null);
+}
+//# sourceMappingURL=bench-view.js.map

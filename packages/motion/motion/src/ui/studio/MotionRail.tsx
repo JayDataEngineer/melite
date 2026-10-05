@@ -19,11 +19,11 @@ import { InputSquare, MESH_SQUARE_ACCEPT, isMeshUrl } from '@melite/card-base/cl
 import type { CardStage } from "@melite/contracts"
 import type { MotionNpz } from "@melite/formats"
 import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
-import { Tip } from "./kit"
+import { Tip } from "./kit.tsx"
 import { cn } from '@melite/card-base/client'
 import s from "./component.module.css"
-import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams"
-import type { ToastFn } from "./useMotionStage"
+import { MOTION_PREVIEW_GLB_PARAM } from "./motionParams.ts"
+import type { ToastFn } from "./useMotionStage.ts"
 
 export interface MotionRailProps {
   effectiveNpz: MotionNpz | null

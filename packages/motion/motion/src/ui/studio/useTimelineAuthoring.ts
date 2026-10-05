@@ -21,7 +21,7 @@ import {
   carveNewPromptCard, snapshotConstraint,
   type MotionConstraint,
 } from "@melite/formats/motionConstraints"
-import type { ToastFn } from "./useMotionStage"
+import type { ToastFn } from "./useMotionStage.ts"
 
 export interface TimelineAuthoringArgs {
   effectiveNpz: MotionNpz | null

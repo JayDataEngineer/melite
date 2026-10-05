@@ -5,7 +5,7 @@
  */
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { RefObject } from "react"
-import { MAX_PPF, clamp } from "./MotionTimelineBarLayout"
+import { MAX_PPF, clamp } from "./MotionTimelineBarLayout.ts"
 
 /** Ruler ticks over the content (bar line 790): seconds coverage of
  *  the frames plus the trailing lead-out room. */

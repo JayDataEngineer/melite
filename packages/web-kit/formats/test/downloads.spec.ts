@@ -10,7 +10,7 @@ import {
   downloadCanvasScreenshot,
   downloadMotionNpz,
 } from "../src/downloads.ts";
-import type { PoseMotion } from "@melite/catalog";
+import type { PoseMotion } from "../src/textToPose.ts";
 
 type Globals = Record<string, unknown>;
 const G = globalThis as unknown as Globals;

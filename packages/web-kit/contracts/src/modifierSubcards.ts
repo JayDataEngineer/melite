@@ -15,7 +15,7 @@
 // LoraLoader nodes in `for spec in loras` order. Drag-reorder rewrites the
 // array; the composed ComfyUI graph follows (rule-2). Families, GPU,
 // and the wire NEVER change.
-import type { LoRAEntry } from "./loraTypes"
+import type { LoRAEntry } from "./loraTypes.ts"
 
 // ── Wire entry shapes (the ONLY storage) ──────────────────────────────────
 
@@ -97,7 +97,7 @@ export type ModifierFieldType = "integer" | "float" | "string" | "select" | "ima
 // openapi.json migration exists to kill. The only added field is
 // ``disk_subdir``, a FRONTEND-COMPUTED view value (resolve_lora_subdir)
 // that never ships on the wire.
-import type { components } from "./schema"
+import type { components } from "./schema.ts"
 
 type WireModifierFieldSpec = components["schemas"]["ModifierFieldSpec"]
 type WireModifierOptionSpec = components["schemas"]["ModifierOptionSpec"]

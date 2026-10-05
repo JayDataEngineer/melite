@@ -7,9 +7,9 @@
 import { useEffect, useRef, useState } from "react"
 import type * as React from "react"
 import type { RefObject } from "react"
-import { DRAG_ARM_PX, clamp } from "./MotionTimelineBarLayout"
-import type { AudioLayer } from "./MotionTimelineBar"
-import type { TimelinePrompt } from "./viser-timeline/types"
+import { DRAG_ARM_PX, clamp } from "./MotionTimelineBarLayout.ts"
+import type { AudioLayer } from "./MotionTimelineBar.tsx"
+import type { TimelinePrompt } from "./viser-timeline/types.ts"
 
 /** One in-flight pointer drag. `moved` distinguishes a click (select/
  * seek on pointerup) from a real drag. */

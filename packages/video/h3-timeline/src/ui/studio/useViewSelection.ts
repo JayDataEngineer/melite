@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { useRef, useState } from "react"
-import type { DocCall, LayerA } from "./docModel"
+import type { DocCall, LayerA } from "./docModel.ts"
 
 /** Selection shared with the bar clips (tenant §2). Verbatim lines 1561–1590. */
 export interface TimelineSelection {

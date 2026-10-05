@@ -28,7 +28,7 @@
 // The 2026-08-14 directive: "WE NEED ONE SYSTEM THAT TRANSMITS TO THE
 // FRONTEND, ONE WAY, ONE PATTERN." This module IS that one pattern.
 
-import { apiJson } from "./api"
+import { apiJson } from "./api.ts"
 import type { ModifierKindSpec } from "@melite/contracts"
 
 // ── Types ───────────────────────────────────────────────────────────────

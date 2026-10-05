@@ -27,7 +27,7 @@ import { axisUnset, composeCandidateDoc, composeValidate } from '@melite/card-ba
 import { fetchMediaLibrary } from '@melite/card-base/client'
 import { type Dispatch, type SetStateAction, useState } from "react"
 import s from "./studio.module.css"
-import type { LayerA, SetLayerAKey } from "./docModel"
+import type { LayerA, SetLayerAKey } from "./docModel.ts"
 import type { CardStage } from "@melite/contracts"
 
 /** Layer A rail: Recipe (clock) + Engine (H3 sampling) + geometry. */

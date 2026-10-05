@@ -14,6 +14,9 @@
 // matrix does not grow). The card's save-intent admission
 // (voice_name + design_prompt) gates the fire.
 import type { Context } from '@deepseek-ai/cordis'
+// the Context merge (ctx.comfyui) lives in the service module —
+// pulling the type seats the augmentation in this program
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 export const inject = ['comfyui']
 

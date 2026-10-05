@@ -1,0 +1,73 @@
+/**
+ * preview.tsx — THE SHARED PREVIEW COMPONENTS (the preview seam's
+ * built-in claims, hour-9 2026-09-13 — the operator's law: "Where
+ * the VIDEO PREVIEW and the IMAGE PREVIEW of other cards go in a
+ * SLOT with SHARED DSH PRIMITIVES"). One preview per media kind,
+ * DSH-pure: native media elements on card-base chrome, DSW tokens
+ * BARE (no fallbacks — the hour-8 name law), zero bespoke islands.
+ *
+ * These are the DEFAULTS the pattern prescribes (the ui-tool law:
+ * "central default views"); a card claims its kind's preview only
+ * to specialize — the h3 studio rides the shared VIDEO preview for
+ * its hero, exactly as an image-gen card rides the IMAGE one.
+ */
+import { createElement as h } from 'react';
+import type { PreviewOwnerProps } from '@melite/contracts';
+export { resetPickCellsForTests } from './pick-store.js';
+/** THE HISTORY HERO (stroke 40 + the output-component stroke): one
+ * hook, three faces — the hero artifact, the REST of whatever set
+ * the hero belongs to (the current run's other outputs, or a picked
+ * history entry's other outputs — a multi-output card shows its
+ * full set either way, never the current row under an old hero),
+ * and THE STALENESS FACT (an explicitly picked entry is NOT the
+ * current generation — the badge law; the between-runs fallback
+ * hero gets NO badge: with no current run, the newest archive is
+ * the closest thing to current, not a stale one). */
+/** The view-identity cell id (stage + run, else urls) — ONE law,
+ * exported so a preview's specialized pick cells (the video face's
+ * current-set pick) derive from the SAME identity, never re-derive. */
+export declare function previewCellIdOf(props: PreviewOwnerProps): string;
+/** THE VIDEO PREVIEW — one hero film, one native player (the kit's
+ *  FilmPlayer law: native <video controls>; no library, no kit). The
+ *  hero is THE FILM (the composed artifact — a film run's artifacts
+ *  arrive windows-first, the film last, so the named film wins the
+ *  seat; any other video card keeps the first). The set's other
+ *  clips render as PLAYABLE THUMBS in the strip (the operator's
+ *  catch b, 2026-09-22: "the preview only shows one of the three
+ *  clips" — a text link is not a preview): click a thumb to promote
+ *  it into the hero, click it again to return (the toggle law);
+ *  the name still opens the file raw in a new tab. The set is the
+ *  CURRENT run's (or the picked history entry's — never mixed).
+ *  Honest empty state while no artifact has landed. */
+export declare function VideoStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
+/** THE IMAGE PREVIEW — the latest render hero (native <img>), the
+ *  active set's thumbs beneath (the CURRENT run's gallery, or the
+ *  picked history entry's full set — a multi-output card never shows
+ *  the current row under an old hero), then THE OUTPUT HISTORY
+ *  (stroke 40): the stage's previous unique outputs, newest first —
+ *  click one to view it in the hero. Same chrome, same law. */
+export declare function ImageStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
+/** THE AUDIO PREVIEW — one hero track, one native player (the same
+ *  law as the video preview: native <audio controls>; no library).
+ *  The active set's named clips follow in the strip row. */
+export declare function AudioStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
+/** THE MESH PREVIEW — the seam's adapter onto the raw-three
+ *  multi-asset stage (GlbStagePreview, the substrate law: NO
+ *  @react-three in any client bundle). The ACTIVE set becomes
+ *  stage assets (the current run's, or a picked history entry's —
+ *  mesh gains the full history law every other kind already had);
+ *  the empty hint honors the live-run flag. THE LIVE FIGURE
+ *  (stroke 90): a card-declared preview.figure replaces the empty
+ *  tombstone with the native figure (the /poser bind mesh) — the
+ *  studio-viewport capability on the form card; run outputs still
+ *  take the stage the moment they exist. */
+export declare function MeshStagePreview(props: PreviewOwnerProps): ReturnType<typeof h>;
+/** THE MESH PREVIEW — the raw-three multi-asset stage (the substrate
+ *  law: NO @react-three in any client bundle). Reached through the
+ *  `/client` door like every other seam in this row. */
+export { GlbStagePreview, autoFitToHeight, applyWireframe, applyWeightsHeat, skeletonHelperFor, heatColor, slotLabelOf, turntableTick, TURNTABLE_SPEED, type StageAsset, type StageLayers } from './glb-stage.js';
+export { ReportView } from './report-view.js';
+export { PoserFigureStage, figureGeometry, figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig, type PoserMeshDoc } from './poser-figure.js';
+export { ViewportFrame, ViewportAnchor, ReferenceImageBadge } from './viewportChrome.js';
+export type { ViewportFrameProps, ViewportAnchorProps, ReferenceImageBadgeProps, ViewportAnchorDock } from './viewportChrome.js';
+//# sourceMappingURL=preview.d.ts.map

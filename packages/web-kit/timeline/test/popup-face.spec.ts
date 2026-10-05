@@ -39,7 +39,9 @@ const ROOTS = [
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
-    if (name === 'node_modules' || name === 'dist') continue
+    // lib/ is the build's css MIRROR of src (copyCssSidecars) — the
+    // authoring plane owns every rule exactly once.
+    if (name === 'node_modules' || name === 'dist' || name === 'lib') continue
     const full = join(dir, name)
     const st = statSync(full)
     if (st.isDirectory()) walk(full, out)

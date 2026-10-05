@@ -8,8 +8,8 @@
 // Track colors are copied verbatim from
 // vendor/kimodo/kimodo/demo/ui.py `build_timeline_tracks()`.
 
-import type { TimelineMessage, TimelineInterval } from "./messages";
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types";
+import type { TimelineMessage, TimelineInterval } from "./messages.ts";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";
 
 // Stable UUIDs (one per lane) so keyframes/prompts bind without churn.
 // The viser component only matches on uuid equality — these never change.

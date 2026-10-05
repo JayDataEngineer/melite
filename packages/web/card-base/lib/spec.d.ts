@@ -1,0 +1,369 @@
+/**
+ * spec.ts — @melite/card-base: THE EMISSION CONTRACT.
+ *
+ * A card package EMITS; the base CONSTRUCTS (operator order,
+ * 2026-09-12: "The package to construct the card ui should see that
+ * the card package emits an image input, then constructs the input
+ * component automatically"). This module is the emission's client-side
+ * shape — the served form-spec document as the base consumes it —
+ * plus the PURE projections. No fetchers here (wire.ts), no
+ * components (form.tsx): types and derivations only.
+ *
+ * THE LAYERED-PARAMS LAW (the parameter audit, 2026-09-14 — the
+ * DSH settings model, subsystems/settings.md): the form-spec serves
+ * the card's own SERIALIZED SCHEMA (schemastery toJSON — the SSOT,
+ * one serializer server-side) and the bench's stage params ARE the
+ * USER layer: a key's PRESENCE is the override mark, never its
+ * value. resolveValue layers schema defaults <- model defaults <-
+ * served stamps <- user — the engine's compose cascade verbatim,
+ * resolved client-side so the form shows exactly what a run
+ * composes. Edits are set/unset ops over the user layer; a family
+ * Recipe macro pick is an ordinary multi-set of declared keys —
+ * no stamp ledger, no value-compare heuristics, no heal walk
+ * (seedUser's one validation clause aside).
+ *
+ * THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
+ * via the package system, it needs to have 'input' 'required=True',
+ * or 'output', so the edges are defined"): every card's emission
+ * carries `inputs` — one row per declared input edge, the required
+ * fact joined per the law (dsl.py Field.emit: `required: True
+ * emits, False omits`) — and `outputs`, the declared output edges.
+ * The base constructs input components and picker candidates from
+ * THESE, never from result-URL sniffing.
+ */
+/** Build an envelope from raw dict nodes — the TEST-side and
+ *  migration-side constructor; the served envelopes come from
+ *  schemastery's own toJSON. Ids assign in insertion order; a node
+ *  carrying `consts` (string labels or {value,label} rows) expands
+ *  into minted const refs with the union's `list` wired to them —
+ *  the shape schemastery's union-of-consts serializes to. */
+export declare function schemaEnvelope(dict: Record<string, SchemaRef & {
+    consts?: unknown;
+}>): SchemaEnvelope;
+import type { FormSpecDoc, InputEdge, ModifierKind, SchemaEnvelope, SchemaRef, SpecField, VariantRow } from '@melite/contracts/formSpec';
+export type { FormSpecDoc, InputEdge, ModifierKind, ModifierOption, SchemaEnvelope, SchemaRef, SpecField, VariantRow, } from '@melite/contracts/formSpec';
+import { type LaneBounds, type LaneRelations, type LaneViolation } from '@melite/contracts/laneRelations';
+/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
+ *  served modifier kind owns — its fields' names plus its param_key
+ *  (the bag storage). CardForm EXCLUDES these from the flat param
+ *  groups: mod params render ONLY inside the mod system. PURE. */
+export declare function modOwnedFields(spec: FormSpecDoc): Set<string>;
+/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
+ *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+export declare function isOptionKind(k: ModifierKind): boolean;
+/** THE HYBRID TEST (the served entry mode — never the kind name):
+ *  catalog rows AND bag-element entry fields. */
+export declare function isHybridKind(k: ModifierKind): boolean;
+/** The catalog-bound field (the hybrid type / the option id) —
+ *  'id' when the door serves no key (the lora backstop). */
+export declare function optionKeyOf(k: ModifierKind): string;
+/** The scalar dial of a bag element (the pack's own name —
+ *  'strength' backstop when the door serves none). */
+export declare function scalarKeyOf(k: ModifierKind): string;
+/** One catalog card (/v1/model-catalog's cards section). */
+export interface CatalogCard {
+    id: string;
+    label: string;
+    description: string;
+    genre: string;
+    families: string[];
+}
+/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+ *  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+ *  FACES ONLY: option values, param keys, and wire bodies keep the
+ *  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+ *  id). First letter of each separator-bound word upper, the rest
+ *  untouched (INT8 stays INT8); idempotent on titled prose. */
+export declare function titleCaseId(id: string): string;
+export type SpecValues = Record<string, unknown>;
+/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+ *  resolveValue's first layer; the base never invents one). */
+export declare function specDefaults(fields: SpecField[]): SpecValues;
+/** ── THE UNSET-FACE LAW (hour 22 — the operator's catch: "steps is
+ *  blank… the UI doesn't even reflect the call that will be sent") ──
+ *
+ * An unset field serializes ABSENT from the wire doc and the
+ * ADMISSION GATE fills the SCHEMA'S OWN DEFAULT at compose. Every
+ * face must therefore show EXACTLY what composes for an unset field:
+ * the explicit inherited stamp first (a run-level override sitting
+ * over the floor), else the schema's declared default, else nothing
+ * — a bare "inherit" is honest ONLY when no schema truth exists.
+ * ONE law in the generic surface; no face hand-rolls this chain
+ * again (the h3 knob fold's private copy silently dropped the
+ * default and showed "inherit" while the engine sent 12). PURE. */
+export type UnsetFace = {
+    composed: string | undefined;
+    from: 'stamp' | 'schema' | 'none';
+};
+export declare function composeUnset(inherited: unknown, schemaDefault: unknown): UnsetFace;
+/** The unset face's LABEL: a run stamp names its source ('← 28'); the
+ *  schema default rides plain (it is not inheriting anything — it IS
+ *  the engine's compose floor); 'inherit' only when nothing
+ *  composes. */
+export declare function unsetFaceLabel(face: UnsetFace): string;
+/** The unset face's PROSE (the tooltip): names in words what unset
+ *  composes. `render` adapts the vocabulary (e.g. boolean on/off). */
+export declare function unsetFaceTip(face: UnsetFace, render?: (v: string) => string): string;
+/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+ *
+ * One pure projection: serialized schemastery schema -> derived
+ * SpecFields. Every presentation fact lives in the nodes' meta (the
+ * declaration IS the UI contract — the Field.emit law); this
+ * walk reads, never invents. THE ORDER: dict insertion order with
+ * the declared `order` hint as tie-break (a stable sort — equal
+ * keys keep insertion order).
+ *
+ * Families scoping: a node whose extra.families names families the
+ * spec does NOT serve skips (the absorption is family-scoped —
+ * the card serves only the boarded plane).
+ *
+ * Nullable pairs: a union of [X, const(null)] wires as X — the
+ * OUTER meta wins (schemastery's nullable() shape, probed live on
+ * image-gen 2026-09-14).
+ *
+ * Presentation types (the audit's client-side derivation — a view
+ * choice over typed meta, never a server row): extra.wtype wins
+ * (declared presentation); union-of-consts -> select; number ->
+ * step 1 -> seed, any other step -> slider, no step -> slider;
+ * string -> text; boolean -> boolean; array -> loras.
+ *
+ * Option labels: a union's const members carry their own
+ * meta.description (the emitter's label law) — the declared
+ * extra.options override when present. */
+export declare function fieldsOfEnvelope(env: SchemaEnvelope | null | undefined, family?: string): SpecField[];
+/** THE HYBRID PROJECTION (the controlnet restoration): the envelope
+ *  root's bag array (param_key) holds entry OBJECTS — project the
+ *  ELEMENT's dict as the kind's entry fields (the catalog select
+ *  joins them in the leaf). Empty when the bag is absent or its
+ *  element is not an object (a pure OPTION kind like lora). */
+export declare function entryFieldsOfEnvelope(env: SchemaEnvelope | null | undefined, paramKey: string, family?: string): SpecField[];
+/** THE PACK-LEVEL PROJECTION (the controlnet strength floor): the
+ *  envelope root's fields OUTSIDE the bag array — the section's own
+ *  rows above the tiles. Bag-external arrays are not section rows
+ *  (no atom renders a bag) — scalars only. */
+export declare function kindScalarFieldsOfEnvelope(env: SchemaEnvelope | null | undefined, paramKey: string, family?: string): SpecField[];
+/** THE EDIT COERCION (the one specPatch duty that survives, moved
+ * to the edit boundary): atoms emit raw strings while typing; a
+ * numeric field's edit rides the user layer as a NUMBER. An
+ * unparseable/empty numeric string rides VERBATIM (display
+ * continuity through clear-and-retype — the bench drill's law; a
+ * blank that reaches the run's schema parse refuses loud, naming
+ * the field — never a silent 0). `v === undefined` stays undefined
+ * (the tri-state's inherit — the caller's unset signal). The
+ * STUDIOS' blank-inherits law lives one door up, at their own edit
+ * verb (useResolvedForm) — each face owns its blank semantics.
+ * PURE. */
+/** THE NUMERIC PARSE, shared by both blank laws (2026-10-13, the card-UI
+ *  duplication audit): a finite parse is a number, anything else is
+ *  NOT one. The blank SEMANTICS then differ by seat and stay there —
+ *  this file rides an unparseable value VERBATIM (never a silent 0),
+ *  while the drill modal keeps the prior value (a typed "x" must
+ *  never reach a number param). One parse, two named laws; the two
+ *  copies of the parse itself are gone. */
+export declare function parseNumericInput(v: string): number | undefined;
+export declare function coerceFieldEdit(f: SpecField | undefined, v: unknown): unknown;
+/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+ * a field's `families` declares BASE family ids — the card's
+ * boarded ids — while the served model key may be a COMPOSED
+ * catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+ * Resolve the active key to its base against the spec's OWN
+ * boarded-families rows: the longest id matching the key at a
+ * '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+ * to the longer). An unresolved key passes through verbatim —
+ * single-family cards and keys with no boarded base walk
+ * unchanged; the resolution never drops a field, it only widens
+ * what a declared base id covers. */
+export declare function resolveFamilyKey(spec: FormSpecDoc): string | undefined;
+/** The card's own derived fields (the schema envelope walked,
+ * families-scoped to the served family). Memoize at the caller for
+ * hot loops — the walk is pure. */
+export declare function fieldsOf(spec: FormSpecDoc): SpecField[];
+/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+ * client-side (stroke 34 — the card-recipe layer is dead): schema
+ * defaults <- model defaults <- SERVED STAMPS <- user. The form
+ * SHOWS exactly what a run composes; `user` rides verbatim by key
+ * presence (a PRESENCE is the override mark, never its value — the
+ * settings law). Arrays (lora bags) and nulls in model_defaults
+ * skip, matching the engine's overlay filter.
+ *
+ * THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+ * stage row's `resolved` map — prepareCardParams' own stamped +
+ * lifted body, served by the drafts doors. It layers UNDER the user
+ * (presence still wins) and OVER model_defaults (the server's own
+ * family/variant stamps replace the client's guesses — variant
+ * resolver_defaults, family defaults, the surface filter). Absent
+ * base = the registry-less lane derive. PURE. */
+export declare function resolveValue(spec: FormSpecDoc, user: SpecValues, base?: SpecValues): SpecValues;
+/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+ * one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+ * (The ONE schema grammar — a field declares its own visibility;
+ * the walker interprets, cards never hand-rolled predicates.) A
+ * field with no visible_when always shows. Unknown guard keys:
+ * show (never hide on a typo). Examples:
+ *   "sharpen_enabled=true"
+ *   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+export declare function fieldVisible(f: SpecField, values: SpecValues): boolean;
+/** The resolved lane surface for the current variant, or null when
+ *  the family declares none (the legacy truth — visibility falls
+ *  back to visible_when). `variantId` is the RESOLVED variant
+ *  value (values.variant); an unknown id inherits the family base
+ *  verbatim (a Quant-only or unset axis). */
+export declare function laneSurfaceFor(spec: FormSpecDoc, variantId: string | null): readonly string[] | null;
+/** The relation words that judge the resolved lane: the family's
+ *  own + the variant's own (both layers fire — the DECL cascade). */
+export declare function laneRelationsFor(spec: FormSpecDoc, variantId: string | null): LaneRelations[];
+/** The numeric bounds that judge the resolved lane: family rows,
+ *  per-field replaced by the variant's own (the DECL cascade's
+ *  replace-law for numbers). */
+export declare function laneBoundsFor(spec: FormSpecDoc, variantId: string | null): LaneBounds | null;
+/** Field visibility UNDER the lane contract: a declared surface
+ *  hides every field it does not name (the declaration is the
+ *  author — the field set IS the variant); a family that declares
+ *  no surface keeps the visible_when grammar. */
+export declare function fieldOnLane(spec: FormSpecDoc, paramName: string, values: SpecValues): boolean;
+/** THE INLINE GATE: the lane's relation + surface violations over
+ *  what the state CARRIES — rendered under the named field while the
+ *  user types, refused by the bench door when the state is saved.
+ *  Empty = a state the run accepts.
+ *
+ *  THE CARRIED LAYERS, NOT THE RESOLVED MAP (2026-10-10, the
+ *  form-plane audit's CRITICAL-1): the resolved `values` map
+ *  materializes schema defaults and model_defaults as own
+ *  properties, so a defaulted field reads as STATED whether the user
+ *  ever touched it. On a lane that excludes a defaulted field that
+ *  produced a perpetual, UNCURABLE warning: the row was hidden
+ *  (fieldOnLane) so the cure ("drop it") was unclickable, and
+ *  unsetting it re-materialized the default. The bench judges the
+ *  PREPARED body — the operator's own params plus the stamps that
+ *  survive the null-skip — so the form judges the same thing: the
+ *  user layer over the base layer, non-null keys only. A schema
+ *  default is a PREFILL the operator never sent, and a variant's
+ *  `voice: null` stamp is exactly how the bench says "no persona on
+ *  this lane". */
+export declare function laneViolations(spec: FormSpecDoc, fields: readonly SpecField[], user: SpecValues, base?: SpecValues): LaneViolation[];
+/** Group the visible fields (the spec's own group key, first-appearance
+ *  order — ungrouped first under no heading). */
+export declare function groupFields(fields: SpecField[], values: SpecValues): Array<{
+    group: string | null;
+    fields: SpecField[];
+}>;
+/** The declared input edge for a param, if the emission names one
+ *  (THE EDGE LOOKUP — the constructor's one way to know a field is
+ *  slot-shaped: the DECLARATION says so, the wtype never guesses). */
+export declare function inputEdgeOf(spec: FormSpecDoc, paramName: string): InputEdge | undefined;
+/** The axis groups in declaration order: features.variant_groups'
+ *  key order when the door serves it, else the rows' distinct groups
+ *  in first-seen order. Empty group names never ride. The Recipe
+ *  group never rides (the recipe-axis yield above). */
+export declare function axisGroups(spec: FormSpecDoc): string[];
+/** The variant_groups contract's keys, in served order (the door
+ *  serves it under features when the family declares axis groups). */
+export declare function variantGroupsContract(spec: FormSpecDoc): string[];
+/** One axis' rows (served order). */
+export declare function rowsFor(spec: FormSpecDoc, group: string): VariantRow[];
+/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
+ *  row composes with the current selection when its `owner` is empty
+ *  (composes with everything — patch-only rows) or names the ACTIVE
+ *  row of another axis. */
+export declare function composingRows(spec: FormSpecDoc, group: string, active: Record<string, string | undefined>): VariantRow[];
+/** The Variant axis' rows (group 'Variant', served order). */
+export declare function variantRows(spec: FormSpecDoc): VariantRow[];
+/** The Quant cells composing with a variant (THE CHAIN). */
+export declare function quantRowsFor(spec: FormSpecDoc, variantId: string | null): VariantRow[];
+/** The Model select's options (stroke 21, the operator's law:
+ *  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
+ *  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
+ *  (krea-2-raw) is the DECL's compose stamp, resolved server-side
+ *  into the run's params — it is NOT a model and never renders as
+ *  one. The rail's other options are the card's boarded families
+ *  (spec.families, served from the card package). */
+export declare function modelChoices(spec: FormSpecDoc): string[];
+/** THE ACTIVE-ENTRY LAW (activeVariantId, generalized to the served
+ *  shape): a row is active when its re-pointed model (defaults.model
+ *  ?? route) matches the held `model` value AND its owner chain
+ *  holds. Nothing matches → undefined (the caller falls to the first
+ *  composing row — the catalog's first-declared law). */
+export declare function activeVariantId(spec: FormSpecDoc, values: SpecValues, group: 'Variant' | 'Quant'): string | undefined;
+/** The ACTIVE RECIPE (the dropdown's selection state, derived from
+ * the ONE truth -- never a persisted key): a recipe row is active
+ * when EVERY key its pick stamps (axisPickPatch, minus the durable
+ * axis keys -- the run door refuses an undeclared `recipe` param)
+ * deep-equals the user layer's held value. Stamp-for-stamp matches
+ * are naturally exclusive (a two-row bag matches only the row that
+ * stamps two rows); first-declared wins on a tie. NOTHING matches ->
+ * undefined (the dropdown shows its placeholder -- a hand-edited
+ * layer is not a recipe, and the form never lies about it). */
+export declare function activeRecipeId(spec: FormSpecDoc, values: SpecValues): string | undefined;
+/** One group's active row under the owner chain (inner recursion of
+ *  activeVariantId — Variant resolves first, chained groups after). */
+export declare function activeRowId(spec: FormSpecDoc, values: SpecValues, group: string, active: Record<string, string | undefined>): string | undefined;
+/** THE AXIS STAMP VOCABULARY (2026-09-29, caught LIVE by the
+ *  compose gate in the CI seat: the client stamped the Quant row's
+ *  composed catalog id — 'raw__int8' — where the door's contract
+ *  speaks the CELL's quant field — 'int8'; the gate refused with the
+ *  door's own voice and the write never left the studio, which is
+ *  exactly the law working). The value an axis pick stamps on the
+ *  durable key is the value the DOOR reads: the variant id for
+ *  Variant, the cell quant for Quant. Never the flat-catalog id.
+ * PURE. */
+export declare function axisStampOf(row: VariantRow): string;
+/** The durable param key an axis rides (the group's id, lowercased —
+ *  'variant', 'quant', 'recipe', 'precision'). */
+export declare function axisKey(group: string): string;
+/** A pick's full value patch — the old onPick law: the row's
+ *  `defaults` overlay rides (model re-point + every resolver default),
+ *  plus the durable axis keys themselves so a reopened stage restores
+ *  its selects. Picking a row also re-seeds the axes BELOW it (their
+ *  first composing row). */
+export declare function axisPickPatch(spec: FormSpecDoc, row: VariantRow): SpecValues;
+/** A model switch's full value patch (the stale-variant cure,
+ *  operator 2026-09-14: model anima + variant turbo refused at
+ *  compose — a switch that keeps the old family's axes is a broken
+ *  stage). Every axis re-seeds to its FIRST row re-pointing at the
+ *  new model (else its first composing row), and the picked rows'
+ *  defaults overlay rides (raw → {model, steps, cfg} — the pick
+ *  law, same as axisPickPatch). The caller writes every key through
+ *  onEdit. PURE. */
+export declare function modelSwitchPatch(spec: FormSpecDoc, model: string): SpecValues;
+/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
+ *  operator's live bench: a stage carrying quant:"" — born when a
+ *  model switch CLEARED the axis to '' — which the RUN door refused:
+ *  'unknown quant "" for model "z-image" variant "turbo" (known:
+ *  int8)'). A stated EMPTY selection is UNSTATED: the authoring
+ *  seat unsets the key instead of writing the empty string, so
+ *  compose defaults the cell. ONE pure decision, shared by the seed
+ *  (seedAxisValues omits) and the write (the drill's onSet unsets)
+ *  — the form's rendering is untouched (a missing axis key reads
+ *  as '' on screen). */
+export declare function axisUnset(name: string, v: unknown, spec: FormSpecDoc | null): boolean;
+/** Seed the axis keys for a fresh stage (the catalog's first-declared
+ *  law: each axis defaults to its FIRST composing row). Held values
+ *  win (a reopened stage never re-seeds). */
+export declare function seedAxisValues(spec: FormSpecDoc, held: SpecValues): SpecValues;
+/** Seed a stage's USER layer from its held params (the bench's
+ * stage.params — the only migration seam). Presence-based, per the
+ * settings law: every HELD key rides verbatim (the override marks
+ * survived the reopen), the absent axis keys seed per the axis law
+ * (seedAxisValues above — first composing row, one direction).
+ *
+ * THE ONE VALIDATION CLAUSE (never value-compare): a held `recipe`
+ * the card's schema does not declare is poison — the dead
+ * card-recipe layer's stamp (strokes 33+34). Dropped on open, so
+ * the run flush's null-domain half deletes the bench key and the
+ * card composes again. Everything else rides untouched.
+ *
+ * PURE — the caller owns the write (onSet per fresh key). */
+export declare function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues;
+export interface ComposeViolation {
+    /** the door's own voice — the same message the estate would send,
+     *  prefixed by the gate that caught it (BEFORE the wire). */
+    message: string;
+}
+export declare function composeValidate(spec: FormSpecDoc | null, doc: SpecValues): ComposeViolation[];
+/** Compose the CANDIDATE doc the door would judge: the bench row's
+ *  held params, the user layer's overrides, then the in-flight frame
+ *  — later layers win, and a null value DELETES the key (the wire's
+ *  own unset law). This is composition: the full doc, assembled
+ *  where the edit happens, so the law can run BEFORE the write. */
+export declare function composeCandidateDoc(held: SpecValues, user: SpecValues, frame: Record<string, unknown>): SpecValues;
+//# sourceMappingURL=spec.d.ts.map

@@ -1,0 +1,66 @@
+/**
+ * THE ESTATE'S LAYOUT GRAMMAR (2026-09-18, promoted from h3's studio
+ * kit — the operator's question: "no other card will need ControlRow,
+ * SectionLabel, PaneHeader in the future ever?"). Rows, section
+ * headings, pane chrome, empty states, tooltip anchors: the grammar
+ * EVERY card speaks. One definition in the shared base; cards compose
+ * them — composition is the card's own geometry, these pieces are the
+ * estate's. Moved VERBATIM (JSX + CSS) from the h3 kit; the kit
+ * re-exports as a bridge so existing import sites keep one door.
+ */
+import type { ComponentProps, ReactElement, ReactNode } from 'react';
+/** The bubble's side relative to the anchor — the DSH Tooltip's own
+ *  three placements. */
+export type TipSide = 'top' | 'bottom' | 'right';
+/** The estate's tooltip anchor: the DSH Tooltip atom over a REAL
+ *  layout box (a display:contents or fragment child measures a zero
+ *  rect and pins the bubble to the viewport corner).
+ * @param props.tip - bubble text; absent renders the child bare.
+ * @param props.side - bubble placement, default 'top'.
+ * @param props.delayDuration - hover delay in ms, default 300.
+ * @param props.children - the single anchor element. */
+export declare function Tip({ tip, side, delayDuration, children }: {
+    tip?: string;
+    side?: TipSide;
+    delayDuration?: number;
+    children: ReactElement;
+}): ReactElement;
+export type ControlDensity = 'md' | 'sm';
+export declare function ControlRow({ label, hint, children, density, className, }: {
+    label: ReactNode;
+    hint?: ReactNode;
+    children: ReactNode;
+    density?: ControlDensity;
+    className?: string;
+}): ReactElement;
+export declare function SectionLabel({ children, tail, className, }: {
+    children: ReactNode;
+    tail?: ReactNode;
+    className?: string;
+}): ReactElement;
+export declare function EmptyState({ icon, title, hint, variant, className, }: {
+    icon?: ReactNode;
+    title: ReactNode;
+    hint?: ReactNode;
+    variant?: 'overlay' | 'pane';
+    className?: string;
+}): ReactElement;
+/** Skeleton — the quiet loading block (promoted 2026-09-18 from
+ *  motion's kit, where it was the estate's only copy): a bare div
+ *  with the estate pulse. EmptyState is the pane's empty face;
+ *  Skeleton is its loading face. */
+export declare function Skeleton({ className, ...props }: ComponentProps<'div'>): ReactElement;
+export type PaneHeaderVariant = 'strip' | 'preview';
+export declare function PaneHeader({ title, meta, hint, lead, variant, className, }: {
+    title?: ReactNode;
+    meta?: ReactNode;
+    hint?: ReactNode;
+    lead?: ReactNode;
+    variant?: PaneHeaderVariant;
+    className?: string;
+}): ReactElement;
+export declare function PaneShell({ children, className }: {
+    children: ReactNode;
+    className?: string;
+}): ReactElement;
+//# sourceMappingURL=layout.d.ts.map

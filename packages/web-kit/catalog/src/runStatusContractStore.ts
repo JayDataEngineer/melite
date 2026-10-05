@@ -18,9 +18,9 @@
 // removed). Retry re-polls the SAME run: if the backend recovered, the
 // verdict clears; if it is still bad, the toast re-fires.
 
-import type { RunStatusViolation } from "./runStatusContract"
-import { createClientStore } from "./clientStore"
-import { contractToast } from "./contractToast"
+import type { RunStatusViolation } from "./runStatusContract.ts"
+import { createClientStore } from "./clientStore.ts"
+import { contractToast } from "./contractToast.ts"
 
 export type RunStatusVerdict =
   | { kind: "violation"; runId: string; violations: RunStatusViolation[] }
@@ -37,7 +37,7 @@ interface RunStatusContractStoreState {
  *  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
  *  whole protocol layer; the store only needs it on click. */
 function repoll(runId: string): void {
-  import("./FlowProtocol")
+  import("./FlowProtocol.ts")
     .then(({ pollFlowRun }) =>
       pollFlowRun(runId, undefined, { maxWaitMs: 30_000, intervalMs: 2_000 }),
     )

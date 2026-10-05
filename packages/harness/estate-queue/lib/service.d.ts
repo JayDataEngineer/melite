@@ -1,0 +1,45 @@
+import { Service } from "@deepseek-ai/cordis";
+import type { Context } from "@deepseek-ai/cordis";
+import { QueueCore } from "./queue.js";
+import type { LedgerTailAnswer } from "./ledgerTail.js";
+/** Provider config: where the estate's run state lives. */
+export interface QueueConfig {
+    /** Repo root for the default `data/runs` state root (the
+     *  MELITE_STATE_ROOT override wins, unchanged). */
+    repoRoot?: string;
+}
+declare module "@deepseek-ai/cordis" {
+    interface Context {
+        queue: QueueService;
+    }
+}
+/** The serial-GPU queue seat: `ctx.queue`. */
+export declare class QueueService extends Service {
+    #private;
+    static inject: string[];
+    /** The run-state root this fiber owns (lock + ledger + outdirs). */
+    readonly stateRoot: string;
+    /** §23 CROSS-ROOTS manifest (own root first, then
+     *  MELITE_STATE_ROOTS, colon-separated): the run-resolving doors
+     *  walk it, and the seat carries it so consumers (the media door)
+     *  read one law instead of re-deriving their own. */
+    readonly stateRoots: string[];
+    /** The boot gate's verdict trail (acquired | stolen-from-dead). */
+    readonly lockNote: string;
+    /** The in-memory serial registry (runs + FIFO order + active). */
+    readonly core: QueueCore;
+    constructor(ctx: Context, config?: QueueConfig);
+    /** The journal path under this service's root (readers + the
+     *  runs remote's list arm). */
+    get ledgerPath(): string;
+    /** The journal tail (REBUILD-19; the dead GET /v1/ledger arm —
+     *  the doors/assets.ts _h_ledger law rides verbatim): limit
+     *  default 50 / clamp 1..500 / garbage -> 50, event prefix on
+     *  the raw line, oldest -> newest within the tail. §23
+     *  CROSS-ROOTS: every manifest root's journal merges into one
+     *  timeline and the answer names the searched roots. */
+    ledger(rawLimit: string, rawEvent: string): LedgerTailAnswer;
+    /** Whether dispose already released our lock (test probe). */
+    get released(): boolean;
+}
+//# sourceMappingURL=service.d.ts.map

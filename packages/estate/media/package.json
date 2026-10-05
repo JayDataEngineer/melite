@@ -12,13 +12,13 @@
       "types": "./lib/types.d.ts",
       "default": "./lib/types.js"
     },
-    "./typert": {
-      "types": "./lib/typert.host.d.ts",
-      "default": "./lib/typert.host.js"
-    },
     "./remote": {
       "types": "./lib/typert.remote-client.d.ts",
       "default": "./lib/typert.remote-client.js"
+    },
+    "./typert": {
+      "types": "./lib/typert.host.d.ts",
+      "default": "./lib/typert.host.js"
     }
   },
   "scripts": {
@@ -27,12 +27,11 @@
     "typert": "node scripts/typert.mjs"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@melite/contracts": "workspace:*",
     "zod": "4.5.4"
   },
   "devDependencies": {
-    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-host-webserver": "0.2.0-rc.1",
     "@deepseek-ai/dsh-typert-generator": "0.2.0-rc.1",
     "@deepseek-ai/dsh-typert-protocol": "0.2.0-rc.1",
@@ -49,5 +48,8 @@
     "lib/index.d.ts",
     "lib/**/*.js",
     "lib/**/*.d.ts"
-  ]
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
+  }
 }

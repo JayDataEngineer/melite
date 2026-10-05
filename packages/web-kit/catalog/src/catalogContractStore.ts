@@ -21,9 +21,9 @@
 // every attempt, and each report used to push a fresh toast (the reported
 // "spammed every 5 seconds"). See the latch below reportError.
 
-import type { CatalogViolation } from "./catalogContract"
-import { createClientStore } from "./clientStore"
-import { contractToast } from "./contractToast"
+import type { CatalogViolation } from "./catalogContract.ts"
+import { createClientStore } from "./clientStore.ts"
+import { contractToast } from "./contractToast.ts"
 
 export type CatalogContractState = "idle" | "loaded" | "violation" | "error"
 
@@ -70,7 +70,7 @@ function _stamp(): string {
  *  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
  *  (for CatalogContractError reporting) — a static import would be circular. */
 function retryCatalog(): void {
-  import("./modelCatalog")
+  import("./modelCatalog.ts")
     .then(({ loadCatalog }) => loadCatalog({ force: true }))
     .catch(() => {
       // The funnel re-reported the failure — a fresh toast already fired.

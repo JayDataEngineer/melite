@@ -1,8 +1,8 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import { DRAW_BUFFER, KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import { DRAW_BUFFER, KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
 import {
   HIGHLIGHT_BORDER_COLOR,
   HIGHLIGHT_BORDER_WIDTH,
@@ -14,9 +14,9 @@ import {
   HIGHLIGHT_TEXT_COLOR,
   HIGHLIGHT_TEXT_SHADOW_BLUR,
   HIGHLIGHT_TEXT_SHADOW_COLOR,
-} from "./styles";
-import type { TimelineTheme } from "./styles";
-import type { TimelineCoordinates, TimelineKeyframe, TimelineTrack } from "./types";
+} from "./styles.ts";
+import type { TimelineTheme } from "./styles.ts";
+import type { TimelineCoordinates, TimelineKeyframe, TimelineTrack } from "./types.ts";
 
 export function drawHighlightFrameBox(
   ctx: CanvasRenderingContext2D,

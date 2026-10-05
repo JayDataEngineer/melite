@@ -2,18 +2,23 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "the anny card (the 3d lane) \u2014 one card one package: the form card (schema groups \u2192 the base form's parameter submenu) + agents/ context",
-  "main": "./src/index.ts",
+  "description": "the anny card (the 3d lane) — one card one package: the form card (schema groups → the base form's parameter submenu) + agents/ context",
   "exports": {
-    ".": "./src/index.ts",
-    "./card": "./src/card.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
@@ -22,7 +27,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
-  "name": "@melite/3d-anny"
+  "name": "@melite/3d-anny",
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
+  }
 }

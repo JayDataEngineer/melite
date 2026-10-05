@@ -15,9 +15,9 @@
  * store. Now the plugin hydrates itself when the first consumer pulls
  * the seam; the promise is exported for anyone needing to await it.
  */
-export * from "./timelineStore"
-export * from "./segmentClipboard"
-import { useTimelineStore } from "./timelineStore"
+export * from "./timelineStore.ts"
+export * from "./segmentClipboard.ts"
+import { useTimelineStore } from "./timelineStore.ts"
 
 /** The one-shot hydration promise (already running; await to join). */
 export const timelineReady: Promise<void> = useTimelineStore

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect, useReducer, useRef, useState } from "react";
-import type { TimelineMessage } from "./messages";
-import { initialInteractionState, interactionReducer } from "./interactions";
+import type { TimelineMessage } from "./messages.ts";
+import { initialInteractionState, interactionReducer } from "./interactions.ts";
 
 export interface TimelineInteractionStateArgs {
  timelineState: TimelineMessage | null;

@@ -1,6 +1,6 @@
 /** regions.ts — the region-slot props contracts (fifth lane): what a
  * sidebar / chat-input claimant receives. */
-import type { MediaAsset } from "./mediaTypes"
+import type { MediaAsset } from "./mediaTypes.ts"
 
 export interface AppSidebarProps {
  open: boolean

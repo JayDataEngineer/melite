@@ -1,0 +1,1 @@
+{"version":3,"file":"melite-load.d.ts","sourceRoot":"","sources":["../../src/tools/melite-load.ts"],"names":[],"mappings":"AAcA,OAAO,KAAK,EAAa,cAAc,EAAE,MAAM,aAAa,CAAA;AAC5D,OAAO,KAAK,EAAE,aAAa,EAAE,MAAM,cAAc,CAAA;AAiBjD,wBAAgB,UAAU,CACxB,OAAO,EAAE,aAAa,EACtB,IAAI,GAAE;IAAE,QAAQ,CAAC,EAAE,OAAO,CAAA;CAAO,GAChC,cAAc,CAgYhB"}

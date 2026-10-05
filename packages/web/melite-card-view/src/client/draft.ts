@@ -72,7 +72,7 @@ export type FlowEventFrame =
 import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
 import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** The media URL seam — the run-wire package's ONE rewrite
  *  (toRunMediaUrl, the browser twin of @melite/estate-media's

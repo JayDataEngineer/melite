@@ -1,7 +1,7 @@
 import * as THREE from "three"
 import { apiFetch } from "@melite/catalog"
-import { CM_TO_M } from "./poseStageSkeleton"
-import type { SkinMeshData } from "./poseStageTypes"
+import { CM_TO_M } from "./poseStageSkeleton.ts"
+import type { SkinMeshData } from "./poseStageTypes.ts"
 
 const FLOOR_LIFT_Y = 0.02
 

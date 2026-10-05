@@ -16,11 +16,11 @@ import type { SomaSkin } from "@melite/formats"
 import { stepAzimuth } from "@melite/formats"
 import { PoseViewer3D, type CameraFraming } from "@melite-plugin/motion/ui/viewer3d"
 import type { JointMoveEvent } from "@melite-plugin/motion/ui/viewer3d"
-import { Skeleton, Tip, ViewportAnchor, ViewportFrame } from "./kit"
+import { Skeleton, Tip, ViewportAnchor, ViewportFrame } from "./kit.tsx"
 import { ASSET_DRAG_MIME } from '@melite/card-base/client'
 import { cn } from '@melite/card-base/client'
 import s from "./component.module.css"
-import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog"
+import { MotionExportDialog, type StageRect, type ThreeCtx } from "./MotionExportDialog.tsx"
 
 export interface MotionStageViewProps {
   stageBoxRef: React.RefObject<HTMLDivElement | null>

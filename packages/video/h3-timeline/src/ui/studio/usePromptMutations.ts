@@ -4,9 +4,9 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { Dispatch, SetStateAction } from "react"
-import type { DocCall } from "./docModel"
-import { STARTER_CALLS } from "./docModel"
-import { callIndexOf } from "./docCalls"
+import type { DocCall } from "./docModel.ts"
+import { STARTER_CALLS } from "./docModel.ts"
+import { callIndexOf } from "./docCalls.ts"
 
 /** Bar↔card prompt gestures (tenant §6). Verbatim lines 1948–2042. */
 export function usePromptMutations(setCalls: Dispatch<SetStateAction<DocCall[]>>) {

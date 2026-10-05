@@ -6,7 +6,7 @@
 // websocket). Field names and types are identical to viser's so the
 // vendored Timeline.tsx renders the demo's bar byte-for-byte.
 
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";
 
 /** A locked/translation interval on a keyframe track (viser shape). */
 export interface TimelineInterval {

@@ -41,10 +41,10 @@ import {
   type LightingOrb,
   type ReferenceMeshSpec,
   type CameraFraming as Framing,
-} from "./poseStage"
+} from "./poseStage.ts"
 import { Loader2, type StageLayers } from '@melite/card-base/client'
 
-export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage"
+export type { CameraFraming, ReferenceMeshSpec, LightingOrb, JointMoveEvent } from "./poseStage.ts"
 export { framedCameraPos }
 
 /** The layers default (the altSamples law's twin): a hoisted shared

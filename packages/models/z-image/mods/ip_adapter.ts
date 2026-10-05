@@ -38,6 +38,9 @@
 // lands upstream + a loader lane exists, the fate flips to 'fired'
 // and the rows gain source_urls — never before.
 import type { Context } from '@deepseek-ai/cordis'
+// the Context merge (ctx.comfyui) lives in the service module —
+// pulling the type seats the augmentation in this program
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 export const inject = ['comfyui']
 

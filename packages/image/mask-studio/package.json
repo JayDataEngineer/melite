@@ -2,17 +2,23 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
+  "description": "the mask-studio carrier, DEMOTED (CONTRACT D — the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
   "exports": {
     "./package.json": "./package.json",
-    "./paint-canvas": "./src/ui/PaintLeafCanvas.tsx",
-    "./bbox-canvas": "./src/ui/BboxLeafCanvas.tsx"
+    "./paint-canvas": {
+      "types": "./lib/ui/PaintLeafCanvas.d.ts",
+      "default": "./lib/ui/PaintLeafCanvas.js"
+    },
+    "./bbox-canvas": {
+      "types": "./lib/ui/BboxLeafCanvas.d.ts",
+      "default": "./lib/ui/BboxLeafCanvas.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@melite/contracts": "workspace:*",
     "react": "^19.3.0"
@@ -26,7 +32,18 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
-  "name": "@melite/image-mask-studio"
+  "name": "@melite/image-mask-studio",
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/**/*.css",
+    "lib/**/*.d.ts",
+    "lib/**/*.js",
+    "lib/**/*.module.css",
+    "src/**/*.module.css"
+  ]
 }

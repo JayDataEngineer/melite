@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 /**
@@ -153,11 +154,23 @@ export const RUNTIME_LIB_ALIAS: Record<string, string> = {
 
 /**
  * The complete resolution facade every vitest config spreads: workspace
- * packages ride src (SOURCE_PLANE_ALIAS); external DSH runtime libraries
- * ride their estate-anchored copies (RUNTIME_LIB_ALIAS).
+ * packages ride src — the GENERATED table (tools/facade-rows.json, from
+ * `node tools/build-plane.mjs paths`, one truth with the tsconfig faces)
+ * plus the hand law rows above (subpathOnly /client doors, remotes,
+ * built-truth exceptions) — external DSH runtime libraries ride their
+ * estate-anchored copies (RUNTIME_LIB_ALIAS). Keys are re-emitted
+ * longest-first: rollup alias matches boundary-prefixes in iteration
+ * order, so '@melite/estate-drafts/remote' must precede its parent or
+ * the parent swallows the subpath.
  */
 export function resolutionFacade(): Record<string, string> {
-  return { ...SOURCE_PLANE_ALIAS, ...RUNTIME_LIB_ALIAS }
+  const generated = JSON.parse(readFileSync(path.join(import.meta.dirname, 'tools/facade-rows.json'), 'utf8')) as Record<string, string[]>
+  const merged: Record<string, string> = {}
+  for (const [k, v] of Object.entries(generated)) merged[k] = path.join(import.meta.dirname, v[0])
+  Object.assign(merged, SOURCE_PLANE_ALIAS, RUNTIME_LIB_ALIAS)
+  const ordered: Record<string, string> = {}
+  for (const k of Object.keys(merged).sort((a, b) => b.length - a.length)) ordered[k] = merged[k]
+  return ordered
 }
 
 /**

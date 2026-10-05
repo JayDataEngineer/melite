@@ -14,7 +14,7 @@
  * have smaller X values than left-side ones).
  */
 import { apiFetch } from "@melite/catalog"
-import { readAsDataURL } from "./readFile"
+import { readAsDataURL } from "./readFile.ts"
 
 // ── COCO-18 keypoint indices ─────────────────────────────────────────────
 export const KP = {

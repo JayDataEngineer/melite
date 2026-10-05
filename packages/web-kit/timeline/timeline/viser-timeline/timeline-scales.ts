@@ -1,9 +1,9 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants";
-import type { TimelineCoordinates } from "./types";
-import type { TimelineMessage } from "./messages";
+import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
+import type { TimelineCoordinates } from "./types.ts";
+import type { TimelineMessage } from "./messages.ts";
 
 export const DEFAULT_KEYFRAME_COLOR: [number, number, number] = [219, 148, 86];
 export const OUT_OF_RANGE_CONSTRAINT_COLOR: [number, number, number] = [140, 140, 140];

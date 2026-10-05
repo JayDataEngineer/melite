@@ -11,8 +11,8 @@
  * ONLY keys the compose reads: fps is document-local and
  * never ride the wire.
  */
-import type { DocAudioClip, LayerA } from "./docModel"
-import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel"
+import type { DocAudioClip, LayerA } from "./docModel.ts"
+import { LEGACY_LAYERA_KEY, stemToClip } from "./docModel.ts"
 import { normalizeDeclaredRefs } from '@melite/models-h3/timelineContract'
 import { parseFilmMixClips } from '@melite/models-h3/filmMix'
 

@@ -8,12 +8,12 @@ import { SpecAtom, Tip, type SpecField } from "@melite/card-base/client"
 import { cn } from '@melite/card-base/client'
 import { ChevronLeft } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { VIDEO_TIMELINE_TRACKS } from "./docModel"
-import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel"
-import { CallCard } from "./CallCard"
+import { VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import type { CallRefs, DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import { CallCard } from "./CallCard.tsx"
 import { deliveredFrames } from '@melite/models-h3/timelineContract'
-import type { LinkArtifact } from "./refUtils"
-import type { TimelineSelection } from "./useViewSelection"
+import type { LinkArtifact } from "./refUtils.ts"
+import type { TimelineSelection } from "./useViewSelection.ts"
 
 /** Handlers + bags the call-card tree needs (all owned by the tenant). */
 export interface CallCardDeps {

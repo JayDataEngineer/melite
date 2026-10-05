@@ -39,8 +39,8 @@
  */
 import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
 import type { Object3D, SkinnedMesh } from "three"
-import { makeGLTFLoader } from "./glbLoad"
-import { invert4, restPoseFromBind, type SomaSkin } from "./somaSkin"
+import { makeGLTFLoader } from "./glbLoad.ts"
+import { invert4, restPoseFromBind, type SomaSkin } from "./somaSkin.ts"
 
 /** SOMA-77 — the rig every SOMAX GLB carries (skin.name "SOMA-Mixamo"). */
 const SOMA_JOINTS = 77

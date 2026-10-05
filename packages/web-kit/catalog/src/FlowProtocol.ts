@@ -16,16 +16,16 @@
 // The START POST uses raw fetch (NOT apiFetch) — a 504 retry would start a
 // SECOND GPU run. The status poll is an idempotent GET, so it goes through
 // apiFetch (retry + dedup + liveness).
-import { apiFetch } from "./api"
+import { apiFetch } from "./api.ts"
 import type { components } from "@melite/contracts/schema"
 import type { StageResult } from "@melite/contracts"
 import {
   RunStatusContractError,
   hasViolationsSignature,
   validateRunStatusContract,
-} from "./runStatusContract"
-import { useRunStatusContractStore } from "./runStatusContractStore"
-import { sleep } from "./sleep"
+} from "./runStatusContract.ts"
+import { useRunStatusContractStore } from "./runStatusContractStore.ts"
+import { sleep } from "./sleep.ts"
 
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.
@@ -453,7 +453,7 @@ export async function runCompiledGeneration(
   // that passes but ships the untyped original is false confidence.
   let typedBody: Record<string, unknown> = body
   if (typeof body.model === "string") {
-    const { assertParamsMatchFamilySchema } = await import("./familyParamContract")
+    const { assertParamsMatchFamilySchema } = await import("./familyParamContract.ts")
     // Strip the envelope field the backend also strips (model) — it is
     // not a family param and would false-positive as "unknown
     // parameter" against additionalProperties: false. debug_id passes
@@ -482,7 +482,7 @@ export async function runCompiledGeneration(
     // draft) — and the same envelope rides validate + start. Paste
     // after the coerce: an early stamp would leak into paramOnly
     // above and false-positive as "unknown parameter".
-    const { ensureDraftId } = await import("./cardBirth")
+    const { ensureDraftId } = await import("./cardBirth.ts")
     typedBody.draft_id = await ensureDraftId(typedBody, signal)
     // COMPILE FIRST (pipe-carry retirement, 2026-09-05): the card body
     // compiles at POST /v1/flows/validate BEFORE any run registers —
@@ -507,7 +507,7 @@ export async function runCompiledGeneration(
   // (named {flow}, inline bodies) ride the same envelope rule — the
   // start door 4xxes a start without a doc-backed draft_id.
   if (typeof typedBody.draft_id !== "string" || typedBody.draft_id === "") {
-    const { ensureDraftId } = await import("./cardBirth")
+    const { ensureDraftId } = await import("./cardBirth.ts")
     typedBody.draft_id = await ensureDraftId(typedBody, signal)
   }
   const res = await fetch("/v1/flows/start", {

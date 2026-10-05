@@ -165,7 +165,7 @@ jobs:
       - name: Real-API e2e (keyless self-skip)
         run: pnpm run test:e2e
       - name: Build (expected tier's built arms run against real output)
-        run: pnpm --filter @melite-plugin/dsh-card-deck run build && pnpm --filter @melite/editor run build
+        run: pnpm run build
       - name: Owner-local expected output
         run: pnpm run test:expected
       - name: Benchmarks

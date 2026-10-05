@@ -1,8 +1,8 @@
 import * as THREE from "three"
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
-import { buildGeometry } from "./poseStageMesh"
-import { CM_TO_M } from "./poseStageSkeleton"
-import type { PoseStageProps, SkinMeshData } from "./poseStageTypes"
+import { buildGeometry } from "./poseStageMesh.ts"
+import { CM_TO_M } from "./poseStageSkeleton.ts"
+import type { PoseStageProps, SkinMeshData } from "./poseStageTypes.ts"
 
 export function createSkinCarrier(liftGroup: THREE.Group) {
   // ══ SkinCarrier (the SkinnedHumanoid port) ══════════════════════════

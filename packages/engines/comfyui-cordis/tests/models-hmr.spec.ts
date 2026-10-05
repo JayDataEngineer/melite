@@ -23,7 +23,7 @@ import { readdirSync } from 'node:fs'
 import { Context } from '@deepseek-ai/cordis'
 import type { Plugin } from '@deepseek-ai/cordis'
 import { ModelsService } from '../src/models/service.ts'
-import { FAMILY_PLUGINS } from '../src/models/families/index.ts'
+import { FAMILY_PKGS, loadFamilies } from '../src/models/families/index.ts'
 
 import { DECL as declAceStep, family as familyAceStep } from '../../../models/ace-step/src/index.ts'
 import { DECL as declAnima, family as familyAnima } from '../../../models/anima/src/index.ts'
@@ -120,8 +120,17 @@ describe('models registry HMR safety (every family)', () => {
   // NOTHING (silent vanish), and a stale table entry names a package
   // that no longer exists. The live seat below only proves mounting
   // for families the table actually carries.
-  it('the family roster is a two-way census (packages/models == FAMILY_PLUGINS)', () => {
-    const mounted = FAMILY_PLUGINS.map((p) => (p.name ?? '').replace(/^family-/, '')).sort()
+  it('the family roster is a two-way census (packages/models == the frozen table)', async () => {
+    // the table, not the mounted set, is the roster's truth — the lazy
+    // load mounts exactly the table (loadFamilies walks FAMILY_PKGS),
+    // and the census must catch a forgotten row without mounting.
+    const mounted = (await loadFamilies()).map((p: Plugin) => (p.name ?? '').replace(/^family-/, '')).sort()
+    const table = FAMILY_PKGS.map((pkg: string) => pkg.replace(/^@melite\/models-/, '')).sort()
+    assert.deepEqual(
+      table,
+      mounted,
+      'the frozen table and the mounted plugins disagree — a family package exports a plugin whose name is not its package name',
+    )
     const dirs = readdirSync(
       new URL('../../../../packages/models', import.meta.url).pathname,
       { withFileTypes: true },

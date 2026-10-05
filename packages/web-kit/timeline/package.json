@@ -2,12 +2,20 @@
   "name": "@melite-plugin/timeline",
   "version": "0.3.1",
   "type": "module",
-  "main": "./timeline/index.ts",
   "types": "./timeline/index.ts",
   "exports": {
-    "./ui/timeline": "./timeline/index.ts",
-    "./ui/store": "./store/index.ts",
-    "./ui/playback": "./playback/index.ts",
+    "./ui/timeline": {
+      "types": "./lib/timeline/index.d.ts",
+      "default": "./lib/timeline/index.js"
+    },
+    "./ui/store": {
+      "types": "./lib/store/index.d.ts",
+      "default": "./lib/store/index.js"
+    },
+    "./ui/playback": {
+      "types": "./lib/playback/index.d.ts",
+      "default": "./lib/playback/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dependencies": {
@@ -23,5 +31,16 @@
     "@testing-library/react": "*",
     "@types/react": "^19.3.0",
     "@types/node": "^22.20.0"
-  }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css",
+    "timeline/**/*.module.css",
+    "store/**/*.module.css",
+    "playback/**/*.module.css"
+  ]
 }

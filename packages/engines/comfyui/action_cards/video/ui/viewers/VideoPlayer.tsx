@@ -2,7 +2,7 @@
 // Modeled after redshiftdb's VideoPlayer pattern.
 import { useCallback, useEffect, useRef, useState } from "react"
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
-import { ScrubInput } from "../../../form-fields"
+import { ScrubInput } from '@melite/cards/form-fields'
 import {
   Maximize, Minimize2, Pause, Play, RotateCcw, RotateCw, Volume2, VolumeX,
 } from "@melite/card-base/client"

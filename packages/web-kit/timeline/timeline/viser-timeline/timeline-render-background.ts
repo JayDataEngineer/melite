@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React, { useEffect } from "react";
-import { DRAW_BUFFER, TRACK_LABEL_WIDTH } from "./constants";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import { drawEndFrameLine, drawFrameLabels, drawInterval, drawKeyframe, drawLabelOverlay } from "./draw";
-import { DEFAULT_PROMPT_COLOR, PROMPT_TEXT_SHADOW } from "./styles";
-import type { TimelineTheme } from "./styles";
-import { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY, PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales";
-import type { TimelineInterval, TimelineMessage } from "./messages";
-import type { CanvasSizeState, TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./types";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state";
+import { DRAW_BUFFER, TRACK_LABEL_WIDTH } from "./constants.ts";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import { drawEndFrameLine, drawFrameLabels, drawInterval, drawKeyframe, drawLabelOverlay } from "./draw.ts";
+import { DEFAULT_PROMPT_COLOR, PROMPT_TEXT_SHADOW } from "./styles.ts";
+import type { TimelineTheme } from "./styles.ts";
+import { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY, PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales.ts";
+import type { TimelineInterval, TimelineMessage } from "./messages.ts";
+import type { CanvasSizeState, TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./types.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 
 export interface TimelineBackgroundArgs {
  timelineState: TimelineMessage | null;

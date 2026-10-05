@@ -1,0 +1,62 @@
+import { taggerSaveText, TAGGER_CAPTION_LENGTHS, TAGGER_CAPTION_TYPES, TAGGER_EXTRA_OPTIONS } from "@melite/comfyui-card-kit";
+/** The weightless door: the family declares no lane_inputs, so
+ * there is nothing to parse and nothing that can drift. The raw
+ * view rides unvalidated by contract (absent ≡ {}).
+ *  @param _raw the resolved lane_inputs (empty for this family)
+ *  @returns the vacuous facts shape */
+export function parseTagFacts(_raw) {
+    return {};
+}
+/** The image prompt-inversion action: the JoyCaption VLM — LoadImage
+ * (or the wired spell), the model loader, JJC_JoyCaption on the
+ * caption template, SaveText under <run>/tags. */
+export const tag = {
+    id: "tag",
+    inputs: [],
+    outputs: [{ name: "text", kind: "TEXT" }],
+    // THE DECLARED SURFACE (the write plane, phase 2): the tagger
+    // card schema's own types and bounds — the family door judges
+    // defaults and variant presets against this row. The closed sets
+    // resolve from the ONE kit vocabularies, never hand-copied;
+    // checkpoint is admitted (the family default stamps it, the
+    // upstream takes any repo id or local path), and the family door
+    // judges the stamp as a string.
+    params: [
+        { name: "input_image", type: "string" },
+        { name: "checkpoint", type: "string" },
+        { name: "caption_type", type: "enum", options: TAGGER_CAPTION_TYPES },
+        { name: "caption_length", type: "enum", options: TAGGER_CAPTION_LENGTHS },
+        { name: "extra_option", type: "enum", options: TAGGER_EXTRA_OPTIONS },
+    ],
+    facts: parseTagFacts,
+    build({ p, g, runId }) {
+        const img = typeof p.input_image === "string" ? p.input_image : "";
+        if (!img.trim()) {
+            throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
+        }
+        const src = img.startsWith("$") ? img : g.node("LoadImage", { image: img }).out();
+        const predictor = g.node("JJC_DownloadAndLoadJoyCaptionModel", {
+            model: p.checkpoint,
+            memory_mode: "Default",
+            keep_loaded: false,
+        });
+        const caption = g.node("JJC_JoyCaption", {
+            model: predictor.out(),
+            image: src,
+            caption_type: p.caption_type,
+            caption_length: p.caption_length,
+            extra_option1: p.extra_option,
+            extra_option2: "",
+            extra_option3: "",
+            extra_option4: "",
+            extra_option5: "",
+            person_name: "",
+            max_new_tokens: 512,
+            temperature: 0.6,
+            top_p: 0.9,
+            top_k: 0,
+        });
+        return taggerSaveText(g, caption.out(1), `${runId}/tags`).out();
+    },
+};
+//# sourceMappingURL=actions.js.map

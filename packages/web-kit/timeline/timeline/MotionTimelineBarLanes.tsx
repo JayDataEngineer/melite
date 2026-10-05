@@ -4,18 +4,18 @@
  * tracks, keyframe lanes. Chrome (gutter/ruler/playhead) lives in
  * MotionTimelineBarChrome.
  */
-import { Image, Mic, Music, X, Zap } from "./icons"
+import { Image, Mic, Music, X, Zap } from "./icons.tsx"
 import { clsx as cn } from "clsx"
 import { ASSET_DRAG_MIME, Tip } from '@melite/card-base/client'
-import { PROMPT_COLORS } from "./viser-timeline/styles"
-import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout"
+import { PROMPT_COLORS } from "./viser-timeline/styles.ts"
+import { AUDIO_CARDS_H, AUDIO_H, LANE_H, rgb } from "./MotionTimelineBarLayout.ts"
 import { Button, Input } from "@deepseek-ai/dsh-client-ui-primitives"
 import css from "./timeline.module.css"
 import { useState } from "react"
 import type * as React from "react"
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types"
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar"
-import type { Drag } from "./MotionTimelineBarDrag"
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts"
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx"
+import type { Drag } from "./MotionTimelineBarDrag.ts"
 
 export interface TimelinePromptsLaneProps {
   prompts: TimelinePrompt[]

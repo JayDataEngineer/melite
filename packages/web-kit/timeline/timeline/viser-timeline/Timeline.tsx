@@ -2,40 +2,40 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useContext, useMemo } from "react";
-import type { TimelineMessage } from "./messages";
-import { ViewerContext } from "./viewerContext";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import { DARK_THEME, LIGHT_THEME } from "./styles";
-import { useTimelineInteractionState } from "./timeline-interaction-state";
-import { useTimelineViewport } from "./timeline-viewport";
-import { useTimelineAutoPan } from "./timeline-auto-pan";
-import { useTimelineGeometry } from "./timeline-geometry";
-import { useTimelineMouseHandlers } from "./timeline-mouse";
-import { useTimelineBackground } from "./timeline-render-background";
-import { useTimelineForeground } from "./timeline-render-foreground";
-import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays";
+import type { TimelineMessage } from "./messages.ts";
+import { ViewerContext } from "./viewerContext.ts";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import { DARK_THEME, LIGHT_THEME } from "./styles.ts";
+import { useTimelineInteractionState } from "./timeline-interaction-state.ts";
+import { useTimelineViewport } from "./timeline-viewport.ts";
+import { useTimelineAutoPan } from "./timeline-auto-pan.ts";
+import { useTimelineGeometry } from "./timeline-geometry.ts";
+import { useTimelineMouseHandlers } from "./timeline-mouse.ts";
+import { useTimelineBackground } from "./timeline-render-background.ts";
+import { useTimelineForeground } from "./timeline-render-foreground.ts";
+import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays.tsx";
 
 export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments,
  getZoomEnvelopeEndFrame, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY,
- PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales";
+ PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales.ts";
 export { useTimelineInteractionState };
-export type { TimelineEditingDraft, TimelineInteractionSnapshot, TimelineInteractionStateArgs } from "./timeline-interaction-state";
+export type { TimelineEditingDraft, TimelineInteractionSnapshot, TimelineInteractionStateArgs } from "./timeline-interaction-state.ts";
 export { useTimelineViewport };
-export type { TimelineViewport, TimelineViewportArgs } from "./timeline-viewport";
+export type { TimelineViewport, TimelineViewportArgs } from "./timeline-viewport.ts";
 export { useTimelineAutoPan };
-export { AUTO_PAN_EDGE_PX, AUTO_PAN_MAX_PX_PER_SEC } from "./timeline-auto-pan";
-export type { AutoPanMode, TimelineAutoPan, TimelineAutoPanArgs } from "./timeline-auto-pan";
+export { AUTO_PAN_EDGE_PX, AUTO_PAN_MAX_PX_PER_SEC } from "./timeline-auto-pan.ts";
+export type { AutoPanMode, TimelineAutoPan, TimelineAutoPanArgs } from "./timeline-auto-pan.ts";
 export { useTimelineGeometry };
-export type { TimelineGeometry, TimelineGeometryArgs } from "./timeline-geometry";
+export type { TimelineGeometry, TimelineGeometryArgs } from "./timeline-geometry.ts";
 export { useTimelineMouseHandlers };
-export type { TimelineMouseArgs, TimelineMouseCallbacks } from "./timeline-mouse";
+export type { TimelineMouseArgs, TimelineMouseCallbacks } from "./timeline-mouse.ts";
 export { useTimelineBackground };
-export type { TimelineBackgroundArgs } from "./timeline-render-background";
+export type { TimelineBackgroundArgs } from "./timeline-render-background.ts";
 export { useTimelineForeground };
-export type { TimelineForegroundArgs } from "./timeline-render-foreground";
+export type { TimelineForegroundArgs } from "./timeline-render-foreground.ts";
 export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar };
-export { SCROLLBAR_HEIGHT } from "./timeline-overlays";
-export type { TimelineEditingOverlayProps, TimelineScrollbarProps } from "./timeline-overlays";
+export { SCROLLBAR_HEIGHT } from "./timeline-overlays.tsx";
+export type { TimelineEditingOverlayProps, TimelineScrollbarProps } from "./timeline-overlays.tsx";
 
 interface TimelineProps {
  timelineState: TimelineMessage | null;

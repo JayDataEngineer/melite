@@ -2,46 +2,138 @@
   "name": "@melite/formats",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
   "dependencies": {
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "three": "*"
   },
   "exports": {
-    "./b64": "./src/b64.ts",
-    "./bodyPresets": "./src/bodyPresets.ts",
-    "./capabilityCards": "./src/capabilityCards.ts",
-    "./captionSplitter": "./src/captionSplitter.ts",
-    "./cardMutations": "./src/cardMutations.ts",
-    "./downloads": "./src/downloads.ts",
-    "./extractVideoFrame": "./src/extractVideoFrame.ts",
-    "./glbLoad": "./src/glbLoad.ts",
-    "./glbSkin": "./src/glbSkin.ts",
-    "./handPose": "./src/handPose.ts",
-    "./keyframeExtract": "./src/keyframeExtract.ts",
-    "./maskPrep": "./src/maskPrep.ts",
-    "./motionConstraints": "./src/motionConstraints.ts",
-    "./motionEnvelope": "./src/motionEnvelope.ts",
-    "./motionNpz": "./src/motionNpz.ts",
-    "./npz": "./src/npz.ts",
-    "./openPoseCanvas": "./src/openPoseCanvas.ts",
+    "./b64": {
+      "types": "./lib/b64.d.ts",
+      "default": "./lib/b64.js"
+    },
+    "./bodyPresets": {
+      "types": "./lib/bodyPresets.d.ts",
+      "default": "./lib/bodyPresets.js"
+    },
+    "./capabilityCards": {
+      "types": "./lib/capabilityCards.d.ts",
+      "default": "./lib/capabilityCards.js"
+    },
+    "./captionSplitter": {
+      "types": "./lib/captionSplitter.d.ts",
+      "default": "./lib/captionSplitter.js"
+    },
+    "./cardMutations": {
+      "types": "./lib/cardMutations.d.ts",
+      "default": "./lib/cardMutations.js"
+    },
+    "./downloads": {
+      "types": "./lib/downloads.d.ts",
+      "default": "./lib/downloads.js"
+    },
+    "./extractVideoFrame": {
+      "types": "./lib/extractVideoFrame.d.ts",
+      "default": "./lib/extractVideoFrame.js"
+    },
+    "./glbLoad": {
+      "types": "./lib/glbLoad.d.ts",
+      "default": "./lib/glbLoad.js"
+    },
+    "./glbSkin": {
+      "types": "./lib/glbSkin.d.ts",
+      "default": "./lib/glbSkin.js"
+    },
+    "./handPose": {
+      "types": "./lib/handPose.d.ts",
+      "default": "./lib/handPose.js"
+    },
+    "./keyframeExtract": {
+      "types": "./lib/keyframeExtract.d.ts",
+      "default": "./lib/keyframeExtract.js"
+    },
+    "./maskPrep": {
+      "types": "./lib/maskPrep.d.ts",
+      "default": "./lib/maskPrep.js"
+    },
+    "./motionConstraints": {
+      "types": "./lib/motionConstraints.d.ts",
+      "default": "./lib/motionConstraints.js"
+    },
+    "./motionEnvelope": {
+      "types": "./lib/motionEnvelope.d.ts",
+      "default": "./lib/motionEnvelope.js"
+    },
+    "./motionNpz": {
+      "types": "./lib/motionNpz.d.ts",
+      "default": "./lib/motionNpz.js"
+    },
+    "./npz": {
+      "types": "./lib/npz.d.ts",
+      "default": "./lib/npz.js"
+    },
+    "./openPoseCanvas": {
+      "types": "./lib/openPoseCanvas.d.ts",
+      "default": "./lib/openPoseCanvas.js"
+    },
     "./package.json": "./package.json",
-    "./pngMeta": "./src/pngMeta.ts",
-    "./pngMetaInfo": "./src/pngMetaInfo.ts",
-    "./poseCodec": "./src/poseCodec.ts",
-    "./poseTransforms": "./src/poseTransforms.ts",
-    "./poserSkin": "./src/poserSkin.ts",
-    "./promptTags": "./src/promptTags.ts",
-    "./psdExport": "./src/psdExport.ts",
-    "./readFile": "./src/readFile.ts",
-    "./renderSnapshot": "./src/renderSnapshot.ts",
-    "./somaSkin": "./src/somaSkin.ts",
-    ".": "./src/index.ts"
+    "./pngMeta": {
+      "types": "./lib/pngMeta.d.ts",
+      "default": "./lib/pngMeta.js"
+    },
+    "./pngMetaInfo": {
+      "types": "./lib/pngMetaInfo.d.ts",
+      "default": "./lib/pngMetaInfo.js"
+    },
+    "./poseCodec": {
+      "types": "./lib/poseCodec.d.ts",
+      "default": "./lib/poseCodec.js"
+    },
+    "./poseTransforms": {
+      "types": "./lib/poseTransforms.d.ts",
+      "default": "./lib/poseTransforms.js"
+    },
+    "./poserSkin": {
+      "types": "./lib/poserSkin.d.ts",
+      "default": "./lib/poserSkin.js"
+    },
+    "./promptTags": {
+      "types": "./lib/promptTags.d.ts",
+      "default": "./lib/promptTags.js"
+    },
+    "./psdExport": {
+      "types": "./lib/psdExport.d.ts",
+      "default": "./lib/psdExport.js"
+    },
+    "./readFile": {
+      "types": "./lib/readFile.d.ts",
+      "default": "./lib/readFile.js"
+    },
+    "./uploadToEstate": {
+      "types": "./lib/uploadToEstate.d.ts",
+      "default": "./lib/uploadToEstate.js"
+    },
+    "./textToPose": {
+      "types": "./lib/textToPose.d.ts",
+      "default": "./lib/textToPose.js"
+    },
+    "./renderSnapshot": {
+      "types": "./lib/renderSnapshot.d.ts",
+      "default": "./lib/renderSnapshot.js"
+    },
+    "./somaSkin": {
+      "types": "./lib/somaSkin.d.ts",
+      "default": "./lib/somaSkin.js"
+    },
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    }
   },
   "version": "0.3.1",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
@@ -50,5 +142,10 @@
     "@types/react-dom": "^19.3.0",
     "@types/three": "^0.184.1",
     "typescript": "^5.9.3"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

@@ -24,8 +24,8 @@
 //   • Server sync is GATED: it only activates after `initTagSync()` is called
 //     (by the app shell on mount) — the tag-map suites that exercise the
 //     server seat call it deliberately.
-import { createClientStore, type GetState, type SetState } from "./clientStore"
-import { apiFetch } from "./api"
+import { createClientStore, type GetState, type SetState } from "./clientStore.ts"
+import { apiFetch } from "./api.ts"
 
 // ── TagColor — TS mirror of the pydantic enum ────────────────────────────
 // SSOT: backend/core/ui/list_filter_schema.py :: TagColor. This TS const is

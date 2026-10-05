@@ -15,13 +15,13 @@
 // promptGuide("krea-2-sd-q8") // → {title, sections:[...]}
 // modelLabel("krea-2") // → "Krea 2"
 
-import { apiJson } from "./api"
+import { apiJson } from "./api.ts"
 import type { CardGenre } from "@melite/contracts"
 import {
  CatalogContractError,
  validateCatalogContract,
-} from "./catalogContract"
-import { useCatalogContractStore } from "./catalogContractStore"
+} from "./catalogContract.ts"
+import { useCatalogContractStore } from "./catalogContractStore.ts"
 
 // ── Wire types — GENERATED from /openapi.json (2026-08-11 directive) ─────
 //
@@ -33,7 +33,7 @@ import { useCatalogContractStore } from "./catalogContractStore"
 // string and defaults as an opaque record.
 
 import type { components } from "@melite/contracts/schema"
-import { createClientStore } from "./clientStore"
+import { createClientStore } from "./clientStore.ts"
 
 export type FamilyEntry = components["schemas"]["FamilyEntryWire"]
 export type VariantEntry = components["schemas"]["VariantEntryWire"]

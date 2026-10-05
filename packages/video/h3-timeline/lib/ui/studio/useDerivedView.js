@@ -1,0 +1,216 @@
+/**
+ * h3-timeline studio split (2026-09-06) — PURE MOVE from
+ * ui/studio/component.tsx. No behavior change: headers/footers are new,
+ * every logic line is verbatim from the monolith (source range noted).
+ */
+import { useMemo, useState } from "react";
+import { isImageUrl } from "@melite/card-base/client";
+import { callsToPrompts, keyframesToLanes } from "./docCalls.js";
+import { refGenreOf } from '@melite/models-h3/timelineContract';
+/** Upstream vocabulary, filmstrip, bar-space memos (tenant §10).
+ *  Verbatim lines 2474–2628. */
+export function useDerivedView(args) {
+    const { upstreams, stage, calls, layerA, keyframes, filmMap, filmFromDoc, selected, fps, totalFrames, } = args;
+    // ── Upstream artifact vocabulary (the source picker's datalist — the
+    // same ctx-key vocabulary _normalize_guides resolves: an upstream
+    // artifact NAME → read + upload; anything else → an uploaded filename).
+    const sourceOptions = useMemo(() => {
+        const opts = [];
+        for (const u of upstreams ?? []) {
+            const arts = u.result?.artifacts;
+            if (!arts)
+                continue;
+            for (const name of Object.keys(arts))
+                opts.push({ title: u.title, name });
+        }
+        return opts;
+    }, [upstreams]);
+    // ── Link-to-previous-output rows (2026-08-24 parity upgrade): the
+    // upstream cards' IMAGE artifacts — what the first/last-frame subcards'
+    // Link2 picker offers. Picking writes the ctx-key NAME, a LIVE reference
+    // _resolveSource re-resolves at render time. Image-filtered by the SHARED
+    // isImageUrl rule — these slots condition frames; a video/audio artifact
+    // is not their language.
+    const linkGroups = useMemo(() => {
+        const out = [];
+        for (const u of upstreams ?? []) {
+            const arts = u.result?.artifacts;
+            if (!arts)
+                continue;
+            for (const [name, url] of Object.entries(arts)) {
+                if (typeof url === "string" && url && isImageUrl(url)) {
+                    out.push({ name, url, title: u.title });
+                }
+            }
+        }
+        return out;
+    }, [upstreams]);
+    // ── Filmstrip: the last run's windows, by artifact name (data already
+    // in props — no fetch, no plan-parse; the plan manifest's reused/rendered
+    // detail stays backend-side).
+    // ARTIFACT-NAME CONTRACT (2026-09-23, the first-clip preview defect):
+    // the queue publishes the card's REAL save names — h3_t4_film_<n>_.mp4
+    // (the hero, filmLead.ts's lead law) and h3_t4_w<k>_<n>_.mp4 (windows).
+    // The legacy video / video_w<k>_main names belong to an older engine
+    // era and stay as a second spelling — but the REAL names are the
+    // contract this face is tested against (fixture from run-b664de5e4155).
+    const filmstrip = useMemo(() => {
+        const res = stage.result;
+        const arts = res?.artifacts ?? {};
+        const urls = Array.isArray(res?.assetUrls) ? res.assetUrls : [];
+        // both eras, one matcher: video_w<k>_… (legacy) | h3_t4_w<k>_<n>_.mp4 (real)
+        const windowIndexOf = (n) => {
+            const legacy = /^video_w(\d+)_/.exec(n);
+            if (legacy !== null)
+                return Number(legacy[1]);
+            const real = /^h3_t4_w(\d+)_\d+_\.mp4$/.exec(n);
+            if (real !== null)
+                return Number(real[1]);
+            return null;
+        };
+        const windows = Object.keys(arts)
+            .filter((n) => windowIndexOf(n) !== null && !n.endsWith("_last_frame") && !n.includes("_seam") && !n.includes("_prev"))
+            // no-fake-data guard (2026-08-31): a placeholder artifact with an
+            // EMPTY url must never become a tile — an empty src renders a
+            // broken video player. Absence of a url = absence of a window.
+            .filter((n) => typeof arts[n] === "string" && arts[n] !== "")
+            .sort((a, b) => {
+            // (both indexes parsed non-null in the filter above — no
+            // fallback arms.)
+            return windowIndexOf(a) - windowIndexOf(b);
+        })
+            .map((name) => ({ name, url: arts[name] }));
+        // FLAT-LIST FALLBACK (2026-08-30 "only shows the first clip"): the
+        // windows were built ONLY from the named artifact map — a snapshot
+        // whose artifacts were stripped (older bundle eras, degraded stores)
+        // rendered ONE final-cut tile and the windows vanished even though
+        // assetUrls (the FLAT list, stitch first) carried every
+        // clip. Union: every flat-list entry beyond [0] that the artifact
+        // map didn't already provide joins as a window tile. Clip loss can
+        // no longer hide behind a missing artifact name.
+        if (urls.length > 1) {
+            const have = new Set(windows.map((w) => w.url));
+            for (let i = 1; i < urls.length; i++) {
+                const u = urls[i];
+                if (!u || have.has(u))
+                    continue;
+                have.add(u);
+                const m = /window(\d+)_video/.exec(u);
+                // (u is truthy here, so split("/") is non-empty and pop() is
+                // defined — no `??` fallback arm.)
+                windows.push({ name: m ? `video_w${m[1]}_main` : u.split("/").pop(), url: u });
+            }
+        }
+        // THE HERO (same defect, the hero arm): the engine film leads by
+        // NAME (filmLead.ts's regex, mirrored here for the browser bundle)
+        // — the legacy 'video' key and the flat list trail it. A run whose
+        // gallery carries the film can never preview a window as the cut.
+        const filmName = Object.keys(arts).find((n) => /^h3_t4_film_\d+_\.mp4$/.test(n));
+        const filmUrl = filmName !== undefined && typeof arts[filmName] === "string" && arts[filmName] !== ""
+            ? arts[filmName] : "";
+        const namedVideo = Object.entries(arts).find(([name, url]) => typeof url === "string" && url !== "" && refGenreOf(name, url) === "video"
+            && !/^h3_t4_w\d+_\d+_\.mp4$/i.test(name) && !/^video_w\d+_/.test(name))?.[1];
+        const flatVideo = urls.find((url) => refGenreOf("", url) === "video"
+            && !/(?:^|\/)h3_t4_w\d+_\d+_\.mp4$/i.test(url)
+            && !/(?:^|\/)video_w\d+_/.test(url));
+        return {
+            windows,
+            final: filmUrl !== "" ? filmUrl : typeof namedVideo === "string" ? namedVideo : flatVideo ?? null,
+        };
+    }, [stage.result]);
+    // (fps is always >0 post-hydration — the num() proof — no `|| 24`.)
+    const prompts = useMemo(() => callsToPrompts(calls, layerA.fps), [calls, layerA.fps]);
+    const lanes = useMemo(() => keyframesToLanes(keyframes), [keyframes]);
+    /** The film's OWN duration off the player (master-axis fallback): a
+     *  run whose metadata carries no probed map still sizes the bar from
+     *  the rendered film, never from the plan frames. */
+    const [filmDurSec, setFilmDurSec] = useState(0);
+    // (audit F2) the no-map fallback sizes the axis from the FILM's own
+    // probed duration — multiply by the film's fps, not the doc rail's
+    // (they diverge the moment fps is edited after a run).
+    // (fps is always a number — the doc rail's Layer A fps — no `?? 24`.)
+    const barTotal = filmMap?.totalFrames
+        ?? (filmDurSec > 0 ? Math.round(filmDurSec * (filmMap?.fps ?? fps)) : totalFrames);
+    const barPrompts = useMemo(() => filmMap
+        ? prompts.map((p) => ({ ...p, start_frame: filmFromDoc(p.start_frame), end_frame: filmFromDoc(p.end_frame) }))
+        : prompts, [prompts, filmMap, filmFromDoc]);
+    // FLAT diamonds (the bar's keyframes prop is TimelineKeyframe[] —
+    // keyframesToLanes returns the FLAT list despite its name; the old
+    // nested `l.keyframes.map` was a type lie that crashed at runtime
+    // whenever a film map existed).
+    const barLanes = useMemo(() => filmMap
+        ? lanes.map((k) => ({ ...k, frame: filmFromDoc(k.frame) }))
+        : lanes, [lanes, filmMap, filmFromDoc]);
+    // ── Bar-side Layer C + previews + selection (2026-08-16) ───────────────
+    /** Every prompt segment flattened into the bar's BEATS row (under the
+     * calls): id `beat-i-j`, end_frame translated to the bar's INCLUSIVE
+     * vocabulary (the doc's end is exclusive), color = the call's prompt
+     * color so a segment reads as belonging to its call. */
+    // (2026-09-15) barBeats removed - no prompt beats row on the strip.
+    /** (Layer A NLE) the Music row's clips in BAR space: both endpoints
+     * through filmFromDoc (identity with no film map), width = the mapped
+     * span — a clip crossing a trim boundary narrows like the calls do. */
+    const barAudioClips = useMemo(() => (layerA.audio_clips ?? []).map((c) => {
+        const g0 = filmFromDoc(c.start_frame);
+        const g1 = filmFromDoc(c.start_frame + c.dur_frames);
+        return {
+            id: c.id,
+            name: c.name,
+            start_frame: g0,
+            dur_frames: Math.max(1, g1 - g0),
+            gain: c.gain,
+            class: c.class,
+            text: c.text,
+        };
+    }), [layerA.audio_clips, filmFromDoc]);
+    /** THE PIN MAP (2026-09-22, the door-guard UX arm): which calls'
+     * spans carry a dialogue/sfx clip — those windows PIN, and the
+     * pinned window's normal audio doors stand down (the CallCard
+     * grays the Ref audios bucket; the compose owns the real wall —
+     * this is the BEFORE-the-Run hint, doc-space overlap mirroring
+     * the stamp law's doc-span arm). */
+    const voicePinnedCalls = useMemo(() => {
+        const set = new Set();
+        calls.forEach((call, i) => {
+            const sf = call.start_frame, ef = call.end_frame;
+            for (const c of layerA.audio_clips ?? []) {
+                const cls = c.class ?? (c.text ? "dialogue" : "music");
+                if (cls !== "dialogue" && cls !== "sfx")
+                    continue;
+                if ((c.dur_frames ?? 0) <= 0)
+                    continue;
+                if (c.start_frame < ef && c.start_frame + c.dur_frames > sf) {
+                    set.add(i);
+                    break;
+                }
+            }
+        });
+        return set;
+    }, [calls, layerA.audio_clips]);
+    /** THE BLOCKER (2026-09-22, the operator's lane-collision law):
+     * the D-M-E clips and the normal audio inputs are MUTUALLY EXCLUSIVE
+     * at authoring time — reference audio wired on ANY call locks the
+     * lanes (no adds on ANY lane); ANY clip present locks the Ref audios
+     * buckets on EVERY call. Doc-level, both directions, blunt on
+     * purpose: the compose door guard stays only as the silent backstop
+     * for docs that already carry both (it strips, never crashes). */
+    const refAudiosPresent = useMemo(() => calls.some((c) => !!(c.refs?.audios ?? "").trim()), [calls]);
+    const audioClipsPresent = (layerA.audio_clips?.length ?? 0) > 0;
+    /** Window render → call clip (previews INSIDE the bar clips): window
+     * index ↔ call index 1:1 (best effort — a forced mid-call split
+     * shifts later windows; index-based like the artifact naming). */
+    const callPreviews = useMemo(() => Object.fromEntries(filmstrip.windows.slice(0, calls.length).map((w, i) => [`call-${i}`, w.url])), [filmstrip.windows, calls.length]);
+    /** The bar's selected clip id (call or beat) — the ring the bar draws. */
+    const selectedBarId = selected
+        ? selected.beatIdx != null
+            ? `beat-${selected.callIdx}-${selected.beatIdx}`
+            : `call-${selected.callIdx}`
+        : null;
+    return {
+        sourceOptions, linkGroups, filmstrip, prompts, lanes,
+        filmDurSec, setFilmDurSec, barTotal,
+        barPrompts, barLanes, barAudioClips, callPreviews, selectedBarId,
+        voicePinnedCalls, refAudiosPresent, audioClipsPresent,
+    };
+}
+//# sourceMappingURL=useDerivedView.js.map

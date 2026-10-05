@@ -13,12 +13,17 @@
     "exactOptionalPropertyTypes": false,
     "noImplicitOverride": false,
     "noFallthroughCasesInSwitch": true,
-    "types": ["node"],
+    "types": [
+      "node"
+    ],
     "rootDir": "src",
     "outDir": "lib",
     "declaration": true,
     "declarationMap": true,
-    "declarationDir": "lib/types"
+    "declarationDir": "lib/types",
+    "noEmitOnError": true
   },
-  "include": ["src"]
+  "include": [
+    "src"
+  ]
 }

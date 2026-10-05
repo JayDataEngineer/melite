@@ -78,3 +78,12 @@ allowBuilds:
 ## packages themselves resolved to.
 overrides:
   "@deepseek-ai/schemastery": "3.18.4"
+  ## THE CORDIS ONE-VERSION LAW (2026-10-14): the vendor webserver's
+  ## peer (^4.0.2) resolved a SECOND 4.0.2 copy beside the consumers'
+  ## 4.0.4 — two physical dts trees split Context identity, and the
+  ## webserver's `declare module '@deepseek-ai/cordis'` augmentation
+  ## merged onto the copy nobody consumed (ctx.webServer TS2339 in
+  ## infer-gallery/melite-card-deck while the runtime stayed one
+  ## plugin). ONE version for the whole graph: 4.0.4, the floor the
+  ## editor-facing packages already resolved to.
+  "@deepseek-ai/cordis": "4.0.4"

@@ -14,8 +14,8 @@
  */
 import type { ComponentProps, ReactElement, ReactNode } from "react"
 import { StudioRail } from "./studioRail.tsx"
-import { AlertTriangle } from "./icons"
-import { cx } from "./chrome"
+import { AlertTriangle } from "./icons.tsx"
+import { cx } from "./chrome.ts"
 import { ToastViewport } from "./toast.tsx"
 import styles from "./shell.module.css"
 

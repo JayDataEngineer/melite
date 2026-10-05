@@ -7,7 +7,7 @@ describe("catalog barrel", () => {
   it("re-exports the transport, contracts, protocol, and helpers", () => {
     for (const key of [
       // api.ts (mine)
-      "apiFetch", "apiJson", "externalUrl", "getBackendState", "onBackendState", "urlToDataUrl",
+      "apiFetch", "apiJson", "externalUrl", "getBackendState", "onBackendState",
       // catalogContractStore.ts (mine)
       "useCatalogContractStore",
       // enhance.ts (mine)

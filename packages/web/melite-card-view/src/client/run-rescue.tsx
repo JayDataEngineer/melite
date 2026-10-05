@@ -4,7 +4,7 @@
  * rescueable — a missing extension pack or a missing model file —
  * offering ONE confirm that routes through the manage seat and
  * re-offers the run. THE LINKS-IN-CODE LAW: names only, the DECL
- * owns every URL server-side (run-rescue.ts's header).
+ * owns every URL server-side (run-rescue-core.ts's header).
  *
  * Mounts where the failure carry already lands (cards-tab-body's
  * runError faces); inert — renders null — for every non-rescueable
@@ -15,8 +15,8 @@
 import { createElement as h, useState } from 'react'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue.ts'
-import { rejectionVoice } from './rejection-voice'
+import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue-core.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 
 export function RunRescue({ error, stages, onRun }: {
   error: string

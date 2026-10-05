@@ -36,7 +36,7 @@ import { isModelUrl } from '@melite/contracts/mediaKinds'
 
 import { artifactNameOf, artifactPathOfUrl } from './artifact-ops.ts'
 import { artifactUrlOfAddress } from './artifact-address.ts'
-import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens'
+import { bgBase1, stateWarnPrimary1, textTertiary3 } from './ui.tokens.ts'
 
 /** THE ARTIFACT-NAME LAW (the operator's 2026-09-26 report:
  *  "3D view unavailable — \"artifact\" is not a .glb/.gltf artifact" on a

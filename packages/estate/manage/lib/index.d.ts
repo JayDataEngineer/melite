@@ -1,7 +1,7 @@
 import type { Context } from "@deepseek-ai/cordis";
 import { TypertRemoteService } from "@deepseek-ai/dsh-typert-protocol";
-import type { ManageActDoc, ManageEnvelopeRow } from "./types.ts";
-export type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from "./types.ts";
+import type { ManageActDoc, ManageEnvelopeRow } from "./types.js";
+export type { ManageActDoc, ManageEnvelopeRow, ManageJsonValue } from "./types.js";
 /** The manage seat's adapter-facing surface (structural — the
  *  implementation is ManageService in @melite/estate-queue; the
  *  wall pins the delegation byte-for-byte). */

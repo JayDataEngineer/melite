@@ -4,11 +4,26 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./slots": "./src/slots.ts",
-    "./gateway": "./src/gateway.ts",
-    "./wire": "./src/wire.ts",
-    "./runCard": "./src/runCard.tsx",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./slots": {
+      "types": "./lib/slots.d.ts",
+      "default": "./lib/slots.js"
+    },
+    "./gateway": {
+      "types": "./lib/gateway.d.ts",
+      "default": "./lib/gateway.js"
+    },
+    "./wire": {
+      "types": "./lib/wire.d.ts",
+      "default": "./lib/wire.js"
+    },
+    "./runCard": {
+      "types": "./lib/runCard.d.ts",
+      "default": "./lib/runCard.js"
+    },
     "./package.json": "./package.json"
   },
   "peerDependencies": {
@@ -30,10 +45,16 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@melite-plugin/melite-run-wire": "workspace:*",
     "@melite/contracts": "workspace:*"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

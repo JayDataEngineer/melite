@@ -6,8 +6,8 @@
 import type { AudioCue, AudioTrackDef, ConsistencyAnchor, TimelineSegment } from "@melite/contracts"
 import { DEFAULT_SEGMENT_PARAMS, normalizeSegmentStatus } from "@melite/contracts"
 import { getCachedCatalog } from "@melite/catalog"
-import { BLOB_FIELDS, BLOB_PREFIX, blobKey, isBlobRef, isDataUrl, tlLoad, tlSave } from "./timelineBlobs"
-import type { TimelineStore } from "./timelineStoreTypes"
+import { BLOB_FIELDS, BLOB_PREFIX, blobKey, isBlobRef, isDataUrl, tlLoad, tlSave } from "./timelineBlobs.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 // Save: strip large blobs from segments, store them in IndexedDB
 export async function persistTimeline(

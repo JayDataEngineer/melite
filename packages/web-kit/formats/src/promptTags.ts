@@ -12,7 +12,7 @@
  * or semicolon, so suggestions apply to the phrase the user is mid-
  * type on, not the whole prompt.
  */
-import tagsJson from './prompt-tags.json'
+import tagsJson from './prompt-tags.json' with { type: 'json' }
 
 export type PromptTagCategory =
   | 'shot' | 'camera' | 'lighting' | 'style'

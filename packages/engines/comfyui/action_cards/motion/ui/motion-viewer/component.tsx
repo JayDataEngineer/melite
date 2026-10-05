@@ -5,7 +5,7 @@
  * MotionViewer (skinned playback). Props: AssetViewerProps.
  */
 import type { AssetViewerProps } from "@melite/contracts"
-import { MotionPoster, MotionViewer } from "../viewers"
+import { MotionPoster, MotionViewer } from "../viewers/index.ts"
 import styles from "./component.module.css"
 
 export default function MotionViewerClaim({ url, mode, className }: AssetViewerProps) {

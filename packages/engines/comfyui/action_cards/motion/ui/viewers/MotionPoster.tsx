@@ -20,9 +20,9 @@
 import * as THREE from "three"
 import { loadMotionNpz } from "@melite/formats"
 import { loadSomaSkin, deformFrame } from "@melite/formats"
-import { useMotionImageStore } from "./motionImageStore"
+import { useMotionImageStore } from "./motionImageStore.ts"
 import { snapshotSceneToJpeg } from "@melite/formats/renderSnapshot"
-import { PosterShell, usePosterDataUrl } from "../../../poster-shell"
+import { PosterShell, usePosterDataUrl } from '@melite/cards/poster-shell'
 
 const FLOOR_LIFT_Y = 0.02
 const J = 77 // SOMA-77 joints

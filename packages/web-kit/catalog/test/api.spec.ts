@@ -3,8 +3,6 @@
 import { describe, it, afterEach, beforeEach, vi } from "vitest";
 import assert from "node:assert/strict";
 
-const { readAsDataURLMock } = vi.hoisted(() => ({ readAsDataURLMock: vi.fn() }));
-vi.mock("@melite/formats/readFile", () => ({ readAsDataURL: readAsDataURLMock }));
 
 import {
   apiFetch,
@@ -12,7 +10,6 @@ import {
   externalUrl,
   getBackendState,
   onBackendState,
-  urlToDataUrl,
 } from "../src/api.ts";
 import type { BackendState } from "../src/api.ts";
 
@@ -40,7 +37,6 @@ beforeEach(() => {
 afterEach(() => {
   globalThis.fetch = realFetch;
   (globalThis as Record<string, unknown>).window = realWindow;
-  readAsDataURLMock.mockReset();
   vi.restoreAllMocks();
 });
 
@@ -359,35 +355,3 @@ describe("apiJson", () => {
   });
 });
 
-describe("urlToDataUrl", () => {
-  it("fetches and re-encodes the blob", async () => {
-    const blob = new Blob(["bytes"], { type: "image/png" });
-    script = [{ ok: true, status: 200, blob: async () => blob } as unknown as Response];
-    readAsDataURLMock.mockResolvedValue("data:image/png;base64,eA==");
-    const ctl = new AbortController();
-    assert.equal(await urlToDataUrl("http://app.test/a.png", ctl.signal), "data:image/png;base64,eA==");
-    assert.equal(readAsDataURLMock.mock.calls.length, 1);
-    assert.equal(calls[0]!.init?.signal, ctl.signal);
-  });
-
-  it("throws loudly on HTTP errors and unreadable blobs", async () => {
-    script = [ok("nope", 404)];
-    await assert.rejects(urlToDataUrl("http://app.test/missing.png"), /HTTP 404/);
-    const blob = new Blob(["x"]);
-    script = [{ ok: true, status: 200, blob: async () => blob } as unknown as Response];
-    readAsDataURLMock.mockRejectedValue(new Error("no reader"));
-    await assert.rejects(urlToDataUrl("http://app.test/b.png"), /Failed to read http:\/\/app.test\/b.png as data URL/);
-  });
-
-  it("slices long URLs in error messages", async () => {
-    const long = `http://app.test/${"p".repeat(500)}.png`;
-    script = [ok("nope", 500)];
-    try {
-      await urlToDataUrl(long);
-      assert.fail("should throw");
-    } catch (e) {
-      assert.ok(!(e as Error).message.includes("p".repeat(500)));
-      assert.ok((e as Error).message.includes(long.slice(0, 200)));
-    }
-  });
-});

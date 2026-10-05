@@ -49,24 +49,24 @@
 import { useRef } from "react"
 import type { CSSProperties } from "react"
 import { clsx as cn } from "clsx"
-import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState"
-import { BEATS_H, PROMPTS_H } from "./MotionTimelineBarLayout"
-import { buildTicks, useTimelineScale } from "./MotionTimelineBarScale"
-import { useTimelineDragSession } from "./MotionTimelineBarDrag"
+import { MOTION_TIMELINE_TRACKS } from "./viser-timeline/motionTimelineState.ts"
+import { BEATS_H, PROMPTS_H } from "./MotionTimelineBarLayout.ts"
+import { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.ts"
+import { useTimelineDragSession } from "./MotionTimelineBarDrag.ts"
 import {
   TimelineContent,
   TimelineGutter,
   TimelinePlayhead,
   TimelineRuler,
-} from "./MotionTimelineBarChrome"
+} from "./MotionTimelineBarChrome.tsx"
 import {
   TimelineAudioLanes,
   TimelineBeatsLane,
   TimelineKeyframeLanes,
   TimelinePromptsLane,
-} from "./MotionTimelineBarLanes"
+} from "./MotionTimelineBarLanes.tsx"
 import css from "./timeline.module.css"
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types"
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts"
 
 /** One Layer C prompt segment (video timeline) rendered in its OWN row
  * UNDER the calls: {text, start, end} within a call — a SUBSET of the
@@ -287,15 +287,15 @@ export interface AudioClipView {
 export {
   AUDIO_CARDS_H, AUDIO_H, BEATS_H, clamp, DRAG_ARM_PX, fmtTimecode, GUTTER_W,
   LANE_H, MAX_PPF, PROMPTS_H, rgb, RULER_H, ZOOM_STEP,
-} from "./MotionTimelineBarLayout"
-export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale"
-export type { TimelineScaleOpts } from "./MotionTimelineBarScale"
-export { useTimelineDragSession } from "./MotionTimelineBarDrag"
-export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag"
-export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome"
-export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome"
-export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes"
-export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes"
+} from "./MotionTimelineBarLayout.ts"
+export { buildTicks, useTimelineScale } from "./MotionTimelineBarScale.ts"
+export type { TimelineScaleOpts } from "./MotionTimelineBarScale.ts"
+export { useTimelineDragSession } from "./MotionTimelineBarDrag.ts"
+export type { Drag, TimelineDragSessionOpts } from "./MotionTimelineBarDrag.ts"
+export { TimelineContent, TimelineGutter, TimelinePlayhead, TimelineRuler } from "./MotionTimelineBarChrome.tsx"
+export type { TimelineContentProps, TimelineGutterProps, TimelineGutterScale, TimelinePlayheadProps, TimelineRulerProps } from "./MotionTimelineBarChrome.tsx"
+export { TimelineAudioLanes, TimelineBeatsLane, TimelineKeyframeLanes, TimelinePromptsLane } from "./MotionTimelineBarLanes.tsx"
+export type { TimelineAudioLanesProps, TimelineBeatsLaneProps, TimelineKeyframeLanesProps, TimelinePromptsLaneProps } from "./MotionTimelineBarLanes.tsx"
 
 export function MotionTimelineBar({
   prompts,

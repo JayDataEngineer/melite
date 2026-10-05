@@ -58,7 +58,9 @@ function stampSrc(pkgDir: string): string {
 }
 
 /** every shipped browser bundle: the lib/client.js files under
- * packages/ (the tsdown preset emits exactly one per consumer). */
+ * packages/ — flat (a lone src/client.ts) or the directory module
+ * (src/client/index.ts → lib/client/index.js, the tsc flat-lib law).
+ * The tsdown preset is dead; the build-plane tsc walk owns emit. */
 function clientBundles(): string[] {
   const found: string[] = [];
   const walk = (dir: string): void => {
@@ -73,7 +75,10 @@ function clientBundles(): string[] {
       }
       if (st.isDirectory()) {
         walk(full);
-      } else if (entry === "client.js" && dir.endsWith("lib")) {
+      } else if (
+        (entry === "client.js" && dir.endsWith("lib")) ||
+        (entry === "index.js" && dir.endsWith(join("lib", "client")))
+      ) {
         found.push(relative(ROOT, full));
       }
     }
@@ -151,14 +156,21 @@ describe("the estate singleton law — one binder per bundle, stamped honest", (
 
   it("STAMP PLANE: every client bundle's .src-stamp matches its src tree", () => {
     const bundles = clientBundles();
-    const stamped = bundles.filter((b) => existsSync(join(ROOT, dirname(b), ".src-stamp")));
+    // the stamp lives at the lib root — lib/.src-stamp — also for the
+    // directory-module bundle (lib/client/index.js)
+    const stamped = bundles.filter((b) => {
+      const d = dirname(b);
+      return existsSync(join(ROOT, d.endsWith("client") ? dirname(d) : d, ".src-stamp"));
+    });
     // MUTATION KILLED: a stale stamp floor — if no bundle carries a
     // stamp the wall passes vacuously; the shipped five must.
     expect(stamped.length, "the shipped client bundles must all carry .src-stamp").toBeGreaterThanOrEqual(5);
     for (const bundle of stamped) {
-      const pkg = dirname(dirname(bundle));
+      const d = dirname(bundle);
+      const libDir = d.endsWith("client") ? dirname(d) : d;
+      const pkg = dirname(libDir);
       const want = stampSrc(pkg);
-      const have = readFileSync(join(ROOT, dirname(bundle), ".src-stamp"), "utf8").trim();
+      const have = readFileSync(join(ROOT, libDir, ".src-stamp"), "utf8").trim();
       // MUTATION KILLED: editing card-base's binder (or any studio
       // src) and committing without rebuilding — the stamp stops
       // matching and the lane's year-immutable cache would serve the

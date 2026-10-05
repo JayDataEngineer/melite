@@ -3,15 +3,15 @@
  * no logic changes).
  */
 import type { VideoVariant } from "@melite/contracts"
-import type { GetState, SetState } from "./createStore"
-import { MAX_VARIANTS_PER_SEGMENT, variantUid } from "./timelineIds"
+import type { GetState, SetState } from "./createStore.ts"
+import { MAX_VARIANTS_PER_SEGMENT, variantUid } from "./timelineIds.ts"
 // the segment defaults are the CONTRACTS' (the same owner
 // timelinePersistence and timelineSegments read — one default table)
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts"
-import type { VariantInput } from "./timelineIds"
-import { pushHistory } from "./timelineHistory"
-import { schedulePersist } from "./timelinePersistence"
-import type { TimelineStore } from "./timelineStoreTypes"
+import type { VariantInput } from "./timelineIds.ts"
+import { pushHistory } from "./timelineHistory.ts"
+import { schedulePersist } from "./timelinePersistence.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export function createVariantSlice(
   set: SetState<TimelineStore>,

@@ -3,13 +3,20 @@
   "version": "0.3.1",
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
-    "./doors": "./src/doors.ts"
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json",
+    "./doors": {
+      "types": "./lib/doors.d.ts",
+      "default": "./lib/doors.js"
+    }
   },
   "scripts": {
-    "build": "tsdown src/index.ts src/doors.ts --format esm --dts --outDir lib",
-    "typecheck": "tsc --noEmit",
-    "test:smoke": "node test/smoke.mjs"
+    "build": "tsc -p tsconfig.build.json",
+    "test:smoke": "node test/smoke.mjs",
+    "typecheck": "tsc --noEmit"
   },
   "dsh": {
     "bundle": {
@@ -49,5 +56,10 @@
   },
   "peerDependencies": {
     "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

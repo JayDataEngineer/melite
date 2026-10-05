@@ -1,9 +1,9 @@
 import * as THREE from "three"
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
-import { buildGeometry, computeMeshLiftY } from "./poseStageMesh"
-import { CM_TO_M } from "./poseStageSkeleton"
-import type { ReferenceManipHandle } from "./poseStageManipulators"
-import type { PoseStageProps, ReferenceBundle } from "./poseStageTypes"
+import { buildGeometry, computeMeshLiftY } from "./poseStageMesh.ts"
+import { CM_TO_M } from "./poseStageSkeleton.ts"
+import type { ReferenceManipHandle } from "./poseStageManipulators.ts"
+import type { PoseStageProps, ReferenceBundle } from "./poseStageTypes.ts"
 
 // ══ ReferenceMesh carrier ═══════════════════════════════════════════
 export function createReferenceCarrier(deps: { liftGroup: THREE.Group; refManip: ReferenceManipHandle }) {

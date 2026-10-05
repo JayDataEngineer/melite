@@ -1,0 +1,1 @@
+{"version":3,"file":"applyGuard.d.ts","sourceRoot":"","sources":["../src/applyGuard.ts"],"names":[],"mappings":"AAAA;;;;;;;;;;;;;;;;;GAiBG;AACH,MAAM,WAAW,UAAU;IACzB,2EAA2E;IAC3E,KAAK,IAAI,OAAO,CAAA;IAChB,uDAAuD;IACvD,OAAO,IAAI,IAAI,CAAA;CAChB;AAED,wBAAgB,gBAAgB,CAAC,KAAK,EAAE,MAAM,EAAE,IAAI,GAAE;IAAE,aAAa,CAAC,EAAE,OAAO,CAAA;CAAO,GAAG,UAAU,CAiBlG"}

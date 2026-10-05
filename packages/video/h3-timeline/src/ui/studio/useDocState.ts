@@ -5,9 +5,9 @@
  */
 import { useEffect, useRef, useState } from "react"
 import type { CardStage } from "@melite/contracts"
-import type { DocCall, DocKeyframe, LayerA } from "./docModel"
-import { hydrateLayerA, serializeLayerA } from "./docHydrate"
-import { hydrateCalls, hydrateKeyframes, serializeCalls, corruptCallsField } from "./docCalls"
+import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import { hydrateLayerA, serializeLayerA } from "./docHydrate.ts"
+import { hydrateCalls, hydrateKeyframes, serializeCalls, corruptCallsField } from "./docCalls.ts"
 
 /** Document state (tenant §1). Verbatim lines 1536–1560. */
 export function useDocState(stage: CardStage) {

@@ -5,18 +5,18 @@
  * @module @deepseek-ai/dsh-typert-protocol
  */
 import { Context, Service } from '@deepseek-ai/cordis';
-import type { TypertContextMap } from './types.ts';
-export { RemoteError, remoteErrorOf } from './remote-error.ts';
-export { TYPERT_OWNED_VALUE, isTypertOwnedValue, typertOwnedValue } from './owned-value.ts';
-export type { TypertOwnedValue } from './owned-value.ts';
-export { isRemoteJsonValue, isRemoteUplinkItem } from './json-value.ts';
+import type { TypertContextMap } from './types.js';
+export { RemoteError, remoteErrorOf } from './remote-error.js';
+export { TYPERT_OWNED_VALUE, isTypertOwnedValue, typertOwnedValue } from './owned-value.js';
+export type { TypertOwnedValue } from './owned-value.js';
+export { isRemoteJsonValue, isRemoteUplinkItem } from './json-value.js';
 /**
  * Test one generated Remote name against the Connection endpoint grammar.
  * @param value - namespace, method, lookup, or Context segment.
  * @returns whether the value can cross the shared RPC carrier unchanged.
  */
 export declare function isTypertRemoteSegment(value: string): boolean;
-export type { InvocationDescriptor, InvocationParameterDescriptor, InvocationSourceLocation, PeerId, PeerScope, RemoteErrorCode, RemoteErrorDetailsMap, RemoteFailure, RemoteInvocation, RemoteResult, RemoteStream, RemoteStreamHandle, TypertClientEventListener, TypertClientRemote, TypertClientContextAdapter, TypertCodec, TypertContext, TypertContextMap, TypertContextRegistry, TypertContextWire, TypertDisposer, TypertForwardableEvent, TypertForwardableEventEntry, TypertHostContextAdapter, TypertHostContextResolver, TypertLocalRegistry, TypertLookup, TypertLookupDefinition, TypertLookupHost, TypertLookupMap, TypertLookupProvider, TypertLookupResolver, TypertLookupRegistry, TypertLookupWire, TypertRemoteScopeApi, TypertRemoteScopeMap, TypertRemoteScopeNamespace, TypertRemoteContribution, TypertRemoteEvent, TypertRemoteEventSelection, TypertRemoteMap, TypertRemoteNamespace, TypertRemoteNamespaceMap, TypertRemoteRegistry, TypertRegistryChange, TypertRegistryListener, TypertSchema, TypertRegistryContract, } from './types.ts';
+export type { InvocationDescriptor, InvocationParameterDescriptor, InvocationSourceLocation, PeerId, PeerScope, RemoteErrorCode, RemoteErrorDetailsMap, RemoteFailure, RemoteInvocation, RemoteResult, RemoteStream, RemoteStreamHandle, TypertClientEventListener, TypertClientRemote, TypertClientContextAdapter, TypertCodec, TypertContext, TypertContextMap, TypertContextRegistry, TypertContextWire, TypertDisposer, TypertForwardableEvent, TypertForwardableEventEntry, TypertHostContextAdapter, TypertHostContextResolver, TypertLocalRegistry, TypertLookup, TypertLookupDefinition, TypertLookupHost, TypertLookupMap, TypertLookupProvider, TypertLookupResolver, TypertLookupRegistry, TypertLookupWire, TypertRemoteScopeApi, TypertRemoteScopeMap, TypertRemoteScopeNamespace, TypertRemoteContribution, TypertRemoteEvent, TypertRemoteEventSelection, TypertRemoteMap, TypertRemoteNamespace, TypertRemoteNamespaceMap, TypertRemoteRegistry, TypertRegistryChange, TypertRegistryListener, TypertSchema, TypertRegistryContract, } from './types.js';
 /** Options for an explicit Service-to-Gateway binding. */
 export interface TypertGatewayBindingOptions {
     /** Wire namespace; defaults to the Cordis service key. */

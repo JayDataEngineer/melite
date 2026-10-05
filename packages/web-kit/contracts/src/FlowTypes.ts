@@ -1,7 +1,7 @@
 // Flow types — the ONE flow document data model (built from stage
 // descriptors or hydrated from a run/spec).
-import type { CompoundMode, CompoundBlock } from "./card"
-import type { Provenance } from "./vocab"
+import type { CompoundMode, CompoundBlock } from "./card.ts"
+import type { Provenance } from "./vocab.ts"
 //
 // ARCHITECTURE:
 // User intent ("make a waifu") or capability tile

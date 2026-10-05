@@ -1,5 +1,5 @@
 import { azimuthCameraPos } from "@melite/formats"
-import type { CameraFraming } from "./poseStageTypes"
+import type { CameraFraming } from "./poseStageTypes.ts"
 
 // ── Camera math (verbatim; re-exported by PoseViewer3D for the studio) ────
 export function cameraPosFor(view: string): [number, number, number] {

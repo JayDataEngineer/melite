@@ -7,7 +7,7 @@ import { useCallback, useEffect, useMemo, useRef } from "react"
 import type { Dispatch, SetStateAction } from "react"
 import type { CardStage } from "@melite/contracts"
 import { readAsDataURL } from '@melite/card-base/client'
-import type { LayerA, SetLayerAKey } from "./docModel"
+import type { LayerA, SetLayerAKey } from "./docModel.ts"
 
 /** Davinci map, artifact index, positioned audio clips + the mixer
  *  (tenant §5). Verbatim lines 1731–1946. */

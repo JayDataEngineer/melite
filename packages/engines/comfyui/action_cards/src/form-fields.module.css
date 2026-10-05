@@ -1,0 +1,101 @@
+/* form-fields — chrome for the local field primitives (NumberField
+   scrub box + range fill + edit input, the invisible ScrubInput
+   overlay, scroll viewport, tab-panel hide). Accent rides the DSH
+   accent token. */
+
+/* ── NumberField ─────────────────────────────────────────────── */
+.numberField {
+  display: block;
+}
+
+.fieldLabel {
+  display: block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+.numberBox {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  transition: border-color 0.15s ease;
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.numberBoxEditing {
+  cursor: text;
+  border-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.numberBox:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+}
+
+.numberBox:focus-within {
+  border-color: var(--dsw-alias-accent, #3b82f6);
+}
+
+.numberFill {
+  pointer-events: none;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.numberInput {
+  position: relative;
+  width: 100%;
+  background: transparent;
+  padding: 2px 6px;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dsw-alias-label-primary, #0f1115);
+  outline: none;
+}
+
+/* ── ScrubInput (the invisible overlay scrubber) ─────────────── */
+.scrub {
+  position: absolute;
+  inset: 0;
+  height: 100%;
+  width: 100%;
+  cursor: pointer;
+  opacity: 0;
+}
+
+/* ── ScrollArea (native overflow viewport) ───────────────────── */
+.scrollRoot {
+  position: relative;
+  overflow: hidden;
+}
+
+.scrollViewport {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: inherit;
+  outline: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+}
+
+/* ── TabsContent (inactive panes stay mounted but hidden — the
+   kit Base-UI behavior the data-[state=inactive]:hidden classes
+   described) ─────────────────────────────────────────────────── */
+.tabsContent[data-state="inactive"] {
+  display: none;
+}

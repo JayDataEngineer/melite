@@ -5,6 +5,9 @@
 // their form-specs. The voice-lock card's design half, moved into
 // the TTS card's mods 2026-09-21).
 import type { Context } from '@deepseek-ai/cordis'
+// the Context merge (ctx.comfyui) lives in the service module —
+// pulling the type seats the augmentation in this program
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 export const inject = ['comfyui']
 

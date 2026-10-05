@@ -1,5 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react'
-import { useTimelineStore } from "../store"
+import { useTimelineStore } from "../store/index.ts"
 import { computeWaveformLODs } from '@melite/catalog'
 
 export function useAudioPlayback() {

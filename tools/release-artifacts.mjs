@@ -17,11 +17,12 @@
 //
 // Plain node, no deps beyond git + pnpm + gh (the same trio every
 // gate already rides). Exit 0 = verified; exit 1 = anything short.
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts }).trim()
 const git = (...a) => run('git', a)
@@ -56,7 +57,73 @@ function releaseJson (tag) {
   try { return JSON.parse(run('gh', ['api', `repos/${REPO}/releases/tags/${tag}`])) } catch { return null }
 }
 
-function mint (opts) {
+/** G3 — exports rows, extracted from the entry gate: promise law
+ *  (every literal target ships in the tarball), plus the alpha.2
+ *  tightenings: wildcard rows require their base dir in the listing,
+ *  and the verified literals feed G5. Pure: throws on violation, so
+ *  the wall suite (release-artifact-plane.spec.ts) can drive it with
+ *  synthetic tarballs. */
+export function exportsRows (inner, listing, tarName) {
+  const literals = []
+  if (!inner.exports) return literals
+  for (const [key, value] of Object.entries(inner.exports)) {
+    if (key === 'package.json') continue
+    const targets = typeof value === 'string' ? [value]
+      : typeof value === 'object' && value !== null ? Object.values(value).filter((t) => typeof t === 'string') : []
+    for (const t of targets) {
+      const norm = t.replace(/^\.\//, '')
+      if (norm === 'package.json') continue
+      if (norm.includes('*')) {
+        const base = norm.split('*')[0]
+        if (!listing.some((l) => l.startsWith(`package/${base}`))) {
+          throw new Error(`exports gate: ${tarName} wildcard "${t}" has no base dir "package/${base}" in the tarball`)
+        }
+        continue
+      }
+      if (!listing.includes(`package/${norm}`)) {
+        throw new Error(`entry gate: ${tarName} exports "${t}" but the tarball does not contain it — fix package.json files`)
+      }
+      literals.push(norm)
+    }
+  }
+  return literals
+}
+
+/** G2 — PAYLOAD PLANE (the DSH pack.ts law, ported): source never
+ *  ships. Any src/** member, .ts/.tsx exports target or main, or
+ *  source-map file refuses the mint. Declarations (.d.ts) are
+ *  artifacts, not source; directory entries are not files. Pure:
+ *  throws on violation. */
+export function validateTarballPayload (inner, listing, tarName) {
+  for (const member of listing) {
+    if (member.endsWith('/')) continue
+    if (/^package\/src\//.test(member)) throw new Error(`payload gate: ${tarName} ships source member ${member}`)
+    if (/\.(js|d\.ts)\.map$/.test(member)) throw new Error(`payload gate: ${tarName} ships source map ${member}`)
+  }
+  const sourceTarget = (t) => /\.(ts|tsx)$/.test(t) && !/\.d\.ts$/.test(t)
+  for (const [key, value] of Object.entries(inner.exports ?? {})) {
+    const targets = typeof value === 'string' ? [value] : Object.values(value ?? {}).filter((t) => typeof t === 'string')
+    for (const t of targets) if (sourceTarget(t)) throw new Error(`payload gate: ${tarName} ${key} targets source "${t}"`)
+  }
+  if (typeof inner.main === 'string' && sourceTarget(inner.main)) {
+    throw new Error(`payload gate: ${tarName} main targets source "${inner.main}"`)
+  }
+}
+
+/** G4 — ENTRY CLASSIFICATION: no `.` row is importable-dead for a
+ *  plain-Node consumer unless declared subpath-only with a reason.
+ *  Pure: throws on violation, logs the declared pass. */
+export function classifyEntry (inner, tarName) {
+  if (inner.exports && !inner.exports['.']) {
+    const decl = inner.melite?.publish?.subpathOnly
+    if (decl !== true || typeof inner.melite?.publish?.reason !== 'string' || !inner.melite.publish.reason) {
+      throw new Error(`entry gate: ${tarName} has no "." exports row and no melite.publish.subpathOnly declaration — give it a real entry`)
+    }
+    console.log(`  ${tarName}: subpath-only (${inner.melite.publish.reason})`)
+  }
+}
+
+async function mint (opts) {
   const dirty = git('status', '--porcelain')
   if (dirty) fail(`work tree is dirty — commit first:\n${dirty}`)
   const tag = resolveTag(opts.tag)
@@ -69,35 +136,38 @@ function mint (opts) {
   }
   const dest = mkdtempSync(join(tmpdir(), 'melite-release-'))
   try {
+    // G1 — BUILD PLANE (packages-alpha3-release-audit): the mint packs
+    // built lib/, never source. Every workspace member builds from the
+    // CURRENT tree before pack; the estate/vendor tier ships tracked,
+    // reference-built lib and is asserted by G2/G5 below.
+    console.log('G1: building every workspace member (artifact plane) …')
+    execFileSync(process.execPath, [join(import.meta.dirname, 'build-plane.mjs'), 'build'], { stdio: 'inherit' })
     console.log(`packing workspace @ ${commit.slice(0, 8)} …`)
     execFileSync(pnpmBin(), ['-r', 'pack', '--pack-destination', dest], { stdio: 'inherit' })
     const files = run('bash', ['-c', `ls ${dest}/*.tgz`]).split('\n').filter(Boolean)
     if (files.length === 0) fail('pnpm packed zero tarballs — refusing an empty artifact set')
-    // THE ENTRY GATE (2026-10-16, the consumer-side receipt): a
-    // files allowlist that omits the package's own exports entry
-    // ships an importable-dead tarball — npm pack drops what the
-    // manifest does not list. Every tarball's manifest is read from
-    // INSIDE the tar and each literal exports target must be present
-    // in the listing. Refuse the whole mint on any miss.
+    const innerFiles = new Map()
+
     for (const f of files) {
+      const tarName = f.split('/').pop()
       const listing = run('tar', ['-tzf', f]).split('\n').filter(Boolean)
-      const inner = JSON.parse(run('bash', ['-c',
-        `tar -xzOf ${f} package/package.json`]))
-      if (!inner.exports) continue
-      for (const [key, value] of Object.entries(inner.exports)) {
-        if (key === 'package.json') continue
-        const targets = typeof value === 'string' ? [value]
-          : typeof value === 'object' && value !== null ? Object.values(value).filter((t) => typeof t === 'string') : []
-        for (const t of targets) {
-          const norm = t.replace(/^\.\//, '')
-          if (norm === 'package.json' || norm.includes('*')) continue
-          if (!listing.includes(`package/${norm}`)) {
-            fail(`entry gate: ${f.split('/').pop()} exports "${t}" but the tarball does not contain it — fix package.json files`)
-          }
-        }
-      }
+      const inner = JSON.parse(run('bash', ['-c', `tar -xzOf ${f} package/package.json`]))
+
+      try {
+        validateTarballPayload(inner, listing, tarName)
+        classifyEntry(inner, tarName)
+        innerFiles.set(tarName, { f, literals: exportsRows(inner, listing, tarName) })
+      } catch (e) { fail(e.message) }
     }
-    console.log(`entry gate: ${files.length} tarballs carry every exports target`)
+    console.log(`entry gate: ${files.length} tarballs carry every exports target; payload plane clean`)
+
+    // G5 — EXECUTABILITY PROBE (the alpha.2 killer): every literal
+    // exports row of every tarball imports under PLAIN NODE from a
+    // bare extract with deps stubbed. See probeExecutability.
+    try {
+      await probeExecutability(innerFiles)
+    } catch (e) { fail(e.message) }
+
     const manifest = {
       manifest: 1,
       tag,
@@ -115,6 +185,50 @@ function mint (opts) {
     run('gh', ['release', 'upload', tag, ...files.map((f) => f), manifestPath, '--clobber'])
     console.log(`✓ ${tag}: ${files.length} tarballs + release-manifest.json @ ${commit.slice(0, 8)}`)
   } finally { rmSync(dest, { recursive: true, force: true }) }
+}
+
+/** G5: bare-extract + plain-node import of every literal exports row.
+ *  External deps are stubbed through the module.register() loader pair
+ *  in tools/exec-stub-loader.mjs (tracked file — no inline source).
+ *  A bare-specifier miss is a probe artifact (the release closure
+ *  installs deps); a relative miss inside the extract is an in-package
+ *  byte defect and refuses the mint. */
+export async function probeExecutability (innerFiles) {
+  const probeDir = mkdtempSync(join(tmpdir(), 'melite-exec-probe-'))
+  try {
+    const loader = join(import.meta.dirname, 'exec-stub-loader.mjs')
+    for (const [tarName, { f, literals }] of innerFiles) {
+      const extract = join(probeDir, tarName.replace(/\.tgz$/, ''))
+      run('mkdir', ['-p', extract])
+      run('tar', ['-xzf', f, '-C', extract])
+      const pkgDir = join(extract, 'package')
+      for (let row of literals) {
+        if (!row.startsWith('./')) row = './' + row
+        // types rows (.d.ts) are compile-time doors — plain Node cannot
+        // import a declaration file, and their internal specifiers are
+        // proven by the entry gate (existence) plus the consumer-side
+        // typecheck walls. Skip loudly, never silently.
+        if (row.endsWith('.d.ts')) {
+          console.log(`  probe: ${tarName} ${row} — types door (compile-time; entry gate proved it ships)`)
+          continue
+        }
+        const entry = join(pkgDir, row)
+        const boot = `import { register } from 'node:module'; import { pathToFileURL } from 'node:url'; ` +
+          `register(${JSON.stringify(pathToFileURL(loader).href)}, pathToFileURL(${JSON.stringify(pkgDir + '/')})); ` +
+          `await import(pathToFileURL(${JSON.stringify(entry)}).href);`
+        const r = spawnSync(process.execPath, ['--no-warnings', '--import', `data:text/javascript,${encodeURIComponent(boot)}`], { encoding: 'utf8', cwd: pkgDir })
+        if (r.status === 0) continue
+        const errText = r.stderr || ''
+        const pkgMiss = errText.match(/Cannot find package '([^']+)'/)
+        if (pkgMiss && !pkgMiss[1].startsWith('.') && !pkgMiss[1].startsWith('@melite') && !pkgMiss[1].startsWith('@melite-plugin')) {
+          console.log(`  probe: ${tarName} ${row} — dep "${pkgMiss[1]}" not stubbed (closure installs it; recorded, not refused)`)
+          continue
+        }
+        throw new Error(`executability gate: ${tarName} ${row} does not import under plain node:\n${errText.split('\n').slice(0, 12).join('\n')}`)
+      }
+      console.log(`  probe: ${tarName} — ${literals.length} rows import under plain node`)
+    }
+  } finally { rmSync(probeDir, { recursive: true, force: true }) }
 }
 
 function verify (opts) {
@@ -163,9 +277,15 @@ function verify (opts) {
     : `local HEAD ${localHead.slice(0, 8)} is ${ahead} commit(s) PAST ${tag} — the release does not carry those; tag + mint when you want them shipped`)
 }
 
-const [verb, ...rest] = process.argv.slice(2)
-const opts = {}
-for (let i = 0; i < rest.length; i += 2) if (rest[i] === '--tag') opts.tag = rest[i + 1]
-if (verb === 'mint') mint(opts)
-else if (verb === 'verify') verify(opts)
-else fail('usage: node tools/release-artifacts.mjs <mint|verify> [--tag vX.Y.Z]')
+// CLI boundary: only dispatch when invoked directly — the wall suite
+// (release-artifact-plane.spec.ts) requires this module for its gates
+// and must not run mint/verify against vitest's argv.
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
+if (invokedDirectly) {
+  const [verb, ...rest] = process.argv.slice(2)
+  const opts = {}
+  for (let i = 0; i < rest.length; i += 2) if (rest[i] === '--tag') opts.tag = rest[i + 1]
+  if (verb === 'mint') mint(opts).catch((err) => { console.error(err); process.exitCode = 1 })
+  else if (verb === 'verify') verify(opts)
+  else fail('usage: node tools/release-artifacts.mjs <mint|verify> [--tag vX.Y.Z]')
+}

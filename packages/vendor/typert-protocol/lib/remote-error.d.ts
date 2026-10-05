@@ -1,5 +1,5 @@
 /** The one Remote failure class shared by owners, the Gateway, and consumers. */
-import type { RemoteErrorCode, RemoteErrorDetailsMap, RemoteFailure } from './types.ts';
+import type { RemoteErrorCode, RemoteErrorDetailsMap, RemoteFailure } from './types.js';
 /**
  * One Remote call failure: a real Error carrying its stable code and typed
  * details. Owners throw it at the failure point; the Host Gateway encodes it

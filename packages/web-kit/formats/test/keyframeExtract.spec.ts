@@ -2,7 +2,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { extractKeyframeFrames, frameVelocities } from "../src/keyframeExtract.ts";
-import type { PromptSegmentOutput } from "@melite/catalog";
+import type { PromptSegmentOutput } from "../src/textToPose.ts";
 
 /** Constant-pose motion: T frames, every joint at the origin. */
 const still = (frames: number, joints = 3): number[][][] =>

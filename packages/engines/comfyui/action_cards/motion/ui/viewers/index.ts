@@ -8,7 +8,7 @@
  * surfaces/assets 2026-08-21: NPZ motion preview is motion domain; kernel
  * AssetMedia consumes it through the declared workspace edge.
  */
-export * from "./MotionViewer";
-export { default as MotionViewer } from "./MotionViewer";
-export * from "./MotionPoster";
-export * from "./motionImageStore";
+export * from "./MotionViewer.tsx";
+export { default as MotionViewer } from "./MotionViewer.tsx";
+export * from "./MotionPoster.tsx";
+export * from "./motionImageStore.ts";

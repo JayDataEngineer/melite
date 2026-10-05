@@ -13,8 +13,8 @@
 import type { CardStage } from "@melite/contracts"
 import { Modal } from "@deepseek-ai/dsh-client-ui-primitives"
 import { clsx } from "clsx"
-import { Link2 } from "./icons"
-import { isImageUrl } from "./square"
+import { Link2 } from "./icons.tsx"
+import { isImageUrl } from "./square.tsx"
 import styles from "./card.module.css"
 
 export interface WirePickerModalProps {

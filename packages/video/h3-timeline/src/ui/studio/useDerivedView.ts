@@ -7,12 +7,12 @@ import { useMemo, useState } from "react"
 import type { CardStage } from "@melite/contracts"
 import { isImageUrl } from "@melite/card-base/client"
 import { PROMPT_COLORS } from "@melite-plugin/timeline/ui/timeline"
-import type { DocCall, DocKeyframe, LayerA } from "./docModel"
-import { callsToPrompts, keyframesToLanes } from "./docCalls"
+import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import { callsToPrompts, keyframesToLanes } from "./docCalls.ts"
 import { refGenreOf } from '@melite/models-h3/timelineContract'
-import type { LinkArtifact } from "./refUtils"
-import type { TimelineSelection } from "./useViewSelection"
-import type { useFilmAudio } from "./useFilmAudio"
+import type { LinkArtifact } from "./refUtils.ts"
+import type { TimelineSelection } from "./useViewSelection.ts"
+import type { useFilmAudio } from "./useFilmAudio.ts"
 
 type FilmMap = ReturnType<typeof useFilmAudio>["filmMap"]
 type FilmFromDoc = ReturnType<typeof useFilmAudio>["filmFromDoc"]

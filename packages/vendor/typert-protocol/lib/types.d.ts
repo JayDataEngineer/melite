@@ -5,7 +5,7 @@
  */
 import type { Context, Events } from '@deepseek-ai/cordis';
 import type { Branded } from '@deepseek-ai/dsh-brand';
-import type { TypertOwnedValue } from './owned-value.ts';
+import type { TypertOwnedValue } from './owned-value.js';
 declare const LOOKUP_HOST: unique symbol;
 declare const LOOKUP_WIRE: unique symbol;
 declare const CONTEXT_WIRE: unique symbol;
@@ -55,7 +55,7 @@ export type RemoteErrorCode = keyof RemoteErrorDetailsMap;
  * instances, so a `code` branch narrows `details` with no cast.
  */
 export type RemoteFailure = {
-    [Code in RemoteErrorCode]: import('./remote-error.ts').RemoteError<Code>;
+    [Code in RemoteErrorCode]: import('./remote-error.js').RemoteError<Code>;
 }[RemoteErrorCode];
 /**
  * What every generated Remote method resolves to. The Remote face itself folds

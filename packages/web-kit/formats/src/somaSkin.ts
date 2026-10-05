@@ -20,7 +20,7 @@
  * was a poser-route artifact that doesn't apply here.
  */
 
-import { parseNpz, type NpyArray } from "./npz"
+import { parseNpz, type NpyArray } from "./npz.ts"
 import { apiFetch } from "@melite/catalog"
 
 // The skin is a DECLARED provision on the kimodo family (models/

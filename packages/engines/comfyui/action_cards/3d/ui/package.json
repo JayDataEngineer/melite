@@ -2,11 +2,13 @@
   "name": "@melite-plugin/3d",
   "version": "0.1.1",
   "type": "module",
-  "main": "./viewers/index.ts",
   "types": "./viewers/index.ts",
   "exports": {
     "./package.json": "./package.json",
-    "./ui/railTabs": "./railTabs.tsx"
+    "./ui/railTabs": {
+      "types": "./lib/railTabs.d.ts",
+      "default": "./lib/railTabs.js"
+    }
   },
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
@@ -15,6 +17,20 @@
     "@melite/formats": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "*"
-  }
+    "three": "*",
+    "@melite/cards": "workspace:*"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/react": "^19"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css",
+    "src/*.module.css"
+  ]
 }

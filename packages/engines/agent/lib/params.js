@@ -1,0 +1,236 @@
+// params.ts — THE AGENT STAGE'S DECLARED CONTRACT (stroke 66, the
+// operator's anti-drift law: "DSH github has contracts that ensure
+// that fields conform for anti-drift, make sure you do the same").
+//
+// THE LAW (the estate's card precedent, cited): every card's
+// schemastery schema is BOTH the compose gate AND the served form
+// (`carrier.toJSON()` at the service, `def.schema(params)` at the
+// door) — ONE declared object, zero drift between what the form
+// renders and what the engine validates. The vocab module states
+// the row-level law: "ONE row gives the dropdown AND the membership
+// refusal". THIS FILE is that law for engine 'agent' stages.
+//
+// Three consumers, one truth each:
+//   1. agentParams            — the schemastery object; the form doc
+//                               serializes THIS object (toJSON); the
+//                               flat fields carry layout metadata.
+//   2. agentModKinds(census)  — the mod kinds (the plus-box grammar:
+//                               mcps/skills/inputs bags). The entry
+//                               field names are CONSTANTS shared with
+//                               the normalizer — the form's grammar
+//                               cannot drift from the wire's.
+//   3. normalizeAgentStageParams — the executor's gate: canonical
+//                               strings OR form-bag entries → the
+//                               canonical shape, LOUD on anything
+//                               else (the estate's message law).
+import z from "@deepseek-ai/schemastery";
+/** The MCP bag entry's catalog field (the form's select binds this
+ *  name; the normalizer reads the same constant). */
+export const MCP_ENTRY_FIELD = "server";
+/** The skills bag entry's catalog field. */
+export const SKILL_ENTRY_FIELD = "skill";
+/** THE CONTRACT OBJECT — the served form serializes this (toJSON)
+ * and the type conformance is declared here, never re-hand-rolled.
+ * Layout metadata rides .extra (the card schema grammar): task is
+ * the brief's textarea; model names a brain route; max_turns bounds
+ * the loop (default unlimited). mcps/skills/inputs are MOD-OWNED
+ * (the kinds' param_keys — the mod law excludes them from the flat
+ * groups); they are declared here for the wire's truth, not for
+ * flat rendering. */
+const taskField = z.string().role("free").description("Task")
+    .extra("extra", {
+    order: 1, group: "brief", width: 2, wtype: "textarea",
+    tooltip: "The brief — what the subagent must get done. Concrete and checkable.",
+});
+/** THE KNOWN BRAINS (operator 2026-09-21: a dropdown of known
+ *  routes): the ledger-proven opencode routes, blank-first (blank
+ *  serves the lane's seated brain whatever it booted). Static BY
+ *  CHOICE — the estate runs no boot-time route enumeration, so a
+ *  live census is not on offer; and the executor's parseRoute
+ *  refuses a rotted row LOUD at Run (never a silent
+ *  substitution). */
+export const KNOWN_BRAINS = [
+    { value: "", label: "Lane brain (seated)" },
+    { value: "opencode-go/muse-spark", label: "Muse Spark" },
+    { value: "opencode-go/muse-spark-1.3-contributor", label: "Muse Spark 1.3" },
+];
+const brainField = z.union(KNOWN_BRAINS.map((b) => z.const(b.value).description(b.label))).description("Brain")
+    .default("")
+    .extra("extra", {
+    order: 0, group: "brief", width: 2, wtype: "select",
+    tooltip: "The subagent's model — blank serves the lane's seated brain (MELITE_AGENT_ROUTE).",
+});
+const modelField = z.string().role("free").description("Brain route")
+    .extra("extra", {
+    order: 2, group: "brief", width: 2,
+    tooltip: '"provider/model" — the boot-seated route (MELITE_AGENT_ROUTE) serves when empty.',
+});
+const mcpsField = z.array(z.any()).description("MCPs")
+    .extra("extra", {
+    order: 1, group: "mods", width: 2,
+    tooltip: "The allow-list: each entry grants one MCP server's tools (mcp__<server>__*).",
+});
+const skillsField = z.array(z.any()).description("Skills")
+    .extra("extra", {
+    order: 2, group: "mods", width: 2,
+    tooltip: "Spawn-injected leaves — operating instructions read at stage start.",
+});
+const inputsField = z.array(z.any()).description("Inputs")
+    .extra("extra", {
+    order: 3, group: "mods", width: 2,
+    tooltip: "The plus-box list: {name, value} entries rendered into the brief.",
+});
+const maxTurnsField = z.number().min(1).max(1000).step(1).description("Max turns")
+    .extra("extra", {
+    order: 3, group: "brief", width: 1,
+    tooltip: "Turn bound — default unlimited (the hard circuit breaker is 1000).",
+});
+export const agentParams = z.object({
+    task: taskField,
+    model: modelField,
+    mcps: mcpsField,
+    skills: skillsField,
+    inputs: inputsField,
+    max_turns: maxTurnsField,
+});
+/** THE CARD FACE (the generic MCP card, operator 2026-09-21: "the
+ * configuration is the MCP tools to provide, the inputs, and the
+ * prompts" — agent selection rides the host, never a card field;
+ * 2026-09-21: …plus the operator's Brain dropdown, a field named
+ * 'brain' — never 'model').
+ * Same field declarations, TWO differences BY LAW: no `model` field
+ * — a card-stage field named 'model' is the estate's MODEL KEY (a
+ * pick re-specs the doc), and a brain route is not a spec key; the
+ * Brain dropdown (blank = the boot route MELITE_AGENT_ROUTE serves
+ * the spawn) stamps the engine's own `model` key at the run seam
+ * (stage-run translates — the face never speaks it). The
+ * executor's gate is normalizeAgentStageParams either way. */
+export const agentCardParams = z.object({
+    brain: brainField,
+    task: taskField,
+    mcps: mcpsField,
+    skills: skillsField,
+    inputs: inputsField,
+    max_turns: maxTurnsField,
+});
+/** The mod kinds (the plus-box grammar — the operator's sketch:
+ * "input can function like mods row, where there is always one more
+ * 'plus box' to add another"). FIELD kinds: each entry is its own
+ * object with a select binding the census — stacking tiles IS the
+ * multi-select. The entry field names ride the shared constants. */
+export function agentModKinds(census) {
+    const kinds = [
+        {
+            kind: "agent_mcps",
+            label: "MCPs",
+            param_key: "mcps",
+            cardinality: "list",
+            max_stack: 16,
+            fields: [{
+                    name: MCP_ENTRY_FIELD,
+                    label: "Server",
+                    type: "select",
+                    options: census.mcps.map((r) => ({ value: r.value, label: r.label })),
+                    tooltip: "One seated MCP server — its tools become mcp__<server>__*.",
+                    default: census.mcps.length > 0 ? census.mcps[0].value : "",
+                }],
+        },
+        {
+            kind: "agent_skills",
+            label: "Skills",
+            param_key: "skills",
+            cardinality: "list",
+            max_stack: 16,
+            fields: [{
+                    name: SKILL_ENTRY_FIELD,
+                    label: "Skill",
+                    type: "select",
+                    options: census.skills.map((r) => ({ value: r.value, label: r.label })),
+                    tooltip: "One skill leaf, spawn-injected into the brief at stage start.",
+                    default: census.skills.length > 0 ? census.skills[0].value : "",
+                }],
+        },
+        {
+            kind: "agent_inputs",
+            label: "Inputs",
+            param_key: "inputs",
+            cardinality: "list",
+            max_stack: 32,
+            fields: [
+                { name: "name", label: "Name", type: "string", default: "", tooltip: "The entry's name (rendered into the brief)." },
+                // THE GENERIC INPUT SQUARE (operator, 2026-09-21: "we have a
+                // generic input component… starts out as one square, then it
+                // adds another blank square"): file-typed constructs THE ONE
+                // square through the construction law — upload/drop/upstream
+                // pick; the picked artifact path rides the entry's value.
+                { name: "value", label: "Value", type: "file", default: "", tooltip: "The entry's value — an artifact picked through the square (an estate path rides verbatim)." },
+            ],
+        },
+    ];
+    return kinds;
+}
+const plainObject = (v) => typeof v === "object" && v !== null && !Array.isArray(v);
+/** THE EXECUTOR'S GATE — canonical strings OR form-bag entries fold
+ *  into the canonical shape; every malformed value refuses LOUD
+ *  with the estate's message law (the messages the spec pins). */
+export function normalizeAgentStageParams(raw, where, hardCap) {
+    const task = raw["task"];
+    if (typeof task !== "string" || task.length === 0) {
+        throw new Error(`${where}: 'task' (the brief) is required`);
+    }
+    // THE FOLD (both grammars, one wire): a bare string IS the entry;
+    // an object must carry the shared entry field — never a silent
+    // skip, never a guessed read off the wrong key.
+    const fold = (v, field, name) => {
+        if (typeof v === "string") {
+            if (v.length === 0)
+                throw new Error(`${where}: '${name}' entries must be non-empty strings`);
+            return v;
+        }
+        if (plainObject(v) && typeof v[field] === "string" && v[field].length > 0) {
+            return v[field];
+        }
+        throw new Error(`${where}: '${name}' entries must be non-empty strings (or {${field}: string} rows off the mod form)`);
+    };
+    const list = (v, name) => {
+        if (v === undefined || v === null)
+            return [];
+        if (!Array.isArray(v)) {
+            throw new Error(`${where}: '${name}' must be an array of strings`);
+        }
+        return v;
+    };
+    const mcps = list(raw["mcps"], "mcps").map((e) => fold(e, MCP_ENTRY_FIELD, "mcps"));
+    const skills = list(raw["skills"], "skills").map((e) => fold(e, SKILL_ENTRY_FIELD, "skills"));
+    const inputsRaw = raw["inputs"];
+    const inputs = [];
+    if (inputsRaw !== undefined && inputsRaw !== null) {
+        if (!Array.isArray(inputsRaw)) {
+            throw new Error(`${where}: 'inputs' must be an array of {name, value} entries`);
+        }
+        for (const e of inputsRaw) {
+            if (!plainObject(e) || typeof e["name"] !== "string" || e["name"].length === 0 || !("value" in e)) {
+                throw new Error(`${where}: 'inputs' entries must be objects {name: string, value: any}`);
+            }
+            inputs.push({ name: e["name"], value: e["value"] });
+        }
+    }
+    const maxTurns = raw["max_turns"];
+    if (maxTurns !== undefined &&
+        (typeof maxTurns !== "number" || !Number.isInteger(maxTurns) || maxTurns < 1)) {
+        throw new Error(`${where}: 'max_turns' must be a positive integer (default unlimited)`);
+    }
+    if (maxTurns !== undefined && maxTurns > hardCap) {
+        throw new Error(`${where}: 'max_turns' ${maxTurns} exceeds the hard cap ${hardCap}`);
+    }
+    const model = raw["model"];
+    return {
+        task,
+        ...(model === undefined ? {} : { model: model }),
+        mcps,
+        skills,
+        inputs,
+        ...(maxTurns === undefined ? {} : { max_turns: maxTurns }),
+    };
+}
+//# sourceMappingURL=params.js.map

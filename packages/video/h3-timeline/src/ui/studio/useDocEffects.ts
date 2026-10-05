@@ -5,10 +5,10 @@
  */
 import { useEffect } from "react"
 import type { Dispatch, SetStateAction } from "react"
-import type { DocCall, DocKeyframe, LayerA } from "./docModel"
-import { serializeLayerA } from "./docHydrate"
-import { serializeCalls } from "./docCalls"
-import type { TimelineSelection } from "./useViewSelection"
+import type { DocCall, DocKeyframe, LayerA } from "./docModel.ts"
+import { serializeLayerA } from "./docHydrate.ts"
+import { serializeCalls } from "./docCalls.ts"
+import type { TimelineSelection } from "./useViewSelection.ts"
 
 /** Playhead clamp, selection scroll/stale-guard, persist effects + the Layer A
  *  setter (tenant §4). Verbatim lines 1671–1729. */

@@ -23,7 +23,7 @@
 // vendor/kimodo passes to FullBodyConstraintSet(model_skel, frame_idx,
 // pos, rot, root2d).
 
-import { encodeBufferToB64 } from "./poseCodec"
+import { encodeBufferToB64 } from "./poseCodec.ts"
 // SOMA-77 joint indices (somaskel77_standard_tpose.bvh declaration order).
 // Verified against lib/motionNpz.ts SOMA_TO_COCO (LeftHand=14, RightHand=42,
 // LeftFoot=69, RightFoot=74) + PoseEditMode.END_EFFECTOR_JOINTS +

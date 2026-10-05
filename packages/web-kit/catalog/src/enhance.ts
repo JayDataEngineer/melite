@@ -1,4 +1,4 @@
-import { apiFetch, externalUrl } from "./api"
+import { apiFetch, externalUrl } from "./api.ts"
 
 // The LLM-keystore plane (/v1/llm/keys, /v1/llm/enhance, storyboard,
 // ideogram-ai) is RETIRED (2026-09-05, door-gate kill stroke): the

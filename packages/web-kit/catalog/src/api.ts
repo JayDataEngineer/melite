@@ -49,10 +49,9 @@
 // greppable escape. There is no `string` overload: an unlisted door must not
 // compile. ─────────────────────────────────────────────────────────────────
 
-import type { EstateDoorUrl } from "./generated/gatewayDoors"
-import { readAsDataURL } from "@melite/formats/readFile"
-import { sleep } from "./sleep"
-import { createClientStore } from "./clientStore"
+import type { EstateDoorUrl } from "./generated/gatewayDoors.ts"
+import { sleep } from "./sleep.ts"
+import { createClientStore } from "./clientStore.ts"
 
 /** A URL outside the door table (another service or a same-host row
  * door like /melite-tools/*). Constructible ONLY via externalUrl()
@@ -254,27 +253,3 @@ export async function apiJson<T = unknown>(input: FetchUrl, init?: RequestInit):
   return res.json() as Promise<T>
 }
 
-/** Fetch a same-origin artifact URL and re-encode it as a data URL
- *  (survived the unicananvas client purge 2026-08-21 — the ONE live
- *  export of that dead module; generic wire utility, so it lives with
- *  the transport). */
-export async function urlToDataUrl(
-  url: string,
-  signal?: AbortSignal,
-): Promise<string> {
-  const res = await fetch(url, { signal })
-  if (!res.ok) {
-    throw new Error(
-      `Canvas artifact fetch failed: HTTP ${res.status} for ${url.slice(0, 200)}`,
-    )
-  }
-  const blob = await res.blob()
-  // Shared readAsDataURL (@melite/ui SlotSquare — the ONE read path) —
-  // the URL context is re-attached here so a read failure still names
-  // the artifact that failed.
-  try {
-    return await readAsDataURL(blob)
-  } catch {
-    throw new Error(`Failed to read ${url.slice(0, 200)} as data URL`)
-  }
-}

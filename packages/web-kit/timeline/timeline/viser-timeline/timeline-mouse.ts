@@ -2,15 +2,15 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback } from "react";
-import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import type { TimelineMessage } from "./messages";
-import type { TimelinePrompt } from "./types";
-import { getZoomEnvelopeEndFrame } from "./timeline-scales";
-import { AUTO_PAN_EDGE_PX } from "./timeline-auto-pan";
-import type { TimelineAutoPan } from "./timeline-auto-pan";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state";
-import type { TimelineGeometry } from "./timeline-geometry";
+import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import type { TimelineMessage } from "./messages.ts";
+import type { TimelinePrompt } from "./types.ts";
+import { getZoomEnvelopeEndFrame } from "./timeline-scales.ts";
+import { AUTO_PAN_EDGE_PX } from "./timeline-auto-pan.ts";
+import type { TimelineAutoPan } from "./timeline-auto-pan.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
+import type { TimelineGeometry } from "./timeline-geometry.ts";
 
 export interface TimelineMouseCallbacks {
  onFrameChange?: (frame: number) => void;

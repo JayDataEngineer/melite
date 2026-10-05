@@ -2,14 +2,14 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useEffect } from "react";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import { drawHighlightFrameBox, drawInterval, drawLabelOverlay } from "./draw";
-import { HIGHLIGHT_BORDER_COLOR, HIGHLIGHT_BORDER_WIDTH, HIGHLIGHT_COLOR, HIGHLIGHT_SHADOW_BLUR, HIGHLIGHT_SHADOW_COLOR, HIGHLIGHT_SHADOW_OFFSET_Y } from "./styles";
-import { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments } from "./timeline-scales";
-import type { TimelineMessage } from "./messages";
-import type { CanvasSizeState, TimelinePrompt } from "./types";
-import type { TimelineTheme } from "./styles";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import { drawHighlightFrameBox, drawInterval, drawLabelOverlay } from "./draw.ts";
+import { HIGHLIGHT_BORDER_COLOR, HIGHLIGHT_BORDER_WIDTH, HIGHLIGHT_COLOR, HIGHLIGHT_SHADOW_BLUR, HIGHLIGHT_SHADOW_COLOR, HIGHLIGHT_SHADOW_OFFSET_Y } from "./styles.ts";
+import { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments } from "./timeline-scales.ts";
+import type { TimelineMessage } from "./messages.ts";
+import type { CanvasSizeState, TimelinePrompt } from "./types.ts";
+import type { TimelineTheme } from "./styles.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 
 export interface TimelineForegroundArgs {
  timelineState: TimelineMessage | null;

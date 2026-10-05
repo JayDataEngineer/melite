@@ -3,13 +3,13 @@
  * no logic changes).
  */
 import type { ChapterMarker } from "@melite/contracts"
-import type { GetState, SetState } from "./createStore"
-import { copySegmentParams, pasteParamsInto } from "./segmentClipboard"
-import { uid } from "./timelineIds"
-import { tlClearAll } from "./timelineBlobs"
-import { schedulePersist } from "./timelinePersistence"
-import { DEFAULT_DRAG, DEFAULT_PLAYBACK, DEFAULT_VIEWPORT } from "./timelineStoreTypes"
-import type { TimelineStore } from "./timelineStoreTypes"
+import type { GetState, SetState } from "./createStore.ts"
+import { copySegmentParams, pasteParamsInto } from "./segmentClipboard.ts"
+import { uid } from "./timelineIds.ts"
+import { tlClearAll } from "./timelineBlobs.ts"
+import { schedulePersist } from "./timelinePersistence.ts"
+import { DEFAULT_DRAG, DEFAULT_PLAYBACK, DEFAULT_VIEWPORT } from "./timelineStoreTypes.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export function createUiSlice(
   set: SetState<TimelineStore>,

@@ -2,11 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants";
-import type { TimelineMessage } from "./messages";
-import type { CanvasSizeState } from "./types";
-import { getZoomEnvelopeEndFrame } from "./timeline-scales";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state";
+import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
+import type { TimelineMessage } from "./messages.ts";
+import type { CanvasSizeState } from "./types.ts";
+import { getZoomEnvelopeEndFrame } from "./timeline-scales.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 
 export interface TimelineViewportArgs {
  timelineState: TimelineMessage | null;

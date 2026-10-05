@@ -303,9 +303,9 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
     // packages the export map carries — a fourth built bundle would
     // have joined the ship while this arm watched three. The set is
-    // DISCOVERED from every manifest now and pinned exactly: six
-    // built bundles (./lib/client.js) plus the viewer's hot-loaded
-    // ./src client, which is the one that must NOT be built.
+    // DISCOVERED from every manifest now and pinned exactly: EIGHT
+    // built bundles, every dsh.client seat compiled to lib (the
+    // viewer's src-hot-load note was stale — no consumer serves src).
     const discovered: Array<{ pkg: string; target: string; built: boolean }> = [];
     const walkPkgs = (dir: string, depth: number): void => {
       if (depth > 2) return;
@@ -320,7 +320,10 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
           const client = data.exports?.["./client"];
           const target = typeof client === "string" ? client : client?.default;
           if (typeof target === "string") {
-            discovered.push({ pkg: p, target, built: target.replace("./", "") === "lib/client.js" });
+            // built = an artifact-plane door under lib/ (flat-lib law:
+            // a directory module lands at lib/client/index.js); the
+            // viewer's src-plane door is the hot-load design, not built
+            discovered.push({ pkg: p, target, built: target.startsWith("./lib/") });
           }
         }
         walkPkgs(p, depth + 1);
@@ -330,16 +333,16 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     expect(discovered.map((d) => [d.pkg.replace(`${REPO}/`, ""), d.target, d.built]).sort(),
       "every manifest carrying a ./client export, and whether it is BUILT")
       .toEqual([
-        ["packages/3d/img-to-mesh", "./lib/client.js", true],
-        ["packages/motion/motion", "./lib/client.js", true],
-        ["packages/video/h3-timeline", "./lib/client.js", true],
+        ["packages/3d/img-to-mesh", "./lib/client/index.js", true],
+        ["packages/motion/motion", "./lib/client/index.js", true],
+        ["packages/video/h3-timeline", "./lib/client/index.js", true],
         // THE ONE-ROW LAW: card-base's own graph row — the studio
         // atoms compile once here, every card client requires it.
-        ["packages/web/card-base", "./lib/client.js", true],
-        ["packages/web/infer-gallery", "./lib/client.js", true],
-        ["packages/web/melite-card-deck", "./lib/client.js", true],
-        ["packages/web/melite-card-view", "./lib/client.js", true],
-        ["packages/web/viewer", "./src/client/index.ts", false],
+        ["packages/web/card-base", "./lib/client/index.js", true],
+        ["packages/web/infer-gallery", "./lib/client/index.js", true],
+        ["packages/web/melite-card-deck", "./lib/client/index.js", true],
+        ["packages/web/melite-card-view", "./lib/client/index.js", true],
+        ["packages/web/viewer", "./lib/client/index.js", true],
       ]);
     // the ship's own discovery must therefore carry all seven built
     // bundles — the export-map filter is the same law

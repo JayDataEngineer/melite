@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import { useState } from "react"
-import { H3_ENHANCE_SYSTEM } from "./docModel"
+import { H3_ENHANCE_SYSTEM } from "./docModel.ts"
 
 /** Per-prompt H3-style enhancement (tenant §7). Verbatim lines 2044–2086. */
 export function useEnhance() {

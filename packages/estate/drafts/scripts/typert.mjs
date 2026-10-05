@@ -46,5 +46,10 @@ for (const artifact of results) {
   }
   writeFileSync(join(output, 'typert.remote-client.js'), artifact.remote.js)
   writeFileSync(join(output, 'typert.remote-client.d.ts'), artifact.remote.dts)
+  // SRC-PLANE TWIN (the two-plane law): the merge declarations that
+  // give TypertRemoteMap its rows must exist on the SOURCE plane too
+  // — a typecheck face (paths → src) pulling this package's ./remote
+  // door resolves the same merges the built lib carries.
+  writeFileSync(join(pkgRootAbs, 'src/typert.remote-client.d.ts'), artifact.remote.dts)
   console.log('  remote: lib/typert.remote-client.js', '(' + artifact.remote.js.length + ' chars)')
 }

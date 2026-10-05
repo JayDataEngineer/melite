@@ -4,31 +4,72 @@
   "private": true,
   "type": "module",
   "description": "The comfyui engine's Cordis compose plane + models registry (merged 2026-09-08: the models plane folds in — one package, two services ctx.models + ctx.comfyui). Runtime is node --experimental-strip-types (erasable-syntax TS); no build step. Cards are one-folder units (card-folder-shape design record): card.ts (host face) + ui/ (browser face — deps below exist for the studios' module resolution; the editor's vite/vitest compiles them, the engine tsc program excludes ui/) + agents/ (model context, served by the planes door).",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./catalog-registry": "./src/entries/catalog-registry.ts",
-    "./cli": "./src/cli.ts",
-    "./comfyui-engine": "./src/entries/comfyui-engine.ts",
-    "./comfyui-host": "./src/entries/comfyui-host.ts",
-    "./comfyui-wiring": "./src/entries/comfyui-wiring.ts",
-    "./envelope-laws": "./src/envelope-laws.ts",
-    "./linked": "./src/linked.ts",
-    "./model-contract": "./src/models/families/contract.ts",
-    "./models-service": "./src/models/service.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./catalog-registry": {
+      "types": "./lib/entries/catalog-registry.d.ts",
+      "default": "./lib/entries/catalog-registry.js"
+    },
+    "./cli": {
+      "types": "./lib/cli.d.ts",
+      "default": "./lib/cli.js"
+    },
+    "./comfyui-engine": {
+      "types": "./lib/entries/comfyui-engine.d.ts",
+      "default": "./lib/entries/comfyui-engine.js"
+    },
+    "./comfyui-host": {
+      "types": "./lib/entries/comfyui-host.d.ts",
+      "default": "./lib/entries/comfyui-host.js"
+    },
+    "./comfyui-wiring": {
+      "types": "./lib/entries/comfyui-wiring.d.ts",
+      "default": "./lib/entries/comfyui-wiring.js"
+    },
+    "./envelope-laws": {
+      "types": "./lib/envelope-laws.d.ts",
+      "default": "./lib/envelope-laws.js"
+    },
+    "./linked": {
+      "types": "./lib/linked.d.ts",
+      "default": "./lib/linked.js"
+    },
+    "./model-contract": {
+      "types": "./lib/models/families/contract.d.ts",
+      "default": "./lib/models/families/contract.js"
+    },
+    "./models-service": {
+      "types": "./lib/models/service.d.ts",
+      "default": "./lib/models/service.js"
+    },
     "./package.json": "./package.json",
-    "./params-emit": "./src/params-emit.ts",
-    "./provisioning-manifest": "./scripts/provision-extensions-manifest.ts",
-    "./service": "./src/service.ts",
-    "./user-loras": "./src/userLoras.ts"
+    "./params-emit": {
+      "types": "./lib/params-emit.d.ts",
+      "default": "./lib/params-emit.js"
+    },
+    "./provisioning-manifest": {
+      "types": "./lib/scripts/provision-extensions-manifest.d.ts",
+      "default": "./lib/scripts/provision-extensions-manifest.js"
+    },
+    "./service": {
+      "types": "./lib/service.d.ts",
+      "default": "./lib/service.js"
+    },
+    "./user-loras": {
+      "types": "./lib/userLoras.d.ts",
+      "default": "./lib/userLoras.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build-scripts.json && tsc -p tsconfig.build.json",
     "compose": "node --experimental-strip-types src/cli.ts",
-    "typecheck": "tsc --noEmit",
-    "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts"
+    "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-settings": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/3d-anny": "workspace:*",
@@ -102,6 +143,15 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
   }
 }

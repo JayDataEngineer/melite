@@ -1,0 +1,343 @@
+// All four estate contributions (bench/drafts from estate-drafts,
+// runs, media) — the one-lane law: every estate verb the tab speaks
+// rides these mounted namespaces.
+import { TYPERT_REMOTE } from '@melite/estate-drafts/remote';
+import { TYPERT_REMOTE as RUNS_TYPERT_REMOTE } from '@melite/estate-runs/remote';
+import { TYPERT_REMOTE as MEDIA_TYPERT_REMOTE } from '@melite/estate-media/remote';
+import { TYPERT_REMOTE as MANAGE_TYPERT_REMOTE } from '@melite/estate-manage/remote';
+import { FlowCards } from "./FlowCards.js";
+import { CARD_TOOLS } from "./card-tools.js";
+import { buildChatFileMentions, meliteCardsTurnDefinition } from "./card-mentions.js";
+import { CardsTab } from "./CardsTab.js";
+import { CARDS_BENCH_ADDRESS, benchAddressOf, benchSessionKey, bindRunFramesRemote, openCardsResource, shouldSpotlight, watchBenchLands } from "./cards-resource.js";
+import { bindEstateRemoteFromRemote, useToastStore } from '@melite/card-base/client';
+import { resolveCardsAddress } from "./CardsTab.js";
+import { setContractToastSink } from '@melite/catalog';
+// CONTRACT TOASTS — wire the inlined catalog contract stores to the
+// row's toast store (the one host that outlives every reporting
+// surface); verdicts surface from the same instance that renders them.
+setContractToastSink((type, message, action) => {
+    useToastStore.getState().addToast(type, message, action);
+});
+/** Every card tool that produces a draft — the card tile renders for ALL of them. */
+export { CARD_TOOLS } from "./card-tools.js";
+/** The tab type's identity (the key its body registers under). */
+const CARDS_TAB_ID = '@melite-plugin/dsh-card-view';
+/** Required services (fiber inject waiting — the registries must be up
+ *  first: the native sidebar subsystem + the resource model + the
+ *  sidebar's navigation face, which the conversation card's rows ride
+ *  to open the Cards tab at a draft stage — the old embed's law — and
+ *  the gateway client's remote service, which carries the mounted
+ *  estate namespaces the bench tail consumes). */
+export const inject = ['slots', 'sidebarRightTabs', 'resources', 'sidebarRight', 'remote', 'uiConversation'];
+/**
+ * Register both planes: the toolview keys for every card tool, and the
+ * cards tab (type + body + resource provider).
+ * @param ctx - client root context.
+ */
+export async function apply(ctx) {
+    // THE CONTRIBUTION MOUNT (the mux swap's client half, 2026-09-15):
+    // the generated bench/drafts descriptors mount onto ctx.remote —
+    // after this the browser speaks the estate's remotes natively
+    // (bench/subscribe pushes over the same-origin mux; the poll era's
+    // HTTP heartbeat is dead). The mount rides the plugin's effect
+    // lifetime (cordis disposes with the plugin); a failed mount is
+    // LOGGED, never thrown — the cards tab then serves one HTTP
+    // snapshot + one visible failure frame (the silent-death law), and
+    // the rest of the plugin keeps its seats.
+    try {
+        const dispose = await ctx.remote.$mount(TYPERT_REMOTE);
+        ctx.effect(() => dispose, 'melite-card-view: estate remote contribution');
+    }
+    catch (error) {
+        console.error('[melite-card-view] estate remote contribution failed to mount:', error);
+    }
+    // The runs + media contributions ride the same mount seam (stroke
+    // 81 — the one estate lane; a failed mount logs, never throws the
+    // boot: the verbs then refuse loudly at the bind seam).
+    try {
+        const disposeRuns = await ctx.remote.$mount(RUNS_TYPERT_REMOTE);
+        ctx.effect(() => disposeRuns, 'melite-card-view: runs remote contribution');
+    }
+    catch (error) {
+        console.error('[melite-card-view] runs remote contribution failed to mount:', error);
+    }
+    try {
+        const disposeMedia = await ctx.remote.$mount(MEDIA_TYPERT_REMOTE);
+        ctx.effect(() => disposeMedia, 'melite-card-view: media remote contribution');
+    }
+    catch (error) {
+        console.error('[melite-card-view] media remote contribution failed to mount:', error);
+    }
+    // The manage contribution (the management plane's one door — the
+    // deck's assets tab and the card chrome's manage verbs ride its
+    // namespace; hand-rolled manage/act frames are dead).
+    try {
+        const disposeManage = await ctx.remote.$mount(MANAGE_TYPERT_REMOTE);
+        ctx.effect(() => disposeManage, 'melite-card-view: manage remote contribution');
+    }
+    catch (error) {
+        console.error('[melite-card-view] manage remote contribution failed to mount:', error);
+    }
+    // DOUBLE-APPLY LAW (client contract): registration conflicts fail at
+    // load — "do not work around it; the conflict is the design
+    // speaking." A stale-bundle second apply throws per registration;
+    // the per-site catch logs it and the FIRST registration keeps the
+    // seat. No cross-instance guard, no module/global flag.
+    // THE NAMESPACE SEATS (the inject fix, extended stroke 81, reshaped
+    // 2026-09-29 through card-base's shared binder): stream callbacks
+    // run detached from any inject-declaring fiber, and each namespace
+    // is a NESTED SERVICE whose access requires the dotted inject on
+    // the accessing fiber — the 2026-09-15 live lane died with "cannot
+    // get property \"remote.bench\" without inject". A static inject on
+    // THIS plugin would deadlock (the namespaces exist only after our
+    // own $mount lands), so the capture rides a CHILD PLUGIN started
+    // after the mounts: its fiber declares the four injects, resolves
+    // the namespace services once, and the captured objects are plain
+    // services — later calls at callback time carry no access checks.
+    // THE BUNDLE-SPLIT LAW (the from-media outage's second layer): the
+    // binder lives in card-base because EVERY bundle that inlines
+    // card-base carries its own singleton copy — this call binds THIS
+    // bundle's copy (the studio bundles bind theirs through
+    // defineStageViewRegistration's static injects), all to the SAME
+    // shared cordis services. Direct and sync (the harness shape, no
+    // child fiber): this plugin OWNS the mounts, which landed above,
+    // and statically injects the parent 'remote' only (the dotted
+    // names would wait on its own $mount — the deadlock law), so the
+    // namespaces are readable off ctx.remote the moment the mounts
+    // resolve. benchNs feeds the spotlight registration below.
+    let benchNs;
+    try {
+        // THE MOUNTER'S READ (the fifth receipt): ctx.remote.bench through
+        // the proxy demands the dotted inject, which on the MOUNTER would
+        // wait on its own $mount — deadlock. cordis' own answer is the
+        // inject-free reflect seam: ctx.get, "Read a service from the
+        // store without the inject requirement". The namespaces this
+        // plugin just mounted come straight back.
+        benchNs = bindEstateRemoteFromRemote({
+            bench: ctx.get('remote.bench'),
+            drafts: ctx.get('remote.drafts'),
+            runs: ctx.get('remote.runs'),
+            media: ctx.get('remote.media'),
+            manage: ctx.get('remote.manage'),
+        }).bench;
+    }
+    catch (error) {
+        console.error('[melite-card-view] estate direct bind failed:', error);
+    }
+    // THE RUN-FRAMES CARRIER (handroll row 1.8's consumer tail): the
+    // conversation card's live tail rides the run resource's frames,
+    // and $stream lives on the remote face component code cannot reach
+    // — hand it down here, the same one-bind law as the estate bind.
+    bindRunFramesRemote(ctx.remote);
+    for (const tool of CARD_TOOLS) {
+        try {
+            // THE SURFACE FACE: the conversation card's way into the Cards
+            // tab rides the register call's inject share (plain callback from
+            // the apply closure — the contract's own cross-surface channel):
+            // ctx.sidebarRight.openResource claims the address, places it,
+            // and reveals the column in one step (ISidebarRight). Both faces
+            // answer false on a shell refusal — FlowCardsProps promises it,
+            // and a throw here would render the whole card tree dead.
+            ctx.slots.inject('tool.call.toolview', () => ctx.slots.register({
+                name: 'tool.call.toolview',
+                key: tool,
+                inject: () => ({
+                    openSurface: (address) => {
+                        try {
+                            ctx.sidebarRight.openResource(address);
+                            return true;
+                        }
+                        catch {
+                            return false;
+                        }
+                    },
+                    openMedia: () => {
+                        try {
+                            ctx.sidebarRight.openTab('media');
+                            return true;
+                        }
+                        catch {
+                            return false;
+                        }
+                    },
+                }),
+            }, FlowCards));
+        }
+        catch (error) {
+            console.error(`[melite-card-view] toolview registration failed for ${tool}:`, error);
+        }
+    }
+    // THE ID VOCABULARY (task d, seam ii): the conversation engine folds
+    // card-tool results into turn data, and the chat's markdown renderer
+    // asks chatFileMentions to resolve an authored id token against it.
+    // The definition is state-only (no view target); the provider's
+    // resolver opens the Media page — the one home both draft tiles and
+    // run artifacts have. Both registrations degrade independently: a
+    // missing engine or a doubled kind logs and leaves the rest of the
+    // lane standing.
+    try {
+        ctx.effect(() => ctx.uiConversation.events.register(meliteCardsTurnDefinition), 'melite-card-view: meliteCards turn fold');
+    }
+    catch (error) {
+        console.error('[melite-card-view] meliteCards turn fold registration failed:', error);
+    }
+    try {
+        ctx.effect(() => ctx.provide('chatFileMentions', buildChatFileMentions(() => {
+            try {
+                ctx.sidebarRight.openTab('media');
+            }
+            catch {
+                // A refused open leaves the mention inert — the renderer's
+                // open callback must never throw into the chat.
+            }
+        })), 'melite-card-view: chat file mentions');
+    }
+    catch (error) {
+        // ALREADY SEATED (the estate's loader law, 2026-09-28): this row
+        // can apply twice, and cordis's provide() throws the bare
+        // duplicate-service Error on the second construction. The seat
+        // exists at this plugin's own name, first apply won it — that
+        // rejection is success, not a failure, and stays off the error
+        // console (the e2e lane pins it clean).
+        const twin = /service "chatFileMentions" has been registered at </.test(String(error?.message));
+        if (twin)
+            console.info('[melite-card-view] chat file mentions: already seated — nothing to do');
+        else
+            console.error('[melite-card-view] chat file mentions registration failed:', error);
+    }
+    // BUILT-IN STUDIO SURFACE (the ui-tool law: the host package ships
+    // its own cards' views — read/search/web live in ui-tool; img-to-mesh
+    // lives here). Third-party cards register additively from their own
+    // packages through the same keyed slot.
+    // Stage one — the tab type: claims every cards address; the bench
+    // page is opened by kind ('cards'). Extension band is the default a
+    // type from outside the product carries.
+    try {
+        ctx.effect(() => ctx.sidebarRightTabs.register({
+            id: CARDS_TAB_ID,
+            kind: 'cards',
+            patterns: ['dsh-resource://cards/**'],
+            title: (address) => {
+                // THE ADDRESS LAW (the 'sidebar://cards' title bug, 2026-09-11:
+                // the operator's own DOM paste): any address the shell opens
+                // resolves through the SAME law the body rides — the bench page
+                // is titled 'Media Flow' no matter which address form reached
+                // it (guide clicks arrive as sidebar://cards, openTab as the
+                // dsh-resource form). Renamed from 'Cards' 2026-09-16 (the
+                // operator's clarity order — the tab shows the FLOW, not a
+                // deck of cards).
+                const resolved = resolveCardsAddress(address);
+                if (resolved.startsWith(CARDS_BENCH_ADDRESS))
+                    return 'Media Flow';
+                return resolved.replace(/^dsh-resource:\/\/cards\//, '');
+            },
+            guide: [{
+                    id: 'cards-tab-guide',
+                    order: 50,
+                    title: () => 'Media Flow',
+                    description: () => 'The media flow — the shared bench and its runs.',
+                }],
+        }), 'melite-card-view: cards tab type');
+    }
+    catch (error) {
+        console.error('[melite-card-view] cards tab type registration failed:', error);
+    }
+    // Stage two — the body, dispatched under the type's id.
+    try {
+        ctx.slots.inject('sidebar.right.pane.tab', () => ctx.slots.register({
+            name: 'sidebar.right.pane.tab',
+            key: CARDS_TAB_ID,
+            // The tab HOSTS card surfaces: declaring the children puts
+            // renderSlot('cards.stage.view') and
+            // renderSlot('cards.stage.preview') into CardsTab's composed
+            // props (the ui-tool children law — hour-9: the preview seam
+            // rides here so the shared video/image previews render).
+            children: {
+                'cards.stage.view': { kind: 'keyed', scope: 'session' },
+                'cards.stage.preview': { kind: 'keyed', scope: 'session' },
+            },
+        }, CardsTab));
+    }
+    catch (error) {
+        console.error('[melite-card-view] cards tab body registration failed:', error);
+    }
+    // The resource provider — the values the body reads (and the wand's
+    // openResource targets, plan §5). The LIVE remote face rides the
+    // open call (the bench tail subscribes through it; a failed mount
+    // leaves it absent and the provider degrades visibly).
+    try {
+        ctx.effect(() => ctx.resources.register({
+            protocol: 'cards',
+            open: (address, rctx) => openCardsResource(address, rctx, ctx.remote, benchNs),
+        }), 'melite-card-view: cards resource provider');
+    }
+    catch (error) {
+        console.error('[melite-card-view] cards resource provider registration failed:', error);
+    }
+    // THE BENCH SPOTLIGHT (stroke 42, the one-flow law: "AI
+    // conversation and human share 1 FLOW — there is no other flow
+    // state"): while the cards surface is not the user's visible seat,
+    // an agent-authored bench write brings the Cards tab FORWARD —
+    // openResource claims the bench address, places it, and reveals
+    // the column in one step (ISidebarRight: "content the user cannot
+    // see is not opened"). The chat's construct writes carry author
+    // "agent" in the served log (bench.ts's default), the human's own
+    // writes carry "user" — the watcher discriminates on exactly that,
+    // so the reveal never fires for the user's own gestures. A failed
+    // reveal (no session mounted yet) surfaces in the console, never
+    // silently.
+    try {
+        // THE SESSION SOURCE (stroke 44): uiSession's scope adapter
+        // follows the current selection — getSnapshot().props.sessionId
+        // (the ui-session merge's SessionStandardProps) is the active
+        // conversation. The watcher reads it on every wake and subscribes
+        // to the adapter's observable for push-driven re-keys (a
+        // conversation switch re-keys the bench stream at switch time —
+        // HostObservable.subscribe, no timer).
+        const activeBenchSession = () => {
+            try {
+                const uiSession = ctx.uiSession;
+                const snap = uiSession?.adapter?.current?.getSnapshot?.();
+                const sid = snap?.props?.['sessionId'];
+                return benchSessionKey(typeof sid === 'string' ? sid : undefined);
+            }
+            catch {
+                // the address-grammar root spells the unattributed bench —
+                // never a local literal (the sessionkey law)
+                return benchSessionKey(undefined);
+            }
+        };
+        const subscribeBenchSession = (fn) => {
+            try {
+                const uiSession = ctx.uiSession;
+                const off = uiSession?.adapter?.current?.subscribe?.(fn);
+                return typeof off === 'function' ? off : () => { };
+            }
+            catch {
+                return () => { };
+            }
+        };
+        ctx.effect(() => watchBenchLands(activeBenchSession, (sessionKey) => {
+            try {
+                if (shouldSpotlight(ctx.sidebarRight.isExpanded())) {
+                    ctx.sidebarRight.openResource(benchAddressOf(sessionKey));
+                }
+            }
+            catch (error) {
+                console.error('[melite-card-view] bench spotlight reveal failed:', error);
+            }
+        }, undefined, ctx.remote, benchNs, subscribeBenchSession), 'melite-card-view: bench spotlight');
+    }
+    catch (error) {
+        console.error('[melite-card-view] bench spotlight registration failed:', error);
+    }
+}
+// EXPORT DISCIPLINE: the
+// /client entry exports only what cordis loading needs — apply +
+// inject below. Components, helpers, and constants stay internal;
+// same-package tests import relatively (../src/client/...), which is
+// the sanctioned zero-machinery path. (CARD_TOOLS stays internal to
+// the apply loop; no consumer — melite-tools' wall test owns its own
+// list.)
+//# sourceMappingURL=index.js.map

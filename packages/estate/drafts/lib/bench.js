@@ -48,10 +48,17 @@ export function benchBlockOf(doc) {
     return { rev: 0, log: [] };
 }
 function stagesOf(doc) {
-    // The domain schema guarantees stages is an array of id-carrying
-    // objects (DraftDocSchema; schema-failing records are backed up and
-    // skipped at read) — no re-defense here.
-    return doc["stages"];
+    // The domain schema promises stages is an array of id-carrying
+    // objects (DraftDocSchema), but nothing enforces the promise on
+    // this path — a doc written behind the domain's back (an older
+    // door, a hand edit) reads back as it was written, and a reader
+    // that trusted the promise crashed on a null row. The read
+    // projection owns the guarantee: only record rows ride, and a
+    // row's id is read where it is used, never assumed.
+    const stages = doc["stages"];
+    if (!Array.isArray(stages))
+        return [];
+    return stages.filter((s) => isRecord(s));
 }
 /** THE SEED RECEIPT (2026-09-21, ledger #41: a concrete seed rode
  *  a wholesale load while the summary said only "load N stages" —
@@ -119,13 +126,11 @@ function nextStageId(max, taken) {
     } while (taken.has(fresh));
     return fresh;
 }
-/** The ids already spoken for on the bench — the writer's own id plus
- *  every stage's. A mint that skips these cannot collide with a row
- *  the caller has not seen yet. */
-function takenStageIds(rows, extra = "") {
+/** The ids already spoken for on the bench — every stage's own. A
+ *  mint that skips these cannot collide with a row the caller has
+ *  not seen yet. */
+function takenStageIds(rows) {
     const taken = new Set();
-    if (extra !== "")
-        taken.add(extra);
     for (const row of rows) {
         const id = row["id"];
         if (typeof id === "string")
@@ -215,11 +220,12 @@ function dedupeStageIds(rows, arrivedWithId) {
     // load and an add cannot disagree about what "next" means.
     let max = highestStageSuffix(named);
     for (const [i, row] of rows.entries()) {
-        const id = row["id"];
         if (arrivedWithId[i] === true)
             continue;
-        if (typeof id !== "string")
-            continue;
+        // the id here is normalizeBenchStage's fill — always a string
+        // (a doc's non-string id heals to the minted form before this
+        // pass, so only a filled id rides)
+        const id = row["id"];
         if (!taken.has(id)) {
             taken.add(id);
             continue;
@@ -538,9 +544,24 @@ async function loadBench(drafts, session) {
         // THE BIRTH (stroke 46g, the operator's "is this a forever fix?"):
         // a conversation's bench is born at its FIRST write — never a
         // refusal. rev 0, empty stages, the session's own id.
-        const doc0 = { draft_id: draftId, intent: "", stages: [], bench: { rev: 0, log: [] } };
+        // THE BIRTH CARRIES EVERY REQUIRED KEY (the typed-seam audit,
+        // 2026-10-15): DraftDocSchema requires status, createdAt and
+        // completedAt, and this literal left all three to a cast — so a
+        // reader that validated the record would have refused the estate's
+        // own first bench. The birth is a DRAFT: status "draft", created
+        // now, completed null.
+        const born = Math.floor(Date.now() / 1000);
+        const doc0 = {
+            draft_id: draftId,
+            status: "draft",
+            createdAt: born,
+            completedAt: null,
+            intent: "",
+            stages: [],
+            bench: { rev: 0, log: [] },
+        };
         await drafts.table("docs").put(draftId, {
-            updated_at: Math.floor(Date.now() / 1000),
+            updated_at: born,
             doc: doc0,
         });
         rec = drafts.table("docs").get(draftId);
@@ -583,8 +604,9 @@ async function appendAndSave(drafts, loaded, entry) {
     return full.rev;
 }
 function stageRow(doc, stageId) {
-    // Schema law (see stagesOf): rows are records with string ids.
-    const stages = doc["stages"];
+    // Schema law (see stagesOf): the projection keeps only record
+    // rows — a junk row in the stored doc never crashes the find.
+    const stages = stagesOf(doc);
     return stages.find((st) => st["id"] === stageId) ?? null;
 }
 const PATCH_KEYS = ["stage", "params", "result", "runStatus", "expect_rev", "author"];
@@ -780,21 +802,24 @@ function admitStage(admit, card, params, provenance = undefined) {
     // A param-less row still names its card (2026-09-15: a stageless
     // add sailed past admission entirely) — admit the card against
     // empty params; the model check passes vacuous, the card check
-    // still bites.
-    admit(card, strippedForAdmission(card, isRecord(params) ? params : {}), provenance);
+    // still bites. Every caller hands this seat a record: the load and
+    // birth arms pass normalizeStages' rows, whose params normalizeBenchStage
+    // has already healed to {} when the doc carried anything else, and the
+    // patch arm passes strippedForAdmission's own copy.
+    admit(card, strippedForAdmission(card, params), provenance);
 }
 /** The compound row's card literal — the bench's own shape, never a
  *  declared card. Named once so every seat that must exempt a
  *  compound says the same word (the load arm below). */
 const GROUP_CARD = "group";
 /** Admission over a wholesale stage list (the load arm — every row
- *  passes the same door an add passes). */
+ *  passes the same door an add passes). Both callers hand it
+ *  normalizeStages' own output, which keeps only records, so a row
+ *  here is a record and the members of a compound are its own. */
 function admitStages(admit, stages) {
     if (admit === undefined || !Array.isArray(stages))
         return;
     for (const s of stages) {
-        if (!isRecord(s))
-            continue;
         // THE COMPOUND IS NOT A CARD (the bench audit's gap 9,
         // 2026-10-10): groupBench writes a row whose card is the literal
         // "group" and whose members ride in `children` — so loading the
@@ -904,8 +929,6 @@ export function admitWiring(row, params, inputs, liveIds, selfId, session, toler
 function liveIdsOf(stages) {
     const out = new Set();
     for (const r of stages) {
-        if (!isRecord(r))
-            continue;
         out.add(String(r["id"] ?? ""));
         if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
             for (const child of r["children"]) {
@@ -948,8 +971,6 @@ function toleratedByRow(stages, preLive) {
         }
     };
     for (const r of stages) {
-        if (!isRecord(r))
-            continue;
         const id = String(r["id"] ?? "");
         rowOf(r, id);
         if (r["card"] === GROUP_CARD && Array.isArray(r["children"])) {
@@ -967,8 +988,10 @@ function admitWiringList(stages, session, tolerate) {
     // normalize contract's guarantees whenever the doc predates it. A
     // row without record params/inputs judges over {} (vacuous pass),
     // never crashes the door; the normalized callers are unaffected.
+    // (records themselves are the projection's guarantee — stagesOf
+    // keeps only record rows and normalizeStages filters its own — so
+    // no re-defense of record-ness here)
     const liveIds = stages
-        .filter((r) => isRecord(r))
         .map((r) => String(r["id"] ?? ""));
     // THE UN-WEDGE TOLERANCE: the map (per row id) carries the refs
     // that pre-date the verb — the walk refuses only the danglings
@@ -977,8 +1000,6 @@ function admitWiringList(stages, session, tolerate) {
     // seat states its own base for toleratedByRow.
     const tolerateAll = tolerate;
     for (const r of stages) {
-        if (!isRecord(r))
-            continue;
         // THE COMPOUND'S OWN WIRES ARE JUDGED (the bench audit's gap 7,
         // 2026-10-10): a compound row's inputs are {} by shape, so this
         // walk passed over it vacuously — a wire hidden INSIDE a group
@@ -1052,10 +1073,9 @@ export async function addStageBench(drafts, session, body, admit) {
     }, stageIdForAdmit);
     admitStage(admit, admitted["card"], admitted["params"]);
     const loaded = loadedForAdmit;
+    // (the card was already refused at the top of this door when it is
+    // not a non-empty string — the bound value here is one)
     const card = body["card"];
-    if (typeof card !== "string" || card === "") {
-        throw new RemoteError("bench/bad-body", "card is required", {});
-    }
     const author = authorOk(body["author"])
         ? body["author"]
         : "agent";
@@ -1443,9 +1463,7 @@ export async function rewireBench(drafts, session, body) {
     // stage still refuses (the phantom-wire cure stands), while
     // the row's other pre-broken inputs tolerate so rewiring one
     // wire on a wounded row never wedges.
-    toleratedByRow(isRecord(loaded.doc["stages"]) && Array.isArray(loaded.doc["stages"])
-        ? [st]
-        : [st], liveIdsOf(stagesOf(loaded.doc))).get(stageId));
+    toleratedByRow([st], liveIdsOf(stagesOf(loaded.doc))).get(stageId));
     st["inputs"] = inputs;
     const inverse = { stage: stageId, input };
     if (before !== undefined)
@@ -1645,8 +1663,10 @@ function applyInverse(doc, e, admit, session = "") {
         // its index (bench order preserved inside the row).
         const idx = stages.findIndex((s) => s["id"] === inv["stage"]);
         const children = inv["children"];
+        // (the inverse is a payload the log recorded, never a promise —
+        // junk members degrade loudly-free: only record rows re-enter)
         const rows = Array.isArray(children)
-            ? children
+            ? children.filter((r) => isRecord(r))
             : [];
         // THE SPILL IS A WRITE HERE TOO (2026-10-10, the write-seat
         // audit's row 1): the children re-enter the flat bench from the
@@ -1673,18 +1693,23 @@ function applyInverse(doc, e, admit, session = "") {
         if (!isRecord(row))
             return;
         const children = row["children"];
-        if (Array.isArray(children)) {
+        // (the inverse's members ride as the log recorded them — only
+        // record rows re-enter; junk degrades loudly-free)
+        const members = Array.isArray(children)
+            ? children.filter((c) => isRecord(c))
+            : [];
+        if (members.length > 0) {
             // THE RE-PARK IS JUDGED (2026-10-10, the write-seat audit's
             // row 2): the compound hides its children from every patch
             // door — re-parking an inverse row re-opens the blind spot the
             // group door closed. Children walk admission BEFORE the
             // compound forms; a refusal aborts the undo whole.
-            for (const child of children) {
+            for (const child of members) {
                 admitRestored(admit, child, isRecord(child["params"])
                     ? child["params"]
                     : {});
             }
-            for (const child of children) {
+            for (const child of members) {
                 const idx = stages.findIndex((s) => s["id"] === child["id"]);
                 if (idx >= 0)
                     stages.splice(idx, 1);
@@ -1712,7 +1737,10 @@ function applyInverse(doc, e, admit, session = "") {
         return;
     }
     if (e.kind === "rewire") {
-        const st = stageRow(doc, String(inv["stage"] ?? ""));
+        // (stageRow matches by identity of the string — the row it
+        // returns carries exactly this id, never a nullish one)
+        const stageId = String(inv["stage"] ?? "");
+        const st = stageRow(doc, stageId);
         if (st === null)
             return;
         // COPY-ON-JUDGE (the write-seat audit's row 6, second half): the
@@ -1738,9 +1766,10 @@ function applyInverse(doc, e, admit, session = "") {
         // and rewireBench refuses to create exactly this state. Undo
         // walks the same wiring law over the RESTORED view BEFORE the
         // assignment; a refusal aborts the undo.
-        admitWiring(st, isRecord(st["params"]) ? st["params"] : {}, inputs, stages
-            .filter((s) => isRecord(s))
-            .map((s) => String(s["id"] ?? "")), String(st["id"] ?? ""), session);
+        admitWiring(st, isRecord(st["params"]) ? st["params"] : {}, inputs, 
+        // (records are stagesOf's guarantee; an id-less row rides as "")
+        stages
+            .map((s) => String(s["id"] ?? "")), stageId, session);
         st["inputs"] = inputs;
         return;
     }

@@ -11,5 +11,5 @@
  * (the body card's store lives beside it: cards/body/bodyStudio.ts —
  * * the @melite/viewers package is DEAD, 2026-08-21).
  */
-export * from "./PoseViewer3D";
-export * from "./PoseEditMode";
+export * from "./PoseViewer3D.tsx";
+export * from "./PoseEditMode.tsx";

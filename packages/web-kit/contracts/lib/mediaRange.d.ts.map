@@ -1,0 +1,1 @@
+{"version":3,"file":"mediaRange.d.ts","sourceRoot":"","sources":["../src/mediaRange.ts"],"names":[],"mappings":"AAkBA,2DAA2D;AAC3D,MAAM,WAAW,SAAS;IACxB,QAAQ,CAAC,KAAK,EAAE,MAAM,CAAA;IACtB,QAAQ,CAAC,GAAG,EAAE,MAAM,CAAA;CACrB;AAED;;;;;;;;;;;;;kBAakB;AAClB,wBAAgB,gBAAgB,CAC9B,MAAM,EAAE,MAAM,GAAG,SAAS,EAC1B,IAAI,EAAE,MAAM,GACX,SAAS,GAAG,eAAe,GAAG,IAAI,CAiBpC"}

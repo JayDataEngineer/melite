@@ -3,16 +3,18 @@
   "private": true,
   "type": "module",
   "description": "the sfx card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
-  "main": "./src/card.ts",
   "exports": {
-    ".": "./src/card.ts",
+    ".": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/schemastery": "^3.18.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
@@ -21,7 +23,16 @@
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
-  "name": "@melite/audio-sfx"
+  "name": "@melite/audio-sfx",
+  "files": [
+    "lib/card.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
+  }
 }

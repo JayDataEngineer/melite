@@ -736,12 +736,19 @@ let DraftsRemoteService = (() => {
                 // half of the pair changes, over the PENDING params (the row's
                 // next view) and the merged inputs, BEFORE either lands.
                 if (pendingParams !== undefined || "inputs" in patch) {
-                    const liveIds = (Array.isArray(doc["stages"]) ? doc["stages"] : [])
+                    // THE LIVE SET READS THE STAGES THE LOOKUP ABOVE ALREADY
+                    // WALKED (the re-audit, 2026-10-16): `doc["stages"]` is the
+                    // same value `stages.find` answered one screen up — a value
+                    // that answers `find` is the array it walked — so the
+                    // non-array arm and this row's own `?? ""` were dead legs
+                    // (the row is the very one the finder selected BECAUSE its
+                    // `id` equals the stage id asked for).
+                    const liveIds = doc["stages"]
                         .map((r) => (isObj(r) ? String(r["id"] ?? "") : ""))
-                        .filter((id) => id !== String(stage["id"] ?? ""));
+                        .filter((id) => id !== stageId);
                     admitWiring(stage, pendingParams !== undefined
                         ? pendingParams
-                        : (isObj(stage["params"]) ? stage["params"] : {}), mergedInputs, liveIds, String(stage["id"] ?? ""), draftId.replace(/^bench-/, ""));
+                        : (isObj(stage["params"]) ? stage["params"] : {}), mergedInputs, liveIds, stageId, draftId.replace(/^bench-/, ""));
                 }
                 stage["inputs"] = mergedInputs;
             }

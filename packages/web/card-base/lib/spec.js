@@ -1,0 +1,1193 @@
+/**
+ * spec.ts — @melite/card-base: THE EMISSION CONTRACT.
+ *
+ * A card package EMITS; the base CONSTRUCTS (operator order,
+ * 2026-09-12: "The package to construct the card ui should see that
+ * the card package emits an image input, then constructs the input
+ * component automatically"). This module is the emission's client-side
+ * shape — the served form-spec document as the base consumes it —
+ * plus the PURE projections. No fetchers here (wire.ts), no
+ * components (form.tsx): types and derivations only.
+ *
+ * THE LAYERED-PARAMS LAW (the parameter audit, 2026-09-14 — the
+ * DSH settings model, subsystems/settings.md): the form-spec serves
+ * the card's own SERIALIZED SCHEMA (schemastery toJSON — the SSOT,
+ * one serializer server-side) and the bench's stage params ARE the
+ * USER layer: a key's PRESENCE is the override mark, never its
+ * value. resolveValue layers schema defaults <- model defaults <-
+ * served stamps <- user — the engine's compose cascade verbatim,
+ * resolved client-side so the form shows exactly what a run
+ * composes. Edits are set/unset ops over the user layer; a family
+ * Recipe macro pick is an ordinary multi-set of declared keys —
+ * no stamp ledger, no value-compare heuristics, no heal walk
+ * (seedUser's one validation clause aside).
+ *
+ * THE EDGE LAW (operator order, 2026-09-12: "whenever a card emits
+ * via the package system, it needs to have 'input' 'required=True',
+ * or 'output', so the edges are defined"): every card's emission
+ * carries `inputs` — one row per declared input edge, the required
+ * fact joined per the law (dsl.py Field.emit: `required: True
+ * emits, False omits`) — and `outputs`, the declared output edges.
+ * The base constructs input components and picker candidates from
+ * THESE, never from result-URL sniffing.
+ */
+/** Build an envelope from raw dict nodes — the TEST-side and
+ *  migration-side constructor; the served envelopes come from
+ *  schemastery's own toJSON. Ids assign in insertion order; a node
+ *  carrying `consts` (string labels or {value,label} rows) expands
+ *  into minted const refs with the union's `list` wired to them —
+ *  the shape schemastery's union-of-consts serializes to. */
+export function schemaEnvelope(dict) {
+    const refs = { 0: { type: 'object', dict: {} } };
+    let uid = 0;
+    for (const [name, raw] of Object.entries(dict)) {
+        uid += 1;
+        const nodeId = uid;
+        const node = { ...raw };
+        const consts = node['consts'];
+        delete node['consts'];
+        if (Array.isArray(consts)) {
+            const list = [];
+            for (const c of consts) {
+                uid += 1;
+                if (typeof c === 'string') {
+                    refs[uid] = { type: 'const', value: c };
+                }
+                else if (typeof c === 'object' && c !== null) {
+                    const row = c;
+                    refs[uid] = {
+                        type: 'const', value: row.value,
+                        ...(row.label !== undefined ? { meta: { description: String(row.label) } } : {}),
+                    };
+                }
+                list.push(uid);
+            }
+            node.list = list;
+            if (node.type === undefined)
+                node.type = 'union';
+        }
+        refs[nodeId] = node;
+        refs[0].dict[name] = nodeId;
+    }
+    return { uid: 0, refs };
+}
+// THE ONE VOCABULARY (2026-10-10): the extra-bag contract lives at
+// the floor (@melite/contracts/extraKeys — zero deps, one spelling
+// shared by the web tier, the engine tier, and every card
+// declaration; before it, the form spelled visible_when while the
+// tool face spelled visibleWhen — a dead read for every card).
+import { extraOf } from '@melite/contracts/extraKeys';
+import { deepEqualJson } from '@deepseek-ai/dsh-util-values';
+import { judgeLaneBounds, judgeLaneRelations, judgeLaneSurface, laneBoundsOf, laneSurfaceOf, judgeSamplerEnvelope, samplerEnvelopeCure, unknownQuantVoice, unknownVariantVoice, } from '@melite/contracts/laneRelations';
+/** THE MOD-OWNED NAMES (the SubcardGrid law, enforced): every name a
+ *  served modifier kind owns — its fields' names plus its param_key
+ *  (the bag storage). CardForm EXCLUDES these from the flat param
+ *  groups: mod params render ONLY inside the mod system. PURE. */
+export function modOwnedFields(spec) {
+    const owned = new Set();
+    for (const k of spec.features?.modifiers ?? [])
+        owned.add(k.param_key);
+    for (const env of Object.values(spec.mod_schemas ?? {})) {
+        if (env == null)
+            continue;
+        const root = env.refs[env.uid];
+        for (const name of Object.keys(root?.dict ?? {}))
+            owned.add(name);
+    }
+    return owned;
+}
+/** Is this kind an OPTION kind (lora-shaped: served catalog rows) —
+ *  as opposed to a FIELD kind (mask-shaped: its own param fields)? */
+export function isOptionKind(k) {
+    return (k.options ?? []).length > 0;
+}
+/** THE HYBRID TEST (the served entry mode — never the kind name):
+ *  catalog rows AND bag-element entry fields. */
+export function isHybridKind(k) {
+    return k.entry === 'hybrid';
+}
+/** The catalog-bound field (the hybrid type / the option id) —
+ *  'id' when the door serves no key (the lora backstop). */
+export function optionKeyOf(k) {
+    return typeof k.option_key === 'string' && k.option_key !== '' ? k.option_key : 'id';
+}
+/** The scalar dial of a bag element (the pack's own name —
+ *  'strength' backstop when the door serves none). */
+export function scalarKeyOf(k) {
+    return typeof k.scalar_key === 'string' && k.scalar_key !== '' ? k.scalar_key : 'strength';
+}
+/** THE TITLE-CASE FACE (the operator's sweep law): machine ids
+ *  (krea-2, z-image, euler, comfyui…) render titled — never raw.
+ *  FACES ONLY: option values, param keys, and wire bodies keep the
+ *  verbatim id (the 1:1 law — the eye gets prose, the door gets the
+ *  id). First letter of each separator-bound word upper, the rest
+ *  untouched (INT8 stays INT8); idempotent on titled prose. */
+export function titleCaseId(id) {
+    return id
+        .split(/[-_\s]+/)
+        .filter((w) => w !== '')
+        .map((w) => w.slice(0, 1).toUpperCase() + w.slice(1))
+        .join(' ');
+}
+/** THE SCHEMA LAYER's declared defaults (fieldsOfEnvelope's output —
+ *  resolveValue's first layer; the base never invents one). */
+export function specDefaults(fields) {
+    const out = {};
+    for (const f of fields) {
+        if (f.default !== undefined && f.default !== null)
+            out[f.name] = f.default;
+    }
+    return out;
+}
+export function composeUnset(inherited, schemaDefault) {
+    if (inherited !== undefined && inherited !== null && inherited !== '') {
+        return { composed: String(inherited), from: 'stamp' };
+    }
+    if (schemaDefault !== undefined && schemaDefault !== null) {
+        return { composed: String(schemaDefault), from: 'schema' };
+    }
+    return { composed: undefined, from: 'none' };
+}
+/** The unset face's LABEL: a run stamp names its source ('← 28'); the
+ *  schema default rides plain (it is not inheriting anything — it IS
+ *  the engine's compose floor); 'inherit' only when nothing
+ *  composes. */
+export function unsetFaceLabel(face) {
+    if (face.composed === undefined)
+        return 'inherit';
+    return face.from === 'stamp' ? `← ${face.composed}` : face.composed;
+}
+/** The unset face's PROSE (the tooltip): names in words what unset
+ *  composes. `render` adapts the vocabulary (e.g. boolean on/off). */
+export function unsetFaceTip(face, render) {
+    const v = (render ?? ((x) => x))(face.composed ?? '');
+    if (face.from === 'stamp')
+        return `unset — inherits ${v} from the run`;
+    if (face.from === 'schema')
+        return `unset — the engine composes ${v} (the schema's default)`;
+    return 'unset — the engine default applies';
+}
+/** ── THE ENVELOPE WALKER ─────────────────────────────────────────
+ *
+ * One pure projection: serialized schemastery schema -> derived
+ * SpecFields. Every presentation fact lives in the nodes' meta (the
+ * declaration IS the UI contract — the Field.emit law); this
+ * walk reads, never invents. THE ORDER: dict insertion order with
+ * the declared `order` hint as tie-break (a stable sort — equal
+ * keys keep insertion order).
+ *
+ * Families scoping: a node whose extra.families names families the
+ * spec does NOT serve skips (the absorption is family-scoped —
+ * the card serves only the boarded plane).
+ *
+ * Nullable pairs: a union of [X, const(null)] wires as X — the
+ * OUTER meta wins (schemastery's nullable() shape, probed live on
+ * image-gen 2026-09-14).
+ *
+ * Presentation types (the audit's client-side derivation — a view
+ * choice over typed meta, never a server row): extra.wtype wins
+ * (declared presentation); union-of-consts -> select; number ->
+ * step 1 -> seed, any other step -> slider, no step -> slider;
+ * string -> text; boolean -> boolean; array -> loras.
+ *
+ * Option labels: a union's const members carry their own
+ * meta.description (the emitter's label law) — the declared
+ * extra.options override when present. */
+export function fieldsOfEnvelope(env, family) {
+    if (env == null)
+        return [];
+    const root = env.refs[env.uid];
+    return projectDict(env, root?.dict ?? {}, family);
+}
+/** THE HYBRID PROJECTION (the controlnet restoration): the envelope
+ *  root's bag array (param_key) holds entry OBJECTS — project the
+ *  ELEMENT's dict as the kind's entry fields (the catalog select
+ *  joins them in the leaf). Empty when the bag is absent or its
+ *  element is not an object (a pure OPTION kind like lora). */
+export function entryFieldsOfEnvelope(env, paramKey, family) {
+    if (env == null)
+        return [];
+    const root = env.refs[env.uid];
+    const at = root?.dict?.[paramKey];
+    const node = at === undefined ? undefined : env.refs[at];
+    const innerId = node?.inner;
+    const inner = typeof innerId === 'number' ? env.refs[innerId] : undefined;
+    if (node?.type !== 'array' || inner?.type !== 'object')
+        return [];
+    return projectDict(env, inner.dict ?? {}, family);
+}
+/** THE PACK-LEVEL PROJECTION (the controlnet strength floor): the
+ *  envelope root's fields OUTSIDE the bag array — the section's own
+ *  rows above the tiles. Bag-external arrays are not section rows
+ *  (no atom renders a bag) — scalars only. */
+export function kindScalarFieldsOfEnvelope(env, paramKey, family) {
+    if (env == null)
+        return [];
+    const root = env.refs[env.uid];
+    const dict = { ...(root?.dict ?? {}) };
+    delete dict[paramKey];
+    for (const [name, id] of Object.entries(dict)) {
+        if (env.refs[id]?.type === 'array')
+            delete dict[name];
+    }
+    return projectDict(env, dict, family);
+}
+/** The dict projector (the walker's body — one meta path for the
+ *  root, the hybrid element, and the pack-level rows). */
+function projectDict(env, dict, family) {
+    const out = [];
+    for (const [name, id] of Object.entries(dict)) {
+        let node = env.refs[id];
+        // THE DANGLING-REF REFUSAL (G9-half, 2026-10-12): a dict id the
+        // refs table does not carry is a corrupt envelope — the old walk
+        // dropped the field and the form rendered with a hole and no
+        // diagnostic. The producer mints a ref for every dict id, so this
+        // arm is unreachable for a well-formed envelope; refusing here is
+        // the earliest client-side point. The UNION members are exempt by
+        // design (non-string consts mint no ref — the bare-union law,
+        // pinned below), and the hybrid projection's own short-envelope
+        // guard answers [] before this walk.
+        if (node === undefined) {
+            throw new Error('form-spec: field ' + JSON.stringify(name)
+                + ' points at ref ' + JSON.stringify(id)
+                + ' the envelope\'s refs table does not carry — the form is refused rather than rendered with a hole');
+        }
+        // nullable unwrap: union [inner, const(null)] -> inner, outer meta wins
+        if (node.type === 'union' && Array.isArray(node.list) && node.list.length === 2) {
+            const a = env.refs[node.list[0]];
+            const b = env.refs[node.list[1]];
+            const nullConst = (r) => r?.type === 'const' && r.value === null;
+            if (a !== undefined && b !== undefined
+                && ((nullConst(a) && b.type !== 'const') || (nullConst(b) && a.type !== 'const'))) {
+                node = nullConst(a) ? b : a;
+            }
+        }
+        const meta = node.meta ?? {};
+        // ONE VOCABULARY (2026-10-10, the operator's law: "literally
+        // impossible to speak two vocabularies"): the bag narrows
+        // through the floor's typed read — every key below spells the
+        // contract's own constant spelling, never a second string
+        // literal (the visible_when/visibleWhen dead-read crime's
+        // structural cure).
+        const extra = extraOf(node);
+        const families = Array.isArray(extra.families)
+            ? extra.families : null;
+        if (families !== null && family !== undefined
+            && !families.includes(family))
+            continue;
+        // THE HIDDEN ARM (2026-09-21, the blank-rows catch): a field
+        // declaring extra.hidden is VALIDATION-ONLY — the schema walk
+        // still refuses garbage for it (the operator's vocabulary
+        // law: "the schema enforces EVERY key the renderer reads"),
+        // but it NEVER renders: renderer vocabulary (k, noise_seed),
+        // legacy aliases (interp_switch), and renderer spellings
+        // (image_name) are gate keys, not surface fields. A blank
+        // default-less row on the form face is a lie.
+        if (extra.hidden === true)
+            continue;
+        // union options: const members, labels from their meta.description
+        let options;
+        if (node.type === 'union' && Array.isArray(node.list)) {
+            const opts = [];
+            for (const mid of node.list) {
+                const m = env.refs[mid];
+                if (m?.type !== 'const')
+                    continue;
+                const v = m.value;
+                if (v === null || v === undefined)
+                    continue;
+                const label = typeof m.meta?.['description'] === 'string'
+                    ? m.meta['description'] : String(v);
+                if (label === String(v))
+                    opts.push(String(v));
+                else
+                    opts.push({ value: String(v), label });
+            }
+            if (opts.length > 0)
+                options = opts;
+        }
+        if (Array.isArray(extra.options)) {
+            options = extra.options.map((o) => typeof o === 'string' ? o
+                : typeof o === 'object' && o !== null && 'value' in o && 'label' in o
+                    ? { value: String(o['value']), label: String(o['label']) }
+                    : String(o));
+        }
+        // presentation type: declared hint wins, else derive. The hint's
+        // WTYPE_SET membership is enforced ONE STEP UP, inside extraOf
+        // (strictness fix 5, 2026-10-01): every face narrows through the
+        // floor's typed read, so the check lives there — never twice.
+        const hint = extra.wtype;
+        let type;
+        if (hint !== undefined && hint !== '')
+            type = hint;
+        else if (options !== undefined && node.type === 'union')
+            type = 'select';
+        else if (node.type === 'number')
+            type = String(meta['step'] ?? '') === '1' ? 'seed' : 'slider';
+        else if (node.type === 'string')
+            type = 'text';
+        else if (node.type === 'boolean')
+            type = 'boolean';
+        else if (node.type === 'array')
+            type = 'loras';
+        else
+            type = node.type ?? 'string';
+        const num = (k) => typeof meta[k] === 'number' ? meta[k] : undefined;
+        // the str() reads ride the TYPED bag first (the contract's own
+        // spelling), the raw meta as the schemastery-native fallback
+        // (description-class keys) — one vocabulary, two layers
+        const str = (k, m) => {
+            const b = extra[k];
+            if (typeof b === 'string')
+                return b;
+            const mk = m ?? k;
+            return typeof meta[mk] === 'string' ? meta[mk] : undefined;
+        };
+        out.push({
+            name,
+            label: typeof meta['description'] === 'string' && meta['description'] !== ''
+                ? meta['description'] : name,
+            order: typeof extra.order === 'number' ? extra.order : undefined,
+            type,
+            default: meta['default'] === undefined ? undefined : meta['default'],
+            min: num('min'), max: num('max'),
+            step: type === 'seed' ? undefined : num('step'),
+            options,
+            group: str('group') ?? '',
+            zone: str('zone'),
+            required: extra.required === true || meta['required'] === true,
+            placeholder: str('placeholder'),
+            tooltip: str('tooltip'),
+            visible_when: str('visible_when'),
+            columns: typeof extra.columns === 'number' ? extra.columns : undefined,
+            width: typeof extra.width === 'number' ? extra.width : undefined,
+            max_stack: typeof extra.max_stack === 'number' ? extra.max_stack : undefined,
+            media: str('media'),
+        });
+    }
+    // declared order first, dict insertion order as tie-break (stable)
+    return out.map((f, i) => [f, i]).sort((a, b) => (a[0].order ?? 0) - (b[0].order ?? 0) || a[1] - b[1]).map((x) => x[0]);
+}
+/** THE EDIT COERCION (the one specPatch duty that survives, moved
+ * to the edit boundary): atoms emit raw strings while typing; a
+ * numeric field's edit rides the user layer as a NUMBER. An
+ * unparseable/empty numeric string rides VERBATIM (display
+ * continuity through clear-and-retype — the bench drill's law; a
+ * blank that reaches the run's schema parse refuses loud, naming
+ * the field — never a silent 0). `v === undefined` stays undefined
+ * (the tri-state's inherit — the caller's unset signal). The
+ * STUDIOS' blank-inherits law lives one door up, at their own edit
+ * verb (useResolvedForm) — each face owns its blank semantics.
+ * PURE. */
+/** THE NUMERIC PARSE, shared by both blank laws (2026-10-13, the card-UI
+ *  duplication audit): a finite parse is a number, anything else is
+ *  NOT one. The blank SEMANTICS then differ by seat and stay there —
+ *  this file rides an unparseable value VERBATIM (never a silent 0),
+ *  while the drill modal keeps the prior value (a typed "x" must
+ *  never reach a number param). One parse, two named laws; the two
+ *  copies of the parse itself are gone. */
+export function parseNumericInput(v) {
+    if (v.trim() === "")
+        return undefined;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : undefined;
+}
+export function coerceFieldEdit(f, v) {
+    if (v === undefined)
+        return undefined;
+    if (f !== undefined && (f.type === 'number' || f.type === 'seed' || f.type === 'slider')
+        && typeof v === 'string') {
+        const n = parseNumericInput(v);
+        if (n !== undefined)
+            return n;
+    }
+    return v;
+}
+/** THE FAMILY-KEY RESOLUTION (the families-DRY law, 2026-09-21):
+ * a field's `families` declares BASE family ids — the card's
+ * boarded ids — while the served model key may be a COMPOSED
+ * catalog row (family-variant-quant, e.g. 'pixal3d-1536-int8').
+ * Resolve the active key to its base against the spec's OWN
+ * boarded-families rows: the longest id matching the key at a
+ * '-' boundary wins (a 'pixal3d' + 'pixal3d-pro' board resolves
+ * to the longer). An unresolved key passes through verbatim —
+ * single-family cards and keys with no boarded base walk
+ * unchanged; the resolution never drops a field, it only widens
+ * what a declared base id covers. */
+export function resolveFamilyKey(spec) {
+    const key = typeof spec.model === 'string' ? spec.model : undefined;
+    if (key === undefined || key === '')
+        return undefined;
+    const boarded = spec.families;
+    if (boarded === undefined)
+        return key;
+    let best;
+    for (const row of boarded) {
+        const exact = key === row.id;
+        const prefixed = key.startsWith(row.id + '-')
+            && (best === undefined || row.id.length > best.length);
+        if (exact || prefixed)
+            best = row.id;
+    }
+    return best ?? key;
+}
+/** The card's own derived fields (the schema envelope walked,
+ * families-scoped to the served family). Memoize at the caller for
+ * hot loops — the walk is pure. */
+export function fieldsOf(spec) {
+    return fieldsOfEnvelope(spec.schema, resolveFamilyKey(spec));
+}
+/** THE LAYERED RESOLUTION — the engine's compose cascade mirrored
+ * client-side (stroke 34 — the card-recipe layer is dead): schema
+ * defaults <- model defaults <- SERVED STAMPS <- user. The form
+ * SHOWS exactly what a run composes; `user` rides verbatim by key
+ * presence (a PRESENCE is the override mark, never its value — the
+ * settings law). Arrays (lora bags) and nulls in model_defaults
+ * skip, matching the engine's overlay filter.
+ *
+ * THE SERVED BASE (hour-26 stroke 15, the 1:1 run law): `base` is the
+ * stage row's `resolved` map — prepareCardParams' own stamped +
+ * lifted body, served by the drafts doors. It layers UNDER the user
+ * (presence still wins) and OVER model_defaults (the server's own
+ * family/variant stamps replace the client's guesses — variant
+ * resolver_defaults, family defaults, the surface filter). Absent
+ * base = the registry-less lane derive. PURE. */
+export function resolveValue(spec, user, base) {
+    const out = specDefaults(fieldsOf(spec));
+    for (const [k, v] of Object.entries(spec.model_defaults ?? {})) {
+        if (v === null || Array.isArray(v))
+            continue;
+        out[k] = v;
+    }
+    if (base !== undefined) {
+        for (const [k, v] of Object.entries(base)) {
+            if (v === null || v === undefined || Array.isArray(v))
+                continue;
+            out[k] = v;
+        }
+    }
+    // THE INHERIT LAW (the blank-rows cure's own header: "undefined is
+    // the tri-state's inherit signal — the unset"): a materialized
+    // undefined/null key on the user layer INHERITS the resolved
+    // default — it never overwrites it. The raw Object.assign wrote
+    // undefined over every declared default for any surface whose
+    // state materializes its knobs (the h3 studio's LayerA does —
+    // every optNum key is an own undefined when unset), blanking
+    // Steps/Denoise/Shift on a fresh document while every wall ran
+    // green (they pass sparse fixtures, never materialized ones).
+    // Arrays RIDE (the mod bag is a user pick; only base/model layers
+    // skip arrays — their owners are the DECL, not the user).
+    for (const [k, v] of Object.entries(user)) {
+        if (v === null || v === undefined)
+            continue;
+        out[k] = v;
+    }
+    // THE MARRIAGE MIRROR (#36, the recipes rework — compose card.ts's
+    // own layering verbatim: "a call's own knobs > the lora entry's
+    // steps > this steps row"): when a served kind declares a knob
+    // marriage and a counting bag rides, the knob is the BAG's —
+    // stated on the row first, else the catalog row's default, Math.max
+    // across the bag ("8 on a 4-step distill is fine, 4 on an 8-step
+    // is undercooked"). The film already runs this law server-side
+    // (the service resolves bag ids against the family catalog); the
+    // face shows what the film runs — Steps reads 8 with the plaguekind
+    // turbo riding, 4 with dareties, NEVER the neutral 12. A bag id
+    // the catalog does not serve contributes nothing HERE (the mod
+    // plane and the compose door refuse unknown ids loudly — the
+    // resolver never invents a refusal of its own).
+    for (const kind of spec.features?.modifiers ?? []) {
+        if (kind.marries === undefined)
+            continue;
+        const bag = out[kind.param_key];
+        if (!Array.isArray(bag) || bag.length === 0)
+            continue;
+        const catalog = new Map((kind.options ?? []).map((o) => [o.value, o]));
+        for (const knob of Object.keys(kind.marries)) {
+            const counts = [];
+            for (const row of bag) {
+                const stated = row?.[knob];
+                if (typeof stated === 'number' && Number.isFinite(stated)) {
+                    counts.push(stated);
+                    continue;
+                }
+                const id = typeof row?.['id'] === 'string' ? row['id'] : undefined;
+                const fromCatalog = id === undefined ? undefined
+                    : catalog.get(id)?.defaults?.[knob];
+                if (typeof fromCatalog === 'number' && Number.isFinite(fromCatalog))
+                    counts.push(fromCatalog);
+            }
+            if (counts.length > 0)
+                out[knob] = Math.max(...counts);
+        }
+    }
+    return out;
+}
+/** evalVisibleWhen's serving shape: "key=value" guards, `&`-ANDed;
+ * one guard's value may be a `|`-SET ("key=a|b" = key ∈ {a,b}).
+ * (The ONE schema grammar — a field declares its own visibility;
+ * the walker interprets, cards never hand-rolled predicates.) A
+ * field with no visible_when always shows. Unknown guard keys:
+ * show (never hide on a typo). Examples:
+ *   "sharpen_enabled=true"
+ *   "sharpen_enabled=true&sharpen_method=adaptive_usm|high_pass" */
+export function fieldVisible(f, values) {
+    const rule = f.visible_when;
+    if (typeof rule !== 'string' || rule === '')
+        return true;
+    for (const guard of rule.split('&')) {
+        const g = guard.trim();
+        // THE GRAMMAR'S FULL LAW (deep pass 2026-10-10, pinned by the
+        // estate law suite's LAW 7): guards are `key=want|want` or
+        // `key!=want|want`; keys and wants TRIM; the literal `null` is
+        // the UNSET face (undefined/empty). Before this pass the
+        // interpreter honored `=` alone — every `!= null` guard on the
+        // wire parsed as key `image1 ` (trailing space) wanting
+        // `! null`, NEVER true: dead grammar the law suite caught.
+        const ne = g.indexOf('!=');
+        const eq = ne >= 0 ? -1 : g.indexOf('=');
+        let key;
+        let wants;
+        let negate = false;
+        if (ne >= 0) {
+            key = g.slice(0, ne).trim();
+            wants = g.slice(ne + 2).split('|').map((w) => w.trim());
+            negate = true;
+        }
+        else if (eq >= 0) {
+            key = g.slice(0, eq).trim();
+            wants = g.slice(eq + 1).split('|').map((w) => w.trim());
+        }
+        else {
+            continue;
+        }
+        if (key === '')
+            continue;
+        const val = String(values[key] ?? '');
+        // `null` matches the unset face ('' | undefined | null)
+        const hit = wants.some((w) => (w === 'null' ? val === '' : w === val));
+        if (negate === hit)
+            return false;
+    }
+    return true;
+}
+// ── THE LANE CONTRACT (2026-10-10, the YOU_ARE_A_LIAR fix shape 2)
+// ─────────────────────────────────────────────────────────────────
+// "a variant's field set IS its declaration": when the spec serves
+// `lanes`, the DECLARED surface owns field visibility for the
+// resolved lane (family base ∪ variant additions — laneSurfaceOf,
+// the same call the bench door resolves with) and the relation
+// words gate INLINE (judgeLaneRelations — the same judgment the
+// bench-write refusal rides). One declaration, two faces.
+//
+// THE visible_when TRUTH (li-aq.3, the design audit's F6): for a
+// declaring family the lane surface and visible_when BOTH judge —
+// they AND (a field hidden by either is hidden; a lane whose
+// surface omits a field never shows it no matter what the table
+// says). Nothing "retires": the table stays live for non-declaring
+// families, and fails SAFE under the declaration.
+//
+// THE BASE-ABSENT SHAPE (F8, stated so nobody rediscovers it):
+// `laneSurfaceOf` derives the family BASE from the declaration's
+// params list — a family that declares variants but leaves the
+// family base EMPTY surfaces ONLY the variant additions (the base
+// is a statement, not a guess); the bench door resolves the same
+// way (one call), so the two faces cannot diverge.
+/** The resolved lane surface for the current variant, or null when
+ *  the family declares none (the legacy truth — visibility falls
+ *  back to visible_when). `variantId` is the RESOLVED variant
+ *  value (values.variant); an unknown id inherits the family base
+ *  verbatim (a Quant-only or unset axis). */
+export function laneSurfaceFor(spec, variantId) {
+    const lanes = spec.lanes;
+    if (lanes === undefined)
+        return null;
+    const extra = variantId === null ? undefined : lanes.variants?.[variantId]?.params;
+    return laneSurfaceOf(lanes.base, extra);
+}
+/** The relation words that judge the resolved lane: the family's
+ *  own + the variant's own (both layers fire — the DECL cascade). */
+export function laneRelationsFor(spec, variantId) {
+    const lanes = spec.lanes;
+    if (lanes === undefined)
+        return [];
+    const out = [];
+    if (lanes.relations !== undefined)
+        out.push(lanes.relations);
+    const v = variantId === null ? undefined : lanes.variants?.[variantId]?.relations;
+    if (v !== undefined)
+        out.push(v);
+    return out;
+}
+/** The numeric bounds that judge the resolved lane: family rows,
+ *  per-field replaced by the variant's own (the DECL cascade's
+ *  replace-law for numbers). */
+export function laneBoundsFor(spec, variantId) {
+    const lanes = spec.lanes;
+    if (lanes === undefined)
+        return null;
+    return laneBoundsOf(lanes.bounds ?? null, variantId === null ? undefined : lanes.variants?.[variantId]?.bounds ?? null);
+}
+/** Field visibility UNDER the lane contract: a declared surface
+ *  hides every field it does not name (the declaration is the
+ *  author — the field set IS the variant); a family that declares
+ *  no surface keeps the visible_when grammar. */
+export function fieldOnLane(spec, paramName, values) {
+    const variantId = typeof values['variant'] === 'string' && values['variant'] !== ''
+        ? values['variant']
+        : null;
+    const surface = laneSurfaceFor(spec, variantId);
+    if (surface === null)
+        return true;
+    return surface.includes(paramName);
+}
+/** THE INLINE GATE: the lane's relation + surface violations over
+ *  what the state CARRIES — rendered under the named field while the
+ *  user types, refused by the bench door when the state is saved.
+ *  Empty = a state the run accepts.
+ *
+ *  THE CARRIED LAYERS, NOT THE RESOLVED MAP (2026-10-10, the
+ *  form-plane audit's CRITICAL-1): the resolved `values` map
+ *  materializes schema defaults and model_defaults as own
+ *  properties, so a defaulted field reads as STATED whether the user
+ *  ever touched it. On a lane that excludes a defaulted field that
+ *  produced a perpetual, UNCURABLE warning: the row was hidden
+ *  (fieldOnLane) so the cure ("drop it") was unclickable, and
+ *  unsetting it re-materialized the default. The bench judges the
+ *  PREPARED body — the operator's own params plus the stamps that
+ *  survive the null-skip — so the form judges the same thing: the
+ *  user layer over the base layer, non-null keys only. A schema
+ *  default is a PREFILL the operator never sent, and a variant's
+ *  `voice: null` stamp is exactly how the bench says "no persona on
+ *  this lane". */
+export function laneViolations(spec, fields, user, base) {
+    // THE VARIANT, tri-state (2026-10-10, the audit's HIGH-3): the
+    // axes write `variant: ''` when a family switch clears the pick,
+    // and a pick can name a row this spec never served. Both are the
+    // RUN door's voice (selectCardVariant refuses an unknown variant;
+    // the run resolves the cleared one), so this gate stands down —
+    // judging the family base there flagged states the bench admits.
+    // An ABSENT variant key is different: the family default (the
+    // head) is what composes, and the family base is its surface.
+    const carried = (key) => Object.prototype.hasOwnProperty.call(user, key) ? user[key] : (base ?? {})[key];
+    const rawVariant = carried('variant');
+    if (rawVariant !== undefined && rawVariant !== null) {
+        if (typeof rawVariant !== 'string' || rawVariant === '' || !laneVariantServed(spec, rawVariant))
+            return [];
+    }
+    const variantId = typeof rawVariant === 'string' && rawVariant !== '' ? rawVariant : null;
+    const surface = laneSurfaceFor(spec, variantId);
+    // A FAMILY THAT DECLARES RELATIONS BUT NO SURFACE still gets its
+    // words judged (2026-10-10, the DECL audit's HIGH-2): the bench
+    // judges relations regardless of surface, so returning here would
+    // leave the form silently building what the door refuses — the
+    // exact failure this whole shape exists to kill. Latent today (no
+    // such DECL), fatal the day one lands.
+    const relations = laneRelationsFor(spec, variantId);
+    if (surface === null && relations.length === 0)
+        return [];
+    const names = fields.map((f) => f.name);
+    const stated = {};
+    for (const src of [base ?? {}, user]) {
+        for (const [k, v] of Object.entries(src)) {
+            if (v === null || v === undefined)
+                continue;
+            stated[k] = v;
+        }
+    }
+    // THE RANGE RULE'S FORM FACE (2026-10-10): the model's numeric
+    // domains judge here too — the same declaration, the same voice,
+    // the cure rendered under the field while the user types instead
+    // of at the save. (The bounds see the STATED map, not the raw
+    // user layer: a stated field over its ceiling is a refusal at
+    // every seat; a defaulted field inside its row never fires.)
+    const bounds = laneBoundsFor(spec, variantId);
+    return [
+        ...judgeLaneSurface(surface, names, stated),
+        ...judgeLaneRelations(relations, stated),
+        ...judgeLaneBounds(bounds, stated),
+    ];
+}
+/** Does the served doc offer this variant id? The VARIANT rows are
+ *  the served truth — a recipe row and a surface-less variant
+ *  (voicedesign) legitimately carry no `lanes.variants` entry and
+ *  still inherit the family base, so the check reads spec.variants
+ *  ids, never the lanes map's keys. */
+function laneVariantServed(spec, variantId) {
+    const rows = Array.isArray(spec.variants) ? spec.variants : [];
+    return rows.some((row) => {
+        const rec = row;
+        return rec?.id === variantId || rec?.key === variantId;
+    });
+}
+/** Group the visible fields (the spec's own group key, first-appearance
+ *  order — ungrouped first under no heading). */
+export function groupFields(fields, values) {
+    const out = [];
+    for (const f of fields) {
+        if (!fieldVisible(f, values))
+            continue;
+        const g = typeof f.group === 'string' && f.group !== '' ? f.group : null;
+        const known = out.find((x) => x.group === g);
+        if (known === undefined)
+            out.push({ group: g, fields: [f] });
+        else
+            known.fields.push(f);
+    }
+    return out;
+}
+/** The declared input edge for a param, if the emission names one
+ *  (THE EDGE LOOKUP — the constructor's one way to know a field is
+ *  slot-shaped: the DECLARATION says so, the wtype never guesses). */
+export function inputEdgeOf(spec, paramName) {
+    return (spec.inputs ?? []).find((e) => e.name === paramName);
+}
+/** The axis groups in declaration order: features.variant_groups'
+ *  key order when the door serves it, else the rows' distinct groups
+ *  in first-seen order. Empty group names never ride. The Recipe
+ *  group never rides (the recipe-axis yield above). */
+export function axisGroups(spec) {
+    const rows = spec.variants ?? [];
+    const groups = [];
+    const declared = variantGroupsContract(spec);
+    if (declared.length > 0) {
+        for (const g of declared)
+            if (g !== '' && !groups.includes(g))
+                groups.push(g);
+    }
+    for (const v of rows) {
+        if (v.group !== '' && !groups.includes(v.group))
+            groups.push(v.group);
+    }
+    // THE RECIPE-AXIS YIELD (strokes 33+34): the Recipe MATRIX group
+    // NEVER rides as an axis — no card owns a `recipe` field anymore
+    // (the card-recipe layer is dead), so the key has no legal seat
+    // anywhere. Family Recipe rows serve as MACRO PILLS (the stamp
+    // verb writes their payload onto declared keys); the stamp-less
+    // `default` row is display metadata and renders nothing.
+    return groups.filter((g) => g !== 'Recipe');
+}
+/** The variant_groups contract's keys, in served order (the door
+ *  serves it under features when the family declares axis groups). */
+export function variantGroupsContract(spec) {
+    const feats = spec.features;
+    const vg = feats?.['variant_groups'];
+    if (vg === null || typeof vg !== 'object' || Array.isArray(vg))
+        return [];
+    return Object.keys(vg);
+}
+/** One axis' rows (served order). */
+export function rowsFor(spec, group) {
+    return (spec.variants ?? []).filter((v) => v.group === group);
+}
+/** THE CHAIN (one direction: an axis filters the axes BELOW it): a
+ *  row composes with the current selection when its `owner` is empty
+ *  (composes with everything — patch-only rows) or names the ACTIVE
+ *  row of another axis. */
+export function composingRows(spec, group, active) {
+    return rowsFor(spec, group).filter((v) => {
+        if (v.owner === undefined || v.owner === '')
+            return true;
+        for (const g of axisGroups(spec)) {
+            if (g === group)
+                continue;
+            const row = rowsFor(spec, g).find((x) => x.id === v.owner);
+            if (row !== undefined)
+                return active[g] === v.owner;
+        }
+        return true;
+    });
+}
+/** The Variant axis' rows (group 'Variant', served order). */
+export function variantRows(spec) {
+    return rowsFor(spec, 'Variant');
+}
+/** The Quant cells composing with a variant (THE CHAIN). */
+export function quantRowsFor(spec, variantId) {
+    return composingRows(spec, 'Quant', { Variant: variantId ?? undefined });
+}
+/** The Model select's options (stroke 21, the operator's law:
+ *  "WHY IS KREA-2 AND KREA-2-RAW MODELS! THAT IS A VARIANT") — THE
+ *  FAMILY THE SPEC SERVES, full stop. A variant row's re-point
+ *  (krea-2-raw) is the DECL's compose stamp, resolved server-side
+ *  into the run's params — it is NOT a model and never renders as
+ *  one. The rail's other options are the card's boarded families
+ *  (spec.families, served from the card package). */
+export function modelChoices(spec) {
+    return typeof spec.model === 'string' && spec.model !== '' ? [spec.model] : [];
+}
+/** THE ACTIVE-ENTRY LAW (activeVariantId, generalized to the served
+ *  shape): a row is active when its re-pointed model (defaults.model
+ *  ?? route) matches the held `model` value AND its owner chain
+ *  holds. Nothing matches → undefined (the caller falls to the first
+ *  composing row — the catalog's first-declared law). */
+export function activeVariantId(spec, values, group) {
+    const held = typeof values['model'] === 'string' ? values['model'] : undefined;
+    if (held === undefined)
+        return undefined;
+    const active = {};
+    for (const g of axisGroups(spec)) {
+        active[g] = activeRowId(spec, values, g, active);
+    }
+    return active[group] ?? undefined;
+}
+/** The ACTIVE RECIPE (the dropdown's selection state, derived from
+ * the ONE truth -- never a persisted key): a recipe row is active
+ * when EVERY key its pick stamps (axisPickPatch, minus the durable
+ * axis keys -- the run door refuses an undeclared `recipe` param)
+ * deep-equals the user layer's held value. Stamp-for-stamp matches
+ * are naturally exclusive (a two-row bag matches only the row that
+ * stamps two rows); first-declared wins on a tie. NOTHING matches ->
+ * undefined (the dropdown shows its placeholder -- a hand-edited
+ * layer is not a recipe, and the form never lies about it). */
+export function activeRecipeId(spec, values) {
+    for (const row of rowsFor(spec, 'Recipe')) {
+        const patch = axisPickPatch(spec, row);
+        let holds = true;
+        for (const [k, v] of Object.entries(patch)) {
+            if (k === axisKey('Recipe'))
+                continue;
+            if (!deepEqualJson(values[k], v)) {
+                holds = false;
+                break;
+            }
+        }
+        if (holds && Object.keys(patch).length > 0)
+            return row.id;
+    }
+    return undefined;
+}
+/** One group's active row under the owner chain (inner recursion of
+ *  activeVariantId — Variant resolves first, chained groups after). */
+export function activeRowId(spec, values, group, active) {
+    const held = typeof values['model'] === 'string' ? values['model'] : undefined;
+    if (held === undefined)
+        return undefined;
+    for (const v of rowsFor(spec, group)) {
+        const rePoint = typeof v.defaults['model'] === 'string' ? v.defaults['model'] : v.route;
+        if (rePoint === '' || rePoint !== held)
+            continue;
+        if (v.owner !== undefined && v.owner !== '') {
+            let chainHolds = false;
+            for (const g of axisGroups(spec)) {
+                if (g === group)
+                    continue;
+                if (rowsFor(spec, g).find((x) => x.id === v.owner) !== undefined) {
+                    chainHolds = active[g] === v.owner;
+                    break;
+                }
+            }
+            if (!chainHolds)
+                continue;
+        }
+        return v.id;
+    }
+    return undefined;
+}
+/** THE AXIS STAMP VOCABULARY (2026-09-29, caught LIVE by the
+ *  compose gate in the CI seat: the client stamped the Quant row's
+ *  composed catalog id — 'raw__int8' — where the door's contract
+ *  speaks the CELL's quant field — 'int8'; the gate refused with the
+ *  door's own voice and the write never left the studio, which is
+ *  exactly the law working). The value an axis pick stamps on the
+ *  durable key is the value the DOOR reads: the variant id for
+ *  Variant, the cell quant for Quant. Never the flat-catalog id.
+ * PURE. */
+export function axisStampOf(row) {
+    if (row.group !== 'Quant')
+        return row.id;
+    if (typeof row.quant === 'string' && row.quant !== '')
+        return row.quant;
+    // NO FALLBACK (2026-09-29, the second live break): the old
+    // `?? row.id` arm was the second vocabulary's doorway — it
+    // legalized stamping the catalog's composite address ('raw__int8')
+    // where the door's contract speaks the cell coordinate ('int8').
+    // A Quant row without its coordinate is an ILLEGAL ROW: discovery
+    // refuses it at birth, and if a hole ever reopens the stamper
+    // REFUSES LOUD here rather than construct a contract the door
+    // would refuse a millisecond later.
+    throw new Error('illegal Quant row ' + JSON.stringify(row.id)
+        + ' (owner ' + JSON.stringify(row.owner ?? '') + '): no quant coordinate —'
+        + ' the row is refused at the stamp; the spec server must refuse it at birth');
+}
+/** The durable param key an axis rides (the group's id, lowercased —
+ *  'variant', 'quant', 'recipe', 'precision'). */
+export function axisKey(group) {
+    return group.toLowerCase();
+}
+/** A pick's full value patch — the old onPick law: the row's
+ *  `defaults` overlay rides (model re-point + every resolver default),
+ *  plus the durable axis keys themselves so a reopened stage restores
+ *  its selects. Picking a row also re-seeds the axes BELOW it (their
+ *  first composing row). */
+export function axisPickPatch(spec, row) {
+    // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (stroke 21): the
+    // row's re-point stamp (model: krea-2-raw) never lands in the user
+    // layer — the server's compose resolves the route into the run's
+    // params. The row's other defaults (steps, cfg) ride as the pick's
+    // visible stamps.
+    const patch = {};
+    for (const [k, v] of Object.entries(row.defaults)) {
+        if (k === 'model')
+            continue;
+        patch[k] = v;
+    }
+    const groups = axisGroups(spec);
+    const at = groups.indexOf(row.group);
+    const active = {};
+    for (const g of groups) {
+        if (g === row.group)
+            active[g] = row.id;
+        else if (typeof row.defaults['model'] === 'string')
+            active[g] = undefined;
+    }
+    // THE VOCABULARY GUARD (stroke 33): the durable axis key stamps
+    // only when the group rides as an axis — a Recipe-row pick on a
+    // card without the field keeps its declared-knob defaults, never
+    // the undeclareable `recipe` key (the compose-door refusal).
+    if (groups.includes(row.group))
+        patch[axisKey(row.group)] = axisStampOf(row);
+    // ONLY the axes BELOW the picked one re-seed (the chain runs one
+    // direction); the axes above stay exactly as the user set them. A
+    // group outside the axes (Recipe since the yield) has nothing
+    // below it — no reseed at all.
+    if (at < 0)
+        return patch;
+    for (const g of groups.slice(at + 1)) {
+        const composing = composingRows(spec, g, active);
+        if (composing.length > 0)
+            patch[axisKey(g)] = axisStampOf(composing[0]);
+        else
+            patch[axisKey(g)] = '';
+    }
+    return patch;
+}
+/** A model switch's full value patch (the stale-variant cure,
+ *  operator 2026-09-14: model anima + variant turbo refused at
+ *  compose — a switch that keeps the old family's axes is a broken
+ *  stage). Every axis re-seeds to its FIRST row re-pointing at the
+ *  new model (else its first composing row), and the picked rows'
+ *  defaults overlay rides (raw → {model, steps, cfg} — the pick
+ *  law, same as axisPickPatch). The caller writes every key through
+ *  onEdit. PURE. */
+export function modelSwitchPatch(spec, model) {
+    const patch = { model };
+    const groups = axisGroups(spec);
+    const active = {};
+    // FAMILY SWITCH (stroke 21: a model pick is either the spec's own
+    // family or a switch — routes are not models, so the re-point union
+    // is gone). A switch CLEARS the axes (stroke 19's law): this
+    // spec's rows belong to another family; seeding them under the new
+    // model is poison. The drill refetches the family's spec and the
+    // absent axis keys seed from ITS first-declared rows.
+    const crossSpec = model !== '' && model !== spec.model;
+    for (const g of groups) {
+        // THE CHAIN (one direction, the activeRowId law): only composing
+        // rows are pickable — when nothing composes (raw owns no quant
+        // cells) the axis rests EMPTY, never a foreign row (int8 belongs
+        // to turbo; seating it under raw is turbo-for-anima again).
+        const composing = composingRows(spec, g, active);
+        if (composing.length === 0 || crossSpec) {
+            // cross-spec: EVERY axis clears (variant and quant filter to
+            // the NEW family's rows once its spec lands — never this
+            // spec's rows carried over)
+            patch[axisKey(g)] = '';
+            active[g] = '';
+            continue;
+        }
+        const match = composing.find((r) => {
+            const rePoint = typeof r.defaults['model'] === 'string' && r.defaults['model'] !== ''
+                ? r.defaults['model'] : r.route;
+            return rePoint === model;
+        });
+        const row = match ?? composing[0];
+        // THE USER PLANE SPEAKS THE CARD'S VOCABULARY (model = family,
+        // variant/quant = row ids): a row's re-point stamp (model:
+        // krea-2-raw) is the DECL's compose business — the server
+        // resolves it into the run's params. It NEVER lands in the user
+        // layer, so the Model rail never shows routes and a reopened
+        // stage never holds one. The row's OTHER defaults (steps, cfg)
+        // still ride — they are the pick's visible stamps.
+        for (const [k, v] of Object.entries(row.defaults)) {
+            if (k === 'model')
+                continue;
+            patch[k] = v;
+        }
+        patch[axisKey(g)] = row.id;
+        active[g] = row.id;
+    }
+    patch['model'] = model;
+    return patch;
+}
+/** THE EMPTY-SELECTION LAW's authoring decision (2026-10-10, the
+ *  operator's live bench: a stage carrying quant:"" — born when a
+ *  model switch CLEARED the axis to '' — which the RUN door refused:
+ *  'unknown quant "" for model "z-image" variant "turbo" (known:
+ *  int8)'). A stated EMPTY selection is UNSTATED: the authoring
+ *  seat unsets the key instead of writing the empty string, so
+ *  compose defaults the cell. ONE pure decision, shared by the seed
+ *  (seedAxisValues omits) and the write (the drill's onSet unsets)
+ *  — the form's rendering is untouched (a missing axis key reads
+ *  as '' on screen). */
+export function axisUnset(name, v, spec) {
+    if (v !== "" || spec === null)
+        return false;
+    return axisGroups(spec).some((g) => axisKey(g) === name);
+}
+/** Seed the axis keys for a fresh stage (the catalog's first-declared
+ *  law: each axis defaults to its FIRST composing row). Held values
+ *  win (a reopened stage never re-seeds). */
+export function seedAxisValues(spec, held) {
+    const out = {};
+    const groups = axisGroups(spec);
+    if (groups.length === 0)
+        return out;
+    const active = {};
+    for (const g of groups) {
+        const heldKey = typeof held[axisKey(g)] === 'string' ? held[axisKey(g)] : '';
+        const rows = rowsFor(spec, g);
+        const heldRow = rows.find((x) => x.id === heldKey);
+        if (heldRow !== undefined) {
+            active[g] = heldRow.id;
+        }
+        else {
+            // first COMPOSING row (the chain law); when nothing composes the
+            // axis rests empty — never a non-composing row
+            const composing = composingRows(spec, g, active);
+            active[g] = composing.length > 0 ? composing[0].id : '';
+        }
+        // THE EMPTY-SELECTION LAW's form half (2026-10-10, the
+        // operator's live bench: a stage born with quant:"" that the
+        // RUN door refused — "unknown quant \"\"" for a lane whose only
+        // cell is int8). An axis with no composing row is UNSTATED, not
+        // stated-empty: the key is omitted so compose defaults it. The
+        // "" value was a form's unchosen control written as a value —
+        // the form rendering never changes (an axisKey the values lack
+        // reads as '' on the form side; the seed is params).
+        if (active[g] !== "")
+            out[axisKey(g)] = active[g];
+    }
+    const heldModel = held['model'];
+    if (typeof heldModel !== 'string' || heldModel === '') {
+        // THE MODEL ARM IS THE FAMILY (stroke 21): the seeded row's
+        // re-point (qwen-img-edit-2511-lightning4) is the server's
+        // compose stamp — the user plane never holds a route
+        const model = typeof spec.model === 'string' && spec.model !== '' ? spec.model : '';
+        if (model !== '')
+            out['model'] = model;
+    }
+    return out;
+}
+/** Seed a stage's USER layer from its held params (the bench's
+ * stage.params — the only migration seam). Presence-based, per the
+ * settings law: every HELD key rides verbatim (the override marks
+ * survived the reopen), the absent axis keys seed per the axis law
+ * (seedAxisValues above — first composing row, one direction).
+ *
+ * THE ONE VALIDATION CLAUSE (never value-compare): a held `recipe`
+ * the card's schema does not declare is poison — the dead
+ * card-recipe layer's stamp (strokes 33+34). Dropped on open, so
+ * the run flush's null-domain half deletes the bench key and the
+ * card composes again. Everything else rides untouched.
+ *
+ * PURE — the caller owns the write (onSet per fresh key). */
+export function seedUser(spec, held) {
+    const out = { ...held, ...seedAxisValues(spec, held) };
+    if (!fieldsOf(spec).some((f) => f.name === 'recipe'))
+        delete out['recipe'];
+    return out;
+}
+export function composeValidate(spec, doc) {
+    if (spec === null)
+        return [];
+    const heldModel = doc['model'];
+    if (typeof heldModel === 'string' && heldModel !== '' && spec.model !== undefined
+        && spec.model !== '' && heldModel !== spec.model) {
+        // this spec is not the law-holder for that doc — the door will
+        // read the doc's own family spec (the drill refetches per model)
+        return [];
+    }
+    const out = [];
+    const all = spec.variants ?? [];
+    // THE DOOR'S POOL, mirrored (selectVariant): offered non-Recipe
+    // rows — the served list mixes the discovery-expanded Quant CELLS
+    // into the same array, and the door's facts row never sees those;
+    // an all-Recipe family falls back to the whole offered list (the
+    // door's own configured.length gate).
+    const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant');
+    const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant');
+    const rawVariant = doc['variant'];
+    let offered;
+    if (typeof rawVariant === 'string' && rawVariant !== '') {
+        // the door matches id OR route (selectVariant: v.id === x ||
+        // v.route === x) — a route-spelled variant is LEGAL at the door
+        // and must be legal here.
+        offered = pool.find((r) => r.id === rawVariant || r.route === rawVariant);
+        if (offered === undefined) {
+            out.push({
+                message: 'card_compose: ' + unknownVariantVoice(rawVariant, spec.model ?? '', pool.map((r) => r.id)),
+            });
+            return out;
+        }
+    }
+    else {
+        // THE DOOR'S DEFAULT (selectVariant: variant = pool[0]) — the
+        // second live break (2026-09-29, 'unknown quant "raw__int8"'):
+        // the gate SKIPPED the quant clause when variant was unstated,
+        // while the door resolves pool[0] and REFUSES the quant against
+        // it. An unstated variant is never a skip — it is a resolution,
+        // exactly the door's.
+        offered = pool[0];
+    }
+    if (offered !== undefined) {
+        // clause 2 — the stated quant must be a cell of THIS variant
+        const rawQuant = doc['quant'];
+        if (typeof rawQuant === 'string' && rawQuant !== '') {
+            const cells = all.filter((r) => r.group === 'Quant' && r.owner === offered.id);
+            if (!cells.some((c) => c.quant === rawQuant)) {
+                out.push({
+                    message: 'card_compose: ' + unknownQuantVoice(rawQuant, spec.model ?? '', offered.id, cells.map((c) => c.quant).filter((q) => typeof q === 'string')),
+                });
+            }
+        }
+        // clause 3 — the envelope, against the RESOLVED variant (the
+        // stated one, else the door's pool[0] — never the still-held
+        // one: the half-switch's whole failure was the door judging
+        // raw's cfg against turbo's envelope). The door judges the RAW
+        // body BEFORE the overlay stamps (stampCardOverlay calls
+        // envelopeRefusal first) — so only EXPLICIT numeric knobs count,
+        // never composed defaults.
+        // THE ONE JUDGE (the voice audit, 2026-10-11): the body
+        // composes in @melite/contracts — the door's envelopeRefusal
+        // asks the same judge, so the mirror and the door can no
+        // longer spell two truths. The client's frame stays phase-less
+        // (the press-side lint never knows the door's phase); the
+        // door adds the marriage clause + lane-read tail it owns.
+        const off = judgeSamplerEnvelope(doc, offered.sampler_envelope ?? null, {
+            id: offered.id,
+            route: offered.route,
+        });
+        if (off !== null) {
+            out.push({
+                message: 'card_compose: ' + off.voice
+                    + '. ' + samplerEnvelopeCure(),
+            });
+        }
+    }
+    return out;
+}
+/** Compose the CANDIDATE doc the door would judge: the bench row's
+ *  held params, the user layer's overrides, then the in-flight frame
+ *  — later layers win, and a null value DELETES the key (the wire's
+ *  own unset law). This is composition: the full doc, assembled
+ *  where the edit happens, so the law can run BEFORE the write. */
+export function composeCandidateDoc(held, user, frame) {
+    const doc = { ...held, ...user };
+    for (const [k, v] of Object.entries(frame)) {
+        if (v === null)
+            delete doc[k];
+        else
+            doc[k] = v;
+    }
+    return doc;
+}
+//# sourceMappingURL=spec.js.map

@@ -22,7 +22,7 @@ import type { MotionConstraint } from "@melite/formats/motionConstraints"
 import { makeTimelineId } from "@melite-plugin/timeline/ui/timeline"
 import { jointsFromCm, patchFrame } from "@melite/formats"
 import { stampEditedPose } from "@melite/formats/motionConstraints"
-import type { StageRect } from "./MotionExportDialog"
+import type { StageRect } from "./MotionExportDialog.tsx"
 
 export type ToastFn = (type: "error" | "success" | "info", message: string) => void
 

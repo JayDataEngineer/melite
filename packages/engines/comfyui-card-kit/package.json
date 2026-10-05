@@ -3,21 +3,48 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "description": "The compose kit \u2014 the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
-  "main": "./src/kit.ts",
+  "description": "The compose kit — the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",
   "exports": {
-    ".": "./src/kit.ts",
-    "./graph": "./src/graph.ts",
-    "./impact": "./src/impact.ts",
-    "./facts": "./src/facts.ts",
-    "./fields": "./src/fields.ts",
-    "./vocab": "./src/vocab.ts",
-    "./paramRows": "./src/paramRows.ts",
-    "./morphs": "./src/morphs.ts",
-    "./guard": "./src/mods/guard.ts",
+    ".": {
+      "types": "./lib/kit.d.ts",
+      "default": "./lib/kit.js"
+    },
+    "./graph": {
+      "types": "./lib/graph.d.ts",
+      "default": "./lib/graph.js"
+    },
+    "./impact": {
+      "types": "./lib/impact.d.ts",
+      "default": "./lib/impact.js"
+    },
+    "./facts": {
+      "types": "./lib/facts.d.ts",
+      "default": "./lib/facts.js"
+    },
+    "./fields": {
+      "types": "./lib/fields.d.ts",
+      "default": "./lib/fields.js"
+    },
+    "./vocab": {
+      "types": "./lib/vocab.d.ts",
+      "default": "./lib/vocab.js"
+    },
+    "./paramRows": {
+      "types": "./lib/paramRows.d.ts",
+      "default": "./lib/paramRows.js"
+    },
+    "./morphs": {
+      "types": "./lib/morphs.d.ts",
+      "default": "./lib/morphs.js"
+    },
+    "./guard": {
+      "types": "./lib/mods/guard.d.ts",
+      "default": "./lib/mods/guard.js"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -28,5 +55,10 @@
   "devDependencies": {
     "@types/node": "^22.20.0",
     "typescript": "^5.9.3"
-  }
+  },
+  "files": [
+    "lib/kit.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

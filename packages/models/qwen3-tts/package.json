@@ -4,22 +4,40 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json",
-    "./mods/qvoice": "./mods/qvoice.ts",
-    "./mods/qvoice_save": "./mods/qvoice_save.ts"
+    "./mods/qvoice": {
+      "types": "./lib/mods/qvoice.d.ts",
+      "default": "./lib/mods/qvoice.js"
+    },
+    "./mods/qvoice_save": {
+      "types": "./lib/mods/qvoice_save.d.ts",
+      "default": "./lib/mods/qvoice_save.js"
+    }
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@melite/comfyui-card-kit": "workspace:*",
     "@melite/comfyui-cordis": "workspace:*",
     "@melite/engine-contract": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build-mods.json && tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ],
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.4"
   }
 }

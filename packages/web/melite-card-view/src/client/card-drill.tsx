@@ -19,7 +19,7 @@ import { Button, Modal, Pill, Input } from '@deepseek-ai/dsh-client-ui-primitive
 import css from './card.module.css'
 import type { EditMap, ParamField } from './draft.ts'
 import { editPatch } from './draft.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 export interface CardDrillProps {
   /** Modal title — the surface names its card. */

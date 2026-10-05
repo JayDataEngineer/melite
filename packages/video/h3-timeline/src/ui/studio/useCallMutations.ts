@@ -4,7 +4,7 @@
  * every logic line is verbatim from the monolith (source range noted).
  */
 import type { Dispatch, SetStateAction } from "react"
-import type { BeatKnobs, CallRefs, DocCall, GuideKind } from "./docModel"
+import type { BeatKnobs, CallRefs, DocCall, GuideKind } from "./docModel.ts"
 import { GRID_BASE, GRID_STEP, isCarriedShape, isLegalCallLength, reflowSeamSpan, snapCallEnd, snapCallLength, snapSplitFrame, shortestCallLength } from "./docGrid.ts"
 
 /** Call-structure setters: extend/add/guide/span/knobs (tenant §8).

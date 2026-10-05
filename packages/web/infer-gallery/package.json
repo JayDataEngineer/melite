@@ -3,12 +3,17 @@
   "version": "0.3.1",
   "type": "module",
   "private": true,
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./lib/client.js",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client/index.js",
     "./package.json": "./package.json",
-    "./drilldown": "./src/drilldown.tsx"
+    "./drilldown": {
+      "types": "./lib/drilldown.d.ts",
+      "default": "./lib/drilldown.js"
+    }
   },
   "dsh": {
     "bundle": {
@@ -25,10 +30,10 @@
     }
   },
   "scripts": {
-    "build": "pnpm exec tsdown -c tsdown.config.ts",
-    "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json",
+    "build:mesh-door": "vite build --config e2e/mesh-door/vite.config.mts",
     "test:e2e": "playwright test",
-    "build:mesh-door": "vite build --config e2e/mesh-door/vite.config.mts"
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",
@@ -63,5 +68,11 @@
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
     "three": "^0.184.0"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css"
+  ]
 }

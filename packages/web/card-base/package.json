@@ -3,14 +3,19 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "main": "./src/host.ts",
   "exports": {
-    ".": "./src/host.ts",
-    "./client": {
-      "types": "./src/client/index.ts",
-      "default": "./lib/client.js"
+    ".": {
+      "types": "./lib/host.d.ts",
+      "default": "./lib/host.js"
     },
-    "./spec": "./src/spec.ts",
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "default": "./lib/client/index.js"
+    },
+    "./spec": {
+      "types": "./lib/spec.d.ts",
+      "default": "./lib/spec.js"
+    },
     "./package.json": "./package.json"
   },
   "peerDependencies": {
@@ -38,6 +43,7 @@
     "typescript": "~6.0.3"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -64,5 +70,10 @@
         "@deepseek-ai/dsh-api-gateway/client"
       ]
     }
-  }
+  },
+  "files": [
+    "lib/host.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

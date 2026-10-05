@@ -3,9 +3,11 @@
   "private": true,
   "version": "0.3.1",
   "type": "module",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json"
   },
   "dsh": {
@@ -14,7 +16,6 @@
     }
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-subprocess": "0.2.0-rc.1",
     "@deepseek-ai/dsh-subprocess-local": "0.2.0-rc.1",
     "@deepseek-ai/schemastery": "^3.18.4",
@@ -35,14 +36,22 @@
     "@melite/models-krea-2": "workspace:*"
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@melite/card-base": "workspace:*",
     "@types/node": "^22.20.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
-  }
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

@@ -59,7 +59,7 @@ import { estateRemote, isEstateRefusal, unwrapRemote, type BenchNamespace } from
 export type { BenchNamespace }
 import type { FlowEventFrame } from './draft.ts'
 import { patchStageOutcome } from './draft.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 // the draft tail's delay (module scope: the other sleeps in this
 // file are locals of other generator scopes)

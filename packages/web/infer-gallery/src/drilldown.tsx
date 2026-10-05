@@ -17,7 +17,7 @@ import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 
 import css from './client/overlay.module.css'
 import { MeshView } from './client/mesh-view.tsx'
-import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTertiary3 } from './client/ui.tokens'
+import { bgBase1, labelPrimary2, stateBusinessPrimary, stateWarnPrimary1, textTertiary3 } from './client/ui.tokens.ts'
 
 /** The drilldown's own currency — everything the face reads, nothing
  *  it doesn't (the gallery's richer item satisfies it structurally). */

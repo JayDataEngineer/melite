@@ -2,12 +2,12 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useCallback } from "react";
-import { KEYFRAME_HIT_RADIUS, KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import type { TimelineInterval, TimelineMessage } from "./messages";
-import type { TimelineKeyframe, TimelinePrompt } from "./types";
-import { getZoomEnvelopeEndFrame } from "./timeline-scales";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state";
+import { KEYFRAME_HIT_RADIUS, KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import type { TimelineInterval, TimelineMessage } from "./messages.ts";
+import type { TimelineKeyframe, TimelinePrompt } from "./types.ts";
+import { getZoomEnvelopeEndFrame } from "./timeline-scales.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
 
 export interface TimelineGeometryArgs {
  timelineState: TimelineMessage | null;

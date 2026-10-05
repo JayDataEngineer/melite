@@ -27,7 +27,7 @@ import { freshStageRow } from './cards-resource.ts'
 import { AudioStagePreview, ImageStagePreview, MeshStagePreview, ReportView, VideoStagePreview, figureCoeffsOf, figureLocalChangesOf, figureCameraOf } from '@melite/card-base/client'
 import { CardZoomOverlay } from './zoom.tsx'
 import { loadFormsEdgeMeta } from './forms-edge-meta.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** THE SHARED DRILLDOWN — spec-formatted (the old system's law): the
  *  stage's card carries a DECLARED form (/v1/form-spec — typed atoms,

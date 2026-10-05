@@ -16,8 +16,8 @@
 // Adding a new audio surface (e.g. form_podcast) is now a YAML edit, not a
 // new `selectedService === "..."` branch in N components.
 
-import { apiFetch } from "./api"
-import { createClientStore } from "./clientStore"
+import { apiFetch } from "./api.ts"
+import { createClientStore } from "./clientStore.ts"
 
 export interface FormEntry {
   /** sidebar_key — the MCP tool / surface name shown in the sidebar. */

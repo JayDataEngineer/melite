@@ -4,11 +4,11 @@
  */
 import type { TimelineSegment } from "@melite/contracts"
 import { DEFAULT_SEGMENT_PARAMS, normalizeSegmentStatus } from "@melite/contracts"
-import type { GetState, SetState } from "./createStore"
-import { syncUidCounter, uid } from "./timelineIds"
-import { pushHistory } from "./timelineHistory"
-import { loadPersistedTimeline, schedulePersist } from "./timelinePersistence"
-import type { TimelineStore } from "./timelineStoreTypes"
+import type { GetState, SetState } from "./createStore.ts"
+import { syncUidCounter, uid } from "./timelineIds.ts"
+import { pushHistory } from "./timelineHistory.ts"
+import { loadPersistedTimeline, schedulePersist } from "./timelinePersistence.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 export function createSegmentSlice(
   set: SetState<TimelineStore>,

@@ -6,7 +6,7 @@
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives"
 import { cn } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import type { DocCall } from "./docModel"
+import type { DocCall } from "./docModel.ts"
 
 /** One call's prompt editor: ONE textarea + ✨ H3 style. */
 export function CallCardPrompt({

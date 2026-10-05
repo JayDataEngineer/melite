@@ -2,45 +2,130 @@
   "name": "@melite/contracts",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
   "dependencies": {},
   "exports": {
-    ".": "./src/index.ts",
-    "./FlowTypes": "./src/FlowTypes.ts",
-    "./benchSnapshot": "./src/benchSnapshot.ts",
-    "./benchResult": "./src/benchResult.ts",
-    "./browserStorage": "./src/browserStorage.ts",
-    "./card": "./src/card.ts",
-    "./character": "./src/character.ts",
-    "./enhanceTypes": "./src/enhanceTypes.ts",
-    "./extraKeys": "./src/extraKeys.ts",
-    "./laneRelations": "./src/laneRelations.ts",
-    "./loraTypes": "./src/loraTypes.ts",
-    "./mediaKinds": "./src/mediaKinds.ts",
-    "./mediaRange": "./src/mediaRange.ts",
-    "./mediaTypes": "./src/mediaTypes.ts",
-    "./modifierSubcards": "./src/modifierSubcards.ts",
-    "./objectUrlCache": "./src/objectUrlCache.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./FlowTypes": {
+      "types": "./lib/FlowTypes.d.ts",
+      "default": "./lib/FlowTypes.js"
+    },
+    "./benchSnapshot": {
+      "types": "./lib/benchSnapshot.d.ts",
+      "default": "./lib/benchSnapshot.js"
+    },
+    "./benchResult": {
+      "types": "./lib/benchResult.d.ts",
+      "default": "./lib/benchResult.js"
+    },
+    "./browserStorage": {
+      "types": "./lib/browserStorage.d.ts",
+      "default": "./lib/browserStorage.js"
+    },
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    },
+    "./character": {
+      "types": "./lib/character.d.ts",
+      "default": "./lib/character.js"
+    },
+    "./enhanceTypes": {
+      "types": "./lib/enhanceTypes.d.ts",
+      "default": "./lib/enhanceTypes.js"
+    },
+    "./extraKeys": {
+      "types": "./lib/extraKeys.d.ts",
+      "default": "./lib/extraKeys.js"
+    },
+    "./laneRelations": {
+      "types": "./lib/laneRelations.d.ts",
+      "default": "./lib/laneRelations.js"
+    },
+    "./loraTypes": {
+      "types": "./lib/loraTypes.d.ts",
+      "default": "./lib/loraTypes.js"
+    },
+    "./mediaKinds": {
+      "types": "./lib/mediaKinds.d.ts",
+      "default": "./lib/mediaKinds.js"
+    },
+    "./mediaRange": {
+      "types": "./lib/mediaRange.d.ts",
+      "default": "./lib/mediaRange.js"
+    },
+    "./mediaTypes": {
+      "types": "./lib/mediaTypes.d.ts",
+      "default": "./lib/mediaTypes.js"
+    },
+    "./modifierSubcards": {
+      "types": "./lib/modifierSubcards.d.ts",
+      "default": "./lib/modifierSubcards.js"
+    },
+    "./objectUrlCache": {
+      "types": "./lib/objectUrlCache.d.ts",
+      "default": "./lib/objectUrlCache.js"
+    },
     "./package.json": "./package.json",
-    "./regions": "./src/regions.ts",
-    "./rootsManifest": "./src/rootsManifest.ts",
-    "./schema": "./src/schema.d.ts",
-    "./stageView": "./src/stageView.ts",
-    "./studio": "./src/studio.ts",
-    "./timelineTypes": "./src/timelineTypes.ts",
-    "./vocab": "./src/vocab.ts",
-    "./wire": "./src/wire.ts",
-    "./benchStage": "./src/benchStage.ts",
-    "./applyGuard": "./src/applyGuard.ts",
-    "./formSpec": "./src/formSpec.ts"
+    "./regions": {
+      "types": "./lib/regions.d.ts",
+      "default": "./lib/regions.js"
+    },
+    "./rootsManifest": {
+      "types": "./lib/rootsManifest.d.ts",
+      "default": "./lib/rootsManifest.js"
+    },
+    "./schema": {
+      "types": "./lib/schema.d.ts"
+    },
+    "./stageView": {
+      "types": "./lib/stageView.d.ts",
+      "default": "./lib/stageView.js"
+    },
+    "./studio": {
+      "types": "./lib/studio.d.ts",
+      "default": "./lib/studio.js"
+    },
+    "./timelineTypes": {
+      "types": "./lib/timelineTypes.d.ts",
+      "default": "./lib/timelineTypes.js"
+    },
+    "./vocab": {
+      "types": "./lib/vocab.d.ts",
+      "default": "./lib/vocab.js"
+    },
+    "./wire": {
+      "types": "./lib/wire.d.ts",
+      "default": "./lib/wire.js"
+    },
+    "./benchStage": {
+      "types": "./lib/benchStage.d.ts",
+      "default": "./lib/benchStage.js"
+    },
+    "./applyGuard": {
+      "types": "./lib/applyGuard.d.ts",
+      "default": "./lib/applyGuard.js"
+    },
+    "./formSpec": {
+      "types": "./lib/formSpec.d.ts",
+      "default": "./lib/formSpec.js"
+    }
   },
   "version": "0.3.1",
   "types": "./src/index.ts",
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "typescript": "^5.9.3",
     "@types/node": "^22.20.0"
-  }
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts"
+  ]
 }

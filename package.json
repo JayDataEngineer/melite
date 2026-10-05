@@ -36,6 +36,7 @@
     "yaml": "2.9.0"
   },
   "scripts": {
+    "build": "node tools/build-plane.mjs build",
     "knip": "node tools/knip-budget.mjs",
     "lint": "node tools/arch-lint.ts",
     "profile:regen": "node scripts/regen-profile-paths.mjs",

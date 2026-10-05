@@ -1,6 +1,6 @@
 /** downloads - browser download triggers for pose artifacts
  * (ex-lib/text-to-pose export helpers). */
-import type { PoseMotion } from "@melite/catalog"
+import type { PoseMotion } from "./textToPose.ts"
 
 // ── Export helpers ─────────────────────────────────────────────────────────
 

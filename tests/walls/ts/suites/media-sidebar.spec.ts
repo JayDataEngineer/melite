@@ -1,6 +1,6 @@
 import { test } from 'vitest'
 import assert from 'node:assert/strict'
-import { readFileSync, readdirSync } from 'node:fs'
+import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -65,13 +65,28 @@ test('the runs-window law: the host pulls the door hard max (500), at its USE SI
 })
 
 test('served-lib byte proofs: the built client carries the ported machinery', () => {
-  const bundle = readFileSync(join(GALLERY, 'lib', 'client.js'), 'utf8')
+  // the bundle is the client MODULE SET (the tsc flat-lib law emits a
+  // graph, not a one-file bundle: src/client/** → lib/client/**/*.js,
+  // the loader imports lib/client/index.js and the graph rides along).
+  // The byte proof's subject is every shipped client module joined —
+  // an edit without a build drops its needle from the whole set.
+  const libDir = join(GALLERY, 'lib')
+  const parts: string[] = []
+  const walk = (d: string): void => {
+    for (const e of readdirSync(d)) {
+      const full = join(d, e)
+      if (statSync(full).isDirectory()) walk(full)
+      else if (e.endsWith('.js')) parts.push(readFileSync(full, 'utf8'))
+    }
+  }
+  walk(libDir)
+  const bundle = parts.join('\n')
   // THE BUILT-LIB LAW: these bytes are what the DSH loader serves.
   // D-C1 (the wall audit): three probes were PROSE — '3D' matches
   // ~400 places in any bundle, 'wand'/'lightbox' match the css text
   // and comments — none could fail. The class probes are CODE
   // SHAPES now: the css-module symbol the build mints
-  // (overlay_module_css_default) with its .lightbox/.wand USES, and
+  // (the mirrored ./overlay.module.css import) with its .lightbox/.wand USES, and
   // the badge rule's own literal with its quotes.
   //
   // THE FRESHNESS LAW (the li-ay round's F4, 2026-10-11): the old
@@ -116,9 +131,12 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
   const normalize = (t: string): string => t.replace(/['`]/g, '"')
   const srcCode = normalize(srcCensus.join('\n'))
 
-  // build-minted: the css-module symbol exists only after bundling —
-  // src-presence is vacuous for it; everything else proves both sides.
-  const BUILD_MINTED = /^overlay_module_css_default/
+  // build-minted: the css-module sidecar exists only after the build
+  // mirrors it into lib/ (tsc emits JS/DTS alone) — src-presence is
+  // vacuous for it; everything else proves both sides. The tsc module
+  // graph imports it as './overlay.module.css' and USES css.lightbox /
+  // css.wand — the tsdown mangled symbol died with the preset.
+  const BUILD_MINTED = /^\.\/overlay\.module\.css$|^css\./
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
     ['media tab kind', 'kind: "media"'],
@@ -133,16 +151,16 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['cards bench address', 'dsh-resource://cards/bench'],
     ['cards run address', 'dsh-resource://cards/run/'],
     ['estate-artifact address prefix', 'dsh-resource://estate-artifact/'],
-    ['the css-module symbol mints (lightbox class)', 'overlay_module_css_default'],
-    ['the modal class USES the module (lightbox)', 'overlay_module_css_default.lightbox'],
-    ['the wand class USES the module', 'overlay_module_css_default.wand'],
+    ['the css-module sidecar mints (mirrored by the build)', './overlay.module.css'],
+    ['the modal class USES the module (lightbox)', 'css.lightbox'],
+    ['the wand class USES the module', 'css.wand'],
     ["3D badge (the badge rule's own literal)", 'text: "3D"'],
     ['honest 3D absence copy', '3D view unavailable'],
     ['honest media-flow absence copy', 'Media Flow view unavailable'],
   ]
   for (const [name, needle] of probes) {
     assert.ok(normalize(codeBundle).includes(needle),
-      `built lib/client.js lost (in CODE, not comments): ${name} (${needle}) — did the build run after the edit?`)
+      `built lib/**/*.js lost (in CODE, not comments): ${name} (${needle}) — did the build run after the edit?`)
     if (!BUILD_MINTED.test(needle)) {
       assert.ok(srcCode.includes(needle),
         `probe ${name} (${needle}) is gone from CURRENT src but still rides the stale bundle — a face the source no longer ships`)
@@ -181,7 +199,7 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['dead FINAL FILM tag', 'FINAL FILM'],
   ]
   for (const [name, needle] of absent) {
-    assert.ok(!bundle.includes(needle), `built lib/client.js still ships the standalone Flows tab: ${name} (${needle})`)
+    assert.ok(!bundle.includes(needle), `built lib/**/*.js still ships the standalone Flows tab: ${name} (${needle})`)
   }
 })
 

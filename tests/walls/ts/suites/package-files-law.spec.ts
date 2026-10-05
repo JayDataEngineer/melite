@@ -101,8 +101,14 @@ describe('package-files law — every exports target ships', () => {
     let checked = 0
     for (const pj of workspaceMembers()) {
       const pkg = JSON.parse(readFileSync(pj, 'utf8')) as Manifest
-      if (!pkg.exports || !pkg.files) continue
+      // W3 (testplane audit): an exports map with NO files block used
+      // to skip the law entirely — that early-continue was the wall
+      // dying silently. Only a package with no exports (unbuildable
+      // seat) may skip; a packable package with no files row fails on
+      // its uncovered entry.
+      if (!pkg.exports) continue
       checked++
+      pkg.files ??= []
       const targets: { files: string[]; dirs: string[] } = { files: [], dirs: [] }
       for (const [key, value] of Object.entries(pkg.exports)) {
         if (key === 'package.json') continue

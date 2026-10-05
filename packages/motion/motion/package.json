@@ -2,21 +2,32 @@
   "version": "0.3.1",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
   "exports": {
-    ".": "./src/index.ts",
-    "./client": "./lib/client.js",
-    "./card": "./src/card.ts",
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./client": "./lib/client/index.js",
+    "./card": {
+      "types": "./lib/card.d.ts",
+      "default": "./lib/card.js"
+    },
     "./package.json": "./package.json",
-    "./tool": "./src/tool.ts",
-    "./ui/studio/component": "./src/ui/studio/component.tsx"
+    "./tool": {
+      "types": "./lib/tool.d.ts",
+      "default": "./lib/tool.js"
+    },
+    "./ui/studio/component": {
+      "types": "./lib/ui/studio/component.d.ts",
+      "default": "./lib/ui/studio/component.js"
+    }
   },
   "scripts": {
+    "build": "tsc -p tsconfig.build.json",
     "bundle": "tsdown",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepseek-ai/cordis": "^4.0.4",
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",
     "@deepseek-ai/dsh-client-ui-renderer": "0.2.0-rc.1",
     "@deepseek-ai/dsh-tools": "0.2.0-rc.1",
@@ -42,10 +53,11 @@
     "@types/react-dom": "~19.3.0",
     "@types/three": "^0.184.1",
     "tsdown": "^0.22.14",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "@deepseek-ai/cordis": "^4.0.4"
   },
   "name": "@melite/motion-motion",
-  "description": "the motion card (the motion lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the motion card (the motion lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web",
@@ -59,6 +71,13 @@
   },
   "sideEffects": true,
   "peerDependencies": {
-    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0"
-  }
+    "@deepseek-ai/dsh": ">=0.2.0-rc.1 <0.3.0",
+    "@deepseek-ai/cordis": "^4.0.4"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css"
+  ]
 }

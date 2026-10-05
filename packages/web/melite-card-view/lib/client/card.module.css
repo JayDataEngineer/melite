@@ -1,0 +1,1058 @@
+/* flow cards toolview — NATIVE in-tree (2026-09-10 Phase 1: the iframe
+   died). Seamless by construction: no border, no box, no fixed height —
+   the cards are laid out by the host document's own flow. Every color
+   is an inherited --dsw-alias-* token; no custom palette, no bridge. */
+.card {
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 4px 0;
+  min-width: 0;
+}
+
+.load {
+  color: var(--dsw-alias-label-secondary);
+  padding: 2px 0;
+}
+
+.head {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.model {
+  font-weight: 600;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.state {
+  border-radius: 999px;
+  corner-shape: round;
+  flex: none;
+  margin-left: auto;
+  padding: 1px 8px;
+}
+.state[data-state='completed'] { color: var(--dsw-alias-state-success-primary); }
+.state[data-state='running'], .state[data-state='queued'], .state[data-state='pending'], .state[data-state='starting'], .state[data-state='draft'] { color: var(--dsw-alias-state-warn-primary); }
+.state[data-state='failed'], .state[data-state='error'], .state[data-state='stopped'], .state[data-state='interrupted'] { color: var(--dsw-alias-state-error-primary); }
+
+.media {
+  background: none;
+  border: 0;
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  flex: none;
+  font: inherit;
+  margin: -2px 0;
+  margin-left: auto;
+  padding: 1px 6px;
+}
+
+.media:hover { background: var(--dsw-alias-interactive-bg-hover); color: var(--dsw-alias-label-primary); }
+.media:focus-visible { outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: -1px; }
+
+.prompt {
+  color: var(--dsw-alias-label-secondary);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+/* USER-GESTURE run affordance (2026-08-22): the only door to the GPU run. */
+
+/* THE action cards — native rows. One row per draft stage: click opens
+   the drilldown (DSH's Modal). Unstyled-listing look: quiet hover,
+   inherited tokens, no box. */
+.row {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 8px;
+  min-width: 0;
+  padding: 4px 6px;
+  text-align: left;
+  width: 100%;
+}
+.row:hover { background: var(--dsw-alias-interactive-bg-hover); }
+.row:focus-visible { outline: 1px solid var(--dsw-alias-state-business-primary); outline-offset: -1px; }
+
+.thumb {
+  border-radius: 4px;
+  flex: none;
+  height: 34px;
+  object-fit: cover;
+  width: 34px;
+}
+
+.rowTitle {
+  font-weight: 600;
+  flex: none;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* DRILLDOWN — the DSH Modal sized for the split: params left, outputs
+   + Run right (operator directive 2026-09-10). */
+.drill { max-width: min(860px, 92vw); width: 92vw; }
+
+.paramsCol {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.params {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  /* the scroll + its right margin moved to THE SHELL's params cell
+   * (stroke 15): one law, every card surface — the zoom, the add
+   * form, and every studio tenant ride StudioShell now. */
+}
+
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.fieldKey {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+}
+
+.outputs {
+  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+/* THE REPORT LIST (ROADMAP 11e): the result row's named verdicts,
+ * stacked under the preview — full column width (the atom's own
+ * card grain does the rest). */
+.reportList {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.outputImg {
+  border-radius: 8px;
+  max-height: 46vh;
+  max-width: 100%;
+  object-fit: contain;
+}
+
+.runRow { align-items: center; display: flex; gap: 10px; justify-content: flex-end; width: 100%; }
+.runError { color: var(--dsw-alias-state-error-primary); font-size: 11px; overflow-wrap: anywhere; }
+
+/* THE DRILL RUN GESTURE (2026-09-13, hour-25 follow-up — the
+ * operator: "the run button should be at the bottom right of
+ * parameters. Also, it's pure white and not a play button"; then:
+ * "it is small, and it has a weird background for the whole row"):
+ * the ghost circle (28px icon-only) was too small and its gradient
+ * fade read as a dirty stripe. The row is now a clean sticky footer
+ * (solid base + hairline top border, no fade) and the button a
+ * LABELED gesture (play/stop glyph + Run/Stop word, 36px) — still
+ * the tile's ghost face (bg-mix + border + secondary label, brand
+ * on hover), no invented fills. */
+.drillRunRow {
+  align-items: center;
+  background: var(--dsw-alias-bg-base);
+  border-top: 1px solid var(--dsw-alias-border-l2);
+  bottom: 0;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  padding: 10px 0 4px;
+  position: sticky;
+  z-index: 1;
+}
+.drillRunBtn {
+  align-items: center;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 600;
+  gap: 8px;
+  height: 36px;
+  justify-content: center;
+  padding: 0 16px;
+  transition: color var(--ds-transition-duration) var(--ds-ease-in-out),
+    border-color var(--ds-transition-duration) var(--ds-ease-in-out);
+}
+.drillRunBtn:hover {
+  border-color: var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-brand-primary);
+}
+.drillRunBtn:focus-visible {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* the ✦ verb's model dropdown (the card LLM preference's write
+ * seat): the same ghost-pill grammar as Run/✦/Close — a compact
+ * select, dark-on-light deterministic in the closed popup (the
+ * specForm select's own law). */
+.drillLlm {
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  height: 36px;
+  max-width: 220px;
+  padding: 0 8px;
+}
+.drillLlm:hover {
+  border-color: var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-brand-primary);
+}
+/* The popup face is card-base's one element-scoped law (its
+ * card.module.css owns it); this select pairs it with the light
+ * color-scheme the popup's system colors follow. */
+.drillLlm { color-scheme: light; }
+.drillLlm:focus-visible {
+  border-color: var(--dsw-alias-brand-primary);
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* the drill's live progress line (the tap fold): spinner + activity
+ * text + percent, riding the run row's left while it runs. */
+.drillProgress {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: inline-flex;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  gap: 6px;
+}
+.drillProgress > svg { animation: tileSpinTurn 1s linear infinite; }
+
+/* legacy note for pre-draft-contract blocks (superseded, inert) */
+.state[data-state='legacy'] { color: var(--dsw-alias-label-secondary); }
+
+/* ── THE CARDS TAB (bench + run views) — 2026-09-11: the tab's
+   classes were shipped UNSTYLED (raw text rows, the unstyled-text
+   regression). Same visual language as the FlowCards rows above:
+   quiet, token-inherited, no boxes. ───────────────────────────── */
+
+.cardsBench {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px 18px;
+}
+
+.benchHead {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.revTag {
+  color: var(--dsw-alias-label-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+
+.runBtn, .back, .restore {
+  background: transparent;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 6px;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12px;
+  padding: 2px 10px;
+}
+.runBtn:hover:not(:disabled), .back:hover, .restore:hover:not(:disabled) {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-state-business-primary);
+}
+.runBtn:disabled, .restore:disabled { cursor: default; opacity: 0.45; }
+
+.runView { display: flex; flex-direction: column; gap: 8px; }
+.runHead { align-items: baseline; display: flex; gap: 8px; }
+.runId { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; font-weight: 600; }
+.runStatus {
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-label-secondary);
+  font-size: 11px;
+  padding: 0 8px;
+}
+.runActions { display: flex; gap: 8px; }
+
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; overflow-x: auto; }
+
+/* ── THE CARD TILES (2026-09-11): the operator's CardTile law
+ *    (flowCardTile.tsx) ported to the tab, DSH native — the card
+ *    system's resting face is the SQUARE TILE, never a text row.
+ *
+ *    LAYOUT LAW ("the entire card IS the preview — no blank square
+ *    below it"): the visual card (INNER) is ONE flex column with
+ *    exactly two flow children — the PREVIEW CELL (flex-1 min-h-0,
+ *    owns every pixel the caption strip doesn't need; media fills it
+ *    edge to edge) and the CAPTION STRIP (shrink-0, natural height).
+ *    Do not reintroduce a flex-1 sibling of a h-full card.
+ *
+ *    SQUARE LAW ("Action Cards need a more square shape"): the
+ *    PREVIEW CELL carries aspect-square — a portrait artifact can
+ *    not drive the row height; the resting face lands ≈square,
+ *    object-cover crops whatever the native ratio is. ─────────── */
+
+.tileGrid {
+  display: grid;
+  /* WIDER AND TALLER default cards (the operator's hour-24 call):
+   * the preview cell is aspect-square, so the column min drives BOTH
+   * axes — 150px crammed them; 200 gives the default card room. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tile {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+
+.tileInner {
+  align-items: stretch;
+  background: transparent;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  /* the old motion cadence: colors ease, geometry never (layout is
+     the morph's own — framer owns transforms) */
+  transition: border-color var(--ds-transition-duration) var(--ds-ease-in-out), background-color var(--ds-transition-duration) var(--ds-ease-in-out);
+  flex-direction: column;
+  font: inherit;
+  overflow: hidden;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.tileInner:hover {
+  border-color: var(--dsw-alias-state-business-primary);
+  background: var(--dsw-alias-interactive-bg-hover);
+}
+
+/* the PREVIEW CELL — flex-1 min-h-0, aspect-square (SQUARE LAW) */
+.tilePreview {
+  aspect-ratio: 1 / 1;
+  display: block;
+  flex: 1 1 0%;
+  margin: 0;
+  min-height: 0;
+  position: relative;
+  width: 100%;
+}
+
+.tileImg, .tileImgLink {
+  display: block;
+  height: 100%;
+  width: 100%;
+}
+.tileImg {
+  object-fit: cover;
+}
+/* THE VIDEO FACE LETTERBOXES (2026-09-22, the operator's catch:
+ * "the preview cuts off the video's sides") — a 5:3 film under
+ * cover in the near-square tile loses its sides; the video face
+ * shows the WHOLE frame (contain), the tile's own background
+ * letterboxes. Images keep cover — a still crops gracefully, a
+ * film's crop reads as broken. */
+.tileVideoImg {
+  display: block;
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+}
+
+/* THE AUDIO-BARS FACE (2026-09-13) — the old system's music preview:
+ * a deterministic bar strip, pure CSS, zero media cost. Token-only
+ * colors (the color law): bars ride the audio identity. */
+.audioBars {
+  align-items: flex-end;
+  box-sizing: border-box;
+  display: flex;
+  gap: 2px;
+  height: 100%;
+  justify-content: center;
+  padding: 18% 12%;
+  width: 100%;
+}
+
+.audioBar {
+  background: var(--dsw-alias-state-business-primary);
+  border-radius: 1px;
+  flex: 1;
+  max-width: 6px;
+  opacity: 0.85;
+}
+
+/* the KIND FACE — the preview when no artifact exists yet */
+.kindFace {
+  align-items: center;
+  background: var(--dsw-alias-interactive-bg-hover);
+  color: var(--dsw-alias-label-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  justify-content: center;
+  width: 100%;
+}
+.kindInitial {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1;
+}
+.kindName {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  overflow: hidden;
+  padding: 0 6px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* the RUN VIEW's stage-row dot (kept — a different surface from the
+ * bench tile; the chrome law owns the bench tile's status face) */
+.tileDot {
+  bottom: 6px;
+  position: absolute;
+  right: 6px;
+}
+
+/* THE CHAT-INPUT CHROME (2026-09-13, the operator): the tile's
+ * hover affordances mirror the DSH chat input — ghost icon circles
+ * pinned to the preview's corners. Trash top-right, play/stop
+ * bottom-right (hover-revealed); the loading spinner bottom-left
+ * PERSISTS while the row runs (loading outlives the hover). All
+ * token colors (the color law). */
+.tileIconBtn {
+  align-items: center;
+  background: color-mix(in srgb, var(--dsw-alias-bg-base) 72%, transparent);
+  border: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  color: var(--dsw-alias-label-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 24px;
+  justify-content: center;
+  opacity: 0;
+  padding: 0;
+  position: absolute;
+  transition: opacity var(--ds-transition-duration) var(--ds-ease-in-out),
+    color var(--ds-transition-duration) var(--ds-ease-in-out);
+  width: 24px;
+  z-index: 2;
+}
+
+.tileIconBtn:hover {
+  border-color: var(--dsw-alias-border-l4);
+  color: var(--dsw-alias-label-primary);
+}
+
+.tileInner:hover .tileIconBtn,
+.tileIconBtn:focus-visible {
+  opacity: 1;
+}
+
+.tileIconBtn:disabled {
+  cursor: default;
+}
+
+.tileTrash {
+  color: var(--dsw-alias-label-tertiary);
+  right: 6px;
+  top: 6px;
+}
+
+.tileTrash:hover {
+  color: var(--dsw-alias-state-error-primary);
+}
+
+.tileRunBtn {
+  bottom: 6px;
+  color: var(--dsw-alias-label-secondary);
+  right: 6px;
+}
+
+.tileRunBtn:hover {
+  color: var(--dsw-alias-brand-primary);
+}
+
+/* the spinner seat — bottom-left, NEVER hover-gated (the loading
+ * state persists past the hover; the operator's law). */
+.tileSpin {
+  align-items: center;
+  bottom: 6px;
+  color: var(--dsw-alias-brand-primary);
+  display: inline-flex;
+  left: 6px;
+  position: absolute;
+  z-index: 2;
+}
+
+.tileSpin > svg {
+  animation: tileSpinTurn 1s linear infinite;
+}
+
+/* the percent rider (2026-09-13) — the tap's live fold beside the
+ * spinner; tabular figures keep the strip steady while it counts. */
+.tilePct {
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  margin-left: 4px;
+}
+
+@keyframes tileSpinTurn {
+  to { transform: rotate(360deg); }
+}
+
+/* the CAPTION STRIP — shrink-0, natural height */
+.tileCaption {
+  border-top: 0.5px solid var(--dsw-alias-border-l2);
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px 8px;
+}
+.tileTitle {
+  font-size: 12px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  line-height: 20px;}
+.tileMeta {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: flex;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 10px;
+  gap: 6px;
+  overflow: hidden;
+
+  line-height: 17px;}
+.tilePrompt {
+  flex: 1 1 0%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── THE ADD-CARD TILE + THE PICKER + THE SPEC FORM (2026-09-11,
+ *    the old system's power back): the trailing + tile (dashed — the
+ *    InlineFlowCards contract), the picker (search + genre groups,
+ *    action cards only), and the DECLARED form (typed atoms: select,
+ *    slider, switch, textarea, number/seed — groups + visible-when). */
+
+.tileAdd .tileInner {
+  border-style: dashed;
+}
+
+.addFace {
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: flex;
+  font-size: 34px;
+  font-weight: 300;
+  justify-content: center;
+}
+
+.picker {
+  margin-top: -6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.pickerGenre {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pickerGenre {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 6px;
+}
+.pickerGenreTitle {
+  grid-column: 1 / -1;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  /* COLOR-LAW form (stroke 49): the file's own primary-label token —
+     the token IS the value, no fallback back door. */
+  color: var(--dsw-alias-label-primary);
+  margin: 12px 0 10px;
+}
+/* (a,c,d): the dialog's own title — bold and bigger, and pull the
+   picker up so the title→search gap is tight. */
+.drill :global([class*="_title_"]) {
+  font-weight: 800;
+  font-size: 18px;
+}
+.pickerCardLabel { font-size: 12px; font-weight: 500; }
+.pickerCard {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  min-height: 44px;
+  width: 100%;
+  box-sizing: border-box;
+  align-items: baseline;
+  background: transparent;
+  border: 0.5px solid var(--dsw-alias-border-l2);
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  gap: 8px;
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+}
+.pickerCard:hover {
+  background: var(--dsw-alias-interactive-bg-hover);
+  border-color: var(--dsw-alias-state-business-primary);
+}
+
+.pickerCardLabel {
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ══ THE SHARED-ELEMENT ZOOM (2026-09-11, the old tree's signature) ══ */
+
+/* The tile's shared box — the morph's origin/target rect carrier. */
+.tileShared { display: block; position: relative; }
+
+/* The overlay: portal to body, FIXED inset-0 (the old tree's own DSH
+ * rule — no workspace root; absolute would cover only part of the
+ * auto-height embed). Solid backdrop: no fade, the grid hides. */
+.zoomOverlay {
+  background: var(--dsw-alias-bg-overlay);
+  display: flex;
+  flex-direction: column;
+  inset: 0;
+  position: fixed;
+  z-index: 80;
+}
+
+/* The overlay is the scroll container; the inner flex centers a short
+ * card and flows a tall one. */
+.zoomScroll { flex: 1 1 0%; min-height: 0; overflow-y: auto; }
+.zoomInner {
+  align-items: center;
+  box-sizing: border-box;
+  display: flex;
+  justify-content: center;
+  margin: 0 auto;
+  max-width: 100%;
+  min-height: 100%;
+  padding: 24px;
+  width: 100%;
+}
+
+/* Reorder drop-target indicator (native sortable). */
+.tileDragOver {
+  outline: 2px dashed var(--dsw-alias-brand-primary);
+  outline-offset: -2px;
+}
+
+/* The zoom card — the shared-element box (tile's twin).
+ * Bounded ≈square: min(760px, 88vh), never the whole surface.
+ * Entry is compositor-only CSS (the framer morph's lawful
+ * replacement): scale+fade keyframe, no reflow, no modal pop. */
+.zoomCard {
+  animation: zoom-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  background: var(--dsw-alias-bg-layer-1);
+  border: 0;
+  border-radius: 14px;
+  box-shadow: 0 0 0 0.5px color-mix(in srgb, var(--dsw-alias-label-primary) 16%, transparent), 0 3px 8px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent), 0 0 16px 0 color-mix(in srgb, var(--dsw-alias-label-primary) 2%, transparent);
+  color: var(--dsw-alias-label-primary);
+  display: flex;
+  flex-direction: column;
+  max-height: 86vh;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+.zoomBar {
+  align-items: center;
+  border-bottom: 0.5px solid var(--dsw-alias-border-l2);
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  justify-content: space-between;
+  padding: 10px 14px;
+}
+/* THE WEBHOOK BAR (hour-26): the comfyui progress-forward strip under
+ * the top bar — live shows spinner + activity + percent + a thin
+ * meter; failed shows the reason. Frame-owned, one per card. */
+.zoomWebhook {
+  /* the seat renders ONLY with content (2026-09-21: the operator
+   * struck the permanent margin — the SCROLL LOCK owns the
+   * geometry law now, an empty seat reserves nothing) */
+  align-items: center;
+  color: var(--dsw-alias-label-secondary);
+  display: flex;
+  font-size: 12px;
+  gap: 8px;
+  min-height: 0;
+  padding: 2px 0;
+  width: 100%;
+}
+.zoomMeter {
+  background: var(--dsw-alias-border-l2);
+  border-radius: 999px;
+  flex: 1 1 auto;
+  height: 3px;
+  overflow: hidden;
+}
+.zoomMeterFill {
+  background: var(--dsw-alias-fill-brand-primary);
+  display: block;
+  height: 100%;
+  transition: width 240ms ease;
+}
+.zoomTitle { font-size: 13px; font-weight: 600;
+  flex: 1 1 auto;
+  line-height: 20px;}
+
+/* The detail payload sits inside the morphed card; it scrolls with the
+ * card's own bounds (max-height keeps the square law bounded). */
+.zoomDetail {
+  display: block;
+  min-height: 0;
+  overflow-y: auto;
+  /* THE ANTI-PULL LAW (2026-09-20, the operator's seizure: "it
+   * gets jerked up" every progress tick / at landing): measured —
+   * scrollTop drops 309px at landing with UNCHANGED scrollHeight
+   * and no child growth: the browser's scroll ANCHOR remapping the
+   * position when the params column reflows mid-run. overflow-anchor
+   * none ends the remap: the user's scroll position is theirs. */
+  overflow-anchor: none;
+  padding: 14px;
+}
+
+/* THE BODY SEAT (the hour-7 height war, 2026-09-13): the flexed
+ * min-zero body that GIVES the detail height — a studio surface
+ * (height:100% chain into the .shell grid) collapses under an
+ * auto-height flex child. Ordinary cards' zoomDetail scrolls inside
+ * this seat unchanged. */
+.zoomBody {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ── The morph skeleton (shimmer — the old tree's loading face) ── */
+.zoomSkeleton {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  gap: 10px;
+  min-height: 0;
+  padding: 16px;
+}
+.skLine {
+  animation: zoomShimmer 1s linear infinite both;
+  will-change: background-position;
+  background: linear-gradient(90deg, transparent 40%, var(--dsw-alias-interactive-bg-hover) 50%, transparent 60%);
+  background-color: var(--dsw-alias-interactive-bg-hover);
+  background-size: 200% 100%;
+  border-radius: 6px;
+  height: 12px;
+}
+.skWide { width: 60%; }
+.skShort { flex: 1 1 0%; height: 28px; }
+.skBlock { border-radius: 10px; height: 120px; }
+.skRow { display: flex; gap: 10px; }
+
+@keyframes zoomShimmer {
+  from { background-position: 150% 0; }
+  to { background-position: -100% 0; }
+}
+
+/* ── tile-pop: a NEW tile lands with a soft pop (the old tree's
+ * animate-tile-pop) — applies to freshly added stage tiles. ── */
+@keyframes tilePop {
+  0% { opacity: 0; transform: scale(0.96) translateY(6px); }
+  60% { opacity: 1; transform: scale(1.015) translateY(0); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+.tileEnter { animation: tilePop 260ms cubic-bezier(0.2, 0.8, 0.3, 1) both; }
+
+/* ── drag-reorder (slice 2) ── */
+.tileDragging {
+  opacity: 0.55;
+  z-index: 2;
+}
+.wiredMark {
+  color: var(--dsw-alias-state-business-primary);
+  font-size: 10px;
+}
+.capOver {
+  background: var(--dsw-alias-interactive-bg-hover);
+  outline: 1px dashed var(--dsw-alias-state-business-primary);
+  outline-offset: 4px;
+}
+
+/* ── run cancel ── */
+.cancelBtn {
+  background: transparent;
+  border: 1px solid var(--dsw-alias-state-error-primary);
+  border-radius: 8px;
+  color: var(--dsw-alias-state-error-primary);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 5px 12px;
+}
+.cancelBtn:disabled { cursor: default; opacity: 0.6; }
+
+/* ── Group Cards sub-view (slice 4) ── */
+.groupBar {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+}
+.checkCircle {
+  align-items: center;
+  border: 1.5px solid var(--dsw-alias-label-secondary);
+  border-radius: 999px;
+  corner-shape: round;
+  color: var(--dsw-alias-bg-module);
+  display: flex;
+  font-size: 11px;
+  height: 20px;
+  justify-content: center;
+  left: 8px;
+  position: absolute;
+  top: 8px;
+  width: 20px;
+  z-index: 3;
+}
+.checkOn {
+  background: var(--dsw-alias-state-business-primary);
+  border-color: var(--dsw-alias-state-business-primary);
+}
+[data-selected="on"] {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+.groupNote {
+  color: var(--dsw-alias-label-secondary);
+  font-size: 12px;
+  margin: 0 0 10px;
+
+  line-height: 20px;}
+.memberList {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+}
+.memberRow {
+  align-items: baseline;
+  border-bottom: 1px solid var(--dsw-alias-interactive-bg-hover);
+  display: flex;
+  gap: 8px;
+  padding: 6px 2px;
+}
+.memberIdx {
+  color: var(--dsw-alias-label-secondary);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+}
+.memberName {
+  font-size: 13px;
+}
+
+/* prefers-reduced-motion (web-styling law): decorative loops stop;
+   state stays legible without movement. */
+@media (prefers-reduced-motion: reduce) {
+  .tileEnter, .skLine, .skBlock {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+  }
+}
+
+/* ── the studio surface (cards.stage.view, img-to-mesh first party) ── */
+
+/* ── InputSquare (the old SlotSquare law on the DSH substrate) ──
+ * chrome laws: 0.5px hairline, token transition, paired line-heights */
+
+/* ── the shared GLB viewport (the old Stage law, lean cut) ── */
+
+/* the studio split: the 3D space + the knob rail (the old rail↔Stage law) */
+@media (max-width: 900px) { .studioSplit { grid-template-columns: 1fr; } }
+
+/* ── THE MOD SYSTEM (the SubcardGrid port) — the mod bags under the
+   form: heading, one flowing tile row (apply order = array order),
+   the + Mod affordance, and the leaf editor's bits. ── */
+
+/* ── The h3 timeline studio (the advanced-views port, 2026-09-12) ──
+ * The three-layer NLE translated onto the zoom envelope: rail (Layer A
+ * ⇄ the selected call's editor), preview (the viewport belongs to the
+ * video), the bar (the document IS the calls + the guide lanes). */
+/* the popup face (the white-on-white law, stroke 13 — same fix;
+ * stroke 84: Canvas/CanvasText, the var() form re-minted it) */
+/* the bar spans the full envelope below the rail/preview pair */
+
+/* ── h3 studio: the real preview + strip panes (the 2026-09-12 full
+   port — rail / video viewport / timeline strip) ── */
+
+/* THE ADD-DOOR STAGE SEAT (hour-7): the claimed studio preview in the
+ * add door — flexed, min-zero, its own bounds; the studio's rail
+ * scrolls inside. The modal's own scroll stays for the form cards. */
+
+/* THE PREVIEW SEAT (hour-9): the drill's RIGHT column — the shared
+ * preview (cards.stage.preview) rides ABOVE the Run row; params own
+ * the left column. Flexed min-zero so the hero video/img fills. */
+.outputsPreview {
+  display: flex;
+  flex: 1 1 0%;
+  flex-direction: column;
+  min-height: 220px;
+  min-width: 280px;
+  overflow: hidden;
+}
+.outputsHint {
+  display: flex;
+  flex: 1 1 0%;
+  align-items: center;
+  justify-content: center;
+  color: var(--dsw-alias-label-dimmed);
+  font-size: 11px;
+  border: 1px dashed var(--dsw-alias-border-l2);
+  border-radius: 6px;
+}
+
+/* THE CLAIMED-CARD ADD MODAL (hour-9): a studio preview rides the
+ * page-sized modal — the zoom's huge law (94vw × 94vh) — so the
+ * shell grid gets its real columns, never a squeezed column. */
+/* The Modal's .content is content-sized by default — the page-sized
+ * dialog would show a dead band below the studio (the hour-9 "odd
+ * margins at the bottom"). The claimed preview's content column
+ * FILLS the dialog (flex, min-zero). */
+
+/* THE CLAIMED ADD LAYOUT (hour-9): the studio full-bleed above, the
+ * Add row pinned below — flexed min-zero so the shell's grid owns the
+ * height it is given by the page-sized modal. */
+
+/* the preview seat is a DOOR (hour 24): clicking it mirrors the media
+ * drilldown 1:1 — the pointer says so. Token-only. */
+.previewClickable { cursor: pointer; }
+.previewClickable:focus-visible {
+  outline: 2px solid var(--dsw-alias-state-business-primary);
+  outline-offset: 2px;
+}
+
+/* the ✦ Agent Enhance row — one press above the params (hour 24
+ * stroke 10). The note is muted for success, red for refusal
+ * (.runError already exists). Token-only. */
+.enhanceRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 0 auto;
+  padding: 2px 0;
+}
+
+/* THE STALE-TAB FACE (2026-09-23, the deploy handshake): this tab's
+ * bundle is older than the lane's — unmissable, amber, sticky until
+ * the reload. Never silent; never a false alarm. Token-only (the
+ * color law: the token IS the value, no literal fallbacks). */
+.enhanceNote {
+  color: var(--dsw-alias-text-tertiary);
+  font-size: 12px;
+}
+
+/* ── THE RUN-GATE RESCUE (roadmap item 4): the install offer under
+ * a rescueable failed run — a missing extension pack or model
+ * file, one confirm through the manage seat. Token-only. ── */
+.rescue {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 6px 8px;
+  border: 1px solid var(--dsw-alias-border-secondary);
+  border-radius: 6px;
+}
+.rescueNote {
+  color: var(--dsh-alias-text-secondary, var(--dsw-alias-text-secondary));
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+.rescueBtn,
+.rescueRun {
+  font-size: 12px;
+  cursor: pointer;
+}
+.rescueErr {
+  color: var(--dsw-alias-state-error-primary);
+  font-size: 11px;
+  overflow-wrap: anywhere;
+  margin: 0;
+}
+
+.zoomBuild {
+  color: var(--dsh-alias-label-tertiary);
+  flex: 0 0 auto;
+  font-size: 10px;
+  opacity: 0.55;
+}

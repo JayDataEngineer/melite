@@ -21,10 +21,27 @@
     "three": "*"
   },
   "exports": {
-    "./3d/*": "./3d/*",
-    "./package.json": "./package.json",
-    "./3d/body/ui/studio/bodyStudio": "./3d/body/ui/studio/bodyStudio.ts",
-    "./3d/body/ui/studio/BodyShapePanel": "./3d/body/ui/studio/BodyShapePanel.tsx",
-    "./3d/body/ui/studio/MeshPreviewCanvas": "./3d/body/ui/studio/MeshPreviewCanvas.tsx"
-  }
+    "./form-fields": {
+      "types": "./lib/form-fields.d.ts",
+      "default": "./lib/form-fields.js"
+    },
+    "./poster-shell": {
+      "types": "./lib/poster-shell.d.ts",
+      "default": "./lib/poster-shell.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.1",
+    "@types/react": "^19"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "files": [
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css",
+    "src/*.module.css"
+  ]
 }

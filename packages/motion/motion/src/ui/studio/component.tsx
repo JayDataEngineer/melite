@@ -64,20 +64,20 @@ import s from "./component.module.css"
 import {
   DEFAULT_STAGE_RECT,
   type StageRect, type ThreeCtx,
-} from "./MotionExportDialog"
+} from "./MotionExportDialog.tsx"
 import {
   FLOOR_LIFT_Y,
   MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM,
-} from "./motionParams"
-import { useMotionUndoStack } from "./useMotionUndoStack"
-import { useMotionMedia } from "./useMotionMedia"
-import { usePoseEditing } from "./usePoseEditing"
-import { useMotionStage } from "./useMotionStage"
-import { useTimelineEnvelope } from "./useTimelineEnvelope"
-import { useTimelineAuthoring } from "./useTimelineAuthoring"
-import { MotionRail } from "./MotionRail"
-import { MotionStageView } from "./MotionStageView"
-import { MotionTimelineSection } from "./MotionTimelineSection"
+} from "./motionParams.ts"
+import { useMotionUndoStack } from "./useMotionUndoStack.ts"
+import { useMotionMedia } from "./useMotionMedia.ts"
+import { usePoseEditing } from "./usePoseEditing.ts"
+import { useMotionStage } from "./useMotionStage.ts"
+import { useTimelineEnvelope } from "./useTimelineEnvelope.ts"
+import { useTimelineAuthoring } from "./useTimelineAuthoring.ts"
+import { MotionRail } from "./MotionRail.tsx"
+import { MotionStageView } from "./MotionStageView.tsx"
+import { MotionTimelineSection } from "./MotionTimelineSection.tsx"
 
 export { FLOOR_LIFT_Y, MOTION_BG_IMAGE_PARAM, MOTION_PREVIEW_GLB_PARAM }
 

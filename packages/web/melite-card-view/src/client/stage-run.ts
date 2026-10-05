@@ -10,7 +10,7 @@ import { startCardRun, startFlowInlineRun } from '@melite/card-base/client'
 import type { CardsBenchValue, BenchStageView } from './cards-resource.ts'
 import { freshStageRow, observeRunOutcome } from './cards-resource.ts'
 import { refuseForUnlandedWrite } from './draft.ts'
-import { rejectionVoice } from './rejection-voice'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** The generic MCP card's id (the ONE engine-served card the run
  * press routes on — the subagent-spawn card, engine 'agent'). */

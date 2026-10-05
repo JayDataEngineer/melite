@@ -5,6 +5,9 @@
 // flavor's whole declaration (image1 REQUIRED, input zone) rides
 // the pack contract — see its seam note.
 import type { Context } from '@deepseek-ai/cordis'
+// the Context merge (ctx.comfyui) lives in the service module —
+// pulling the type seats the augmentation in this program
+import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 
 export const inject = ['comfyui']
 

@@ -33,7 +33,7 @@ export interface CompoundBlock {
 // and the tile play-affordance decision live here as the dependency root —
 // everything else in the kit imports from this module, never from the
 // aggregator shim.
-import type { Provenance } from "./vocab"
+import type { Provenance } from "./vocab.ts"
 
 // ── The unified view-model ────────────────────────────────────────────────
 

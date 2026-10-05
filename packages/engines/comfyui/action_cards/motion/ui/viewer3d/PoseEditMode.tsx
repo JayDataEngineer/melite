@@ -11,8 +11,8 @@
 // lift group's translation can never double-apply to the handles.
 
 export { SOMA77_BONE_CONNECTIONS } from "@melite/formats"
-export type { LightingOrb, JointMoveEvent } from "./poseStage"
-export { SOMA77_PARENT, getJointChain, getDescendants, solveCCD, CM_TO_M } from "./poseStage"
+export type { LightingOrb, JointMoveEvent } from "./poseStage.ts"
+export { SOMA77_PARENT, getJointChain, getDescendants, solveCCD, CM_TO_M } from "./poseStage.ts"
 
 export interface Keyframe {
   id: string

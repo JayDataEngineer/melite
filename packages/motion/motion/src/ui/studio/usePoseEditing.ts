@@ -19,7 +19,7 @@ import type { TimelineKeyframe } from "@melite-plugin/timeline/ui/timeline"
 import {
   decodeF32, stampEditedPose, type MotionConstraint,
 } from "@melite/formats/motionConstraints"
-import type { ToastFn } from "./useMotionStage"
+import type { ToastFn } from "./useMotionStage.ts"
 
 export interface PoseEditingArgs {
   effectiveNpz: MotionNpz | null

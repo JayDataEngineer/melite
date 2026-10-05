@@ -5,13 +5,13 @@ import { useEffect } from "react";
 import { Button } from "@deepseek-ai/dsh-client-ui-primitives";
 import { Tip } from "@melite/card-base/client";
 import css from "../timeline.module.css";
-import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants";
-import { DEFAULT_PROMPT_COLOR } from "./styles";
-import type { TimelineTheme } from "./styles";
-import type { TimelineMessage } from "./messages";
-import { getZoomEnvelopeEndFrame } from "./timeline-scales";
-import type { TimelineEditingDraft, TimelineInteractionSnapshot } from "./timeline-interaction-state";
-import type { TimelineViewport } from "./timeline-viewport";
+import { FRAME_LABELS_HEIGHT, TRACK_HEIGHT } from "./TimelineConstants.ts";
+import { DEFAULT_PROMPT_COLOR } from "./styles.ts";
+import type { TimelineTheme } from "./styles.ts";
+import type { TimelineMessage } from "./messages.ts";
+import { getZoomEnvelopeEndFrame } from "./timeline-scales.ts";
+import type { TimelineEditingDraft, TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
+import type { TimelineViewport } from "./timeline-viewport.ts";
 
 export const SCROLLBAR_HEIGHT = 10;
 export const SCROLLBAR_TOTAL_HEIGHT = SCROLLBAR_HEIGHT + 4; // height + vertical padding

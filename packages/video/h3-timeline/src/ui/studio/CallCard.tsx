@@ -8,14 +8,14 @@ import { OverlayKnob, SectionLabel, SpecAtom, Tip } from "@melite/card-base/clie
 import { cn } from '@melite/card-base/client'
 import { ChevronDown, X } from '@melite/card-base/client'
 import s from "./studio.module.css"
-import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel"
-import type { DocCall } from "./docModel"
-import type { GuideKind } from "./docModel"
+import { GUIDE_KINDS, KNOB_ORDER, VIDEO_TIMELINE_TRACKS } from "./docModel.ts"
+import type { DocCall } from "./docModel.ts"
+import type { GuideKind } from "./docModel.ts"
 import { readAsDataURL } from '@melite/card-base/client'
 import { SourceRow } from '@melite/card-base/client'
-import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard"
-import { CallCardPrompt } from "./CallCardPrompt"
-import { REF_UPLOAD_SPEC, declaredShortName } from "./refUtils"
+import { FirstFrameSlot, SeamControls } from "./CallFrameSubcard.tsx"
+import { CallCardPrompt } from "./CallCardPrompt.tsx"
+import { REF_UPLOAD_SPEC, declaredShortName } from "./refUtils.ts"
 import {
   IMAGE_BUS_SLOTS,
   REF_CAPS,
@@ -25,7 +25,7 @@ import {
   refGenreOf,
   splitRefList,
 } from "@melite/models-h3/timelineContract"
-import type { CallCardDeps } from "./CallCardsPanel"
+import type { CallCardDeps } from "./CallCardsPanel.tsx"
 
 /** A CARD-LEVEL reference chip (2026-09-23, the operator: the
  *  agent-persisted card-level refs showed NOWHERE): display-only — the

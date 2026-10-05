@@ -3,9 +3,9 @@
  * timelineStore.ts; pure move, no logic changes).
  */
 import type { AudioCue, TimelineSegment } from "@melite/contracts"
-import type { GetState, SetState } from "./createStore"
-import { schedulePersist } from "./timelinePersistence"
-import type { TimelineStore } from "./timelineStoreTypes"
+import type { GetState, SetState } from "./createStore.ts"
+import { schedulePersist } from "./timelinePersistence.ts"
+import type { TimelineStore } from "./timelineStoreTypes.ts"
 
 // ── Undo/Redo history ─────────────────────────────────────────────────────────
 export const _history: { segments: TimelineSegment[]; audioCues: AudioCue[] }[] = []

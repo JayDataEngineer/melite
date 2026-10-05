@@ -8,7 +8,7 @@
  * ONLY (the links-in-code law: no URL ever enters the client).
  */
 import { describe, expect, it, vi, beforeEach } from 'vitest'
-import { familyOfStages, parseRescue, runRescueCall, terminalStageErrorOf } from '../src/client/run-rescue.ts'
+import { familyOfStages, parseRescue, runRescueCall, terminalStageErrorOf } from '../src/client/run-rescue-core.ts'
 
 describe('parseRescue (the estate refusal shapes, nothing else)', () => {
   it('a missing-extension refusal yields its pack verbatim', () => {
@@ -100,7 +100,7 @@ describe('runRescueCall (names only, the one wire)', () => {
   it('an extension rescue posts install_extension with the pack id', async () => {
     const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'queued: 1 pack(s)', data: { state: 'active' } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'SomePack' }, 'h3-timeline')).resolves.toEqual({ detail: 'queued: 1 pack(s)', restartRequired: false })
     expect(spy).toHaveBeenCalledWith('install_extension', { nodes: ['SomePack'] })
   })
@@ -108,7 +108,7 @@ describe('runRescueCall (names only, the one wire)', () => {
   it('a model rescue posts provision_model with the FAMILY id (never a URL)', async () => {
     const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { state: 'active', restart_required: false } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.safetensors' }, 'h3-timeline')).resolves.toEqual({ detail: 'downloaded: 2', restartRequired: false })
     expect(spy).toHaveBeenCalledWith('provision_model', { model: 'h3-timeline' })
   })
@@ -116,7 +116,7 @@ describe('runRescueCall (names only, the one wire)', () => {
   it('uses an explicit model target over the stage fallback', async () => {
     const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed' })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.bin', target: 'mask' }, 'family')).resolves.toEqual({ detail: 'installed', restartRequired: false })
     expect(spy).toHaveBeenCalledWith('provision_model', { model: 'mask' })
   })
@@ -125,7 +125,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { state: 'restart_required' } }),
     }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'installed', restartRequired: true })
   })
 
@@ -133,7 +133,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { state: 'active', restart_required: true } }),
     }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'installed', restartRequired: true })
   })
 
@@ -141,7 +141,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn().mockResolvedValue({ ok: false, detail: 'pack unknown to the manager list' }),
     }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'GhostPack' }, '')).rejects.toThrow('pack unknown')
   })
 
@@ -149,7 +149,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn().mockResolvedValue({ ok: true }),
     }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'P installed', restartRequired: false })
     await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam provisioned', restartRequired: false })
   })
@@ -158,7 +158,7 @@ describe('runRescueCall (names only, the one wire)', () => {
     vi.doMock('@melite/card-base/client', () => ({
       postManageAction: vi.fn().mockResolvedValue({ ok: false }),
     }))
-    const { runRescueCall: call } = await import('../src/client/run-rescue.ts')
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('manage refused')
   })
 })
