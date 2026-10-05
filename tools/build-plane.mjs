@@ -21,7 +21,7 @@
  * Idempotent: every step converges; re-running is a no-op on a cured tree.
  */
 import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, copyFileSync } from 'node:fs'
-import { join, dirname, relative } from 'node:path'
+import { join, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -545,35 +545,46 @@ function ensureFinalNewlines(libDir) {
   return touched
 }
 
-// Mirror every .css asset to the path its emitted JS imports it from:
-// a css under src/ lands at lib/<rel-from-src> (the rootDir src
-// collapse), a css in a legacy source tree OUTSIDE src (the
-// action-card viewers faces, whose rootDir is the package dir) lands
-// at lib/<package-rel>. tsc emits JS/DTS only — without the mirror
-// every built css import dangles.
+// IMPORT-DRIVEN SIDECAR RESOLVER: tsc emits JS/DTS only. After the
+// emit, every `./x.module.css` / `./x.json` import in lib/**/*.js is
+// resolved against the lib tree; a miss hunts its source twin (the
+// src/ plane first, then the package plane for the legacy viewer
+// faces) and copies exactly that file. Breadth-mirroring shipped
+// sub-package manifests and whole data trees (build15) — the graph's
+// own imports are the only truth.
 function copyCssSidecars(pkgDir, libDir) {
   let copied = 0
-  const walk = (dir) => {
+  const jsFiles = []
+  const collect = (dir) => {
     let entries
     try { entries = readdirSync(dir, { withFileTypes: true }) } catch { return }
     for (const e of entries) {
       const full = join(dir, e.name)
-      if (e.isDirectory()) {
-        if (e.name === 'lib' || e.name === 'node_modules' || e.name === 'dist') continue
-        walk(full)
-        continue
-      }
-      if (!e.name.endsWith('.css')) continue
-      const relFromPkg = relative(pkgDir, full)
-      const inSrc = relFromPkg.startsWith('src' + sep)
-      const libRel = inSrc ? relFromPkg.slice('src/'.length) : relFromPkg
-      const dest = join(libDir, libRel)
-      mkdirSync(dirname(dest), { recursive: true })
-      copyFileSync(full, dest)
-      copied++
+      if (e.isDirectory()) collect(full)
+      else if (e.name.endsWith('.js')) jsFiles.push(full)
     }
   }
-  walk(pkgDir)
+  collect(libDir)
+  const wanted = new Set()
+  for (const js of jsFiles) {
+    const src = readFileSync(js, 'utf8')
+    for (const m of src.matchAll(/['"](\.[^'"]+\.(?:module\.)?css|\.[^'"]+\.json)['"]/g)) {
+      const target = resolve(dirname(js), m[1])
+      if (!existsSync(target)) wanted.add(target)
+    }
+  }
+  for (const target of wanted) {
+    const libRel = relative(libDir, target)
+    const candidates = [
+      join(pkgDir, 'src', libRel),
+      join(pkgDir, libRel),
+    ]
+    const hit = candidates.find((c) => existsSync(c))
+    if (!hit) continue
+    mkdirSync(dirname(target), { recursive: true })
+    copyFileSync(hit, target)
+    copied++
+  }
   return copied
 }
 

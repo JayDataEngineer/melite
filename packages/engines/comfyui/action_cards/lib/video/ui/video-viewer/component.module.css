@@ -1,8 +1,0 @@
-/* video-viewer claim default (the full/dialog geometry the host
-   sizes the cell with when it passes no className). */
-
-.fullDefault {
-  width: 100%;
-  height: 70vh;
-  border-radius: 8px;
-}

@@ -146,6 +146,7 @@
   "files": [
     "lib/index.js",
     "lib/**/*.js",
-    "lib/**/*.d.ts"
+    "lib/**/*.d.ts",
+    "lib/**/*.json"
   ]
 }
