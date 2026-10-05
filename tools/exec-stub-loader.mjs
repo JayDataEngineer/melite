@@ -20,6 +20,15 @@ import { fileURLToPath } from 'node:url'
 const stubImporters = new Map()
 
 export async function resolve (specifier, context, nextResolve) {
+  // CSS MODULES: a relative './x.module.css' resolves fine but plain
+  // node cannot LOAD it ("Unknown file extension") — the packed
+  // tarball's built graph carries the css sidecar imports, and the
+  // probe only proves the graph executes. Stub every .css specifier
+  // the same as a missing bare dep.
+  if (specifier.endsWith('.css')) {
+    const parent = typeof context.parentURL === 'string' ? context.parentURL : ''
+    return { url: 'stub:' + specifier + '?importer=' + encodeURIComponent(parent), shortCircuit: true }
+  }
   if (!/^[./]|^(file|node|data):/.test(specifier)) {
     try {
       return await nextResolve(specifier, context)

@@ -74,6 +74,7 @@
   "files": [
     "lib/host.js",
     "lib/**/*.js",
-    "lib/**/*.d.ts"
+    "lib/**/*.d.ts",
+    "lib/**/*.module.css"
   ]
 }
