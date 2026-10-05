@@ -21,7 +21,6 @@
     "three": "*"
   },
   "exports": {
-    ".": "./src/index.ts",
     "./3d/*": "./3d/*",
     "./package.json": "./package.json",
     "./3d/body/ui/studio/bodyStudio": "./3d/body/ui/studio/bodyStudio.ts",
