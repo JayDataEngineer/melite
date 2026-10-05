@@ -9,6 +9,7 @@
 // compared them byte-for-byte. Creation order IS node-id order (the
 // recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
+import { saveAudio } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -65,7 +66,7 @@ export const prep: ComfyActionSpec<PrepParams, PrepFacts> = {
 
     if (p.media_type === "audio") {
       const loaded = g.node("LoadAudio", { audio: p.source as string });
-      return g.node("SaveAudio", { audio: loaded.out(), filename_prefix: prefix }).out();
+      return saveAudio(g, loaded.out(), prefix).out();
     }
 
     let img: OutputHandle = g.node("LoadImage", { image: p.source as string }).out(0);

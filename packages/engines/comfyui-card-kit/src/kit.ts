@@ -93,6 +93,14 @@ export {
   saveAudio,
   laneStr,
 } from './blocks/audio-kit.ts'
+// the 3D render blocks (the poser turnaround consensus: one place per
+// multi-node shape, so the anny/fit/skin families compose the sheet
+// instead of hand-rolling the node chain).
+export {
+  renderGLBViews,
+  renderGLBViewsNode,
+  positive,
+} from './blocks/poser-kit.ts'
 // lanes.spec.ts names the StripTable type off the kit face (the lanes'
 // strip tables are StripTable-typed) — re-exported as a type, erased at runtime.
 export type { StripTable } from './graph.ts'

@@ -59,7 +59,10 @@ export function validateCardDefinition(def: CardDefinition): void {
   try {
     strict = (Schema.resolve(def as unknown as Record<string, unknown>, CardDefinitionSchema, {}, true) as [Record<string, unknown>, unknown])[0];
   } catch (err: unknown) {
-    const detail = err instanceof Error ? err.message : String(err);
+    // Schemastery's own resolve is the only thrower and every failure it
+    // raises is an Error subclass (ValidationError extends TypeError), so
+    // the message read needs no non-Error spelling (the re-audit, 2026-10-16).
+    const detail = (err as Error).message;
     throw new ComposeRefusal('card-envelope', `card '${def.id}': envelope schema refused — ${detail}`);
   }
   const carried = Object.keys(def as unknown as Record<string, unknown>);

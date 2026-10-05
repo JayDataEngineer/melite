@@ -10,7 +10,7 @@
 // lane. Sibling: models-qwen3-tts-voicedesign (the 1.7B model).
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { DECL, family, LANE_TOPOLOGY } from "../src/index.ts";
+import { DECL, family, LANE_TOPOLOGY, variantRoute } from "../src/index.ts";
 
 describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
   it("is a plugin: named family export, inject ['models'], apply registers", () => {
@@ -65,5 +65,18 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
     const resolver = base.resolver_defaults as Record<string, unknown>;
     assert.equal(resolver["model"], "qwen3-tts-base", "the re-point stamp (krea-2-raw precedent) resolves variant picks server-side");
     assert.equal(resolver["voice"], null, "the NULL stamp unsets the inherited persona (the clone takes no voice)");
+  });
+
+  // THE ROUTE READ (the card audit's M5): the card resolves a variant's
+  // own address through this, so a lane that declares none must answer
+  // '' — the honest "board nothing" signal the caller filters on.
+  it("variantRoute reads the DECL's own address and answers '' for a lane that declares none", () => {
+    assert.equal(variantRoute(DECL, "customvoice"), "qwen3-tts");
+    assert.equal(variantRoute(DECL, "base"), "qwen3-tts-base");
+    // `variants` is optional on the read's own shape — a decl with none
+    assert.equal(variantRoute({}, "base"), "");
+    // a lane that declares no route (a recipe row) and an unknown id
+    assert.equal(variantRoute({ variants: [{ id: "plain" }] }, "plain"), "");
+    assert.equal(variantRoute(DECL, "ghost"), "");
   });
 });

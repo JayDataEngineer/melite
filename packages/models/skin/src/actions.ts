@@ -8,6 +8,7 @@
 // schema; the 2026-09-16 retirement order keeps the skin CARD dead
 // — the family is the sanctioned seam, not a card revival).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
+import { renderGLBViewsNode } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -106,8 +107,7 @@ export const coat: ComfyActionSpec<{ readonly body: string }, Record<string, nev
     // node, let the proof ride as an extra artifact). Returning the
     // renderer published a PNG as the `skin` channel and wired an
     // IMAGE into the next stage's body slot.
-    g.node("RayRenderGLBViews", {
-      glb_path: apply.out(0),
+    renderGLBViewsNode(g, apply.out(0), {
       resolution: 768,
       framing: 1.2,
       focal_length: 50,

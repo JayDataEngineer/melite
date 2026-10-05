@@ -103,7 +103,9 @@ describe("fetchOutputs (the harvest matrix)", () => {
     });
     expect(arts.length).toBe(1);
     // the subfolder-less spelling lands under its own name (the
-    // node-prefixed name is the subfoldered arm's)
+    // node-prefixed name is the subfoldered arm's) — and the path the
+    // harvest RETURNS is the file it wrote
+    expect(arts[0]).toBe(join(runDir, "rigged.glb"));
     const written = readFileSync(join(runDir, "rigged.glb"));
     expect(written.length).toBe(glb.length);
     expect(Buffer.compare(written, Buffer.from(glb))).toBe(0);

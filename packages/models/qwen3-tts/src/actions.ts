@@ -26,6 +26,7 @@ import {
   loadAudiocore,
   mintSeed,
   qvoiceUse,
+  saveAudio,
   voiceLockSeed,
 } from "@melite/comfyui-card-kit";
 import { assertModUse } from "@melite/comfyui-card-kit/guard";
@@ -123,7 +124,7 @@ function speakSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
     ...(p.repetition_penalty !== undefined && p.repetition_penalty !== null ? { repetition_penalty: p.repetition_penalty } : {}),
     seed,
   });
-  return g.node("SaveAudio", { audio: synth.out(), filename_prefix: `${runId}/tts` });
+  return saveAudio(g, synth.out(), `${runId}/tts`);
 }
 
 /** The use segment: a saved persona performs the text — the
@@ -143,7 +144,7 @@ function useSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBuild
     voice_strength: strength,
     seed: voiceLockSeed(p, path),
   });
-  return g.node("SaveAudio", { audio: studio.out(), filename_prefix: `${runId}/tts` });
+  return saveAudio(g, studio.out(), `${runId}/tts`);
 }
 
 /** The clone segment: the Base cloner (reference audio +
@@ -169,7 +170,7 @@ function cloneSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBui
     ...(p.repetition_penalty !== undefined && p.repetition_penalty !== null ? { repetition_penalty: p.repetition_penalty } : {}),
     seed,
   });
-  return g.node("SaveAudio", { audio: synth.out(), filename_prefix: `${runId}/tts` });
+  return saveAudio(g, synth.out(), `${runId}/tts`);
 }
 
 /** The speak action: the tts lane — two honest branches keyed on
@@ -240,7 +241,7 @@ function exportSegment(p: Record<string, unknown>, model: ModelFacts, g: GraphBu
     repetition_penalty: p.repetition_penalty,
     seed,
   });
-  const save = g.node("SaveAudio", { audio: studio.out(), filename_prefix: `${runId}/design` });
+  const save = saveAudio(g, studio.out(), `${runId}/design`);
   g.node("MeliteQVoiceCopy", {
     voice_name: (p.voice_name as string).trim(),
     dest_prefix: `${runId}/voices`,

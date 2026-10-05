@@ -169,6 +169,16 @@ describe("loraNamesFromObjectInfo — the engine's own fact, bounds-checked", ()
     }
   });
 
+  it("a lora_name that is not the [names, {}] tuple answers empty at its own seat", () => {
+    // every served object_info spells lora_name as the [names, {}]
+    // tuple; a declaration that drops the tuple (a bare string, a bare
+    // names list, a keyed object) answers empty, never throws.
+    for (const field of ["nope", { 0: ["a.safetensors"] }, 42, null]) {
+      const info = { LoraLoaderModelOnly: { input: { required: { lora_name: field } } } };
+      expect(loraNamesFromObjectInfo(info), JSON.stringify(field)).toEqual([]);
+    }
+  });
+
   it("members that are not strings or are empty fall away; the real names ride", () => {
     expect(loraNamesFromObjectInfo(node([42, "", "ok.safetensors", null]))).toEqual(["ok.safetensors"]);
   });

@@ -826,16 +826,20 @@ export const modelsFamiliesProvider: Plugin = {
     // The injector read (the doors' own — property access on a
     // fiber ctx demands inject; ctx.get resolves registered
     // services without it).
-    /* v8 ignore next 4 -- the service registered when this provider
-     * plugin applied above (service.ts:11 — the Service constructor
-     * self-registers on ctx), so the read cannot be absent; the guard
-     * stays the loud check it has always been. */
     const svc = ctx.get("models") as ModelsService | undefined;
+    /* v8 ignore next 5 -- `await ctx.plugin(modelsProvider)` above
+     * ran `new ModelsService(ctx)`, whose Service constructor
+     * registers on that ctx, so the read cannot be absent; the guard
+     * stays the loud check it has always been. */
     if (svc === undefined) {
       throw new ModelError(
         "models service failed to register at the families provider mount",
       );
     }
+    /* v8 ignore next 5 -- every family plugin body is an unconditional
+     * registerFamily(DECL) inside ctx.effect, and the loop above awaited
+     * each apply to completion, so familyCount() equals
+     * FAMILY_PLUGINS.length whenever the mount returns. */
     if (svc.familyCount() !== FAMILY_PLUGINS.length) {
       throw new ModelError(
         `the families provider registered ${svc.familyCount()} families but ${FAMILY_PLUGINS.length} plugins loaded — a family registered nothing (the transactional gate)`,

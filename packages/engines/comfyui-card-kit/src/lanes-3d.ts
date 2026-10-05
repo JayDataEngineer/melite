@@ -2,10 +2,6 @@ import { GraphBuilder, OutputHandle, stripEmptyAutofill } from './graph.ts'
 import type { PromptGraph, StripTable } from './graph.ts'
 import type { ModelFacts } from './facts.ts'
 import { mintSeed } from './graph-helpers.ts'
-import {
-  renderGLBViews,
-  positive,
-} from './blocks/poser-kit.ts'
 
 /** The wired-tensor law (the lanes-image precedent, ported 1:1):
  *  a '$name' value names an upstream stage's wired output — the

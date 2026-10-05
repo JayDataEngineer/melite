@@ -105,6 +105,28 @@ describe("validateRegistryAgainstCards (the boardings edge)", () => {
     );
     assert.deepEqual(out, [], "retired-engine rows name their own engine's cards");
   });
+
+  // THE AXIS-PARAMS ARM (the estate contract laws, 2026-10-10): a
+  // decl's variant_groups own durable draft seats, so a default whose
+  // key IS a group id (lowercased — the axisKey law) is a stamp, never
+  // a ghost card field. No in-tree decl reaches it through the wall
+  // (every served family's axis stamp is also admitted), so one is
+  // driven here with and without its group.
+  it("a default naming its OWN variant_group passes — the axis stamp, not a ghost field", () => {
+    const stamped = decl({ defaults: { variant: "base" }, variant_groups: [{ id: "Variant" }] });
+    const boardings = new Map([["image-gen", [stamped.id]]]);
+    assert.deepEqual(
+      validateRegistryAgainstCards([stamped], cards, [], boardings),
+      [["synth", "image-gen"]],
+      "the card declares no 'variant' field — the axis stamp skips",
+    );
+    assert.throws(
+      () => validateRegistryAgainstCards(
+        [decl({ defaults: { variant: "base" } })], cards, [], boardings,
+      ),
+      /default 'variant' names no field on card image-gen/,
+    );
+  });
 });
 
 describe("isServedFamily (LAW 0 + the offered gate)", () => {

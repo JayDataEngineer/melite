@@ -8,6 +8,7 @@
 // order keeps the fit CARD dead — the family is the sanctioned
 // seam, not a card revival).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
+import { renderGLBViewsNode } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -108,8 +109,7 @@ export const seat: ComfyActionSpec<SeatParams, Record<string, never>> = {
     // shape): the declared output is the seated mesh, so the handle
     // is the node that produces it; the renderer stays a terminal and
     // the harvest finds its PNG there.
-    g.node("RayRenderGLBViews", {
-      glb_path: seatNode.out(0),
+    renderGLBViewsNode(g, seatNode.out(0), {
       resolution: 768,
       framing: 1.2,
       focal_length: 50,

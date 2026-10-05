@@ -8,6 +8,7 @@
 // the oracle compared them. Creation order IS node-id order
 // (the recipe law). Keys the segment never reads ride unvalidated.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
+import { positive, renderGLBViews } from "@melite/comfyui-card-kit";
 import type { OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from "@melite/comfyui-card-kit/morphs";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
@@ -20,11 +21,6 @@ const PHENOTYPE_DIMS = [
   'cupsize', 'firmness', 'african', 'asian', 'caucasian',
 ] as const
 
-/** The 8 named view slots (moved verbatim from the kit's poser
- * block), slot order IS the RayRenderGLBViews output order — the
- * studio composes the sheet client-side. */
-const VIEW_NAMES: readonly string[] = ['front', 'front_right', 'right', 'back_right', 'back', 'back_left', 'left', 'front_left']
-
 /** THE 254 MORPH ROWS OF THE DECLARED SURFACE — one row per served
  * local-change label, at the served range. Both members are the ONE
  * door-pinned sources (morphs.ts): a hand-copied 254-row block here
@@ -32,16 +28,6 @@ const VIEW_NAMES: readonly string[] = ['front', 'front_right', 'right', 'back_ri
 const MORPH_PARAMS = ANNY_MORPH_LABELS.map(
   (label) => ({ name: label, type: "number", bounds: ANNY_MORPH_RANGE }) as const,
 )
-
-/** Row guard: an inherent amount must be a positive finite number
- * (zero or negative is nonsense, never a silently clamped render —
- * moved verbatim from the kit's poser block). */
-function positive(name: string, v: unknown): number {
-  if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) {
-    throw new Error(`${name} = ${JSON.stringify(v)}: a positive number is required (never silently clamped)`)
-  }
-  return v
-}
 
 /** The closed facts shape the compose segment reads. The segment
  * reads NOTHING off the row (the anny bake is parametric — no
@@ -116,19 +102,13 @@ export const compose: ComfyActionSpec<AnnyParams, Record<string, never>> = {
           }),
         }).out()
     const glbPath = g.node('CompositeCharacter', { body_glb_path: bodyPath }).out()
-    const views = g.node('RayRenderGLBViews', {
-      glb_path: glbPath,
+    return renderGLBViews(g, glbPath, {
       resolution: positive('resolution', p.resolution),
       framing: positive('framing', p.framing),
       focal_length: positive('focal_length', p.focal_length),
       samples: positive('samples', p.samples),
       transparent: String(p.transparent).toLowerCase() !== 'false',
-    })
-    let last: OutputHandle = views.out(0)
-    for (const [i, view] of VIEW_NAMES.entries()) {
-      last = g.node('SaveImage', { images: views.out(i), filename_prefix: `anny_${view}` }).out()
-    }
-    return last
+    }, 'anny')
   },
 };
 
@@ -141,42 +121,6 @@ export const compose: ComfyActionSpec<AnnyParams, Record<string, never>> = {
 export function parseEstimatorFacts(_raw: LaneInputsFacts): Record<string, never> {
   return {}
 }
-
-/** The photo→body regression (the hmr-estimate verb's backend — the
- *  flow 'anny-hmr' the chip drives through the queue): MultiHMR2
- *  regression + the loud single-person lock, every calibration knob
- *  FIXED here (conf 0.4 / nms 0.25 / grounded output) — an
- *  estimator is a verb, not a bench surface (SubActionMod law,
- *  stroke 89: its knobs never join the anny card schema; they ride
- *  the family's own action declaration). */
-export const estimate: ComfyActionSpec<{ readonly photo: string }, Record<string, never>> = {
-  id: "estimate",
-  inputs: [],
-  laneIndependent: true,
-  outputs: [{ name: "body", kind: "mesh" }],
-  // THE DECLARED SURFACE (the write plane, phase 2): the one photo
-  // the verb reads. No anny card schema row exists for it (the
-  // calibration knobs are FIXED in build below, never a bench
-  // surface), so the type is the anny-hmr flow row's own initial
-  // kind — its `photo` validator admits an image path.
-  params: [{ name: "photo", type: "string" }],
-  facts: parseEstimatorFacts,
-  build({ p, g }): OutputHandle {
-    const load = g.node('LoadImage', { image: String(p.photo) })
-    const hmr = g.node('MultiHMR2ImageToAnny', {
-      image: load.out(0),
-      conf_thresh: 0.4,
-      dist_thresh_nms: 0.25,
-      lowres: false,
-      save_anny_params: true,
-      save_mesh: true,
-      render: false,
-      filename_prefix: 'anny/multihmr2',
-    })
-    const select = g.node('AnnySelectPerson', { mesh_paths: hmr.out(2), index: 0 })
-    return g.node('AnnyGroundBody', { glb_path: select.out(0) }).out(0)
-  },
-};
 
 /** The commercial photo→body chain (the hmr-estimate verb's
  *  commercial engine — the flow 'anny-hmr-commercial'):

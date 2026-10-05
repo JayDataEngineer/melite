@@ -50,6 +50,32 @@ describe("validateWriteRowsAgainstActions (the declared-plane door)", () => {
     );
   });
 
+  it("a WRONG-TYPED number refuses with the declared type and the carried one", () => {
+    // the bounds arm only judges a real number — a string on a number
+    // row must refuse on the type mismatch, never reach the bounds
+    // comparison and read there as NaN.
+    throwsDoor(
+      [{ where: "defaults", values: { steps: "8" } }],
+      /probe defaults: 'steps' declares number but carries string/,
+    );
+  });
+
+  it("an optionless enum refuses every value it carries (options is optional on the row)", () => {
+    // `options` is an OPTIONAL member of a declared enum row, so an
+    // optionless enum is legal TypeScript and nothing can satisfy it.
+    const optionless: readonly DeclaredSurface[] = [{
+      id: "probe",
+      params: [{ name: "flavor", type: "enum" }],
+    }];
+    for (const value of ["any", 7]) {
+      assert.throws(
+        () => validateWriteRowsAgainstActions("probe", [{ where: "defaults", values: { flavor: value } }], optionless),
+        /probe defaults: 'flavor' carries '.*', off the declared options/,
+        `flavor = ${String(value)}`,
+      );
+    }
+  });
+
   it("an off-enum string refuses", () => {
     throwsDoor(
       [{ where: "cell v1/q8 resolver_defaults", values: { sampler: "dpm" } }],

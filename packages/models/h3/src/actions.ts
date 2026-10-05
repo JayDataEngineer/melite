@@ -24,6 +24,7 @@
 import type { OutputHandle } from '@melite/comfyui-card-kit/graph'
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import type { ComfyActionSpec } from '@melite/comfyui-card-kit'
+import { saveAudio } from '@melite/comfyui-card-kit'
 import { FAMILIES, paramSchema, wireList, H3_RECOMMENDED_SAMPLERS } from './schema.ts'
 import { H3_LORA_ROWS } from '../mods/loras.ts'
 import type { Family } from './schema.ts'
@@ -589,9 +590,7 @@ function renderH3Film(
     // calibrated against ffmpeg's ebur128 to within 0.1 LU on tones,
     // noise, gating, and mono.
     const meter = g.node('MeliteLoudness', { audio: mix.out(0) })
-    g.node('SaveAudio', {
-      audio: meter.out(0), filename_prefix: 'h3_t4_film_audio',
-    })
+    saveAudio(g, meter.out(0), 'h3_t4_film_audio')
     // THE FILM MP4 (GAP 1): the same file-tail video join the
     // clips-free arm rides — container mux only (CreateVideo +
     // SaveVideo h264/mp4 on the decoded window files), never the

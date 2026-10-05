@@ -12,6 +12,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import {
   AUDIACORE_TTS_AUTOFILL,
   loadAudiocore,
+  saveAudio,
 } from "@melite/comfyui-card-kit";
 import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 
@@ -66,6 +67,6 @@ export const sfx: ComfyActionSpec<SfxParams, SfxFacts> = {
       duration_seconds: p.duration,
       seed,
     });
-    return g.node("SaveAudio", { audio: synth.out(), filename_prefix: `${runId}/sfx` }).out();
+    return saveAudio(g, synth.out(), `${runId}/sfx`).out();
   },
 };

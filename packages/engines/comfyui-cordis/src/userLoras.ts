@@ -122,10 +122,14 @@ export function readUserLoraRows(path: string): UserLoraFile {
   try {
     text = readFileSync(path, 'utf8')
   } catch (e) {
+    // node:fs throws Error subclasses only (ErrnoException extends
+    // Error; an argument-type failure is an ERR_INVALID_ARG_TYPE
+    // TypeError) — no non-Error spelling is reachable here (the
+    // re-audit, 2026-10-16).
     return {
       path,
       rows: [],
-      problems: [`the rows file could not be read: ${e instanceof Error ? e.message : String(e)}`],
+      problems: [`the rows file could not be read: ${(e as Error).message}`],
       absent: false,
     }
   }
@@ -133,10 +137,13 @@ export function readUserLoraRows(path: string): UserLoraFile {
   try {
     parsed = JSON.parse(text) as unknown
   } catch (e) {
+    // JSON.parse on a string raises SyntaxError (an Error subclass)
+    // and nothing else — no non-Error spelling is reachable here (the
+    // re-audit, 2026-10-16).
     return {
       path,
       rows: [],
-      problems: [`the rows file is not JSON: ${e instanceof Error ? e.message : String(e)}`],
+      problems: [`the rows file is not JSON: ${(e as Error).message}`],
       absent: false,
     }
   }
@@ -207,7 +214,8 @@ export function installUserLora(
   try {
     st = statSync(sourcePath)
   } catch (e) {
-    return { ok: false, reason: `cannot read ${sourcePath}: ${e instanceof Error ? e.message : String(e)}` }
+    // node:fs throws Error subclasses only (the re-audit, 2026-10-16).
+    return { ok: false, reason: `cannot read ${sourcePath}: ${(e as Error).message}` }
   }
   if (!st.isFile()) return { ok: false, reason: `${sourcePath} is not a file` }
   if (!LORA_EXTENSIONS.includes(extname(sourcePath).toLowerCase())) {
@@ -222,9 +230,11 @@ export function installUserLora(
     copyFileSync(sourcePath, target)
     return { ok: true, filename: basename(sourcePath), bytes: st.size }
   } catch (e) {
+    // mkdirSync and copyFileSync throw Error subclasses only (the
+    // re-audit, 2026-10-16).
     return {
       ok: false,
-      reason: `copy into ${dirname(engineLorasDir)} failed: ${e instanceof Error ? e.message : String(e)}`,
+      reason: `copy into ${dirname(engineLorasDir)} failed: ${(e as Error).message}`,
     }
   }
 }
@@ -286,9 +296,12 @@ export function installUserLoraBytes(
   // zero bytes and the refusal below names that)
   const bytes: Buffer = Buffer.from(payload, 'base64')
   if (bytes.byteLength === 0) return { ok: false, reason: 'the upload decoded to zero bytes' }
-  if (bytes.byteLength > LORA_BYTES_CAP) {
-    return { ok: false, reason: 'the LoRA is over the door cap' }
-  }
+  // THE BUDGET ABOVE IS THE ONLY SIZE DOOR: decoded ≤
+  // floor(budget·3/4) = LORA_BYTES_CAP for every input, because the
+  // caller declares `req.data.length` (managePlane.ts) and
+  // `req.data.length ≥ payload.length`, while the budget bounds that
+  // same length. A second check on the decoded length could never
+  // refuse (the re-audit, 2026-10-16).
   try {
     mkdirSync(engineLorasDir, { recursive: true })
     const target = join(engineLorasDir, name)
@@ -297,7 +310,9 @@ export function installUserLoraBytes(
     writeFileSync(target, bytes)
     return { ok: true, filename: name, bytes: bytes.byteLength }
   } catch (e) {
-    return { ok: false, reason: `writing into ${engineLorasDir} failed: ${e instanceof Error ? e.message : String(e)}` }
+    // mkdirSync and writeFileSync throw Error subclasses only (the
+    // re-audit, 2026-10-16).
+    return { ok: false, reason: `writing into ${engineLorasDir} failed: ${(e as Error).message}` }
   }
 }
 

@@ -7,7 +7,7 @@
 // SSOT is the live engine node set (object_info via the SDK client)
 // a pin refresh that moves a default must update every consumer,
 // never a quiet edit here.
-import { GraphBuilder, OutputHandle } from '../graph.ts'
+import { GraphBuilder, OutputHandle, type NodeRef } from '../graph.ts'
 import type { ModelFacts, LaneInputsFacts } from '../facts.ts'
 
 /** The AudiocoreTTS optional-input defaults the engine pin autofills
@@ -71,7 +71,11 @@ export function loadAudiocore(g: GraphBuilder, model: ModelFacts): OutputHandle 
   }).out()
 }
 
-/** The audio-lane tail: SaveAudio under the prefix. */
-export function saveAudio(g: GraphBuilder, audio: OutputHandle, filenamePrefix: string): void {
-  g.node('SaveAudio', { audio, filename_prefix: filenamePrefix })
+/** The audio-lane tail: SaveAudio under the prefix.
+ *  @param g the graph builder
+ *  @param audio the audio handle to persist
+ *  @param filenamePrefix the run-scoped filename prefix
+ *  @returns the SaveAudio node's ref — the lane's terminal output */
+export function saveAudio(g: GraphBuilder, audio: OutputHandle, filenamePrefix: string): NodeRef {
+  return g.node('SaveAudio', { audio, filename_prefix: filenamePrefix })
 }

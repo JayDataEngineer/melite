@@ -6,8 +6,12 @@
 // The import is side-effect-cheap now; the boot happens where
 // models are used (cardsRegistry applies `await bootModels()`),
 // and the sync readers throw the named refusal before any boot.
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
+
+// The rejecting-boot probe's own state rides vi.hoisted so the mock
+// factory (hoisted above every import in the module graph) can reach it.
+const boot = vi.hoisted(() => ({ calls: 0 }));
 
 describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
   it("the package root resolves WITHOUT awaiting the models boot (a fresh module graph, a hard timeout)", async () => {
@@ -31,5 +35,35 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
     assert.equal(typeof mod.cascadeInit, "function");
     assert.equal(mod.cascadeInit(), mod.cascadeInit());
     await mod.cascadeInit();
+  });
+
+  it("a REFUSED boot clears the memo, so the next call re-boots (bootModels' own retry law)", async () => {
+    // Every in-tree boot is green, so the rejection handler below
+    // cascadeInit's bootModels call is otherwise never reached. A
+    // refusing boot is driven here through a mocked service module.
+    boot.calls = 0;
+    vi.resetModules();
+    vi.doMock("../src/models/service.ts", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("../src/models/service.ts")>();
+      return {
+        ...actual,
+        bootModels: (): Promise<never> => {
+          boot.calls += 1;
+          return Promise.reject(new Error("probe: the boot refused"));
+        },
+      };
+    });
+    try {
+      const mod = await import("../src/models/models.ts");
+      await assert.rejects(mod.cascadeInit(), /probe: the boot refused/u);
+      // the memoized promise was the refused one and the handler nulled
+      // it: the SECOND call re-boots rather than re-serving the dead
+      // promise (two bootModels calls, not one).
+      await assert.rejects(mod.cascadeInit(), /probe: the boot refused/u);
+      assert.equal(boot.calls, 2, "the refused memo was cleared — the next call re-boots");
+    } finally {
+      vi.doUnmock("../src/models/service.ts");
+      vi.resetModules();
+    }
   });
 });
