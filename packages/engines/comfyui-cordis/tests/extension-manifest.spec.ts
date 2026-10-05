@@ -200,12 +200,15 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
     // The roster entries with no declared row ARE the open gap — each
     // needs an operator-chosen upstream (url + pinned ref) and its
     // deletion here. (2026-10-15: the three phantom keys left this
-    // list with the cards that no longer require them.)
-    const UNDECLARED_ROSTER: readonly string[] = [
-      "ComfyUI-GGUF",
-      "comfyui-lanpaint",
-      "vnccs_utils",
-    ];
+    // list with the cards that no longer require them. 2026-10-16,
+    // the roster-rows batch closed all three: ComfyUI-GGUF declared
+    // at city96@6ea2651e for the §4d gguf channel; comfyui-lanpaint
+    // deleted — the operator ruling (2026-10-16) is that LanPaint is
+    // MOD-ONLY, installed by hand on the box, never estate-provisioned,
+    // so no row will ever declare it and the key dies; vnccs_utils
+    // deleted — ModelSamplingAuraFlow is comfy_extras core and
+    // UniCanvasNode has no provider on disk and no requiring card.)
+    const UNDECLARED_ROSTER: readonly string[] = [];
     const drifted = rostered.filter((name) => !declared.has(name)).sort();
     assert.deepEqual(
       drifted,

@@ -44,9 +44,9 @@ const FACTS = join(ROOT, "packages/engines/comfyui-cordis/data/model-facts.json"
  *  an already-declared pack; core classes live in core_node_types
  *  now, and no graph addresses a pack-owned class of theirs.) */
 const NOT_YET_INSTALLED: Readonly<Record<string, string>> = {
-  "ComfyUI-GGUF": "third-party; no pinned registry identity in this tree",
-  "comfyui-lanpaint": "third-party; no pinned registry identity in this tree",
-  "vnccs_utils": "third-party; no pinned registry identity in this tree",
+  // 2026-10-16, the roster-rows batch: all three left — ComfyUI-GGUF
+  // declared at city96@6ea2651e (the §4d gguf channel); lanpaint and
+  // vnccs_utils deleted from the check map (mod-only ruling / phantom).
 };
 
 /** Check-map key -> manifest row name, where the two name the SAME

@@ -185,8 +185,12 @@
       "Florence2Run"
     ],
     "ComfyUI-GGUF": [
-      "GGUFCLIPLoader",
-      "GGUFUnetLoader"
+      "CLIPLoaderGGUF",
+      "DualCLIPLoaderGGUF",
+      "QuadrupleCLIPLoaderGGUF",
+      "TripleCLIPLoaderGGUF",
+      "UnetLoaderGGUF",
+      "UnetLoaderGGUFAdvanced"
     ],
     "ComfyUI-KJNodes": [
       "ImageConcatMulti",
@@ -234,10 +238,6 @@
     ],
     "comfyui-impact-subpack": [
       "UltralyticsDetectorProvider"
-    ],
-    "comfyui-lanpaint": [
-      "LanPaintInpaint",
-      "LanPaintSampler"
     ],
     "Nvidia_RTX_Nodes_ComfyUI": [
       "RTXVideoSuperResolution"
@@ -308,10 +308,6 @@
     ],
     "Comfyui-QwenEditUtils": [
       "TextEncodeQwenImageEditPlus"
-    ],
-    "vnccs_utils": [
-      "ModelSamplingAuraFlow",
-      "UniCanvasNode"
     ]
   },
   "core_node_types": {

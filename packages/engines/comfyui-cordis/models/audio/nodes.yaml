@@ -29,3 +29,19 @@ extensions:
       2026-10-13). The Audiocore* classes are duplicated across the
       three packs by the split; this row is what makes MeliteQVoiceCopy
       reachable.
+  # 2026-10-16 (the roster-rows batch): the GGUF loader family declares
+  # for the §4d HF-directory model channel — the qwen3-tts and ace-step
+  # .gguf weights load through its nodes. The roster's old spellings
+  # (GGUFUnetLoader/GGUFCLIPLoader) named classes that exist nowhere
+  # upstream; the row pins the real class set.
+  - name: ComfyUI-GGUF
+    url: https://github.com/city96/ComfyUI-GGUF
+    ref: 6ea2651e7df66d7585f6ffee804b20e92fb38b8a
+    required: true
+    desc: >-
+      city96's GGUF loaders (UnetLoaderGGUF, UnetLoaderGGUFAdvanced,
+      CLIPLoaderGGUF, Dual/Triple/QuadrupleCLIPLoaderGGUF) — the §4d
+      HF-directory channel's .gguf weights load through them. The gguf
+      pip dependency (>=0.13.0) rides the row for fresh estates.
+    pip:
+      - gguf
