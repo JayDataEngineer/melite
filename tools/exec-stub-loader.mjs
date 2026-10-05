@@ -66,7 +66,10 @@ export async function load (url, context, nextLoad) {
         for (let part of m[1].split(',')) {
           part = part.trim()
           if (!part) continue
-          named.add(part.split(/\s+as\s+/)[1]?.trim() ?? part)
+          // the stub must export the MODULE's name (before `as`),
+          // not the importer's local alias — the linker checks the
+          // original (import { DECL as annyDecl } needs export DECL).
+          named.add(part.split(/\s+as\s+/)[0].trim())
         }
       }
       hasDefault = new RegExp(`import\\s+[^{*\\s][^\\s]*\\s*from\\s*['"]${spec}['"]`).test(src)
