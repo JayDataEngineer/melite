@@ -57,7 +57,17 @@ export async function load (url, context, nextLoad) {
       // unreadable importer — fall through to the default stub
     }
   }
-  const lines = ['export default undefined']
-  for (const n of named) lines.push(`export const ${n} = undefined`)
+  // CONSTRUCTIBLE SYNTHESIS: a stub member that only links is not
+  // enough — G5's plain-node import executes the tarball's top level,
+  // and vendor libs do `new yaml.Type(...)` at module scope. undefined
+  // dies with "not a constructor"; a no-op function satisfies both the
+  // link check and construction. The default is a Proxy so ANY member
+  // access (import x, then x.y.z) stays constructible-callable.
+  const lines = [
+    'const stubFn = function stub () {}',
+    "const stubObj = new Proxy(stubFn, { get: () => stubObj, apply: () => stubObj, construct: () => ({}) })",
+    'export default stubObj',
+  ]
+  for (const n of named) lines.push(`export const ${n} = stubObj`)
   return { format: 'module', shortCircuit: true, source: lines.join('\n') + '\n' }
 }
