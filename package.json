@@ -49,6 +49,8 @@
     "test:web:browser": "pnpm --filter @melite-plugin/dsh-card-view exec playwright test && pnpm --filter @melite-plugin/dsh-card-deck exec playwright test",
     "test:web:mesh": "pnpm --filter @melite-plugin/dsh-gallery run build:mesh-door && pnpm --filter @melite-plugin/dsh-gallery exec playwright test",
     "lint": "node tools/arch-lint.ts",
+    "release:mint": "node tools/release-artifacts.mjs mint",
+    "release:verify": "node tools/release-artifacts.mjs verify",
     "provision": "node --experimental-strip-types --no-warnings packages/engines/comfyui-cordis/scripts/provision.ts",
     "profile:regen": "node scripts/regen-profile-paths.mjs"
   },
