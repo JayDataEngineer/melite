@@ -23,6 +23,37 @@ client are retired; they are not alternate launch paths.
 The agent and developer contract is [`AGENTS.md`](AGENTS.md). Read it before
 changing the harness or composing media.
 
+## Install from a GitHub release
+
+The publish channel is the GitHub release, not a package registry. Every
+melite-owned package in a release carries one identical version, and the
+release tag is exactly `v<that version>`; the tarball filenames say the
+same string. Pre-releases carry a `-alpha.N` suffix on every channel.
+
+Consumers install through the `dsh` CLI over the release assets — the
+same sequence `tools/release-rehearsal.mjs` proves on every release
+(one command, nine receipts, in a fresh container):
+
+```sh
+npm install -g @deepseek-ai/dsh@0.2.0-rc.2   # the profile CLI
+corepack enable && corepack prepare pnpm@10.33.2 --activate
+```
+
+The plugin verb resolves a profile's packages against release tarballs
+(see `release-manifest.json` on the release page). Two dsh runtime
+facts the install must honor, both proven by the rehearsal:
+
+- the CLI's profile template pins older member versions; pin
+  `@deepseek-ai/dsh-base` and the four members named in the rehearsal
+  seed (`tools/release-rehearsal.mjs`, `SKEW_PINNED`) at the CLI's own
+  version in dependencies and `pnpm-workspace.yaml` overrides;
+- `@deepseek-ai/dsh-web-app` must be a bundle layer of the profile —
+  it provides the `webServer` service the melite web plugins wait on.
+
+The web UI boots with `dsh --profile <name> --no-open --port <port>`;
+the printed token URL is the entry point (the browser-trust fence
+rejects every other first request).
+
 ## Quick start
 
 Requirements:

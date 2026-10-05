@@ -24,7 +24,10 @@
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
-import { tmpdir } from 'node:os'
+
+// host-side scratch root: /var/tmp/melite-scratch, never the box
+// /tmp tmpfs (the strip pass extracts every packed tarball here)
+const SCRATCH = '/var/tmp/melite-scratch'
 import { join, resolve } from 'node:path'
 import { stripLeakageComments } from './strip-artifact-comments.mjs'
 
@@ -89,7 +92,7 @@ let distDir = flag('--dist')
 const tag = flag('--tag')
 if (!distDir && !tag) die('pass --dist DIR or --tag vX.Y.Z')
 if (!distDir) {
-  distDir = join(tmpdir(), `melite-rehearsal-${tag}`)
+  distDir = join(SCRATCH, `rehearsal-${tag}`)
   rmSync(distDir, { recursive: true, force: true })
   mkdirSync(distDir, { recursive: true })
   log(`[1/6] downloading release assets for ${tag}`)
@@ -147,7 +150,7 @@ check('publishConfig access public, private dropped — every seat', notPublic.l
 
 // strip law through the mint's own tool: extract every packable source
 // file and demand the stripper finds nothing left to strip
-const stripScratch = join(tmpdir(), 'melite-rehearsal-strip')
+const stripScratch = join(SCRATCH, 'rehearsal-strip')
 rmSync(stripScratch, { recursive: true, force: true })
 mkdirSync(stripScratch, { recursive: true })
 let stripHits = 0
@@ -250,14 +253,14 @@ const seed = {
   dependencies,
   dsh: { profile: { bundles: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', ...BUNDLES] } },
 }
-const seedPath = join(tmpdir(), 'melite-rehearsal-seed.json')
+const seedPath = join(SCRATCH, 'rehearsal-seed.json')
 writeFileSync(seedPath, JSON.stringify(seed, null, 2))
 r = docker(['cp', seedPath, `${CONTAINER}:${profileDir}/package.json`])
 if (r.code !== 0) die(`seeding profile failed: ${r.out.slice(0, 400)}`)
 // the shipped dsh profile template's own workspace law (dsh-app-boot's
 // PROFILE_PNPM_WORKSPACE): hoisted linking is the shape bundle
 // reconciliation and web boot were proved on
-const workspacePath = join(tmpdir(), 'melite-rehearsal-workspace.yaml')
+const workspacePath = join(SCRATCH, 'rehearsal-workspace.yaml')
 writeFileSync(workspacePath, [
   'packages:', '  - .', '',
   'nodeLinker: hoisted', 'autoInstallPeers: false', '',
@@ -314,7 +317,7 @@ check('dump-config carries every bundle layer, zero skips', layersOk,
   (layersOk ? `all ${bundleSeats.length} layers` :
     `${dumpWarn.length} skip markers; missing: ${bundleSeats.filter((b) => !dump.out.includes(b)).join(', ')}`))
 if (dump.code === 0) {
-  writeFileSync(join(tmpdir(), 'melite-rehearsal-dump-config.txt'), dump.out)
+  writeFileSync(join(SCRATCH, 'rehearsal-dump-config.txt'), dump.out)
 }
 
 // web boot: bring it up, poll, tear down
