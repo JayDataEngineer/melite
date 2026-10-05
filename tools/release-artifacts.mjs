@@ -25,7 +25,7 @@ import { join } from 'node:path'
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts }).trim()
 const git = (...a) => run('git', a)
-const gh = (argString) => run('gh', argString.split(' '))
+const gh = (args) => run('gh', args) // array — jq expressions carry spaces
 const fail = (msg) => { console.error(`✗ ${msg}`); process.exit(1) }
 const sha256 = (file) => createHash('sha256').update(readFileSync(file)).digest('hex')
 
@@ -120,13 +120,19 @@ function mint (opts) {
 function verify (opts) {
   // /releases/latest EXCLUDES prereleases — an alpha-only repo 404s.
   // "Latest" for this tool = newest by the releases list (newest first).
-  const tag = opts.tag || gh(`api repos/${REPO}/releases --jq .[0].tag_name`)
+  const tag = opts.tag || gh(['api', `repos/${REPO}/releases`, '--jq', '.[0].tag_name'])
   const rel = releaseJson(tag)
   if (!rel) fail(`no release for ${tag}`)
   const manifestAsset = rel.assets.find((a) => a.name === 'release-manifest.json')
   if (!manifestAsset) fail(`${tag} carries no release-manifest.json — mint it: node tools/release-artifacts.mjs mint`)
-  const b64 = gh(`api repos/${REPO}/releases/tags/${tag} --jq '.assets[] | select(.name=="release-manifest.json") | .content'`)
-  const manifest = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'))
+  // REST asset listings return content: "" — the manifest bytes
+  // come down the same wire every asset does.
+  const mdir = mkdtempSync(join(tmpdir(), 'melite-verify-manifest-'))
+  let manifest
+  try {
+    run('gh', ['release', 'download', tag, '--repo', REPO, '--pattern', 'release-manifest.json', '--dir', mdir])
+    manifest = JSON.parse(readFileSync(join(mdir, 'release-manifest.json'), 'utf8'))
+  } finally { rmSync(mdir, { recursive: true, force: true }) }
   const tagCommit = git('rev-list', '-1', tag)
   if (manifest.commit !== tagCommit) {
     fail(`manifest commit ${manifest.commit} ≠ tag commit ${tagCommit} — the manifest was minted from a different tree`)
