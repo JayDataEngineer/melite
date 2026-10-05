@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-drafts",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "REBUILD-1 (2026-09-10): the drafts domain as a DSH-native Typert Remote owner. Draft list/get over the host's storageDomain facility \u2014 no routes, no lanes, no second process. Follows references/deepseek-harness/docs/cookbook/adding-a-remote-api.md.",

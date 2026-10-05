@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-queue",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "The serial run queue as a host Cordis service (REBUILD-5 of the gateway kill): lock-first single-writer, sidecar/ledger I/O, reproduce/resume refusal arms, run-status probe slot. No doors, no routes, no port \u2014 the runs remote exposes the lanes over this seat.",

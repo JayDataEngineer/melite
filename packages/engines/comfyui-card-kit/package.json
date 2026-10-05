@@ -1,6 +1,6 @@
 {
   "name": "@melite/comfyui-card-kit",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "The compose kit \u2014 the named package deep card domains reach for instead of climbing (P46: 1:1 with the reference; ui-tool's toolviews imports @deepseek-ai/dsh-client-ui-primitives from depth, never a relative climb). Pure graph-compose functions: kit lanes, GraphBuilder, facts derivation, block/mod helpers, the ONE vocabulary. Runtime is node --experimental-strip-types (erasable-syntax TS); no build step.",

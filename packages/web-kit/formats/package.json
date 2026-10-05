@@ -41,7 +41,7 @@
     "./specContract": "./src/specContract.ts",
     ".": "./src/index.ts"
   },
-  "version": "0.3.0",
+  "version": "0.3.1",
   "types": "./src/index.ts",
   "scripts": {
     "typecheck": "tsc --noEmit"

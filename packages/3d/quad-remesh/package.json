@@ -1,5 +1,5 @@
 {
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "the quad-remesh card (the 3d lane) \u2014 one card one package: card.ts host face + schema/composition",
