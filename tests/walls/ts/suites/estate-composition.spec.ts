@@ -49,6 +49,19 @@ import { theService } from "../../../../packages/engines/comfyui-cordis/src/card
 
 let ctx: Context;
 
+/** THE BUNDLE MOUNT (shared by this wall's boot and the re-boot arm
+ *  below): the whole engine tier in load order over one root. */
+const mountBundle = async (c: Context, root: string): Promise<void> => {
+  // cross-copy plugin shapes ride the honest Plugin cast — never
+  // poisons the ctx.plugin overload into a required Config.
+  await c.plugin(timerPlugin as unknown as Plugin);
+  await c.plugin(Storage as unknown as Plugin);
+  await c.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
+  await c.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
+  // THE BUNDLE — the whole engine tier in load order.
+  await c.plugin(estateBundle as unknown as Plugin);
+};
+
 beforeAll(async () => {
   const root = mkdtempSync(join(tmpdir(), "estate-composition-wall-"));
   // OWN the key (2026-10-13, the flake audit): set in beforeAll and
@@ -57,14 +70,7 @@ beforeAll(async () => {
   stateRootBefore = process.env["MELITE_STATE_ROOT"];
   process.env["MELITE_STATE_ROOT"] = root;
   ctx = new Context();
-  // cross-copy plugin shapes ride the honest Plugin cast — never
-  // poisons the ctx.plugin overload into a required Config.
-  await ctx.plugin(timerPlugin as unknown as Plugin);
-  await ctx.plugin(Storage as unknown as Plugin);
-  await ctx.plugin({ name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as unknown as Plugin, { root });
-  await ctx.plugin({ name: domainName, inject: domainInject, apply: domainApply, Config: DomainConfig } as unknown as Plugin, { backend: "json" });
-  // THE BUNDLE — the whole engine tier in load order.
-  await ctx.plugin(estateBundle as unknown as Plugin);
+  await mountBundle(ctx, root);
 });
 
 function seat<T>(name: string): T {
@@ -171,4 +177,44 @@ describe("the estate bundle composes", () => {
     const env = await manage.act({ action: "status", test: true }, sig);
     assert.equal(env.ok, true, "status answers test-flagged with no engine");
   });
+
+  it("the SHIPPED composition re-mounts on its own durable state (dispose + fresh boot, same root)", async () => {
+    // THE RE-BOOT LAW (the durability trio audit, T5): this wall
+    // booted the shipped bundle once and never disposed it — nothing
+    // proved the estate a user runs re-mounts on the durable state
+    // it wrote (the e2e smoke disposes but never re-boots; the
+    // drafts-remote wall re-boots the drafts plugin alone). Here the
+    // first boot's bench is patched ABOVE its birth rev, the context
+    // is disposed, and a fresh bundle mounts on the SAME root: the
+    // row and the advanced counter can only come back off disk — a
+    // re-born bench would read rev 0.
+    type Bench = {
+      ensure(doc: { session: string; stages: Array<{ id: string }> }, signal: AbortSignal): Promise<unknown>;
+      patch(session: string, op: { stage: string; params: Record<string, number>; expect_rev: number }, signal: AbortSignal): Promise<{ rev: number }>;
+      get(session: string, signal: AbortSignal): Promise<{ rev: number }>;
+    };
+    const sig = new AbortController().signal;
+    const bench0 = seat<Bench>("benchRemote");
+    await bench0.ensure({ session: "reboot", stages: [{ id: "s_0" }] }, sig);
+    const patched = await bench0.patch("reboot", { stage: "s_0", params: { steps: 5 }, expect_rev: 0 }, sig);
+    assert.equal(patched.rev, 1, "the first boot advanced the counter past its birth value");
+    await ctx.fiber.dispose();
+
+    const root = process.env["MELITE_STATE_ROOT"] as string;
+    const fresh = new Context();
+    await mountBundle(fresh, root);
+    const bench1 = fresh.get("benchRemote", false) as Bench | undefined;
+    assert.ok(bench1, "the fresh bundle's bench seat is live");
+    const back = await bench1.get("reboot", sig);
+    assert.equal(back.rev, 1, "the counter the FIRST boot advanced — read off disk, not a re-birth");
+    // THE LOCK RE-TAKE (the trio audit's T5 tail): the dispose
+    // released the boot lock (service.ts's PID-checked effect) and
+    // the fresh boot's gate re-took it from disk — the estate's
+    // other durable state, proven here in-process for the first
+    // time (the e2e smoke proves it only across two live services).
+    const queue1 = fresh.get("queue", false) as { lockNote: string } | undefined;
+    assert.ok(queue1, "the fresh bundle's queue seat is live");
+    assert.equal(queue1.lockNote, "acquired", "the second boot re-took the boot lock the dispose released");
+    await fresh.fiber.dispose();
+  }, 30000);
 }, 30000);

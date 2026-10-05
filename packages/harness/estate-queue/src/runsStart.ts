@@ -536,7 +536,10 @@ export async function registerCompiledRun(args: {
   }
   // THE DOOR IS REQUIRED (the run id is read from it above) — the
   // door-undefined guards and the `?.`/`??` vestiges of the old
-  // optional door were dead legs, pruned with the door law.
+  // optional door were dead legs, pruned with the door law. (The
+  // re-audit caught three survivors this comment once overclaimed
+  // as gone — the benchDoc gate, the benchRec read, and the
+  // variant-lift body — pruned in the same law, 2026-10-16.)
   run.pipeline = door.pipeline;
   if (door.cardId !== undefined) run.cardId = door.cardId;
   // THE CARD SNAPSHOT LAW (stroke 45, the operator's wand complaint):

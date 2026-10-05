@@ -187,9 +187,10 @@ export async function validate(
     // (a wall for an unreachable arm is a lie), so they are gone; a
     // body that skipped the door now fails loud instead of quietly
     // composing nothing.
-    // THE SUBJECT, THE WAY inlineArm FINDS IT: a body carrying
-    // flow_inline is read through it, and a body without one is its
-    // own subject (inlineArm's own envelope rule). Reading
+    // THE SUBJECT, THE WAY inlineArm FINDS IT (under the 200 only —
+    // the re-audit's correction, 2026-10-16): on a 200, a body
+    // carrying flow_inline is read through it and a body without one
+    // is its own subject (inlineArm's own envelope rule). Reading
     // flow_inline.stages unconditionally assumed a key this walk's
     // caller does not promise — the removed half-built-seat guard had
     // been hiding it.

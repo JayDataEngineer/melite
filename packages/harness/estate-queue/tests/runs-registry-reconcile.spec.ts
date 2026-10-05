@@ -12,6 +12,7 @@ import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { ComfyUIHostService } from "@melite/comfyui-cordis";
 import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { RunsRuntimeService } from "../src/runsRegistry.ts";
+import { listRuns } from "../src/runsList.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
@@ -671,6 +672,107 @@ describe("the writer's own bytes survive the process", () => {
     const dead = seatAt(s.state);
     new FakeEngine((dead.svc as unknown as { ctx: Context }).ctx);
     assert.deepEqual(await waitForReplay(dead), [], "a settled run is never resurrected");
+  });
+
+  it("a REAL running claim is retired by a fresh boot (no replay, no duplicate spend)", async () => {
+    // THE CLAIM-PERSIST RETIREMENT (the durability trio audit §7.2):
+    // the zombie arms HAND-WRITE a 'running' sidecar, so the claim
+    // writer (claimPersist — the rewrite the pump fires the moment
+    // it takes the row) and the sweep that retires it were never
+    // crossed. Here the real pump CLAIMS a real run whose engine
+    // never answers, the owning seat is abandoned mid-flight (a
+    // process death between claim and settle), and a fresh boot
+    // retires the claim off the writer's own bytes.
+    const s = seat();
+    const engine = engineSeat(s);
+    // the engine stalls forever: the run claims and never settles
+    engine.onFlow = () => new Promise((): never => undefined as never);
+    const ans = await s.svc.start(wfBody82(), new AbortController().signal);
+    // wait for the CLAIM WRITE, not the in-memory flip (claimPersist
+    // is best-effort async — the row turns 'running' in memory a
+    // tick before the sidecar rewrite lands)
+    const sidecarPath = join(s.state, "output", ans.run_id, "_flow.json");
+    let claimed: Record<string, unknown> = {};
+    for (let i = 0; i < 200; i++) {
+      claimed = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
+      if (claimed["status"] === "running") break;
+      await new Promise((r) => setTimeout(r, 10));
+    }
+    assert.equal(claimed["status"], "running", "the CLAIM rewrite fired before the death");
+
+    const dead = seatAt(s.state);
+    new FakeEngine((dead.svc as unknown as { ctx: Context }).ctx);
+    // the fresh boot's reconcile is constructor-fired; poll for its
+    // retirement of the real claim (bounded — a sweep that never
+    // runs fails on the stale 'running' read)
+    let swept = claimed;
+    for (let i = 0; i < 200 && swept["status"] !== "failed"; i++) {
+      await new Promise((r) => setTimeout(r, 10));
+      swept = JSON.parse(readFileSync(sidecarPath, "utf8")) as Record<string, unknown>;
+    }
+    assert.equal(swept["status"], "failed", "the fresh boot retired the dead process's claim");
+    assert.match(String(swept["sweep"]), /boot sweep/, "the retirement names its authority");
+    assert.deepEqual(
+      [...dead.core.runs.keys()],
+      [],
+      "a running claim is never replayed — the claim's entire purpose (no duplicate GPU spend)",
+    );
+  });
+
+  it("stroke-82 on the REAL writer: identity scalars lead every payload and listRuns serves the bulky row whole", async () => {
+    // THE ORDER LAW ON REAL BYTES (the durability trio audit, T3):
+    // runs-list.spec.ts:448 pins the 8191-slice law against a
+    // hand-written literal that IMITATES the writer's key order —
+    // reorder sidecarDoc and that arm stays green. Only a run whose
+    // bulky payload really overflowed the window, written by the
+    // real door, proves the writer keeps the scalars ahead of it.
+    const s = seat();
+    const engine = engineSeat(s);
+    engine.onFlow = async (_rows, runDir) => {
+      // listRuns refuses a run with no media (runRowOrNull), so the
+      // harvest must leave one file behind
+      writeFileSync(join(runDir, "a.png"), "PNG");
+      return { stages: { s: { outputs: {}, artifacts: ["a.png"] } }, promptId: "p" };
+    };
+    // 9 KB INSIDE the workflow: the door compiles it into the graph
+    // rows the settle writer serializes AFTER the identity scalars
+    const blob = "x".repeat(9216);
+    const ans = await s.svc.start(
+      inlineBody({
+        flow_inline: {
+          id: "x",
+          stages: [
+            {
+              id: "s",
+              engine: "comfyui",
+              params: { workflow: { "1": { class_type: "UNETLoader", inputs: { prompt: blob } } } },
+            },
+          ],
+        },
+      }),
+      new AbortController().signal,
+    );
+    await settleWait(s, ans.run_id);
+
+    const raw = readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8");
+    assert.ok(raw.length > 8192, "the graph payload really overflowed the slice window");
+    const keys = [...raw.matchAll(/"(run_id|status|created_at|test|draft_id|pipeline|error|stages|skipped_stages|artifacts|graph)":/g)]
+      .map((m) => m[1]!);
+    assert.deepEqual(
+      keys.slice(0, 6),
+      ["run_id", "status", "created_at", "test", "draft_id", "pipeline"],
+      "the identity scalars precede every payload — the writer's own bytes, not an imitation",
+    );
+
+    const { count, runs } = await listRuns(s.state, 10, async () => true);
+    assert.equal(count, 1, "the bulky row still lists");
+    const row = runs[0]! as Record<string, unknown>;
+    // the pipeline the door named — for an inline run, the flow's
+    // own id (the hand-written literals in runs-list.spec.ts use a
+    // named flow's "flow_inline"; this row is the inline id itself)
+    assert.equal(row["flow"], "x");
+    assert.equal(row["draft_id"], "d1", "the draft was not zombied by the overflow");
+    assert.ok(Number(row["created_at"]) > 0, "the age was not zombied by the overflow");
   });
 });
 
