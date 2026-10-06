@@ -114,6 +114,27 @@ if (!existsSync(vitest)) {
   console.error("BATTERY FAIL: repo vitest missing (run pnpm install)");
   process.exit(1);
 }
+
+// THE BUILD PRECEDES THE WALLS (2026-10-13, the vendor-lib race):
+// vendor members' lib/ is gitignored (built, never committed), so
+// package-files-law's exports-liars check sees it ONLY after a
+// build-plane run — every committed lib/ exists regardless, but a
+// fresh checkout or a cleaned tree starts with vendor lib/ absent.
+// The lib-sync build once ran AFTER the walls, so the same tree
+// failed walls in one battery run and passed the next (the build
+// had minted the vendor lib by then): three pre-push failures at
+// ~117s against green hand-runs, deterministic per tree state.
+// Build-then-judge is already the acceptance arms' own law below;
+// the walls now inherit it.
+const build = spawnSync(process.execPath, ["tools/build-plane.mjs", "build"], {
+  cwd: REPO,
+  stdio: "inherit",
+});
+if (build.status !== 0) {
+  console.error("BATTERY FAIL: lib-sync build (tools/build-plane.mjs build)");
+  process.exit(1);
+}
+
 // EVERY PROJECT, not just `node` (round-6 audit, 2026-10-13): the
 // hook and the pre-commit job both run `--project node`, so the dom
 // / dom18 / deck projects (~3,000 specs) had NO local owner while
@@ -137,15 +158,8 @@ if (walls.status !== 0) {
 // owns the whole artifact plane: build everything, then refuse on
 // any tracked lib/ file a fresh build would rewrite. The cure it
 // names is the law: the artifact lands in the SAME commit as the
-// src (pnpm run build, then stage the diff).
-const build = spawnSync(process.execPath, ["tools/build-plane.mjs", "build"], {
-  cwd: REPO,
-  stdio: "inherit",
-});
-if (build.status !== 0) {
-  console.error("BATTERY FAIL: lib-sync build (tools/build-plane.mjs build)");
-  process.exit(1);
-}
+// src (pnpm run build, then stage the diff). The build itself ran
+// BEFORE the walls (see above); this arm is its drift check.
 const drift = spawnSync("git", ["status", "--porcelain", "--", "**/lib/**"], {
   cwd: REPO,
   encoding: "utf8",
