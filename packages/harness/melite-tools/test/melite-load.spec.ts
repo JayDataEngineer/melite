@@ -482,7 +482,12 @@ test('THE MODS LINE RIDES (stroke 79 — the agent sees the kinds beside params)
   assert.ok(text.includes("params {variant: 'customvoice'}"), 'the seat shape is spelled')
   // 026#3: model rides top-level while variant rides inside —
   // both seats stated, the params.model misread dies here.
-  assert.ok(text.includes('`model` rides top-level'), 'the model seat is stated')
+  // (batch U: the grammar now names the tts exception — the model
+  // seat is stated AND the one card-family that reads it from
+  // params is named beside it, so the seats cannot conflate.)
+  assert.ok(text.includes('`model` selector rides top-level'), 'the model seat is stated')
+  assert.ok(text.includes('ONE named exception'), 'the tts params.model exception is named')
+  assert.ok(text.includes("params {model: 'qwen3-tts-large'}"), 'the exception seat shape is spelled')
   // kindless cards stay line-less (never an empty mods line)
   const plain = tool.output.render(
     { name: 'c', inference_type: 'card' },

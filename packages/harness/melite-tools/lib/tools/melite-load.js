@@ -181,7 +181,7 @@ export function meliteLoad(request, opts = {}) {
                         // now leads with the bench grammar and quotes the door.
                         out.push('mods: ' + modLines.join(', ')
                             + ' — THE BENCH GRAMMAR (melite_construct add_stage/patch, where you compose): mod FIELDS ride FLAT inside params (e.g. params {voice_name, qvoice}) — never keyed under the pack name, never at flow top-level. A pack key (e.g. qvoice_save) as a params key REFUSES at the compose door: the pack takes no key of its own, its fields ride flat top-level'
-                            + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while `model` rides top-level — the compose reads them off the body, the engine never sees them'
+                            + '; card-mode lane select: `variant`/`quant` ride INSIDE params (e.g. params {variant: \'customvoice\'}) while the stage\'s `model` selector rides top-level — the compose reads them off the body, the engine never sees them. ONE named exception: a card whose own doc reads the model FAMILY from params (tts: params {model: \'qwen3-tts-large\'} — the loaded card doc owns the seat spelling; follow it there)'
                             + '; bag-mode arrays under the kind keys exist ONLY for flow_inline/ad-hoc stages (melite_flow {flow}, never the bench) — ordered kinds stack in array order, standalone kinds each provide their own output (the bag lives at param_key when it differs)');
                         const keyed = packSeats.filter((p) => p.param_key !== p.kind);
                         if (keyed.length > 0) {

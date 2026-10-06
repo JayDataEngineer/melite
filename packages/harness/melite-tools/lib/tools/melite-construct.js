@@ -386,7 +386,7 @@ export function meliteConstruct(request, opts = {}) {
                 description: 'patch (merge onto the stage) | add_stage | load single-stage shorthand. '
                     + 'A null value UNSETS its key (the drafts door\'s JSON Merge Patch law, both doors one law since 2026-09-24 — '
                     + 'patch {voice_name: null} clears it; no remove_stage dance). '
-                    + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching params.model without '
+                    + 'MODEL SWITCH LAW: a stage\'s variant/quant belong to its model — switching the model seat (the stage\'s top-level `model`; tts-family cards read it from params.model — the loaded card doc names its seat) without '
                     + 'co-stating the new family\'s variant (melite_load names each family\'s variants) composes a refusal '
                     + '(unknown variant for the new model). State model + variant (+ quant) together, or leave the model alone.',
             },
