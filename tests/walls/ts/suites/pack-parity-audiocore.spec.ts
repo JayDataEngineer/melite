@@ -385,3 +385,42 @@ describe("the three-pack audiocore parity wall", () => {
     }
   });
 });
+
+describe("the estate venv standard (the transformers/hf-hub pin law)", () => {
+  // THE 2026-10-16 REINSTALL (roadmap: requirements bare-floats
+  // transformers): Manager resolved the float to 4.57.3 and floated
+  // huggingface-hub to 1.33.0, whose 1.x guard broke the ENGINE
+  // BOOT (core transformers wants hf-hub >=0.34,<1.0 — the
+  // traceback died in `import execution` before any pack loaded).
+  // The cure is the pin, and the STANDARD is what the estate venv
+  // verifies against: transformers 4.57.3, huggingface_hub <1.0
+  // (the live venv runs 0.36.2; diffusers 0.40.0's >=1.23 want is
+  // latent — nothing at boot imports it). This wall holds the pin
+  // so every fresh install converges on the standard, never the
+  // lottery. The clean-venv boot gate rides the next provision.
+  const STANDARD = { transformers: "4.57.3", huggingface_hub: "<1.0" } as const;
+
+  it("every audio-family pack carries the estate venv standard pins in requirements.txt", () => {
+    for (const pack of PACKS) {
+      const req = read(pack, "requirements.txt");
+      expect(req, `${pack}/requirements.txt exists`).not.toBeNull();
+      const body = (req as string).split("\n").map((l) => l.trim()).filter((l) => l !== "" && !l.startsWith("#"));
+      expect(body, `${pack}: transformers pinned to the estate standard`).toContain(`transformers==${STANDARD.transformers}`);
+      expect(body, `${pack}: huggingface_hub held below the 1.0 guard break`).toContain(`huggingface_hub${STANDARD.huggingface_hub}`);
+    }
+  });
+
+  it("no vendored pack floats transformers or huggingface_hub (the lottery has one ticket left: none)", () => {
+    for (const name of readdirSync(VENDOR)) {
+      const req = join(VENDOR, name, "requirements.txt");
+      if (!existsSync(req) || !statSync(req).isFile()) continue;
+      for (const line of readFileSync(req, "utf8").split("\n").map((l) => l.trim())) {
+        if (line === "" || line.startsWith("#")) continue;
+        const dep = line.split(/[=<>!~\[]/)[0]!.toLowerCase();
+        if (dep !== "transformers" && dep !== "huggingface_hub" && dep !== "huggingface-hub") continue;
+        expect(line.startsWith("transformers==") || line.startsWith("huggingface_hub<") || line.startsWith("huggingface-hub<"),
+          `${name}: '${line}' floats a boot-critical dep — pin it to the estate venv standard`).toBe(true);
+      }
+    }
+  });
+});
