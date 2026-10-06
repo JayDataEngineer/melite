@@ -1346,6 +1346,36 @@ describe("the dialogue conditioning (a clip's window hears it)", () => {
       assert.ok(!soundscape.includes("At 00:09.500"), "the authored clock never doubles");
       assert.equal((soundscape.match(/At 00:/g) ?? []).length, 1, "exactly one clock in the field");
     }
+    // THE ONE-FIELD LAW (finding 11, Commission 17, 2026-10-13): a
+    // window carrying BOTH a dialogue stamp and an sfx stamp once
+    // composed TWO overall_soundscape fields with separate clocks —
+    // the format admits one. Both sentences ride a single field,
+    // dialogue lane first, each with its own lane clock.
+    {
+      const gs = new GraphBuilder();
+      def.compose(
+        def.schema({
+          calls: [SHOT(), SHOT({ start_frame: 56, end_frame: 124 })],
+          audio_clips: [
+            CLIP({ text: "finish it, please." }),
+            CLIP({ id: "c2", name: "blast.wav", class: "sfx", text: "a sudden explosion rocks the room", start_frame: 60, dur_frames: 24 }),
+          ],
+        }),
+        model, gs, "run_one_field",
+      );
+      const outs = graphOf(gs);
+      const prompt = String(scoped(outs, "window2_", "MiniMaxH3ReferenceToVideo")[0]![1].inputs.prompt);
+      assert.equal((prompt.match(/overall_soundscape:/g) ?? []).length, 1,
+        "both lanes ride ONE overall_soundscape field (never two)");
+      assert.ok(prompt.includes('<d>[English] finish it, please.</d>'), "the dialogue sentence rides the field");
+      assert.ok(/overall_soundscape:[\s\S]*At [\d:.]+, the on-screen speaker says/.test(prompt),
+        "the dialogue sentence leads the field");
+      assert.ok(/At [\d:.]+, a sudden explosion rocks the room/.test(prompt),
+        "the sfx sentence rides the same field at its own lane clock");
+      const field = prompt.slice(prompt.indexOf("overall_soundscape:"));
+      assert.equal((field.match(/At \d{2}:/g) ?? []).length, 2,
+        "two lane clocks inside the one field (the one-clock law bounds a text, not the field)");
+    }
     // THE PINNED GUIDE (rewired 2026-09-22): the slice rides an
     // audio-only MiniMaxH3AddGuide keyframe at the clip's
     // generation-frame index (delay 2.75s = frame 66) — the model's

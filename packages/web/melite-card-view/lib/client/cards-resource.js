@@ -306,6 +306,14 @@ export function watchBenchLands(getSession, onAgentLand, signal, remote, benchNs
         open: openSignal => benchNs.subscribe(key, openSignal),
         ended: accepted => new RemoteStreamCarrierError(`bench spotlight stream ${accepted ? 'ended' : 'never opened'} (${key})`),
     });
+    /** THE NAVIGATION-TEARDOWN LATCH (the reload wall, 2026-10-13): a
+     *  page reload or close aborts every open transport mid-flight
+     *  ("signal is aborted without reason" — the browser killing the
+     *  connection at unload). A stream death after the page began
+     *  unloading is teardown, never a supervisor failure: the error
+     *  ledger of a plain reload must stay empty. */
+    let pageUnloading = false;
+    addEventListener('pagehide', () => { pageUnloading = true; }, { once: true });
     const run = async () => {
         let stream = openStream(activeKey);
         let iterator = stream[Symbol.asyncIterator]();
@@ -354,7 +362,11 @@ export function watchBenchLands(getSession, onAgentLand, signal, remote, benchNs
             }
         }
         catch (error) {
-            // terminal supervisor failure — best-effort seat, logged only
+            // terminal supervisor failure — best-effort seat, logged only.
+            // The navigation-teardown latch (pagehide) classifies the
+            // reload's own abort: teardown, not a failure.
+            if (pageUnloading)
+                return;
             console.error('[melite-card-view] bench spotlight stream failed:', error);
         }
         finally {

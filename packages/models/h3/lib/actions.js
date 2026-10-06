@@ -254,14 +254,23 @@ function renderH3Film(p, g, facts) {
             const mmm = String(Math.round((t % 1) * 1000)).padStart(3, '0');
             return `${mm}:${ss}.${mmm}`;
         };
+        // ONE overall_soundscape FIELD per window (finding 11,
+        // Commission 17, 2026-10-13): a window carrying both a dialogue
+        // stamp and an sfx stamp once composed TWO fields with separate
+        // `At MM:SS.mmm` clocks in one prompt — the format admits one
+        // field, and no authoring move avoided it short of dropping a
+        // lane. The sentences collect in lane order (dialogue first,
+        // then sfx — the historical append order) and ride a single
+        // field; each sentence keeps its own lane clock (the one-clock
+        // law trims a doubled clock off ONE text, never across lanes).
+        const soundscapeSentences = [];
         if (stamps.dialogue !== undefined && stamps.dialogue.text !== '') {
             const t = stampClock(stamps.dialogue.delay_seconds);
             // SPEAKER-NEUTRAL (attempt-019 maker finding): the stamp once
             // hard-coded "She says" — a plainly male harbourmaster got a
             // female pronoun in his own mouth. The speaker is whoever the
             // window shows; the stamp never genders them.
-            text = text.replace(/\s+$/, '') +
-                `\n\noverall_soundscape:\nAt ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[English] ${stamps.dialogue.text}</d>`;
+            soundscapeSentences.push(`At ${t}, the on-screen speaker says the line below, mouth visible and articulating the words; room tone continues underneath.\nThe line: <d>[English] ${stamps.dialogue.text}</d>`);
         }
         if (stamps.sfx !== undefined && stamps.sfx.text !== '') {
             // THE ONE-CLOCK LAW (2026-09-24): an authored sfx text that already
@@ -269,8 +278,10 @@ function renderH3Film(p, g, facts) {
             // the stamp's clock is canonical, the authored one is trimmed.
             const sfxText = stamps.sfx.text
                 .replace(/^\s*at\s+\d{1,2}:\d{2}(?:\.\d{1,3})?\s*[,-]\s*/i, '');
-            text = text.replace(/\s+$/, '') +
-                `\n\noverall_soundscape:\nAt ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`;
+            soundscapeSentences.push(`At ${stampClock(stamps.sfx.delay_seconds)}, ${sfxText}`);
+        }
+        if (soundscapeSentences.length > 0) {
+            text = text.replace(/\s+$/, '') + '\n\noverall_soundscape:\n' + soundscapeSentences.join('\n');
         }
         if (stamps.music !== undefined && stamps.music.text !== '') {
             text = text.replace(/\s+$/, '') +
