@@ -1,11 +1,11 @@
 // The h3 family's declared action (the atom vocabulary, stroke 3,
-// the video leg — the LAST family): the film renderer, ported
-// verbatim from the h3-timeline card's module scope. ONE family
+// the video leg — the LAST family): the film renderer. ONE family
 // owns the whole surface (the one-model law): the multi-window
 // film and the frozen single-window shape are both THIS action's
-// build; the card keeps its own copy as the declared fallback
-// until the final interlock retires it (the byte-oracle rides the
-// two copies).
+// build — the action is the SINGLE SEAT of the renderer body; the
+// card dispatches here and refuses any undeclared family loud
+// (card.ts: no declared action → throw, never a legacy fallback),
+// so there is no second copy to keep true.
 //
 // THE SEAM (the stroke's law): the card's schema plane (paramSchema
 // + the wire-law gate + the single-call lift + its overlay
@@ -1336,8 +1336,8 @@ function renderH3Window(
 
 /** The film action — the h3 family's whole compose segment. The
  * doc arrives gated + lifted from the card; the build owns the
- * lane admissions and both renderers, byte-identical to the card's
- * legacy fallback. */
+ * lane admissions and both renderers (this module is their only
+ * seat). */
 /** The sampler row the h3 schema itself serves: the ONE engine
  * vocabulary read through the family's recommended subset (the
  * schema's own filter law — a retyped list would be a second

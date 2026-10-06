@@ -58,14 +58,14 @@ export async function fetchListRow(
   return null
 }
 
-/** THE SINGLE-STAGE FALLBACK (run-wire's law, verbatim): a
- *  one-stage run's only stage IS the asked stage — the {model:} door
- *  names its stage by the card's declared skeleton ('img-to-mesh'),
- *  not the bench row id ('s_1') the caller holds; matching ids first
- *  keeps multi-stage runs exact while single-stage card runs answer
- *  under any label. File-era arm: a REFUSED status (the run is not
- *  in the live map) falls back to the runs/list row's first
- *  artifact — completed runs answer here, not at the status door.
+/** THE SINGLE-STAGE FALLBACK: a one-stage run's only stage IS the
+ *  asked stage — the {model:} door names its stage by the card's
+ *  declared skeleton ('img-to-mesh'), not the bench row id ('s_1')
+ *  the caller holds; matching ids first keeps multi-stage runs
+ *  exact while single-stage card runs answer under any label.
+ *  File-era arm: a REFUSED status (the run is not in the live
+ *  map) falls back to the runs/list row's first artifact —
+ *  completed runs answer here, not at the status door.
  *  Transport errors rethrow (the caller decides retry); a live
  *  answer with no url yet is null (the poll loop keeps going). */
 export async function fetchRunStageUrl(

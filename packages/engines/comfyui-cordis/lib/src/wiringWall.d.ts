@@ -20,6 +20,26 @@ export interface WiringDoc {
     readonly nodes: ReadonlySet<string>;
     readonly inputs: ReadonlyMap<string, ReadonlyMap<string, WiringInputSpec>> | undefined;
 }
+/** One `/object_info` input tuple → its value facts. The tuple's
+ *  first element is the combo enum (an array) or the type name (a
+ *  string); an object second element carries `min`/`max` for
+ *  numerics. ComfyUI ≥ 0.38 also spells combos as a string head
+ *  with the enum in the detail object — `["COMBO", {options}]` and
+ *  `["COMFY_DYNAMICCOMBO_V3", {options: [{key}, …]}]` — which the
+ *  video sweep (2026-10-13, F1) proved the string-head arm alone
+ *  stood down on: a shape the declaration does not say contributes
+ *  the required flag alone — the wall judges only what the
+ *  declaration actually says.
+ *
+ *  Exported for the wall tier: the vocab-rails drift contract reads
+ *  the live cache through THIS parse (both combo spellings, one
+ *  derivation) instead of assuming `spec[0]` is the enum array —
+ *  the assumption a modern-shaped combo silently breaks.
+ *  @param spec the raw input tuple from /object_info
+ *  @param required whether the tuple sat in the required group
+ *  @returns the parsed value facts (enum present only when the
+ *           tuple carries one in either spelling) */
+export declare function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec;
 /** Derive the census from a raw /object_info body — ONE derivation
  *  shared by every doc-owner (the card-plane service and the
  *  estate registry's prime) so no seat judges a differently-shaped

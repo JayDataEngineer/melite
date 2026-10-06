@@ -174,6 +174,37 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     }
   });
 
+  it("the live engine, wherever one serves, agrees with the tracked fixture (the cache-drift contract — the R6 class: a cache nothing refreshes is a second truth)", async (ctx) => {
+    // The drift arm above judges fixture ↔ the CACHED snapshot
+    // (data/tmp/object_info_prod.json); nothing in the tree owned
+    // cache ↔ the serving engine. A cache pinned days ago passes
+    // that arm while the engine has since served new members —
+    // the stale-cache class (CreateVideo.bit_depth absent from
+    // the cache, present live). This arm closes the loop where an
+    // engine answers on :8188: every fixture key's LIVE roster
+    // must equal the fixture's, else the cache (and fixture) are
+    // stale and must be re-projected. A SELF-SKIP IS NOT A PASS
+    // (AGENTS.md): the skip is REPORTED; CI boxes serve nothing.
+    let doc: Record<string, { input?: { required?: Record<string, unknown>; optional?: Record<string, unknown> } }>;
+    try {
+      const res = await fetch("http://127.0.0.1:8188/object_info", { signal: AbortSignal.timeout(10_000) });
+      if (!res.ok) { ctx.skip(true, `engine answered ${res.status}`); return; }
+      doc = await res.json();
+    } catch {
+      ctx.skip(true, "no engine on :8188");
+      return;
+    }
+    const fx = JSON.parse(readFileSync(FIXTURE, "utf8")) as Record<string, string[]>;
+    for (const key of Object.keys(fx)) {
+      const [cls, inp] = [key.slice(0, key.lastIndexOf(".")), key.slice(key.lastIndexOf(".") + 1)];
+      const def = doc[cls]?.input;
+      const raw = def?.required?.[inp] ?? def?.optional?.[inp];
+      const live = parseInputSpec(raw, true).enum;
+      expect(live, `the engine's ${key} combo is present`).toBeDefined();
+      expect([...(live ?? [])].sort(), `the fixture's ${key} roster drifted from the SERVING engine — run \`node tools/reproject-combos.mjs\` (the projection is a mechanism the repo owns; a hand edit of pinned values is banned)`).toEqual([...fx[key]].sort());
+    }
+  });
+
   it("the census: every vocabulary( site and checkpoint-stamping DECL is registered — a new one turns this red", () => {
     const sites: string[] = [];
     const walk = (dir: string) => {

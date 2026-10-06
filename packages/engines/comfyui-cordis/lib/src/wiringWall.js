@@ -63,9 +63,23 @@ function isPrimitive(v) {
 /** One `/object_info` input tuple → its value facts. The tuple's
  *  first element is the combo enum (an array) or the type name (a
  *  string); an object second element carries `min`/`max` for
- *  numerics. Any other shape contributes the required flag alone —
- *  the wall judges only what the declaration actually says. */
-function parseInputSpec(spec, required) {
+ *  numerics. ComfyUI ≥ 0.38 also spells combos as a string head
+ *  with the enum in the detail object — `["COMBO", {options}]` and
+ *  `["COMFY_DYNAMICCOMBO_V3", {options: [{key}, …]}]` — which the
+ *  video sweep (2026-10-13, F1) proved the string-head arm alone
+ *  stood down on: a shape the declaration does not say contributes
+ *  the required flag alone — the wall judges only what the
+ *  declaration actually says.
+ *
+ *  Exported for the wall tier: the vocab-rails drift contract reads
+ *  the live cache through THIS parse (both combo spellings, one
+ *  derivation) instead of assuming `spec[0]` is the enum array —
+ *  the assumption a modern-shaped combo silently breaks.
+ *  @param spec the raw input tuple from /object_info
+ *  @param required whether the tuple sat in the required group
+ *  @returns the parsed value facts (enum present only when the
+ *           tuple carries one in either spelling) */
+export function parseInputSpec(spec, required) {
     if (Array.isArray(spec) && spec.length > 0) {
         const head = spec[0];
         if (Array.isArray(head)) {
@@ -75,6 +89,18 @@ function parseInputSpec(spec, required) {
             const detail = spec.length > 1 && typeof spec[1] === 'object' && spec[1] !== null && !Array.isArray(spec[1])
                 ? spec[1]
                 : undefined;
+            if ((head === 'COMBO' || head === 'COMFY_DYNAMICCOMBO_V3') && Array.isArray(detail?.options)) {
+                const enumFromOptions = detail.options
+                    .map((o) => isPrimitive(o)
+                    ? o
+                    : o !== null && typeof o === 'object' && isPrimitive(o.key)
+                        ? o.key
+                        : undefined)
+                    .filter((o) => o !== undefined);
+                if (enumFromOptions.length > 0) {
+                    return { required, enum: enumFromOptions };
+                }
+            }
             const bound = (k) => typeof detail?.[k] === 'number' ? detail[k] : undefined;
             return { required, type: head, min: bound('min'), max: bound('max') };
         }
@@ -193,12 +219,25 @@ function fmtEnum(values) {
  *  run seat walks pre-splice rows; rewriteSpells turns every
  *  spell into a link tuple or a request initial before the engine
  *  — a spell is never an enum member by construction). */
+/** Mixed-type combo membership (the video sweep's F1, 2026-10-13):
+ *  modern option lists mix strings and numbers — CreateVideo's
+ *  bit_depth is `["auto", 8, 10]` — while the compose layer
+ *  serializes widget values as strings, and the engine accepts the
+ *  string spelling of a numeric member. Membership therefore
+ *  matches a numeric member by its string form; a string member is
+ *  never matched by a number (the engine does not coerce that
+ *  direction, and the wall is never looser than the engine it
+ *  guards). */
+function enumHas(values, value) {
+    return values.some((m) => m === value
+        || (typeof m === 'number' && typeof value === 'string' && String(m) === value));
+}
 function judgeValue(cardId, id, ct, key, value, spec) {
     if (!isPrimitive(value))
         return;
     if (typeof value === 'string' && (value.startsWith('$') || (isStagedArtifactRef(value) && canReceiveStagedArtifact(spec))))
         return;
-    if (spec.enum !== undefined && !spec.enum.includes(value)) {
+    if (spec.enum !== undefined && !enumHas(spec.enum, value)) {
         throw new ComposeRefusal('bad-value', `card '${cardId}' wired '${ct}.${key}' = ${JSON.stringify(value)} (as '${id}') — the input allows ${fmtEnum(spec.enum)}; the card's compose is stale against the engine build`);
     }
     if (typeof value === 'number') {

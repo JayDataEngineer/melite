@@ -1,8 +1,16 @@
-import type { EndpointConfig } from "./provision-config.js";
+import type { BoundLayout, EndpointConfig } from "./provision-config.js";
 export declare function probe(url: string, path: string, timeoutMs?: number): {
     status: number;
     text: string;
 };
+/** The generated yaml's exact body — ONE owner shared by the writer
+ *  (cmdPaths) and the wiring-roots wall, which recomputes it from
+ *  the config and refuses a stale file (the wiring-roots audit,
+ *  2026-10-13: nothing reconciled the generated roots with the
+ *  config that should have produced them).
+ *  @param bound the bound layout (base, download, folder map).
+ *  @returns the full file body, trailing newline included. */
+export declare function wiringYamlBody(bound: BoundLayout): string;
 export declare function cmdPaths(cfg: EndpointConfig): void;
 export declare function layDownloadPointers(downloadBase: string, folders: Record<string, string>, modelsDir?: string): void;
 export declare const ENDPOINT_DERIVED: readonly string[];
