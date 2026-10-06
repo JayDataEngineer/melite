@@ -24,6 +24,19 @@ export declare function activeRuns(): string[];
  *  user/__manager/config.ini (system-user-api ComfyUI), legacy
  *  user/default/ComfyUI-Manager/config.ini otherwise. */
 export declare function managerSecurity(repoRoot: string): string;
+/** The engine's own queue view (/queue), corroborating live claims:
+ *  ComfyUI executes prompts SERIALLY, so `queue_running` is 0 or 1 —
+ *  a reachable engine reporting BOTH empty cannot be executing any
+ *  claim, and every sidecar still claiming live is historical (the
+ *  finding-10 status split, 2026-10-13). Malformed or refused
+ *  answers return null: no corroboration, and the census stays
+ *  conservative. @param mctx the manage context (endpoint + signal).
+ *  @returns the running/pending counts, or null when the engine did
+ *  not answer a parseable queue. */
+export declare function engineQueueView(mctx: ManageCtx): Promise<{
+    running: number;
+    pending: number;
+} | null>;
 interface EndpointView {
     reachable: boolean;
     url?: string;

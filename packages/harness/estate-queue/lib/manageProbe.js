@@ -88,6 +88,37 @@ export function managerSecurity(repoRoot) {
     }
     return "unpinned (no manager config on disk — provision sync)";
 }
+/** The engine's own queue view (/queue), corroborating live claims:
+ *  ComfyUI executes prompts SERIALLY, so `queue_running` is 0 or 1 —
+ *  a reachable engine reporting BOTH empty cannot be executing any
+ *  claim, and every sidecar still claiming live is historical (the
+ *  finding-10 status split, 2026-10-13). Malformed or refused
+ *  answers return null: no corroboration, and the census stays
+ *  conservative. @param mctx the manage context (endpoint + signal).
+ *  @returns the running/pending counts, or null when the engine did
+ *  not answer a parseable queue. */
+export async function engineQueueView(mctx) {
+    const cfg = mctx.endpoint();
+    const url = typeof cfg["url"] === "string" ? cfg["url"].replace(/\/+$/, "") : "";
+    if (url === "")
+        return null;
+    const dl = deadline(mctx.signal, 5000, "MANAGE_PROBE");
+    try {
+        const r = await fetch(url + "/queue", { signal: dl.signal });
+        const q = (await r.json());
+        const running = q["queue_running"];
+        const pending = q["queue_pending"];
+        if (!Array.isArray(running) || !Array.isArray(pending))
+            return null;
+        return { running: running.length, pending: pending.length };
+    }
+    catch {
+        return null;
+    }
+    finally {
+        dl[Symbol.dispose]();
+    }
+}
 /** The endpoint config's OWN server, probed live (/system_stats).
  *  The 5s fuse is dsh-timeout's deadline — the caller signal and
  *  the timer fuse into one signal with dispose-once cleanup (the

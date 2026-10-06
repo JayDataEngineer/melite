@@ -428,6 +428,40 @@ describe('comfy_manage contract projection matrix', () => {
     assert.ok(managerOperations.includes('operation m1'))
   })
 
+  test('THE FINDING-10 SPLIT: idle-engine status renders the historical rows by name, empty actives as none', () => {
+    const value = text({
+      ok: true,
+      action: 'status',
+      detail: 'status',
+      data: {
+        state: 'up',
+        active_runs: [],
+        engine_queue: { running: 0, pending: 0 },
+        stale_claims: [
+          'run-a (claimed live; engine queue empty — historical: the sidecar never settled; the boot sweep retires its own root at restart)',
+        ],
+      },
+    })
+    assert.ok(value.includes('active_runs: none'))
+    assert.ok(value.includes('engine queue: running 0 · pending 0'))
+    assert.ok(value.includes('stale_claims (historical, never settled): run-a (claimed live; engine queue empty'))
+  })
+
+  test('THE FINDING-10 SPLIT: surplus claims render the one-run-law note', () => {
+    const value = text({
+      ok: true,
+      action: 'status',
+      data: {
+        active_runs: ['run-a', 'run-b'],
+        engine_queue: { running: 1, pending: 0 },
+        active_runs_note: '2 claims; the one-run law bounds machine-wide actives at 1 — the surplus is unsettled sidecars (historical); the engine queue corroborates only when empty',
+      },
+    })
+    assert.ok(value.includes('active_runs: run-a, run-b'))
+    assert.ok(value.includes('engine queue: running 1 · pending 0'))
+    assert.ok(value.includes('note: 2 claims; the one-run law bounds machine-wide actives at 1'))
+  })
+
   test('row, operation, action-row, and inferred-next helpers cover sparse values', () => {
     const rows = text({
       ok: true,

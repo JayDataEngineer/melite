@@ -173,7 +173,15 @@ function statusText(data: unknown): string[] {
     out.push('manager: ' + (manager.reachable === true ? 'reachable' : 'unavailable') + version + queue + security + reason)
   }
   if (value.routing !== undefined) out.push('routing: ' + asText(value.routing))
-  if (Array.isArray(value.active_runs)) out.push('active_runs: ' + value.active_runs.map(asText).join(', '))
+  if (Array.isArray(value.active_runs)) out.push('active_runs: ' + (value.active_runs.length === 0 ? 'none' : value.active_runs.map(asText).join(', ')))
+  // THE FINDING-10 SPLIT (2026-10-13): unsettled sidecars are
+  // historical rows, not concurrent actives — the tool line names
+  // the distinction the status view reports (engine queue empty ⇒
+  // no claim can be live; ComfyUI executes serially).
+  const engineQueue = recordValue(value.engine_queue)
+  if (engineQueue !== null) out.push('engine queue: running ' + asText(engineQueue.running) + ' · pending ' + asText(engineQueue.pending))
+  if (Array.isArray(value.stale_claims) && value.stale_claims.length > 0) out.push('stale_claims (historical, never settled): ' + value.stale_claims.map(asText).join(', '))
+  if (typeof value.active_runs_note === 'string') out.push('note: ' + value.active_runs_note)
   if (Array.isArray(value.resources)) {
     for (const resource of value.resources.slice(0, 20)) {
       const row = recordValue(resource)

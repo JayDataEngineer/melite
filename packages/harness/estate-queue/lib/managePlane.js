@@ -17,7 +17,7 @@ import { join } from "node:path";
 import { endpointConfigPath, invalidateObjectInfo, liveObjectInfo, loadEndpointConfig, resolveEngineBaseUrl, } from "@melite/comfyui-cordis";
 import { installUserLora, installUserLoraBytes, loraNamesFromObjectInfo, readUserLoraRows, unboardedRows, userLorasPath, } from "@melite/comfyui-cordis/user-loras";
 import { ManagerApiError, managerGet, managerPost, planeUnavailable } from "./managerRail.js";
-import { probeEndpoint, activeRuns, managerSecurity } from "./manageProbe.js";
+import { probeEndpoint, activeRuns, managerSecurity, engineQueueView } from "./manageProbe.js";
 import { base, mapManagerRefused, mapRail, railMs, estateOnly, awaitQueueDrained, systemctl, guardLifecycle, COMFY_UNIT } from "./manageOps.js";
 import { deadline as deadlineOf, timeoutOf } from "@deepseek-ai/dsh-timeout";
 const execFileAsync = promisify(execFile);
@@ -422,6 +422,21 @@ async function hStatus(req, ctx) {
     const cfg = ctx.endpoint();
     const endpoint = await probeEndpoint(ctx);
     const active = activeRuns();
+    // THE FINDING-10 SPLIT (2026-10-13): the census is fail-closed by
+    // law (unreadable ⇒ active — guardLifecycle refuses restarts on
+    // it), but the STATUS view was asserting every unsettled sidecar
+    // as a concurrent active run: 60+ `active_runs` against the flow
+    // door's one-active-run-machine-wide contract. The engine's own
+    // queue corroborates: ComfyUI executes serially, so a reachable
+    // engine reporting an empty queue cannot be executing ANY claim —
+    // those rows are historical (dead-process sidecars that never
+    // settled). The guard keeps the raw census; only the view splits.
+    const engineQueue = await engineQueueView(ctx);
+    const engineIdle = engineQueue !== null && engineQueue.running === 0 && engineQueue.pending === 0;
+    const activeView = engineIdle ? [] : active;
+    const staleClaims = engineIdle
+        ? active.map((name) => name + " (claimed live; engine queue empty — historical: the sidecar never settled; the boot sweep retires its own root at restart)")
+        : [];
     const routing = { mode: cfg["provision"] === "managed" ? "managed" : "byo" };
     let manager = {};
     let comfyuiVersions = [];
@@ -499,7 +514,12 @@ async function hStatus(req, ctx) {
         ...(comfyuiVersionsDetail === undefined ? {} : { comfyui_versions_detail: comfyuiVersionsDetail }),
         model_options: catalog.options,
         ...(catalog.detail === undefined ? {} : { model_options_detail: catalog.detail }),
-        active_runs: active,
+        active_runs: activeView,
+        ...(engineQueue === null ? {} : { engine_queue: engineQueue }),
+        ...(staleClaims.length > 0 ? { stale_claims: staleClaims } : {}),
+        ...(active.length > 1 && !engineIdle
+            ? { active_runs_note: active.length + " claims; the one-run law bounds machine-wide actives at 1 — the surplus is unsettled sidecars (historical); the engine queue corroborates only when empty" }
+            : {}),
         engine_boot: engineBootRow(ctx),
         routing,
         resources: resourceRows,

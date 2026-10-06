@@ -432,6 +432,73 @@ describe("hStatus", () => {
     }
   });
 
+  it("THE FINDING-10 SPLIT: an idle engine corroborates — unsettled claims become historical rows, not 60+ actives", async () => {
+    mkRoot();
+    try {
+      runFlow("run-b", "queued");
+      runFlow("run-a", "running");
+      route((url) => {
+        if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+        if (url.endsWith("/manager/version")) return json({ v: 1 });
+        if (url.endsWith("/queue")) return json({ queue_running: [], queue_pending: [] });
+        return json({ is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 });
+      });
+      const [code, env] = await manage({ action: "status" });
+      assert.equal(code, 200);
+      const data = env.data as {
+        active_runs: string[];
+        stale_claims?: string[];
+        engine_queue?: { running: number; pending: number };
+        active_runs_note?: string;
+      };
+      // ComfyUI executes serially: an empty queue cannot be executing
+      // any claim — the census's rows are dead-process sidecars.
+      assert.deepEqual(data.active_runs, [], "an idle engine corroborates zero actives");
+      assert.deepEqual(data.engine_queue, { running: 0, pending: 0 });
+      assert.equal(data.stale_claims?.length, 2);
+      assert.match(data.stale_claims?.[0] ?? "", /^run-a \(claimed live; engine queue empty — historical/u);
+      assert.match(data.stale_claims?.[1] ?? "", /^run-b \(claimed live; engine queue empty — historical/u);
+      assert.equal(data.active_runs_note, undefined, "the idle split carries no surplus note");
+    } finally {
+      rmRoot();
+    }
+  });
+
+  it("THE FINDING-10 SPLIT: a busy or unanswerable engine keeps the census conservative (the restart guard's law)", async () => {
+    mkRoot();
+    try {
+      runFlow("run-b", "queued");
+      runFlow("run-a", "running");
+      const routeFor = (queueBody: unknown): void => {
+        route((url) => {
+          if (url.endsWith("/system_stats")) return json({ system: { comfyui_version: "9.9" }, devices: [] });
+          if (url.endsWith("/manager/version")) return json({ v: 1 });
+          if (url.endsWith("/queue")) return json(queueBody);
+          return json({ is_processing: false, in_progress_count: 0, total_count: 0, done_count: 0 });
+        });
+      };
+      // Busy engine (serial executor mid-prompt): the claims stay —
+      // which claim is the live one is not knowable without prompt
+      // ids, so the view refuses to guess and names the one-run law.
+      routeFor({ queue_running: [{ prompt_id: "p1" }], queue_pending: [] });
+      const [, busy] = await manage({ action: "status" });
+      const busyData = busy.data as { active_runs: string[]; stale_claims?: string[]; engine_queue?: { running: number }; active_runs_note?: string };
+      assert.deepEqual(busyData.active_runs, ["run-a", "run-b"]);
+      assert.deepEqual(busyData.engine_queue, { running: 1, pending: 0 });
+      assert.equal(busyData.stale_claims, undefined);
+      assert.match(busyData.active_runs_note ?? "", /one-run law bounds machine-wide actives at 1/u);
+      // Unanswerable queue (malformed body): no corroboration at all.
+      routeFor({ is_processing: false });
+      const [, blind] = await manage({ action: "status" });
+      const blindData = blind.data as { active_runs: string[]; engine_queue?: unknown; active_runs_note?: string };
+      assert.deepEqual(blindData.active_runs, ["run-a", "run-b"]);
+      assert.equal(blindData.engine_queue, undefined);
+      assert.match(blindData.active_runs_note ?? "", /one-run law/u);
+    } finally {
+      rmRoot();
+    }
+  });
+
   it("THE ROOTS UNIFICATION: a live run under an EXTRA state root guards the restart census", async () => {
     mkRoot();
     try {
