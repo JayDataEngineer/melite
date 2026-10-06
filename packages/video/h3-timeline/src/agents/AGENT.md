@@ -23,6 +23,11 @@ may execute through `melite_flow` under the 3088 runbook.
 The stage lands in the Cards tab. The browser agent composes only. The
 headless maker uses `melite_flow` and `run_status` for its delegated run.
 
+`calls` and `audio_clips` are deliberately absent from the loaded
+params listing — they are compose inputs this document owns, not
+schema knobs the form renders. A film without `calls` is not a film;
+the schema listing alone under-describes this card by design.
+
 ## Timeline shape
 
 - `calls` and `audio_clips` must be arrays.
@@ -63,6 +68,16 @@ DUCKS -14dB under a conditioned row. Place the row with `start_frame` and
 `dur_frames` in film coordinates. A source-less row can currently be skipped,
 so verify the returned manifest and final audio. Spoken lines are NEVER a
 call field.
+
+The `class` field is inferred when absent: a row carrying `text` is
+read as dialogue, whatever its `src` sounds like. An SFX or music row
+that needs `text` (a lyric sheet, a cue note) must state its class
+explicitly or it rides the dialogue lane and inherits the dialogue
+mix laws:
+
+```json
+{"id":"bell-1","src":"<returned artifact>","start_frame":44,"dur_frames":12,"class":"sfx","text":"harbour bell, two strikes, wet tail"}
+```
 
 Positioned audio belongs to a film with two or more calls; a single-call
 stage does not use the film clip path. The current H3 card has separate

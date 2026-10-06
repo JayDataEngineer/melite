@@ -382,15 +382,15 @@ describe('run_status render — the human line', () => {
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
     )
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/tts/f.flac'], test: true }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: test-output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): test-output/run-abc/tts/f.flac',
     )
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: [{ path: './output/run-abc/tts/f.flac' }] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
     )
   })
 
@@ -475,7 +475,7 @@ describe('run_status render — the human line', () => {
     const text = (v: unknown) => (tool.output.render({} as never, v as never) as Array<{ text?: string }>)[0].text ?? ''
     assert.equal(
       text({ run_id: 'run-abc', status: 'completed', stages: [{ id: 't', status: 'completed' }], artifacts: ['run-abc/run-abc/tts/f.flac'] }),
-      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts: output/run-abc/tts/f.flac',
+      'run run-abc completed — 1/1 stage(s) · 1 artifact(s)\nstages: t:completed\nartifacts (rooted at the estate output tree, not your cwd): output/run-abc/tts/f.flac',
     )
   })
 })

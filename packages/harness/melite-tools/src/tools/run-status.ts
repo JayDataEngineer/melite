@@ -248,7 +248,13 @@ export function runStatus(request: EstateRequest): ToolDefinition {
           return single
         }).filter(Boolean) : []
         const artVoice = artPaths.length
-          ? '\nartifacts: ' + artPaths.join('\n  ')
+          // THE RESOLVING-ROOT VOICE (commission 17 finding 9): the
+          // canonicalized paths are estate-rooted — `output/` (or
+          // `test-output/`) hangs off the estate's run-output tree,
+          // the one a card serves artifacts from. The column says so:
+          // the maker's shell cwd is NOT that root, and the bare
+          // string used to float with no tree named at all.
+          ? '\nartifacts (rooted at the estate output tree, not your cwd): ' + artPaths.join('\n  ')
             + (artifacts.length > 4 ? `\n  (+${artifacts.length - 4} more)` : '')
           : ''
         // THE EXPORT-NAME VOICE (023's self-critique #4/#6): a
