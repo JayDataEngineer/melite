@@ -39,6 +39,17 @@ const CSS_VIRTUAL_SUFFIX = '.mjs'
  * Everything else under @deepseek-ai/* is either a module-table entry
  * (external) or a leak the purity gate rejects.
  *
+ * THE SET IS THIS REPO'S MEASURED BROWSER-IMPORT SURFACE, not a copy of
+ * upstream's (upstream inlines more because its client surface imports
+ * more; file-reference, deque, output-retention, util-crypto,
+ * util-workspace-path and the named-subpath exceptions have zero melite
+ * importers). Measured 2026-10-17 (batch AK): llm, tools, brand,
+ * typert-protocol, util-values are imported by melite client code;
+ * dsh-session and dsh-host-apiproxy — both carried since the preset's
+ * first day — had ZERO importers and left. Adding a member requires a
+ * real melite import that needs it; the inline-safe-surface wall derives
+ * the import surface from the tree and refuses a member nothing imports.
+ *
  * dsh-typert-protocol (2026-09-10, the cards tab): the RemoteError class
  * is a per-bundle copy BY DESIGN — discrimination is by `code` plus the
  * structural isDSHRemoteError marker, never instanceof (the class's own
@@ -50,7 +61,7 @@ const CSS_VIRTUAL_SUFFIX = '.mjs'
  * runtime identity to share — upstream ships it under packages/util/
  * precisely as the browser-safe utility tier the client rules name.
  */
-const INLINE_SAFE = /^@deepseek-ai\/dsh-(host-apiproxy|session|llm|tools|brand|typert-protocol|util-values)(\/|$)/
+const INLINE_SAFE = /^@deepseek-ai\/dsh-(llm|tools|brand|typert-protocol|util-values)(\/|$)/
 
 /** Generated descriptor/codec contribution with no shared runtime identity. */
 const GENERATED_REMOTE = /^@deepseek-ai\/dsh-[a-z0-9]+(?:-[a-z0-9]+)*\/remote$/
