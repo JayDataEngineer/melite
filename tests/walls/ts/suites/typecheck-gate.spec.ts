@@ -81,12 +81,10 @@ function packageDirs(): string[] {
 /** One tsc run per package; resolves to "" when clean, else the
  * first lines of the error report. */
 async function typecheck(dir: string): Promise<string> {
-  const candidates = [
-    join(REPO, "node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc"),
-    join(REPO, "node_modules/typescript/bin/tsc"),
-  ];
-  const tsc = candidates.find((c) => existsSync(c));
-  if (tsc === undefined) throw new Error("typecheck gate: no tsc binary in the tree");
+  // The compiler is DERIVED (tools/tsc-path.mjs — the workspace's own
+  // resolution), never a store path literal: a pinned
+  // typescript@x.y.z dangles on the next lockfile bump.
+  const tsc = execFileSync(process.execPath, [join(REPO, "tools", "tsc-path.mjs")], { encoding: "utf8" }).trim();
   try {
     await run("node", [tsc, "--noEmit", "-p", "tsconfig.json"], {
       cwd: dir,

@@ -191,15 +191,13 @@ say "the client bundles (discovered from the ./client exports): ${CLIENT_BUNDLES
 # emitted; and --no-build skipped the gates entirely, so a "restart
 # only" ship could leave port with red source. The gates now run
 # BEFORE the first emit, on EVERY ship, --no-build included.)
-TSC=""
-for cand in \
-  "$REPO/node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc" \
-  "$REPO/node_modules/typescript/bin/tsc" \
-  "$(command -v tsc 2>/dev/null || true)"; do
-  if [ -n "$cand" ] && [ -f "$cand" ]; then TSC="$cand"; break; fi
-done
+# THE COMPILER IS DERIVED (tools/tsc-path.mjs) — the same helper the
+# repo tier (scripts/typecheck-tests.mjs) uses, so both seats judge
+# with ONE compiler. A literal store path dangles on the next
+# typescript bump; the helper follows the workspace's own resolution.
+TSC="$(node "$REPO/tools/tsc-path.mjs" 2>/dev/null || true)"
 if [ -z "$TSC" ]; then
-  bad "no tsc found (looked in the pnpm store, node_modules, PATH)"
+  bad "no tsc found (tools/tsc-path.mjs: no workspace link, no pnpm store copy, no PATH tsc)"
   exit 1
 fi
 

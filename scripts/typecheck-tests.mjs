@@ -22,13 +22,17 @@
 import { readdirSync, existsSync, writeFileSync, rmSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileP = promisify(execFile);
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const tsc = join(root, "node_modules/.pnpm/typescript@5.7.3/node_modules/typescript/bin/tsc");
+// THE COMPILER IS DERIVED (tools/tsc-path.mjs): a literal store path
+// (typescript@5.7.3) dangles the moment the lockfile bumps, and the
+// ship playbook names the same helper so both seats judge with ONE
+// compiler.
+const tsc = execFileSync(process.execPath, [join(root, "tools", "tsc-path.mjs")], { encoding: "utf8" }).trim();
 
 // DISCOVERY — same shape as the wall's src tier: every dir under
 // packages/ (depth ≤ 2, node_modules never walked) holding a

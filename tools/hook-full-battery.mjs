@@ -114,7 +114,13 @@ if (!existsSync(vitest)) {
   console.error("BATTERY FAIL: repo vitest missing (run pnpm install)");
   process.exit(1);
 }
-const walls = spawnSync(vitest, ["run", "--project", "node"], {
+// EVERY PROJECT, not just `node` (round-6 audit, 2026-10-13): the
+// hook and the pre-commit job both run `--project node`, so the dom
+// / dom18 / deck projects (~3,000 specs) had NO local owner while
+// the CI unit job that runs them fires on main/master only. The
+// battery is the last local gate before a push, so it owns the full
+// fleet; the pre-commit job keeps the fast node-only seat.
+const walls = spawnSync(vitest, ["run"], {
   cwd: REPO,
   stdio: "inherit",
 });
@@ -164,4 +170,39 @@ if (dirty.length > 0) {
   console.error("The artifact lands in the SAME commit as the src: pnpm run build, then stage the diff.");
   process.exit(1);
 }
-console.log(`battery green: tsc x${PACKAGES.length} + walls + lib-sync`);
+// THE ACCEPTANCE ARMS (round-6 audit, 2026-10-13): the tiers job
+// and the pytest seat run in CI only, and CI fires on main/master —
+// so on the branch the team works on, the expected / bench /
+// snapshot surfaces and the vendored layer C pytest seat were
+// judged by NOTHING. All four are keyless and cheap, and they run
+// AFTER the lib-sync build so the expected tier judges fresh
+// artifacts (CI's own order: build, then expected). pytest skips
+// LOUD — never silently — where the box has no pytest, and names
+// the install line.
+for (const [label, config] of [
+  ["expected", "vitest.expected.config.ts"],
+  ["bench", "vitest.bench.config.ts"],
+  ["snapshot", "vitest.snapshot.config.ts"],
+  ["web", "vitest.web.config.ts"],
+]) {
+  const arm = spawnSync(vitest, ["run", "--config", config], { cwd: REPO, stdio: "inherit" });
+  if (arm.status !== 0) {
+    console.error(`BATTERY FAIL: ${label} tier (vitest run --config ${config})`);
+    process.exit(1);
+  }
+  console.log(`ok   ${label} tier`);
+}
+const pytest = spawnSync("python3", ["-m", "pytest", "tests/", "-q"], { cwd: REPO, encoding: "utf8" });
+if (pytest.error !== undefined && pytest.error !== null) {
+  console.warn("SKIP-LOUD: python3 absent — the vendored layer C pytest seat is unjudged here (CI owns it; install python3 + pytest to judge locally)");
+} else if (pytest.status === 5 || /No module named pytest/u.test(pytest.stdout + pytest.stderr)) {
+  console.warn("SKIP-LOUD: pytest absent — the vendored layer C seat is unjudged here (pip install pytest; CI owns it)");
+} else if (pytest.status !== 0) {
+  console.error(pytest.stdout);
+  console.error(pytest.stderr);
+  console.error("BATTERY FAIL: pytest seat (python3 -m pytest tests/ -q)");
+  process.exit(1);
+} else {
+  console.log("ok   pytest seat (vendored layer C)");
+}
+console.log(`battery green: tsc x${PACKAGES.length} + walls (every project) + lib-sync + acceptance arms`);

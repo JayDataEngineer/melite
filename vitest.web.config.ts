@@ -1,3 +1,4 @@
+import { realpathSync } from 'node:fs'
 import path from 'node:path'
 import { defineConfig } from 'vitest/config'
 import {
@@ -25,11 +26,18 @@ export default defineConfig({
   resolve: {
     alias: {
       ...resolutionFacade(),
-      // 2026-09-12: the web lane's React universe re-pinned at the
-      // store's matched 19 pair (the editor app — the old host — is
-      // deleted; one React per lane).
-      react: rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react'),
-      'react-dom': rootPath('node_modules/.pnpm/react-dom@19.2.8_react@19.2.8/node_modules/react-dom'),
+      // the web lane's React universe: the studio host's (card-view)
+      // own installed 19 pair, resolved through its node_modules link
+      // so the lane rides whatever pnpm installed. A literal store
+      // path (react@19.2.8) fails wholesale the moment the lockfile
+      // moves — the dangling-alias class the root config's dom
+      // project already derives its way out of.
+      react: realpathSync(path.join(CARD_VIEW, 'node_modules/react')),
+      'react-dom': realpathSync(path.join(CARD_VIEW, 'node_modules/react-dom')),
+      // the react-dom CLIENT subpath: a bare react-dom/client import
+      // escapes the exact-match alias and lands on a nested copy (the
+      // dual-React trap) — pinned at the same 19 tree as its parent.
+      'react-dom/client': path.join(realpathSync(path.join(CARD_VIEW, 'node_modules/react-dom')), 'client'),
       // the gateway's browser client face resolves to the card-view
       // tests' stand-in (the root config's dom project carries the
       // same row — the real artifact is module-loader format, it only
@@ -37,7 +45,7 @@ export default defineConfig({
       // moment a scenario imports the cards tab's client tree, e.g.
       // snapshots/web/cards-tab).
       '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
-      'react/jsx-runtime': rootPath('node_modules/.pnpm/react@19.2.8/node_modules/react/jsx-runtime'),
+      'react/jsx-runtime': path.join(realpathSync(path.join(CARD_VIEW, 'node_modules/react')), 'jsx-runtime'),
       anser: rootPath('node_modules/anser'),
       'shiki/core': rootPath('node_modules/shiki/dist/core.mjs'),
       'shiki/engine/javascript': rootPath('node_modules/shiki/dist/engine-javascript.mjs'),

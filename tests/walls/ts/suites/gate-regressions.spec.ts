@@ -198,6 +198,20 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
   });
 });
 
+describe("THE PRE-PUSH BATTERY'S FLEET (round-6, 2026-10-13)", () => {
+  it("the battery runs every vitest project, never a narrowed one", () => {
+    // The pre-commit job runs `--project node` for speed, so the dom
+    // / dom18 / deck projects had no local owner; the CI unit job
+    // that runs them fires on main/master only. The battery is the
+    // last local gate before a push and must run the whole fleet.
+    const battery = read("tools/hook-full-battery.mjs");
+    const spawn = battery.match(/spawnSync\(vitest,\s*\[([^\]]*)\]/);
+    expect(spawn, "the battery spawns vitest").not.toBeNull();
+    expect(spawn![1], "the battery's vitest argv names no --project (a narrowed fleet hides the dom/deck seats)")
+      .not.toContain("--project");
+  });
+});
+
 describe("THE COVERAGE RATCHET'S OWN EXCLUSIONS (GT-08, the round-5 gate audit)", () => {
   it("every coverage-exclude literal names a real file", () => {
     // An exclude row pointing at a deleted file excludes nothing —
@@ -215,6 +229,36 @@ describe("THE COVERAGE RATCHET'S OWN EXCLUSIONS (GT-08, the round-5 gate audit)"
     expect(literals.length, "the exclude block carries package-path literals — the parse is armed").toBeGreaterThan(5);
     const ghosts = literals.filter((p) => !existsSync(join(REPO, p)));
     expect(ghosts, `coverage excludes naming deleted files: ${ghosts.join(", ")}`).toEqual([]);
+  });
+});
+
+describe("THE DANGLING STORE PATH (round-6, 2026-10-13)", () => {
+  it("no tracked file pins a pnpm store path by exact version", () => {
+    // node_modules/.pnpm/<pkg>@<x.y.z>/ is a LOCKFILE artifact: the
+    // next bump leaves the literal dangling and whatever named it
+    // dies at load or ENOENT. The class hit React (the web lane's
+    // hardcoded react@19.2.8 went red when the store moved to
+    // 19.3.0) and typescript (the repo tier's compiler pin). Both
+    // now derive their paths; this arm keeps a third instance out.
+    const offenders: string[] = [];
+    const files = execFileSync("git", ["ls-files"], { cwd: REPO, encoding: "utf8" })
+      .split("\n")
+      .filter((f) => /\.(ts|tsx|mjs|js|json|sh|yml)$/u.test(f));
+    for (const f of files) {
+      const text = readFileSync(join(REPO, f), "utf8");
+      const hits = text.match(/node_modules\/\.pnpm\/[A-Za-z@/_-]+@\d+\.\d+\.\d+/gu);
+      if (hits !== null) offenders.push(`${f}: ${hits[0]}`);
+    }
+    expect(offenders, `tracked files pinning a pnpm store version path: ${offenders.join(" | ")}`).toEqual([]);
+  });
+
+  it("the compiler has one derivation, and both repo-tier seats use it", () => {
+    expect(existsSync(join(REPO, "tools", "tsc-path.mjs")), "tools/tsc-path.mjs exists").toBe(true);
+    const helper = read("tools/tsc-path.mjs");
+    expect(helper, "the helper follows the workspace's own resolution").toContain("workspaceTally");
+    for (const seat of ["scripts/typecheck-tests.mjs", "scripts/ship-lane.sh"]) {
+      expect(read(seat), `${seat} resolves the compiler through the helper`).toContain("tsc-path.mjs");
+    }
   });
 });
 
