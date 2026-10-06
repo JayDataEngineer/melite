@@ -200,6 +200,20 @@ curl -s -b "$COOKIES" -X POST "http://127.0.0.1:$PORT/api/bench/add-stage" \
   -H 'content-type: application/json' \
   -d '{"type":"client-request","rpcId":"seed","method":"bench/add-stage","payload":{"args":{"sessionKey":"main","doc":{"card":"h3-timeline","author":"user","expect_rev":0}}}}' -o /dev/null
 
+# ── seed the runs library: one image run ───────────────────────────
+# The media walls (restore-preview, from-media's pick branch) drive
+# the gallery's real gestures and need a run whose tile paints an
+# <img> preview — the runs seat lists the state root's output/ tree
+# on demand, so the seed is a plain run dir: run-<hex>-<word> (the
+# RUN_ID_RE grammar — a loose name 400s on the artifact route), a
+# servable media leaf, and the _flow.json sidecar the row builder
+# byte-scans (pipeline must not start with _ — the user-surface law).
+SEED_RUN="$RUNS_ROOT/output/run-3ca7-laneseed"
+mkdir -p "$SEED_RUN"
+cp "$REPO_ROOT/packages/web/melite-card-view/e2e/rail-overflow.png" "$SEED_RUN/preview.png"
+printf '{"pipeline":"image-gen","status":"success","created_at":%s,"prompt":"the lane seed image run","seed":7}\n' \
+  "$(date +%s000)" > "$SEED_RUN/_flow.json"
+
 # ── the wall ──────────────────────────────────────────────────────
 PLAYWRIGHT_EXIT=0
 PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
@@ -214,6 +228,19 @@ PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" 
 if grep -q "Cannot find module" "$LOG" 2>/dev/null; then
   echo "[e2e-studio-lane] host log carries a module-resolution failure:" >&2
   grep -n "Cannot find module" "$LOG" >&2
+  exit 1
+fi
+# THE BOOT-DIAGNOSTIC CLASS (2026-10-13, the 3-entry boot): a boot
+# can half-fail on OPTIONAL entries — dsh-app-boot warns "N entries
+# did not activate" / "<id> (<name>): failed to import" and still
+# serves. The run that taught this: three host entries dead (estate,
+# tools, tools-doors) → the catalog API answered empty → thirteen
+# specs starved into 5.5-minute timeouts for 1.1h of noise. A host
+# whose boot carried ANY activation failure never owns the lane; the
+# refusal names the dead entries and stops before playwright.
+if grep -q "did not activate" "$LOG" 2>/dev/null; then
+  echo "[e2e-studio-lane] host boot carried activation failures (never benign — the wall starves on a half-dead host):" >&2
+  grep -nE "did not activate|failed to import" "$LOG" >&2
   exit 1
 fi
 exit $PLAYWRIGHT_EXIT

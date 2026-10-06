@@ -159,6 +159,12 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
     }
   });
 
+  // Both REAL-compose arms spawn the CLI twice (node
+  // --experimental-strip-types, a 240s internal spawn budget). Their
+  // idle cost is ~1s, but under the full battery's import/transform
+  // storm the spawns' tail crosses the 30s default test timeout
+  // while the subprocesses are still healthy — the budget names the
+  // spawn reality, the same law dep-doctor's wall already carries.
   it("THE WHOLE WIRE: real image-gen → real image-edit, through the real merge", () => {
     const genChannels = declaredOutputs("image-gen");
     const genGraph = compose("image-gen", "z-image", { prompt: "a harbour at dusk" });
@@ -219,7 +225,7 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
     // 3. and it is the PRODUCER's node, not something from the consumer
     assert.ok(crossed.target.startsWith("s_0::"),
       `s_1's input resolved to ${crossed.target}, which is not in the producing stage s_0`);
-  });
+  }, 120_000);
 
   it("the BACKWARD arrangement of the same two real cards ALSO resolves", () => {
     // The li-aw defect was proved on hand-made graphs. This pins it on
@@ -252,7 +258,7 @@ describe("a wire between REAL composed cards resolves to a node that EXISTS", ()
       );
     });
     assert.ok(crossed, "the backward arrangement of two REAL cards did not resolve");
-  });
+  }, 120_000);
 });
 
 // ── THE RENAMED CHANNEL (the arm the derived arms above cannot be) ─

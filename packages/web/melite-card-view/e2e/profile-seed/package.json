@@ -90,6 +90,7 @@
       "bundles": [
         "@deepseek-ai/dsh-base",
         "@melite-plugin/dsh-estate",
+        "@melite/card-base",
         "@deepseek-ai/dsh-web-app",
         "@melite/harness-tools",
         "@melite/motion-motion",

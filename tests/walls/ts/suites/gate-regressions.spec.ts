@@ -397,6 +397,17 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     expect(lane, "the lane owns the studio host door").toContain("e2e-studio-lane.sh");
     expect(lane, "the host-log verdict greps the failure class").toContain('grep -q "Cannot find module"');
   });
+
+  it("the studio lane refuses a host whose boot carried activation failures", () => {
+    // The 3-entry boot: dsh-app-boot warns "N entries did not
+    // activate" for OPTIONAL entries and still serves. The lane run
+    // that taught this burned 1.1h starving thirteen specs on a
+    // half-dead host (the dead estate/tools entries emptied the
+    // catalog API). A boot diagnostic is never benign here either.
+    const lane = read("scripts/e2e-studio-lane.sh");
+    expect(lane, "the boot verdict greps the activation-failure class").toContain('grep -q "did not activate"');
+    expect(lane, "the refusal names the dead entries, not just the count").toContain('grep -nE "did not activate|failed to import"');
+  });
 });
 
 describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () => {
@@ -557,6 +568,84 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
       const body = readFileSync(file, "utf8");
       const rawEsm = body.match(/^(?:import|export)[^()]/m);
       expect(rawEsm, `${file} carries a module-format statement the classic script tag would refuse`).toBeNull();
+    }
+  });
+
+  /** Directory of every workspace package, keyed by manifest name. */
+  function packageDirs(): Map<string, string> {
+    const dirs = new Map<string, string>();
+    const walkPkgs = (dir: string, depth: number): void => {
+      if (depth > 2) return;
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (!e.isDirectory() || e.name === "node_modules" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        const manifest = join(p, "package.json");
+        if (existsSync(manifest)) {
+          const data = JSON.parse(readFileSync(manifest, "utf8")) as { name?: string };
+          if (typeof data.name === "string") dirs.set(data.name, p);
+        }
+        walkPkgs(p, depth + 1);
+      }
+    };
+    walkPkgs("packages", 0);
+    return dirs;
+  }
+
+  it("every @melite client EXTERNAL is row-mountable (the loader's require must land in the table)", () => {
+    // The factory cure's own follow-on (2026-10-13): the lane booted
+    // the new bundles and the browser answered `require("@melite/
+    // card-base/client") missed the module table` — the five card
+    // entries externalized a package no profile row materializes.
+    // A declared external is a SERVED-PLANE promise: the target is
+    // either a DSH platform module (their law) or a workspace
+    // package whose own bundle patch mounts its graph row.
+    const dirs = packageDirs();
+    const meliteExternals = new Set<string>();
+    for (const row of discoveredRows()) {
+      const manifest = JSON.parse(readFileSync(join(row.pkg, "package.json"), "utf8"));
+      for (const spec of manifest.dsh?.client?.external ?? []) {
+        if (spec.startsWith("@melite/")) meliteExternals.add(spec);
+      }
+    }
+    expect(meliteExternals.size, "the estate carries @melite client externals to judge").toBeGreaterThan(0);
+    for (const spec of meliteExternals) {
+      const targetPkg = spec.replace(/\/client$/u, "");
+      const target = dirs.get(targetPkg);
+      expect(target, `${spec}: the target package exists in the workspace`).toBeDefined();
+      if (target === undefined) continue;
+      const manifest = JSON.parse(readFileSync(join(target, "package.json"), "utf8"));
+      expect(manifest.dsh?.bundle?.patch,
+        `${spec} is externalized but ${targetPkg} mounts no graph row — declare dsh.bundle.patch (the ONE-ROW LAW) or stop externalizing it`).toBeDefined();
+      expect(existsSync(join(target, String(manifest.dsh.bundle.patch))),
+        `${targetPkg}: the declared bundle patch exists`).toBe(true);
+    }
+  });
+
+  it("the lane seed bundles every @melite package its bundles externalize", () => {
+    // The profile-plane half of the externals law (2026-10-13): a
+    // row-mountable target still misses the table when the PROFILE
+    // never bundles it. The seed is the lane's own profile; every
+    // @melite external of every bundled package must itself appear
+    // in the seed's bundle list, or the boot dies on the wire.
+    const dirs = packageDirs();
+    const seedPath = join("packages", "web", "melite-card-view", "e2e", "profile-seed", "package.json");
+    const seed = JSON.parse(readFileSync(seedPath, "utf8"));
+    const bundles: string[] = seed.dsh?.profile?.bundles ?? [];
+    const externalTargets = new Set<string>();
+    for (const bundle of bundles) {
+      if (!bundle.startsWith("@melite/") && !bundle.startsWith("@melite-plugin/")) continue;
+      const pkgDir = dirs.get(bundle);
+      if (pkgDir === undefined) continue;
+      const manifest = JSON.parse(readFileSync(join(pkgDir, "package.json"), "utf8"));
+      for (const spec of manifest.dsh?.client?.external ?? []) {
+        if (spec.startsWith("@melite/") || spec.startsWith("@melite-plugin/")) {
+          externalTargets.add(spec.replace(/\/client$/u, ""));
+        }
+      }
+    }
+    expect(externalTargets.size, "the seed's bundles carry @melite externals to judge").toBeGreaterThan(0);
+    for (const target of externalTargets) {
+      expect(bundles, `${target} is externalized by a bundled package but the seed never mounts it`).toContain(target);
     }
   });
 

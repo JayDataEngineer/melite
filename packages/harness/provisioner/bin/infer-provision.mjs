@@ -54,8 +54,13 @@ const PROFILE_BASES = {
   // every FRESH boot of profiles mounting both patches).
   // anny LEFT the web bases (stroke 89): its studio died — the form
   // card rides the engine-plane SSOT only, never a browser bundle.
+  // card-base rides the WEB bases (the ONE-ROW LAW, 2026-10-13):
+  // its bundle patch mounts the null host row that materializes
+  // @melite/card-base/client for the browser graph — every card
+  // client externalizes it, and without the row the loader's
+  // require misses the module table at web boot.
   inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
-    '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
+    '@melite/harness-tools', '@melite/card-base', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
     '@melite-plugin/dsh-gallery'],
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
@@ -84,7 +89,7 @@ const PROFILE_BASES = {
   // rows in ONE process. Custom bakes serve from this name; the
   // :33081 wire never existed here.
   'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
-    '@melite/harness-tools', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
+    '@melite/harness-tools', '@melite/card-base', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
     '@melite-plugin/dsh-gallery'],
 }
 

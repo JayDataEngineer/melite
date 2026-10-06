@@ -1,0 +1,17 @@
+# card-base bundle patch: the ONE-ROW LAW mount (operator order
+# 2026-10-01). This package is ONE module-table graph row — the
+# mirror of DSH's platform-seed ui atoms. Every card client bundle
+# REQUIRES `@melite/card-base/client` (dsh.client.external — the
+# loader's require); the row below is what materializes that module
+# for the browser graph: bundling @melite/card-base in a profile
+# applies this patch, the loader imports the null host marker at
+# exports['.'] (src/host.ts — registers nothing node-side), and the
+# dsh.client scan carries lib/client.js as the ONE compiled instance
+# of the studio atoms. Without the row, every externalizing consumer
+# dies at boot with `require("@melite/card-base/client") missed the
+# module table` (the lane finding, 2026-10-13). No consumer bundle
+# may inline a second compiled copy; no other patch may twin this
+# row (the anny double-mount law, 2026-09-17).
+- insert:
+    - id: card-base
+      name: "@melite/card-base"

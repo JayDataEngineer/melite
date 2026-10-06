@@ -54,8 +54,12 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
   // law: the studio's singleton binds at first use), so the branch
   // decision WAITS for the pane to settle — rows OR the empty state
   // — before counting (a count raced against the load reads 0 with
-  // no empty text yet: the dead-pane false positive).
-  await expect(page.locator('[role="dialog"]'), 'the picker modal opens').toBeVisible({ timeout: 10_000 })
+  // no empty text yet: the dead-pane false positive). The locator
+  // NAMES its dialog: the bench carries the h3 studio's stage overlay
+  // (role=dialog, 'Stage h3-timeline') on the seeded stage, and a
+  // bare [role=dialog] strict-violates against it — the lane's first
+  // served-plane green run exposed it, 2026-10-13.
+  await expect(page.getByRole('dialog', { name: 'From media' }), 'the picker modal opens').toBeVisible({ timeout: 10_000 })
   await expect(page.getByText('The runs library').first()).toBeVisible({ timeout: 10_000 })
   const rows = page.locator('[data-testid="source-pick-row"]')
   await expect(
@@ -74,7 +78,7 @@ test('From media on an input card: menu opens, modal lists the runs library, a p
     // Both are the pick LANDING; a dead pane or a swallowed click is
     // the #41 outage.
     await rows.first().click({ timeout: 5_000 })
-    await expect(page.locator('[role="dialog"]'), 'the modal closes on pick').toBeHidden({ timeout: 10_000 })
+    await expect(page.getByRole('dialog', { name: 'From media' }), 'the modal closes on pick').toBeHidden({ timeout: 10_000 })
     await expect(
       page.locator('[aria-label*="detach"i]').first()
         .or(page.getByText("that source is not in this timeline’s vocabulary").or(page.getByText("that source is not in this timeline's vocabulary"))),
