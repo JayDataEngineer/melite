@@ -61,7 +61,7 @@ extensions:
   desc: RTXVideoSuperResolution (bypassed group; class must register).
 - name: melite-utility-nodes
   url: https://github.com/JayDataEngineer/melite-utility-nodes
-  ref: e5e5e610f0a8236adedc9c30656a75e2896f5919
+  ref: 5a76680c0d4bef28b869fe6ca9f5b42a19c22c08
   required: true
   desc: >-
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary

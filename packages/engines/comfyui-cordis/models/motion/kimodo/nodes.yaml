@@ -10,7 +10,7 @@
 extensions:
   - name: melite-kimodo-nodes
     url: https://github.com/JayDataEngineer/melite-kimodo-nodes
-    ref: 4a15bf4d2e72405116d1ac56a190e9daec0442ee
+    ref: c696ba5f73e0f1d70d940fdca2c93c2e06df47eb
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
     # 2026-09-08 (red-closure lane): pip restated identical to the 3d

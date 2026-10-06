@@ -23,7 +23,7 @@
 extensions:
   - name: melite-kimodo-nodes
     url: https://github.com/JayDataEngineer/melite-kimodo-nodes
-    ref: 4a15bf4d2e72405116d1ac56a190e9daec0442ee
+    ref: c696ba5f73e0f1d70d940fdca2c93c2e06df47eb
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:
