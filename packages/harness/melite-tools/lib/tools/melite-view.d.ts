@@ -1,3 +1,4 @@
+import type { EngineJson } from '@melite/comfyui-cordis';
 import type { Context } from '@deepseek-ai/cordis';
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment';
 import type { ProbedStream } from './mp4Probe.js';
@@ -96,17 +97,20 @@ export declare function sheetPlan(duration_s: number | undefined): number[];
  * parameter is the PRESENT image — callers assert presence (the
  * text-only observe arm never reaches here). */
 export declare function imageRefFromValue(image: NonNullable<ViewedImageValue['image']>): ImageAttachmentRef;
-/** The process seam the film arm exercises (ffprobe + ffmpeg).
- *  Production runs the estate's own binaries; tests pin every arm
- *  with fakes and prove the success path once against the real
- *  binaries on the committed fixture. */
-export type FilmProc = (bin: string, args: string[], signal: AbortSignal) => Promise<{
-    stdout: string;
-}>;
-/** Default proc: the estate's ffmpeg/ffprobe, 30s each (a probe is
- *  milliseconds; four frame seeks + a tile are seconds) — a hung
- *  binary never wedges the observe arm past the run's own budget. */
-export declare const defaultFilmProc: FilmProc;
+/** The engine render seam the sheet arms ride (one graph, one PNG
+ *  back). Production submits the ESTATE'S OWN execute seat with the
+ *  vendored view nodes (melite-utility-nodes: MeliteFrameSheet,
+ *  MeliteWaveform — PyAV inside the engine, never a host binary, and
+ *  the harness never becomes a codec vendor); the sheet lands in a
+ *  scratch dir under os.tmpdir (never the run tree — a view mints no
+ *  provenance) and returns as bytes. Tests pin every arm with fakes
+ *  — no engine, no subprocess, nothing to install. */
+export type MediaSheetRender = (node: 'MeliteFrameSheet' | 'MeliteWaveform', inputs: Record<string, EngineJson>, signal: AbortSignal) => Promise<Uint8Array>;
+/** Default render: one utility graph through executeSingle (the
+ *  estate's non-plugin execute face), PreviewImage so the sheet
+ *  rides the engine's temp plane (the output tree stays untouched),
+ *  fetched back through /view into the scratch dir. */
+export declare const defaultMediaSheetRender: MediaSheetRender;
 /** Read one artifact's stream facts from its container bytes. The
  *  refusal keeps the door's voice: a file the in-repo parser cannot
  *  read names ITSELF and the parser's reason, never a throw-through. */
@@ -123,7 +127,7 @@ export declare const defaultBytesReader: BytesReader;
  *  mint provenance). */
 export declare function viewFilmArtifact(seat: QueueSeatSeam, runId: string, artifact: string, exec: ViewExec, ctx: {
     get(name: string): unknown;
-}, attachments: AttachmentsSeam, proc?: FilmProc, read?: BytesReader): Promise<ViewedImageValue>;
+}, attachments: AttachmentsSeam, render?: MediaSheetRender, read?: BytesReader): Promise<ViewedImageValue>;
 /** View an audio artifact: ffprobe summary + a WAVEFORM sheet
  * committed as the viewed image (the audio twin of §24's film arm;
  * ROADMAP §33 gap-6, receipt: 032/034's makers shelled to ffprobe
@@ -136,7 +140,7 @@ export declare function viewFilmArtifact(seat: QueueSeatSeam, runId: string, art
  * provenance). */
 export declare function viewAudioArtifact(seat: QueueSeatSeam, runId: string, artifact: string, exec: ViewExec, ctx: {
     get(name: string): unknown;
-}, attachments: AttachmentsSeam, proc?: FilmProc, read?: BytesReader): Promise<ViewedImageValue>;
+}, attachments: AttachmentsSeam, render?: MediaSheetRender, read?: BytesReader): Promise<ViewedImageValue>;
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
  * exec.agent; contravariance-safe: a body accepting this accepts any
@@ -223,6 +227,6 @@ export declare function viewModelArtifact(seat: QueueSeatSeam, runId: string, ar
  * seats: `attachments` — the durable store, `queue` — the runs tree
  * root owner, `llm` — the route gate; all optional probes, the
  * tool-fs inject law). */
-export declare function meliteView(ctx: Context): ToolDefinition;
+export declare function meliteView(ctx: Context, render?: MediaSheetRender): ToolDefinition;
 export {};
 //# sourceMappingURL=melite-view.d.ts.map

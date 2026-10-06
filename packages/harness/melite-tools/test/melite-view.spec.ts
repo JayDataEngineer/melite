@@ -16,7 +16,7 @@ import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
 import { meliteView, sniffImageMediaType, imageRefFromValue, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
-import type { ViewedImageValue, FilmProc } from '../src/tools/melite-view.ts'
+import type { ViewedImageValue, MediaSheetRender } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
 
@@ -461,26 +461,28 @@ describe('the signature sniffer + ref re-brand (read_image copies)', () => {
   })
 })
 
-describe('melite_view film — the §24 observe arm (real binaries on the committed fixture, fakes for every refusal)', () => {
+describe('melite_view film — the §24 observe arm (fakes for the engine render seam; the vendored nodes own the decode proof)', () => {
   // a fake proc: canned probe text, then PNG bytes written to every
   // ffmpeg out path (the tests pin the plumbing, not the pixels —
   // the pixels are proven once against the real binaries above)
   // the fakes serve the SHEET build only — the probe is TypeScript now
   // and never asks a process for anything
-  const fakeProc = (opts?: { ffmpegThrow?: unknown }): FilmProc =>
-    async (bin, args) => {
+  // a fake render seam: PNG bytes back for the sheet ask (the
+  // engine-produced decode is the vendored nodes' own pytest — the
+  // TS plane pins the plumbing: probe verdict, attach, provenance)
+  const fakeProc = (opts?: { ffmpegThrow?: unknown }): MediaSheetRender =>
+    async () => {
       // true rides the Error voice; any other value is thrown raw
       // (a foreign rejection shape — the door still speaks)
       if (opts?.ffmpegThrow !== undefined) {
         throw opts.ffmpegThrow === true ? new Error('ffmpeg exploded') : opts.ffmpegThrow
       }
-      writeFileSync(args[args.length - 1]!, PNG_BYTES)
-      return { stdout: '' }
+      return PNG_BYTES
     }
 
   test('a film run serves probe summary + contact sheet; the run tree stays untouched', async () => {
     const { ctx, attachments } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeProc())
     const out = await tool.execute({ run_id: 'run-face001-wide' }, visualExec as never) as ViewedImageValue
     assert.equal(out.runId, 'run-face001-wide')
     assert.equal(out.url, '/melite-media/runs/run-face001-wide/film.mp4')
@@ -491,11 +493,11 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     assert.equal(out.film!.size_bytes, 7670)
     assert.deepEqual(out.film!.streams, [{ codec: 'h264', codec_type: 'video', width: 160, height: 120, fps: '10/1', frames: 20 }])
     assert.equal(out.film!.sheet_of, 4)
-    // the viewed image IS the sheet (a real multi-KB PNG, not bytes
-    // the test invented)
+    // the viewed image IS the sheet (the seam's PNG bytes, attached
+    // verbatim — the decode itself is the vendored nodes' pytest)
     assert.equal(out.image!.mediaType, 'image/png')
     assert.equal(out.image!.name, 'film-sheet.png')
-    assert.ok(out.image!.bytes > 5000, 'expected a real contact sheet, got ' + String(out.image!.bytes) + ' bytes')
+    assert.equal(out.image!.bytes, PNG_BYTES.byteLength)
     assert.equal(attachments.saved.length, 1)
     // PROVENANCE (a view mints nothing): the run still holds exactly
     // the film — the sheet lived in tmpdir, never the runs tree
@@ -507,9 +509,25 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     assert.ok(text.includes('film.mp4') && text.includes('2s') && text.includes('h264') && text.includes('20f') && text.includes('contact sheet of 4'), text)
   })
 
+  test('THE SEAM CONTRACT: the sheet ask names the vendored node + the walked path, never a binary', async () => {
+    const { ctx } = fakeCtx()
+    const asks: Array<{ node: string, inputs: Record<string, unknown> }> = []
+    const spy: MediaSheetRender = async (node, inputs) => {
+      asks.push({ node, inputs: inputs as Record<string, unknown> })
+      return PNG_BYTES
+    }
+    const tool = meliteView(ctx, spy)
+    await tool.execute({ run_id: 'run-face001-wide' }, visualExec as never)
+    assert.equal(asks.length, 1)
+    assert.equal(asks[0]!.node, 'MeliteFrameSheet')
+    assert.ok(String(asks[0]!.inputs['video']).endsWith(join('run-face001-wide', 'film.mp4')), String(asks[0]!.inputs['video']))
+    assert.equal(asks[0]!.inputs['stamps'], 4)
+    assert.equal(asks[0]!.inputs['width'], 320)
+  })
+
   test('the artifact substring picks the film; a miss lists the holdings', async () => {
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeProc())
     const out = await tool.execute({ run_id: 'run-face001-wide', artifact: 'film' }, visualExec as never) as ViewedImageValue
     assert.equal(out.film!.file, 'film.mp4')
     await assert.rejects(
@@ -520,7 +538,7 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
 
   test('a run with neither images nor film keeps the old voice, extended', async () => {
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeProc())
     await assert.rejects(
       tool.execute({ run_id: 'run-def456-empty' }, visualExec as never),
       /produced no image artifacts \(and no viewable film/,
@@ -637,7 +655,7 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
 
   test('a sparse container states what it knows and omits what it does not', async () => {
     const { ctx } = fakeCtx()
-    const tool0 = meliteView(ctx)
+    const tool0 = meliteView(ctx, fakeProc())
     const { viewFilmArtifact } = await import('../src/tools/melite-view.ts')
     const box = (type: string, body: Buffer): Buffer => {
       const head = Buffer.alloc(8)
@@ -671,7 +689,7 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
     const namedText = (tool0.output!.render!({} as never, named as never)[0] as { text: string }).text
     assert.ok(!namedText.includes('undefined'), namedText)
     // and the RENDER never prints an undefined
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeProc())
     const text = (tool.output!.render!({} as never, out as never)[0] as { text: string }).text
     assert.ok(!text.includes('undefined'), text)
   })
@@ -688,7 +706,7 @@ describe('melite_view film — the §24 observe arm (real binaries on the commit
 
   test('a width-without-height stream renders without geometry (never a half "160xundefined")', async () => {
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeProc())
     const text = (tool.output!.render!({} as never, {
       runId: 'run-face001-wide', url: '/melite-media/runs/run-face001-wide/film.mp4',
       image: { attachmentId: 'att_1', mediaType: 'image/png', bytes: 99, width: 8, height: 8 },
@@ -747,14 +765,13 @@ describe('melite_view cross-roots (§23 manifest)', () => {
   })
 })
 
-describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the committed tone fixture, fakes for refusals)', () => {
-  const fakeAudioProc = (opts?: { ffmpegThrow?: unknown }): FilmProc =>
-    async (bin, args) => {
+describe('melite_view audio — the §33 gap-6 observe arm (fakes for the engine render seam; the vendored nodes own the decode proof)', () => {
+  const fakeAudioProc = (opts?: { ffmpegThrow?: unknown }): MediaSheetRender =>
+    async () => {
       if (opts?.ffmpegThrow !== undefined) {
         throw opts.ffmpegThrow === true ? new Error('ffmpeg exploded') : opts.ffmpegThrow
       }
-      writeFileSync(args[args.length - 1]!, PNG_BYTES)
-      return { stdout: '' }
+      return PNG_BYTES
     }
 
   beforeAll(() => {
@@ -768,7 +785,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
 
   test('an audio-only run serves the probe verdict + waveform sheet; the run tree stays untouched', async () => {
     const { ctx, attachments } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     const out = await tool.execute({ run_id: 'run-a0d10-tone' }, visualExec as never) as ViewedImageValue
     assert.equal(out.runId, 'run-a0d10-tone')
     assert.equal(out.url, '/melite-media/runs/run-a0d10-tone/line.wav')
@@ -789,7 +806,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
 
   test('THE TEXT-ONLY AUDIO TWIN: a route without image input gets the clip facts, and no ffmpeg waveform is spent', async () => {
     const { ctx, attachments } = fakeCtx({ visual: false })
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     const value = await tool.execute({ run_id: 'run-a0d10-tone' }, visualExec as never)
     const text = String((value as { textObservation?: unknown }).textObservation)
     // the probe verdict rides whole: name, duration, bytes, streams
@@ -807,7 +824,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
 
   test('THE STUB DETECTOR: a near-zero duration reads in the verdict (the 032 receipt closes natively)', async () => {
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     // a real WAV header over ONE data byte: 1 / (8000*1*2) = 62.5µs
     const stub = join(root, 'output', 'run-c1c1c1-stub')
     mkdirSync(stub, { recursive: true })
@@ -832,7 +849,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     writeFileSync(join(mixed, 'portrait.png'), PNG_BYTES)
     copyFileSync(new URL('./fixtures/tone-05s.wav', import.meta.url), join(mixed, 'line.flac'))
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     const out = await tool.execute({ run_id: 'run-b1e5d-mix2', artifact: 'line.flac' }, visualExec as never) as ViewedImageValue
     assert.equal(out.audio!.file, 'line.flac')
     assert.equal(out.audio!.duration_s, 0.5)
@@ -855,7 +872,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     mkdirSync(run, { recursive: true })
     writeFileSync(join(run, 'line.mp3'), Buffer.concat([box('ftyp', Buffer.from('isom', 'latin1')), moov]))
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     // the fake serves the sheet build; the PROBE reads these bytes
     const { viewAudioArtifact } = await import('../src/tools/melite-view.ts')
     const out = await viewAudioArtifact({ stateRoot: root } as never, 'run-d4d4d4-odd', 'line.mp3', visualExec as never, ctx, (ctx.get('attachments') as never), fakeAudioProc())
@@ -866,7 +883,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
 
   test('a probe refusal names the clip LOUD (never a silent stub)', async () => {
     const { ctx } = fakeCtx()
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     // a truncated clip: a RIFF header with no fmt and no data
     const broken = join(root, 'output', 'run-d2d2d2-trunc')
     mkdirSync(broken, { recursive: true })
@@ -895,7 +912,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     // voices, so each one is pinned here rather than assumed
     const { ctx, attachments } = fakeCtx()
     const { viewAudioArtifact } = await import('../src/tools/melite-view.ts')
-    const call = (proc: FilmProc, c: unknown = ctx, read?: (p: string) => Promise<Uint8Array>) => viewAudioArtifact(
+    const call = (proc: MediaSheetRender, c: unknown = ctx, read?: (p: string) => Promise<Uint8Array>) => viewAudioArtifact(
       { stateRoot: root } as never, 'run-a0d10-tone', 'line.wav', visualExec as never,
       c as never, ((c as { get(n: string): unknown }).get('attachments') as never), proc, read,
     )
@@ -966,7 +983,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
       audio: { duration_s?: number, streams: Array<{ sample_rate?: number, channels?: number }> }
     }
     assert.deepEqual(thinOut.audio.streams, [{ codec: 'pcm', codec_type: 'audio' }])
-    const thinText = (meliteView(ctx).output!.render!({} as never, thinOut as never)[0] as { text: string }).text
+    const thinText = (meliteView(ctx, fakeAudioProc()).output!.render!({} as never, thinOut as never)[0] as { text: string }).text
     assert.ok(!thinText.includes('undefined') && !thinText.includes('Hz') && !thinText.includes('ch)'), thinText)
     // a real RIFF/WAVE whose data chunk is missing: the stream row
     // reads, the duration stays ABSENT (never a fabricated zero)
@@ -989,7 +1006,7 @@ describe('melite_view audio — the §33 gap-6 observe arm (real binaries on the
     assert.deepEqual(bare.audio.streams, [{ codec: 'pcm_s16le', codec_type: 'audio', sample_rate: 8000, channels: 1 }])
     // THE AUDIO RENDER, the twin of the film's: the probe verdict leads
     // the text and the waveform sheet is named as the image
-    const tool = meliteView(ctx)
+    const tool = meliteView(ctx, fakeAudioProc())
     const rendered = await call(fakeAudioProc())
     const blocks = tool.output!.render!({} as never, rendered as never)
     const text = (blocks[0] as { text: string }).text

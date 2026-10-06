@@ -1,5 +1,7 @@
 export * from "./catalog.js";
 export * from "./comfyui.js";
+export * from "./comfyui-execute.js";
+export type { EngineJson } from "./comfyui-types.js";
 export * from "./models/models.js";
 export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.js";
 export * from "./models/validate.js";

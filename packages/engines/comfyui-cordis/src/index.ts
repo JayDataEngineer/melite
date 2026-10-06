@@ -9,6 +9,12 @@
 
 export * from "./catalog.ts";
 export * from "./comfyui.ts";
+// The non-plugin execute face (walls/probes/unit — no Context) plus
+// its graph row type: the tools plane's observe arm rides it to run
+// one-off utility graphs (the melite_view sheet render), the same
+// seat the estate's own probes use — one truth for graph submission.
+export * from "./comfyui-execute.ts";
+export type { EngineJson } from "./comfyui-types.ts";
 
 export * from "./models/models.ts";
 export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.ts";

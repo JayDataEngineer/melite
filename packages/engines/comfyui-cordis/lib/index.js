@@ -8,6 +8,11 @@
 // package name only).
 export * from "./catalog.js";
 export * from "./comfyui.js";
+// The non-plugin execute face (walls/probes/unit — no Context) plus
+// its graph row type: the tools plane's observe arm rides it to run
+// one-off utility graphs (the melite_view sheet render), the same
+// seat the estate's own probes use — one truth for graph submission.
+export * from "./comfyui-execute.js";
 export * from "./models/models.js";
 export { enhanceRecipes, enhanceRecipeFor } from "./models/enhanceRecipes.js";
 export * from "./models/validate.js";

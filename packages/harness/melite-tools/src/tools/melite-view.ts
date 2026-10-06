@@ -29,10 +29,10 @@ import { RUN_ID_RE } from "@melite/contracts/benchStage"
  * a substring FILTER over names the walk already produced.
  */
 import { basename, extname, join } from 'node:path'
-import { mkdtemp, readFile, rm } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { execFile } from 'node:child_process'
-import { promisify } from 'node:util'
+import { executeSingle } from '@melite/comfyui-cordis'
+import type { EngineJson } from '@melite/comfyui-cordis'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { ToolCallView } from '@deepseek-ai/dsh-tools'
 import type { Context } from '@deepseek-ai/cordis'
@@ -195,18 +195,42 @@ export function imageRefFromValue(image: NonNullable<ViewedImageValue['image']>)
   }
 }
 
-/** The process seam the film arm exercises (ffprobe + ffmpeg).
- *  Production runs the estate's own binaries; tests pin every arm
- *  with fakes and prove the success path once against the real
- *  binaries on the committed fixture. */
-export type FilmProc = (bin: string, args: string[], signal: AbortSignal) => Promise<{ stdout: string }>
-const execFileAsync = promisify(execFile)
-/** Default proc: the estate's ffmpeg/ffprobe, 30s each (a probe is
- *  milliseconds; four frame seeks + a tile are seconds) — a hung
- *  binary never wedges the observe arm past the run's own budget. */
-export const defaultFilmProc: FilmProc = async (bin, args, signal) => {
-  const out = await execFileAsync(bin, args, { timeout: 30_000, maxBuffer: 8 << 20, signal })
-  return { stdout: out.stdout }
+/** The engine render seam the sheet arms ride (one graph, one PNG
+ *  back). Production submits the ESTATE'S OWN execute seat with the
+ *  vendored view nodes (melite-utility-nodes: MeliteFrameSheet,
+ *  MeliteWaveform — PyAV inside the engine, never a host binary, and
+ *  the harness never becomes a codec vendor); the sheet lands in a
+ *  scratch dir under os.tmpdir (never the run tree — a view mints no
+ *  provenance) and returns as bytes. Tests pin every arm with fakes
+ *  — no engine, no subprocess, nothing to install. */
+export type MediaSheetRender = (
+  node: 'MeliteFrameSheet' | 'MeliteWaveform',
+  inputs: Record<string, EngineJson>,
+  signal: AbortSignal,
+) => Promise<Uint8Array>
+
+/** Default render: one utility graph through executeSingle (the
+ *  estate's non-plugin execute face), PreviewImage so the sheet
+ *  rides the engine's temp plane (the output tree stays untouched),
+ *  fetched back through /view into the scratch dir. */
+export const defaultMediaSheetRender: MediaSheetRender = async (node, inputs, signal) => {
+  const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
+  try {
+    const graph: Record<string, EngineJson> = {
+      workflow: {
+        '1': { class_type: node, inputs },
+        '2': { class_type: 'PreviewImage', inputs: { images: ['1', 0] } },
+      },
+    }
+    await executeSingle(work, graph, {}, { timeoutS: 300, shouldStop: () => signal.aborted })
+    const names = (await readdir(work)).filter((n) => n.endsWith('.png'))
+    if (names.length === 0) {
+      throw new Error('the engine returned no sheet image for ' + node)
+    }
+    return new Uint8Array(await readFile(join(work, names[0]!)))
+  } finally {
+    await rm(work, { recursive: true, force: true })
+  }
 }
 
 /** Read one artifact's stream facts from its container bytes. The
@@ -251,7 +275,7 @@ export async function viewFilmArtifact(
   exec: ViewExec,
   ctx: { get(name: string): unknown },
   attachments: AttachmentsSeam,
-  proc: FilmProc = defaultFilmProc,
+  render: MediaSheetRender = defaultMediaSheetRender,
   read: BytesReader = defaultBytesReader,
 ): Promise<ViewedImageValue> {
   // §23 CROSS-ROOTS: the video walk spans the manifest (own root
@@ -285,65 +309,46 @@ export async function viewFilmArtifact(
     }
   }
   const stamps = sheetPlan(probe.duration_s)
-  const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
+  // THE SHEET IS ENGINE-PRODUCED (the host-binary cure): the
+  // vendored MeliteFrameSheet node decodes the film inside the
+  // engine (PyAV) and composes the tiled sheet as a graph output —
+  // one render call, never four ffmpeg seeks on the host.
+  let data: Uint8Array
   try {
-    const frames: string[] = []
-    try {
-      let n = 0
-      for (const t of stamps) {
-        const out = join(work, 'frame-' + String(n) + '.png')
-        await proc('ffmpeg', ['-v', 'error', '-ss', String(t), '-i', absPath, '-frames:v', '1', '-vf', 'scale=320:-1', '-y', out], exec.signal)
-        frames.push(out)
-        n++
-      }
-      const sheet = join(work, 'sheet.png')
-      if (frames.length === 1) {
-        await proc('ffmpeg', ['-v', 'error', '-i', frames[0]!, '-y', sheet], exec.signal)
-      } else {
-        const inputs: string[] = []
-        for (const f of frames) inputs.push('-i', f)
-        const pairs: string[] = []
-        for (let i = 0; i + 1 < frames.length; i += 2) pairs.push('[' + String(i) + ':v][' + String(i + 1) + ':v]hstack=inputs=2[r' + String(i) + ']')
-        const stacked = pairs.map((_, i) => '[r' + String(i * 2) + ']').join('') + 'vstack=inputs=' + String(pairs.length)
-        await proc('ffmpeg', ['-v', 'error', ...inputs, '-filter_complex', pairs.join(';') + ';' + stacked, '-y', sheet], exec.signal)
-      }
-    } catch (error) {
-      throw new Error('cannot view the film "' + row.name + '": the contact sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
-    }
-    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
-    const data = await readFile(join(work, 'sheet.png'), { signal: exec.signal })
-    if (data.byteLength > byteCap) {
-      throw new Error('cannot view the film "' + row.name + '": its contact sheet exceeds the ' + String(byteCap) + '-byte image cap')
-    }
-    let ref: ImageAttachmentRef
-    try {
-      ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-sheet.png' })
-    } catch (error) {
-      throw new Error('cannot commit the film contact sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
-    }
-    return {
-      runId: row.runId,
-      url: row.url,
-      image: {
-        attachmentId: ref.attachmentId,
-        mediaType: ref.mediaType,
-        bytes: ref.bytes,
-        width: ref.width,
-        height: ref.height,
-        ...(ref.name === undefined ? {} : { name: ref.name }),
-        ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
-      },
-      film: {
-        file: row.name,
-        ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
-        size_bytes: probe.size_bytes,
-        streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.width === undefined ? {} : { width: s.width }), ...(s.height === undefined ? {} : { height: s.height }), ...(s.fps === undefined ? {} : { fps: s.fps }), ...(s.frames === undefined ? {} : { frames: s.frames }) })),
-        sheet_of: stamps.length,
-      },
-    }
-  } finally {
-    await rm(work, { recursive: true, force: true })
+    data = await render('MeliteFrameSheet', { video: absPath, stamps: stamps.length, width: 320 }, exec.signal)
+  } catch (error) {
+    throw new Error('cannot view the film "' + row.name + '": the contact sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
   }
+  const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
+  if (data.byteLength > byteCap) {
+    throw new Error('cannot view the film "' + row.name + '": its contact sheet exceeds the ' + String(byteCap) + '-byte image cap')
+  }
+  let ref: ImageAttachmentRef
+  try {
+    ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-sheet.png' })
+  } catch (error) {
+    throw new Error('cannot commit the film contact sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+  }
+  return {
+    runId: row.runId,
+    url: row.url,
+    image: {
+      attachmentId: ref.attachmentId,
+      mediaType: ref.mediaType,
+      bytes: ref.bytes,
+      width: ref.width,
+      height: ref.height,
+      ...(ref.name === undefined ? {} : { name: ref.name }),
+      ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
+    },
+    film: {
+      file: row.name,
+      ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
+      size_bytes: probe.size_bytes,
+      streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.width === undefined ? {} : { width: s.width }), ...(s.height === undefined ? {} : { height: s.height }), ...(s.fps === undefined ? {} : { fps: s.fps }), ...(s.frames === undefined ? {} : { frames: s.frames }) })),
+    sheet_of: stamps.length,
+      },
+    }
 }
 
 /** View an audio artifact: ffprobe summary + a WAVEFORM sheet
@@ -363,7 +368,7 @@ export async function viewAudioArtifact(
   exec: ViewExec,
   ctx: { get(name: string): unknown },
   attachments: AttachmentsSeam,
-  proc: FilmProc = defaultFilmProc,
+  render: MediaSheetRender = defaultMediaSheetRender,
   read: BytesReader = defaultBytesReader,
 ): Promise<ViewedImageValue> {
   const found = await firstRootWithRun(seat, 'audio', runId)
@@ -397,48 +402,46 @@ export async function viewAudioArtifact(
         + '" declares no image input, so no waveform sheet was rendered. The measurements above are complete.',
     }
   }
-  const work = await mkdtemp(join(tmpdir(), 'melite-view-'))
+  // THE WAVEFORM IS ENGINE-PRODUCED (the host-binary cure): the
+  // vendored MeliteWaveform node decodes the audio inside the
+  // engine (PyAV) and renders the showwavespic-shaped envelope —
+  // never a host ffmpeg call.
+  let data: Uint8Array
   try {
-    const sheet = join(work, 'waveform.png')
-    try {
-      await proc('ffmpeg', ['-v', 'error', '-i', absPath, '-filter_complex', 'showwavespic=s=640x240:colors=#9db4ff', '-frames:v', '1', '-y', sheet], exec.signal)
-    } catch (error) {
-      throw new Error('cannot view the audio "' + row.name + '": the waveform sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
-    }
-    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
-    const data = await readFile(sheet, { signal: exec.signal })
-    if (data.byteLength > byteCap) {
-      throw new Error('cannot view the audio "' + row.name + '": its waveform sheet exceeds the ' + String(byteCap) + '-byte image cap')
-    }
-    let ref: ImageAttachmentRef
-    try {
-      ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-waveform.png' })
-    } catch (error) {
-      throw new Error('cannot commit the audio waveform sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
-    }
-    return {
-      runId: row.runId,
-      url: row.url,
-      image: {
-        attachmentId: ref.attachmentId,
-        mediaType: ref.mediaType,
-        bytes: ref.bytes,
-        width: ref.width,
-        height: ref.height,
-        ...(ref.name === undefined ? {} : { name: ref.name }),
-        ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
-      },
-      audio: {
-        file: row.name,
-        ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
-        size_bytes: probe.size_bytes,
-        streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.sample_rate === undefined ? {} : { sample_rate: s.sample_rate }), ...(s.channels === undefined ? {} : { channels: s.channels }) })),
-        waveform_of: true,
-      },
-    }
-  } finally {
-    await rm(work, { recursive: true, force: true })
+    data = await render('MeliteWaveform', { audio: absPath, width: 640, height: 240 }, exec.signal)
+  } catch (error) {
+    throw new Error('cannot view the audio "' + row.name + '": the waveform sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error })
   }
+  const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes)
+  if (data.byteLength > byteCap) {
+    throw new Error('cannot view the audio "' + row.name + '": its waveform sheet exceeds the ' + String(byteCap) + '-byte image cap')
+  }
+  let ref: ImageAttachmentRef
+  try {
+    ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-waveform.png' })
+  } catch (error) {
+    throw new Error('cannot commit the audio waveform sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error })
+  }
+  return {
+    runId: row.runId,
+    url: row.url,
+    image: {
+      attachmentId: ref.attachmentId,
+      mediaType: ref.mediaType,
+      bytes: ref.bytes,
+      width: ref.width,
+      height: ref.height,
+      ...(ref.name === undefined ? {} : { name: ref.name }),
+      ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
+    },
+    audio: {
+      file: row.name,
+      ...(probe.duration_s === undefined ? {} : { duration_s: probe.duration_s }),
+      size_bytes: probe.size_bytes,
+      streams: probe.streams.map((s: FilmStreamSummary) => ({ codec: s.codec, ...(s.codec_type === undefined ? {} : { codec_type: s.codec_type }), ...(s.sample_rate === undefined ? {} : { sample_rate: s.sample_rate }), ...(s.channels === undefined ? {} : { channels: s.channels }) })),
+    waveform_of: true,
+      },
+    }
 }
 /** The structural exec view the route gate reads (the types.ts
  * ToolExec adaptation, widened for THIS tool's need — the gate walks
@@ -696,7 +699,10 @@ export async function viewModelArtifact(
  * seats: `attachments` — the durable store, `queue` — the runs tree
  * root owner, `llm` — the route gate; all optional probes, the
  * tool-fs inject law). */
-export function meliteView(ctx: Context): ToolDefinition {
+export function meliteView(
+  ctx: Context,
+  render: MediaSheetRender = defaultMediaSheetRender,
+): ToolDefinition {
   const presentCall: (args: unknown) => ToolCallView = (args) => {
     const a = (typeof args === 'object' && args !== null ? args : {}) as { run_id?: unknown, artifact?: unknown }
     return {
@@ -788,7 +794,7 @@ export function meliteView(ctx: Context): ToolDefinition {
       // table above).
       const AUDIO_EXTENSIONS = new Set(['.wav', '.flac', '.mp3', '.ogg', '.m4a', '.aac'])
       if (artifact !== '' && AUDIO_EXTENSIONS.has(extname(artifact).toLowerCase())) {
-        const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
+        const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments, render)
         return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
       }
       // THE MESH ARM (2026-09-26): a 3D artifact names its intent the
@@ -807,7 +813,7 @@ export function meliteView(ctx: Context): ToolDefinition {
         // sheet the model can SEE). The no-film voice keeps the old
         // prefix (the walls pin it); the value carries the film row.
         try {
-          const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments)
+          const filmed = await viewFilmArtifact(seat, runId, artifact, exec, ctx, attachments, render)
           return filmed as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
         } catch (filmMiss) {
           // THE AUDIO-ONLY RUN (§33 gap-6): when the film arm found
@@ -817,7 +823,7 @@ export function meliteView(ctx: Context): ToolDefinition {
           // rethrows — the chain never masks a working arm's error.
           if (!(filmMiss instanceof Error && /produced no image artifacts/.test(filmMiss.message))) throw filmMiss
           try {
-            const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments)
+            const heard = await viewAudioArtifact(seat, runId, artifact, exec, ctx, attachments, render)
             return heard as unknown as { runId: string, url: string, image: Record<string, JsonValue> } & Record<string, JsonValue>
           } catch (audioMiss) {
             // THE MESH-ONLY RUN (2026-09-26): a 3D lane's run holds a
