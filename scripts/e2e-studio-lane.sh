@@ -201,5 +201,19 @@ curl -s -b "$COOKIES" -X POST "http://127.0.0.1:$PORT/api/bench/add-stage" \
   -d '{"type":"client-request","rpcId":"seed","method":"bench/add-stage","payload":{"args":{"sessionKey":"main","doc":{"card":"h3-timeline","author":"user","expect_rev":0}}}}' -o /dev/null
 
 # ── the wall ──────────────────────────────────────────────────────
+PLAYWRIGHT_EXIT=0
 PATH="$HOME/.local/share/mise/installs/node/24.21.0/bin:$HOME/.local/bin:$PATH" \
-  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "$@"
+  pnpm --filter "$CARD_VIEW_FILTER" exec playwright test "$@" || PLAYWRIGHT_EXIT=$?
+
+# ── the host's own word (2026-10-13, the stale-lib wedge): a green
+# playwright run can ride a host that silently skipped a capability
+# — the lane booted green while card-plane cross-validation died at
+# a "Cannot find module" skip in the host log (a stale committed lib
+# whose emitted JS carried a .ts specifier). A module-resolution
+# failure in the host log is never benign; the lane refuses it.
+if grep -q "Cannot find module" "$LOG" 2>/dev/null; then
+  echo "[e2e-studio-lane] host log carries a module-resolution failure:" >&2
+  grep -n "Cannot find module" "$LOG" >&2
+  exit 1
+fi
+exit $PLAYWRIGHT_EXIT

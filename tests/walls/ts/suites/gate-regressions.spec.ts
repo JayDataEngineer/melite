@@ -387,6 +387,78 @@ describe("THE STALE-LIB SHIP (a green ship must prove the lane runs THIS tree)",
     ).trim();
     expect(extracted).toBe(declared.join("|"));
   });
+
+  it("the studio lane refuses a host log that carries a module-resolution failure", () => {
+    // The stale-lib wedge again, at the DOOR: the lane booted green
+    // while the host silently skipped a capability behind a
+    // "Cannot find module" line. Playwright's verdict alone cannot
+    // see the host's own log; the lane greps it and refuses.
+    const lane = read("scripts/e2e-studio-lane.sh");
+    expect(lane, "the lane owns the studio host door").toContain("e2e-studio-lane.sh");
+    expect(lane, "the host-log verdict greps the failure class").toContain('grep -q "Cannot find module"');
+  });
+});
+
+describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () => {
+  // The studio lane's host booted and silently logged "card-plane
+  // cross-validation skipped: Cannot find module …/lib/mods/packs.ts"
+  // (2026-10-13): src/cardDefs.ts dynamic-imports './mods/packs.ts',
+  // the committed lib was stale, and the emitted JS still carried the
+  // .ts specifier — unresolvable under plain Node. GT-06's untracked
+  // sweep judges only ADDED lib files; staleness that breaks runtime
+  // imports had no judge. Two signatures, both machine-checked here:
+  // a relative .ts specifier in emitted JS (the rewrite flag's
+  // failure), and any relative specifier whose target file is absent.
+  /** Every tracked lib .js file, from git. */
+  const libFiles = execFileSync("git", ["ls-files", "--", "*lib/**/*.js"], { cwd: REPO, encoding: "utf8" })
+    .split("\n")
+    .filter((f) => f.endsWith(".js"));
+  const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
+
+  it("the census is real (a wholesale lib deletion cannot green this arm)", () => {
+    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(200);
+  });
+
+  it("no emitted JS names a relative .ts specifier", () => {
+    const offenders: string[] = [];
+    for (const f of libFiles) {
+      if (/(?:from\s*|import\(\s*)(["'])\.[^"']*\.ts\1/.test(read(f))) offenders.push(f);
+    }
+    expect(offenders, `emitted JS carrying a .ts specifier: ${offenders.join(" | ")}`).toEqual([]);
+  });
+
+  it("every relative specifier in emitted JS resolves to a file on disk", () => {
+    const offenders: string[] = [];
+    for (const f of libFiles) {
+      for (const m of read(f).matchAll(specRe)) {
+        const base = join(REPO, f, "..", m[2]);
+        const candidates = [
+          base,
+          `${base}.js`,
+          `${base}.json`,
+          `${base}/index.js`,
+          `${base}/index.json`,
+          `${base}/index.mjs`,
+          `${base}/index.cjs`,
+          `${base}/index.node`,
+        ];
+        if (!candidates.some((c) => existsSync(c))) offenders.push(`${f} -> ${m[2]}`);
+      }
+    }
+    expect(offenders, `emitted JS with a dangling relative import: ${offenders.join(" | ")}`).toEqual([]);
+  });
+
+  it("the build plane resolves its compiler through tsc-path (a store-first walk emits the stale bytes)", () => {
+    // The stale-lib root (2026-10-13): build-plane.mjs picked the
+    // store's FIRST typescript@ dir (5.7.3), whose emit rewrites only
+    // VARIABLE dynamic-import specifiers — literal "./x.ts" survived,
+    // and the battery's lib-sync arm rebuilt the stale bytes and
+    // blessed them. The majority compiler (tsc-path.mjs, shared with
+    // the typecheck gates and the ship lane) rewrites literals.
+    const plane = read("tools/build-plane.mjs");
+    expect(plane).toContain("tools/tsc-path.mjs");
+    expect(plane).not.toContain("startsWith('typescript@')");
+  });
 });
 
 describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {

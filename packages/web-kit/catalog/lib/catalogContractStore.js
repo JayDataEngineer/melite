@@ -22,7 +22,7 @@ function _stamp() {
  *  re-validates + re-reports. Lazy import: modelCatalog imports THIS store
  *  (for CatalogContractError reporting) — a static import would be circular. */
 function retryCatalog() {
-    import("./modelCatalog.ts")
+    import("./modelCatalog.js")
         .then(({ loadCatalog }) => loadCatalog({ force: true }))
         .catch(() => {
         // The funnel re-reported the failure — a fresh toast already fired.

@@ -5,7 +5,7 @@ import { contractToast } from "./contractToast.js";
  *  bad → re-report (a fresh toast). Lazy import: FlowProtocol pulls the
  *  whole protocol layer; the store only needs it on click. */
 function repoll(runId) {
-    import("./FlowProtocol.ts")
+    import("./FlowProtocol.js")
         .then(({ pollFlowRun }) => pollFlowRun(runId, undefined, { maxWaitMs: 30_000, intervalMs: 2_000 }))
         .then(() => useRunStatusContractStore.getState().clear())
         .catch(() => {

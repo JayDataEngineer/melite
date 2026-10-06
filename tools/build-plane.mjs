@@ -503,10 +503,22 @@ export function flipManifest(pkgDir) {
 
 /* ----------------------------------------------------------------- build */
 
+// THE COMPILER IS THE WORKSPACE MAJORITY (GT6-06's root, 2026-10-13):
+// the store's FIRST typescript@ dir is 5.7.3, and 5.7 rewrites only
+// VARIABLE dynamic-import specifiers (the __rewriteRelativeImportExtension
+// runtime helper) — literal "./x.ts" specifiers survive its emit, so the
+// committed lib carried unresolvable .ts imports under plain Node while
+// every build "succeeded". The majority workspace compiler (5.9.3) rewrites
+// literals at emit. ONE derivation owns this law repo-wide: tools/tsc-path.mjs
+// (the typecheck gates and the ship lane resolve through it too — a second
+// ad-hoc store walk here is the dangling-store-path class again).
 const tscBin = (() => {
-  const hit = readdirSync(join(ROOT, 'node_modules/.pnpm')).find((d) => d.startsWith('typescript@'))
-  if (!hit) throw new Error('typescript not installed')
-  return join(ROOT, 'node_modules/.pnpm', hit, 'node_modules/typescript/bin/tsc')
+  const r = spawnSync(process.execPath, [join(ROOT, 'tools', 'tsc-path.mjs')], { encoding: 'utf8' })
+  const out = (r.stdout ?? '').trim()
+  if (r.status !== 0 || out === '') {
+    throw new Error(`tools/tsc-path.mjs refused to name a compiler (status ${r.status}): ${(r.stdout ?? '') + (r.stderr ?? '')}`.trim())
+  }
+  return out
 })()
 
 export function buildFaces(pkgDir) {
