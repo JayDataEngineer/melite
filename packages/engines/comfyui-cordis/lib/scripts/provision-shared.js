@@ -1,9 +1,28 @@
 // provision-shared — repo paths, dry-run flag, failure ledger, output helpers.
 // Split from scripts/provision.ts (pure move — no logic changes).
-import { dirname, join, resolve } from "node:path";
+import { dirname, join } from "node:path";
+import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 export const HERE = dirname(fileURLToPath(import.meta.url));
-export const REPO = resolve(HERE, "..", "..", "..", "..");
+// REPO is the WORKSPACE ROOT by marker, never by a fixed hop count:
+// this module executes from two layouts — src/scripts (source) and
+// lib/scripts (the built artifact a plain-`node` config subprocess
+// runs) — one directory apart in depth, so a counted `resolve`
+// mis-derived the built plane to <repo>/packages and every
+// data/runtime path died in ENOENT. The marker (pnpm-workspace.yaml)
+// exists at exactly one ancestor; refuse loud if it does not.
+function workspaceRoot(from) {
+    for (let dir = from;; dir = dirname(dir)) {
+        if (existsSync(join(dir, "pnpm-workspace.yaml")))
+            return dir;
+        const parent = dirname(dir);
+        if (parent === dir) {
+            throw new Error("provision: no pnpm-workspace.yaml above " + from +
+                " — the CLI must run from inside the melite workspace checkout");
+        }
+    }
+}
+export const REPO = workspaceRoot(HERE);
 // The engine package's own data/ (comfyui-cordis since the models-
 // plane reversal, 91532243 — the old engines/comfyui anchor was a
 // stale name that left every config-less CLI call fatal).
