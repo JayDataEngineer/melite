@@ -167,6 +167,17 @@ export function engineUrl(cfg) {
     const root = loadRoot();
     return engineField(root, "url", cfg.url);
 }
+/** The live engine's tree root when the overlay names one ("" when
+ *  the estate runs the single-tree shape — every box but the
+ *  developer estate). The install loop verifies every row against
+ *  this tree TOO: Manager's door installs into the tree its engine
+ *  runs from, not into the repo's data/runtime.
+ *  @param cfg the tracked endpoint config (fallback value holder).
+ *  @returns the absolute live tree root, or "" when none declared. */
+export function engineLiveRoot(cfg) {
+    const root = loadRoot();
+    return engineField(root, "live_root", cfg.live_root);
+}
 export function enginePort(cfg) {
     const root = loadRoot();
     const raw = engineField(root, "port", cfg.port);

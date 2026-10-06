@@ -6,7 +6,18 @@
 // 2026-10-13: Manager is the ONE extension vendor; the CLI never
 // clones — installs ride POST /customnode/install/git_url,
 // verified by the clone's remote).
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
+// verifyRoots reads the live tree through engineLiveRoot (the
+// overlay seam). The box's own overlay is not this wall's subject —
+// mock it to the passed cfg value so every arm is deterministic
+// (in production the overlay's value wins over the tracked
+// fallback; that precedence is engineField's law, walled in
+// provision-config.spec).
+vi.mock("../scripts/provision-config.ts", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../scripts/provision-config.ts")>()),
+  engineLiveRoot: (cfg: { live_root?: string }): string =>
+    (cfg.live_root ?? "").trim(),
+}));
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -17,9 +28,12 @@ import {
   ensureManagerPinnedConfig,
   installedDirFor,
   installedHead,
+  landedIn,
   landedVerdict,
   urlInstalled,
+  verifyRoots,
 } from "../scripts/provision-extensions-install.ts";
+import { RUNTIME } from "../scripts/provision-shared.ts";
 import { symlinkSync, existsSync } from "node:fs";
 
 describe("ensureManagerPinnedConfig", () => {
@@ -207,7 +221,7 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
   it("a clone at the declared ref passes — the step's own equality", () => {
     landAClone("melite-tts-nodes", "");
     const head = commit("melite-tts-nodes");
-    assert.equal(landedVerdict("melite-tts-nodes", url, head, workspace), "");
+    assert.equal(landedVerdict("melite-tts-nodes", url, head, [workspace]), "");
   });
 
   it("verifies the head in the dir whose remote IS the url — Manager renames install dirs", () => {
@@ -219,7 +233,7 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
     landAClone("qweneditutils", "", qu);
     const head = commit("qweneditutils");
     assert.equal(installedDirFor(qu, workspace), "qweneditutils");
-    assert.equal(landedVerdict("Comfyui-QwenEditUtils", qu, head, workspace), "");
+    assert.equal(landedVerdict("Comfyui-QwenEditUtils", qu, head, [workspace]), "");
   });
 
   it("the SAME clone, advanced one commit, is drift — named with both shas", () => {
@@ -229,7 +243,7 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
       cwd: clone,
       encoding: "utf8",
     }).trim();
-    const verdict = landedVerdict("melite-tts-nodes", url, atPin, workspace);
+    const verdict = landedVerdict("melite-tts-nodes", url, atPin, [workspace]);
     assert.match(verdict, /landed at/);
     assert.match(verdict, /but the declaration pins/);
   });
@@ -241,13 +255,106 @@ describe("landedVerdict (the CLI step's landed-HEAD law)", () => {
     assert.match(
       landedVerdict("comfyui-impact-pack",
         "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
-        "5bed9d5545ef430406a5d6d7233e5c0a5e75051a", workspace),
+        "5bed9d5545ef430406a5d6d7233e5c0a5e75051a", [workspace]),
       /reports no landed commit/,
     );
   });
 
   it("a row with no declared ref carries no verdict (the registry install)", () => {
     assert.equal(landedVerdict("comfyui-impact-pack",
-      "https://github.com/ltdrdata/ComfyUI-Impact-Pack", "", workspace), "");
+      "https://github.com/ltdrdata/ComfyUI-Impact-Pack", "", [workspace]), "");
+  });
+});
+
+describe("the two-tree verify (landedIn + verifyRoots)", () => {
+  // The 2026-10-16 misreport class (roadmap): Manager's door
+  // installs into the tree its engine runs from (the live engine's
+  // service tree), while the CLI verified only against the repo's
+  // IaC runtime — so a new row landed at its pin was retried into
+  // Manager's "Already exists" 400s until the loop exhausted, then
+  // reported FAILED. The cure: verify against EVERY tree, and say
+  // which one held the clone.
+  const url = "https://github.com/JayDataEngineer/melite-kimodo-nodes";
+  const mkTree = (tag: string, withClone: boolean): string => {
+    const root = mkdtempSync(join(tmpdir(), "melite-two-tree-" + tag + "-"));
+    if (!withClone) {
+      mkdirSync(join(root, "custom_nodes"), { recursive: true });
+      return root;
+    }
+    const clone = join(root, "custom_nodes", "melite-kimodo-nodes");
+    mkdirSync(clone, { recursive: true });
+    execSync("git init -q . && git config user.email t@t && " +
+      "git config user.name t && git commit -q --allow-empty -m seed",
+      { cwd: clone, encoding: "utf8" });
+    execSync("git remote add origin " + url, { cwd: clone, encoding: "utf8" });
+    return root;
+  };
+  // the IaC runtime is EMPTY (the exact misreport shape: Manager
+  // never installs there on the two-tree estate); only the live
+  // engine's tree carries the clone.
+  const iac = mkTree("iac", false);
+  const live = mkTree("live", true);
+  const liveHead = execSync("git rev-parse HEAD",
+    { cwd: join(live, "custom_nodes", "melite-kimodo-nodes"), encoding: "utf8" }).trim();
+
+  it("landedIn finds the row in the SECOND tree when the IaC runtime is empty", () => {
+    // the exact GGUF/audio-pins shape: RUNTIME never saw the
+    // install; the live engine's tree has it at the pin.
+    assert.equal(landedIn(url, [iac, live])?.root, live);
+    assert.equal(landedIn(url, [iac]) ?? null, null);
+  });
+
+  it("the verdict across BOTH trees passes at the pin and names the tree on drift", () => {
+    assert.equal(
+      landedVerdict("melite-kimodo-nodes", url, liveHead, [iac, live]), "");
+    const drifted = landedVerdict("melite-kimodo-nodes", url,
+      "1111111111111111111111111111111111111111", [iac, live]);
+    assert.match(drifted, /landed at/);
+    assert.match(drifted, new RegExp(live.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+      "the drift verdict names the tree the clone sits in");
+  });
+
+  it("an unverifiable row across both trees names BOTH in the refusal", () => {
+    const verdict = landedVerdict("melite-kimodo-nodes",
+      "https://github.com/JayDataEngineer/melite-poser-nodes",
+      "2222222222222222222222222222222222222222", [iac, live]);
+    assert.match(verdict, /no custom_nodes clone in/);
+    assert.match(verdict, new RegExp(
+      (iac + ", " + live).replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  });
+
+  it("verifyRoots: no live root declared → the IaC runtime alone", () => {
+    assert.deepEqual(verifyRoots({}), [RUNTIME]);
+  });
+
+  it("verifyRoots: a declared live root joins AFTER the IaC runtime; RUNTIME itself never duplicates", () => {
+    assert.deepEqual(verifyRoots({ live_root: live }), [RUNTIME, live]);
+    assert.deepEqual(verifyRoots({ live_root: RUNTIME }), [RUNTIME]);
+  });
+
+  it("verifyRoots refuses loud when the overlay names a missing live tree", () => {
+    // a declared tree the box does not have is a misconfiguration,
+    // not a skip. die() is the CLI's process boundary (REFUSED +
+    // exit 2), so the wall intercepts the exit and reads the
+    // refusal text.
+    const lines: string[] = [];
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(((code?: number) => {
+      throw new Error("exit " + (code ?? 0));
+    }) as never);
+    const logSpy = vi.spyOn(console, "log").mockImplementation((...args) => {
+      lines.push(args.join(" "));
+    });
+    try {
+      assert.throws(() => verifyRoots({ live_root: iac + "-absent" }), /exit 2/);
+      assert.match(lines.join("\n"), /live_root names a tree that does not exist/);
+    } finally {
+      exitSpy.mockRestore();
+      logSpy.mockRestore();
+    }
+  });
+
+  it("cleans up", () => {
+    rmSync(iac, { recursive: true, force: true });
+    rmSync(live, { recursive: true, force: true });
   });
 });

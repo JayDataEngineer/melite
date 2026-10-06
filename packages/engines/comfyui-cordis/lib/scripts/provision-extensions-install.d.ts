@@ -1,3 +1,4 @@
+import type { EndpointConfig } from "./provision-config.js";
 /** The custom_nodes directory whose git remote IS this url — the only
  *  reliable identity of a Manager install. Manager renames install
  *  dirs (lrzjason/Comfyui-QwenEditUtils landed as "qweneditutils",
@@ -13,6 +14,28 @@ export declare function installedDirFor(url: string, workspace: string): string;
  *  @param workspace the engine workspace root.
  *  @returns true when a clone with this remote is installed. */
 export declare function urlInstalled(url: string, workspace: string): boolean;
+/** The trees the install loop verifies against: the repo's IaC
+ *  runtime FIRST (the tree provision owns), then the live engine's
+ *  tree when the overlay declares one (engines.comfyui.live_root —
+ *  the two-tree estate: Manager's door installs into the tree its
+ *  engine runs from, which is not data/runtime). A declared live
+ *  root that does not exist is a loud refusal, not a skip — the
+ *  overlay named a tree the box does not have.
+ *  @param cfg the endpoint config.
+ *  @returns the deduped verify roots, IaC runtime first. */
+export declare function verifyRoots(cfg: EndpointConfig): string[];
+/** Where a row's clone actually sits: the first verify root whose
+ *  custom_nodes carries a clone with this remote. Manager installs
+ *  into ITS engine's tree, so a row can be absent from the IaC
+ *  runtime while landed exactly at its pin in the live tree.
+ *  @param url the declared git remote.
+ *  @param roots the verify roots, IaC first (see verifyRoots).
+ *  @returns the root and install dir name, or null when no root
+ *  carries the remote. */
+export declare function landedIn(url: string, roots: readonly string[]): {
+    root: string;
+    dir: string;
+} | null;
 /** The installed clone's HEAD commit, for ref-pin verification.
  *  @param workspace the engine workspace root.
  *  @param dir the custom_nodes dir name Manager installed.
@@ -27,9 +50,16 @@ export declare function installedHead(workspace: string, dir: string): string;
  *  the declared url (installedDirFor), never from a name derived
  *  from the url — Manager renames install dirs, so a name-derived
  *  lookup verified a directory that does not exist and failed seven
- *  rows that had landed exactly at their pins (2026-10-15).
+ *  rows that had landed exactly at their pins (2026-10-15). Since
+ *  2026-10-17 the read spans EVERY verify root (the two-tree
+ *  estate: the clone sits in whichever tree Manager's engine runs
+ *  from) and the verdict names the tree it read.
+ *  @param name the row name, for the verdict text.
+ *  @param url the declared git remote.
+ *  @param ref the declared pin ("" for registry rows).
+ *  @param roots the verify roots, IaC first (see verifyRoots).
  *  @returns "" when the row's landed state is the declared one. */
-export declare function landedVerdict(name: string, url: string, ref: string, workspace: string): string;
+export declare function landedVerdict(name: string, url: string, ref: string, roots: readonly string[]): string;
 /** Idempotently pin the manager's config.ini to the estate-proven
  *  install door: allow_git_url_install opens unknown-URL queue
  *  installs, and the ltdrdata channel_url replaces Manager 3.41's

@@ -15,7 +15,7 @@ import { execSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.js";
-import { engineUrl, loadConfig } from "./provision-config.js";
+import { engineLiveRoot, engineUrl, loadConfig } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
 /** The cold-cache retry window for Manager git-url installs: a
  *  just-booted Manager refuses installs (empty-body 400, or a 200
@@ -76,6 +76,42 @@ export function installedDirFor(url, workspace) {
 export function urlInstalled(url, workspace) {
     return installedDirFor(url, workspace) !== "";
 }
+/** The trees the install loop verifies against: the repo's IaC
+ *  runtime FIRST (the tree provision owns), then the live engine's
+ *  tree when the overlay declares one (engines.comfyui.live_root —
+ *  the two-tree estate: Manager's door installs into the tree its
+ *  engine runs from, which is not data/runtime). A declared live
+ *  root that does not exist is a loud refusal, not a skip — the
+ *  overlay named a tree the box does not have.
+ *  @param cfg the endpoint config.
+ *  @returns the deduped verify roots, IaC runtime first. */
+export function verifyRoots(cfg) {
+    const live = engineLiveRoot(cfg);
+    if (live === "" || live === RUNTIME)
+        return [RUNTIME];
+    if (!existsSync(live)) {
+        die("engines.comfyui.live_root names a tree that does not exist: " +
+            live + " — fix the overlay (data/inference.local.json); the " +
+            "install loop refuses to verify against a missing tree");
+    }
+    return [RUNTIME, live];
+}
+/** Where a row's clone actually sits: the first verify root whose
+ *  custom_nodes carries a clone with this remote. Manager installs
+ *  into ITS engine's tree, so a row can be absent from the IaC
+ *  runtime while landed exactly at its pin in the live tree.
+ *  @param url the declared git remote.
+ *  @param roots the verify roots, IaC first (see verifyRoots).
+ *  @returns the root and install dir name, or null when no root
+ *  carries the remote. */
+export function landedIn(url, roots) {
+    for (const root of roots) {
+        const dir = installedDirFor(url, root);
+        if (dir !== "")
+            return { root, dir };
+    }
+    return null;
+}
 /** The installed clone's HEAD commit, for ref-pin verification.
  *  @param workspace the engine workspace root.
  *  @param dir the custom_nodes dir name Manager installed.
@@ -98,20 +134,29 @@ export function installedHead(workspace, dir) {
  *  the declared url (installedDirFor), never from a name derived
  *  from the url — Manager renames install dirs, so a name-derived
  *  lookup verified a directory that does not exist and failed seven
- *  rows that had landed exactly at their pins (2026-10-15).
+ *  rows that had landed exactly at their pins (2026-10-15). Since
+ *  2026-10-17 the read spans EVERY verify root (the two-tree
+ *  estate: the clone sits in whichever tree Manager's engine runs
+ *  from) and the verdict names the tree it read.
+ *  @param name the row name, for the verdict text.
+ *  @param url the declared git remote.
+ *  @param ref the declared pin ("" for registry rows).
+ *  @param roots the verify roots, IaC first (see verifyRoots).
  *  @returns "" when the row's landed state is the declared one. */
-export function landedVerdict(name, url, ref, workspace) {
+export function landedVerdict(name, url, ref, roots) {
     if (ref === undefined || ref === "")
         return "";
-    const dir = installedDirFor(url, workspace);
-    const head = dir === "" ? "" : installedHead(workspace, dir);
-    if (head === "") {
-        return "reports no landed commit — the declared ref " + ref +
-            " cannot be verified (no custom_nodes clone carries remote " + url + ")";
+    const seat = landedIn(url, roots);
+    const head = seat === null ? "" : installedHead(seat.root, seat.dir);
+    if (head === "" || seat === null) {
+        return "reports no landed commit in any verify tree — the declared " +
+            "ref " + ref + " cannot be verified (no custom_nodes clone in " +
+            roots.join(", ") + " carries remote " + url + ")";
     }
     if (!head.startsWith(ref) && !ref.startsWith(head)) {
-        return "landed at " + head.slice(0, 10) + " but the declaration pins " +
-            ref.slice(0, 10) + " (the pin is the truth)";
+        return "landed at " + head.slice(0, 10) + " in " + seat.root +
+            " but the declaration pins " + ref.slice(0, 10) +
+            " (the pin is the truth)";
     }
     return "";
 }
@@ -247,6 +292,12 @@ export async function stepExtensions() {
             "installs into a user workspace");
     }
     const workspace = RUNTIME;
+    // THE TWO-TREE ESTATE (roadmap 2026-10-16): Manager's door
+    // installs into the tree its engine runs from — the live engine
+    // at engines.comfyui.live_root when the overlay names one —
+    // while the IaC runtime stays data/runtime. Every verdict below
+    // reads the tree the clone actually sits in and NAMES it.
+    const roots = verifyRoots(cfg);
     const counts = { installed: 0, skipped: 0, failed: 0, blocked: 0 };
     let planned = 0;
     const pending = [];
@@ -270,11 +321,12 @@ export async function stepExtensions() {
             counts.failed += 1;
             continue;
         }
-        if (urlInstalled(url, workspace)) {
+        const seat = landedIn(url, roots);
+        if (seat !== null) {
             // AN ALREADY-PRESENT ROW IS STILL A DECLARED ROW: the law is
             // that every pinned row's LANDED HEAD is verified, not only the
             // ones this run installed.
-            const drift = landedVerdict(name, url, ref, workspace);
+            const drift = landedVerdict(name, url, ref, [seat.root]);
             if (drift !== "") {
                 // THE PIN IS THE TRUTH, SO THE ESTATE CONVERGES (the IaC
                 // law, operator 2026-10-15): a drifted head is re-queued
@@ -286,15 +338,13 @@ export async function stepExtensions() {
                     planned += 1;
                     continue;
                 }
-                const drifted = installedDirFor(url, workspace);
-                if (drifted !== "") {
-                    rmSync(join(workspace, "custom_nodes", drifted), { recursive: true, force: true });
-                }
+                rmSync(join(seat.root, "custom_nodes", seat.dir), { recursive: true, force: true });
                 pending.push({ name, url, ref });
                 continue;
             }
             counts.skipped += 1;
-            info("  [" + name + "] already in custom_nodes at the declared ref — skipping");
+            info("  [" + name + "] already in custom_nodes at the declared ref" +
+                " (" + seat.root + ") — skipping");
             continue;
         }
         if (DRY) {
@@ -360,6 +410,9 @@ export async function stepExtensions() {
             // (the fresh-clone probe's pass-5 receipt: 25/25 refused
             // seconds after boot; the same rows installed minutes later).
             let landed = false;
+            // The tree each landed row verified against — every
+            // installed report names it (the two-tree estate's receipt).
+            let verifiedRoot = "";
             for (let attempt = 1; attempt <= INSTALL_RETRY.attempts; attempt += 1) {
                 if (attempt > 1) {
                     info("  [" + row.name + "] retrying install in " +
@@ -368,17 +421,39 @@ export async function stepExtensions() {
                     await sleep(INSTALL_RETRY.delayMs);
                 }
                 info("  [" + row.name + "] manager git_url install — " + target);
-                const res = await fetch(endpoint + "/customnode/install/git_url", {
-                    method: "POST",
-                    headers: { "content-type": "application/json" },
-                    body: JSON.stringify({ url: target }),
-                    signal: AbortSignal.timeout(900_000),
-                });
+                // TRANSPORT FAILURES RETRY TOO (the same bounded window as
+                // Manager's warm-up refusals): a connect reset or a briefly
+                // stalled engine is transient, and a FATAL here would strand
+                // rows the loop already converged (their drifted clones are
+                // gone — the retry window is what finishes the install).
+                let res;
+                try {
+                    res = await fetch(endpoint + "/customnode/install/git_url", {
+                        method: "POST",
+                        headers: { "content-type": "application/json" },
+                        body: JSON.stringify({ url: target }),
+                        signal: AbortSignal.timeout(900_000),
+                    });
+                }
+                catch (error) {
+                    if (attempt === INSTALL_RETRY.attempts) {
+                        warn("  [" + row.name + "] install call failed — " +
+                            (error instanceof Error ? error.message : String(error)) +
+                            " (verified trees: " + roots.join(", ") + ")");
+                    }
+                    continue;
+                }
                 if (!res.ok) {
                     // Manager states its reason in the response body (JSON or
                     // plain text); surfacing it here is the diagnosis seam —
                     // "the engine log has the failure" is true but the body is
-                    // the failure, verbatim
+                    // the failure, verbatim. An empty-body 400 with "Already
+                    // exists" semantics gets the SAME on-disk check the 200
+                    // arm runs before any retry: the row can be already
+                    // installed in the live tree (the tree Manager's engine
+                    // runs from) while the IaC runtime never sees it — the
+                    // 2026-10-16 misreport class, where the retry loop
+                    // exhausted on a row that had landed at its pin.
                     let reason = "";
                     try {
                         reason = (await res.text()).trim().slice(0, 300);
@@ -386,22 +461,47 @@ export async function stepExtensions() {
                     catch {
                         reason = "(body unreadable)";
                     }
+                    const seat = landedIn(row.url, roots);
+                    if (seat !== null &&
+                        landedVerdict(row.name, row.url, row.ref, [seat.root]) === "") {
+                        info("  [" + row.name + "] refused (status " + res.status +
+                            ") but already at the declared ref in " + seat.root +
+                            " — verified there");
+                        landed = true;
+                        verifiedRoot = seat.root;
+                        break;
+                    }
+                    if (seat !== null && attempt === 1) {
+                        // THE SAME CONVERGE LAW THE SKIP ARM APPLIES (the pin is
+                        // the truth, operator 2026-10-15): Manager refuses
+                        // because a DRIFTED clone of this remote sits in the
+                        // tree its engine runs from — remove it there and let
+                        // the retry install at the declared ref.
+                        warn("  [" + row.name + "] refused over a drifted clone in " +
+                            seat.root + " (" + seat.dir + ") — converging to the declared ref");
+                        rmSync(join(seat.root, "custom_nodes", seat.dir), { recursive: true, force: true });
+                    }
                     if (attempt === INSTALL_RETRY.attempts) {
                         warn("  [" + row.name + "] install refused (status " + res.status +
-                            ") — " + (reason === "" ? "the engine log has the failure" : reason));
+                            ") — " + (reason === "" ? "the engine log has the failure" : reason) +
+                            " (verified trees: " + roots.join(", ") + ")");
                     }
                     continue;
                 }
                 // Verify the outcome on disk: the clone's git remote IS the
-                // row (a 200 with action=skip means it was already there).
-                if (!urlInstalled(row.url, workspace)) {
+                // row (a 200 with action=skip means it was already there) —
+                // in ANY verify tree, not only the IaC runtime.
+                const seat = landedIn(row.url, roots);
+                if (seat === null) {
                     if (attempt === INSTALL_RETRY.attempts) {
-                        warn("  [" + row.name + "] not present after a 200 — the " +
-                            "engine log has the failure");
+                        warn("  [" + row.name + "] not present after a 200 in any " +
+                            "verify tree (" + roots.join(", ") + ") — the engine log " +
+                            "has the failure");
                     }
                     continue;
                 }
                 landed = true;
+                verifiedRoot = seat.root;
                 break;
             }
             if (!landed) {
@@ -409,7 +509,8 @@ export async function stepExtensions() {
                 continue;
             }
             counts.installed += 1;
-            const drift = landedVerdict(row.name, row.url, row.ref, workspace);
+            info("  [" + row.name + "] installed — verified against " + verifiedRoot);
+            const drift = landedVerdict(row.name, row.url, row.ref, [verifiedRoot]);
             if (drift !== "") {
                 warn("  [" + row.name + "] " + drift);
                 counts.failed += 1;

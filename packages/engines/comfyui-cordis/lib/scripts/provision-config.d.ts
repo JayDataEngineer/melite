@@ -3,6 +3,13 @@ export interface EndpointConfig {
     url?: string;
     port?: number;
     boot_cmd?: string;
+    /** The LIVE engine's tree root, when the estate runs the two-tree
+     *  shape (a service-owned ComfyUI at a path outside the repo's
+     *  data/runtime — Manager's git-url door installs THERE, while
+     *  provision verifies against data/runtime). Machine-local: named
+     *  by the overlay (data/inference.local.json
+     *  engines.comfyui.live_root), never by the tracked files. */
+    live_root?: string;
     model_base_path?: string;
     model_download_path?: string;
     input_dir?: string;
@@ -84,4 +91,12 @@ export declare function anchorDir(value: string): string;
 export declare function joinBase(root: string, base: string): string;
 export declare function boundModelFolders(cfg: EndpointConfig): BoundLayout;
 export declare function engineUrl(cfg: EndpointConfig): string;
+/** The live engine's tree root when the overlay names one ("" when
+ *  the estate runs the single-tree shape — every box but the
+ *  developer estate). The install loop verifies every row against
+ *  this tree TOO: Manager's door installs into the tree its engine
+ *  runs from, not into the repo's data/runtime.
+ *  @param cfg the tracked endpoint config (fallback value holder).
+ *  @returns the absolute live tree root, or "" when none declared. */
+export declare function engineLiveRoot(cfg: EndpointConfig): string;
 export declare function enginePort(cfg: EndpointConfig): number;
