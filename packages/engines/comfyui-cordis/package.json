@@ -67,6 +67,7 @@
     "build": "tsc -p tsconfig.build-scripts.json && tsc -p tsconfig.build.json",
     "compose": "node --experimental-strip-types src/cli.ts",
     "regen:vocab": "node --experimental-strip-types scripts/regen-vocab.ts",
+    "regen:object-info": "node --experimental-strip-types scripts/regen-object-info-min.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

@@ -24,7 +24,7 @@
 // listed verbatim; the cure is deletion or a real consumer.
 import { describe, expect, it } from "vitest";
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, normalize, sep } from "node:path";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..", "..");
@@ -59,12 +59,22 @@ function registryPackages(): Set<string> {
   // prose comments carry quotes ("skeleton + weights on this GLB")
   // that would otherwise open phantom strings.
   const bare = m[1]!.replace(/\/\/[^\n]*/gu, "");
-  // Entries may carry subpaths ('@melite/3d-anny/card'); the SEAT is
-  // the package root — every module under a registry package rides
-  // the runtime compose loop.
+  // Entries may carry subpaths ('@melite/3d-anny/card'); a subpath
+  // names its OWN module — the seat is the entry file the spec
+  // resolves to, never the whole package tree (GT-04, the round-5
+  // gate audit: the per-package blanket kept 75/574 modules alive
+  // that the registry never named).
   const root = (spec: string): string =>
     spec.startsWith("@") ? spec.split("/").slice(0, 2).join("/") : spec.split("/")[0]!;
-  return new Set([...bare.matchAll(/['"]([^'"]+)['"]/gu)].map((x) => root(x[1]!)));
+  const seats = new Set<string>();
+  for (const spec of [...bare.matchAll(/['"]([^'"]+)['"]/gu)].map((x) => x[1]!)) {
+    const dir = packageDirs().get(root(spec));
+    if (dir === undefined) continue;
+    const sub = spec.slice(root(spec).length); // '' or '/card'
+    if (sub === "") seats.add(`${dir}/src/index.ts`);
+    else seats.add(`${dir}/src${sub}.ts`);
+  }
+  return seats;
 }
 const REGISTRY = registryPackages();
 
@@ -140,7 +150,11 @@ function hasEntrySeat(mod: string): boolean {
   const mf = join(ROOT, dir, "package.json");
   if (!existsSync(mf)) return false;
   const manifest = readFileSync(mf, "utf8");
-  const pkgRelLib = mod.slice(dir.length + 1).replace(/\/src\//u, "lib/").replace(/\.(ts|tsx)$/u, "");
+  // the rel path begins with src/ (GT-03, the round-5 gate audit:
+  // /\/src\// required a LEADING slash, `src/foo.ts` never matched,
+  // and the seat never fired — every manifest-seated module fell
+  // through to the import/door seats instead)
+  const pkgRelLib = mod.slice(dir.length + 1).replace(/^src\//u, "lib/").replace(/\.(ts|tsx)$/u, "");
   return manifest.includes(pkgRelLib) || manifest.includes(pkgRelLib + ".js");
 }
 
@@ -169,7 +183,7 @@ describe("THE SRC-ORPHAN WALL — every tracked src module has a life", () => {
       if (!mod.includes("/src/") || !/\.(ts|tsx)$/u.test(mod) || mod.endsWith(".d.ts")) continue;
       if (imported.has(mod)) continue;
       if (hasEntrySeat(mod)) continue;
-      if (REGISTRY.has(owningPackage(mod))) continue;
+      if (REGISTRY.has(mod)) continue;
       if (hasDoorSeat(mod, files)) continue;
       orphans.push(mod);
     }
@@ -177,6 +191,31 @@ describe("THE SRC-ORPHAN WALL — every tracked src module has a life", () => {
       orphans,
       "these tracked src modules have no importer and no exports seat — delete them or wire them to a real consumer",
     ).toEqual([]);
+  });
+
+  it("no tracked tool is door-less (GT-05: the census stops at /src/ no more)", () => {
+    // tools/*.mjs operators with no caller are dead weight that no
+    // import census sees (.mjs scripts are spawned, not imported) —
+    // knip exempts the plane, so nothing judged it. A DOOR is a real
+    // caller naming the file: a package.json script, a hook or CI
+    // config, a doc the operator reads, or a spec that spawns it.
+    const doors = readFileSync(join(ROOT, "package.json"), "utf8")
+      + readFileSync(join(ROOT, "lefthook.yml"), "utf8");
+    const ciDir = join(ROOT, ".github", "workflows");
+    let ci = "";
+    try {
+      for (const f of readdirSync(ciDir)) ci += readFileSync(join(ciDir, f), "utf8");
+    } catch { /* no CI dir on this tree — the other doors carry the law */ }
+    const docs = sh(["git", "ls-files", "dev_docs", "docs", "*.md", "tools", "scripts", "tests"]).trim();
+    const doorText = `${doors}\n${ci}\n${docs}`;
+    const doorless: string[] = [];
+    for (const tool of sh(["git", "ls-files", "tools"]).split("\n").filter((f) => f.endsWith(".mjs") || f.endsWith(".ts"))) {
+      if (tool.endsWith(".d.ts")) continue;
+      // a sibling import counts (a tool suite or a shared helper)
+      const base = tool.split("/").pop()!;
+      if (!doorText.includes(base)) doorless.push(tool);
+    }
+    expect(doorless, "tracked tools no file names — delete them or give them a door").toEqual([]);
   });
 
   it("the census itself is armed (both walks see the tracked plane)", () => {
@@ -187,5 +226,6 @@ describe("THE SRC-ORPHAN WALL — every tracked src module has a life", () => {
     expect(sample.size, "the import census resolved no specifiers — the parse broke").toBeGreaterThan(100);
     expect(PKGS.size, "the package map is empty — the manifest walk broke").toBeGreaterThan(10);
     expect(REGISTRY.size, "the registry seat is empty — the cardPackages parse broke").toBeGreaterThan(10);
+    expect(owningPackage("packages/3d/img-to-mesh/src/foo.ts"), "owningPackage still resolves for the census").toContain("img-to-mesh");
   });
 });

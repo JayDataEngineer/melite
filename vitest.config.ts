@@ -563,12 +563,10 @@ export default defineConfig({
         // image closed (2026-09-12, §TEST-14): seven card compose
         // gates (incl. image-edit's 19 firing refusals + the
         // upscale estate-file contract), the image-gen and image-edit
-        // tool batteries, the dead-lane agents bundle. ONE file stays
-        // exempt, named: mask-studio's agents/tools.ts — the
-        // gateway-kill transitional carrier (every lane refuses loud
-        // until the Typert remote migration; the draft-mint body is
-        // dead-until-live by design, documented at the site).
-        'packages/image/mask-studio/src/agents/tools.ts',
+        // tool batteries, the dead-lane agents bundle. mask-studio's
+        // agents/tools.ts exemption died with the file (GT-08, the
+        // round-5 gate audit: the row named a deleted path, an
+        // exclusion that excluded nothing).
         // + the studios (src/ui/** — 28 files) stay GUI-debt: DOM,
         // the dom project's territory, same carve-out as the web tree.
         // image (stroke 77): mask-studio's paint-leaf face +

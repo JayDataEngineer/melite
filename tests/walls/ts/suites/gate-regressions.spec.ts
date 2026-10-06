@@ -55,6 +55,41 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
   });
 });
 
+describe("THE FRESH-CLONE HOOK (GT-01/GT-02, the round-5 gate audit)", () => {
+  // GT-02: the walls run redirects into .scratch/, which a fresh
+  // clone does not have — the redirect fails before vitest starts,
+  // and the hook refused having judged nothing. The cure is mkdir -p
+  // ahead of the redirect; this arm pins the ORDER, because the mkdir
+  // landing anywhere after the redirect is the same dead hook.
+  // GT-01: the run line must also keep its two mechanisms — no
+  // `glob:` narrowing (a glob on the staged set lets the walls skip
+  // most commits) and the log-keep branch (a red run keeps its log
+  // for the name).
+  const yml = read("lefthook.yml");
+  const walls = yml.split("- name: walls (staged anything)")[1]?.split("- name:")[0] ?? "";
+  const runLine = walls.split("run: ")[1] ?? "";
+
+  it("the .scratch dir is created before the walls log redirects into it", () => {
+    expect(runLine, "the walls run line exists").toContain("vitest.mjs run");
+    const mkdirAt = runLine.indexOf("mkdir -p .scratch");
+    const redirectAt = runLine.indexOf("> .scratch/");
+    expect(mkdirAt, "the run creates .scratch").toBeGreaterThan(-1);
+    expect(redirectAt, "the run redirects into .scratch").toBeGreaterThan(-1);
+    expect(mkdirAt, "mkdir precedes the redirect (after it, the hook judges nothing on a fresh clone)")
+      .toBeLessThan(redirectAt);
+  });
+
+  it("the walls job stages the whole tree (no glob:) and keeps the log on red", () => {
+    // GT-01: a `glob:` key on the job narrows lefthook's file set —
+    // most commits would skip the walls entirely while the job name
+    // still reads green in the hook's summary.
+    expect(walls, "no glob: may narrow the walls job's staged set").not.toMatch(/^\s*glob:/m);
+    // the log-keep branch: a red run's evidence survives
+    expect(runLine, "a red run keeps its log").toContain("if [ $code -ne 0 ]");
+    expect(runLine, "the kept log is renamed for the name").toContain("mv .scratch/hook-walls.$$.log");
+  });
+});
+
 describe("THE REPO TIER (tools/ + tests/ typed by nothing)", () => {
   it("the tier script names the repo config and runs it as an arm", () => {
     // THE WEDGE: tools/ and the repo-level tests/ (harness, helpers,
@@ -160,6 +195,26 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
       const ts = read(`${p}/tsconfig.json`);
       expect(ts, `${p} must pin "noEmitOnError": true`).toContain('"noEmitOnError": true');
     }
+  });
+});
+
+describe("THE COVERAGE RATCHET'S OWN EXCLUSIONS (GT-08, the round-5 gate audit)", () => {
+  it("every coverage-exclude literal names a real file", () => {
+    // An exclude row pointing at a deleted file excludes nothing —
+    // it keeps a dead exemption's name alive after the exemption
+    // died, and the ratchet cannot shrink a row that is not real.
+    const cfg = read("vitest.config.ts");
+    const covAt = cfg.indexOf("coverage: {");
+    expect(covAt, "the coverage block exists").toBeGreaterThan(-1);
+    const open = cfg.indexOf("exclude: [", covAt);
+    expect(open, "the coverage exclude block exists").toBeGreaterThan(-1);
+    const block = cfg.slice(open, cfg.indexOf("]", open));
+    const literals = [...block.matchAll(/'(packages\/[^']+)'/g)]
+      .map((m) => m[1]!)
+      .filter((p) => !p.includes("*")); // glob rows name classes, not files
+    expect(literals.length, "the exclude block carries package-path literals — the parse is armed").toBeGreaterThan(5);
+    const ghosts = literals.filter((p) => !existsSync(join(REPO, p)));
+    expect(ghosts, `coverage excludes naming deleted files: ${ghosts.join(", ")}`).toEqual([]);
   });
 });
 

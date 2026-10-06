@@ -68,7 +68,11 @@ pre-commit:
       # walls job and the unconditional rm ate the only evidence —
       # green runs sweep themselves, red runs leave the log for the
       # name (the janitor-safe .scratch dir under repo root).
-      run: d=$(mktemp -d /var/tmp/melite-hook-XXXXXX) && env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE TMPDIR=$d node node_modules/vitest/vitest.mjs run --project node > .scratch/hook-walls.$$.log 2>&1; code=$?; tail -n 4 .scratch/hook-walls.$$.log; if [ $code -ne 0 ]; then echo "walls log kept at .scratch/hook-walls.$$"; mv .scratch/hook-walls.$$.log .scratch/hook-walls.$$.kept.log; rm -rf "$d"; exit $code; fi; rm -rf "$d" .scratch/hook-walls.$$.log; exit $code
+      # mkdir -p before the redirect (2026-10-13): a fresh clone has
+      # no .scratch, and a redirect into a missing dir kills the
+      # compound before vitest starts — the hook refused having
+      # judged nothing.
+      run: d=$(mktemp -d /var/tmp/melite-hook-XXXXXX) && mkdir -p .scratch && env -u MELITE_MCP_ENGINES -u MELITE_AGENT_ROUTE TMPDIR=$d node node_modules/vitest/vitest.mjs run --project node > .scratch/hook-walls.$$.log 2>&1; code=$?; tail -n 4 .scratch/hook-walls.$$.log; if [ $code -ne 0 ]; then echo "walls log kept at .scratch/hook-walls.$$"; mv .scratch/hook-walls.$$.log .scratch/hook-walls.$$.kept.log; rm -rf "$d"; exit $code; fi; rm -rf "$d" .scratch/hook-walls.$$.log; exit $code
 
     - name: final-newline (staged text)
       run: node tools/hook-final-newline.mjs {staged_files}

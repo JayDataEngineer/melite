@@ -87,6 +87,34 @@ describe("THE IAC LAW — the store is reconstructable from DECLs, through real 
     }
   });
 
+  it("the engine-fixture regen doors exist, are wired, and their fixtures exist (GT-09)", () => {
+    // The regen doors are the ONLY way the tracked engine snapshots
+    // change (no hand edits), and nothing judged that they — or the
+    // fixtures they write — exist. A deleted door would leave the
+    // snapshots frozen with no lawful refresh path.
+    const pkg = JSON.parse(
+      readFileSync(join(ROOT, "packages", "engines", "comfyui-cordis", "package.json"), "utf8"),
+    ) as { scripts?: Record<string, string> };
+    const scripts = pkg.scripts!;
+    const doors: [string, string, string][] = [
+      ["regen:vocab", "scripts/regen-vocab.ts", ""],
+      ["regen:object-info", "scripts/regen-object-info-min.ts", ""],
+    ];
+    for (const [door, script] of doors) {
+      expect(scripts[door], `comfyui-cordis door ${door} exists`).toContain(script);
+      expect(
+        existsSync(join(ROOT, "packages", "engines", "comfyui-cordis", script)),
+        `${script} exists on disk`,
+      ).toBe(true);
+    }
+    for (const fixture of [
+      "tests/walls/fixtures/object_info.min.json",
+      "tests/walls/fixtures/shipped-graph-doc.min.json",
+    ]) {
+      expect(existsSync(join(ROOT, fixture)), `regen target ${fixture} exists`).toBe(true);
+    }
+  });
+
   it("every provisions row is complete: url + sha256 + size_bytes (the reconstruction promise)", () => {
     const rows = provisionRows();
     expect(rows.length, "the DECL plane carries provisions rows — the parse is armed").toBeGreaterThan(50);

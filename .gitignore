@@ -197,12 +197,11 @@ packages/*/*/lib/.src-stamp
 # Build scratch, never a tracked artifact — same law as the stamp above.
 .tsconfig.test.*.json
 
-# tmp/ is scratch — never committed (history's two oracle files stay tracked).
+# tmp/ is scratch — never committed (the two oracle negations died
+# with their untracked tree, 2026-10-13; no !tmp/ row remains).
 # HARD RULE: live lane tokens and dsh-auth cookies have landed here; they must
 # never ride a git add -A (the 2026-09-29 cookie-jar near-miss).
 tmp/*
-!tmp/oracle-death-import-trace.md
-!tmp/oracle-death-wall-inventory.md
 data/runtime/real-install-tarballs/
 
 # developer-local material (audits, design docs, runbooks) — never shipped

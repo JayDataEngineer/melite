@@ -168,11 +168,20 @@ jobs:
         run: pnpm run build
       - name: Lib sync (a fresh build reproduces the committed lib/)
         run: |
+          # GT-06 (the round-5 gate audit): git diff is BLIND to
+          # untracked files — a build emitting a brand-new lib path
+          # rode this gate green. The porcelain sweep sees both.
           git diff --exit-code -- '**/lib/**' || {
             echo "CI FAIL: lib/ drifted from a fresh build — the artifact must land in the same commit as the src";
             git status --porcelain -- '**/lib/**';
             exit 1;
           }
+          UNTRACKED="$(git status --porcelain -- '**/lib/**')"
+          if [ -n "$UNTRACKED" ]; then
+            echo "CI FAIL: a fresh build emitted UNTRACKED lib files the diff cannot see:"
+            echo "$UNTRACKED"
+            exit 1
+          fi
       - name: Owner-local expected output
         run: pnpm run test:expected
       - name: Benchmarks
