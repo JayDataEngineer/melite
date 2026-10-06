@@ -41,6 +41,7 @@
 // plain-editing (the retired python MOD FIRING LAW, ported 1:1 —
 // admission is the surface, firing is compose's call).
 import type { Context } from '@deepseek-ai/cordis'
+import { readFileSync } from 'node:fs'
 import z from '@deepseek-ai/schemastery'
 import { finalizeImageEdit, impactArmNames, IMPACT_DETECTOR_PROVISIONS, instantiateAction, orderedInputImages, refuseImageEditFiring, declaredAction } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
@@ -201,8 +202,52 @@ export const identity = {
     'Region detail rides mask_detail_size (working size) + mask_denoise (rework strength); grow + context pad compose the region halo, feather blends the paste',
     'Mask prep (grow/feather/invert) rides in-graph ahead of the sampler; re-threshold has no node and refuses non-zero',
     'Iterate HERE, not in video — an edit costs seconds, a render minutes; name what changes, state the rest as unchanged',
+    'THE GEOMETRY LAW (finding 8): on the 2.1 lane a draft stating NEITHER width NOR height inherits the anchor image\'s own geometry (its header is the truth); stated axes always ride verbatim, and the 2511 lane edits at the source\'s own resolution outright (stated axes refuse there)',
     'Previous card outputs ride as artifact URLs (/v1/assets/runs/<run>/<file>); the compose resolves them to data/runs/output/<run>/<file> and stages into the comfy input dir (phase 1 validates on the mounts BEFORE registration)',
   ],
+}
+
+/** THE SOURCE-GEOMETRY PROBE (finding 8, 2026-10-13): the 2.1 edit
+ *  lane samples an EmptyLatentImage at TARGET resolution — a draft
+ *  that states no axes fell to the lane's silent 1024s and a
+ *  1344x768 source came back 1024x1024, no refusal, no warning.
+ *  The gate's cure: an edit that omits both axes inherits the
+ *  ANCHOR's own geometry. The probe reads the image header only
+ *  (PNG IHDR, JPEG SOF0/SOF2 — the formats the estate stages);
+ *  anything else (spell, URL, webp, unreadable) returns null and
+ *  the draft keeps its stated axes or the lane fallback — never a
+ *  new refusal on an unprobeable anchor. @param path a compose-time
+ *  estate path (the staging walk resolved artifacts already).
+ *  @returns {width,height} from the header, or null. */
+function sourceImageGeometry(path: string): { width: number; height: number } | null {
+  let head: Buffer
+  try {
+    head = readFileSync(path).subarray(0, 256)
+  } catch {
+    return null
+  }
+  // PNG: 8-byte signature, then IHDR — width at 16, height at 20 (big-endian).
+  if (head.length >= 24 && head[0] === 0x89 && head[1] === 0x50 && head[2] === 0x4e && head[3] === 0x47) {
+    const width = head.readUInt32BE(16)
+    const height = head.readUInt32BE(20)
+    return width > 0 && height > 0 ? { width, height } : null
+  }
+  // JPEG: walk the marker segments to the first SOF0/SOF2 frame header.
+  if (head.length >= 4 && head[0] === 0xff && head[1] === 0xd8) {
+    let at = 2
+    while (at + 9 < head.length) {
+      if (head[at] !== 0xff) { at += 1; continue }
+      const marker = head[at + 1]
+      if (marker === 0xc0 || marker === 0xc2) {
+        const height = head.readUInt16BE(at + 5)
+        const width = head.readUInt16BE(at + 7)
+        return width > 0 && height > 0 ? { width, height } : null
+      }
+      if (marker === 0xd8 || (marker >= 0xd0 && marker <= 0xd9)) { at += 2; continue }
+      at += 2 + head.readUInt16BE(at + 2)
+    }
+  }
+  return null
 }
 
 export function registerCard(ctx: Context, comfy: ComfyUIService): void {
@@ -306,6 +351,23 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
         throw new Error("required param 'input_images' missing on the image-edit card (the first image is the one being edited — an ordered list; legacy drafts may state image1 alone instead)")
       }
       refuseImageEditFiring(doc, model)
+      // THE SOURCE-GEOMETRY INHERITANCE (finding 8): on the 2.1
+      // lane (the target-resolution editor — 2511 refuses stated
+      // axes and edits at the source's own resolution already), a
+      // draft that states NEITHER axis inherits the anchor's own
+      // geometry; the probe's null (spell, URL, unknown format)
+      // leaves the axes absent for the lane fallback — a stated
+      // axis pair always rides verbatim.
+      if ((model.family ?? model.id) === 'qwen-img-edit-21' && doc.width === undefined && doc.height === undefined) {
+        const anchor = orderedInputImages(doc)[0]
+        if (typeof anchor === 'string' && !anchor.startsWith('$')) {
+          const own = sourceImageGeometry(anchor)
+          if (own !== null) {
+            doc.width = own.width
+            doc.height = own.height
+          }
+        }
+      }
       const bound = ACTION_BINDINGS[model.family ?? model.id]
       if (bound) {
         bound(doc, model, g, runId)

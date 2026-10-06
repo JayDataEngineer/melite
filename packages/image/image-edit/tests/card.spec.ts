@@ -11,6 +11,8 @@ import assert from "node:assert/strict";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { loadCardDefs, theService } from "@melite/comfyui-cordis";
+import { tmpdir } from "node:os";
+import { writeFileSync, rmSync } from "node:fs";
 import { BOARDED } from "../src/card.ts";
 import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
 import { loadFacts } from "@melite/comfyui-card-kit/facts";
@@ -100,6 +102,51 @@ describe("the image-edit compose gate", () => {
   it("THE MODEL ORDER (operator catch e): 2.1 boards FIRST — the tool's default and the GUI's head", () => {
     assert.equal(BOARDED[0], "qwen-img-edit-21", "2.1 is the LATEST lane — the default");
     assert.equal(BOARDED[1], "qwen-img-edit-2511", "2511 is the BACKUP");
+  });
+
+  // THE SOURCE-GEOMETRY INHERITANCE (finding 8, 2026-10-13): a
+  // draft that omits both axes on the 2.1 lane fell to the silent
+  // 1024s — a 1344x768 source came back 1024x1024, no refusal, no
+  // warning. The compose now probes the ANCHOR's own header (PNG
+  // IHDR / JPEG SOF) and inherits it; unprobeable anchors (missing
+  // file, spell) keep the lane fallback, and STATED axes always
+  // ride verbatim.
+  it("THE SOURCE-GEOMETRY INHERITANCE: omitted axes inherit the anchor's own geometry on the 2.1 lane", () => {
+    const model21 = facts.models["qwen-img-edit-21"]!;
+    assert.ok(model21, "the qwen-img-edit-21 facts row serves");
+    // A compose-time anchor: real header bytes (PNG signature +
+    // IHDR width 1344 height 768 — the probe reads only the head).
+    const png = Buffer.alloc(33)
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0)
+    png.writeUInt32BE(13, 8) // IHDR chunk length
+    png.write("IHDR", 12, "ascii")
+    png.writeUInt32BE(1344, 16)
+    png.writeUInt32BE(768, 20)
+    const anchorPath = join(tmpdir(), "melite-f8-source-" + Date.now() + ".png")
+    writeFileSync(anchorPath, png)
+    try {
+      const g = new GraphBuilder()
+      def.compose({ prompt: "make it night", image1: anchorPath, steps: 25, cfg: 1 }, model21, g, "r_f8")
+      const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+      assert.equal(graph["EmptyLatentImage.0"]?.inputs.width, 1344, "width inherits the source's own")
+      assert.equal(graph["EmptyLatentImage.0"]?.inputs.height, 768, "height inherits the source's own")
+
+      // STATED axes ride verbatim — the inheritance is a DEFAULT, never an override.
+      const gStated = new GraphBuilder()
+      def.compose({ prompt: "make it night", image1: anchorPath, width: 512, height: 512, steps: 25, cfg: 1 }, model21, gStated, "r_f8b")
+      const stated = gStated.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+      assert.equal(stated["EmptyLatentImage.0"]?.inputs.width, 512)
+      assert.equal(stated["EmptyLatentImage.0"]?.inputs.height, 512)
+
+      // UNPROBEABLE anchor (no such file): the lane fallback stands — no new refusal.
+      const gBlind = new GraphBuilder()
+      def.compose({ prompt: "make it night", image1: "/m/not-on-disk.png", steps: 25, cfg: 1 }, model21, gBlind, "r_f8c")
+      const blind = gBlind.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+      assert.equal(blind["EmptyLatentImage.0"]?.inputs.width, 1024, "the lane fallback covers unprobeable anchors")
+      assert.equal(blind["EmptyLatentImage.0"]?.inputs.height, 1024)
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
   });
 
   it("the edit-scope field names whole-image and masked-region choices", () => {
