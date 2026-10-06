@@ -19,7 +19,6 @@
  * fetch ("THERE SHOULD NOT BE A LORAS REMOTE / IT'S ALL BUILT IN").
  */
 import * as React from 'react';
-import { readAsDataURL } from '@melite/formats/readFile';
 import { postManage } from "./assets-tab.js";
 /** The voice for a THROWN manage verb. postManage raises Error values
  *  only: a lane that throws anything else (a string, a number) is
@@ -117,12 +116,24 @@ function LoraBlock() {
         setBusy(true);
         setRefusal(null);
         try {
-            const dataUrl = await readAsDataURL(file);
-            await postManage('lora_install', {
-                filename: file.name,
-                data: dataUrl,
-                families: families.split(',').map((f) => f.trim()).filter((f) => f !== ''),
+            // THE BINARY DOOR (2026-10-17, the transport cure): the bytes
+            // stream straight through as octet-stream — no base64 data URL,
+            // so a 200MB LoRA costs 200MB, never a ~267MB string inside a
+            // JSON manage act (~2× peak memory). The door checks the
+            // declared content-length against the cap BEFORE reading.
+            const qs = new URLSearchParams({ filename: file.name });
+            const fam = families.split(',').map((f) => f.trim()).filter((f) => f !== '');
+            if (fam.length > 0)
+                qs.set('families', fam.join(','));
+            const res = await fetch('/v1/uploads/lora?' + qs.toString(), {
+                method: 'POST',
+                headers: { 'content-type': 'application/octet-stream' },
+                body: file,
             });
+            if (!res.ok) {
+                const why = await res.json().then((r) => typeof r?.error === 'string' ? r.error : '').catch(() => '');
+                throw new Error(why !== '' ? why : 'the lora door refused the upload (HTTP ' + String(res.status) + ')');
+            }
             await refresh();
         }
         catch (e) {

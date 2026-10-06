@@ -253,6 +253,63 @@ export function installUserLora(
  *  the estate's existing shape, not a new protocol. */
 export const LORA_BYTES_CAP = 512 * 1024 * 1024
 
+/** THE DIR, one spelling: the env override wins, else the endpoint
+ *  machine statement's model base + /loras; null means UNDECLARED and
+ *  every caller refuses loud (never a guessed path — the portability
+ *  law, 2026-10-12). Shared by the manage plane's two lora arms and
+ *  the uploads door's binary arm so they can never disagree.
+ *  @param cfg the endpoint config record (readEndpointConfig's value)
+ *  @returns the declared loras dir, or null when undeclared */
+export function resolveEngineLorasDir(cfg: Record<string, unknown>): string | null {
+  const declared = process.env['MELITE_COMFYUI_LORAS_DIR']
+  if (declared !== undefined && declared !== '') return declared
+  const root = typeof cfg['model_base_path'] === 'string' ? (cfg['model_base_path'] as string) : ''
+  if (root !== '') return join(root, 'loras')
+  return null
+}
+
+/** THE BINARY ARM (the transport cure, 2026-10-17): the uploads door
+ *  takes raw octet-stream bytes, so a 200MB LoRA costs 200MB — never
+ *  a ~267MB base64 string riding JSON (~2× peak memory). The cap is
+ *  the door's declared-length check (content-length, PRE-buffer);
+ *  here the already-buffered bytes are judged once more so this
+ *  entry point is safe on its own. */
+export function installUserLoraBuffer(
+  filename: string,
+  bytes: Uint8Array,
+  engineLorasDir: string,
+): { ok: true; filename: string; bytes: number } | { ok: false; reason: string } {
+  const name = basename(filename.trim())
+  if (name === '' || name === '.' || name === '..') {
+    return { ok: false, reason: 'filename is required (the name the engine\'s LoRA list will know)' }
+  }
+  if (!LORA_EXTENSIONS.includes(extname(name).toLowerCase())) {
+    return {
+      ok: false,
+      reason: `${name} is not a LoRA file (${LORA_EXTENSIONS.join(', ')}) — the engine's loader will not take it`,
+    }
+  }
+  if (bytes.byteLength === 0) return { ok: false, reason: 'the upload carried no bytes' }
+  if (bytes.byteLength > LORA_BYTES_CAP) {
+    return {
+      ok: false,
+      reason: `the LoRA is over the ${Math.round(LORA_BYTES_CAP / (1024 * 1024))}MB door cap — copy it in from the machine instead (lora_install with a path)`,
+    }
+  }
+  try {
+    mkdirSync(engineLorasDir, { recursive: true })
+    const target = join(engineLorasDir, name)
+    // WRITE-THROUGH, never a merge: a partial LoRA in the engine's
+    // list is worse than none, so the bytes land in one write
+    writeFileSync(target, bytes)
+    return { ok: true, filename: name, bytes: bytes.byteLength }
+  } catch (e) {
+    // mkdirSync and writeFileSync throw Error subclasses only (the
+    // re-audit, 2026-10-16).
+    return { ok: false, reason: `writing into ${engineLorasDir} failed: ${(e as Error).message}` }
+  }
+}
+
 export function installUserLoraBytes(
   filename: string,
   dataUrl: string,

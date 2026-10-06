@@ -10,7 +10,8 @@ import { remoteErrorOf } from '@deepseek-ai/dsh-typert-protocol';
 // The /poser door's outbound seam — cordis's own HTTP primitive +
 // engine base resolution (COMFYUI_URL / the endpoint config file):
 // the same seam every other Layer-A→B call resolves through.
-import { resolveEngineBaseUrl, sdkClient } from '@melite/comfyui-cordis';
+import { loadEndpointConfig, resolveEngineBaseUrl, sdkClient } from '@melite/comfyui-cordis';
+import { LORA_BYTES_CAP } from '@melite/comfyui-cordis/user-loras';
 import { buildSkillIndex, disclosureRoot } from '@melite/estate-queue';
 import { agentFormDoc, agentCardFormDoc } from '@melite/engine-agent';
 import { craftFormDoc } from '@melite/engine-craft';
@@ -315,6 +316,14 @@ export function apply(c, config = {}) {
     // /v1/assets/inputs/<name> serves those bytes for the img tags.
     // Containment law = the media route's own: one clean segment, no
     // dots-only, realpath inside the input dir, image types only.
+    // ONE SEGMENT GRAMMAR (li-aq.3): the contracts' own — this
+    // private charset was the same law re-spelled (RULE 10's find).
+    // The DOORS add one local truth on top: an upload filename is a
+    // SINGLE segment (no separators), which the media grammar rightly
+    // does not judge (a path of many legal segments is legal); here
+    // one name = one file. Plugin scope: the uploads rail and the
+    // binary lora door judge by the same grammar.
+    const SEG = (name) => !name.includes('/') && !name.includes('\\') && segmentConfined(name);
     {
         const INPUT_TYPES = new Set(['image/png', 'image/jpeg', 'image/webp']);
         const inputDir = async () => {
@@ -325,13 +334,6 @@ export function apply(c, config = {}) {
             await fs.mkdir(dir, { recursive: true });
             return dir;
         };
-        // ONE SEGMENT GRAMMAR (li-aq.3): the contracts' own — this
-        // private charset was the same law re-spelled (RULE 10's find).
-        // The DOOR adds its one local truth on top: an upload filename
-        // is a SINGLE segment (no separators), which the media grammar
-        // rightly does not judge (a path of many legal segments is
-        // legal); here one name = one file.
-        const SEG = (name) => !name.includes('/') && !name.includes('\\') && segmentConfined(name);
         c.effect(() => c.webServer.register({
             kind: 'exact',
             path: '/v1/uploads',
@@ -426,6 +428,93 @@ export function apply(c, config = {}) {
                 })().catch((e) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))));
             },
         }), 'melite-tools: input preview');
+    }
+    // ── THE BINARY LORA DOOR (2026-10-17, the transport cure): the
+    // uploads rail's JSON arm rides base64 data URLs — a 200MB LoRA
+    // costs a ~267MB string inside one JSON body (~2× peak memory
+    // against the 512MB cap). This door takes the SAME file as RAW
+    // octet-stream bytes: `POST /v1/uploads/lora?filename=<one
+    // segment>&families=<ids>` — the browser's File streams straight
+    // through, no base64 anywhere. The cap reads the DECLARED
+    // content-length BEFORE the body is buffered (an oversize upload
+    // is refused without ever allocating), and the loras dir is the
+    // ONE shared spelling (`resolveEngineLorasDir` — the same function
+    // the manage plane's lora arms read, so the doors cannot disagree).
+    {
+        c.effect(() => c.webServer.register({
+            kind: 'exact',
+            path: '/v1/uploads/lora',
+            handler: (req, res) => {
+                const fail = (code, err) => {
+                    const body = JSON.stringify({ error: err });
+                    res.writeHead(code, { 'content-type': 'application/json' });
+                    res.end(body);
+                };
+                void (async () => {
+                    if (req.method !== 'POST')
+                        return fail(405, 'the lora door takes POST (raw bytes)');
+                    const type = String(req.headers['content-type'] ?? '');
+                    if (!/^application\/octet-stream/i.test(type)) {
+                        return fail(415, 'the lora door takes application/octet-stream (raw bytes — no base64)');
+                    }
+                    const url = new URL(req.url ?? '/', 'http://melite.invalid');
+                    let filename;
+                    try {
+                        filename = decodeURIComponent(url.searchParams.get('filename') ?? '');
+                    }
+                    catch {
+                        return fail(400, 'bad filename');
+                    }
+                    if (filename === '' || !SEG(filename))
+                        return fail(400, 'the lora door needs a one-segment filename');
+                    const families = (url.searchParams.get('families') ?? '')
+                        .split(',').map((f) => f.trim()).filter((f) => f !== '');
+                    if (families.some((f) => !/^[a-z0-9][a-z0-9-]*$/i.test(f))) {
+                        return fail(400, 'families must be comma-separated family ids');
+                    }
+                    // THE DECLARED-LENGTH CAP, PRE-BUFFER: the refusal answers
+                    // before readBody allocates anything — a 600MB upload is
+                    // refused at the header, never held in memory. Chunked
+                    // bodies carry no declaration, so they cannot prove the
+                    // cap and are refused (the browser's fetch always declares).
+                    const declared = Number(req.headers['content-length'] ?? '');
+                    if (!Number.isFinite(declared) || declared <= 0) {
+                        return fail(411, 'the lora door needs a declared content-length (the cap is checked pre-read)');
+                    }
+                    if (declared > LORA_BYTES_CAP) {
+                        return fail(413, `the LoRA is over the ${Math.round(LORA_BYTES_CAP / (1024 * 1024))}MB door cap — copy it in from the machine instead (lora_install with a path)`);
+                    }
+                    // the dir resolves BEFORE the body is read — an undeclared
+                    // loras dir refuses without holding the upload's bytes
+                    const { resolveEngineLorasDir, installUserLoraBuffer } = await import('@melite/comfyui-cordis/user-loras');
+                    const dir = resolveEngineLorasDir(loadEndpointConfig());
+                    if (dir === null) {
+                        return fail(502, 'the loras install dir is undeclared — set MELITE_COMFYUI_LORAS_DIR or the endpoint model_base_path (never guessed)');
+                    }
+                    const bytes = await readBody(req);
+                    const landed = installUserLoraBuffer(filename, bytes, dir);
+                    if (!landed.ok)
+                        return fail(422, landed.reason);
+                    const out = JSON.stringify({
+                        filename: landed.filename,
+                        bytes: landed.bytes,
+                        install_dir: dir,
+                        // core reads its folder list at import — a reboot is the
+                        // only refresh this repo owns
+                        next_action: 'restart',
+                        restart_required: true,
+                        row_suggestion: {
+                            id: landed.filename.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]+/g, '_'),
+                            filename: landed.filename,
+                            families,
+                            default_strength: 1,
+                        },
+                    });
+                    res.writeHead(200, { 'content-type': 'application/json' });
+                    res.end(out);
+                })().catch((e) => fail(500, 'lora door: ' + (e instanceof Error ? e.message : String(e))));
+            },
+        }), 'melite-tools: binary lora door');
     }
     // ── THE /v1 PREFIX DOOR (2026-09-11 — production restore) ────────
     //

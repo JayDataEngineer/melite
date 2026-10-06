@@ -66,6 +66,24 @@ function stubManageSeat(routes: Record<string, Canned | undefined>): Array<Recor
 const actionsOf = (calls: Array<Record<string, unknown>>): string[] =>
   calls.map((call) => String(call["action"]));
 
+/** Seat ONE fake binary fetch for the lora door (/v1/uploads/lora):
+ *  every call is recorded verbatim (url + method + headers + the body
+ *  object itself) so the assertions read the WIRE SHAPE — the File
+ *  streams through as octet-stream, never a base64 data URL. */
+interface FetchCall { url: string; init: RequestInit }
+function stubLoraFetch(reply: { ok: boolean; status: number; error?: string } = { ok: true, status: 200 }): Array<FetchCall> {
+  const calls: Array<FetchCall> = [];
+  vi.stubGlobal("fetch", async (input: RequestInfo | URL, init?: RequestInit): Promise<Response> => {
+    calls.push({ url: String(input), init: init ?? {} });
+    return {
+      ok: reply.ok,
+      status: reply.status,
+      json: async () => ({ error: reply.error ?? "" }),
+    } as unknown as Response;
+  });
+  return calls;
+}
+
 beforeEach(() => {
   vi.unstubAllGlobals();
 });
@@ -147,8 +165,9 @@ test("Copy LoRA in posts lora_install with the parsed path + families, then refr
   expect(install["families"]).toEqual(["z-image", "flux"]);
 });
 
-test("the upload door posts lora_install with filename + data-URL bytes (the civit flow)", async () => {
-  const calls = stubManageSeat({ lora_list: LORA_LIST, lora_install: {} });
+test("THE BINARY DOOR (2026-10-17): the upload streams the File as octet-stream — no base64, no manage act", async () => {
+  const calls = stubManageSeat({ lora_list: LORA_LIST });
+  const uploads = stubLoraFetch();
   render(<LoraBlock />);
   fireEvent.click(screen.getByText("Show LoRAs"));
   await screen.findByText(/The engine accepts 2 LoRA name/);
@@ -157,15 +176,18 @@ test("the upload door posts lora_install with filename + data-URL bytes (the civ
   const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" });
   fireEvent.change(fileInput, { target: { files: [file] } });
 
-  await waitFor(() => {
-    expect(actionsOf(calls)).toContain("lora_install");
-  });
-  const install = calls.find((call) => call["action"] === "lora_install") as Record<string, ManageJsonValue>;
-  expect(install["filename"]).toBe("downloaded.safetensors");
-  // the browser read the file — the estate never fetched it
-  expect(String(install["data"])).toMatch(/^data:/);
-  // the default families field rides along parsed
-  expect(install["families"]).toEqual(["z-image"]);
+  await waitFor(() => { expect(uploads.length).toBe(1); });
+  const { url, init } = uploads[0]!;
+  // the name and the families ride the query; the door reads the
+  // declared length from the transport, never from a JSON body
+  expect(url).toBe("/v1/uploads/lora?filename=downloaded.safetensors&families=z-image");
+  expect(init.method).toBe("POST");
+  expect(String((init.headers as Record<string, string>)["content-type"])).toBe("application/octet-stream");
+  // THE TRANSPORT CURE: the body IS the File — a 200MB LoRA costs
+  // 200MB, never a ~267MB base64 string inside a manage act
+  expect(init.body).toBe(file);
+  // no install verb rode the manage lane; only the refresh did
+  expect(actionsOf(calls)).toEqual(["lora_list", "lora_list"]);
 });
 
 test("Restart engine posts restart, then refreshes the list", async () => {
@@ -328,8 +350,9 @@ test("a lane that throws a NON-Error is folded into a refusal, never a throw", a
 
 test("the UPLOAD verb's catch speaks — a file chosen with no lane seated", async () => {
   // uploadChosen's catch was never driven: the no-lane path reaches it
-  // through the bytes' own postManage call, the one verb arm the
-  // not-mounted battery forgot because it clicked no file input.
+  // through the refresh that follows the upload (the manage lane is
+  // the missing seat; the binary fetch itself carries no lane).
+  stubLoraFetch()
   render(<LoraBlock />)
   seatManageNamespace(undefined)
   const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
@@ -341,32 +364,30 @@ test("the UPLOAD verb's catch speaks — a file chosen with no lane seated", asy
   })
 })
 
-test("the upload's own read failure speaks too — the browser refused the bytes", async () => {
-  // The other arm of the same catch: the file read is inside the try,
-  // so a FileReader that errors reaches setRefusal before any manage
-  // verb is posted (the wire.spec read-failure precedent).
-  const RealReader = globalThis.FileReader
-  class FailingReader {
-    onload: (() => void) | null = null
-    onerror: (() => void) | null = null
-    result: string | null = null
-    error: Error | null = new Error("read failed")
-    readAsDataURL(_file: Blob): void {
-      queueMicrotask(() => { this.onerror?.() })
-    }
-  }
-  globalThis.FileReader = FailingReader as unknown as typeof RealReader
+test("the door's own refusal speaks — a non-2xx upload answers its error body", async () => {
+  // THE CURE'S REFUSAL ARM: the base64 read is gone (no FileReader
+  // anywhere in the flow), so the catch's driver is the door itself —
+  // a 413 answer speaks its error text, and no refresh rides a
+  // failed install.
+  stubManageSeat({ lora_list: LORA_LIST })
+  stubLoraFetch({ ok: false, status: 413, error: "the LoRA is over the 512MB door cap" })
+  render(<LoraBlock />)
+  await open()
+  const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
+  const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" })
+  fireEvent.change(fileInput, { target: { files: [file] } })
+  await waitFor(() => { expect(screen.getByText(/over the 512MB door cap/)).toBeTruthy() })
+})
+
+test("a transport that throws mid-upload speaks too (the network died)", async () => {
   const calls = stubManageSeat({ lora_list: LORA_LIST })
-  try {
-    render(<LoraBlock />)
-    await open()
-    const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
-    const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" })
-    fireEvent.change(fileInput, { target: { files: [file] } })
-    await waitFor(() => { expect(screen.getByText("read failed")).toBeTruthy() })
-    // the read died before the door: no install was posted
-    expect(actionsOf(calls)).toEqual(["lora_list"])
-  } finally {
-    globalThis.FileReader = RealReader
-  }
+  vi.stubGlobal("fetch", async (): Promise<Response> => { throw new Error("network went away") })
+  render(<LoraBlock />)
+  await open()
+  const fileInput = document.querySelector("input[type=file]") as HTMLInputElement
+  const file = new File(["bytes"], "downloaded.safetensors", { type: "application/octet-stream" })
+  fireEvent.change(fileInput, { target: { files: [file] } })
+  await waitFor(() => { expect(screen.getByText("network went away")).toBeTruthy() })
+  // the upload died before any refresh verb was posted
+  expect(actionsOf(calls)).toEqual(["lora_list"])
 })

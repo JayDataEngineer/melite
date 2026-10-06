@@ -26,6 +26,7 @@ import {
   installUserLoraBytes,
   loraNamesFromObjectInfo,
   readUserLoraRows,
+  resolveEngineLorasDir,
   unboardedRows,
   userLorasPath,
 } from "@melite/comfyui-cordis/user-loras";
@@ -1379,19 +1380,12 @@ async function hSnapshotRestore(req: Req, ctx: ManageCtx): Promise<[number, Mana
 // ── THE LORA DOORS (the operator's 2026-09-26 order: custom LoRAs
 // belong in the ComfyUI Manager sidebar, not a dev-only drop-in).
 
-/** The engine's own LoRA directory, as ComfyUI's folder_paths would
- *  resolve it: the endpoint's model root + `loras`. A declared override
- *  wins (a box whose models live elsewhere), and the copy lands where
- *  the combo will find it. Nothing declared answers null — never a
- *  guessed path (the portability law, 2026-10-12: this fallback once
- *  baked one machine's /mnt absolute into every clone). */
-function engineLorasDir(cfg: Record<string, unknown>): string | null {
-  const declared = process.env['MELITE_COMFYUI_LORAS_DIR']
-  if (declared !== undefined && declared !== '') return declared
-  const root = typeof cfg['model_base_path'] === 'string' ? (cfg['model_base_path'] as string) : ''
-  if (root !== '') return join(root, 'loras')
-  return null
-}
+/** The engine's loras dir, resolved by the ONE shared spelling
+ *  (`resolveEngineLorasDir` in comfyui-cordis — env override, else
+ *  the endpoint's model root + `loras`, null when undeclared). The
+ *  uploads door's binary arm reads the same function, so the two
+ *  doors can never disagree about where a LoRA lands. */
+const engineLorasDir = resolveEngineLorasDir
 
 /** The refusal text for an undeclared loras dir — one spelling. */
 const LORAS_DIR_UNDECLARED =

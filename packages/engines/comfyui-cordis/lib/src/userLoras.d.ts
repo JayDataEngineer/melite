@@ -83,6 +83,28 @@ export declare function installUserLora(sourcePath: string, engineLorasDir: stri
  *  (`{filename, data: "data:...;base64,..."}`), so the transport is
  *  the estate's existing shape, not a new protocol. */
 export declare const LORA_BYTES_CAP: number;
+/** THE DIR, one spelling: the env override wins, else the endpoint
+ *  machine statement's model base + /loras; null means UNDECLARED and
+ *  every caller refuses loud (never a guessed path — the portability
+ *  law, 2026-10-12). Shared by the manage plane's two lora arms and
+ *  the uploads door's binary arm so they can never disagree.
+ *  @param cfg the endpoint config record (readEndpointConfig's value)
+ *  @returns the declared loras dir, or null when undeclared */
+export declare function resolveEngineLorasDir(cfg: Record<string, unknown>): string | null;
+/** THE BINARY ARM (the transport cure, 2026-10-17): the uploads door
+ *  takes raw octet-stream bytes, so a 200MB LoRA costs 200MB — never
+ *  a ~267MB base64 string riding JSON (~2× peak memory). The cap is
+ *  the door's declared-length check (content-length, PRE-buffer);
+ *  here the already-buffered bytes are judged once more so this
+ *  entry point is safe on its own. */
+export declare function installUserLoraBuffer(filename: string, bytes: Uint8Array, engineLorasDir: string): {
+    ok: true;
+    filename: string;
+    bytes: number;
+} | {
+    ok: false;
+    reason: string;
+};
 export declare function installUserLoraBytes(filename: string, dataUrl: string, engineLorasDir: string, 
 /** the payload's declared base64 length, when the transport knows
  *  it without copying the string (the cap is then checked BEFORE

@@ -6,7 +6,7 @@
 // spec's enhance sweep resolves model keys through the booted
 // table, so it owns the boot the way the estate-queue specs do).
 import '../../../../tests/helpers/boot-models.ts'
-import { describe, test, afterEach } from 'vitest'
+import { describe, test, afterEach, beforeEach } from 'vitest'
 import assert from 'node:assert/strict'
 import { EventEmitter } from 'node:events'
 import * as http from 'node:http'
@@ -264,7 +264,7 @@ void SIG
 // ── apply wiring ──────────────────────────────────────────────────
 
 describe('doors apply', () => {
-  test('inject names the web-only plane; six routes mount with labels (the /poser prefix mount died with the no-proxy law, 2026-09-16)', () => {
+  test('inject names the web-only plane; seven routes mount with labels (the /poser prefix mount died with the no-proxy law, 2026-09-16)', () => {
     assert.deepEqual(inject, ['webServer', 'llm', 'tools'])
     const h = boot({ defaultModel: DEFAULT_MODEL })
     assert.deepEqual(
@@ -275,17 +275,18 @@ describe('doors apply', () => {
         'exact /v1/llm/enhance',
         'exact /v1/uploads',
         'prefix /v1/assets/inputs',
+        'exact /v1/uploads/lora',
         'prefix /v1',
       ],
     )
-    assert.equal(h.labels.length, 6)
+    assert.equal(h.labels.length, 7)
     assert.ok(h.labels[0].includes('catalog'))
   })
 
   test('config defaults when omitted', () => {
     const h = fakeHost({ defaultModel: DEFAULT_MODEL })
     apply(h.host as never)
-    assert.equal(h.routes.length, 6)
+    assert.equal(h.routes.length, 7)
   })
 
   test('a staggered child-fiber composition returns typed pending until its seat is active, then preserves missing-seat 502', async () => {
@@ -1176,6 +1177,107 @@ describe('uploads rail', () => {
     const h = boot({})
     const r = await call(h.routes, '/v1/uploads', { method: 'POST', url: '/', emitError: 'reset' })
     assert.equal(r.status, 500)
+  })
+})
+
+// ── the binary lora door (the transport cure, 2026-10-17) ─────────
+//
+// A 200MB LoRA on the JSON arm rides a ~267MB base64 string inside
+// one manage act (~2× peak memory); the binary door takes the same
+// file as raw octet-stream with the declared-length cap checked
+// BEFORE the body is buffered.
+describe('binary lora door', () => {
+  const LORA_BYTES = Buffer.from([0x53, 0x41, 0x46, 0x45, 0x54, 0x45, 0x4e, 0x53]) // 'SAFETENS'
+  const withDir = (): string => {
+    const dir = mkdtempSync(path.join(os.tmpdir(), 'melite-lora-door-'))
+    created.push(dir)
+    process.env['MELITE_COMFYUI_LORAS_DIR'] = dir
+    return dir
+  }
+  let savedEnv: string | undefined
+  beforeEach(() => { savedEnv = process.env['MELITE_COMFYUI_LORAS_DIR'] })
+  afterEach(() => {
+    if (savedEnv === undefined) delete process.env['MELITE_COMFYUI_LORAS_DIR']
+    else process.env['MELITE_COMFYUI_LORAS_DIR'] = savedEnv
+  })
+
+  test('raw octet-stream bytes land in the declared loras dir; the answer carries the row suggestion', async () => {
+    const dir = withDir()
+    const h = boot({})
+    const { status, body } = await call(h.routes, '/v1/uploads/lora', {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=' + encodeURIComponent(TAG + 'shiny.safetensors') + '&families=z-image,qwen',
+      raw: LORA_BYTES.toString('latin1'),
+      headers: {
+        'content-type': 'application/octet-stream',
+        'content-length': String(LORA_BYTES.byteLength),
+      },
+    })
+    assert.equal(status, 200)
+    const out = body as { filename: string, bytes: number, install_dir: string, next_action: string, row_suggestion: { id: string, families: string[] } }
+    assert.equal(out.filename, TAG + 'shiny.safetensors')
+    assert.equal(out.bytes, LORA_BYTES.byteLength)
+    assert.equal(out.install_dir, dir)
+    assert.equal(out.next_action, 'restart')
+    // the id collapses non-alphanumerics (the manage arm's own rule)
+    assert.equal(out.row_suggestion.id, TAG.replace(/-/g, '_') + 'shiny')
+    assert.deepEqual(out.row_suggestion.families, ['z-image', 'qwen'])
+    assert.deepEqual(
+      await fs.readFile(path.join(dir, TAG + 'shiny.safetensors')),
+      LORA_BYTES,
+    )
+  })
+
+  test('THE PRE-BUFFER CAP: an over-cap declared length answers 413 with NO body ever read', async () => {
+    withDir()
+    const h = boot({})
+    const route = h.routes.find((r) => r.path === '/v1/uploads/lora')
+    assert.ok(route, 'no route mounted at /v1/uploads/lora')
+    // a request whose body NEVER arrives: if the door answers, it
+    // answered on the declared header alone — the cap is pre-read
+    const req = new EventEmitter() as EventEmitter & { method?: string, url?: string, headers: Record<string, string> }
+    req.method = 'POST'
+    req.url = '/v1/uploads/lora?filename=big.safetensors'
+    req.headers = {
+      'content-type': 'application/octet-stream',
+      'content-length': String(600 * 1024 * 1024),
+    }
+    const { res, done } = fakeRes()
+    route.handler(req, res)
+    const { status, text } = await done
+    assert.equal(status, 413)
+    assert.ok(text.includes('over the 512MB door cap'))
+  })
+
+  test('the cheap refusals answer on the header and query alone', async () => {
+    const h = boot({})
+    const octet = { 'content-type': 'application/octet-stream', 'content-length': '8' }
+    // non-POST
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'GET', url: '/v1/uploads/lora?filename=a.pt', headers: octet })).status, 405)
+    // non-octet content-type (the JSON/base64 spelling is the OTHER door)
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'POST', url: '/v1/uploads/lora?filename=a.pt', headers: { 'content-type': 'application/json', 'content-length': '8' }, raw: 'x' })).status, 415)
+    // missing/empty filename and separator names
+    for (const q of ['', 'filename=', 'filename=a%2Fb.pt']) {
+      const r = await call(h.routes, '/v1/uploads/lora', { method: 'POST', url: '/v1/uploads/lora' + (q === '' ? '' : '?' + q), headers: octet, raw: 'x' })
+      assert.equal(r.status, 400, q)
+    }
+    // families must be ids
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'POST', url: '/v1/uploads/lora?filename=a.pt&families=bad%20id', headers: octet, raw: 'x' })).status, 400)
+    // no declared length (chunked) cannot prove the cap
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'POST', url: '/v1/uploads/lora?filename=a.pt', headers: { 'content-type': 'application/octet-stream' }, raw: 'x' })).status, 411)
+  })
+
+  test('a non-LoRA extension refuses at the door (422)', async () => {
+    withDir()
+    const h = boot({})
+    const r = await call(h.routes, '/v1/uploads/lora', {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=notes.txt',
+      raw: 'x',
+      headers: { 'content-type': 'application/octet-stream', 'content-length': '1' },
+    })
+    assert.equal(r.status, 422)
+    assert.ok(String((r.body as { error: string }).error).includes('not a LoRA file'))
   })
 })
 

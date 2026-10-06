@@ -13,6 +13,9 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   installUserLora,
   installUserLoraBytes,
+  installUserLoraBuffer,
+  resolveEngineLorasDir,
+  LORA_BYTES_CAP,
   loraNamesFromObjectInfo,
   readUserLoraRows,
   unboardedRows,
@@ -417,6 +420,82 @@ describe("userLorasFlavor (the composed registration — no patch file)", () => 
     } finally {
       if (prev === undefined) delete process.env["MELITE_USER_LORAS"];
       else process.env["MELITE_USER_LORAS"] = prev;
+    }
+  });
+});
+
+describe("installUserLoraBuffer — the binary door's raw-bytes spelling (2026-10-17)", () => {
+  const PAYLOAD = new Uint8Array([0x53, 0x41, 0x46, 0x45]);
+
+  it("writes the bytes through and answers name + count", () => {
+    const dir = join(root, "loras");
+    const out = installUserLoraBuffer("mine.safetensors", PAYLOAD, dir);
+    expect(out.ok).toBe(true);
+    expect(out).toMatchObject({ filename: "mine.safetensors", bytes: 4 });
+    expect(readFileSync(join(dir, "mine.safetensors"))).toEqual(Buffer.from(PAYLOAD));
+  });
+
+  it("refuses the names and extensions the loader will not take", () => {
+    for (const name of ["", "  ", ".", ".."]) {
+      expect(installUserLoraBuffer(name, PAYLOAD, root), JSON.stringify(name)).toMatchObject({
+        ok: false,
+        reason: expect.stringMatching(/filename is required/u),
+      });
+    }
+    expect(installUserLoraBuffer("notes.txt", PAYLOAD, root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/is not a LoRA file/u),
+    });
+  });
+
+  it("refuses empty and over-cap payloads before writing anything", () => {
+    expect(installUserLoraBuffer("a.safetensors", new Uint8Array(0), root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/carried no bytes/u),
+    });
+    // a length past the 512MB cap, WITHOUT a real half-GB
+    // allocation (a unit seat must stay CI-box-sized): the boundary
+    // arm reads byteLength only — the refusal lands before any write
+    const over: Uint8Array = new Proxy(new Uint8Array(1), {
+      get: (t, k) => (k === "byteLength" ? LORA_BYTES_CAP + 1 : Reflect.get(t, k)),
+    }) as Uint8Array;
+    expect(installUserLoraBuffer("a.safetensors", over, root)).toMatchObject({
+      ok: false,
+      reason: expect.stringMatching(/over the 512MB door cap/u),
+    });
+    expect(existsSync(join(root, "a.safetensors"))).toBe(false);
+  });
+
+  it("refuses loudly when the write cannot land, naming the directory", () => {
+    const blocker = write("blocker.txt", "x");
+    const out = installUserLoraBuffer("mine.safetensors", PAYLOAD, join(blocker, "loras"));
+    expect(out).toMatchObject({ ok: false, reason: expect.stringMatching(/writing into .* failed/u) });
+  });
+});
+
+describe("resolveEngineLorasDir — the ONE dir spelling every lora door reads", () => {
+  it("the declared env override wins", () => {
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    try {
+      process.env["MELITE_COMFYUI_LORAS_DIR"] = "/opt/elsewhere/loras";
+      expect(resolveEngineLorasDir({})).toBe("/opt/elsewhere/loras");
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
+    }
+  });
+
+  it("without the env, the endpoint's model base + loras answers", () => {
+    const prev = process.env["MELITE_COMFYUI_LORAS_DIR"];
+    try {
+      delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      expect(resolveEngineLorasDir({ model_base_path: "/srv/models" })).toBe(join("/srv/models", "loras"));
+      // nothing declared answers null — never a guessed path
+      expect(resolveEngineLorasDir({})).toBe(null);
+      expect(resolveEngineLorasDir({ model_base_path: 7 })).toBe(null);
+    } finally {
+      if (prev === undefined) delete process.env["MELITE_COMFYUI_LORAS_DIR"];
+      else process.env["MELITE_COMFYUI_LORAS_DIR"] = prev;
     }
   });
 });
