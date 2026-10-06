@@ -11,8 +11,12 @@ of weights (legacy enum + container dirs — the family DEFAULT
 model_path is the bare `qwen3-tts` container), while nested dirs
 ride only when they DIRECTLY hold weights, and a weights-holding
 dir is a LEAF (the structural stop): its parts never ride, the
-HF bookkeeping never rides, and a link may never re-enter a dir
-the walk holds open (cycles pruned; depth bound as backstop).
+HF bookkeeping never rides, and cycles die (a dir never re-enters
+itself). Round 4 adds the confinement and alias truths: OPENING
+stays inside the models root's real tree (a link outside rides as
+an address, never a graft of the foreign filesystem), and a real
+container opens ONCE — riding is by spelling, opening is by
+realpath, so aliases never multiply the nested members.
 
 Function-grain: the helpers are read out of the pack by NAME with
 per-name boundaries (a slice between two defs breaks the moment
@@ -62,6 +66,13 @@ def _helpers(root: Path):
         assert len(matches) == 1, f"{name} must be declared exactly once, on one line"
         lines.append(matches[0])
     for fn in ("_dir_holds_weights", "_list_audiocore_models"):
+        # EXACTLY ONE module-level def: a dead copy appended below the
+        # live one would otherwise be invisible to re.search (first
+        # match wins) and the wall would pin the first while the pack
+        # grew a second (round 4 R9 — the vitest def-twice arm catches
+        # the pack side; this closes the pytest side)
+        defs = re.findall(rf"^def {fn}\(", source, re.M)
+        assert len(defs) == 1, f"{fn} must be defined exactly once at module level"
         m = re.search(rf"^def {fn}\([^\n]*\n[\s\S]*?(?=^def |^class |\Z)", source, re.M)
         assert m, f"{fn} must be defined at module level in the pack"
         lines.append(m.group(0))
@@ -213,3 +224,49 @@ def test_a_bare_container_rides_and_its_lanes_ride(tmp_path):
         "qwen3-tts",
         "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
     ]
+
+
+def test_a_link_out_of_the_root_rides_but_never_grafts(tmp_path, tmp_path_factory):
+    # THE ROOT CONFINEMENT (round 4 R1): a symlink may NAME weights
+    # anywhere, but opening stays inside the root's real tree — a
+    # link to a FOREIGN tree rides as one address and never walks
+    # it (the old law offered the whole foreign tree as members)
+    _holds, lanes_of = _helpers(tmp_path)
+    _lane(tmp_path / "real-lane")
+    # the foreign tree lives OUTSIDE the models root entirely
+    foreign = tmp_path_factory.mktemp("foreign-tree")
+    (foreign / "deep" / "weights").mkdir(parents=True)
+    (foreign / "deep" / "weights" / "model.safetensors").write_text("x", encoding="utf-8")
+    (foreign / "top").mkdir()
+    try:
+        os.symlink(foreign, tmp_path / "linked-outside")
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks unavailable on this filesystem")
+    lanes = lanes_of()
+    # the link rides ONCE, as an address; nothing under it rides
+    assert lanes == ["linked-outside", "real-lane"], lanes
+
+
+def test_one_real_dir_opens_once_its_aliases_never_rewalk_it(tmp_path):
+    # THE ALIAS LAW (round 4 R2): riding is by spelling (each alias
+    # is a valid combo address), but OPENING is by realpath — the
+    # first spelling walks the lanes, and no alias re-walks the same
+    # weights (the old stack-scoped guard walked the store once per
+    # alias and multiplied the nested members)
+    _holds, lanes_of = _helpers(tmp_path)
+    store = tmp_path / "store"
+    store.mkdir()
+    _lane(store / "lane-a")
+    _lane(store / "lane-b")
+    try:
+        for alias in ("aliasA", "aliasB"):
+            os.symlink(store, tmp_path / alias)
+    except (OSError, NotImplementedError):
+        pytest.skip("symlinks unavailable on this filesystem")
+    lanes = lanes_of()
+    # the store's lanes ride under EXACTLY ONE spelling — never two
+    assert sum(1 for x in lanes if x.endswith("/lane-a")) == 1, lanes
+    assert sum(1 for x in lanes if x.endswith("/lane-b")) == 1, lanes
+    # and every top-level spelling still rides as an address
+    for addr in ("store", "aliasA", "aliasB"):
+        assert addr in lanes, lanes

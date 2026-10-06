@@ -1,7 +1,6 @@
 // paramRows.ts — THE SHARED ACTION PARAM SURFACES (the atom
-// vocabulary's declared-plane half: dev_docs/design/atom-vocabulary-
-// 2026-10-12.md's "declare once, compose everywhere", applied to
-// the write plane).
+// vocabulary's declared-plane half: "declare once, compose
+// everywhere", applied to the write plane).
 //
 // The grammar (ParamSpec) is engine-agnostic and lives at
 // packages/engines/contract/src/vocabulary.ts; the CONTENT is the

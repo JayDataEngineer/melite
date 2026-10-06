@@ -32,9 +32,14 @@ describe("the registry-flow wiring wall (the hand-authored graphs, judged)", () 
     // full production snapshot IS present (data/tmp), the fixture
     // is held against it — a drifted fixture fails wherever the
     // full doc exists, and the fixture alone judges everywhere
-    // else. Regenerate: node --input-type=module (the projection
-    // one-liner, pinned in this spec's comment) — a NEW class in a
-    // flow refuses until the fixture is regenerated deliberately.
+    // else. Regenerate (the tracked door — the ONLY way these
+    // bytes change):
+    //   pnpm --filter @melite/comfyui-cordis exec node
+    //     --experimental-strip-types scripts/regen-object-info-min.ts
+    //   (--add ClassName seats a NEW class a flow references; a
+    //   class the engine dropped fails loud, never a silent drop)
+    // — a NEW class in a flow refuses until the fixture is
+    // regenerated deliberately.
     const doc = JSON.parse(
       readFileSync(new URL("../../fixtures/object_info.min.json", import.meta.url), "utf8"),
     ) as Record<string, { r?: string[]; o?: string[] }>;

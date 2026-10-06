@@ -1,5 +1,4 @@
-// agent-engine.ts — the agent engine (stroke 60, plan §5:
-// dev_docs/design/engine-generics-mcp.md). One stage = ONE AGENT RUN:
+// agent-engine.ts — the agent engine. One stage = ONE AGENT RUN:
 // a general tool-calling loop with the task as its brief — "craft
 // without the fixed critic". The model gets the allow-listed MCP
 // tools (filtered from the host ToolRuntime's own schemas), drives

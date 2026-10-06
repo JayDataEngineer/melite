@@ -1,8 +1,8 @@
 import { WIRE_STAGE_KEYS, benchSessionOf, normalizeBenchStages } from "@melite/contracts/benchStage"
 import { FLOW_ID_RE } from '@melite/estate-queue'
 // melite-construct.ts — THE AUTHOR VERB over one shared bench
-// (the bench rework, 2026-09-10; dev_docs/plans/bench-rework-2026-09-10.md
-// §4). melite_flow executes; melite_construct AUTHORS — verbs over
+// (the bench rework, 2026-09-10). melite_flow executes;
+// melite_construct AUTHORS — verbs over
 // THE working flow both the model and the user edit. Never mints:
 // the bench is ensure'd once per key and edited in place.
 //

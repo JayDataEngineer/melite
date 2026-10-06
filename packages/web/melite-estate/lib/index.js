@@ -32,7 +32,7 @@ import comfyuiWiring from "@melite/comfyui-cordis/comfyui-wiring";
 // (one registry every engine provider registers into), then the
 // ComfyUI adapter (engine id 'comfyui' — merged-submit law inside;
 // the runs lane resolves through the seat). MCP engines register
-// as 'mcp:<server>' rows next (dev_docs/design/engine-generics-mcp.md).
+// as 'mcp:<server>' rows next.
 import enginesContract from "@melite/engine-contract";
 import comfyuiEngine from "@melite/comfyui-cordis/comfyui-engine";
 // Stroke 54: the MCP lane. The engine provider (mcp:<server>

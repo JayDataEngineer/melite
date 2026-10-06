@@ -6,7 +6,7 @@ import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage';
 import { plainStage, initial, fromStage } from "./flowsData.js";
 export const ANNY_HMR_COMMERCIAL = {
     id: "anny-hmr-commercial",
-    description: "The commercial photo→Anny chain (dev_docs/design/commercial-estimator-chain.md): " +
+    description: "The commercial photo→Anny chain: " +
         "SAM 3D Body → MHR → SOMA → anny — every link license-cleared for sale " +
         "(SAM License operator-accepted; the rest Apache 2.0). Emits a grounded " +
         "bind-pose body GLB + anny phenotype/local-change params.",
@@ -31,7 +31,7 @@ export const ANNY_HMR_COMMERCIAL = {
 };
 export const ANNY_PARAMS = {
     id: "anny-params",
-    description: "Stroke 3 (dev_docs/design/anny-evolution.md §2): preset params → grounded " +
+    description: "Preset params → grounded " +
         "Anny body GLB (authored 11-dim rows + verbatim estimated runs " +
         "re-instantiate bit-exact) — the preset-load verb's flow template; the " +
         "anny card's preset picker runs this through the queue and hydrates " +

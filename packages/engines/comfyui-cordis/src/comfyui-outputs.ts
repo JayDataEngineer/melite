@@ -138,7 +138,7 @@ export async function fetchOutputs(
 
 // ── channel publish (native 438-458) ──
 
-/** FILE-kind -> artifact extensions (native._CHANNEL_EXTS). */
+/** FILE-kind -> artifact extensions. */
 export const CHANNEL_EXTS: Record<string, readonly string[]> = {
   mesh: [".glb", ".gltf", ".obj", ".fbx", ".usd", ".usdz"],
   image: [".png", ".jpg", ".jpeg", ".webp"],

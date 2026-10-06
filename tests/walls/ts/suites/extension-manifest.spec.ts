@@ -97,6 +97,15 @@ function manifestRows(dir: string, out: ManifestRow[] = []): ManifestRow[] {
   return out;
 }
 
+/** The card-face census floor (R4-04): how many card.ts faces the
+ *  walk must find and how many requires rows it must parse. A card
+ *  renamed off card.ts silently empties cardRequires() and every
+ *  census arm below passes vacuously — the floor makes that
+ *  silence LOUD. Grow it when cards land (16 faces live); a shrink
+ *  means a rename in progress, never a quiet pass. */
+const CARD_FACE_FLOOR = 16;
+const CARD_REQUIRES_FLOOR = 1;
+
 /** Every pack a card's `requires` names. */
 function cardRequires(): Map<string, Set<string>> {
   const out = new Map<string, Set<string>>();
@@ -122,8 +131,32 @@ function cardRequires(): Map<string, Set<string>> {
   return out;
 }
 
+/** Independent card-face count: same walk, no requires regex — the
+ *  census floor is judged against this, never against
+ *  cardRequires()' own output (a floor read from the function under
+ *  test is no floor). */
+function cardFaceCount(): number {
+  let n = 0;
+  const walk = (dir: string): void => {
+    for (const entry of readdirSync(dir)) {
+      const full = join(dir, entry);
+      if (statSync(full).isDirectory()) {
+        if (entry === "node_modules" || entry === "lib") continue;
+        walk(full);
+      } else if (entry === "card.ts") n++;
+    }
+  };
+  walk(join(ROOT, "packages"));
+  return n;
+}
+
 describe("THE EXTENSION CENSUS (install side ⇔ check side ⇔ card requires)", () => {
   it("every pack a card REQUIRES is in the check map (the gate must not no-op)", () => {
+    // THE CENSUS FLOOR (R4-04): first prove the walk found the card
+    // faces — an empty census makes every arm below vacuously green.
+    expect(cardFaceCount(), "the card-face walk found fewer card.ts faces than the census floor — cards were renamed off card.ts").toBeGreaterThanOrEqual(CARD_FACE_FLOOR);
+    const requiresRows = [...cardRequires().values()].reduce((n, set) => n + set.size, 0);
+    expect(requiresRows, "the requires walk parsed fewer rows than its floor — the regex or the face drifted").toBeGreaterThanOrEqual(CARD_REQUIRES_FLOOR);
     const extMap = extensionNodeTypes();
     const missing: string[] = [];
     for (const [pack, cards] of cardRequires()) {

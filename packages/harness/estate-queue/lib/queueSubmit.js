@@ -90,8 +90,7 @@ export function validateSubmitEnvelope(doc, draftExists) {
     if (typeof draftId !== "string" || draftId === "") {
         return refusal(400, "draft_id is required — every run is born from an " +
             "action card (CARD BIRTH LAW); compose the card first: " +
-            "POST /v1/flows/drafts, then start with its draft_id " +
-            "(dev_docs/cards/draft-door.md)", "draft_required", "draft_id", "doc-backed draft id", "absent");
+            "POST /v1/flows/drafts, then start with its draft_id", "draft_required", "draft_id", "doc-backed draft id", "absent");
     }
     if (!draftIdOk(draftId)) {
         return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +

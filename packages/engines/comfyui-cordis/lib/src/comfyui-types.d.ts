@@ -2,7 +2,7 @@
 export declare class ComfyError extends Error {
     constructor(message: string);
 }
-/** Wire JSON — mirrors native.JsonValue. */
+/** Wire JSON. */
 export type EngineJson = string | number | boolean | null | EngineJson[] | {
     [key: string]: EngineJson;
 };

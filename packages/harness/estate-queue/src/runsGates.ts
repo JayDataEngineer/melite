@@ -6,7 +6,7 @@
 // described are the ones implemented here, and the path references
 // are provenance, not addresses.
 //
-// CORDIS CORE law (dev_docs/patterns/cordis-core.md §4): the card plane
+// CORDIS CORE law: the card plane
 // admits params through schemastery (the card plane's Schemastery
 // schemas, direct — the knob vocabulary; cli.ts's admission-contract
 // gate refuses unknown keys

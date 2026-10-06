@@ -205,8 +205,7 @@ export function stepAzimuth(view: MotionAzimuth, dir: 1 | -1): MotionAzimuth {
 // ── SOMA-77 → COCO-18 (port of custom_nodes/melite-poser-nodes/library/soma_to_coco.py) ──
 // COCO-18 ordering matches poser.py::_KP_ORDER (the DWPose / vnccs contract).
 // COCO "shoulder" = the glenohumeral socket (SOMA LeftArm/RightArm 12/40),
-// NOT the clavicle (LeftShoulder/RightShoulder 11/39) — see the canonical
-// pose memory (dev_docs/CANONICAL-SOMAX-POSE.md §2.1).
+// NOT the clavicle (LeftShoulder/RightShoulder 11/39).
 export const COCO_TO_SOMA_IDX = [
   6, // 0  nose        → Head
   4, // 1  neck        → Neck1

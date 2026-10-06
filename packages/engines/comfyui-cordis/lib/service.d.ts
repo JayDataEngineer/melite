@@ -140,9 +140,9 @@ export interface CardDefinition {
          *  to the video preview's shared player. Video-output cards. */
         timeline?: boolean;
     };
-    /** Card-declared modifier kinds (the MODs generalization, stroke
-     *  63 — dev_docs/design/mods-contracts.md CONTRACT A): action kinds
-     *  the CARD owns (MASK's mask sources), served through the ONE
+    /** Card-declared modifier kinds (the MODs generalization,
+     *  CONTRACT A): action kinds the CARD owns (MASK's mask sources),
+     *  served through the ONE
      *  features.modifiers channel beside the family-DECL pack kinds.
      *  fields/kindFields are the served spec rows (the JSON wire
      *  shape SpecField projects); options carry static catalog rows —

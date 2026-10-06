@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // hook-full-battery.mjs — pre-push checkpoint: tsc per typecheck
-// package + the walls (root vitest node project).
+// package + the walls (root vitest node project) + lib-sync (a
+// fresh full build must reproduce the committed lib/ byte-for-byte).
 // The walls are the estate's gate law; tsc mirrors each package's own
 // `typecheck` script locally (CI runs unit/coverage/tiers only —
 // types are this battery's to own). Exits non-zero on the FIRST
@@ -121,4 +122,46 @@ if (walls.status !== 0) {
   console.error("BATTERY FAIL: walls");
   process.exit(1);
 }
-console.log(`battery green: tsc x${PACKAGES.length} + walls`);
+
+// THE LIB-SYNC ARM (R4-03): a fresh full build must reproduce the
+// committed lib/ byte-for-byte. The class recurred 149× in 90
+// commits — src landed without its artifact, invisible to every
+// existing gate (the .src-stamp is gitignored, the singleton wall
+// covered client bundles only, CI built with no diff). This arm
+// owns the whole artifact plane: build everything, then refuse on
+// any tracked lib/ file a fresh build would rewrite. The cure it
+// names is the law: the artifact lands in the SAME commit as the
+// src (pnpm run build, then stage the diff).
+const build = spawnSync(process.execPath, ["tools/build-plane.mjs", "build"], {
+  cwd: REPO,
+  stdio: "inherit",
+});
+if (build.status !== 0) {
+  console.error("BATTERY FAIL: lib-sync build (tools/build-plane.mjs build)");
+  process.exit(1);
+}
+const drift = spawnSync("git", ["status", "--porcelain", "--", "**/lib/**"], {
+  cwd: REPO,
+  encoding: "utf8",
+});
+if (drift.status !== 0 || typeof drift.stdout !== "string") {
+  console.error("BATTERY FAIL: lib-sync git status unreadable");
+  process.exit(1);
+}
+// Drift is WORKTREE vs INDEX (second column / untracked), not
+// index vs HEAD: staged lib updates are the law's own end state —
+// the artifact sits staged for the same commit as its src. Only a
+// file the fresh build rewrote PAST what is staged refuses.
+const dirty = drift.stdout
+  .split("\n")
+  .filter((l) => l.trim() !== "")
+  // XY path: refuse when Y is non-space (worktree differs from
+  // index) or the file is untracked — a fresh build minted it.
+  .filter((l) => (l[1] !== undefined && l[1] !== " ") || l.startsWith("??"));
+if (dirty.length > 0) {
+  console.error("BATTERY FAIL: lib/ drifted past the staged artifact — the build rewrote files beyond what is staged:");
+  for (const line of dirty) console.error("  " + line);
+  console.error("The artifact lands in the SAME commit as the src: pnpm run build, then stage the diff.");
+  process.exit(1);
+}
+console.log(`battery green: tsc x${PACKAGES.length} + walls + lib-sync`);

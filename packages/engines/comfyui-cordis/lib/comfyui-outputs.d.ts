@@ -23,7 +23,7 @@ export interface FetchedOutputArtifact {
 }
 export declare function fetchOutputArtifacts(client: Client, runDir: string, entry: Record<string, EngineJson>, timeoutS?: EngineJson): Promise<FetchedOutputArtifact[]>;
 export declare function fetchOutputs(client: Client, runDir: string, entry: Record<string, EngineJson>, timeoutS?: EngineJson): Promise<string[]>;
-/** FILE-kind -> artifact extensions (native._CHANNEL_EXTS). */
+/** FILE-kind -> artifact extensions. */
 export declare const CHANNEL_EXTS: Record<string, readonly string[]>;
 /** THE QVOICE CHANNEL (roadmap OWED 2026-09-24 — the export FULL
  *  PATH, transcript-026 #4): the vendored AudiocoreVoiceStudio

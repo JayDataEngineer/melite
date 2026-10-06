@@ -10,7 +10,7 @@ export class ComfyError extends Error {
   }
 }
 
-/** Wire JSON — mirrors native.JsonValue. */
+/** Wire JSON. */
 export type EngineJson =
   | string
   | number

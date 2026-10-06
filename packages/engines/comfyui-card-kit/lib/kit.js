@@ -1,5 +1,4 @@
-// Tier 2.5 — the emit kit (dev_docs/design/one-contract-compose.md §2;
-// operator order 2026-09-07:
+// Tier 2.5 — the emit kit (operator order 2026-09-07:
 // "MOST OF THIS LANE JUST RIDES DEFAULTS AND A FEW COMFYUI NODES
 // SLAPPED TOGETHER").
 //

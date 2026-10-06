@@ -29,7 +29,7 @@ describe("THE HOOK THAT CRIED RED (the SIGPIPE wedge)", () => {
     // vitest's own exit code. A future edit back to bare piping is
     // exactly the edit this pin exists to catch.
     const yml = read("lefthook.yml");
-    const walls = yml.split("- name: walls (staged TS/walls)")[1]?.split("- name:")[0] ?? "";
+    const walls = yml.split("- name: walls (staged anything)")[1]?.split("- name:")[0] ?? "";
     expect(walls, "the walls job still exists in lefthook.yml").toContain(
       "node node_modules/vitest/vitest.mjs run --project node",
     );

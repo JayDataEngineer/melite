@@ -14,8 +14,7 @@
 // input zone) is the qwen flavor's whole-declaration override,
 // inlined here because exactly one family boards lanpaint
 // byte-identical output. A second lanpaint family with a different
-// image1 story re-opens the flavor-fields seam (recorded in
-// dev_docs/design/mods-as-mutations-2026-09-08.md).
+// image1 story re-opens the flavor-fields seam.
 //
 // The Cordis contract shape: fields ARE a Schemastery object
 // schema, wire types + UI meta on .extra('extra', bag({...})).

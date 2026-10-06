@@ -12,7 +12,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** The ONE run door — two doors: {flow: name} | {model: id} (the yaml/route shapes retired 2026-09-04, dev_docs/queue/flows.md) */
+        /** The ONE run door — two doors: {flow: name} | {model: id} (the yaml/route shapes retired 2026-09-04) */
         post: operations["flows_start"];
         delete?: never;
         options?: never;
@@ -1300,7 +1300,7 @@ export interface components {
         };
         /**
          * VideoManifest
-         * @description Family-level engine capability contract (dev_docs/design/video-families.md §3).
+         * @description Family-level engine capability contract.
          */
         VideoManifest: {
             /** Conditioning */

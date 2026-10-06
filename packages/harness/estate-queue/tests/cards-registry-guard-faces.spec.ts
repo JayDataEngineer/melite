@@ -1,7 +1,7 @@
 // cards-registry-guard-faces.spec.ts — the three arms a withdrawn
 // marker claim had hidden, pinned as behavior. A machine check
-// (dev_docs/audits/marker-claims-audit-2026-10-14.md) proved each
-// claim FALSE by executing this service: a facts file that will not
+// proved each claim FALSE by executing this service: a facts file
+// that will not
 // read raises a plain error through BOTH catch seats (the rethrows
 // are the guard, never a verdict string), and a familyless card
 // address skips lane presence exactly as the run press composes it.

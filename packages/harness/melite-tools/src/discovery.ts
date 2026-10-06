@@ -511,8 +511,8 @@ function specModifiers(
     }))
     out.push(entry)
   }
-  // CARD-DECLARED KINDS (stroke 63 — dev_docs/design/mods-contracts.md
-  // CONTRACT A): the card's own action kinds ride the SAME channel,
+  // CARD-DECLARED KINDS (CONTRACT A): the card's own action kinds
+  // ride the SAME channel,
   // VERBATIM (fields/kindFields/options are the served rows — the
   // card IS the catalog; no mod_schemas envelope derives them, the
   // entry IS the schema). Validated LOUD at serve: a malformed kind

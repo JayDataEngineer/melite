@@ -47,8 +47,7 @@ export async function runOne(run, ctx, settle) {
     // Seat-less boots (fixtures, walls) keep the pre-seam direct
     // path byte-for-byte. Runs stay single-engine today: the
     // single-stage gateway constraint means one run names one
-    // engine; mixed-engine grouping arrives with the MCP executor
-    // (dev_docs/design/engine-generics-mcp.md).
+    // engine; mixed-engine grouping arrives with the MCP executor.
     const enginesSeat = ctx.get("engines");
     let seatExecutor = null;
     if (enginesSeat !== undefined &&

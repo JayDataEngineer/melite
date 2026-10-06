@@ -365,8 +365,7 @@ export function envelopeRefusal(
         400,
         "draft_id is required — every run is born from an " +
           "action card (CARD BIRTH LAW); compose the card first: " +
-          "POST /v1/flows/drafts, then start with its draft_id " +
-          "(dev_docs/cards/draft-door.md)",
+          "POST /v1/flows/drafts, then start with its draft_id",
         "draft_required",
         "draft_id",
         "doc-backed draft id",

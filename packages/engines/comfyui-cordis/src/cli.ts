@@ -107,7 +107,7 @@ async function main(): Promise<void> {
 
   // ── THE ADMISSION CONTRACT GATE (compose = the single translation
   // rim; the card definition is the truth — "admission is the
-  // surface", dev_docs/design/image-edit-param-contract.md). Every param
+  // surface"). Every param
   // key must be a declared knob (the card's schema carrier) or ride
   // the admits (def.admits extras ∪ the boarded families' studio
   // writes; exact names or trailing-* prefixes). Everything else

@@ -102,7 +102,7 @@ export async function fetchOutputs(client, runDir, entry, timeoutS) {
     return (await fetchOutputArtifacts(client, runDir, entry, timeoutS)).map((artifact) => artifact.path);
 }
 // ── channel publish (native 438-458) ──
-/** FILE-kind -> artifact extensions (native._CHANNEL_EXTS). */
+/** FILE-kind -> artifact extensions. */
 export const CHANNEL_EXTS = {
     mesh: [".glb", ".gltf", ".obj", ".fbx", ".usd", ".usdz"],
     image: [".png", ".jpg", ".jpeg", ".webp"],

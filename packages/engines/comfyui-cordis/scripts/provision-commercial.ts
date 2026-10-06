@@ -8,8 +8,7 @@ import { join } from "node:path";
 import { REPO, die, info, venvPython } from "./provision-shared.ts";
 
 // ── anny-commercial runtime ──────────────────────────────────────
-// dev_docs/design/commercial-estimator-chain.md — SAM 3D Body → MHR →
-// SOMA → anny. Its OWN venv: torch cu130.
+// SAM 3D Body → MHR → SOMA → anny. Its OWN venv: torch cu130.
 
 export const SOMAX_REF = "d29dbe5a3f5a";     // NVlabs/SOMA-X, probed 2026-09-05
 export const S3DB_REF = "b5c765a0d89d";      // facebookresearch/sam-3d-body

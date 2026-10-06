@@ -53,9 +53,8 @@ import type { FlowResult, MergeRow } from "./comfyui-merge.ts";
 //   - data/comfyui_endpoint.json url: stays — estate truth (the
 //     endpoint machine statement; NO default, NO hardcoded
 //     host/port — QUEUE LANE LAW).
-//   - INFERENCE_TEST_SANDBOX gate: stays — engine-truth mirror
-//     (_config.py: a sandboxed test with no env path resolves to
-//     {}, never the product file).
+//   - INFERENCE_TEST_SANDBOX gate: stays — a sandboxed test with
+//     no env path resolves to {}, never the product file.
 //   - MELITE_REPO_ROOT: stays — the wall fixture seam (fixture
 //     repo roots carry no endpoint file -> LOUD ComfyError only
 //     when a caller actually submits, never at boot: the TS walls

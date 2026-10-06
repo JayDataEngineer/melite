@@ -166,6 +166,13 @@ jobs:
         run: pnpm run test:e2e
       - name: Build (expected tier's built arms run against real output)
         run: pnpm run build
+      - name: Lib sync (a fresh build reproduces the committed lib/)
+        run: |
+          git diff --exit-code -- '**/lib/**' || {
+            echo "CI FAIL: lib/ drifted from a fresh build — the artifact must land in the same commit as the src";
+            git status --porcelain -- '**/lib/**';
+            exit 1;
+          }
       - name: Owner-local expected output
         run: pnpm run test:expected
       - name: Benchmarks

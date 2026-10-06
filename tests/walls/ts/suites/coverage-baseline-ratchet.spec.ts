@@ -134,7 +134,7 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
     }
   });
 
-  it("no floor moved DOWN except where the landing deleted that file's lines", () => {
+  it("no floor moved DOWN except where the landing deleted that file's lines", (ctx) => {
     // THE REMOVAL CLAUSE (2026-10-13). Floors only move UP — but a
     // landing that DELETES code lowers the measured ratio honestly:
     // removing the hand-rolled clone seat (the extensions law) dropped
@@ -145,7 +145,7 @@ describe("THE COVERAGE RATCHET LAW (floors only move UP; every gated file has a 
     // the working tree is the landing under test.
     const prev = execFileSyncSafe(["git", "show", "HEAD:scripts/coverage-baseline.ts"]);
     if (prev === null) {
-      expect(true, "no git history available (tarball or shallow clone) — monotonicity unproven here");
+      ctx.skip(true, "no git history available (tarball or shallow clone) — monotonicity unproven here (the row/floor arms above still judged the table)");
       return;
     }
     const before = parseRows(prev);

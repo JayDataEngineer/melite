@@ -128,8 +128,7 @@ export function apply(ctx: Context): void {
   ctx.effect(() => ctx.comfyui.registerCard({
     id: 'tagger',
     // stage-row id the compose emits (purge S-decls verdict: the
-    // retired row carried "" — engine truth wins, recorded in
-    // dev_docs/design/python-purge-2026-09-08.md).
+    // retired row carried "" — engine truth wins).
     skeleton: 'tagger',
     // the four boarded families (derived — the DECL ids are the
     // one spelling; RULE 5).

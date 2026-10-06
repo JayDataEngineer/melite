@@ -514,8 +514,8 @@ describe.sequential("estate provisioning composition paths", () => {
       // replaced with the operation-level cancellation, so the arm's
       // string is not reachable from here. The arm fires — this
       // asserts the outcome that proves it, and the swallowed voice is
-      // owed at the service's error fold (dev_docs/ROADMAP.md), not
-      // pinned by a test that cannot see it.
+      // owed at the service's error fold, not pinned by a test that
+      // cannot see it.
       assert.equal(stopped.state, "cancelled");
       assert.equal(stopped.items[0]?.errorCode, "provisioning/cancelled");
     } finally {

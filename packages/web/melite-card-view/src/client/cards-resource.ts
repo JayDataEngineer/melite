@@ -8,8 +8,7 @@
 /**
  * The `cards` resource protocol — the cards tab's live values.
  *
- * Addresses (the bench rework's client plane, dev_docs/plans/
- * bench-rework-2026-09-10.md §5):
+ * Addresses (the bench rework's client plane):
  *
  *   dsh-resource://cards/bench        THE working flow (the shared bench)
  *   dsh-resource://cards/run/<runId>  one run, live

@@ -1,7 +1,7 @@
 // index.ts — @melite/viewer-base: the seam layer of the melite viewer.
 //
-// THE BASE PLUGIN LAW (dev_docs/design/viewer-plan-2026-09-09.md): the
-// base owns SEAMS and WIRING only — it CLAIMS no slot and renders
+// THE BASE PLUGIN LAW: the base owns SEAMS and WIRING only — it
+// CLAIMS no slot and renders
 // nothing on its own. It declares the three viewer slots (typed
 // SlotMap contracts), exports the seam ids, the run-scoped wire facts
 // (route prefixes/URL builders), the gateway wiring, and the DEFAULT

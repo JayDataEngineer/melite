@@ -1,5 +1,5 @@
-// comfyui-config.ts — the endpoint SSOT (native._server_url + _config.py). Same directory as
-// (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
+// comfyui-config.ts — the endpoint SSOT: the ONLY spelling of the
+// endpoint resolution (split from comfyui.ts 2026-09-18).
 
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
@@ -9,16 +9,15 @@ import type { EngineJson } from "./comfyui-types.ts";
 
 // before, so the source-file-relative repo-root hops are unchanged.
 
-// ── config: the endpoint SSOT (native._server_url + _config.py) ──
+// ── config: the endpoint SSOT (this module is the single spelling) ──
 
-/** No-endpoint refusal — byte-identical to native refusal. */
+/** No-endpoint refusal — the exact string the queue lane throws. */
 export const NO_ENDPOINT_MESSAGE: string =
   "no ComfyUI endpoint: the endpoint config carries no 'url' " +
   "and COMFYUI_URL is unset (no defaults — QUEUE LANE LAW)";
 
 /** Repo root: MELITE_REPO_ROOT override (the wall seam — default
- *  resolution is the source-file-relative root, the same relation
- *  REPO = Path(__file__).parent.parent holds for native.py). */
+ *  resolution is the source-file-relative root). */
 export function resolveRepoRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
@@ -27,7 +26,7 @@ export function resolveRepoRoot(): string {
   return resolve(here, "..", "..", "..", "..");
 }
 
-/** The endpoint config dict — mirrors _config.load_global_config:
+/** The endpoint config dict — the single spelling of the law:
  *  COMFYUI_ENDPOINT_CONFIG env path first, else the plugin's
  *  data/comfyui_endpoint.json; INFERENCE_TEST_SANDBOX without the
  *  env path resolves to {} (the test-sandbox leak gate); a
@@ -95,8 +94,8 @@ export function loadEndpointConfig(): Record<string, EngineJson> {
   return {};
 }
 
-/** The engine base URL — mirrors native._server_url (env seam for
- *  the hermetic walls; live env read, no caching). */
+/** The engine base URL — env seam for the hermetic walls (live env
+ *  read, no caching; this function is the only spelling). */
 export function resolveEngineBaseUrl(): string {
   const env: string = process.env["COMFYUI_URL"] ?? "";
   if (env !== "") return env.replace(/\/+$/, "");

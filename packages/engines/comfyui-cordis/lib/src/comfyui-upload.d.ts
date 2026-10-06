@@ -24,7 +24,8 @@ export declare const UPLOAD_EXTS: readonly string[];
  * name). */
 export declare const DATA_URL_IMAGE_EXT: Record<string, string>;
 /** params['workflow'] + params['inject'] -> the final graph.
- *  Byte-identical refusals to native._splice_workflow (239-271). */
+ *  The refusal strings are the contract; a wall pins them
+ *  verbatim (this function is the graph-splice SSOT). */
 export declare function spliceWorkflow(nodeParams: Record<string, EngineJson>): Record<string, EngineJson>;
 /** POST /upload/image multipart over the SDK client's fetchApi
  *  (the platform FormData owns the boundary — the hand-rolled
@@ -37,9 +38,8 @@ export declare function isFile(path: string): boolean;
  *  dangling-ref gate accepts exactly these two forms). */
 export declare const MEDIA_ROUTE_PREFIX: string;
 export declare const ASSET_ROUTE_PREFIX: string;
-/** Walk the FINAL graph; stage every existing local-media path.
- *  Mirrors native._upload_referenced (274-327) incl. the
- *  VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
+/** Walk the FINAL graph; stage every existing local-media path,
+ *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *
  *  opts.runsRoot (the runs OUTPUT tree root — callers hold the run
  *  dir; its dirname is the root) arms the ESTATE-ASSET arm: URLs the

@@ -1407,7 +1407,7 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
         crimes.push(node.ct + '.' + key)
       }
     }
-    assert.deepEqual(crimes, [], 'the recorded graph wires inputs the tracked engine doc does not declare (fixture drift — re-project it from a refreshed cache)')
+    assert.deepEqual(crimes, [], 'the recorded graph wires inputs the tracked engine doc does not declare (fixture drift — re-project it: pnpm --filter @melite/comfyui-cordis exec node --experimental-strip-types scripts/regen-object-info-min.ts)')
   });
 
   it("every landed run's graph satisfies the input law (the runs-corpus receipt)", (ctx) => {
@@ -1418,12 +1418,12 @@ describe("the shipped-graph wall (the law over REAL graphs, not fixtures)", () =
     // the directory itself is absent, so its existence rides the
     // same guard (the 9122e524 verifier's ENOENT finding: a
     // readdir before the guard would FAIL the arm, not skip it).
-    if (!existsSync('data/runs/output')) { ctx.skip(true); return }
+    if (!existsSync('data/runs/output')) { ctx.skip(true, 'no runs output tree on this box (untracked) — the seed arm above judged the law'); return }
     const files = readdirSync('data/runs/output', { withFileTypes: true })
       .filter((e) => e.isDirectory())
       .map((e) => join('data/runs/output', e.name, '_flow.json'))
       .filter((f) => existsSync(f));
-    if (!docPresent || files.length === 0) { ctx.skip(true); return }
+    if (!docPresent || files.length === 0) { ctx.skip(true, 'no runs doc or no _flow.json runs to judge — the seed arm above judged the law'); return }
     const doc: Record<string, any> = JSON.parse(readFileSync(DOC, 'utf8'));
     const crimes: string[] = [];
     const stale: string[] = [];

@@ -283,10 +283,11 @@ describe("the h3-timeline compose gate", () => {
 // leg): every served address on this card resolves through the ONE
 // h3 family, so every row composes through the family's declared
 // film action (the binding keys on the family id, never the address
-// id); a family-less row rides the card's declared legacy else —
-// byte-identical by the action oracle, so the wall only proves the
-// ROUTING here: bound rows save through the family action, the
-// fallback composes the frozen card lane.
+// id); a family-less row has NO fallback — the legacy else body is
+// deleted (the action oracle's own law), so the wall proves the
+// ROUTING here: every bound row saves through the family action,
+// and the interlock below proves the family-less row REFUSES at
+// the dispatch instead of composing anything.
 describe("THE EVERY-ADDRESS WALL — every served address composes through the family action", () => {
   const rows = Object.values(facts.models).filter((m) => m.card === "h3-timeline");
 

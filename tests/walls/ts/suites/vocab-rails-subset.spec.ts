@@ -151,9 +151,16 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
 
   it("the live cache, wherever it exists, agrees with the tracked fixture (drift contract)", (ctx) => {
     // A SELF-SKIP IS NOT A PASS (AGENTS.md): the skip is REPORTED
-    // (ctx.skip); the floor above already judged the fixture.
+    // (ctx.skip); the floor above already judged the fixture
+    // (card literals vs fixture, tracked-vs-tracked, CI-green).
+    // THE ENGINE JUDGMENT (fixture vs live 0.38.x) lives at REGEN
+    // TIME, not in CI: the tracked door
+    //   pnpm --filter @melite/comfyui-cordis exec node
+    //     --experimental-strip-types scripts/regen-object-info-min.ts
+    // is byte-stable over an unchanged engine — drift is a git diff
+    // the operator cannot merge past (R4-06's contract).
     if (!existsSync(LIVE)) {
-      ctx.skip(true);
+      ctx.skip(true, "no live object_info cache on this box — the tracked fixture was judged above and the engine judgment rides the regen door (see comment); nothing to compare against");
       return;
     }
     const doc = JSON.parse(readFileSync(LIVE, "utf8")) as Record<string, { input?: { required?: Record<string, unknown>; optional?: Record<string, unknown> } }>;

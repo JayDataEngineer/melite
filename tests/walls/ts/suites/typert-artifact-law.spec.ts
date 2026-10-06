@@ -67,9 +67,15 @@ describe("the typert artifact law — generation face, runtime face, one law", (
     }
   });
 
-  it("the vendor never leaks out of generation — no hoist-layer link onto packages/vendor", () => {
+  it("the vendor never leaks out of generation — no hoist-layer link onto packages/vendor", (ctx) => {
     const hoist = join(ROOT, "node_modules/.pnpm/node_modules");
-    if (!existsSync(hoist)) return;
+    // A bare return here is a vacuous PASS wearing the arm's name
+    // (R4-05): the absence is a no-pnpm-install tree (fresh clone
+    // before install), and the skip is REPORTED, never passed.
+    if (!existsSync(hoist)) {
+      ctx.skip(true, "no pnpm hoist layer on this tree (run pnpm install) — the vendor-leak arm has nothing to walk");
+      return;
+    }
     const offenders = readdirSync(hoist).filter((entry) => {
       try {
         return realpathSync(join(hoist, entry)).startsWith(join(ROOT, "packages/vendor"));

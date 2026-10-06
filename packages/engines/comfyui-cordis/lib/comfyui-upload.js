@@ -96,7 +96,8 @@ export const DATA_URL_IMAGE_EXT = {
     "audio/x-aiff": ".aiff",
 };
 /** params['workflow'] + params['inject'] -> the final graph.
- *  Byte-identical refusals to native._splice_workflow (239-271). */
+ *  The refusal strings are the contract; a wall pins them
+ *  verbatim (this function is the graph-splice SSOT). */
 export function spliceWorkflow(nodeParams) {
     const wf = nodeParams["workflow"];
     if (typeof wf !== "object" || wf === null || Array.isArray(wf)) {
@@ -209,9 +210,8 @@ export function isFile(path) {
 // place now.
 export const MEDIA_ROUTE_PREFIX = RUN_MEDIA_PREFIX + "/";
 export const ASSET_ROUTE_PREFIX = LEGACY_RUN_MEDIA_PREFIX + "/";
-/** Walk the FINAL graph; stage every existing local-media path.
- *  Mirrors native._upload_referenced (274-327) incl. the
- *  VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
+/** Walk the FINAL graph; stage every existing local-media path,
+ *  with the VHS_LoadVideoPath/VHS_LoadVideo `video` exemption.
  *
  *  opts.runsRoot (the runs OUTPUT tree root — callers hold the run
  *  dir; its dirname is the root) arms the ESTATE-ASSET arm: URLs the

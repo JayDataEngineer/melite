@@ -247,8 +247,7 @@ export function envelopeRefusal(kind, doc, detail) {
         case "missing-draft":
             return refusal(400, "draft_id is required — every run is born from an " +
                 "action card (CARD BIRTH LAW); compose the card first: " +
-                "POST /v1/flows/drafts, then start with its draft_id " +
-                "(dev_docs/cards/draft-door.md)", "draft_required", "draft_id", "doc-backed draft id", "absent");
+                "POST /v1/flows/drafts, then start with its draft_id", "draft_required", "draft_id", "doc-backed draft id", "absent");
         case "malformed-draft":
             return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
                 JSON.stringify(detail?.draftId ?? ""), "draft_malformed", "draft_id", "[A-Za-z0-9_-]{1,96}", (detail?.draftId ?? "").slice(0, 60));

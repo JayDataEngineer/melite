@@ -30,19 +30,21 @@ try {
   process.exit(1);
 }
 
-/** Both combo spellings: legacy array-head and ["COMBO", {options}]
- *  (options dict or list) — same parse the walls read. */
+// THE PARSE IS IMPORTED, never re-hand-rolled here (R4-07): a
+// second combo spelling would red this tool and green the wall.
+// wiringWall.ts's parseInputSpec is the ONE derivation (both
+// legacy spellings + COMBO + COMFY_DYNAMICCOMBO_V3, object-key
+// options); this tool maps its enum to strings. Erasable-syntax TS
+// imports ride node's --experimental-strip-types (the same
+// contract the scripts/ regen doors use) — if that import fails,
+// the tool refuses loud rather than falling back to a copy.
+const { parseInputSpec } = await import(
+  join(REPO, "packages/engines/comfyui-cordis/src/wiringWall.ts")
+);
+/** One spelling of "the combo values" — the wall's own parse. */
 function specOptions(raw) {
-  if (!Array.isArray(raw) || raw.length === 0) return null;
-  const head = raw[0];
-  if (Array.isArray(head)) return head.map(String);
-  if (head === "COMBO") {
-    const opts = raw[1]?.["options"];
-    if (Array.isArray(opts)) return opts.map(String);
-    if (opts !== null && typeof opts === "object") return Object.keys(opts).map(String);
-    return null;
-  }
-  return null;
+  const parsed = parseInputSpec(raw, true);
+  return Array.isArray(parsed.enum) ? parsed.enum.map(String) : null;
 }
 
 const fx = JSON.parse(readFileSync(FIXTURE, "utf8"));
