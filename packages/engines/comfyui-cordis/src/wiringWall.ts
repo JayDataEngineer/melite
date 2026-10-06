@@ -95,8 +95,17 @@ function isPrimitive(v: unknown): v is string | number | boolean {
  *  video sweep (2026-10-13, F1) proved the string-head arm alone
  *  stood down on: a shape the declaration does not say contributes
  *  the required flag alone — the wall judges only what the
- *  declaration actually says. */
-function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec {
+ *  declaration actually says.
+ *
+ *  Exported for the wall tier: the vocab-rails drift contract reads
+ *  the live cache through THIS parse (both combo spellings, one
+ *  derivation) instead of assuming `spec[0]` is the enum array —
+ *  the assumption a modern-shaped combo silently breaks.
+ *  @param spec the raw input tuple from /object_info
+ *  @param required whether the tuple sat in the required group
+ *  @returns the parsed value facts (enum present only when the
+ *           tuple carries one in either spelling) */
+export function parseInputSpec(spec: unknown, required: boolean): WiringInputSpec {
   if (Array.isArray(spec) && spec.length > 0) {
     const head: unknown = spec[0]
     if (Array.isArray(head)) {

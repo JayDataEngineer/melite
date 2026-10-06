@@ -1,7 +1,7 @@
 import type * as React from "react";
-import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.js";
-import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.js";
-import type { Drag } from "./MotionTimelineBarDrag.js";
+import type { TimelineKeyframe, TimelinePrompt, TimelineTrack } from "./viser-timeline/types.ts";
+import type { AudioLayer, TimelineBeat } from "./MotionTimelineBar.tsx";
+import type { Drag } from "./MotionTimelineBarDrag.ts";
 export interface TimelinePromptsLaneProps {
     prompts: TimelinePrompt[];
     fps: number;
@@ -66,3 +66,4 @@ export interface TimelineKeyframeLanesProps {
 }
 /** Keyframe lanes: pin, drag, hover-X delete (bar line 1443). */
 export declare function TimelineKeyframeLanes(props: TimelineKeyframeLanesProps): React.JSX.Element;
+//# sourceMappingURL=MotionTimelineBarLanes.d.ts.map

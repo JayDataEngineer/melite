@@ -1,5 +1,5 @@
-import type { TimelineCoordinates } from "./types.js";
-import type { TimelineMessage } from "./messages.js";
+import type { TimelineCoordinates } from "./types.ts";
+import type { TimelineMessage } from "./messages.ts";
 export declare const DEFAULT_KEYFRAME_COLOR: [number, number, number];
 export declare const OUT_OF_RANGE_CONSTRAINT_COLOR: [number, number, number];
 export declare const OUT_OF_RANGE_CONSTRAINT_OPACITY = 0.1;
@@ -28,3 +28,4 @@ export declare function getZoomEnvelopeEndFrame(timelineState: TimelineMessage):
  * Calculate common coordinate values used throughout timeline rendering
  */
 export declare function calculateTimelineCoordinates(width: number, timelineState: TimelineMessage, zoomLevel: number, panOffset: number): TimelineCoordinates;
+//# sourceMappingURL=timeline-scales.d.ts.map

@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/vocab.ts";
 import { TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS } from "../../../../packages/engines/comfyui-card-kit/src/lanes-image-tools.ts";
 import { PRESET_SPEAKERS } from "../../../../packages/models/qwen3-tts/src/actions.ts";
+import { parseInputSpec } from "../../../../packages/engines/comfyui-cordis/src/wiringWall.ts";
 
 // THE VOCAB-RAILS SUBSET WALL (schema-gate-inventory fix 3, 2026-10-12):
 // the engine-subset wall judged ONLY the kit's sampler/scheduler
@@ -60,6 +61,17 @@ const JOINED: Joined[] = [
   { site: "tagger:caption_type", join: "JJC_JoyCaption.caption_type", values: TAGGER_CAPTION_TYPES },
   { site: "tagger:caption_length", join: "JJC_JoyCaption.caption_length", values: TAGGER_CAPTION_LENGTHS },
   { site: "motion:cfg_type", join: "KimodoTextToPose.cfg_type", values: inlineVocab("motion/motion/src/card.ts", "cfg_type") },
+  // RE-JOINED (walls-truths audit, 2026-10-13): both sites sat LOCAL
+  // with the reason "provisioned files, not engine combos" — false
+  // since the packs landed; the live engine declares BOTH combos
+  // (FrameInterpolationModelLoader.model_name,
+  // SeedVR2LoadDiTModel.model) and the card ⊆ engine diff was
+  // empty. These are the operator's only video door's two weight
+  // pickers; judged by nobody while LOCAL (a LOCAL row is only
+  // checked for non-emptiness). The modern-combo parse in
+  // wiringWall (batch 2026-10-13) is what made the join expressible.
+  { site: "h3:interp_model", join: "FrameInterpolationModelLoader.model_name", values: inlineVocab("models/h3/src/schema.ts", "interp_model") },
+  { site: "h3:sr_model", join: "SeedVR2LoadDiTModel.model", values: inlineVocab("models/h3/src/schema.ts", "sr_model") },
 ];
 
 // Inverted join — the engine combo (the dropdown the node's UI
@@ -92,8 +104,6 @@ const LOCAL: { site: string; values: () => readonly string[]; reason: string }[]
   { site: "tagger:extra_option", values: () => TAGGER_EXTRA_OPTIONS, reason: "the JoyCaption instruction list minus the engine's own vulgar-caption row — the card deliberately drops that one upstream combo entry (release hygiene, 2026-10-16: the tracked tree keeps no profanity); the engine node keeps its full dropdown" },
   { site: "input-prep:media_type", values: () => inlineVocab("image/input-prep/src/card.ts", "media_type"), reason: "card-local media-kind toggle" },
   { site: "h3:attention_backend", values: () => inlineVocab("models/h3/src/schema.ts", "attention_backend"), reason: "the h3 family's own model vocabulary (its kitchen's attention modes)" },
-  { site: "h3:interp_model", values: () => inlineVocab("models/h3/src/schema.ts", "interp_model"), reason: "the h3 family's bundled interp weights (provisioned files, not engine combos)" },
-  { site: "h3:sr_model", values: () => inlineVocab("models/h3/src/schema.ts", "sr_model"), reason: "the h3 family's bundled restoration weights (provisioned files)" },
   { site: "h3:sla_block_size", values: () => inlineVocab("models/h3/src/schema.ts", "sla_block_size"), reason: "the h3 family's own SLA block sizes" },
   { site: "h3:sla_dense_backend", values: () => inlineVocab("models/h3/src/schema.ts", "sla_dense_backend"), reason: "the h3 family's own dense backend picker" },
   { site: "h3:sla_reference_protection", values: () => inlineVocab("models/h3/src/schema.ts", "sla_reference_protection"), reason: "the h3 family's own protection levels" },
@@ -146,8 +156,14 @@ describe("THE VOCAB-RAILS SUBSET WALL — every closed vocabulary is engine-join
     for (const key of Object.keys(fx)) {
       const [cls, inp] = [key.slice(0, key.lastIndexOf(".")), key.slice(key.lastIndexOf(".") + 1)];
       const def = doc[cls]?.input;
-      const spec = (def?.required?.[inp] ?? def?.optional?.[inp]) as unknown as [string[]] | undefined;
-      const live = spec?.[0];
+      const raw = def?.required?.[inp] ?? def?.optional?.[inp];
+      // BOTH SPELLINGS, ONE PARSE (walls-truths audit, 2026-10-13):
+      // `spec[0]` is the enum only for the legacy array-head combo;
+      // ComfyUI ≥ 0.38 spells ["COMBO", {options}] whose [0] is the
+      // string "COMBO" — spreading that chars the head into a roster
+      // and reds the drift on a healthy engine. The wall tier reads
+      // the engine package's own parse (never a second copy).
+      const live = parseInputSpec(raw, true).enum;
       expect(live, `the cache's ${key} combo is present`).toBeDefined();
       expect([...(live ?? [])].sort(), `the fixture's ${key} roster drifted from the live cache (re-project pinned-combos.min.json)`).toEqual([...fx[key]].sort());
     }

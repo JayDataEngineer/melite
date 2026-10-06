@@ -336,6 +336,9 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
         ["packages/3d/img-to-mesh", "./lib/client/index.js", true],
         ["packages/motion/motion", "./lib/client/index.js", true],
         ["packages/video/h3-timeline", "./lib/client/index.js", true],
+        // the timeline UI kit re-exports the door's Tip/icon set on
+        // its own client face (the phantom-require cure, 2026-10-13)
+        ["packages/web-kit/timeline", "./lib/client/index.js", true],
         // THE ONE-ROW LAW: card-base's own graph row — the studio
         // atoms compile once here, every card client requires it.
         ["packages/web/card-base", "./lib/client/index.js", true],
@@ -344,7 +347,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
         ["packages/web/melite-card-view", "./lib/client/index.js", true],
         ["packages/web/viewer", "./lib/client/index.js", true],
       ]);
-    // the ship's own discovery must therefore carry all seven built
+    // the ship's own discovery must therefore carry all eight built
     // bundles — the export-map filter is the same law
     for (const d of discovered.filter((x) => x.built)) {
       expect(ship, `${d.pkg} is a built client bundle`).toContain(

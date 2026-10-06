@@ -7,6 +7,14 @@
 //
 // Self-skips unless FILM_E2E=1 (the estate doors own runs in CI;
 // this file exists for the live proof on the test lane).
+//
+// THE PER-FILE BOOT BRICK (the boot-models law): this suite reads
+// the model table at MODULE scope (loadFacts below), so it owns
+// the booted world explicitly — the helper's top-level await
+// settles before this file's own imports evaluate. Without it the
+// suite crashed at import ("models service not booted") on every
+// keyless e2e run even though every test inside self-skips.
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";

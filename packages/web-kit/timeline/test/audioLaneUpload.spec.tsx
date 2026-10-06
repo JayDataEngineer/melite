@@ -9,7 +9,7 @@
 import { afterEach, describe, it, expect, vi } from "vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
-import { MotionTimelineBar } from "../timeline/MotionTimelineBar"
+import { MotionTimelineBar } from "../src/timeline/MotionTimelineBar"
 
 afterEach(cleanup)
 

@@ -17,3 +17,4 @@ export type VariantInput = Omit<VideoVariant, 'id' | 'createdAt'> & Partial<Pick
  * a verbatim move from the store root (the counter lives in this module).
  */
 export declare function syncUidCounter(allIds: string[]): void;
+//# sourceMappingURL=timelineIds.d.ts.map

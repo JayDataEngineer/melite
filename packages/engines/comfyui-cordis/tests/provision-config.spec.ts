@@ -10,6 +10,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join, relative } from "node:path";
 import { engineField, mergeOverlay, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
+import { cmdPaths } from "../scripts/provision-instance-layout.ts";
 import { REPO } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
@@ -95,5 +96,22 @@ describe("boundModelFolders (unset endpoint overrides fall through to the root)"
     } as never);
     assert.equal(bound.base_path, "/explicit/store");
     assert.equal(bound.download_path, "/explicit/store");
+  });
+});
+
+describe("cmdPaths refuses a dead root (wiring re-audit F7, 2026-10-13)", () => {
+  it("throws before writing anything when the resolved base does not exist", () => {
+    // a typoed models.read_root sailed through: the yaml mounted a
+    // path that does not exist, ComfyUI silently served empty enums
+    // under it, and lanes refused at /prompt with the weights on
+    // disk. The refusal is provision-time and side-effect-free —
+    // it fires before the first mkdir/write.
+    assert.throws(
+      () => cmdPaths({
+        url: "http://127.0.0.1:8188",
+        model_base_path: "/nonexistent/store-root-for-the-refusal-spec",
+      } as never),
+      /base_path does not exist.*never guessed/s,
+    );
   });
 });

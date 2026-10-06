@@ -3,8 +3,8 @@
  * timelineStore.ts; pure move, no logic changes).
  */
 import type { AudioCue, TimelineSegment } from "@melite/contracts";
-import type { GetState, SetState } from "./createStore.js";
-import type { TimelineStore } from "./timelineStoreTypes.js";
+import type { GetState, SetState } from "./createStore.ts";
+import type { TimelineStore } from "./timelineStoreTypes.ts";
 export declare const _history: {
     segments: TimelineSegment[];
     audioCues: AudioCue[];
@@ -17,3 +17,4 @@ export declare function pushHistory(segments: TimelineSegment[], audioCues: Audi
  * composed into the store by timelineStore.ts. Bodies are verbatim moves.
  */
 export declare function createHistorySlice(set: SetState<TimelineStore>, get: GetState<TimelineStore>): Pick<TimelineStore, "undo" | "redo">;
+//# sourceMappingURL=timelineHistory.d.ts.map

@@ -1,8 +1,8 @@
-import type { TimelineMessage } from "./messages.js";
-import type { TimelinePrompt } from "./types.js";
-import type { TimelineAutoPan } from "./timeline-auto-pan.js";
-import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
-import type { TimelineGeometry } from "./timeline-geometry.js";
+import type { TimelineMessage } from "./messages.ts";
+import type { TimelinePrompt } from "./types.ts";
+import type { TimelineAutoPan } from "./timeline-auto-pan.ts";
+import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
+import type { TimelineGeometry } from "./timeline-geometry.ts";
 export interface TimelineMouseCallbacks {
     onFrameChange?: (frame: number) => void;
     onKeyframeAdd?: (trackId: string, frame: number) => string | void;
@@ -41,3 +41,4 @@ export declare function useTimelineMouseHandlers(args: TimelineMouseArgs): {
     handleContextMenu: (e: React.MouseEvent<HTMLCanvasElement>) => void;
     handleDoubleClick: (e: React.MouseEvent<HTMLCanvasElement>) => void;
 };
+//# sourceMappingURL=timeline-mouse.d.ts.map

@@ -8,8 +8,8 @@ import assert from "node:assert/strict";
 import {
   flushPersist,
   useTimelineStore,
-} from "../store/timelineStore.ts";
-import { clearSegmentClipboard } from "../store/segmentClipboard.ts";
+} from "../src/store/timelineStore.ts";
+import { clearSegmentClipboard } from "../src/store/segmentClipboard.ts";
 import type {
   AudioCue,
   TimelineSegment,

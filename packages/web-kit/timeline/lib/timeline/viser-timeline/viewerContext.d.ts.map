@@ -1,0 +1,1 @@
+{"version":3,"file":"viewerContext.d.ts","sourceRoot":"","sources":["../../../src/timeline/viser-timeline/viewerContext.ts"],"names":[],"mappings":"AAWA,UAAU,QAAQ;IAChB,KAAK,EAAE;QAAE,SAAS,EAAE,OAAO,CAAA;KAAE,CAAC;CAC/B;AAED,UAAU,UAAU;IAClB,MAAM,EAAE,CAAC,CAAC,EAAE,QAAQ,EAAE,CAAC,KAAK,EAAE,QAAQ,KAAK,CAAC,KAAK,CAAC,CAAC;CACpD;AAOD,eAAO,MAAM,aAAa,4CAA+C,CAAC"}

@@ -11,6 +11,14 @@
 // band, and — new, catch (c)'s audible proof — the duck's release
 // rises GRADUALLY (~350ms) after the dialogue ends, measured as a
 // monotonic mean-volume ladder across three ~120ms slices.
+//
+// THE PER-FILE BOOT BRICK (the boot-models law): this suite reads
+// the model table at MODULE scope (loadFacts below), so it owns
+// the booted world explicitly — the helper's top-level await
+// settles before this file's own imports evaluate. Without it the
+// suite crashed at import ("models service not booted") on every
+// keyless e2e run even though every test inside self-skips.
+import "../../../../tests/helpers/boot-models.ts";
 import { beforeAll, describe, expect, it } from "vitest";
 import assert from "node:assert/strict";
 import { existsSync, readdirSync, statSync } from "node:fs";

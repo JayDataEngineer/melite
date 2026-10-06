@@ -10,14 +10,14 @@ import {
   drawInterval,
   drawKeyframe,
   drawLabelOverlay,
-} from "../timeline/viser-timeline/draw.ts";
-import { DARK_THEME } from "../timeline/viser-timeline/styles.ts";
-import type { TimelineTheme } from "../timeline/viser-timeline/styles.ts";
+} from "../src/timeline/viser-timeline/draw.ts";
+import { DARK_THEME } from "../src/timeline/viser-timeline/styles.ts";
+import type { TimelineTheme } from "../src/timeline/viser-timeline/styles.ts";
 import type {
   TimelineCoordinates,
   TimelineKeyframe,
   TimelineTrack,
-} from "../timeline/viser-timeline/types.ts";
+} from "../src/timeline/viser-timeline/types.ts";
 
 type Call = { name: string; args: unknown[] };
 

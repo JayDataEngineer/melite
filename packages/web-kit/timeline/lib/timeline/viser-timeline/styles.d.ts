@@ -28,3 +28,4 @@ export declare const HIGHLIGHT_SHADOW_BLUR = 5;
 export declare const HIGHLIGHT_SHADOW_OFFSET_Y = 2;
 export declare const HIGHLIGHT_BORDER_WIDTH = 1.5;
 export declare const HIGHLIGHT_TEXT_SHADOW_BLUR = 2;
+//# sourceMappingURL=styles.d.ts.map

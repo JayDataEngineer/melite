@@ -21,3 +21,4 @@ export declare function useAudioPlayback(): {
  * in `render_service.py`). With no fades, the param is left at `volume`.
  */
 export declare function scheduleFadeAutomation(param: AudioParam, volume: number, cueDuration: number, fadeInRaw: number, fadeOutRaw: number, offset: number, now: number): void;
+//# sourceMappingURL=useAudioPlayback.d.ts.map

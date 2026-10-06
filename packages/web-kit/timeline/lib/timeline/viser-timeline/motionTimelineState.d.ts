@@ -1,5 +1,5 @@
-import type { TimelineMessage, TimelineInterval } from "./messages.js";
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.js";
+import type { TimelineMessage, TimelineInterval } from "./messages.ts";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";
 export declare const MOTION_TIMELINE_TRACKS: TimelineTrack[];
 export interface MotionTimelineInput {
     fps: number;
@@ -13,3 +13,4 @@ export interface MotionTimelineInput {
 export declare function buildMotionTimelineState(inp: MotionTimelineInput): TimelineMessage;
 /** UUID for locally-added keyframes/prompts/intervals. */
 export declare function makeTimelineId(): string;
+//# sourceMappingURL=motionTimelineState.d.ts.map

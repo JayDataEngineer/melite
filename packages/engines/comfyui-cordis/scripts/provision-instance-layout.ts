@@ -72,6 +72,26 @@ export function wiringYamlBody(bound: BoundLayout): string {
 
 export function cmdPaths(cfg: EndpointConfig): void {
   const bound = boundModelFolders(cfg);
+  // THE DEAD-ROOT REFUSAL (wiring re-audit F7, 2026-10-13): the
+  // empty-string guard in boundModelFolders refuses an UNSET root,
+  // but a TYPOED one sailed through — the yaml mounted a path that
+  // does not exist, ComfyUI silently served empty enums for every
+  // category under it, and lanes refused at /prompt with the
+  // weights "present" on disk. The refusal lives at provision
+  // time (here), never in the pure derivation: the wiring-roots
+  // wall recomputes boundModelFolders on CI seats where the store
+  // is legitimately absent.
+  for (const [k, root] of [["base_path", bound.base_path],
+    ["download_path", bound.download_path]] as const) {
+    if (!existsSync(root)) {
+      throw new Error(
+        `[paths] the resolved ${k} does not exist on this machine: ${root} — ` +
+        "a dead root is not mounted (ComfyUI serves empty enums for it, " +
+        "silently); create the store or fix models.read_root in " +
+        "inference.config.json (never guessed)",
+      );
+    }
+  }
   mkdirSync(join(RUNTIME, "custom_nodes"), { recursive: true });
   mkdirSync(join(RUNTIME, "user"), { recursive: true });
   writeFileSync(join(RUNTIME, "extra_model_paths.yaml"), wiringYamlBody(bound));

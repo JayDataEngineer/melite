@@ -20,3 +20,4 @@ export interface FilmPlayerProps {
     "data-testid"?: string;
 }
 export declare const FilmPlayer: import("react").ForwardRefExoticComponent<FilmPlayerProps & import("react").RefAttributes<FilmPlayerHandle>>;
+//# sourceMappingURL=FilmPlayer.d.ts.map

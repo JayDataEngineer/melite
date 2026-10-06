@@ -86,3 +86,4 @@ export type InteractionAction = {
     type: "stopAll";
 };
 export declare function interactionReducer(state: InteractionState, action: InteractionAction): InteractionState;
+//# sourceMappingURL=interactions.d.ts.map

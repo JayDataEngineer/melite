@@ -13,16 +13,12 @@
     "incremental": false,
     "composite": false,
     "outDir": "lib",
-    "rootDir": ".",
-    "paths": {}
+    "rootDir": "src",
+    "paths": {},
+    "declarationMap": true
   },
   "include": [
-    "*.d.ts",
-    "timeline/**/*.ts",
-    "timeline/**/*.tsx",
-    "playback/**/*.ts",
-    "playback/**/*.tsx",
-    "store/**/*.ts",
-    "store/**/*.tsx"
+    "src/**/*.ts",
+    "src/**/*.tsx"
   ]
 }

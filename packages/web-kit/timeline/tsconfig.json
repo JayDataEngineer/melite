@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite-plugin/timeline/client": ["./src/client/index.ts"],
         "@melite/cards/form-fields": ["./../../engines/comfyui/action_cards/src/form-fields.tsx"],
         "@melite/cards/poster-shell": ["./../../engines/comfyui/action_cards/src/poster-shell.tsx"],
         "@melite/estate-drafts/remote": ["./../../estate/drafts/src/typert.remote-client.d.ts"],
@@ -71,9 +72,9 @@
         "@melite/contracts/benchStage": ["./../contracts/src/benchStage.ts"],
         "@melite/contracts/applyGuard": ["./../contracts/src/applyGuard.ts"],
         "@melite/contracts/formSpec": ["./../contracts/src/formSpec.ts"],
-        "@melite-plugin/timeline/ui/timeline": ["./timeline/index.ts"],
-        "@melite-plugin/timeline/ui/store": ["./store/index.ts"],
-        "@melite-plugin/timeline/ui/playback": ["./playback/index.ts"],
+        "@melite-plugin/timeline/ui/timeline": ["./src/timeline/index.ts"],
+        "@melite-plugin/timeline/ui/store": ["./src/store/index.ts"],
+        "@melite-plugin/timeline/ui/playback": ["./src/playback/index.ts"],
         "@melite-plugin/dsh-gallery": ["./../../web/infer-gallery/src/index.ts"],
         "@melite-plugin/dsh-gallery/client": ["./../../web/infer-gallery/src/client/index.ts"],
         "@melite-plugin/dsh-card-deck": ["./../../web/melite-card-deck/src/index.ts"],
@@ -301,10 +302,8 @@
     ]
   },
   "include": [
-    "timeline/**/*.ts",
-    "timeline/**/*.tsx",
-    "playback/**/*.ts",
-    "store/**/*.ts",
+    "src/**/*.ts",
+    "src/**/*.tsx",
     "test/**/*.ts",
     "test/**/*.tsx"
   ]

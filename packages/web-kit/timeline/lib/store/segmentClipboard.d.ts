@@ -47,3 +47,4 @@ export declare function getSegmentClipboard(): SegmentClipboard | null;
 export declare function hasSegmentClipboard(): boolean;
 /** Clear the clipboard. Mostly useful for tests. */
 export declare function clearSegmentClipboard(): void;
+//# sourceMappingURL=segmentClipboard.d.ts.map

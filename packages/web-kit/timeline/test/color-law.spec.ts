@@ -21,8 +21,8 @@ const here = dirname(fileURLToPath(import.meta.url))
  *  controls file is 4 honest uses) get a calibrated floor; the
  *  no-literal and no-fallback walls above stay ABSOLUTE for all. */
 const GUARDED: Array<{ file: string, why: string, min?: number }> = [
-  { file: join(here, '../timeline/timeline.module.css'), why: 'the shared timeline skin' },
-  { file: join(here, '../timeline/MotionTimelineBar.tsx'), why: 'the shared timeline component' },
+  { file: join(here, '../src/timeline/timeline.module.css'), why: 'the shared timeline skin' },
+  { file: join(here, '../src/timeline/MotionTimelineBar.tsx'), why: 'the shared timeline component' },
   { file: join(here, '../../../video/h3-timeline/src/ui/studio/studio.module.css'), why: 'the h3 studio skin' },
   // THE SWEEP COMPLETES (hour 25, the operator: "fix ALL DEBT"): the
   // named debt files fell one by one; the wall now guards each of

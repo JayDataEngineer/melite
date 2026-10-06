@@ -16,3 +16,4 @@ export declare function ZoomIn({ className, ...rest }: IconProps): import("react
 export declare function Mic({ className, ...rest }: IconProps): import("react").JSX.Element;
 export declare function Zap({ className, ...rest }: IconProps): import("react").JSX.Element;
 export declare function ZoomOut({ className, ...rest }: IconProps): import("react").JSX.Element;
+//# sourceMappingURL=icons.d.ts.map

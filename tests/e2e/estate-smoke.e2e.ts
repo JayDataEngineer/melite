@@ -41,16 +41,28 @@ describe('estate composition smoke (headless boot)', () => {
 
       // THE SHIPPED ESTATE PLUGINS, applied like a profile applies
       // them (relative source imports — the e2e lives outside the
-      // package graph, same discipline as inference-smoke).
-      const estateQueue = (await import('../../packages/harness/estate-queue/src/index.ts')).default
+      // package graph, same discipline as inference-smoke). The
+      // queue rides DIRECT construction (ROADMAP :188, 2026-10-13):
+      // its row declares inject: ["timer"] and the timer service is
+      // a HOST seat — the vendored cordis declares no timer, so a
+      // headless mount never resolves the fiber and the lock never
+      // lands. RunsRuntimeService in inference-smoke set the same
+      // law (a static inject gates plugin lifecycle, never direct
+      // construction); the service registers itself on the context
+      // either way, so every world assertion below still judges the
+      // registered seat.
+      const { QueueService } = await import('../../packages/harness/estate-queue/src/service.ts')
+      new QueueService(ctx, { repoRoot: sandbox.root })
       const estateDrafts = (await import('../../packages/estate/drafts/src/index.ts')).default
       const estateMedia = (await import('../../packages/estate/media/src/index.ts')).default
       // THE TYPED MOUNT (this tier's first sweep found the calls
       // untyped-by-nothing: a Plugin default is an object, and the
-      // cordis mount is ctx.plugin — never a bare .apply)
-      ctx.plugin(estateQueue, { repoRoot: sandbox.root })
-      ctx.plugin(estateDrafts)
-      ctx.plugin(estateMedia)
+      // cordis mount is ctx.plugin — never a bare .apply). The
+      // mounts are AWAITED: plugin application is fiber work, and
+      // the seats below read the context the same tick (the
+      // drafts package's own remote.spec.ts sets this law).
+      await ctx.plugin(estateDrafts)
+      await ctx.plugin(estateMedia)
 
       // THE WORLD, not the self-report:
       // 1. the queue owns its root (lock + ledger face)
@@ -65,7 +77,6 @@ describe('estate composition smoke (headless boot)', () => {
 
       // 2. a second QueueService on the same root REFUSES (the lock
       //    is real, not a claim)
-      const { QueueService } = await import('../../packages/harness/estate-queue/src/service.ts')
       assert.throws(
         () => new QueueService(new Context(), { repoRoot: sandbox.root }),
         /held|live|lock/,

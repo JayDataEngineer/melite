@@ -5,11 +5,11 @@ import assert from "node:assert/strict";
 import {
   initialInteractionState,
   interactionReducer,
-} from "../timeline/viser-timeline/interactions.ts";
+} from "../src/timeline/viser-timeline/interactions.ts";
 import type {
   InteractionAction,
   InteractionState,
-} from "../timeline/viser-timeline/interactions.ts";
+} from "../src/timeline/viser-timeline/interactions.ts";
 
 function reduce(action: InteractionAction, from: InteractionState = initialInteractionState): InteractionState {
   return interactionReducer(from, action);

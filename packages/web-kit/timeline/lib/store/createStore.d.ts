@@ -13,3 +13,4 @@ export interface UseBoundStore<T> {
     destroy: () => void;
 }
 export declare function create<T>(initializer: StateCreator<T>): UseBoundStore<T>;
+//# sourceMappingURL=createStore.d.ts.map

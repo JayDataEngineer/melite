@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite-plugin/timeline/client": ["./../../../web-kit/timeline/src/client/index.ts"],
         "@melite/estate-drafts/remote": ["./../../../estate/drafts/src/typert.remote-client.d.ts"],
         "@melite/estate-manage/remote": ["./../../../estate/manage/src/typert.remote-client.d.ts"],
         "@melite/estate-media/remote": ["./../../../estate/media/src/typert.remote-client.d.ts"],
@@ -248,9 +249,9 @@
         "@melite/formats/renderSnapshot": ["./../../../web-kit/formats/src/renderSnapshot.ts"],
         "@melite/formats/somaSkin": ["./../../../web-kit/formats/src/somaSkin.ts"],
         "@melite/formats": ["./../../../web-kit/formats/src/index.ts"],
-        "@melite-plugin/timeline/ui/timeline": ["./../../../web-kit/timeline/timeline/index.ts"],
-        "@melite-plugin/timeline/ui/store": ["./../../../web-kit/timeline/store/index.ts"],
-        "@melite-plugin/timeline/ui/playback": ["./../../../web-kit/timeline/playback/index.ts"],
+        "@melite-plugin/timeline/ui/timeline": ["./../../../web-kit/timeline/src/timeline/index.ts"],
+        "@melite-plugin/timeline/ui/store": ["./../../../web-kit/timeline/src/store/index.ts"],
+        "@melite-plugin/timeline/ui/playback": ["./../../../web-kit/timeline/src/playback/index.ts"],
         "@melite/card-base": ["./../../../web/card-base/src/host.ts"],
         "@melite/card-base/client": ["./../../../web/card-base/src/client/index.ts"],
         "@melite/card-base/spec": ["./../../../web/card-base/src/spec.ts"],

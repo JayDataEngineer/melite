@@ -6,13 +6,13 @@ import assert from "node:assert/strict";
 import {
   FRAME_LABELS_HEIGHT,
   TRACK_HEIGHT,
-} from "../timeline/viser-timeline/TimelineConstants.ts";
+} from "../src/timeline/viser-timeline/TimelineConstants.ts";
 import {
   DRAW_BUFFER,
   KEYFRAME_HIT_RADIUS,
   KEYFRAME_RADIUS,
   TRACK_LABEL_WIDTH,
-} from "../timeline/viser-timeline/constants.ts";
+} from "../src/timeline/viser-timeline/constants.ts";
 import {
   DARK_THEME,
   DEFAULT_PROMPT_COLOR,
@@ -29,10 +29,10 @@ import {
   LIGHT_THEME,
   PROMPT_COLORS,
   PROMPT_TEXT_SHADOW,
-} from "../timeline/viser-timeline/styles.ts";
-import type { TimelineTheme } from "../timeline/viser-timeline/styles.ts";
-import "../timeline/viser-timeline/messages.ts";
-import "../timeline/viser-timeline/types.ts";
+} from "../src/timeline/viser-timeline/styles.ts";
+import type { TimelineTheme } from "../src/timeline/viser-timeline/styles.ts";
+import "../src/timeline/viser-timeline/messages.ts";
+import "../src/timeline/viser-timeline/types.ts";
 
 const THEME_KEYS: ReadonlyArray<keyof TimelineTheme> = [
   "timeCursorColor",

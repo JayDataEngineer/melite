@@ -15,3 +15,4 @@ export interface TimelineScrubBarProps {
     "data-testid"?: string;
 }
 export declare function TimelineScrubBar({ current, duration, onSeek, onTogglePlay, playing, fps, "data-testid": tid, }: TimelineScrubBarProps): import("react").JSX.Element;
+//# sourceMappingURL=TimelineScrubBar.d.ts.map

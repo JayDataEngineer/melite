@@ -25,13 +25,25 @@
 //
 // Run: npx vitest run tests/walls/ts/suites/wiring-roots.spec.ts
 // (or the whole gate: pnpm run test). The battery's engine contract
-// holds: the boot-freshness leg fails loud when no local engine
-// unit exists, exactly like the compose doors fail without an
-// engine.
+// holds: the boot legs fail loud when no local engine unit exists,
+// exactly like the compose doors fail without an engine.
+//
+// THE DELEGATION SEAM (re-audit S3, 2026-10-13): legs 4 and 5 read
+// the OWNER'S MACHINE — a systemd --user unit and /proc — and no CI
+// seat can own that truth; on a runner without the engine
+// `systemctl --user show` returns MainPID=0 and the legs would fail
+// on a contract CI never had. They stand down under
+// MELITE_TIER_DELEGATED=1 (the env tests.yml :33-34/:94-95 already
+// sets on the unit/coverage jobs, the same seam the typecheck gate
+// rides); the owning surface is the operator's local `pnpm run test`
+// on the estate box, where the engine contract is real. The three
+// pure legs (repo config, generated yaml, DECL tables) run
+// everywhere — they are CI-portable by construction.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { readFileSync, readlinkSync, accessSync, X_OK } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
@@ -74,6 +86,10 @@ function keysOf(body: string): Set<string> {
   return keys;
 }
 
+// DELEGATION SEAM (S3): 1 in CI's delegated seats (unit + coverage
+// jobs), 0 on the estate box — see the header comment.
+const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
+
 describe("the wiring-roots wall (one store, four truths, all reconciled)", () => {
   it("IDEMPOTENCE — the runtime yaml is exactly what the config produces", () => {
     const expected = generatedBody();
@@ -104,7 +120,13 @@ describe("the wiring-roots wall (one store, four truths, all reconciled)", () =>
     assert.deepEqual(missed, [],
       "provision folders whose category the engine never mounts — the lane refuses at /prompt with the weights on disk (add the category to extra_model_folders)");
   });
+});
 
+// THE MACHINE LEGS (S3): owner-local by design — see the header's
+// delegation note. skipIf, never a conditional assert: a delegated
+// run REPORTS the skip; it does not paint a green bar over a leg
+// it never read.
+describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", () => {
   it("BOOT FRESHNESS — the running engine's yaml equals the generated one", () => {
     let pid = "";
     try {
@@ -146,9 +168,14 @@ describe("the wiring-roots wall (one store, four truths, all reconciled)", () =>
       `${ENGINE_UNIT} boots without AUTOREMESHER_BIN — the quad-remesh pack's find_binary() cannot walk from a foreign engine tree to the repo landing (image sweep D1, 2026-10-13); the unit needs the estate override (service.d/autoremesher.conf, as provision boot-cmd exports it for the managed engine)`);
     const landing = bin.slice("AUTOREMESHER_BIN=".length);
     accessSync(landing, X_OK);
-    assert.equal(landing,
-      "/home/user/Documents/programs/active/inference.cpp/data/runtime/autoremesher/autoremesher",
-      "AUTOREMESHER_BIN points somewhere other than the estate's sha-verified landing (provision sync installs autoremesher-d9ef96bd)");
+    // REPO-RELATIVE, never the machine literal (re-audit S2): the
+    // pin is whatever THIS checkout's runtime tree lands at, so the
+    // wall travels with the clone instead of encoding one box's
+    // home directory as the law. The landing sits beside the
+    // engine's runtime tree (data/runtime/autoremesher), not inside
+    // it — provision-shared's RUNTIME names data/runtime/comfyui.
+    assert.equal(landing, join(dirname(RUNTIME), "autoremesher", "autoremesher"),
+      "AUTOREMESHER_BIN points somewhere other than this checkout's sha-verified landing (provision sync installs autoremesher-d9ef96bd)");
   });
 });
 

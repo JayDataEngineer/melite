@@ -627,6 +627,88 @@ describe("models against cards (the cross-validation, resurrected)", () => {
       `every provision declarer also SERVES (saw ${servingDeclarers.join(", ")}) — a declarer going dark, or the declaring/serving split reopening, is a deliberate edit`);
   });
 
+  // THE UNION WALK'S OTHER HALF (wiring re-audit S1 + the bytes
+  // provisions audit, both 2026-10-13): the family arm above walks
+  // `registryModel(id).provisions` and pins 61 rows — but the
+  // provision DOOR serves provisionsByFamily, whose union adds
+  // card-owned rows (IMPACT_DETECTOR_PROVISIONS spread by mask and
+  // image-edit, sam3.1/rt_detr inline) and every variant-cell
+  // artifact (digest-pinned downloads the 61-row pin never
+  // inspects). Those rows were shaped by nobody: a malformed url,
+  // a non-hex sha, or a whole card dropping its provisions moved
+  // no needle. This arm judges the door's own surface — same shape
+  // contract, same exact-census law, one seam (never a second
+  // copy of any row).
+  it("card-owned rows and variant-cell artifacts are SHAPED and censused (the door's union walk, not just the DECL plane)", async () => {
+    const { loadCardDefs, provisionsByFamily } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const byFamily = await provisionsByFamily(await loadCardDefs());
+    const families = new Set(modelIds());
+
+    // (1) CARD-PLANE ROWS — an entry whose key is not a model id is
+    // a card (CARD_PLANE_ENGINE is "comfyui", so ownership — not
+    // the engine string — is the discriminator). The declarer
+    // roster is EXACT; every row carries the family arm's shape
+    // contract.
+    const cardDeclarers: string[] = [];
+    let cardRows = 0;
+    for (const [id, view] of Object.entries(byFamily)) {
+      if (families.has(id)) continue;
+      cardDeclarers.push(id);
+      for (const row of view.provisions) {
+        cardRows++;
+        assert.ok(typeof row.name === "string" && row.name !== "", `${id}: a card provision row carries an empty name`);
+        assert.match(String(row.url), /^https?:\/\//, `${id}/${String(row.name)}: url is not http(s)`);
+        assert.ok(typeof row.folder === "string" && row.folder !== "" && !String(row.folder).startsWith("/"),
+          `${id}/${String(row.name)}: folder must be a non-empty relative path under the models root`);
+        if (row.sha256 !== undefined) {
+          assert.match(String(row.sha256), /^[0-9a-f]{64}$/, `${id}/${String(row.name)}: sha256 is not a 64-hex digest`);
+        }
+        if (row.size_bytes !== undefined) {
+          assert.ok(typeof row.size_bytes === "number" && row.size_bytes >= 0,
+            `${id}/${String(row.name)}: size_bytes is negative`);
+        }
+      }
+    }
+    assert.deepEqual(cardDeclarers, ["image-edit", "mask"],
+      `the card-plane provision declarers are the named 2 (saw ${cardDeclarers.join(", ")}) — a card starting or stopping its own provisioning is a deliberate edit`);
+    assert.equal(cardRows, 9,
+      `the card plane declares exactly 9 rows (saw ${String(cardRows)}) — a row appearing or leaving a card is a deliberate edit (mask's 3 inline + the 3 Impact detectors it spreads; image-edit's same 3 Impact rows — 6 distinct files, 9 declared rows)`);
+
+    // (2) VARIANT-CELL ARTIFACTS — the digest-pinned channel the
+    // 61-row family pin never inspects (the bytes audit: "the wall
+    // pins 61 but the manage plane owns 66"). Every artifact row
+    // is shaped; the distinct-artifact count is EXACT.
+    const artifacts: Array<{ id: string; url: string }> = [];
+    for (const id of modelIds()) {
+      const view = getModel(id);
+      for (const variant of view.variants ?? []) {
+        for (const cell of variant.cells) {
+          const artifact = cell.artifact;
+          if (artifact === undefined || artifact === null) continue;
+          assert.match(String(artifact.source_url), /^https?:\/\//,
+            `${id}: a variant-cell artifact url is not http(s)`);
+          assert.ok(typeof artifact.dest_sub === "string" && artifact.dest_sub !== "" && !String(artifact.dest_sub).startsWith("/"),
+            `${id}: artifact dest_sub must be a non-empty relative path`);
+          if (artifact.sha256 !== undefined) {
+            assert.match(String(artifact.sha256), /^[0-9a-f]{64}$/, `${id}: artifact sha256 is not a 64-hex digest`);
+          }
+          if (artifact.size_bytes !== undefined) {
+            assert.ok(typeof artifact.size_bytes === "number" && artifact.size_bytes >= 0,
+              `${id}: artifact size_bytes is negative`);
+          }
+          artifacts.push({ id, url: String(artifact.source_url) });
+        }
+      }
+    }
+    // deduped by url+dest the same way the union walk dedupes —
+    // variants sharing one artifact are ONE download
+    const distinct = new Set(artifacts.map((a) => a.url)).size;
+    assert.equal(distinct, 6,
+      `the distinct variant-cell artifacts are exactly 6 (saw ${String(distinct)}: ${[...new Set(artifacts.map((a) => a.id + " " + a.url))].join(", ")}) — an artifact appearing or leaving is a deliberate edit`);
+  });
+
   it("fieldDomains extracts schemastery min/max/options", (): void => {
     // schemastery truth (probed 2026-09-08): the union's
     // alternatives live at .list (NODE level), each const carries

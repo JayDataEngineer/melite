@@ -58,3 +58,4 @@ export interface TimelineCoordinates {
     firstVisibleFrame: number;
     endFrame: number;
 }
+//# sourceMappingURL=types.d.ts.map

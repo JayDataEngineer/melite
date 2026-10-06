@@ -8,7 +8,7 @@ import assert from "node:assert/strict"
 import { createRef } from "react"
 import { createElement as h } from "react"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
-import { FilmPlayer, type FilmPlayerHandle } from "../timeline/FilmPlayer"
+import { FilmPlayer, type FilmPlayerHandle } from "../src/timeline/FilmPlayer"
 
 afterEach(cleanup)
 

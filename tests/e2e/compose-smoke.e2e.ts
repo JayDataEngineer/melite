@@ -14,6 +14,7 @@
 // boxes carrying the weights (presence refused first, shadowing the
 // /recipe/ voice).
 import { expect, it } from 'vitest'
+import assert from 'node:assert/strict'
 import { join } from 'node:path'
 import { Context } from '@deepseek-ai/cordis'
 import { mintSandbox } from '../harness.ts'
@@ -45,12 +46,27 @@ it('THE ORDER: a fully-admitted body hears the ENVIRONMENT voice (presence or en
     ;(ctx as never as { draftsRemote: unknown }).draftsRemote = { get: async () => ({}) }
     await ctx.plugin(cardRegistryProvider)
     const cards = (ctx as never as { cardRegistry: { phase1Card: Function } }).cardRegistry
-    // every key admitted; whatever refuses next is an environment
-    // question (weights present → the engine gate; absent → presence)
-    await expect(cards.phase1Card({
+    // every key admitted; whatever speaks next is an environment
+    // question, and BOTH answers are honest (this file's own law:
+    // box-independent, never a body-shape refusal): weights absent
+    // → a presence refusal; everything present and the engine
+    // healthy → a CLEAN COMPOSE. The 2026-10-13 drift cures made
+    // the estate box the second case (krea-2's weights + turbo
+    // lora enumerate at the engine), and the old `.rejects` pin
+    // failed the smoke on exactly the health it was built to
+    // prove. The only forbidden outcome stays the body-shape
+    // refusal.
+    const outcome = await cards.phase1Card({
       model: 'krea-2', prompt: 'a red cube', width: 512, height: 512,
       loras: [{ id: 'krea2_turbo_lora_rank_64_bf16', strength: 1.0 }],
-    }, 'krea-2')).rejects.not.toThrow(/unknown param|declared surface/)
+    }, 'krea-2').then(
+      () => ({ refused: false, error: '' }),
+      (e: unknown) => ({ refused: true, error: String(e) }),
+    )
+    if (outcome.refused) {
+      assert.ok(!/unknown param|declared surface/.test(outcome.error),
+        `the body refused a fully-admitted request on shape: ${outcome.error}`)
+    }
   } finally {
     await ctx.fiber.dispose()
   }

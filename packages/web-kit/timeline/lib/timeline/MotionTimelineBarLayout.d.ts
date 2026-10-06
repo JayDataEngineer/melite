@@ -37,3 +37,4 @@ export declare const fmtTimecode: (frame: number, fps: number) => string;
  * cuts a frame. 5px = click still selects, jitter stays a click). */
 export declare const DRAG_ARM_PX = 5;
 export declare const MAX_PPF = 40;
+//# sourceMappingURL=MotionTimelineBarLayout.d.ts.map

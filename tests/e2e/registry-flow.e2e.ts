@@ -53,8 +53,17 @@ async function engineAlive(): Promise<boolean> {
 
 const HAS_ENGINE = await engineAlive()
 const HAS_PHOTO = existsSync(PHOTO)
+// THE COMMERCIAL RUNTIME (the tier-3 key law, ROADMAP :222): the
+// anny-hmr-commercial flow's estimator needs the provisioned
+// commercial chain (SAM 3D Body venv + SOMA-X checkout at the
+// runtime root, or ANNY_COMMERCIAL_ROOT). It is a machine
+// prerequisite the same way an API key is — absent, the suite
+// self-skips NAMING it (never a pass, never a red herring fail).
+const ANNY_COMMERCIAL_ROOT = process.env['ANNY_COMMERCIAL_ROOT'] ??
+  '/home/user/tools/data/runtime/anny-commercial'
+const HAS_COMMERCIAL = existsSync(join(ANNY_COMMERCIAL_ROOT, 'commercial_chain.py'))
 
-describe.skipIf(!HAS_ENGINE || !HAS_PHOTO)(
+describe.skipIf(!HAS_ENGINE || !HAS_PHOTO || !HAS_COMMERCIAL)(
   'registry flow through the {flow:} door (live ComfyUI)',
   () => {
     it("anny-hmr-commercial on a real portrait: the $photo initial links at planMerge and the estimator's GLB lands on disk", async () => {

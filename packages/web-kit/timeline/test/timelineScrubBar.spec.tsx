@@ -5,7 +5,7 @@
 import { afterEach, describe, it, expect, vi } from "vitest"
 import { cleanup, fireEvent, render, screen } from "@testing-library/react"
 import { createElement as h } from "react"
-import { TimelineScrubBar } from "../timeline/TimelineScrubBar"
+import { TimelineScrubBar } from "../src/timeline/TimelineScrubBar"
 
 afterEach(cleanup)
 

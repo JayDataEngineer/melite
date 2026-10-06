@@ -16,3 +16,4 @@ export declare function isDataUrl(val: unknown): val is string;
 export declare const BLOB_PREFIX = "TLB:";
 export declare function blobKey(segId: string, field: string): string;
 export declare function isBlobRef(val: unknown): val is string;
+//# sourceMappingURL=timelineBlobs.d.ts.map

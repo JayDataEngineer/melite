@@ -26,6 +26,7 @@
       "node"
     ],
     "paths": {
+        "@melite-plugin/timeline/client": ["./../../web-kit/timeline/src/client/index.ts"],
         "@melite/cards/form-fields": ["./../../engines/comfyui/action_cards/src/form-fields.tsx"],
         "@melite/cards/poster-shell": ["./../../engines/comfyui/action_cards/src/poster-shell.tsx"],
         "@melite/estate-drafts/remote": ["./../../estate/drafts/src/typert.remote-client.d.ts"],
@@ -281,9 +282,9 @@
         "@melite/formats/renderSnapshot": ["./../../web-kit/formats/src/renderSnapshot.ts"],
         "@melite/formats/somaSkin": ["./../../web-kit/formats/src/somaSkin.ts"],
         "@melite/formats": ["./../../web-kit/formats/src/index.ts"],
-        "@melite-plugin/timeline/ui/timeline": ["./../../web-kit/timeline/timeline/index.ts"],
-        "@melite-plugin/timeline/ui/store": ["./../../web-kit/timeline/store/index.ts"],
-        "@melite-plugin/timeline/ui/playback": ["./../../web-kit/timeline/playback/index.ts"],
+        "@melite-plugin/timeline/ui/timeline": ["./../../web-kit/timeline/src/timeline/index.ts"],
+        "@melite-plugin/timeline/ui/store": ["./../../web-kit/timeline/src/store/index.ts"],
+        "@melite-plugin/timeline/ui/playback": ["./../../web-kit/timeline/src/playback/index.ts"],
         "@melite/card-base": ["./../card-base/src/host.ts"],
         "@melite/card-base/spec": ["./../card-base/src/spec.ts"],
         "@melite-plugin/dsh-gallery": ["./../infer-gallery/src/index.ts"],

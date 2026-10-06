@@ -35,3 +35,4 @@ export declare function useTimelineScale(opts: TimelineScaleOpts): {
     zoom: (factor: number) => void;
     keepTailVisible: (endFrame: number) => void;
 };
+//# sourceMappingURL=MotionTimelineBarScale.d.ts.map

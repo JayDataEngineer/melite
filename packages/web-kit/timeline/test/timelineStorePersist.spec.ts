@@ -9,7 +9,7 @@ import {
   _persistRunCount,
   flushPersist,
   useTimelineStore,
-} from "../store/timelineStore.ts";
+} from "../src/store/timelineStore.ts";
 import { primeCatalog } from "@melite/catalog";
 import { DEFAULT_SEGMENT_PARAMS } from "@melite/contracts";
 import type { TimelineSegment } from "@melite/contracts";
@@ -258,7 +258,7 @@ describe("debounced persistence", () => {
   it("deletes blobs directly (ok + failing transactions)", async () => {
     await cleanReset();
     table().set("TLB:del-me", "data:video/mp4;base64,D");
-    const { _tlDelete } = await import("../store/timelineStore.ts");
+    const { _tlDelete } = await import("../src/store/timelineStore.ts");
     await _tlDelete("TLB:del-me");
     assert.equal(table().has("TLB:del-me"), false);
     table().set("TLB:del-me2", "data:video/mp4;base64,D2");
@@ -392,7 +392,7 @@ describe("fresh-module environment arms", () => {
     // on a cold module. Everything downstream must survive it loudly.
     idbMode = "open-error";
     vi.resetModules();
-    const fresh = await import("../store/timelineStore.ts");
+    const fresh = await import("../src/store/timelineStore.ts");
     lsData.set(
       LS_KEY,
       JSON.stringify({
@@ -433,7 +433,7 @@ describe("fresh-module environment arms", () => {
       },
     });
     vi.resetModules();
-    await import("../store/timelineStore.ts");
+    await import("../src/store/timelineStore.ts");
     vi.unstubAllGlobals();
     const unload = seen.find((s) => s.name === "beforeunload");
     assert.ok(unload);
@@ -444,7 +444,7 @@ describe("fresh-module environment arms", () => {
   it("skips store creation on upgrade when the blob store exists", async () => {
     table().set("TLB:preexisting", "data:video/mp4;base64,PRE");
     vi.resetModules();
-    const fresh = await import("../store/timelineStore.ts");
+    const fresh = await import("../src/store/timelineStore.ts");
     // The pre-seeded table survived (createObjectStore skipped).
     assert.equal(table().get("TLB:preexisting"), "data:video/mp4;base64,PRE");
     const added = fresh.useTimelineStore.getState().addSegment({ videoUrl: "data:video/mp4;base64,NEW" });

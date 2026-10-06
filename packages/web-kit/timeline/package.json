@@ -2,7 +2,7 @@
   "name": "@melite-plugin/timeline",
   "version": "0.1.0-alpha.1",
   "type": "module",
-  "types": "./timeline/index.ts",
+  "types": "./src/timeline/index.ts",
   "exports": {
     "./ui/timeline": {
       "types": "./lib/timeline/index.d.ts",
@@ -15,6 +15,10 @@
     "./ui/playback": {
       "types": "./lib/playback/index.d.ts",
       "default": "./lib/playback/index.js"
+    },
+    "./client": {
+      "types": "./lib/client/index.d.ts",
+      "default": "./lib/client/index.js"
     },
     "./package.json": "./package.json"
   },
@@ -33,20 +37,26 @@
     "@types/node": "^22.20.0"
   },
   "scripts": {
-    "build": "tsc -p tsconfig.build.json"
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "lib/**/*.js",
     "lib/**/*.d.ts",
-    "lib/**/*.module.css",
-    "timeline/**/*.module.css",
-    "store/**/*.module.css",
-    "playback/**/*.module.css"
+    "lib/**/*.module.css"
   ],
   "melite": {
     "publish": {
       "subpathOnly": true,
       "reason": "cordis plugin loaded by the host runtime, not imported by root"
+    }
+  },
+  "dsh": {
+    "client": {
+      "platform": "web",
+      "external": [
+        "@melite/card-base/client"
+      ]
     }
   }
 }

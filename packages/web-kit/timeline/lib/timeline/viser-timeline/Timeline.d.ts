@@ -1,31 +1,31 @@
-import type { TimelineMessage } from "./messages.js";
-import { useTimelineInteractionState } from "./timeline-interaction-state.js";
-import { useTimelineViewport } from "./timeline-viewport.js";
-import { useTimelineAutoPan } from "./timeline-auto-pan.js";
-import { useTimelineGeometry } from "./timeline-geometry.js";
-import { useTimelineMouseHandlers } from "./timeline-mouse.js";
-import { useTimelineBackground } from "./timeline-render-background.js";
-import { useTimelineForeground } from "./timeline-render-foreground.js";
-import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays.js";
-export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments, getZoomEnvelopeEndFrame, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY, PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales.js";
+import type { TimelineMessage } from "./messages.ts";
+import { useTimelineInteractionState } from "./timeline-interaction-state.ts";
+import { useTimelineViewport } from "./timeline-viewport.ts";
+import { useTimelineAutoPan } from "./timeline-auto-pan.ts";
+import { useTimelineGeometry } from "./timeline-geometry.ts";
+import { useTimelineMouseHandlers } from "./timeline-mouse.ts";
+import { useTimelineBackground } from "./timeline-render-background.ts";
+import { useTimelineForeground } from "./timeline-render-foreground.ts";
+import { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar } from "./timeline-overlays.tsx";
+export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegments, getZoomEnvelopeEndFrame, OUT_OF_RANGE_CONSTRAINT_COLOR, OUT_OF_RANGE_CONSTRAINT_OPACITY, PROMPT_TEXT_Y_OFFSET_PX } from "./timeline-scales.ts";
 export { useTimelineInteractionState };
-export type { TimelineEditingDraft, TimelineInteractionSnapshot, TimelineInteractionStateArgs } from "./timeline-interaction-state.js";
+export type { TimelineEditingDraft, TimelineInteractionSnapshot, TimelineInteractionStateArgs } from "./timeline-interaction-state.ts";
 export { useTimelineViewport };
-export type { TimelineViewport, TimelineViewportArgs } from "./timeline-viewport.js";
+export type { TimelineViewport, TimelineViewportArgs } from "./timeline-viewport.ts";
 export { useTimelineAutoPan };
-export { AUTO_PAN_EDGE_PX, AUTO_PAN_MAX_PX_PER_SEC } from "./timeline-auto-pan.js";
-export type { AutoPanMode, TimelineAutoPan, TimelineAutoPanArgs } from "./timeline-auto-pan.js";
+export { AUTO_PAN_EDGE_PX, AUTO_PAN_MAX_PX_PER_SEC } from "./timeline-auto-pan.ts";
+export type { AutoPanMode, TimelineAutoPan, TimelineAutoPanArgs } from "./timeline-auto-pan.ts";
 export { useTimelineGeometry };
-export type { TimelineGeometry, TimelineGeometryArgs } from "./timeline-geometry.js";
+export type { TimelineGeometry, TimelineGeometryArgs } from "./timeline-geometry.ts";
 export { useTimelineMouseHandlers };
-export type { TimelineMouseArgs, TimelineMouseCallbacks } from "./timeline-mouse.js";
+export type { TimelineMouseArgs, TimelineMouseCallbacks } from "./timeline-mouse.ts";
 export { useTimelineBackground };
-export type { TimelineBackgroundArgs } from "./timeline-render-background.js";
+export type { TimelineBackgroundArgs } from "./timeline-render-background.ts";
 export { useTimelineForeground };
-export type { TimelineForegroundArgs } from "./timeline-render-foreground.js";
+export type { TimelineForegroundArgs } from "./timeline-render-foreground.ts";
 export { SCROLLBAR_TOTAL_HEIGHT, TimelineEditingOverlay, TimelineScrollbar };
-export { SCROLLBAR_HEIGHT } from "./timeline-overlays.js";
-export type { TimelineEditingOverlayProps, TimelineScrollbarProps } from "./timeline-overlays.js";
+export { SCROLLBAR_HEIGHT } from "./timeline-overlays.tsx";
+export type { TimelineEditingOverlayProps, TimelineScrollbarProps } from "./timeline-overlays.tsx";
 interface TimelineProps {
     timelineState: TimelineMessage | null;
     onFrameChange?: (frame: number) => void;
@@ -45,3 +45,4 @@ interface TimelineProps {
     getLatestState?: () => TimelineMessage | null;
 }
 export declare function Timeline({ timelineState, onFrameChange, onKeyframeAdd, onKeyframeMove, onKeyframeDelete, onIntervalAdd, onIntervalMove, onIntervalDelete, onPromptUpdate, onPromptResize, onPromptMove, onPromptDelete, onPromptAdd, onPromptSplit, onPromptMerge, getLatestState }: TimelineProps): import("react").JSX.Element | null;
+//# sourceMappingURL=Timeline.d.ts.map

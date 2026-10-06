@@ -738,13 +738,16 @@
     "./packages/web-kit/formats/src/index.ts"
   ],
   "@melite-plugin/timeline/ui/timeline": [
-    "./packages/web-kit/timeline/timeline/index.ts"
+    "./packages/web-kit/timeline/src/timeline/index.ts"
   ],
   "@melite-plugin/timeline/ui/store": [
-    "./packages/web-kit/timeline/store/index.ts"
+    "./packages/web-kit/timeline/src/store/index.ts"
   ],
   "@melite-plugin/timeline/ui/playback": [
-    "./packages/web-kit/timeline/playback/index.ts"
+    "./packages/web-kit/timeline/src/playback/index.ts"
+  ],
+  "@melite-plugin/timeline/client": [
+    "./packages/web-kit/timeline/src/client/index.ts"
   ],
   "@melite/card-base": [
     "./packages/web/card-base/src/host.ts"

@@ -8,7 +8,7 @@ import {
   getSegmentClipboard,
   hasSegmentClipboard,
   pasteParamsInto,
-} from "../store/segmentClipboard.ts";
+} from "../src/store/segmentClipboard.ts";
 import type { TimelineSegment } from "@melite/contracts";
 
 function seg(over: Partial<TimelineSegment> = {}): TimelineSegment {

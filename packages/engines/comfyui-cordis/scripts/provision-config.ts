@@ -17,6 +17,15 @@ export interface EndpointConfig {
   input_dir?: string;
   input_dir_container?: string;
   output_dir?: string;
+  /** Pack-declared mount categories beyond the stock folders:
+   *  category → store subdirectory (identity when the store already
+   *  names the category). LOAD-BEARING ALIASES stay (wiring re-audit
+   *  F6, 2026-10-13): `model_patches: controlnet` is intended, never
+   *  drift — the z-image lane wires ModelPatchLoader (whose
+   *  `name` shares ControlNetLoader's list through this mount), and
+   *  packages/models/z-image/mods/controlnet.ts documents the lane.
+   *  ComfyUI registers both folder names and unions their file
+   *  lists through a set, so the alias double-lists nothing. */
   extra_model_folders?: Record<string, string>;
   [k: string]: unknown;
 }

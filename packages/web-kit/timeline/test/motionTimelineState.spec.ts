@@ -6,8 +6,8 @@ import {
   MOTION_TIMELINE_TRACKS,
   buildMotionTimelineState,
   makeTimelineId,
-} from "../timeline/viser-timeline/motionTimelineState.ts";
-import type { MotionTimelineInput } from "../timeline/viser-timeline/motionTimelineState.ts";
+} from "../src/timeline/viser-timeline/motionTimelineState.ts";
+import type { MotionTimelineInput } from "../src/timeline/viser-timeline/motionTimelineState.ts";
 
 function input(over: Partial<MotionTimelineInput> = {}): MotionTimelineInput {
   return {

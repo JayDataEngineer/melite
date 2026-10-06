@@ -8,4 +8,5 @@
  * timeline domain — it reads the storyboard store, so it lives where
  * the store lives.
  */
-export * from "./useAudioPlayback.js";
+export * from "./useAudioPlayback.ts";
+//# sourceMappingURL=index.d.ts.map

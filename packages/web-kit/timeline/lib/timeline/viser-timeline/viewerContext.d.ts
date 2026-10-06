@@ -8,3 +8,4 @@ interface ViewerLike {
 }
 export declare const ViewerContext: import("react").Context<ViewerLike | null>;
 export {};
+//# sourceMappingURL=viewerContext.d.ts.map
