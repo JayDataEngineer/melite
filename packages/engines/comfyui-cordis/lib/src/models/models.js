@@ -23,7 +23,7 @@
 import { bootModels, modelsService } from "./service.js";
 import { buildCatalog } from "./catalogEmission.js";
 export * from "./families/contract.js";
-export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
+export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
 let cascadePromise = null;
 /** The shared once-per-process boot entry: fires bootModels() on
  * first call, memoizes, never at import. A REJECTED boot clears

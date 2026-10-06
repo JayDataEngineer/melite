@@ -26,7 +26,7 @@ import { jsonClean } from "../json-clean.js";
 import { unwrapItemArrays } from '@melite/comfyui-card-kit';
 import { benchKeyOfExec } from "./melite-construct.js";
 import { loadCardDefs } from '@melite/comfyui-cordis';
-import { boardedMap, resolveSpecKey } from "../discovery.js";
+import { boardedMap, resolveSpecKeyForTool } from "../discovery.js";
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView';
 import { benchDraftIdOf } from '@melite/contracts/benchStage';
 /** The row's model (the QUEUE LANE LAW, agent-side): the row's
@@ -40,7 +40,7 @@ async function modelForCard(card, params) {
     if (typeof params['model'] === 'string' && params['model'] !== '')
         return params['model'];
     const defs = await loadCardDefs();
-    const res = resolveSpecKey(card, defs, boardedMap(defs));
+    const res = resolveSpecKeyForTool(card, defs, boardedMap(defs));
     return res !== null ? res.model : card;
 }
 /** Fold flat connects into per-stage typed edges. LOUD on shapes the
@@ -522,7 +522,7 @@ a, signal) {
     if (typeof a.prompt === 'string' && a.prompt !== '')
         bag["prompt"] = a.prompt;
     const defs = await loadCardDefs();
-    const resolved = resolveSpecKey(card, defs, boardedMap(defs));
+    const resolved = resolveSpecKeyForTool(card, defs, boardedMap(defs));
     // M7 (the fallback audit): an unknown card used to degrade to
     // `cardDef === undefined`, the tool still birthed a draft with the
     // bogus card id, and the refusal surfaced only at the run door —

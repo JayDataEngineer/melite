@@ -27,7 +27,7 @@ import { bootModels, modelsService, resolveCascade } from "./service.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
 export * from "./families/contract.ts";
-export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
+export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
 let cascadePromise: Promise<void> | null = null;
 

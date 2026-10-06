@@ -173,5 +173,13 @@ export declare function assertFactsCallers(decls: readonly ModelDecl[], factsMod
 export declare function bootModels(): Promise<ModelsService>;
 /** The booted service (throws if bootModels has not settled). */
 export declare function modelsService(): ModelsService;
+/** The boot-state probe (the form-spec census-arm split, 2026-10-13):
+ * true once bootModels has settled in this process. Callers that
+ * CATCH a getModel throw ask this before swallowing it — an
+ * unbooted table's throw is the TABLE's own refusal and must ride,
+ * never flatten into a not-found answer.
+ *
+ * @returns whether the models table is booted. */
+export declare function modelsBooted(): boolean;
 /** The cascade through the booted service (the wall's entry). */
 export declare function resolveCascade(base: Record<string, unknown>, intercept: Record<string, unknown> | null, head: Record<string, unknown> | null): Record<string, unknown>;

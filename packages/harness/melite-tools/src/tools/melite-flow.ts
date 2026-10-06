@@ -29,7 +29,7 @@ import { jsonClean } from '../json-clean.ts'
 import { unwrapItemArrays } from '@melite/comfyui-card-kit'
 import { benchKeyOfExec } from './melite-construct.ts'
 import { loadCardDefs } from '@melite/comfyui-cordis'
-import { boardedMap, resolveSpecKey } from '../discovery.ts'
+import { boardedMap, resolveSpecKeyForTool } from '../discovery.ts'
 import { isTerminalStatus, statusOf, statusOrPendingOf } from '@melite/contracts/stageView'
 import { benchDraftIdOf } from '@melite/contracts/benchStage';
 
@@ -43,7 +43,7 @@ import { benchDraftIdOf } from '@melite/contracts/benchStage';
 async function modelForCard(card: string, params: Record<string, unknown>): Promise<string> {
   if (typeof params['model'] === 'string' && params['model'] !== '') return params['model'] as string
   const defs = await loadCardDefs()
-  const res = resolveSpecKey(card, defs, boardedMap(defs))
+  const res = resolveSpecKeyForTool(card, defs, boardedMap(defs))
   return res !== null ? res.model : card
 }
 export interface MeliteConnectArg {
@@ -590,7 +590,7 @@ async function runSingle(
   const bag: Record<string, unknown> = { ...a.params }
   if (typeof a.prompt === 'string' && a.prompt !== '') bag["prompt"] = a.prompt
   const defs = await loadCardDefs()
-  const resolved = resolveSpecKey(card, defs, boardedMap(defs))
+  const resolved = resolveSpecKeyForTool(card, defs, boardedMap(defs))
   // M7 (the fallback audit): an unknown card used to degrade to
   // `cardDef === undefined`, the tool still birthed a draft with the
   // bogus card id, and the refusal surfaced only at the run door —

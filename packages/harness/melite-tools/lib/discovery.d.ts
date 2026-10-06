@@ -17,6 +17,21 @@ export interface SpecResolution {
     model: string;
 }
 export declare function resolveSpecKey(key: string, defs: Map<string, CardDefinition>, boarded: Map<string, string>): SpecResolution | null;
+/** The TOOL arm's resolution (melite_flow's card question): the
+ *  card census with the family fallback, SILENT on an unbooted
+ *  models table. The tool's own census is the CARD table
+ *  (loadCardDefs — always booted by the time it asks), and the
+ *  live estate boots the models seat before tools serve, so an
+ *  unbooted table here is a cold test process's state: the tool
+ *  keeps its own refusal voice, never the table's. Only the
+ *  form-spec family arm (resolveSpecKey itself) may speak the
+ *  table's voice.
+ *
+ * @param key the tool's card or family id.
+ * @param defs the booted card definitions.
+ * @param boarded family id → owning card id.
+ * @returns the resolution, or null when neither census answers. */
+export declare function resolveSpecKeyForTool(key: string, defs: Map<string, CardDefinition>, boarded: Map<string, string>): SpecResolution | null;
 /** The modifier-pack table (the subcard packs). controlnet waits
  *  unboarded (the phantom-capability gate). kind/label/cardinality
  *  are UI strings with no other live source — one row per pack,
@@ -105,6 +120,8 @@ export declare function formsArm(mcpServers?: readonly string[]): Promise<Record
 /** /v1/kinds — the kinds arm. */
 export declare function kindsDoorArm(): Promise<Record<string, unknown>>;
 /** /v1/form-spec?model=<key> — the envelope, or null when the key
- *  does not resolve (the door 404s, same body as ever). */
+ *  does not resolve (the door 404s, same body as ever). A model
+ *  FAMILY name against an unbooted table THROWS the table's own
+ *  refusal (never a 404 — the census-arm split, 2026-10-13). */
 export declare function formSpecArm(model: string, engineDocs?: ReadonlyMap<string, () => Record<string, unknown>>): Promise<FormSpecDoc | null>;
 //# sourceMappingURL=discovery.d.ts.map

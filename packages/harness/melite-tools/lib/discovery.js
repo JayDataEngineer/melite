@@ -15,7 +15,7 @@
 // the family-owned rows in packages/models/<family>/mods/loras.ts
 // composed server-side. NO second spelling, no remote fetch.
 import { laneContractOf as sharedLaneContractOf } from '@melite/contracts/laneRelations';
-import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, owningAtom, registryModel, loadCardDefs, modelIds, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
+import { buildCatalog, CARD_KINDS, emitParamsSchema, enhanceRecipeFor, getModel, isServedFamily, liveScanOrder, modelsBooted, owningAtom, registryModel, loadCardDefs, modelIds, theService, emitModifierKinds, declaredDefaults, } from '@melite/comfyui-cordis';
 import { faceStamp } from "./faceStamp.js";
 /** The boarded map (family -> the card that boards it, first-seen).
  *  Exported for the flow tool's bench pass (the card-id alias
@@ -58,13 +58,17 @@ export function resolveSpecKey(key, defs, boarded) {
     try {
         decl = getModel(key);
     }
-    catch {
-        // Two different throws land here — the seat not being booted and
-        // a genuinely unknown model — and a name that cannot resolve is
-        // this function's contract, so both answer null. The form-spec
-        // DOOR asks the seat itself before calling, so a lane whose table
-        // has not settled speaks the table's voice instead of routing
-        // every model through the 404.
+    catch (e) {
+        // THE CENSUS ARM SPLIT (2026-10-13 — the old comment's claim was
+        // the reverted fix's residue: the door never asked the seat, so
+        // an unbooted table routed every model through the 404): two
+        // throws land here, and they are NOT one answer. A booted
+        // table's unknown name is this arm's null (404). An unbooted
+        // table's throw is the TABLE's own refusal — the family arm
+        // alone may speak it, so it rides to the door verbatim (the
+        // seat's words, never a hand-copied message).
+        if (!modelsBooted())
+            throw e;
         return null;
     }
     if (!isServedFamily(decl))
@@ -84,6 +88,30 @@ export function resolveSpecKey(key, defs, boarded) {
             return { card, service: fam, model: key };
     }
     return null;
+}
+/** The TOOL arm's resolution (melite_flow's card question): the
+ *  card census with the family fallback, SILENT on an unbooted
+ *  models table. The tool's own census is the CARD table
+ *  (loadCardDefs — always booted by the time it asks), and the
+ *  live estate boots the models seat before tools serve, so an
+ *  unbooted table here is a cold test process's state: the tool
+ *  keeps its own refusal voice, never the table's. Only the
+ *  form-spec family arm (resolveSpecKey itself) may speak the
+ *  table's voice.
+ *
+ * @param key the tool's card or family id.
+ * @param defs the booted card definitions.
+ * @param boarded family id → owning card id.
+ * @returns the resolution, or null when neither census answers. */
+export function resolveSpecKeyForTool(key, defs, boarded) {
+    try {
+        return resolveSpecKey(key, defs, boarded);
+    }
+    catch (e) {
+        if (!modelsBooted())
+            return null;
+        throw e;
+    }
 }
 /** A key is a family key when a DECL names it (routes and owners
  *  alike); otherwise a defs hit is a card-id alias. */
@@ -1018,7 +1046,9 @@ export async function kindsDoorArm() {
     return kindsArm();
 }
 /** /v1/form-spec?model=<key> — the envelope, or null when the key
- *  does not resolve (the door 404s, same body as ever). */
+ *  does not resolve (the door 404s, same body as ever). A model
+ *  FAMILY name against an unbooted table THROWS the table's own
+ *  refusal (never a 404 — the census-arm split, 2026-10-13). */
 export async function formSpecArm(model, engineDocs) {
     // THE ENGINE ARM (stroke 66, generalized stroke 69 — the
     // card-seam completion): an engine id resolves to the ENGINE's
@@ -1034,6 +1064,14 @@ export async function formSpecArm(model, engineDocs) {
         }
         return engineDoc;
     }
+    // THE MCP NAMESPACE — its own census arm, decided BEFORE any
+    // family lookup (the reverted-fix lesson, 2026-10-13): 'mcp' and
+    // 'mcp:<server>' are SERVER census keys. A seated one was served
+    // by the engine arm above; an absent one is the CENSUS's answer
+    // (404) — never the models table's voice and never a getModel
+    // lookup, whatever the table's boot state.
+    if (model === 'mcp' || model.startsWith('mcp:'))
+        return null;
     const defs = await loadCardDefs();
     const res = resolveSpecKey(model, defs, boardedMap(defs));
     if (res === null)

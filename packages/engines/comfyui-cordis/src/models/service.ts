@@ -1195,6 +1195,17 @@ export function modelsService(): ModelsService {
   return booted;
 }
 
+/** The boot-state probe (the form-spec census-arm split, 2026-10-13):
+ * true once bootModels has settled in this process. Callers that
+ * CATCH a getModel throw ask this before swallowing it — an
+ * unbooted table's throw is the TABLE's own refusal and must ride,
+ * never flatten into a not-found answer.
+ *
+ * @returns whether the models table is booted. */
+export function modelsBooted(): boolean {
+  return booted !== null;
+}
+
 /** The cascade through the booted service (the wall's entry). */
 export function resolveCascade(
   base: Record<string, unknown>,
