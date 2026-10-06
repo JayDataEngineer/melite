@@ -19,8 +19,8 @@
 // deployed checkouts the engine loads equal the vendor tree — so
 // neither a drifted copy nor an undeployed cure can pass.
 import { describe, it, expect } from "vitest";
-import { existsSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { join, sep } from "node:path";
 
 const ROOT = join(__dirname, "..", "..", "..", "..");
 const VENDOR = join(ROOT, "vendor", "comfyui_extensions");
@@ -30,18 +30,35 @@ const RUNTIME_ENGINE = "/home/user/tools/comfyui/custom_nodes";
 
 const PACKS = ["melite-audio-nodes", "melite-tts-nodes", "melite-sfx-nodes"] as const;
 
-/** The files every pack that HAS them must serve byte-identical:
- *  the engine seam (core), the schemas, the native binding, the
- *  qvoice codec, and the qwen3 engine. nodes.py is excluded at
- *  whole-file level — its class roster is pack-owned — and pinned
- *  class-by-class below instead. */
+/** The files EVERY pack must serve byte-identical and must CARRY:
+ *  the engine seam (core), the schemas, the native binding, and
+ *  BOTH engine modules — core.py dispatches into them by relative
+ *  import from whichever pack won the custom_nodes race, so a pack
+ *  missing one serves enum members whose families cannot load
+ *  (round-3 N2: tts shipped no moss_sfx_v2 while its sfx family
+ *  rode the enum). */
 const SHARED_FILES = [
   "core.py",
   "schemas.py",
   "native.py",
-  "qvoice.py",
   "engines/qwen3_tts.py",
+  "engines/moss_sfx_v2.py",
+  "engines/__init__.py",
 ] as const;
+
+/** Files carried only by the packs whose nodes use them (qvoice is
+ *  the .qvoice codec spec, imported by no core seam): byte-identical
+ *  among carriers, but a non-carrier is lawful — the dispatcher
+ *  never reaches them. */
+const CARRIER_FILES = ["qvoice.py"] as const;
+
+/** Engine subtrees that must exist byte-identical in EVERY pack:
+ *  core.py dispatches into these by relative import regardless of
+ *  which pack won the custom_nodes race, so a pack missing one
+ *  serves an enum member whose family cannot load (the round-3
+ *  N2/N3 class: tts shipped no moss_sfx_v2 while its sfx family
+ *  rode the enum). */
+const SHARED_TREES = ["engines/moss_sfx_impl"] as const;
 
 /** Every class defined by more than one pack — the split's lawful
  *  duplication, held identical by this wall. A NEW class reaching a
@@ -107,13 +124,50 @@ describe("the three-pack audiocore parity wall", () => {
     }
   });
 
-  it("every shared file is byte-identical across the packs that carry it", () => {
+  it("every dispatcher-reached file is carried by EVERY pack and byte-identical (core.py imports these by relative path from whichever pack won the custom_nodes race)", () => {
     for (const rel of SHARED_FILES) {
+      for (const pack of PACKS) {
+        const src = read(pack, rel);
+        expect(src, `${pack}/${rel} must be carried — a pack missing it serves enum members whose families cannot load`).not.toBeNull();
+      }
+      const [first, ...rest] = PACKS.map((pack) => ({ pack, src: read(pack, rel) as string }));
+      for (const other of rest) {
+        expect(other.src, `${other.pack}/${rel} drifts from ${first.pack}'s — the engine seam is one body, not three`).toBe(first.src);
+      }
+    }
+  });
+
+  it("every carrier file is byte-identical among the packs that carry it (a codec forked across carriers is two codecs)", () => {
+    for (const rel of CARRIER_FILES) {
       const held = PACKS.map((pack) => ({ pack, src: read(pack, rel) })).filter((x) => x.src !== null);
       expect(held.length, `${rel} is carried by at least one pack`).toBeGreaterThan(0);
       const [first, ...rest] = held as { pack: string; src: string }[];
       for (const other of rest as { pack: string; src: string }[]) {
-        expect(other.src, `${other.pack}/${rel} drifts from ${first.pack}'s — the engine seam is one body, not three`).toBe(first.src);
+        expect(other.src, `${other.pack}/${rel} drifts from ${first.pack}'s`).toBe(first.src);
+      }
+    }
+  });
+
+  it("every shared engine subtree is carried by EVERY pack, byte-identical (moss_sfx_impl is dispatched by relative import; __pycache__ excluded)", () => {
+    const listTree = (pack: string, rel: string): string[] => {
+      const base = join(VENDOR, pack, rel);
+      if (!existsSync(base)) return [];
+      return readdirSync(base, { recursive: true })
+        .filter((f) => typeof f === "string" && !(f as string).split(sep).includes("__pycache__") && statSync(join(base, f as string)).isFile())
+        .map((f) => (f as string).split(sep).join("/"))
+        .sort();
+    };
+    for (const rel of SHARED_TREES) {
+      const trees = PACKS.map((pack) => ({ pack, files: listTree(pack, rel) }));
+      const [first, ...rest] = trees;
+      expect(first.files.length, `${rel} must hold files in ${first.pack}`).toBeGreaterThan(0);
+      for (const other of rest) {
+        expect(other.files, `${other.pack}/${rel} file set drifts from ${first.pack}'s`).toEqual(first.files);
+        for (const f of first.files) {
+          expect(readFileSync(join(VENDOR, other.pack, rel, f), "utf8"), `${other.pack}/${rel}/${f} drifts from ${first.pack}'s`).toBe(
+            readFileSync(join(VENDOR, first.pack, rel, f), "utf8"),
+          );
+        }
       }
     }
   });
@@ -178,11 +232,20 @@ describe("the three-pack audiocore parity wall", () => {
     // silently. The effective law is now byte-identical across
     // all three packs; this arm keeps any module-level def in
     // nodes.py from ever being defined twice in one file.
+    // Round 3 extended the class: the same shadowing disease held
+    // FAMILY_NAMES, _DEFAULT_MODEL_DIR, _WEIGHT_FILE_NAMES,
+    // _WEIGHT_FILE_SUFFIXES, and _MAX_WALK_DEPTH as doubled
+    // module-level ASSIGNMENTS (byte-identical pairs, but a future
+    // edit to the first binding would cure nothing) — the arm pins
+    // top-level assignments to one binding per name as well.
     for (const pack of PACKS) {
       const src = read(pack, "nodes.py") as string;
-      const names = [...src.matchAll(/^def (\w+)/gm)].map((m) => m[1]);
-      const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+      const defs = [...src.matchAll(/^def (\w+)/gm)].map((m) => m[1]);
+      const dupes = defs.filter((n, i) => defs.indexOf(n) !== i);
       expect(dupes, `${pack}/nodes.py: module-level functions defined twice (the first is dead shadowed code)`).toEqual([]);
+      const assigns = [...src.matchAll(/^([A-Za-z_]\w*) = /gm)].map((m) => m[1]);
+      const dupeAssigns = assigns.filter((n, i) => assigns.indexOf(n) !== i);
+      expect(dupeAssigns, `${pack}/nodes.py: module-level constants bound twice (the first binding is dead shadowed code)`).toEqual([]);
     }
   });
 
@@ -204,11 +267,19 @@ describe("the three-pack audiocore parity wall", () => {
     // the deployed truth when present; a bare CI checkout has
     // neither and the arm stands down (the same owner-local law as
     // test:expected).
-    const deployed = [join(RUNTIME_ENGINE, "custom_nodes"), RUNTIME].filter((d) => existsSync(join(d, PACKS[0])));
+    // RUNTIME_ENGINE already ends in custom_nodes — joining it
+    // AGAIN was the round-3 fail-open bug (the doubled path never
+    // exists, the filter dropped it silently, and the arm compared
+    // staging only). The engine root, when it exists at all, MUST
+    // be among the compared roots — fail-closed, never filtered.
+    const deployed = [RUNTIME_ENGINE, RUNTIME].filter((d) => existsSync(join(d, PACKS[0])));
+    if (existsSync(RUNTIME_ENGINE)) {
+      expect(deployed, "the engine root exists — it must be among the compared roots, never silently filtered").toContain(RUNTIME_ENGINE);
+    }
     if (deployed.length === 0) return;
     for (const root of deployed) {
       for (const pack of PACKS) {
-        for (const rel of [...SHARED_FILES, "nodes.py", "__init__.py"]) {
+        for (const rel of [...SHARED_FILES, ...CARRIER_FILES, "nodes.py", "__init__.py"]) {
           const v = read(pack, rel);
           const dp = join(root, pack, rel);
           expect(existsSync(dp), `${pack}/${rel} missing under ${root}`).toBe(v !== null);
