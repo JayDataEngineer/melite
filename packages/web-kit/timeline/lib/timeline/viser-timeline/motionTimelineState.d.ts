@@ -1,5 +1,5 @@
-import type { TimelineMessage, TimelineInterval } from "./messages.ts";
-import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.ts";
+import type { TimelineMessage, TimelineInterval } from "./messages.js";
+import type { TimelineTrack, TimelineKeyframe, TimelinePrompt } from "./types.js";
 export declare const MOTION_TIMELINE_TRACKS: TimelineTrack[];
 export interface MotionTimelineInput {
     fps: number;
