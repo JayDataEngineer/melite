@@ -82,7 +82,7 @@ export const DECL: ModelDecl = {
     {
       "id": "int8",
       "label": "INT8 ConvRot",
-      "hint": "The official template pick — 7.3GB unet, int8 convrot (DEFAULT)",
+      "hint": "The official template pick — 7.3GB unet, int8 convrot (DEFAULT). Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
       "group": "Variant",
       "route": "qwen-img-21",
       "order": 0,
@@ -106,7 +106,7 @@ export const DECL: ModelDecl = {
     {
       "id": "bf16",
       "label": "BF16",
-      "hint": "Full precision unet + bf16 encoder — 14.2GB unet, highest fidelity, most VRAM",
+      "hint": "Full precision unet + bf16 encoder — 14.2GB unet, highest fidelity, most VRAM. Requires provisioning: the 2.1 files are NOT on this box by default; without them the engine validation refuses LOUD (the honest face — the 2511 weights are what ship).",
       "group": "Variant",
       "route": "qwen-img-21-bf16",
       "order": 1,

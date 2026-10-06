@@ -55,8 +55,13 @@ function railStamps(decl: string): string[] {
 type Joined = { site: string; join: string; values: readonly string[] };
 
 const JOINED: Joined[] = [
-  { site: "h3:sampler_name", join: "KSampler.sampler_name", values: SAMPLER_OPTIONS },
-  { site: "h3:sched_name", join: "KSampler.scheduler", values: SCHEDULER_OPTIONS },
+  // THE NODE THE LANE COMPOSES (video drift audit, 2026-10-13): h3
+  // wires KSamplerSelect + BasicSampler's scheduler through
+  // SamplerCustomAdvanced — the KSampler.* proxy rows below judged
+  // the same BACKEND enums but never the nodes the lane actually
+  // loads; the join now names those nodes directly.
+  { site: "h3:sampler_name", join: "KSamplerSelect.sampler_name", values: SAMPLER_OPTIONS },
+  { site: "h3:sched_name", join: "BasicScheduler.scheduler", values: SCHEDULER_OPTIONS },
   { site: "tagger:caption_task", join: "Florence2Run.task", values: TAGGER_CAPTION_TASKS },
   { site: "tagger:caption_type", join: "JJC_JoyCaption.caption_type", values: TAGGER_CAPTION_TYPES },
   { site: "tagger:caption_length", join: "JJC_JoyCaption.caption_length", values: TAGGER_CAPTION_LENGTHS },

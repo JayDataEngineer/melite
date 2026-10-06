@@ -107,6 +107,11 @@ export const DECL: ModelDecl = {
   // GHOST DEBT CLEARED (2026-10-12 model audit, fix 4): the fp16
   // conversion pair from numz' comfy repack; SEEDVR2 folder maps via
   // the endpoint's extra_model_folders (the pack registers the type).
+  // The fp8 3B row (bytes audit, 2026-10-13): the pack's DEFAULT_DIT
+  // IS this file — the loader resolves it out of the box, so the DECL
+  // declares it or the door cannot provision the default the engine
+  // would otherwise name. sha256 + size from the pack's own model
+  // registry (model_registry.py:38) and the hub's x-linked-size.
   "provisions": [
     {
       "name": "seedvr2_ema_3b_fp16.safetensors",
@@ -114,6 +119,13 @@ export const DECL: ModelDecl = {
       "folder": "SEEDVR2",
       "sha256": "2fd0e03a3dad24e07086750360727ca437de4ecd456f769856e960ae93e2b304",
       "size_bytes": 6783018808
+    },
+    {
+      "name": "seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      "url": "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_3b_fp8_e4m3fn.safetensors",
+      "folder": "SEEDVR2",
+      "sha256": "3bf1e43ebedd570e7e7a0b1b60d6a02e105978f505c8128a241cde99a8240cff",
+      "size_bytes": 3391544696
     },
     {
       "name": "ema_vae_fp16.safetensors",

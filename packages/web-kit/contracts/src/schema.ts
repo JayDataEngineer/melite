@@ -1012,7 +1012,7 @@ export interface components {
          * @description One param whose VALUE is a model file the builder loads.
          *
          *     The builder form-field contract (2026-08-14): fields like ``vfi_model``
-         *     ("rife46.pth"…) or ``upscale_model`` feed a loader node with a filename
+         *     ("rife47.pth"…) or ``upscale_model`` feed a loader node with a filename
          *     picked from a vocabulary. Before this, that vocabulary lived ONLY in
          *     builder code — the door gate couldn't see it, so a missing RIFE
          *     checkpoint died as an opaque mid-run ComfyUI error. Declaring the param

@@ -35,6 +35,10 @@ const PROVISION_PINS: ReadonlyArray<
   readonly [name: string, sha256: string, url: string, size_bytes: number]
 > = [
   ["seedvr2_ema_3b_fp16.safetensors", "2fd0e03a3dad24e07086750360727ca437de4ecd456f769856e960ae93e2b304", "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_3b_fp16.safetensors", 6783018808],
+  // the pack's DEFAULT_DIT (bytes audit 2026-10-13): the loader
+  // resolves it out of the box — declared or the door can never
+  // provision the engine's own default pick
+  ["seedvr2_ema_3b_fp8_e4m3fn.safetensors", "3bf1e43ebedd570e7e7a0b1b60d6a02e105978f505c8128a241cde99a8240cff", "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/seedvr2_ema_3b_fp8_e4m3fn.safetensors", 3391544696],
   ["ema_vae_fp16.safetensors", "20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1", "https://huggingface.co/numz/SeedVR2_comfyUI/resolve/main/ema_vae_fp16.safetensors", 501324814],
 ];
 

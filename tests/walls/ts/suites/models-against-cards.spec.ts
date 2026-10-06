@@ -584,8 +584,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // landing: 42 -> 59 (17 new rows across 8 families; the dino
     // swap is net-zero); the §4c closing: 59 -> 60 (joytag's
     // model.safetensors, the pack weights the audit ghosted); the
-    // ghost-tree judgment: 60 -> 61 (transfer_rig's mirrored npz)
-    const PROVISION_ROW_COUNT = 61;
+    // ghost-tree judgment: 60 -> 61 (transfer_rig's mirrored npz);
+    // the bytes audit: 61 -> 62 (seedvr2_ema's fp8 3B — the pack's
+    // DEFAULT_DIT, declarable or the door cannot provision the
+    // engine's own default pick)
+    const PROVISION_ROW_COUNT = 62;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {

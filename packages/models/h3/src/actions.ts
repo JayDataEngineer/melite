@@ -83,12 +83,27 @@ const SHARPEN_DEFAULTS = { method: 'rcas', strength: 0.3, radius: 1.0, threshold
  * are invariants of THIS package's lane — no variant varies them,
  * so they live beside the parser that reads them, never in a row
  * a family could drift. The unet alone rides the DECL row: quants
- * and hybrids vary it per route. */
+ * and hybrids vary it per route. sr_vae is the seedvr2_ema DECL's
+ * own row (its lane_inputs.vae) duplicated HERE as the invariant
+ * the super-resolution branch loads — the sr_model DiT rides the
+ * param enum instead (joined to the engine combo), and this const
+ * is the one home the VAE filename owns in this package (the
+ * video drift audit, 2026-10-13: a bare literal at the node seat
+ * was a second copy nobody owned). */
 const LANE_FILES = {
   clip: 'qwen3vl_32b_minimax_h3_int8_convrot.safetensors',
   vae_video: 'minimax_h3_video_vae_int8_convrot.safetensors',
   vae_audio: 'minimax_h3_audio_vae_fp32.safetensors',
+  sr_vae: 'ema_vae_fp16.safetensors',
 } as const
+
+/** The film mux's bit depth — ONE home for the CreateVideo literal
+ * the four join seats wire (the video drift audit, 2026-10-13: a
+ * bare 8 at each seat was four copies of one truth). The engine's
+ * combo admits ["auto", 8, 10]; the estate always renders an exact
+ * 8-bit mp4 (the h264 pipeline's own depth), never "auto" — a
+ * deliberate pin, changed only here. */
+const FILM_BIT_DEPTH = 8
 
 /** The h3 facts door: the resolved lane_inputs parsed into the
  * loader names the renderers read (the unet from the row; the
@@ -600,7 +615,7 @@ function renderH3Film(
       after,
     })
     const filmCreated = g.node('CreateVideo', {
-      images: join.out(0), audio: meter.out(0), fps: join.out(2), bit_depth: 8,
+      images: join.out(0), audio: meter.out(0), fps: join.out(2), bit_depth: FILM_BIT_DEPTH,
     })
     return g.node('SaveVideo', {
       video: filmCreated.out(), filename_prefix: 'h3_t4_film',
@@ -612,7 +627,7 @@ function renderH3Film(
     after,
   })
   const filmCreated = g.node('CreateVideo', {
-    images: concat.out(0), audio: concat.out(1), fps: concat.out(2), bit_depth: 8,
+    images: concat.out(0), audio: concat.out(1), fps: concat.out(2), bit_depth: FILM_BIT_DEPTH,
   })
   return g.node('SaveVideo', {
     video: filmCreated.out(), filename_prefix: 'h3_t4_film',
@@ -1211,7 +1226,7 @@ function renderH3Window(
   }
   if (isT4r) {
     const created = g.node('CreateVideo', {
-      images: vdec, audio: vadec, fps: fpsInput, bit_depth: 8,
+      images: vdec, audio: vadec, fps: fpsInput, bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     // ONE WINDOW-NAMING LAW (2026-09-22, the file-tail amendment):
@@ -1268,7 +1283,7 @@ function renderH3Window(
         model: p.sr_model as string, device: 'cuda:0',
       }).out(),
       vae: g.node('SeedVR2LoadVAEModel', {
-        model: 'ema_vae_fp16.safetensors', device: 'cuda:0',
+        model: LANE_FILES.sr_vae, device: 'cuda:0',
       }).out(),
       seed: 42, resolution: srRes,
       max_resolution: 0, batch_size: 5, uniform_batch_size: false,
@@ -1293,7 +1308,7 @@ function renderH3Window(
     const interpOn = secondPassOn && (p.interpolate_enabled as boolean)
     const interpMult = p.interp_multiplier as number
     const created = g.node('CreateVideo', {
-      images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: 8,
+      images: sharpSw, audio: vadec, fps: interpOn ? 24 * interpMult : 24, bit_depth: FILM_BIT_DEPTH,
       // color_space: pin autofill "sRGB"
     })
     const saved = g.node('SaveVideo', {
