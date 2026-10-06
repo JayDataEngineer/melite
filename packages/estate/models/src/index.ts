@@ -174,20 +174,31 @@ interface RootConfig {
   engines?: { comfyui?: { base?: string } };
 }
 
-/** Resolve the weights store root from one checkout dir (the
- *  provision script's boundModelFolders law, verbatim): endpoint
- *  model_download_path (when set) else endpoint model_base_path
- *  (when set) else <root models.download_root>/<engines.comfyui.
- *  base>. The root config is the machine-local overlay
+/** Resolve the weights store DOWNLOAD root from one checkout dir.
+ *  This is the provision law's DOWNLOAD arm — ONE value of the
+ *  three boundModelFolders derives — never the whole law:
+ *  endpoint model_download_path (when set) else endpoint
+ *  model_base_path (when set) else <root
+ *  models.download_root>/<engines.comfyui.base>. The READ arm
+ *  (models.read_root-derived base_path) and the 22-entry folder
+ *  remap map are NOT derived here: this door serves provision
+ *  DESTINATIONS (where downloads land), and read_root only moves
+ *  the engine's read tree — on a read_root != download_root
+ *  machine this door and the provisioner's read arm disagree BY
+ *  DESIGN. Anchoring also differs by role: boundModelFolders
+ *  anchors each arm against the REPO constant before joining;
+ *  this door anchors the RESULT against its repoDir parameter
+ *  (tests pass other checkouts; production passes the repo root).
+ *  The root config is the machine-local overlay
  *  (data/inference.local.json) when present, else the tracked
  *  inference.config.json — the SAME overlay law as provision-config
  *  loadRoot (machine-local absolutes live in the untracked overlay
- *  ONLY; the tracked tree ships portable repo-relative defaults, so
- *  a fresh clone never inherits another machine's /mnt). A relative
- *  store anchors to the repo dir (the CLI's anchorDir law). A
- *  present-but-empty endpoint key refuses LOUD (unset the key to
- *  inherit — never guessed); an unset read_root refuses LOUD (the
- *  provision law's own die). */
+ *  ONLY; the tracked tree ships portable repo-relative defaults,
+ *  so a fresh clone never inherits another machine's /mnt). A
+ *  relative store anchors to the repo dir (the CLI's anchorDir
+ *  law). A present-but-empty endpoint key refuses LOUD (unset the
+ *  key to inherit — never guessed); an unset read_root refuses
+ *  LOUD (the provision law's own die). */
 export function loadStoreRoot(repoDir: string): string {
   const ep = JSON.parse(
     readFileSync(

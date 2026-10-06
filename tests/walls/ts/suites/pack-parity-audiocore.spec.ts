@@ -170,6 +170,33 @@ describe("the three-pack audiocore parity wall", () => {
 
   // ── THE DEPLOYED TRUTH — vendor equals the tree the engine serves ──
 
+  it("no module-level law is defined twice in one pack file (a shadowed def is dead code wearing a live name)", () => {
+    // The re-audit round 3 class: tts and sfx each carried TWO
+    // module-level _list_audiocore_models definitions — the first
+    // (an older walk law) permanently shadowed by the second. A
+    // future editor patching the dead copy would cure nothing,
+    // silently. The effective law is now byte-identical across
+    // all three packs; this arm keeps any module-level def in
+    // nodes.py from ever being defined twice in one file.
+    for (const pack of PACKS) {
+      const src = read(pack, "nodes.py") as string;
+      const names = [...src.matchAll(/^def (\w+)/gm)].map((m) => m[1]);
+      const dupes = names.filter((n, i) => names.indexOf(n) !== i);
+      expect(dupes, `${pack}/nodes.py: module-level functions defined twice (the first is dead shadowed code)`).toEqual([]);
+    }
+  });
+
+  it("the effective model-walk law is byte-identical across the three packs (one enum, not three)", () => {
+    const bodies = PACKS.map((pack) => {
+      const src = read(pack, "nodes.py") as string;
+      const m = /^def _list_audiocore_models\(\)[^\n]*\n[\s\S]*?(?=^def |^class |\Z)/m.exec(src);
+      expect(m, `${pack}/nodes.py: the walk law must exist`).toBeTruthy();
+      return m![0];
+    });
+    expect(bodies[1], "sfx walk law drifts from tts").toBe(bodies[0]);
+    expect(bodies[2], "audio walk law drifts from tts").toBe(bodies[0]);
+  });
+
   it("the deployed tree equals the vendor tree for every shared file and nodes.py (an undeployed cure is not landed; owner-local — CI boxes deploy nothing)", () => {
     // The engine runs from its own ComfyUI root, whose custom_nodes
     // holds git checkouts of these packs at the pinned refs; the

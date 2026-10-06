@@ -290,6 +290,22 @@ describe("findRepoRoot", () => {
 });
 
 describe("loadStoreRoot + resolveStoreRoot", () => {
+  test("the door's JSDoc does not claim the whole provision law (the F-17 class: a 'verbatim' that names a law it does not reproduce)", () => {
+    // The door derives the DOWNLOAD arm only; the read arm and the
+    // folder map belong to boundModelFolders. The JSDoc must say
+    // which value it serves and that the others are not derived —
+    // never "verbatim" over a three-valued law. Pinned as a spec
+    // because prose drift is exactly what audits cannot see.
+    const src = readFileSync(
+      new URL("../src/index.ts", import.meta.url), "utf8",
+    );
+    const m = /\/\*\* Resolve the weights store[^]*?\*\//.exec(src);
+    assert.ok(m, "the loadStoreRoot JSDoc exists");
+    const doc = m[0];
+    assert.ok(!/verbatim/.test(doc), "the JSDoc must not claim verbatim over a law it partially derives");
+    assert.ok(/DOWNLOAD arm/.test(doc), "the JSDoc names the one arm it derives");
+    assert.ok(/NOT derived here/.test(doc), "the JSDoc names the arms it does not derive");
+  });
   test("the tracked checkout resolves the endpoint download_path", () => {
     assert.equal(loadStoreRoot(findRepoRoot(process.cwd())), LIVE_STORE);
   });
