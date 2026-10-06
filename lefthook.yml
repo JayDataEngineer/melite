@@ -69,5 +69,16 @@ pre-push:
     # The full local battery on push: tsc per typecheck package
     # (CI runs unit/coverage/tiers only — types are the battery's
     # to own) + the walls via the root vitest node project.
+    #
+    # THE UPSTREAM-TRACKING LAW (found 2026-10-13): lefthook
+    # computes a pre-push job's file set from the current branch's
+    # @{push}; a branch with NO upstream tracking yields an empty
+    # set and the job silently skips ("no matching push files") —
+    # batches pushed with the type battery never firing. The
+    # one-time cure is `git push -u origin cordis`; a checkout that
+    # moves to a fresh branch must re-track before trusting a push.
+    # The typecheck-gate wall owns this truth on every root test
+    # run regardless (typecheck-gate.spec.ts), so the battery is
+    # the second seat, never the only one.
     - name: tsc + walls (full)
       run: node tools/hook-full-battery.mjs

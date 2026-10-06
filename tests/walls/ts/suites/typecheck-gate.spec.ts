@@ -133,6 +133,27 @@ const DELEGATED = process.env.MELITE_TIER_DELEGATED === "1";
 describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", () => {
   const dirs = packageDirs();
 
+  it("every typecheck-owning package declares its own tsc (the battery's per-package .bin must exist)", () => {
+    // The battery (tools/hook-full-battery.mjs) resolves each
+    // typecheck owner's node_modules/.bin/tsc. A manifest that
+    // declares `typecheck: tsc --noEmit` without a typescript
+    // devDependency never gets that binary from pnpm — the battery
+    // dies at preflight (BATTERY FAIL: tsc missing) and the type
+    // net silently loses its push gate. packages/web-kit/timeline
+    // shipped exactly that (found 2026-10-13 when the pre-push
+    // battery was run by hand after a push had silently skipped).
+    for (const dir of manifestDirs()) {
+      const manifest = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
+        scripts?: Record<string, string>;
+        devDependencies?: Record<string, string>;
+        dependencies?: Record<string, string>;
+      };
+      if (typeof manifest.scripts?.typecheck !== "string") continue;
+      const deps = { ...manifest.dependencies, ...manifest.devDependencies };
+      expect(deps.typescript, `${dir} declares a typecheck script but no typescript dependency — pnpm never mints its .bin/tsc`).toBeTruthy();
+    }
+  });
+
   it("the net reaches the estate (discovery is dynamic, not a named list)", () => {
     // DERIVED, NOT A PINNED COUNT (the flake audit, 2026-10-15): the
     // old exact number made every package addition an arithmetic
