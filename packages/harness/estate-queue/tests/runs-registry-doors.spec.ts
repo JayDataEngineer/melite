@@ -14,7 +14,7 @@ import type { FlowResult, MergeRow, EngineJson } from "@melite/comfyui-cordis";
 import { DECL as ANNY_DECL } from "../../../models/anny/src/index.ts";
 import { DECL as FIT_DECL } from "../../../models/fit/src/index.ts";
 import { DECL as SKIN_DECL } from "../../../models/skin/src/index.ts";
-import { RunsRuntimeService, benchWiring } from "../src/runsRegistry.ts";
+import { RunsRuntimeService, benchWiring, withStageReports, sidecarReaderFor } from "../src/runsRegistry.ts";
 import { EnginesService } from "@melite/engine-contract";
 import { QueueCore } from "../src/queue.ts";
 import { CardArmError } from "../src/cardsRegistry.ts";
@@ -1129,6 +1129,95 @@ describe("status + stop", () => {
     assert.deepEqual(await s.svc.stop(done, sig()), {
       error: "cannot stop run in state completed",
     });
+  });
+
+  it("THE REPORT SIDECAR MOUNT (2026-10-17): a run dir's <stem>.report.json rides the status stage INLINE, contract-judged", async () => {
+    const s = seat();
+    const runId = "run-rig-report";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(join(dir, "3D"), { recursive: true });
+    // the writer's own body (report_sidecar.py's fold): a finished
+    // bench report entry, never a rig tuple
+    const report = { kind: "report", status: "fail", title: "Rig validation",
+      chips: ["CRITICAL 1"], rows: { passed: false, critical_count: 1 } };
+    writeFileSync(join(dir, "3D", "rigged.report.json"), JSON.stringify(report));
+    const stage: RunStageRow = {
+      id: "st1", name: "rig", index: 0, status: "completed",
+      url: "rigged.glb", gallery: [{ name: "3D/rigged.glb" }] as never,
+      outputs: {}, expected: {},
+    };
+    live(s, { runId, status: "completed", stages: [stage] });
+    const got = await s.svc.status(runId, sig());
+    const stages = got["stages"] as Array<Record<string, unknown>>;
+    assert.deepEqual(stages[0]["reports"], { rigged: report });
+    // a clean run's row never grows the key
+    const bare = live(s, { runId: "run-rig-bare", status: "completed",
+      stages: [{ id: "st1", name: "rig", index: 0, status: "completed", gallery: [{ name: "a.png" }] as never, outputs: {}, expected: {} }] });
+    const bareRow = await s.svc.status(bare, sig());
+    assert.equal("reports" in (bareRow["stages"] as Array<Record<string, unknown>>)[0], false);
+  });
+
+  it("the mount refuses loud: non-JSON and contract-unlawful sidecars warn + skip; an existing key wins", async () => {
+    const s = seat();
+    const runId = "run-rig-loud";
+    const dir = join(s.state, "output", runId);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "broken.report.json"), "{not json");
+    // a rig TUPLE is not a report entry — the contract refuses it
+    writeFileSync(join(dir, "tuple.report.json"), JSON.stringify([true, [], { bones: 2 }]));
+    const stage: RunStageRow = {
+      id: "st1", name: "rig", index: 0, status: "completed",
+      gallery: [{ name: "broken.glb" }, { name: "tuple.glb" }, { name: "kept.glb" }] as never,
+      reports: { kept: { kind: "report", status: "pass" } } as never,
+      outputs: {}, expected: {},
+    };
+    live(s, { runId, status: "completed", stages: [stage] });
+    const got = await s.svc.status(runId, sig());
+    const stages = got["stages"] as Array<Record<string, unknown>>;
+    assert.deepEqual(stages[0]["reports"], { kept: { kind: "report", status: "pass" } });
+    const warnings = got["warnings"] as string[];
+    assert.equal(warnings.length, 2);
+    assert.match(warnings[0], /broken\.report\.json is not JSON/);
+    assert.match(warnings[1], /tuple\.report\.json refused by the bench result contract/);
+  });
+});
+
+describe("withStageReports + sidecarReaderFor (the pure decorate, function-grain)", () => {
+  const rep = (status: string): Record<string, unknown> =>
+    ({ kind: "report", status, title: "Rig validation" });
+  const withDir = (
+    fn: (dir: string) => void,
+  ): { row: Record<string, unknown>; dir: string } => {
+    const dir = tmp();
+    fn(dir);
+    return { row: { run_id: "run-p", stages: [{ id: "s", gallery: [{ name: "3D/foo.glb" }] }] }, dir };
+  };
+
+  it("derives <stem>.report.json siblings from gallery names and the hero url (run-id prefix stripped)", () => {
+    const { row, dir } = withDir((d) => {
+      mkdirSync(join(d, "3D"), { recursive: true });
+      writeFileSync(join(d, "3D", "foo.report.json"), JSON.stringify(rep("pass")));
+    });
+    row["stages"] = [{ id: "s", url: "run-p/3D/foo.glb", gallery: [{ name: "3D/foo.glb" }] }];
+    const out = withStageReports(row, sidecarReaderFor(dir));
+    assert.deepEqual((out["stages"] as Array<Record<string, unknown>>)[0]["reports"], { foo: rep("pass") });
+  });
+
+  it("the reader answers null for absent sidecars; a stage without candidates passes through untouched", () => {
+    const read = sidecarReaderFor(tmp());
+    assert.equal(read("nope.report.json"), null);
+    const row = { run_id: "r", stages: [{ id: "s", gallery: [] }] };
+    assert.equal(withStageReports(row as never, read), row);
+  });
+
+  it("prior warnings ride along; a skipped-only mount still warns", () => {
+    const dir = tmp();
+    writeFileSync(join(dir, "bad.report.json"), "~~");
+    const out = withStageReports(
+      { run_id: "r", warnings: ["existing"], stages: [{ id: "s", gallery: [{ name: "bad.glb" }] }] },
+      sidecarReaderFor(dir),
+    );
+    assert.deepEqual(out["warnings"], ["existing", "report sidecar bad.report.json is not JSON — skipped"]);
   });
 });
 

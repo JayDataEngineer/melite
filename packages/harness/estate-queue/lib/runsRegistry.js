@@ -15,6 +15,7 @@ import { join, relative } from "node:path";
 import { Service } from "@deepseek-ai/cordis";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
 import { stageEngineOf } from "@melite/contracts/benchStage";
+import { benchResultDefects } from "@melite/contracts/benchResult";
 import { remoteErrorOf } from "@deepseek-ai/dsh-typert-protocol";
 import { needComfyUI } from "@melite/comfyui-cordis";
 import { expandRegistryFlow, extractRequestInitials, getRegistryFlow, registryFlowToInline, inlineStagesNameCards, registryInitialsError, } from "./flowsData.js";
@@ -85,6 +86,123 @@ export function enrichDiskRow(row) {
                 ...(typeof current['url'] === 'string' && current['url'] !== '' ? {} : { url: hero }),
                 ...(Array.isArray(current['gallery']) ? {} : { gallery: names.map((name) => ({ name })) }),
             }],
+    };
+}
+/** THE SIDECAR READER (2026-10-17): one run dir → a read(name)
+ *  closure. Absent sidecars are the COMMON case (a run validates
+ *  only when its lane asks) — every miss reads as null, never a
+ *  throw, so the decorate stays about mounting, not survival.
+ * @param dir the run's output dir (names resolve against it)
+ * @returns a UTF-8 reader returning null for any unreadable name */
+export function sidecarReaderFor(dir) {
+    return (name) => {
+        try {
+            return readFileSync(join(dir, name), 'utf8');
+        }
+        catch {
+            return null;
+        }
+    };
+}
+/** The sidecar candidates for one stage row: every gallery name's
+ *  own `<stem>.report.json` sibling, keyed by stem. */
+function sidecarCandidatesOf(stage, runId) {
+    const candidates = new Map();
+    const add = (name) => {
+        const at = name.lastIndexOf('/');
+        const dir = at >= 0 ? name.slice(0, at + 1) : '';
+        const base = at >= 0 ? name.slice(at + 1) : name;
+        const dot = base.lastIndexOf('.');
+        const stem = dot > 0 ? base.slice(0, dot) : base;
+        if (stem === '')
+            return;
+        if (!candidates.has(stem))
+            candidates.set(stem, `${dir}${stem}.report.json`);
+    };
+    const gallery = Array.isArray(stage['gallery']) ? stage['gallery'] : [];
+    for (const g of gallery) {
+        if (typeof g === 'object' && g !== null && !Array.isArray(g)) {
+            const name = g['name'];
+            if (typeof name === 'string' && name !== '')
+                add(name);
+        }
+    }
+    const url = typeof stage['url'] === 'string' ? stage['url'] : '';
+    if (url !== '') {
+        const marker = `/${runId}/`;
+        const at = url.lastIndexOf(marker);
+        add(at >= 0 ? url.slice(at + marker.length) : url.replace(/^\/+/, ''));
+    }
+    return candidates;
+}
+/** THE REPORT SIDECAR MOUNT (2026-10-17, the rig-reports writer):
+ *  a stage's machine-readable verdicts ride INLINE on the status row
+ *  (`reports` — the bench stage result contract's own map, never a
+ *  url, never subject to the one-file-one-key law). The validator
+ *  runs under Blender's python, which the engine cannot host, so its
+ *  lane drops `<stem>.report.json` beside the GLB and THIS seat
+ *  mounts it at status time — the body must already BE the
+ *  contract's report entry (the writer performs the fold; the seat
+ *  stays domain-neutral and judges through `benchResultDefects`,
+ *  never parsing rig tuples). A malformed or unlawful sidecar SKIPS
+ *  with a warning naming the file — a refused verdict is loud,
+ *  never silently absent; an existing key under the same stem wins
+ *  (the sidecar never overwrites a mounted report).
+ * @param row the status row (stages decorated additively)
+ * @param read the run dir's sidecar reader
+ * @returns the row with stages' reports mounted and warnings named */
+export function withStageReports(row, read) {
+    const runId = typeof row['run_id'] === 'string' ? row['run_id'] : '';
+    const stages = Array.isArray(row['stages']) ? row['stages'] : [];
+    if (stages.length === 0)
+        return row;
+    const priorWarnings = Array.isArray(row['warnings']) ? row['warnings'].length : 0;
+    const warnings = Array.isArray(row['warnings'])
+        ? (row['warnings'].filter((w) => typeof w === 'string'))
+        : [];
+    let mounted = false;
+    const nextStages = stages.map((raw) => {
+        if (typeof raw !== 'object' || raw === null || Array.isArray(raw))
+            return raw;
+        const stage = raw;
+        const existing = typeof stage['reports'] === 'object' && stage['reports'] !== null
+            && !Array.isArray(stage['reports'])
+            ? stage['reports'] : {};
+        const reports = { ...existing };
+        for (const [stem, rel] of sidecarCandidatesOf(stage, runId)) {
+            if (stem in reports)
+                continue;
+            const text = read(rel);
+            if (text === null)
+                continue;
+            let parsed;
+            try {
+                parsed = JSON.parse(text);
+            }
+            catch {
+                warnings.push(`report sidecar ${rel} is not JSON — skipped`);
+                continue;
+            }
+            // THE CONTRACT JUDGES (the writer asserts, the reader
+            // normalizes — this seat does neither by hand): a probe row
+            // carrying only this entry surfaces the entry's own defects.
+            const defects = benchResultDefects({ run_id: 'probe', reports: { [stem]: parsed } })
+                .filter((d) => d.startsWith(`reports.${stem}`));
+            if (defects.length > 0) {
+                warnings.push(`report sidecar ${rel} refused by the bench result contract (${defects[0]}) — skipped`);
+                continue;
+            }
+            reports[stem] = parsed;
+            mounted = true;
+        }
+        return Object.keys(reports).length > 0 ? { ...stage, reports } : stage;
+    });
+    if (!mounted && warnings.length === priorWarnings)
+        return row;
+    return {
+        ...row,
+        stages: nextStages,
+        ...(warnings.length > 0 ? { warnings } : {}),
     };
 }
 /** The runs registry seat: `ctx.runs`. The estate-runs adapters
@@ -1282,7 +1400,7 @@ export class RunsRuntimeService extends Service {
                 throw new RemoteError("runs/unknown-run", "unknown run_id \"" + runId + "\" " +
                     searchedVoice(rootsManifest(this.ctx.queue.stateRoot)), { runId });
             }
-            return { ...enrichDiskRow(disk.row), from_disk: true, queue_position: 0, served_from: disk.root };
+            return withStageReports({ ...enrichDiskRow(disk.row), from_disk: true, queue_position: 0, served_from: disk.root }, sidecarReaderFor(disk.dir));
         }
         const payload = {
             run_id: run.runId,
@@ -1367,7 +1485,7 @@ export class RunsRuntimeService extends Service {
             const diskStages = disk !== undefined && Array.isArray(disk.row["stages"]) ? disk.row["stages"].length : 0;
             const diskArts = disk !== undefined && Array.isArray(disk.row["artifacts"]) ? disk.row["artifacts"].length : 0;
             if (disk !== undefined && (diskStages > 0 || diskArts > 0)) {
-                return { ...enrichDiskRow(disk.row), from_disk: true, queue_position: payload["queue_position"], served_from: disk.root };
+                return withStageReports({ ...enrichDiskRow(disk.row), from_disk: true, queue_position: payload["queue_position"], served_from: disk.root }, sidecarReaderFor(disk.dir));
             }
         }
         // THE LIVE-ROW PLAN (efficiency review 002, Fix 2, 2026-09-22):
@@ -1401,7 +1519,10 @@ export class RunsRuntimeService extends Service {
         }
         if (includeLog)
             payload["log_tail"] = runLogTail(payload);
-        return payload;
+        // THE REPORT SIDECAR MOUNT, LIVE PATH: the same decorate the
+        // disk fallback serves — a rig run's validate sidecar mounts
+        // whether the row answered from the live map or disk.
+        return withStageReports(payload, sidecarReaderFor(join(outRootFor(this.ctx.queue.stateRoot, run.testFlag), run.runId)));
     }
     async stop(runId, signal) {
         signal.throwIfAborted();
@@ -1470,7 +1591,7 @@ export class RunsRuntimeService extends Service {
                         if (typeof row["status"] !== "string" || !RUN_STATUSES.has(row["status"])) {
                             continue;
                         }
-                        return { row, root };
+                        return { row, root, dir };
                     }
                 }
                 catch {

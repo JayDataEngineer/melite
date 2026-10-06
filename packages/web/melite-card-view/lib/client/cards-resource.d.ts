@@ -245,6 +245,7 @@ export declare function terminalOutcomeOf(runId: string, status: string, stage: 
     url?: unknown;
     gallery?: unknown;
     error?: unknown;
+    reports?: unknown;
 } | undefined, runError: string | undefined): {
     result: Record<string, unknown>;
     terminal: 'done' | 'failed' | 'stopped';

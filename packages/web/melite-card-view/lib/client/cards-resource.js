@@ -695,6 +695,20 @@ export function terminalOutcomeOf(runId, status, stage, runError) {
         result['artifacts'] = artifacts;
         result['assetUrls'] = url !== '' && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls;
     }
+    // THE REPORTS CARRY (2026-10-17, the rig-reports writer): the
+    // status row's stage arrives with its mounted report sidecars
+    // (the runs seat's decorate — the entries already passed the
+    // contract's judge there); INLINE verbatim, the same object the
+    // row paints. The reports map is never a url set — the
+    // one-file-one-key law does not see it.
+    if (stage !== undefined && typeof stage.reports === 'object' && stage.reports !== null
+        && !Array.isArray(stage.reports)) {
+        const entries = Object.entries(stage.reports)
+            .filter(([, v]) => typeof v === 'object' && v !== null && !Array.isArray(v));
+        if (entries.length > 0) {
+            result['reports'] = Object.fromEntries(entries);
+        }
+    }
     // THE FAILURE CARRY (2026-09-13, the silent-failure cure): a
     // failed run's reason rides the row verbatim — the stage's own
     // error first, the run-level text as fallback.

@@ -283,4 +283,31 @@ describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () =
     expect(result).toEqual({ run_id: "run-e" });
     expect(benchResultDefects(result)).toEqual([]);
   });
+
+  // THE REPORTS CARRY (2026-10-17, the rig-reports writer): the
+  // status row's stage arrives with its mounted report sidecars;
+  // the builder carries the verdict map INLINE verbatim — the same
+  // object the row paints through the default atom.
+  test("THE REPORTS CARRY: a mounted verdict map rides the row verbatim (contract-clean)", () => {
+    const report = { kind: "report", status: "fail", title: "Rig validation",
+      chips: ["CRITICAL 1"], rows: { passed: false, critical_count: 1 } };
+    const { result } = terminalOutcomeOf(
+      "run-r", "completed",
+      { url: "/melite-media/runs/run-r/3D/rigged.glb",
+        gallery: [{ name: "3D/rigged.glb" }],
+        reports: { rigged: report } },
+      undefined,
+    );
+    expect(result["reports"]).toEqual({ rigged: report });
+    expect(benchResultDefects(result)).toEqual([]);
+  });
+
+  test("a degenerate reports value (not an object / array entries) never rides the row", () => {
+    const str = terminalOutcomeOf("run-g", "completed", { reports: "nope" } as never, undefined).result;
+    expect(str["reports"]).toBeUndefined();
+    const arr = terminalOutcomeOf("run-g", "completed", { gallery: [{ name: "a.png" }],
+      reports: { bad: ["not", "an", "entry"], keep: { kind: "report", status: "pass" } } }, undefined).result;
+    expect(arr["reports"]).toEqual({ keep: { kind: "report", status: "pass" } });
+    expect(benchResultDefects(arr)).toEqual([]);
+  });
 });

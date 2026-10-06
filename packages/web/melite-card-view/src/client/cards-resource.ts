@@ -847,7 +847,7 @@ export async function reconcileBenchRuns(
 export function terminalOutcomeOf(
   runId: string,
   status: string,
-  stage: { url?: unknown, gallery?: unknown, error?: unknown } | undefined,
+  stage: { url?: unknown, gallery?: unknown, error?: unknown, reports?: unknown } | undefined,
   runError: string | undefined,
 ): { result: Record<string, unknown>, terminal: 'done' | 'failed' | 'stopped' } {
   // THE OWNER DECIDES (2026-10-01): the old ternary knew only
@@ -887,6 +887,20 @@ export function terminalOutcomeOf(
     }
     result['artifacts'] = artifacts
     result['assetUrls'] = url !== '' && !mediaUrls.includes(url) ? [url, ...mediaUrls] : mediaUrls
+  }
+  // THE REPORTS CARRY (2026-10-17, the rig-reports writer): the
+  // status row's stage arrives with its mounted report sidecars
+  // (the runs seat's decorate — the entries already passed the
+  // contract's judge there); INLINE verbatim, the same object the
+  // row paints. The reports map is never a url set — the
+  // one-file-one-key law does not see it.
+  if (stage !== undefined && typeof stage.reports === 'object' && stage.reports !== null
+    && !Array.isArray(stage.reports)) {
+    const entries = Object.entries(stage.reports as Record<string, unknown>)
+      .filter(([, v]) => typeof v === 'object' && v !== null && !Array.isArray(v))
+    if (entries.length > 0) {
+      result['reports'] = Object.fromEntries(entries)
+    }
   }
   // THE FAILURE CARRY (2026-09-13, the silent-failure cure): a
   // failed run's reason rides the row verbatim — the stage's own

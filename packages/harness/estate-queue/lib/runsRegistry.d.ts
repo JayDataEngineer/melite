@@ -59,6 +59,30 @@ declare module "@deepseek-ai/dsh-typert-protocol" {
 /** The refusal codes this remote serves, folded to the
  *  protocol's vocabulary — a literal table, no dynamic key. */
 export declare function enrichDiskRow(row: Record<string, unknown>): Record<string, unknown>;
+/** THE SIDECAR READER (2026-10-17): one run dir → a read(name)
+ *  closure. Absent sidecars are the COMMON case (a run validates
+ *  only when its lane asks) — every miss reads as null, never a
+ *  throw, so the decorate stays about mounting, not survival.
+ * @param dir the run's output dir (names resolve against it)
+ * @returns a UTF-8 reader returning null for any unreadable name */
+export declare function sidecarReaderFor(dir: string): (name: string) => string | null;
+/** THE REPORT SIDECAR MOUNT (2026-10-17, the rig-reports writer):
+ *  a stage's machine-readable verdicts ride INLINE on the status row
+ *  (`reports` — the bench stage result contract's own map, never a
+ *  url, never subject to the one-file-one-key law). The validator
+ *  runs under Blender's python, which the engine cannot host, so its
+ *  lane drops `<stem>.report.json` beside the GLB and THIS seat
+ *  mounts it at status time — the body must already BE the
+ *  contract's report entry (the writer performs the fold; the seat
+ *  stays domain-neutral and judges through `benchResultDefects`,
+ *  never parsing rig tuples). A malformed or unlawful sidecar SKIPS
+ *  with a warning naming the file — a refused verdict is loud,
+ *  never silently absent; an existing key under the same stem wins
+ *  (the sidecar never overwrites a mounted report).
+ * @param row the status row (stages decorated additively)
+ * @param read the run dir's sidecar reader
+ * @returns the row with stages' reports mounted and warnings named */
+export declare function withStageReports(row: Record<string, unknown>, read: (name: string) => string | null): Record<string, unknown>;
 export declare function benchWiring(benchDoc: Record<string, unknown>): {
     cross: string[];
     self: string[];
