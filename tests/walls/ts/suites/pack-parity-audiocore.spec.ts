@@ -31,12 +31,14 @@ const RUNTIME_ENGINE = "/home/user/tools/comfyui/custom_nodes";
 const PACKS = ["melite-audio-nodes", "melite-tts-nodes", "melite-sfx-nodes"] as const;
 
 /** The files EVERY pack must serve byte-identical and must CARRY:
- *  the engine seam (core), the schemas, the native binding, and
- *  BOTH engine modules — core.py dispatches into them by relative
- *  import from whichever pack won the custom_nodes race, so a pack
- *  missing one serves enum members whose families cannot load
- *  (round-3 N2: tts shipped no moss_sfx_v2 while its sfx family
- *  rode the enum). */
+ *  the engine seam (core), the schemas, the native binding, BOTH
+ *  engine modules, and requirements.txt — core.py dispatches into
+ *  the engines by relative import from whichever pack won the
+ *  custom_nodes race (a pack missing one serves enum members whose
+ *  families cannot load), and the winning pack must also INSTALL
+ *  every family's deps on a fresh machine (round-3 N2's dep half:
+ *  tts shipped no moss_sfx_v2 while its sfx family rode the enum;
+ *  tts's requirements omitted the moss_sfx_impl imports). */
 const SHARED_FILES = [
   "core.py",
   "schemas.py",
@@ -44,6 +46,7 @@ const SHARED_FILES = [
   "engines/qwen3_tts.py",
   "engines/moss_sfx_v2.py",
   "engines/__init__.py",
+  "requirements.txt",
 ] as const;
 
 /** Files carried only by the packs whose nodes use them (qvoice is
