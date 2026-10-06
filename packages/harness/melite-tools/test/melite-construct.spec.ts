@@ -857,13 +857,13 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
   const RUNS = {
     count: 3,
     runs: [
-      { run_id: 'run-old-0001', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: 't1', artifacts: [{ name: 'a.png' }] },
-      { run_id: 'run-new-0002', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }] },
-      { run_id: 'run-foreign-0003', draft_id: 'bench-other', status: 'done', created_at: 300, thumbnail: 't3', artifacts: [{ name: 'c.png' }] },
+      { run_id: 'run-old-0001', draft_id: 'bench-main', status: 'done', created_at: 100, thumbnail: 't1', artifacts: [{ name: 'a.png' }], stage_ids: ['s_0'] },
+      { run_id: 'run-new-0002', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }], stage_ids: ['s_0', 's_1'] },
+      { run_id: 'run-foreign-0003', draft_id: 'bench-other', status: 'done', created_at: 300, thumbnail: 't3', artifacts: [{ name: 'c.png' }], stage_ids: ['s_0', 's_1'] },
     ],
   }
 
-  test('stages carry the draft\'s NEWEST run; foreign drafts never leak', async () => {
+  test('each stage carries the NEWEST run that names it; foreign drafts never leak', async () => {
     const { request } = mockRequest((method, path) => {
       if (method === 'GET' && path === '/v1/bench/main') return BENCH
       if (method === 'GET' && path === '/v1/flows/runs?limit=100') return RUNS
@@ -878,6 +878,47 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
       assert.equal(last.status, 'done')
       assert.deepEqual(last.artifacts, [{ name: 'b.png' }])
     }
+  })
+
+  test('a run that composed only one stage stamps only that stage — the TTS stage never advertises a PNG (commission 015 §6 finding 6)', async () => {
+    // The roadmap scenario verbatim: the image-edit run topped the
+    // draft, and the shared stamp told a human the TTS stage last
+    // produced a PNG. Membership in the run's stage_ids digest is
+    // now the only ticket to a stamp.
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+        count: 1,
+        runs: [
+          { run_id: 'run-img-0001', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }], stage_ids: ['s_0'] },
+        ],
+      }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal((stages[0].last_run as Record<string, unknown>).run_id, 'run-img-0001')
+    assert.equal(stages[1].last_run, null)
+  })
+
+  test('a run with no stage_ids digest (pre-fix sidecar) stamps nothing — unknown membership is no stamp', async () => {
+    const seen = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return BENCH
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
+        count: 1,
+        runs: [
+          { run_id: 'run-legacy-0001', draft_id: 'bench-main', status: 'done', created_at: 200, thumbnail: 't2', artifacts: [{ name: 'b.png' }] },
+        ],
+      }
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(seen.request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    for (const s of out.stages as Array<Record<string, unknown>>) {
+      assert.equal(s.last_run, null)
+    }
+    // the facts window still shows the draft ran — the evidence is
+    // in the totals, never faked onto a stage row.
+    assert.deepEqual(out.runs, { checked: 1, total: 1, matched: 1 })
   })
 
   test('a failed runs call degrades to verbatim stages with NO runs key — lookup-failed stays distinct', async () => {
@@ -1210,8 +1251,8 @@ describe('read enrichment defensive paths', () => {
       }
       if (method === 'GET' && path === '/v1/flows/runs?limit=100') return {
         count: 2, runs: [
-          { draft_id: 'd1', run_id: 'old', created_at: 1 },
-          { draft_id: 'd1', run_id: 'new', created_at: 2, status: 'done', artifacts: ['a'], export_name: 'voice', export_path: '/voice.qvoice' },
+          { draft_id: 'd1', run_id: 'old', created_at: 1, stage_ids: ['s'] },
+          { draft_id: 'd1', run_id: 'new', created_at: 2, status: 'done', artifacts: ['a'], export_name: 'voice', export_path: '/voice.qvoice', stage_ids: ['s'] },
         ],
       }
       throw new Error('unexpected ' + method + ' ' + path)

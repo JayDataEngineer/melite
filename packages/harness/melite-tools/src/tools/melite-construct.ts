@@ -166,9 +166,13 @@ async function postBenchVerb(
  *  touches a filesystem path). A stage that has run carries
  *  last_run {run_id, status, created_at, thumbnail, artifacts} —
  *  view it with melite_view, chain it with {stage, output}.
- *  last_run is the DRAFT's latest run, shared by every stage
- *  (stages carry no timestamps — a stage added after the run
- *  still advertises it; known limit, stated not silent).
+ *  last_run is PER-STAGE (commission 015, §6 finding 6): a run
+ *  names the stages it composed in its stage_ids digest (stamped
+ *  at sidecar birth), and a stage advertises the NEWEST run that
+ *  names it — never another stage's run. Runs from before the
+ *  digest cannot name their stages, so they stamp nothing (the
+ *  runs facts still show the draft ran; the stage row keeps its
+ *  own memory).
  *  No match carries last_run: null PLUS the window facts
  *  (runs {checked, total, matched}) — never-ran reads off small
  *  totals, window-miss off total >> checked. Enrichment DEGRADES,
@@ -216,8 +220,14 @@ async function withLastRun(
     }
   }
   mine.sort((a, b): number => b.created - a.created)
-  const win: Record<string, unknown> = (mine[0] as { row: Record<string, unknown> }).row
-  const lastRun: Record<string, unknown> = {
+  // THE PER-STAGE STAMP (commission 015, §6 finding 6): a stage
+  // advertises the newest run that NAMES it — the run's stage_ids
+  // digest, born with the sidecar. The old shared stamp told a
+  // human the TTS stage last produced a PNG because an image-edit
+  // run topped the draft; membership is now the only ticket. A run
+  // carrying no digest (pre-fix sidecars) names nothing and stamps
+  // nothing — the stage row's own memory keeps its evidence.
+  const summaryOf = (win: Record<string, unknown>): Record<string, unknown> => ({
     run_id: win['run_id'],
     status: win['status'],
     created_at: win['created_at'],
@@ -231,11 +241,19 @@ async function withLastRun(
     // THE EXPORT PATH (the FULL-mint voice): the engine-reported
     // .qvoice file rides the read's last_run too — additive.
     ...(typeof win['export_path'] === 'string' && win['export_path'] !== '' ? { export_path: win['export_path'] } : {}),
+  })
+  const namesOf = (row: Record<string, unknown>): Set<string> => {
+    const v: unknown = row['stage_ids']
+    return new Set(Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== '') : [])
   }
   return {
     stages: stages.map((s): unknown => {
       if (typeof s !== 'object' || s === null || Array.isArray(s)) return s
-      return { ...(s as Record<string, unknown>), ...paramsSummary(s), last_run: lastRun }
+      const sid: unknown = (s as Record<string, unknown>)['id']
+      const hit = typeof sid === 'string' && sid !== ''
+        ? mine.find((m) => namesOf(m.row).has(sid))
+        : undefined
+      return { ...(s as Record<string, unknown>), ...paramsSummary(s), last_run: hit ? summaryOf(hit.row) : null }
     }),
     runs: facts(mine.length),
   }

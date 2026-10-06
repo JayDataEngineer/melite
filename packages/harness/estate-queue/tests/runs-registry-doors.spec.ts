@@ -599,6 +599,46 @@ describe("validate", () => {
     assert.equal(s.core.runs.size, 1, "one run registered — the bench, not a discarded card");
   });
 
+  it("THE STAGE-ID DIGEST: a settled bench run names the stages it composed — on disk ahead of the payloads, on the row as an array", async () => {
+    // Commission 015 §6 finding 6: per-stage last_run needs the run
+    // to name its membership. The digest is DERIVED from the very
+    // stages the doc stores (digest and array can never disagree),
+    // rides with the identity scalars so the list row's 8191-byte
+    // window always reaches it, and projects CSV-on-disk to
+    // array-on-the-row.
+    const s = modelDoorSeat(
+      { SaveImage: { class_type: "SaveImage", inputs: {} } },
+      {
+        stages: [
+          { id: "s_0", card: "image-gen", params: { prompt: "x" } },
+          {
+            id: "s_1",
+            card: "image-edit",
+            params: { input_images: ["$input_images"] },
+            inputs: { input_images: { stage: "s_0", output: "default" } },
+          },
+        ],
+      },
+    );
+    const ans = (await s.svc.start(
+      { draft_id: "d1", test: false, model: "m1", params: { prompt: "x" } },
+      sig(),
+    )) as { run_id: string };
+    await settleWait(s, ans.run_id);
+    const raw = readFileSync(join(s.state, "output", ans.run_id, "_flow.json"), "utf8");
+    const doc = JSON.parse(raw) as Record<string, unknown>;
+    assert.equal(doc["stage_ids"], "s_0,s_1");
+    assert.ok(
+      raw.indexOf('"stage_ids"') < raw.indexOf('"graph"'),
+      "the digest rides ahead of every payload — the 8191-byte window must always reach it",
+    );
+    const listed = await s.svc.list("1_0", sig());
+    assert.deepEqual(
+      (listed.runs[0] as Record<string, unknown>)["stage_ids"],
+      ["s_0", "s_1"],
+    );
+  });
+
   // THE SELF-WIRE DISCRIMINATION (2026-10-10, the operator's live
   // report: a persisted bench carried input_images <- s_0.default —
   // the STAGE'S OWN output feeding its own input, a cycle born

@@ -503,6 +503,35 @@ describe("listRuns envelope", () => {
     assert.equal(runs[0]!["export_path"], "/mnt/voices/night-keeper.qvoice");
   });
 
+  it("THE STAGE-ID DIGEST: the run's composed stage ids ride the row as an array; pre-digest sidecars stay keyless", async () => {
+    // Commission 015 §6 finding 6 — per-stage last_run needs the
+    // list row to name membership. CSV on disk, array on the wire;
+    // absent on the era that predates the stamp (the export_name
+    // precedent law: optional key, never guessed).
+    const state = tmp();
+    const digested = join(state, "output", "run-new");
+    mkdirSync(digested, { recursive: true });
+    writeFileSync(join(digested, "_flow.json"), JSON.stringify({
+      status: "completed",
+      pipeline: "voice",
+      seed: 7,
+      created_at: 100,
+      stage_ids: "s_0,s_2",
+    }));
+    const legacy = join(state, "output", "run-old");
+    mkdirSync(legacy, { recursive: true });
+    writeFileSync(join(legacy, "_flow.json"), JSON.stringify({
+      status: "completed",
+      pipeline: "voice",
+      seed: 7,
+      created_at: 50,
+    }));
+    const { runs } = await listRuns(state, 10, async () => true);
+    assert.equal(runs.length, 2);
+    assert.deepEqual(runs[0]!["stage_ids"], ["s_0", "s_2"]);
+    assert.ok(!("stage_ids" in (runs[1] as Record<string, unknown>)), "the pre-digest era carries no key at all");
+  });
+
   it("serves the first manifest row when run ids collide", async () => {
     const first = tmp();
     const second = tmp();

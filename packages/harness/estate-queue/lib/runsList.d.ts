@@ -54,6 +54,10 @@ export declare function runRowOrNull(row: {
     artifacts: Record<string, unknown>[];
     params: Record<string, unknown>;
     draft_id: string;
+    /** THE STAGE-ID DIGEST (commission 015, §6 finding 6): the ids
+     *  of the stages the run composed. Optional — older sidecars
+     *  predate the digest, and such runs cannot name their stages. */
+    stage_ids?: string[];
     /** THE EXPORT NAME (023's self-critique #4/#6): optional —
      *  older sidecars predate it, and only export lanes stamp it. */
     export_name?: string;

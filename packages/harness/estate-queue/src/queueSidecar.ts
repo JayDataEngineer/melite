@@ -171,6 +171,14 @@ export function sidecarDoc(args: {
     test: args.testFlag,
     draft_id: args.draftId,
     pipeline: args.pipeline,
+    // THE STAGE-ID DIGEST (commission 015, §6 finding 6): the ids of
+    // the stages THIS run composed, CSV-compact, riding with the
+    // identity scalars AHEAD of every payload — the list row's
+    // 8191-byte window cannot reach the stages array, but it always
+    // reaches this. Derived from the very stages the doc stores, so
+    // digest and array can never disagree; every writer (queued,
+    // settled, resurrect) shares this one seat.
+    stage_ids: args.stages.map((s) => s.id).filter((id) => id !== "").join(","),
     ...(args.exportName !== undefined && args.exportName !== "" ? { export_name: args.exportName } : {}),
     ...(args.exportPath !== undefined && args.exportPath !== "" ? { export_path: args.exportPath } : {}),
     ...(args.variant !== undefined && args.variant !== "" ? { variant: args.variant } : {}),

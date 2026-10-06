@@ -395,6 +395,10 @@ export function runRowOrNull(
     artifacts: Record<string, unknown>[];
     params: Record<string, unknown>;
     draft_id: string;
+    /** THE STAGE-ID DIGEST (commission 015, §6 finding 6): the ids
+     *  of the stages the run composed. Optional — older sidecars
+     *  predate the digest, and such runs cannot name their stages. */
+    stage_ids?: string[];
     /** THE EXPORT NAME (023's self-critique #4/#6): optional —
      *  older sidecars predate it, and only export lanes stamp it. */
     export_name?: string;
@@ -423,6 +427,7 @@ export function runRowOrNull(
     artifacts: row.artifacts,
     params: row.params,
     draft_id: row.draft_id,
+    ...(row.stage_ids !== undefined && row.stage_ids.length > 0 ? { stage_ids: [...row.stage_ids] } : {}),
     ...(typeof row.export_name === "string" && row.export_name !== "" ? { export_name: row.export_name } : {}),
     ...(typeof row.export_path === "string" && row.export_path !== "" ? { export_path: row.export_path } : {}),
   };
@@ -534,6 +539,7 @@ async function buildRunCard(
   let pipeline = "";
   let prompt = "";
   let draft = "";
+  let stageIdsRaw = "";
   let exported = "";
   let exportedPath = "";
   let seed = -1;
@@ -558,6 +564,10 @@ async function buildRunCard(
     pipeline = sidecarStr(rawBytes, "pipeline", 64);
     prompt = sidecarStr(rawBytes, "prompt", 2048);
     draft = sidecarStr(rawBytes, "draft_id", 96);
+    // THE STAGE-ID DIGEST, LISTED: CSV on disk, array on the row —
+    // absent on pre-digest sidecars (the export_name precedent:
+    // optional key, never guessed).
+    stageIdsRaw = sidecarStr(rawBytes, "stage_ids", 512);
     // THE EXPORT NAME, LISTED (023's self-critique #4/#6): the
     // design lane's mint rides the list row too — additive, same
     // spelling as the sidecar; absent on non-export runs.
@@ -587,6 +597,7 @@ async function buildRunCard(
     artifacts: runArtifacts(runDir, literal),
     params: { seed },
     draft_id: draft,
+    ...(stageIdsRaw !== "" ? { stage_ids: stageIdsRaw.split(",") } : {}),
     ...(exported !== "" ? { export_name: exported } : {}),
     ...(exportedPath !== "" ? { export_path: exportedPath } : {}),
   });
