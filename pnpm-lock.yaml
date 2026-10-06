@@ -923,6 +923,9 @@ importers:
 
   packages/estate/media:
     dependencies:
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite/contracts':
         specifier: workspace:*
         version: link:../../web-kit/contracts
@@ -937,9 +940,6 @@ importers:
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-typert-generator':
-        specifier: 0.2.0-rc.1
-        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-typert-protocol':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@types/node':
@@ -2704,6 +2704,9 @@ importers:
       '@deepseek-ai/dsh':
         specifier: '>=0.2.0-rc.1 <0.3.0'
         version: 0.2.0-rc.1(6993605508a484e8995f37b6ffd49e6c)
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite/card-base':
         specifier: workspace:*
         version: link:../card-base
@@ -2726,9 +2729,6 @@ importers:
       '@deepseek-ai/dsh-client-connection':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)))
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.0-rc.1
-        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-client-ui-renderer':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
@@ -2868,6 +2868,9 @@ importers:
       '@deepseek-ai/dsh-client-ui-primitives':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
+      '@deepseek-ai/dsh-typert-protocol':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite-plugin/dsh-gallery':
         specifier: workspace:*
         version: link:../infer-gallery
@@ -2880,6 +2883,12 @@ importers:
       '@melite/card-base':
         specifier: workspace:*
         version: link:../card-base
+      '@melite/catalog':
+        specifier: workspace:*
+        version: link:../../web-kit/catalog
+      '@melite/contracts':
+        specifier: workspace:*
+        version: link:../../web-kit/contracts
       '@melite/estate-drafts':
         specifier: workspace:*
         version: link:../../estate/drafts
@@ -2892,6 +2901,9 @@ importers:
       '@melite/estate-runs':
         specifier: workspace:*
         version: link:../../estate/runs
+      '@melite/image-mask-studio':
+        specifier: workspace:*
+        version: link:../../image/mask-studio
       '@melite/three-client':
         specifier: workspace:*
         version: link:../three-client
@@ -2926,21 +2938,9 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/dsh-typert-protocol':
-        specifier: 0.2.0-rc.1
-        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@melite/catalog':
-        specifier: workspace:*
-        version: link:../../web-kit/catalog
-      '@melite/contracts':
-        specifier: workspace:*
-        version: link:../../web-kit/contracts
       '@melite/formats':
         specifier: workspace:*
         version: link:../../web-kit/formats
-      '@melite/image-mask-studio':
-        specifier: workspace:*
-        version: link:../../image/mask-studio
       '@playwright/test':
         specifier: ^1.62.1
         version: 1.62.1
@@ -3115,6 +3115,9 @@ importers:
       '@deepseek-ai/dsh-api-gateway':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-client-connection@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))(@deepseek-ai/dsh-scope@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)(@deepseek-ai/dsh-invariants@0.2.0-rc.1(@deepseek-ai/cordis@4.0.4))))
+      '@deepseek-ai/schemastery':
+        specifier: 3.18.4
+        version: 3.18.4
       '@melite-plugin/melite-run-wire':
         specifier: workspace:*
         version: link:../melite-run-wire
@@ -3137,9 +3140,6 @@ importers:
       '@deepseek-ai/dsh-host-webserver':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
-      '@deepseek-ai/schemastery':
-        specifier: 3.18.4
-        version: 3.18.4
       '@tsdown/css':
         specifier: ^0.22.14
         version: 0.22.14(jiti@2.7.0)(postcss@8.5.26)(tsdown@0.22.14)(yaml@2.9.1)
@@ -3155,6 +3155,9 @@ importers:
 
   packages/web/viewer-base:
     dependencies:
+      '@deepseek-ai/dsh-client-ui-primitives':
+        specifier: 0.2.0-rc.1
+        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@melite-plugin/melite-run-wire':
         specifier: workspace:*
         version: link:../melite-run-wire
@@ -3165,9 +3168,6 @@ importers:
         specifier: ^19.2.6
         version: 19.3.0
     devDependencies:
-      '@deepseek-ai/dsh-client-ui-primitives':
-        specifier: 0.2.0-rc.1
-        version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
       '@deepseek-ai/dsh-client-ui-slots':
         specifier: 0.2.0-rc.1
         version: 0.2.0-rc.1(@deepseek-ai/cordis@4.0.4)
