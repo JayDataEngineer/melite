@@ -280,6 +280,26 @@ export function normalizeStages(
   );
   const normalized: Array<Record<string, unknown>> = kept
     .map((s: unknown, idx: number): Record<string, unknown> => {
+      // THE PARAMS-SHAPE REFUSAL (commission 015, §6 finding 5):
+      // normalizeBenchStage heals a non-record params to {} — the
+      // right law for a doc already on disk, but at the WRITE door
+      // that heal minted a stage from the card's knobs WRAPPED IN AN
+      // ARRAY with empty params instead of refusing, the bench door
+      // looser than the card it stages. The judgment runs on the
+      // UNWRAPPED value (the wire's `{item:[…]}` spelling resolves to
+      // the same bare array); the add and patch doors carry the same
+      // law.
+      const rawParams: unknown = wireParams((s as Record<string, unknown>)["params"]);
+      if (rawParams !== undefined && !isRecord(rawParams)) {
+        const named: unknown = (s as Record<string, unknown>)["id"];
+        throw new RemoteError(
+          "bench/bad-body",
+          "stage " + (typeof named === "string" && named !== "" ? named : "#" + idx) +
+            ": params must be an object (got " + (Array.isArray(rawParams) ? "an array — the card's knobs, not a list of them" : typeof rawParams) +
+            "); a wire that cannot be read is refused here, not healed",
+          {},
+        );
+      }
       // THE ONE NORMALIZATION (benchStage.ts — the contract): id
       // fill, DERIVED engine, run-memory strip, run-media path heal,
       // the self-naming model strip, inputs/params/outputs defaults.
@@ -1432,12 +1452,29 @@ export async function addStageBench(
       {},
     );
   }
+  // A MALFORMED `params` CONTAINER REFUSES (the same fail-open the
+  // `inputs` container closed above — commission 015, §6 finding 5):
+  // `isRecord(...) ? ... : {}` treated a non-record `params` exactly
+  // like an absent one, so the card's knobs wrapped in an array
+  // minted a stage with EMPTY params instead of refusing. The patch
+  // door has refused this shape since 2026-09-15 and the load door
+  // refuses at its own row admission — one law, every write door.
+  const rawParams: unknown = wireParams(body["params"]);
+  if (rawParams !== undefined && !isRecord(rawParams)) {
+    throw new RemoteError(
+      "bench/bad-body",
+      "stage " + JSON.stringify(stageIdForAdmit) + ": params must be an object (got " +
+        (Array.isArray(rawParams) ? "an array — the card's knobs, not a list of them" : typeof rawParams) +
+        "); a wire that cannot be read is refused here, not dropped",
+      {},
+    );
+  }
   const admitted: Record<string, unknown> = normalizeBenchStage(
     {
       id: stageIdForAdmit,
       card: cardForRow,
       ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
-      ...(isRecord(wireParams(body["params"])) ? { params: wireParams(body["params"]) } : {}),
+      ...(rawParams !== undefined ? { params: rawParams } : {}),
       ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
       ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
     },
@@ -1478,7 +1515,7 @@ export async function addStageBench(
       id: stageId,
       card,
       ...(typeof body["engine"] === "string" && body["engine"] !== "" ? { engine: body["engine"] } : {}),
-      ...(isRecord(wireParams(body["params"])) ? { params: wireParams(body["params"]) } : {}),
+      ...(rawParams !== undefined ? { params: rawParams } : {}),
       ...(isRecord(body["inputs"]) ? { inputs: body["inputs"] } : {}),
       ...(isRecord(body["outputs"]) ? { outputs: body["outputs"] } : {}),
     },

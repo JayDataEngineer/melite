@@ -33,6 +33,51 @@ test("patch refuses non-string stages, non-record params, and empty bodies", asy
   );
 });
 
+test("every write door refuses array-shaped params — the bench is never looser than the card (commission 015 §6 finding 5)", async () => {
+  const drafts = await boot();
+  // load/birth (ensure): the card's knobs wrapped in an array — the
+  // exact shape that minted an empty-params eighth row live.
+  assert.match(
+    await codeOf(ensureBench(drafts, {
+      session: "arrload",
+      stages: [{ id: "a", card: "hero", params: [{ steps: 4 }] }],
+    })),
+    /^bench\/bad-body\|stage a: params must be an object \(got an array/,
+  );
+  // the wire's own item-wrap spelling of the same corruption — the
+  // store-seat unwrap resolves it to a bare array, which refuses.
+  assert.match(
+    await codeOf(ensureBench(drafts, {
+      session: "arrload",
+      stages: [{ id: "a", card: "hero", params: { item: [{ steps: 4 }] } }],
+    })),
+    /^bench\/bad-body\|stage a: params must be an object \(got an array/,
+  );
+  // nothing minted — the refused birth persisted no doc.
+  assert.throws(() => getBench(drafts, "arrload"), /no such bench/);
+  // add_stage: the same shape on a live bench.
+  await ensureBench(drafts, { session: "arradd", stages: [{ id: "a" }] });
+  assert.match(
+    await codeOf(addStageBench(drafts, "arradd", {
+      card: "hero", params: [{ steps: 4 }], expect_rev: 0,
+    })),
+    /^bench\/bad-body\|stage "s_0": params must be an object \(got an array/,
+  );
+  // patch: the array variant of the shape this door has refused
+  // since 2026-09-15 (the string variant is pinned above).
+  assert.match(
+    await codeOf(patchBench(drafts, "arradd", {
+      stage: "a", params: [{ steps: 4 }], expect_rev: 0,
+    })),
+    /^bench\/bad-body\|params must be an object/,
+  );
+  // the live bench is untouched by any of the refusals.
+  assert.deepEqual(
+    (getBench(drafts, "arradd").stages as Array<{ id: string }>).map((x) => x.id),
+    ["a"],
+  );
+});
+
 test("patch refuses run outcomes with the redirect voice — the drafts door owns results (the telemetry law's other half, 2026-10-08)", async () => {
   const drafts = await boot();
   await ensureBench(drafts, {

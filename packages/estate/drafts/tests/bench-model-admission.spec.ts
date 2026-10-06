@@ -669,21 +669,30 @@ describe("the admission's own tolerances (a doc is data)", () => {
     assert.deepEqual(judged, ["card-a"], "only the row that named a card was judged");
   });
 
-  test("a params bag that is not an object is judged as empty params (never coerced)", async () => {
+  test("a params bag that is not an object refuses the write — never coerced, never minted", async () => {
+    // Commission 015 (§6 finding 5) inverted this tolerance: healing
+    // an array-shaped bag to {} at the write door minted a cardless
+    // stage live. The full three-door law (load, add, patch, both
+    // wire spellings, nothing persisted) lives in
+    // bench-mutations.spec.ts; this arm holds the admission's own
+    // half — the judge is never handed a coerced bag, because the
+    // door refuses before admission runs.
     const drafts = await boot();
     const seen: Array<Record<string, unknown>> = [];
     const admit = (card: string, params: Record<string, unknown>): void => {
       seen.push({ card, params: { ...params } });
     };
-    await ensureBench(drafts, {
-      session: "junk-params",
-      stages: [
-        { card: "card-a", params: ["array-shaped"] },
-        { card: "card-b", params: "string-shaped" },
-      ],
-    }, admit);
-    assert.equal(seen.length, 2, "both rows crossed the door");
-    for (const row of seen) assert.deepEqual(row.params, {}, "nothing was read out of a non-object bag");
+    await assert.rejects(
+      ensureBench(drafts, {
+        session: "junk-params",
+        stages: [
+          { card: "card-a", params: ["array-shaped"] },
+          { card: "card-b", params: "string-shaped" },
+        ],
+      }, admit),
+      /params must be an object/,
+    );
+    assert.equal(seen.length, 0, "the judge never saw the malformed bag");
   });
 
   test("a compound whose children is not an array is judged as the row it is, and its junk members are skipped", async () => {
