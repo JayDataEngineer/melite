@@ -345,6 +345,74 @@ describe("validate", () => {
     assert.match(ghost.message, /not a registered card/);
   });
 
+  it("a lane_inputs family validates clean under the FACTS DEGRADE — the registry plane answers (the moss-sfx lesion, 2026-10-01 finding 3)", async () => {
+    // The commission's false-negative: the validate door read a
+    // frozen facts file that lacked the family's lane_inputs rows
+    // while the run door composed from the live registry — the two
+    // doors disagreed. One plane now answers both: prepare resolves
+    // a mid the facts never knew through modelMids() (the registry
+    // DECL plane), and phase-1 reads lane_inputs FROM the DECL row
+    // it is handed. This wall pins the worst case — modelFacts()
+    // worst case — modelFacts() THROWS (the door's pinned degrade
+    // answers from the catalog alone) — and the moss-sfx-shaped
+    // stage still validates 200, with the family resolved through
+    // the registry plane into phase-1.
+    const defs = new Map([
+      ["sfx", { requiresModel: true, boarded: ["moss_sfx_v2"], schema: (p: unknown): unknown => p }],
+    ]);
+    let phase1SawLane: unknown = "never-called";
+    const s = seat({
+      defsSync: (): unknown => defs,
+      modelFacts: (): unknown => { throw new Error("facts file absent"); },
+      resolveCardFamily: (): unknown => "moss_sfx_v2",
+      modelMids: (): unknown => new Set(["moss_sfx_v2"]),
+      cardDecls: (): unknown => ({}),
+      composeValidateCard: async (): Promise<unknown> => null,
+      phase1Card: async (body: Record<string, unknown>, mid: string): Promise<unknown> => {
+        phase1SawLane = mid;
+        assert.equal(mid, "moss_sfx_v2");
+        assert.equal(body["model"], "moss_sfx_v2",
+          "the overlaid body rode the resolved family address into phase-1");
+        return {};
+      },
+    });
+    const ok = await s.svc.validate(
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" } }] } }),
+      sig(),
+    );
+    assert.equal((ok as { ok?: unknown })["ok"], true);
+    assert.equal(phase1SawLane, "moss_sfx_v2",
+      "phase-1 resolved the family mid through the registry plane despite the facts degrade");
+  });
+
+  it("a phase-1 LANE refusal folds into the validate answer — the doors cannot disagree (finding 3, second arm)", async () => {
+    // The 2026-10-01 lesion's harm was disagreement: run refused
+    // where validate said green (or the reverse). One prepare, one
+    // plane: a phase-1 CardArmError (the lane presence gate's
+    // voice) must surface in the validate answer, never pass.
+    const defs = new Map([
+      ["sfx", { requiresModel: true, boarded: ["moss_sfx_v2"], schema: (p: unknown): unknown => p }],
+    ]);
+    const s = seat({
+      defsSync: (): unknown => defs,
+      modelFacts: (): unknown => { throw new Error("facts file absent"); },
+      resolveCardFamily: (): unknown => "moss_sfx_v2",
+      modelMids: (): unknown => new Set(["moss_sfx_v2"]),
+      cardDecls: (): unknown => ({}),
+      composeValidateCard: async (): Promise<unknown> => null,
+      phase1Card: async (): Promise<unknown> => {
+        throw new CardArmError(400,
+          "lane miss: family moss_sfx_v2 lane 'unet' — file moss_sfx_v2.safetensors not found", "lane_presence");
+      },
+    });
+    const caught = await remote(() => s.svc.validate(
+      inlineBody({ flow_inline: { id: "x", stages: [{ id: "s", card: "sfx", engine: "comfyui", params: { model: "moss_sfx_v2", prompt: "drip" } }] } }),
+      sig(),
+    ));
+    assert.match(String(caught.message), /lane miss.*moss_sfx_v2.*not found/,
+      "the lane refusal surfaced in the validate answer");
+  });
+
   it("an ARRAY flow_inline is refused at the compile gate (isRecord — never read as a row)", async () => {
     // inline as an ARRAY: compileFlowInline's first gate is isRecord,
     // so the array dies in the not-object voice — it never reaches the
