@@ -9,8 +9,13 @@
     "anny": "anny",
     "audiocpp": "audio",
     "frame_interpolation": "frame_interpolation",
+    "geometry_estimation": "geometry_estimation",
+    "h3_adaln": "h3_adaln",
     "model_patches": "controlnet",
     "qwen3_tts": "audio/qwen3-tts/hf",
+    "sams": "sams",
+    "somaskel77": "somaskel77",
+    "taggers": "taggers",
     "text_encoders": "text_encoders"
   },
   "url": "http://127.0.0.1:8188"

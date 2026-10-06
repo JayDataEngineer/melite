@@ -123,6 +123,89 @@ describe("THE VALUE GATE (the audit's T2)", () => {
     assertWiringAgainst(nodes, inputs, "c1", { "1": { class_type: "BigNode", inputs: { pick: "v7" } } });
   });
 
+  // The video sweep (2026-10-13, F1): ComfyUI ≥ 0.38 spells combos
+  // as ["COMBO", {options}] and ["COMFY_DYNAMICCOMBO_V3", {options:
+  // [{key}, …]}]; the string-head arm read only the type name and
+  // stood down on every modern pin — the video genre's model pins
+  // were judged by nobody.
+  describe("the modern combo spellings (the video sweep's F1)", () => {
+    const MODERN = {
+      CreateVideo: {
+        input: {
+          required: {
+            bit_depth: ["COMBO", { options: ["auto", 8, 10] }],
+            codec: ["COMBO", { options: ["libx264", "prores"] }],
+          },
+        },
+      },
+      SeedVR2LoadDiTModel: {
+        input: {
+          required: {
+            model: ["COMFY_DYNAMICCOMBO_V3", {
+              options: [
+                { key: "seedvr2_fp16.safetensors", label: "fp16" },
+                { key: "seedvr2_fp8.safetensors", label: "fp8" },
+                { label: "a row with no key is not a choice" },
+              ],
+            }],
+          },
+        },
+      },
+      EmptyCombo: {
+        input: {
+          required: { mode: ["COMBO", { options: [] }] },
+        },
+      },
+    };
+
+    function modern() {
+      return deriveWiringDoc(MODERN);
+    }
+
+    it("derives the enum from spec[1].options — the string-head arm no longer stands down", () => {
+      const { inputs } = modern();
+      assert.deepEqual(inputs.get("CreateVideo")?.get("bit_depth")?.enum, ["auto", 8, 10]);
+      assert.deepEqual(inputs.get("CreateVideo")?.get("codec")?.enum, ["libx264", "prores"]);
+    });
+
+    it("derives the enum from COMFY_DYNAMICCOMBO_V3 option key rows", () => {
+      const { inputs } = modern();
+      assert.deepEqual(
+        inputs.get("SeedVR2LoadDiTModel")?.get("model")?.enum,
+        ["seedvr2_fp16.safetensors", "seedvr2_fp8.safetensors"],
+      );
+    });
+
+    it("an empty options list is a declaration that says nothing — no enum, no judgment", () => {
+      const { inputs } = modern();
+      assert.equal(inputs.get("EmptyCombo")?.get("mode")?.enum, undefined);
+    });
+
+    it("a renamed weight on a modern pin refuses (a renamed rife47.pth cannot sail through)", () => {
+      const { nodes, inputs } = modern();
+      assert.throws(
+        () => assertWiringAgainst(nodes, inputs, "c1",
+          { "1": { class_type: "SeedVR2LoadDiTModel", inputs: { model: "rife48.pth" } } }),
+        (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value" && /2 values/.test(e.message),
+      );
+      assertWiringAgainst(nodes, inputs, "c1",
+        { "1": { class_type: "SeedVR2LoadDiTModel", inputs: { model: "seedvr2_fp16.safetensors" } } });
+    });
+
+    it("a string widget value matches a numeric member (the engine's own coercion direction)", () => {
+      const { nodes, inputs } = modern();
+      assertWiringAgainst(nodes, inputs, "c1",
+        { "1": { class_type: "CreateVideo", inputs: { bit_depth: "8", codec: "libx264" } } });
+      // a number never matches a string member — the wall is never
+      // looser than the engine it guards
+      assert.throws(
+        () => assertWiringAgainst(nodes, inputs, "c1",
+          { "1": { class_type: "CreateVideo", inputs: { bit_depth: 8, codec: 8 } } }),
+        (e: unknown) => e instanceof ComposeRefusal && e.code === "bad-value",
+      );
+    });
+  });
+
   it("a STAGED-ARTIFACT reference never judges against the enum (the upload walk rewrites it after every seat)", () => {
     const { nodes, inputs } = armed();
     const loader = (image: string): unknown =>
