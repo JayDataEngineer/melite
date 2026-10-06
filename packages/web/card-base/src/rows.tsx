@@ -58,12 +58,16 @@ export function SeedDice({ random, onToggle }: { random: boolean; onToggle(): vo
     ))
 }
 
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
+export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
   wireCandidates?: Array<{ id: string; label: string; url: string }>
+  /** the active variant's [min,max] for THIS knob — forwarded to
+   *  the slider atom's track clamp (the dragbar law); absent when
+   *  the caller has no variant envelope to offer. */
+  envelope?: readonly [number, number] | null
 }): ReturnType<typeof h> {
   // the row is a DIV, not a wrapper label: the atoms self-label
   // (aria-label) — a button inside a <label> steals the label
@@ -109,6 +113,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
       // never "-1" (the dice carries the state's face)
       value: seedRandom ? undefined : value,
       ...(seedRandom ? { placeholder: 'random — new every run' } : {}),
+      ...(envelope !== undefined ? { envelope } : {}),
       onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }),
   )

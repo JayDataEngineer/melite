@@ -28,7 +28,7 @@
  */
 import { createElement as h, useState } from 'react'
 import { type BboxFaceComponent, ModifiersSection, type PaintFaceComponent } from './mods.tsx'
-import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
+import { type FormSpecDoc, type SpecField, type SpecValues, coerceFieldEdit, entryFieldsOfEnvelope, fieldOnLane, fieldVisible, fieldsOf, fieldsOfEnvelope, groupFields, kindScalarFieldsOfEnvelope, composeValidate, laneViolations, modOwnedFields, offeredVariantOf, resolveFamilyKey, resolveValue, titleCaseId } from './spec.ts'
 import css from './card.module.css'
 import { useFormSpec } from './use-form-spec.ts'
 import { type FieldAtomClaim, type SquareHost, type SquareWire, useSquareProvider } from './square-provider.tsx'
@@ -265,6 +265,22 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
   // refuse). A violation renders the door's voice ABOVE the form:
   // the impossible value never presents as live, selectable truth.
   const gateViolations = composeValidate(spec, user)
+  // THE DRAGBAR CLAMP SOURCE (the form-must-not-author row,
+  // 2026-10-13): the ACTIVE variant's sampler envelope — resolved
+  // by the door's own law (offeredVariantOf: stated id-or-route,
+  // else pool[0]) — narrows every bounded knob's dragbar track so
+  // the hand cannot drag what the compose gate would refuse; the
+  // wire stays loud for API authors. Null when the variant declares
+  // no envelope (the family's own domain rides).
+  const variantEnvelope = (offeredVariantOf(spec.variants ?? [], value)?.sampler_envelope) ?? null
+  // knob-level bound: only steps/cfg carry envelopes; a malformed
+  // served pair (not length 2) clamps nothing — the wire gate still
+  // refuses, so the display stays permissive rather than wrong.
+  const knobEnvelope = (f: SpecField): { envelope?: readonly [number, number] | null } => {
+    if (f.name !== 'steps' && f.name !== 'cfg') return {}
+    const bound = variantEnvelope?.[f.name]
+    return { envelope: bound !== undefined && bound.length === 2 ? [bound[0], bound[1]] : null }
+  }
   // THE MODEL GUARD (the grammar's own key — the base owns the
   // mechanism, the card owns the leaves): the serving family rides
   // the visibility values as `model`, so a field may declare
@@ -516,6 +532,7 @@ export function CardForm({ spec, user, base, onSet, onPick, onUnset, wire, squar
         flush()
         const cell = h(SpecFieldRow, {
           key: f.name, f, value: value[f.name], onEdit: edit,
+          ...knobEnvelope(f),
           ...(sq !== undefined ? { square: sq } : {}),
           ...(wireCandidates !== undefined ? { wireCandidates } : {}),
         })

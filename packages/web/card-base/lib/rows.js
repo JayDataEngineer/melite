@@ -48,7 +48,7 @@ export function SeedDice({ random, onToggle }) {
     // hollow when fixed (one glyph, the pip fill IS the state)
     h('circle', { cx: 5, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 5, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 8, cy: 8, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 5, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) }), h('circle', { cx: 11, cy: 11, r: 1.35, ...(random ? { fill: 'currentColor' } : { stroke: 'currentColor', strokeWidth: 1 }) })));
 }
-export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
+export function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }) {
     // the row is a DIV, not a wrapper label: the atoms self-label
     // (aria-label) — a button inside a <label> steals the label
     // association (interactive-in-label is the discouraged shape
@@ -81,6 +81,7 @@ export function SpecFieldRow({ f, value, onEdit, square, wireCandidates }) {
         // never "-1" (the dice carries the state's face)
         value: seedRandom ? undefined : value,
         ...(seedRandom ? { placeholder: 'random — new every run' } : {}),
+        ...(envelope !== undefined ? { envelope } : {}),
         onEdit, square, ...(wireCandidates !== undefined ? { wireCandidates } : {}),
     }));
 }

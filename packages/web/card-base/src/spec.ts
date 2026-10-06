@@ -1205,6 +1205,35 @@ export function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues {
 //   declares nothing; a doc whose model points at another family is
 //   judged by THAT family's spec, not this one.
 
+/** The door's offered-variant pool (selectVariant mirrored):
+ *  non-Recipe/non-Quant rows, else every non-Quant row when the
+ *  family configures none — the discovery-expanded Quant CELLS
+ *  never carry an envelope to judge against. */
+function variantPool(all: readonly VariantRow[]): VariantRow[] {
+  const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant')
+  return configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant')
+}
+
+/** The door's variant resolution, ONE spelling (the dragbar clamp,
+ *  2026-10-13): the stated variant matched by id OR route over the
+ *  offered pool, else pool[0] — the row whose sampler_envelope the
+ *  judge and the form's dragbar clamps BOTH read. Undefined only
+ *  when the pool itself is empty or the stated id matches no row
+ *  (the miss voice is composeValidate's own).
+ *  @param all the spec's full variants array, cells included.
+ *  @param doc the resolved display doc (the held variant key). */
+export function offeredVariantOf(
+  all: readonly VariantRow[],
+  doc: Readonly<Record<string, unknown>>,
+): VariantRow | undefined {
+  const pool = variantPool(all)
+  const rawVariant = doc['variant']
+  if (typeof rawVariant === 'string' && rawVariant !== '') {
+    return pool.find((r) => r.id === rawVariant || r.route === rawVariant)
+  }
+  return pool[0]
+}
+
 export interface ComposeViolation {
   /** the door's own voice — the same message the estate would send,
    *  prefixed by the gate that caught it (BEFORE the wire). */
@@ -1230,8 +1259,7 @@ export function composeValidate(
   // into the same array, and the door's facts row never sees those;
   // an all-Recipe family falls back to the whole offered list (the
   // door's own configured.length gate).
-  const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant')
-  const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant')
+  const pool = variantPool(all)
   const rawVariant = doc['variant']
   let offered: VariantRow | undefined
   if (typeof rawVariant === 'string' && rawVariant !== '') {

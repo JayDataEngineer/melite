@@ -24,7 +24,7 @@ export declare function SeedDice({ random, onToggle }: {
     random: boolean;
     onToggle(): void;
 }): ReturnType<typeof h>;
-export declare function SpecFieldRow({ f, value, onEdit, square, wireCandidates }: {
+export declare function SpecFieldRow({ f, value, onEdit, square, wireCandidates, envelope }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
@@ -34,6 +34,10 @@ export declare function SpecFieldRow({ f, value, onEdit, square, wireCandidates 
         label: string;
         url: string;
     }>;
+    /** the active variant's [min,max] for THIS knob — forwarded to
+     *  the slider atom's track clamp (the dragbar law); absent when
+     *  the caller has no variant envelope to offer. */
+    envelope?: readonly [number, number] | null;
 }): ReturnType<typeof h>;
 /** ── THE OVERRIDE PARAMETER LAYER (hour 22 — the operator's law) ──
  *

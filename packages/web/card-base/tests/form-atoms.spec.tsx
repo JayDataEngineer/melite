@@ -88,6 +88,47 @@ test('SLIDER: undeclared bounds fall to 0..10 × 0.1 (never an unbound drag)', (
   expect(slider.step).toBe('0.1')
 })
 
+// THE DRAGBAR CLAMP (the form-must-not-author row, 2026-10-13): the
+// form never offers what the compose gate refuses — the track clamps
+// to the ACTIVE variant's envelope, and a held out-of-envelope value
+// renders AS ITSELF, refused (never a clamped neighbor painted over).
+test('SLIDER: the track clamps to the variant envelope (turbo cfg 1-2 inside a 0-10 field)', () => {
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'cfg', label: 'Cfg', type: 'slider', min: 0, max: 10, step: 0.1 }),
+    value: 1.5, onEdit: () => {}, envelope: [1, 2],
+  }))
+  const slider = screen.getByLabelText('Cfg') as HTMLInputElement
+  expect(slider.min).toBe('1')
+  expect(slider.max).toBe('2')
+  expect(slider.value).toBe('1.5')
+})
+
+test('SLIDER: a held out-of-envelope value refuses AS ITSELF (the no-clamp-over lie)', () => {
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'cfg', label: 'Cfg', type: 'slider', min: 0, max: 10, step: 0.1 }),
+    value: 3.8, onEdit: () => {}, envelope: [1, 2],
+  }))
+  expect(screen.getByText('3.8 — OUTSIDE the variant envelope [1, 2]')).not.toBeNull()
+  expect(document.querySelector('[data-refused="cfg"]')).not.toBeNull()
+  // no track at all — the impossible contract offers no drag
+  expect(document.querySelector('input[type="range"]')).toBeNull()
+})
+
+test('SLIDER: a null envelope keeps the field bounds; a disjoint envelope refuses outright', () => {
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'slider', min: 1, max: 50 }),
+    value: 20, onEdit: () => {}, envelope: null,
+  }))
+  expect((screen.getByLabelText('Steps') as HTMLInputElement).max).toBe('50')
+  render(h(SpecSliderAtom, {
+    f: F({ name: 'steps', label: 'Steps', type: 'slider', min: 1, max: 50 }),
+    value: 20, onEdit: () => {}, envelope: [60, 80],
+  }))
+  // disjoint: the envelope (60-80) meets the field (1-50) in nothing —
+  // the refused face names the gap's own span, the knob admits nothing
+  expect(screen.getByText('20 — OUTSIDE the variant envelope [50, 60]')).not.toBeNull()
+})
+
 test('SPEC ATOM: the image square builds when claimed; bare text when not (never a bare URL input)', () => {
   const onEdit = vi.fn()
   const f = F({ name: 'img', label: 'Image', type: 'image' })

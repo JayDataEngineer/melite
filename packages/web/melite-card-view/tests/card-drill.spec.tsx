@@ -916,7 +916,7 @@ test('a variant pick lands as ONE marriage write — variant, steps, and cfg in 
 //    law BEFORE any wire frame exists. An invalid doc is refused in
 //    the studio, with the door's voice — the estate never receives
 //    what it would refuse. ────────────────────────────────────────
-test('THE COMPOSE GATE: a typed cfg outside the envelope never reaches the wire — refused in the studio with the door\'s own voice', async () => {
+test('THE DRAGBAR CLAMP: sliding 9 against turbo\'s [1,2] cannot author the impossible — the track clamps at the envelope ceiling', async () => {
   const kreaSpec = {
     form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
     families: [],
@@ -955,20 +955,73 @@ test('THE COMPOSE GATE: a typed cfg outside the envelope never reaches the wire 
   }))
   await user.click(tileButton())
   await screen.findByText('Prompt', {}, { timeout: 4000 })
-  // number fields render as slider atoms (input[type=range], the
-  // spec's own widget law) — drive the range directly; CardForm's
-  // edit verb coerces '9' to the number before onSet
-  const cfgField = await screen.findByLabelText('CFG', {}, { timeout: 4000 })
-  // THE GESTURE: slide 9 against turbo's [1,2] envelope
+  const cfgField = (await screen.findByLabelText('CFG', {}, { timeout: 4000 })) as HTMLInputElement
+  // THE TRACK ITSELF IS CLAMPED (the form-must-not-author law,
+  // 2026-10-13): the DOM range pins turbo's envelope — a hand
+  // pushing 9 settles at the ceiling, never past it
+  expect(cfgField.min).toBe('1')
+  expect(cfgField.max).toBe('2')
   fireEvent.input(cfgField, { target: { value: '9' } })
   fireEvent.change(cfgField, { target: { value: '9' } })
-  // THE GATE: the door's own law, caught at composition — the face
-  // speaks BEFORE any wire round-trip
+  // the clamp authored 2 — no impossible contract exists to refuse,
+  // and a 9 never leaves the form for the wire
+  await new Promise((r) => setTimeout(r, 500))
+  const patches = calls.filter((c) => c.method === 'drafts/patch') as Array<{ body?: { stages?: Array<{ params?: Record<string, unknown> }> } }>
+  for (const p of patches) {
+    for (const s of p.body?.stages ?? []) {
+      expect(s.params?.cfg, 'the out-of-envelope value never reaches the wire').not.toBe(9)
+    }
+  }
+})
+
+test('THE COMPOSE GATE: a HELD cfg outside the envelope (a foreign writer\'s 3.8) refuses in the studio with the door\'s own voice — the dragbar shows the impossible contract AS ITSELF', async () => {
+  const kreaSpec = {
+    form: 'image-gen', genre: 'image', engine: 'comfyui', model: 'krea-2',
+    families: [],
+    schema: schemaEnvelope({
+      prompt: { type: 'string', meta: { description: 'Prompt', extra: { wtype: 'textarea' } } },
+      steps: { type: 'number', meta: { description: 'Steps', default: 4 } },
+      cfg: { type: 'number', meta: { description: 'CFG', default: 1 } },
+    }),
+    variants: [
+      { id: 'turbo', label: 'Turbo', group: 'Variant', defaults: { model: 'krea-2', steps: 4, cfg: 1 }, route: 'krea-2',
+        sampler_envelope: { steps: [4, 8], cfg: [1, 2] } },
+    ],
+  }
+  const { calls } = stubWire({
+    formSpecs: { 'krea-2': kreaSpec },
+    bench: {
+      draft_id: 'bench-s1', rev: 7,
+      stages: [{ id: 's_0', card: 'image-gen', title: 'hero frame', engine: 'comfyui', params: { model: 'krea-2', prompt: 'a red cube', variant: 'turbo', steps: 4, cfg: 3.8 } }],
+      log: [],
+    },
+  })
+  const LIVE: CardsBenchValue = {
+    ...BENCH,
+    stages: [{ ...BENCH.stages[0], params: { ...BENCH.stages[0].params, model: 'krea-2', variant: 'turbo', steps: 4, cfg: 3.8 } }],
+  }
+  const user = userEvent.setup()
+  render(createElement(CardsTab, {
+    useTabInfo: () => ({
+      tab: {
+        kind: 'sidebar.right.pane.tab', contentId: undefined,
+        navigation: { address: 'dsh-resource://cards/bench' },
+        actions: { openResource: noop },
+      },
+    }),
+    useResource: () => ({ status: 'live' as const, value: LIVE }),
+  }))
+  await user.click(tileButton())
+  await screen.findByText('Prompt', {}, { timeout: 4000 })
+  // THE GATE: the door's own law, over the doc that ARRIVED — the
+  // strip speaks before any wire round-trip
   await waitFor(() => {
     expect(document.body.textContent ?? '').toContain('THE COMPOSE GATE REFUSED')
-    expect(document.body.textContent ?? '').toContain('stated cfg 9 is OUTSIDE the route envelope for variant "turbo"')
+    expect(document.body.textContent ?? '').toContain('stated cfg 3.8 is OUTSIDE the route envelope for variant "turbo"')
   })
-  // and NO frame ever left: not the trailing scheduler, not a flush
+  // THE KNOB'S OWN FACE: the impossible value renders AS ITSELF —
+  // the track never paints a clamped neighbor over it
+  expect(document.body.textContent ?? '').toContain('3.8 — OUTSIDE the variant envelope [1, 2]')
   await new Promise((r) => setTimeout(r, 500))
   expect(calls.filter((c) => c.method === 'drafts/patch'), 'the invalid doc never reached the wire').toEqual([])
 })

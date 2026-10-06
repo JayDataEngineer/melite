@@ -1096,6 +1096,65 @@ export function seedUser(spec, held) {
         delete out['recipe'];
     return out;
 }
+// ── THE CLIENT'S COMPOSE GATE (2026-09-29, the operator's law: "IF
+//    THE CARD IS A CONTRACT/SCHEMA, HOW DOES THE SYSTEM
+//    ALLOW CONSTRUCTING BAD CONTRACTS? IT CAN ALL BE VALIDATED
+//    BEFOREHAND, IN THE CODE") ───────────────────────────────────
+// The estate door has always held this law (cardsVariant.ts:
+// selectVariant + envelopeRefusal) — but the door judges AFTER the
+// wire, on the merged doc. The client was a DELTA-EMITTER: per-key
+// patches over state held elsewhere, so no full doc existed at the
+// composer and validation could only live at the state-holder. The
+// composer now assembles the CANDIDATE doc and runs the door's OWN
+// law over the SERVED spec BEFORE any frame exists.
+//
+// THE MIRROR DISCIPLINE: exactly the door's clauses, no stricter, no
+// looser. A client gate stricter than the door refuses writes the
+// estate would admit (a new lie); looser lets the door be the first
+// line again (the old lie). When the door's law changes, this mirror
+// changes WITH it — pinned by the mirror wall.
+//   clause 1 (marriage): a stated variant must be an offered
+//     Variant-row id of this spec (the door: selectVariant's
+//     unknown-variant refusal);
+//   clause 2 (quant cell): a stated quant must be a Quant row owned
+//     by the stated variant (the door: selectVariant's cell refusal);
+//   clause 3 (envelope): a numeric steps/cfg stated in the doc must
+//     sit inside the STATED variant's sampler_envelope — the door:
+//     envelopeRefusal, the exact break that fired the operator's
+//     live incident ('stated cfg 3.5 is OUTSIDE the route envelope
+//     for variant "turbo" — the declared envelope is [1, 2]').
+//   The door's own skips mirror verbatim: an unstated variant
+//   RESOLVES to the door's pool[0] (never skipped — the second live
+//   break: the gate once skipped the quant clause on unstated
+//   variants while the door judged against pool[0], and a poisoned
+//   quant sailed through); a non-numeric stated knob is skipped
+//   (the door's own typeof guard); a variant with no envelope
+//   declares nothing; a doc whose model points at another family is
+//   judged by THAT family's spec, not this one.
+/** The door's offered-variant pool (selectVariant mirrored):
+ *  non-Recipe/non-Quant rows, else every non-Quant row when the
+ *  family configures none — the discovery-expanded Quant CELLS
+ *  never carry an envelope to judge against. */
+function variantPool(all) {
+    const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant');
+    return configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant');
+}
+/** The door's variant resolution, ONE spelling (the dragbar clamp,
+ *  2026-10-13): the stated variant matched by id OR route over the
+ *  offered pool, else pool[0] — the row whose sampler_envelope the
+ *  judge and the form's dragbar clamps BOTH read. Undefined only
+ *  when the pool itself is empty or the stated id matches no row
+ *  (the miss voice is composeValidate's own).
+ *  @param all the spec's full variants array, cells included.
+ *  @param doc the resolved display doc (the held variant key). */
+export function offeredVariantOf(all, doc) {
+    const pool = variantPool(all);
+    const rawVariant = doc['variant'];
+    if (typeof rawVariant === 'string' && rawVariant !== '') {
+        return pool.find((r) => r.id === rawVariant || r.route === rawVariant);
+    }
+    return pool[0];
+}
 export function composeValidate(spec, doc) {
     if (spec === null)
         return [];
@@ -1113,8 +1172,7 @@ export function composeValidate(spec, doc) {
     // into the same array, and the door's facts row never sees those;
     // an all-Recipe family falls back to the whole offered list (the
     // door's own configured.length gate).
-    const configured = all.filter((r) => r.group !== 'Recipe' && r.group !== 'Quant');
-    const pool = configured.length > 0 ? configured : all.filter((r) => r.group !== 'Quant');
+    const pool = variantPool(all);
     const rawVariant = doc['variant'];
     let offered;
     if (typeof rawVariant === 'string' && rawVariant !== '') {

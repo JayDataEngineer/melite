@@ -111,11 +111,25 @@ function useLocalSliderValue(value: unknown): { value: number | null, set(n: num
  *  the editor. The atom shows the drag locally and persists ONCE on
  *  settle (the change event = release / keyboard step). External
  *  writes (agent, revive) re-sync the display when the backing
- *  value actually moves. */
-export function SpecSliderAtom({ f, value, onEdit }: {
+ *  value actually moves.
+ *
+ *  THE VARIANT-ENVELOPE CLAMP (the dragbar law, 2026-10-13): the
+ *  track clamps to the ACTIVE variant's declared envelope (min and
+ *  max intersected with the field's own bounds) — an
+ *  out-of-envelope value cannot be dragged or saved from the form
+ *  while the wire gate stays loud for API authors. A HELD value
+ *  outside the envelope renders AS ITSELF, refused (the
+ *  no-fallback law): the track never paints a clamped neighbor over
+ *  an impossible contract. @param f the knob's field row.
+ *  @param value the resolved display value.
+ *  @param onEdit the settle seam.
+ *  @param envelope the active variant's [min,max] for THIS knob,
+ *  null when the variant declares none. */
+export function SpecSliderAtom({ f, value, onEdit, envelope }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
+  envelope?: readonly [number, number] | null
 }): ReturnType<typeof h> {
   const shown = useLocalSliderValue(value)
   // the refused face: the held value is not a number the run can
@@ -127,12 +141,33 @@ export function SpecSliderAtom({ f, value, onEdit }: {
         String(value) + ' — REFUSED: not a number'),
     )
   }
+  // the envelope's refused face: a HELD out-of-envelope number is
+  // an impossible contract — rendered as itself, never clamped over.
+  // A disjoint envelope (its min above the field's max or its max
+  // below the field's min) admits no value at all — the knob is
+  // refused outright, the DECL's own broken state named.
+  const clamped = envelope !== undefined && envelope !== null
+    ? {
+        min: Math.max(f.min ?? Number.NEGATIVE_INFINITY, envelope[0]),
+        max: Math.min(f.max ?? Number.POSITIVE_INFINITY, envelope[1]),
+      }
+    : null
+  if (clamped !== null && (clamped.min > clamped.max
+    || shown.value < clamped.min || shown.value > clamped.max)) {
+    const lo = clamped.min > clamped.max ? Math.min(clamped.min, clamped.max) : clamped.min
+    const hi = clamped.min > clamped.max ? Math.max(clamped.min, clamped.max) : clamped.max
+    return h('span', { className: css.specSliderRow, 'data-refused': f.name },
+      h('span', { className: css.specSliderValue },
+        String(shown.value) + ' — OUTSIDE the variant envelope ['
+        + String(lo) + ', ' + String(hi) + ']'),
+    )
+  }
   return h('span', { className: css.specSliderRow },
     h('input', {
       className: css.specSlider,
       type: 'range',
-      min: f.min ?? 0,
-      max: f.max ?? 10,
+      min: clamped !== null ? clamped.min : (f.min ?? 0),
+      max: clamped !== null ? clamped.max : (f.max ?? 10),
       step: f.step ?? 0.1,
       value: shown.value,
       onInput: (e: unknown) => { shown.set(Number((e as { target: { value: string } }).target.value)) },
@@ -145,13 +180,17 @@ export function SpecSliderAtom({ f, value, onEdit }: {
 
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }: {
+export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }: {
   f: SpecField
   value: unknown
   onEdit(name: string, v: unknown): void
   square?: SquareHost
   /** the wire's flow rows (the image_list slots source From flow too) */
   wireCandidates?: Array<{ id: string; label: string; url: string }>
+  /** the active variant's [min,max] for THIS knob — the slider
+   *  track clamps to it (the dragbar law); absent when the caller
+   *  has no variant envelope to offer. */
+  envelope?: readonly [number, number] | null
   /** the row's placeholder override (the seed dice's random face:
    *  the sentinel never paints, the placeholder explains the state) */
   placeholder?: string
@@ -237,7 +276,7 @@ export function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder
     }))
   }
   if (f.type === 'slider') {
-    return h(SpecSliderAtom, { f, value, onEdit })
+    return h(SpecSliderAtom, { f, value, onEdit, ...(envelope !== undefined ? { envelope } : {}) })
   }
   if (f.type === 'tri') {
     // THE TRI-STATE ATOM (hour 15, stroke C — h3's TriControl

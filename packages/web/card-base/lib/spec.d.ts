@@ -354,6 +354,15 @@ export declare function seedAxisValues(spec: FormSpecDoc, held: SpecValues): Spe
  *
  * PURE — the caller owns the write (onSet per fresh key). */
 export declare function seedUser(spec: FormSpecDoc, held: SpecValues): SpecValues;
+/** The door's variant resolution, ONE spelling (the dragbar clamp,
+ *  2026-10-13): the stated variant matched by id OR route over the
+ *  offered pool, else pool[0] — the row whose sampler_envelope the
+ *  judge and the form's dragbar clamps BOTH read. Undefined only
+ *  when the pool itself is empty or the stated id matches no row
+ *  (the miss voice is composeValidate's own).
+ *  @param all the spec's full variants array, cells included.
+ *  @param doc the resolved display doc (the held variant key). */
+export declare function offeredVariantOf(all: readonly VariantRow[], doc: Readonly<Record<string, unknown>>): VariantRow | undefined;
 export interface ComposeViolation {
     /** the door's own voice — the same message the estate would send,
      *  prefixed by the gate that caught it (BEFORE the wire). */

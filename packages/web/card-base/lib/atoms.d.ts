@@ -22,15 +22,29 @@ export declare function TriStateAtom({ label, value, onEdit, name, disabled }: {
  *  the editor. The atom shows the drag locally and persists ONCE on
  *  settle (the change event = release / keyboard step). External
  *  writes (agent, revive) re-sync the display when the backing
- *  value actually moves. */
-export declare function SpecSliderAtom({ f, value, onEdit }: {
+ *  value actually moves.
+ *
+ *  THE VARIANT-ENVELOPE CLAMP (the dragbar law, 2026-10-13): the
+ *  track clamps to the ACTIVE variant's declared envelope (min and
+ *  max intersected with the field's own bounds) — an
+ *  out-of-envelope value cannot be dragged or saved from the form
+ *  while the wire gate stays loud for API authors. A HELD value
+ *  outside the envelope renders AS ITSELF, refused (the
+ *  no-fallback law): the track never paints a clamped neighbor over
+ *  an impossible contract. @param f the knob's field row.
+ *  @param value the resolved display value.
+ *  @param onEdit the settle seam.
+ *  @param envelope the active variant's [min,max] for THIS knob,
+ *  null when the variant declares none. */
+export declare function SpecSliderAtom({ f, value, onEdit, envelope }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
+    envelope?: readonly [number, number] | null;
 }): ReturnType<typeof h>;
 /** One spec atom — typed by the declaration, edited as a raw string
  *  while typing (decimal dots survive; coercion happens once at patch). */
-export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost }: {
+export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, placeholder, ghost, envelope }: {
     f: SpecField;
     value: unknown;
     onEdit(name: string, v: unknown): void;
@@ -41,6 +55,10 @@ export declare function SpecAtom({ f, value, onEdit, square, wireCandidates, pla
         label: string;
         url: string;
     }>;
+    /** the active variant's [min,max] for THIS knob — the slider
+     *  track clamps to it (the dragbar law); absent when the caller
+     *  has no variant envelope to offer. */
+    envelope?: readonly [number, number] | null;
     /** the row's placeholder override (the seed dice's random face:
      *  the sentinel never paints, the placeholder explains the state) */
     placeholder?: string;
