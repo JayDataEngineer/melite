@@ -19,4 +19,15 @@ export declare function reorderStageWire(doc: Record<string, unknown>, sessionKe
 export declare function groupStagesWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>>;
 /** The bench ungroup verb caller: spill a compound's children. */
 export declare function ungroupStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>>;
+/** THE UNDO WIRE (the walkable revision log): revert the log
+ *  tail's newest ACTION (or `n` of them — the doc's own key,
+ *  server-defaulted to 1). One press, no author filter — the
+ *  tab's reader undoes the last change to the ONE shared bench,
+ *  whoever authored it; the server's own log walk skips
+ *  already-reverted entries and never targets undo entries
+ *  themselves (no ping-pong). Same CAS rebase dance: a bench the
+ *  agent moved mid-press costs one silent re-read, never a
+ *  bricked tab. The session key addresses the doc the bar
+ *  RENDERS (stroke 80's law). */
+export declare function undoBenchWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>>;
 //# sourceMappingURL=add-stage.d.ts.map

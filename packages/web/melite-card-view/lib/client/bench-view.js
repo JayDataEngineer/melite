@@ -10,7 +10,7 @@ import { fetchFormSpec, fieldsOf } from '@melite/card-base/client';
 import { patchStageParams } from "./draft.js";
 import { fetchBench } from "./cards-resource.js";
 import { uploadInputFile } from '@melite/card-base/client';
-import { addStageWire, clearBenchWire, groupStagesWire, reorderStageWire } from "./add-stage.js";
+import { addStageWire, clearBenchWire, groupStagesWire, reorderStageWire, undoBenchWire } from "./add-stage.js";
 import { CardZoomOverlay } from "./zoom.js";
 import { CAPABILITY_DRAG_MIME, ASSET_DRAG_MIME, parseCapabilityDrop, parseAssetDrop, isMalformedCapabilityDrop } from "./dnd-payloads.js";
 import { benchRow } from "./bench-row.js";
@@ -87,6 +87,23 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
             .then(() => { setOpen(null); reload(); })
             .catch((e) => { setReloadError('clear refused — ' + (rejectionVoice(e))); });
     }, [clearing, live.rev, sessionKey, reload]);
+    // THE WALKABLE REVISION LOG (2026-10-13): one press reverts the
+    // log tail's newest action — no confirm step (undo RESTORES; the
+    // two-step law arms only destructive controls). The gate is the
+    // streamed log heads themselves: an ACTION entry (any kind but
+    // 'undo') is a candidate; a log of undos alone offers no drag.
+    const canUndo = live.log.some((e) => typeof e.kind === 'string' && e.kind !== 'undo');
+    const [undoing, setUndoing] = useState(false);
+    const onUndo = useCallback(() => {
+        if (undoing)
+            return;
+        setUndoing(true);
+        setReloadError(null);
+        undoBenchWire({ expect_rev: live.rev }, sessionKey)
+            .then(() => { setOpen(null); reload(); })
+            .catch((e) => { setReloadError('undo refused — ' + (rejectionVoice(e))); })
+            .finally(() => { setUndoing(false); });
+    }, [undoing, live.rev, sessionKey, reload]);
     const onAdded = useCallback(() => {
         setAdding(false);
         reload();
@@ -369,7 +386,20 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
             ? 'confirm: every stage leaves the bench (undo restores them)'
             : 'clear the whole bench — every stage out, one rev, undo restores them',
         onClick: onClear,
-    }, clearing ? 'Confirm clear' : 'Clear'), saving
+    }, clearing ? 'Confirm clear' : 'Clear'), 
+    // THE UNDO (the walkable revision log): reverts the
+    // newest action by rev — the streamed log head's own
+    // candidate gate, one entry per press, agent or user.
+    h('button', {
+        className: css.back,
+        type: 'button',
+        disabled: running || !canUndo,
+        'data-bench-undo': '1',
+        title: canUndo
+            ? 'revert the newest bench action (one log entry per press — its own inverse, by rev)'
+            : 'nothing to undo — the log holds no unreverted action',
+        onClick: onUndo,
+    }, undoing ? 'Undoing…' : 'Undo'), saving
         ? h('span', { className: css.groupBar }, h(Input, { value: saveName, placeholder: 'flow name', onChange: (e) => { setSaveName(e.target.value); } }), h('button', { className: css.runBtn, type: 'button', disabled: saveName.trim() === '', onClick: onSave }, 'Save'), h('button', { className: css.back, type: 'button', onClick: () => { setSaving(false); setSaveError(null); } }, 'Cancel'))
         : h('button', { className: css.back, type: 'button', disabled: live.stages.length === 0, title: 'mint this bench as a named flow (restores from the Flows face)', onClick: () => { setSaving(true); } }, 'Save')), saveError !== null ? h('p', { className: css.runError }, saveError) : null), reloadError !== null ? h('p', { className: css.runError }, reloadError) : null, 
     // ONE SURFACE, NO STATES (operator, 2026-09-12: "Why is there an

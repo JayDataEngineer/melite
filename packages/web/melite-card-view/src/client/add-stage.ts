@@ -36,7 +36,11 @@ import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
  * typed keys on the generated client, so a typo is a compile error). */
 // 'clear' (2026-10-10, the operator's demanded clear-all) — the
 // nuclear verb: every stage out, one rev, undo restores all.
-type BenchVerb = 'add-stage' | 'remove-stage' | 'clear' | 'reorder' | 'group' | 'ungroup'
+// 'undo' (the walkable revision log, 2026-10-13) — the inverse
+// walk: the server applies the log tail's inverses newest-first
+// and appends ONE undo entry; the caller's expect_rev rides the
+// same CAS law as every mutation.
+type BenchVerb = 'add-stage' | 'remove-stage' | 'clear' | 'reorder' | 'group' | 'ungroup' | 'undo'
 
 /** The bench's CURRENT rev for one session — the CAS handle for a
  *  re-apply. Returns undefined when the read fails (the re-apply is
@@ -132,4 +136,18 @@ export async function groupStagesWire(doc: Record<string, unknown>, sessionKey: 
 /** The bench ungroup verb caller: spill a compound's children. */
 export async function ungroupStageWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
   return await withRebase('ungroup', doc, sessionKey, signal)
+}
+
+/** THE UNDO WIRE (the walkable revision log): revert the log
+ *  tail's newest ACTION (or `n` of them — the doc's own key,
+ *  server-defaulted to 1). One press, no author filter — the
+ *  tab's reader undoes the last change to the ONE shared bench,
+ *  whoever authored it; the server's own log walk skips
+ *  already-reverted entries and never targets undo entries
+ *  themselves (no ping-pong). Same CAS rebase dance: a bench the
+ *  agent moved mid-press costs one silent re-read, never a
+ *  bricked tab. The session key addresses the doc the bar
+ *  RENDERS (stroke 80's law). */
+export async function undoBenchWire(doc: Record<string, unknown>, sessionKey: string, signal?: AbortSignal): Promise<Record<string, unknown>> {
+  return await withRebase('undo', doc, sessionKey, signal)
 }

@@ -103,4 +103,17 @@ export async function groupStagesWire(doc, sessionKey, signal) {
 export async function ungroupStageWire(doc, sessionKey, signal) {
     return await withRebase('ungroup', doc, sessionKey, signal);
 }
+/** THE UNDO WIRE (the walkable revision log): revert the log
+ *  tail's newest ACTION (or `n` of them — the doc's own key,
+ *  server-defaulted to 1). One press, no author filter — the
+ *  tab's reader undoes the last change to the ONE shared bench,
+ *  whoever authored it; the server's own log walk skips
+ *  already-reverted entries and never targets undo entries
+ *  themselves (no ping-pong). Same CAS rebase dance: a bench the
+ *  agent moved mid-press costs one silent re-read, never a
+ *  bricked tab. The session key addresses the doc the bar
+ *  RENDERS (stroke 80's law). */
+export async function undoBenchWire(doc, sessionKey, signal) {
+    return await withRebase('undo', doc, sessionKey, signal);
+}
 //# sourceMappingURL=add-stage.js.map

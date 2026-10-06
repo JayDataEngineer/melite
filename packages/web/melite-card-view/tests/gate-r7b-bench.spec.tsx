@@ -69,13 +69,13 @@ function stubFetch(): void {
   });
 }
 
-function mountView(stages: BenchStageView[], estate?: EstateOpts, kind?: "draft"): { rerender: (tick: number) => void } {
+function mountView(stages: BenchStageView[], estate?: EstateOpts, kind?: "draft", log?: Array<{ rev: number; author?: string; kind?: string }>): { rerender: (tick: number) => void } {
   doors.specFields = null;
   doors.uploads = () => ({ name: "data/input/a.png" });
   stubFetch();
   fakes?.unmount();
   fakes = mountEstateFakes({
-    benchDoc: { draft_id: "bench-p", rev: 1, log: [], stages: stages.map((s) => ({ ...s })) },
+    benchDoc: { draft_id: "bench-p", rev: 1, log: log ?? [], stages: stages.map((s) => ({ ...s })) },
     draftStages: stages.map((s) => ({ ...s }) as unknown as Record<string, unknown>),
     draftBenchRev: 1,
     refusals: estate?.refusals,
@@ -84,8 +84,8 @@ function mountView(stages: BenchStageView[], estate?: EstateOpts, kind?: "draft"
     addStageRevs: estate?.addStageRevs,
   });
   const bench = kind === "draft"
-    ? { kind: "draft", draftId: "bench-p", stageId: "s_0", rev: 1, log: [], stages }
-    : { kind: "bench", draftId: "bench-p", rev: 1, log: [], stages } as const;
+    ? { kind: "draft", draftId: "bench-p", stageId: "s_0", rev: 1, log: log ?? [], stages }
+    : { kind: "bench", draftId: "bench-p", rev: 1, log: log ?? [], stages } as const;
   const props = {
     bench: bench as unknown as Parameters<typeof BenchView>[0]["bench"],
     sessionKey: "main",
@@ -186,6 +186,45 @@ describe("the clear control — the demanded door, two-step", () => {
     fireEvent.click(screen.getByRole("button", { name: /confirm clear/i }));
 
     expect(await screen.findByText("clear refused — kablam")).toBeTruthy();
+  });
+});
+
+// THE WALKABLE REVISION LOG (2026-10-13): a bench mutation is
+// undoable from the tab, by rev — one press fires the server's
+// inverse walk (no confirm step: undo RESTORES; the two-step law
+// arms only destructive controls). The gate is the streamed log
+// heads: an ACTION entry (any kind but 'undo') is a candidate; a
+// log of undos alone offers no press.
+describe("the undo control — the walkable revision log", () => {
+  test("one press fires bench/undo at the live rev — no confirm step (undo restores)", async () => {
+    mountView(three(), undefined, undefined, [{ rev: 1, author: "agent", kind: "add_stage" }]);
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    const undo = screen.getByRole("button", { name: /undo/i }) as HTMLButtonElement;
+    expect(undo.disabled).toBe(false);
+    fireEvent.click(undo);
+    // ONE press, one frame — the restore is not destructive, so the
+    // two-step arms nothing
+    await waitFor(() => { expect(calls().filter((c) => c.method === "bench/undo")).toHaveLength(1) });
+    const fired = calls().find((c) => c.method === "bench/undo");
+    expect(fired?.args["doc"]).toMatchObject({ expect_rev: expect.any(Number) });
+  });
+
+  test("a log of undos alone (or none) offers no press — the candidate gate is the log itself", async () => {
+    mountView(three(), undefined, undefined, [{ rev: 1, author: "agent", kind: "undo" }]);
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    const undo = screen.getByRole("button", { name: /undo/i }) as HTMLButtonElement;
+    expect(undo.disabled).toBe(true);
+    fireEvent.click(undo);
+    expect(calls().filter((c) => c.method === "bench/undo")).toHaveLength(0);
+  });
+
+  test("a refused undo voices 'undo refused' and the bench stands", async () => {
+    mountView(three(), { throws: [{ method: "bench/undo", message: "bench/nothing-to-undo" }] }, undefined,
+      [{ rev: 1, author: "agent", kind: "add_stage" }]);
+    await waitFor(() => { expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3) });
+    fireEvent.click(screen.getByRole("button", { name: /undo/i }));
+    expect(await screen.findByText("undo refused — bench/nothing-to-undo")).toBeTruthy();
+    expect(document.querySelectorAll('li[data-stage-id]').length).toBe(3);
   });
 });
 
