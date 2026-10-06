@@ -161,7 +161,7 @@ def test_an_absent_or_malformed_file_is_not_an_error(tmp_path):
     assert [r["id"] for r in parsed["rows"]] == ["w"]
 
 
-def test_the_combo_is_a_fact_read_from_the_node_declaration():
+def test_the_combo_is_a_fact_read_from_the_node_declaration(tmp_path):
     info = {
         "LoraLoaderModelOnly": {
             "input": {
@@ -172,34 +172,34 @@ def test_the_combo_is_a_fact_read_from_the_node_declaration():
             }
         }
     }
-    out = _node_eval(f"m.loraNamesFromObjectInfo({json.dumps(info)})", REPO)
+    out = _node_eval(f"m.loraNamesFromObjectInfo({json.dumps(info)})", tmp_path)
     assert json.loads(out) == ["h3/one.safetensors", "z-image/two.safetensors"]
 
 
-def test_a_hostile_object_info_answers_empty_never_throws():
+def test_a_hostile_object_info_answers_empty_never_throws(tmp_path):
     for junk in [None, [], "x", 7, {}, {"LoraLoaderModelOnly": None},
                  {"LoraLoaderModelOnly": {"input": []}},
                  {"LoraLoaderModelOnly": {"input": {"required": {"lora_name": "nope"}}}},
                  {"LoraLoaderModelOnly": {"input": {"required": {"lora_name": [[{"a": 1}], {}]}}}}]:
-        out = _node_eval(f"m.loraNamesFromObjectInfo({json.dumps(junk)})", REPO)
+        out = _node_eval(f"m.loraNamesFromObjectInfo({json.dumps(junk)})", tmp_path)
         assert json.loads(out) == [], junk
 
 
-def test_a_row_the_engine_lacks_is_named_before_it_costs_a_run():
+def test_a_row_the_engine_lacks_is_named_before_it_costs_a_run(tmp_path):
     rows = [
         {"id": "known", "filename": "h3/one.safetensors", "families": ["h3"]},
         {"id": "unknown", "filename": "mine/new.safetensors", "families": ["h3"]},
     ]
     combo = ["h3/one.safetensors"]
     out = _node_eval(
-        f"m.unboardedRows({json.dumps(rows)}, {json.dumps(combo)})", REPO
+        f"m.unboardedRows({json.dumps(rows)}, {json.dumps(combo)})", tmp_path
     )
     problems = json.loads(out)
     assert len(problems) == 1
     assert "unknown" in problems[0]
     assert "mine/new.safetensors" in problems[0]
     # an empty combo (engine down) proves nothing and refuses nothing
-    out = _node_eval(f"m.unboardedRows({json.dumps(rows)}, {json.dumps([])})", REPO)
+    out = _node_eval(f"m.unboardedRows({json.dumps(rows)}, {json.dumps([])})", tmp_path)
     assert json.loads(out) == []
 
 
@@ -245,8 +245,8 @@ def test_the_file_door_COPIES_a_lora_and_never_fetches(tmp_path):
     assert wrong["ok"] is False and "not a LoRA file" in wrong["reason"]
 
 
-def test_an_empty_rows_file_registers_no_flavor():
-    out = _node_eval("m.userLoraFlavor({rows: [], problems: [], absent: true, path: 'x'})", REPO)
+def test_an_empty_rows_file_registers_no_flavor(tmp_path):
+    out = _node_eval("m.userLoraFlavor({rows: [], problems: [], absent: true, path: 'x'})", tmp_path)
     assert json.loads(out) is None
 
 def test_the_BYTES_door_writes_a_browser_upload_into_the_loras_dir(tmp_path):
@@ -301,7 +301,7 @@ def test_the_bytes_door_refuses_over_the_cap_before_decoding(tmp_path):
     """The cap is checked on the base64 LENGTH, before any decode —
     an oversize upload must not become an OOM in the door."""
     engine_dir = tmp_path / "loras"
-    cap = json.loads(_node_eval("m.LORA_BYTES_CAP", REPO))
+    cap = json.loads(_node_eval("m.LORA_BYTES_CAP", tmp_path))
     assert cap == 512 * 1024 * 1024
     # one character past the cap's base64 budget: refused on the cap,
     # with nothing written
@@ -314,7 +314,7 @@ def test_the_bytes_door_refuses_over_the_cap_before_decoding(tmp_path):
         + ", "
         + json.dumps(str(engine_dir))
         + ", " + str(payload_len) + ")",
-        REPO,
+        tmp_path,
     )
     result = json.loads(out)
     assert result["ok"] is False
