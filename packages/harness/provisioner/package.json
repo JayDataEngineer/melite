@@ -8,6 +8,7 @@
     "infer-provision": "./bin/infer-provision.mjs"
   },
   "dependencies": {
+    "@deepseek-ai/dsh-llm-pi-ai": "0.2.0-rc.2",
     "@melite-plugin/dsh-card-deck": "workspace:*",
     "@melite-plugin/dsh-card-view": "workspace:*",
     "@melite-plugin/dsh-gallery": "workspace:*",

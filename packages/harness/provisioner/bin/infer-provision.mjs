@@ -60,14 +60,22 @@ const PROFILE_BASES = {
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
   // renderer disables the web-plane doors row in this mount).
+  // dsh-estate rides here too: a headless task that composes media
+  // reaches the same runs/queue/drafts seats through melite_flow —
+  // without the bundle the tool answers ABSENCE (the estate-drive
+  // finding, 2026-10-13; the state-root pin still applies — an
+  // unpinned queue seat refuses loud by design).
   headless: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-headless', '@melite/harness-provisioner',
-    '@melite/harness-tools'],
+    '@melite/harness-tools', '@melite-plugin/dsh-estate'],
   // estate = the job server: the SDK JSON-RPC base (estate-drive
   // spawns this profile; the estate row serves the runs lanes
-  // in-process — no second app, no HTTP). The renderer pins the
+  // in-process — no second app, no HTTP). dsh-estate bundles the
+  // runs/queue/drafts seats — without it melite_flow answers
+  // ABSENCE ("no seat of that family is mounted on this lane"),
+  // the 2026-10-13 estate-drive finding. The renderer pins the
   // tools row's HEADLESS interface by its self-registration id.
   estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner',
-    '@melite/harness-tools'],
+    '@melite/harness-tools', '@melite-plugin/dsh-estate'],
   // melite-test = THE TEST LANE, RE-COMPOSED (REBUILD-20, gateway
   // kill 2026-09-10): the historical TEST bake (:3088, the
   // melite-test profile mounting the estate API as a SECOND
@@ -149,6 +157,13 @@ function renderProfile(name) {  // In-box bundles (@deepseek-ai/*) resolve from 
     } else if (byName.has(depName)) {
       rowDeps[depName] = 'link:' + byName.get(depName)
     }
+    // Registry specs (e.g. the lane-brain adapter @deepseek-ai/dsh-llm-pi-ai)
+    // are deliberately NOT pinned here: the profile package.json is
+    // link:-only by contract (the render wall proves the trailing
+    // `pnpm install` stays offline-safe). A registry dep rides through
+    // its OWNING package's own manifest — the provisioner declares it,
+    // the provisioner is linked, its install resolves it in the repo
+    // workspace.
   }
 
   const pkgPath = join(dst, 'package.json')

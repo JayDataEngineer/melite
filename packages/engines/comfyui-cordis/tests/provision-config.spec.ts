@@ -9,7 +9,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join, relative } from "node:path";
-import { engineField, mergeOverlay, anchorDir } from "../scripts/provision-config.ts";
+import { engineField, mergeOverlay, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
 import { REPO } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
@@ -68,5 +68,32 @@ describe("anchorDir (explicit overrides anchor like the root config)", () => {
     const written = relative(REPO, abs);
     assert.ok(abs.startsWith(REPO + "/"));
     assert.equal(anchorDir(written), abs);
+  });
+});
+
+describe("boundModelFolders (unset endpoint overrides fall through to the root)", () => {
+  it("derives base_path from models.read_root when the endpoint pins no storage", () => {
+    // the wiring-roots audit (2026-10-13): anchorDir("") collapses to
+    // the repository root — a truthy value that swallowed the ||
+    // fallback and pointed every yaml category at the repo instead
+    // of the configured store
+    const cfg = { url: "http://127.0.0.1:8188" };
+    const bound = boundModelFolders(cfg as never);
+    // loadRoot merges the tracked config + machine overlay; on this
+    // estate the overlay pins /mnt-style absolute store roots. The
+    // LAW: the base is the configured store, never the repository
+    // itself, and the fixed categories keep their identity mapping
+    assert.ok(bound.base_path.length > 0 && bound.base_path !== REPO,
+      "base_path fell back to the repo root (anchorDir(\"\") collapse): "
+      + bound.base_path);
+    assert.equal(bound.folders["checkpoints"], "checkpoints");
+  });
+  it("keeps an explicit endpoint override anchored exactly like the root", () => {
+    const bound = boundModelFolders({
+      url: "http://127.0.0.1:8188",
+      model_base_path: "/explicit/store",
+    } as never);
+    assert.equal(bound.base_path, "/explicit/store");
+    assert.equal(bound.download_path, "/explicit/store");
   });
 });

@@ -38,7 +38,9 @@ const JOB_TEXT = [
 
 const log = (...a) => console.log('[drive]', ...a)
 const frames = []
-import { appendFileSync } from 'node:fs'
+import { appendFileSync, existsSync, readdirSync, statSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { join } from 'node:path'
 const RAW = '/tmp/estate-drive-frames.jsonl'
 let nextId = 1
 const pending = new Map()
@@ -61,12 +63,25 @@ if (vcur === null || vcur < vfloor) {
   console.error('[drive] ' + DSH_BIN + ' is not a dsh at the version floor (>=0.2.0-rc.1) — boot only through the provision')
   process.exit(1)
 }
-const child = spawn(DSH_BIN, ['--profile', 'estate'], {
+// the brain adapter rides a machine-local overlay next to the profile
+// (pi-ai.patch.yml — gateway rows belong to the machine's key env, the
+// same law as the web profile's hand-maintained base; the renderer
+// owns cordis.patch.yml, so the overlay stays a sibling it never
+// rewrites). --patch is repeatable and applies after the profile layer.
+const OVERLAY = join(DSH_HOME, 'profiles', 'estate', 'pi-ai.patch.yml')
+const child = spawn(DSH_BIN, ['--profile', 'estate', ...(existsSync(OVERLAY) ? ['--patch', OVERLAY] : [])], {
   env: {
     ...process.env, ...keyEnv, DSH_HOME,
     // dsh 0.1.2-rc.1 imports out-of-tree melite plugins as TS sources;
     // Node 22.15 needs the flag until the box runs >=22.18.
     NODE_OPTIONS: '--experimental-strip-types',
+    // The drive owns its OWN runs state root: the queue seat is
+    // serial-by-design over one root (one gateway.lock holder), and
+    // this box's live studio lane already holds the repo root — a
+    // second lane over the same root refuses its queue seat at
+    // mount (silently: a non-awaited row) and melite_flow answers
+    // ABSENCE. MELITE_STATE_ROOT wins over the repoRoot pin.
+    MELITE_STATE_ROOT: join(DSH_HOME, 'estate-drive-runs'),
   },
   stdio: ['pipe', 'pipe', 'pipe'],
 })
@@ -129,7 +144,7 @@ try {
   // 1. handshake (the runtime-readiness boundary)
   const init = await send('initialize', {
     cwd: '/home/user/Documents/programs/active/inference.cpp',
-    provider: 'opencode-go', model: 'muse-spark-1.3-contributor',
+    provider: 'openrouter', model: 'deepseek/deepseek-v4.1-flash',
   })
   log('initialized:', init?.serverInfo?.name ?? '?')
 
@@ -158,7 +173,43 @@ try {
       && String(JSON.stringify(m.params?.event?.data ?? '')).includes('run-'))
     if (flowResult !== undefined) {
       log('queue receipt observed in tool result')
-      await send('shutdown').catch(() => {})
+      // 4. hold the lane until the run EXECUTES: the queue's serial
+      //    executor lives in this same child — killing it at the
+      //    receipt would orphan the queued run (the 2026-10-13
+      //    drive-que-then-die: run.queued, no artifacts). The image
+      //    receipt is the PNG itself, hashed. test:true runs land
+      //    under <state root>/test-output/<run_id>/.
+      const runId = (String(flowResult.params?.event?.data?.message?.content?.[0]?.text ?? '')
+        .match(/run-[0-9a-f]+-[0-9a-f]+/) ?? [])[0]
+      if (runId) {
+        const stateRoot = join(DSH_HOME, 'estate-drive-runs')
+        const runDir = join(stateRoot, 'test-output', runId)
+        const t1 = Date.now()
+        // artifacts land NESTED (the comfy executor writes under
+        // generate/ inside the run dir) — walk the whole subtree.
+        const findImages = (dir) => {
+          const out = []
+          for (const f of readdirSync(dir, { withFileTypes: true })) {
+            if (f.isDirectory()) out.push(...findImages(join(dir, f.name)))
+            else if (f.name.endsWith('.png') || f.name.endsWith('.jpg')) out.push(join(dir, f.name))
+          }
+          return out
+        }
+        while (Date.now() - t1 < 240_000) {
+          await new Promise((r) => setTimeout(r, 3000))
+          const pngs = existsSync(runDir) ? findImages(runDir) : []
+          if (pngs.length > 0) {
+            const bytes = statSync(pngs[0]).size
+            const sha = createHash('sha256').update(readFileSync(pngs[0])).digest('hex')
+            log('image receipt:', pngs[0].slice(runDir.length + 1), bytes + 'B', 'sha256=' + sha.slice(0, 16))
+            await send('shutdown').catch(() => {})
+            finish(0, 'job accepted → run executed → image produced (' + runDir + ')')
+          }
+        }
+        finish(1, 'run ' + runId + ' queued but no image in 240s (executor stalled?)')
+      }
+      await send('shutdown').catch(() => {}
+      )
       finish(0, 'job accepted → melite_flow fired → run queued (server + queue live)')
     }
   }

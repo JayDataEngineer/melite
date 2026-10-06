@@ -127,6 +127,18 @@ export function anchorDir(value: string): string {
   return isAbsolute(value) ? value : resolve(REPO, value);
 }
 
+/** Anchors a possibly-unset override: empty stays empty so the
+ *  root-config fallback in the `||` chains applies. anchorDir("")
+ *  collapses to the repository root — a truthy value that silently
+ *  masked the models.read_root fallback and re-pointed every yaml
+ *  category at the repo (the wiring-roots audit, 2026-10-13).
+ *  @param v the raw config value (undefined/null = unset)
+ *  @returns the anchored absolute path, or "" when unset */
+function anchoredOpt(v: unknown): string {
+  const s = rootStr(v);
+  return s === "" ? "" : anchorDir(s);
+}
+
 /** Joins the engine base under a models root, never twice: overlays
  *  written under the old replacement semantics bake the base into
  *  read_root/download_root (an absolute already pointing INSIDE the
@@ -162,12 +174,12 @@ export function boundModelFolders(cfg: EndpointConfig): BoundLayout {
   // provisioner — and endpointWritable's under-repo rewrite then
   // re-broke it on the next paths run; anchoring makes the round
   // trip stable)
-  const base = anchorDir(rootStr(cfg.model_base_path)) ||
-    joinBase(anchorDir(rootStr(root.models?.read_root)),
+  const base = anchoredOpt(cfg.model_base_path) ||
+    joinBase(anchoredOpt(root.models?.read_root),
       rootStr(root.engines?.comfyui?.base));
-  const download = anchorDir(rootStr(cfg.model_download_path)) ||
-    anchorDir(rootStr(cfg.model_base_path)) ||
-    joinBase(anchorDir(rootStr(root.models?.download_root)),
+  const download = anchoredOpt(cfg.model_download_path) ||
+    anchoredOpt(cfg.model_base_path) ||
+    joinBase(anchoredOpt(root.models?.download_root),
       rootStr(root.engines?.comfyui?.base));
   if (!rootStr(root.models?.read_root)) {
     die("models.read_root is unset in inference.config.json — " +
