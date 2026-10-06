@@ -554,6 +554,14 @@ describe('single-view exports', () => {
     await vi.waitFor(() => {
       expect(downloads.map((d) => d.download)).toEqual(['stage_depth.png', 'stage_depth.png'])
     })
+    // await each chain's TERMINAL toast (the try's last statement —
+    // finally's setState follows it in the same tick): ending at the
+    // download leaves the tail in flight past file teardown, and its
+    // setExporting dispatch lands in a dead window (fleet-load flake,
+    // 2026-10-13) — an unhandled rejection the battery rightly refuses
+    await vi.waitFor(() => {
+      expect(useToastStore.getState().toasts.filter((t) => t.type === 'success')).toHaveLength(2)
+    })
   })
 
   test('transparent bg nulls the stage for the mesh pass', async () => {
@@ -574,6 +582,10 @@ describe('single-view exports', () => {
     })
     // the null swaps back to the stage's own background object
     expect(ref.current.scene.background).toBeInstanceOf(THREE.Color)
+    // terminal toast — see the depth rerun note: never end at the download
+    await vi.waitFor(() => {
+      expect(useToastStore.getState().toasts.some((t) => t.type === 'success')).toBe(true)
+    })
   })
 
   test('hex bg swaps a flat color in and restores it', async () => {
@@ -594,6 +606,10 @@ describe('single-view exports', () => {
       expect(downloads).toHaveLength(1)
     })
     expect(ref.current.scene.background).toBe(before)
+    // terminal toast — see the depth rerun note: never end at the download
+    await vi.waitFor(() => {
+      expect(useToastStore.getState().toasts.some((t) => t.type === 'success')).toBe(true)
+    })
   })
 
   test('preserve over a non-color stage falls back to the studio dark', async () => {
@@ -613,6 +629,10 @@ describe('single-view exports', () => {
       expect(downloads).toHaveLength(1)
     })
     expect(seen.fillStyles[0]).toBe('#0e0e1a')
+    // terminal toast — see the depth rerun note: never end at the download
+    await vi.waitFor(() => {
+      expect(useToastStore.getState().toasts.some((t) => t.type === 'success')).toBe(true)
+    })
   })
 
   test('stage dims fall back to element size, then to 1px', async () => {
@@ -631,6 +651,11 @@ describe('single-view exports', () => {
       })
       await vi.waitFor(() => {
         expect(downloads).toHaveLength(1)
+      })
+      // terminal toast — see the depth rerun note: never end at the
+      // download (the last iteration's tail can cross file teardown)
+      await vi.waitFor(() => {
+        expect(useToastStore.getState().toasts.some((t) => t.type === 'success')).toBe(true)
       })
       await cleanup19()
     }

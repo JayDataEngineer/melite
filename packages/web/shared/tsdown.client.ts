@@ -113,6 +113,17 @@ export function clientBundle(
       ? 'src/client/index.ts'
       : 'lib/types/client/index.js') : undefined
     const node = [lib, ...(options.companions ?? [])]
+    // ONE BUILDER PER PLANE (this repo's layout adjustment over the DSH
+    // copy): every workspace package's node half is the tsc plane —
+    // tools/build-plane.mjs emits and owns lib/**, the battery's lib-sync
+    // arm rebuilds it, and a second builder claiming the same files
+    // oscillates the drift check (a bare `tsdown` rewrote six tracked
+    // lib/index.js files on 2026-10-13). A package WITH a client face
+    // builds ONLY lib/client.js here, from source (rolldown compiles the
+    // TS directly) — img-to-mesh's hand comment "the node-half lib output
+    // is pruned" is this law, automatic now. hostPhase callers (the DSH
+    // monorepo phase pipeline) keep the full matrix below.
+    if (options.hostPhase !== true && client !== undefined) return [client]
     if (face === 'host') return options.hostPhase === true ? node : [SKIP_WORKSPACE_BUILD]
     if (face === 'client') return options.hostPhase === true ? (client ? [client] : []) : (client ? [...node, client] : node)
     return client ? [...node, client] : node
@@ -287,7 +298,36 @@ function clientConfig(id: string, entry: string): UserConfig {
     // guaranteed runtime throw, so the rule is the table list itself: no
     // opinion for table entries (external above wins), bundle everything else.
     noExternal: (id: string) => (CLIENT_EXTERNALS.includes(id) ? undefined : true),
-    plugins: [{
+    plugins: [
+      {
+        // THE TYPE-TWIN REROUTE (source plane vs artifact plane, the
+        // bundle-build law): the consumer's tsconfig paths resolve
+        // workspace specifiers to SRC declaration twins (the testing
+        // law — static gates resolve to src), but a value import the
+        // bundle inlines needs the RUNTIME artifact. When default
+        // resolution lands on a .d.ts (e.g. the typert remotes:
+        // @melite/estate-<x>/remote -> src/typert.remote-client.d.ts),
+        // reroute to the sibling runtime artifact — same directory, or
+        // the lib/ twin the package's exports map serves. A .d.ts with
+        // NO runtime twin is a type-only export: the import must carry
+        // `import type`, and the loud throw below names it.
+        name: 'dsh-client-type-twin-reroute',
+        async resolveId(source, importer, options) {
+          if (!source.startsWith('@melite/')) return null
+          const resolved = await this.resolve(source, importer, { ...options, skipSelf: true })
+          if (resolved === null || !resolved.id.endsWith('.d.ts')) return null
+          const sameDir = resolved.id.replace(/\.d\.ts$/u, '.js')
+          const libTwin = resolved.id.replace(/\/src\//u, '/lib/').replace(/\.d\.ts$/u, '.js')
+          const twin = [sameDir, libTwin].find((candidate) => existsSync(candidate))
+          if (twin === undefined) {
+            throw new Error(
+              `tsdown: ${source} resolves to the declaration twin ${resolved.id} with no runtime artifact — a type-only export must be imported with \`import type\``,
+            )
+          }
+          return twin
+        },
+      },
+      {
       // THE TRAILING-NEWLINE LAW (the repo convention: a file ends
       // with exactly one trailing newline). Rolldown appends the
       // sourcemap comment AFTER renderChunk, so the guarantee
@@ -304,9 +344,30 @@ function clientConfig(id: string, entry: string): UserConfig {
           // fileName is relative to the OUTPUT dir (lib/).
           const file = resolvePath(process.cwd(), dir, chunk.fileName)
           if (!existsSync(file)) continue
-          const code = readFileSync(file, 'utf8')
-          if (code.endsWith('\n')) continue
-          writeFileSync(file, code + '\n')
+          let code = readFileSync(file, 'utf8')
+          // STORE-PATH NORMALIZATION (GT6-08 follow-up, 2026-10-13):
+          // rolldown stamps module ids and sourcemap sources with the
+          // writer's pnpm store layout (`node_modules/.pnpm/<pkg>@<ver>/
+          // node_modules/<pkg>/…`) — an exact-version machine path in a
+          // TRACKED artifact the dangling-store-path wall refuses (and
+          // two stores would emit different bytes for one truth). The
+          // normal form is package-relative: the store segment collapses
+          // to the package name. Applied to the written file AND its map
+          // sibling, whose sources carry the same layout.
+          code = code.replaceAll(
+            /node_modules\/\.pnpm\/[^/"']+\/node_modules\//gu,
+            '',
+          )
+          const mapFile = file + '.map'
+          if (existsSync(mapFile)) {
+            const map = readFileSync(mapFile, 'utf8').replaceAll(
+              /node_modules\/\.pnpm\/[^/"']+\/node_modules\//gu,
+              '',
+            )
+            if (map !== readFileSync(mapFile, 'utf8')) writeFileSync(mapFile, map)
+          }
+          if (!code.endsWith('\n')) code += '\n'
+          writeFileSync(file, code)
         }
       },
     }, {

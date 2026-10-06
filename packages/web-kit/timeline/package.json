@@ -18,7 +18,7 @@
     },
     "./client": {
       "types": "./lib/client/index.d.ts",
-      "default": "./lib/client/index.js"
+      "default": "./lib/client.js"
     },
     "./package.json": "./package.json"
   },
@@ -33,8 +33,10 @@
   },
   "devDependencies": {
     "@testing-library/react": "*",
-    "@types/react": "^19.3.0",
+    "@tsdown/css": "^0.22.14",
     "@types/node": "^22.20.0",
+    "@types/react": "^19.3.0",
+    "tsdown": "^0.22.14",
     "typescript": "~6.0.3"
   },
   "scripts": {

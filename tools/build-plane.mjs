@@ -20,7 +20,7 @@
  *
  * Idempotent: every step converges; re-running is a no-op on a cured tree.
  */
-import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, copyFileSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync, readdirSync, statSync, rmSync, mkdirSync, copyFileSync, renameSync, openSync, readSync, closeSync } from 'node:fs'
 import { join, dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { spawnSync } from 'node:child_process'
@@ -627,8 +627,47 @@ export function buildOne(pkgDir) {
   if (faces.length === 0) return { dir: pkgDir, skipped: true }
   // CLEAN emit (manifest audit M3): tsc never prunes; a stale flat or
   // lib/src build beside the new one is exactly the mixed-plane rot the
-  // dangling-promise wall catches. lib is fully derived state.
-  rmSync(join(pkgDir, 'lib'), { recursive: true, force: true })
+  // dangling-promise wall catches. lib is fully derived state — EXCEPT
+  // the loader-factory client bundles (tsdown's plane, GT6-08): a file
+  // whose first bytes are the __ModuleLoader__ registration belongs to
+  // the OTHER builder and survives the clean (rmSync would otherwise
+  // wipe every untracked lib/client.js on each battery run — the lane
+  // host then died refusing a missing bundle). The marker is the
+  // ownership boundary itself, machine-checked, never a name list.
+  const libDir = join(pkgDir, 'lib')
+  const preserved = []
+  if (existsSync(libDir)) {
+    const stash = join(pkgDir, 'node_modules', '.client-bundle-stash')
+    rmSync(stash, { recursive: true, force: true })
+    mkdirSync(stash, { recursive: true })
+    const keep = (dirent) => {
+      const full = join(libDir, dirent)
+      // a sibling's handling may have renamed this entry away already
+      // (client.js takes its .map with it) — readdir lists stale names
+      if (!existsSync(full)) return
+      if (!statSync(full).isFile()) return
+      const fd = openSync(full, 'r')
+      const head = Buffer.alloc(32)
+      const n = readSync(fd, head, 0, 32, 0)
+      closeSync(fd)
+      if (n > 0 && head.toString('utf8', 0, n).startsWith('window.__ModuleLoader__.load(')) {
+        renameSync(full, join(stash, dirent))
+        preserved.push(dirent)
+        // the bundle's .map sibling carries the marker's JSON, not the
+        // loader call — it rides with its bundle or the clean wipes it
+        const mapSibling = full + '.map'
+        if (existsSync(mapSibling)) {
+          renameSync(mapSibling, join(stash, dirent + '.map'))
+          preserved.push(dirent + '.map')
+        }
+      }
+    }
+    for (const dirent of readdirSync(libDir)) keep(dirent)
+    rmSync(libDir, { recursive: true, force: true })
+    if (preserved.length > 0) mkdirSync(libDir, { recursive: true })
+    for (const dirent of preserved) renameSync(join(stash, dirent), join(libDir, dirent))
+    rmSync(stash, { recursive: true, force: true })
+  }
   let code = 0, out = ''
   for (const face of faces) {
     const r = spawnSync(process.execPath, [tscBin, '-p', face], { cwd: pkgDir, encoding: 'utf8' })
@@ -759,9 +798,12 @@ function findSrcForSpec(d, spec) {
   // target's source is .ts/.tsx. Collapsing .d.ts to .ts lost every
   // types-only row (the catalog/comfyui-cordis TS2307 class).
   const inner = spec.replace(/^\.\/lib\//, '').replace(/\.(js|d\.ts)$/, '')
+  // a flat target may be a directory module's emitted index (the client
+  // bundles: ./lib/client.js <- src/client/index.ts, GT6-08 2026-10-13)
+  // — Node's own resolution rule
   const cands = /\.d\.ts$/.test(spec)
-    ? [inner + '.d.ts', inner + '.ts', inner + '.tsx']
-    : [inner + '.ts', inner + '.tsx']
+    ? [inner + '.d.ts', inner + '.ts', inner + '.tsx', join(inner, 'index.d.ts'), join(inner, 'index.ts'), join(inner, 'index.tsx')]
+    : [inner + '.ts', inner + '.tsx', join(inner, 'index.ts'), join(inner, 'index.tsx')]
   for (const cand of cands) {
     for (const base of [join('src', cand), cand]) {
       if (existsSync(join(d, base))) return base

@@ -259,9 +259,12 @@ describe('W8 — no dangling door (re-audit R5/R6, buildfaces F2)', () => {
         for (const t of rowTargets(value)) {
           if (!/^\.\/lib\//.test(t)) continue
           const noExt = t.replace(/^\.\/lib\//, '').replace(/\.(js|d\.ts)$/, '')
+          // a flat target may be a directory module's emitted index
+          // (the client bundles: ./lib/client.js <- src/client/index.ts,
+          // GT6-08 2026-10-13) — Node's own resolution rule
           const cands = /\.d\.ts$/.test(t)
-            ? [`${noExt}.d.ts`, `${noExt}.ts`, `${noExt}.tsx`]
-            : [`${noExt}.ts`, `${noExt}.tsx`]
+            ? [`${noExt}.d.ts`, `${noExt}.ts`, `${noExt}.tsx`, `${noExt}/index.d.ts`, `${noExt}/index.ts`, `${noExt}/index.tsx`]
+            : [`${noExt}.ts`, `${noExt}.tsx`, `${noExt}/index.ts`, `${noExt}/index.tsx`]
           const hit = cands.some((c) => existsSync(join(dir, 'src', c)) || existsSync(join(dir, c)))
           if (!hit) offenders.push(`${pkg.name} ${key}: ${t} — no source produces it`)
         }

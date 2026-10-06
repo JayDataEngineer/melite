@@ -7,7 +7,7 @@
       "types": "./lib/index.d.ts",
       "default": "./lib/index.js"
     },
-    "./client": "./lib/client/index.js",
+    "./client": "./lib/client.js",
     "./card": {
       "types": "./lib/card.d.ts",
       "default": "./lib/card.js"
@@ -53,7 +53,7 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "name": "@melite/video-h3-timeline",
-  "description": "the h3-timeline card (the video lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the h3-timeline card (the video lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
   "dsh": {
     "client": {
       "platform": "web",

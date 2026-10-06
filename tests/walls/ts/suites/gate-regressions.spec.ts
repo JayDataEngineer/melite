@@ -464,19 +464,8 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
 describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
   const ship = read("scripts/ship-lane.sh");
 
-  it("the client-bundle list is DISCOVERED from the export map (a film UI edit shipped stale)", () => {
-    // Three packages export ./client → ./lib/client.js (motion,
-    // h3-timeline, img-to-mesh) and the browser fetches them like the
-    // web ones — but a hand list omitted all three, so a film UI edit
-    // "shipped green" while the operator ran yesterday's bytes. The
-    // list is now derived from the export map itself.
-    expect(ship).toContain('(data.get("exports") or {}).get("./client")');
-    // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
-    // packages the export map carries — a fourth built bundle would
-    // have joined the ship while this arm watched three. The set is
-    // DISCOVERED from every manifest now and pinned exactly: EIGHT
-    // built bundles, every dsh.client seat compiled to lib (the
-    // viewer's src-hot-load note was stale — no consumer serves src).
+  /** Every manifest under packages/ carrying a ./client export row. */
+  function discoveredRows(): Array<{ pkg: string; target: string; built: boolean }> {
     const discovered: Array<{ pkg: string; target: string; built: boolean }> = [];
     const walkPkgs = (dir: string, depth: number): void => {
       if (depth > 2) return;
@@ -491,39 +480,83 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
           const client = data.exports?.["./client"];
           const target = typeof client === "string" ? client : client?.default;
           if (typeof target === "string") {
-            // built = an artifact-plane door under lib/ (flat-lib law:
-            // a directory module lands at lib/client/index.js); the
-            // viewer's src-plane door is the hot-load design, not built
-            discovered.push({ pkg: p, target, built: target.startsWith("./lib/") });
+            // built = the FACTORY bundle the loader materializes
+            // (GT6-08: an artifact-plane directory door under lib/ was
+            // counted "built" while serving raw tsc ESM the browser
+            // refused — "Cannot use import statement outside a
+            // module", five entries did not activate)
+            discovered.push({ pkg: p, target, built: target === "./lib/client.js" });
           }
         }
         walkPkgs(p, depth + 1);
       }
     };
     walkPkgs(join(REPO, "packages"), 0);
+    return discovered;
+  }
+
+  it("the client-bundle list is DISCOVERED from the export map (a film UI edit shipped stale)", () => {
+    // Three packages export ./client → ./lib/client.js (motion,
+    // h3-timeline, img-to-mesh) and the browser fetches them like the
+    // web ones — but a hand list omitted all three, so a film UI edit
+    // "shipped green" while the operator ran yesterday's bytes. The
+    // list is now derived from the export map itself.
+    expect(ship).toContain('(data.get("exports") or {}).get("./client")');
+    // C-M11 (the wall audit, 2026-09-28): the arm named THREE of the
+    // packages the export map carries — a fourth built bundle would
+    // have joined the ship while this arm watched three. The set is
+    // DISCOVERED from every manifest now and pinned exactly: NINE
+    // built bundles, every dsh.client seat compiled to lib (the
+    // viewer's src-hot-load note was stale — no consumer serves src).
+    const discovered = discoveredRows();
     expect(discovered.map((d) => [d.pkg.replace(`${REPO}/`, ""), d.target, d.built]).sort(),
       "every manifest carrying a ./client export, and whether it is BUILT")
       .toEqual([
-        ["packages/3d/img-to-mesh", "./lib/client/index.js", true],
-        ["packages/motion/motion", "./lib/client/index.js", true],
-        ["packages/video/h3-timeline", "./lib/client/index.js", true],
+        ["packages/3d/img-to-mesh", "./lib/client.js", true],
+        ["packages/motion/motion", "./lib/client.js", true],
+        ["packages/video/h3-timeline", "./lib/client.js", true],
         // the timeline UI kit re-exports the door's Tip/icon set on
         // its own client face (the phantom-require cure, 2026-10-13)
-        ["packages/web-kit/timeline", "./lib/client/index.js", true],
+        ["packages/web-kit/timeline", "./lib/client.js", true],
         // THE ONE-ROW LAW: card-base's own graph row — the studio
         // atoms compile once here, every card client requires it.
-        ["packages/web/card-base", "./lib/client/index.js", true],
-        ["packages/web/infer-gallery", "./lib/client/index.js", true],
-        ["packages/web/melite-card-deck", "./lib/client/index.js", true],
-        ["packages/web/melite-card-view", "./lib/client/index.js", true],
-        ["packages/web/viewer", "./lib/client/index.js", true],
+        ["packages/web/card-base", "./lib/client.js", true],
+        ["packages/web/infer-gallery", "./lib/client.js", true],
+        ["packages/web/melite-card-deck", "./lib/client.js", true],
+        ["packages/web/melite-card-view", "./lib/client.js", true],
+        ["packages/web/viewer", "./lib/client.js", true],
       ]);
-    // the ship's own discovery must therefore carry all eight built
+    // the ship's own discovery must therefore carry all nine built
     // bundles — the export-map filter is the same law
     for (const d of discovered.filter((x) => x.built)) {
       expect(ship, `${d.pkg} is a built client bundle`).toContain(
         d.pkg.replace(`${REPO}/`, "").replace("packages/", "").split("/").pop() as string,
       );
+    }
+  });
+
+  it("every built client bundle is FACTORY FORMAT (the loader fetches classic scripts)", () => {
+    // GT6-08 (the round-6 re-audit, 2026-10-13): every melite client
+    // entry's exports row pointed at the tsc per-file emit — raw ESM
+    // (`import { createElement } from 'react'`) that the DSH loader's
+    // classic <script> tag cannot parse: "Cannot use import statement
+    // outside a module", five web entries did not activate, and the
+    // served path had been dead since the web-graph rows landed. The
+    // wire names the factory bundle (window.__ModuleLoader__.load —
+    // externals resolve through the injected require), and this arm
+    // refuses any regression to module-format bytes on the wire.
+    const built = discoveredRows();
+    expect(built.length, "the discovered set carries the nine bundles").toBe(9);
+    for (const row of built) {
+      const file = join(row.pkg, "lib", "client.js");
+      expect(existsSync(file), `${file} exists (build it: pnpm exec tsdown in the package)`).toBe(true);
+      if (!existsSync(file)) continue;
+      const head = readFileSync(file, "utf8").slice(0, 64);
+      expect(head.startsWith("window.__ModuleLoader__.load("),
+        `${file} must open with the loader registration (factory format), found: ${head.slice(0, 40)}`).toBe(true);
+      const body = readFileSync(file, "utf8");
+      const rawEsm = body.match(/^(?:import|export)[^()]/m);
+      expect(rawEsm, `${file} carries a module-format statement the classic script tag would refuse`).toBeNull();
     }
   });
 
