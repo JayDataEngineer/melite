@@ -3,13 +3,19 @@
 //
 // The operator's law (2026-10-15): the repo is shared on GitHub, so
 // "works on other people's computers" must be provable HERE, not
-// argued. This script does what a stranger does — a plain public
-// clone, pnpm install, the README's own sequence — on an isolated
-// sandbox it owns, and reports every step PASS/FAIL with verbatim
+// argued. This script does what a stranger does — a plain clone,
+// pnpm install, the README's own sequence — on an isolated sandbox
+// it owns, and reports every step PASS/FAIL with verbatim
 // refusals. It is the executable form of the 2026-10-14 sandbox
 // audit (dev_docs/audits/sandbox-zimage-autoprovision-2026-10-14.md,
 // developer-local), whose F1–F3 cured; whatever it catches next is
 // a finding to cure, not a probe bug.
+//
+// THE PREMISE IS TESTED, NOT ASSUMED: a stranger has no
+// credentials, so a PRIVATE remote can only be cloned with this
+// box's stored credential — such a run proves a fresh machine WITH
+// ACCESS, not a stranger's clone. The preflight runs an anonymous
+// ls-remote and the report's premise line carries the result.
 //
 // Scope honesty (the README's own law): weights are separate,
 // deliberate downloads. The probe NEVER runs `provision models` —
@@ -208,6 +214,25 @@ async function main() {
     console.error("probe refused: workdir exists — " + WORKDIR);
     process.exit(1);
   }
+  // THE PREMISE (2026-10-13): the probe's fiction is a STRANGER's
+  // clone, and a stranger has no credentials. A private remote is
+  // clonable only with this box's stored credential, so the clone
+  // step would pass while proving nothing about strangers. The
+  // premise is tested, not assumed: an anonymous ls-remote with the
+  // credential helper disabled. The verdict carries the result.
+  const anon = spawnSync("git", ["-c", "credential.helper=", "ls-remote", REMOTE, "HEAD"], {
+    encoding: "utf8",
+    timeout: 60_000,
+    env: { ...process.env, GIT_TERMINAL_PROMPT: "0", GIT_ASKPASS: "/bin/true", GH_TOKEN: "", GITHUB_TOKEN: "" },
+  });
+  const STRANGER_CLONE = anon.status === 0;
+  if (STRANGER_CLONE) {
+    console.log("premise:   anonymous clone WORKS — the stranger's path is what this run proves");
+  } else {
+    console.log("premise:   the remote needs credentials (anonymous ls-remote refused) —");
+    console.log("           this run proves a fresh machine WITH ACCESS, not a stranger's clone.");
+    console.log("           Point --remote at a public mirror to prove the stranger's path.");
+  }
   // space preflight: the sandbox carries a clone, a workspace install,
   // a ComfyUI core checkout, and the engine venv — a few GB before
   // any model. Refusing up front beats ENOSPC mid-step (the pass-3
@@ -391,6 +416,9 @@ function report() {
   if (fails.length === 0) {
     console.log("fresh-clone proof: GREEN — clone → install → render → sync → boot → extensions → verify" +
       (SKIP_SNAPSHOT ? "" : " → snapshot") + " all passed");
+    console.log("premise: " + (STRANGER_CLONE
+      ? "anonymous clone (a stranger's path)"
+      : "authenticated clone (a fresh machine WITH ACCESS — the remote is private)"));
     return;
   }
   console.log("fresh-clone proof: " + String(fails.length) + " step(s) failed — verbatim:");

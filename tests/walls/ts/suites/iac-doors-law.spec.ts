@@ -87,6 +87,21 @@ describe("THE IAC LAW — the store is reconstructable from DECLs, through real 
     }
   });
 
+  it("the fresh-clone door tests its own premise (a stranger has no credentials)", () => {
+    // The probe's fiction is a STRANGER's clone. A private remote is
+    // clonable only with this box's stored credential, so the clone
+    // step can pass while proving nothing about strangers. The door
+    // must run its own anonymous ls-remote (credential helper
+    // disabled, no terminal prompt) and carry the result in its
+    // verdict — deleting that test would silently restore the
+    // overclaim.
+    const probe = readFileSync(join(ROOT, "tools", "fresh-clone-probe.mjs"), "utf8");
+    expect(probe, "the anonymous preflight disables the credential helper").toContain('"credential.helper="');
+    expect(probe, "the anonymous preflight refuses a terminal prompt").toContain("GIT_TERMINAL_PROMPT");
+    expect(probe, "the premise verdict is named").toContain("STRANGER_CLONE");
+    expect(probe, "the report carries the premise line").toContain("premise:");
+  });
+
   it("the engine-fixture regen doors exist, are wired, and their fixtures exist (GT-09)", () => {
     // The regen doors are the ONLY way the tracked engine snapshots
     // change (no hand edits), and nothing judged that they — or the
