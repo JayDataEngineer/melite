@@ -21,8 +21,8 @@
  * as a click (the 350ms threshold). Gizmo subtrees (TransformControls)
  * are excluded from picking — r3f did this implicitly.
  */
-import * as THREE from "three";
-import { OrbitControls } from "three/addons/controls/OrbitControls.js";
+import * as THREE from "@melite/three-client/client";
+import { OrbitControls } from "@melite/three-client/client";
 /** THE 3D STAGE COLOUR (the one owner). The void every raw-three
  *  viewport clears behind its scene, and the light counterpart the
  *  pose stage flips to. Every renderer/background that paints this

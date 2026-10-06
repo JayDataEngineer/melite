@@ -15,7 +15,7 @@
  * non-blank frame; the cost is negligible since we dispose
  * immediately.
  */
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 
 export interface SnapshotOptions {
   /** Square output size (256 — plenty for a tile even at 2× DPR). */

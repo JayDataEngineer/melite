@@ -22,7 +22,7 @@
  * (its negative-offset hack existed only because drei nested the gizmo
  * inside the lifted group).
  */
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { mountStage3D } from "@melite/card-base/client";
 import { CM_TO_M } from "./poseStageSkeleton.js";
 import { framedCameraPos } from "./poseStageCamera.js";

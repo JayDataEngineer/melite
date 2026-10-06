@@ -26,8 +26,8 @@
     "@melite/formats": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "*",
-    "@melite/cards": "workspace:*"
+    "@melite/cards": "workspace:*",
+    "@melite/three-client": "workspace:*"
   },
   "devDependencies": {
     "@types/three": "^0.184.1",

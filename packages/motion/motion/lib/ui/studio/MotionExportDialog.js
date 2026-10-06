@@ -62,7 +62,7 @@ import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-run
  * DESTINATION: browser download — the ONE delivery path.
  */
 import { useCallback, useEffect, useRef, useState } from "react";
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { Download, X, Camera, FileBox, Box, Palette, Check, Layers, RotateCw, Film, ChevronLeft, ChevronRight, PlayAlt as Play, Pause, Crop, Frame, } from '@melite/card-base/client';
 import { AZIMUTH_PRESETS, soma77ToCoco18, azimuthCameraPos, } from "@melite/formats";
 import { renderOpenPoseCanvas } from "@melite/formats";

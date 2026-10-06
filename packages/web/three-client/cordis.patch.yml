@@ -1,0 +1,19 @@
+# three-client bundle patch: the ONE-ROW LAW mount for 3D (roadmap
+# "multiple three.js copies", lane wire probe 2026-10-13). This
+# package is ONE module-table graph row carrying the estate's
+# single compiled instance of three plus its four consumed addon
+# modules. Every 3D-touching client bundle REQUIRES
+# `@melite/three-client/client` (dsh.client.external — the loader's
+# require); the row below is what materializes that module for the
+# browser graph: bundling @melite/three-client in a profile applies
+# this patch, the loader imports the null host marker at
+# exports['.'] (src/host.ts — registers nothing node-side), and the
+# dsh.client scan carries lib/client.js. Without the row, every
+# externalizing consumer dies at boot with
+# `require("@melite/three-client/client") missed the module table`
+# (the card-base lane finding, 2026-10-13). No consumer bundle may
+# inline a second compiled copy of three; no other patch may twin
+# this row.
+- insert:
+    - id: three-client
+      name: "@melite/three-client"

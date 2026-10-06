@@ -13,7 +13,7 @@
  * reads became explicit hook args. Behavior is IDENTICAL.
  */
 import { useCallback, useEffect, useMemo, useRef } from "react";
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { isMeshUrl } from '@melite/card-base/client';
 import { deformFrame, loadGlbSkin, loadMotionNpz, loadSomaSkin, NotSomaxGlbError, precomputeDeformedVertsChunked, } from "@melite/formats";
 import { useMotionImageStore } from "@melite-plugin/motion/ui/viewers/motionImageStore";

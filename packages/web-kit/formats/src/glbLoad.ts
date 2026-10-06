@@ -23,10 +23,10 @@
  *   • glbSkin (this package — character GLB → SomaSkin substrate)
  *   • anything else that needs the estate's ONE GLB parse policy
  */
-import * as THREE from "three"
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js"
-import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js"
-import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
+import * as THREE from '@melite/three-client/client'
+import { GLTFLoader } from '@melite/three-client/client'
+import { DRACOLoader } from '@melite/three-client/client'
+import type { GLTF } from '@melite/three-client/client'
 
 let _draco: DRACOLoader | null = null
 let _loader: GLTFLoader | null = null

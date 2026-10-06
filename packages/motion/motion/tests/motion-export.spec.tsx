@@ -10,7 +10,7 @@
 import { fireEvent, getByLabelText, getByRole, getByText, queryByText } from '@testing-library/dom'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { createElement as h, type ReactElement } from 'react'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 
 import {
   DEFAULT_STAGE_RECT, MotionExportDialog, type StageRect,

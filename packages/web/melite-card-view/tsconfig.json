@@ -26,6 +26,8 @@
       "node"
     ],
     "paths": {
+        "@melite/three-client": ["./../three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../three-client/src/client/index.ts"],
         "@melite-plugin/timeline/client": ["./../../web-kit/timeline/src/client/index.ts"],
         "@melite/cards/form-fields": ["./../../engines/comfyui/action_cards/src/form-fields.tsx"],
         "@melite/cards/poster-shell": ["./../../engines/comfyui/action_cards/src/poster-shell.tsx"],

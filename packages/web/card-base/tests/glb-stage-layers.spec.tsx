@@ -9,7 +9,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { createElement as h } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 
 import { applyWeightsHeat, applyWireframe, GlbStagePreview, heatColor, skeletonHelperFor, slotLabelOf, TURNTABLE_SPEED, turntableTick } from '../src/glb-stage.tsx'
 

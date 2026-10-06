@@ -785,6 +785,12 @@
   "@melite-plugin/melite-run-wire": [
     "./packages/web/melite-run-wire/src/index.ts"
   ],
+  "@melite/three-client": [
+    "./packages/web/three-client/src/host.ts"
+  ],
+  "@melite/three-client/client": [
+    "./packages/web/three-client/src/client/index.ts"
+  ],
   "@melite/viewer": [
     "./packages/web/viewer/src/index.ts"
   ],

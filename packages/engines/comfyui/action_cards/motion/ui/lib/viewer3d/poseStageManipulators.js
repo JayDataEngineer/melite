@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { TransformControls } from "three/addons/controls/TransformControls.js";
+import * as THREE from '@melite/three-client/client';
+import { TransformControls } from '@melite/three-client/client';
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats";
 import { CM_TO_M, SOMA77_PARENT, getDescendants, getJointChain, solveCCD } from "./poseStageSkeleton.js";
 // SOMA-77 joint display sizes (verbatim).

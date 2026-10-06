@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import type { ReferenceManipHandle } from "./poseStageManipulators.js";
 import type { PoseStageProps, ReferenceBundle } from "./poseStageTypes.js";
 export declare function createReferenceCarrier(deps: {

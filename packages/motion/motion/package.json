@@ -44,7 +44,7 @@
     "@melite/models-kimodo": "workspace:*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "*"
+    "@melite/three-client": "workspace:*"
   },
   "devDependencies": {
     "@testing-library/dom": "*",
@@ -62,7 +62,8 @@
     "client": {
       "platform": "web",
       "external": [
-        "@melite/card-base/client"
+        "@melite/card-base/client",
+        "@melite/three-client/client"
       ]
     },
     "bundle": {

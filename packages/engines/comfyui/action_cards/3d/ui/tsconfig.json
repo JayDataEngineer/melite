@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/three-client": ["./../../../../../web/three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../../../../../web/three-client/src/client/index.ts"],
         "@melite-plugin/timeline/client": ["./../../../../../web-kit/timeline/src/client/index.ts"],
         "@melite/estate-drafts/remote": ["./../../../../../estate/drafts/src/typert.remote-client.d.ts"],
         "@melite/estate-manage/remote": ["./../../../../../estate/manage/src/typert.remote-client.d.ts"],

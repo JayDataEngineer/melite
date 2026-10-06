@@ -535,9 +535,13 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
         ["packages/web/infer-gallery", "./lib/client.js", true],
         ["packages/web/melite-card-deck", "./lib/client.js", true],
         ["packages/web/melite-card-view", "./lib/client.js", true],
+        // THE ONE-ROW LAW FOR 3D: the three graph row — three and
+        // its six addon modules compile once here, every 3D-touching
+        // client requires it (the multiple-copies cure, 2026-10-13)
+        ["packages/web/three-client", "./lib/client.js", true],
         ["packages/web/viewer", "./lib/client.js", true],
       ]);
-    // the ship's own discovery must therefore carry all nine built
+    // the ship's own discovery must therefore carry all ten built
     // bundles — the export-map filter is the same law
     for (const d of discovered.filter((x) => x.built)) {
       expect(ship, `${d.pkg} is a built client bundle`).toContain(
@@ -557,7 +561,7 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     // externals resolve through the injected require), and this arm
     // refuses any regression to module-format bytes on the wire.
     const built = discoveredRows();
-    expect(built.length, "the discovered set carries the nine bundles").toBe(9);
+    expect(built.length, "the discovered set carries the ten bundles").toBe(10);
     for (const row of built) {
       const file = join(row.pkg, "lib", "client.js");
       expect(existsSync(file), `${file} exists (build it: pnpm exec tsdown in the package)`).toBe(true);
@@ -646,6 +650,100 @@ describe("THE SHIP'S OWN HOLES (the lane audit's findings, 2026-10-10)", () => {
     expect(externalTargets.size, "the seed's bundles carry @melite externals to judge").toBeGreaterThan(0);
     for (const target of externalTargets) {
       expect(bundles, `${target} is externalized by a bundled package but the seed never mounts it`).toContain(target);
+    }
+  });
+
+  it("three compiles ONCE — the three-client row is the only tree seat that imports a three specifier", () => {
+    // THE ONE-ROW LAW FOR 3D (the multiple-copies cure, 2026-10-13):
+    // the lane's wire probe caught `THREE.WARNING: Multiple
+    // instances of Three.js being imported` on a bench carrying the
+    // img-to-mesh and glb-viewer entries — `three` rode
+    // `dependencies`, so every 3D-touching client bundle inlined
+    // its own compiled copy. The cure is ONE graph row
+    // (@melite/three-client) every consumer REQUIRES through
+    // dsh.client.external. This arm holds the SOURCE half: a bare
+    // three import anywhere outside the row is a second copy
+    // re-entering the tree.
+    const offenders: string[] = [];
+    const walkSrc = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (!e.isDirectory() && !/\.(ts|tsx|mts|cts)$/.test(e.name)) continue;
+        const p = join(dir, e.name);
+        if (e.isDirectory()) {
+          if (e.name === "node_modules" || e.name === "lib" || e.name.startsWith(".")) continue;
+          walkSrc(p);
+          continue;
+        }
+        const body = readFileSync(p, "utf8");
+        if (/from\s+['"]three(?:\/|['"])/u.test(body) || /import\(\s*['"]three(?:\/|['"])/u.test(body)) {
+          offenders.push(p.replace(`${REPO}/`, ""));
+        }
+      }
+    };
+    walkSrc(join(REPO, "packages"));
+    const outside = offenders.filter((p) => !p.startsWith("packages/web/three-client/"));
+    expect(offenders.length, "the row's own src imports three (else this wall judges nothing)").toBeGreaterThan(0);
+    expect(outside, "a bare three import re-entered the tree — route it through @melite/three-client/client").toEqual([]);
+  });
+
+  it("exactly one manifest declares three, and no @react-three rides the tree", () => {
+    // The DEPENDENCY half of the one-row law: `three` in any other
+    // package's dependencies is a second copy the next bundle
+    // inlines (the original wedge), and @react-three/* was banned
+    // from client bundles outright (card-base/preview.tsx: NO
+    // @react-three — r3f's react-reconciler version-skew throws at
+    // boot). Both spellings re-enter through package.json.
+    const threeHolders: string[] = [];
+    const r3fHolders: string[] = [];
+    const walkPkgs = (dir: string): void => {
+      for (const e of readdirSync(dir, { withFileTypes: true })) {
+        if (!e.isDirectory() || e.name === "node_modules" || e.name.startsWith(".")) continue;
+        const p = join(dir, e.name);
+        const manifest = join(p, "package.json");
+        if (existsSync(manifest)) {
+          const data = JSON.parse(readFileSync(manifest, "utf8")) as {
+            name?: string; dependencies?: Record<string, string>;
+          };
+          if (data.dependencies?.three !== undefined) threeHolders.push(data.name ?? p);
+          for (const dep of Object.keys(data.dependencies ?? {})) {
+            if (dep.startsWith("@react-three/")) r3fHolders.push(`${data.name ?? p} → ${dep}`);
+          }
+        }
+        walkPkgs(p);
+      }
+    };
+    walkPkgs(join(REPO, "packages"));
+    expect(threeHolders, "three rides exactly one manifest — the three-client row's own")
+      .toEqual(["@melite/three-client"]);
+    expect(r3fHolders, "@react-three/* is banned from this tree (the boot-skew class)").toEqual([]);
+  });
+
+  it("no built client bundle inlines a compiled three copy — the row is the artifact owner", () => {
+    // The ARTIFACT half of the one-row law: three's own source
+    // embeds its instance guard's warning text
+    // ('WARNING: Multiple instances of Three.js being imported.',
+    // three/src/Three.Core.js) — a bundle that inlines three carries
+    // the literal, so the text is a machine-checkable copy marker.
+    // Every built bundle EXCEPT the row's own must carry zero
+    // occurrences, and every bundle whose manifest externalizes the
+    // row must carry the bare require the loader answers.
+    const rowPkg = join(REPO, "packages", "web", "three-client");
+    const rowBundle = readFileSync(join(rowPkg, "lib", "client.js"), "utf8");
+    expect(rowBundle.includes("Multiple instances of Three.js being imported"),
+      "the three-client row's bundle carries three itself (rebuild it if this fails)").toBe(true);
+    for (const row of discoveredRows()) {
+      if (row.pkg === rowPkg) continue;
+      const file = join(row.pkg, "lib", "client.js");
+      if (!existsSync(file)) continue;
+      const body = readFileSync(file, "utf8");
+      expect(body.includes("Multiple instances of Three.js being imported"),
+        `${row.pkg}/lib/client.js inlines a compiled three copy — externalize @melite/three-client/client instead`).toBe(false);
+      const manifest = JSON.parse(readFileSync(join(row.pkg, "package.json"), "utf8"));
+      const externalizes = (manifest.dsh?.client?.external ?? []).includes("@melite/three-client/client");
+      const requires = body.includes('require("@melite/three-client/client")');
+      if (externalizes) {
+        expect(requires, `${row.pkg} declares the three external but its bundle never requires it (stale build?)`).toBe(true);
+      }
     }
   });
 

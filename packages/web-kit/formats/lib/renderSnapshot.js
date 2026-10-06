@@ -15,7 +15,7 @@
  * non-blank frame; the cost is negligible since we dispose
  * immediately.
  */
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 /** Render `scene` through `camera` ONCE and return a JPEG data URL.
  *  The renderer is created, used, and torn down within this call —
  *  no persistent WebGL context survives a snapshot. */

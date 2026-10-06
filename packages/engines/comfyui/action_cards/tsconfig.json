@@ -253,6 +253,8 @@
         "@melite-plugin/timeline/ui/store": ["./../../../web-kit/timeline/src/store/index.ts"],
         "@melite-plugin/timeline/ui/playback": ["./../../../web-kit/timeline/src/playback/index.ts"],
         "@melite/card-base": ["./../../../web/card-base/src/host.ts"],
+        "@melite/three-client": ["./../../../web/three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../../../web/three-client/src/client/index.ts"],
         "@melite/card-base/client": ["./../../../web/card-base/src/client/index.ts"],
         "@melite/card-base/spec": ["./../../../web/card-base/src/spec.ts"],
         "@melite-plugin/dsh-gallery": ["./../../../web/infer-gallery/src/index.ts"],

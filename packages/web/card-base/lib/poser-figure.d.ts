@@ -22,7 +22,7 @@
  * commits SWAP THE GEOMETRY in place — no canvas flicker per drag.
  */
 import { createElement as h } from 'react';
-import * as THREE from 'three';
+import * as THREE from '@melite/three-client/client';
 import { type FormSpecDoc, type SpecValues } from './spec.js';
 /** The bind-mesh doc the geometry builder reads (SkinMeshData's
  * pinned subset: xyz verts, index-triplet faces). */

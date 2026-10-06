@@ -77,6 +77,7 @@ const BOOT_BUDGET = { testTimeout: 30_000, hookTimeout: 30_000 } as const;
 
 const DECK = rootPath('packages/web/melite-card-deck')
 const CARD_VIEW = rootPath('packages/web/melite-card-view')
+const THREE_CLIENT = rootPath('packages/web/three-client')
 const GALLERY = rootPath('packages/web/infer-gallery')
 
 // The dom-lane clients' spec trees (partitioned out of the node lane).
@@ -105,6 +106,10 @@ const DOM_SPEC_TREES = [
   // card-base's own spec tree (hour 14: the mesh stage's decision
   // layer moved here with the component — the preview seam's claim)
   `${rootPath('packages/web/card-base')}/tests/**/*.spec.{ts,tsx}`,
+  // the three graph row's own spec tree (the one-row law for 3D):
+  // the dual-face marker contract — same universe as card-base's
+  // host face, whose pattern it mirrors.
+  `${rootPath('packages/web/three-client')}/tests/**/*.spec.{ts,tsx}`,
   // the shared timeline package's DOM specs (the generic-tools
   // stroke 2026-09-17: FilmPlayer moved from h3's kit — its spec
   // rides the dom lane beside it; the package's other specs are
@@ -314,9 +319,16 @@ export default defineConfig({
             // Types come from the real package at typecheck time.
             '@deepseek-ai/dsh-api-gateway/client': rootPath('packages/web/melite-card-view/tests/fixtures/gateway-client.ts'),
             'lucide-react': path.join(CARD_VIEW, 'node_modules/lucide-react'),
-            'three/addons': path.join(CARD_VIEW, 'node_modules/three/examples/jsm'),
-            'three/examples': path.join(CARD_VIEW, 'node_modules/three/examples'),
-            three: path.join(CARD_VIEW, 'node_modules/three')
+            // THE ONE-ROW LAW FOR 3D: nothing under this project's
+            // trees imports a bare three specifier anymore — every
+            // 3D seat routes through @melite/three-client/client
+            // (SOURCE_PLANE_ALIAS maps it to the row's src). The
+            // row's own src imports three, and its resolution rides
+            // the ROW's declared link (derived, not literal — the
+            // row's node_modules always carries the single copy).
+            'three/addons': path.join(THREE_CLIENT, 'node_modules/three/examples/jsm'),
+            'three/examples': path.join(THREE_CLIENT, 'node_modules/three/examples'),
+            three: path.join(THREE_CLIENT, 'node_modules/three')
           },
         },
         test: {

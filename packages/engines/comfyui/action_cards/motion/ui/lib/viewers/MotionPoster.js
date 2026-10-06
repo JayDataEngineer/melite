@@ -18,7 +18,7 @@ import { jsx as _jsx } from "react/jsx-runtime";
  * shared poster shell (the local poster-shell module — the same shell MeshPoster
  * uses); this module keeps ONLY the motion scene builder.
  */
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { loadMotionNpz } from "@melite/formats";
 import { loadSomaSkin, deformFrame } from "@melite/formats";
 import { useMotionImageStore } from "./motionImageStore.js";

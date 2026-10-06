@@ -23,7 +23,7 @@
 import { useEffect, useMemo, useRef, useState } from "react"
 import { mountStage3D, Skeleton } from "@melite/card-base/client"
 import styles from "./MeshPreviewCanvas.module.css"
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 import {
   fetchBindMesh, buildGeometry, type SkinMeshData, type PreviewPose,
 } from "./bodyMesh"

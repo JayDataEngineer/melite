@@ -16,7 +16,7 @@ import { describe, test, expect, afterEach, vi } from 'vitest'
 import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import { fireEvent } from '@testing-library/react'
 import { createElement as h } from 'react'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 import {
   MeshStagePreview, PoserFigureStage, figureGeometry,
   figureCoeffsOf, figureLocalChangesOf, figureCameraOf, figureShapeSig,

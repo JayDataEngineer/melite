@@ -14,7 +14,7 @@
  */
 import { useCallback, useEffect, useMemo, useRef } from "react"
 import type * as React from "react"
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 import type { CardStage } from "@melite/contracts"
 import { isMeshUrl } from '@melite/card-base/client'
 import {

@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats";
 /** Centimeters → meters. SOMA-X/ANNY joints arrive in cm; the Three.js scene
  *  is authored in meters. Applied at every display boundary. The drag handler

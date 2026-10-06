@@ -132,6 +132,11 @@ CLIENT_BUNDLES=(
   # row — the studio atoms compile ONCE here; every card client
   # requires it through the loader's module table.
   packages/web/card-base
+  # THE ONE-ROW LAW FOR 3D (the multiple-copies cure, 2026-10-13):
+  # the three graph row — three and its six addon modules compile
+  # ONCE here; every 3D-touching client requires it through the
+  # loader's module table.
+  packages/web/three-client
 )
 CLILIST=$(mktemp /tmp/ship-cli.XXXXXX)
 # Guard class of the typecheck nets (verifier b9cf8fc1 finding 1, 2026-10-12):

@@ -1,4 +1,4 @@
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 import type { StageLayers } from '@melite/card-base/client'
 
 // ── Types ─────────────────────────────────────────────────────────────────

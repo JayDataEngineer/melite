@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { type MotionAzimuth, type MotionNpz } from "@melite/formats";
 export type ThreeCtx = {
     gl: THREE.WebGLRenderer;

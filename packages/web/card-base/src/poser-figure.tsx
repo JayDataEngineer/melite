@@ -22,7 +22,7 @@
  * commits SWAP THE GEOMETRY in place — no canvas flicker per drag.
  */
 import { createElement as h, useEffect, useRef, useState } from 'react'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 import { fetchBindMesh, type SkinMeshData } from '@melite/formats/poserSkin'
 import { mountStage3D } from './stage3d.ts'
 import { autoFitToHeight } from './glb-stage.tsx'

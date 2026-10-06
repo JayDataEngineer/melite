@@ -23,9 +23,9 @@
  */
 import { fitObjectToHeight } from '@melite/formats/glbLoad';
 import { createElement as h, useEffect, useRef, useState } from 'react';
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { DRACOLoader } from 'three/addons/loaders/DRACOLoader.js';
+import * as THREE from '@melite/three-client/client';
+import { GLTFLoader } from '@melite/three-client/client';
+import { DRACOLoader } from '@melite/three-client/client';
 import { mountStage3D, makeLabelSprite } from "./stage3d.js";
 import s from './preview.module.css';
 let draco = null;

@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import type { PoseStageProps, SkinMeshData } from "./poseStageTypes.js";
 export declare function createSkinCarrier(liftGroup: THREE.Group): {
     mesh: THREE.Mesh | null;

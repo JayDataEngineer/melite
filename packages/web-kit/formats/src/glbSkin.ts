@@ -37,8 +37,8 @@
  * hair layers share ONE rig) merge: vertices/faces concatenate, indices
  * offset — one SomaSkin, one deform pass.
  */
-import type { GLTF } from "three/examples/jsm/loaders/GLTFLoader.js"
-import type { Object3D, SkinnedMesh } from "three"
+import type { GLTF } from '@melite/three-client/client'
+import type { Object3D, SkinnedMesh } from '@melite/three-client/client'
 import { makeGLTFLoader } from "./glbLoad.ts"
 import { invert4, restPoseFromBind, type SomaSkin } from "./somaSkin.ts"
 

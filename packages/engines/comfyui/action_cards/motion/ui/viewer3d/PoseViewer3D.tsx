@@ -27,7 +27,7 @@
 import { useRef, useMemo, useState, useEffect, memo } from "react"
 import type React from "react"
 import styles from "./PoseViewer3D.module.css"
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 import type { MotionAzimuth } from "@melite/formats"
 import {
   mountPoseStage,

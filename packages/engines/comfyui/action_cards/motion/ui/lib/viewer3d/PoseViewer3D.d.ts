@@ -1,5 +1,5 @@
 import type React from "react";
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import type { MotionAzimuth } from "@melite/formats";
 import { framedCameraPos, type SkinMeshData, type JointMoveEvent, type LightingOrb, type ReferenceMeshSpec, type CameraFraming as Framing } from "./poseStage.js";
 import { type StageLayers } from '@melite/card-base/client';

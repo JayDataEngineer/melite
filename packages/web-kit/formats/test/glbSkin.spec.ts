@@ -5,7 +5,7 @@
 // merge with index-base offsets. Fetch is stubbed (no network).
 import { describe, it, vi, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 
 const parseMock = vi.hoisted(() => vi.fn());
 

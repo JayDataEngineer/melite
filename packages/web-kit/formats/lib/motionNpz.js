@@ -27,7 +27,7 @@
  * cross the PoseViewer3D boundary, which is centimeters (its mesh, skeleton
  * and gizmos all apply CM_TO_M internally). Callers convert explicitly.
  */
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { parseNpz } from "./npz.js";
 import { loadSomaSkin, deformFrame } from "./somaSkin.js";
 import { encodeBufferToB64, SOMA77_BONE_CONNECTIONS } from "./poseCodec.js";

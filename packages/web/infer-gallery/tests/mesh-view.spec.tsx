@@ -11,7 +11,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { cleanup, render, screen, waitFor } from '@testing-library/react'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 
 const mountStage3D = vi.fn()
 const disposeStage = vi.fn()

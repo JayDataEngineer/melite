@@ -25,7 +25,8 @@
       ],
       "platform": "web",
       "external": [
-        "@melite/card-base/client"
+        "@melite/card-base/client",
+        "@melite/three-client/client"
       ]
     }
   },
@@ -67,7 +68,7 @@
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "three": "^0.184.0"
+    "@melite/three-client": "workspace:*"
   },
   "files": [
     "lib/index.js",

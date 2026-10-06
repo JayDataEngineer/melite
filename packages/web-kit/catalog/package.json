@@ -95,5 +95,9 @@
     "lib/index.js",
     "lib/**/*.js",
     "lib/**/*.d.ts"
-  ]
+  ],
+  "peerDependencies": {
+    "immer": "^10.2.0",
+    "zustand": "^5.0.15"
+  }
 }

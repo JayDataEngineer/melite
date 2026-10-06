@@ -5,7 +5,7 @@
   "dependencies": {
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
-    "three": "*"
+    "@melite/three-client": "workspace:*"
   },
   "exports": {
     "./b64": {

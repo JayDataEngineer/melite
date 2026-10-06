@@ -28,8 +28,8 @@
  * become "we lost it".
  */
 import * as React from 'react'
-import * as THREE from 'three'
-import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js'
+import * as THREE from '@melite/three-client/client'
+import { RoomEnvironment } from '@melite/three-client/client'
 import { mountStage3D, type Stage3D } from '@melite/card-base/client'
 import { autoFitToHeight, loadGLB } from '@melite/formats/glbLoad'
 import { isModelUrl } from '@melite/contracts/mediaKinds'

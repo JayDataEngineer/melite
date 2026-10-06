@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { SOMA77_BONE_CONNECTIONS } from "@melite/formats";
 import { buildGeometry } from "./poseStageMesh.js";
 import { CM_TO_M } from "./poseStageSkeleton.js";

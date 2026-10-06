@@ -578,6 +578,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-estate/src/index.ts': { statements: 100, branches: 98.33, functions: 100, lines: 100 },
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.39, branches: 100, functions: 97.67, lines: 99.28 },
   '**/packages/web/melite-run-wire/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // the three graph row (the one-row law for 3D): both faces measured
+  // 100x4 under their host-face contract spec.
+  '**/packages/web/three-client/src/client/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/three-client/src/host.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/gateway.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/viewer-base/src/owners.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

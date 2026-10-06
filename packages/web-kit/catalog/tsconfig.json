@@ -2,6 +2,8 @@
   "compilerOptions": {
     "noEmitOnError": true,
     "paths": {
+        "@melite/three-client": ["./../../web/three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../../web/three-client/src/client/index.ts"],
         "@melite-plugin/timeline/client": ["./../timeline/src/client/index.ts"],
         "@melite/cards/form-fields": ["./../../engines/comfyui/action_cards/src/form-fields.tsx"],
         "@melite/cards/poster-shell": ["./../../engines/comfyui/action_cards/src/poster-shell.tsx"],

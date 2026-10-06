@@ -13,12 +13,10 @@
     "@melite/catalog": "workspace:*",
     "@melite/contracts": "workspace:*",
     "@melite/formats": "workspace:*",
-    "@react-three/drei": "*",
-    "@react-three/fiber": "*",
     "clsx": "*",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "three": "*"
+    "@melite/three-client": "workspace:*"
   },
   "exports": {
     "./form-fields": {

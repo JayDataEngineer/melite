@@ -270,6 +270,8 @@
         "@melite/formats/somaSkin": ["./../../web-kit/formats/src/somaSkin.ts"],
         "@melite/formats": ["./../../web-kit/formats/src/index.ts"],
         "@melite/card-base": ["./../card-base/src/host.ts"],
+        "@melite/three-client": ["./../three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../three-client/src/client/index.ts"],
         "@melite/card-base/client": ["./../card-base/src/client/index.ts"],
         "@melite/card-base/spec": ["./../card-base/src/spec.ts"],
         "@melite-plugin/dsh-card-view": ["./../melite-card-view/src/index.ts"],

@@ -39,6 +39,8 @@
         "@melite/3d-img-to-mesh/client": ["./../../3d/img-to-mesh/src/client/index.ts"],
         "@melite/motion-motion/client": ["./src/client/index.ts"],
         "@melite/video-h3-timeline/client": ["./../../video/h3-timeline/src/client/index.ts"],
+        "@melite/three-client": ["./../../web/three-client/src/host.ts"],
+        "@melite/three-client/client": ["./../../web/three-client/src/client/index.ts"],
         "@melite/card-base/client": ["./../../web/card-base/src/client/index.ts"],
         "@melite-plugin/dsh-card-view/client": ["./../../web/melite-card-view/src/client/index.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],

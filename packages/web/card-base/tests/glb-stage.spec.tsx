@@ -7,7 +7,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, expect, test, vi } from 'vitest'
 import { createElement } from 'react'
-import * as THREE from 'three'
+import * as THREE from '@melite/three-client/client'
 
 import { GlbStagePreview, autoFitToHeight } from '../src/glb-stage.tsx'
 

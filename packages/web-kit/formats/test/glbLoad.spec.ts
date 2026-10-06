@@ -4,7 +4,7 @@
 // and uncompressed GLBs load through fetch data: URLs (no network).
 import { describe, it, afterEach } from "vitest";
 import assert from "node:assert/strict";
-import * as THREE from "three";
+import * as THREE from '@melite/three-client/client';
 import { autoFitToHeight, loadGLB, makeGLTFLoader } from "../src/glbLoad.ts";
 
 // three's FileLoader streams fetch bodies and builds a ProgressEvent per

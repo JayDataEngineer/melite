@@ -272,6 +272,8 @@
       "@melite-plugin/dsh-card-view/client": ["./packages/web/melite-card-view/src/client/index.ts"],
       "@melite-plugin/dsh-estate": ["./packages/web/melite-estate/src/index.ts"],
       "@melite-plugin/melite-run-wire": ["./packages/web/melite-run-wire/src/index.ts"],
+      "@melite/three-client": ["./packages/web/three-client/src/host.ts"],
+      "@melite/three-client/client": ["./packages/web/three-client/src/client/index.ts"],
       "@melite/viewer": ["./packages/web/viewer/src/index.ts"],
       "@melite/viewer/client": ["./packages/web/viewer/src/client/index.ts"],
       "@melite/viewer-base": ["./packages/web/viewer-base/src/index.ts"],

@@ -1,5 +1,5 @@
 import { createElement as h } from 'react';
-import * as THREE from 'three';
+import * as THREE from '@melite/three-client/client';
 /** One stage asset — the old Stage contract's live subset (the four
  *  fields consumers set: id/url/name + the placement override; the
  *  drop-raycast position stays caller-computed). */

@@ -101,6 +101,14 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   // condition names, so typecheck and runtime resolve ONE graph, and
   // the row's own sink wiring executes under test.
   '@melite/card-base/client': path.join(import.meta.dirname, 'packages/web/card-base/src/client/index.ts'),
+  // THE ONE-ROW LAW FOR 3D: the three graph row's /client door
+  // points at the BUILT browser row (lib/client.js — the module-
+  // table registration the shell serves); tests resolve the src
+  // client face instead, the same file the types condition names,
+  // so typecheck and runtime share ONE graph and three's instance
+  // guard never races a factory bundle under jsdom (the bundle
+  // opens with window.__ModuleLoader__.load — undefined there).
+  '@melite/three-client/client': path.join(import.meta.dirname, 'packages/web/three-client/src/client/index.ts'),
   '@melite/harness-tools': path.join(import.meta.dirname, 'packages/harness/melite-tools/src/index.ts'),
   '@melite-plugin/melite-run-wire': path.join(import.meta.dirname, 'packages/web/melite-run-wire/src/index.ts'),
   // the drafts REMOTE subpath — MUST sit BEFORE the parent row

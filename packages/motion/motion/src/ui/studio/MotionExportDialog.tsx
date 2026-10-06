@@ -61,7 +61,7 @@
  * DESTINATION: browser download — the ONE delivery path.
  */
 import { useCallback, useEffect, useRef, useState } from "react"
-import * as THREE from "three"
+import * as THREE from '@melite/three-client/client'
 import {
  Download, X, Camera, FileBox, Box, Palette, Check,
  Layers, RotateCw, Film, ChevronLeft, ChevronRight, PlayAlt as Play, Pause, Crop,

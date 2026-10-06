@@ -1,5 +1,5 @@
-import * as THREE from "three";
-import { TransformControls } from "three/addons/controls/TransformControls.js";
+import * as THREE from '@melite/three-client/client';
+import { TransformControls } from '@melite/three-client/client';
 import type { Stage3D } from "@melite/card-base/client";
 import type { JointMoveEvent } from "./poseStageTypes.js";
 export declare function createJointManipulator(deps: {
