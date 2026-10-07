@@ -101,10 +101,13 @@ jobs:
       (needs.fetch.result == 'success' || needs.fetch.result == 'skipped')
     runs-on: ubuntu-24.04
     steps:
-      # The rehearsal script is the tag's own (same law as publish).
+      # VERIFIER FRESHNESS: the rehearsal checks out the dispatch ref,
+      # not the tag — receipts are verifiers and must be allowed to
+      # improve over a frozen tag (the client-carriage fix is the
+      # first case). The publish job below stays pinned to the tag:
+      # only a verifier may be newer than the bytes it judges.
       - uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.tag }}
           persist-credentials: false
 
       - uses: actions/setup-node@v6

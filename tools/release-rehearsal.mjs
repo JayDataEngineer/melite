@@ -309,16 +309,29 @@ check('bundle overlays ship at installed roots (set derived from the dist)', ove
 const dump = inBox(`${PATH}; dsh --profile ${PROFILE} --dump-config 2>&1`)
 // the warning-absence law: dsh skips unresolved declared bundles with a
 // warning, so a plain inclusion check passes on a gutted stack. The dump
-// must carry every layer AND carry no skip/failure markers at all.
+// must carry no skip/failure markers at all, and every seat whose host
+// half contributes plugins or services must appear by name.
+// CLIENT-CARRIAGE SEATS are the exception: card-base and three-client
+// mount the browser graph's one compiled instance (the one-row law) and
+// their host halves register nothing node-side by design — the dump can
+// never carry them. Their positive receipt is the client subpath
+// resolving from the installed profile, the loader's own require.
+const CLIENT_ONLY = ['@melite/card-base', '@melite/three-client']
+const dumpSeats = bundleSeats.filter((b) => !CLIENT_ONLY.includes(b))
 const dumpWarn = dump.out.match(/cannot resolve profile bundle|failed to import|skipped (bundle|plugin)/gi) || []
-const layersOk = dump.code === 0 && bundleSeats.every((b) => dump.out.includes(b)) &&
+const layersOk = dump.code === 0 && dumpSeats.every((b) => dump.out.includes(b)) &&
   dumpWarn.length === 0
-check('dump-config carries every bundle layer, zero skips', layersOk,
-  (layersOk ? `all ${bundleSeats.length} layers` :
-    `${dumpWarn.length} skip markers; missing: ${bundleSeats.filter((b) => !dump.out.includes(b)).join(', ')}`))
+check('dump-config carries every host-contributing layer, zero skips', layersOk,
+  (layersOk ? `all ${dumpSeats.length} layers` :
+    `${dumpWarn.length} skip markers; missing: ${dumpSeats.filter((b) => !dump.out.includes(b)).join(', ')}`))
 if (dump.code === 0) {
   writeFileSync(join(SCRATCH, 'rehearsal-dump-config.txt'), dump.out)
 }
+const clientMiss = CLIENT_ONLY.filter((b) =>
+  inBox(`${PATH}; cd ${profileDir} && node -e "require.resolve('${b}/client')" >/dev/null 2>&1`).code !== 0)
+check('client-carriage seats resolve their client subpath (the one-row law)',
+  clientMiss.length === 0,
+  clientMiss.length === 0 ? `${CLIENT_ONLY.length} resolve` : `unresolved: ${clientMiss.join(', ')}`)
 
 // web boot: bring it up, poll, tear down
 // with dsh-web-app layered, `dsh --profile X` boots the browser UI
