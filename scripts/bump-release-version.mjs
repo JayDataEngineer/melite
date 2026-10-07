@@ -17,11 +17,16 @@
  * Usage:
  *   node scripts/bump-release-version.mjs --to <version> [--dry-run]
  *
- * Packages are the workspace packages under packages/ whose name
- * starts with `@melite/`, `@melite-plugin/`, or `@infer-media/`.
- * Vendored packages keep their upstream versions.
+ * Packages are the workspace packages whose name starts with
+ * `@melite/`, `@melite-plugin/`, or `@infer-media/` — discovered by
+ * `git ls-files` over every tracked package.json (the release set's
+ * own census), so every depth seats (the ComfyUI action-card UIs
+ * sit seven levels under packages/; a bounded readdir walk missed
+ * them and mint24's version gate caught the split set). Vendored
+ * packages keep their upstream versions.
  */
-import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
+import { execSync } from 'node:child_process'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -45,22 +50,17 @@ function parseArgs(argv) {
 
 function discoverPackages() {
   const found = []
-  const walk = (dir, depth) => {
-    if (depth > 5) return
-    for (const e of readdirSync(dir, { withFileTypes: true })) {
-      if (!e.isDirectory() || e.name === 'node_modules' || e.name === 'lib' || e.name.startsWith('.')) continue
-      const p = join(dir, e.name)
-      try {
-        const manifest = JSON.parse(readFileSync(join(p, 'package.json'), 'utf8'))
-        if (typeof manifest.name === 'string' && OURS.some((scope) => manifest.name.startsWith(scope))) {
-          found.push({ dir: p, name: manifest.name, manifest })
-          continue
-        }
-      } catch { /* an unreadable manifest is not a package */ }
-      walk(p, depth + 1)
-    }
+  const listing = execSync("git ls-files '*/package.json'", { cwd: REPO, encoding: 'utf8' })
+  for (const rel of listing.split('\n')) {
+    if (!rel || rel.includes('node_modules/')) continue
+    const dir = dirname(join(REPO, rel))
+    try {
+      const manifest = JSON.parse(readFileSync(join(dir, 'package.json'), 'utf8'))
+      if (typeof manifest.name === 'string' && OURS.some((scope) => manifest.name.startsWith(scope))) {
+        found.push({ dir, name: manifest.name, manifest })
+      }
+    } catch { /* an unreadable manifest is not a package */ }
   }
-  walk(join(REPO, 'packages'), 0)
   found.sort((a, b) => a.name.localeCompare(b.name))
   return found
 }
