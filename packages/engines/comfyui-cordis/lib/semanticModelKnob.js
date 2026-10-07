@@ -33,11 +33,12 @@ export const semanticModelEntries = (decls) => {
     return out;
 };
 /** Resolve a served style value to its admission route — the
- *  estate-side fold a request's `model` field rides. Returns null
- *  for any value the derivation never served.
+ *  estate-side fold a request's `model` field rides.
  *
  *  @param entries the derivation's own output (one spelling)
  *  @param value the request's model field
+ *  @returns the served entry, or null for any value the
+ *   derivation never served (callers fall back to the raw value)
  */
 export const resolveSemanticModel = (entries, value) => entries.find((e) => e.value === value) ?? null;
 //# sourceMappingURL=semanticModelKnob.js.map

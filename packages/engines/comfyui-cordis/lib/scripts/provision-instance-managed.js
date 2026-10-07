@@ -7,8 +7,6 @@ import { COMFY_PROJECT, FAILS, REPO, RUNTIME, check, die, fail, info, venvPython
 import { boundModelFolders, enginePort, engineUrl } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
 import { cmdPaths, probe } from "./provision-instance-layout.js";
-import { AUDIOCORE_LIB, provisionAudiocore } from "./provision-audiocore.js";
-import { AUTOREMESHER_BIN, provisionAutoremesher } from "./provision-autoremesher.js";
 export function cmdSync(cfg) {
     if (cfg.provision !== "managed") {
         die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
@@ -55,8 +53,6 @@ export function cmdSync(cfg) {
             info("core already at pin " + pin.slice(0, 12));
             cmdPaths(cfg);
             vendorManager();
-            provisionAudiocore();
-            provisionAutoremesher();
             return;
         }
     }
@@ -77,8 +73,6 @@ export function cmdSync(cfg) {
         RUNTIME + ")");
     cmdPaths(cfg);
     vendorManager();
-    provisionAudiocore();
-    provisionAutoremesher();
 }
 // ── the built-in manager (auto-build; no external dependency) ──────
 export const MANAGER_PIN_F = join(COMFY_PROJECT, "manager.pin");
@@ -182,15 +176,12 @@ export function cmdBootCmd(cfg) {
     if (cfg.provision === "managed") {
         const port = enginePort(cfg);
         console.log("# managed launch (cwd resolves custom_nodes; weights via " +
-            "extra_model_paths; estate streams for input/output; the native " +
-            "audio core via AUDIOCORE_NATIVE_LIB and the quad-remesh binary " +
-            "via AUTOREMESHER_BIN — provision sync installs both; one line — " +
-            "paste into any shell):");
-        // a bare assignment (semicolon-terminated) persists in the pasted
-        // shell — a `VAR=x cmd && cmd2` prefix would scope to cmd only
-        console.log("AUDIOCORE_NATIVE_LIB=" + AUDIOCORE_LIB + "; " +
-            "AUTOREMESHER_BIN=" + AUTOREMESHER_BIN + "; " +
-            "cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
+            "extra_model_paths; estate streams for input/output; packs own " +
+            "their native binaries — install.py converges them at " +
+            "Manager-install time; one line — paste into any shell):");
+        // a bare `cd` start — the pack law (2026-10-17): no binary env
+        // exports on the boot line; every pack resolves its own assets
+        console.log("cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
             " main.py --listen 127.0.0.1 --port " + port +
             " --extra-model-paths-config extra_model_paths.yaml" +
             " --input-directory " + join(REPO, "data", "input") +

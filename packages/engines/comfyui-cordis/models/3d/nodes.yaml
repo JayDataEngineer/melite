@@ -39,22 +39,23 @@ extensions:
       - "multihmr2 @ git+https://github.com/naver/multi-hmr2.git@f066532d096034700e5ba8b7b1ca655729d3ea6e"
   # SYSTEM REQUIREMENT (Law 0, carried from the model-scoped row the
   # 2026-10-16 consolidation deleted — one pack, one row): the pack
-  # shells the autoremesher BINARY, resolved engine-side through
-  # AUTOREMESHER_BIN (the boot line exports it) or the estate
-  # provision landing; the pack fails LOUD at node time when it
-  # cannot.
+  # shells the autoremesher BINARY, resolved through the pack's own
+  # install.py landing (Manager runs it on install: fetches +
+  # sha-verifies autoremesher-d9ef96bd into the pack's native/ dir)
+  # or an explicit AUTOREMESHER_BIN; the pack fails LOUD at node
+  # time when it cannot.
   - name: melite-autoremesher-nodes
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
-    ref: d9ab386cb747c863fa01237c64d4721036ea0957
+    ref: 18ebea9af7131ade2ab7fb13c5e5595f2273c874
     required: true
     desc: >-
       Quad-remesh pack: huxingyi/autoremesher as a subprocess node
       (GLB in, remeshed GLB out) with in-process trimesh GLB<->OBJ
-      conversion. The engine binary rides provision sync as the
-      pinned release asset autoremesher-d9ef96bd (2026-10-16, the
-      provision-sharing audit's cure — the gitignored
-      references/autoremesher build taught by the old refusal ships
-      with no clone); the boot line exports AUTOREMESHER_BIN.
+      conversion. The binary is pack-owned (2026-10-17 pack-law
+      ruling): the pack's install.py fetches + sha-verifies the
+      pinned release asset autoremesher-d9ef96bd into its own
+      native/ dir at Manager-install time — no estate provision
+      seat, no boot-line env export.
       Budget classes stay DATA in melite-3d presets yaml; resolution
       chain explicit > preset > defaults, loud on missing budgets.
     pip:

@@ -43,6 +43,15 @@ export interface ParamSpecNode {
     required?: true;
 }
 export type ParamsSpec = Record<string, ParamSpecNode>;
+/** The implicit property map (`/v1/tools`'s JSON-schema form):
+ *  the schema's own fields plus the synthesized model enum.
+ *
+ *  @param schemaCarrier the card's declared schema object
+ *  @param boarded the boarded family ids
+ *  @param semantic the derived style entries — served as the model
+ *   enum when present; the bare boarded enum otherwise
+ *  @returns the served properties + required list
+ */
 export declare const emitParamsSpec: (carrier: Schema, boarded: readonly string[], semantic?: readonly SemanticModelEntry[]) => ParamsSpec;
 /** Project a registered card's schema + boarded list to the served
  * params_schema dialect. `schemaFn` is the card's registered schema
@@ -52,6 +61,16 @@ export declare const emitParamsSpec: (carrier: Schema, boarded: readonly string[
  * inner one at def.schemaCarrier. The registry's own reader of that
  * field is models/service.ts:987, which resolves
  * `def?.schemaCarrier ?? def?.schema`. */
+/** The JSON-schema form of the same walk.
+ *
+ *  @param schemaCarrier the card's declared schema object
+ *  @param boarded the boarded family ids
+ *  @param semantic the derived style entries — the model enum +
+ *   default (the first entry) + label-carrying description when
+ *   present; the bare boarded enum otherwise
+ *  @returns properties, required, and (when the carrier declares
+ *   them) additionalProperties
+ */
 export declare const emitParamsSchema: (schemaCarrier: Schema, boarded: readonly string[], semantic?: readonly SemanticModelEntry[]) => ParamsSchema;
 /** THE MODS PROJECTION (stroke 79 — the seam-law unification): the
  *  declared kinds as the AGENT plane consumes them. ONE emitter,

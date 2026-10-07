@@ -124,6 +124,15 @@ export const emitKnob = (s) => {
         out['x-families'] = iex.families;
     return out;
 };
+/** The implicit property map (`/v1/tools`'s JSON-schema form):
+ *  the schema's own fields plus the synthesized model enum.
+ *
+ *  @param schemaCarrier the card's declared schema object
+ *  @param boarded the boarded family ids
+ *  @param semantic the derived style entries — served as the model
+ *   enum when present; the bare boarded enum otherwise
+ *  @returns the served properties + required list
+ */
 export const emitParamsSpec = (carrier, boarded, semantic) => {
     const served = emitParamsSchema(carrier, boarded, semantic);
     const spec = {};
@@ -180,6 +189,16 @@ export const emitParamsSpec = (carrier, boarded, semantic) => {
  * inner one at def.schemaCarrier. The registry's own reader of that
  * field is models/service.ts:987, which resolves
  * `def?.schemaCarrier ?? def?.schema`. */
+/** The JSON-schema form of the same walk.
+ *
+ *  @param schemaCarrier the card's declared schema object
+ *  @param boarded the boarded family ids
+ *  @param semantic the derived style entries — the model enum +
+ *   default (the first entry) + label-carrying description when
+ *   present; the bare boarded enum otherwise
+ *  @returns properties, required, and (when the carrier declares
+ *   them) additionalProperties
+ */
 export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
     const dict = schemaCarrier.dict ?? {};
     const properties = {};

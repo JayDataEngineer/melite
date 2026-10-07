@@ -239,7 +239,9 @@ describe("the executor path (two doors, the model-card law)", () => {
     const refused = tool.output.render({}, { error: "nope" });
     assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
     const ran = tool.output.render({}, { model: STYLE0.value, run_id: "r_9" });
-    assert.match(String((ran[0] as { text?: string }).text), /krea-2.*r_9/);
+    const esc = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    assert.match(String((ran[0] as { text?: string }).text),
+      new RegExp(esc(STYLE0.value) + ".*r_9"));
   });
 });
 

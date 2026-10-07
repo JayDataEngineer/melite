@@ -4,7 +4,7 @@ import type { ModelDecl } from './models/families/contract.js';
  *  admission atom the estate resolves it to.
  *
  *  @param value stable three-part address family:variant:cell
- *  @param label the DECL's own human copy (cell.label else variant.label)
+ *  @param label the DECL's own human copy (cell.label → variant.label → family label)
  *  @param family the DECL id — compose's model-unit key
  *  @param route the cell's route — the class tree's _routes atom
  */
@@ -26,11 +26,12 @@ type DeclSlice = Pick<ModelDecl, 'id' | 'label' | 'variants'>;
  */
 export declare const semanticModelEntries: (decls: readonly DeclSlice[]) => SemanticModelEntry[];
 /** Resolve a served style value to its admission route — the
- *  estate-side fold a request's `model` field rides. Returns null
- *  for any value the derivation never served.
+ *  estate-side fold a request's `model` field rides.
  *
  *  @param entries the derivation's own output (one spelling)
  *  @param value the request's model field
+ *  @returns the served entry, or null for any value the
+ *   derivation never served (callers fall back to the raw value)
  */
 export declare const resolveSemanticModel: (entries: readonly SemanticModelEntry[], value: string) => SemanticModelEntry | null;
 export {};

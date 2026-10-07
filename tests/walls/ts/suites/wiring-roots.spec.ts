@@ -42,14 +42,14 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, readlinkSync, accessSync, X_OK } from "node:fs";
-import { dirname, join } from "node:path";
+import { readFileSync, readlinkSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { boundModelFolders, loadConfig } from "../../../../packages/engines/comfyui-cordis/scripts/provision-config.ts";
 import { DEFAULT_CONFIG, REPO, RUNTIME } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
 import { wiringYamlBody } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-layout.ts";
+import { cmdBootCmd } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-managed.ts";
 import { loadStoreRoot } from "../../../../packages/estate/models/src/index.ts";
 
 const here = fileURLToPath(import.meta.url);
@@ -153,29 +153,29 @@ describe.skipIf(DELEGATED)("the boot legs (the engine process's own truths)", ()
       `the engine tree's yaml (${cwd}/extra_model_paths.yaml) is stale against the generated one — the running engine still serves the roots it booted with; sync the tree and restart the unit (folder roots freeze at boot)`);
   });
 
-  it("BOOT ENV — the running engine carries the estate's autoremesher pin (a BYO tree cannot walk to the repo landing)", () => {
-    let pid = "";
+  it("BOOT ENV — the managed boot line carries no binary env exports (packs converge themselves)", () => {
+    // The pack law (operator ruling, 2026-10-17): every melite
+    // nodepack is a plain ComfyUI extension — Manager installs it
+    // and the pack's own install.py converges its native binaries
+    // pack-locally. The estate exports nothing on the boot line.
+    // The LIVE unit's /proc environ is its own boot history, never
+    // this wall's subject (the :8188 engine never restarts).
+    const printed: string[] = [];
+    const realLog = console.log;
+    console.log = (...a: unknown[]) => { printed.push(a.join(" ")); };
     try {
-      pid = execFileSync("systemctl", ["--user", "show", "-p", "MainPID", "--value", ENGINE_UNIT],
-        { encoding: "utf8" }).trim();
-    } catch {
-      assert.fail(`${ENGINE_UNIT} is not queryable on this box — the battery's engine contract is broken; cannot judge the boot env`);
+      cmdBootCmd({ provision: "managed", port: 8188 });
+    } finally {
+      console.log = realLog;
     }
-    assert.notEqual(pid, "0", `${ENGINE_UNIT} has no running process`);
-    const env = readFileSync(`/proc/${pid}/environ`, "utf8").split("\0");
-    const bin = env.find((e) => e.startsWith("AUTOREMESHER_BIN="));
-    assert.ok(bin !== undefined,
-      `${ENGINE_UNIT} boots without AUTOREMESHER_BIN — the quad-remesh pack's find_binary() cannot walk from a foreign engine tree to the repo landing (image sweep D1, 2026-10-13); the unit needs the estate override (service.d/autoremesher.conf, as provision boot-cmd exports it for the managed engine)`);
-    const landing = bin.slice("AUTOREMESHER_BIN=".length);
-    accessSync(landing, X_OK);
-    // REPO-RELATIVE, never the machine literal (re-audit S2): the
-    // pin is whatever THIS checkout's runtime tree lands at, so the
-    // wall travels with the clone instead of encoding one box's
-    // home directory as the law. The landing sits beside the
-    // engine's runtime tree (data/runtime/autoremesher), not inside
-    // it — provision-shared's RUNTIME names data/runtime/comfyui.
-    assert.equal(landing, join(dirname(RUNTIME), "autoremesher", "autoremesher"),
-      "AUTOREMESHER_BIN points somewhere other than this checkout's sha-verified landing (provision sync installs autoremesher-d9ef96bd)");
+    const boot = printed.find((l) => l.includes("main.py"));
+    assert.ok(boot !== undefined, "the managed boot line composes");
+    assert.ok(boot.startsWith("cd "),
+      "the managed boot line starts at cd (a bare start — no env prefix)");
+    assert.doesNotMatch(boot, /\b[A-Z][A-Z0-9_]*=/,
+      "the managed boot line exports a binary env var — the packs own " +
+      "their binaries now (install.py + pack-local discovery); the " +
+      "estate provision seats are dead law (pack-law ruling, 2026-10-17)");
   });
 });
 

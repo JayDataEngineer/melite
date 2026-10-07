@@ -4,8 +4,8 @@
 // own DECL variant rows — never a bare family id list. Each entry
 // carries the stable three-part address (family:variant:cell) and
 // the admission route it resolves to; the label is the DECL's own
-// copy at the cell's precedence (cell → variant — the contract's
-// derived-route-view law at models/families/contract.ts).
+// copy at the cell's precedence (cell → variant → family — the
+// contract's derived-route-view law at models/families/contract.ts).
 import type { ModelDecl } from './models/families/contract.ts'
 
 /** One served style entry. `value` is the wire spelling a request
@@ -13,7 +13,7 @@ import type { ModelDecl } from './models/families/contract.ts'
  *  admission atom the estate resolves it to.
  *
  *  @param value stable three-part address family:variant:cell
- *  @param label the DECL's own human copy (cell.label else variant.label)
+ *  @param label the DECL's own human copy (cell.label → variant.label → family label)
  *  @param family the DECL id — compose's model-unit key
  *  @param route the cell's route — the class tree's _routes atom
  */
@@ -60,11 +60,12 @@ export const semanticModelEntries = (decls: readonly DeclSlice[]): SemanticModel
 }
 
 /** Resolve a served style value to its admission route — the
- *  estate-side fold a request's `model` field rides. Returns null
- *  for any value the derivation never served.
+ *  estate-side fold a request's `model` field rides.
  *
  *  @param entries the derivation's own output (one spelling)
  *  @param value the request's model field
+ *  @returns the served entry, or null for any value the
+ *   derivation never served (callers fall back to the raw value)
  */
 export const resolveSemanticModel = (
   entries: readonly SemanticModelEntry[],

@@ -44,6 +44,7 @@ const SHARED_FILES = [
   "core.py",
   "schemas.py",
   "native.py",
+  "install.py",
   "qvoice.py",
   "engines/qwen3_tts.py",
   "engines/moss_sfx_v2.py",
