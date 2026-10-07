@@ -35,8 +35,17 @@ export function dshHarnessHome(): string {
 }
 
 export const DSH_PROFILE = "estate";
+// @melite-plugin/dsh-estate is a BUNDLE ROW, not an optional extra:
+// its melite-estate plugin mounts the estate's host composition
+// (the disclose/load/runs/skills/queue/manage seats register
+// in-process on the estate fiber). Without it a profile carries the
+// melite TOOLS but no seats — every estate door refuses with the
+// lane-absence error (the cold-start drive's first live-fire,
+// 2026-10-07: discover/load/construct/manage ALL refused on a
+// registry-installed profile that bundled harness-tools alone).
 export const DSH_PROFILE_BUNDLES: readonly string[] = ["@deepseek-ai/dsh-base",
-  "@deepseek-ai/dsh-sdk-app", DSH_PROVISIONER_NAME, "@melite/harness-tools"];
+  "@deepseek-ai/dsh-sdk-app", DSH_PROVISIONER_NAME, "@melite/harness-tools",
+  "@melite-plugin/dsh-estate"];
 
 /** The version floor: the repo's own runtime pin
  *  (packages/harness/provisioner/package.json — ">=0.2.0-rc.1

@@ -155,7 +155,8 @@
   "files": [
     "lib/index.js",
     "lib/**/*.js",
-    "lib/**/*.d.ts"
+    "lib/**/*.d.ts",
+    "data/**"
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4"

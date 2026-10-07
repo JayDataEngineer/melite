@@ -575,9 +575,9 @@ async function mint (opts) {
       }
       console.log(`gated publish set copied to ${opts.out}`)
     }
-    console.log(`uploading ${files.length} tarballs + manifest to ${tag} …`)
-    run('gh', ['release', 'upload', tag, ...files.map((f) => f), manifestPath, '--clobber'])
-    console.log(`✓ ${tag}: ${files.length} tarballs + release-manifest.json @ ${commit.slice(0, 8)}`)
+    console.log(`uploading ${files.length} tarballs + manifest + order to ${tag} …`)
+    run('gh', ['release', 'upload', tag, ...files.map((f) => f), manifestPath, orderPath, '--clobber'])
+    console.log(`✓ ${tag}: ${files.length} tarballs + release-manifest.json + order.txt @ ${commit.slice(0, 8)}`)
   } finally { rmSync(dest, { recursive: true, force: true }) }
 }
 
