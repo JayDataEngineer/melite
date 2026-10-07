@@ -138,6 +138,25 @@ describe('package-files law — every exports target ships', () => {
     expect(filesCover(['lib/*.js'], 'lib/deep/x.js')).toBe(false)
   })
 
+  it('no files row allows a member the release payload gate refuses (maps, src)', () => {
+    // mint23: three-client allowlisted lib/**/*.js.map — the mint's
+    // payload gate refused the packed tarball (source maps and src
+    // members never ship). This arm mirrors the gate's two refusals
+    // on the manifest half, so the battery catches the class before
+    // a mint run does.
+    const offenders: string[] = []
+    for (const pj of workspaceMembers()) {
+      const pkg = JSON.parse(readFileSync(pj, 'utf8')) as Manifest
+      for (const row of pkg.files ?? []) {
+        const rel = row.replace(/^\.\//u, '')
+        if (/\.(js|d\.ts)\.map$/u.test(rel) || /^src\//u.test(rel)) {
+          offenders.push(`${pkg.name}: files row "${row}" allows a payload-gate-refused member`)
+        }
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
+
   it('every dsh.bundle.patch declaration packs its patch and allows it in files', () => {
     // The alpha.3 mint catch (G2's class, mint21): card-base and
     // three-client declared dsh.bundle.patch but omitted the file
