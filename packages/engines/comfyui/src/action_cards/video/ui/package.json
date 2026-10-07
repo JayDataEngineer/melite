@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/video",
-  "version": "0.4.0-alpha.8",
+  "version": "0.1.4-alpha",
   "type": "module",
   "types": "./viewers/index.ts",
   "exports": {

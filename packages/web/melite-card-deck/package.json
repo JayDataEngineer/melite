@@ -1,6 +1,6 @@
 {
   "name": "@melite-plugin/dsh-card-deck",
-  "version": "0.4.0-alpha.8",
+  "version": "0.1.4-alpha",
   "type": "module",
   "private": true,
   "license": "SSPL-1.0",
