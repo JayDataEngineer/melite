@@ -42,6 +42,9 @@ export declare class ProvisioningService extends Service implements Provisioning
      *  runLocked's join law). The fetch itself rides executeEnsure
      *  (the existing fetcher — no second fetcher). */
     startWeightAcquire(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
+    /** The background-start run: a preset id (the caller returns it
+     *  synchronously) with no caller signal — the operation owns its
+     *  own controller alone. */
     private runWithId;
     plan(ref: ResourceRef): Promise<ProvisionPlan>;
     inspect(ref: ResourceRef, signal?: AbortSignal): Promise<ResourceStatus>;
