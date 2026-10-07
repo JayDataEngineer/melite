@@ -592,6 +592,17 @@ export async function probeExecutability (innerFiles) {
           continue
         }
         const entry = join(pkgDir, row)
+        // Loader-marked rows are browser-plane bundles (the tsdown
+        // consolidation's client doors): the host runtime's module
+        // table loads them under window, so a plain-Node import is
+        // the wrong proof for them. The marker — first bytes
+        // window.__ModuleLoader__.load( — is the same ownership
+        // boundary build-plane.mjs stashes bundles by. Skip loudly,
+        // never silently.
+        if (readFileSync(entry, 'utf8').startsWith('window.__ModuleLoader__.load(')) {
+          console.log(`  probe: ${tarName} ${row} — browser bundle door (loader-marked; the host runtime loads it)`)
+          continue
+        }
         const boot = `import { register } from 'node:module'; import { pathToFileURL } from 'node:url'; ` +
           `register(${JSON.stringify(pathToFileURL(loader).href)}, pathToFileURL(${JSON.stringify(pkgDir + '/')})); ` +
           `await import(pathToFileURL(${JSON.stringify(entry)}).href);`
