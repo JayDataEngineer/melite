@@ -9,12 +9,10 @@
 // deleted ModifiersModal), subcard derivation, reorder, and add-entry
 // templates that honor the catalog's schema defaults.
 //
-// Apply order = array order — structural, not conventional: apply_controlnets
-// (media/comfyui/core/controlnets.py) chains ControlNetApply in
-// `for cn_spec in controlnets` order; apply_loras (core/loras.py) chains
-// LoraLoader nodes in `for spec in loras` order. Drag-reorder rewrites the
-// array; the composed ComfyUI graph follows (rule-2). Families, GPU,
-// and the wire NEVER change.
+// Apply order = array order — structural, not conventional: stackControlNets in the @melite/comfyui-card-kit render-kit chains controlnet nodes in array order.
+// stackLoras in the same render-kit chains LoraLoader nodes in array order.
+// Drag-reorder rewrites the array; the composed ComfyUI graph follows (rule-2).
+// Families, GPU, and the wire NEVER change.
 import type { LoRAEntry } from "./loraTypes.ts"
 import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.ts"
 export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec }
@@ -91,10 +89,10 @@ export interface FormSpecFeatures {
 export type ModifierFieldType = "integer" | "float" | "string" | "select" | "image" | "boolean"
 
 // ── Wire contract aliases (2026-08-11) ───────────────────────────────────
-// The generic modifier-kind spec IS the backend's strict contract — the
-// wire type ModifierKindSpec (moved to
-// catalog_schema.ModifierKind: extra="forbid", options_scanned declared,
-// min/max/step float). The hand-written mirrors were duplicates that could
+// The generic modifier-kind spec IS the strict wire contract — the
+// wire type ModifierKindSpec (wireTypes.ts: extra="forbid"
+// semantics, options_scanned declared, min/max/step float). The
+// hand-written mirrors were duplicates that could
 // drift and LIE on the wire — exactly the two-schema disease this
 // openapi.json migration exists to kill. The only added field is
 // ``disk_subdir``, a FRONTEND-COMPUTED view value (resolve_lora_subdir)
@@ -336,8 +334,8 @@ export function newControlnetEntry(
  }
 }
 
-/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
- * own default when the spec omits it). */
+/** New LoRA entry from an adapter name — default strength 1.0 (the
+ * LoRA stack's own default when the spec omits it). */
 export function newLoraEntry(id: string, strength = 1.0): LoRAEntry {
  return { id, strength }
 }

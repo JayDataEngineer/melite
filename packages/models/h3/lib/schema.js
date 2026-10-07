@@ -303,10 +303,8 @@ export function schema(v) {
     // got [object Object]` ×4 and `calls: ""`).
     const out = paramSchema(coerceWireArrays(paramSchema, coerceWireBoolean(raw)));
     let variant = typeof raw.variant === 'string' ? raw.variant : undefined;
-    // variant DERIVATION (retired timeline/laws.py, b324c480^ —
-    // opener_family/chain_family): the studio calls shape carries no
-    // variant; the card derives it. An image-anchored opener rides t4r;
-    // a text-only single call is t4_open; multiple calls chain (t4_chain).
+    // variant DERIVATION (opener_family/chain_family): the studio calls shape carries no variant; the card derives it.
+    // An image-anchored opener rides t4r; a text-only single call is t4_open; multiple calls chain (t4_chain).
     // THE FRESH-PRESS STARTER (the operator's 2026-09-17 instant-fail:
     // a freshly added card holds params {} — calls is NOT a form knob,
     // so the bench tile's Run composed no shots and the door refused
@@ -355,10 +353,7 @@ export function schema(v) {
                 }
             }
         }
-        // THE SHOT LAWS (schema.py _wire_value_laws port — the ranges
-        // are the card gate's, never a silent re-default: the retired era
-        // quietly re-defaulted an out-of-range seam and rendered a
-        // reversed span as 56 frames; both banned there, banned here).
+        // THE SHOT LAWS (the ranges are the card gate's, never a silent re-default: an out-of-range seam is refused and a reversed span is refused; both banned).
         // (the seam_carry law died with the MotionContext seam — the
         // drift-control continuation owns the chaining now, overlap is
         // automatic, never user-authored lane physics)

@@ -1,4 +1,4 @@
-// Editor model catalog client — TypeScript mirror of media/editor_catalog.py.
+// Editor model catalog client — the TS catalog owner (selectors below plus ./wireTypes.ts).
 //
 // Single source of truth for the webform. All family relationships,
 // variant groupings, defaults, prompt guides, and variant declarations
@@ -214,7 +214,7 @@ export function primeCatalog(data) {
  * so the taken arm is unreachable here (2026-09-12). */
 if (import.meta.env?.MODE !== "test")
     ensureCatalog();
-// ── Selectors (mirror media/editor_catalog.py) ──────────────────────────
+// ── Selectors (the TS selector owner; ./wireTypes.ts carries the wire) ──
 /**
  * For route keys that are NOT top-level catalog entries (e.g. a quant-tier
  * sibling that only appears as a variant route on its parent), find the
@@ -595,8 +595,8 @@ export function routeCoordinates(routeKey, cat = catalogStore.getState().catalog
  *
  * Group → axis mapping: a ``Quant`` group switches the quant tier (base
  * variant preserved); a ``Variant`` group switches the base variant (quant
- * preserved). The vocabulary is closed to Variant/Quant (schema.py
- * CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+ * preserved). The vocabulary is closed to Variant/Quant (the
+ * canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
  * the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
  * with no ``route:`` never reach here — the caller handles those as draft
  * overlays.

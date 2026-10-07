@@ -554,9 +554,8 @@ export class ComfyUIService extends Service {
     return () => { this.cards.delete(def.id) }
   }
 
-  // ── THE MOD/VERB REGISTRATION (dsl.py port: the Model.mods
-  //  interlock — fields absorb onto the OWNING CARD's surface
-  //  scoped to the declaring families; verbs mount by id) ──
+  // ── THE MOD/VERB REGISTRATION (ported from the RETIRED dsl.py — the TS mod/verb system in serviceMods.ts owns this: the Model.mods interlock).
+  //  Fields absorb onto the OWNING CARD's surface scoped to the declaring families; verbs mount by id. ──
 
   /** Register one PACK CONTRACT — the category (the Mod parent).
    *  LOUD: field gates at registration (the metaclass's

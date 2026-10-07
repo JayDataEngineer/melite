@@ -98,7 +98,7 @@ export declare function validateParamsAgainstSchema(schema: FamilyParamSchema, p
 }): ParamContractViolation[];
 /**
  * Validate a stage's modifier entries against the family's declared kinds.
- * Mirrors backend validate_modifier_entries: per declared kind with a
+ * validateModifierEntries (this file) is the owner: per declared kind with a
  * param_key, params[param_key] must honor the cardinality (list kinds take
  * a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
  * and each entry's keys/required/type/bounds/select-membership must match

@@ -40,9 +40,8 @@ interface FlowDecl {
  *  -> []). The headless tool rides the registry declaration
  *  verbatim (projected to the frozen row shape); hasSkillMd reads
  *  the flows/<id>/SKILL.md leaf live. skillRefs ride the registry
- *  declaration (empty today — the frozen refs pointed at the
- *  retired flow.py rows and the retired enhance recipes, which
- *  resolve nowhere and would only skip-loud). */
+ *  declaration (empty today — the frozen refs pointed at the RETIRED flow.py rows and the retired enhance recipes).
+ *  Those refs resolve nowhere and would only skip-loud. */
 /** @param modelsSeat the context's models service when mounted — the
  *  disclosure composes from the SAME seat the runs doors thread (the
  *  lane-seat law: the served body and the composed graph must agree;

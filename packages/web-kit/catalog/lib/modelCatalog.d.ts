@@ -9,11 +9,10 @@ export type Catalog = CatalogResponse;
 export type TransformApplicabilityEntry = TransformApplicability;
 export type CardSummaryEntry = CardSummary;
 export type OptionalOutputEntry = OptionalOutput;
-/** Source media type a family INGESTS — DERIVED from the backend's closed
- * Literal (schema.py FamilyEntry.accepts), never hand-written: a backend
- * vocabulary change re-types this on api:sync instead of silently
- * drifting. Deliberately a SUBSET of CardGenre (no 3d/motion/other):
- * those are output genres, not ingest types. */
+/** Source media type a family INGESTS — the closed ingest vocabulary
+ * (the TS family DECLs own it), hand-maintained as a SUBSET of
+ * CardGenre (no 3d/motion/other): those are output genres, not
+ * ingest types. */
 export type SourceMediaType = NonNullable<TransformApplicability["applies_to"]>[number];
 /** Narrow the wire's plain string genre (string | null — the backend
  * Literal does not survive the wire as a type) onto the view union.

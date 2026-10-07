@@ -1204,8 +1204,7 @@ describe("status + stop", () => {
     const runId = "run-rig-report";
     const dir = join(s.state, "output", runId);
     mkdirSync(join(dir, "3D"), { recursive: true });
-    // the writer's own body (report_sidecar.py's fold): a finished
-    // bench report entry, never a rig tuple
+    // The writer's own body (the withStageReports fold in runsRegistry.ts): a finished bench report entry, never a rig tuple.
     const report = { kind: "report", status: "fail", title: "Rig validation",
       chips: ["CRITICAL 1"], rows: { passed: false, critical_count: 1 } };
     writeFileSync(join(dir, "3D", "rigged.report.json"), JSON.stringify(report));

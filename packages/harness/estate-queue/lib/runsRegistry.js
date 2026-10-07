@@ -1326,9 +1326,8 @@ export class RunsRuntimeService extends Service {
      *  probe rides the drafts remote. */
     async list(rawLimit, signal, test = false) {
         signal.throwIfAborted();
-        // The door's 400 text (editor_runs int()) — the runs face's
-        // invalid-request refusal. ONLY this parse folds; every other
-        // failure stays loud (no absorb).
+        // The door's 400 text (parseIntOrNull in runsList.ts) — the runs face's invalid-request refusal.
+        // ONLY this parse folds; every other failure stays loud (no absorb).
         const parsed = parseIntOrNull(rawLimit);
         if (parsed === null) {
             throw new RemoteError("runs/invalid-request", "limit must be an integer (got '" + rawLimit + "')", { loc: "query.limit", expected: "integer", got: rawLimit });

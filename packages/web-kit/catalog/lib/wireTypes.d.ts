@@ -142,7 +142,7 @@ export type CatalogResponse = {
  *
  *     The declared ``loras`` list is the contract — the LoraPicker's dropdown
  *     renders EXCLUSIVELY from it, so the response model IS the no-silent-drop
- *     gate: a drifted shape fails here with a pydantic path, never an empty
+ *     gate: a drifted shape fails here with a named path, never an empty
  *     picker. ``note`` / ``meta`` are optional long-tail extras.
  */
 export type DetectorEntry = {
@@ -277,7 +277,7 @@ export type LanpaintModelEntry = {
  * MaskLayerKind
  * @description Provenance of a mask-studio output — which producer derived it.
  *
- *     The ONE pydantic validation surface for both mask producers: a
+ *     The ONE validation surface for both mask producers: a
  *     per-class detector filter (impact-pack SEGS) vs a derived selection
  *     (subject / background / cutout) vs an externally-authored paint layer
  *     (photoshop-hybrid — authoring lives OUTSIDE the card by design). A
@@ -493,20 +493,18 @@ export type ModifierEntry = {
  *     primary output." ``mask`` / ``detection`` / ``depth`` / … are INSTANCES
  *     of this model, not special cases — mirroring how ``ModifierKind`` makes
  *     ``lora`` / ``controlnet`` instances of an open kind vocabulary (rule 4:
- *     declarative + pydantic-validated, never a hardcoded ``if mask``).
+ *     declarative + contract-validated, never a hardcoded ``if mask``).
  *
  *     Declaration lives on the family's catalog block (``primary_output`` +
  *     ``optional_outputs:``); ``emit_when`` is the param key whose truthy
- *     presence in a step's params ACTIVATES the output for that step. The
- *     resolver (core.flows.outputs.resolve_step_outputs) derives the
- *     per-step ``outputs`` list from this declaration + the step's params —
- *     one generic code path for every family. Adding an optional output to a
+ *     presence in a step's params ACTIVATES the output for that step —
+ *     one generic rule for every family. Adding an optional output to a
  *     family is a YAML line here, ZERO schema/compile/frontend edits.
  *
  *     ``name`` is the artifact key the family writes into BrickResult.artifacts
  *     AND the name a downstream slot wires by (Option A — named outputs). It
- *     MUST match the key the family actually produces, or the orchestrator's
- *     _check_outputs hard-errors (declared = enforced).
+ *     MUST match the key the family actually produces, or the run gate
+ *     refuses it (declared = enforced).
  */
 export type ModifierKind = {
     /** Kind */
@@ -545,10 +543,8 @@ export type ModifierKind = {
  *     The SSOT for "a card allows selecting the type of output" — the
  *     user-directed contract extension (2026-08-14): mp4|webm video, flac|mp3
  *     audio, png-only image. ``id`` is the wire value of the family's
- *     ``output_format`` param (a family-signature Literal — the compile-layer
- *     vocabulary gate) AND the SAVE_MAP key the builder's save node reads.
- *     Zero drift is pinned by test_outputs_contract.py: declared ids ==
- *     Literal values == SAVE_MAP keys == served schema Field options.
+ *     ``output_format`` param (a family-signature Literal — the compile-layer vocabulary gate) AND the key the builder's save node reads.
+ *     Zero drift has no single pinning suite today; the walls tier (closure-gate, real-card-wire) owns drift: declared ids == Literal values == save-node keys == served schema field options.
  *
  *     ``params`` declares per-format gated params (e.g. mp3_quality only for
  *     ``mp3``) — informational for the frontend; the schema Field's

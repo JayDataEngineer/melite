@@ -249,7 +249,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_add_stage_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1212,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1209,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/clear',
@@ -286,7 +286,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchClearRow',
         create: _melite_estate_drafts_bench_clear_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1235,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1232,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/ensure',
@@ -313,7 +313,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchEnsureRow',
         create: _melite_estate_drafts_bench_ensure_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1145,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1142,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/get',
@@ -340,7 +340,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchGetRow',
         create: _melite_estate_drafts_bench_get_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1055,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1052,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/group',
@@ -377,7 +377,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_group_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1271,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1268,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/patch',
@@ -414,7 +414,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchPatchRow',
         create: _melite_estate_drafts_bench_patch_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1202,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1199,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/remove-stage',
@@ -451,7 +451,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_remove_stage_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1222,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1219,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/reorder',
@@ -488,7 +488,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchReorderRow',
         create: _melite_estate_drafts_bench_reorder_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1256,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1253,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/rewire',
@@ -525,7 +525,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchRewireRow',
         create: _melite_estate_drafts_bench_rewire_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1245,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1242,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/subscribe',
@@ -552,7 +552,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchGetRow',
         create: _melite_estate_drafts_bench_subscribe_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1073,"column":10},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1070,"column":10},
     },
     {
       id: '@melite/estate-drafts#bench/undo',
@@ -589,7 +589,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchUndoRow',
         create: _melite_estate_drafts_bench_undo_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1299,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1296,"column":9},
     },
     {
       id: '@melite/estate-drafts#bench/ungroup',
@@ -626,7 +626,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#BenchStageRow',
         create: _melite_estate_drafts_bench_ungroup_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1285,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":1282,"column":9},
     },
     {
       id: '@melite/estate-drafts#drafts/get',
@@ -727,7 +727,7 @@ export const TYPERT = {
         typeSymbol: '@melite/estate-drafts/types#DraftPatchRow',
         create: _melite_estate_drafts_drafts_patch_result$schema,
       },
-      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":623,"column":9},
+      sourceLocation: {"file":"packages/estate/drafts/src/remote.ts","line":620,"column":9},
     },
   ],
   model: {
@@ -953,7 +953,7 @@ export const TYPERT = {
             "name": "remoteExportPatch",
             "signature": "@Remote(\"patch\") async remoteExportPatch( draftId: string, stageId: string, patch: DraftStagePatch, expectRev: number | null, signal: AbortSignal, ): Promise<DraftPatchRow>",
             "summary": "Endpoint `drafts/patch` — the stage patch door, REBORN on the domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/ stages/:sid died with the app and stroke L left the client door a throwing stub).",
-            "jsDoc": "/** Endpoint `drafts/patch` — the stage patch door, REBORN on the\n *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/\n *  stages/:sid died with the app and stroke L left the client door\n *  a throwing stub). Semantics VERBATIM from the old door\n *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed\n *  editor_runs.py): admission on the fixed key set\n *  (params | result | runStatus | inputs | inputOutputs — unknown\n *  keys refuse with the door's voice), params merge PER-KEY into\n *  the stage's existing params (never replace), the domain write\n *  bumps the recency column, and the answer is the delivered\n *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and\n *  the user (the card drilldowns) author the SAME domain records\n *  through it — one truth, two authors.\n *\n *  THE LAYERED-PARAMS LAW (2026-09-14, the parameter audit): the\n *  params map is the stage's USER layer — a key's PRESENCE is the\n *  override mark (never its value). Two additions make the door\n *  speak it: (1) JSON Merge Patch semantics for params — a null\n *  value DELETES the key (the reset/unset path; RFC 7386's\n *  convention, the wire form of the settings system's unset path\n *  op); (2) the door JOINS the bench CAS law — every write bumps\n *  bench.rev and appends a kind:'patch' log entry, and expectRev\n *  (nullable) fences the write: a bench that moved refuses loud\n *  with bench/cas-conflict carrying current_rev, never merges\n *  under the earlier author. */"
+            "jsDoc": "/** Endpoint `drafts/patch` — the stage patch door, REBORN on the\n *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/\n *  stages/:sid died with the app and stroke L left the client door\n *  a throwing stub). Semantics VERBATIM from the old door (hDraftStagePatch, the retired gateway drafts door): admission on the fixed key set (STAGE_PATCH_KEYS: params | result | runStatus | inputs | inputOutputs — unknown\n *  keys refuse with the door's voice), params merge PER-KEY into\n *  the stage's existing params (never replace), the domain write\n *  bumps the recency column, and the answer is the delivered\n *  envelope. THE SHARED STATE DOOR: the agent (bench verbs) and\n *  the user (the card drilldowns) author the SAME domain records\n *  through it — one truth, two authors.\n *\n *  THE LAYERED-PARAMS LAW (2026-09-14, the parameter audit): the\n *  params map is the stage's USER layer — a key's PRESENCE is the\n *  override mark (never its value). Two additions make the door\n *  speak it: (1) JSON Merge Patch semantics for params — a null\n *  value DELETES the key (the reset/unset path; RFC 7386's\n *  convention, the wire form of the settings system's unset path\n *  op); (2) the door JOINS the bench CAS law — every write bumps\n *  bench.rev and appends a kind:'patch' log entry, and expectRev\n *  (nullable) fences the write: a bench that moved refuses loud\n *  with bench/cas-conflict carrying current_rev, never merges\n *  under the earlier author. */"
           },
           {
             "kind": "method",

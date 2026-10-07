@@ -126,7 +126,7 @@ let CACHE: CatalogModel[] | null = null;
  *  the dead provisions.json (deAPI-ai mirror -> Comfy-Org) — the
  *  unit at 034e1f97 carries Comfy-Org with the SAME sha256 (a
  *  mirror swap the compile predated); the registry is the fresher
- *  authoring truth (models/video/h3/model.py line 56).
+ *  authoring truth (the h3 DECL in packages/models/h3/src/index.ts).
  *
  *  NON-PLUGIN callers only (walls/probes/unit — no Context). Plugin
  *  paths (the manage door) thread ctx.models and read through

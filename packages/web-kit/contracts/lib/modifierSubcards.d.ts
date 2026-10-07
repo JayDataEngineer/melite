@@ -139,8 +139,8 @@ export declare function applySubcardDrop(params: Record<string, unknown>, active
  * Takes the KIND SPEC (the one contract entry) — no parallel feature shape.
  */
 export declare function newControlnetEntry(entries: ControlNetEntry[], type: string, cnKind: ModifierKindSpec | null): ControlNetEntry | null;
-/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
- * own default when the spec omits it). */
+/** New LoRA entry from an adapter name — default strength 1.0 (the
+ * LoRA stack's own default when the spec omits it). */
 export declare function newLoraEntry(id: string, strength?: number): LoRAEntry;
 /**
  * New generic entry for a NOVEL modifier kind (not lora / controlnet — those

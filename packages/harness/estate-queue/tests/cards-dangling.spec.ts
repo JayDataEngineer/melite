@@ -165,11 +165,8 @@ describe("resolveArtifactFile (the artifact rim)", () => {
     );
   });
   it("one voice for non-swept shapes: a bare name refuses; runs-relative and absolute paths resolve", () => {
-    // The resolver's ported shapes (artifact_refs.py): a
-    // runs-relative <run>/<file> joins the root, an absolute path
-    // is its own candidate, and only a BARE name refuses — the
-    // ComfyUI input dir is the caller's staging concern, never a
-    // disk lookup.
+    // The resolver's shapes (ported from the RETIRED artifact_refs.py): a runs-relative <run>/<file> joins the root, an absolute path is its own candidate, and only a BARE name refuses.
+    // The ComfyUI input dir is the caller's staging concern, never a disk lookup.
     assert.throws(
       () => resolveArtifactFile("relative.png", ROOT),
       /artifact ref is a bare "relative.png" — not an absolute path, an artifact URL/,

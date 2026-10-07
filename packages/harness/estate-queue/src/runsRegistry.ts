@@ -1471,9 +1471,8 @@ export class RunsRuntimeService extends Service {
     test = false,
   ): Promise<{ count: number; runs: Record<string, unknown>[] }> {
     signal.throwIfAborted();
-    // The door's 400 text (editor_runs int()) — the runs face's
-    // invalid-request refusal. ONLY this parse folds; every other
-    // failure stays loud (no absorb).
+    // The door's 400 text (parseIntOrNull in runsList.ts) — the runs face's invalid-request refusal.
+    // ONLY this parse folds; every other failure stays loud (no absorb).
     const parsed: number | null = parseIntOrNull(rawLimit);
     if (parsed === null) {
       throw new RemoteError(

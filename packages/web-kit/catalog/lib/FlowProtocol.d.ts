@@ -15,14 +15,10 @@ import type { StageResult } from "@melite/contracts";
  * error is now surfaced unmodified (user: "full errors in the modals").
  */
 export declare function describeErrorBody(text: string): string;
-/** One wire stage — the backend's RunStage CONTRACT CORE (id/name/index/
- *  status, REQUIRED — generated from /openapi.json, never hand-written)
- *  plus the view extras the runner tolerates beyond the core and the poll
- *  consumes (url / gallery / named_urls / progress / activity). The core
- *  is inherited from the backend schema; the extras are documented view
- *  fields — a stage from the wire always carries the core, by contract.
- *  A type-alias intersection (NOT an interface): the generated components
- *  are intersection aliases, which interfaces cannot extend (TS2499). */
+/** One wire stage — the RunStageWire CONTRACT CORE in ./wireTypes.ts (id/name/index/status, REQUIRED — declared there, never hand-written). */
+/** Plus the view extras the runner tolerates beyond the core and the poll consumes (url / gallery / named_urls / progress / activity). */
+/** The core is inherited from the wire type; the extras are documented view fields — a stage from the wire always carries the core, by contract. */
+/** A type-alias intersection (NOT an interface): the wire components are intersection aliases, which interfaces cannot extend (TS2499). */
 export type FlowRunStage = RunStageWire & {
     url?: string;
     gallery?: Array<{

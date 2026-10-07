@@ -1,5 +1,4 @@
-// provision — the ONE provisioning orchestrator (TS port of tools/provision.py,
-// deleted at the NO-ESTATE-PYTHON cut, 2026-09-08).
+// provision — the ONE provisioning orchestrator (TS port of the RETIRED tools/provision.py, deleted at the NO-ESTATE-PYTHON cut, 2026-09-08).
 //
 // Operator orders: PROVISIONING LAW (2026-09-03) + NO-ESTATE-PYTHON
 // (2026-09-08) + NO-EXTERNAL-PYTHON (2026-09-10): the ONE vendor is

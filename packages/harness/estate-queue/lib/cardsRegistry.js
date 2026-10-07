@@ -33,19 +33,14 @@
 //      absent-keys-only, filtered to the card field surface
 //      (schema keys + admits). Facts carry every input
 //      (model-facts.json variants[].resolver_defaults).
-//   5. R1 variant/quant wire contract (survey §5.3 + §6 R1): body
-//      `variant`/`quant` keys select the matrix cell when stated
-//      (matched against facts variant id/route + cell quant);
-//      unstated coordinates fall to the FIRST non-Recipe variant /
-//      first cell (Model.resolve, grammar.py:1102-1121). Route-id-
-//      as-model is preserved (resolveCardFamily). The keys are
-//      CONSUMED (never reach compose — no card declares them).
+//   5. R1 variant/quant wire contract (survey §5.3 + §6 R1): body `variant`/`quant` keys select the matrix cell when stated (matched against facts variant id/route + cell quant).
+//      Unstated coordinates fall to the FIRST non-Recipe variant / first cell (selectCardVariant in cardsVariant.ts, re-exported through this file's surface).
+//      Route-id-as-model is preserved (resolveCardFamily).
+//      The keys are CONSUMED (never reach compose — no card declares them).
 //   6. envelope lift (card_compose_body 363-372: body minus
 //      CARD_ENVELOPE_KEYS restaged as {params}) + the nested-stanza
 //      unwrap (cli.ts:82-91 — a `params` dict key IS the stanza).
-//   7. $spell phase-1 rule (compose/__init__.py spell block): a
-//      phaseless call (run_id "") whose spell params carry $ values
-//      composes NO graph.
+//   7. $spell phase-1 rule (composeOnce in cardsCompose.ts): a phaseless call (run_id "") whose spell params carry $ values composes NO graph.
 //   8. admission-contract gate (the cli door's verbatim voice).
 //   9. in-process compose: ONE Context + ComfyUIService +
 //      auto-loaded cards (the cli loop), setFacts +
@@ -54,12 +49,8 @@
 //      unauthenticated), ctx.comfyui.compose(card, family, params,
 //      runId) — the same call the cli door makes. ComposeRefusal.code
 //      maps to the refusal detail.
-//  10. stage-row wrap (the rim, plugins.py:566-588): {id: skeleton
-//      (the card definition, fallback: the posted mid), engine comfyui,
-//      params: {workflow: graph}} — submitted through the EXISTING
-//      engine layer (engine/comfyui.ts executeFlow) exactly like
-//      flow_inline runs (L3 routing, upload walk, harvest,
-//      interrupt, timeout all reused untouched).
+//  10. Stage-row wrap (the rim, composeOnce in cardsCompose.ts): {id: skeleton (the card definition, fallback: the posted mid), engine comfyui, params: {workflow: graph}}.
+//      The row rides the EXISTING engine layer (engine/comfyui.ts executeFlow) exactly like flow_inline runs (L3 routing, upload walk, harvest, interrupt, timeout all reused untouched).
 //
 // REFUSAL VOICES: every card-lane failure carries
 // `card_compose phase <N>: <detail>` (the phase framing; the

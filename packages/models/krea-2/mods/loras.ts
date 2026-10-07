@@ -1,6 +1,5 @@
-// @melite/models-krea-2/mods/loras.ts — KREA-2'S LORAS FLAVOR
-// (the py models/image/krea-2/mods/loras.py, 1:1): the Raw-variant
-// training set, applied on Turbo. FAMILY-OWNED DATA — the rows
+// @melite/models-krea-2/mods/loras.ts — KREA-2'S LORAS FLAVOR:
+// the Raw-variant training set, applied on Turbo. FAMILY-OWNED DATA —
 // live with the family (never in the pack contract, never in the
 // family DECL); the pack contract (engines/comfyui src/mods/
 // packs.ts) supplies the inherited fields. Registered as an effect

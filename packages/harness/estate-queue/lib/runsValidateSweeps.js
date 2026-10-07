@@ -41,8 +41,7 @@ export function batchRows(body, firstError, cards) {
         rows.push(wrow);
     return rows;
 }
-// ── pin sweep (
-// compose/__init__.py:198 validate_workflow) ─────────────────────
+// ── pin sweep (validateWorkflow + servedNodeClasses, same file) ──
 // STROKE 4b (the stroke-2a followup — same defect class): the
 // module-level pinCache singleton (read-once, never refreshed) is
 // DEAD. The pin now reads through ctx.cardRegistry.objectInfo()
@@ -128,9 +127,8 @@ export function sweepWorkflows(body, cards) {
         const label = JSON.stringify("id" in rec ? rec["id"] : "stage[" + i + "]");
         if (typeof engine !== "string")
             continue;
-        // Only engines exporting validate_workflow are swept (comfyui
-        // today — compose/__init__.py:198; the bus try/except-continue
-        // collapses to this since the table is the bus here).
+        // Only engines exporting validate_workflow are swept (comfyui today — validateWorkflow above owns the judgment).
+        // The bus try/except-continue collapses to this since the table is the bus here.
         if (engine !== "comfyui")
             continue;
         if (typeof rec["params"] !== "object" || rec["params"] === null || Array.isArray(rec["params"])) {

@@ -167,8 +167,8 @@ export function newControlnetEntry(entries, type, cnKind) {
         source: "user",
     };
 }
-/** New LoRA entry from an adapter name — default strength 1.0 (apply_loras'
- * own default when the spec omits it). */
+/** New LoRA entry from an adapter name — default strength 1.0 (the
+ * LoRA stack's own default when the spec omits it). */
 export function newLoraEntry(id, strength = 1.0) {
     return { id, strength };
 }

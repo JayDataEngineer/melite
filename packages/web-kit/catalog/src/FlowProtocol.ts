@@ -55,14 +55,10 @@ export function describeErrorBody(text: string): string {
  *  unexpected shape, not our error report — showing its start is enough. */
 const NON_JSON_BODY_CAP = 2000
 
-/** One wire stage — the backend's RunStage CONTRACT CORE (id/name/index/
- *  status, REQUIRED — generated from /openapi.json, never hand-written)
- *  plus the view extras the runner tolerates beyond the core and the poll
- *  consumes (url / gallery / named_urls / progress / activity). The core
- *  is inherited from the backend schema; the extras are documented view
- *  fields — a stage from the wire always carries the core, by contract.
- *  A type-alias intersection (NOT an interface): the generated components
- *  are intersection aliases, which interfaces cannot extend (TS2499). */
+/** One wire stage — the RunStageWire CONTRACT CORE in ./wireTypes.ts (id/name/index/status, REQUIRED — declared there, never hand-written). */
+/** Plus the view extras the runner tolerates beyond the core and the poll consumes (url / gallery / named_urls / progress / activity). */
+/** The core is inherited from the wire type; the extras are documented view fields — a stage from the wire always carries the core, by contract. */
+/** A type-alias intersection (NOT an interface): the wire components are intersection aliases, which interfaces cannot extend (TS2499). */
 export type FlowRunStage = RunStageWire & {
   url?: string
   gallery?: Array<{ url: string; name?: string }>
@@ -239,10 +235,9 @@ export async function pollFlowRun(
           `Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`,
         )
       }
-      // A non-ok body carrying a `violations` array is the status-channel
-      // CONTRACT 500 (backend/core/flows/contracts.py run_status_500):
-      // the backend is lying to the poll. Fail VISIBLY — polling on would
-      // be a silent fake "running" for the rest of the ceiling.
+      // A non-ok body carrying a `violations` array is the status-channel CONTRACT 500 (the refusal ./runStatusContract.ts validates).
+      // The server is lying to the poll.
+      // Fail VISIBLY — polling on would be a silent fake "running" for the rest of the ceiling.
       let errorBody: unknown = null
       try { errorBody = await resp.json() } catch { errorBody = null }
       if (hasViolationsSignature(errorBody)) {

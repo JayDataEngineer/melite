@@ -1,7 +1,6 @@
-// families/3d/anny/mods/verbs.ts — ANNY'S SUB-ACTION MODS (the py
-// models/3d/anny/mods/verbs.py, 1:1): body estimate, preset
-// save/load, dress, prop-seat. FAMILY-OWNED — the verb definitions
-// live with the family; each mounts by verb id on the anny card's
+// families/3d/anny/mods/verbs.ts — ANNY'S SUB-ACTION MODS:
+// body estimate, preset save/load, dress, prop-seat. FAMILY-OWNED —
+// the verb definitions live with the family; each mounts by verb id on the anny card's
 // boarded families. Knobs NEVER join the card surface
 // (SubActionMod law — verbs own their knobs; they ride the verb's
 // own invocation doc). The Cordis contract shape: every verb's

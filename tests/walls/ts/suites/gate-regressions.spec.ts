@@ -942,27 +942,23 @@ describe("THE IDENTITY LAW: a value that crosses a door has ONE producer (2026-0
     expect(bench).not.toMatch(/"s_" \+\s*\n\s*String\(/);
   });
 
-  it("the python plane leaves no scratch in the repo root (the eval.mts leak)", () => {
-    // Five tests in test_user_lora_plane.py passed REPO as the
-    // node-bridge tmp, so every battery run (its pytest arm) dropped
-    // eval.mts into the repo root and left it there — an untracked
-    // scratch the frozen clock dated days old. The bridge writes
-    // its script under pytest tmp_path now, and THIS arm executes
-    // the real door and judges the tree after it: the class is
-    // "a test's scratch never lands outside its own tmp", pinned
-    // by the leak's own artifact name.
-    const leak = join("eval.mts");
-    if (existsSync(leak)) {
-      rmSync(leak);
+  it("the estate's TS modules are tested by TS — no pytest bridges into a .ts module", () => {
+    // The python plane once tested userLoras.ts through a node
+    // eval.mts bridge spawned from pytest (batch AW deleted it —
+    // Layer A is typescript; a python shell around a TS proof is
+    // an invented system). The class survives as a wall: every
+    // pytest seat under tests/ may load VENDORED python (Layer C
+    // packs, the sidecar writer) but never a .ts module.
+    const bridges: string[] = [];
+    for (const f of readdirSync(join(REPO, "tests"))) {
+      if (!f.endsWith(".py")) continue;
+      const text = readFileSync(join(REPO, "tests", f), "utf8");
+      if (/(node_eval|--experimental-strip-types|\.ts["']|file:\/\/.*\.ts)/.test(text)) {
+        bridges.push(f);
+      }
     }
-    const hasPytest = spawnSync("python3", ["-m", "pytest", "--version"], { encoding: "utf8" });
-    if (hasPytest.error !== undefined && hasPytest.error !== null) {
-      console.warn("SKIP-LOUD: python3 absent — the python-plane leak wall is unjudged here (the battery's own skip law)");
-      return;
-    }
-    const run = spawnSync("python3", ["-m", "pytest", "tests/test_user_lora_plane.py", "-q"], { encoding: "utf8" });
-    expect(run.status, `the plane itself must pass: ${run.stdout?.slice(-400)}`).toBe(0);
-    expect(existsSync(leak),
-      "test_user_lora_plane.py wrote eval.mts into the repo root — a node-bridge call passes REPO where it must pass tmp_path").toBe(false);
+    expect(bridges,
+      "a pytest seat bridging into a .ts module — port the proof to vitest (the census law: Layer A is typescript)")
+      .toEqual([]);
   });
 });

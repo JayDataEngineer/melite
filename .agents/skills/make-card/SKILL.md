@@ -159,7 +159,7 @@ cd packages/<genre>/<card> && pnpm exec tsdown  # when a studio ships:
                                                 # refuses the commit)
 rm -rf coverage && node node_modules/vitest/vitest.mjs run --coverage
                                                 # per-file 100% gate
-python3 scripts/dsh-census.py -strict           # ZERO banned imports
+node scripts/dsh-census.mjs -strict            # ZERO banned imports
 ```
 
 The client spec (`tests/<card>-client.spec.tsx`) runs in the dom

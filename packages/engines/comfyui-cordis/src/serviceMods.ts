@@ -1,11 +1,10 @@
-// serviceMods.ts — the mod/verb system (extracted from
-// service.ts, the god-file cut): the dsl.py port's module truth —
-// mod-field validation, verb validation, and the ControlNet entry
-// resolution. No Service state; the seat calls these.
+// serviceMods.ts — the mod/verb system (extracted from service.ts, the god-file cut): the TS mod/verb system owns this plane (ported from the RETIRED dsl.py).
+// Mod-field validation, verb validation, and the ControlNet entry resolution live here.
+// No Service state; the seat calls these.
 import { ComposeRefusal } from "./service.ts";
 import { assertControlNetSchedule } from "@melite/comfyui-card-kit/guard";
 import { bag } from '@melite/contracts/extraKeys'
-// ── THE MOD/VERB SYSTEM (melite_cards dsl.py port, 2026-09-08) ──
+// ── THE MOD/VERB SYSTEM (ported from the RETIRED melite_cards dsl.py, 2026-09-08 — the TS mod/verb system owns this now) ──
 //
 // The interlock: Model classes declared mods (fields + catalog
 // rows joining the OWNING CARD's surface, scoped to the declaring
@@ -63,14 +62,9 @@ export interface LoraRowDecl {
 // ── THE MOD MUTATION SYSTEM (corrected 2026-09-08, operator
 // order): mods are a DISTINCT CATEGORY — packs (loras, controlnets,
 // lan-inpaint, mask, qvoice in that vein). The PACK is the category
-// contract (its field schema, the Mod parent — engine-owned,
-// melite_cards role); the FLAVOR is a family's boarding of the pack
-// (the Model.mods tuple entry + the family's mods/<pack>.py
-// subclass — FAMILY-owned data: rows, runtime door, or a bare
-// boarding). Fields live ONLY on the pack; a flavor never re-declares
-// them (inheritance — subclassing). Scope comes from the
-// DECLARATION SITE: the flavor's families, cross-gated boot-loud
-// against the model's own DECL.mods (the paper's satisfaction law).
+// contract (its field schema, the Mod parent — engine-owned, melite_cards role); the FLAVOR is a family's boarding of the pack (the Model.mods tuple entry + the family's mods/<pack>.ts flavor — FAMILY-owned data: rows, runtime door, or a bare boarding).
+// Fields live ONLY on the pack; a flavor never re-declares them (inheritance — subclassing).
+// Scope comes from the DECLARATION SITE: the flavor's families, cross-gated boot-loud against the model's own DECL.mods (the paper's satisfaction law).
 
 /** A pack contract — the CATEGORY (the Mod parent: LorasMod,
  *  ControlNetMod, LanPaintMod, MaskMod, the qvoice pack). Fields

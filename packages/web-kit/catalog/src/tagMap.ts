@@ -5,15 +5,15 @@
 //   tags[tagId]    = TagDef          — the registry (name + color)
 //
 // Tags are RUNTIME data (user-created), not static config — so they don't live
-// in config/editor/list_filters.json. But their COLOR vocabulary is closed by
-// the pydantic TagColor enum (backend/core/ui/list_filter_schema.py); the TS
-// mirror below is twin-tested against that enum. A tag never drifts into an
-// arbitrary hex that breaks the theme.
+// in config/editor/list_filters.json. Their COLOR vocabulary is closed by the
+// TagColor const below — the single owner since the python backend retired.
+// A tag never drifts into an arbitrary hex that breaks the theme.
 //
 // PERSISTENCE (server-canonical, localStorage-cached):
 //   • The server is the source of truth — GET/PUT /v1/tags exchanges a full
-//     TagDocument ({tags, map}), validated by the pydantic ratchet on BOTH
-//     read (corrupt file → empty fallback) and write (422 on any violation).
+//     TagDocument ({tags, map}); this store re-validates every document on
+//     read (corrupt → empty fallback) and the same rules gate the
+//     optimistic PUT path.
 //   • localStorage (`melite:tag-map:v1`) is a write-through cache + offline
 //     fallback. The store hydrates from it SYNCHRONOUSLY on first load (so the
 //     UI renders instantly), then `initTagSync()` replaces it with the server
@@ -27,11 +27,10 @@
 import { createClientStore, type GetState, type SetState } from "./clientStore.ts"
 import { apiFetch } from "./api.ts"
 
-// ── TagColor — TS mirror of the pydantic enum ────────────────────────────
-// SSOT: backend/core/ui/list_filter_schema.py :: TagColor. This TS const is
-// the front-end mirror; tag-map.test.ts pins that the values match, and
-// test_list_filter_schema.py pins the backend. Drift between the two fails
-// one of the two test suites — never the UI at runtime.
+// ── TagColor — the closed color vocabulary ───────────────────────────
+// This TS const is the single owner of the tag color enum; adding a
+// color means a row here (and its TagColorMeta entry below) in the
+// same PR. Nothing mirrors it anywhere else.
 export const TagColor = {
   brand: "brand",
   sky: "sky",
@@ -52,8 +51,8 @@ export function isTagColor(v: unknown): v is TagColor {
 
 // ── Presentation: each color → Tailwind classes for the badge ────────────
 // One source of truth for the dot (tile overlay), the pill (inline badge),
-// and any future tag surface. Adding a color means a row here AND a backend
-// enum edit in the same PR.
+// and any future tag surface. Adding a color means a row here AND a
+// TagColor row above, in the same PR.
 export interface TagColorMeta {
   /** Solid dot class for compact tile overlays (h-2 w-2 circle). */
   dot: string
@@ -125,8 +124,8 @@ interface PersistedShape {
  * Boundary ratchet — gate untrusted JSON (localStorage OR a server payload)
  * before it enters the store. Drops any tag whose color isn't in the closed
  * enum, then rebuilds the forward index dropping orphan entries. This is the
- * front-end mirror of the pydantic TagDocument validator; the server enforces
- * the same rules on PUT, but we don't trust the wire even from our own server
+ * store's own TagDocument validator; the server enforces the same rules
+ * on PUT, but we don't trust the wire even from our own server
  * — defense in depth.
  */
 function validateDocument(parsed: Partial<PersistedShape> | null | undefined): PersistedShape {

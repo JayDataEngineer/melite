@@ -30,10 +30,9 @@ export function candidateTrees(runsRoot: string, env: Record<string, string | un
 
 // ── workflow finalization (native 231-327) ──
 
-/** The artifact-primitive upload table — the TS restatement of
- *  artifact.upload_extensions() (compose/artifact.py _EXTS union
- *  minus latent, sorted): image/video/audio/qvoice/mesh ride the
- *  submit-time walk; latent (.safetensors/.pt/.pth) NEVER uploads. */
+/** The artifact-primitive upload table — image/video/audio/qvoice/mesh
+ *  ride the submit-time walk; latent (.safetensors/.pt/.pth) NEVER
+ *  uploads. */
 export const UPLOAD_EXTS: readonly string[] = [
   ".aac",
   ".aiff",

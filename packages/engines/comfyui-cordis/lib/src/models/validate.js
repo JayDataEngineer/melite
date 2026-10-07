@@ -1,9 +1,5 @@
-// models/validate.ts — VALIDATE AGAINST CARDS, the killer feature,
-// ported from melite_models/grammar.py @ git 034e1f97 (validate_
-// against_cards, lines 1323-1375). Model defaults must live inside
-// the OWNING card's field domains: a default naming neither a card
-// field nor engine truth, an enum miss, or an out-of-range number
-// REFUSES (loud, never a silent 400 at run time).
+// models/validate.ts — VALIDATE AGAINST CARDS, the killer feature, ported from the RETIRED melite_models/grammar.py @ git 034e1f97 (validate_against_cards, lines 1323-1375).
+// Model defaults must live inside the OWNING card's field domains: a default naming neither a card field nor engine truth, an enum miss, or an out-of-range number REFUSES (loud, never a silent 400 at run time).
 //
 // SEAM (no cross-package dep): this module is the PURE core — it
 // takes the card domain table as data. The card plane (comfyui-

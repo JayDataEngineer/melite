@@ -112,7 +112,7 @@ export function toGraph(flow: Flow): GraphNode[] {
   });
 }
 
-// _dollar_tokens (flow_graph.py:33): whole-string $-tokens.
+// dollarTokens (same file): whole-string $-tokens.
 export function dollarTokens(params: unknown): string[] {
   const out: string[] = [];
   const walk = (v: unknown): void => {
@@ -128,8 +128,7 @@ export function dollarTokens(params: unknown): string[] {
   return out;
 }
 
-// compile: prune, then to_graph, then the unresolved
-// $channel gate (flow_graph.py:169 — per-node pool, ALL bad joined).
+// compileFlow (same file): prune, then toGraph, then the unresolved $channel gate (per-node pool, ALL bad joined).
 export function compileFlow(
   flow: Flow,
   body: Record<string, unknown>,

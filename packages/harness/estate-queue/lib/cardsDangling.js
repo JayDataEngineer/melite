@@ -132,11 +132,8 @@ export function refLocations(body) {
     }
     return out;
 }
-/** The shared sweep body: every dangling (location, ref, why) in
- *  refLocations' DFS order, each miss quoting the PRIMARY root
- *  lookup (artifact_refs.py:161) + every searched tree (the
- *  NAME-THE-ROOT law, §23 — receipt transcript-034 step 18: the
- *  old voice named ONE tree and read like a pruned run). */
+/** The shared sweep body: every dangling (location, ref, why) in refLocations' DFS order, each miss quoting the PRIMARY root lookup (resolveArtifactFile above) + every searched tree (the NAME-THE-ROOT law, §23). */
+/** Receipt transcript-034 step 18: the old voice named ONE tree and read like a pruned run. */
 function scanRefs(body) {
     const roots = sweepOutputRoots();
     const dangling = [];

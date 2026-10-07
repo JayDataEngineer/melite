@@ -2,26 +2,23 @@
 //
 // DECLARATIVE way. One table, one gate — no per-kind imperative store code.
 // Each row declares the field a mutation kind writes + its validation
-// + coercion; extending the gate = adding a union member + a table row (same
-// discipline as _FORM_CONFIGS, and the
-// backend's pydantic models this table mirrors).
+// + coercion; extending the gate = adding a union member + a table row
+// (same discipline as _FORM_CONFIGS: one table the gate mirrors).
 //
 // The enforcement is two-layer, mirroring the catalog schema's pattern:
 // • HERE (frontend, edit time): the typed unions (tsc) + this runtime gate —
 // every card/doc mutation passes through applyStageMutation /
 // applyDocMutation (the shared runMutation core).
-// • BACKEND (wire, run start): FlowStep.title AND FlowDoc.name
-// carry Field(max_length=TITLE_MAX_LEN) in backend/media/comfyui/flow.py
-// — the pydantic bounds. Bump all together.
+// • WIRE (run start): FlowDoc.title AND BackendStage.title in FlowTypes.ts are bare strings — this gate is the bound's single home; a title that passes here fits the wire.
+// Bump all together.
 //
 // THE NAMING RULE (2026-08-09, the "meta-asset" pattern): every user-visible
 // name gets a row in one of these tables + a bound in the owning layer
-// (pydantic where Python owns the model, zod where Node does). No ad-hoc
-// name writes — that's how drift and breakage creep in.
+// (this gate where the card owns the name, the wire contract where the
+// run owns it). No ad-hoc name writes — that's how drift and breakage
+// creep in.
 
-/** Max length of a card title / flow name. MIRRORED on the backend:
- * FlowStep.title AND FlowDoc.name carry Field(max_length=120) in
- * backend/media/comfyui/flow.py. */
+/** Max length of a card title / flow name, enforced by this gate at edit time. The wire types carry titles as bare strings — the gate is the bound's single home. */
 export const TITLE_MAX_LEN = 120
 
 // ─── Shared gate core ──────────────────────────────────────────────────────

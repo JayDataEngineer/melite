@@ -11,18 +11,8 @@
 // source, zero drift. The frontend cannot lie about a param shape because
 // it validates against the exact schema the backend serves.
 //
-// F-DEBT (2026-08-21): the COMPILE-time half of this contract
-// (`familyParams.generated.ts` — 77 per-family interfaces generated from
-// the Python family signatures via scripts/gen_family_param_types.py) is
-// DELETED with the Python estate it was derived from: the generator died
-// in the purge (2f1be2a7), the file's body was corrupted by a later
-// hand-edit (6a96073a deleted 49 interface HEADS, leaving 74 orphan
-// bodies — the exact 98 tsc parse errors), and the live TS derivation
-// source (server-js family_schema.ts) emits faithful EMPTY envelopes
-// because TS families take an untyped params dict — there is no
-// per-param knowledge to generate from. Regenerating would have produced
-// empty interfaces that made every `@ts-expect-error` directive in the
-// type-test unused (tsc error TS2578 — proven), i.e. a vacuous gate.
+// F-DEBT (2026-08-21): the COMPILE-time half of this contract (`familyParams.generated.ts` — 77 per-family interfaces generated from the Python family signatures via scripts/gen_family_param_types.py) is DELETED with the Python estate it was derived from: the generator died in the purge (2f1be2a7), the served family_schema.ts (server-js) died with it, the file's body was corrupted by a later hand-edit (6a96073a deleted 49 interface HEADS, leaving 74 orphan bodies — the exact 98 tsc parse errors), and the served param-schemas endpoint emits faithful EMPTY envelopes for untyped families because TS families take an untyped params dict — there is no per-param knowledge to generate from.
+// Regenerating would have produced empty interfaces that made every `@ts-expect-error` directive in the type-test unused (tsc error TS2578 — proven), i.e. a vacuous gate.
 // The RUNTIME validator below is the honest contract that remains.
 //
 // The 2026-08-14 directive: "WE NEED ONE SYSTEM THAT TRANSMITS TO THE
@@ -117,8 +107,8 @@ export function isFamilySchemaCachePopulated(): boolean {
  *    click gate doesn't second-guess cross-lane bodies. On lanes
  *    that DON'T declare them the backend forbid row voices LOUD —
  *    admission ≠ permission, the hard gate decides.
- *  • SLOT / TRANSPORT VOCABULARY (python/slot_kinds.py SlotDecl + the
- *    flow upstream injector): input slots (first_frame, last_frame,
+ *  • SLOT / TRANSPORT VOCABULARY (the flow spec's slot + upstream
+ *    injector vocabulary): input slots (first_frame, last_frame,
  *    input_glb, source_glb, outfit_glb, hair_glb, motion_npz,
  *    prev_motion_artifact, lanpaint_mask), modifier bags (loras,
  *    controlnets, modifiers), renderer weight filenames
@@ -331,16 +321,9 @@ export function validateParamsAgainstSchema(
   // deferred always). An envelope that STILL declares nothing means
   // an unboarded family — no param knowledge to validate against, so
   // the unknown-key/type checks defer to the backend HARD wire gate
-  // rather than false-positive every key. (History: the TS families'
-  // untyped params dict made server-js family_schema.ts serve EMPTY
-  // envelopes with additionalProperties:false, and the gate THREW on
-  // every clean payload — proven by a canonical z-image draw's 6
-  // phantom violations. A schema that declares NOTHING transmits no
-  // param knowledge; validating against it means validating against
-  // nothing.)
-  // The unknown-key/type checks run only when the family actually
-  // declared a properties map; the modifier-entry gate (real catalog
-  // knowledge) and the backend wire gate still run either way.
+  // rather than false-positive every key. (History: untyped family params made the served endpoint serve EMPTY envelopes with additionalProperties:false, and the gate THREW on every clean payload — proven by a canonical z-image draw's 6 phantom violations.
+  // A schema that declares NOTHING transmits no param knowledge; validating against it means validating against nothing.)
+  // The unknown-key/type checks run only when the family actually declared a properties map; the modifier-entry gate (real catalog knowledge) and the backend wire gate still run either way.
   if (Object.keys(props).length === 0) return out
 
   for (const [key, val] of Object.entries(params)) {
@@ -377,15 +360,10 @@ export function validateParamsAgainstSchema(
 }
 
 // ── The modifier-entry gate (Phase B2, 2026-08-14) ──────────────────────
-// A mod-capable family's signature only says ``loras: list[dict] | None`` —
-// the ENTRY structure is untyped at the wire. The catalog's declared
-// ``modifiers:`` kinds (ModifierKind — param_key / cardinality / fields /
-// options) ARE the entry contract: the editor renders from them, the
-// appliers consume them. This mirrors the backend's validate_modifier_entries
-// (family_schema.py) so a bad entry fails before the fetch, not at ComfyUI
-// sample time. The declared-CN type gate stays backend-side (it resolves the
-// model's CN declarations); the generic kind-options membership is skipped
-// for controlnet kinds so the same bug isn't double-flagged.
+// A mod-capable family's signature only says ``loras: list[dict] | None`` — the ENTRY structure is untyped at the wire.
+// The catalog's declared ``modifiers:`` kinds (ModifierKind — param_key / cardinality / fields / options) ARE the entry contract: the editor renders from them, the appliers consume them.
+// This matches the validateModifierEntries gate below so a bad entry fails before the fetch, not at ComfyUI sample time.
+// The declared-CN type gate stays backend-side (it resolves the model's CN declarations); the generic kind-options membership is skipped for controlnet kinds so the same bug isn't double-flagged.
 
 /** Entry keys the bespoke tile editors add beyond the declared fields
  * (newControlnetEntry / newGenericEntry in modifierSubcards.ts) — wire-
@@ -401,7 +379,7 @@ const EDITOR_MOD_ENTRY_KEYS = new Set([
 
 /**
  * Validate a stage's modifier entries against the family's declared kinds.
- * Mirrors backend validate_modifier_entries: per declared kind with a
+ * validateModifierEntries (this file) is the owner: per declared kind with a
  * param_key, params[param_key] must honor the cardinality (list kinds take
  * a list of entry dicts bounded by max_stack; scalar kinds take ONE value),
  * and each entry's keys/required/type/bounds/select-membership must match
@@ -692,8 +670,8 @@ export async function assertParamsMatchFamilySchema(
   const violations = [...coerced.violations]
   violations.push(...validateParamsAgainstSchema(schema, coerced.params))
   // Modifier entries are untyped in the family signature (``list[dict]``);
-  // the catalog's declared ``modifiers:`` kinds are their contract — same
-  // validator the backend's wire gate runs (validate_modifier_entries).
+  // the catalog's declared ``modifiers:`` kinds are their contract — the
+  // validator this contract owns (validateModifierEntries).
   // Entries validate against the RAW draft bags (coercion passes untyped
   // fields through untouched — same objects either way).
   violations.push(...validateModifierEntries(modifiers, params))

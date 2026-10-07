@@ -2,11 +2,9 @@
 //
 // A capability tile (Library) declares ONE default family. A run records
 // which families actually executed: list_runs projects a `families` array
-// from brick-level family keys (backend/core/flows/runner.py
-// _run_families — YAML + inline runs both carry it). Provenance is the
-// join: "this capability has produced N completed runs, most recently at
-// T". The Library badges tiles that have run before — the archive is a
-// trace of what each action has already made.
+// from brick-level family keys (MediaRun.families in @melite/contracts mediaTypes.ts — YAML plus inline runs both carry it). Provenance is the join:
+// "this capability has produced N completed runs, most recently at T".
+// The Library badges tiles that have run before — the archive is a trace of what each action has already made.
 //
 // Pure module: fold + format. The fetch (who owns the runs payload) is the
 // caller's business — LibrarySidebar polls listRuns on mediaVersion bump.

@@ -111,7 +111,7 @@ export const DECL: ModelDecl = {
   // IS this file — the loader resolves it out of the box, so the DECL
   // declares it or the door cannot provision the default the engine
   // would otherwise name. sha256 + size from the pack's own model
-  // registry (model_registry.py:38) and the hub's x-linked-size.
+  // registry (the pack's own model registry) and the hub's x-linked-size.
   "provisions": [
     {
       "name": "seedvr2_ema_3b_fp16.safetensors",

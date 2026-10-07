@@ -1,7 +1,6 @@
-// serviceMods.ts — the mod/verb system (extracted from
-// service.ts, the god-file cut): the dsl.py port's module truth —
-// mod-field validation, verb validation, and the ControlNet entry
-// resolution. No Service state; the seat calls these.
+// serviceMods.ts — the mod/verb system (extracted from service.ts, the god-file cut): the TS mod/verb system owns this plane (ported from the RETIRED dsl.py).
+// Mod-field validation, verb validation, and the ControlNet entry resolution live here.
+// No Service state; the seat calls these.
 import { ComposeRefusal } from "./service.js";
 import { assertControlNetSchedule } from "@melite/comfyui-card-kit/guard";
 /** The field gates (dsl._validate_field), on the

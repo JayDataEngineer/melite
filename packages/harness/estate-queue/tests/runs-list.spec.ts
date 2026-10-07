@@ -668,13 +668,9 @@ describe("listRuns envelope", () => {
   });
 
   it("the depth law diverges on purpose: listMedia browses depth 3, rows state depth 2", async () => {
-    // DELIBERATE DIVERGENCE (stroke 82): the picker browses every
-    // file the byte route can SERVE (listMedia walks run/stage/file
-    // — depth 3, and parseTarget has no depth cap, so l1/l2/deep.png
-    // serves), while the restore-port rows state the artifact
-    // CONVENTION (mediaCandidates walks top + one level only — depth
-    // 2, the editor_runs.py one-level law). A 2-deep file is browsed
-    // but never rowed.
+    // DELIBERATE DIVERGENCE (stroke 82): the picker browses every file the byte route can SERVE (listMedia walks run/stage/file — depth 3, and parseTarget has no depth cap, so l1/l2/deep.png serves).
+    // The restore-port rows state the artifact CONVENTION instead (mediaCandidates in runsList.ts walks top + one level only — depth 2, the one-level law).
+    // A 2-deep file is browsed but never rowed.
     const state = tmp();
     const dir = join(state, "output", "run-aaa1-deep");
     mkdirSync(join(dir, "l1", "l2"), { recursive: true });

@@ -1,10 +1,7 @@
 import { servableLeaf } from "@melite/contracts/mediaKinds"
 // runsList.ts — the runs LIST surface (REBUILD-7, gateway kill):
-// the dead runs door's list arm (GET /v1/flows/runs, the
-// editor_runs.py restore port) re-homed verbatim into the queue
-// package as the registry's `list` business arm. The sidecar
-// byte-surgery helpers are the door's own bodies, second move
-// unchanged (their line cites ride along — traceability).
+// the retired runs door's list arm (GET /v1/flows/runs, the restore port) re-homed verbatim into the queue package as the registry's `list` business arm.
+// The sidecar byte-surgery helpers are the door's own bodies, second move unchanged (the section notes below name the reader each helper implements).
 //
 // TWO re-homes ride this stroke (ledgered):
 //  - mediaVocab: the media-kinds.json DATA file died with the media
@@ -30,8 +27,7 @@ export function parseLeadingInt(s: string): number {
   return Number(m[1] as string);
 }
 
-/** sidecar_num (editor_runs.297-303): first `"key":`, strtol the
- *  tail, default when the key is absent. */
+/** sidecar_num: first `"key":`, strtol the tail, default when the key is absent. */
 export function sidecarNum(text: string, key: string, dflt: number): number {
   const needle: string = '"' + key + '":';
   const i: number = text.indexOf(needle);
@@ -39,10 +35,7 @@ export function sidecarNum(text: string, key: string, dflt: number): number {
   return parseLeadingInt(text.slice(i + needle.length));
 }
 
-/** sidecar_str (editor_runs.271-295): BYTE-wise exact — first
- *  `"key":`, skip spaces/tabs, expect `"`, decode \\n \\r \\t \"
- *  \\ (any other escape lands literally — \u stays "u"), stop at
- *  cap-1 BYTES. Operates on the UTF-8 bytes (D5). */
+/** sidecar_str: BYTE-wise exact — first `"key":`, skip spaces/tabs, expect `"`, decode \\n \\r \\t \" \\ (any other escape lands literally — \u stays "u"), stop at cap-1 BYTES. Operates on the UTF-8 bytes (D5). */
 export function sidecarStr(raw: Uint8Array, key: string, cap: number): string {
   const pat: Uint8Array = Buffer.from('"' + key + '":', "utf8");
   let at: number = -1;
@@ -73,10 +66,7 @@ export function sidecarStr(raw: Uint8Array, key: string, cap: number): string {
   return Buffer.from(out).toString("utf8");
 }
 
-/** _sidecar_str_impl found-ness (editor_runs.271-295 core): only
- *  the runs-list status site reads it (editor_runs.py) — a
- *  present-but-empty "status" serves "" (the gate then skips the
- *  row), while an absent/non-string key serves "unknown". */
+/** _sidecar_str_impl found-ness: only the runs-list status site reads it — a present-but-empty "status" serves "" (the gate then skips the row), while an absent/non-string key serves "unknown". */
 export function sidecarStrFound(
   raw: Uint8Array,
   key: string,
@@ -125,9 +115,7 @@ export function artifactType(name: string): string {
   return "file";
 }
 
-/** Byte-wise name order (editor_runs sorts on the surrogateescape
- *  bytes — for valid UTF-8, Buffer.compare on the re-encoded name
- *  is the same bytes; D5). */
+/** Byte-wise name order (the sort runs on the surrogateescape bytes — for valid UTF-8, Buffer.compare on the re-encoded name is the same bytes; D5). */
 function byteLess(a: string, b: string): number {
   return Buffer.compare(Buffer.from(a, "utf8"), Buffer.from(b, "utf8"));
 }
@@ -153,9 +141,7 @@ interface MediaCand {
   readonly full: string;
 }
 
-/** _media_candidates (editor_runs.373-402): top-level files
- *  (non-underscore) then ONE level down (underscore + deeper dirs
- *  skipped), each tier byte-sorted. */
+/** _media_candidates: top-level files (non-underscore) then ONE level down (underscore + deeper dirs skipped), each tier byte-sorted. */
 export function mediaCandidates(runDir: string): MediaCand[] {
   const cands: MediaCand[] = [];
   let names: string[];
@@ -191,10 +177,8 @@ export function mediaCandidates(runDir: string): MediaCand[] {
   return cands;
 }
 
-/** run_artifacts (editor_runs.404-430): image/video/audio/model
- *  rows (image capped at _MAX_IMGS — counted but unlisted past it),
- *  everything else skipped; the {truncated,listed,total} marker when
- *  entries went unlisted. path keeps the "./output/<run>/" literal. */
+/** run_artifacts: image/video/audio/model rows (image capped at _MAX_IMGS — counted but unlisted past it), everything else skipped; the {truncated,listed,total} marker when entries went unlisted. */
+/** path keeps the "./output/<run>/" literal. */
 export function runArtifacts(
   runDir: string,
   outDirLiteral: string,
@@ -254,9 +238,7 @@ export function runArtifacts(
   return marker === undefined ? ordered : [...ordered, marker]
 }
 
-/** _run_thumbnail (editor_runs.433-444): cached poster wins, else
- *  the first image candidate (same one-level rule, so nested-only
- *  runs still get a poster). */
+/** _run_thumbnail: cached poster wins, else the first image candidate (same one-level rule, so nested-only runs still get a poster). */
 export function runThumbnail(runDir: string, runId: string): string {
   try {
     statSync(join(runDir, "_poster.jpg"));
@@ -275,12 +257,9 @@ export function runThumbnail(runDir: string, runId: string): string {
   return "";
 }
 
-/** _run_dir_has_media (editor_runs.307-333): the media-FIRST
- *  sort key — top-level names, then one level down. NOTE the
- *  absences: NO `_` skip (a lone `_poster.jpg` counts), NO inner
- *  isdir check (a nested DIR named x.mp4 counts) — probed live,
- *  mirrored exactly. Gallery sets only (svg/bmp classify but do
- *  not list — the media-kinds.json contract). */
+/** _run_dir_has_media: the media-FIRST sort key — top-level names, then one level down. */
+/** NOTE the absences: NO `_` skip (a lone `_poster.jpg` counts), NO inner isdir check (a nested DIR named x.mp4 counts) — probed live, mirrored exactly. */
+/** Gallery sets only (svg/bmp classify but do not list — the media-kinds.json contract). */
 export function runDirHasMedia(runDir: string): boolean {
   const kinds = mediaVocab();
   const has = (name: string): boolean => {
@@ -317,25 +296,16 @@ export function runDirHasMedia(runDir: string): boolean {
   return false;
 }
 
-// ── the run_wire.py gate (RunRow 83-96 / RunsEnvelope 99-104) ─────
-// A refused reconstruction is SKIPPED (RESILIENCE LAW) but stays in
-// count (the C contract). Extra keys forbid; statuses outside the
-// closed vocab (incl. "queued") refuse.
+// ── the run-row gate (runRowOrNull below owns the row law) ─────
+// A refused reconstruction is SKIPPED (RESILIENCE LAW) but stays in count (the C contract).
+// Extra keys forbid; statuses outside the closed vocab (incl. "queued") refuse.
 //
-// DIVERGENCE (ledgered): run_wire.py's ArtifactRow admits
-// image/video/audio only — the image-era vocab. The estate's own
-// emitter half (runArtifacts, editor_runs.py, same file)
-// counts "model" rows as listable media, mediaKinds.ts carries the
-// galleryModel set, and the img-to-mesh lane is the first producer
-// of model-only runs. Keeping the image-era refusal would drop
-// every completed model run from the restore port (runs/list) —
-// and with it runs/list adoption (fetchLatestRunForDraft) — so the
-// row gate admits "model" alongside the triple.
+// DIVERGENCE (ledgered): the original ArtifactRow admitted image/video/audio only — the image-era vocab.
+// The estate's own emitter half (runArtifacts in this file) counts "model" rows as listable media, mediaKinds.ts carries the galleryModel set, and the img-to-mesh lane is the first producer of model-only runs.
+// Keeping the image-era refusal would drop every completed model run from the restore port (runs/list) — and with it runs/list adoption (fetchLatestRunForDraft) — so the row gate admits "model" alongside the triple.
 
 const RUN_ID_RE: RegExp = /^run-[A-Za-z0-9_.@-]+$/;
-// NOT runsTypes.ts's exported RUN_STATUSES: this set mirrors
-// run_wire.py's list-side vocabulary (adds success/unknown, drops
-// queued/stopping — the C-contract fold runsRegistry owns).
+// NOT runsTypes.ts's exported RUN_STATUSES: this set is the list-side vocabulary (adds success/unknown, drops queued/stopping — the C-contract fold runsRegistry owns).
 const RUN_STATUS: ReadonlySet<string> = new Set([
   "running",
   "completed",
@@ -379,9 +349,8 @@ function artifactRowOk(a: unknown): boolean {
   );
 }
 
-/** The RunRow gate — the row dict, or null when run_wire would
- *  refuse it (the caller logs LOUD and skips). Key order is the
- *  RunRow field order. */
+/** The RunRow gate — the row dict, or null when the gate refuses it (the caller logs LOUD and skips). */
+/** Key order is the RunRow field order. */
 export function runRowOrNull(
   row: {
     run_id: string;
@@ -547,8 +516,7 @@ async function buildRunCard(
   const rawBytes: Uint8Array =
     buf === null ? Buffer.alloc(0) : Buffer.from(buf, "utf8");
   if (buf !== null) {
-    // found-ness matters (editor_runs.py): absent key ->
-    // "unknown" (served); present-but-empty -> "" (gate-skipped).
+    // found-ness matters: absent key -> "unknown" (served); present-but-empty -> "" (gate-skipped).
     const [foundStatus, rawStatus]: [boolean, string] = sidecarStrFound(
       rawBytes,
       "status",
@@ -604,12 +572,8 @@ async function buildRunCard(
   return row; // null = RESILIENCE LAW loud skip
 }
 
-/** The runs-list envelope (editor_runs.runs 483-653, the restore
- *  port): the output-root scan, media-first + newest sort, the
- *  limit parse (raw STRING — the lane/remote pass the raw
- *  text; underscores parse, non-ints refuse), refused cards
- *  SKIPPED but counted. url/thumbnail are run-RELATIVE (the
- *  /v1/assets prefix died with the app — the header's law). */
+/** The runs-list envelope (the restore port): the output-root scan, media-first + newest sort, the limit parse (raw STRING — the lane/remote pass the raw text; underscores parse, non-ints refuse), refused cards SKIPPED but counted. */
+/** url/thumbnail are run-RELATIVE (the /v1/assets prefix died with the app — the header's law). */
 export async function listRuns(
   stateRoot: string,
   limit: number,

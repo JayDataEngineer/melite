@@ -227,8 +227,7 @@ export interface SegmentParams {
     tileOverlap: number;
     imageAttentionStrength: number;
     /** Selected LoRAs — canonical `LoRAEntry[]` primitive (lib/loraTypes.ts).
-    * Single wire format across video + image surfaces; the ComfyUI backend
-    * consumes this shape directly (media/image/comfyui.py). */
+    * Single wire format across video + image surfaces; the ComfyUI engine consumes this shape directly. */
     loras: LoRAEntry[];
     /** data-URL or bare base64 of the reference MP4. Null = no motion track. */
     motionVideoB64: string | null;

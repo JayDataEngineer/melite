@@ -1,14 +1,9 @@
 // mods/packs.ts — THE MOD PACKS: the distinct category taxonomy
 // (operator order 2026-09-08: "we had a distinct mods category —
 // LORAS, CONTROLNETS, LAN-INPAINT, in that vein"). One file
-// registers every PACK CONTRACT — the Mod parents (melite_cards
-// dsl.py: LorasMod, ControlNetMod, LanPaintMod, MaskMod, the
-// qvoice pack): the CATEGORY's field schema, inherited by every
-// boarding family. A flavor (the family's own mods/<pack>.ts under
-// the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards
-// the pack and carries ONLY data — rows, the runtime door, or a
-// bare boarding. Fields live HERE and nowhere else
-// (subclassing: the flavor inherits, never re-declares).
+// registers every PACK CONTRACT — the Mod parents (ported from the RETIRED melite_cards dsl.py: LorasMod, ControlNetMod, LanPaintMod, MaskMod, the qvoice pack): the CATEGORY's field schema, inherited by every boarding family.
+// A flavor (the family's own mods/<pack>.ts under the family's packaged mods (packages/models/<id>/mods/ — the packagedFlavors table in cardDefs.ts)) boards the pack and carries ONLY data — rows, the runtime door, or a bare boarding.
+// Fields live HERE and nowhere else (subclassing: the flavor inherits, never re-declares).
 //
 // SEAM NOTE (image1): the lanpaint contract's image1 (REQUIRED,
 // input zone) is the qwen flavor's whole-declaration override,

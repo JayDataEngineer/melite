@@ -1,6 +1,4 @@
-/** Max length of a card title / flow name. MIRRORED on the backend:
- * FlowStep.title AND FlowDoc.name carry Field(max_length=120) in
- * backend/media/comfyui/flow.py. */
+/** Max length of a card title / flow name, enforced by this gate at edit time. The wire types carry titles as bare strings — the gate is the bound's single home. */
 export declare const TITLE_MAX_LEN = 120;
 export interface MutationSpec {
     /** The field this mutation writes (the patch key). */

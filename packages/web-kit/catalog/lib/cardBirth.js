@@ -20,9 +20,10 @@
  */
 /** Mint the card doc for a start body. The doc carries the body
  *  verbatim (intent/stages/model/params become the card extras —
- *  see python/editor_runs.py drafts_save), so what the card shows is
- *  what the run consumed. Throws LOUDLY on any refusal — a refused
- *  compose never proceeds to a start (no silent cardless runs). */
+ *  see the drafts door, packages/estate/drafts, POST /v1/flows/drafts),
+ *  so what the card shows is what the run consumed. Throws LOUDLY
+ *  on any refusal — a refused compose never proceeds to a start
+ *  (no silent cardless runs). */
 export async function composeCard(body, signal) {
     const res = await fetch("/v1/flows/drafts", {
         method: "POST",

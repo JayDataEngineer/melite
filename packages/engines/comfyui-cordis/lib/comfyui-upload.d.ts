@@ -9,10 +9,9 @@ import type { EngineJson } from "./comfyui-types.js";
  *  a manifest naming the own state root adds nothing. Pure (env
  *  injectable through rootsManifest). */
 export declare function candidateTrees(runsRoot: string, env?: Record<string, string | undefined>): string[];
-/** The artifact-primitive upload table — the TS restatement of
- *  artifact.upload_extensions() (compose/artifact.py _EXTS union
- *  minus latent, sorted): image/video/audio/qvoice/mesh ride the
- *  submit-time walk; latent (.safetensors/.pt/.pth) NEVER uploads. */
+/** The artifact-primitive upload table — image/video/audio/qvoice/mesh
+ *  ride the submit-time walk; latent (.safetensors/.pt/.pth) NEVER
+ *  uploads. */
 export declare const UPLOAD_EXTS: readonly string[];
 /** The data-URL mime table (the DATA-URL ARM's allowlist — the
  * stageable mimes, each onto its UPLOAD_EXTS member; a mime outside

@@ -138,12 +138,9 @@ export type ModifierKindSpec = {
 };
 /**
  * VariantDef
- * @description The form-spec toggle-row variant — the catalog's strict VariantEntry
- *     plus the request-time ``live`` annotation: form_spec.py writes
- *     ``v["live"] = route in live_routes`` when the pool answered, and leaves
- *     it ABSENT when the pool wasn't queried (dev workstation) — the frontend
- *     treats absence as "show the entry". Same real-class-plus-one-wire-field
- *     pattern as VariantEntryWire; strict extra="forbid" inherited.
+ * @description The form-spec toggle-row variant — the catalog's strict VariantEntry plus the request-time ``live`` annotation.
+ *     ``v["live"]`` is present when the pool answered, and ABSENT when the pool wasn't queried (dev workstation) — the frontend treats absence as "show the entry".
+ *     Same real-class-plus-one-wire-field pattern as VariantEntryWire; strict extra="forbid" inherited.
  */
 export type ModifierOption = {
     /** Value */

@@ -22,12 +22,9 @@
 // "done"/"error" are STAGE values (see below). "done"/"error" are STAGE
 // values; if the run level ever sent them, the contract flags it instead
 // of silently coercing.
-// Compile-time drift guard (2026-08-14): the array is constrained to the
-// GENERATED union from /openapi.json. If the backend Literal grows another
-// status and schema.d.ts is regenerated, this `satisfies` fails until the
-// mirror is updated — the runtime validator can never silently lag (it
-// already did once: "queued" shipped in the runner + generated types but
-// not here, and every queued run flipped cards to error).
+// Compile-time drift guard (2026-08-14): the array is constrained to the RunStatusWire["status"] union in ./wireTypes.ts.
+// If that union grows another status, this `satisfies` fails until the list is updated — the runtime validator can never silently lag.
+// (It already lagged once: "queued" shipped in the runner plus the wire types but not here, and every queued run flipped cards to error).
 const _RUN_STATUS_VALUES = [
     "pending",
     "running",

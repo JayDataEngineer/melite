@@ -29,13 +29,10 @@ export function refusal(
 
 
 
-/** editor_runs.draft_id_ok (<=96, [A-Za-z0-9_-]; the TS doors carry
- *  their own copy — this core re-checks nothing, it BUILDS the
- *  refusal for a caller-computed verdict... no: the check is one
- *  regex, owned here so envelope validation is whole. Callers pass
- *  the raw draft_id; the malformed/unknown split needs the
- *  existence probe too — see validateSubmitEnvelope.)
- *
+/** Draft id rule (draftIdOk in @melite/estate-drafts, re-exported below): <=96 chars of [A-Za-z0-9_-]. */
+/** This core re-checks nothing: it BUILDS the refusal for a caller-computed verdict (the check is one regex, owned by the drafts package so envelope validation is whole). */
+/** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see validateSubmitEnvelope. */
+/**
  * DEDUP (2026-09-10, ledger row 27): draftIdOk + the three vocab
  * sets below had parallel copies in gateway-core params.ts and
  * here — drift failed nowhere. The SSOT is core's params.ts

@@ -2,8 +2,9 @@ import type { CompoundMode, CompoundBlock } from "./card.js";
 import type { Provenance } from "./vocab.js";
 /** How a stage executes + what card it renders as.
  *
- * ``input`` — the doc-driven media-import family (media/comfyui/families/
- * input_prep.py). Runs via POST /v1/flows/start with a 1-step inline
+ * ``input`` — the doc-driven media-import family (the input model
+ * package, packages/models/input). Runs via POST /v1/flows/start with
+ * a 1-step inline
  * doc (no catalog entry, no form spec) — the card editor renders a FIXED
  * field set (source / crop / scale / trim / volume). The output artifact
  * feeds downstream generation bricks via the normal consumes topology.
@@ -36,11 +37,11 @@ import type { Provenance } from "./vocab.js";
  * card hold"; children live in the same flat ``stages[]`` (wiring/cache-key/
  * runner untouched). Mode-specific extras ride along (``flowName`` for
  * flow mode, ``paramKey`` for modifiers mode). */
-/** The compound block AS THE BACKEND WROTE IT — mirror of CompoundBlock
- * with the wire's snake-free field set (drafts.py). ``childIds`` already
- * resolved. The store adopts this as-is on hydration; no client-side
- * resolution exists anymore (2026-08-13: build_flow moved to the
- * backend — the browser is a dumb renderer). */
+/** The compound block AS THE FLOW BUILDER EMITS IT — mirror of CompoundBlock
+ * with the wire's snake-free field set (the estate-queue flow builder).
+ * ``childIds`` already resolved. The store adopts this as-is on
+ * hydration; no client-side resolution exists anymore (2026-08-13:
+ * build_flow moved to the estate — the browser is a dumb renderer). */
 export interface BackendCompoundBlock {
     mode: CompoundMode;
     childIds: string[];
@@ -95,7 +96,7 @@ export interface BackendDraft {
      */
     flow?: InlineFlowBody;
 }
-/** One typed edge row of an inline flow (python/flow.flow_from_body
+/** One typed edge row of an inline flow (the runs-registry inline-flow
  * contract): an initial-pool key, or an upstream stage output. */
 export type InlineFlowEdge = {
     initial: string;
@@ -115,9 +116,9 @@ export interface InlineFlowStage {
     expected?: Record<string, string>;
     outputs?: Record<string, string>;
 }
-/** The agent-compiled multi-step pipeline as the gateway accepts it
+/** The agent-compiled multi-step pipeline as the estate accepts it
  * (``{flow_inline: ...}`` at /v1/flows/start and /v1/flows/validate —
- * python/flow.py ``flow_from_body``). */
+ * the runs-registry validation path, runsValidate.ts). */
 export interface InlineFlowBody {
     id: string;
     description?: string;
@@ -208,11 +209,11 @@ export interface FlowStage {
         [k: string]: unknown;
     } | null;
     /** WHO created the stage — the agent-generated marker (2026-08-09).
-    * Set at the creation site: ``agent`` (backend build_flow / drafts.py,
+    * Set at the creation site: ``agent`` (the estate's flow builder,
     * 2026-08-13), ``user`` (addStage), ``imported`` (hydrateRunStages /
     * hydrateSpecSteps). Optional so legacy code paths keep working during
-    * rollout; the card badge renders only when set. Mirrors the pydantic enum
-    * in backend/core/ui/list_filter_schema.py. */
+    * rollout; the card badge renders only when set. The closed vocabulary
+    * lives at vocab.ts :: Provenance — the single owner. */
     provenance?: Provenance;
     /** Whether this stage's output appears in the left sidebar asset library
     * (2026-08-12). undefined / true = saved to sidebar (default). false = the

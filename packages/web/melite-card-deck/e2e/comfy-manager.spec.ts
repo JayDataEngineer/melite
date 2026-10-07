@@ -13,9 +13,8 @@
  *      dispatch (no status reply overwrites it).
  *   6. Zero console errors / page errors across the tour.
  *
- * Save/restore mutate the estate and are pinned at the unit layer
- * (tests/unit/estate/test_manage_handlers.py) and the live-door
- * layer (tests/routes/control/test_manage_route.py).
+ * Save/restore mutate the estate and are pinned at the manage
+ * plane (packages/harness/estate-queue/tests/manage-plane.spec.ts).
  *
  * Run: E2E_DECK_URL='http://127.0.0.1:3909/?token=…' pnpm exec
  *   playwright test --config=playwright.config.ts

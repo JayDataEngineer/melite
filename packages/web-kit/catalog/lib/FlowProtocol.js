@@ -153,10 +153,9 @@ export async function pollFlowRun(runId, signal, opts) {
             if (resp.status === 404) {
                 throw new Error(`Flow run ${runId} is gone — the server restarted mid-run. Re-run this card.`);
             }
-            // A non-ok body carrying a `violations` array is the status-channel
-            // CONTRACT 500 (backend/core/flows/contracts.py run_status_500):
-            // the backend is lying to the poll. Fail VISIBLY — polling on would
-            // be a silent fake "running" for the rest of the ceiling.
+            // A non-ok body carrying a `violations` array is the status-channel CONTRACT 500 (the refusal ./runStatusContract.ts validates).
+            // The server is lying to the poll.
+            // Fail VISIBLY — polling on would be a silent fake "running" for the rest of the ceiling.
             let errorBody = null;
             try {
                 errorBody = await resp.json();

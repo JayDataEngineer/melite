@@ -138,9 +138,8 @@ export interface CardStage {
     * ``imported`` — hydrated from a past run (flowStore.loadRun).
    *
    * Optional for graceful rollout — existing call sites that don't set it
-   * render unchanged (no badge). The closed vocabulary mirrors the
-   * pydantic enum in backend/core/ui/list_filter_schema.py :: Provenance;
-   * drift between the two fails CI. */
+   * render unchanged (no badge). The closed vocabulary lives at
+   * vocab.ts :: Provenance — the single owner. */
     provenance?: Provenance;
     /** Whether this card's output appears in the left sidebar asset library
     * (2026-08-12). undefined / true = saved to sidebar (default). false =

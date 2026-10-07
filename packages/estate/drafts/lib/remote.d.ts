@@ -220,10 +220,7 @@ export declare class DraftsRemoteService extends TypertRemoteService {
     /** Endpoint `drafts/patch` — the stage patch door, REBORN on the
      *  domain (2026-09-11; the gateway-era PATCH /v1/flows/drafts/:id/
      *  stages/:sid died with the app and stroke L left the client door
-     *  a throwing stub). Semantics VERBATIM from the old door
-     *  (hDraftStagePatch, packages/gateway/doors drafts.ts, probed
-     *  editor_runs.py): admission on the fixed key set
-     *  (params | result | runStatus | inputs | inputOutputs — unknown
+     *  a throwing stub). Semantics VERBATIM from the old door (hDraftStagePatch, the retired gateway drafts door): admission on the fixed key set (STAGE_PATCH_KEYS: params | result | runStatus | inputs | inputOutputs — unknown
      *  keys refuse with the door's voice), params merge PER-KEY into
      *  the stage's existing params (never replace), the domain write
      *  bumps the recency column, and the answer is the delivered

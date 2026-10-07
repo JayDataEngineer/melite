@@ -4,9 +4,7 @@
  *    - LoraPicker component (video + image + inspector surfaces)
  *    - Segment params (timeline.ts::SegmentParams.loras)
  *    - GenerateFormBody (image form values)
- *    - Backend dispatch (ComfyUI image + video both accept this shape via
- *      media/image/comfyui.py and parse_loras_selected in
- *      media/inference/loras.py).
+ *    - Backend dispatch (ComfyUI image + video both accept this shape; the TS parse seat is normalizeLoraEntry in ./modifierSubcards.ts).
  *
  *  History: the video flow previously used a comma-separated string
  *  ("name:0.7, name2") while the image flow used

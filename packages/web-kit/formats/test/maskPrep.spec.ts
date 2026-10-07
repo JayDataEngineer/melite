@@ -1,4 +1,4 @@
-// maskPrep.spec.ts — the TypeScript twin of mask_prep.py: op container,
+// maskPrep.spec.ts — the mask-prep suite: op container,
 // matrix helpers, disk morph, feather, threshold/invert, the fixed chain,
 // outpaint geometry, and the ImageData bridge.
 import { describe, it } from "vitest";

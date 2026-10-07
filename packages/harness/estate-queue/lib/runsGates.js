@@ -75,7 +75,7 @@ export const FLOW_ID_RE = /^[a-z_][a-z0-9_-]*$/;
 /** PATCH .../stages/:sid accepted keys — the CONTRACT's list, in the
  *  voice's order (B-M9: this was a second copy in a different order;
  *  the two doors disagreed about what the door wants). */
-/** editor_runs.draft_id_ok shape: 1..96 chars of [A-Za-z0-9_-]. */
+/** Draft id shape (DRAFT_ID_RE in @melite/estate-drafts spec.ts): 1..96 chars of [A-Za-z0-9_-]. */
 // THE DRAFT ID GRAMMAR MIRRORS ITS OWNER (the census's H13: this copy
 // had NO length cap, so a 200-char id passed this door and was
 // refused by the next with a different voice). The drafts package

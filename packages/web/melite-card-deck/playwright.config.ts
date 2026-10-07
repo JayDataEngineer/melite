@@ -4,9 +4,8 @@ import { defineConfig, devices } from '@playwright/test'
  * Ray ComfyUI tab, live in the deck shell — the proof no unit test
  * can give: the REAL tab, the REAL gateway, the REAL cm_cli rail.
  * READ-ONLY by design (status / installed packs / list snapshots) —
- * save/restore mutate the estate and are pinned at the unit layer
- * (tests/unit/estate/test_manage_handlers.py) and the live-door
- * layer (tests/routes/control/test_manage_route.py).
+ * save/restore mutate the estate and are pinned at the manage
+ * plane (packages/harness/estate-queue/tests/manage-plane.spec.ts).
  *
  * The deck host (:3909) is estate infrastructure (the lanes answer
  * in-process) — already up, never booted here.

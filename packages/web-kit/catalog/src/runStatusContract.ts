@@ -25,11 +25,9 @@
 
 import type { RunStatusWire, Violation } from "./wireTypes.ts"
 
-/** One contract violation — {field, kind, message}, the SAME shape the
- * backend's error envelope declares (Violation).
- * Generated from /openapi.json (2026-08-11 directive) — never a
- * hand-written mirror; a drift in the backend's Violation model lands
- * here on the next api:sync. */
+/** One contract violation — {field, kind, message}, the SAME shape the server's error envelope declares (Violation).
+ * Declared in ./wireTypes.ts (2026-08-11 directive) — never a hand-written mirror.
+ * A change to the Violation type lands here at edit time. */
 export type RunStatusViolation = Violation
 
 export interface RunStatusContractResult {
@@ -37,16 +35,12 @@ export interface RunStatusContractResult {
  violations: RunStatusViolation[]
 }
 
-/** The backend's 8-value run-level status vocabulary — mirrors
- * RunStatusValue in contracts.py (kept in sync; the backend 500s anything
- * outside it, so a value reaching the poll is already a lie). */
+/** The 8-value run-level status vocabulary — owned by RunStatusWire["status"] in ./wireTypes.ts. */
+/** A value reaching the poll outside it is already a lie. */
 type _RunStatusUnion = RunStatusWire["status"]
-// Compile-time drift guard (2026-08-14): the array is constrained to the
-// GENERATED union from /openapi.json. If the backend Literal grows another
-// status and schema.d.ts is regenerated, this `satisfies` fails until the
-// mirror is updated — the runtime validator can never silently lag (it
-// already did once: "queued" shipped in the runner + generated types but
-// not here, and every queued run flipped cards to error).
+// Compile-time drift guard (2026-08-14): the array is constrained to the RunStatusWire["status"] union in ./wireTypes.ts.
+// If that union grows another status, this `satisfies` fails until the list is updated — the runtime validator can never silently lag.
+// (It already lagged once: "queued" shipped in the runner plus the wire types but not here, and every queued run flipped cards to error).
 const _RUN_STATUS_VALUES = [
  "pending",
  "running",

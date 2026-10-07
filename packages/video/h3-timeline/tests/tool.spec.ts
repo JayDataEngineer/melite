@@ -148,7 +148,7 @@ describe("the h3-timeline tool face", () => {
   });
 });
 
-describe("the shot laws (the card gate — py schema.py port)", () => {
+describe("the shot laws (the card gate — packages/models/h3/src/schema.ts)", () => {
   // The LAWS live in card.ts schema()'s variant arm (module-private
   // by design — the registry hands it to the compose door); the
   // carrier does NOT declare calls (the studio's frozen form-spec
@@ -162,11 +162,10 @@ describe("the shot laws (the card gate — py schema.py port)", () => {
     assert.ok(!("calls" in dict), "calls is the tool plane's, never the studio's");
   });
 
-  // the py _wire_value_laws port — each arm, isolated.
+  // the _wire_value_laws arms in packages/models/h3/src/schema.ts — each arm, isolated.
   //
   // The interpolate_enabled quirk is FIXED: the gate pre-fills the
-  // boolean when the doc omits the key (the served wire default stays
-  // the py-parity literal "false" — byte-frozen in the goldens).
+  // boolean when the doc omits the key (the served wire default stays the parity literal "false" — byte-frozen in the goldens).
   // Docs exercise the gate WITHOUT the key now.
   const BASE = { prompt: "x" };
   const SHOT = { text: "the courier pushes off", start_frame: 0, end_frame: 56 };

@@ -10,7 +10,7 @@
 // state, the UI renders it, and the catalog can never silently vanish
 // into an empty sidebar.
 //
-// Wire shape (backend/core/catalog/editor_catalog.py — get_catalog):
+// Wire shape (the @melite/contracts catalog types plus ./wireTypes.ts — get_catalog):
 //   { "families": { "<id>": {...} }, "models": { "<route_key>": {...} },
 //     "capabilities"?: { "<cap_id>": {...} },
 //     "engine_order"?, "quant_order"? }
@@ -131,10 +131,10 @@ export function validateCatalogContract(catalog: unknown): CatalogContractResult
      if (raw.kind !== "controlnet" && raw.kind !== "lora") continue
      const options = Array.isArray(raw.options) ? raw.options : []
      // CATALOG LEVEL: upload_dir is the proof (NOT options_scanned — that
-     // flag is emission-time only, set by form_spec.py AFTER the disk scan;
+     // flag is emission-time only, set AFTER the disk scan;
      // it CAN'T exist on the raw catalog). A zero-option lora kind with an
      // upload_dir is honest — options are disk-appended at emission. The
-     // enriched form-spec emission (specContract.ts) checks options_scanned
+     // enriched form-spec emission checks options_scanned
      // too; this catalog gate checks only what the catalog CAN prove.
      if (
       (raw.cardinality ?? "list") === "list" &&

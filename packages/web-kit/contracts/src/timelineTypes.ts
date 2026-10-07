@@ -241,8 +241,7 @@ export interface SegmentParams {
  teacacheThreshold: number
 
  // ── Progressive resolution (Diffusers-engine only — Omni ignores) ───────
- // The custom VACE diffusers server (vace_api_server.py) accepts these
- // per-request to A/B progressive vs full-res without an env restart.
+ // The diffusers engine accepts these per-request to A/B progressive vs full-res without an env restart.
  /** Enable progressive-resolution denoising (early steps at 1/(2^levels)
  * spatial resolution, then DCT-II upsample for detail steps). */
  progressiveEnabled: boolean
@@ -299,8 +298,7 @@ export interface SegmentParams {
 
  // ── LoRA (G6 — both engines now support LoRA loading) ───────────────────
  /** Selected LoRAs — canonical `LoRAEntry[]` primitive (lib/loraTypes.ts).
- * Single wire format across video + image surfaces; the ComfyUI backend
- * consumes this shape directly (media/image/comfyui.py). */
+ * Single wire format across video + image surfaces; the ComfyUI engine consumes this shape directly. */
  loras: LoRAEntry[]
 
  // ── Motion guidance (G16 — Diffusers-engine only) ──────────────────────

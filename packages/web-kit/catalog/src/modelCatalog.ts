@@ -1,4 +1,4 @@
-// Editor model catalog client — TypeScript mirror of media/editor_catalog.py.
+// Editor model catalog client — the TS catalog owner (selectors below plus ./wireTypes.ts).
 //
 // Single source of truth for the webform. All family relationships,
 // variant groupings, defaults, prompt guides, and variant declarations
@@ -45,11 +45,10 @@ export type TransformApplicabilityEntry = TransformApplicability
 export type CardSummaryEntry = CardSummary
 export type OptionalOutputEntry = OptionalOutput
 
-/** Source media type a family INGESTS — DERIVED from the backend's closed
- * Literal (schema.py FamilyEntry.accepts), never hand-written: a backend
- * vocabulary change re-types this on api:sync instead of silently
- * drifting. Deliberately a SUBSET of CardGenre (no 3d/motion/other):
- * those are output genres, not ingest types. */
+/** Source media type a family INGESTS — the closed ingest vocabulary
+ * (the TS family DECLs own it), hand-maintained as a SUBSET of
+ * CardGenre (no 3d/motion/other): those are output genres, not
+ * ingest types. */
 export type SourceMediaType = NonNullable<
  TransformApplicability["applies_to"]
 >[number]
@@ -272,7 +271,7 @@ export function primeCatalog(data: Catalog): void {
  * so the taken arm is unreachable here (2026-09-12). */
 if ((import.meta as { env?: { MODE?: string } }).env?.MODE !== "test") ensureCatalog()
 
-// ── Selectors (mirror media/editor_catalog.py) ──────────────────────────
+// ── Selectors (the TS selector owner; ./wireTypes.ts carries the wire) ──
 
 /**
  * For route keys that are NOT top-level catalog entries (e.g. a quant-tier
@@ -730,8 +729,8 @@ export function routeCoordinates(
  *
  * Group → axis mapping: a ``Quant`` group switches the quant tier (base
  * variant preserved); a ``Variant`` group switches the base variant (quant
- * preserved). The vocabulary is closed to Variant/Quant (schema.py
- * CANONICAL_VARIANT_GROUPS, 2026-08-09 — "Speed" was a duplicate name for
+ * preserved). The vocabulary is closed to Variant/Quant (the
+ * canonical variant-group law, 2026-08-09 — "Speed" was a duplicate name for
  * the Variant axis). Patch-only entries (Lightning/Standard LoRA style)
  * with no ``route:`` never reach here — the caller handles those as draft
  * overlays.
