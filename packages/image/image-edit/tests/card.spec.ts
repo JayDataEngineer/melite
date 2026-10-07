@@ -53,6 +53,35 @@ beforeAll(async () => {
   assert.ok(model, "the qwen-img-edit-2511 facts row serves");
 });
 
+let anchorSeq = 0;
+
+// A compose-time JPEG anchor: the given header bytes padded past
+// the probe's segment walk (the walk reads at most the first 256
+// bytes; padding keeps short headers from ending the walk early).
+const writeAnchor = (bytes: number[], pad = true): string => {
+  anchorSeq += 1;
+  const anchorPath = join(tmpdir(), `melite-f8-anchor-${Date.now()}-${anchorSeq}.jpg`);
+  const body = Buffer.from(bytes);
+  writeFileSync(anchorPath, pad ? Buffer.concat([body, Buffer.alloc(Math.max(0, 64 - body.length))]) : body);
+  return anchorPath;
+};
+
+// A minimal SOF frame header for 1344x768 (marker + length +
+// precision + height + width — the only bytes the probe reads).
+const SOF_1344x768 = (marker: number): number[] =>
+  [0xff, marker, 0x00, 0x0b, 0x08, 0x03, 0x00, 0x05, 0x40];
+
+// The 2.1 target latent's geometry for an anchor file — the
+// inheritance (or the lane fallback) made visible.
+const latentGeometry = (anchorPath: string): { width: unknown; height: unknown } => {
+  const model21 = facts.models["qwen-img-edit-21"]!;
+  assert.ok(model21, "the qwen-img-edit-21 facts row serves");
+  const g = new GraphBuilder();
+  def.compose({ prompt: "make it night", image1: anchorPath, steps: 25, cfg: 1 }, model21, g, `r_probe_${anchorSeq}`);
+  const graph = g.toJSON() as Record<string, { inputs: Record<string, unknown> }>;
+  return { width: graph["EmptyLatentImage.0"]?.inputs.width, height: graph["EmptyLatentImage.0"]?.inputs.height };
+};
+
 describe("the image-edit compose gate", () => {
   it("a missing prompt refuses (WHAT to change, not the whole image)", () => {
     assert.throws(
@@ -149,6 +178,91 @@ describe("the image-edit compose gate", () => {
     }
   });
 
+  // THE JPEG MARKER ARMS (finding 8's probe walks marker segments
+  // to the first SOF0/SOF2 frame header — APP segments carry a
+  // length, filler bytes and standalone markers carry none). Each
+  // arm below pins one walk shape against the 2.1 target latent:
+  // inherited geometry when a frame header lands, the lane fallback
+  // otherwise — never a new refusal on an unprobeable anchor.
+  it("THE JPEG SOF0 ARM: a baseline-JPEG anchor inherits its frame geometry on the 2.1 lane", () => {
+    const anchorPath = writeAnchor([0xff, 0xd8, ...SOF_1344x768(0xc0)])
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "SOF0 width/height ride the target latent")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE JPEG SOF2 ARM: a progressive-JPEG anchor inherits the same way (the C2 disjunct)", () => {
+    const anchorPath = writeAnchor([0xff, 0xd8, ...SOF_1344x768(0xc2)])
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "SOF2 is the same frame header, progressive scan")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE JPEG SKIP ARMS: APP segments, filler bytes and standalone markers walk past to the frame header", () => {
+    // SOI + APP0 (length-prefixed) + a stray filler byte + an
+    // embedded SOI + an RST0 standalone + SOF0 — every skip shape
+    // in one header, the frame geometry still lands.
+    const anchorPath = writeAnchor([
+      0xff, 0xd8,
+      0xff, 0xe0, 0x00, 0x10, ...new Array<number>(14).fill(0),
+      0x00,
+      0xff, 0xd8,
+      0xff, 0xd0,
+      ...SOF_1344x768(0xc0),
+    ])
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1344, height: 768 }, "skipped segments never hide the frame header")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE ZERO-FRAME ARM: a zero-dimension JPEG header keeps the lane fallback (never a 0-wide latent)", () => {
+    const anchorPath = writeAnchor([0xff, 0xd8, 0xff, 0xc0, 0x00, 0x0b, 0x08, 0x00, 0x00, 0x00, 0x00])
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "a 0x0 frame header is no geometry")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE ZERO-PNG ARM: a zero-dimension IHDR keeps the lane fallback", () => {
+    const png = Buffer.alloc(33)
+    Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]).copy(png, 0)
+    png.writeUInt32BE(13, 8)
+    png.write("IHDR", 12, "ascii")
+    png.writeUInt32BE(0, 16)
+    png.writeUInt32BE(0, 20)
+    const anchorPath = join(tmpdir(), "melite-f8-zero-png-" + Date.now() + ".png")
+    writeFileSync(anchorPath, png)
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "a 0x0 IHDR is no geometry")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE NON-IMAGE ARM: a long non-image anchor keeps the lane fallback (signature mismatch, never a refusal)", () => {
+    const anchorPath = writeAnchor(new Array<number>(32).fill(0))
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "neither signature matches — the fallback stands")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
+
+  it("THE TRUNCATED ARM: a bare SOI keeps the lane fallback (the walk never runs past the head)", () => {
+    const anchorPath = writeAnchor([0xff, 0xd8], false)
+    try {
+      assert.deepEqual(latentGeometry(anchorPath), { width: 1024, height: 1024 }, "no segment to walk — the fallback stands")
+    } finally {
+      rmSync(anchorPath, { force: true })
+    }
+  });
   it("the edit-scope field names whole-image and masked-region choices", () => {
     const pack = theService().cardModFields("image-edit").find((row) => row.pack === "mask");
     assert.ok(pack, "the image-edit mask pack is absorbed");

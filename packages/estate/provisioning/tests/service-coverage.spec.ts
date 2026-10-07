@@ -430,6 +430,13 @@ describe("ProvisioningService public seams", () => {
     })).service;
     const landedResult = await landed.ensure(ref);
     assert.equal(landedResult.state, "active");
+    // a declared size that the Manager landing confirms bumps the
+    // ledger to the declared total on success (the F9 manager bytes)
+    const sized = makeService(basicConfig(plan(ref, [modelItem({ sizeBytes: 4 })]), {
+      artifactWriter: fakeWriter([{ present: false }, { present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
+      manager: manager({ installModel: async () => ({ installed: true }) }),
+    })).service;
+    assert.equal((await sized.ensure(ref)).state, "active");
   });
 
   test("extension acquisition covers local, manager, pins, and optional details", async () => {
@@ -506,6 +513,14 @@ describe("ProvisioningService public seams", () => {
       inspector: inspector({ active: true, nodeTypes: ["PackNode"], detail: "visible" }),
     })).service;
     assert.equal((await detail.activate(ref)).items[0]?.detail, "visible");
+    // an inspection that throws lands as the failure voice — the
+    // activation arm never swallows a transport error
+    const thrown = makeService(basicConfig(planValue, {
+      manager: manager({ inspect: async () => ({ installed: false, active: false }) }),
+      lifecycle: lifecycle(),
+      inspector: { inspect: async () => { throw new Error("inspection exploded"); } },
+    })).service;
+    assert.equal((await thrown.activate(ref)).state, "failed");
   });
 
   test("ensure activation options cover extension, model, force, and idle branches", async () => {
@@ -1094,5 +1109,203 @@ describe("ProvisioningService public seams", () => {
     contexts.push(ctx);
     provisioningApply(ctx, basicConfig(plan(modelRef(), [modelItem()])));
     assert.equal(ctx.provisioning.name, "provisioning");
+  });
+
+  test("a start that arrives while a blocking ensure holds the lock seeds the joined ledger, never a second fetch", async () => {
+    const ref = modelRef();
+    const value = plan(ref, [modelItem()]);
+    // the ensure's own plan read hangs on the gate so the start's
+    // read lands first and owns the seed for the joined id
+    let declarationCalls = 0;
+    let releasePlan!: () => void;
+    const planGate = new Promise<void>((resolve) => { releasePlan = resolve; });
+    const service = makeService({
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          declarationCalls += 1;
+          if (declarationCalls === 2) await planGate;
+          return value;
+        },
+        list: async (): Promise<readonly ResourceRef[]> => [],
+      },
+      manager: manager(),
+      artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
+    }).service;
+    const pending = service.ensure(ref);
+    const id = await service.startWeightAcquire(ref);
+    assert.equal(declarationCalls, 2);
+    releasePlan();
+    const result = await pending;
+    assert.equal(id, result.operationId);
+    assert.equal(result.state, "active");
+    // the start seeded the joined id with the DECL total and the
+    // already-landed file bumped it to the same total
+    assert.equal(service.progressOf(id)?.total, 4);
+    assert.equal(service.progressOf(id)?.bytes, 4);
+    assert.equal(service.progressOfRef(ref)?.operationId, id);
+  });
+
+  test("a start that arrives while the declaration refuses keeps a zero total instead of a guess", async () => {
+    const ref = modelRef();
+    const value = plan(ref, [modelItem()]);
+    // the start's read is the first call, so it takes the refusal
+    // while the ensure's later read resolves and completes the join
+    let declarationCalls = 0;
+    const service = makeService({
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          declarationCalls += 1;
+          if (declarationCalls === 1) throw new Error("declaration refused");
+          return value;
+        },
+        list: async (): Promise<readonly ResourceRef[]> => [],
+      },
+      manager: manager(),
+      artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 4 }]),
+    }).service;
+    const pending = service.ensure(ref);
+    const id = await service.startWeightAcquire(ref);
+    const result = await pending;
+    assert.equal(id, result.operationId);
+    assert.equal(result.state, "active");
+    assert.equal(service.progressOf(id)?.total, 0);
+  });
+
+  test("a start with no declaration to read opens a zero-total ledger and fails loud", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(async (): Promise<ProvisionPlan> => {
+      throw new Error("declaration refused");
+    })).service;
+    const id = await service.startWeightAcquire(ref);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.progressOf(id)?.state === "failed") break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(service.progressOf(id)?.state, "failed");
+    assert.equal(service.progressOf(id)?.total, 0);
+  });
+
+  test("a background start on a read-only lane lands the door's own refusal on the ledger", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem()]), {
+      writeGuard: () => false,
+    })).service;
+    const id = await service.startWeightAcquire(ref);
+    // the ledger's detail lands one microtask after the terminal
+    // state (the state mirror runs inside complete, the detail
+    // spread in the start's own settlement arm), so poll for both
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const current = service.progressOf(id);
+      if (current !== null && current.state !== "acquiring" && current.detail !== undefined) break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    const ledger = service.progressOf(id);
+    assert.equal(ledger?.state, "blocked");
+    assert.equal(ledger?.total, 4);
+    assert.equal(ledger?.bytes, 0);
+    assert.match(ledger?.detail ?? "", /read-only/);
+  });
+
+  test("a synchronous operation-store failure fails the background ledger with the store's own words", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem({ provider: "direct" })]), {
+      fetcher: async (): Promise<ArtifactResponse> => ({
+        status: 200,
+        body: (async function* (): AsyncGenerator<Uint8Array> { yield new Uint8Array([1, 2, 3, 4]); })(),
+      }),
+      operationStore: {
+        load: async () => null,
+        save: (): Promise<void> => { throw new Error("disk offline"); },
+      },
+    })).service;
+    const id = await service.startWeightAcquire(ref);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.progressOf(id)?.state === "failed") break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(service.progressOf(id)?.state, "failed");
+    assert.equal(service.progressOf(id)?.detail, "disk offline");
+  });
+
+  test("a synchronous operation-store failure that throws a bare string lands the string on the ledger", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem({ provider: "direct" })]), {
+      fetcher: async (): Promise<ArtifactResponse> => ({
+        status: 200,
+        body: (async function* (): AsyncGenerator<Uint8Array> { yield new Uint8Array([1, 2, 3, 4]); })(),
+      }),
+      operationStore: {
+        load: async () => null,
+        save: (): Promise<void> => { throw "disk offline"; },
+      },
+    })).service;
+    const id = await service.startWeightAcquire(ref);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.progressOf(id)?.state === "failed") break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(service.progressOf(id)?.state, "failed");
+    assert.equal(service.progressOf(id)?.detail, "disk offline");
+  });
+
+  test("a plan that gains its declared size mid-flight fills the opening zero instead of keeping it", async () => {
+    const ref = modelRef();
+    // the start's read lands before the declaration names a size;
+    // the background ensure's later read carries the sized row
+    let declarationCalls = 0;
+    const service = makeService({
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          declarationCalls += 1;
+          if (declarationCalls === 1) return plan(ref, [modelItem({ provider: "direct", sizeBytes: undefined })]);
+          return plan(ref, [modelItem({ provider: "direct", sizeBytes: 4 })]);
+        },
+        list: async (): Promise<readonly ResourceRef[]> => [],
+      },
+      artifactWriter: fakeWriter([{ present: false }]),
+      fetcher: async (): Promise<ArtifactResponse> => ({
+        status: 200,
+        body: (async function* (): AsyncGenerator<Uint8Array> { yield new Uint8Array([1, 2, 3, 4]); })(),
+      }),
+    }).service;
+    const id = await service.startWeightAcquire(ref);
+    assert.equal(service.progressOf(id)?.total, 0);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.progressOf(id)?.state === "active") break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(service.progressOf(id)?.state, "active");
+    assert.equal(service.progressOf(id)?.total, 4);
+  });
+
+  test("an already-landed model with no declared size skips the ledger bump and still reads active", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem({ sizeBytes: undefined })]), {
+      artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64) }]),
+    })).service;
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "active");
+    assert.equal(service.progressOf(result.operationId)?.bytes, 0);
+  });
+
+  test("a zero-byte landing adds nothing to the live count", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem({ sizeBytes: 0 })]), {
+      artifactWriter: fakeWriter([{ present: true, path: "/p", sha256: "a".repeat(64), sizeBytes: 0 }]),
+    })).service;
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "active");
+    assert.equal(service.progressOf(result.operationId)?.bytes, 0);
+  });
+
+  test("a Manager landing with no declared size skips the ledger bump on success", async () => {
+    const ref = modelRef();
+    const service = makeService(basicConfig(plan(ref, [modelItem({ sizeBytes: undefined })]), {
+      artifactWriter: fakeWriter([{ present: false }, { present: true, path: "/p", sha256: "a".repeat(64) }]),
+      manager: manager({ installModel: async () => ({ installed: true }) }),
+    })).service;
+    const result = await service.ensure(ref);
+    assert.equal(result.state, "active");
+    assert.equal(service.progressOf(result.operationId)?.bytes, 0);
   });
 });

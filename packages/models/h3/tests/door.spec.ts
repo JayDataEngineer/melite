@@ -2,8 +2,36 @@
 // lane_inputs parse into the closed engine shape, and drift (a
 // missing lane file, a blank string, a non-string) refuses loud at
 // instantiate — never a silent route to a stock lane.
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { film, parseH3Facts } from "../src/actions.ts";
+import { GraphBuilder } from "@melite/comfyui-card-kit/graph";
+import { instantiateAction } from "@melite/comfyui-card-kit";
+import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
+
+// THE TURBO-LESS CATALOG (the absent-bag default's load refusal):
+// the default stack derives from the family's own lora catalog, so
+// a catalog that lost the turbo row must refuse loud. The filter
+// keeps every other row — only the default's source is gone.
+vi.mock("@melite/models-h3/mods/loras", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@melite/models-h3/mods/loras")>();
+  return { ...actual, H3_LORA_ROWS: actual.H3_LORA_ROWS.filter((r) => r.id !== "h3_lightx2v_turbo") };
+});
+
+// The window driver's model row — the interpreter's own contract
+// (facts door + seed mint + segment factory, the production path).
+// No variants/groups/outputs: the film window routes by lane_inputs
+// alone, and the interpreter reads no variant cell on this path.
+const WINDOW_MODEL: ModelFacts = {
+  id: "h3",
+  card: "h3-timeline",
+  defaults: {},
+  lane_inputs: {
+    unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
+  },
+  variants: [],
+  variant_groups: [],
+  outputs: [],
+};
 
 const LANE = {
   unet: "minimax_h3_hybrid_fl2va_ref2va_b30-49-int8.safetensors",
@@ -50,5 +78,31 @@ describe("the h3 film action's facts door", () => {
     expect(film.params.find((row) => row.name === "steps")).toEqual({ name: "steps", type: "number", bounds: [4, 30] });
     expect(film.params.find((row) => row.name === "sla_enabled")).toEqual({ name: "sla_enabled", type: "boolean" });
     expect(film.facts).toBe(parseH3Facts);
+  });
+});
+
+describe("the film build's single-window arms (no calls wrapper)", () => {
+  it("an empty bag with no turbo catalog row refuses loud (the absent-bag default has no source)", () => {
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      { variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42, loras: [] },
+      WINDOW_MODEL, g, "run_no_turbo",
+    )).toThrow(/the lora catalog has no 'h3_lightx2v_turbo' row/);
+  });
+
+  it("a calls-less window marries the bag's steps (no call knobs to consult, the doc face reads the bag)", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }],
+      },
+      WINDOW_MODEL, g, "run_nocalls_steps",
+    );
+    const schedulers = Object.entries(g.toJSON()).filter(([, n]) => n.class_type === "BasicScheduler");
+    expect(schedulers.length).toBeGreaterThan(0);
+    expect(schedulers[0]![1].inputs.steps).toBe(8);
   });
 });

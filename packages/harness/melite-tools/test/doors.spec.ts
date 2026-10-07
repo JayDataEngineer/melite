@@ -1279,6 +1279,60 @@ describe('binary lora door', () => {
     assert.equal(r.status, 422)
     assert.ok(String((r.body as { error: string }).error).includes('not a LoRA file'))
   })
+
+  test('a missing content-type and a missing url ride their fallbacks (415 on no type, 400 on no url)', async () => {
+    const h = boot({})
+    // No content-type header: the ?? '' arm, then the octet refusal.
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'POST', url: '/v1/uploads/lora?filename=a.pt', raw: 'x' })).status, 415)
+    // No url: the ?? '/' arm lands on the empty-filename refusal.
+    const octet = { 'content-type': 'application/octet-stream', 'content-length': '8' }
+    assert.equal((await call(h.routes, '/v1/uploads/lora', { method: 'POST', headers: octet, raw: 'x' })).status, 400)
+  })
+
+  test('a filename that will not decode refuses 400 (the bad-filename arm)', async () => {
+    const h = boot({})
+    // %25 decodes to a bare % at the URL layer, which decodeURIComponent
+    // refuses — the door names the filename, never the escape.
+    const r = await call(h.routes, '/v1/uploads/lora', {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=%25',
+      raw: 'x',
+      headers: { 'content-type': 'application/octet-stream', 'content-length': '8' },
+    })
+    assert.equal(r.status, 400)
+    assert.equal((r.body as { error: string }).error, 'bad filename')
+  })
+
+  test('an undeclared loras dir refuses 502 before the body is ever read', async () => {
+    // No env override and no model_base_path in the endpoint file: the
+    // dir is null and the door refuses without buffering a byte.
+    delete process.env['MELITE_COMFYUI_LORAS_DIR']
+    const h = boot({})
+    const r = await call(h.routes, '/v1/uploads/lora', {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=a.safetensors',
+      raw: 'x',
+      headers: { 'content-type': 'application/octet-stream', 'content-length': '8' },
+    })
+    assert.equal(r.status, 502)
+    assert.ok(String((r.body as { error: string }).error).includes('undeclared'))
+  })
+
+  test('a body that dies mid-read refuses 500 — Error and non-Error both voice', async () => {
+    withDir()
+    const h = boot({})
+    const base = {
+      method: 'POST',
+      url: '/v1/uploads/lora?filename=a.safetensors',
+      headers: { 'content-type': 'application/octet-stream', 'content-length': '8' },
+    }
+    const died = await call(h.routes, '/v1/uploads/lora', { ...base, emitError: 'socket died' })
+    assert.equal(died.status, 500)
+    assert.match((died.body as { error: string }).error, /lora door: socket died/)
+    const rawErr = await call(h.routes, '/v1/uploads/lora', { ...base, emitRawError: 'a string boom' })
+    assert.equal(rawErr.status, 500)
+    assert.match((rawErr.body as { error: string }).error, /lora door: a string boom/)
+  })
 })
 
 describe('input preview', () => {

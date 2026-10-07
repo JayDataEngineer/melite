@@ -33,6 +33,7 @@ import {
   kindsDoorArm,
   modelCatalogArm,
   resolveSpecKey,
+  resolveSpecKeyForTool,
   specBody,
 } from '../src/discovery.ts'
 
@@ -104,6 +105,19 @@ describe('resolveSpecKey', () => {
 
   test('unknown keys resolve to null', () => {
     assert.equal(resolveSpecKey('__no_such_key__', new Map(), new Map()), null)
+  })
+})
+
+describe('resolveSpecKeyForTool', () => {
+  test('a booted-table fault rides to the caller — the tool never swallows its own census throw', () => {
+    // A defs table that dies on read faults past the family catch, so
+    // the tool arm meets its own catch with the seat booted and rethrows.
+    class ThrowingDefs extends Map<string, CardDefinition> {
+      override get(_key: string): CardDefinition | undefined {
+        throw new Error('defs exploded')
+      }
+    }
+    assert.throws(() => resolveSpecKeyForTool('krea-2', new ThrowingDefs(), new Map()), /defs exploded/)
   })
 })
 

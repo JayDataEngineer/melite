@@ -645,11 +645,13 @@ describe("ManagerPort provider", () => {
       },
     });
     const provider = new ComfyUiManagerProvider(client);
+    // the signal rides every wire read (the installed-rows fetch too,
+    // not just the install POST) — an un-aborted signal passes through
     await expect(provider.install({
       id: "example-pack",
       url: "https://github.com/example/pack.git",
       ref: "abc1234",
-    })).rejects.toMatchObject({ code: "head-mismatch" });
+    }, new AbortController().signal)).rejects.toMatchObject({ code: "head-mismatch" });
   });
 
   test("a pack Manager installed with no commit cannot satisfy a declared pin", async () => {

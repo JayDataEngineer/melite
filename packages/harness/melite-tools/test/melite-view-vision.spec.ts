@@ -346,6 +346,29 @@ function glbBytes(): Uint8Array {
   return out
 }
 
+/** A RIFF/WAVE header with a fmt chunk and NO data chunk: the probe
+ * names the audio stream but measures no duration (nothing to time),
+ * and the stream carries no geometry, rate, or frame count. */
+function fmtOnlyWavBytes(): Uint8Array {
+  const out = new Uint8Array(36)
+  const view = new DataView(out.buffer)
+  const put = (at: number, s: string): void => {
+    out.set(new TextEncoder().encode(s), at)
+  }
+  put(0, 'RIFF')
+  view.setUint32(4, 28, true)
+  put(8, 'WAVE')
+  put(12, 'fmt ')
+  view.setUint32(16, 16, true)
+  view.setUint16(20, 1, true)
+  view.setUint16(22, 1, true)
+  view.setUint32(24, 8000, true)
+  view.setUint32(28, 16000, true)
+  view.setUint16(32, 2, true)
+  view.setUint16(34, 16, true)
+  return out
+}
+
 let root = ''
 
 beforeAll(() => {
@@ -516,6 +539,20 @@ describe('the delegated eye — the film arm (Commission 17)', () => {
     assert.equal(rendered, 0)
     assert.match(String(value.textObservation), /TEXT-ONLY observation/)
     assert.match(String(value.textObservation), /contact sheet was neither built nor attached/)
+  })
+  test('a sparse probe renders bare — a stream with no dims, rate, frames, or duration still verifies', async () => {
+    // A fmt-only WAV names the codec but measures nothing: the stream
+    // row is the bare codec and the film line carries no duration, yet
+    // the eye still gets its sheet and verdict.
+    delete process.env[VIEW_ROUTE_ENV]
+    const eye = fakeEye()
+    const { ctx, store } = eyeCtx(eye)
+    const render: MediaSheetRender = async () => PNG_BYTES
+    const value = await viewFilmArtifact({ stateRoot: root }, 'run-face001-film', '', blindExec, ctx, store.attachments, render, async () => fmtOnlyWavBytes())
+    const text = String(value.textObservation)
+    assert.match(text, /film\.mp4, 36 bytes, streams: pcm_s16le, contact sheet of 1/)
+    assert.match(text, /VISUAL VERIFICATION via vp\/sees/)
+    assert.doesNotMatch(text, /\d+x\d+/)
   })
 })
 

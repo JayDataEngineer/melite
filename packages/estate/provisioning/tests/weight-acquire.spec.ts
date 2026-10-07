@@ -130,4 +130,102 @@ describe("weight acquisition progress (F9 run-press acquisition)", () => {
     assert.equal(calls.count, 1);
     assert.equal(service.progressOf(first)?.bytes, BYTES.length);
   });
+
+  test("a sizeless direct plan still lands whole and counts real bytes against a zero denominator", async () => {
+    const root = tempRoot();
+    const calls = { count: 0 };
+    const ctx = new Context();
+    contexts.push(ctx);
+    const value: ProvisionPlan = { ref: ref(), items: [{ ...item(), sizeBytes: undefined }] };
+    const service = new ProvisioningService(ctx, {
+      declaration: { resolve: async (): Promise<ProvisionPlan> => value },
+      storeRoot: root,
+      fetcher: async () => {
+        calls.count += 1;
+        async function* generate(): AsyncGenerator<Uint8Array> {
+          yield Uint8Array.of(...BYTES);
+        }
+        return { status: 200, body: generate() };
+      },
+    });
+    const target = ref();
+
+    const id = await service.startWeightAcquire(target);
+    assert.equal(service.progressOf(id)?.total, 0);
+
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      const current = service.progressOf(id);
+      if (current !== null && (current.state === "active" || current.state === "installed")) break;
+      await new Promise((resolve) => { setTimeout(resolve, 50); });
+    }
+    assert.equal(service.progressOf(id)?.bytes, BYTES.length);
+    assert.deepEqual(readFileSync(join(root, "checkpoints", "weight.bin")), BYTES);
+    assert.equal(calls.count, 1);
+  });
+
+  test("two starts that cross mid-plan join one fetch through the shared lock", async () => {
+    const root = tempRoot();
+    const calls = { count: 0 };
+    const ctx = new Context();
+    contexts.push(ctx);
+    const value: ProvisionPlan = { ref: ref(), items: [item()] };
+    // the second plan read hangs so the first start wins the race
+    // into the lock and the second joins it inside runWithId
+    let planCalls = 0;
+    let releasePlan!: () => void;
+    const planGate = new Promise<void>((resolve) => { releasePlan = resolve; });
+    let releaseFetch!: () => void;
+    const fetchGate = new Promise<void>((resolve) => { releaseFetch = resolve; });
+    const service = new ProvisioningService(ctx, {
+      declaration: {
+        resolve: async (): Promise<ProvisionPlan> => {
+          planCalls += 1;
+          if (planCalls === 2) await planGate;
+          return value;
+        },
+        list: async (): Promise<readonly ResourceRef[]> => [],
+      },
+      storeRoot: root,
+      fetcher: async () => {
+        calls.count += 1;
+        await fetchGate;
+        async function* generate(): AsyncGenerator<Uint8Array> {
+          yield Uint8Array.of(...BYTES);
+        }
+        return { status: 200, body: generate() };
+      },
+    });
+    const target = ref();
+
+    const firstPromise = service.startWeightAcquire(target);
+    assert.equal(planCalls, 1);
+    const secondPromise = service.startWeightAcquire(target);
+    assert.equal(planCalls, 2);
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (service.isLocked(target)) break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(service.isLocked(target), true);
+    releasePlan();
+    for (let attempt = 0; attempt < 100; attempt += 1) {
+      if (calls.count === 1) break;
+      await new Promise((resolve) => { setTimeout(resolve, 10); });
+    }
+    assert.equal(calls.count, 1);
+    releaseFetch();
+    const first = await firstPromise;
+    const second = await secondPromise;
+    // the crossing start minted its own id but rode the first fetch
+    assert.notEqual(second, first);
+    assert.equal(calls.count, 1);
+    for (const id of [first, second]) {
+      for (let attempt = 0; attempt < 100; attempt += 1) {
+        const current = service.progressOf(id);
+        if (current !== null && (current.state === "active" || current.state === "installed")) break;
+        await new Promise((resolve) => { setTimeout(resolve, 50); });
+      }
+      assert.equal(service.progressOf(id)?.bytes, BYTES.length);
+    }
+    assert.deepEqual(readFileSync(join(root, "checkpoints", "weight.bin")), BYTES);
+  });
 });

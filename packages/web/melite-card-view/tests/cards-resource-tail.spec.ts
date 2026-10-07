@@ -361,6 +361,29 @@ describe("the watcher's end + failure arms", () => {
     }
   });
 
+  test("a stream death AFTER the page began unloading is teardown, never a logged failure", async () => {
+    // the pagehide latch (cards-resource.ts): a reload aborts every
+    // open transport mid-flight; the watcher must die quiet. The
+    // listener registers with the watcher itself, so the pagehide
+    // fires after the watch starts and before the stream's
+    // rejection lands (a microtask later).
+    const cap = captureConsoleError();
+    try {
+      let disposed = 0;
+      const remote = bespokeStream([{ throw: new Error("aborted without reason") }], {
+        disposed: () => { disposed++; },
+      });
+      const lands: string[] = [];
+      watchBenchLands(() => "main", (k) => { lands.push(k); }, undefined, remote, benchNs as never, undefined);
+      window.dispatchEvent(new window.Event("pagehide"));
+      await until(() => disposed === 1);
+      expect(lands).toEqual([]);
+      expect(cap.lines).toEqual([]);
+    } finally {
+      cap.restore();
+    }
+  });
+
   test("a rev regression resyncs honestly (never a fire on old news)", async () => {
     const bench = fakeRemote();
     const lands: string[] = [];

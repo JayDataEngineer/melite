@@ -31,6 +31,12 @@ const argv = process.argv.slice(2)
 const from = argv[argv.indexOf('--from') + 1]
 const dryRun = argv.includes('--dry-run')
 const registryArg = argv[argv.indexOf('--registry') + 1]
+const paceArg = argv[argv.indexOf('--pace-ms') + 1]
+// --pace-ms N: sleep N ms between publish PUTs. npmjs rate-limits
+// burst publishing at the account level; a steady gap keeps a large
+// release under the limiter instead of tripping into backoff.
+const paceMs = typeof paceArg === 'string' && /^\d+$/.test(paceArg) ? Number(paceArg) : 0
+const noProbe = argv.includes('--no-probe')
 const registry = typeof registryArg === 'string' && registryArg !== '--dry-run' && registryArg !== undefined
   ? ['--registry', registryArg]
   : []
@@ -91,16 +97,64 @@ for (const file of order) {
   let have = false
   // --prefer-online: a stale packument cache (e.g. a previous local
   // registry run) must never make the pre-check answer "published"
-  // for a registry that no longer carries the version
-  try { run('npm', ['view', spec, 'version', '--prefer-online', ...registry]); have = true } catch { /* not on the registry yet */ }
+  // for a registry that no longer carries the version. --no-probe
+  // skips the view entirely: a run's rapid view burst counts against
+  // the same account rate limit as publishes, and an already-up
+  // version surfaces as 409/403 on the PUT (handled below).
+  if (!noProbe) {
+    try { run('npm', ['view', spec, 'version', '--prefer-online', ...registry]); have = true } catch { /* not on the registry yet */ }
+  }
   if (have) { console.log(`skip ${spec} — already published`); skipped++; continue }
   if (dryRun) { console.log(`dry-run ${spec} (${file})`); continue }
   // prerelease versions never touch the latest channel — npm refuses
   // a bare prerelease publish, and the release channel is 'next'
   const channel = inner.version.includes('-') ? ['--tag', 'next'] : []
-  run('npm', ['publish', join(from, file), '--access', 'public', ...channel, ...registry])
-  run('npm', ['view', spec, 'version', ...registry]) // the readback: the registry answers for it
-  console.log(`✓ ${spec}`)
+  try {
+    // npmjs rate-limits burst publishing (E429 on the second or third
+    // package of a fresh scope) and can hold the limit window open
+    // for a long stretch — back off and retry the SAME bytes; a rate
+    // limit is transient, never a verdict on the package.
+    let publishedOk = false
+    for (let attempt = 0; !publishedOk && attempt < 7; attempt += 1) {
+      try {
+        run('npm', ['publish', join(from, file), '--access', 'public', ...channel, ...registry])
+        publishedOk = true
+      } catch (e) {
+        if (!String(e.stderr ?? e.message).includes('429')) throw e
+        if (attempt === 6) break
+        console.log(`… ${spec} rate-limited, backing off 60s×2^${attempt} (attempt ${attempt + 1}/7)`)
+        await new Promise((r) => setTimeout(r, 60000 * Math.pow(2, attempt)))
+      }
+    }
+    if (!publishedOk) throw new Error(`publish still rate-limited after backoff: ${spec}`)
+    if (paceMs > 0) await new Promise((r) => setTimeout(r, paceMs))
+  } catch (e) {
+    // npmjs answers a re-publish of OUR OWN staged version with 409
+    // "Cannot publish over previously staged version" — and of an
+    // already-propagated one with 403 "cannot publish over the
+    // previously published versions" (a rate-limited client can see
+    // an error for a publish the registry accepted). With the CDN
+    // answering views lazily, the pre-check above can 404 a version
+    // this very tool already landed. Both verdicts mean the bytes
+    // are up — every retry sends the same sha256-gated tarball.
+    // Anything else rethrows.
+    const msg = String(e.stderr ?? e.message)
+    if (!msg.includes('Cannot publish over previously staged version') && !msg.includes('cannot publish over the previously published versions')) throw e
+    console.log(`✓ ${spec} (already on the registry)`)
+    published++
+    continue
+  }
+  // the readback: the registry answers for it. npmjs's CDN answers a
+  // fresh publish lazily (the local fake registry answers inline), so
+  // one 404 readback is propagation, not a lost publish — the publish
+  // command above already threw on any real failure. Retry through
+  // the lag; a version that never appears is flagged, never fatal.
+  let readback = false
+  for (let i = 0; i < 10 && !readback; i++) {
+    try { run('npm', ['view', spec, 'version', '--prefer-online', ...registry]); readback = true } catch { await new Promise((r) => setTimeout(r, 6000)) }
+  }
+  if (!readback) console.log(`⚠ ${spec} published but not yet readable — verify after the run`)
+  else console.log(`✓ ${spec}`)
   published++
 }
 console.log(`done: ${published} published, ${skipped} skipped, ${order.length} total`)

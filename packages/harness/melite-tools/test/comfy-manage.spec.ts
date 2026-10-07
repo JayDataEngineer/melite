@@ -644,4 +644,31 @@ describe('comfy_manage acquire_weight — the agent seat on the one acquisition 
     }) as Array<{ text: string }>
     assert.match(lines[0]?.text ?? '', /progress: 1\/8 bytes/)
   })
+
+  test('the progress line marks the missing half with ? (bytes-only and total-only polls)', async () => {
+    // A poll can carry half the fraction (bytes before the total is
+    // known, or the total before bytes land) — the line still renders
+    // with ? for the unknown half.
+    const tool = comfyManage(stubRequest())
+    const render = tool.output?.render
+    assert.ok(typeof render === 'function')
+    const bytesOnly = render({}, {
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'acquiring',
+      operation_id: 'op-1',
+      state: 'acquiring',
+      bytes: 1,
+    }) as Array<{ text: string }>
+    assert.match(bytesOnly[0]?.text ?? '', /progress: 1\/\? bytes/)
+    const totalOnly = render({}, {
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'sizing',
+      operation_id: 'op-1',
+      state: 'acquiring',
+      total: 8,
+    }) as Array<{ text: string }>
+    assert.match(totalOnly[0]?.text ?? '', /progress: \?\/8 bytes/)
+  })
 })

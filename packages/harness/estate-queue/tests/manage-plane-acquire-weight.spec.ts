@@ -22,6 +22,7 @@ import type {
 } from "@melite/estate-provisioning";
 import { dispatchManage } from "../src/managePlane.ts";
 import type { ManageCtx } from "../src/managePlane.ts";
+import type { ModelsService } from "@melite/comfyui-cordis";
 
 let ROOT = "";
 const roots: string[] = [];
@@ -30,10 +31,17 @@ afterEach(() => {
 });
 
 type ModelRef = Extract<ResourceRef, { kind: "model" }>;
-const modelRef = (id: string, owner: "family" | "card" = "family"): ModelRef => ({
+const modelRef = (
+  id: string,
+  owner: "family" | "card" = "family",
+  variant = "",
+  quant = "",
+): ModelRef => ({
   kind: "model",
   owner,
   id,
+  ...(variant === "" ? {} : { variant }),
+  ...(quant === "" ? {} : { quant }),
 });
 
 const SIZE = 8;
@@ -59,6 +67,7 @@ function modelPlan(ref: ModelRef): ProvisionPlan {
 
 interface Fake extends ProvisioningServiceDefinition {
   plans: Map<string, ProvisionPlan>;
+  failures: Map<string, unknown>;
   planCalls: ResourceRef[];
   startCalls: ResourceRef[];
   ledger: Map<string, WeightAcquireProgress>;
@@ -67,12 +76,14 @@ interface Fake extends ProvisioningServiceDefinition {
 
 function fakeProvisioning(): Fake {
   const plans = new Map<string, ProvisionPlan>();
+  const failures = new Map<string, unknown>();
   const planCalls: ResourceRef[] = [];
   const startCalls: ResourceRef[] = [];
   const ledger = new Map<string, WeightAcquireProgress>();
   let seq = 0;
   const fake: Fake = {
     plans,
+    failures,
     planCalls,
     startCalls,
     ledger,
@@ -83,7 +94,9 @@ function fakeProvisioning(): Fake {
     inspect: async (ref): Promise<ResourceStatus> => ({ ref, state: "unknown", items: [] }),
     plan: async (ref): Promise<ProvisionPlan> => {
       planCalls.push(ref);
-      const plan = plans.get(resourceKey(ref));
+      const key = resourceKey(ref);
+      if (failures.has(key)) throw failures.get(key);
+      const plan = plans.get(key);
       if (plan === undefined) throw new Error(`model "${(ref as ModelRef).id}" is not declared`);
       return plan;
     },
@@ -120,13 +133,13 @@ function fakeProvisioning(): Fake {
   return fake;
 }
 
-function ctxFor(fake: Fake): ManageCtx {
+function ctxFor(fake: ProvisioningServiceDefinition, decls: ReturnType<ModelsService["allDecls"]> = []): ManageCtx {
   ROOT = mkdtempSync(join(tmpdir(), "manage-acquire-"));
   roots.push(ROOT);
   return {
     repoRoot: ROOT,
     endpoint: () => ({ provision: "managed", url: "http://engine:8188" }),
-    models: { allDecls: () => [] },
+    models: { allDecls: () => decls },
     provisioning: fake,
     timeout: (cb: () => void, ms: number): (() => void) => {
       const timer = setTimeout(cb, ms);
@@ -210,5 +223,137 @@ describe("manage acquire_weight (the one acquisition door)", () => {
     // owner only reads through the model discriminant.
     assert.deepEqual(fake.startCalls[0], modelRef("mask", "card"));
     assert.match(String(dataOf(envelope)["operation_id"]), /^op-weight-/);
+  });
+
+  it("a poll on a lane without the progress seat 503s (the tracker renders the refusal, never a crash)", async () => {
+    const fake = fakeProvisioning();
+    const { progressOf: _withoutProgress, ...pollBlind } = fake;
+    void _withoutProgress;
+    const ctx = ctxFor(pollBlind);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", operation_id: "op-any" }, ctx);
+    assert.equal(code, 503);
+    assert.match(envelope.detail, /progress is not configured/);
+  });
+
+  it("a start on a lane without the start seat 503s (the Download press names the missing seat)", async () => {
+    const fake = fakeProvisioning();
+    const { startWeightAcquire: _withoutStart, ...noStarter } = fake;
+    void _withoutStart;
+    const ctx = ctxFor(noStarter);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 503);
+    assert.match(envelope.detail, /acquire_weight is not configured/);
+  });
+
+  it("a start on a lane without the progress seat 503s (either half of the gate refuses alike)", async () => {
+    const fake = fakeProvisioning();
+    const { progressOf: _withoutProgress, ...noTracker } = fake;
+    void _withoutProgress;
+    const ctx = ctxFor(noTracker);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 503);
+    assert.match(envelope.detail, /acquire_weight is not configured/);
+  });
+
+  it("the poll renders the ledger's detail word (the tracker shows the why, not just the bytes)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+
+    const [, start] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    const opId = String(dataOf(start)["operation_id"]);
+    const entry = fake.ledger.get(opId);
+    assert.ok(entry !== undefined);
+    fake.ledger.set(opId, { ...entry, bytes: 3, detail: "fetching weight.bin" });
+
+    const [pollCode, polled] = await dispatchManage({ action: "acquire_weight", operation_id: opId }, ctx);
+    assert.equal(pollCode, 200);
+    assert.equal(dataOf(polled)["detail"], "fetching weight.bin");
+  });
+
+  it("the start spells variant and quant onto the family ref (the fetch keys the exact address)", async () => {
+    const fake = fakeProvisioning();
+    const ref = modelRef("weight-fam", "family", "turbo", "int8");
+    fake.plans.set(resourceKey(ref), modelPlan(modelRef("weight-fam")));
+    const ctx = ctxFor(fake);
+
+    const [code, envelope] = await dispatchManage(
+      { action: "acquire_weight", model: "weight-fam", variant: "turbo", quant: "int8" }, ctx);
+    assert.equal(code, 200);
+    assert.deepEqual(fake.planCalls[0], ref);
+    assert.equal(dataOf(envelope)["variant"], "turbo");
+    assert.equal(dataOf(envelope)["quant"], "int8");
+  });
+
+  it("a declared family's miss 404s with the plan's words (the card fallback never fires for a family row)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake, [{ id: "weight-fam", genre: "image", label: "Weight Fam", variants: [] }]);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 404);
+    assert.match(envelope.detail, /model "weight-fam" is not declared/);
+    assert.equal(fake.planCalls.length, 1);
+  });
+
+  it("a declared family's string refusal 404s with its words (the throw need not be an Error)", async () => {
+    const fake = fakeProvisioning();
+    fake.failures.set(resourceKey(modelRef("weight-fam")), "family lane exploded");
+    const ctx = ctxFor(fake, [{ id: "weight-fam", genre: "image", label: "Weight Fam", variants: [] }]);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 404);
+    assert.equal(envelope.detail, "family lane exploded");
+    assert.equal(fake.planCalls.length, 1);
+  });
+
+  it("the card fallback carries variant and quant (the fallback address stays exact)", async () => {
+    const fake = fakeProvisioning();
+    const card = modelRef("mask", "card", "fp16", "q4");
+    fake.plans.set(resourceKey(card), modelPlan(modelRef("mask", "card")));
+    const ctx = ctxFor(fake);
+
+    const [code, envelope] = await dispatchManage(
+      { action: "acquire_weight", model: "mask", variant: "fp16", quant: "q4" }, ctx);
+    assert.equal(code, 200);
+    assert.deepEqual(fake.startCalls[0], card);
+    assert.match(String(dataOf(envelope)["operation_id"]), /^op-weight-/);
+  });
+
+  it("an undeclared model 404s with the card plan's words (both doors missed)", async () => {
+    const fake = fakeProvisioning();
+    const ctx = ctxFor(fake);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "ghost" }, ctx);
+    assert.equal(code, 404);
+    assert.match(envelope.detail, /model "ghost" is not declared/);
+    assert.equal(fake.planCalls.length, 2);
+  });
+
+  it("an undeclared model's string refusal 404s with its words (the throw need not be an Error)", async () => {
+    const fake = fakeProvisioning();
+    fake.failures.set(resourceKey(modelRef("ghost", "card")), "card lane exploded");
+    const ctx = ctxFor(fake);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "ghost" }, ctx);
+    assert.equal(code, 404);
+    assert.equal(envelope.detail, "card lane exploded");
+  });
+
+  it("a start whose ledger lags answers zeros as acquiring (a missing row is patience, never a crash)", async () => {
+    const fake = fakeProvisioning();
+    fake.plans.set(resourceKey(modelRef("weight-fam")), modelPlan(modelRef("weight-fam")));
+    const lagging = { ...fake, startWeightAcquire: async (): Promise<string> => "op-ghost" };
+    const ctx = ctxFor(lagging);
+
+    const [code, envelope] = await dispatchManage({ action: "acquire_weight", model: "weight-fam" }, ctx);
+    assert.equal(code, 200);
+    const data = dataOf(envelope);
+    assert.equal(data["operation_id"], "op-ghost");
+    assert.equal(data["bytes"], 0);
+    assert.equal(data["total"], 0);
+    assert.equal(data["state"], "acquiring");
   });
 });

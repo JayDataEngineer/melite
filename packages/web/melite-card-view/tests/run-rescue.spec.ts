@@ -87,6 +87,7 @@ describe('terminalStageErrorOf (the normalized failure carry)', () => {
     expect(terminalStageErrorOf([
       { runStatus: 'unreachable', result: { error: 'transport down' } },
       { runStatus: 'weird', result: { error: 'garbage' } },
+      { runStatus: 7, result: { error: 'not even a word' } },
     ])).toBe(null)
   })
 })
@@ -173,5 +174,88 @@ describe('runRescueCall (names only, the one wire)', () => {
     }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('manage refused')
+  })
+
+  it('a detail-less EXTENSION refusal names itself too (both arms carry the default)', async () => {
+    vi.doMock('@melite/card-base/client', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: false }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'extension', pack: 'GhostPack' }, '')).rejects.toThrow('manage refused')
+  })
+
+  it('an acquire answer with no operation id at all is refused by name (never a ghost fetch)', async () => {
+    vi.doMock('@melite/card-base/client', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: true, data: { state: 'active' } }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('acquire_weight answered without an operation_id')
+  })
+
+  it('a non-object acquire payload is the same refusal (the wire shape is judged, not trusted)', async () => {
+    vi.doMock('@melite/card-base/client', () => ({
+      postManageAction: vi.fn().mockResolvedValue({ ok: true, data: null }),
+    }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('answered without an operation_id')
+  })
+
+  it('a camelCase operationId and an absent state still track (the parser falls back, never invents)', async () => {
+    const spy = vi.fn()
+      .mockResolvedValueOnce({ ok: true, data: { operationId: 'op-camel' } })
+      .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-camel', state: 'active', bytes: 3, total: 3 } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (3/3 bytes)', restartRequired: false })
+    expect(spy).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-camel' })
+  })
+
+  it('a model rescue with an empty file posts the family alone (no empty file key)', async () => {
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-nf', state: 'active' } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
+    const { runRescueCall: call, acquireWeightStart: start } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: '' }, 'fam')).resolves.toEqual({ detail: 'installed', restartRequired: false })
+    expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'fam' })
+    // the exported seam alone: no file argument, no file key on the wire
+    await expect(start('fam')).resolves.toEqual(expect.objectContaining({ operationId: 'op-nf' }))
+    expect(spy).toHaveBeenLastCalledWith('acquire_weight', { model: 'fam' })
+  })
+
+  it('a refused poll refusal voices its detail, and a detail-less one names itself', async () => {
+    vi.resetModules()
+    const detailed = vi.fn()
+      .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-x', state: 'acquiring' } })
+      .mockResolvedValueOnce({ ok: false, detail: 'registry hiccup' })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: detailed }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('registry hiccup')
+
+    vi.resetModules()
+    const bare = vi.fn()
+      .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-y', state: 'acquiring' } })
+      .mockResolvedValueOnce({ ok: false })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: bare }))
+    const { runRescueCall: again } = await import('../src/client/run-rescue-core.ts')
+    await expect(again({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('manage refused')
+  })
+
+  it('a terminal failed or blocked poll throws the estate voice, or names the state itself', async () => {
+    vi.resetModules()
+    const voiced = vi.fn().mockResolvedValue({ ok: true, detail: 'disk full', data: { operation_id: 'op-f', state: 'failed' } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: voiced }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('disk full')
+
+    vi.resetModules()
+    const bare = vi.fn().mockResolvedValue({ ok: true, data: { operation_id: 'op-b', state: 'failed' } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: bare }))
+    const { runRescueCall: bareCall } = await import('../src/client/run-rescue-core.ts')
+    await expect(bareCall({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('weight acquisition failed')
+
+    vi.resetModules()
+    const blocked = vi.fn().mockResolvedValue({ ok: true, data: { operation_id: 'op-k', state: 'blocked' } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: blocked }))
+    const { runRescueCall: blockedCall } = await import('../src/client/run-rescue-core.ts')
+    await expect(blockedCall({ kind: 'model', file: 'x.safetensors' }, 'fam')).rejects.toThrow('weight acquisition blocked')
   })
 })

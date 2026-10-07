@@ -921,6 +921,20 @@ describe('melite_construct read — last_run (the lookup the agent cannot do its
     assert.deepEqual(out.runs, { checked: 1, total: 1, matched: 1 })
   })
 
+  test('a stage with no id takes no stamp — the join needs a name to match on', async () => {
+    // An id-less stage row is an object (past the malformed guard) but
+    // names nothing, so even the newest matching run stamps nothing.
+    const { request } = mockRequest((method, path) => {
+      if (method === 'GET' && path === '/v1/bench/main') return { ...BENCH, stages: [{ card: 'image-gen' }] }
+      if (method === 'GET' && path === '/v1/flows/runs?limit=100') return RUNS
+      throw new Error('unmocked ' + method + ' ' + path)
+    })
+    const out = await meliteConstruct(request).execute({ verb: 'read' }, exec()) as Record<string, unknown>
+    const stages = out.stages as Array<Record<string, unknown>>
+    assert.equal(stages.length, 1)
+    assert.equal(stages[0].last_run, null)
+  })
+
   test('a failed runs call degrades to verbatim stages with NO runs key — lookup-failed stays distinct', async () => {
     const { request } = mockRequest((method, path) => {
       if (method === 'GET' && path === '/v1/bench/main') return BENCH

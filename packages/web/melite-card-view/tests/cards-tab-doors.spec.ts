@@ -310,4 +310,12 @@ describe("terminalOutcomeOf — the terminal row builder, contract-fenced", () =
     expect(arr["reports"]).toEqual({ keep: { kind: "report", status: "pass" } });
     expect(benchResultDefects(arr)).toEqual([]);
   });
+
+  test("a reports map with no valid entries is omitted entirely (never an empty object)", () => {
+    const none = terminalOutcomeOf("run-h", "completed", {
+      reports: { bad: ["x"], worse: 7 },
+    }, undefined).result;
+    expect(none["reports"]).toBeUndefined();
+    expect(benchResultDefects(none)).toEqual([]);
+  });
 });

@@ -139,6 +139,112 @@ test('the Download press opens a live bytes/total tracker that polls the same do
   expect(fill.style.width).toBe('100%')
 })
 
+test('a dismissed popup falls back to the inline offer and reopens on demand (the miss is never lost)', async () => {
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  expect(screen.getByTestId('weight-popup')).toBeTruthy()
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  expect(screen.queryByTestId('weight-popup')).toBe(null)
+  expect(screen.getByText(/download through the manage seat\?/)).toBeTruthy()
+  await userEvent.click(screen.getByRole('button', { name: 'Download weight' }))
+  expect(screen.getByTestId('weight-popup')).toBeTruthy()
+})
+
+test('a dismissed miss with NO owning family or card stays offered but disabled (the agent door owns it)', async () => {
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={[{ params: { prompt: 'p' } }]} onRun={() => {}} />,
+  )
+  expect(screen.getByTestId('weight-popup')).toBeTruthy()
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  const inline = screen.getByRole('button', { name: 'Download weight' }) as HTMLButtonElement
+  expect(inline.disabled).toBe(true)
+  expect(inline.title).toBe('no stage names the owning family or card — provision via the agent door')
+})
+
+test('a poll rejection lands as the popup voice with the press un-busied', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-f', state: 'acquiring', bytes: 1, total: 4 } })
+    .mockRejectedValueOnce(new Error('registry hiccup'))
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText('registry hiccup')).toBeTruthy() })
+  expect((screen.getByTestId('weight-download') as HTMLButtonElement).disabled).toBe(false)
+  expect(screen.getByTestId('weight-download').textContent).toBe('Download')
+})
+
+test('the popup close is ignored while a download is in flight', async () => {
+  // a deferred poll: the in-flight download must END inside this
+  // test — a loop parked on a never-resolving promise wakes during
+  // the NEXT test's window and steals its queued mock (the shared
+  // wire is file-global), so the deferred is released to a terminal
+  // state before the test closes.
+  let releasePoll: (reply: { ok: true, data: { operation_id: string, state: string } }) => void = () => {}
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-s', state: 'acquiring', bytes: 1, total: 9 } })
+    .mockImplementationOnce(() => new Promise((resolve) => { releasePoll = resolve }))
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByTestId('weight-download').textContent).toBe('downloading…') })
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  expect(screen.getByTestId('weight-popup')).toBeTruthy()
+  // the deferred exists only once the poll call has actually fired
+  // (the loop delays 400ms before polling) — release after that,
+  // never on a sync initializer that discards the value.
+  await waitFor(() => { expect(wire.postManageAction.mock.calls.length).toBe(2) })
+  releasePoll({ ok: true, data: { operation_id: 'op-s', state: 'failed' } })
+  await waitFor(() => { expect(screen.getByTestId('weight-download').textContent).toBe('Download') })
+})
+
+test('an installed poll with no detail voices the acquired bytes and the restart face', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-i', state: 'installed', bytes: 4, total: 4 } })
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText(/h3-timeline acquired \(4\/4 bytes\)/)).toBeTruthy() })
+  expect(screen.getByRole('button', { name: 'Restart to activate' })).toBeTruthy()
+})
+
+test('the Weight-ready popup closes to nothing (the run face owns the next move)', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-d', state: 'active', bytes: 2, total: 2 } })
+  const { container } = render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText(/downloaded: 2/)).toBeTruthy() })
+  await userEvent.click(screen.getByRole('button', { name: 'Close weight popup' }))
+  expect(container.textContent).toBe('')
+})
+
+test('a failed poll voices the estate detail', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-x', state: 'acquiring', bytes: 1, total: 4 } })
+    .mockResolvedValueOnce({ ok: true, detail: 'disk full', data: { operation_id: 'op-x', state: 'failed' } })
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText('disk full')).toBeTruthy() }, { timeout: 3000 })
+})
+
+test('a blocked poll without a detail voices the state itself', async () => {
+  wire.postManageAction
+    .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-b', state: 'acquiring', bytes: 0, total: 4 } })
+    .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-b', state: 'blocked' } })
+  render(
+    <RunRescue error="x.safetensors not found in loras/h3" stages={STAGES} onRun={() => {}} />,
+  )
+  await userEvent.click(screen.getByTestId('weight-download'))
+  await waitFor(() => { expect(screen.getByText('weight acquisition blocked')).toBeTruthy() })
+})
+
 test('a restart-required result never offers Run again before the restart', async () => {
   wire.postManageAction.mockReset()
   wire.postManageAction

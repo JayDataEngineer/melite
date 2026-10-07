@@ -156,6 +156,21 @@ test('FROM MEDIA: a door REFUSAL is stated, not rendered as an empty library', a
   expect(await screen.findByText(/media library unavailable/)).not.toBeNull()
 })
 
+test('FROM MEDIA: a non-Error door refusal still states its reason (never "[object Object]")', async () => {
+  // The String(e) arm: a door that rejects with a bare string (a
+  // worker boundary posting the reason, not an Error) must read
+  // verbatim in the picker — the instanceof arm alone would print
+  // the object stringification instead of the reason.
+  const loadMedia = async (): Promise<Array<{ url: string; name: string }>> => {
+    throw 'the media seat is down for restart'
+  }
+  const { cap } = captureProvider({ candidates: [], loadMedia })
+  const host = cap().square(MESH) as { verbs: { onPick: () => void } }
+  act(() => { host.verbs.onPick() })
+  fireEvent.click(screen.getByRole('menuitem', { name: 'From media' }))
+  expect(await screen.findByText(/media library unavailable — the media seat is down for restart/)).not.toBeNull()
+})
+
 test('MESH UPLOADS: no extension-less data-URL mirror; the named estate path lands', async () => {
   const RealReader = globalThis.FileReader
   globalThis.FileReader = fakeReader('data:application/octet-stream;base64,AAA')

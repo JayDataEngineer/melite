@@ -7,7 +7,7 @@
 // are loud and specific (grammar, no images, no store, no seat,
 // non-visual route, byte cap) — never a silent miss.
 
-import { describe, test, beforeAll, afterAll } from 'vitest'
+import { describe, test, beforeAll, afterAll, vi } from 'vitest'
 import assert from 'node:assert/strict'
 import { mkdtempSync, mkdirSync, rmSync, writeFileSync, utimesSync, copyFileSync, readdirSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -15,12 +15,35 @@ import { join } from 'node:path'
 import { ToolArgsError } from '@deepseek-ai/dsh-tools'
 import { AttachmentError } from '@deepseek-ai/dsh-attachment'
 import type { GenericCallView } from '@deepseek-ai/dsh-tools'
-import { meliteView, sniffImageMediaType, imageRefFromValue, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
+import { meliteView, sniffImageMediaType, imageRefFromValue, defaultMediaSheetRender, viewFilmArtifact, sheetPlan } from '../src/tools/melite-view.ts'
 import type { ViewedImageValue, MediaSheetRender } from '../src/tools/melite-view.ts'
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment'
 import type { Context } from '@deepseek-ai/cordis'
 
 // ── the runs tree (real files, controlled mtimes) ──────────────────
+
+// The engine sheet seam, scripted: the real executeSingle would queue
+// on the live engine, so the default render's own body (scratch dir,
+// PNG pick, refusal, cleanup) runs here against a seat that drops one
+// PNG into the scratch dir it is given, or none at all.
+const sheetState = vi.hoisted(() => ({ mode: 'png' as 'png' | 'empty', calls: 0, stopSeen: false }))
+
+vi.mock('@melite/comfyui-cordis', async (importOriginal) => {
+  const orig = await importOriginal<typeof import('@melite/comfyui-cordis')>()
+  return {
+    ...orig,
+    executeSingle: async (work: string, _graph: unknown, _outputs: unknown, opts?: { shouldStop?: () => boolean }) => {
+      sheetState.calls++
+      if (opts?.shouldStop !== undefined) sheetState.stopSeen = opts.shouldStop()
+      if (sheetState.mode === 'png') {
+        const { writeFile } = await import('node:fs/promises')
+        const { join } = await import('node:path')
+        await writeFile(join(work, 'sheet.png'), new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10]))
+      }
+      return { outputs: {}, artifacts: [], promptId: 'mock-sheet' }
+    },
+  }
+})
 
 let root = ''
 const PNG_BYTES = new Uint8Array([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0])
@@ -721,6 +744,33 @@ describe('melite_view film — the §24 observe arm (fakes for the engine render
     assert.deepEqual(sheetPlan(Number.NaN), [0.5])
     assert.deepEqual(sheetPlan(0), [0.5])
     assert.deepEqual(sheetPlan(-3), [0.5])
+  })
+})
+
+describe('defaultMediaSheetRender — the engine sheet seam (the execute seat is scripted; the fs is the real tmpdir)', () => {
+  test('an engine PNG lands as bytes and the scratch dir is removed', async () => {
+    // The scripted seat drops one PNG into the scratch dir the render
+    // made; the render returns its bytes and removes the dir.
+    sheetState.mode = 'png'
+    sheetState.calls = 0
+    sheetState.stopSeen = false
+    const controller = new AbortController()
+    controller.abort()
+    const out = await defaultMediaSheetRender('MeliteFrameSheet', { video: 'run-face001-wide/film.mp4' }, controller.signal)
+    assert.ok(out instanceof Uint8Array)
+    assert.deepEqual(Array.from(out.slice(0, 4)), [137, 80, 78, 71])
+    assert.equal(sheetState.calls, 1)
+    assert.equal(sheetState.stopSeen, true)
+  })
+
+  test('an engine run with no PNG refuses naming the node', async () => {
+    sheetState.mode = 'empty'
+    sheetState.calls = 0
+    await assert.rejects(
+      defaultMediaSheetRender('MeliteWaveform', { audio: 'run-tone05/tone.wav' }, AbortSignal.timeout(15_000)),
+      /the engine returned no sheet image for MeliteWaveform/,
+    )
+    assert.equal(sheetState.calls, 1)
   })
 })
 

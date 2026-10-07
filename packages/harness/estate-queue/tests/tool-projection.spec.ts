@@ -2,7 +2,7 @@
 // identity fence (missing label/description refuse LOUD), the
 // boarded[0] model (null rides), the wire name, and the live
 // params_schema (required omitted when empty).
-import { describe, it } from "vitest";
+import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
 import {
   baseRowFor,
@@ -10,6 +10,24 @@ import {
   toolBaseRows,
 } from "../src/toolProjection.ts";
 import type { CardDefinition } from "@melite/comfyui-cordis";
+
+// The table-failure seat: this worker never boots the models table,
+// so every arm above rides the unbooted fallback. One arm forces the
+// booted-but-broken table to prove the outer catch keeps the bare
+// fallback instead of throwing.
+const tableSeat = vi.hoisted(() => ({ broken: false }));
+
+vi.mock("@melite/comfyui-cordis", async (importOriginal) => {
+  const real = await importOriginal<typeof import("@melite/comfyui-cordis")>();
+  return {
+    ...real,
+    modelsBooted: (): boolean => (tableSeat.broken ? true : real.modelsBooted()),
+    modelsService: () => {
+      if (tableSeat.broken) throw new Error("table failure keeps the bare fallback");
+      return real.modelsService();
+    },
+  };
+});
 
 const DEF = (over: Record<string, unknown> = {}): CardDefinition =>
   ({
@@ -44,6 +62,16 @@ describe("toolBaseRows", () => {
     );
     assert.equal(rows.get("pure")?.model, null);
     assert.equal(rows.get("multi")?.model, "a");
+  });
+
+  it("a failing table keeps the bare boarded fallback (the caller never throws for a missing style)", () => {
+    tableSeat.broken = true;
+    try {
+      const rows = toolBaseRows(DEFS([["img-gen", DEF()]]));
+      assert.equal(rows.get("img-gen")?.model, "fam-a");
+    } finally {
+      tableSeat.broken = false;
+    }
   });
 
   it("missing prose refuses LOUD (each fence leg)", () => {
