@@ -54,6 +54,20 @@ The web UI boots with `dsh --profile <name> --no-open --port <port>`;
 the printed token URL is the entry point (the browser-trust fence
 rejects every other first request).
 
+## Wiring the agent driver
+
+The estate's agent seats need one LLM driver. The driver is a DSH
+provider row: a `cordis.patch.yml` in `${DSH_HOME:-$HOME/.dsh}`
+naming the provider and model, and the provider key under the same
+root in `.credentials.yaml` (mode 0600; never committed, never
+printed). With the key seated, the headless estate selects the
+driver with `MELITE_AGENT_ROUTE` (`<provider>/<model>`).
+
+From there the flow is conversational: ask for an image, the agent
+composes it on the bench card (discover → load → construct, boarding
+weights and engine extensions as needed), and RUNS START AT YOUR RUN
+PRESS on the card — never the agent's.
+
 ## Quick start
 
 Requirements:
