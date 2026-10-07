@@ -14,6 +14,7 @@
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "paths": {
+        "@melite/comfyui-cordis/semanticModelKnob": ["./../../engines/comfyui-cordis/src/semanticModelKnob.ts"],
         "@melite/contracts/wire-types": ["./../../web-kit/contracts/src/wireTypes.ts"],
         "@melite/3d-anny": ["./../../3d/anny/src/index.ts"],
         "@melite/3d-anny/card": ["./../../3d/anny/src/card.ts"],

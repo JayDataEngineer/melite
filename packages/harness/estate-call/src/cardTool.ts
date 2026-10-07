@@ -60,6 +60,13 @@ export interface CardToolSpec {
   parameters: ParameterSchemaSpec
   defaultModel: string
   jsonArrayParams?: readonly string[]
+  /** Resolve a served model value to the estate's admission
+   *  spelling before it crosses the wire. Cards serving the
+   *  semantic style enum close over their own entries (the fold
+   * at comfyui-cordis/semanticModelKnob.ts — one spelling); cards
+   * serving bare family ids leave it unstated and the value
+   * crosses verbatim. */
+  resolveModel?: (value: string) => string
   previewField?: string
   previewValue?: (a: Record<string, unknown>) => string
   prepare?: (params: Record<string, unknown>) => void
@@ -161,10 +168,15 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
     async execute(args, exec): Promise<CardToolEnvelope> {
       // Validated args (the defineTool wrapper) — always the object.
       const a = args as Record<string, unknown>
-      // The emitted params spec synthesizes a CLOSED model enum from
-      // the boarded array — the wrapper rejects ''/unknown models at
-      // the seam, so a validated model is always a non-empty boarded id.
-      const model = typeof a.model === 'string' ? a.model : DEFAULT_MODEL
+      // The emitted params spec synthesizes a CLOSED model enum —
+      // the wrapper rejects ''/unknown values at the seam, so a
+      // validated model is always a served entry. Cards serving
+      // the semantic style enum resolve values through
+      // spec.resolveModel first: the estate's admission spelling
+      // (a route atom) crosses the wire, while the envelope and
+      // preview keep the picked style value.
+      const rawModel = typeof a.model === 'string' && a.model !== '' ? a.model : DEFAULT_MODEL
+      const model = spec.resolveModel !== undefined ? spec.resolveModel(rawModel) : rawModel
       const params: Record<string, unknown> = {}
       for (const [k, v] of Object.entries(a)) if (k !== 'model') params[k] = v
       const normalizedParams = normalizeJsonArrayParams(params, spec.jsonArrayParams)
@@ -181,7 +193,7 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
           stages: [{ title: label, kind: 'generation', service: model, params: preparedParams }],
         }, exec?.signal, timeoutMs)
         const draftId = typeof draft.draftId === 'string' ? draft.draftId : ''
-        if (draftId === '') return { flow: FLOW, model, error: 'gateway draft POST returned no draftId' }
+        if (draftId === '') return { flow: FLOW, model: rawModel, error: 'gateway draft POST returned no draftId' }
         // DOOR TWO (start): draft_id + exactly one door key — the
         // {model:} arm resolves, composes, and queues the run.
         // THE ENVELOPE LIFT (card_compose_body 363-372): the start
@@ -196,13 +208,13 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
           draft_id: draftId,
         }, exec?.signal, timeoutMs)
         const named = typeof started.error === 'string' ? started.error : ''
-        if (named !== '') return { flow: FLOW, model, error: named }
+        if (named !== '') return { flow: FLOW, model: rawModel, error: named }
         if (typeof started.run_id !== 'string' || started.run_id === '') {
-          return { flow: FLOW, model, error: 'gateway start returned no run_id' }
+          return { flow: FLOW, model: rawModel, error: 'gateway start returned no run_id' }
         }
         return {
           flow: FLOW,
-          model,
+          model: rawModel,
           draft_id: draftId,
           run_id: started.run_id,
           status: typeof started.status === 'string' ? started.status : 'queued',
@@ -215,7 +227,7 @@ export function defineCardTool(call: EstateCall, spec: CardToolSpec): ToolDefini
         if (e instanceof GatewayError) {
           // Named refusals (4xx/5xx bodies carrying {error}) are
           // DOMAIN OUTCOMES — canonical values, not throws.
-          return { flow: FLOW, model, error: e.named || e.body || `estate ${e.status}` }
+          return { flow: FLOW, model: rawModel, error: e.named || e.body || `estate ${e.status}` }
         }
         throw e
       }

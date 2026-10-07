@@ -49,6 +49,7 @@
       "@melite/comfyui-cordis/model-contract": ["./packages/engines/comfyui-cordis/src/models/families/contract.ts"],
       "@melite/comfyui-cordis/models-service": ["./packages/engines/comfyui-cordis/src/models/service.ts"],
       "@melite/comfyui-cordis/params-emit": ["./packages/engines/comfyui-cordis/src/params-emit.ts"],
+      "@melite/comfyui-cordis/semanticModelKnob": ["./packages/engines/comfyui-cordis/src/semanticModelKnob.ts"],
       "@melite/comfyui-cordis/provisioning-manifest": ["./packages/engines/comfyui-cordis/scripts/provision-extensions-manifest.ts"],
       "@melite/comfyui-cordis/service": ["./packages/engines/comfyui-cordis/src/service.ts"],
       "@melite/comfyui-cordis/user-loras": ["./packages/engines/comfyui-cordis/src/userLoras.ts"],

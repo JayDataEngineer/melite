@@ -4,6 +4,7 @@ import type { PromptGraph, StripTable } from '@melite/comfyui-card-kit/graph';
 import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
 import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { ComfyUIService } from '@melite/comfyui-cordis/service';
+import type { SemanticModelEntry } from '@melite/comfyui-cordis/semanticModelKnob';
 /** The card's boarding — where the card gets its models: THE AI
  *  MODELS' own plugin declarations (packages/models/*), each
  *  carrying its whole truth — variants, quant cells, HF artifact
@@ -12,6 +13,12 @@ import type { ComfyUIService } from '@melite/comfyui-cordis/service';
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export declare const BOARDED: readonly [string, string, string, string];
+/** The served style enum (the semantic model knob): entries derived
+ *  from the same four DECLs — labels are their own copy, values
+ *  are stable family:variant:cell addresses, routes resolve
+ *  estate-side. One source: the tool face serves THIS, never a
+ *  second hand-written list. */
+export declare const SEMANTIC_MODELS: readonly SemanticModelEntry[];
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
  *  boarded family with a bound action composes through the atom's
  *  own declared segment — the card delegates, never authors nodes.

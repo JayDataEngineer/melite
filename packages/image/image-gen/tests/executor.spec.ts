@@ -11,13 +11,21 @@ import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
 import * as pkg from "../src/index.ts";
 import { buildImageGenTool as FACE } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
+import { SEMANTIC_MODELS } from "../src/card.ts";
 import { registerExecutorBattery } from "@melite/estate-call/executorHarness";
+
+// The semantic spellings, derived from the card (never re-spelled):
+// the envelope carries the style value; the wire carries its route.
+const FIRST = SEMANTIC_MODELS[0]!;
+const SECOND = SEMANTIC_MODELS[1]!;
 
 const harness = registerExecutorBattery({
   makeTool: FACE,
   goodArgs: { prompt: "a koi pond at dusk" },
-  defaultModel: "krea-2",
-  explicitModel: "krea-2",
+  defaultModel: FIRST.value,
+  defaultModelRoute: FIRST.route,
+  explicitModel: SECOND.value,
+  explicitModelRoute: SECOND.route,
   explicitAnchor: "\\s",
   draftIntent: "image-gen",
   flow: "image-gen",

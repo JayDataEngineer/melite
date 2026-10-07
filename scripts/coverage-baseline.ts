@@ -119,6 +119,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/engines/comfyui-cordis/src/mods/userLorasFlavor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/no-cheat.ts': { statements: 95.45, branches: 93.75, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/params-emit.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/engines/comfyui-cordis/src/semanticModelKnob.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/service.ts': { statements: 98.33, branches: 97.68, functions: 100, lines: 99.02 },
   '**/packages/engines/comfyui-cordis/src/serviceMods.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/engines/comfyui-cordis/src/supervisor.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/comfyui-cordis/semanticModelKnob": ["./../../engines/comfyui-cordis/src/semanticModelKnob.ts"],
         "@melite/contracts/wire-types": ["./../contracts/src/wireTypes.ts"],
         "@melite/three-client": ["./../../web/three-client/src/host.ts"],
         "@melite/three-client/client": ["./../../web/three-client/src/client/index.ts"],

@@ -173,6 +173,32 @@ describe("emitParamsSchema (the served projection)", () => {
     });
     assert.equal(out.required, undefined, "nothing required, no key");
   });
+
+  it("semantic entries serve the style enum — labels in the copy, address as default", () => {
+    const out = emitParamsSchema(carrier({ prompt: knob() }), ["a", "b"], [
+      { value: "a:fast:fp8", label: "Fast FP8", family: "a", route: "a:fast" },
+      { value: "b:full:bf16", label: "Full BF16", family: "b", route: "b:full" },
+    ]);
+    assert.deepEqual(out.properties["model"], {
+      type: "string",
+      enum: ["a:fast:fp8", "b:full:bf16"],
+      default: "a:fast:fp8",
+      description: "The style to run — the request's top-level `model`. " +
+        "Options: Fast FP8 (a:fast:fp8); Full BF16 (b:full:bf16).",
+    });
+  });
+
+  it("an empty semantic array falls back to the family enum", () => {
+    const out = emitParamsSchema(carrier({ prompt: knob() }), ["a", "b"], []);
+    assert.deepEqual(out.properties["model"]!.enum, ["a", "b"]);
+  });
+
+  it("a single-family board serves no model knob even with semantic entries", () => {
+    const out = emitParamsSchema(carrier({ prompt: knob() }), ["a"], [
+      { value: "a:fast:fp8", label: "Fast", family: "a", route: "a:fast" },
+    ]);
+    assert.equal("model" in out.properties, false, "unambiguous boards need no picker");
+  });
 });
 
 describe("emitParamsSpec (the DSL projection)", () => {

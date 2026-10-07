@@ -68,10 +68,10 @@ export function registerExecutorBattery(cfg) {
             const draft = calls[1].body;
             assert.equal(draft.intent, cfg.draftIntent);
             const stage = draft.stages[0];
-            assert.equal(stage.service, defaultModel, "the unstated model resolves to the boarded default");
+            assert.equal(stage.service, cfg.defaultModelRoute ?? defaultModel, "the unstated model resolves to the boarded default at its wire spelling");
             const start = calls[2].body;
             assert.equal(start.draft_id, "d_9");
-            assert.equal(start.model, defaultModel);
+            assert.equal(start.model, cfg.defaultModelRoute ?? defaultModel);
             assert.deepEqual(value, {
                 flow: cfg.flow, model: defaultModel, draft_id: "d_9", run_id: "r_9", status: "queued",
             });
@@ -81,8 +81,8 @@ export function registerExecutorBattery(cfg) {
             controls.startBody = { run_id: "r_1", status: "queued" };
             const value = (await tool().execute({ ...goodArgs, model: cfg.explicitModel }, exec));
             const stage = calls[3].body.stages[0];
-            assert.equal(stage.service, cfg.explicitModel);
-            assert.equal(calls[4].body.model, cfg.explicitModel);
+            assert.equal(stage.service, cfg.explicitModelRoute ?? cfg.explicitModel);
+            assert.equal(calls[4].body.model, cfg.explicitModelRoute ?? cfg.explicitModel);
             assert.equal(value.model, cfg.explicitModel);
         });
         it("a mint without draftId is a refusal value", async () => {
@@ -205,12 +205,15 @@ export function registerExecutorBattery(cfg) {
         });
         it("validated args name the resolved model (default when unstated)", () => {
             // rawInput rides the source's own presentCall return — the lib's
-            // ToolCallView does not declare it.
+            // ToolCallView does not declare it. The spellings are escaped:
+            // semantic style values carry regex metachars (':'-separated
+            // addresses, dotted family ids).
+            const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             const card = tool().presentCall?.(goodArgs);
             assert.ok(card);
-            assert.match(String(card.rawInput), new RegExp("model=" + defaultModel + (cfg.defaultAnchor ?? "")));
+            assert.match(String(card.rawInput), new RegExp("model=" + esc(defaultModel) + (cfg.defaultAnchor ?? "")));
             const explicit = tool().presentCall?.({ ...goodArgs, model: cfg.explicitModel });
-            assert.match(String(explicit?.rawInput), new RegExp("model=" + cfg.explicitModel + (cfg.explicitAnchor ?? "")));
+            assert.match(String(explicit?.rawInput), new RegExp("model=" + esc(cfg.explicitModel) + (cfg.explicitAnchor ?? "")));
         });
         it("the prose names the driving field (the card's own input)", () => {
             // rawInput rides the source's own presentCall return — the lib's

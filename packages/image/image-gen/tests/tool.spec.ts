@@ -25,7 +25,7 @@ import { buildImageGenTool } from "../src/tool.ts";
 import { TOOL_NAME } from "../src/wire.ts";
 import { parameterSchemaSpecToJsonSchema } from "@deepseek-ai/dsh-tools";
 import type { ToolDefinition } from "@deepseek-ai/dsh-tools";
-import { identity, schema, BOARDED } from "../src/card.ts";
+import { identity, schema, BOARDED, SEMANTIC_MODELS } from "../src/card.ts";
 
 const REFUSING_CALL = async (): Promise<never> => { throw new Error("face tests never call the seam") }
 
@@ -56,7 +56,11 @@ const seam: EstateCall = async (method, path, body) => {
 // Minimal ToolRunContext per the contract's required identity fields
 // (the registry materializes real ones; tests fill every required
 // field and the executor only consumes signal).
-const FULL_ARGS = { prompt: "a cat in neon rain", model: "krea-2" };
+// The semantic style spelling: the first served entry is the
+// default pick (value = the wire enum's default, route = the atom
+// that crosses to the estate) — derived, never re-spelled here.
+const STYLE0 = SEMANTIC_MODELS[0]!;
+const FULL_ARGS = { prompt: "a cat in neon rain", model: STYLE0.value };
 
 const exec = {
   callId: "test-call",
@@ -81,16 +85,20 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.equal(tool.description, identity.description);
   });
 
-  it("parameters are the SPEC projection of the same walk — model knob synthesized, recipe gone (stroke 34)", () => {
+  it("parameters are the SPEC projection of the same walk — the semantic style enum served, recipe gone (stroke 34)", () => {
     // One walk, two planes: the registry serves the JSON-schema
     // form (/v1/tools); defineTool takes the implicit property map
     // and compiles it — the definition carries the compiled form.
-    const spec = emitParamsSpec(schema as never, BOARDED);
+    const spec = emitParamsSpec(schema as never, BOARDED, SEMANTIC_MODELS);
     const compiled = parameterSchemaSpecToJsonSchema(spec as never);
     assert.deepEqual(tool.parameters, compiled);
-    // The model input, spelled once: enum from the boarded array.
-    const props = compiled.properties as Record<string, { enum?: string[] }>;
-    assert.deepEqual(props.model!.enum, [...BOARDED]);
+    // The model input, spelled once: the style enum derived from
+    // the boarded DECLs' variant rows — labels in the copy, the
+    // first entry's address the default.
+    const props = compiled.properties as Record<string, { enum?: string[]; default?: string; description?: string }>;
+    assert.deepEqual(props.model!.enum, SEMANTIC_MODELS.map((e) => e.value));
+    assert.equal(props.model!.default, STYLE0.value);
+    assert.ok(String(props.model!.description).includes(STYLE0.label), "the DECL's own label rides the copy");
     assert.equal("recipe" in props, false, "the recipe knob is gone from the projection");
   });
 
@@ -100,7 +108,7 @@ describe("single spelling (the emission derives from the card)", () => {
     assert.equal(card.card, "generic");
     assert.equal(card.title, identity.label);
     assert.equal(card.kind, "execute");
-    assert.ok(String(card.rawInput).includes("krea-2"), "model rides the summary");
+    assert.ok(String(card.rawInput).includes(STYLE0.value), "the picked style rides the summary");
     assert.ok(!String(card.rawInput).includes("recipe="), "the dead layer never names itself");
   });
 });
@@ -110,16 +118,16 @@ describe("the completed card (P0: presentationMeta + presentResult)", () => {
 
   it("presentationMeta projects the settled facts (run arm), omitting empty keys", () => {
     const meta = tool.output.presentationMeta?.(FULL_ARGS, {
-      flow: "image-gen", model: "krea-2", draft_id: "d_77", run_id: "r_9", status: "queued",
+      flow: "image-gen", model: STYLE0.value, draft_id: "d_77", run_id: "r_9", status: "queued",
     });
     assert.deepEqual(meta, {
-      flow: "image-gen", model: "krea-2", draft_id: "d_77", run_id: "r_9", status: "queued",
+      flow: "image-gen", model: STYLE0.value, draft_id: "d_77", run_id: "r_9", status: "queued",
     });
   });
 
   it("presentationMeta carries the named refusal as a domain outcome", () => {
     const meta = tool.output.presentationMeta?.(FULL_ARGS, {
-      flow: "image-gen", model: "krea-2", error: "model 'bogus' is not boarded on the image-gen card",
+      flow: "image-gen", model: STYLE0.value, error: "model 'bogus' is not boarded on the image-gen card",
     }) as Record<string, unknown>;
     assert.equal(meta.error, "model 'bogus' is not boarded on the image-gen card");
     assert.ok(!("run_id" in meta), "no run id on a refusal");
@@ -129,11 +137,11 @@ describe("the completed card (P0: presentationMeta + presentResult)", () => {
     const view = tool.presentResult?.(FULL_ARGS, {
       content: [], isError: false,
       meta: tool.output.presentationMeta?.(FULL_ARGS, {
-        flow: "image-gen", model: "krea-2", run_id: "r_9", status: "queued",
+        flow: "image-gen", model: STYLE0.value, run_id: "r_9", status: "queued",
       }),
     });
     assert.ok(view && view.card === "generic");
-    assert.equal(view.title, `${identity.label} [krea-2] \u2192 r_9`);
+    assert.equal(view.title, `${identity.label} [${STYLE0.value}] \u2192 r_9`);
     assert.equal(view.content, undefined, "the raw result content renders; presentResult never re-encodes it");
   });
 
@@ -141,11 +149,11 @@ describe("the completed card (P0: presentationMeta + presentResult)", () => {
     const view = tool.presentResult?.(FULL_ARGS, {
       content: [], isError: false,
       meta: tool.output.presentationMeta?.(FULL_ARGS, {
-        flow: "image-gen", model: "krea-2", error: "not boarded",
+        flow: "image-gen", model: STYLE0.value, error: "not boarded",
       }),
     });
     assert.ok(view && view.card === "generic");
-    assert.equal(view.title, `${identity.label} [krea-2] \u2014 REFUSED`);
+    assert.equal(view.title, `${identity.label} [${STYLE0.value}] \u2014 REFUSED`);
   });
 
   it("meta-less replay (nested or projected-out call) keeps the pending title: presentResult returns undefined", () => {
@@ -167,7 +175,7 @@ describe("the executor path (two doors, the model-card law)", () => {
     assert.equal(calls.length, 2, "exactly two doors");
     assert.equal(calls[0].path, "/v1/flows/drafts");
     const stage = (calls[0].body.stages as Array<Record<string, unknown>>)[0]!;
-    assert.equal(stage.service, "krea-2", "the model rides as the stage's service");
+    assert.equal(stage.service, STYLE0.route, "the resolved route rides as the stage's service");
     assert.equal(stage.kind, "generation");
     const stageParams = stage.params as Record<string, unknown>;
     assert.equal(stageParams.prompt, "a cat in neon rain");
@@ -175,16 +183,16 @@ describe("the executor path (two doors, the model-card law)", () => {
     assert.ok(!("model" in stageParams), "model rides service, never params");
     assert.equal(calls[1].path, "/v1/flows/start");
     assert.equal(calls[1].body.draft_id, "d_77", "the minted draft rides the start envelope");
-    assert.equal(calls[1].body.model, "krea-2", "exactly one door key: {model:}");
-    assert.deepEqual(value, { flow: "image-gen", model: "krea-2", draft_id: "d_77", run_id: "r_9", status: "queued" });
+    assert.equal(calls[1].body.model, STYLE0.route, "exactly one door key: {model:} at its admission spelling");
+    assert.deepEqual(value, { flow: "image-gen", model: STYLE0.value, draft_id: "d_77", run_id: "r_9", status: "queued" });
   });
 
-  it("an unstated model resolves boarded[0] (the same law as the row)", async () => {
+  it("an unstated model resolves the semantic default (the same law as the row)", async () => {
     calls.length = 0;
     draftsBody = { draftId: "d_1" };
     const value = (await buildImageGenTool(seam).execute({ prompt: "x" }, exec)) as Record<string, string>;
-    assert.equal((calls[0].body.stages as Array<Record<string, unknown>>)[0]!.service, "krea-2");
-    assert.equal(value.model, "krea-2");
+    assert.equal((calls[0].body.stages as Array<Record<string, unknown>>)[0]!.service, STYLE0.route);
+    assert.equal(value.model, STYLE0.value);
   });
 
   it("a named refusal is a CANONICAL value, never a throw", async () => {
@@ -221,7 +229,7 @@ describe("the executor path (two doors, the model-card law)", () => {
 
   it("schema-incomplete args are refused by the contract's own validation", async () => {
     await assert.rejects(
-      buildImageGenTool(seam).execute({ model: "krea-2" }, exec),
+      buildImageGenTool(seam).execute({ model: STYLE0.value }, exec),
       /prompt/,
     );
   });
@@ -230,7 +238,7 @@ describe("the executor path (two doors, the model-card law)", () => {
     const tool = buildImageGenTool(seam);
     const refused = tool.output.render({}, { error: "nope" });
     assert.match(String((refused[0] as { text?: string }).text), /REFUSED: nope/);
-    const ran = tool.output.render({}, { model: "krea-2", run_id: "r_9" });
+    const ran = tool.output.render({}, { model: STYLE0.value, run_id: "r_9" });
     assert.match(String((ran[0] as { text?: string }).text), /krea-2.*r_9/);
   });
 });

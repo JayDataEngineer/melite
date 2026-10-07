@@ -1,4 +1,5 @@
 import type { DeclaredModifierKind } from './service.js';
+import type { SemanticModelEntry } from './semanticModelKnob.js';
 /** The carrier dict shape (shared with the no-cheat door). */
 export type Schema = {
     type: string;
@@ -42,7 +43,7 @@ export interface ParamSpecNode {
     required?: true;
 }
 export type ParamsSpec = Record<string, ParamSpecNode>;
-export declare const emitParamsSpec: (carrier: Schema, boarded: readonly string[]) => ParamsSpec;
+export declare const emitParamsSpec: (carrier: Schema, boarded: readonly string[], semantic?: readonly SemanticModelEntry[]) => ParamsSpec;
 /** Project a registered card's schema + boarded list to the served
  * params_schema dialect. `schemaFn` is the card's registered schema
  * (the callable); we walk its carrier via the .dict of the declared
@@ -51,7 +52,7 @@ export declare const emitParamsSpec: (carrier: Schema, boarded: readonly string[
  * inner one at def.schemaCarrier. The registry's own reader of that
  * field is models/service.ts:987, which resolves
  * `def?.schemaCarrier ?? def?.schema`. */
-export declare const emitParamsSchema: (schemaCarrier: Schema, boarded: readonly string[]) => ParamsSchema;
+export declare const emitParamsSchema: (schemaCarrier: Schema, boarded: readonly string[], semantic?: readonly SemanticModelEntry[]) => ParamsSchema;
 /** THE MODS PROJECTION (stroke 79 — the seam-law unification): the
  *  declared kinds as the AGENT plane consumes them. ONE emitter,
  *  TWO doors (the /v1/tools manifest row and the /v1/load bundle's

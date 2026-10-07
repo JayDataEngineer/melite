@@ -22,6 +22,8 @@ import { DECL as krea2Decl } from '@melite/models-krea-2'
 import { DECL as zImageDecl } from '@melite/models-z-image'
 import { DECL as animaDecl } from '@melite/models-anima'
 import { DECL as qwenImg21Decl } from '@melite/models-qwen-img-21'
+import { semanticModelEntries } from '@melite/comfyui-cordis/semanticModelKnob'
+import type { SemanticModelEntry } from '@melite/comfyui-cordis/semanticModelKnob'
 import { bag } from '@melite/contracts/extraKeys'
 
 /** The card's boarding — where the card gets its models: THE AI
@@ -32,6 +34,15 @@ import { bag } from '@melite/contracts/extraKeys'
  *  not-boarded refusal. The model-knob enum, the tool default, and
  *  the registry row all derive from this array. */
 export const BOARDED = [krea2Decl.id, zImageDecl.id, animaDecl.id, qwenImg21Decl.id] as const
+
+/** The served style enum (the semantic model knob): entries derived
+ *  from the same four DECLs — labels are their own copy, values
+ *  are stable family:variant:cell addresses, routes resolve
+ *  estate-side. One source: the tool face serves THIS, never a
+ *  second hand-written list. */
+export const SEMANTIC_MODELS: readonly SemanticModelEntry[] = semanticModelEntries([
+  krea2Decl, zImageDecl, animaDecl, qwenImg21Decl,
+])
 
 /** The action bindings (the atom vocabulary, stroke-1 pilot): a
  *  boarded family with a bound action composes through the atom's

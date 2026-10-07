@@ -52,8 +52,14 @@ export declare function executorHarness(makeTool: (call: EstateCall) => ToolDefi
 export interface BatteryConfig {
     makeTool: (call: EstateCall) => ToolDefinition;
     goodArgs: Record<string, unknown>;
+    /** the boarded default (the unstated resolution — the envelope's spelling) */
     defaultModel: string;
+    /** the wire spelling the unstated default crosses as (semantic cards
+     *  fold the style value to its route; defaults to defaultModel) */
+    defaultModelRoute?: string;
     explicitModel: string;
+    /** the wire spelling of explicitModel (defaults to explicitModel) */
+    explicitModelRoute?: string;
     draftIntent: string;
     flow: string;
     renderLabel?: string;

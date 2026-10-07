@@ -116,6 +116,9 @@
   "@melite/comfyui-cordis/params-emit": [
     "./packages/engines/comfyui-cordis/src/params-emit.ts"
   ],
+  "@melite/comfyui-cordis/semanticModelKnob": [
+    "./packages/engines/comfyui-cordis/src/semanticModelKnob.ts"
+  ],
   "@melite/comfyui-cordis/provisioning-manifest": [
     "./packages/engines/comfyui-cordis/scripts/provision-extensions-manifest.ts"
   ],

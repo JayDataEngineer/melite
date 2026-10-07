@@ -50,6 +50,10 @@
       "types": "./lib/params-emit.d.ts",
       "default": "./lib/params-emit.js"
     },
+    "./semanticModelKnob": {
+      "types": "./lib/semanticModelKnob.d.ts",
+      "default": "./lib/semanticModelKnob.js"
+    },
     "./provisioning-manifest": {
       "types": "./lib/scripts/provision-extensions-manifest.d.ts",
       "default": "./lib/scripts/provision-extensions-manifest.js"

@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/comfyui-cordis/semanticModelKnob": ["./../../engines/comfyui-cordis/src/semanticModelKnob.ts"],
         "@melite/contracts/wire-types": ["./../../web-kit/contracts/src/wireTypes.ts"],
         "@melite-plugin/timeline/client": ["./../../web-kit/timeline/src/client/index.ts"],
         "@melite/cards/form-fields": ["./../../engines/comfyui/action_cards/src/form-fields.tsx"],

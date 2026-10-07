@@ -100,6 +100,38 @@ describe("the card-tool builder", () => {
     assert.deepEqual(startBody, { prompt: "p", lyrics: "l", model: "yue2", draft_id: "d1" })
   })
 
+  it("resolveModel folds a served style value to its route; the envelope keeps the style", async () => {
+    const semantic = defineCardTool(call, {
+      name: "img", flow: "image-gen", label: "Image", description: "d",
+      parameters: { prompt: { type: "string", required: true } } as never,
+      defaultModel: "a:fast",
+      resolveModel: (v) => (v === "a:fast:fp8" ? "a:fast" : v),
+      previewField: "prompt",
+    })
+    let phase = 0
+    respond = () => { phase += 1; return phase === 1 ? { draftId: "d2" } : { run_id: "r7" } }
+    const out = await semantic.execute({ model: "a:fast:fp8", prompt: "p" }, runCtx()) as Record<string, unknown>
+    assert.deepEqual(out, { flow: "image-gen", model: "a:fast:fp8", draft_id: "d2", run_id: "r7", status: "queued" })
+    const stage = (draftBody.stages as Array<Record<string, unknown>>)[0]!
+    assert.equal(stage.service, "a:fast", "the drafts stage carries the route atom")
+    assert.equal(startBody.model, "a:fast", "the start lift carries the route atom")
+  })
+
+  it("resolveModel folds the unstated default the same way — one spelling for both arms", async () => {
+    const semantic = defineCardTool(call, {
+      name: "img", flow: "image-gen", label: "Image", description: "d",
+      parameters: { prompt: { type: "string", required: true } } as never,
+      defaultModel: "a:fast",
+      resolveModel: (v) => (v === "a:fast" ? "a:fast:routed" : v),
+      previewField: "prompt",
+    })
+    let phase = 0
+    respond = () => { phase += 1; return phase === 1 ? { draftId: "d3" } : { run_id: "r8" } }
+    const out = await semantic.execute({ prompt: "p" }, runCtx()) as Record<string, unknown>
+    assert.equal(out.model, "a:fast", "the envelope echoes the raw default")
+    assert.equal(startBody.model, "a:fast:routed", "the wire carries the folded atom")
+  })
+
   it("execute resolves the unstated model to the card's default", async () => {
     let phase = 0
     respond = () => { phase += 1; return phase === 1 ? { draftId: "d1" } : { run_id: "r6" } }

@@ -124,8 +124,8 @@ export const emitKnob = (s) => {
         out['x-families'] = iex.families;
     return out;
 };
-export const emitParamsSpec = (carrier, boarded) => {
-    const served = emitParamsSchema(carrier, boarded);
+export const emitParamsSpec = (carrier, boarded, semantic) => {
+    const served = emitParamsSchema(carrier, boarded, semantic);
     const spec = {};
     const requiredSet = new Set(served.required ?? []);
     /* v8 ignore next -- emitParamsSchema always serves properties
@@ -180,21 +180,37 @@ export const emitParamsSpec = (carrier, boarded) => {
  * inner one at def.schemaCarrier. The registry's own reader of that
  * field is models/service.ts:987, which resolves
  * `def?.schemaCarrier ?? def?.schema`. */
-export const emitParamsSchema = (schemaCarrier, boarded) => {
+export const emitParamsSchema = (schemaCarrier, boarded, semantic) => {
     const dict = schemaCarrier.dict ?? {};
     const properties = {};
     // the served model knob exists ONLY on multi-family cards — a
     // single-family board is unambiguous (the top-level model IS the
-    // card); multi-family synthesizes enum boarded + default
-    // boarded[0] (one source, two projections — the {model:} door
-    // still owns admission; this knob is the UI's picker)
+    // card). Multi-family synthesizes the picker from one source with
+    // two lawful spellings: the semantic style enum (entries derived
+    // at semanticModelKnob.ts from the boarded DECLs' own variant
+    // rows — labels are the DECLs' copy, values resolve to routes
+    // estate-side; a seat passes them when its DECLs are in scope)
+    // or the bare boarded family-id enum where no derivation is
+    // wired yet. The {model:} door still owns admission; this knob
+    // is the UI's picker.
     if (boarded.length > 1) {
-        properties.model = {
-            type: 'string',
-            enum: [...boarded],
-            default: boarded[0],
-            description: `The boarded family to run — the request's top-level \`model\`. Options: ${boarded.join(', ')}.`,
-        };
+        if (semantic !== undefined && semantic.length > 0) {
+            properties.model = {
+                type: 'string',
+                enum: semantic.map((e) => e.value),
+                default: semantic[0].value,
+                description: `The style to run — the request's top-level \`model\`. Options: ` +
+                    semantic.map((e) => `${e.label} (${e.value})`).join('; ') + '.',
+            };
+        }
+        else {
+            properties.model = {
+                type: 'string',
+                enum: [...boarded],
+                default: boarded[0],
+                description: `The boarded family to run — the request's top-level \`model\`. Options: ${boarded.join(', ')}.`,
+            };
+        }
     }
     const required = [];
     for (const [k, v] of Object.entries(dict)) {
