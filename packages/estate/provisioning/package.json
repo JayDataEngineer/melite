@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-provisioning",
-  "version": "0.1.0-alpha.1",
+  "version": "0.4.0-alpha.3",
   "private": true,
   "type": "module",
   "description": "Cordis provisioning service definition and provider for declared model and extension resources.",
