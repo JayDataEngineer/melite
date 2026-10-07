@@ -5,17 +5,14 @@
   "types": "./viewers/index.ts",
   "exports": {
     "./ui/viewers": {
-      "types": "./lib/viewers/index.d.ts",
-      "default": "./lib/viewers/index.js"
+      "types": "./lib/viewers/index.d.ts"
     },
     "./ui/viewers/motionImageStore": {
-      "types": "./lib/viewers/motionImageStore.d.ts",
-      "default": "./lib/viewers/motionImageStore.js"
+      "types": "./lib/viewers/motionImageStore.d.ts"
     },
     "./package.json": "./package.json",
     "./ui/viewer3d": {
-      "types": "./lib/viewer3d/index.d.ts",
-      "default": "./lib/viewer3d/index.js"
+      "types": "./lib/viewer3d/index.d.ts"
     }
   },
   "dependencies": {

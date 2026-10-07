@@ -5,8 +5,7 @@
   "types": "./viewers/index.ts",
   "exports": {
     "./ui/viewers": {
-      "types": "./lib/viewers/index.d.ts",
-      "default": "./lib/viewers/index.js"
+      "types": "./lib/viewers/index.d.ts"
     },
     "./package.json": "./package.json"
   },

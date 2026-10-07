@@ -20,16 +20,13 @@
   },
   "exports": {
     ".": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
+      "types": "./lib/index.d.ts"
     },
     "./form-fields": {
-      "types": "./lib/form-fields.d.ts",
-      "default": "./lib/form-fields.js"
+      "types": "./lib/form-fields.d.ts"
     },
     "./poster-shell": {
-      "types": "./lib/poster-shell.d.ts",
-      "default": "./lib/poster-shell.js"
+      "types": "./lib/poster-shell.d.ts"
     },
     "./package.json": "./package.json"
   },
