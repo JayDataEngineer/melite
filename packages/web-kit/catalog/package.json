@@ -1,6 +1,7 @@
 {
   "name": "@melite/catalog",
   "private": true,
+  "license": "SSPL-1.0",
   "type": "module",
   "dependencies": {
     "@deepseek-ai/dsh-client-store": "0.2.0-rc.1",
@@ -79,7 +80,7 @@
       "default": "./lib/waveform-peaks.js"
     }
   },
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

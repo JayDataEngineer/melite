@@ -1,6 +1,7 @@
 {
   "name": "@melite/contracts",
   "private": true,
+  "license": "SSPL-1.0",
   "type": "module",
   "dependencies": {},
   "exports": {
@@ -114,7 +115,7 @@
       "default": "./lib/wireTypes.js"
     }
   },
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

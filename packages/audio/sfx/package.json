@@ -1,8 +1,9 @@
 {
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "private": true,
+  "license": "SSPL-1.0",
   "type": "module",
-  "description": "the sfx card (the audio lane) \u2014 one card one package: card.ts host face + ui/ studio + agents/ context",
+  "description": "the sfx card (the audio lane) — one card one package: card.ts host face + ui/ studio + agents/ context",
   "exports": {
     ".": {
       "types": "./lib/card.d.ts",

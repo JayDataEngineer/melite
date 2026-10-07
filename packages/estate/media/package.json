@@ -1,6 +1,6 @@
 {
   "name": "@melite/estate-media",
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "type": "module",
   "exports": {
     ".": {
@@ -50,5 +50,6 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.4"
-  }
+  },
+  "license": "SSPL-1.0"
 }

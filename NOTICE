@@ -1,0 +1,20 @@
+Melite — licensing map
+Copyright (c) 2026 JayDataEngineer
+
+The @melite/* package estate (packages/**, minted as npm artifacts)
+is licensed under the Server Side Public License v1 (SSPL-1.0):
+use it, self-host it, build with it — but offering it as a network
+service requires releasing the service's entire source under
+SSPL-1.0 (see section 13). The canonical text: LICENSE and
+licenses/SSPL-1.0.txt; each minted tarball carries it as
+package/LICENSE.
+
+The ComfyUI engine extensions (vendor/comfyui_extensions/) are
+MIT-licensed where authored here, and carry their upstream
+licenses where derived from upstream (the timeline director is
+GPL-3 upstream and stays so — relicensing upstream code is not
+ours to do).
+
+Vendored workspace members (vendor/cordis_plugins/,
+packages/vendor/) keep their upstream licenses and are not
+published on the public registry.

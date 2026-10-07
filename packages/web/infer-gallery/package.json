@@ -1,8 +1,9 @@
 {
   "name": "@melite-plugin/dsh-gallery",
-  "version": "0.4.0-alpha.7",
+  "version": "0.4.0-alpha.8",
   "type": "module",
   "private": true,
+  "license": "SSPL-1.0",
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

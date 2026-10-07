@@ -26,6 +26,7 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   extensionlessImportOffender: (text: string) => string | null
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
   stripPackedTarballs: (files: string[]) => void
+  publishableTarballs: (files: string[]) => string[]
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
   versionCoherenceOffender: (innerFiles: Map<string, { inner: { name: string, version: string } }>, tag: string) => string | null
 }
@@ -50,7 +51,7 @@ function fixture (files: Record<string, string>): { f: string; inner: Record<str
 }
 
 const okManifest = (extra: Record<string, unknown> = {}): string => JSON.stringify({
-  name: 'fx-wellformed', version: '0.0.0', type: 'module',
+  name: 'fx-wellformed', version: '0.0.0', type: 'module', license: 'SSPL-1.0',
   exports: { '.': { types: './lib/index.d.ts', default: './lib/index.js' }, './package.json': './package.json' },
   ...extra,
 }, null, 2)
@@ -400,6 +401,81 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
       expect(() => gates.stripPackedTarballs([fx.f]))
         .toThrow('description carries development history')
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('injects package/LICENSE from the canonical single-source text (license arm)', () => {
+    // The publish terms ride the artifact: every minted tarball
+    // carries its manifest-declared license text, sourced from the
+    // ONE canonical file under licenses/ — the tree stays one-source.
+    const fx = fixture({
+      'package.json': okManifest({ license: 'SSPL-1.0' }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const shipped = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/LICENSE`], { encoding: 'utf8' })
+      expect(shipped).toBe(readFileSync(join(ROOT, 'licenses', 'SSPL-1.0.txt'), 'utf8'))
+      expect(shipped).toContain('13. Offering the Program as a Service')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses a manifest with no license field (license arm)', () => {
+    // A licenseless publish is a legal hole; the gate refuses rather
+    // than defaulting a license nobody chose.
+    const bare = JSON.parse(okManifest())
+    delete bare.license
+    const fx = fixture({
+      'package.json': JSON.stringify(bare, null, 2),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      expect(() => gates.stripPackedTarballs([fx.f]))
+        .toThrow('manifest carries no license field')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses an SPDX id with no canonical text under licenses/ (license arm)', () => {
+    const fx = fixture({
+      'package.json': okManifest({ license: 'WTFPL' }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      expect(() => gates.stripPackedTarballs([fx.f]))
+        .toThrow('no canonical text under licenses/')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses a shipped LICENSE that drifts from the canonical text (license arm)', () => {
+    const fx = fixture({
+      'package.json': okManifest({ license: 'MIT' }),
+      LICENSE: 'MIT License\n\nCopyright (c) someone else entirely\n\nNot the canonical text.\n',
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      expect(() => gates.stripPackedTarballs([fx.f]))
+        .toThrow('drifts from the canonical MIT text')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('drops vendored tarballs from the publishable set (vendor-tier arm)', () => {
+    // Operator ruling 2026-10-18: upstream-licensed vendored members
+    // are not ours to publish. The melite set flows on; the foreign
+    // scopes stay out of order, manifest, and upload.
+    const kept = gates.publishableTarballs([
+      '/tmp/x/melite-viewer-0.4.0.tgz',
+      '/tmp/x/melite-cards-0.4.0.tgz',
+    ])
+    expect(kept).toHaveLength(2)
+    const filtered = gates.publishableTarballs([
+      '/tmp/x/melite-viewer-0.4.0.tgz',
+      '/tmp/x/deepseek-ai-cordis-plugin-timer-1.0.0.tgz',
+      '/tmp/x/deepseek-ai-cordis-plugin-group-1.0.0.tgz',
+    ])
+    expect(filtered).toEqual(['/tmp/x/melite-viewer-0.4.0.tgz'])
   })
 })
 

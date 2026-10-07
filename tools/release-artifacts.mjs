@@ -407,12 +407,50 @@ export function stripPackedTarballs (files) {
       if (typeof manifest.description === 'string' && isLeak(manifest.description)) {
         throw new Error(`strip gate: ${f.split('/').pop()} description carries development history (${JSON.stringify(manifest.description)}) — product copy is fixed at source`)
       }
+      // LICENSE MEMBER (the 2026-10-18 licensing posture): the publish
+      // terms ride the artifact, sourced from the ONE canonical text
+      // under licenses/<SPDX>.txt. A manifest without a license field
+      // REFUSES — a licenseless publish is a legal hole, not a default
+      // to guess; an unknown SPDX id REFUSES (no unverified text
+      // ships); a pre-existing LICENSE that drifts from the canonical
+      // text REFUSES. Injection, never rewriting: the tree stays
+      // one-source, the tarball carries its terms.
+      const declared = manifest.license
+      if (typeof declared !== 'string' || declared === '') {
+        throw new Error(`license gate: ${f.split('/').pop()} manifest carries no license field — the publish plane ships terms, not ambiguity`)
+      }
+      const canonicalPath = join(import.meta.dirname, '..', 'licenses', `${declared}.txt`)
+      if (!existsSync(canonicalPath)) {
+        throw new Error(`license gate: ${declared} has no canonical text under licenses/ — refusing to ship an unverified license`)
+      }
+      const licensePath = join(dir, 'package', 'LICENSE')
+      const canonical = readFileSync(canonicalPath, 'utf8')
+      if (existsSync(licensePath)) {
+        if (readFileSync(licensePath, 'utf8') !== canonical) {
+          throw new Error(`license gate: ${f.split('/').pop()} ships a LICENSE that drifts from the canonical ${declared} text`)
+        }
+      } else {
+        copyFileSync(canonicalPath, licensePath)
+      }
       delete manifest.private
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
       run('bash', ['-c', `tar -czf ${f}.new -C ${dir} package && mv ${f}.new ${f}`])
     } finally { rmSync(dir, { recursive: true, force: true }) }
   }
+}
+
+/** VENDOR TIER (operator ruling 2026-10-18): vendored workspace members
+ *  keep upstream licenses that are not ours to publish. pnpm still
+ *  packs them (the workspace asserts their build), but they never
+ *  enter the public release set — order, manifest, and upload all
+ *  flow from the returned list. Exported for the wall suite. */
+export function publishableTarballs (files) {
+  const dropped = files.filter((f) => !f.split('/').pop().startsWith('melite-'))
+  if (dropped.length > 0) {
+    console.log(`vendor tier: ${dropped.length} tarball(s) stay private (upstream licenses, not ours to publish): ${dropped.map((f) => f.split('/').pop()).join(', ')}`)
+  }
+  return files.filter((f) => f.split('/').pop().startsWith('melite-'))
 }
 
 async function mint (opts) {
@@ -436,7 +474,7 @@ async function mint (opts) {
     execFileSync(process.execPath, [join(import.meta.dirname, 'build-plane.mjs'), 'build'], { stdio: 'inherit' })
     console.log(`packing workspace @ ${commit.slice(0, 8)} …`)
     execFileSync(pnpmBin(), ['-r', 'pack', '--pack-destination', dest], { stdio: 'inherit' })
-    const files = run('bash', ['-c', `ls ${dest}/*.tgz`]).split('\n').filter(Boolean)
+    const files = publishableTarballs(run('bash', ['-c', `ls ${dest}/*.tgz`]).split('\n').filter(Boolean))
     if (files.length === 0) fail('pnpm packed zero tarballs — refusing an empty artifact set')
     // G1.5 — COMMENT HYGIENE (publish plane): compiled lib inherits the
     // source plane's dated rationale comments; the artifact must not ship
