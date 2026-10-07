@@ -64,7 +64,7 @@
 // Erasable-syntax TS only: no enums, no namespaces.
 import { DEFAULT_CONFIG, info, setDry } from "./provision-shared.js";
 import { loadConfig } from "./provision-config.js";
-import { cmdPaths } from "./provision-instance-layout.js";
+import { cmdInitStore, cmdPaths } from "./provision-instance-layout.js";
 import { cmdBootCmd, cmdManifest, cmdSync, cmdVerify } from "./provision-instance-managed.js";
 import { stepExtensions } from "./provision-extensions-install.js";
 import { stepModels } from "./provision-models.js";
@@ -85,6 +85,7 @@ export * from "./provision-commercial.js";
 function usage() {
     console.log("usage: provision <command> [args]");
     console.log("  paths|sync|boot-cmd|verify|manifest [config]");
+    console.log("  init-store [config] — lay the empty model store (fresh clones)");
     console.log("  extensions|models|all [--dry-run]");
     console.log("  dsh | manage <action> [key=value ...] | commercial [--no-warmup]");
 }
@@ -112,7 +113,7 @@ async function main() {
         return cmdManage(argv.slice(1));
     }
     if (cmd === "paths" || cmd === "sync" || cmd === "boot-cmd" ||
-        cmd === "verify" || cmd === "manifest") {
+        cmd === "verify" || cmd === "manifest" || cmd === "init-store") {
         if (cmd === "manifest") {
             cmdManifest();
             return 0;
@@ -120,6 +121,8 @@ async function main() {
         const cfg = loadConfig(argv[1] ?? DEFAULT_CONFIG);
         if (cmd === "paths")
             cmdPaths(cfg);
+        else if (cmd === "init-store")
+            cmdInitStore(cfg);
         else if (cmd === "sync")
             cmdSync(cfg);
         else if (cmd === "boot-cmd")

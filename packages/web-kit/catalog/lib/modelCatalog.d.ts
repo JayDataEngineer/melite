@@ -1,24 +1,20 @@
 import type { CardGenre } from "@melite/contracts";
-import type { components } from "@melite/contracts/schema";
-export type FamilyEntry = components["schemas"]["FamilyEntryWire"];
-export type VariantEntry = components["schemas"]["VariantEntryWire"];
-export type PromptGuide = components["schemas"]["PromptGuide"];
-export type PromptGuideSection = components["schemas"]["PromptGuideSection"];
-export type ModelEntry = components["schemas"]["ModelEntryWire"];
-export type CapabilityEntry = components["schemas"]["CapabilityEntryWire"];
-export type CapabilitySubcategory = components["schemas"]["CapabilitySubcategory"];
-export type CapabilityRoute = components["schemas"]["CapabilityRoute"];
-export type Catalog = components["schemas"]["CatalogResponse"];
-export type TransformApplicabilityEntry = components["schemas"]["TransformApplicability"];
-export type CardSummaryEntry = components["schemas"]["CardSummary"];
-export type OptionalOutputEntry = components["schemas"]["OptionalOutput"];
-export type PresetEntry = components["schemas"]["PresetEntry"];
+import type { CapabilityEntryWire, CapabilityRoute, CapabilitySubcategory, CardSummary, CatalogResponse, FamilyEntryWire, ModelEntryWire, OptionalOutput, PresetEntry, PromptGuide, PromptGuideSection, StudioBindingWire, TransformApplicability, VariantEntryWire } from "./wireTypes.js";
+export type { PromptGuide, PromptGuideSection, CapabilitySubcategory, CapabilityRoute, PresetEntry };
+export type FamilyEntry = FamilyEntryWire;
+export type VariantEntry = VariantEntryWire;
+export type ModelEntry = ModelEntryWire;
+export type CapabilityEntry = CapabilityEntryWire;
+export type Catalog = CatalogResponse;
+export type TransformApplicabilityEntry = TransformApplicability;
+export type CardSummaryEntry = CardSummary;
+export type OptionalOutputEntry = OptionalOutput;
 /** Source media type a family INGESTS — DERIVED from the backend's closed
  * Literal (schema.py FamilyEntry.accepts), never hand-written: a backend
  * vocabulary change re-types this on api:sync instead of silently
  * drifting. Deliberately a SUBSET of CardGenre (no 3d/motion/other):
  * those are output genres, not ingest types. */
-export type SourceMediaType = NonNullable<components["schemas"]["TransformApplicability"]["applies_to"]>[number];
+export type SourceMediaType = NonNullable<TransformApplicability["applies_to"]>[number];
 /** Narrow the wire's plain string genre (string | null — the backend
  * Literal does not survive the wire as a type) onto the view union.
  * Out-of-vocabulary values return undefined (callers fall back) — never a
@@ -80,7 +76,7 @@ export declare function familyOf(routeKey: string, cat?: Catalog): string | unde
  * ROUTE, and a phantom service that happens to spell a family id must
  * not match its way into a studio.
  */
-export type StudioBinding = components["schemas"]["StudioBindingWire"];
+export type StudioBinding = StudioBindingWire;
 export declare function studioOf(routeKey: string, cat?: Catalog): StudioBinding | undefined;
 /**
  * The catalog-declared FORM for a route key (the model's ``form`` — the

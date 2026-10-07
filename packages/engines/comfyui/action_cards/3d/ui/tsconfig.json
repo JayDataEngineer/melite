@@ -2,6 +2,7 @@
   "compilerOptions": {
     "noEmitOnError": true,
       "paths": {
+        "@melite/contracts/wire-types": ["./../../../../../web-kit/contracts/src/wireTypes.ts"],
         "@melite/three-client": ["./../../../../../web/three-client/src/host.ts"],
         "@melite/three-client/client": ["./../../../../../web/three-client/src/client/index.ts"],
         "@melite-plugin/timeline/client": ["./../../../../../web-kit/timeline/src/client/index.ts"],
@@ -212,7 +213,6 @@
         "@melite/contracts/objectUrlCache": ["./../../../../../web-kit/contracts/src/objectUrlCache.ts"],
         "@melite/contracts/regions": ["./../../../../../web-kit/contracts/src/regions.ts"],
         "@melite/contracts/rootsManifest": ["./../../../../../web-kit/contracts/src/rootsManifest.ts"],
-        "@melite/contracts/schema": ["./../../../../../web-kit/contracts/src/schema.ts"],
         "@melite/contracts/stageView": ["./../../../../../web-kit/contracts/src/stageView.ts"],
         "@melite/contracts/studio": ["./../../../../../web-kit/contracts/src/studio.ts"],
         "@melite/contracts/timelineTypes": ["./../../../../../web-kit/contracts/src/timelineTypes.ts"],

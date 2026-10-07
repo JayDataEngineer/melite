@@ -21,6 +21,5 @@ export * from "./studio.js";
 export * from "./timelineTypes.js";
 export * from "./vocab.js";
 export * from "./wire.js";
-export type { components } from "./schema.js";
 export * from "./benchStage.js";
 //# sourceMappingURL=index.d.ts.map

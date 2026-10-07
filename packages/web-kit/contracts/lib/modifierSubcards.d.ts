@@ -1,4 +1,6 @@
 import type { LoRAEntry } from "./loraTypes.js";
+import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.js";
+export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec };
 export interface ControlNetEntry {
     id: string;
     type: string;
@@ -46,19 +48,6 @@ export interface FormSpecFeatures {
     modifiers?: ModifierKindSpec[];
 }
 export type ModifierFieldType = "integer" | "float" | "string" | "select" | "image" | "boolean";
-import type { components } from "./schema.js";
-type WireModifierFieldSpec = components["schemas"]["ModifierFieldSpec"];
-type WireModifierOptionSpec = components["schemas"]["ModifierOptionSpec"];
-export type ModifierFieldSpec = WireModifierFieldSpec;
-export type ModifierOptionSpec = WireModifierOptionSpec;
-export type ModifierKindSpec = WireModifierKindSpec;
-type WireModifierKindSpec = components["schemas"]["ModifierKindSpec"] & {
-    /** Backend-resolved canonical scan subdir for the lora kind —
-    * resolve_lora_subdir(family.lora_dir or _slug(family_id)). The
-    * empty-state hint renders /opt/ComfyUI/models/loras/<disk_subdir>/
-    * from THIS (not upload_dir, which drifted out of sync and lied). */
-    disk_subdir?: string | null;
-};
 /** Arbitrary kind — open string. ``lora`` / ``controlnet`` are the first two
  * instances, not the whole vocabulary (see ModifierKindSpec). */
 export type SubcardKind = string;
@@ -189,5 +178,4 @@ export declare function modifiersFeatureOf(formSpec: Record<string, any> | null)
 export declare function hasModifierCapability(formSpec: Record<string, any> | null): boolean;
 /** Find a kind's spec by its discriminator — convenience for the grid/modal. */
 export declare function kindSpecOf(formSpec: Record<string, any> | null, kind: string): ModifierKindSpec | null;
-export {};
 //# sourceMappingURL=modifierSubcards.d.ts.map

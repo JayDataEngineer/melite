@@ -16,6 +16,8 @@
 // array; the composed ComfyUI graph follows (rule-2). Families, GPU,
 // and the wire NEVER change.
 import type { LoRAEntry } from "./loraTypes.ts"
+import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.ts"
+export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec }
 
 // ── Wire entry shapes (the ONLY storage) ──────────────────────────────────
 
@@ -90,24 +92,20 @@ export type ModifierFieldType = "integer" | "float" | "string" | "select" | "ima
 
 // ── Wire contract aliases (2026-08-11) ───────────────────────────────────
 // The generic modifier-kind spec IS the backend's strict contract — the
-// generated components["schemas"]["ModifierKindSpec"] (from
+// wire type ModifierKindSpec (moved to
 // catalog_schema.ModifierKind: extra="forbid", options_scanned declared,
 // min/max/step float). The hand-written mirrors were duplicates that could
 // drift and LIE on the wire — exactly the two-schema disease this
 // openapi.json migration exists to kill. The only added field is
 // ``disk_subdir``, a FRONTEND-COMPUTED view value (resolve_lora_subdir)
 // that never ships on the wire.
-import type { components } from "./schema.ts"
 
-type WireModifierFieldSpec = components["schemas"]["ModifierFieldSpec"]
-type WireModifierOptionSpec = components["schemas"]["ModifierOptionSpec"]
+type WireModifierFieldSpec = ModifierFieldSpec
+type WireModifierOptionSpec = ModifierOptionSpec
 
-export type ModifierFieldSpec = WireModifierFieldSpec
-export type ModifierOptionSpec = WireModifierOptionSpec
 
-export type ModifierKindSpec = WireModifierKindSpec
 
-type WireModifierKindSpec = components["schemas"]["ModifierKindSpec"] & {
+type WireModifierKindSpec = ModifierKindSpec & {
  /** Backend-resolved canonical scan subdir for the lora kind —
  * resolve_lora_subdir(family.lora_dir or _slug(family_id)). The
  * empty-state hint renders /opt/ComfyUI/models/loras/<disk_subdir>/

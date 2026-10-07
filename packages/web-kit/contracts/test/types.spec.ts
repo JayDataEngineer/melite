@@ -5,6 +5,7 @@
 // pin representative shapes so the imports are load-bearing, not bare.
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
+import type { FormField } from "../src/wireTypes.ts";
 import type { CardStage } from "../src/card.ts";
 import type { Character } from "../src/character.ts";
 import type { EnhanceModel } from "../src/enhanceTypes.ts";
@@ -14,7 +15,6 @@ import type { AppSidebarProps } from "../src/regions.ts";
 import type { StudioTenantProps } from "../src/studio.ts";
 import type { PluginRow } from "../src/wire.ts";
 import type { FlowDoc } from "../src/FlowTypes.ts";
-import type { components } from "../src/schema.d.ts";
 import * as barrel from "../src/index.ts";
 
 describe("pure-type GATE files import cleanly", () => {
@@ -35,9 +35,9 @@ describe("pure-type GATE files import cleanly", () => {
     const tenant: StudioTenantProps = {} as unknown as StudioTenantProps;
     const plugin: PluginRow = { id: "p" } as unknown as PluginRow;
     const doc: FlowDoc = { id: "f" } as unknown as FlowDoc;
-    const formField: components["schemas"]["FormField"] = {
+    const formField: FormField = {
       key: "k",
-    } as unknown as components["schemas"]["FormField"];
+    } as unknown as FormField;
     for (const v of [
       stage,
       character,

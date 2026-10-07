@@ -1,10 +1,10 @@
-import type { components } from "@melite/contracts/schema";
+import type { Violation } from "./wireTypes.js";
 /** One contract violation — {field, kind, message}, the SAME shape the
- * backend's error envelope declares (components["schemas"]["Violation"]).
+ * backend's error envelope declares (Violation).
  * Generated from /openapi.json (2026-08-11 directive) — never a
  * hand-written mirror; a drift in the backend's Violation model lands
  * here on the next api:sync. */
-export type RunStatusViolation = components["schemas"]["Violation"];
+export type RunStatusViolation = Violation;
 export interface RunStatusContractResult {
     valid: boolean;
     violations: RunStatusViolation[];

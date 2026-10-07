@@ -23,14 +23,14 @@
 // values; if the run level ever sent them, the contract flags it instead
 // of silently coercing.
 
-import type { components } from "@melite/contracts/schema"
+import type { RunStatusWire, Violation } from "./wireTypes.ts"
 
 /** One contract violation — {field, kind, message}, the SAME shape the
- * backend's error envelope declares (components["schemas"]["Violation"]).
+ * backend's error envelope declares (Violation).
  * Generated from /openapi.json (2026-08-11 directive) — never a
  * hand-written mirror; a drift in the backend's Violation model lands
  * here on the next api:sync. */
-export type RunStatusViolation = components["schemas"]["Violation"]
+export type RunStatusViolation = Violation
 
 export interface RunStatusContractResult {
  valid: boolean
@@ -40,7 +40,7 @@ export interface RunStatusContractResult {
 /** The backend's 8-value run-level status vocabulary — mirrors
  * RunStatusValue in contracts.py (kept in sync; the backend 500s anything
  * outside it, so a value reaching the poll is already a lie). */
-type _RunStatusUnion = components["schemas"]["RunStatusWire"]["status"]
+type _RunStatusUnion = RunStatusWire["status"]
 // Compile-time drift guard (2026-08-14): the array is constrained to the
 // GENERATED union from /openapi.json. If the backend Literal grows another
 // status and schema.d.ts is regenerated, this `satisfies` fails until the

@@ -418,7 +418,10 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/contracts/src/objectUrlCache.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/regions.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/rootsManifest.ts': { statements: 91.66, branches: 66.66, functions: 100, lines: 100 },
-  '**/packages/web-kit/contracts/src/schema.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // batch AS 2026-10-17: schema.ts (python-era openapi output) deleted; its two
+  // wireTypes successors are TYPE-ONLY modules (zero statements) at their owners
+  '**/packages/web-kit/contracts/src/wireTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web-kit/catalog/src/wireTypes.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/stagePreview.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/stageView.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web-kit/contracts/src/studio.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

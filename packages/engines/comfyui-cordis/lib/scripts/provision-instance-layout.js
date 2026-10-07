@@ -60,6 +60,39 @@ export function wiringYamlBody(bound) {
     lines.push("download_model_base:", "  base_path: " + bound.download_path, "  download_model_base: .");
     return lines.join("\n") + "\n";
 }
+/**
+ * Creates the model store the dead-root refusal names (fresh-clone
+ * gate, 2026-10-17): `paths`/`sync` refuse a store that does not
+ * exist — loud by law, catching typoed roots — but a fresh clone
+ * has no store at all, and "create the store" was a hand-carried
+ * mkdir with no door. This verb IS the named action: it lays the
+ * two bound roots plus every category directory under the download
+ * root, idempotently. It never runs inside `paths` (that would
+ * create a typoed root silently — the exact bug the refusal
+ * cures); a plain FILE in place of either root still refuses.
+ *
+ * @param cfg the endpoint config (storage overrides resolve like `paths`)
+ */
+export function cmdInitStore(cfg) {
+    const bound = boundModelFolders(cfg);
+    for (const [k, root] of [["base_path", bound.base_path],
+        ["download_path", bound.download_path]]) {
+        const st = lstatSync(root, { throwIfNoEntry: false });
+        if (st !== undefined && st.isFile()) {
+            throw new Error(`[init-store] the resolved ${k} is a file, not a directory: ` +
+                root + " — move it or fix models.read_root in " +
+                "inference.config.json (never guessed)");
+        }
+    }
+    const created = [bound.base_path, bound.download_path];
+    for (const cat of Object.keys(bound.folders).sort()) {
+        created.push(join(bound.download_path, bound.folders[cat]));
+    }
+    for (const dir of created)
+        mkdirSync(dir, { recursive: true });
+    console.log("init-store: " + created.length + " directories laid at " +
+        bound.base_path + " (existing ones untouched)");
+}
 export function cmdPaths(cfg) {
     const bound = boundModelFolders(cfg);
     // THE DEAD-ROOT REFUSAL (wiring re-audit F7, 2026-10-13): the

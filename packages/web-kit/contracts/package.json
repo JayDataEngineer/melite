@@ -77,9 +77,6 @@
       "types": "./lib/rootsManifest.d.ts",
       "default": "./lib/rootsManifest.js"
     },
-    "./schema": {
-      "types": "./lib/schema.d.ts"
-    },
     "./stageView": {
       "types": "./lib/stageView.d.ts",
       "default": "./lib/stageView.js"
@@ -111,6 +108,10 @@
     "./formSpec": {
       "types": "./lib/formSpec.d.ts",
       "default": "./lib/formSpec.js"
+    },
+    "./wire-types": {
+      "types": "./lib/wireTypes.d.ts",
+      "default": "./lib/wireTypes.js"
     }
   },
   "version": "0.1.0-alpha.1",

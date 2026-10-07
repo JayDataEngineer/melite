@@ -620,9 +620,6 @@
   "@melite/contracts/rootsManifest": [
     "./packages/web-kit/contracts/src/rootsManifest.ts"
   ],
-  "@melite/contracts/schema": [
-    "./packages/web-kit/contracts/src/schema.ts"
-  ],
   "@melite/contracts/stageView": [
     "./packages/web-kit/contracts/src/stageView.ts"
   ],
@@ -646,6 +643,9 @@
   ],
   "@melite/contracts/formSpec": [
     "./packages/web-kit/contracts/src/formSpec.ts"
+  ],
+  "@melite/contracts/wire-types": [
+    "./packages/web-kit/contracts/src/wireTypes.ts"
   ],
   "@melite/formats/b64": [
     "./packages/web-kit/formats/src/b64.ts"

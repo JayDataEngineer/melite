@@ -17,7 +17,7 @@
 // SECOND GPU run. The status poll is an idempotent GET, so it goes through
 // apiFetch (retry + dedup + liveness).
 import { apiFetch } from "./api.ts"
-import type { components } from "@melite/contracts/schema"
+import type { RunStageWire, RunStatusWire } from "./wireTypes.ts"
 import type { StageResult } from "@melite/contracts"
 import {
   RunStatusContractError,
@@ -63,7 +63,7 @@ const NON_JSON_BODY_CAP = 2000
  *  fields — a stage from the wire always carries the core, by contract.
  *  A type-alias intersection (NOT an interface): the generated components
  *  are intersection aliases, which interfaces cannot extend (TS2499). */
-export type FlowRunStage = components["schemas"]["RunStageWire"] & {
+export type FlowRunStage = RunStageWire & {
   url?: string
   gallery?: Array<{ url: string; name?: string }>
   /** name → wireable URL for EVERY artifact the brick produced (Phase 5,
@@ -91,7 +91,7 @@ export type FlowRunStage = components["schemas"]["RunStageWire"] & {
 }
 
 /** The status channel's contract core comes from the backend schema
- *  (components["schemas"]["RunStatusWire"]: run_id, the 7-value run-level
+ *  (RunStatusWire: run_id, the 7-value run-level
  *  status, stages) — generated, never hand-written. The view layer
  *  consumes a few documented extras the runner tolerates beyond the core:
  *  the run-level `error` detail, and the richer stage view.
@@ -102,7 +102,7 @@ export type FlowRunStage = components["schemas"]["RunStageWire"] & {
  *  (keyof includes `string`). Pick with literal keys avoids the poison —
  *  indexed access on the intersection still resolves status to the 7-union. */
 export type FlowRunStatus = Pick<
-  components["schemas"]["RunStatusWire"],
+  RunStatusWire,
   "run_id" | "status"
 > & {
   stages?: Array<FlowRunStage>

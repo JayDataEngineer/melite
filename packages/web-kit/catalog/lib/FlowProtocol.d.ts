@@ -1,4 +1,4 @@
-import type { components } from "@melite/contracts/schema";
+import type { RunStageWire, RunStatusWire } from "./wireTypes.js";
 import type { StageResult } from "@melite/contracts";
 /**
  * Extract the backend's error message from a non-2xx body for surfacing.
@@ -23,7 +23,7 @@ export declare function describeErrorBody(text: string): string;
  *  fields — a stage from the wire always carries the core, by contract.
  *  A type-alias intersection (NOT an interface): the generated components
  *  are intersection aliases, which interfaces cannot extend (TS2499). */
-export type FlowRunStage = components["schemas"]["RunStageWire"] & {
+export type FlowRunStage = RunStageWire & {
     url?: string;
     gallery?: Array<{
         url: string;
@@ -57,7 +57,7 @@ export type FlowRunStage = components["schemas"]["RunStageWire"] & {
     } | null;
 };
 /** The status channel's contract core comes from the backend schema
- *  (components["schemas"]["RunStatusWire"]: run_id, the 7-value run-level
+ *  (RunStatusWire: run_id, the 7-value run-level
  *  status, stages) — generated, never hand-written. The view layer
  *  consumes a few documented extras the runner tolerates beyond the core:
  *  the run-level `error` detail, and the richer stage view.
@@ -67,7 +67,7 @@ export type FlowRunStage = components["schemas"]["RunStageWire"] & {
  *  unknown), so Omit's mapped type degenerates every property to unknown
  *  (keyof includes `string`). Pick with literal keys avoids the poison —
  *  indexed access on the intersection still resolves status to the 7-union. */
-export type FlowRunStatus = Pick<components["schemas"]["RunStatusWire"], "run_id" | "status"> & {
+export type FlowRunStatus = Pick<RunStatusWire, "run_id" | "status"> & {
     stages?: Array<FlowRunStage>;
     /** Run-level failure detail — emitted by the runner on failed runs;
      *  not part of the contract core (declared here as a view extra). */

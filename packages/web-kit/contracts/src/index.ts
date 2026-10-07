@@ -21,6 +21,5 @@ export * from "./studio.ts"
 export * from "./timelineTypes.ts"
 export * from "./vocab.ts"
 export * from "./wire.ts"
-export type { components } from "./schema.ts"
 
 export * from "./benchStage.ts";
