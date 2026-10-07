@@ -179,7 +179,15 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/estate/provisioning/src/manager-provider.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/operation-store.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/estate/provisioning/src/ports.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/estate/provisioning/src/service.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // 2026-10-21: the 100s above were the driver-seat-env over-count;
+  // the stripped gate measures the honest floor. The landing deleted
+  // runWithId's dead caller-signal machinery (sole caller passed
+  // undefined). The remaining gap is three defensive arms no public
+  // caller reaches (proofs in the TEST-2 ledger): the ensureProgress
+  // create arm (executeEnsure's synchronous seed dominates it, no
+  // deletion path) and the .then/.catch current-undefined arms (both
+  // start paths seed the id before attaching handlers).
+  '**/packages/estate/provisioning/src/service.ts': { statements: 99.65, branches: 99.49, functions: 100, lines: 99.61 },
   '**/packages/estate/runs/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-call/src/cardTool.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/estate-call/src/estateCall.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -266,7 +274,12 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/harness/melite-tools/src/tools/melite-construct.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/melite-discover.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/melite-flow.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/harness/melite-tools/src/tools/melite-load.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  // 2026-10-21: same driver-seat correction; the landing deleted the
+  // `?? ''` on split(':')[0] (ECMA-262 always returns at least one
+  // element). The remaining gap is the fam === '' guard in
+  // familyPackSeats: the sole call site's seatFams structurally
+  // excludes the empty family (proof in the TEST-2 ledger).
+  '**/packages/harness/melite-tools/src/tools/melite-load.ts': { statements: 99.41, branches: 99.44, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/melite-read.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/melite-view.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/harness/melite-tools/src/tools/mp4Probe.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },

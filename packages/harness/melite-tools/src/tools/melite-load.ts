@@ -194,7 +194,7 @@ export function meliteLoad(
           const seatFams: string[] = []
           for (const v of styleVals) {
             if (typeof v !== 'string' || v === '') continue
-            const fam = v.split(':')[0] ?? ''
+            const fam = v.split(':')[0]
             if (fam !== '' && !seatFams.includes(fam)) seatFams.push(fam)
           }
           const packSeats = familyPackSeats(

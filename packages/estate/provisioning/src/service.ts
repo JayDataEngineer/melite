@@ -477,7 +477,7 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
       total,
     });
     this.weightProgressByRef.set(key, id);
-    void this.runWithId(ref, id, undefined, async (operationId, operationSignal) =>
+    void this.runWithId(ref, id, async (operationId, operationSignal) =>
       await this.executeEnsure(ref, options, operationId, operationSignal),
     ).then((result) => {
       const current = this.weightProgress.get(id);
@@ -506,20 +506,19 @@ export class ProvisioningService extends Service implements ProvisioningServiceD
     return id;
   }
 
+  /** The background-start run: a preset id (the caller returns it
+   *  synchronously) with no caller signal — the operation owns its
+   *  own controller alone. */
   private async runWithId(
     ref: ResourceRef,
     presetId: string,
-    signal: AbortSignal | undefined,
     body: (operationId: string, signal: AbortSignal) => Promise<ProvisionResult>,
     key = resourceKey(ref),
   ): Promise<ProvisionResult> {
     const existing = this.locks.get(key);
-    if (existing !== undefined) return await this.joinLocked(ref, existing, signal);
+    if (existing !== undefined) return await this.joinLocked(ref, existing);
     const controller = new AbortController();
-    const operationSignal = signal === undefined
-      ? controller.signal
-      : AbortSignal.any([controller.signal, signal]);
-    if (signal?.aborted === true) controller.abort(signal.reason);
+    const operationSignal = controller.signal;
     let promise!: Promise<ProvisionResult>;
     promise = Promise.resolve()
       .then(() => body(presetId, operationSignal))
