@@ -124,6 +124,13 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      # TRUSTED PUBLISHING (OIDC): the run's own Actions identity
+      # authenticates to npm — no token in any secret. The registry-side
+      # connections (operator-configured) name this workflow, the
+      # npm-publish environment, and direct-publish allowance; npm's CLI
+      # performs the handshake automatically inside Actions with
+      # id-token: write and no NODE_AUTH_TOKEN in the environment.
+      id-token: write
     steps:
       # Checkout and install carry the release scripts only. There is no
       # build step: publication uploads the bytes the pack job produced.
@@ -146,6 +153,4 @@ jobs:
           path: dist/npm
 
       - name: Publish tarballs
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node tools/publish-npm.mjs --from dist/npm
