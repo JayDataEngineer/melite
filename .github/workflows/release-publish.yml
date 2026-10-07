@@ -14,6 +14,14 @@ on:
         description: 'Release tag to mint and publish (must point at a commit)'
         required: true
         type: string
+      dist:
+        description: 'Tarball source: mint in CI, or download the release assets'
+        required: false
+        default: 'mint'
+        type: choice
+        options:
+          - mint
+          - release-assets
 
 permissions:
   contents: read
@@ -24,6 +32,7 @@ env:
 jobs:
   pack:
     name: Mint gated npm tarballs
+    if: inputs.dist == 'mint'
     runs-on: ubuntu-24.04
     steps:
       # Complete history: the release scripts read tags.
@@ -56,9 +65,33 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  fetch:
+    name: Fetch the release assets (the gated mint)
+    if: inputs.dist == 'release-assets'
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      # The tag's release assets carry the exact sha256-gated bytes the
+      # local mint produced — publishing them skips the CI re-mint while
+      # uploading the same tarballs the rehearsal validated.
+      - name: Download release assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download "${{ inputs.tag }}" \
+            --repo "$GITHUB_REPOSITORY" --dir dist/npm --clobber
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: melite-npm-tarballs
+          path: dist/npm/*
+          if-no-files-found: error
+          retention-days: 7
+
   rehearse:
     name: Cold-consumer rehearsal
-    needs: pack
+    needs: [pack, fetch]
     runs-on: ubuntu-24.04
     steps:
       # The rehearsal script is the tag's own (same law as publish).
@@ -91,14 +124,6 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
-      # TRUSTED PUBLISHING (OIDC): the run itself authenticates to npm —
-      # no NPM_TOKEN secret. The registry-side connection must name this
-      # exact shape: publisher GitHub Actions, org JayDataEngineer, repo
-      # melite, workflow release-publish.yml, environment npm-publish,
-      # with direct publish allowed. npm's CLI performs the OIDC
-      # handshake automatically when it runs inside Actions with
-      # id-token: write and no NODE_AUTH_TOKEN in the environment.
-      id-token: write
     steps:
       # Checkout and install carry the release scripts only. There is no
       # build step: publication uploads the bytes the pack job produced.
@@ -121,4 +146,6 @@ jobs:
           path: dist/npm
 
       - name: Publish tarballs
-        run: node tools/publish-npm.mjs --from dist/npm --pace-ms 15000
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node tools/publish-npm.mjs --from dist/npm
