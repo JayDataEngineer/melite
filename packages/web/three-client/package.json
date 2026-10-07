@@ -44,6 +44,7 @@
     "lib/**/*.js",
     "lib/**/*.d.ts",
     "lib/**/*.d.ts.map",
-    "lib/**/*.js.map"
+    "lib/**/*.js.map",
+    "cordis.patch.yml"
   ]
 }

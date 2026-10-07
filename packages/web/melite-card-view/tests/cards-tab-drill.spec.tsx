@@ -438,8 +438,10 @@ describe("the group compound — members, ungroup, and its honesty", () => {
     // The refusal rides the client's async failure path and renders on a
     // macrotask; the budget must exceed a LOADED event loop (the sibling
     // drill2 case failed once in a full-suite run with a 4s wait inside
-    // a 5s test — a fixed budget sized for an idle box).
-    expect(await screen.findByText("stale rev", {}, { timeout: 15000 })).toBeTruthy();
+    // a 5s test; this arm then measured 15.5s in a full pre-push run —
+    // fixed budgets sized for an idle box starve under the whole dom
+    // suite's workers). 25s stays inside the 30s test budget.
+    expect(await screen.findByText("stale rev", {}, { timeout: 25000 })).toBeTruthy();
     expect(screen.getByText("Ungroup")).toBeTruthy();
   }, 30_000);
 });

@@ -138,6 +138,34 @@ describe('package-files law — every exports target ships', () => {
     expect(filesCover(['lib/*.js'], 'lib/deep/x.js')).toBe(false)
   })
 
+  it('every dsh.bundle.patch declaration packs its patch and allows it in files', () => {
+    // The alpha.3 mint catch (G2's class, mint21): card-base and
+    // three-client declared dsh.bundle.patch but omitted the file
+    // from files — the tarball shipped a declaration with no bytes
+    // behind it. The mint's payload gate owns the packed-tarball
+    // half; this arm owns the manifest half so the battery catches
+    // the rot before a mint run does.
+    const offenders: string[] = []
+    let checked = 0
+    for (const pj of workspaceMembers()) {
+      const pkg = JSON.parse(readFileSync(pj, 'utf8')) as Manifest & { dsh?: { bundle?: { patch?: string } } }
+      const patch = pkg.dsh?.bundle?.patch
+      if (!patch) continue
+      checked++
+      const dir = dirname(pj)
+      const rel = patch.replace(/^\.\//u, '')
+      if (!existsSync(join(dir, rel))) {
+        offenders.push(`${pkg.name}: dsh.bundle.patch "${patch}" does not exist on disk`)
+        continue
+      }
+      if (!filesCover(pkg.files ?? [], rel)) {
+        offenders.push(`${pkg.name}: dsh.bundle.patch "${rel}" not in files allowlist`)
+      }
+    }
+    expect(offenders, `${offenders.join('\n')}\n(checked ${checked} bundle-patch declarations)`).toEqual([])
+    expect(checked, 'the walk must find the bundle-patch seats — a vacuous pass is the wall dying silently').toBeGreaterThanOrEqual(4)
+  })
+
   it('no exports row is a dangling promise — every literal target exists on disk', () => {
     // 39 rows died for this (2026-10-16): 36 model families carried
     // template "./mods/loras" rows with no mods tree (mods is

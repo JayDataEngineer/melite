@@ -82,6 +82,7 @@
     "lib/host.js",
     "lib/**/*.js",
     "lib/**/*.d.ts",
-    "lib/**/*.module.css"
+    "lib/**/*.module.css",
+    "cordis.patch.yml"
   ]
 }
