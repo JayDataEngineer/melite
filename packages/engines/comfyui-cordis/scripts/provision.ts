@@ -65,7 +65,7 @@
 
 import { DEFAULT_CONFIG, info, setDry } from "./provision-shared.ts";
 import { loadConfig } from "./provision-config.ts";
-import { cmdPaths } from "./provision-instance-layout.ts";
+import { cmdInitStore, cmdPaths } from "./provision-instance-layout.ts";
 import { cmdBootCmd, cmdManifest, cmdSync, cmdVerify } from "./provision-instance-managed.ts";
 import { stepExtensions } from "./provision-extensions-install.ts";
 import { stepModels } from "./provision-models.ts";
@@ -89,6 +89,7 @@ export * from "./provision-commercial.ts";
 function usage(): void {
   console.log("usage: provision <command> [args]");
   console.log("  paths|sync|boot-cmd|verify|manifest [config]");
+  console.log("  init-store [config] — lay the empty model store (fresh clones)");
   console.log("  extensions|models|all [--dry-run]");
   console.log("  dsh | manage <action> [key=value ...] | commercial [--no-warmup]");
 }
@@ -116,13 +117,14 @@ async function main(): Promise<number> {
     return cmdManage(argv.slice(1));
   }
   if (cmd === "paths" || cmd === "sync" || cmd === "boot-cmd" ||
-      cmd === "verify" || cmd === "manifest") {
+      cmd === "verify" || cmd === "manifest" || cmd === "init-store") {
     if (cmd === "manifest") {
       cmdManifest();
       return 0;
     }
     const cfg = loadConfig(argv[1] ?? DEFAULT_CONFIG);
     if (cmd === "paths") cmdPaths(cfg);
+    else if (cmd === "init-store") cmdInitStore(cfg);
     else if (cmd === "sync") cmdSync(cfg);
     else if (cmd === "boot-cmd") cmdBootCmd(cfg);
     else await cmdVerify(cfg);

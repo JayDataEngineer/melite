@@ -90,6 +90,8 @@ provisioning CLI is plain Node — the same commands on Windows, macOS, and
 Linux:
 
 ```sh
+pnpm run provision -- init-store   # lay the empty model store (fresh clones) —
+                                   # paths/sync refuse a store that does not exist
 pnpm run provision -- sync        # ComfyUI core + Manager checkout (managed instance)
 pnpm run provision -- extensions  # declared packs — installed BY ComfyUI-Manager's
                                    # git-url door, so the engine must be UP first

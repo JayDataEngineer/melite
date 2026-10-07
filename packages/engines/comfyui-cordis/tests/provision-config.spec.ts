@@ -9,8 +9,11 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { join, relative } from "node:path";
+import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+const nodeFs = { existsSync, mkdtempSync, readdirSync, writeFileSync };
 import { engineField, mergeOverlay, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
-import { cmdPaths } from "../scripts/provision-instance-layout.ts";
+import { cmdInitStore, cmdPaths } from "../scripts/provision-instance-layout.ts";
 import { REPO } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
@@ -112,6 +115,40 @@ describe("cmdPaths refuses a dead root (wiring re-audit F7, 2026-10-13)", () => 
         model_base_path: "/nonexistent/store-root-for-the-refusal-spec",
       } as never),
       /base_path does not exist.*never guessed/s,
+    );
+  });
+});
+
+describe("init-store (the fresh-clone store door, 2026-10-17)", () => {
+  // `paths`/`sync` refuse a store that does not exist — the
+  // dead-root law — but a fresh clone has no store at all, and
+  // the refusal's named action ("create the store") had no door:
+  // every fresh clone died at sync. init-store IS the named
+  // action, explicit, never called from inside `paths` (creating
+  // a typoed root silently is the exact bug the refusal cures).
+  it("lays the roots and every category dir, and is idempotent", () => {
+    const { mkdtempSync, existsSync, readdirSync } = nodeFs;
+    const base = mkdtempSync(join(tmpdir(), "init-store-spec-"));
+    const store = join(base, "store");
+    const cfg = { url: "http://127.0.0.1:8188", model_base_path: store } as never;
+    cmdInitStore(cfg);
+    assert.ok(existsSync(store), "base_path laid");
+    const first = readdirSync(store).sort();
+    assert.ok(first.includes("checkpoints") && first.includes("loras"),
+      "category dirs laid under the download root");
+    const before = readdirSync(store).sort();
+    cmdInitStore(cfg); // second run: no throw, no change
+    assert.deepEqual(readdirSync(store).sort(), before);
+  });
+  it("refuses a plain file sitting where a root belongs", () => {
+    const { mkdtempSync, writeFileSync } = nodeFs;
+    const base = mkdtempSync(join(tmpdir(), "init-store-file-spec-"));
+    const store = join(base, "store");
+    writeFileSync(store, "not a directory");
+    assert.throws(
+      () => cmdInitStore(
+        { url: "http://127.0.0.1:8188", model_base_path: store } as never),
+      /init-store.*is a file, not a directory.*never guessed/s,
     );
   });
 });
