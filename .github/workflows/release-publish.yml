@@ -91,6 +91,14 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
+      # TRUSTED PUBLISHING (OIDC): the run itself authenticates to npm —
+      # no NPM_TOKEN secret. The registry-side connection must name this
+      # exact shape: publisher GitHub Actions, org JayDataEngineer, repo
+      # melite, workflow release-publish.yml, environment npm-publish,
+      # with direct publish allowed. npm's CLI performs the OIDC
+      # handshake automatically when it runs inside Actions with
+      # id-token: write and no NODE_AUTH_TOKEN in the environment.
+      id-token: write
     steps:
       # Checkout and install carry the release scripts only. There is no
       # build step: publication uploads the bytes the pack job produced.
@@ -113,6 +121,4 @@ jobs:
           path: dist/npm
 
       - name: Publish tarballs
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node tools/publish-npm.mjs --from dist/npm
+        run: node tools/publish-npm.mjs --from dist/npm --pace-ms 15000
