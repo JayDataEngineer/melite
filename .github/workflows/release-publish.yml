@@ -92,6 +92,13 @@ jobs:
   rehearse:
     name: Cold-consumer rehearsal
     needs: [pack, fetch]
+    # The dist lanes are exclusive: exactly one of pack/fetch runs, so
+    # a skipped sibling must not skip the sequence (needs propagates
+    # skips) — each lane is judged on its own result.
+    if: >-
+      !cancelled() &&
+      (needs.pack.result == 'success' || needs.pack.result == 'skipped') &&
+      (needs.fetch.result == 'success' || needs.fetch.result == 'skipped')
     runs-on: ubuntu-24.04
     steps:
       # The rehearsal script is the tag's own (same law as publish).
@@ -115,6 +122,7 @@ jobs:
   publish:
     name: Publish to npm
     needs: rehearse
+    if: ${{ !cancelled() && needs.rehearse.result == 'success' }}
     runs-on: ubuntu-24.04
     # Required reviewers and the allowed tags live on the environment; this
     # is the only job in the sequence that can write to the registry.

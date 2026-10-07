@@ -241,10 +241,12 @@ describe("the error face retires on an external success — an error is a claim,
     await openFirstTile();
     fireEvent.click(within(zoomCard()).getByRole("button", { name: "Run stage" }));
     // the refused start voices (the zoom's status seat and/or the
-    // tab's strip — multiple seats may carry it, at least one must)
+    // tab's strip — multiple seats may carry it, at least one must).
+    // The 5s ceilings match the file's house style: the fleet's dom
+    // lanes share the box, so arrival latency is load-owned.
     await waitFor(() => {
       expect(screen.getAllByText(/refuses the state/).length).toBeGreaterThan(0);
-    });
+    }, { timeout: 5000 });
     // THE OTHER HAND: the agent's generation lands — the resource
     // re-emits the row terminal-done; THIS tab pressed nothing
     benchValue = {
@@ -257,7 +259,7 @@ describe("the error face retires on an external success — an error is a claim,
     view.rerender(h(CardsTab, props));
     await waitFor(() => {
       expect(screen.queryAllByText(/refuses the state/)).toEqual([]);
-    });
+    }, { timeout: 5000 });
     // the derived half stays honest: a row that is failed NOW faces
     // its reason — retirement never muted the live truth
     benchValue = {
