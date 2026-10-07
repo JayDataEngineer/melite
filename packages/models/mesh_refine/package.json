@@ -1,6 +1,6 @@
 {
   "name": "@melite/models-mesh_refine",
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.7",
   "private": true,
   "type": "module",
   "exports": {

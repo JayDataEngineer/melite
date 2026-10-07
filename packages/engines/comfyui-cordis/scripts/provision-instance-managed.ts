@@ -4,7 +4,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { COMFY_PROJECT, FAILS, REPO, RUNTIME, check, die, fail, info, venvPython, warn } from "./provision-shared.ts";
+import { comfyProject, FAILS, repo, runtime, check, die, fail, info, venvPython, warn } from "./provision-shared.ts";
 import { boundModelFolders, enginePort, engineUrl } from "./provision-config.ts";
 import type { EndpointConfig } from "./provision-config.ts";
 import { mergeManifest } from "./provision-extensions-manifest.ts";
@@ -16,12 +16,12 @@ export function cmdSync(cfg: EndpointConfig): void {
       "deployments never install a ComfyUI (the estate sits on top; " +
       "verify instead)");
   }
-  const lock = join(COMFY_PROJECT, "uv.lock");
+  const lock = join(comfyProject(), "uv.lock");
   if (!existsSync(lock)) {
     die("no uv.lock in infra/comfyui — run `uv lock` there first " +
       "(the lock is the pinned truth, tracked in git)");
   }
-  const pinF = join(COMFY_PROJECT, "core.pin");
+  const pinF = join(comfyProject(), "core.pin");
   if (!existsSync(pinF)) {
     die("no core.pin in infra/comfyui — the core source ref is " +
       "deployment truth, never a floating clone");
@@ -38,10 +38,10 @@ export function cmdSync(cfg: EndpointConfig): void {
   for (const [k, v] of Object.entries(process.env)) {
     if (v !== undefined) env[k] = v;
   }
-  env.UV_PROJECT_ENVIRONMENT = join(RUNTIME, ".venv");
+  env.UV_PROJECT_ENVIRONMENT = join(runtime(), ".venv");
   const s = spawnSync("uv",
-    ["sync", "--frozen", "--project", COMFY_PROJECT],
-    { cwd: REPO, env, stdio: "inherit" });
+    ["sync", "--frozen", "--project", comfyProject()],
+    { cwd: repo(), env, stdio: "inherit" });
   // a missing binary spawns NOTHING (status null) — name it, never a
   // silent exit 1 (the ubuntu-desktop self-provisioning receipt)
   if (s.error !== undefined) {
@@ -50,8 +50,8 @@ export function cmdSync(cfg: EndpointConfig): void {
   }
   if (s.status !== 0) process.exit(s.status ?? 1);
   const coreUrl = "https://github.com/comfyanonymous/ComfyUI.git";
-  if (existsSync(join(RUNTIME, "main.py"))) {
-    const have = spawnSync("git", ["-C", RUNTIME, "rev-parse", "HEAD"],
+  if (existsSync(join(runtime(), "main.py"))) {
+    const have = spawnSync("git", ["-C", runtime(), "rev-parse", "HEAD"],
       { encoding: "utf8" });
     if ((have.stdout ?? "").trim() === pin) {
       info("core already at pin " + pin.slice(0, 12));
@@ -61,26 +61,26 @@ export function cmdSync(cfg: EndpointConfig): void {
     }
   }
   info("fetching core at pin " + pin.slice(0, 12) + " …");
-  mkdirSync(RUNTIME, { recursive: true });
+  mkdirSync(runtime(), { recursive: true });
   const git = (args: string[]): void => {
-    const r = spawnSync("git", args, { cwd: RUNTIME, stdio: "inherit" });
+    const r = spawnSync("git", args, { cwd: runtime(), stdio: "inherit" });
     if (r.status !== 0) fail("core checkout of pin " + pin + " failed");
   };
-  if (!existsSync(join(RUNTIME, ".git"))) {
+  if (!existsSync(join(runtime(), ".git"))) {
     git(["init", "--quiet"]);
     git(["remote", "add", "origin", coreUrl]);
   }
   git(["fetch", "--quiet", "--depth", "1", "origin", pin]);
   git(["checkout", "--quiet", "FETCH_HEAD"]);
   info("core checked out at " + pin.slice(0, 12) + " (workspace root: " +
-    RUNTIME + ")");
+    runtime() + ")");
   cmdPaths(cfg);
   vendorManager();
 }
 
 // ── the built-in manager (auto-build; no external dependency) ──────
 
-export const MANAGER_PIN_F: string = join(COMFY_PROJECT, "manager.pin");
+export const MANAGER_PIN_F: string = join(comfyProject(), "manager.pin");
 
 /** Pin text from infra/comfyui/manager.pin (comments stripped). */
 export function managerPin(): string {
@@ -102,10 +102,10 @@ export function managerPin(): string {
  *  separate manager process). */
 export function vendorManager(): void {
   const pin = managerPin();
-  const mgrDir = join(RUNTIME, "custom_nodes", "comfyui-manager");
+  const mgrDir = join(runtime(), "custom_nodes", "comfyui-manager");
   const url = "https://github.com/Comfy-Org/ComfyUI-Manager.git";
   const gitm = (args: string[]): number => {
-    const r = spawnSync("git", args, { cwd: RUNTIME, stdio: "inherit" });
+    const r = spawnSync("git", args, { cwd: runtime(), stdio: "inherit" });
     return r.status ?? 1;
   };
   if (existsSync(join(mgrDir, "__init__.py"))) {
@@ -120,7 +120,7 @@ export function vendorManager(): void {
     }
   } else {
     info("vendoring the built-in manager at pin " + pin.slice(0, 12) + " …");
-    mkdirSync(join(RUNTIME, "custom_nodes"), { recursive: true });
+    mkdirSync(join(runtime(), "custom_nodes"), { recursive: true });
     if (gitm(["clone", "--quiet", "--depth", "1", url, mgrDir]) !== 0) {
       gitm(["clone", "--quiet", url, mgrDir]);
     }
@@ -131,11 +131,11 @@ export function vendorManager(): void {
   for (const [k, v] of Object.entries(process.env)) {
     if (v !== undefined) env[k] = v;
   }
-  env.UV_PROJECT_ENVIRONMENT = join(RUNTIME, ".venv");
+  env.UV_PROJECT_ENVIRONMENT = join(runtime(), ".venv");
   const r = spawnSync("uv",
-    ["pip", "install", "--python", venvPython(join(RUNTIME, ".venv")),
+    ["pip", "install", "--python", venvPython(join(runtime(), ".venv")),
       "-r", join(mgrDir, "requirements.txt")],
-    { cwd: REPO, env, stdio: "inherit" });
+    { cwd: repo(), env, stdio: "inherit" });
   if (r.status !== 0) fail("manager requirements install failed");
   pinManagerConfig();
   info("built-in manager vendored (rides the engine port; config " +
@@ -145,8 +145,8 @@ export function vendorManager(): void {
 /** Write/verify the manager config pins. The vendor reads this file
  *  ONCE at ComfyUI startup — drift is warned, never silently
  *  rewritten (a running engine would not see the write). */
-export function pinManagerConfig(runtime: string = RUNTIME): void {
-  const f = join(runtime, "user", "__manager", "config.ini");
+export function pinManagerConfig(rt: string = runtime()): void {
+  const f = join(rt, "user", "__manager", "config.ini");
   const pins = [
     "security_level = normal-",
     "allow_git_url_install = true",
@@ -177,7 +177,7 @@ export function pinManagerConfig(runtime: string = RUNTIME): void {
 export function cmdManifest(): void {
   // The extension_lane --format json equivalent: print the merged
   // manifest (declaration validation without touching the instance).
-  const rows = mergeManifest(REPO);
+  const rows = mergeManifest(repo());
   console.log(JSON.stringify(rows, null, 1));
 }
 
@@ -190,11 +190,11 @@ export function cmdBootCmd(cfg: EndpointConfig): void {
       "Manager-install time; one line — paste into any shell):");
     // a bare `cd` start — the pack law (2026-10-17): no binary env
     // exports on the boot line; every pack resolves its own assets
-    console.log("cd " + RUNTIME + " && " + venvPython(join(RUNTIME, ".venv")) +
+    console.log("cd " + runtime() + " && " + venvPython(join(runtime(), ".venv")) +
       " main.py --listen 127.0.0.1 --port " + port +
       " --extra-model-paths-config extra_model_paths.yaml" +
-      " --input-directory " + join(REPO, "data", "input") +
-      " --output-directory " + join(REPO, "data", "temp") +
+      " --input-directory " + join(repo(), "data", "input") +
+      " --output-directory " + join(repo(), "data", "temp") +
       " --user-directory user");
   } else {
     const boot = (cfg.boot_cmd ?? "").trim();
@@ -235,9 +235,9 @@ export async function cmdVerify(cfg: EndpointConfig): Promise<void> {
       String(e).slice(0, 120));
   }
   if (cfg.provision === "managed") {
-    check("managed lock present", existsSync(join(COMFY_PROJECT, "uv.lock")));
+    check("managed lock present", existsSync(join(comfyProject(), "uv.lock")));
     const r = spawnSync("uv",
-      ["lock", "--check", "--project", COMFY_PROJECT],
+      ["lock", "--check", "--project", comfyProject()],
       { encoding: "utf8" });
     check("managed lock fresh (uv lock --check)", r.status === 0,
       ((r.stdout ?? "").trim().slice(0, 120)));
@@ -275,7 +275,7 @@ export async function cmdVerify(cfg: EndpointConfig): Promise<void> {
   // management plane: the BUILT-IN ComfyUI-Manager (vendored custom
   // node riding the engine port — no external Python anywhere).
   if (cfg.provision === "managed") {
-    const mgrDir = join(RUNTIME, "custom_nodes", "comfyui-manager");
+    const mgrDir = join(runtime(), "custom_nodes", "comfyui-manager");
     const pin = managerPin();
     const have = existsSync(join(mgrDir, "__init__.py"))
       ? (spawnSync("git", ["-C", mgrDir, "rev-parse", "HEAD"],
@@ -286,7 +286,7 @@ export async function cmdVerify(cfg: EndpointConfig): Promise<void> {
       have === "" ? "run provision sync (the auto-build)" :
         "at " + have.slice(0, 12) + ", pin " + pin.slice(0, 12));
     check("manager config pinned (user/__manager/config.ini)",
-      existsSync(join(RUNTIME, "user", "__manager", "config.ini")),
+      existsSync(join(runtime(), "user", "__manager", "config.ini")),
       "run provision sync");
     if (url) {
       try {

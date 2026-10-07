@@ -61,7 +61,7 @@
 //   pnpm run provision -- <command>
 //   node --experimental-strip-types packages/engines/comfyui-cordis/scripts/provision.ts <command>
 // Erasable-syntax TS only: no enums, no namespaces.
-import { DEFAULT_CONFIG, info, setDry } from "./provision-shared.js";
+import { defaultConfig, info, setDry } from "./provision-shared.js";
 import { loadConfig } from "./provision-config.js";
 import { cmdInitStore, cmdPaths } from "./provision-instance-layout.js";
 import { cmdBootCmd, cmdManifest, cmdSync, cmdVerify } from "./provision-instance-managed.js";
@@ -117,7 +117,7 @@ async function main() {
             cmdManifest();
             return 0;
         }
-        const cfg = loadConfig(argv[1] ?? DEFAULT_CONFIG);
+        const cfg = loadConfig(argv[1] ?? defaultConfig());
         if (cmd === "paths")
             cmdPaths(cfg);
         else if (cmd === "init-store")

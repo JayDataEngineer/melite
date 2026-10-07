@@ -41,7 +41,7 @@ import {
 import { PATH_TABLE } from './commission.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO = resolve(HERE, '..', '..')
+const REPO_LOCAL = resolve(HERE, '..', '..')
 const ENGINE_HOST = process.env['MELITE_E2E_COMFYUI_HOST'] ?? '127.0.0.1'
 const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
 /** THE RUN-SEAT LAW: a supervisor-launched maker mints its runs in
@@ -50,8 +50,8 @@ const ENGINE_PORT = Number(process.env['MELITE_E2E_COMFYUI_PORT'] ?? '8188')
  *  seats (own state root first), then any §23 cross-root extras. */
 const ROOTS: string[] = [
   ...new Set([
-    process.env['MELITE_STATE_ROOT'] ?? REPO,
-    join(REPO, 'data/runs'),
+    process.env['MELITE_STATE_ROOT'] ?? REPO_LOCAL,
+    join(REPO_LOCAL, 'data/runs'),
     ...((process.env['MELITE_STATE_ROOTS'] ?? '').split(':').filter((r) => r !== '')),
   ]),
 ]
@@ -67,7 +67,7 @@ async function engineAlive(): Promise<boolean> {
   }
 }
 
-const VERDICT_PATH = join(REPO, 'data/lane-harness/verdict.json')
+const VERDICT_PATH = join(REPO_LOCAL, 'data/lane-harness/verdict.json')
 
 function writeVerdict(report: LaneReport, blocked: string[]): void {
   mkdirSync(dirname(VERDICT_PATH), { recursive: true })
@@ -122,7 +122,7 @@ describe.skipIf(!HAS_ENGINE)('the 3088 lane — the live analyst (video + 3d, no
     runs_scanned: receipts.length,
     runs: receipts,
     // no commission in-process: the window floor is the honest floor
-    transcript: discoverTranscript(join(REPO, 'data/agent-video-test'), 'lane', transcriptFloor([], SINCE_MS)),
+    transcript: discoverTranscript(join(REPO_LOCAL, 'data/agent-video-test'), 'lane', transcriptFloor([], SINCE_MS)),
     paths,
     blocked: BLOCKED,
   }
@@ -172,7 +172,7 @@ describe('the 3088 lane — the verdict receipt (always runs, even when the engi
       boot_ms: Date.now(),
       roots: ROOTS,
       runs_scanned: 0,
-      transcript: discoverTranscript(join(REPO, 'data/agent-video-test'), 'lane', Date.now()),
+      transcript: discoverTranscript(join(REPO_LOCAL, 'data/agent-video-test'), 'lane', Date.now()),
       paths: PATH_NAMES.map((name) => assessPath(name, [], { blocked })),
       blocked,
     }

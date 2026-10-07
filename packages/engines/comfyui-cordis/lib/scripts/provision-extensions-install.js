@@ -14,7 +14,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, lstatSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
-import { DEFAULT_CONFIG, DRY, REPO, RUNTIME, die, info, warn } from "./provision-shared.js";
+import { defaultConfig, DRY, repo, runtime, die, info, warn } from "./provision-shared.js";
 import { engineLiveRoot, engineUrl, loadConfig } from "./provision-config.js";
 import { mergeManifest } from "./provision-extensions-manifest.js";
 /** The cold-cache retry window for Manager git-url installs: a
@@ -87,14 +87,14 @@ export function urlInstalled(url, workspace) {
  *  @returns the deduped verify roots, IaC runtime first. */
 export function verifyRoots(cfg) {
     const live = engineLiveRoot(cfg);
-    if (live === "" || live === RUNTIME)
-        return [RUNTIME];
+    if (live === "" || live === runtime())
+        return [runtime()];
     if (!existsSync(live)) {
         die("engines.comfyui.live_root names a tree that does not exist: " +
             live + " — fix the overlay (data/inference.local.json); the " +
             "install loop refuses to verify against a missing tree");
     }
-    return [RUNTIME, live];
+    return [runtime(), live];
 }
 /** Where a row's clone actually sits: the first verify root whose
  *  custom_nodes carries a clone with this remote. Manager installs
@@ -283,15 +283,15 @@ function clearRenamedSquatter(url, dir, workspace) {
     return "";
 }
 export async function stepExtensions() {
-    const exts = mergeManifest(REPO);
+    const exts = mergeManifest(repo());
     info(exts.length + " extensions declared");
-    const cfg = loadConfig(DEFAULT_CONFIG);
+    const cfg = loadConfig(defaultConfig());
     if (cfg.provision !== "managed") {
         die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
             "deployments own their custom_nodes; the estate never " +
             "installs into a user workspace");
     }
-    const workspace = RUNTIME;
+    const workspace = runtime();
     // THE TWO-TREE ESTATE (roadmap 2026-10-16): Manager's door
     // installs into the tree its engine runs from — the live engine
     // at engines.comfyui.live_root when the overlay names one —
@@ -365,7 +365,7 @@ export async function stepExtensions() {
                 "extensions install through Manager's git-url door: " +
                 (error instanceof Error ? error.message : String(error)));
         }
-        const flagStable = ensureManagerPinnedConfig(join(RUNTIME, "user", "__manager", "config.ini"));
+        const flagStable = ensureManagerPinnedConfig(join(runtime(), "user", "__manager", "config.ini"));
         if (!flagStable) {
             die("manager config pinned (allow_git_url_install, channel_url) — " +
                 "the engine reads it once at startup: restart the engine, then " +

@@ -37,12 +37,10 @@
       "default": "./lib/extractVideoFrame.js"
     },
     "./glbLoad": {
-      "types": "./lib/glbLoad.d.ts",
-      "default": "./lib/glbLoad.js"
+      "types": "./lib/glbLoad.d.ts"
     },
     "./glbSkin": {
-      "types": "./lib/glbSkin.d.ts",
-      "default": "./lib/glbSkin.js"
+      "types": "./lib/glbSkin.d.ts"
     },
     "./handPose": {
       "types": "./lib/handPose.d.ts",
@@ -65,8 +63,7 @@
       "default": "./lib/motionEnvelope.js"
     },
     "./motionNpz": {
-      "types": "./lib/motionNpz.d.ts",
-      "default": "./lib/motionNpz.js"
+      "types": "./lib/motionNpz.d.ts"
     },
     "./npz": {
       "types": "./lib/npz.d.ts",
@@ -118,19 +115,17 @@
       "default": "./lib/textToPose.js"
     },
     "./renderSnapshot": {
-      "types": "./lib/renderSnapshot.d.ts",
-      "default": "./lib/renderSnapshot.js"
+      "types": "./lib/renderSnapshot.d.ts"
     },
     "./somaSkin": {
       "types": "./lib/somaSkin.d.ts",
       "default": "./lib/somaSkin.js"
     },
     ".": {
-      "types": "./lib/index.d.ts",
-      "default": "./lib/index.js"
+      "types": "./lib/index.d.ts"
     }
   },
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.7",
   "types": "./src/index.ts",
   "scripts": {
     "build": "tsc -p tsconfig.build.json",

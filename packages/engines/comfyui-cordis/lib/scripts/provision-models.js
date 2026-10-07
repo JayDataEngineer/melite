@@ -9,7 +9,7 @@ import { finished } from "node:stream/promises";
 import { ComfyUiManagerHttpClient, ComfyUiManagerProvider, VerifiedArtifactWriter, } from "@melite/estate-provisioning";
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.js";
 import { cascadeInit } from "../src/models/models.js";
-import { DEFAULT_CONFIG, DRY, RUNTIME, die, info, warn } from "./provision-shared.js";
+import { defaultConfig, DRY, runtime, die, info, warn } from "./provision-shared.js";
 import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.js";
 // ── models via the estate downloader + frozen catalog + sha256 gate ──
 /** The Manager whitelist key this estate's declared rows match on:
@@ -425,7 +425,7 @@ export function verifyHandPlacedTrees(storeRoot, roots, families) {
     return { present, missingMerged, missingFetched };
 }
 export async function stepModels() {
-    const cfg = loadConfig(DEFAULT_CONFIG);
+    const cfg = loadConfig(defaultConfig());
     if (cfg.provision !== "managed") {
         die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
             "deployments own their model tree; the estate never " +
@@ -464,7 +464,7 @@ export async function stepModels() {
             // reads the local list per request but caches its config —
             // restart the engine when the security line changes.
             const rows = await catalogProvisions();
-            const listPath = join(RUNTIME, "custom_nodes", "comfyui-manager", "model-list.json");
+            const listPath = join(runtime(), "custom_nodes", "comfyui-manager", "model-list.json");
             if (existsSync(dirname(listPath))) {
                 writeManagerLocalModelList(listPath, rows);
             }
@@ -472,7 +472,7 @@ export async function stepModels() {
                 warn("  [model] ComfyUI-Manager is not installed yet — local " +
                     "model-list NOT written (run the extensions step first)");
             }
-            ensureManagerSecurityWeak(join(RUNTIME, "user", "__manager", "config.ini"));
+            ensureManagerSecurityWeak(join(runtime(), "user", "__manager", "config.ini"));
         }
         let ok = 0, bad = 0, skipped = 0, planned = 0;
         for (const { family, row } of await catalogProvisions()) {

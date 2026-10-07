@@ -209,10 +209,14 @@ export function primeCatalog(data) {
 // transform into src modules (import.meta.vitest is only injected into test
 // files themselves; env.VITEST is not injected at all). A normal browser build
 // runs MODE "production"/"development", so production + HMR are unchanged.
-/* v8 ignore next -- module warm-load runs only in browser builds, where
- * MODE is "production"/"development"; under vitest MODE is always "test",
- * so the taken arm is unreachable here (2026-09-12). */
-if (import.meta.env?.MODE !== "test")
+/* v8 ignore next -- module warm-load runs only in browser builds
+ * (Vite sets MODE to exactly "development"/"production"); under vitest
+ * MODE is "test", and under a plain-Node import (the release probe)
+ * import.meta.env is undefined — both arms never reach the load, so
+ * no fetch fires and no retry timer keeps the process alive
+ * (2026-09-12). */
+if (import.meta.env?.MODE === "development" ||
+    import.meta.env?.MODE === "production")
     ensureCatalog();
 // ── Selectors (the TS selector owner; ./wireTypes.ts carries the wire) ──
 /**

@@ -14,7 +14,7 @@ import { tmpdir } from "node:os";
 const nodeFs = { existsSync, mkdtempSync, readdirSync, writeFileSync };
 import { engineField, mergeOverlay, anchorDir, boundModelFolders } from "../scripts/provision-config.ts";
 import { cmdInitStore, cmdPaths } from "../scripts/provision-instance-layout.ts";
-import { REPO } from "../scripts/provision-shared.ts";
+import { repo } from "../scripts/provision-shared.ts";
 import type { RootConfig } from "../scripts/provision-config.ts";
 
 describe("engineField (root wins, endpoint file is the fallback)", () => {
@@ -69,8 +69,8 @@ describe("anchorDir (explicit overrides anchor like the root config)", () => {
     // absolute under repo -> stored repo-relative -> read back ->
     // anchored to the SAME absolute: the pointer never dangles
     const abs = anchorDir("data/models/image-gen");
-    const written = relative(REPO, abs);
-    assert.ok(abs.startsWith(REPO + "/"));
+    const written = relative(repo(), abs);
+    assert.ok(abs.startsWith(repo() + "/"));
     assert.equal(anchorDir(written), abs);
   });
 });
@@ -87,7 +87,7 @@ describe("boundModelFolders (unset endpoint overrides fall through to the root)"
     // estate the overlay pins /mnt-style absolute store roots. The
     // LAW: the base is the configured store, never the repository
     // itself, and the fixed categories keep their identity mapping
-    assert.ok(bound.base_path.length > 0 && bound.base_path !== REPO,
+    assert.ok(bound.base_path.length > 0 && bound.base_path !== repo(),
       "base_path fell back to the repo root (anchorDir(\"\") collapse): "
       + bound.base_path);
     assert.equal(bound.folders["checkpoints"], "checkpoints");

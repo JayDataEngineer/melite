@@ -5,7 +5,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { REPO, die, info, venvPython } from "./provision-shared.ts";
+import { repo, die, info, venvPython } from "./provision-shared.ts";
 
 // ── anny-commercial runtime ──────────────────────────────────────
 // SAM 3D Body → MHR → SOMA → anny. Its OWN venv: torch cu130.
@@ -140,7 +140,7 @@ export function patchSomax(checkout: string): void {
 export function cmdCommercial(warmup: boolean): void {
   // Materialize data/runtime/anny-commercial (venv + checkouts +
   // worker). Idempotent: a healthy runtime is left alone.
-  const root = join(REPO, "data", "runtime", "anny-commercial");
+  const root = join(repo(), "data", "runtime", "anny-commercial");
   const venvPy = venvPython(join(root, ".venv"));
   const marker = join(root, ".provisioned");
   const expected = [venvPy, join(root, "commercial_chain.py"),

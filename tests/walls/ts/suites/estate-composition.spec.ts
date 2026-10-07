@@ -29,7 +29,7 @@ afterAll(() => {
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { bundleSeats } from "../../helpers/bundle-seats.ts";
-const REPO = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
+const REPO_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 import assert from "node:assert/strict";
 import { Context, type Plugin } from '@deepseek-ai/cordis';
 import timerPlugin from '@deepseek-ai/cordis-plugin-timer';
@@ -104,7 +104,7 @@ describe("the estate bundle composes", () => {
     // catch). The census is DERIVED from the bundle's own import
     // closure (every `super(ctx, "seat")` it reaches), and pinned
     // EXACTLY below so a new seat is a conscious edit.
-    const seats = bundleSeats(join(REPO, "packages/web/melite-estate/src/index.ts"), REPO);
+    const seats = bundleSeats(join(REPO_ROOT, "packages/web/melite-estate/src/index.ts"), REPO_ROOT);
     expect(seats, "the bundle's seat census, derived from its import closure").toEqual([
       "benchRemote",
       "cardRegistry",

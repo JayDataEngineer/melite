@@ -120,13 +120,21 @@ describe('W1 — flat lib doors (manifest audit M1/M2/M9/M11)', () => {
     expect(offenders, offenders.join('\n')).toEqual([])
   })
 
-  it('every "." door has both types and default', () => {
+  it('every "." door carries types; a defaultless door is the browser-door class, default-without-types refuses', () => {
+    // Two lawful shapes: the full node door (types + default) and the
+    // types-only browser door — the executability probe skips .d.ts
+    // loudly (release-artifacts.mjs validateBuiltEntry: "types-only
+    // door: the probe skips .d.ts loudly") because the door's JS twin
+    // is browser-plane (loader-marked client bundles, module-scope
+    // WebGL/localStorage graphs). The degenerate class this wall
+    // hunts is a default with NO types: a node door with no
+    // typecheck contract.
     const offenders: string[] = []
     for (const { pkg } of members()) {
       const dot = pkg.exports?.['.']
       if (!dot) continue
       const row = typeof dot === 'string' ? { default: dot } : (dot as Record<string, string>)
-      if (!row.types || !row.default) offenders.push(`${pkg.name}: incomplete "." door ${JSON.stringify(row)}`)
+      if (!row.types) offenders.push(`${pkg.name}: types-less "." door ${JSON.stringify(row)}`)
     }
     expect(offenders, offenders.join('\n')).toEqual([])
   })

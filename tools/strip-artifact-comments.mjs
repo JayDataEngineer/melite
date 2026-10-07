@@ -23,13 +23,31 @@ import { pathToFileURL } from "node:url";
 const LEAK = [
   /\b20[0-2]\d[-/](0?[1-9]|1[0-2])[-/](0?[1-9]|[12]\d|3[01])/, // dates: 2026-09-07, 2026/9/7
   /\b(ROW \d|li-[a-z]{1,3}\b|mint\d{1,2})/, // ledger/mint codes
-  /\b(TODO|FIXME|HACK|XXX)\b/,
+  /\b(TODO|FIXME|HACK|XXX)\b/i, // TODO-family, any case (a lowercase `// todo:` marker is the same leak)
   /\bM\d{1,2}\b(?![\w-])/, // audit item codes (M1..M99)
   /\bG[1-5]\b(?![\w-])/, // gate codes
-  /(moved OUT|no longer|used to|decision \d|\(decision|in review|later PR|this PR|the operator'?s law|the compact law|reseat)/i,
+  /(moved OUT|no longer|previously|formerly|used to|decision \d|\(decision|in review|later PR|this PR|the operator'?s law|the compact law|reseat)/i,
 ];
 
-const isLeak = (text) => LEAK.some((re) => re.test(text));
+/** Does this text carry a leakage marker? Exported for the pack
+ * gate's manifest-description refusal (product copy, fixed at
+ * source). @param text the text to test @returns marker present */
+export const isLeak = (text) => LEAK.some((re) => re.test(text));
+
+/**
+ * Remove whole-line `#` comments (leading whitespace allowed) whose
+ * text matches a leakage marker, from YAML members (overlay patches).
+ * Inline trailing `#` comments stay: a `#` inside a quoted YAML value
+ * is a fragment, not a comment — the conservative line-owned form is
+ * the only one provable without a YAML parser.
+ * @param src the YAML text
+ * @returns the rewritten text */
+export function stripLeakageYaml (src) {
+  return src.split("\n").map((line) => {
+    const m = /^(\s*)#(.*)$/.exec(line)
+    return m && isLeak(m[2]) ? "" : line
+  }).join("\n")
+}
 
 /**
  * Remove `//`-line and `/*`-block comments whose text matches a leakage

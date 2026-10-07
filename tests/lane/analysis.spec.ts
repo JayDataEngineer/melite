@@ -42,14 +42,14 @@ import {
 } from './analysis.ts'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
-const REPO = resolve(HERE, '..', '..')
+const REPO_LOCAL = resolve(HERE, '..', '..')
 /** A REAL H3 film (the 2026-09-20 seam-swap bench receipt) — the
  *  video arm is proven against encoder bytes, never a hand-built
  *  stand-in. */
-const REAL_FILM = join(REPO, 'bench/2026-09-20-seam-swap/new-driftcontrol__h3_bench_new_00001_.mp4')
+const REAL_FILM = join(REPO_LOCAL, 'bench/2026-09-20-seam-swap/new-driftcontrol__h3_bench_new_00001_.mp4')
 /** A REAL glTF binary (the creature lane) and a real motion rig. */
-const REAL_MESH = join(REPO, 'data/runs/output/run-08c627659a19-6d9cd785/creature.glb')
-const REAL_RIG = join(REPO, 'data/runs/output/run-be29e189215d-6c335282/motion.glb')
+const REAL_MESH = join(REPO_LOCAL, 'data/runs/output/run-08c627659a19-6d9cd785/creature.glb')
+const REAL_RIG = join(REPO_LOCAL, 'data/runs/output/run-be29e189215d-6c335282/motion.glb')
 
 const bytes = (path: string): Uint8Array => new Uint8Array(readFileSync(path))
 

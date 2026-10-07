@@ -39,5 +39,5 @@ export declare const ENDPOINT_DERIVED: readonly string[];
  * @param value the derived machine-resolved path
  * @returns the tracked-file-safe form, or null when the overlay owns it
  */
-export declare function endpointWritable(value: string, repo?: string): string | null;
+export declare function endpointWritable(value: string, root?: string): string | null;
 export declare function syncEndpointFromRoot(cfg: EndpointConfig): void;

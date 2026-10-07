@@ -33,7 +33,7 @@ import {
   urlInstalled,
   verifyRoots,
 } from "../scripts/provision-extensions-install.ts";
-import { RUNTIME } from "../scripts/provision-shared.ts";
+import { runtime } from "../scripts/provision-shared.ts";
 import { symlinkSync, existsSync } from "node:fs";
 
 describe("ensureManagerPinnedConfig", () => {
@@ -324,12 +324,12 @@ describe("the two-tree verify (landedIn + verifyRoots)", () => {
   });
 
   it("verifyRoots: no live root declared → the IaC runtime alone", () => {
-    assert.deepEqual(verifyRoots({}), [RUNTIME]);
+    assert.deepEqual(verifyRoots({}), [runtime()]);
   });
 
   it("verifyRoots: a declared live root joins AFTER the IaC runtime; RUNTIME itself never duplicates", () => {
-    assert.deepEqual(verifyRoots({ live_root: live }), [RUNTIME, live]);
-    assert.deepEqual(verifyRoots({ live_root: RUNTIME }), [RUNTIME]);
+    assert.deepEqual(verifyRoots({ live_root: live }), [runtime(), live]);
+    assert.deepEqual(verifyRoots({ live_root: runtime() }), [runtime()]);
   });
 
   it("verifyRoots refuses loud when the overlay names a missing live tree", () => {

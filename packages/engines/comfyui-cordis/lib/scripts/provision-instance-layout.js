@@ -3,7 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { lstatSync, existsSync, mkdirSync, readFileSync, realpathSync, readdirSync, renameSync, rmSync, symlinkSync, unlinkSync, writeFileSync, copyFileSync } from "node:fs";
 import { isAbsolute, join, relative, sep } from "node:path";
-import { DEFAULT_CONFIG, REPO, RUNTIME } from "./provision-shared.js";
+import { defaultConfig, repo, runtime } from "./provision-shared.js";
 import { FIXED_FOLDERS, anchorDir, boundModelFolders, engineField, enginePort, loadRoot, rootStr } from "./provision-config.js";
 // ── instance commands ───────────────────────────────────────────
 export function probe(url, path, timeoutMs = 5000) {
@@ -113,14 +113,14 @@ export function cmdPaths(cfg) {
                 "inference.config.json (never guessed)");
         }
     }
-    mkdirSync(join(RUNTIME, "custom_nodes"), { recursive: true });
-    mkdirSync(join(RUNTIME, "user"), { recursive: true });
-    writeFileSync(join(RUNTIME, "extra_model_paths.yaml"), wiringYamlBody(bound));
-    console.log("runtime layout + extra_model_paths.yaml → " + RUNTIME);
+    mkdirSync(join(runtime(), "custom_nodes"), { recursive: true });
+    mkdirSync(join(runtime(), "user"), { recursive: true });
+    writeFileSync(join(runtime(), "extra_model_paths.yaml"), wiringYamlBody(bound));
+    console.log("runtime layout + extra_model_paths.yaml → " + runtime());
     layDownloadPointers(bound.download_path, bound.folders);
     syncEndpointFromRoot(cfg);
 }
-export function layDownloadPointers(downloadBase, folders, modelsDir = join(RUNTIME, "models")) {
+export function layDownloadPointers(downloadBase, folders, modelsDir = join(runtime(), "models")) {
     // Every category dir inside the runtime is a symlink onto the
     // CONFIGURED destination, so every writer (comfy-cli, pack
     // auto-download, core) lands exactly where the endpoint config
@@ -188,13 +188,13 @@ export const ENDPOINT_DERIVED = ["url", "model_base_path",
  * @param value the derived machine-resolved path
  * @returns the tracked-file-safe form, or null when the overlay owns it
  */
-export function endpointWritable(value, repo = REPO) {
+export function endpointWritable(value, root = repo()) {
     const v = value.trim();
     if (v === "")
         return v;
     if (!isAbsolute(v))
         return v;
-    const rel = relative(repo, v);
+    const rel = relative(root, v);
     if (rel !== "" && !rel.startsWith("..") && !isAbsolute(rel)) {
         return rel.split(sep).join("/");
     }
@@ -251,12 +251,12 @@ export function syncEndpointFromRoot(cfg) {
     }
     if (changed.length === 0)
         return;
-    const onDisk = JSON.parse(readFileSync(DEFAULT_CONFIG, "utf8"));
+    const onDisk = JSON.parse(readFileSync(defaultConfig(), "utf8"));
     for (const k of ENDPOINT_DERIVED) {
         if (k in next)
             onDisk[k] = next[k];
     }
-    writeFileSync(DEFAULT_CONFIG, JSON.stringify(onDisk, null, 2) + "\n");
+    writeFileSync(defaultConfig(), JSON.stringify(onDisk, null, 2) + "\n");
     console.log("endpoint derived from root: " + changed.join(", ") +
         (skipped.length > 0
             ? " (not written — inherited or overlay-owned: " + skipped.join(", ") + ")"

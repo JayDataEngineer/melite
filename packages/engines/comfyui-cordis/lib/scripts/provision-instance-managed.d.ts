@@ -15,7 +15,7 @@ export declare function vendorManager(): void;
 /** Write/verify the manager config pins. The vendor reads this file
  *  ONCE at ComfyUI startup — drift is warned, never silently
  *  rewritten (a running engine would not see the write). */
-export declare function pinManagerConfig(runtime?: string): void;
+export declare function pinManagerConfig(rt?: string): void;
 export declare function cmdManifest(): void;
 export declare function cmdBootCmd(cfg: EndpointConfig): void;
 export declare function cmdVerify(cfg: EndpointConfig): Promise<void>;

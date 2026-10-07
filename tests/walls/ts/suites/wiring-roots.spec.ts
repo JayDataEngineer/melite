@@ -47,7 +47,7 @@ import { fileURLToPath } from "node:url";
 import "../../../helpers/boot-models.ts";
 import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { boundModelFolders, loadConfig } from "../../../../packages/engines/comfyui-cordis/scripts/provision-config.ts";
-import { DEFAULT_CONFIG, REPO, RUNTIME } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
+import { defaultConfig, repo, runtime } from "../../../../packages/engines/comfyui-cordis/scripts/provision-shared.ts";
 import { wiringYamlBody } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-layout.ts";
 import { cmdBootCmd } from "../../../../packages/engines/comfyui-cordis/scripts/provision-instance-managed.ts";
 import { loadStoreRoot } from "../../../../packages/estate/models/src/index.ts";
@@ -59,12 +59,12 @@ const here = fileURLToPath(import.meta.url);
 const ENGINE_UNIT = "melite-comfyui.service";
 
 function generatedBody(): string {
-  return wiringYamlBody(boundModelFolders(loadConfig(DEFAULT_CONFIG)));
+  return wiringYamlBody(boundModelFolders(loadConfig(defaultConfig())));
 }
 
 /** The yaml on disk under the repo's runtime tree. */
 function diskBody(): string {
-  return readFileSync(`${RUNTIME}/extra_model_paths.yaml`, "utf8");
+  return readFileSync(`${runtime()}/extra_model_paths.yaml`, "utf8");
 }
 
 /** The base_path the generated body binds (first melite_weights row). */
@@ -99,7 +99,7 @@ describe("the wiring-roots wall (one store, four truths, all reconciled)", () =>
   });
 
   it("STORE — the yaml's base IS the estate store root (one store, not two)", () => {
-    const storeRoot = loadStoreRoot(REPO);
+    const storeRoot = loadStoreRoot(repo());
     assert.ok(storeRoot !== "", "the estate store root resolves non-empty");
     assert.equal(baseOf(generatedBody()), storeRoot,
       "the engine's mounted base and the estate's store root diverged — the estate door and the engine would read different stores");

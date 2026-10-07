@@ -345,6 +345,62 @@ describe('G1.5 — publish rewrite (hygiene strip + registry manifest)', () => {
       expect(manifest.publishConfig).toEqual({ access: 'public' })
     } finally { rmSync(fx.dir, { recursive: true, force: true }) }
   })
+
+  it('strips previously/formerly narration and lowercase todo markers (verb census arm)', () => {
+    // timeline-viewport shipped "Previously this was hard-clamped to
+    // 20" — narration without a date sailed past the verb list; a
+    // lowercase `// todo:` marker is the same leak as TODO.
+    const src = [
+      '// Previously this was hard-clamped to 20.',
+      '// formerly the retry loop',
+      '// todo: revisit the clamp bound',
+      '/** Clamps the viewport scale. @param v the raw scale */',
+      'export const clamp = (v: number) => Math.min(2, v)\n',
+    ].join('\n')
+    const out = stripper.stripLeakageComments(src)
+    expect(out).not.toContain('Previously')
+    expect(out).not.toContain('formerly')
+    expect(out).not.toContain('todo:')
+    expect(out).toContain('Clamps the viewport scale.')
+  })
+
+  it('strips whole-line leakage comments from packed .yml members (overlay arm)', () => {
+    const fx = fixture({
+      'package.json': okManifest({}),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+      'cordis.patch.yml': [
+        '# overlay law (2026-10-11): rows must resolve in-set',
+        'insert:',
+        '  - id: seat',
+        "    name: '@melite/x'",
+        '# clean section note stays',
+      ].join('\n') + '\n',
+    })
+    try {
+      gates.stripPackedTarballs([fx.f])
+      const yml = execFileSync('bash', ['-c', `tar -xzOf ${fx.f} package/cordis.patch.yml`], { encoding: 'utf8' })
+      expect(yml).not.toContain('2026-10-11')
+      expect(yml).not.toContain('overlay law')
+      expect(yml).toContain('clean section note stays')
+      expect(yml).toContain("name: '@melite/x'")
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
+
+  it('refuses a manifest description carrying development history (product-copy arm)', () => {
+    // The description is registry-facing product copy: a dated merge
+    // note ships to every consumer. The gate refuses — copy is fixed
+    // at source, never rewritten by the tool.
+    const fx = fixture({
+      'package.json': okManifest({ description: 'The compose plane (merged 2026-09-08: two services)' }),
+      'lib/index.js': 'export const x = 1\n',
+      'lib/index.d.ts': 'export declare const x: number\n',
+    })
+    try {
+      expect(() => gates.stripPackedTarballs([fx.f]))
+        .toThrow('description carries development history')
+    } finally { rmSync(fx.dir, { recursive: true, force: true }) }
+  })
 })
 
 describe('G2 — bundle overlay law (a declared patch must ship)', () => {

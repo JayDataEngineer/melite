@@ -1,9 +1,21 @@
 export declare const HERE: string;
-export declare const REPO: string;
-export declare const DEFAULT_CONFIG: string;
-export declare const ROOT_CONFIG: string;
-export declare const RUNTIME: string;
-export declare const COMFY_PROJECT: string;
+/** The melite workspace root, derived from the pnpm-workspace.yaml
+ * marker at first call (memoized). Throws when called outside the
+ * checkout — a CLI entry error, never an import error.
+ * @returns absolute path to the workspace root */
+export declare function repo(): string;
+/** The engine package's own data/ (comfyui-cordis since the models-
+ * plane reversal, 91532243 — the old engines/comfyui anchor was a
+ * stale name that left every config-less CLI call fatal).
+ * @returns absolute path to the default endpoint config */
+export declare function defaultConfig(): string;
+/** @returns absolute path to the repo's inference.config.json */
+export declare function rootConfig(): string;
+/** @returns absolute path to the comfyui runtime tree
+ * (data/runtime/comfyui) */
+export declare function runtime(): string;
+/** @returns absolute path to the comfyui project (infra/comfyui) */
+export declare function comfyProject(): string;
 /** Python executable inside a uv venv: `Scripts/python.exe` on
  * Windows, `bin/python` everywhere else. Every venv spawn and every
  * printed launch command resolves through this — the provisioning

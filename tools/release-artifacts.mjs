@@ -23,7 +23,7 @@ import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFile
 import { homedir, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
-import { stripLeakageComments } from './strip-artifact-comments.mjs'
+import { stripLeakageComments, stripLeakageYaml, isLeak } from './strip-artifact-comments.mjs'
 
 const run = (cmd, args, opts = {}) => execFileSync(cmd, args, { encoding: 'utf8', ...opts }).trim()
 const git = (...a) => run('git', a)
@@ -376,16 +376,20 @@ function builtEntryText (f, inner) {
  *  one repack, so the gates below and the manifest sha256s describe the
  *  exact published bytes:
  *  - leakage comments stripped from js/mjs/cjs/css/.d.ts members;
+ *  - whole-line leakage `#` comments stripped from .yml members
+ *    (overlay patches carried dated developer notes through G1.5);
  *  - package/package.json: drop `private` (a workspace invariant, not a
  *    publish fact), set publishConfig.access=public — the registry
  *    shape, produced at the same door DSH's release pack produces it.
+ *    A `description` carrying a leakage marker REFUSES the tarball:
+ *    product copy is fixed at source, never rewritten by the gate.
  *  Exported for the wall suite (release-artifact-plane.spec.ts). */
 export function stripPackedTarballs (files) {
   const walk = (dir, out) => {
     for (const ent of readdirSync(dir, { withFileTypes: true })) {
       const p = join(dir, ent.name)
       if (ent.isDirectory()) walk(p, out)
-      else if (/\.(js|mjs|cjs|css|d\.ts)$/.test(ent.name)) out.push(p)
+      else if (/\.(js|mjs|cjs|css|d\.ts|ya?ml)$/.test(ent.name)) out.push(p)
     }
     return out
   }
@@ -395,11 +399,14 @@ export function stripPackedTarballs (files) {
       run('tar', ['-xzf', f, '-C', dir])
       for (const p of walk(join(dir, 'package'), [])) {
         const raw = readFileSync(p, 'utf8')
-        const next = stripLeakageComments(raw)
+        const next = /\.(ya?ml)$/.test(p) ? stripLeakageYaml(raw) : stripLeakageComments(raw)
         if (next !== raw) writeFileSync(p, next)
       }
       const manifestPath = join(dir, 'package', 'package.json')
       const manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+      if (typeof manifest.description === 'string' && isLeak(manifest.description)) {
+        throw new Error(`strip gate: ${f.split('/').pop()} description carries development history (${JSON.stringify(manifest.description)}) — product copy is fixed at source`)
+      }
       delete manifest.private
       manifest.publishConfig = { ...manifest.publishConfig, access: 'public' }
       writeFileSync(manifestPath, JSON.stringify(manifest, null, 2) + '\n')

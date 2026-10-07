@@ -15,7 +15,7 @@ import {
 import { loadCardDefs, provisionsByFamily } from "../src/cardDefs.ts";
 import { cascadeInit } from "../src/models/models.ts";
 import type * as CATALOG from "../src/models/families/contract.ts";
-import { DEFAULT_CONFIG, DRY, RUNTIME, die, info, warn } from "./provision-shared.ts";
+import { defaultConfig, DRY, runtime, die, info, warn } from "./provision-shared.ts";
 import { boundModelFolders, engineUrl, loadConfig } from "./provision-config.ts";
 
 // ── models via the estate downloader + frozen catalog + sha256 gate ──
@@ -487,7 +487,7 @@ export function verifyHandPlacedTrees(
 }
 
 export async function stepModels(): Promise<boolean> {
-  const cfg = loadConfig(DEFAULT_CONFIG);
+  const cfg = loadConfig(defaultConfig());
   if (cfg.provision !== "managed") {
     die("provision=" + JSON.stringify(cfg.provision) + " — BYO " +
       "deployments own their model tree; the estate never " +
@@ -525,7 +525,7 @@ export async function stepModels(): Promise<boolean> {
       // reads the local list per request but caches its config —
       // restart the engine when the security line changes.
       const rows = await catalogProvisions();
-      const listPath = join(RUNTIME, "custom_nodes", "comfyui-manager",
+      const listPath = join(runtime(), "custom_nodes", "comfyui-manager",
         "model-list.json");
       if (existsSync(dirname(listPath))) {
         writeManagerLocalModelList(listPath, rows);
@@ -533,7 +533,7 @@ export async function stepModels(): Promise<boolean> {
         warn("  [model] ComfyUI-Manager is not installed yet — local " +
           "model-list NOT written (run the extensions step first)");
       }
-      ensureManagerSecurityWeak(join(RUNTIME, "user", "__manager", "config.ini"));
+      ensureManagerSecurityWeak(join(runtime(), "user", "__manager", "config.ini"));
     }
     let ok = 0, bad = 0, skipped = 0, planned = 0;
     for (const { family, row } of await catalogProvisions()) {

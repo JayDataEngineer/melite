@@ -3,7 +3,7 @@
 
 import { existsSync, readFileSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
-import { REPO, ROOT_CONFIG, die } from "./provision-shared.ts";
+import { repo, rootConfig, die } from "./provision-shared.ts";
 
 // ── config (the root file is the SSOT; the endpoint overrides) ──
 
@@ -70,18 +70,18 @@ export function loadRoot(): RootConfig {
   // roots and ports here; the tracked file ships portable
   // repo-relative defaults, and an overlay that names only some
   // keys inherits the rest.
-  const local = join(REPO, "data", "inference.local.json");
+  const local = join(repo(), "data", "inference.local.json");
   const overlay = existsSync(local)
     ? JSON.parse(readFileSync(local, "utf8")) as RootConfig
     : null;
-  if (!existsSync(ROOT_CONFIG)) {
+  if (!existsSync(rootConfig())) {
     if (overlay === null) {
       die("no root config at inference.config.json — model storage is " +
         "configured from the project root (never guessed)");
     }
     return overlay;
   }
-  const tracked = JSON.parse(readFileSync(ROOT_CONFIG, "utf8")) as RootConfig;
+  const tracked = JSON.parse(readFileSync(rootConfig(), "utf8")) as RootConfig;
   if (overlay === null) return tracked;
   return mergeOverlay(tracked, overlay) as RootConfig;
 }
@@ -140,7 +140,7 @@ export interface BoundLayout {
  * roots on developer estates.
  */
 export function anchorDir(value: string): string {
-  return isAbsolute(value) ? value : resolve(REPO, value);
+  return isAbsolute(value) ? value : resolve(repo(), value);
 }
 
 /** Anchors a possibly-unset override: empty stays empty so the

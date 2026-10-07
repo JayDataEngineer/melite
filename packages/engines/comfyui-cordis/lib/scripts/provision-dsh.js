@@ -3,11 +3,29 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { REPO, check, die, fail, info } from "./provision-shared.js";
+import { repo, check, die, fail, info } from "./provision-shared.js";
 // ── agent harness home (server mount) ────────────────────────────
-export const DSH_PROVISIONER = join(REPO, "packages", "harness", "provisioner");
+let provisionerCached = null;
+/** The repo's provisioner package path (lazy + memoized — a module
+ * const would compute the workspace root at import).
+ * @returns absolute path to packages/harness/provisioner */
+export function dshProvisioner() {
+    if (provisionerCached === null) {
+        provisionerCached = join(repo(), "packages", "harness", "provisioner");
+    }
+    return provisionerCached;
+}
 export const DSH_PROVISIONER_NAME = "@melite/harness-provisioner";
-export const DSH_HARNESS_HOME = join(REPO, "data", "runtime", "dsh-harness-home");
+let harnessHomeCached = null;
+/** The agent harness home (lazy + memoized — same import-safety law
+ * as dshProvisioner).
+ * @returns absolute path to data/runtime/dsh-harness-home */
+export function dshHarnessHome() {
+    if (harnessHomeCached === null) {
+        harnessHomeCached = join(repo(), "data", "runtime", "dsh-harness-home");
+    }
+    return harnessHomeCached;
+}
 export const DSH_PROFILE = "estate";
 export const DSH_PROFILE_BUNDLES = ["@deepseek-ai/dsh-base",
     "@deepseek-ai/dsh-sdk-app", DSH_PROVISIONER_NAME, "@melite/harness-tools"];
@@ -64,7 +82,7 @@ export function materializeProfile(home) {
     writeFileSync(join(prof, "package.json"), JSON.stringify({
         name: "dsh-profile-" + DSH_PROFILE,
         private: true,
-        dependencies: { [DSH_PROVISIONER_NAME]: "link:" + DSH_PROVISIONER },
+        dependencies: { [DSH_PROVISIONER_NAME]: "link:" + dshProvisioner() },
         dsh: { profile: { bundles: [...DSH_PROFILE_BUNDLES] } },
     }, null, 2) + "\n");
     writeFileSync(join(prof, "pnpm-workspace.yaml"), "packages:\n  - .\n\nnodeLinker: hoisted\nautoInstallPeers: false\n");
@@ -106,14 +124,14 @@ export function materializeProfile(home) {
     return prof;
 }
 export function cmdDsh() {
-    const home = process.env.MELITE_DSH_HOME ?? DSH_HARNESS_HOME;
+    const home = process.env.MELITE_DSH_HOME ?? dshHarnessHome();
     const guiHome = join(process.env.HOME ?? "", ".dsh");
     if (resolve(home) === resolve(guiHome)) {
         die("harness home must differ from the GUI home (" + guiHome +
             ") — isolation is the mount's whole point");
     }
-    if (!existsSync(join(DSH_PROVISIONER, "cordis.patch.yml"))) {
-        fail("provisioner bundle missing: " + DSH_PROVISIONER +
+    if (!existsSync(join(dshProvisioner(), "cordis.patch.yml"))) {
+        fail("provisioner bundle missing: " + dshProvisioner() +
             " (tracked in-repo)");
     }
     const prof = materializeProfile(home);
@@ -140,7 +158,7 @@ export function cmdDsh() {
             env[k] = v;
     }
     env.DSH_HOME = home;
-    const r = spawnSync(argv[0], argv.slice(1), { encoding: "utf8", env, cwd: REPO, timeout: 180000 });
+    const r = spawnSync(argv[0], argv.slice(1), { encoding: "utf8", env, cwd: repo(), timeout: 180000 });
     if (r.status !== 0) {
         console.error((r.stdout ?? "").slice(-800));
         console.error((r.stderr ?? "").slice(-800));

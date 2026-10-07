@@ -1,6 +1,6 @@
 {
   "name": "@melite/engine-contract",
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.7",
   "private": true,
   "type": "module",
   "description": "The engine Service Definition (stroke 53, the engine-generics seam): one registry seat every engine provider registers into and every run-path consumer resolves through \u2014 ComfyUI today, MCP servers (blender/unity/godot) next. Stage rows are engine-agnostic; graph surgery (spliceWorkflow) stays inside the owning engine's executor. Source-plane TS (erasable syntax, no build step).",

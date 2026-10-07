@@ -1,5 +1,5 @@
-// manifest-src-imports.spec.ts — RUNTIME VALUE IMPORTS ARE
-// RUNTIME DEPENDENCIES, walled (batch AN, 2026-10-17).
+// manifest-src-imports.spec.ts — runtime() VALUE IMPORTS ARE
+// runtime() DEPENDENCIES, walled (batch AN, 2026-10-17).
 //
 // The DSH practice row's manifest-discipline item, measured: five
 // packages VALUE-imported runtime seats (@melite/contracts,

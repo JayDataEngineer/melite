@@ -62,7 +62,7 @@
 //   node --experimental-strip-types packages/engines/comfyui-cordis/scripts/provision.ts <command>
 // Erasable-syntax TS only: no enums, no namespaces.
 
-import { DEFAULT_CONFIG, info, setDry } from "./provision-shared.ts";
+import { defaultConfig, info, setDry } from "./provision-shared.ts";
 import { loadConfig } from "./provision-config.ts";
 import { cmdInitStore, cmdPaths } from "./provision-instance-layout.ts";
 import { cmdBootCmd, cmdManifest, cmdSync, cmdVerify } from "./provision-instance-managed.ts";
@@ -121,7 +121,7 @@ async function main(): Promise<number> {
       cmdManifest();
       return 0;
     }
-    const cfg = loadConfig(argv[1] ?? DEFAULT_CONFIG);
+    const cfg = loadConfig(argv[1] ?? defaultConfig());
     if (cmd === "paths") cmdPaths(cfg);
     else if (cmd === "init-store") cmdInitStore(cfg);
     else if (cmd === "sync") cmdSync(cfg);

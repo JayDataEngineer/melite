@@ -1,5 +1,5 @@
 {
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.7",
   "private": true,
   "type": "module",
   "description": "the rig card (the 3d lane) \u2014 skeleton + weights on any GLB: SOMA-77 auto (humanoid), rig-copy (donor\u2192target), species (anyCreature bridge)",

@@ -6,6 +6,13 @@ import { existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export const HERE: string = dirname(fileURLToPath(import.meta.url));
+// The repo root is a LAZY MEMOIZED function, never a top-level const:
+// this module is a library door (the provision scripts and the
+// release probe import it), and import-time path discovery throws
+// outside the workspace checkout — the executability gate caught the
+// top-level `export const REPO = workspaceRoot(HERE)` dying in the
+// packed tarball ("no pnpm-workspace.yaml above ..." at import).
+// The derivation still runs from the marker by caller demand:
 // REPO is the WORKSPACE ROOT by marker, never by a fixed hop count:
 // this module executes from two layouts — src/scripts (source) and
 // lib/scripts (the built artifact a plain-`node` config subprocess
@@ -23,15 +30,41 @@ function workspaceRoot(from: string): string {
     }
   }
 }
-export const REPO: string = workspaceRoot(HERE);
-// The engine package's own data/ (comfyui-cordis since the models-
-// plane reversal, 91532243 — the old engines/comfyui anchor was a
-// stale name that left every config-less CLI call fatal).
-export const DEFAULT_CONFIG: string = join(REPO, "packages", "engines",
-  "comfyui-cordis", "data", "comfyui_endpoint.json");
-export const ROOT_CONFIG: string = join(REPO, "inference.config.json");
-export const RUNTIME: string = join(REPO, "data", "runtime", "comfyui");
-export const COMFY_PROJECT: string = join(REPO, "infra", "comfyui");
+let repoCached: string | null = null;
+
+/** The melite workspace root, derived from the pnpm-workspace.yaml
+ * marker at first call (memoized). Throws when called outside the
+ * checkout — a CLI entry error, never an import error.
+ * @returns absolute path to the workspace root */
+export function repo(): string {
+  if (repoCached === null) repoCached = workspaceRoot(HERE);
+  return repoCached;
+}
+
+/** The engine package's own data/ (comfyui-cordis since the models-
+ * plane reversal, 91532243 — the old engines/comfyui anchor was a
+ * stale name that left every config-less CLI call fatal).
+ * @returns absolute path to the default endpoint config */
+export function defaultConfig(): string {
+  return join(repo(), "packages", "engines",
+    "comfyui-cordis", "data", "comfyui_endpoint.json");
+}
+
+/** @returns absolute path to the repo's inference.config.json */
+export function rootConfig(): string {
+  return join(repo(), "inference.config.json");
+}
+
+/** @returns absolute path to the comfyui runtime tree
+ * (data/runtime/comfyui) */
+export function runtime(): string {
+  return join(repo(), "data", "runtime", "comfyui");
+}
+
+/** @returns absolute path to the comfyui project (infra/comfyui) */
+export function comfyProject(): string {
+  return join(repo(), "infra", "comfyui");
+}
 
 /** Python executable inside a uv venv: `Scripts/python.exe` on
  * Windows, `bin/python` everywhere else. Every venv spawn and every

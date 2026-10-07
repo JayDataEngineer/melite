@@ -1,20 +1,17 @@
 {
   "name": "@melite-plugin/timeline",
-  "version": "0.4.0-alpha.3",
+  "version": "0.4.0-alpha.7",
   "type": "module",
   "types": "./src/timeline/index.ts",
   "exports": {
     "./ui/timeline": {
-      "types": "./lib/timeline/index.d.ts",
-      "default": "./lib/timeline/index.js"
+      "types": "./lib/timeline/index.d.ts"
     },
     "./ui/store": {
-      "types": "./lib/store/index.d.ts",
-      "default": "./lib/store/index.js"
+      "types": "./lib/store/index.d.ts"
     },
     "./ui/playback": {
-      "types": "./lib/playback/index.d.ts",
-      "default": "./lib/playback/index.js"
+      "types": "./lib/playback/index.d.ts"
     },
     "./client": {
       "types": "./lib/client/index.d.ts",
