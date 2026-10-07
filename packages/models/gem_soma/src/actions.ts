@@ -13,7 +13,8 @@
 //
 // NODE CONTRACT (vendor/melite-autorig-nodes/nodes.py — KimodoExportFBX):
 // rigged_path rides empty on this arm (no npz to load), file_format
-// 'glb', preserve_texture True keeps the source textures and False
+// glb|fbx (fbx converts through headless Blender — the Unity import
+// door), preserve_texture True keeps the source textures and False
 // strips to flat SOMA-blue, decimate_ratio 0 is off.
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
@@ -29,6 +30,7 @@ export interface SomaRigParams {
   mesh_glb: string
   preserve_texture?: boolean
   decimate_ratio: number
+  file_format?: string
 }
 
 /** The weightless door: the family declares no lane_inputs, so there
@@ -48,11 +50,12 @@ export const rig: ComfyActionSpec<SomaRigParams, SomaRigFacts> = {
   // THE DECLARED SURFACE (the write plane, phase 2): the rig
   // card schema's own types and bounds — the family door judges
   // defaults and variant presets against this row. The auto lane's
-  // rows only: the mesh and the two KimodoExportFBX knobs.
+  // rows only: the mesh, the file format, and the two KimodoExportFBX knobs.
   params: [
     { name: "mesh_glb", type: "string" },
     { name: "preserve_texture", type: "boolean" },
     { name: "decimate_ratio", type: "number", bounds: [0, 1] },
+    { name: "file_format", type: "enum", options: ["glb", "fbx"] },
   ],
   facts: parseSomaRigFacts,
   build({ p, g }) {
@@ -61,7 +64,10 @@ export const rig: ComfyActionSpec<SomaRigParams, SomaRigFacts> = {
     return g.node("KimodoExportFBX", {
       rigged_path: empty,
       source_glb: source,
-      file_format: "glb",
+      // CLOSED (the preserve_texture precedent): the card's
+      // vocabulary gates glb|fbx, and anything else rides glb —
+      // the node never receives a format it cannot spell.
+      file_format: p.file_format === "fbx" ? "fbx" : "glb",
       preserve_texture: p.preserve_texture === true,
       decimate_ratio: p.decimate_ratio,
     }).out();

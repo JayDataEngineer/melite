@@ -137,13 +137,13 @@ test('THE LOAD ERROR: a refusing door voices per-asset (never a dead stage, neve
   }
 })
 
-test('THE LOAD ERROR: a non-Error rejection voices the fallback (never an empty voice)', async () => {
+test('THE LOAD ERROR: a non-Error rejection voices the thrown words (never an empty voice)', async () => {
   const door = installGlbDoor(() => Promise.reject('door-exploded') as Promise<never>)
   try {
     const onAssetError = vi.fn()
     render(h(GlbStagePreview, { assets: [{ id: 'a', url: `/mesh-rej-${urlSeq++}.glb` }], onAssetError }))
     await waitFor(() => { expect(onAssetError).toHaveBeenCalledTimes(1) })
-    expect(onAssetError).toHaveBeenCalledWith('a', 'glb load failed')
+    expect(onAssetError).toHaveBeenCalledWith('a', 'door-exploded')
   } finally {
     door.restore()
   }

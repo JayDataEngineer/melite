@@ -894,7 +894,9 @@ describe("compose (the model path)", () => {
   // ── STEPS APPLIED (2026-09-18, the operator's plaguekind law):
   // a distill row's married step count resolves onto the entry; the
   // caller's own stated count wins over the row's; unstated stays
-  // unstated (a non-distill lora has no count to claim). ──
+  // unstated (a non-distill lora has no count to claim — 007 L2
+  // extends this to STATED counts: a step-less row ignores them,
+  // never marries them). ──
   it("lora steps resolve (row seeds, caller wins, name rows pass verbatim)", async () => {
     const seen: Record<string, unknown>[] = [];
     const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
@@ -922,6 +924,78 @@ describe("compose (the model path)", () => {
     // a non-number steps claim is ignored (never a NaN on the wire)
     svc.compose("card1", "fam1", { loras: [{ id: "dareties", steps: "four" as unknown }] }, "s5");
     assert.deepEqual(seen[4]!["loras"], [{ name: "dareties.safetensors", strength: 1.0, steps: 4 }]);
+  });
+
+  // ── THE STEP-CLAIMING DISTINCTION (007-H3-LoRA-PLANE L2): a
+  // functional (step-less) row cannot claim or inherit steps — a
+  // stated count on such a row is IGNORED (dropped at resolve),
+  // never married onto the entry. Only a row that declares steps
+  // may carry one. ──
+  it("L2 — a step-less row ignores a stated step count (never married)", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [
+        { id: "plain", filename: "plain.safetensors", source_url: "https://h/p" },
+        { id: "turbo", filename: "turbo.safetensors", source_url: "https://h/t", steps: 8 },
+      ],
+    });
+    svc.compose("card1", "fam1", { loras: [{ id: "plain", strength: 0.5, steps: 9 }] }, "l2a");
+    assert.deepEqual(seen[0]!["loras"], [{ name: "plain.safetensors", strength: 0.5 }],
+      "the functional row drops the stated count — nothing to marry");
+    svc.compose("card1", "fam1", { loras: [{ id: "plain", strength: 0.5 }] }, "l2b");
+    assert.deepEqual(seen[1]!["loras"], [{ name: "plain.safetensors", strength: 0.5 }]);
+    // the distinction cuts one way: a distill row still seeds, and a
+    // stated count still wins over its default.
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo", strength: 0.6 }] }, "l2c");
+    assert.deepEqual(seen[2]!["loras"], [{ name: "turbo.safetensors", strength: 0.6, steps: 8 }]);
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo", strength: 0.6, steps: 5 }] }, "l2d");
+    assert.deepEqual(seen[3]!["loras"], [{ name: "turbo.safetensors", strength: 0.6, steps: 5 }]);
+  });
+
+  // ── THE ROW DOMAIN (007-H3-LoRA-PLANE L4): steps_min/steps_max
+  // are SERVICE law, not leaf-only — a count from a recipe (or any
+  // payload) outside the row's declared domain refuses LOUD with
+  // the domain named. In-domain counts (row default or stated)
+  // resolve untouched. ──
+  it("L4 — an out-of-domain step count refuses with the row's domain named", async () => {
+    const seen: Record<string, unknown>[] = [];
+    const svc = await bootModel({ compose: (params) => { seen.push({ ...params }); } });
+    svc.registerPack({ pack: "loras", fields: fields({}) });
+    svc.registerFlavor({
+      pack: "loras",
+      families: ["fam1"],
+      rows: [
+        { id: "turbo48", filename: "t48.safetensors", source_url: "https://h/48", steps: 8, steps_min: 4, steps_max: 8 },
+      ],
+    });
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo48", strength: 0.6 }] }, "l4a");
+    assert.deepEqual(seen[0]!["loras"], [{ name: "t48.safetensors", strength: 0.6, steps: 8 }],
+      "the row default inside its own domain resolves");
+    svc.compose("card1", "fam1", { loras: [{ id: "turbo48", strength: 0.6, steps: 5 }] }, "l4b");
+    assert.deepEqual(seen[1]!["loras"], [{ name: "t48.safetensors", strength: 0.6, steps: 5 }],
+      "an in-domain stated count resolves");
+    assert.throws(
+      () => svc.compose("card1", "fam1", { loras: [{ id: "turbo48", strength: 0.6, steps: 30 }] }, "l4c"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "lora-steps-range" && /declared domain \[4, 8\]/.test(e.message),
+      "above the max refuses with the domain named",
+    );
+    assert.throws(
+      () => svc.compose("card1", "fam1", { loras: [{ id: "turbo48", strength: 0.6, steps: 2 }] }, "l4d"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "lora-steps-range" && /declared domain \[4, 8\]/.test(e.message),
+      "below the min refuses with the domain named",
+    );
+    assert.throws(
+      () => svc.compose("card1", "fam1", { refine_lora: "turbo48", refine_steps: 30 }, "l4e"),
+      (e: unknown) => e instanceof ComposeRefusal && e.code === "refine-steps-range" && /declared domain \[4, 8\]/.test(e.message),
+      "the refine half obeys the same domain",
+    );
+    svc.compose("card1", "fam1", { refine_lora: "turbo48", refine_steps: 6 }, "l4f");
+    assert.deepEqual(seen[2]!["refine"], { name: "t48.safetensors", strength: 1.0, steps: 6 },
+      "an in-domain refine count resolves");
   });
 
   // ── THE T3 REFINE RIDER RESOLUTION (roadmap item 2): the same

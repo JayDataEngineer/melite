@@ -68,9 +68,9 @@
   "loader_info": null,
   "mod_schemas": {
     "mask": {
-      "uid": 990,
+      "uid": 1001,
       "refs": {
-        "924": {
+        "935": {
           "type": "any",
           "meta": {
             "description": "Region Mask",
@@ -83,7 +83,7 @@
             }
           }
         },
-        "928": {
+        "939": {
           "type": "string",
           "meta": {
             "role": "path",
@@ -99,22 +99,22 @@
             "description": "Region Mask"
           }
         },
-        "929": {
+        "940": {
           "type": "const",
           "meta": {},
           "value": "auto"
         },
-        "930": {
+        "941": {
           "type": "const",
           "meta": {},
           "value": "crop_stitch"
         },
-        "931": {
+        "942": {
           "type": "const",
           "meta": {},
           "value": "full_frame"
         },
-        "935": {
+        "946": {
           "type": "union",
           "meta": {
             "default": "crop_stitch",
@@ -139,32 +139,32 @@
             }
           },
           "list": [
-            929,
-            930,
-            931
+            940,
+            941,
+            942
           ]
         },
-        "936": {
+        "947": {
           "type": "const",
           "meta": {},
           "value": "off"
         },
-        "937": {
+        "948": {
           "type": "const",
           "meta": {},
           "value": "person"
         },
-        "938": {
+        "949": {
           "type": "const",
           "meta": {},
           "value": "face"
         },
-        "939": {
+        "950": {
           "type": "const",
           "meta": {},
           "value": "hand"
         },
-        "943": {
+        "954": {
           "type": "union",
           "meta": {
             "default": "off",
@@ -185,13 +185,13 @@
             }
           },
           "list": [
-            936,
-            937,
-            938,
-            939
+            947,
+            948,
+            949,
+            950
           ]
         },
-        "950": {
+        "961": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -209,7 +209,7 @@
             }
           }
         },
-        "957": {
+        "968": {
           "type": "number",
           "meta": {
             "min": -32,
@@ -227,7 +227,7 @@
             }
           }
         },
-        "964": {
+        "975": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -245,7 +245,7 @@
             }
           }
         },
-        "971": {
+        "982": {
           "type": "number",
           "meta": {
             "min": 0,
@@ -263,7 +263,7 @@
             }
           }
         },
-        "975": {
+        "986": {
           "type": "boolean",
           "meta": {
             "default": false,
@@ -278,7 +278,7 @@
             }
           }
         },
-        "982": {
+        "993": {
           "type": "number",
           "meta": {
             "min": 64,
@@ -296,7 +296,7 @@
             }
           }
         },
-        "989": {
+        "1000": {
           "type": "number",
           "meta": {
             "min": 0.05,
@@ -314,23 +314,23 @@
             }
           }
         },
-        "990": {
+        "1001": {
           "type": "object",
           "meta": {
             "default": {}
           },
           "dict": {
-            "mask": 924,
-            "input_mask": 928,
-            "mask_mode": 935,
-            "mask_detector": 943,
-            "mask_context_pad": 950,
-            "mask_grow": 957,
-            "mask_feather": 964,
-            "mask_threshold": 971,
-            "mask_invert": 975,
-            "mask_detail_size": 982,
-            "mask_denoise": 989
+            "mask": 935,
+            "input_mask": 939,
+            "mask_mode": 946,
+            "mask_detector": 954,
+            "mask_context_pad": 961,
+            "mask_grow": 968,
+            "mask_feather": 975,
+            "mask_threshold": 982,
+            "mask_invert": 986,
+            "mask_detail_size": 993,
+            "mask_denoise": 1000
           }
         }
       }
@@ -341,283 +341,283 @@
     "default": "image"
   },
   "schema": {
-    "uid": 3403,
+    "uid": 3420,
     "refs": {
-      "318": {
+      "329": {
         "type": "const",
         "meta": {},
         "value": "cfgpp_ud10_ab"
       },
-      "319": {
+      "330": {
         "type": "const",
         "meta": {},
         "value": "ddim"
       },
-      "320": {
+      "331": {
         "type": "const",
         "meta": {},
         "value": "ddpm"
       },
-      "321": {
+      "332": {
         "type": "const",
         "meta": {},
         "value": "deis"
       },
-      "322": {
+      "333": {
         "type": "const",
         "meta": {},
         "value": "dpm_2"
       },
-      "323": {
+      "334": {
         "type": "const",
         "meta": {},
         "value": "dpm_2_ancestral"
       },
-      "324": {
+      "335": {
         "type": "const",
         "meta": {},
         "value": "dpm_adaptive"
       },
-      "325": {
+      "336": {
         "type": "const",
         "meta": {},
         "value": "dpm_fast"
       },
-      "326": {
+      "337": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m"
       },
-      "327": {
+      "338": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_cfg_pp"
       },
-      "328": {
+      "339": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde"
       },
-      "329": {
+      "340": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_gpu"
       },
-      "330": {
+      "341": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun"
       },
-      "331": {
+      "342": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2m_sde_heun_gpu"
       },
-      "332": {
+      "343": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral"
       },
-      "333": {
+      "344": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_2s_ancestral_cfg_pp"
       },
-      "334": {
+      "345": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde"
       },
-      "335": {
+      "346": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_3m_sde_gpu"
       },
-      "336": {
+      "347": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde"
       },
-      "337": {
+      "348": {
         "type": "const",
         "meta": {},
         "value": "dpmpp_sde_gpu"
       },
-      "338": {
+      "349": {
         "type": "const",
         "meta": {},
         "value": "er_sde"
       },
-      "339": {
+      "350": {
         "type": "const",
         "meta": {},
         "value": "euler"
       },
-      "340": {
+      "351": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral"
       },
-      "341": {
+      "352": {
         "type": "const",
         "meta": {},
         "value": "euler_ancestral_cfg_pp"
       },
-      "342": {
+      "353": {
         "type": "const",
         "meta": {},
         "value": "euler_cfg_pp"
       },
-      "343": {
+      "354": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0"
       },
-      "344": {
+      "355": {
         "type": "const",
         "meta": {},
         "value": "exp_heun_2_x0_sde"
       },
-      "345": {
+      "356": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation"
       },
-      "346": {
+      "357": {
         "type": "const",
         "meta": {},
         "value": "gradient_estimation_cfg_pp"
       },
-      "347": {
+      "358": {
         "type": "const",
         "meta": {},
         "value": "heun"
       },
-      "348": {
+      "359": {
         "type": "const",
         "meta": {},
         "value": "heunpp2"
       },
-      "349": {
+      "360": {
         "type": "const",
         "meta": {},
         "value": "ipndm"
       },
-      "350": {
+      "361": {
         "type": "const",
         "meta": {},
         "value": "ipndm_v"
       },
-      "351": {
+      "362": {
         "type": "const",
         "meta": {},
         "value": "lcm"
       },
-      "352": {
+      "363": {
         "type": "const",
         "meta": {},
         "value": "lms"
       },
-      "353": {
+      "364": {
         "type": "const",
         "meta": {},
         "value": "res_multistep"
       },
-      "354": {
+      "365": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral"
       },
-      "355": {
+      "366": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_ancestral_cfg_pp"
       },
-      "356": {
+      "367": {
         "type": "const",
         "meta": {},
         "value": "res_multistep_cfg_pp"
       },
-      "357": {
+      "368": {
         "type": "const",
         "meta": {},
         "value": "sa_solver"
       },
-      "358": {
+      "369": {
         "type": "const",
         "meta": {},
         "value": "sa_solver_pece"
       },
-      "359": {
+      "370": {
         "type": "const",
         "meta": {},
         "value": "seeds_2"
       },
-      "360": {
+      "371": {
         "type": "const",
         "meta": {},
         "value": "seeds_3"
       },
-      "361": {
+      "372": {
         "type": "const",
         "meta": {},
         "value": "uni_pc"
       },
-      "362": {
+      "373": {
         "type": "const",
         "meta": {},
         "value": "uni_pc_bh2"
       },
-      "364": {
+      "375": {
         "type": "const",
         "meta": {},
         "value": "beta"
       },
-      "365": {
+      "376": {
         "type": "const",
         "meta": {},
         "value": "ddim_uniform"
       },
-      "366": {
+      "377": {
         "type": "const",
         "meta": {},
         "value": "exponential"
       },
-      "367": {
+      "378": {
         "type": "const",
         "meta": {},
         "value": "karras"
       },
-      "368": {
+      "379": {
         "type": "const",
         "meta": {},
         "value": "kl_optimal"
       },
-      "369": {
+      "380": {
         "type": "const",
         "meta": {},
         "value": "linear_quadratic"
       },
-      "370": {
+      "381": {
         "type": "const",
         "meta": {},
         "value": "normal"
       },
-      "371": {
+      "382": {
         "type": "const",
         "meta": {},
         "value": "sgm_uniform"
       },
-      "372": {
+      "383": {
         "type": "const",
         "meta": {},
         "value": "simple"
       },
-      "3337": {
+      "3354": {
         "type": "string",
         "meta": {}
       },
-      "3341": {
+      "3358": {
         "type": "array",
         "meta": {
           "default": [],
@@ -633,9 +633,9 @@
             "tooltip": "Ordered input images — the FIRST is the image being edited; the rest are references the prompt can cite as <image2>, <image3>… in order. Capacity follows the boarded model; more than it admits refuses loudly."
           }
         },
-        "inner": 3337
+        "inner": 3354
       },
-      "3345": {
+      "3362": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -645,7 +645,7 @@
           "description": "Input Image"
         }
       },
-      "3349": {
+      "3366": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -655,7 +655,7 @@
           "description": "Image 2"
         }
       },
-      "3353": {
+      "3370": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -665,11 +665,11 @@
           "description": "Image 3"
         }
       },
-      "3354": {
+      "3371": {
         "type": "string",
         "meta": {}
       },
-      "3357": {
+      "3374": {
         "type": "array",
         "meta": {
           "default": [],
@@ -678,9 +678,9 @@
             "hidden": true
           }
         },
-        "inner": 3354
+        "inner": 3371
       },
-      "3361": {
+      "3378": {
         "type": "string",
         "meta": {
           "role": "path",
@@ -690,7 +690,7 @@
           "description": "Region Mask"
         }
       },
-      "3364": {
+      "3381": {
         "type": "string",
         "meta": {
           "description": "Prompt",
@@ -705,7 +705,7 @@
           }
         }
       },
-      "3367": {
+      "3384": {
         "type": "string",
         "meta": {
           "description": "Negative Prompt",
@@ -718,7 +718,7 @@
           }
         }
       },
-      "3370": {
+      "3387": {
         "type": "number",
         "meta": {
           "description": "Width",
@@ -733,7 +733,7 @@
           }
         }
       },
-      "3373": {
+      "3390": {
         "type": "number",
         "meta": {
           "description": "Height",
@@ -748,7 +748,7 @@
           }
         }
       },
-      "3378": {
+      "3395": {
         "type": "number",
         "meta": {
           "description": "Seed",
@@ -762,7 +762,7 @@
           }
         }
       },
-      "3384": {
+      "3401": {
         "type": "number",
         "meta": {
           "description": "Steps",
@@ -779,7 +779,7 @@
           }
         }
       },
-      "3390": {
+      "3407": {
         "type": "number",
         "meta": {
           "description": "Guidance Scale",
@@ -796,7 +796,7 @@
           }
         }
       },
-      "3392": {
+      "3409": {
         "type": "union",
         "meta": {
           "description": "Sampler",
@@ -810,17 +810,6 @@
           }
         },
         "list": [
-          318,
-          319,
-          320,
-          321,
-          322,
-          323,
-          324,
-          325,
-          326,
-          327,
-          328,
           329,
           330,
           331,
@@ -854,10 +843,21 @@
           359,
           360,
           361,
-          362
+          362,
+          363,
+          364,
+          365,
+          366,
+          367,
+          368,
+          369,
+          370,
+          371,
+          372,
+          373
         ]
       },
-      "3394": {
+      "3411": {
         "type": "union",
         "meta": {
           "description": "Scheduler",
@@ -871,18 +871,18 @@
           }
         },
         "list": [
-          364,
-          365,
-          366,
-          367,
-          368,
-          369,
-          370,
-          371,
-          372
+          375,
+          376,
+          377,
+          378,
+          379,
+          380,
+          381,
+          382,
+          383
         ]
       },
-      "3398": {
+      "3415": {
         "type": "boolean",
         "meta": {
           "description": "Use Stock Nodes",
@@ -896,7 +896,7 @@
           }
         }
       },
-      "3402": {
+      "3419": {
         "type": "boolean",
         "meta": {
           "description": "Double Reference",
@@ -910,29 +910,29 @@
           }
         }
       },
-      "3403": {
+      "3420": {
         "type": "object",
         "meta": {
           "default": {}
         },
         "dict": {
-          "input_images": 3341,
-          "image1": 3345,
-          "image2": 3349,
-          "image3": 3353,
-          "reference_images": 3357,
-          "input_mask": 3361,
-          "prompt": 3364,
-          "negative_prompt": 3367,
-          "width": 3370,
-          "height": 3373,
-          "seed": 3378,
-          "steps": 3384,
-          "cfg": 3390,
-          "sampler": 3392,
-          "scheduler": 3394,
-          "use_stock_nodes": 3398,
-          "double_reference": 3402
+          "input_images": 3358,
+          "image1": 3362,
+          "image2": 3366,
+          "image3": 3370,
+          "reference_images": 3374,
+          "input_mask": 3378,
+          "prompt": 3381,
+          "negative_prompt": 3384,
+          "width": 3387,
+          "height": 3390,
+          "seed": 3395,
+          "steps": 3401,
+          "cfg": 3407,
+          "sampler": 3409,
+          "scheduler": 3411,
+          "use_stock_nodes": 3415,
+          "double_reference": 3419
         }
       }
     }

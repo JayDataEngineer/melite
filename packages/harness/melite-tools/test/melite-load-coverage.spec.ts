@@ -57,18 +57,11 @@ beforeEach(() => {
 describe('melite_load family pack seats', () => {
   test('projects valid family packs, keyed grammars, and every defensive skip', () => {
     const text = render({
-      model_hints: [
-        { id: 'rich' },
-        { id: 'rich' },
-        { id: 'emptyFields' },
-        { id: 'noMods' },
-        { id: 'nullMods' },
-        { id: 'throws' },
-        { id: '' },
-        { id: 7 },
-        null,
-      ],
-      signature: { params_schema: { properties: {} }, modifiers: [] },
+      signature: {
+        model: 'rich:base:fp16',
+        params_schema: { properties: { model: { enum: ['rich:base:fp16', 'rich:base:fp16', 'emptyFields:base:fp16', 'noMods:base:fp16', 'nullMods:base:fp16', 'throws:base:fp16', '', 7, null] } } },
+        modifiers: [],
+      },
     })
     expect(text).toContain('qvoice[] (list; fields: voice_name, voice_id)')
     expect(text).toContain('controlnet[] (list; fields: image, strength)')
@@ -78,8 +71,8 @@ describe('melite_load family pack seats', () => {
 
   test('a kind already served by the card is not repeated', () => {
     const text = render({
-      model_hints: [{ id: 'rich' }],
       signature: {
+        model: 'rich:base:fp16',
         params_schema: { properties: {} },
         modifiers: [{ kind: 'qvoice', category: 'standalone', fields: ['voice_name'] }],
       },
@@ -92,8 +85,7 @@ describe('melite_load family pack seats', () => {
   test('an absent service drops family pack fields without inventing them', () => {
     state.serviceThrows = true
     const text = render({
-      model_hints: [{ id: 'rich' }],
-      signature: { params_schema: { properties: {} }, modifiers: [] },
+      signature: { model: 'rich:base:fp16', params_schema: { properties: {} }, modifiers: [] },
     })
     expect(text).not.toContain('qvoice[]')
     expect(text).not.toContain('controlnet[]')

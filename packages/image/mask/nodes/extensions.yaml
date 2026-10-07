@@ -22,7 +22,7 @@ extensions:
       - numpy
       - dill
       - matplotlib
-      - git+https://github.com/facebookresearch/sam2
+      - git+https://github.com/facebookresearch/sam2@2b90b9f5ceec907a1c18123530e92e794ad901a4
   - name: comfyui-impact-subpack
     url: https://github.com/ltdrdata/ComfyUI-Impact-Subpack
     ref: 50c7b71a6a224734cc9b21963c6d1926816a97f1

@@ -30,7 +30,7 @@ const ACTIONS = [
     'status', 'endpoint_set', 'logs', 'search_models',
     'list_extensions', 'snapshot_list',
     'install_extension', 'install_extension_url',
-    'download_model', 'provision_model',
+    'download_model', 'provision_model', 'acquire_weight',
     'restart', 'stop', 'launch', 'update', 'switch_version', 'free',
     'snapshot_save', 'snapshot_restore',
     'lora_list', 'lora_install',
@@ -54,6 +54,13 @@ function contractFields(data, envelope) {
             fields.code = source.code;
         if (typeof source.state === 'string')
             fields.state = source.state;
+        // THE F9 TRACKER FIELDS (the agent's poll read): live landed
+        // bytes + declared total ride top-level beside state — the
+        // tracker's bytes/total without digging into data.
+        if (typeof source.bytes === 'number')
+            fields.bytes = source.bytes;
+        if (typeof source.total === 'number')
+            fields.total = source.total;
         if (typeof source.next_action === 'string')
             fields.next_action = source.next_action;
         if (typeof source.restart_required === 'boolean')
@@ -225,11 +232,16 @@ function renderManage(_args, value) {
     else if (action === 'logs' || action === 'search_models' || action === 'list_extensions' || action === 'snapshot_list') {
         lines.push(...actionRows(action, data, result.rows));
     }
-    else if (result.state !== undefined || result.items !== undefined || result.operations !== undefined || result.operation_id !== undefined) {
+    else if (result.state !== undefined || result.items !== undefined || result.operations !== undefined || result.operation_id !== undefined || result.bytes !== undefined || result.total !== undefined) {
         if (typeof result.state === 'string')
             lines.push('state: ' + result.state);
         if (typeof result.operation_id === 'string')
             lines.push('operation: ' + result.operation_id);
+        // THE F9 TRACKER LINE (the agent's poll read): bytes/total in the
+        // same line the popup tracker renders — real landed bytes.
+        if (typeof result.bytes === 'number' || typeof result.total === 'number') {
+            lines.push('progress: ' + String(result.bytes ?? '?') + '/' + String(result.total ?? '?') + ' bytes');
+        }
         if (Array.isArray(result.requested))
             lines.push('requested: ' + result.requested.join(', '));
         if (Array.isArray(result.succeeded))
@@ -285,7 +297,9 @@ export function comfyManage(request) {
             + 'runs are active); endpoint_set (point at a different ComfyUI server '
             + 'url — validate-first: an unreachable url is refused, never written); install_extension (registry ids), '
             + 'install_extension_url (git url), download_model (url), provision_model '
-            + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); lora_list (the '
+            + '(declared model id from melite_load; Manager search results are external-catalog rows, not provision ids); acquire_weight '
+            + '(THE run-failure weight door — ONE door with the bench popup Download button: start with model + optional file/variant/quant, '
+            + 'take the operation_id from the answer, then poll the SAME action with operation_id for live bytes/total until a terminal state); lora_list (the '
             + 'engine-accepted LoRA names plus the user rows file) and lora_install (copy or upload a LoRA file the operator '
             + 'already has — never fetched; the answer names the restart that follows); restart, stop, launch, update '
             + '(target comfy), switch_version, free. INFRA UPKEEP only — it '
@@ -323,10 +337,12 @@ export function comfyManage(request) {
             },
             model: {
                 type: 'string',
-                description: 'provision_model: declared model id from melite_load (e.g. "z-image"); Manager search rows are not provision ids.',
+                description: 'provision_model / acquire_weight: declared model id from melite_load (e.g. "z-image"); Manager search rows are not provision ids.',
             },
-            variant: { type: 'string', description: 'provision_model: optional variant id.' },
-            quant: { type: 'string', description: 'provision_model: optional quant cell id.' },
+            variant: { type: 'string', description: 'provision_model / acquire_weight: optional variant id.' },
+            quant: { type: 'string', description: 'provision_model / acquire_weight: optional quant cell id.' },
+            file: { type: 'string', description: 'acquire_weight: the missing weight filename for display (e.g. "sam2.1_hiera_large.pt"); the DECL owns the fetch source.' },
+            operation_id: { type: 'string', description: 'acquire_weight: poll key — the operation_id from the start answer; the tracker polls the same action with this until a terminal state.' },
             query: { type: 'string', description: 'search_models: search text.' },
             tail: { type: 'integer', description: 'logs: line count (default 200).' },
             version: { type: 'string', description: 'switch_version: target ComfyUI version.' },
@@ -358,6 +374,8 @@ export function comfyManage(request) {
                     code: { type: 'string', description: 'Structured refusal code returned by the manage seat.' },
                     operation_id: { type: 'string', description: 'Provisioning operation correlation id when the manage seat returned one.' },
                     state: { type: 'string', description: 'Provisioning or status state.' },
+                    bytes: { type: 'number', description: 'acquire_weight: live landed bytes for the weight fetch (the tracker numerator — real, never animation).' },
+                    total: { type: 'number', description: 'acquire_weight: declared size_bytes total for the weight fetch (the tracker denominator).' },
                     next_action: { type: 'string', description: 'The next existing manage action to take.' },
                     restart_required: { type: 'boolean', description: 'Whether ComfyUI must restart before the result is active.' },
                     partial: { type: 'boolean', description: 'True when some requested resources succeeded and others did not.' },
@@ -380,10 +398,10 @@ export function comfyManage(request) {
             const a = args;
             // forward only declared fields — the SSOT envelope is extra=forbid
             const body = { action: a.action };
-            for (const k of ['nodes', 'url', 'relative_path', 'filename', 'model',
+            for (const k of ['nodes', 'url', 'relative_path', 'filename', 'file', 'model',
                 'variant', 'quant', 'query', 'tail', 'version',
                 'target', 'force', 'snapshot', 'path', 'data',
-                'families']) {
+                'families', 'operation_id']) {
                 if (a[k] !== undefined && a[k] !== null && a[k] !== '')
                     body[k] = a[k];
             }

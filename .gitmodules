@@ -34,9 +34,6 @@
 [submodule "vendor/comfyui_extensions/melite-tts-nodes"]
 	path = vendor/comfyui_extensions/melite-tts-nodes
 	url = https://github.com/JayDataEngineer/melite-tts-nodes.git
-[submodule "vendor/comfyui_extensions/melite-unity-nodes"]
-	path = vendor/comfyui_extensions/melite-unity-nodes
-	url = https://github.com/JayDataEngineer/melite-unity-nodes.git
 [submodule "vendor/comfyui_extensions/melite-utility-nodes"]
 	path = vendor/comfyui_extensions/melite-utility-nodes
 	url = https://github.com/JayDataEngineer/melite-utility-nodes.git

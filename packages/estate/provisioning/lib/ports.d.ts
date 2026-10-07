@@ -94,6 +94,16 @@ export type ProvisioningServiceDefinition = {
     stateOf(ref: ResourceRef): ProvisionState;
     operationOf(ref: ResourceRef): ProvisionOperation | undefined;
     isLocked(ref: ResourceRef): boolean;
+    /** THE F9 PROGRESS SEAT (optional so older fakes still satisfy
+     *  the type): the live byte count for one weight fetch. */
+    progressOf?(operationId: string): import("./contracts.js").WeightAcquireProgress | null;
+    /** THE F9 START SEAT (optional, same reason): starts the fetch
+     *  for one ref in the background and returns its operation id
+     *  WITHOUT awaiting the landing — the tracker polls progressOf.
+     *  A second start while the first is locked joins it (one fetch,
+     *  never two). The fetch itself rides ensure (the existing
+     *  fetcher — no second fetcher). */
+    startWeightAcquire?(ref: ResourceRef, options?: EnsureOptions): Promise<string>;
 };
 export type ProvisioningPorts = {
     readonly declaration: DeclarationPort;

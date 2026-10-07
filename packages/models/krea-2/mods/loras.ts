@@ -13,6 +13,15 @@
 // Comfy-Org/Krea-2 mirror (same repo the family's checkpoints
 // pull from); realism and filterbypass3 are the community
 // originals. Files land in COMFYUI loras/<filename>.
+//
+// THE MODS FATE (2026-10-17, model-families audit fix 7, option b).
+// These rows are operator-supplied picker vocabulary.
+// They are never auto-provisioned.
+// Their source_url is provenance documentation.
+// It is not a download declaration.
+// The estate never fetches them.
+// The ghost wall proves the split.
+// No mods source_url appears in provisionsByFamily.
 import type { Context } from '@deepseek-ai/cordis'
 // the ctx.comfyui augmentation rides the service module:
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'

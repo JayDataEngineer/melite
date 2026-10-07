@@ -307,13 +307,6 @@ export async function stepExtensions() {
         const ref = (e.ref ?? "").trim();
         if (!name)
             continue;
-        if (!url && (e.registry ?? "").trim()) {
-            warn("  [" + name + "] registry rows ride the runtime door " +
-                "(comfy_manage install_extension) — declare a url for the " +
-                "provision step");
-            counts.failed += 1;
-            continue;
-        }
         if (!url) {
             warn("  [" + name + "] has no url — every extension declares " +
                 "its source (first-party packs: github.com/JayDataEngineer/" +

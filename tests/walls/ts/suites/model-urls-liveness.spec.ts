@@ -15,6 +15,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import "../../../helpers/boot-models.ts";
+import { registryIds, registryModel } from "../../../../packages/engines/comfyui-cordis/src/models/models.ts";
 import { loadCardDefs, provisionsByFamily } from "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts";
 
 const OFFLINE = process.env["MELITE_WALLS_OFFLINE"] === "1";
@@ -72,5 +73,35 @@ describe.skipIf(OFFLINE)("THE URL-LIVENESS GATE (every declared download answers
     }
     assert.deepEqual(dead, [], `dead declared URLs (fresh provisioning would 404):\n${dead.join("\n")}`);
     assert.deepEqual(sizeLiars, [], `declared sizes disagree with the source:\n${sizeLiars.join("\n")}`);
+  });
+
+  // THE SNAPSHOT-REPOS ARM (the model-families audit fix 8).
+  // Every snapshot_provisions row pins an upstream repo + revision.
+  // The pinned files the node loads (config + weights) must answer
+  // a keyless ranged GET at the pinned revision.
+  // Same offline law as the URL arm: MELITE_WALLS_OFFLINE=1 skips.
+  it("every pinned snapshot file is live at its pinned revision", async () => {
+    // Registry ids, never route views: a route view re-carries its
+    // family's rows, so a model-ids walk counts one declaration
+    // three times.
+    const rows = registryIds().flatMap((id) =>
+      (registryModel(id).snapshot_provisions ?? []).map((row) => ({ family: id, ...row })),
+    );
+    assert.equal(rows.length, 2, `the snapshot-row census moved (${rows.length} rows) — update this pin deliberately`);
+    const dead: string[] = [];
+    for (const row of rows) {
+      for (const file of ["config.json", "model.safetensors"]) {
+        const url = `https://huggingface.co/${row.repo_id}/resolve/${row.revision}/${file}`;
+        try {
+          const seen = await probe(url);
+          if (seen.status < 200 || seen.status >= 300) {
+            dead.push(`${row.family}: ${url} -> HTTP ${seen.status}`);
+          }
+        } catch (e) {
+          dead.push(`${row.family}: ${url} -> ${e instanceof Error ? e.message : String(e)}`);
+        }
+      }
+    }
+    assert.deepEqual(dead, [], `dead pinned snapshot files (fresh snapshot provisioning would 404):\n${dead.join("\n")}`);
   });
 });

@@ -196,6 +196,182 @@ export function classifyEntry (inner, tarName) {
   }
 }
 
+/** G8 — BUILT-ENTRY IMPORT LAW (alpha.3 batch, the consumer's preset
+ *  audit): the "." door's built JS carries no extensionless relative
+ *  import, and the door itself targets built JS, never source.
+ *  Plain-Node ESM resolves no `./x` without its file extension, so a
+ *  `./x` (or a leaked `./x.ts`) in emitted JS is the in-package byte
+ *  defect class (b) — loadable in-workspace through tsx, dead in the
+ *  tarball. The `.ts`-target half is the class (a) backstop at the
+ *  entry door (the payload gate refuses every .ts target repo-wide;
+ *  this names the door). Pure: throws on violation, so the wall suite
+ *  (release-artifact-plane.spec.ts) drives it with synthetic strings. */
+export function validateBuiltEntry (inner, entryText, tarName) {
+  const dot = inner.exports?.['.']
+  if (dot === undefined) return // subpath-only seats pass at classifyEntry
+  const target = typeof dot === 'string' ? dot : dot?.default
+  if (typeof target === 'string' && /\.(ts|tsx|mts|cts)$/.test(target) && !/\.d\.ts$/.test(target)) {
+    throw new Error(`entry gate: ${tarName} "." targets source "${target}" — ship built lib/ (the estate-* pattern)`)
+  }
+  if (typeof target !== 'string' || !/\.(js|mjs|cjs)$/.test(target)) return // types-only door: the probe skips .d.ts loudly
+  const offender = extensionlessImportOffender(entryText ?? '')
+  if (offender) {
+    throw new Error(`entry gate: ${tarName} ${target} carries extensionless relative import "${offender}" — emit must rewrite to its file extension`)
+  }
+}
+
+/** First relative specifier in JS text with no resolvable runtime file
+ *  extension (or a leaked source extension), or null when clean.
+ *  Import/export clauses are parsed structurally in code position:
+ *  comments are skipped (entry files narrate their own module graph
+ *  in prose — estate-queue's "importable from ./queue.ts" line is not
+ *  an import) and every other string is opaque (an import-looking
+ *  string literal is not an import). Template spans are fully opaque —
+ *  an import built inside `${}` stays out of the static gate's sight
+ *  and the executability probe executes it. Exported for the wall
+ *  suite. */
+export function extensionlessImportOffender (text) {
+  const RUNTIME_EXT = /\.(js|mjs|cjs|json|css|wasm)$/
+  const n = text.length
+  let bad = null
+  const isId = (ch) => /[A-Za-z0-9_$]/.test(ch ?? '')
+
+  const skipString = (i, q) => {
+    let j = i + 1
+    while (j < n) {
+      if (text[j] === '\\') { j += 2; continue }
+      if (text[j] === q) return j + 1
+      j++
+    }
+    return j
+  }
+
+  const readLiteral = (i) => {
+    const q = text[i]
+    if (q !== "'" && q !== '"') return null
+    let j = i + 1
+    let spec = ''
+    while (j < n) {
+      if (text[j] === '\\') { spec += text[j + 1] ?? ''; j += 2; continue }
+      if (text[j] === q) return { spec, end: j + 1 }
+      spec += text[j]
+      j++
+    }
+    return { spec, end: j }
+  }
+
+  const skipTrivia = (i) => {
+    for (;;) {
+      while (i < n && /\s/.test(text[i])) i++
+      if (text[i] === '/' && text[i + 1] === '/') { while (i < n && text[i] !== '\n') i++; continue }
+      if (text[i] === '/' && text[i + 1] === '*') { i += 2; while (i < n && !(text[i] === '*' && text[i + 1] === '/')) i++; i += 2; continue }
+      return i
+    }
+  }
+
+  const checkSpec = (spec) => {
+    if (spec.startsWith('.') && !RUNTIME_EXT.test(spec) && bad === null) bad = spec
+  }
+
+  // `from "..."` at the current statement's top level (the clause's
+  // own from — strings, templates, comments, and bracket depth hide
+  // every lookalike). Returns the index past the clause.
+  const scanFrom = (i) => {
+    let depth = 0
+    while (i < n && bad === null) {
+      const c = text[i]
+      if (c === "'" || c === '"') { i = skipString(i, c); continue }
+      if (c === '`') { i = skipTemplate(i); continue }
+      if (c === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) { i = skipTrivia(i); continue }
+      if (c === '{' || c === '(' || c === '[') depth++
+      else if (c === '}' || c === ')' || c === ']') {
+        if (depth === 0) return i
+        depth--
+      } else if (c === ';') return i + 1
+      else if (depth === 0 && c === 'f' && text.startsWith('from', i) && !isId(text[i - 1]) && !isId(text[i + 4])) {
+        i = skipTrivia(i + 4)
+        const tgt = readLiteral(i)
+        if (tgt) { checkSpec(tgt.spec); return tgt.end }
+        return i
+      }
+      i++
+    }
+    return i
+  }
+
+  // past `import`: side-effect string, dynamic (, or a named/default
+  // list whose `from` scanFrom finds. import.meta is not an import.
+  const scanImport = (i) => {
+    i = skipTrivia(i)
+    if (text[i] === '.') return i // import.meta
+    const lit = readLiteral(i)
+    if (lit) { checkSpec(lit.spec); return lit.end }
+    if (text[i] === '(') {
+      i = skipTrivia(i + 1)
+      const dyn = readLiteral(i)
+      if (dyn) { checkSpec(dyn.spec); return dyn.end }
+      return i
+    }
+    return scanFrom(i)
+  }
+
+  // past `export`: only `*` and `{}` forms carry a specifier
+  const scanExport = (i) => {
+    i = skipTrivia(i)
+    if (text[i] !== '*' && text[i] !== '{') return i
+    return scanFrom(i)
+  }
+
+  // past `require`: ( "..." )
+  const scanRequire = (i) => {
+    i = skipTrivia(i)
+    if (text[i] !== '(') return i
+    i = skipTrivia(i + 1)
+    const lit = readLiteral(i)
+    if (lit) { checkSpec(lit.spec); return lit.end }
+    return i
+  }
+
+  // past the opening backtick: template text is opaque, no descent
+  const skipTemplate = (i) => {
+    let j = i + 1
+    while (j < n) {
+      if (text[j] === '\\') { j += 2; continue }
+      if (text[j] === '`') return j + 1
+      j++
+    }
+    return j
+  }
+
+  let i = 0
+  while (i < n && bad === null) {
+    const c = text[i]
+    if (c === '/' && (text[i + 1] === '/' || text[i + 1] === '*')) { i = skipTrivia(i); continue }
+    if (/\s/.test(c)) { i++; continue }
+    if (c === "'" || c === '"') { i = skipString(i, c); continue }
+    if (c === '`') { i = skipTemplate(i); continue }
+    if (!isId(text[i - 1])) {
+      if (c === 'i' && text.startsWith('import', i) && !isId(text[i + 6])) { i = scanImport(i + 6); continue }
+      if (c === 'e' && text.startsWith('export', i) && !isId(text[i + 6])) { i = scanExport(i + 6); continue }
+      if (c === 'r' && text.startsWith('require', i) && !isId(text[i + 7])) { i = scanRequire(i + 7); continue }
+    }
+    i++
+  }
+  return bad
+}
+
+/** The "." door's built JS bytes from inside a packed tarball (the G8
+ *  scan input), or '' when the door is subpath-only, types-only, or
+ *  otherwise unscannable — validateBuiltEntry returns early there.
+ *  Module-private: the wall suite drives validateBuiltEntry with
+ *  synthetic strings, never tarballs. */
+function builtEntryText (f, inner) {
+  const dot = inner.exports?.['.']
+  const target = typeof dot === 'string' ? dot : dot?.default
+  if (typeof target !== 'string' || !/\.(js|mjs|cjs)$/.test(target)) return ''
+  return run('bash', ['-c', `tar -xzOf ${f} package/${target.replace(/^\.\//, '')}`])
+}
+
 /** G1.5: rewrite every packed tarball for publication. Two rewrites in
  *  one repack, so the gates below and the manifest sha256s describe the
  *  exact published bytes:
@@ -273,7 +449,9 @@ async function mint (opts) {
       try {
         validateTarballPayload(inner, listing, tarName)
         classifyEntry(inner, tarName)
-        innerFiles.set(tarName, { f, literals: exportsRows(inner, listing, tarName), inner })
+        const literals = exportsRows(inner, listing, tarName)
+        validateBuiltEntry(inner, builtEntryText(f, inner), tarName)
+        innerFiles.set(tarName, { f, literals, inner })
       } catch (e) { fail(e.message) }
     }
 
@@ -406,7 +584,8 @@ export async function probeExecutability (innerFiles) {
         if (!row.startsWith('./')) row = './' + row
         // types rows (.d.ts) are compile-time doors — plain Node cannot
         // import a declaration file, and their internal specifiers are
-        // proven by the entry gate (existence) plus the consumer-side
+        // proven by the entry gate (existence; G8 proves the built
+        // entry's specifiers carry extensions) plus the consumer-side
         // typecheck walls. Skip loudly, never silently.
         if (row.endsWith('.d.ts')) {
           console.log(`  probe: ${tarName} ${row} — types door (compile-time; entry gate proved it ships)`)

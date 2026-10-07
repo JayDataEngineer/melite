@@ -10,6 +10,7 @@ export interface SomaRigParams {
     mesh_glb: string;
     preserve_texture?: boolean;
     decimate_ratio: number;
+    file_format?: string;
 }
 /** The weightless door: the family declares no lane_inputs, so there
  * is nothing to parse and nothing that can drift.

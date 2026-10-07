@@ -23,6 +23,7 @@
  */
 import * as THREE from "@melite/three-client/client"
 import { OrbitControls } from "@melite/three-client/client"
+import { rejectionVoice } from "./rejection-voice.ts"
 
 /** THE 3D STAGE COLOUR (the one owner). The void every raw-three
  *  viewport clears behind its scene, and the light counterpart the
@@ -120,7 +121,7 @@ export function mountStage3D(
       preserveDrawingBuffer: opts.preserveDrawingBuffer === true,
     })
   } catch (e: unknown) {
-    opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable")
+    opts.onContextFailure?.(rejectionVoice(e))
     return null
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))

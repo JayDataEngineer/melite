@@ -43,7 +43,10 @@ interface ServerState {
   statsFailures: number;
   calls: string[];
   store?: string;
-  onStatus?: () => void;
+  // Fires from the install routes the flow actually hits (R7: the
+  // registry door's queue poll is gone — the git door's install POST
+  // is the loss seam now). Only the mounts that set it feel it.
+  onInstall?: () => void;
   onReboot?: () => void;
 }
 
@@ -152,12 +155,13 @@ function startServer(state: ServerState, prefix: string): Promise<string> {
       return;
     }
     if (path === "/manager/queue/install" || path === "/manager/queue/start" || path === "/customnode/install/git_url" || path === "/customnode/install/pip") {
+      state.onInstall?.();
       res.writeHead(200, { "content-type": "application/json" });
       res.end("{}");
       return;
     }
     if (path === "/manager/queue/status") {
-      state.onStatus?.();
+      state.onInstall?.();
       res.writeHead(200, { "content-type": "application/json" });
       res.end(JSON.stringify({ total_count: 1, done_count: 1, in_progress_count: 0, is_processing: false }));
       return;
@@ -327,7 +331,7 @@ describe.sequential("estate provisioning composition paths", () => {
   test("resolves family, card, and extension declarations and lists every source", async () => {
     const { ctx } = await mount({
       cards: cardsWithModels(),
-      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n",
+      extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n",
     });
     const family = await ctx.provisioning.plan({ kind: "model", owner: "family", id: "h3" });
     assert.equal(family.items.length > 0, true);
@@ -375,7 +379,7 @@ describe.sequential("estate provisioning composition paths", () => {
   });
 
   test("caches object definitions and memoizes an unreachable dial", async () => {
-    const mounted = await mount({ extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n", facts: { extension_node_types: { demo: ["DemoNode"] }, rows: { h3: { card: "h3", card_knobs: [] } } } });
+    const mounted = await mount({ extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n", facts: { extension_node_types: { demo: ["DemoNode"] }, rows: { h3: { card: "h3", card_knobs: [] } } } });
     const first = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
     const second = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
     assert.equal(first.state, "active", JSON.stringify(first));
@@ -390,7 +394,7 @@ describe.sequential("estate provisioning composition paths", () => {
   });
 
   test("covers inspector model, missing node, empty expectation, and endpoint refusal", async () => {
-    const mounted = await mount({ facts: { extension_node_types: {}, rows: { h3: { card: "h3", card_knobs: [] } } }, extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n" });
+    const mounted = await mount({ facts: { extension_node_types: {}, rows: { h3: { card: "h3", card_knobs: [] } } }, extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n" });
     assert.equal(mounted.state.objectInfo, "ok");
     assert.equal(process.env["MELITE_REPO_ROOT"], mounted.root);
     assert.equal(process.env["COMFYUI_ENDPOINT_CONFIG"], join(mounted.root, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json"));
@@ -398,7 +402,7 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.equal(modelStatus.state, "absent", JSON.stringify(modelStatus));
     const extension = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "demo" });
     assert.equal(extension.items[0]?.detail, "extension has no declared node types");
-    const missingFacts = await mount({ facts: { extension_node_types: { demo: ["MissingNode"] }, rows: { h3: { card: "h3", card_knobs: [] } } }, extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n" });
+    const missingFacts = await mount({ facts: { extension_node_types: { demo: ["MissingNode"] }, rows: { h3: { card: "h3", card_knobs: [] } } }, extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n" });
     assert.equal((await missingFacts.ctx.provisioning.inspect({ kind: "extension", id: "demo" })).items[0]?.state, "absent");
     const noEndpoint = await mount({ endpoint: { url: "" }, server: false });
     assert.equal((await noEndpoint.ctx.provisioning.inspect({ kind: "model", owner: "family", id: "h3" })).state, "failed");
@@ -448,14 +452,15 @@ describe.sequential("estate provisioning composition paths", () => {
     assert.deepEqual(readFileSync(join(store, "checkpoints", "model.bin")), MODEL_BYTES);
   });
 
-  test("lazy Manager covers registry, URL, and pinned git post-install paths", async () => {
+  test("lazy Manager covers URL and pinned git post-install paths", async () => {
+    // R7: the registry key no row sets is gone — every manifest row
+    // declares its url (git) or nothing (local). The registry-only
+    // row and its manager-source assertion died with the field.
     const mounted = await mount({
-      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n  - name: registry-only\n    registry: demo\n    version: 1.0.0\n    url: ''\n  - name: pinned\n    registry: ''\n    version: ''\n    url: https://example.invalid/pinned.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n  - name: operator\n    registry: ''\n    version: ''\n    url: https://example.invalid/operator.git\n  - name: local\n    registry: ''\n    version: ''\n    url: ''\n",
+      extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n  - name: pinned\n    version: ''\n    url: https://example.invalid/pinned.git\n    ref: 0a1b2c3d4e5f60718293a4b5c6d7e8f901234567\n    pip:\n      - numpy\n  - name: operator\n    version: ''\n    url: https://example.invalid/operator.git\n  - name: local\n    version: ''\n    url: ''\n",
     });
-    const registry = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "demo" });
-    assert.equal(registry.state, "restart_required");
-    const registryOnly = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "registry-only" });
-    assert.equal(registryOnly.state, "restart_required");
+    const git = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "demo" });
+    assert.equal(git.state, "restart_required");
     const pinned = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "pinned" });
     assert.equal(pinned.state, "restart_required");
     const operator = await mounted.ctx.provisioning.ensure({ kind: "extension", id: "operator" });
@@ -465,7 +470,7 @@ describe.sequential("estate provisioning composition paths", () => {
   });
 
   test("lifecycle covers queue snapshot, restart refusal, readiness retry, abort, and timeout", async () => {
-    const extensionYaml = "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n";
+    const extensionYaml = "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n";
     const mounted = await mount({ extensions: extensionYaml, queue: { active: "run-active", queued_ids: ["run-queued"] }, state: { statsFailures: 1 } });
     const blocked = await mounted.ctx.provisioning.activate({ kind: "extension", id: "demo" });
     assert.equal(blocked.items[0]?.errorCode, "activation/active-run");
@@ -524,14 +529,14 @@ describe.sequential("estate provisioning composition paths", () => {
   });
 
   test("lifecycle covers empty queue snapshots and endpoint loss during restart", async () => {
-    const extensionYaml = "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n";
+    const extensionYaml = "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n";
     const emptyQueue = await mount({ extensions: extensionYaml, queue: { active: "", queued_ids: ["queued"] } });
     assert.equal((await emptyQueue.ctx.provisioning.activate({ kind: "extension", id: "demo" }, { force: true })).state, "active");
 
     let statusPath = "";
     const statusMount = await mount({
       extensions: extensionYaml,
-      state: { onStatus: () => writeFileSync(statusPath, JSON.stringify({ url: "", provision: "managed" })) },
+      state: { onInstall: () => writeFileSync(statusPath, JSON.stringify({ url: "", provision: "managed" })) },
     });
     statusPath = join(statusMount.root, "packages", "engines", "comfyui-cordis", "data", "comfyui_endpoint.json");
     assert.equal((await statusMount.ctx.provisioning.activate({ kind: "extension", id: "demo" })).state, "failed");
@@ -548,7 +553,7 @@ describe.sequential("estate provisioning composition paths", () => {
   test("lifecycle propagates an abort during restart", async () => {
     const controller = new AbortController();
     const mounted = await mount({
-      extensions: "extensions:\n  - name: demo\n    registry: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n",
+      extensions: "extensions:\n  - name: demo\n    version: 1.0.0\n    url: https://example.invalid/demo.git\n",
     });
     const originalPost = ComfyUiManagerHttpClient.prototype.post;
     const postSpy = vi.spyOn(ComfyUiManagerHttpClient.prototype, "post").mockImplementation(async function (this: ComfyUiManagerHttpClient, ...args: Parameters<typeof originalPost>) {
@@ -576,7 +581,7 @@ describe.sequential("estate provisioning composition paths", () => {
     const mounted = await mount({
       plugin: freshComposition,
       state: { objectInfo: "error" },
-      extensions: "extensions:\n  - name: offline\n    registry: offline\n    version: 1.0.0\n    url: https://example.invalid/offline.git\n",
+      extensions: "extensions:\n  - name: offline\n    version: 1.0.0\n    url: https://example.invalid/offline.git\n",
     });
     const result = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "offline" });
     const memo = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "offline" });
@@ -613,7 +618,7 @@ describe.sequential("estate provisioning composition paths", () => {
     sdkClientMock.mockImplementationOnce(() => ({ fetchApi: async () => { throw "raw-object-info-error"; } }));
     const mounted = await mount({
       plugin: freshComposition,
-      extensions: "extensions:\n  - name: raw-error\n    registry: raw-error\n    version: 1.0.0\n    url: https://example.invalid/raw-error.git\n",
+      extensions: "extensions:\n  - name: raw-error\n    version: 1.0.0\n    url: https://example.invalid/raw-error.git\n",
     });
     const result = await mounted.ctx.provisioning.inspect({ kind: "extension", id: "raw-error" });
     assert.equal(result.state, "failed");

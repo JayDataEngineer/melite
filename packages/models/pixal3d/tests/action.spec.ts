@@ -117,6 +117,17 @@ describe("the pixal3d mesh action — byte-stability (the compatibility law)", (
     assert.equal(loudNode.inputs["fix_poles"], true, "fix_poles rides the param");
     assert.equal(loudNode.inputs["sign_mode"], "udf", "the mode itself stays the UDF lane");  });
 
+  it("the repaired recipe (qef + drop_enclosed ON — the melite repair default)", () => {
+
+    const repaired = new GraphBuilder({});
+    instantiateAction(mesh, { ...PARAMS, remesh_qef: true, remesh_drop_enclosed: true } as typeof PARAMS, FACTS, repaired, "probe-repaired");
+    const repairedNode = nodesOf(repaired, "RemeshMesh")[0] as { inputs: Record<string, unknown> };
+    assert.equal(repairedNode.inputs["sign_mode.qef"], true, "the repaired recipe heals edges");
+    assert.equal(repairedNode.inputs["sign_mode.drop_enclosed_components"], true, "the repaired recipe drops interior shells");
+    assert.equal(repairedNode.inputs["sign_mode.drop_inverted_components"], false, "drop_inverted stays opt-in");
+    assert.equal(repairedNode.inputs["fix_poles"], false, "fix_poles stays opt-in");
+    assertGraphGolden(golden("the-repaired-recipe-qef-and-drop-enclosed-on"), repaired.toJSON(), "the repaired recipe (qef + drop_enclosed ON)");  });
+
   it("GATE S — seed -1 mints ONCE per compose and feeds every sampler the same take", () => {
 
     const a = new GraphBuilder({});

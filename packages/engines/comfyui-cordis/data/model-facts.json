@@ -299,9 +299,6 @@
       "LoadAudiocoreModel",
       "UnloadAudiocoreModel"
     ],
-    "melite-unity-nodes": [
-      "MeliteUnityBatch"
-    ],
     "melite-utility-nodes": [
       "MeliteConcatVideos",
       "MeliteUnload"

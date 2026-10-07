@@ -582,3 +582,66 @@ describe('comfy_manage contract projection matrix', () => {
     assert.equal(emptyOut.ok, true)
   })
 })
+
+describe('comfy_manage acquire_weight — the agent seat on the one acquisition door', () => {
+  test('the action rides the enum, forwards model/file/operation_id, and surfaces bytes/total', async () => {
+    const tool = comfyManage(stubRequest())
+    const params = tool.parameters as { properties?: Record<string, { enum?: string[] }> }
+    assert.ok(params.properties?.['action']?.enum?.includes('acquire_weight'), 'acquire_weight on the enum')
+
+    // THE START (the agent's Download press): model + file ride the
+    // SAME /v1/manage door the popup button rides — one door, two
+    // callers — and the live bytes/total surface top-level.
+    const start = mockRequest(() => ({
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'acquiring mask (weight.bin) — 0/8 bytes',
+      data: { operation_id: 'op-agent-1', state: 'acquiring', bytes: 0, total: 8, next_action: 'acquire_weight' },
+      operation_id: 'op-agent-1',
+      state: 'acquiring',
+      next_action: 'acquire_weight',
+    }))
+    const started = await comfyManage(start.request).execute(
+      { action: 'acquire_weight', model: 'mask', file: 'weight.bin' }, exec()) as Record<string, unknown>
+    assert.deepEqual(start.seen[0]?.body, { action: 'acquire_weight', model: 'mask', file: 'weight.bin' })
+    assert.equal(started.operation_id, 'op-agent-1')
+    assert.equal(started.state, 'acquiring')
+    assert.equal(started.bytes, 0)
+    assert.equal(started.total, 8)
+
+    // THE POLL (the agent's tracker read): the SAME action with ONLY
+    // the operation id — no second fetch — and the terminal ledger
+    // lands with bytes == total.
+    const poll = mockRequest(() => ({
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'acquire_weight op-agent-1: 8/8 bytes (active)',
+      data: { operation_id: 'op-agent-1', state: 'active', bytes: 8, total: 8, next_action: 'acquire_weight' },
+      operation_id: 'op-agent-1',
+      state: 'active',
+      next_action: 'acquire_weight',
+    }))
+    const polled = await comfyManage(poll.request).execute(
+      { action: 'acquire_weight', operation_id: 'op-agent-1' }, exec()) as Record<string, unknown>
+    assert.deepEqual(poll.seen[0]?.body, { action: 'acquire_weight', operation_id: 'op-agent-1' })
+    assert.equal(polled.bytes, 8)
+    assert.equal(polled.total, 8)
+    assert.equal(polled.state, 'active')
+  })
+
+  test('the render names the live bytes/total line', async () => {
+    const tool = comfyManage(stubRequest())
+    const render = tool.output?.render
+    assert.ok(typeof render === 'function')
+    const lines = render({}, {
+      ok: true,
+      action: 'acquire_weight',
+      detail: 'acquiring mask — 1/8 bytes',
+      operation_id: 'op-agent-1',
+      state: 'acquiring',
+      bytes: 1,
+      total: 8,
+    }) as Array<{ text: string }>
+    assert.match(lines[0]?.text ?? '', /progress: 1\/8 bytes/)
+  })
+})

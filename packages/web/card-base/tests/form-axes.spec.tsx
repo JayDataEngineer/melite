@@ -445,7 +445,7 @@ test('FORM SPEC: a wordless throw still voices (never a silent none)', async () 
   globalThis.fetch = (async () => { throw 'boom' }) as typeof fetch
   try {
     render(h(SpecHarness, { id: 'krea-2' }))
-    await screen.findByText('form-spec failed')
+    await screen.findByText('boom')
   } finally {
     globalThis.fetch = realFetch
   }

@@ -573,6 +573,40 @@ describe("the single-window doors", () => {
     expect(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps).toBe(12);
   });
 
+  // ── L3 (007-H3-LoRA-PLANE L3): ONE STEPS LAW for both window
+  // paths — the single-window marriage fires only when the caller
+  // pinned no steps of their own. A doc-level pin (the schema's
+  // __steps_pinned stamp) or a single-call knob pin (the film
+  // path's own precedence) keeps the document's steps over the
+  // bag's distill default; an unpinned doc still marries. ──
+  it("L3 — a single-window doc with explicit steps keeps them over the bag's marriage", () => {
+    const bag = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
+    // doc-level pin.
+    const g1 = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [SHOT()], steps: 20, loras: bag }),
+      model, g1, "run_l3_pinned",
+    );
+    assert.equal(scoped(graphOf(g1), "", "BasicScheduler")[0]![1].inputs.steps, 20,
+      "the doc's explicit steps survive the bagged distill");
+    // single-call knob pin (the film path's own precedence).
+    const g2 = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [SHOT({ knobs: { steps: 20 } })], loras: bag }),
+      model, g2, "run_l3_knob",
+    );
+    assert.equal(scoped(graphOf(g2), "", "BasicScheduler")[0]![1].inputs.steps, 20,
+      "the call's knob steps survive the bagged distill");
+    // unpinned: the marriage still fires (default behavior stands).
+    const g3 = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [SHOT()], loras: bag }),
+      model, g3, "run_l3_unpinned",
+    );
+    assert.equal(scoped(graphOf(g3), "", "BasicScheduler")[0]![1].inputs.steps, 8,
+      "an unpinned doc still takes the bag's steps");
+  });
+
   it("an empty loras bag falls back to the frozen gold solo (turbo 0.6 — plaguekind 1:1, never a pair)", () => {
     const g = new GraphBuilder();
     def.compose(def.schema({ calls: [SHOT()], loras: [] }), model, g, "run_lora_empty");
@@ -637,6 +671,64 @@ describe("the single-window doors", () => {
     );
     const mab2 = scoped(graphOf(g2), "", "ModelAttentionBackend");
     assert.equal(mab2[0]![1].inputs.attention, "pytorch attention", "a pinned value rides verbatim");
+  });
+
+  // ── L1 (007-H3-LoRA-PLANE L1): the SLA/attention switch rides
+  // ABOVE the LoRA loader on BOTH arms — the old t4 order stacked
+  // the loader under the chunked branch only, so the default
+  // sla_enabled=true picked the bare SLA model and every bagged
+  // LoRA silently did nothing. The loader samples the switch pick
+  // (its model input IS the switch output) and feeds the fix-up →
+  // shift chain, so the bagged turbo provably reaches the sampler
+  // on either arm. (The charter's gate words this "loader upstream
+  // of the switch" — the topology it prescribes, and pins here, is
+  // the t4r mirror: switch selects, loader samples the pick.) ──
+  it("L1 — no arm bypasses the LoRA loader (switch above loader, turbo reaches the sampler)", () => {
+    const bag = [{ name: "turbo-8.safetensors", strength: 0.6, steps: 8 }];
+    const linkSource = (out: Record<string, Node>, id: string, input: string): string => {
+      const link = out[id]!.inputs[input] as [string, number];
+      assert.ok(Array.isArray(link), `${id}.${input} is a wire link`);
+      return link[0];
+    };
+    const checkArm = (label: string, out: Record<string, Node>): void => {
+      const loaders = ofClass(out, "LTX_lora_loader")
+        .filter(([, n]) => String(n.inputs.stack_data ?? "").includes("turbo-8"));
+      assert.equal(loaders.length, 1, `${label}: exactly one loader carries the bagged turbo`);
+      const loaderId = loaders[0]![0];
+      const feeder = out[linkSource(out, loaderId, "model")]!;
+      assert.equal(feeder.class_type, "ComfySwitchNode", `${label}: the loader samples the switch pick (switch above loader)`);
+      // the fix-up rides the loaded model, the shift rides the
+      // fix-up, the scheduler rides the shift — the turbo's wire to
+      // the sampler is unbroken.
+      const adalns = ofClass(out, "H3AdaLNLoRAFix");
+      assert.equal(adalns.length, 1, `${label}: one adaln fix-up rides`);
+      const adalnId = adalns[0]![0];
+      if (label === "t4r") {
+        const previews = ofClass(out, "ModelPreviewOverrideKJ");
+        assert.equal(previews.length, 1, "t4r: the preview override rides between loader and fix-up");
+        assert.equal(linkSource(out, previews[0]![0], "model"), loaderId, "t4r: the preview rides the loaded model");
+        assert.equal(linkSource(out, adalnId, "model"), previews[0]![0], "t4r: the fix-up rides the preview");
+      } else {
+        assert.equal(linkSource(out, adalnId, "model"), loaderId, "t4: the fix-up rides the loaded model");
+      }
+      const shifts = ofClass(out, "MiniMaxH3SigmaShift");
+      assert.equal(shifts.length, 1, `${label}: one sigma shift rides`);
+      assert.equal(linkSource(out, shifts[0]![0], "model"), adalnId, `${label}: the shift rides the fix-up`);
+      const scheds = scoped(out, "", "BasicScheduler");
+      assert.ok(scheds.some(([id]) => linkSource(out, id, "model") === shifts[0]![0]),
+        `${label}: the sampler schedule rides the shifted (loaded) model`);
+    };
+    // t4 arm at the DEFAULT sla (on) — the defect's own seat.
+    const g1 = new GraphBuilder();
+    def.compose(def.schema({ calls: [SHOT()], loras: bag }), model, g1, "run_l1_t4");
+    checkArm("t4", graphOf(g1));
+    // t4r arm (guide + refs imply t4r).
+    const g2 = new GraphBuilder();
+    def.compose(
+      def.schema({ calls: [SHOT({ ref_image: "/m/a.png", refs: { images: ["r1.png"] } })], loras: bag }),
+      model, g2, "run_l1_t4r",
+    );
+    checkArm("t4r", graphOf(g2));
   });
 
   it("interpolate_enabled doubles the playout fps (the V9 compensation)", () => {

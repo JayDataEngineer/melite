@@ -59,7 +59,7 @@ export function meliteLoad(
       + 'inference_type (card | flow — a card or a flow tool call; nothing else executes). Returns the bundle: '
       + 'agents md, the tool-call signature (params_schema for cards; the prebuilt simplified signature for flows), '
       + 'tier-1 skill lines for the underlying skills (bodies load via melite_skill_read — write the prompts yourself from '
-      + 'the craft you read), model hints on cards (the boarded families\' DECL identity — id/label/description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
+      + 'the craft you read), model hints on cards (the boarded checkpoints — description, each marked present:true|false: present means downloaded on this machine; absent-but-boarded models are OFFERED — prompt the user to download, or provision via comfy_manage provision_model) + pack hints (the card\'s declared ComfyUI extension packs, marked present:true|false|null — missing packs refuse the run: install via comfy_manage install_extension), '
       + 'and a stable bundle digest — quote it and skip reload on a match.',
     // ParameterSchemaSpec grammar: the map IS the implicit object root
     // (no type/properties wrapper), per-property `required: true`.
@@ -112,7 +112,7 @@ export function meliteLoad(
             } | null
             agents?: Array<{ path?: unknown; text?: unknown }>
             skills?: Array<Record<string, unknown>>
-            model_hints?: Array<{ id?: unknown; label?: unknown; present?: unknown }>
+            model_hints?: Array<{ description?: unknown; present?: unknown }>
             stages?: Array<Record<string, unknown>>
           }
           error?: string
@@ -182,8 +182,23 @@ export function meliteLoad(
           // the param_key + field names the compose bag takes (the
           // grammar the maker had to grep card.ts for).
           const mods = Array.isArray(sig?.modifiers) ? sig.modifiers : []
+          // THE PACK-SEAT FAMILIES (model-knob cure, 2026-10-18): the
+          // bundle never names family ids (Card Abstraction Law) and
+          // model_hints no longer carry id — the boarded families
+          // arrive as the signature's semantic model style
+          // (family:variant:cell) plus every style in its model enum;
+          // bare legacy values read whole.
+          const styleVals: unknown[] = [sig?.model]
+          const modelProp = (sig?.params_schema?.properties as Record<string, unknown> | undefined)?.model as { enum?: unknown } | undefined
+          if (Array.isArray(modelProp?.enum)) styleVals.push(...modelProp.enum)
+          const seatFams: string[] = []
+          for (const v of styleVals) {
+            if (typeof v !== 'string' || v === '') continue
+            const fam = v.split(':')[0] ?? ''
+            if (fam !== '' && !seatFams.includes(fam)) seatFams.push(fam)
+          }
           const packSeats = familyPackSeats(
-            Array.isArray(b.model_hints) ? b.model_hints : [],
+            seatFams,
             new Set(mods.map((m) => str(m?.kind))),
           )
           const modLines = mods.map((m) => {
@@ -423,13 +438,15 @@ export function meliteLoad(
  *  every modifier pack the card's boarded families DECL-board, read
  *  off the ONE grammar table (MODIFIER_PACKS — the form-spec's own)
  *  with field names off the engine's registered pack contract (the
- *  service read, never a re-derivation). Kinds the card itself
+ *  service read, never a re-derivation). Families arrive pre-parsed
+ *  (first segment of each semantic model style + enum — the render
+ *  owns the parse, never the hints). Kinds the card itself
  *  declares are skipped (dedupe — the signature already serves
  *  them). A registry/service miss drops the family quietly here:
  *  the compose door still refuses loud on a bad bag, and the
  *  signature's own kinds were never at risk. */
 function familyPackSeats(
-  hints: Array<Record<string, unknown>>,
+  families: string[],
   servedKinds: Set<string>,
 ): Array<{ kind: string; param_key: string; fields: string[]; cardinality: string }> {
   const out: Array<{ kind: string; param_key: string; fields: string[]; cardinality: string }> = []
@@ -440,8 +457,7 @@ function familyPackSeats(
   } catch {
     svc = null
   }
-  for (const h of hints) {
-    const fam = typeof h?.id === 'string' ? h.id : ''
+  for (const fam of families) {
     if (fam === '') continue
     let packs: string[] = []
     try {

@@ -11,6 +11,7 @@ import {
 } from './square.tsx'
 import { uploadInputFile } from './wire.ts'
 import { type SpecField } from './spec.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 import css from './card.module.css'
 
 /** The media-kind the picker fetches for a field: image fields name
@@ -75,7 +76,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
       const { name } = await uploadInputFile(file)
       onEdit(f.name, name)
     } catch (e: unknown) {
-      onEdit(f.name, e instanceof Error ? e.message : 'upload failed')
+      onEdit(f.name, rejectionVoice(e))
     }
   }, [onEdit, wire.onFile])
   const square = (f: SpecField): SquareHost | undefined => {

@@ -10,7 +10,7 @@
 extensions:
   - name: melite-kimodo-nodes
     url: https://github.com/JayDataEngineer/melite-kimodo-nodes
-    ref: c696ba5f73e0f1d70d940fdca2c93c2e06df47eb
+    ref: 6953d02447c4d21663f1a9fc748d1005ee8cf318
     required: true
     desc: KimodoLoader + KimodoTextToPose (the NVIDIA-package wrap — THE kimodo implementation) — text to SOMA-77 motion NPZ.
     # 2026-09-08 (red-closure lane): pip restated identical to the 3d
@@ -25,6 +25,6 @@ extensions:
   # forked the pin and extension_lane refused the whole manifest.
   - name: melite-poser-nodes
     url: https://github.com/JayDataEngineer/melite-poser-nodes
-    ref: bf268458600c702c71e2d80b7acda33229c08de0
+    ref: 0b8941ff47d1bff3b982f0bb94503e5eb40fce04
     required: true
     desc: RaySomaxBake — skins the motion NPZ onto a SOMAX-rigged character GLB.

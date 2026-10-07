@@ -188,7 +188,6 @@ function extensionPlan(
   ref: Extract<ResourceRef, { kind: "extension" }>,
   row: {
     readonly name: string;
-    readonly registry: string;
     readonly version: string;
     readonly url: string;
     readonly ref: string;
@@ -196,11 +195,11 @@ function extensionPlan(
   },
   nodeTypes: readonly string[],
 ): ProvisionPlan {
+  // Every manifest row declares its url (R7: the registry key no row
+  // set is gone) — extensions plan from git, or local when url-less.
   const source = row.url.trim() !== ""
     ? "git"
-    : row.registry.trim() !== ""
-      ? "manager"
-      : "local";
+    : "local";
   return {
     ref,
     items: [{
@@ -212,7 +211,6 @@ function extensionPlan(
       provider: source,
       ...(row.ref.trim() === "" ? {} : { ref: row.ref.trim() }),
       ...(row.version.trim() === "" ? {} : { version: row.version.trim() }),
-      ...(row.registry.trim() === "" ? {} : { registry: row.registry.trim() }),
       requirements: [...row.pip],
       nodeTypes: [...nodeTypes],
     }],
@@ -221,7 +219,6 @@ function extensionPlan(
 
 function extensionManifest(repoRoot: string): Map<string, {
   readonly name: string;
-  readonly registry: string;
   readonly version: string;
   readonly url: string;
   readonly ref: string;

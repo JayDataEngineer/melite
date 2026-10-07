@@ -17,7 +17,6 @@ import { die, warn } from "./provision-shared.ts";
 
 export interface ExtRow {
   name: string;
-  registry: string;
   version: string;
   url: string;
   ref: string;
@@ -28,7 +27,7 @@ export interface ExtRow {
 }
 
 export const EXT_KEYS: ReadonlySet<string> = new Set(
-  ["name", "registry", "version", "url", "ref", "required", "desc", "pip"]);
+  ["name", "version", "url", "ref", "required", "desc", "pip"]);
 
 export function stripComment(line: string): string {
   // A `#` opens a comment only outside single/double quotes.
@@ -158,7 +157,7 @@ export function loadExtensionsYaml(path: string): ExtRow[] {
     const dash = /^- name:\s*(.*)$/.exec(body);
     if (dash && (ind === 0 || ind === 2)) {
       push();
-      cur = { name: unquote(dash[1], path, l.n), registry: "",
+      cur = { name: unquote(dash[1], path, l.n),
         version: "", url: "", ref: "", required: true, desc: "", pip: [] };
       rowInd = ind;
       continue;
@@ -251,7 +250,7 @@ export function mergeManifest(repo: string): ExtRow[] {
   for (const [path, pluginId] of findNodesYaml(repo)) {
     const rel = path.slice(repo.length + 1);
     for (const ext of loadExtensionsYaml(path)) {
-      const pin = JSON.stringify([ext.registry, ext.version, ext.url,
+      const pin = JSON.stringify([ext.version, ext.url,
         ext.ref, ext.pip]);
       const prior = seen.get(ext.name);
       const src = pluginId + ":" + rel;

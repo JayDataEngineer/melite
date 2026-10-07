@@ -331,7 +331,7 @@ export function cardUnitDirs(engine, repo) {
     // Emit under the registry's owner engine ONLY (the manifests()
     // dir-less-cards precedent below) — never once per engine. The
     // owner is comfyui-cordis (factsPath in cardsRegistry.ts hardcodes it;
-    // packages/engines/comfyui/ holds only action_cards tenants, it is
+    // packages/engines/comfyui/src/ holds only action_cards tenants, it is
     // never itself an engine entry).
     // (split never yields [] — pop is always a string here; dir names
     // are unique so the equal arm never fires)

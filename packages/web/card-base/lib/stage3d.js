@@ -23,6 +23,7 @@
  */
 import * as THREE from "@melite/three-client/client";
 import { OrbitControls } from "@melite/three-client/client";
+import { rejectionVoice } from "./rejection-voice.js";
 /** THE 3D STAGE COLOUR (the one owner). The void every raw-three
  *  viewport clears behind its scene, and the light counterpart the
  *  pose stage flips to. Every renderer/background that paints this
@@ -68,7 +69,7 @@ export function mountStage3D(canvas, opts = {}) {
         });
     }
     catch (e) {
-        opts.onContextFailure?.(e instanceof Error ? e.message : "WebGL unavailable");
+        opts.onContextFailure?.(rejectionVoice(e));
         return null;
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));

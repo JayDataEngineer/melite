@@ -27,6 +27,7 @@ import { fetchBindMesh, type SkinMeshData } from '@melite/formats/poserSkin'
 import { mountStage3D } from './stage3d.ts'
 import { autoFitToHeight } from './glb-stage.tsx'
 import { fieldsOf, type FormSpecDoc, type SpecValues } from './spec.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 import s from './preview.module.css'
 
 /** The bind-mesh doc the geometry builder reads (SkinMeshData's
@@ -164,7 +165,7 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
         ...(localChanges !== undefined && localChanges !== null && Object.keys(localChanges).length > 0 ? { localChanges } : {}),
       })
         .then((d) => { if (alive) setDoc(d) })
-        .catch((e: unknown) => { if (alive) setFailed(e instanceof Error ? e.message : 'figure fetch failed') })
+        .catch((e: unknown) => { if (alive) setFailed(rejectionVoice(e)) })
     }, 120)
     return () => { alive = false; clearTimeout(timer) }
     // sig (not the arrays): a stable string dep — identityCoeffs and

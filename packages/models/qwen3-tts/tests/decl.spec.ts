@@ -79,4 +79,31 @@ describe("the qwen3-tts model plugin (0.6B, two variants)", () => {
     assert.equal(variantRoute({ variants: [{ id: "plain" }] }, "plain"), "");
     assert.equal(variantRoute(DECL, "ghost"), "");
   });
+
+  // THE DIRECTORY PROVISION (the model-families audit fix 8): the
+  // fetchable Base tree pins its upstream snapshot (repo + revision
+  // + patterns).
+  // The operator merge pins nothing (no upstream exists).
+  it("snapshot_provisions pins the fetchable Base tree and nothing else", () => {
+    const rows = DECL.snapshot_provisions ?? [];
+    assert.equal(rows.length, 1, "exactly one snapshot row — the fetchable tree, never a merge");
+    const row = rows[0]!;
+    assert.equal(row.name, "Qwen3-TTS-12Hz-0.6B-Base");
+    assert.equal(row.folder, "audio/qwen3-tts/hf");
+    assert.equal(row.repo_id, "Qwen/Qwen3-TTS-12Hz-0.6B-Base");
+    assert.match(row.revision, /^[0-9a-f]{40}$/, "the revision is a pinned commit, never a branch");
+    for (const need of ["config.json", "model.safetensors"]) {
+      assert.ok(row.allow_patterns.includes(need), `patterns cover ${need}`);
+    }
+    assert.ok(
+      row.allow_patterns.some((p) => p.startsWith("speech_tokenizer/")),
+      "patterns cover the speech tokenizer subtree",
+    );
+    const placed = DECL.hand_placed_weights ?? [];
+    assert.ok(placed.some((w) => w.endsWith(row.name)), "the fetchable tree stays dual-declared in hand_placed_weights");
+    assert.ok(
+      placed.some((w) => w.endsWith("Qwen3-TTS-12Hz-0.6B-CustomVoice-merged")),
+      "the merged tree stays hand-placed",
+    );
+  });
 });

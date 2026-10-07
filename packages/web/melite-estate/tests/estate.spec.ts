@@ -100,6 +100,7 @@ interface Ctx {
   get(name: string): undefined
   effect(fn: () => unknown): unknown
   root: { on(): () => void }
+  loader?: { entries(): Array<{ options: { name: string } }> }
 }
 
 afterEach(() => {
@@ -115,7 +116,10 @@ afterEach(() => {
 
 // apply is async (the models row is awaited so a family refusal
 // fails the estate boot loud): mount awaits it the way cordis does.
-async function mount(config?: { repoRoot?: string; blenderPath?: string }): Promise<Ctx> {
+// loaderNames builds the loader stub the bundle gate judges — absent
+// (undefined) means a direct-mount rig with no tree, present means a
+// lane boot with exactly those composed entry modules.
+async function mount(config?: { repoRoot?: string; blenderPath?: string; allowGuttedLane?: boolean }, loaderNames?: string[]): Promise<Ctx> {
   const ctx: Ctx = {
     plugins: [],
     plugin(row, cfg) {
@@ -134,6 +138,9 @@ async function mount(config?: { repoRoot?: string; blenderPath?: string }): Prom
     get: (_name: string) => undefined,
     effect: (fn: () => unknown) => fn(),
     root: { on: () => () => {} },
+    ...(loaderNames === undefined
+      ? {}
+      : { loader: { entries: () => loaderNames.map((name) => ({ options: { name } })) } }),
   }
   attempted.length = 0
   await apply(ctx as never, config as never)
@@ -178,6 +185,34 @@ describe('dispatch — mount order is load order', () => {
       modelsLane.refusal = undefined
       attempted.length = 0
     }
+  })
+
+  it('a gutted loader tree refuses before any row mounts (the lane-side refusal)', async () => {
+    // The 2026-10-05 replay: every @melite* bundle skipped, so the
+    // tree carries DSH rows only. The gate runs before the models
+    // seat — attempted holds zero rows, stronger than the
+    // models-first atomicity above (which mounts one seat).
+    const gutted: string[] = ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app']
+    const outcome = await mount({ repoRoot: '/tmp/pin' }, gutted).catch((e: unknown) => e)
+    try {
+      expect(outcome).toBeInstanceOf(Error)
+      expect((outcome as Error).message).toMatch(/gutted lane/)
+      expect((outcome as Error).message).toMatch(/@melite\/harness-tools/)
+      expect(attempted.map((p) => p.name)).toEqual([])
+    } finally {
+      attempted.length = 0
+    }
+  })
+
+  it('a whole loader tree mounts normally past the gate', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin' }, ['@melite/harness-tools', '@deepseek-ai/dsh-web-app'])
+    expect(ctx.plugins.length).toBeGreaterThan(5)
+    expect(ctx.plugins[0]?.name).toBe('comfyui-models-families')
+  })
+
+  it('the degraded opt-out serves a gutted tree instead of refusing', async () => {
+    const ctx = await mount({ repoRoot: '/tmp/pin', allowGuttedLane: true }, ['@deepseek-ai/dsh-web-app'])
+    expect(ctx.plugins.length).toBeGreaterThan(5)
   })
 
   it('pins the queue row with repoRoot and passes row configs through verbatim', async () => {

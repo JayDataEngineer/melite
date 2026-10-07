@@ -19,7 +19,7 @@
 //
 // Exit 1 red, package-by-package lines on stdout, summary last.
 
-import { readdirSync, existsSync, writeFileSync, rmSync } from "node:fs";
+import { readdirSync, existsSync, writeFileSync, rmSync, readFileSync } from "node:fs";
 import { join, dirname, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFile, execFileSync } from "node:child_process";
@@ -51,9 +51,9 @@ walk(join(root, "packages"), 0);
 /** The RESOLVED config, tsc's own reading (handles comments,
  *  extends chains, and URL strings in values — hand-rolled
  *  JSONC-stripping eats strings and lies). */
-const flattenConfig = async (dir) => {
+const flattenConfig = async (dir, project = "tsconfig.json") => {
   try {
-    const { stdout } = await execFileP(process.execPath, [tsc, "--showConfig", "-p", "tsconfig.json"], {
+    const { stdout } = await execFileP(process.execPath, [tsc, "--showConfig", "-p", project], {
       cwd: dir, encoding: "utf8", timeout: 120_000, maxBuffer: 32 * 1024 * 1024,
     });
     return JSON.parse(stdout);
@@ -61,6 +61,15 @@ const flattenConfig = async (dir) => {
     throw new Error(`showConfig failed in ${dir}: ${err.stderr ?? err.message}`);
   }
 };
+
+// A DUAL-FACE package (F4: a solution-only tsconfig.json with
+// `references` to tsconfig.host.json + tsconfig.client.json) has no
+// program of its own — flattening the root yields files: [] plus the
+// references, which the tier cannot judge (TS6306: the leaves are
+// not composite, nor should they be). The tier judges the UNION:
+// the host leaf's program (same compilerOptions in both faces —
+// only the file lists differ) widened with the client leaf's
+// include plus the test dirs.
 
 let failed = 0;
 let checked = 0;
@@ -78,7 +87,18 @@ const runOne = async (d) => {
   // sources specs legitimately import (repo tests/helpers, sibling
   // packages). The package's own config keeps its emit contract;
   // this tier never emits.
-  const flat = await flattenConfig(d);
+  // Solution-only roots carry `references` — flatten the HOST leaf
+  // and union the client leaf's file list (the dual-face union).
+  let flat = await flattenConfig(d);
+  if (Array.isArray(flat.references) && flat.references.length > 0 && existsSync(join(d, "tsconfig.host.json"))) {
+    flat = await flattenConfig(d, "tsconfig.host.json");
+    const client = await flattenConfig(d, "tsconfig.client.json");
+    const extra = [...(client.include ?? []), ...(client.files ?? [])];
+    flat.include = [...(flat.include ?? []), ...(flat.files ?? []), ...extra];
+    delete flat.files;
+    delete flat.exclude; // the client leaf's host-file exclusion must not narrow the union
+    delete flat.references;
+  }
   // A COMPILED package (it EMITS to lib) keeps rootDir: "." for its
   // test tier. Its specs import its own package face (NodeNext
   // forbids extensionless relative paths, and `.ts` specifiers are

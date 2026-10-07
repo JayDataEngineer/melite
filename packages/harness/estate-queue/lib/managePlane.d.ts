@@ -1,6 +1,6 @@
 import type { ModelsService } from "@melite/comfyui-cordis";
 import type { ProvisioningServiceDefinition } from "@melite/estate-provisioning";
-export declare const ACTIONS: readonly ["status", "endpoint_set", "logs", "search_models", "list_extensions", "snapshot_list", "install_extension", "install_extension_url", "download_model", "provision_model", "restart", "stop", "launch", "update", "switch_version", "free", "snapshot_save", "snapshot_restore", "lora_list", "lora_install"];
+export declare const ACTIONS: readonly ["status", "endpoint_set", "logs", "search_models", "list_extensions", "snapshot_list", "install_extension", "install_extension_url", "download_model", "provision_model", "acquire_weight", "restart", "stop", "launch", "update", "switch_version", "free", "snapshot_save", "snapshot_restore", "lora_list", "lora_install"];
 export type ManageAction = (typeof ACTIONS)[number];
 export declare const LIFECYCLE_GUARDED: ReadonlySet<ManageAction>;
 export interface ManageEnvelope {
@@ -103,6 +103,11 @@ export interface Req {
     path: string;
     data: string;
     families: string[];
+    /** THE ACQUIRE-WEIGHT POLL KEY (F9 run-press acquisition): the
+     *  tracker's poll carries ONLY this — the start carries the model
+     *  (plus the missing file for display, via filename) and returns
+     *  this id at once. */
+    operation_id: string;
 }
 export declare class Refused extends Error {
     data?: unknown;

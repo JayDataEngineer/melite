@@ -27,6 +27,7 @@ import * as THREE from '@melite/three-client/client'
 import { GLTFLoader } from '@melite/three-client/client'
 import { DRACOLoader } from '@melite/three-client/client'
 import { mountStage3D, makeLabelSprite } from './stage3d.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 import s from './preview.module.css'
 
 let draco: DRACOLoader | null = null
@@ -373,7 +374,7 @@ export function GlbStagePreview({ assets, selectedId, onSelect, onAssetError, em
         undefined,
         (e: unknown) => {
           if (!alive) return
-          errRef.current?.(a.id, e instanceof Error ? e.message : 'glb load failed')
+          errRef.current?.(a.id, rejectionVoice(e))
           pending -= 1; settle()
         })
     }

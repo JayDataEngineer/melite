@@ -20,7 +20,8 @@
 //
 // NODE CONTRACTS (vendor/, both packs local + always installed):
 //  · melite-autorig-nodes/nodes.py — KimodoExportFBX (REQUIRED
-//    rigged_path rides empty on the auto arm; file_format 'glb';
+//    rigged_path rides empty on the auto arm; file_format glb|fbx
+//    (the card's file_format knob — glb default, fbx for Unity);
 //    preserve_texture True keeps the source textures, False strips
 //    to flat SOMA-blue; decimate_ratio 0=off, Collapse mode
 //    preserves skin weights), KimodoTransferWeights + SaveRiggedModel.
@@ -60,10 +61,11 @@ const schema = z.object({
   // auto-lane knobs (KimodoExportFBX, its 'SOMAX standalone mode').
   preserve_texture: z.boolean().default(true).description("Preserve texture").extra('extra', bag({ order: 4, visible_when: 'mode=auto', tooltip: "auto mode: keep the source mesh's textures. Off strips to flat SOMA-blue for texturing later." })),
   decimate_ratio: z.number().min(0).max(1).default(0).description("Decimate ratio").extra('extra', bag({ order: 5, visible_when: 'mode=auto', tooltip: "0 = off (the rig default). Collapse-mode decimation preserves skin weights; 0.2 ≈ -70% file size.", min: 0.0, max: 1.0 })),
+  file_format: vocabulary(['glb', 'fbx']).default('glb').description("File format").extra('extra', bag({ order: 6, visible_when: 'mode=auto', tooltip: "auto mode: glb for the web estate, fbx for the Unity import door (the node converts through headless Blender).", wtype: 'select' })),
   // species-lane knobs (RayCreatureRigBridge).
-  height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', bag({ order: 6, visible_when: 'mode=species', tooltip: "species mode: mesh height as a fraction of the creature bind-pose height.", min: 0.05, max: 10.0 })),
-  max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 7, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win).", min: 1, max: 8 })),
-  strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
+  height_ratio: z.number().min(0.05).max(10).default(1).description("Height ratio").extra('extra', bag({ order: 7, visible_when: 'mode=species', tooltip: "species mode: mesh height as a fraction of the creature bind-pose height.", min: 0.05, max: 10.0 })),
+  max_influences: z.number().min(1).max(8).default(3).description("Max influences").extra('extra', bag({ order: 8, visible_when: 'mode=species', tooltip: "species mode: max bone influences per vertex (nearest segments win).", min: 1, max: 8 })),
+  strip_body: z.boolean().default(true).description("Strip body").extra('extra', bag({ order: 9, visible_when: 'mode=species', tooltip: "species mode: delete the creature body meshes, export only the bound mesh." })),
 })
 
 /** The schema's callable face — ONE cast serving both seams (the
@@ -160,7 +162,7 @@ export function apply(ctx: Context): void {
       // auto — the SOMA-77 template's own weights
       const action = declaredAction(gemSomaDecl, 'rig')
       const row: ModelFacts = { id: gemSomaDecl.id, family: gemSomaDecl.id, card: 'rig', defaults: {}, lane_inputs: {}, variants: [], variant_groups: [], outputs: [], mods: [] }
-      instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture, decimate_ratio: doc.decimate_ratio } as never, row, g, runId)
+      instantiateAction(action, { mesh_glb: mesh, preserve_texture: doc.preserve_texture, decimate_ratio: doc.decimate_ratio, file_format: doc.file_format } as never, row, g, runId)
     },
   }))
 }

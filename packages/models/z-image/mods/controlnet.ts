@@ -22,6 +22,15 @@
 // extra_model_folders, the /opt engine's own precedent) — the
 // filename stays the controlnet-relative subpath on BOTH sides,
 // never re-spelled per side.
+//
+// THE MODS FATE (2026-10-17, model-families audit fix 7, option b).
+// These rows are operator-supplied picker vocabulary.
+// They are never auto-provisioned.
+// Their source_url is provenance documentation.
+// It is not a download declaration.
+// The estate never fetches them.
+// The ghost wall proves the split.
+// No mods source_url appears in provisionsByFamily.
 import type { Context } from '@deepseek-ai/cordis'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 

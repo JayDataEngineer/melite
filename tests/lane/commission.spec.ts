@@ -141,6 +141,24 @@ describe('the commissioner — the brief law (a human task, not a checklist)', (
     expect(brief).toMatch(/single playable video file/)
   })
 
+  it('a brief naming a visual requirement demands a verified visual, not a dimension check (the vision-route gate)', () => {
+    // BOTH paths name what the deliverable should show, so BOTH
+    // briefs tell the maker to look before reporting — and to say
+    // UNVERIFIED when no seeing route looked.
+    const video = briefFor('video', { subject: 'a lighthouse keeper in a storm' })
+    expect(video).toMatch(/Look at the film before you report it/)
+    expect(video).toMatch(/never by a subject you could not see/)
+    const mesh = briefFor('3d', { subject: 'the ruined lighthouse' })
+    expect(mesh).toMatch(/Look at the model's poster before you report it/)
+    expect(mesh).toMatch(/never by a subject you could not see/)
+    // the final-verification line labels openability as structure,
+    // not seeing
+    for (const brief of [video, mesh]) {
+      expect(brief).toMatch(/Present and openable is structure, not seeing/)
+      expect(brief).toMatch(/the subject is UNVERIFIED/)
+    }
+  })
+
   it('the 3D brief asks for a model file, and says a viewer must be able to open it', () => {
     const brief = briefFor('3d', { subject: 'the ruined lighthouse' })
     expect(brief).toMatch(/ruined lighthouse/)

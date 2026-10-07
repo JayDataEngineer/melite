@@ -20,17 +20,44 @@ export const DECL = {
     "genre": "audio",
     // HAND-PLACED WEIGHTS (the TTS chain audit T3, option 3 — the
     // 1.7B mirror of qwen3-tts's row): all three trees this family's
-    // lanes load are merged/snapshot builds with no public per-file
-    // URL — two merged trees (base + speaker tensors, the operator's
-    // placed bytes) and the VoiceDesign checkpoint riding the HF
-    // cache snapshot layout. Declared here so the lanes never
-    // silently claim the estate fetches them; the ghost wall
-    // (models-against-cards) judges every model_path leaf against
-    // this row.
+    // lanes load are stated here so no lane silently claims the estate
+    // fetches them.
+    // The VoiceDesign tree is FETCHABLE (its snapshot_provisions row
+    // below pins the upstream repo + revision, and the provisioner
+    // lands it).
+    // The two merged trees (base + speaker tensors, the operator's
+    // placed bytes) carry no upstream repo, so no snapshot row can
+    // honestly name them and they stay hand-only.
+    // The ghost wall (models-against-cards) judges every model_path
+    // leaf against this row plus the snapshot rows.
     "hand_placed_weights": [
         "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
         "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
         "Qwen3-TTS-12Hz-1.7B-Base-merged",
+    ],
+    // THE DIRECTORY PROVISION (the model-families audit fix 8): the
+    // VoiceDesign tree ships as a whole HF dir (config + weights +
+    // speech_tokenizer), so no single-file provisions row can name it.
+    // This row pins the upstream snapshot the provisioner fetches.
+    // The merged trees carry no such row (no upstream repo exists for
+    // an operator merge — stating one would be a lie).
+    "snapshot_provisions": [
+        {
+            "name": "Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+            "folder": "audio/qwen3-tts/hf",
+            "repo_id": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
+            "revision": "5ecdb67327fd37bb2e042aab12ff7391903235d3",
+            "allow_patterns": [
+                "config.json",
+                "model.safetensors",
+                "speech_tokenizer/*",
+                "tokenizer_config.json",
+                "vocab.json",
+                "merges.txt",
+                "preprocessor_config.json",
+                "generation_config.json",
+            ],
+        },
     ],
     "mods": [
         "qvoice",
@@ -43,10 +70,11 @@ export const DECL = {
             "description": "preset personas with optional instruct-text style control (the 1.7B instruct lane — upstream reserves instruction control for the large checkpoint)",
             "group": "Variant",
             "route": "qwen3-tts-voicedesign",
-            // THE SNAPSHOT ADDRESS (transcript-014's sibling hole): the
-            // 1.7B CustomVoice weights ship only as the HF cache snapshot
-            // (top-level safetensors one level down) — the lane points at
-            // the real weights, never at a name nothing provisioned.
+            // THE MERGED ADDRESS: the 1.7B CustomVoice lane loads the
+            // operator's merged tree (base + speaker tensors, placed by
+            // hand — no upstream repo ships this exact build).
+            // The lane points at the real weights, never at a name nothing
+            // provisioned.
             "lane_inputs": {
                 "model_path": "Qwen3-TTS-12Hz-1.7B-CustomVoice-merged",
             },
@@ -124,8 +152,8 @@ export const DECL = {
             // THE CLONE INTERCEPT (the 0.6B family's fold, mirrored):
             // the clone checkpoint address + the clone lane key ride the
             // variant — merged base ← variant at the derived read. Same
-            // snapshot law as the customvoice lane above: real weights,
-            // real address.
+            // hand-placed law as the customvoice lane above: real weights,
+            // real address, placed by the operator.
             "lane_inputs": {
                 "model_path": "Qwen3-TTS-12Hz-1.7B-Base-merged",
             },

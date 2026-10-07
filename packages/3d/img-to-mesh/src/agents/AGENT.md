@@ -49,8 +49,10 @@ families board one surface):
 
 ## Artifacts
 
-- `<prefix>_<resolution>_<seed>.glb` — the TEXTURED mesh (atlas
-  baked via ApplyTextureToMesh), in the run output.
+- `<prefix>_<counter:05>.glb` — the TEXTURED mesh (atlas
+  baked via ApplyTextureToMesh), in the run output. The saver mints
+  the counter (Save3DAdvanced/SaveGLB spell); resolution and seed
+  never appear in the name.
 
 ## Honest edges
 

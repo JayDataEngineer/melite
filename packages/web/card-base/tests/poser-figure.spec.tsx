@@ -354,7 +354,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     expect(screen.queryByTestId('stage-preview-figure')).toBeNull()
   })
 
-  test('a settle after unmount is swallowed (no dead setState); a non-Error rejection takes the fallback voice', async () => {
+  test('a settle after unmount is swallowed (no dead setState); a non-Error rejection voices its own words', async () => {
     let resolveIt!: (v: unknown) => void
     bindState.spy.mockReturnValue(new Promise((res) => { resolveIt = res as typeof resolveIt }))
     const first = render(h(PoserFigureStage, { identityModel: 'anny' }))
@@ -370,7 +370,7 @@ describe('PoserFigureStage (DOM states + LIVE reshaping)', () => {
     bindState.spy.mockRejectedValue('a string, not an Error')
     render(h(PoserFigureStage, { identityModel: 'anny' }))
     await waitFor(() => screen.getByTestId('figure-failed'))
-    expect(screen.getByTestId('figure-failed').textContent).toContain('figure fetch failed')
+    expect(screen.getByTestId('figure-failed').textContent).toContain('a string, not an Error')
   })
 })
 

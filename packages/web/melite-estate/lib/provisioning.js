@@ -123,11 +123,11 @@ function modelPlanItem(ref, row, provider, variant, quant) {
     };
 }
 function extensionPlan(ref, row, nodeTypes) {
+    // Every manifest row declares its url (R7: the registry key no row
+    // set is gone) — extensions plan from git, or local when url-less.
     const source = row.url.trim() !== ""
         ? "git"
-        : row.registry.trim() !== ""
-            ? "manager"
-            : "local";
+        : "local";
     return {
         ref,
         items: [{
@@ -139,7 +139,6 @@ function extensionPlan(ref, row, nodeTypes) {
                 provider: source,
                 ...(row.ref.trim() === "" ? {} : { ref: row.ref.trim() }),
                 ...(row.version.trim() === "" ? {} : { version: row.version.trim() }),
-                ...(row.registry.trim() === "" ? {} : { registry: row.registry.trim() }),
                 requirements: [...row.pip],
                 nodeTypes: [...nodeTypes],
             }],

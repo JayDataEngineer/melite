@@ -8,7 +8,7 @@
  * one-time downloads, ALL download links are KEPT IN CODE"): the
  * client NEVER carries a URL. It passes NAMES ONLY —
  * install_extension takes the pack id from the refusal's own text;
- * provision_model takes the FAMILY id and the manage seat resolves
+ * acquire_weight takes the FAMILY id and the manage seat resolves
  * the DECL provision rows server-side (the declaration is the one
  * truth for what downloads from where). An ad-hoc URL has no door
  * here, by construction.
@@ -68,27 +68,102 @@ export interface RescueResult {
   restartRequired: boolean
 }
 
+/** THE F9 ACQUIRE-WEIGHT READ (the tracker's poll): one live
+ *  snapshot of the backend's byte ledger — real landed bytes over
+ *  the DECL total, never an animation. */
+export interface WeightAcquireState {
+  operationId: string
+  state: string
+  bytes: number
+  total: number
+  detail?: string
+}
+
+/** Terminal acquire_weight states (the tracker stops polling). */
+export const ACQUIRE_TERMINAL: ReadonlySet<string> = new Set([
+  'active', 'installed', 'restart_required', 'failed', 'blocked',
+])
+
+function weightStateOf(reply: { data?: unknown, detail?: string }): WeightAcquireState {
+  const data = typeof reply.data === 'object' && reply.data !== null && !Array.isArray(reply.data)
+    ? reply.data as Record<string, unknown>
+    : {}
+  const operationId = typeof data['operation_id'] === 'string'
+    ? data['operation_id'] as string
+    : typeof data['operationId'] === 'string' ? data['operationId'] as string : ''
+  if (operationId === '') throw new Error('acquire_weight answered without an operation_id')
+  return {
+    operationId,
+    state: typeof data['state'] === 'string' ? data['state'] as string : 'acquiring',
+    bytes: typeof data['bytes'] === 'number' ? data['bytes'] as number : 0,
+    total: typeof data['total'] === 'number' ? data['total'] as number : 0,
+    ...(typeof reply.detail === 'string' && reply.detail !== '' ? { detail: reply.detail as string } : {}),
+  }
+}
+
+/** Start the weight fetch through the ONE acquisition door (the
+ *  same door the agent's comfy_manage acquire_weight seat rides —
+ *  one door, two callers). Names only: the model/card id plus the
+ *  missing file for DISPLAY (the DECL owns the fetch source).
+ *  Returns the operation id at once with the opening bytes/total —
+ *  the caller polls acquireWeightPoll for the live count. */
+export async function acquireWeightStart(target: string, file?: string): Promise<WeightAcquireState> {
+  const reply = await postManageAction('acquire_weight', {
+    model: target,
+    ...(file === undefined || file === '' ? {} : { file }),
+  })
+  if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
+  return weightStateOf(reply)
+}
+
+/** Poll one weight fetch (the tracker's read): the SAME action with
+ *  ONLY the operation id — no model, no second fetch. */
+export async function acquireWeightPoll(operationId: string): Promise<WeightAcquireState> {
+  const reply = await postManageAction('acquire_weight', { operation_id: operationId })
+  if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
+  return weightStateOf(reply)
+}
+
 /** Offer one rescue through the manage seat. Names only — the
  * server owns every URL (the declaration law above). The target
  * is the model family OR the card id (model-less tool cards carry
- * their own provision rows under the card id — provision_model
- * resolves both). Resolves
+ * their own provision rows under the card id — the acquire_weight
+ * door resolves both, as provision_model did before it). The model
+ * arm rides acquire_weight (ONE door with the popup tracker and the
+ * agent seat); the extension arm keeps install_extension. Resolves
  * with the reply's detail line, refuses with its own name. */
 export async function runRescueCall(rescue: Rescue, target: string): Promise<RescueResult> {
   const provisionTarget = rescue.kind === 'model' && rescue.target !== undefined && rescue.target !== ''
     ? rescue.target
     : target
-  const reply = rescue.kind === 'extension'
-    ? await postManageAction('install_extension', { nodes: [rescue.pack] })
-    : await postManageAction('provision_model', { model: provisionTarget })
-  if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
-  const data = typeof reply.data === 'object' && reply.data !== null && !Array.isArray(reply.data)
-    ? reply.data as Record<string, unknown>
-    : null
-  const state = data !== null && typeof data['state'] === 'string' ? data['state'] : ''
+  if (rescue.kind === 'extension') {
+    const reply = await postManageAction('install_extension', { nodes: [rescue.pack] })
+    if (!reply.ok) throw new Error(reply.detail ?? 'manage refused')
+    const data = typeof reply.data === 'object' && reply.data !== null && !Array.isArray(reply.data)
+      ? reply.data as Record<string, unknown>
+      : null
+    const state = data !== null && typeof data['state'] === 'string' ? data['state'] : ''
+    return {
+      detail: reply.detail ?? rescue.pack + ' installed',
+      restartRequired: (data !== null && data['restart_required'] === true) || state === 'restart_required',
+    }
+  }
+  // THE MODEL ARM (F9 one-door law): start the fetch, then poll the
+  // SAME door to the terminal state — the popup tracker polls the
+  // same snapshots this loop awaits.
+  const first = await acquireWeightStart(provisionTarget, rescue.file)
+  let current = first
+  for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
+    await new Promise((resolve) => { setTimeout(resolve, 200) })
+    current = await acquireWeightPoll(current.operationId)
+  }
+  const restartRequired = current.state === 'restart_required' || current.state === 'installed'
+  if (current.state === 'failed' || current.state === 'blocked') {
+    throw new Error(current.detail ?? 'weight acquisition ' + current.state)
+  }
   return {
-    detail: reply.detail ?? (rescue.kind === 'extension' ? rescue.pack + ' installed' : provisionTarget + ' provisioned'),
-    restartRequired: (data !== null && data['restart_required'] === true) || state === 'restart_required',
+    detail: current.detail ?? provisionTarget + ' acquired (' + String(current.bytes) + '/' + String(current.total) + ' bytes)',
+    restartRequired,
   }
 }
 

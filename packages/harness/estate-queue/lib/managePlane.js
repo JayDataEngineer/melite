@@ -34,6 +34,7 @@ export const ACTIONS = [
     "install_extension_url",
     "download_model",
     "provision_model",
+    "acquire_weight",
     "restart",
     "stop",
     "launch",
@@ -198,6 +199,7 @@ export function parseReq(doc) {
         data: str("data"),
         filename: str("filename") || str("file"),
         families: Array.isArray(d["families"]) ? d["families"].map(String).filter((s) => s !== "") : [],
+        operation_id: str("operation_id"),
     };
 }
 function need(req, ...fields) {
@@ -224,6 +226,8 @@ function ok(action, detail, data) {
         envelope.state = value.state;
     if (typeof value?.next_action === "string")
         envelope.next_action = value.next_action;
+    if (typeof value?.operation_id === "string")
+        envelope.operation_id = value.operation_id;
     if (Array.isArray(value?.operations))
         envelope.operations = value.operations;
     return [200, envelope];
@@ -922,6 +926,95 @@ async function hProvisionModel(req, ctx) {
         }, [operationRow(req.model, result, ref, plan)]);
     });
 }
+/** THE F9 ACQUISITION DOOR (run-press acquisition — ONE door, TWO
+ *  callers): the bench popup's Download button and the agent's
+ *  comfy_manage acquire_weight seat both land here. It starts the
+ *  fetch WITHOUT awaiting the landing (the progress ledger counts
+ *  real landed bytes) and returns the operation id at once; the
+ *  tracker polls this SAME action with {operation_id} for
+ *  bytes/total. The fetch itself rides provisioner.ensure (the
+ *  existing fetcher — never a second fetcher). */
+async function hAcquireWeight(req, ctx) {
+    const provisioner = provisioningOf(ctx);
+    // THE POLL (the tracker's read): same action, operation id only —
+    // no model, no fetch, no wait. Unknown ids 404 (never a fake
+    // zero — the tracker must render the truth).
+    if (req.operation_id !== "") {
+        if (typeof provisioner.progressOf !== "function") {
+            throw unavailable("acquire_weight progress is not configured on this lane");
+        }
+        const progress = provisioner.progressOf(req.operation_id);
+        if (progress === null || progress === undefined) {
+            throw notFound("unknown acquire_weight operation: " + req.operation_id);
+        }
+        return ok(req.action, "acquire_weight " + progress.operationId + ": " + String(progress.bytes) + "/" + String(progress.total)
+            + " bytes (" + progress.state + ")", {
+            operation_id: progress.operationId,
+            state: progress.state,
+            bytes: progress.bytes,
+            total: progress.total,
+            next_action: "acquire_weight",
+            ...(progress.detail === undefined ? {} : { detail: progress.detail }),
+        });
+    }
+    // THE START (the Download press): model required, the missing file
+    // rides filename for DISPLAY only (the DECL owns the fetch source —
+    // the names-only law). Returns the operation id at once; the fetch
+    // lands in the background and the tracker polls it above.
+    need(req, "model");
+    estateOnly(req, ctx.endpoint());
+    if (typeof provisioner.startWeightAcquire !== "function" || typeof provisioner.progressOf !== "function") {
+        throw unavailable("acquire_weight is not configured on this lane");
+    }
+    const family = {
+        kind: "model",
+        owner: "family",
+        id: req.model,
+        ...(req.variant === "" ? {} : { variant: req.variant }),
+        ...(req.quant === "" ? {} : { quant: req.quant }),
+    };
+    let ref = family;
+    try {
+        await provisioner.plan(family);
+    }
+    catch (error) {
+        if (familyModelDeclared(ctx, req.model)) {
+            throw notFound(error instanceof Error ? error.message : String(error));
+        }
+        ref = {
+            kind: "model",
+            owner: "card",
+            id: req.model,
+            ...(req.variant === "" ? {} : { variant: req.variant }),
+            ...(req.quant === "" ? {} : { quant: req.quant }),
+        };
+        try {
+            await provisioner.plan(ref);
+        }
+        catch (nested) {
+            throw notFound(nested instanceof Error ? nested.message : String(nested));
+        }
+    }
+    const operationId = await provisioner.startWeightAcquire(ref);
+    const progress = provisioner.progressOf(operationId);
+    const bytes = progress?.bytes ?? 0;
+    const total = progress?.total ?? 0;
+    const state = progress?.state ?? "acquiring";
+    const file = req.filename !== "" ? " (" + req.filename + ")" : "";
+    return ok(req.action, "acquiring " + req.model + file + " — " + String(bytes) + "/" + String(total)
+        + " bytes (poll acquire_weight operation_id=" + operationId + ")", {
+        operation_id: operationId,
+        operationId,
+        state,
+        bytes,
+        total,
+        model: req.model,
+        ...(req.filename === "" ? {} : { file: req.filename, filename: req.filename }),
+        ...(req.variant === "" ? {} : { variant: req.variant }),
+        ...(req.quant === "" ? {} : { quant: req.quant }),
+        next_action: "acquire_weight",
+    });
+}
 async function hRestart(req, ctx) {
     guardLifecycle(req, ctx);
     const cfg = ctx.endpoint();
@@ -1345,6 +1438,7 @@ const HANDLERS = {
     install_extension_url: hInstallExtensionUrl,
     download_model: hDownloadModel,
     provision_model: hProvisionModel,
+    acquire_weight: hAcquireWeight,
     restart: hRestart,
     stop: hStop,
     launch: hLaunch,

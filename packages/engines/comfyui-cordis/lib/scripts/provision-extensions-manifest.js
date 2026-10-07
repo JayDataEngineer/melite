@@ -3,7 +3,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { die, warn } from "./provision-shared.js";
-export const EXT_KEYS = new Set(["name", "registry", "version", "url", "ref", "required", "desc", "pip"]);
+export const EXT_KEYS = new Set(["name", "version", "url", "ref", "required", "desc", "pip"]);
 export function stripComment(line) {
     // A `#` opens a comment only outside single/double quotes.
     let q = null;
@@ -140,7 +140,7 @@ export function loadExtensionsYaml(path) {
         const dash = /^- name:\s*(.*)$/.exec(body);
         if (dash && (ind === 0 || ind === 2)) {
             push();
-            cur = { name: unquote(dash[1], path, l.n), registry: "",
+            cur = { name: unquote(dash[1], path, l.n),
                 version: "", url: "", ref: "", required: true, desc: "", pip: [] };
             rowInd = ind;
             continue;
@@ -247,7 +247,7 @@ export function mergeManifest(repo) {
     for (const [path, pluginId] of findNodesYaml(repo)) {
         const rel = path.slice(repo.length + 1);
         for (const ext of loadExtensionsYaml(path)) {
-            const pin = JSON.stringify([ext.registry, ext.version, ext.url,
+            const pin = JSON.stringify([ext.version, ext.url,
                 ext.ref, ext.pip]);
             const prior = seen.get(ext.name);
             const src = pluginId + ":" + rel;

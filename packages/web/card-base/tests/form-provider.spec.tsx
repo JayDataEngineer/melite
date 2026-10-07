@@ -417,7 +417,7 @@ test('THE UPLOAD: refusals land ON the field (the door names itself, never a sil
   const cases: Array<{ fake: ReturnType<typeof fakeFetch>; message: string }> = [
     { fake: fakeFetch({ uploadStatus: 500 }), message: 'upload refused: HTTP 500' },
     { fake: fakeFetch({ uploadThrow: new Error('door down') }), message: 'door down' },
-    { fake: fakeFetch({ uploadThrow: 'boom' }), message: 'upload failed' },
+    { fake: fakeFetch({ uploadThrow: 'boom' }), message: 'boom' },
   ]
   for (const c of cases) {
     const realFetch = globalThis.fetch

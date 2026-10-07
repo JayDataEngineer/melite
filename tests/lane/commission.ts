@@ -89,10 +89,12 @@ export function briefFor(path: PathName, opts: { subject?: string; sourceImage?:
   if (path === 'video') {
     lines.push(
       `Produce ${row.deliverable}. The film should show ${subject}, and it should be watchable end to end: if the work needs a voice line, sound effects, or a music bed, make them and wire them into the film.`,
+      'Look at the film before you report it: when your wire surface cannot show you images, say so in your report and describe the film by its structure and measurements — never by a subject you could not see.',
     )
   } else {
     lines.push(
       `Produce ${row.deliverable} for ${subject}. The model file must be loadable as-is by a 3D viewer — a real mesh with geometry, not a preview image or a turntable sheet.`,
+      "Look at the model's poster before you report it: when your wire surface cannot show you images, say so in your report and describe the model by its structure and measurements — never by a subject you could not see.",
     )
   }
   if (opts.sourceImage !== undefined) {
@@ -121,7 +123,7 @@ export function briefFor(path: PathName, opts: { subject?: string; sourceImage?:
   lines.push('- a written report naming every run id and artifact you produced')
   lines.push('')
   lines.push(
-    'Final verification: the deliverable must be present and openable. A queued run, a graph, or a screenshot is not a deliverable.',
+    'Final verification: the deliverable must be present and openable. Present and openable is structure, not seeing: when the brief names what the film or model should show, the report must say whether a seeing route verified the picture or the subject is UNVERIFIED. A queued run, a graph, or a screenshot is not a deliverable.',
   )
   return lines.join('\n') + '\n'
 }

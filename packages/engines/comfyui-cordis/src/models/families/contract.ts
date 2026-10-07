@@ -477,6 +477,35 @@ export const ProvisionRow: z<ProvisionRow> = z.object({
   size_bytes: z.number().min(0).required(false),
 });
 
+// A pinned HF commit SHA (40 lowercase hex).
+const REVISION_RE = /^[0-9a-f]{40}$/;
+
+/** One directory-provision row (the audit's fix 8 channel).
+ *  A single-file ProvisionRow cannot name a whole HF directory.
+ *  This row names one instead: the repo, the pinned revision, and
+ *  the file patterns to fetch.
+ *  `name` is the tree basename the lane loads.
+ *  `folder` is the parent dir under the models root.
+ *  `repo_id` is the upstream repo (owner/name).
+ *  `revision` is the pinned 40-hex commit (never a branch).
+ *  `allow_patterns` names the fetched files (exact paths, or a
+ *  `dir/*` prefix for a whole subtree). */
+export interface SnapshotProvisionRow {
+  name: string;
+  folder: string;
+  repo_id: string;
+  revision: string;
+  allow_patterns: string[];
+}
+
+export const SnapshotProvisionRow: z<SnapshotProvisionRow> = z.object({
+  name: z.string(),
+  folder: z.string(),
+  repo_id: z.string(),
+  revision: z.string().pattern(REVISION_RE),
+  allow_patterns: z.array(z.string()).min(1),
+});
+
 /**
  * THE SCHEMA/INTERFACE AGREEMENT (2026-10-10, the census's C3).
  *
@@ -504,6 +533,10 @@ export function assertSchemaAcceptsMinimalRows(): void {
     ["VariantRow", VariantRow, { id: "v" }],
     ["VariantGroupRow", VariantGroupRow, { id: "g" }],
     ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
+    // THE DIRECTORY CHANNEL (the audit's fix 8): the snapshot row
+    // carries its own pin (repo + revision + patterns), so the
+    // minimal row states all three.
+    ["SnapshotProvisionRow", SnapshotProvisionRow, { name: "n", folder: "f", repo_id: "o/m", revision: "a".repeat(40), allow_patterns: ["config.json"] }],
     ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
     ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
     // THE MAIN DECLARATION (2026-10-10, the audit's Rule 7): ModelDecl
@@ -646,6 +679,10 @@ export const ModelDecl: z<ModelDecl> = z.object({
   variants: z.array(VariantRow),
   variant_groups: z.array(VariantGroupRow).default([]),
   provisions: z.array(ProvisionRow).default([]),
+  // THE DIRECTORY CHANNEL (the audit's fix 8): whole HF dirs ride
+  // here, never in provisions (a single-file row cannot name a
+  // tree, and a tree row cannot name a single file).
+  snapshot_provisions: z.array(SnapshotProvisionRow).default([]),
   // THE OPTION-3 CHANNEL (TTS chain audit T3, 2026-10-15): weights
   // trees the operator hand-places — no public per-file URL exists
   // (the merged TTS trees, the MOSS-SoundEffect source tree), so no
@@ -756,6 +793,10 @@ export interface ModelDecl {
   variants: VariantRow[];
   variant_groups?: VariantGroupRow[];
   provisions?: ProvisionRow[];
+  /** Whole HF dirs this family fetches as snapshots.
+   *  Absent = the family fetches no directory (the single-file
+   *  default: every provision names one file). */
+  snapshot_provisions?: SnapshotProvisionRow[];
   /** Weights trees the operator hand-places — no public per-file
    *  URL exists (merged TTS trees, the MOSS-SoundEffect source
    *  tree), so no provisions row can honestly name them; declaring

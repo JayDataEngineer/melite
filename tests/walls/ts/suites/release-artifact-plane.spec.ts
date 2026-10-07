@@ -22,6 +22,8 @@ const gates = req('../../../../tools/release-artifacts.mjs') as {
   exportsRows: (inner: unknown, listing: string[], tarName: string) => string[]
   validateTarballPayload: (inner: unknown, listing: string[], tarName: string) => void
   classifyEntry: (inner: unknown, tarName: string) => void
+  validateBuiltEntry: (inner: unknown, entryText: string, tarName: string) => void
+  extensionlessImportOffender: (text: string) => string | null
   probeExecutability: (innerFiles: Map<string, { f: string; literals: string[] }>) => Promise<void>
   stripPackedTarballs: (files: string[]) => void
   overlayNameOffender: (packageName: string, overlay: string, packed: Map<string, Set<string>>) => string | null
@@ -115,6 +117,48 @@ describe('G4 — vacuous-set rejection (audit case 3)', () => {
   it('accepts the same shape WITH the subpathOnly declaration and reason', () => {
     const inner = { name: 'fx', exports: { './sub': './lib/sub.js' }, melite: { publish: { subpathOnly: true, reason: 'engine-side only' } } }
     expect(() => gates.classifyEntry(inner, 'fx.tgz')).not.toThrow()
+  })
+})
+
+describe('G8 — built-entry import law (alpha.3 batch)', () => {
+  const dot = (def: unknown): { exports: { '.': unknown } } => ({ exports: { '.': def } })
+  const js = './lib/index.js'
+
+  it('accepts a built entry whose relative imports carry extensions', () => {
+    expect(() => gates.validateBuiltEntry(
+      dot({ types: './lib/index.d.ts', default: js }),
+      'import { x } from "./other.js"\nimport "./side.css"\nimport r from "react"\nexport * from "@melite/x"\n',
+      'fx.tgz')).not.toThrow()
+  })
+
+  it('refuses a "." door targeting source (class (a) backstop at the door)', () => {
+    expect(() => gates.validateBuiltEntry(dot({ types: './lib/index.d.ts', default: './src/index.ts' }), '', 'fx.tgz'))
+      .toThrow('entry gate: fx.tgz "." targets source "./src/index.ts"')
+  })
+
+  it('refuses an extensionless relative import in the built entry', () => {
+    expect(() => gates.validateBuiltEntry(dot({ default: js }), 'import { sleep } from "./sleep"\n', 'fx.tgz'))
+      .toThrow('entry gate: fx.tgz ./lib/index.js carries extensionless relative import "./sleep"')
+  })
+
+  it('refuses a leaked source extension in the built entry', () => {
+    expect(() => gates.validateBuiltEntry(dot({ default: js }), 'export * from "./queue.ts"\n', 'fx.tgz'))
+      .toThrow('carries extensionless relative import "./queue.ts"')
+  })
+
+  it('ignores import-looking prose in comments and strings', () => {
+    const prose = '// every symbol stays importable from "./queue.ts".\n/* import a from "./ghost"; */\nconst m = "from \\"./nope\\"";\nexport * from "./queueLock.js"\n'
+    expect(() => gates.validateBuiltEntry(dot({ default: js }), prose, 'fx.tgz')).not.toThrow()
+  })
+
+  it('passes subpath-only and types-only doors through (G4 / the probe own them)', () => {
+    expect(() => gates.validateBuiltEntry({ exports: { './sub': './lib/sub.js' } }, '', 'fx.tgz')).not.toThrow()
+    expect(() => gates.validateBuiltEntry(dot({ types: './lib/index.d.ts' }), '', 'fx.tgz')).not.toThrow()
+  })
+
+  it('names the first offender (the audit names one defect)', () => {
+    expect(gates.extensionlessImportOffender('import a from "./a.js"\nimport b from "./b"\n')).toBe('./b')
+    expect(gates.extensionlessImportOffender('export const x = 1\n')).toBeNull()
   })
 })
 

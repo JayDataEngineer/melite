@@ -96,6 +96,10 @@ import mediaPlugin from "@melite/estate-media";
 // no proxies (the 2026-09-12 motion-skin 502).
 import modelsPlugin from "@melite/estate-models";
 import provisioningComposition from "./provisioning.ts";
+// THE GUTTED-LANE GATE (2026-10-05: dsh-melite-test served :3088 with
+// every @melite* bundle skipped — warning-only): the lane-side refusal.
+// Runs first in apply, before any row mounts.
+import { checkBundleGate } from "./bundle-gate.ts";
 
 /** The estate composition: the engine tier, the drafts service,
  *  the serial run queue, and the runs plane (REBUILD-5/9). A
@@ -359,9 +363,20 @@ export const name = "melite-estate";
  *  blender stdio row (audit 008 M12). */
 export interface Config {
   repoRoot?: string;
+  /**
+   * Serve degraded when required bundles are absent instead of
+   * refusing the boot (the bundle gate's explicit opt-out; the
+   * MELITE_ALLOW_GUTTED_LANE=1 environment wins over this field).
+   */
+  allowGuttedLane?: boolean;
 }
 
 export async function apply(ctx: Context, config: Config = {}): Promise<void> {
+  // THE BUNDLE GATE RUNS FIRST: a configuration refusal precedes any
+  // composition — nothing mounts before it, so a gutted tree fails
+  // with zero rows attempted (stronger than the models-first
+  // atomicity below, which mounts one seat before judging).
+  checkBundleGate(ctx, config);
   // THE MODELS ROW MOUNTS FIRST AND IS AWAITED: a family that
   // refuses at mount would otherwise land in cordis's logger alone —
   // the estate boot continues, the seat unregisters, and every door

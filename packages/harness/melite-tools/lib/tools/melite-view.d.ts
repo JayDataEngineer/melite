@@ -3,6 +3,8 @@ import type { Context } from '@deepseek-ai/cordis';
 import type { ImageAttachmentRef, ImageMediaType } from '@deepseek-ai/dsh-attachment';
 import type { ProbedStream } from './mp4Probe.js';
 import type { MeshSummary } from './glbSummary.js';
+import type { MediaListRow } from '@melite/estate-media';
+import type { VisionQuestionKind, VisionRoute } from './vision-route.js';
 import type { ToolDefinition } from '../types.js';
 /** Identify the media type declared by a supported image signature. */
 export declare function sniffImageMediaType(data: Uint8Array): ImageMediaType | undefined;
@@ -189,23 +191,41 @@ interface QueueSeatSeam {
  *  away and left the maker with local ffprobe as its only observe
  *  arm — the exact gap this door exists to close. So the capability is
  *  REPORTED, and the caller serves the facts in text and names the one
- *  thing it cannot do (the image block). `assertImageCapableRoute`
- *  keeps the strict refusal for the callers that genuinely need pixels
- *  (read_image's own law). */
+ *  thing it cannot do (the image block). The mesh arm keeps the
+ *  strict refusal for the caller that genuinely needs pixels (the
+ *  blind block throws byte-identical to read_image's own law). */
 export declare function routeImageCapability(ctx: {
     get(name: string): unknown;
 }, exec: ViewExec, requestedRun: string): Promise<{
     capable: boolean;
     model: string;
 }>;
-/** Enforce the strict image-capability gate for the calling route
- * (read_image's assertImageCapableRoute, copied): the session's
- * latest routed provider/model must declare `image` input — unknown
- * capability refuses, it never relies on an adapter failure after
- * the filesystem work. */
-export declare function assertImageCapableRoute(ctx: {
+/** THE DELEGATED EYE (the charter's vision-capable route for the
+ *  maker lane, dev_docs/ROADMAP.md): the calling route is blind, so
+ *  the viewing runs through a route that CAN see — the lane's
+ *  declared `MELITE_VIEW_ROUTE` verified image-capable, else the
+ *  first image-capable route in enumeration (the craft critic's
+ *  route law, vision-route.ts). A named-but-blind route throws LOUD
+ *  (explicit means explicit — never a silent substitution, never a
+ *  silent measurement pass); no eye on the lane resolves null and
+ *  the caller serves its labeled measurements instead. A narrow seat
+ *  (a fake exposing resolveModelInfo only) is also null — the old
+ *  walls never grew an enumeration seam. */
+export declare function seeingRoute(ctx: {
     get(name: string): unknown;
-}, exec: ViewExec, requestedRun: string): Promise<void>;
+}, exec: ViewExec): Promise<VisionRoute | null>;
+/** The file-bytes twin of the eye: resolve, commit, verify. Null
+ *  when the lane seats no eye (the caller serves measurements). */
+export declare function delegatedVisual(ctx: {
+    get(name: string): unknown;
+}, exec: ViewExec, image: {
+    data: Uint8Array;
+    mediaType: ImageMediaType;
+    name?: string;
+}, kind: VisionQuestionKind, attachments: AttachmentsSeam): Promise<{
+    verdict: string;
+    via: string;
+} | null>;
 /** THE MESH ARM (2026-09-26). A `.glb`/`.gltf` has no raster, so the
  *  door serves the mesh two ways, in this order:
  *
@@ -223,6 +243,15 @@ export declare function assertImageCapableRoute(ctx: {
 export declare function viewModelArtifact(seat: QueueSeatSeam, runId: string, artifact: string, exec: ViewExec, ctx: {
     get(name: string): unknown;
 }, attachments: AttachmentsSeam, read?: BytesReader): Promise<ViewedImageValue>;
+/** THE STILL ARM (exported like its film/audio/mesh siblings — the
+ *  suites call it directly): one image artifact observed through the
+ *  walk's own row. A capable calling route gets the committed image;
+ *  a blind route gets the file's facts as labeled text, or the
+ *  lane's seeing route's verdict when the delegated eye resolves
+ *  (the vision-capable route for the maker lane). */
+export declare function viewStillArtifact(root: string, row: MediaListRow, runId: string, exec: ViewExec, ctx: {
+    get(name: string): unknown;
+}, attachments: AttachmentsSeam): Promise<ViewedImageValue>;
 /** Build the melite_view tool against the live cordis context (the
  * seats: `attachments` — the durable store, `queue` — the runs tree
  * root owner, `llm` — the route gate; all optional probes, the

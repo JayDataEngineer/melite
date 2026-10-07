@@ -84,7 +84,7 @@ const CARD_PLANE = [
   "packages/image/ideogram4",
   "packages/3d/anny",
   "packages/3d/img-to-mesh",
-  "packages/engines/comfyui/action_cards",
+  "packages/engines/comfyui/src/action_cards",
   "packages/web-kit/timeline",
   "packages/web-kit/slots",
   "packages/web-kit/catalog",

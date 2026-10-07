@@ -37,6 +37,14 @@ export const DECL = {
     "mods": [
         "loras"
     ],
+    // THE ARTIFACT FATE (2026-10-17, model-families audit fix 7).
+    // These cell artifacts ARE provision rows via the union law.
+    // Their source_url is a download declaration.
+    // It is not a plain source link.
+    // The estate provisions them through provisionsByFamily.
+    // The liveness gate probes them.
+    // The mods/ loras fate is the opposite.
+    // Those rows are operator-supplied and never fetched.
     "variants": [
         {
             "id": "turbo",

@@ -608,6 +608,24 @@ describe('the analyst — the report', () => {
     expect(text).toMatch(/transcript: NONE/)
     expect(text).toMatch(/run-film\/film\.mp4/)
   })
+
+  it('every path verdict labels its dimension-check fallback (a pass is structural, never a seen subject)', () => {
+    const root = tempRoot()
+    mintRun(root, { runId: 'run-film', status: 'completed', files: { 'film.mp4': bytes(REAL_FILM) } })
+    const receipts = scanRunTree([root])
+    const boot = Date.now()
+    const text = renderReport({
+      boot_ms: boot,
+      roots: [root],
+      runs_scanned: receipts.length,
+      runs: receipts,
+      transcript: discoverTranscript(root, 'tide-meter', boot),
+      paths: [assessPath('video', receipts), assessPath('3d', receipts)],
+      blocked: [],
+    })
+    // one explicit visual line per path verdict — pass or fail
+    expect((text.match(/visual: UNVERIFIED — judged by bytes, not by sight/g) ?? []).length).toBe(2)
+  })
 })
 
 describe('the harness modules load under the DRIVER\'S OWN loader', () => {

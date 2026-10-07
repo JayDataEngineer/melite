@@ -4,6 +4,7 @@ import { createElement as h, Fragment, useCallback, useEffect, useRef, useState 
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
 import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, isImageUrl, readAsDataUrl, } from "./square.js";
 import { uploadInputFile } from "./wire.js";
+import { rejectionVoice } from "./rejection-voice.js";
 import css from './card.module.css';
 /** The media-kind the picker fetches for a field: image fields name
  *  image; mesh fields name the MEDIA vocabulary's kind for 3D, which
@@ -69,7 +70,7 @@ export function useSquareProvider(onEdit, wire) {
             onEdit(f.name, name);
         }
         catch (e) {
-            onEdit(f.name, e instanceof Error ? e.message : 'upload failed');
+            onEdit(f.name, rejectionVoice(e));
         }
     }, [onEdit, wire.onFile]);
     const square = (f) => {

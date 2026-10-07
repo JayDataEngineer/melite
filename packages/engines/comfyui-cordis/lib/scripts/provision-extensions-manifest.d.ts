@@ -1,6 +1,5 @@
 export interface ExtRow {
     name: string;
-    registry: string;
     version: string;
     url: string;
     ref: string;

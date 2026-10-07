@@ -60,6 +60,7 @@ import {
 } from './ui.tsx'
 import { MEDIA_KINDS } from './media-kinds.ts'
 import { estateArtifactAddress } from './artifact-address.ts'
+import { ModelTilePreview } from './mesh-tile.tsx'
 import {
   bgBase1,
   bgBase2,
@@ -690,7 +691,13 @@ export function MediaPanel({ useTabInfo, sessionId }: { useTabInfo?: () => TabIn
                                 style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', pointerEvents: 'none' }}
                               />
                             )
-                          : null}
+                          : it.kind === 'model'
+                            // THE MESH SEAT (2026-10-18): a model tile
+                            // mounts the click-to-load preview — the
+                            // grid's only 3D wire (the drilldown and
+                            // the estate-artifact tab carry the others).
+                            ? <ModelTilePreview url={it.url} file={it.file} />
+                            : null}
                       {it.kind === 'video'
                         ? (
                             <span style={{

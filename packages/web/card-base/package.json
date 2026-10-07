@@ -47,7 +47,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "dependencies": {
     "@deepseek-ai/dsh-api-gateway": "0.2.0-rc.1",

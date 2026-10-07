@@ -4,6 +4,10 @@
   "type": "module",
   "description": "the mask-studio carrier, DEMOTED (CONTRACT D \u2014 the card retired at parity): ui/ survives as the leaf-face carrier (paint + bbox); the takeover client is gone",
   "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
     "./package.json": "./package.json",
     "./paint-canvas": {
       "types": "./lib/ui/PaintLeafCanvas.d.ts",
@@ -40,15 +44,10 @@
     "@deepseek-ai/cordis": "^4.0.4"
   },
   "files": [
+    "lib/index.js",
     "lib/**/*.css",
     "lib/**/*.d.ts",
     "lib/**/*.js",
     "lib/**/*.module.css"
-  ],
-  "melite": {
-    "publish": {
-      "subpathOnly": true,
-      "reason": "cordis plugin loaded by the host runtime, not imported by root"
-    }
-  }
+  ]
 }

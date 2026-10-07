@@ -179,6 +179,15 @@ export const ProvisionRow = z.object({
     sha256: z.string().pattern(SHA256_RE).required(false),
     size_bytes: z.number().min(0).required(false),
 });
+// A pinned HF commit SHA (40 lowercase hex).
+const REVISION_RE = /^[0-9a-f]{40}$/;
+export const SnapshotProvisionRow = z.object({
+    name: z.string(),
+    folder: z.string(),
+    repo_id: z.string(),
+    revision: z.string().pattern(REVISION_RE),
+    allow_patterns: z.array(z.string()).min(1),
+});
 /**
  * THE SCHEMA/INTERFACE AGREEMENT (2026-10-10, the census's C3).
  *
@@ -206,6 +215,10 @@ export function assertSchemaAcceptsMinimalRows() {
         ["VariantRow", VariantRow, { id: "v" }],
         ["VariantGroupRow", VariantGroupRow, { id: "g" }],
         ["ProvisionRow", ProvisionRow, { name: "n", url: "https://x/y", folder: "models" }],
+        // THE DIRECTORY CHANNEL (the audit's fix 8): the snapshot row
+        // carries its own pin (repo + revision + patterns), so the
+        // minimal row states all three.
+        ["SnapshotProvisionRow", SnapshotProvisionRow, { name: "n", folder: "f", repo_id: "o/m", revision: "a".repeat(40), allow_patterns: ["config.json"] }],
         ["ModPackMarriage", ModPackMarriage, { pack: "p", marries: { fps: "max" } }],
         ["ModelRow", ModelRow, { id: "i", family: "f", genre: "image", label: "L", description: "d", form: "image", source: {}, defaults: {}, engine: "comfyui" }],
         // THE MAIN DECLARATION (2026-10-10, the audit's Rule 7): ModelDecl
@@ -305,6 +318,10 @@ export const ModelDecl = z.object({
     variants: z.array(VariantRow),
     variant_groups: z.array(VariantGroupRow).default([]),
     provisions: z.array(ProvisionRow).default([]),
+    // THE DIRECTORY CHANNEL (the audit's fix 8): whole HF dirs ride
+    // here, never in provisions (a single-file row cannot name a
+    // tree, and a tree row cannot name a single file).
+    snapshot_provisions: z.array(SnapshotProvisionRow).default([]),
     // THE OPTION-3 CHANNEL (TTS chain audit T3, 2026-10-15): weights
     // trees the operator hand-places — no public per-file URL exists
     // (the merged TTS trees, the MOSS-SoundEffect source tree), so no

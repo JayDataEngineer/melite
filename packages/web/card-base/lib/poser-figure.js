@@ -27,6 +27,7 @@ import { fetchBindMesh } from '@melite/formats/poserSkin';
 import { mountStage3D } from "./stage3d.js";
 import { autoFitToHeight } from "./glb-stage.js";
 import { fieldsOf } from "./spec.js";
+import { rejectionVoice } from "./rejection-voice.js";
 import s from './preview.module.css';
 /** Pure: the resolved params → the identity coeff vector (the
  * identity group's fields, order-sorted, values from the resolved
@@ -149,7 +150,7 @@ export function PoserFigureStage({ identityModel, identityCoeffs, localChanges, 
                 .then((d) => { if (alive)
                 setDoc(d); })
                 .catch((e) => { if (alive)
-                setFailed(e instanceof Error ? e.message : 'figure fetch failed'); });
+                setFailed(rejectionVoice(e)); });
         }, 120);
         return () => { alive = false; clearTimeout(timer); };
         // sig (not the arrays): a stable string dep — identityCoeffs and

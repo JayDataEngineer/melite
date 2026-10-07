@@ -23,7 +23,7 @@
 extensions:
   - name: melite-kimodo-nodes
     url: https://github.com/JayDataEngineer/melite-kimodo-nodes
-    ref: c696ba5f73e0f1d70d940fdca2c93c2e06df47eb
+    ref: 6953d02447c4d21663f1a9fc748d1005ee8cf318
     required: false
     desc: >-
       Image -> Anny (all-age parametric human model), both engines:
@@ -46,7 +46,7 @@ extensions:
   # time when it cannot.
   - name: melite-autoremesher-nodes
     url: https://github.com/JayDataEngineer/melite-autoremesher-nodes
-    ref: 18ebea9af7131ade2ab7fb13c5e5595f2273c874
+    ref: bcf4e6bfd1e89ea8fa30b17b2fad0cdccbd84fce
     required: true
     desc: >-
       Quad-remesh pack: huxingyi/autoremesher as a subprocess node
@@ -64,14 +64,11 @@ extensions:
   # runtime — extension_node_types names its classes, so a missing
   # pack is a refusal — yet NO manifest ever installed it, so a fresh
   # estate refused 3d lanes it had no way to satisfy.
-  # 2026-10-04 (operator ruling, audit 008 M12): melite-blender-
-  # proxy-nodes LEFT this manifest. Its four nodes were composed by
-  # zero graphs and its mcp_server.py duplicated the 72-tool bench
-  # dsh-provision seats on the game preset — a Blender bench is a DSH
-  # profile concern. MeliteUnityBatch has the same zero-consumer
-  # shape and rides the next row (M15, pending the operator's word).
-  - name: melite-unity-nodes
-    url: https://github.com/JayDataEngineer/melite-unity-nodes
-    ref: e0608551a71d2e60e91f809e0477a40f2c5aac69
-    required: true
-    desc: Unity bridge (MeliteUnityBatch) — the Unity batch lane.
+  # 2026-10-18 (operator ruling, audit 008 M15 — the M12 shape,
+  # Unity's turn): melite-unity-nodes LEFT this manifest and the
+  # estate. MeliteUnityBatch was composed by zero graphs and a
+  # Unity bench is a DSH profile concern, exactly the Blender
+  # ruling's law (li-en). The registry node
+  # data-engineer/melite-unity-nodes 0.1.0 stays published-dormant
+  # (published versions are immutable); the live engine's imported
+  # classes ride its next restart (operator window).

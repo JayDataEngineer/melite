@@ -38,18 +38,44 @@ export const DECL: ModelDecl = {
   },
   "genre": "audio",
   // HAND-PLACED WEIGHTS (the TTS chain audit T3, option 3): the two
-  // trees this family's lanes load have no public per-file URL — the
-  // CustomVoice tree is a merged build (base + speaker tensors) that
-  // exists only as the operator's placed bytes plus its
-  // estate-authored model_specs row; the Base tree rides the HF
-  // cache snapshot layout. No provisions row can honestly name
-  // either, so the placement is DECLARED here instead of the lanes
-  // silently claiming the estate fetches them. The ghost wall
-  // (models-against-cards) judges every model_path leaf against
-  // this row.
+  // trees this family's lanes load are stated here so no lane
+  // silently claims the estate fetches them.
+  // The Base tree is FETCHABLE (its snapshot_provisions row below
+  // pins the upstream repo + revision, and the provisioner lands
+  // it).
+  // The CustomVoice tree is a merged build (base + speaker tensors)
+  // that exists only as the operator's placed bytes plus its
+  // estate-authored model_specs row, so no snapshot row can honestly
+  // name it and it stays hand-only.
+  // The ghost wall (models-against-cards) judges every model_path
+  // leaf against this row plus the snapshot rows.
   "hand_placed_weights": [
     "qwen3-tts/hf/Qwen3-TTS-12Hz-0.6B-Base",
     "Qwen3-TTS-12Hz-0.6B-CustomVoice-merged",
+  ],
+  // THE DIRECTORY PROVISION (the model-families audit fix 8): the
+  // Base tree ships as a whole HF dir (config + weights +
+  // speech_tokenizer), so no single-file provisions row can name it.
+  // This row pins the upstream snapshot the provisioner fetches.
+  // The merged CustomVoice tree carries no such row (no upstream
+  // repo exists for an operator merge — stating one would be a lie).
+  "snapshot_provisions": [
+    {
+      "name": "Qwen3-TTS-12Hz-0.6B-Base",
+      "folder": "audio/qwen3-tts/hf",
+      "repo_id": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+      "revision": "5d83992436eae1d760afd27aff78a71d676296fc",
+      "allow_patterns": [
+        "config.json",
+        "model.safetensors",
+        "speech_tokenizer/*",
+        "tokenizer_config.json",
+        "vocab.json",
+        "merges.txt",
+        "preprocessor_config.json",
+        "generation_config.json",
+      ],
+    },
   ],
   // THE LANE DECLARATION (2026-10-10, the YOU_ARE_A_LIAR fix
   // shapes 1+2: the model is the author of what it accepts — no

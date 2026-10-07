@@ -306,7 +306,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // remesh_drop_enclosed, remesh_fix_poles) — the audit's pinned-off
     // literals became card params with the core defaults as schema
     // defaults
-    assert.equal(walked, 469,
+    // 2026-10-07 (batch 008 M5, the FBX door): 469 -> 470, the rig
+    // card's file_format knob (glb|fbx vocabulary, schema default
+    // glb — a string field, so the numeric judge is unmoved and no
+    // family starves)
+    assert.equal(walked, 470,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);
@@ -567,8 +571,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // (ProvisionRow); this wall pins the DATA: every declared row
     // carries a non-empty name, an http(s) url, a NON-ABSOLUTE
     // folder under the models root, a 64-hex sha256 when present,
-    // and a non-negative size when present. The declaring split is
-    // EXACT both ways: 15 families declare provisions, and the served
+    // and a REQUIRED non-negative size_bytes (audit fix 10).
+    // Every real DECL provision row declares its size.
+    // A row omitting size_bytes refuses here.
+    // The declaring split is
+    // EXACT both ways: 17 families declare provisions, and the served
     // side of the split is this arm's own census below (declarers∩
     // served, every declarer serves) — the provisioner-catalog carve
     // is enumerated here, not deferred.
@@ -604,10 +611,8 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         if (row["sha256"] !== undefined) {
           assert.match(String(row["sha256"]), /^[0-9a-f]{64}$/, `${id}/${String(row["name"])}: sha256 is not a 64-hex digest`);
         }
-        if (row["size_bytes"] !== undefined) {
-          assert.ok(typeof row["size_bytes"] === "number" && row["size_bytes"] >= 0,
-            `${id}/${String(row["name"])}: size_bytes is negative`);
-        }
+        assert.ok(typeof row["size_bytes"] === "number" && row["size_bytes"] >= 0,
+          `${id}/${String(row["name"])}: size_bytes is REQUIRED (audit fix 10) — a row omitting it refuses`);
       }
     }
     assert.deepEqual(declarers, PROVISION_DECLARERS,
@@ -632,11 +637,11 @@ describe("models against cards (the cross-validation, resurrected)", () => {
 
   // THE UNION WALK'S OTHER HALF (wiring re-audit S1 + the bytes
   // provisions audit, both 2026-10-13): the family arm above walks
-  // `registryModel(id).provisions` and pins 61 rows — but the
+  // `registryModel(id).provisions` and pins 62 rows — but the
   // provision DOOR serves provisionsByFamily, whose union adds
   // card-owned rows (IMPACT_DETECTOR_PROVISIONS spread by mask and
   // image-edit, sam3.1/rt_detr inline) and every variant-cell
-  // artifact (digest-pinned downloads the 61-row pin never
+  // artifact (digest-pinned downloads the 62-row pin never
   // inspects). Those rows were shaped by nobody: a malformed url,
   // a non-hex sha, or a whole card dropping its provisions moved
   // no needle. This arm judges the door's own surface — same shape
@@ -654,11 +659,13 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // the engine string — is the discriminator). The declarer
     // roster is EXACT; every row carries the family arm's shape
     // contract.
-    const cardDeclarers: string[] = [];
+    // Audit fix 6 names this registry CARD_PROVISION_DECLARERS.
+    const CARD_PROVISION_DECLARERS: string[] = [];
+    const CARD_PROVISION_ROW_COUNT = 9;
     let cardRows = 0;
     for (const [id, view] of Object.entries(byFamily)) {
       if (families.has(id)) continue;
-      cardDeclarers.push(id);
+      CARD_PROVISION_DECLARERS.push(id);
       for (const row of view.provisions) {
         cardRows++;
         assert.ok(typeof row.name === "string" && row.name !== "", `${id}: a card provision row carries an empty name`);
@@ -668,28 +675,33 @@ describe("models against cards (the cross-validation, resurrected)", () => {
         if (row.sha256 !== undefined) {
           assert.match(String(row.sha256), /^[0-9a-f]{64}$/, `${id}/${String(row.name)}: sha256 is not a 64-hex digest`);
         }
-        if (row.size_bytes !== undefined) {
-          assert.ok(typeof row.size_bytes === "number" && row.size_bytes >= 0,
-            `${id}/${String(row.name)}: size_bytes is negative`);
-        }
+        assert.ok(typeof row.size_bytes === "number" && row.size_bytes >= 0,
+          `${id}/${String(row.name)}: size_bytes is REQUIRED (audit fix 10) — a card row omitting it refuses`);
       }
     }
-    assert.deepEqual(cardDeclarers, ["image-edit", "mask"],
-      `the card-plane provision declarers are the named 2 (saw ${cardDeclarers.join(", ")}) — a card starting or stopping its own provisioning is a deliberate edit`);
-    assert.equal(cardRows, 9,
-      `the card plane declares exactly 9 rows (saw ${String(cardRows)}) — a row appearing or leaving a card is a deliberate edit (mask's 3 inline + the 3 Impact detectors it spreads; image-edit's same 3 Impact rows — 6 distinct files, 9 declared rows)`);
+    assert.deepEqual(CARD_PROVISION_DECLARERS, ["image-edit", "mask"],
+      `the card-plane provision declarers are the named 2 (saw ${CARD_PROVISION_DECLARERS.join(", ")}) — a card starting or stopping its own provisioning is a deliberate edit`);
+    assert.equal(cardRows, CARD_PROVISION_ROW_COUNT,
+      `the card plane declares exactly ${String(CARD_PROVISION_ROW_COUNT)} rows (saw ${String(cardRows)}) — a row appearing or leaving a card is a deliberate edit (mask's 3 inline + the 3 Impact detectors it spreads; image-edit's same 3 Impact rows — 6 distinct files, 9 declared rows)`);
 
     // (2) VARIANT-CELL ARTIFACTS — the digest-pinned channel the
-    // 61-row family pin never inspects (the bytes audit: "the wall
-    // pins 61 but the manage plane owns 66"). Every artifact row
-    // is shaped; the distinct-artifact count is EXACT.
+    // 62-row family pin never inspects (the bytes audit: "the wall
+    // pins 62 but the manage plane owns 68"). Every artifact row
+    // is shaped; the declarer roster and the counts are EXACT.
+    // Audit fix 6 names this registry ARTIFACT_DECLARERS.
+    const ARTIFACT_DECLARERS: string[] = [];
+    const ARTIFACT_ROW_COUNT = 8;
+    const ARTIFACT_DISTINCT_COUNT = 6;
     const artifacts: Array<{ id: string; url: string }> = [];
-    for (const id of modelIds()) {
-      const view = getModel(id);
-      for (const variant of view.variants ?? []) {
-        for (const cell of variant.cells) {
-          const artifact = cell.artifact;
+    for (const id of registryIds()) {
+      const decl = registryModel(id) as { variants?: Array<{ cells?: Array<{ artifact?: unknown }> }> };
+      let familyArtifacts = 0;
+      for (const variant of decl.variants ?? []) {
+        for (const cell of variant.cells ?? []) {
+          const artifact = cell.artifact as Record<string, unknown>;
           if (artifact === undefined || artifact === null) continue;
+          if (familyArtifacts === 0) ARTIFACT_DECLARERS.push(id);
+          familyArtifacts++;
           assert.match(String(artifact.source_url), /^https?:\/\//,
             `${id}: a variant-cell artifact url is not http(s)`);
           assert.ok(typeof artifact.dest_sub === "string" && artifact.dest_sub !== "" && !String(artifact.dest_sub).startsWith("/"),
@@ -697,19 +709,72 @@ describe("models against cards (the cross-validation, resurrected)", () => {
           if (artifact.sha256 !== undefined) {
             assert.match(String(artifact.sha256), /^[0-9a-f]{64}$/, `${id}: artifact sha256 is not a 64-hex digest`);
           }
-          if (artifact.size_bytes !== undefined) {
-            assert.ok(typeof artifact.size_bytes === "number" && artifact.size_bytes >= 0,
-              `${id}: artifact size_bytes is negative`);
-          }
+          assert.ok(typeof artifact.size_bytes === "number" && artifact.size_bytes >= 0,
+            `${id}: artifact size_bytes is REQUIRED (audit fix 10) — a cell omitting it refuses`);
           artifacts.push({ id, url: String(artifact.source_url) });
         }
       }
     }
+    assert.deepEqual(ARTIFACT_DECLARERS, ["krea-2", "qwen-img-21", "qwen-img-edit-21", "qwen-img-edit-2511"],
+      `the artifact declarers are the named 4 (saw ${ARTIFACT_DECLARERS.join(", ")}) — a family starting or stopping its cell-artifact channel is a deliberate edit`);
+    assert.equal(artifacts.length, ARTIFACT_ROW_COUNT,
+      `the variant-cell artifact rows are exactly ${String(ARTIFACT_ROW_COUNT)} (saw ${String(artifacts.length)}) — a cell appearing or leaving is a deliberate edit`);
     // deduped by url+dest the same way the union walk dedupes —
     // variants sharing one artifact are ONE download
     const distinct = new Set(artifacts.map((a) => a.url)).size;
-    assert.equal(distinct, 6,
-      `the distinct variant-cell artifacts are exactly 6 (saw ${String(distinct)}: ${[...new Set(artifacts.map((a) => a.id + " " + a.url))].join(", ")}) — an artifact appearing or leaving is a deliberate edit`);
+    assert.equal(distinct, ARTIFACT_DISTINCT_COUNT,
+      `the distinct variant-cell artifacts are exactly ${String(ARTIFACT_DISTINCT_COUNT)} (saw ${String(distinct)}: ${[...new Set(artifacts.map((a) => a.id + " " + a.url))].join(", ")}) — an artifact appearing or leaving is a deliberate edit`);
+  });
+
+  it("mods flavor source_urls are operator-supplied and never provisioned (audit fix 7, option b)", async () => {
+    // THE MODS FATE (2026-10-17, model-families audit fix 7).
+    // The 20 krea-2 + z-image flavor rows look provisioned and are not.
+    // H3 folds its loras into DECL.provisions (the in-tree precedent).
+    // Krea-2 and z-image take the audit's option b instead.
+    // Their rows are operator-supplied picker vocabulary.
+    // Their source_url is provenance documentation.
+    // The estate never fetches them.
+    // This arm proves the split both ways.
+    // No mods source_url rides the provision union.
+    // Both krea-2 cell artifacts do ride it.
+    const { KREA_ROWS } = await import(
+      "../../../../packages/models/krea-2/mods/loras.ts"
+    );
+    const { ZIMAGE_ROWS } = await import(
+      "../../../../packages/models/z-image/mods/loras.ts"
+    );
+    const { ZIMAGE_CONTROLNET_ROWS } = await import(
+      "../../../../packages/models/z-image/mods/controlnet.ts"
+    );
+    const modsUrls = new Set<string>([
+      ...(KREA_ROWS as Array<{ source_url: string }>).map((r) => r.source_url),
+      ...(ZIMAGE_ROWS as Array<{ source_url: string }>).map((r) => r.source_url),
+      ...(ZIMAGE_CONTROLNET_ROWS as Array<{ source_url: string }>).map((r) => r.source_url),
+    ]);
+    assert.equal(modsUrls.size, 20,
+      `the mods flavor rows name exactly 20 distinct source_urls (saw ${String(modsUrls.size)}) — a flavor row appearing or leaving is a deliberate edit`);
+    const { loadCardDefs: loadDefs, provisionsByFamily: byFamily } = await import(
+      "../../../../packages/engines/comfyui-cordis/src/cardDefs.ts"
+    );
+    const union = await byFamily(await loadDefs());
+    const unionUrls = new Set<string>();
+    for (const view of Object.values(union)) {
+      for (const row of view.provisions) unionUrls.add(row.url);
+    }
+    const leaked = [...modsUrls].filter((u) => unionUrls.has(u));
+    assert.deepEqual(leaked, [],
+      `mods flavor source_urls are operator-supplied, never provisioned (leaked into the union: ${leaked.join(", ")})`);
+    for (const id of ["krea-2"] as const) {
+      for (const row of union[id]?.provisions ?? []) {
+        assert.ok(!modsUrls.has(row.url),
+          `${id}: union row ${row.name} is a mods URL — the channels crossed`);
+      }
+    }
+    const kreaUnion = new Set((union["krea-2"]?.provisions ?? []).map((r) => r.url));
+    assert.ok(kreaUnion.has("https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_turbo_int8_convrot.safetensors"),
+      "krea-2 turbo artifact rides the union (it IS a provision row)");
+    assert.ok(kreaUnion.has("https://huggingface.co/Comfy-Org/Krea-2/resolve/main/diffusion_models/krea2_raw_int8_convrot.safetensors"),
+      "krea-2 raw artifact rides the union (it IS a provision row)");
   });
 
   it("fieldDomains extracts schemastery min/max/options", (): void => {
@@ -1295,6 +1360,11 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       const declared = new Set<string>();
       const add = (s: string): void => { declared.add(s); declared.add(base(s)); };
       for (const row of byFamily[id]?.provisions ?? []) add(row.name);
+      // THE SNAPSHOT CHANNEL (the model-families audit fix 8): whole
+      // HF dirs ride snapshot_provisions, never single-file rows.
+      // A snapshot row names its tree by basename, like every other
+      // channel here.
+      for (const row of view.snapshot_provisions ?? []) add(row.name);
       for (const w of view.hand_placed_weights ?? []) add(w);
       if (view.source?.repo_id) add(view.source.repo_id);
       for (const variant of view.variants ?? []) {
@@ -1314,7 +1384,7 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
       for (const p of paths) {
         if (!declared.has(p) && !declared.has(base(p))) {
           offenders.push(
-            `${id}: lane model_path ${p} — no provisions row, artifact, source repo, or hand_placed_weights entry names it`,
+            `${id}: lane model_path ${p} — no provisions row, snapshot row, artifact, source repo, or hand_placed_weights entry names it`,
           );
         }
       }
@@ -1322,6 +1392,84 @@ describe("THE PROVISIONS↔WEIGHTS AGREEMENT (no ghost weights)", () => {
     assert.deepEqual(
       offenders, [],
       `ghost weight trees (directory-form model_path; hand-placed bytes are not a provision):\n${offenders.join("\n")}`,
+    );
+  });
+});
+
+// THE SNAPSHOT↔MERGE SPLIT (the model-families audit fix 8).
+// Five TTS trees load as whole HF dirs across two families.
+// Two are fetchable upstream (pinned snapshot rows land them).
+// Three are operator merges (no repo exists, so no snapshot row may
+// name them — stating one would be a lie).
+// The fetchable two stay dual-declared (hand_placed_weights names
+// the placement, the snapshot row names the fetch).
+describe("THE SNAPSHOT↔MERGE SPLIT (no lying snapshot rows)", () => {
+  const REVISION_RE = /^[0-9a-f]{40}$/;
+
+  /** The snapshot rows of one family, keyed by tree name. */
+  function snapshotsOf(id: string) {
+    return new Map(getModel(id).snapshot_provisions.map((r) => [r.name, r]));
+  }
+
+  it("exactly two snapshot rows exist, both on the TTS families", () => {
+    // Registry ids, never route views: a route view (qwen3-tts-base)
+    // re-carries its family's rows, so a modelIds walk counts one
+    // declaration three times.
+    const rows: Array<{ family: string; name: string }> = [];
+    for (const id of registryIds()) {
+      for (const r of registryModel(id).snapshot_provisions ?? []) rows.push({ family: id, name: r.name });
+    }
+    assert.deepEqual(
+      rows.sort((a, b) => a.name < b.name ? -1 : 1),
+      [
+        { family: "qwen3-tts", name: "Qwen3-TTS-12Hz-0.6B-Base" },
+        { family: "qwen3-tts-voicedesign", name: "Qwen3-TTS-12Hz-1.7B-VoiceDesign" },
+      ],
+      "the snapshot channel carries exactly the two fetchable trees — a third row is an unreviewed fetch",
+    );
+  });
+
+  it("the fetchable rows pin repo + revision + load-covering patterns", () => {
+    const tts = snapshotsOf("qwen3-tts").get("Qwen3-TTS-12Hz-0.6B-Base");
+    assert.equal(tts?.repo_id, "Qwen/Qwen3-TTS-12Hz-0.6B-Base");
+    const vd = snapshotsOf("qwen3-tts-voicedesign").get("Qwen3-TTS-12Hz-1.7B-VoiceDesign");
+    assert.equal(vd?.repo_id, "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign");
+    for (const [label, row] of [["0.6B-Base", tts], ["1.7B-VoiceDesign", vd]] as const) {
+      assert.ok(row, `${label} carries a snapshot row`);
+      assert.match(row!.revision, REVISION_RE, `${label}: revision is a pinned 40-hex commit, never a branch`);
+      assert.equal(row!.folder, "audio/qwen3-tts/hf", `${label}: the dest parent under the models root`);
+      assert.ok(row!.allow_patterns.includes("config.json"), `${label}: patterns cover the config`);
+      assert.ok(row!.allow_patterns.includes("model.safetensors"), `${label}: patterns cover the weights`);
+      assert.ok(
+        row!.allow_patterns.some((p) => p.startsWith("speech_tokenizer/")),
+        `${label}: patterns cover the speech tokenizer subtree`,
+      );
+    }
+  });
+
+  it("the fetchable trees stay dual-declared; the merges stay hand-only", () => {
+    const ttsPlaced = getModel("qwen3-tts").hand_placed_weights ?? [];
+    assert.ok(
+      ttsPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-0.6B-Base")),
+      "the fetchable 0.6B-Base tree stays in hand_placed_weights (the placement is stated even where a fetch exists)",
+    );
+    assert.ok(
+      ttsPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-0.6B-CustomVoice-merged")),
+      "the merged CustomVoice tree stays declared",
+    );
+    const vdPlaced = getModel("qwen3-tts-voicedesign").hand_placed_weights ?? [];
+    assert.ok(
+      vdPlaced.some((w) => w.endsWith("Qwen3-TTS-12Hz-1.7B-VoiceDesign")),
+      "the fetchable VoiceDesign tree stays in hand_placed_weights",
+    );
+    const vdSnaps = snapshotsOf("qwen3-tts-voicedesign");
+    for (const merged of ["Qwen3-TTS-12Hz-1.7B-CustomVoice-merged", "Qwen3-TTS-12Hz-1.7B-Base-merged"]) {
+      assert.ok(vdPlaced.some((w) => w.endsWith(merged)), `${merged} stays declared as hand-placed`);
+      assert.ok(!vdSnaps.has(merged), `${merged} carries no snapshot row (no upstream repo exists for an operator merge)`);
+    }
+    assert.ok(
+      !snapshotsOf("qwen3-tts").has("Qwen3-TTS-12Hz-0.6B-CustomVoice-merged"),
+      "the 0.6B merged tree carries no snapshot row",
     );
   });
 });

@@ -128,29 +128,32 @@
   "@melite/comfyui-cordis/user-loras": [
     "./packages/engines/comfyui-cordis/src/userLoras.ts"
   ],
+  "@melite/cards": [
+    "./packages/engines/comfyui/src/action_cards/src/index.ts"
+  ],
   "@melite/cards/form-fields": [
-    "./packages/engines/comfyui/action_cards/src/form-fields.tsx"
+    "./packages/engines/comfyui/src/action_cards/src/form-fields.tsx"
   ],
   "@melite/cards/poster-shell": [
-    "./packages/engines/comfyui/action_cards/src/poster-shell.tsx"
+    "./packages/engines/comfyui/src/action_cards/src/poster-shell.tsx"
   ],
   "@melite-plugin/3d/ui/railTabs": [
-    "./packages/engines/comfyui/action_cards/3d/ui/src/railTabs.tsx"
+    "./packages/engines/comfyui/src/action_cards/3d/ui/src/railTabs.tsx"
   ],
   "@melite-plugin/audio/ui/viewers": [
-    "./packages/engines/comfyui/action_cards/audio/ui/viewers/index.ts"
+    "./packages/engines/comfyui/src/action_cards/audio/ui/viewers/index.ts"
   ],
   "@melite-plugin/motion/ui/viewers": [
-    "./packages/engines/comfyui/action_cards/motion/ui/viewers/index.ts"
+    "./packages/engines/comfyui/src/action_cards/motion/ui/viewers/index.ts"
   ],
   "@melite-plugin/motion/ui/viewers/motionImageStore": [
-    "./packages/engines/comfyui/action_cards/motion/ui/viewers/motionImageStore.ts"
+    "./packages/engines/comfyui/src/action_cards/motion/ui/viewers/motionImageStore.ts"
   ],
   "@melite-plugin/motion/ui/viewer3d": [
-    "./packages/engines/comfyui/action_cards/motion/ui/viewer3d/index.ts"
+    "./packages/engines/comfyui/src/action_cards/motion/ui/viewer3d/index.ts"
   ],
   "@melite-plugin/video/ui/viewers": [
-    "./packages/engines/comfyui/action_cards/video/ui/viewers/index.ts"
+    "./packages/engines/comfyui/src/action_cards/video/ui/viewers/index.ts"
   ],
   "@melite/engine-contract": [
     "./packages/engines/contract/src/index.ts"
@@ -242,6 +245,9 @@
   "@melite/harness-tools/doors": [
     "./packages/harness/melite-tools/src/doors.ts"
   ],
+  "@melite/harness-provisioner": [
+    "./packages/harness/provisioner/src/index.ts"
+  ],
   "@melite/image-image-edit": [
     "./packages/image/image-edit/src/index.ts"
   ],
@@ -265,6 +271,9 @@
   ],
   "@melite/image-mask/card": [
     "./packages/image/mask/src/card.ts"
+  ],
+  "@melite/image-mask-studio": [
+    "./packages/image/mask-studio/src/index.ts"
   ],
   "@melite/image-mask-studio/paint-canvas": [
     "./packages/image/mask-studio/src/ui/PaintLeafCanvas.tsx"
@@ -494,9 +503,6 @@
   "@melite/motion-motion/tool": [
     "./packages/motion/motion/src/tool.ts"
   ],
-  "@melite/motion-motion/ui/studio/component": [
-    "./packages/motion/motion/src/ui/studio/component.tsx"
-  ],
   "@deepseek-ai/dsh-typert-protocol": [
     "./packages/vendor/typert-protocol/src/index.ts"
   ],
@@ -514,9 +520,6 @@
   ],
   "@melite/video-h3-timeline/tool": [
     "./packages/video/h3-timeline/src/tool.ts"
-  ],
-  "@melite/video-h3-timeline/ui/studio/component": [
-    "./packages/video/h3-timeline/src/ui/studio/component.tsx"
   ],
   "@melite/catalog": [
     "./packages/web-kit/catalog/src/index.ts"
@@ -767,9 +770,6 @@
   "@melite-plugin/dsh-gallery/client": [
     "./packages/web/infer-gallery/src/client/index.ts"
   ],
-  "@melite-plugin/dsh-gallery/drilldown": [
-    "./packages/web/infer-gallery/src/drilldown.tsx"
-  ],
   "@melite-plugin/dsh-card-deck": [
     "./packages/web/melite-card-deck/src/index.ts"
   ],
@@ -827,10 +827,7 @@
   "@deepseek-ai/cordis-plugin-logger-console": [
     "./vendor/cordis_plugins/logger-console/src/browser.ts"
   ],
-  "@deepseek-ai/cordis-plugin-timer": [
-    "./vendor/cordis_plugins/timer/src/index.ts"
-  ],
-  "@deepseek-ai/dsh-host-webserver": [
-    "./vendor/cordis_plugins/webserver/src/index.ts"
+  "@melite-plugin/dsh-gallery/drilldown": [
+    "./packages/web/infer-gallery/src/drilldown.tsx"
   ]
 }

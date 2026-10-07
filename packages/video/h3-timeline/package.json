@@ -16,15 +16,11 @@
     "./tool": {
       "types": "./lib/tool.d.ts",
       "default": "./lib/tool.js"
-    },
-    "./ui/studio/component": {
-      "types": "./lib/ui/studio/component.d.ts",
-      "default": "./lib/ui/studio/component.js"
     }
   },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "dependencies": {
     "@deepseek-ai/dsh-client-ui-primitives": "0.2.0-rc.1",

@@ -14,8 +14,9 @@
 //      runtime refuses a pack a fresh estate had no way to obtain.
 //      Eleven were (melite-audio-nodes, melite-utility-nodes,
 //      melite-blender-proxy-nodes (left the tree 2026-10-04 with the
-//      MCP ruling, li-en), melite-unity-nodes, and the third-party
-//      rows on NOT_YET_INSTALLED below).
+//      MCP ruling, li-en), melite-unity-nodes (left the tree
+//      2026-10-18 with the M15 ruling — same shape), and the
+//      third-party rows on NOT_YET_INSTALLED below).
 //   3. a manifest row installing a pack nothing checks — installed
 //      weight with no refusal to back it.
 //

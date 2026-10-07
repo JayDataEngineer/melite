@@ -2,6 +2,7 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { useEffect, useState } from 'react';
 import { fetchFormSpec } from "./wire.js";
+import { rejectionVoice } from "./rejection-voice.js";
 /** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
  *  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
  *  img-to-mesh's client, ideogram4's client) each hand-copied the
@@ -24,7 +25,7 @@ export function useFormSpec(modelId) {
         setError(null);
         fetchFormSpec(id, ctl.signal)
             .then((doc) => { setSpec(doc); })
-            .catch((e) => { setError(e instanceof Error ? e.message : 'form-spec failed'); });
+            .catch((e) => { setError(rejectionVoice(e)); });
         return () => { ctl.abort(); };
     }, [id]);
     return { spec, error };

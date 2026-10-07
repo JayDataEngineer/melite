@@ -133,10 +133,12 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
 
   // build-minted: the css-module sidecar exists only after the build
   // mirrors it into lib/ (tsc emits JS/DTS alone) — src-presence is
-  // vacuous for it; everything else proves both sides. The tsc module
+  // vacuous for it; everything else proves both sides. The module
   // graph imports it as './overlay.module.css' and USES css.lightbox /
-  // css.wand — the tsdown mangled symbol died with the preset.
-  const BUILD_MINTED = /^\.\/overlay\.module\.css$|^css\./
+  // css.wand — the tsdown bundler mints the sidecar as a VIRTUAL
+  // module id 'overlay.module.css@<hash>' (2026-10-18, the client
+  // consolidation), so the mint probe carries the bundler's spelling.
+  const BUILD_MINTED = /overlay\.module\.css|^css\.|^overlay_module_css_default\./
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
     ['media tab kind', 'kind: "media"'],
@@ -151,9 +153,9 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
     ['cards bench address', 'dsh-resource://cards/bench'],
     ['cards run address', 'dsh-resource://cards/run/'],
     ['estate-artifact address prefix', 'dsh-resource://estate-artifact/'],
-    ['the css-module sidecar mints (mirrored by the build)', './overlay.module.css'],
-    ['the modal class USES the module (lightbox)', 'css.lightbox'],
-    ['the wand class USES the module', 'css.wand'],
+    ['the css-module sidecar mints (mirrored by the build)', 'overlay.module.css@'],
+    ['the modal class USES the module (lightbox)', 'overlay_module_css_default.lightbox'],
+    ['the wand class USES the module', 'overlay_module_css_default.wand'],
     ["3D badge (the badge rule's own literal)", 'text: "3D"'],
     ['honest 3D absence copy', '3D view unavailable'],
     ['honest media-flow absence copy', 'Media Flow view unavailable'],

@@ -33,7 +33,7 @@ const schema = z.object({
   // card schema; input remains required at compose.
   // RANGE RULE: schema min/max mirrors the live AutoRemesher input
   // contract, so the editor and the node refuse the same values.
-  input: z.string().role('path').description("Input mesh").extra('extra', bag({ order: null, tooltip: "GLB path or artifact-ref from a previous card", required: true, wtype: 'mesh', })),
+  input: z.string().role('path').description("Input mesh").extra('extra', bag({ order: null, tooltip: "GLB path or artifact-ref from a previous card. The remesh rebuilds the surface — input textures/UVs do not survive (no transfer rides the node); texture the quad mesh after.", required: true, wtype: 'mesh', })),
   target_quads: z.number().description("Target quads").min(0).max(200000).default(50000).extra('extra', bag({ order: null, tooltip: "Target quad count", min: 0, max: 200000 })),
   edge_scaling: z.number().description("Edge scaling").min(0).max(4).default(1).extra('extra', bag({ order: null, min: 0, max: 4.0 })),
   sharp_edge: z.number().description("Sharp edge").min(0).max(180).default(90).extra('extra', bag({ order: null, min: 0.0, max: 180.0 })),
@@ -66,6 +66,7 @@ export const identity = {
     'sharp_edge below 90 preserves creases; above smooths them',
     'adaptivity above 1 concentrates quads at curvature',
     'Feed it a dense scan or TRELLIS output; it returns clean quads',
+    'The output is untextured — the remesh rebuilds the surface and drops textures/UVs, so texture after',
   ],
 }
 

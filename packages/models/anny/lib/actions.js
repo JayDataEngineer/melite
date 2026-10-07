@@ -101,8 +101,8 @@ export function parseEstimatorFacts(_raw) {
 /** The commercial photo→body chain (the hmr-estimate verb's
  *  commercial engine — the flow 'anny-hmr-commercial'):
  *  SAM 3D Body → grounded anny GLB, every link license-cleared for
- *  sale. The
- *  person_index stays FIXED at the loudest detection (0) — the
+ *  sale (SOMA-X Apache-2.0; sam-3d-body SAM License §1(a)/§5(a)).
+ *  The person_index stays FIXED at the loudest detection (0) — the
  *  verb's own person picker is a chip knob, never a bench surface
  *  (SubActionMod law). */
 export const estimate_commercial = {

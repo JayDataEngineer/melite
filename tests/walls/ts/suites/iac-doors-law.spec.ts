@@ -32,6 +32,9 @@ function provisionRows(): { folder: string; name: string; size: number; sha: str
     const src = readFileSync(join(ROOT, decl), "utf8");
     for (const m of src.matchAll(/\{[^{}]*?"name":\s*"([^"]+)"[^{}]*?"folder":\s*"([^"]+)"[^{}]*?\}/gu)) {
       const lit = m[0];
+      // DIRECTORY SNAPSHOT ROWS ride their own arm below — a whole
+      // HF tree has no single-file url/sha/size triple to state.
+      if (/"repo_id":/u.test(lit)) continue;
       rows.push({
         name: m[1]!,
         folder: m[2]!,
@@ -42,6 +45,8 @@ function provisionRows(): { folder: string; name: string; size: number; sha: str
     }
     for (const m of src.matchAll(/\{[^{}]*?"folder":\s*"([^"]+)"[^{}]*?"name":\s*"([^"]+)"[^{}]*?\}/gu)) {
       const lit = m[0];
+      // same exemption, folder-first spelling of the same row.
+      if (/"repo_id":/u.test(lit)) continue;
       rows.push({
         name: m[2]!,
         folder: m[1]!,
@@ -57,6 +62,29 @@ function provisionRows(): { folder: string; name: string; size: number; sha: str
     seen.add(k);
     return true;
   });
+}
+
+/** Directory snapshot rows — whole-HF-tree provisions judged by their own law. */
+function snapshotRows(): { name: string; repoId: string; revision: string; patterns: number }[] {
+  const decls = sh(["git", "ls-files", "packages/models/*/src/index.ts"]).split("\n").filter(Boolean);
+  const out: { name: string; repoId: string; revision: string; patterns: number }[] = [];
+  for (const decl of decls) {
+    const src = readFileSync(join(ROOT, decl), "utf8");
+    for (const m of src.matchAll(/\{[^{}]*?"repo_id":\s*"([^"]+)"[^{}]*?\}/gu)) {
+      const lit = m[0];
+      // The snapshot door's signature is allow_patterns + revision —
+      // note-rows ("type"/"note" metadata) carry repo_id without being
+      // provisions and stay outside this census.
+      if (!/"allow_patterns":/u.test(lit) || !/"revision":/u.test(lit)) continue;
+      out.push({
+        name: /"name":\s*"([^"]+)"/u.exec(lit)?.[1] ?? "(unnamed)",
+        repoId: m[1]!,
+        revision: /"revision":\s*"([0-9a-f]+)"/u.exec(lit)?.[1] ?? "",
+        patterns: (lit.match(/allow_patterns[\s\S]*?\]/u)?.[0]?.match(/"/gu)?.length ?? 0) / 2,
+      });
+    }
+  }
+  return out;
 }
 
 function storeRoot(): string | undefined {
@@ -139,6 +167,18 @@ describe("THE IAC LAW — the store is reconstructable from DECLs, through real 
     expect(noUrl, "rows without a fetchable url").toEqual([]);
     expect(noSha, "rows without a 64-hex sha256 pin").toEqual([]);
     expect(noSize, "rows without declared bytes").toEqual([]);
+    // DIRECTORY SNAPSHOT ROWS (model-families audit fix 8) carry no
+    // single-file triple — a whole HF tree has no one sha/size — so
+    // their own completeness law is repo_id + 40-hex revision +
+    // a non-empty allow_patterns list. Anything less would pin a
+    // floating HEAD the store cannot reconstruct.
+    const snap = snapshotRows();
+    expect(snap.length, "the snapshot door is armed — at least one directory provision").toBeGreaterThan(0);
+    for (const s of snap) {
+      expect(s.repoId, `${s.name}: snapshot rows pin a repo_id`).toMatch(/^[\w.-]+\/[\w.-]+$/u);
+      expect(s.revision, `${s.name}: snapshot rows pin a 40-hex revision, not a floating HEAD`).toMatch(/^[0-9a-f]{40}$/u);
+      expect(s.patterns, `${s.name}: snapshot rows name the files they fetch`).toBeGreaterThan(0);
+    }
   });
 
   it("a declared artifact on disk hashes to its DECL pin (the pins are real)", { timeout: 120_000 }, async () => {

@@ -236,6 +236,55 @@ function itemResult(item, state, outcome, values = {}) {
         ...values,
     };
 }
+/** THE F9 TOTAL (the tracker's denominator): the DECL size_bytes
+ *  sum across a plan's model rows — 0 when no row declares one.
+ *  Real declared bytes, never a guess. */
+function planTotal(plan) {
+    let total = 0;
+    for (const item of plan.items) {
+        if (item.kind === "model" && typeof item.sizeBytes === "number")
+            total += item.sizeBytes;
+    }
+    return total;
+}
+/** THE F9 COUNTED SOURCE (the tracker's numerator): wraps the
+ *  fetcher's byte stream and counts every landed chunk — the bytes
+ *  the tracker polls are the bytes the writer received. */
+function countedSource(source, onBytes) {
+    async function* generate() {
+        if (source instanceof ReadableStream) {
+            const reader = source.getReader();
+            try {
+                for (;;) {
+                    const next = await reader.read();
+                    if (next.done)
+                        break;
+                    if (next.value !== undefined) {
+                        onBytes(next.value.byteLength);
+                        yield next.value;
+                    }
+                }
+            }
+            finally {
+                reader.releaseLock();
+            }
+            return;
+        }
+        const maybeAsync = source;
+        if (typeof maybeAsync[Symbol.asyncIterator] === "function") {
+            for await (const chunk of maybeAsync) {
+                onBytes(chunk.byteLength);
+                yield chunk;
+            }
+            return;
+        }
+        for (const chunk of source) {
+            onBytes(chunk.byteLength);
+            yield chunk;
+        }
+    }
+    return generate();
+}
 export class ProvisioningService extends Service {
     declaration;
     writer;
@@ -249,6 +298,13 @@ export class ProvisioningService extends Service {
     operationIdFactory;
     records = new Map();
     locks = new Map();
+    /** THE F9 BYTE LEDGER (one map, two readers): operationId ->
+     *  live bytes/total. The direct arm counts the fetcher stream as
+     *  it lands (real bytes, never an animation); total is the DECL
+     *  size_bytes sum. The manage door (acquire_weight) and any
+     *  future caller poll progressOf — one ledger, never two. */
+    weightProgress = new Map();
+    weightProgressByRef = new Map();
     constructor(ctx, config) {
         super(ctx, "provisioning");
         if (config === undefined || config.declaration === undefined) {
@@ -283,6 +339,117 @@ export class ProvisioningService extends Service {
     }
     isLocked(ref) {
         return this.locks.has(resourceKey(ref));
+    }
+    /** THE F9 PROGRESS READ (the tracker's poll): a copy of the live
+     *  byte ledger for one operation id, null when unknown. Bytes are
+     *  counted as the fetcher stream lands — real landed bytes, never
+     *  an animation. */
+    progressOf(operationId) {
+        const entry = this.weightProgress.get(operationId);
+        if (entry === undefined)
+            return null;
+        return { ...entry, ref: copyRef(entry.ref) };
+    }
+    /** THE F9 REF READ (the tracker's poll by model): the live entry
+     *  for one ref, null when no acquisition has started for it. */
+    progressOfRef(ref) {
+        const id = this.weightProgressByRef.get(resourceKey(ref));
+        if (id === undefined)
+            return null;
+        return this.progressOf(id);
+    }
+    /** THE F9 START (one door's background arm): starts the fetch for
+     *  one ref WITHOUT awaiting the landing and returns its operation
+     *  id at once — the tracker polls progressOf. A second start while
+     *  the first is locked returns the FIRST id (one fetch, never two;
+     *  runLocked's join law). The fetch itself rides executeEnsure
+     *  (the existing fetcher — no second fetcher). */
+    async startWeightAcquire(ref, options = {}) {
+        const key = resourceKey(ref);
+        const locked = this.locks.get(key);
+        if (locked !== undefined) {
+            if (!this.weightProgress.has(locked.id)) {
+                let total = 0;
+                try {
+                    const plan = await this.plan(ref);
+                    total = planTotal(plan);
+                }
+                catch {
+                    total = 0;
+                }
+                this.weightProgress.set(locked.id, {
+                    operationId: locked.id,
+                    ref: copyRef(ref),
+                    state: "acquiring",
+                    bytes: 0,
+                    total,
+                });
+                this.weightProgressByRef.set(key, locked.id);
+            }
+            return locked.id;
+        }
+        let total = 0;
+        try {
+            const plan = await this.plan(ref);
+            total = planTotal(plan);
+        }
+        catch {
+            total = 0;
+        }
+        const id = this.operationIdFactory();
+        this.weightProgress.set(id, {
+            operationId: id,
+            ref: copyRef(ref),
+            state: "acquiring",
+            bytes: 0,
+            total,
+        });
+        this.weightProgressByRef.set(key, id);
+        void this.runWithId(ref, id, undefined, async (operationId, operationSignal) => await this.executeEnsure(ref, options, operationId, operationSignal)).then((result) => {
+            const current = this.weightProgress.get(id);
+            if (current !== undefined) {
+                const landed = current.total > 0 &&
+                    (result.state === "active" || result.state === "restart_required")
+                    ? current.total
+                    : current.bytes;
+                this.weightProgress.set(id, {
+                    ...current,
+                    state: result.operationState,
+                    bytes: landed,
+                    ...(result.detail === undefined ? {} : { detail: result.detail }),
+                });
+            }
+        }).catch((error) => {
+            const current = this.weightProgress.get(id);
+            if (current !== undefined) {
+                this.weightProgress.set(id, {
+                    ...current,
+                    state: "failed",
+                    detail: error instanceof Error ? error.message : String(error),
+                });
+            }
+        });
+        return id;
+    }
+    async runWithId(ref, presetId, signal, body, key = resourceKey(ref)) {
+        const existing = this.locks.get(key);
+        if (existing !== undefined)
+            return await this.joinLocked(ref, existing, signal);
+        const controller = new AbortController();
+        const operationSignal = signal === undefined
+            ? controller.signal
+            : AbortSignal.any([controller.signal, signal]);
+        if (signal?.aborted === true)
+            controller.abort(signal.reason);
+        let promise;
+        promise = Promise.resolve()
+            .then(() => body(presetId, operationSignal))
+            .catch((error) => this.completeUnstarted(ref, presetId, error, operationSignal))
+            .finally(() => {
+            this.locks.delete(key);
+        });
+        this.locks.set(key, { id: presetId, controller, promise });
+        return await promise;
     }
     async plan(ref) {
         return copyPlan(await this.declaration.resolve(ref), ref);
@@ -510,6 +677,20 @@ export class ProvisioningService extends Service {
         if (plan.items.length === 0) {
             return this.complete(ref, operationId, this.failureResult(ref, operationId, new Error("resource has no provision plan items"), signal));
         }
+        // THE F9 LEDGER SEED (the tracker's denominator): the blocking
+        // ensure path never passes through startWeightAcquire, so the
+        // entry must exist here too — total is the DECL sum, bytes 0.
+        // A background start already seeded it; that entry wins.
+        if (!this.weightProgress.has(operationId)) {
+            this.weightProgress.set(operationId, {
+                operationId,
+                ref: copyRef(ref),
+                state: "acquiring",
+                bytes: 0,
+                total: planTotal(plan),
+            });
+            this.weightProgressByRef.set(resourceKey(ref), operationId);
+        }
         const items = [];
         let cancelled = false;
         for (const item of plan.items) {
@@ -619,6 +800,10 @@ export class ProvisioningService extends Service {
             if (item.sizeBytes !== undefined && existing.sizeBytes !== item.sizeBytes) {
                 throw new ItemRefusal("failed", "artifact/size-mismatch", `the declared model has size ${String(existing.sizeBytes ?? "unknown")}, expected ${String(item.sizeBytes)}`);
             }
+            // THE F9 ALREADY-LANDED BYTES (real, not animation): a present
+            // file contributes its declared size to the live count at once.
+            if (item.sizeBytes !== undefined)
+                this.bumpProgress(operationId, item.sizeBytes);
             return itemResult(item, "active", "active", {
                 ...(existing.path === undefined ? {} : { path: existing.path }),
                 ...(existing.sha256 === undefined ? {} : { sha256: existing.sha256 }),
@@ -638,12 +823,18 @@ export class ProvisioningService extends Service {
                 throw new ItemRefusal("failed", "artifact/fetch-refused", `direct fetch of ${item.url} answered status ${String(response.status)}${response.body === null ? " with no body" : ""}`);
             }
             try {
+                // THE F9 COUNTED WRITE (the tracker's numerator): the ledger
+                // entry must exist before the first chunk lands (a background
+                // start seeded it with the plan total; a blocking ensure
+                // seeded it in executeEnsure — this keeps whichever total is
+                // already there and only fills a missing one).
+                this.ensureProgress(operationId, ref, item.sizeBytes ?? 0);
                 const landed = await this.writer.write({
                     root: this.writerRoot,
                     relativePath,
                     expectedSha256: item.sha256,
                     operationId,
-                    source: response.body,
+                    source: countedSource(response.body, (count) => this.bumpProgress(operationId, count)),
                     sizeBytes: item.sizeBytes,
                 }, signal);
                 this.move(ref, operationId, "installed");
@@ -688,6 +879,11 @@ export class ProvisioningService extends Service {
         if (item.sizeBytes !== undefined && landed.sizeBytes !== item.sizeBytes) {
             throw new ItemRefusal("failed", "artifact/size-mismatch", `ComfyUI-Manager landed a model with size ${String(landed.sizeBytes ?? "unknown")}, expected ${String(item.sizeBytes)}`);
         }
+        // THE F9 MANAGER BYTES (real landed total, no mid-flight count):
+        // the Manager owns its own queue bytes, so the ledger jumps from
+        // the pre-install count to the declared size only on success.
+        if (item.sizeBytes !== undefined)
+            this.bumpProgress(operationId, item.sizeBytes);
         this.move(ref, operationId, "installed");
         return itemResult(item, "active", "active", {
             path: landed.path,
@@ -857,8 +1053,44 @@ export class ProvisioningService extends Service {
                 items: items === undefined ? record.operation.items : items.map(copyItem),
             };
         }
+        // THE F9 STATE MIRROR (the tracker's face): the progress entry
+        // follows the record — acquiring while the stream lands, then
+        // the terminal operationState. The poll reads state + bytes.
+        if (operationId !== undefined) {
+            const entry = this.weightProgress.get(operationId);
+            if (entry !== undefined && entry.state !== next) {
+                this.weightProgress.set(operationId, { ...entry, state: next });
+            }
+        }
         if (previous !== next) {
             this.persist(record);
+        }
+    }
+    /** THE F9 BYTE ADD (the tracker's numerator write): adds landed
+     *  bytes to one operation's live count. No entry, no write. */
+    bumpProgress(operationId, count) {
+        const entry = this.weightProgress.get(operationId);
+        if (entry === undefined || count <= 0)
+            return;
+        this.weightProgress.set(operationId, { ...entry, bytes: entry.bytes + count });
+    }
+    /** THE F9 ENTRY FILL (the tracker's denominator keep): creates the
+     *  live entry when the blocking path is the first writer, and never
+     *  shrinks a background start's plan total. */
+    ensureProgress(operationId, ref, total) {
+        const entry = this.weightProgress.get(operationId);
+        if (entry === undefined) {
+            this.weightProgress.set(operationId, {
+                operationId,
+                ref: copyRef(ref),
+                state: "acquiring",
+                bytes: 0,
+                total,
+            });
+            this.weightProgressByRef.set(resourceKey(ref), operationId);
+        }
+        else if (entry.total === 0 && total > 0) {
+            this.weightProgress.set(operationId, { ...entry, total });
         }
     }
     persist(record) {

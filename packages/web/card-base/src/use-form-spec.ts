@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { fetchFormSpec } from './wire.ts'
 import { type FormSpecDoc } from './spec.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** THE SERVED-SPEC HOOK (the DRY extraction, 2026-09-13): four
  *  consumers (mask-studio's TuneSection, h3's RunAdvancedPanels,
@@ -28,7 +29,7 @@ export function useFormSpec(modelId: string | null | undefined): {
     setError(null)
     fetchFormSpec(id, ctl.signal)
       .then((doc) => { setSpec(doc) })
-      .catch((e: unknown) => { setError(e instanceof Error ? e.message : 'form-spec failed') })
+      .catch((e: unknown) => { setError(rejectionVoice(e)) })
     return () => { ctl.abort() }
   }, [id])
   return { spec, error }

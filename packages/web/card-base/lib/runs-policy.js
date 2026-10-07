@@ -18,6 +18,7 @@
  */
 import { isTerminalRun, listRowMediaUrl, readRunStatus, } from '@melite-plugin/melite-run-wire';
 import { isEstateRefusal, estateRemote, unwrapRemote, } from "./estate-remote.js";
+import { rejectionVoice } from "./rejection-voice.js";
 /** One runs/status read (normalized once — readRunStatus's law). */
 export async function fetchRunStatus(runId, signal) {
     const doc = await unwrapRemote(estateRemote().runs.status(runId, signal), 'runs/status');
@@ -132,7 +133,7 @@ async function startRun(doc, signal) {
         return { refused: 'run refused: no run_id in the answer' };
     }
     catch (e) {
-        return { refused: e instanceof Error ? e.message : 'run request failed' };
+        return { refused: rejectionVoice(e) };
     }
 }
 /** Start ONE card through the composing door (the bench drill's

@@ -175,8 +175,13 @@ function emitConfig(pkgDir) {
   // paths:{} — the emit face stays on the artifact plane: dependency
   // resolution rides exports → the dependency's built lib, never its
   // src (two-plane law).
+  // DUAL-FACE (the DSH layout law): a package with Host + Client leaf
+  // faces emits its lib from the HOST program — the build face extends
+  // the host leaf, never the solution-only root (which has no program,
+  // so extending it would emit nothing).
+  const dualFace = existsSync(join(pkgDir, 'tsconfig.host.json'))
   const cfg = {
-    extends: './tsconfig.json',
+    extends: dualFace ? './tsconfig.host.json' : './tsconfig.json',
     compilerOptions: {
       module: 'NodeNext',
       moduleResolution: 'NodeNext',
@@ -763,6 +768,32 @@ function facadeRows(dirs) {
  *  faces carry their own vendor rows (react/three), so the rows are
  *  merged INTO each face's paths block. Emit faces override paths:{}
  *  to stay on the artifact plane (exports -> built lib). */
+/** Rows the generator never emits into any face table (workspace audit
+ *  M7): the name resolves to the REGISTRY copy the runtime executes,
+ *  never a vendored src twin.
+ *  - `@deepseek-ai/cordis-plugin-timer`: the timer seat is host-provided
+ *    (registry 1.1.6, the copy DSH composes); estate-queue imports only
+ *    `import type { TimerService }`, so its types must come from the
+ *    same 1.1.6 declarations the host runs. A vendor-src row would
+ *    re-split types (vendored 1.1.3) from runtime (registry 1.1.6).
+ *    Skipped in workspacePathRows AND purged from faces that still
+ *    carry the row. */
+const REGISTRY_PINNED_ROWS = new Map([
+  ['@deepseek-ai/cordis-plugin-timer', 'registry 1.1.6 (the host seat) — never vendor src'],
+])
+
+/** Rows the manifests cannot seed (the tsdown consolidation): a
+ *  client-leaf door with typecheck/test consumers but no node-half
+ *  emit — the exports row died with the consolidation (W1 forbids
+ *  src targets, the plane wipes unemitted lib files), yet
+ *  cross-package client src still imports the specifier. The row
+ *  resolves to src for every face and lane through the ONE table
+ *  (facade-rows.json), the same one-table cure as exports-derived
+ *  rows. Paths are workspace-relative. */
+const FACE_SEED_ROWS = new Map([
+  ['@melite-plugin/dsh-gallery/drilldown', 'packages/web/infer-gallery/src/drilldown.tsx'],
+])
+
 function workspacePathRows(dirs) {
   const rows = {}
   for (const d of dirs) {
@@ -771,9 +802,16 @@ function workspacePathRows(dirs) {
     for (const key of Object.keys(p.exports)) {
       if (key === 'package.json') continue
       const rel = key === '.' ? '' : key.slice(1)
+      const name = p.name + rel
+      // M7: registry-pinned rows never take a vendor-src twin (the
+      // timer seat's types ride the registry 1.1.6 the host runs).
+      if (REGISTRY_PINNED_ROWS.has(name)) continue
       const srcPath = findSrcForExport(d, p.exports[key])
-      if (srcPath) rows[p.name + rel] = ['./' + relative(ROOT, join(d, srcPath))]
+      if (srcPath) rows[name] = ['./' + relative(ROOT, join(d, srcPath))]
     }
+  }
+  for (const [name, rel] of FACE_SEED_ROWS) {
+    if (rows[name] === undefined && existsSync(join(ROOT, rel))) rows[name] = ['./' + rel]
   }
   return rows
 }
@@ -835,18 +873,32 @@ export function parseJsonc(text) {
   return JSON.parse(out)
 }
 
-function mergePaths(pkgDir, rows) {
-  const p = join(pkgDir, 'tsconfig.json')
+/** A solution-only root (dual-face packages, the DSH layout law): a
+ *  files:[] + references face carries NO program and NO paths block —
+ *  the leaves own both. The generator never writes it, and --check
+ *  never drifts on it. */
+function isSolutionRoot(cfg) {
+  return Array.isArray(cfg?.references) && cfg.references.length > 0 &&
+    Array.isArray(cfg?.files) && cfg.files.length === 0
+}
+
+function mergePaths(pkgDir, rows, face = 'tsconfig.json') {
+  const p = join(pkgDir, face)
   const raw = readFileSync(p, 'utf8')
   const cfg = parseJsonc(raw)
+  // solution-only roots own no paths block (their leaves do).
+  if (face === 'tsconfig.json' && isSolutionRoot(cfg)) return false
   const existing = cfg.compilerOptions?.paths ?? {}
   const ordered = {}
   for (const k of Object.keys(rows)) if (!(k in existing)) ordered[k] = rows[k].map((v) => './' + relative(pkgDir, join(ROOT, v)))
   // F8 purge: a row the door table no longer owns whose target is GONE
   // (a moved module — schema.d.ts→schema.ts, text-to-pose→formats) is
   // dead weight the W5 wall catches; delete it, never carry it.
+  // M7 purge: a registry-pinned row is dead weight even when its vendor
+  // target still EXISTS (the twin must not resolve through any face).
   const live = {}
   for (const [k, v] of Object.entries(existing)) {
+    if (REGISTRY_PINNED_ROWS.has(k)) continue
     if (k in rows) { live[k] = rows[k].map((x) => './' + relative(pkgDir, join(ROOT, x))); continue }
     const targets = (Array.isArray(v) ? v : [v]).map((t) => join(pkgDir, String(t)))
     if (targets.some((t) => existsSync(t))) live[k] = v
@@ -899,7 +951,16 @@ function runPaths(dirs, check) {
   let n = 0
   for (const d of dirs) {
     if (outOfScope(d) || !existsSync(join(d, 'tsconfig.json'))) continue
-    if (mergePaths(d, rows)) n++
+    // dual-face packages (the DSH layout law): the solution-only root
+    // owns no paths block (mergePaths skips it); each leaf face carries
+    // the merged table so its program resolves workspace rows to src.
+    const faces = ['tsconfig.json']
+    for (const leaf of ['tsconfig.host.json', 'tsconfig.client.json']) {
+      if (existsSync(join(d, leaf))) faces.push(leaf)
+    }
+    for (const face of faces) {
+      if (mergePaths(d, rows, face)) n++
+    }
   }
   const baseChanged = writeBasePaths(rows)
   writeFileSync(join(ROOT, 'tools/facade-rows.json'), JSON.stringify(rows, null, 2) + '\n')

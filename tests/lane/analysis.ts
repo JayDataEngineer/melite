@@ -839,6 +839,13 @@ export function renderReport(report: LaneReport): string {
         verdict.runs.length === 0 ? '' : `: ${shownRuns.join(', ')}${restRuns > 0 ? ` (+${restRuns} more)` : ''}`
       }`,
     )
+    // THE DIMENSION-CHECK LABEL (the vision-route charter's analyst
+    // half): this harness judges bytes — parses, dimensions,
+    // manifests — and never looks at a pixel, so a pass here is a
+    // structural pass, never a seen subject. The line rides every
+    // path verdict explicitly (a live commission proved a bare pass
+    // reads as a visual pass).
+    lines.push(`      visual: UNVERIFIED — judged by bytes, not by sight (a subject claim needs a seeing route's verdict)`)
     for (const art of verdict.artifacts.slice(0, ARTS_SHOWN)) {
       lines.push(`      ${art.verdict_ok ? 'ok  ' : 'BAD '} ${art.run_id}/${art.rel} (${art.bytes} bytes)${art.reasons.length === 0 ? '' : ` — ${art.reasons.join('; ')}`}`)
       if (art.verdict_ok) {

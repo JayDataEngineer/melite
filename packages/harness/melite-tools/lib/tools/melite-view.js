@@ -8,9 +8,10 @@ import { RUN_ID_RE } from "@melite/contracts/benchStage";
  * image itself, not a description of it.
  *
  * THE COPY LAW (DSH tool-fs `read_image`, studied then copied): the
- * route gate (`assertImageCapableRoute` — the session's routed
- * provider/model must DECLARE image input, or the tool refuses
- * BEFORE filesystem work), the signature sniffer (extension first,
+ * route gate (the session's routed provider/model must DECLARE
+ * image input — a blind calling route gets labeled text or the
+ * delegated eye's verdict, the mesh arm its strict refusal — BEFORE
+ * pixels ride any block), the signature sniffer (extension first,
  * bytes authoritative), `attachments.saveImage` → durable
  * `ImageAttachmentRef`, and the render pairing — one text summary
  * block + one `{type:'image', attachment}` block re-branded from
@@ -37,6 +38,7 @@ import { AttachmentError, AttachmentId } from '@deepseek-ai/dsh-attachment';
 import { probeMedia } from "./mp4Probe.js";
 import { meshVoice, summarizeMesh } from "./glbSummary.js";
 import { listMedia } from '@melite/estate-media';
+import { resolveVisionRoute, verifyVisual, viewRoutePreference } from "./vision-route.js";
 import { rootsManifest, searchedVoice } from '@melite/estate-queue';
 /** §23 CROSS-ROOTS (2026-09-23): the view walk searches the
  *  manifest in order — own root first, then the maker's tree
@@ -160,6 +162,59 @@ async function probeFile(absPath, name, kind, read = defaultBytesReader) {
         throw new Error('cannot view the ' + kind + ' "' + name + '": ' + String(error.message), { cause: error });
     }
 }
+/** THE SHEET COMMIT: the engine-produced contact sheet (the
+ *  host-binary cure — the vendored MeliteFrameSheet node decodes the
+ *  film inside the engine and composes the tiled sheet as a graph
+ *  output) plus the durable store commit. Shared by the capable arm
+ *  and the delegated eye (the blind route that found a seeing route
+ *  builds the SAME sheet — no second truth). */
+async function commitFilmSheet(attachments, render, rowName, absPath, stamps, signal) {
+    let data;
+    try {
+        data = await render('MeliteFrameSheet', { video: absPath, stamps, width: 320 }, signal);
+    }
+    catch (error) {
+        throw new Error('cannot view the film "' + rowName + '": the contact sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error });
+    }
+    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
+    if (data.byteLength > byteCap) {
+        throw new Error('cannot view the film "' + rowName + '": its contact sheet exceeds the ' + String(byteCap) + '-byte image cap');
+    }
+    try {
+        return await attachments.saveImage({ data, mediaType: 'image/png', name: basename(rowName, extname(rowName)) + '-sheet.png' });
+    }
+    catch (error) {
+        throw new Error('cannot commit the film contact sheet for "' + rowName + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error });
+    }
+}
+/** THE FILM'S DELEGATED EYE (Commission 17's cure): the calling
+ *  route is blind but the lane seats an eye, so the contact sheet
+ *  IS built — for the route that can see it — and the seeing
+ *  route's verdict rides the measurements as labeled text. Null when
+ *  the lane seats no eye: the sheet is never built for nobody (the
+ *  old economy) and the caller serves the probe facts alone. */
+async function delegatedFilmVisual(seat, runId, row, absPath, probe, exec, ctx, attachments, render) {
+    const llm = ctx.get('llm');
+    if (llm === undefined || typeof llm.stream !== 'function')
+        return null;
+    const route = await seeingRoute(ctx, exec);
+    if (route === null)
+        return null;
+    const stamps = sheetPlan(probe.duration_s);
+    const ref = await commitFilmSheet(attachments, render, row.name, absPath, stamps.length, exec.signal);
+    const seen = await verifyVisual(llm, route, ref, 'film', exec.signal);
+    const streams = probe.streams.map((s) => s.codec + (s.width !== undefined && s.height !== undefined ? ' ' + String(s.width) + 'x' + String(s.height) : '')
+        + (s.fps !== undefined ? ' @' + s.fps : '') + (s.frames !== undefined ? ' ' + String(s.frames) + 'f' : '')).join(' + ');
+    return {
+        runId,
+        url: row.url,
+        textObservation: 'melite_view film: ' + row.name
+            + (probe.duration_s !== undefined ? ', ' + String(probe.duration_s) + 's' : '')
+            + ', ' + String(probe.size_bytes) + ' bytes, streams: ' + streams
+            + ', contact sheet of ' + String(stamps.length)
+            + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the sheet): ' + seen.verdict,
+    };
+}
 /** View a film artifact: the container summary + a contact sheet committed
  *  as the viewed image (the §24 gate — one view artifact, stream
  *  summary + frames the model can SEE). Containment rides the walk's
@@ -187,10 +242,14 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
     // are read from bytes. No ffprobe, no host binary, no subprocess.
     const probe = await probeFile(absPath, row.name, 'film', read);
     // THE TEXT-ONLY OBSERVE ARM: the probe facts are text, so a route
-    // that cannot take an image still gets the observation — and the
-    // contact sheet (the ONLY image-shaped part) is simply not built.
+    // that cannot take an image still gets the observation — unless the
+    // lane seats a seeing route (the delegated eye below), in which
+    // case the contact sheet IS built, for the eye that can see it.
     const capability = await routeImageCapability(ctx, exec, runId);
     if (!capability.capable) {
+        const seen = await delegatedFilmVisual(seat, runId, row, absPath, probe, exec, ctx, attachments, render);
+        if (seen !== null)
+            return seen;
         return {
             runId,
             url: row.url,
@@ -198,28 +257,7 @@ export async function viewFilmArtifact(seat, runId, artifact, exec, ctx, attachm
         };
     }
     const stamps = sheetPlan(probe.duration_s);
-    // THE SHEET IS ENGINE-PRODUCED (the host-binary cure): the
-    // vendored MeliteFrameSheet node decodes the film inside the
-    // engine (PyAV) and composes the tiled sheet as a graph output —
-    // one render call, never four ffmpeg seeks on the host.
-    let data;
-    try {
-        data = await render('MeliteFrameSheet', { video: absPath, stamps: stamps.length, width: 320 }, exec.signal);
-    }
-    catch (error) {
-        throw new Error('cannot view the film "' + row.name + '": the contact sheet could not be built (' + (error instanceof Error ? error.message : String(error)) + ')', { cause: error });
-    }
-    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
-    if (data.byteLength > byteCap) {
-        throw new Error('cannot view the film "' + row.name + '": its contact sheet exceeds the ' + String(byteCap) + '-byte image cap');
-    }
-    let ref;
-    try {
-        ref = await attachments.saveImage({ data, mediaType: 'image/png', name: basename(row.name, extname(row.name)) + '-sheet.png' });
-    }
-    catch (error) {
-        throw new Error('cannot commit the film contact sheet for "' + row.name + '": ' + (error instanceof Error ? error.message : String(error)), { cause: error });
-    }
+    const ref = await commitFilmSheet(attachments, render, row.name, absPath, stamps.length, exec.signal);
     return {
         runId: row.runId,
         url: row.url,
@@ -333,9 +371,9 @@ export async function viewAudioArtifact(seat, runId, artifact, exec, ctx, attach
  *  away and left the maker with local ffprobe as its only observe
  *  arm — the exact gap this door exists to close. So the capability is
  *  REPORTED, and the caller serves the facts in text and names the one
- *  thing it cannot do (the image block). `assertImageCapableRoute`
- *  keeps the strict refusal for the callers that genuinely need pixels
- *  (read_image's own law). */
+ *  thing it cannot do (the image block). The mesh arm keeps the
+ *  strict refusal for the caller that genuinely needs pixels (the
+ *  blind block throws byte-identical to read_image's own law). */
 export async function routeImageCapability(ctx, exec, requestedRun) {
     const routed = exec.agent?.session?.requestHeader?.()?.config;
     const provider = routed?.provider ?? exec.agent?.options?.provider;
@@ -350,23 +388,39 @@ export async function routeImageCapability(ctx, exec, requestedRun) {
         model,
     };
 }
-/** Enforce the strict image-capability gate for the calling route
- * (read_image's assertImageCapableRoute, copied): the session's
- * latest routed provider/model must declare `image` input — unknown
- * capability refuses, it never relies on an adapter failure after
- * the filesystem work. */
-export async function assertImageCapableRoute(ctx, exec, requestedRun) {
-    const routed = exec.agent?.session?.requestHeader?.()?.config;
-    const provider = routed?.provider ?? exec.agent?.options?.provider;
-    const model = routed?.model ?? exec.agent?.options?.model;
+/** THE DELEGATED EYE (the charter's vision-capable route for the
+ *  maker lane, dev_docs/ROADMAP.md): the calling route is blind, so
+ *  the viewing runs through a route that CAN see — the lane's
+ *  declared `MELITE_VIEW_ROUTE` verified image-capable, else the
+ *  first image-capable route in enumeration (the craft critic's
+ *  route law, vision-route.ts). A named-but-blind route throws LOUD
+ *  (explicit means explicit — never a silent substitution, never a
+ *  silent measurement pass); no eye on the lane resolves null and
+ *  the caller serves its labeled measurements instead. A narrow seat
+ *  (a fake exposing resolveModelInfo only) is also null — the old
+ *  walls never grew an enumeration seam. */
+export async function seeingRoute(ctx, exec) {
     const llm = ctx.get('llm');
-    if (provider === undefined || model === undefined || llm === undefined) {
-        throw new Error(`cannot view run "${requestedRun}": the current model route could not be resolved`);
+    if (llm === undefined
+        || typeof llm.listProviders !== 'function'
+        || typeof llm.listModels !== 'function'
+        || typeof llm.resolveModelInfo !== 'function'
+        || typeof llm.stream !== 'function') {
+        return null;
     }
-    const active = await llm.resolveModelInfo(provider, model, exec.signal);
-    if (active.inputModalities === undefined || !active.inputModalities.includes('image')) {
-        throw new Error(`cannot view run "${requestedRun}": model "${model}" does not declare image input; switch to an image-capable model to view artifacts`);
-    }
+    return resolveVisionRoute(llm, viewRoutePreference(), exec.signal);
+}
+/** The file-bytes twin of the eye: resolve, commit, verify. Null
+ *  when the lane seats no eye (the caller serves measurements). */
+export async function delegatedVisual(ctx, exec, image, kind, attachments) {
+    const llm = ctx.get('llm');
+    if (llm === undefined || typeof llm.stream !== 'function')
+        return null;
+    const route = await seeingRoute(ctx, exec);
+    if (route === null)
+        return null;
+    const ref = await attachments.saveImage({ data: image.data, mediaType: image.mediaType, ...(image.name === undefined ? {} : { name: image.name }) });
+    return verifyVisual(llm, route, ref, kind, exec.signal);
 }
 /** THE TEXT OBSERVATION: the film's facts as text — the same numbers
  *  the image route leads with, plus the one honest statement of what
@@ -444,6 +498,43 @@ async function meshBesidePoster(seat, runId, imageName) {
     const hit = models.find((i) => i.name === stem + '.glb' || i.name === stem + '.gltf');
     return hit === undefined ? null : hit.name;
 }
+/** THE MESH POSTER'S DELEGATED EYE: the blind calling route cannot
+ *  take the poster block, but the lane's seeing route can still look
+ *  at it — the verdict rides the structural row as labeled text.
+ *  Null when the lane seats no eye (the caller keeps the strict
+ *  gate's refusal — there is no raster any route could see). */
+async function delegatedMeshPoster(root, runId, poster, exec, ctx, attachments, read, summary, posterName, row) {
+    const llm = ctx.get('llm');
+    if (llm === undefined || typeof llm.stream !== 'function')
+        return null;
+    const route = await seeingRoute(ctx, exec);
+    if (route === null)
+        return null;
+    const posterPath = join(root, 'output', poster.runId, poster.name);
+    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
+    const bytes = await read(posterPath);
+    if (bytes.byteLength > byteCap) {
+        throw new Error('cannot view "' + poster.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry');
+    }
+    const mediaType = sniffImageMediaType(bytes);
+    if (mediaType === undefined) {
+        throw new Error('cannot view the mesh poster "' + poster.name + '": the bytes are not an image '
+            + '(the mesh lane wrote non-image content under the poster name this door mints)');
+    }
+    // The route already resolved above, so the verdict commits
+    // directly (no second resolution — a re-resolve could only repeat
+    // the same answer, and its null arm would be dead code).
+    const ref = await attachments.saveImage({ data: bytes, mediaType, name: basename(poster.name) });
+    const seen = await verifyVisual(llm, route, ref, 'poster', exec.signal);
+    return {
+        runId,
+        url: row.url,
+        textObservation: 'melite_view mesh: ' + row.url + ' (' + meshVoice(summary)
+            + '; poster: ' + posterName
+            + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the poster): ' + seen.verdict + ')',
+        mesh: { ...summary, poster: posterName },
+    };
+}
 /** THE MESH ARM (2026-09-26). A `.glb`/`.gltf` has no raster, so the
  *  door serves the mesh two ways, in this order:
  *
@@ -489,7 +580,22 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
             + 'The 3D lane emits no poster today: read the numbers above, or open the mesh in the app\'s media drilldown, '
             + 'which renders it in 3D. ' + searchedVoice(rootsManifest(seat.stateRoot)));
     }
-    await assertImageCapableRoute(ctx, exec, runId);
+    // THE POSTER'S DELEGATED EYE: the strict gate below refuses a
+    // blind calling route — unless the lane seats a seeing route, in
+    // which case the verdict rides the mesh row as labeled text (the
+    // block itself can never ride a blind chat route, so the mesh row
+    // pairs with a textObservation the same way the still does).
+    const meshCapability = await routeImageCapability(ctx, exec, runId);
+    if (!meshCapability.capable) {
+        const seen = await delegatedMeshPoster(found.root, runId, poster, exec, ctx, attachments, read, summary, posterName, row);
+        if (seen !== null)
+            return seen;
+        throw new Error('cannot view run "' + runId + '": model "' + meshCapability.model + '" does not declare image input; switch to an image-capable model to view artifacts');
+    }
+    // THE GATE STAYS STRICT (re-audit 2026-10-16): the probe above
+    // decided capability, and the blind block already returned or
+    // threw — reaching here means the calling route can take the
+    // poster block, so the arm commits it.
     const posterPath = join(found.root, 'output', poster.runId, poster.name);
     const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
     const bytes = await read(posterPath);
@@ -513,6 +619,112 @@ export async function viewModelArtifact(seat, runId, artifact, exec, ctx, attach
         mesh: { ...summary, poster: posterName },
     };
 }
+/** THE STILL ARM (exported like its film/audio/mesh siblings — the
+ *  suites call it directly): one image artifact observed through the
+ *  walk's own row. A capable calling route gets the committed image;
+ *  a blind route gets the file's facts as labeled text, or the
+ *  lane's seeing route's verdict when the delegated eye resolves
+ *  (the vision-capable route for the maker lane). */
+export async function viewStillArtifact(root, row, runId, exec, ctx, attachments) {
+    // CONTAINMENT BY CONSTRUCTION: the absolute path is built from
+    // the walk's own root + runId + name — caller text never
+    // reaches the filesystem as a path.
+    const absPath = join(root, 'output', row.runId, row.name);
+    const declared = imageMediaTypeForPath(row.name);
+    if (declared !== undefined && !attachments.imageLimits.mediaTypes.includes(declared)) {
+        throw new Error('cannot view "' + row.name + '": ' + declared + ' images are not accepted by this deployment');
+    }
+    // THE TEXT-ONLY OBSERVE ARM (the still's twin): a route that
+    // cannot take an image still gets the file's facts — its sniffed
+    // media type and byte count, which are read from the bytes, not
+    // from a store round-trip — unless the lane seats a seeing
+    // route, in which case the verdict below carries what the eye
+    // saw. The pixels are what this route cannot have, and the
+    // observation says so rather than refusing.
+    const stillCapability = await routeImageCapability(ctx, exec, runId);
+    if (!stillCapability.capable) {
+        const data = await readFile(absPath, { signal: exec.signal });
+        const sniffed = sniffImageMediaType(data);
+        const facts = 'melite_view: ' + row.name + ' (' + String(data.byteLength) + ' bytes, '
+            + (sniffed ?? declared ?? 'format not sniffed')
+            + (declared !== undefined && sniffed !== undefined && declared !== sniffed
+                ? '; the extension declares ' + declared + ' and the BYTES say ' + sniffed + ' — the bytes win'
+                : '');
+        const mediaType = sniffed ?? declared;
+        const seen = mediaType === undefined
+            ? null
+            : await delegatedVisual(ctx, exec, { data, mediaType, name: basename(row.name) }, 'still', attachments);
+        if (seen === null) {
+            return {
+                runId,
+                url: row.url,
+                textObservation: facts
+                    + '; TEXT-ONLY observation — model "' + stillCapability.model
+                    + '" declares no image input, so the file was not attached. The facts above are complete; the picture is what this route cannot have.',
+            };
+        }
+        return {
+            runId,
+            url: row.url,
+            textObservation: facts
+                + '; VISUAL VERIFICATION via ' + seen.via + ' (a seeing route looked at the pixels): ' + seen.verdict,
+        };
+    }
+    const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
+    const data = await readFile(absPath, { signal: exec.signal });
+    if (data.byteLength > byteCap) {
+        throw new Error('cannot view "' + row.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry');
+    }
+    // THE BYTES-ARE-TRUTH LAW (035 attempt-16's gap #5, 2026-09-24):
+    // the signature SNIFF outranks the declared extension — a
+    // receipt reported mediaType image/jpeg for a PNG artifact
+    // when the two seats disagreed. The sniff runs first; the
+    // extension fills only when the bytes match no known
+    // signature; an explicit disagreement still voices the sniff.
+    const sniffed = sniffImageMediaType(data);
+    const mediaType = sniffed ?? declared;
+    if (mediaType === undefined) {
+        throw new Error('cannot view "' + row.name + '": the file content is not a supported image format (PNG/JPEG/WebP/GIF)');
+    }
+    if (declared === undefined && !attachments.imageLimits.mediaTypes.includes(mediaType)) {
+        throw new Error('cannot view "' + row.name + '": ' + mediaType + ' images are not accepted by this deployment');
+    }
+    let ref;
+    try {
+        ref = await attachments.saveImage({ data, mediaType, name: basename(row.name) });
+    }
+    catch (error) {
+        if (!(error instanceof AttachmentError))
+            throw error;
+        if (error.code === 'IMAGE_DIMENSION_TOO_LARGE') {
+            throw new Error('cannot view "' + row.name + '": at least one image side exceeds the ' + String(attachments.imageLimits.maxImageDimension) + 'px limit; downscale the image and view the smaller copy', { cause: error });
+        }
+        if (error.code === 'IMAGE_TOO_MANY_PIXELS') {
+            throw new Error('cannot view "' + row.name + '": the image exceeds the ' + String(attachments.imageLimits.maxImagePixels) + '-pixel decoded-size limit; downscale the image and view the smaller copy', { cause: error });
+        }
+        if (error.code === 'IMAGE_TOO_LARGE') {
+            throw new Error('cannot view "' + row.name + '": the image cannot be stored within the deployment\'s byte limits; downscale the image and view the smaller copy', { cause: error });
+        }
+        if (error.code === 'INVALID_IMAGE' && declared === undefined) {
+            throw new Error('cannot view "' + row.name + '": the bytes do not decode as a supported PNG/JPEG/WebP/GIF image; the file may be truncated or corrupt', { cause: error });
+        }
+        throw error;
+    }
+    const value = {
+        runId: row.runId,
+        url: row.url,
+        image: {
+            attachmentId: ref.attachmentId,
+            mediaType: ref.mediaType,
+            bytes: ref.bytes,
+            width: ref.width,
+            height: ref.height,
+            ...(ref.name === undefined ? {} : { name: ref.name }),
+            ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
+        },
+    };
+    return value;
+}
 /** Build the melite_view tool against the live cordis context (the
  * seats: `attachments` — the durable store, `queue` — the runs tree
  * root owner, `llm` — the route gate; all optional probes, the
@@ -535,7 +747,8 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
             + 'This is the observe arm of the act/observe/decide loop: after a run lands, '
             + 'VIEW it before deciding the next step (never claim a match without viewing). '
             + 'Args: run_id (required, the run directory under the runs tree), artifact (optional substring — when a run '
-            + 'produced several images, name the one to view; default is the newest). Requires the current model to accept image input.',
+            + 'produced several images, name the one to view; default is the newest). On a model that accepts image input the image rides the result; '
+            + 'on a text-only model the observation is measurements as text, or a seeing route\u2019s verdict when the lane seats one — the observation says which.',
         // ParameterSchemaSpec grammar: the map IS the implicit object root.
         parameters: {
             run_id: {
@@ -688,85 +901,7 @@ export function meliteView(ctx, render = defaultMediaSheetRender) {
             // CONTAINMENT BY CONSTRUCTION: the absolute path is built from
             // the walk's own root + runId + name — caller text never
             // reaches the filesystem as a path.
-            const absPath = join(found.root, 'output', row.runId, row.name);
-            const declared = imageMediaTypeForPath(row.name);
-            if (declared !== undefined && !attachments.imageLimits.mediaTypes.includes(declared)) {
-                throw new Error('cannot view "' + row.name + '": ' + declared + ' images are not accepted by this deployment');
-            }
-            // THE TEXT-ONLY OBSERVE ARM (the still's twin): a route that
-            // cannot take an image still gets the file's facts — its sniffed
-            // media type and byte count, which are read from the bytes, not
-            // from a store round-trip. The pixels are what this route cannot
-            // have, and the observation says so rather than refusing.
-            const stillCapability = await routeImageCapability(ctx, exec, runId);
-            if (!stillCapability.capable) {
-                const data = await readFile(absPath, { signal: exec.signal });
-                const sniffed = sniffImageMediaType(data);
-                return {
-                    runId,
-                    url: row.url,
-                    textObservation: 'melite_view: ' + row.name + ' (' + String(data.byteLength) + ' bytes, '
-                        + (sniffed ?? declared ?? 'format not sniffed')
-                        + (declared !== undefined && sniffed !== undefined && declared !== sniffed
-                            ? '; the extension declares ' + declared + ' and the BYTES say ' + sniffed + ' — the bytes win'
-                            : '')
-                        + '; TEXT-ONLY observation — model "' + stillCapability.model
-                        + '" declares no image input, so the file was not attached. The facts above are complete; the picture is what this route cannot have.',
-                };
-            }
-            const byteCap = Math.min(attachments.imageLimits.maxImageBytes, attachments.imageLimits.maxMessageImageBytes);
-            const data = await readFile(absPath, { signal: exec.signal });
-            if (data.byteLength > byteCap) {
-                throw new Error('cannot view "' + row.name + '": the file exceeds the ' + String(byteCap) + '-byte image cap; downscale and retry');
-            }
-            // THE BYTES-ARE-TRUTH LAW (035 attempt-16's gap #5, 2026-09-24):
-            // the signature SNIFF outranks the declared extension — a
-            // receipt reported mediaType image/jpeg for a PNG artifact
-            // when the two seats disagreed. The sniff runs first; the
-            // extension fills only when the bytes match no known
-            // signature; an explicit disagreement still voices the sniff.
-            const sniffed = sniffImageMediaType(data);
-            const mediaType = sniffed ?? declared;
-            if (mediaType === undefined) {
-                throw new Error('cannot view "' + row.name + '": the file content is not a supported image format (PNG/JPEG/WebP/GIF)');
-            }
-            if (declared === undefined && !attachments.imageLimits.mediaTypes.includes(mediaType)) {
-                throw new Error('cannot view "' + row.name + '": ' + mediaType + ' images are not accepted by this deployment');
-            }
-            let ref;
-            try {
-                ref = await attachments.saveImage({ data, mediaType, name: basename(row.name) });
-            }
-            catch (error) {
-                if (!(error instanceof AttachmentError))
-                    throw error;
-                if (error.code === 'IMAGE_DIMENSION_TOO_LARGE') {
-                    throw new Error('cannot view "' + row.name + '": at least one image side exceeds the ' + String(attachments.imageLimits.maxImageDimension) + 'px limit; downscale the image and view the smaller copy', { cause: error });
-                }
-                if (error.code === 'IMAGE_TOO_MANY_PIXELS') {
-                    throw new Error('cannot view "' + row.name + '": the image exceeds the ' + String(attachments.imageLimits.maxImagePixels) + '-pixel decoded-size limit; downscale the image and view the smaller copy', { cause: error });
-                }
-                if (error.code === 'IMAGE_TOO_LARGE') {
-                    throw new Error('cannot view "' + row.name + '": the image cannot be stored within the deployment\'s byte limits; downscale the image and view the smaller copy', { cause: error });
-                }
-                if (error.code === 'INVALID_IMAGE' && declared === undefined) {
-                    throw new Error('cannot view "' + row.name + '": the bytes do not decode as a supported PNG/JPEG/WebP/GIF image; the file may be truncated or corrupt', { cause: error });
-                }
-                throw error;
-            }
-            const value = {
-                runId: row.runId,
-                url: row.url,
-                image: {
-                    attachmentId: ref.attachmentId,
-                    mediaType: ref.mediaType,
-                    bytes: ref.bytes,
-                    width: ref.width,
-                    height: ref.height,
-                    ...(ref.name === undefined ? {} : { name: ref.name }),
-                    ...(ref.originalDimensions === undefined ? {} : { originalDimensions: { ...ref.originalDimensions } }),
-                },
-            };
+            const value = await viewStillArtifact(found.root, row, runId, exec, ctx, attachments);
             return value;
         },
     });

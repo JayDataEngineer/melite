@@ -7,7 +7,10 @@
 //
 //   W1  flat lib doors — every exports target is ./lib/** (manifest M1)
 //   W2  face shape — emit faces extend the typecheck face and stay
-//       on the artifact plane (buildfaces F5, two-plane law)
+//       on the artifact plane (buildfaces F5, two-plane law);
+//       dual-face packages carry Host + Client leaves under a
+//       solution-only root, and no host-plane file voices the
+//       client plane (buildfaces F4)
 //   W4  the facade table is fresh — `build-plane paths --check` exits 0
 //   W5  typecheck faces carry workspace paths rows that point at
 //       real src files (testplane F1/F3)
@@ -15,6 +18,9 @@
 //   W7  workspace:* names a member (workspace audit M4, re-audit R1)
 //   W8  no dangling door — every ./lib target maps back to a source
 //       some face includes (re-audit R5/R6, buildfaces F2)
+//   W9  the family table is real manifests; vendored twins never
+//       shadow the registry — the webserver fork is gone (M3), the
+//       timer seat rides registry 1.1.6 (M7)
 import { describe, it, expect } from 'vitest'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
@@ -134,7 +140,14 @@ describe('W2 — emit face shape (buildfaces audit)', () => {
       if (!existsSync(face)) continue
       const cfg = JSON.parse(readFileSync(face, 'utf8')) as Record<string, unknown>
       const co = (cfg.compilerOptions ?? {}) as Record<string, unknown>
-      if (cfg.extends !== './tsconfig.json') offenders.push(`${pkg.name}: face does not extend ./tsconfig.json`)
+      // DUAL-FACE (the DSH layout law): a package with Host + Client
+      // leaf faces emits its lib from the HOST program — the build
+      // face extends the host leaf. Extending the solution-only root
+      // would emit nothing (it carries no program).
+      const dual = existsSync(join(dir, 'tsconfig.host.json'))
+      const want = dual ? './tsconfig.host.json' : './tsconfig.json'
+      if (cfg.extends !== want) offenders.push(`${pkg.name}: face extends ${String(cfg.extends)} — dual-face packages extend ${want}`)
+      if (dual && !existsSync(join(dir, 'tsconfig.client.json'))) offenders.push(`${pkg.name}: host leaf without a client leaf — the pair is the face`)
       if (co.rootDir !== 'src') offenders.push(`${pkg.name}: main face rootDir "${co.rootDir}" — the flat lib law is rootDir src (M1; lib/src layout is the disease)`)
       if (co.outDir !== 'lib') offenders.push(`${pkg.name}: outDir ${String(co.outDir)}`)
       if (co.noEmitOnError !== true) offenders.push(`${pkg.name}: no noEmitOnError — a red build still emits (buildfaces F3)`)
@@ -160,6 +173,131 @@ describe('W2 — emit face shape (buildfaces audit)', () => {
     }
     expect(offenders, offenders.join('\n')).toEqual([])
   })
+
+  it('dual-face packages carry Host + Client leaves under a solution-only root (F4)', () => {
+    // The reference law: a package with both a Host and a Client
+    // program exposes face-specific leaf configs and a
+    // solution-only root. The root carries no program and no paths
+    // block — the leaves own both — so a root-only tsc is
+    // vacuously green (the typecheck gate judges the leaves).
+    const offenders: string[] = []
+    for (const { dir, pkg } of members()) {
+      const host = join(dir, 'tsconfig.host.json')
+      const client = join(dir, 'tsconfig.client.json')
+      if (!existsSync(host) && !existsSync(client)) continue
+      if (!existsSync(host) || !existsSync(client)) {
+        offenders.push(`${pkg.name}: a lone leaf — the pair is the face`)
+        continue
+      }
+      const root = parseFace(readFileSync(join(dir, 'tsconfig.json'), 'utf8'))
+      if (!Array.isArray(root.files) || root.files.length !== 0) {
+        offenders.push(`${pkg.name}: root is not solution-only (files is not [])`)
+      }
+      const refs = (root.references ?? []).map((r) => r.path).sort()
+      if (JSON.stringify(refs) !== JSON.stringify(['./tsconfig.client.json', './tsconfig.host.json'])) {
+        offenders.push(`${pkg.name}: root references are not exactly the two leaves (${refs.join(', ')})`)
+      }
+      if (root.compilerOptions !== undefined) {
+        offenders.push(`${pkg.name}: solution-only root carries compilerOptions — the leaves own every knob`)
+      }
+      // Both leaves carry the merged facade table (leaves-aware
+      // mergePaths): a leaf with no paths block resolves workspace
+      // rows to nothing.
+      for (const leaf of [host, client]) {
+        const cfg = parseFace(readFileSync(leaf, 'utf8'))
+        if (!cfg.compilerOptions?.paths) offenders.push(`${pkg.name}: ${leaf.split('/').pop()} carries no paths block`)
+      }
+      // The client leaf is the browser face: it keeps the jsx + DOM
+      // program its bundle is built from.
+      const cco = parseFace(readFileSync(client, 'utf8'))
+      if (cco.compilerOptions?.jsx !== 'react-jsx') {
+        offenders.push(`${pkg.name}: client leaf jsx is ${String(cco.compilerOptions?.jsx)} — the browser face stays react-jsx`)
+      }
+      // The lax-triple wall walks tsconfig.json only — a leaf could
+      // turn strict off under it. No leaf turns the triple off.
+      for (const leaf of [host, client]) {
+        const body = readFileSync(leaf, 'utf8')
+        if (/"strict":\s*false/.test(body) || /"strictNullChecks":\s*false/.test(body) || /"noImplicitAny":\s*false/.test(body)) {
+          offenders.push(`${pkg.name}: ${leaf.split('/').pop()} turns the lax triple off`)
+        }
+      }
+      // The package's own typecheck script judges both leaves (a
+      // bare `tsc --noEmit` would judge the vacuous root).
+      const tc = pkg.scripts?.typecheck ?? ''
+      if (!tc.includes('tsconfig.host.json') || !tc.includes('tsconfig.client.json')) {
+        offenders.push(`${pkg.name}: typecheck script does not judge both leaves (${tc})`)
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
+
+  it('no host-plane file imports the client plane or a stylesheet (F4 partition)', () => {
+    // tsc include splits are soft — a host file importing
+    // src/client/** still compiles. The partition is a grep law over
+    // the EMIT program (tsconfig.build.json includes src only —
+    // e2e/test/configs are harness outside the shipped lib): no
+    // host-plane source (src minus src/client) names the client
+    // plane or a .css module.
+    // The scan is scoped to the HOST LEAF'S OWN PROGRAM (its
+    // include/files minus its exclude — files the leaf never covers
+    // are judged by the face that covers them, never here): a
+    // files-based host (card-base: host.ts + spec.ts) does not drag
+    // the client-covered atoms in, and client-covered studio doors
+    // (motion/h3 src/ui/studio, gallery drilldown) are not
+    // host-plane files.
+    const globTest = (pattern: string): ((rel: string) => boolean) => {
+      const esc = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&')
+      const rx = new RegExp('^' + esc.replace(/\*\*/g, '\u0000').replace(/\*/g, '[^/]*').replace(/\u0000/g, '.*') + '$')
+      return (rel: string): boolean => rx.test(rel)
+    }
+    const offenders: string[] = []
+    for (const { dir, pkg } of members()) {
+      const host = join(dir, 'tsconfig.host.json')
+      if (!existsSync(host)) continue
+      const leaf = parseFace(readFileSync(host, 'utf8'))
+      const inc = [...(leaf.include ?? []), ...(leaf.files ?? [])].map(globTest)
+      const exc = (leaf.exclude ?? []).map(globTest)
+      const inHost = (rel: string): boolean => inc.some((t) => t(rel)) && !exc.some((t) => t(rel))
+      const files: string[] = []
+      const walk = (d: string): void => {
+        for (const e of readdirSync(d, { withFileTypes: true })) {
+          if (e.name === 'node_modules') continue
+          const p = join(d, e.name)
+          if (e.isDirectory()) walk(p)
+          else if (/\.(ts|tsx)$/.test(e.name) && !e.name.endsWith('.d.ts')) {
+            const rel = p.slice(dir.length + 1).replace(/\\/g, '/')
+            if (inHost(rel)) files.push(p)
+          }
+        }
+      }
+      walk(dir)
+      const strip = (body: string): string =>
+        body.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|\s)\/\/[^\n]*/g, '$1')
+      for (const f of files) {
+        const body = strip(readFileSync(f, 'utf8'))
+        const specs: string[] = []
+        for (const m of body.matchAll(/(?:import|export)[^'"]*?['"]([^'"]+)['"]/g)) specs.push(m[1])
+        for (const m of body.matchAll(/import\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) specs.push(m[1])
+        for (const s of specs) {
+          if (/(^|\/)client(\/|$)/.test(s) && !s.startsWith('@')) {
+            // bare package rows (@melite/x/client) are facade rows,
+            // not relative-plane crossings — the crossing this law
+            // forbids is a host file reaching INTO a client dir.
+            if (s.startsWith('.')) offenders.push(`${pkg.name}: ${f.split('/').slice(-2).join('/')} reaches into the client plane (${s})`)
+          } else if (s.startsWith('@') && /\/client(\/|$)/.test(s)) {
+            // A host file importing another package's CLIENT door
+            // voices browser-plane bundled sources from the node
+            // program — the door it may voice is the host marker.
+            offenders.push(`${pkg.name}: ${f.split('/').slice(-2).join('/')} imports a client door (${s})`)
+          }
+          if (/\.css(['"]|$)/.test(s)) {
+            offenders.push(`${pkg.name}: ${f.split('/').slice(-2).join('/')} imports a stylesheet (${s})`)
+          }
+        }
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
 })
 
 describe('W4 — the facade table is fresh (one truth)', () => {
@@ -176,7 +314,14 @@ describe('W4 — the facade table is fresh (one truth)', () => {
 /** Faces are JSONC (hand comments survive the surgical merge) — parse
  *  with a string-aware comment stripper, the same shape build-plane.mjs
  *  carries (parseJsonc). */
-function parseFace(text: string): { compilerOptions?: { paths?: Record<string, string[]> } } {
+function parseFace(text: string): {
+  compilerOptions?: { paths?: Record<string, string[]>; jsx?: string; lib?: string[] };
+  files?: string[];
+  references?: Array<{ path?: string }>;
+  include?: string[];
+  exclude?: string[];
+  extends?: string;
+} {
   let out = ''
   let i = 0
   while (i < text.length) {
@@ -194,7 +339,14 @@ function parseFace(text: string): { compilerOptions?: { paths?: Record<string, s
     out += c
     i++
   }
-  return JSON.parse(out) as { compilerOptions?: { paths?: Record<string, string[]> } }
+  return JSON.parse(out) as {
+    compilerOptions?: { paths?: Record<string, string[]>; jsx?: string; lib?: string[] };
+    files?: string[];
+    references?: Array<{ path?: string }>;
+    include?: string[];
+    exclude?: string[];
+    extends?: string;
+  }
 }
 
 describe('W5 — typecheck faces resolve workspace rows to real src', () => {
@@ -274,9 +426,8 @@ describe('W8 — no dangling door (re-audit R5/R6, buildfaces F2)', () => {
   })
 })
 
-describe('W9 — the family table is a table of real manifests (the cycle cure pinned)', () => {
-  it('every FAMILY_PKGS row names a models member, exactly once, and none is missing', () => {
-    const barrel = readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/src/models/families/index.ts'), 'utf8')
+describe('W9 — the family table is a table of real manifests (the cycle cure pinned); vendored twins never shadow the registry (M3/M7)', () => {
+  it('every FAMILY_PKGS row names a models member, exactly once, and none is missing', () => {    const barrel = readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/src/models/families/index.ts'), 'utf8')
     const rows = [...barrel.matchAll(/^\s+"(@melite\/models-[a-zA-Z0-9_-]+)",$/gm)].map((m) => m[1])
     expect(rows.length, 'the string table is the load order — it cannot be empty').toBeGreaterThan(0)
     const dupes = rows.filter((r, i) => rows.indexOf(r) !== i)
@@ -297,5 +448,77 @@ describe('W9 — the family table is a table of real manifests (the cycle cure p
     const engine = JSON.parse(readFileSync(join(ROOT, 'packages/engines/comfyui-cordis/package.json'), 'utf8')) as { dependencies?: Record<string, string> }
     const undeclared = rows.filter((n) => !engine.dependencies?.[n])
     expect(undeclared, `table rows with no dependency declaration (unresolvable at runtime): ${undeclared.join(', ')}`).toEqual([])
+  })
+
+  it('M3: the webserver fork is gone and nothing names it (delete-or-wire receipt)', () => {
+    // The vendored cordis_plugins/webserver carried a forked branch
+    // no face reached; its symbols appeared in zero imports. The
+    // cure is delete-or-wire, not maintain: the fork is absent from
+    // the vendor tier, no manifest declares it, and no face table
+    // resolves it (the four former import-by-name files voice the
+    // registry dsh-client-connection, which needs no row at all).
+    const offenders: string[] = []
+    if (existsSync(join(ROOT, 'vendor', 'cordis_plugins', 'webserver'))) {
+      offenders.push('vendor/cordis_plugins/webserver exists — the dead fork is back')
+    }
+    const needle = 'cordis-plugin-webserver'
+    const walk = (d: string): void => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+        const p = join(d, e.name)
+        if (e.isDirectory()) { walk(p); continue }
+        if (!/\.(ts|tsx|mts|cts|mjs|cjs|js|json|yml|yaml|sh)$/.test(e.name)) continue
+        if (e.name === 'pnpm-lock.yaml') continue
+        if (readFileSync(p, 'utf8').includes(needle)) offenders.push(`${p.replace(ROOT + '/', '')} names the deleted fork`)
+      }
+    }
+    walk(join(ROOT, 'packages'))
+    walk(join(ROOT, 'vendor'))
+    walk(join(ROOT, 'tools'))
+    // the lockfile carries no webserver importer (delete-or-wire's
+    // install half — a stale importer would reinstall the twin)
+    const lock = readFileSync(join(ROOT, 'pnpm-lock.yaml'), 'utf8')
+    if (lock.includes(needle)) offenders.push('pnpm-lock.yaml still carries a webserver importer')
+    expect(offenders, offenders.join('\n')).toEqual([])
+  })
+
+  it('M7: the timer seat resolves to the registry, never the vendored twin', () => {
+    // The timer seat is host-provided (registry 1.1.6, the copy DSH
+    // composes); estate-queue voices only its types. A vendor-src
+    // row would re-split types (vendored 1.1.3) from runtime
+    // (registry 1.1.6). The pin is threefold: the manifest names
+    // the registry, no face table carries a vendor-timer row, and
+    // the facade carries none (vitest resolves through the facade).
+    const offenders: string[] = []
+    const eq = JSON.parse(readFileSync(join(ROOT, 'packages/harness/estate-queue/package.json'), 'utf8')) as {
+      dependencies?: Record<string, string>
+    }
+    const pin = eq.dependencies?.['@deepseek-ai/cordis-plugin-timer']
+    if (pin !== '1.1.6') offenders.push(`estate-queue timer pin is ${String(pin)} — the seat rides registry 1.1.6`)
+    const faces: string[] = []
+    const walkFaces = (d: string): void => {
+      for (const e of readdirSync(d, { withFileTypes: true })) {
+        if (e.name === 'node_modules' || e.name.startsWith('.')) continue
+        const p = join(d, e.name)
+        if (e.isDirectory()) { walkFaces(p); continue }
+        if (/^tsconfig(\..*)?\.json$/.test(e.name)) faces.push(p)
+      }
+    }
+    walkFaces(join(ROOT, 'packages'))
+    for (const f of faces) {
+      const body = readFileSync(f, 'utf8')
+      if (body.includes('cordis_plugins/timer')) {
+        offenders.push(`${f.replace(ROOT + '/', '')} carries a vendor-timer row`)
+      }
+    }
+    const base = readFileSync(join(ROOT, 'tsconfig.base.json'), 'utf8')
+    if (base.includes('cordis_plugins/timer')) offenders.push('tsconfig.base.json carries a vendor-timer row')
+    const facade = JSON.parse(readFileSync(join(ROOT, 'tools/facade-rows.json'), 'utf8')) as Record<string, string[]>
+    for (const [k, v] of Object.entries(facade)) {
+      if (k.includes('cordis-plugin-timer') || v.some((t) => t.includes('cordis_plugins/timer'))) {
+        offenders.push(`facade row ${k} resolves the timer to vendor src`)
+      }
+    }
+    expect(offenders, offenders.join('\n')).toEqual([])
   })
 })

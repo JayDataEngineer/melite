@@ -192,8 +192,13 @@ describe("THE SHIP'S GATE ORDER (build before typecheck, --no-build skipping gat
     // The estate's compiled half must never empty out: a derivation
     // that silently returns nothing would ship a host with no lib.
     for (const p of pkgs) {
-      const ts = read(`${p}/tsconfig.json`);
-      expect(ts, `${p} must pin "noEmitOnError": true`).toContain('"noEmitOnError": true');
+      // DUAL-FACE F4 (2026-10-17): a solution-only root ("files": [],
+      // references only) carries no program — its emit face is
+      // tsconfig.build.json, so THAT is where noEmitOnError must ride.
+      // A single-face package keeps pinning it at the root.
+      const root = read(`${p}/tsconfig.json`);
+      const face = /"files"\s*:\s*\[\s*\]/u.test(root) ? `${p}/tsconfig.build.json` : `${p}/tsconfig.json`;
+      expect(read(face), `${face} must pin "noEmitOnError": true (the emit face)`).toContain('"noEmitOnError": true');
     }
   });
 });
@@ -427,7 +432,12 @@ describe("THE COMMITTED LIB (an emitted import Node can actually resolve)", () =
   const specRe = /(?:from\s*|import\(\s*)(["'])(\.[^"']*)\1/g;
 
   it("the census is real (a wholesale lib deletion cannot green this arm)", () => {
-    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(200);
+    // 166 measured 2026-10-18: the tsdown client consolidation bundled
+    // the per-file node faces into loader-factory client.js artifacts
+    // (lib-sync proves the staged tree IS the build's fixpoint), so
+    // the tracked .js census fell from the tsc-era 200+ — the floor
+    // rides at the consolidated count, not the pruned history's.
+    expect(libFiles.length, "tracked lib .js files").toBeGreaterThanOrEqual(166);
   });
 
   it("no emitted JS names a relative .ts specifier", () => {

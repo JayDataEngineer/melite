@@ -947,4 +947,23 @@ describe("THE AUDIT-ADDED LAWS", async () => {
     }
     expect(offenders, offenders.join("\n")).toEqual([]);
   });
+
+  it("RULE 12 · no exported poser-kit guard without a lane caller (R9 — refusals nothing calls)", () => {
+    // A refusal that currently refuses nothing is dead weight with
+    // a live voice: the law lives in code and is exercised only by
+    // its own spec. Every function blocks/poser-kit.ts exports must
+    // have a non-spec importer outside itself — nonNegative,
+    // strictTransparent and vecShape died here with their arms.
+    const kit = "packages/engines/comfyui-card-kit/src/blocks/poser-kit.ts";
+    const src = readFileSync(kit, "utf8");
+    const fns = [...src.matchAll(/^export function (\w+)/gm)].map((m) => m[1]!);
+    expect(fns.length > 0, "the kit exports no functions — the rule walks nothing").toBe(true);
+    const offenders: string[] = [];
+    for (const fn of fns) {
+      const re = new RegExp(`\\b${fn}\\b`);
+      const owned = SOURCES.some((f) => f !== kit && re.test(readCode(f)));
+      if (!owned) offenders.push(`${fn} — exported by poser-kit with no lane caller (wire it or delete it with its spec)`);
+    }
+    expect(offenders, offenders.join("\n")).toEqual([]);
+  });
 });

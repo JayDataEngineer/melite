@@ -9,11 +9,7 @@
       "default": "./lib/index.js"
     },
     "./client": "./lib/client.js",
-    "./package.json": "./package.json",
-    "./drilldown": {
-      "types": "./lib/drilldown.d.ts",
-      "default": "./lib/drilldown.js"
-    }
+    "./package.json": "./package.json"
   },
   "dsh": {
     "bundle": {
@@ -34,7 +30,7 @@
     "build": "tsc -p tsconfig.build.json",
     "build:mesh-door": "vite build --config e2e/mesh-door/vite.config.mts",
     "test:e2e": "playwright test",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit -p tsconfig.host.json && tsc --noEmit -p tsconfig.client.json"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.4",

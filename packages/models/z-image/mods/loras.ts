@@ -12,6 +12,15 @@
 //
 // Every row carries its upstream source_url — no link, no row.
 // Files land in COMFYUI loras/<filename>.
+//
+// THE MODS FATE (2026-10-17, model-families audit fix 7, option b).
+// These rows are operator-supplied picker vocabulary.
+// They are never auto-provisioned.
+// Their source_url is provenance documentation.
+// It is not a download declaration.
+// The estate never fetches them.
+// The ghost wall proves the split.
+// No mods source_url appears in provisionsByFamily.
 import type { Context } from '@deepseek-ai/cordis'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 

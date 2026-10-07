@@ -467,6 +467,16 @@ export function schema(v) {
         if (b.length)
             throw new Error(`h3_window(t4r): unsanctioned inject keys: ${b.join(', ')}`);
     }
+    // THE STEPS-PIN STAMP (007-H3-LoRA-PLANE L3): whether the caller
+    // pinned steps is a fact only this walk owns (the raw keys —
+    // defaults materialize downstream and the film build can no
+    // longer tell a pinned count from the walked default). The
+    // single-window marriage reads it: an explicit count is the
+    // user's word and the distill default never overwrites it. The
+    // __-prefix internal channel (the film loop's
+    // __iteration/__overlap precedent) — faces project the carrier's
+    // declared knobs only, so no served surface changes.
+    out.__steps_pinned = explicit.has('steps');
     return out;
 }
 // THE TOOL-FACE EXPORTS: the carrier (paramSchema — the same object

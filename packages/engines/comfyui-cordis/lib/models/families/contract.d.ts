@@ -259,6 +259,24 @@ export interface ProvisionRow {
     size_bytes?: number;
 }
 export declare const ProvisionRow: z<ProvisionRow>;
+/** One directory-provision row (the audit's fix 8 channel).
+ *  A single-file ProvisionRow cannot name a whole HF directory.
+ *  This row names one instead: the repo, the pinned revision, and
+ *  the file patterns to fetch.
+ *  `name` is the tree basename the lane loads.
+ *  `folder` is the parent dir under the models root.
+ *  `repo_id` is the upstream repo (owner/name).
+ *  `revision` is the pinned 40-hex commit (never a branch).
+ *  `allow_patterns` names the fetched files (exact paths, or a
+ *  `dir/*` prefix for a whole subtree). */
+export interface SnapshotProvisionRow {
+    name: string;
+    folder: string;
+    repo_id: string;
+    revision: string;
+    allow_patterns: string[];
+}
+export declare const SnapshotProvisionRow: z<SnapshotProvisionRow>;
 /**
  * THE SCHEMA/INTERFACE AGREEMENT (2026-10-10, the census's C3).
  *
@@ -382,6 +400,10 @@ export interface ModelDecl {
     variants: VariantRow[];
     variant_groups?: VariantGroupRow[];
     provisions?: ProvisionRow[];
+    /** Whole HF dirs this family fetches as snapshots.
+     *  Absent = the family fetches no directory (the single-file
+     *  default: every provision names one file). */
+    snapshot_provisions?: SnapshotProvisionRow[];
     /** Weights trees the operator hand-places — no public per-file
      *  URL exists (merged TTS trees, the MOSS-SoundEffect source
      *  tree), so no provisions row can honestly name them; declaring

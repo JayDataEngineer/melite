@@ -514,13 +514,13 @@ test("probeRunGone: a dead list read settles gone", async () => {
   }
 });
 
-// THE FOREIGN-THROW LAW (startRun): a non-Error throw lands as the
-// fallback refusal (never the value past the gesture).
-test("startCardRun converts a foreign throw to the fallback refusal", async () => {
+// THE FOREIGN-THROW LAW (startRun): a non-Error throw lands VERBATIM
+// (the thrower's own words past the gesture, never a fixed fallback).
+test("startCardRun voices a foreign throw verbatim", async () => {
   const fakes = mountEstateFakes({ throws: [{ method: "runs/start", value: "kablam" }] });
   try {
     await expect(startCardRun({ model: "anima", params: {}, draftId: DRAFT }))
-      .resolves.toEqual({ refused: "run request failed" });
+      .resolves.toEqual({ refused: "kablam" });
   } finally {
     fakes.unmount();
   }

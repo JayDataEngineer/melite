@@ -77,9 +77,9 @@ describe("S4a — the real DSH client set is the estate's dependency", () => {
     // are both deliberate edits this list names.
     assert.deepEqual(ATOM_HOSTS.map((h) => h.slice(h.indexOf("packages"))), [
       "packages/3d/img-to-mesh", // the stale exclusion comment died (F-M1): its studio DOES ride the atoms
-      "packages/engines/comfyui/action_cards",
-      "packages/engines/comfyui/action_cards/3d/ui",
-      "packages/engines/comfyui/action_cards/motion/ui",
+      "packages/engines/comfyui/src/action_cards",
+      "packages/engines/comfyui/src/action_cards/3d/ui",
+      "packages/engines/comfyui/src/action_cards/motion/ui",
       "packages/image/mask-studio",
       "packages/motion/motion", // missed by the hand list (F-M1)
       "packages/video/h3-timeline",

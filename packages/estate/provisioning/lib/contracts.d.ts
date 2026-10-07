@@ -88,6 +88,21 @@ export interface ProvisionOperation {
     readonly finishedAt?: number;
     readonly detail?: string;
 }
+/** THE WEIGHT-ACQUISITION PROGRESS (F9 run-press acquisition):
+ *  the live byte count for one weight fetch — the tracker polls
+ *  this, never an animation. bytes counts LANDED bytes on the
+ *  store (counted as the fetcher's stream lands); total is the
+ *  DECL's declared size_bytes sum (0 when no row declares one).
+ *  state mirrors the provisioning record (acquiring while the
+ *  fetch lands, then the terminal operationState). */
+export interface WeightAcquireProgress {
+    readonly operationId: string;
+    readonly ref: ResourceRef;
+    readonly state: ProvisionState;
+    readonly bytes: number;
+    readonly total: number;
+    readonly detail?: string;
+}
 export interface EnsureOptions {
     readonly items?: readonly string[];
     readonly activate?: boolean;

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { execFile, execFileSync } from "node:child_process";
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, basename } from "node:path";
 import { tmpdir } from "node:os";
 import { promisify } from "node:util";
 
@@ -33,12 +33,11 @@ const REPO = join(import.meta.dirname, "..", "..", "..", "..");
 
 
 /** Packages whose sources are NOT TypeScript, so tsc has nothing to
- *  read: the provisioner ships .mjs bin scripts and a cordis patch
- *  manifest. Named here rather than left as a silent gap — a package
- *  that grows a .ts file must delete its name from this list. */
-const NO_TYPESCRIPT_SOURCES: readonly string[] = [
-  "packages/harness/provisioner",
-];
+ *  read. Named here rather than left as a silent gap — a package
+ *  that grows a .ts file must delete its name from this list.
+ *  (The provisioner shipped .mjs bin scripts until the 2026-10-18
+ *  mint batch gave it src/index.ts + lib faces; it left this list.) */
+const NO_TYPESCRIPT_SOURCES: readonly string[] = [];
 
 /** Every package directory the tree declares — a directory under
  *  packages/ that carries a package.json (the same walk the net
@@ -78,15 +77,16 @@ function packageDirs(): string[] {
   return out.filter((d) => existsSync(join(d, "package.json")));
 }
 
-/** One tsc run per package; resolves to "" when clean, else the
- * first lines of the error report. */
-async function typecheck(dir: string): Promise<string> {
+/** One tsc run per package face; resolves to "" when clean, else the
+ * first lines of the error report. The face defaults to the root —
+ * dual-face packages pass their leaf face explicitly. */
+async function typecheck(dir: string, face = "tsconfig.json"): Promise<string> {
   // The compiler is DERIVED (tools/tsc-path.mjs — the workspace's own
   // resolution), never a store path literal: a pinned
   // typescript@x.y.z dangles on the next lockfile bump.
   const tsc = execFileSync(process.execPath, [join(REPO, "tools", "tsc-path.mjs")], { encoding: "utf8" }).trim();
   try {
-    await run("node", [tsc, "--noEmit", "-p", "tsconfig.json"], {
+    await run("node", [tsc, "--noEmit", "-p", basename(face)], {
       cwd: dir,
       timeout: 120_000,
       maxBuffer: 16 * 1024 * 1024,
@@ -100,7 +100,7 @@ async function typecheck(dir: string): Promise<string> {
 }
 
 /** A bounded parallel pool — the sweep stays a wall, not a nap. */
-async function pool<T>(items: string[], worker: (item: string) => Promise<T>, width = 8): Promise<PromiseSettledResult<T>[]> {
+async function pool<T, J>(items: J[], worker: (item: J) => Promise<T>, width = 8): Promise<PromiseSettledResult<T>[]> {
   const results: PromiseSettledResult<T>[] = new Array(items.length);
   let next = 0;
   const lanes = Array.from({ length: Math.min(width, items.length) }, async () => {
@@ -194,15 +194,34 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
   });
 
   it("every package with a tsconfig typechecks clean", async () => {
-    const settled = await pool(dirs, typecheck);
+    // DUAL-FACE (the DSH layout law, 2026-10-17): a solution-only root
+    // (files:[] + references) compiles NOTHING — tsc -p on it is
+    // vacuously green. A package carrying leaf faces
+    // (tsconfig.host.json / tsconfig.client.json) typechecks THROUGH
+    // ITS LEAVES; the root is skipped. A leaf that fails fails the
+    // gate by name, so the split can never hide a red program.
+    const leaves = (dir: string): string[] => {
+      const found: string[] = [];
+      for (const leaf of ["tsconfig.host.json", "tsconfig.client.json"]) {
+        if (existsSync(join(dir, leaf))) found.push(join(dir, leaf));
+      }
+      return found;
+    };
+    const jobs: { dir: string; face: string }[] = [];
+    for (const dir of dirs) {
+      const ls = leaves(dir);
+      if (ls.length > 0) for (const face of ls) jobs.push({ dir, face });
+      else jobs.push({ dir, face: join(dir, "tsconfig.json") });
+    }
+    const settled = await pool(jobs, (j) => typecheck(j.dir, j.face));
     const failures: string[] = [];
-    for (let i = 0; i < dirs.length; i++) {
+    for (let i = 0; i < jobs.length; i++) {
       const r = settled[i];
       if (r === undefined) continue;
       if (r.status === "rejected") {
-        failures.push(`${dirs[i]} — gate error: ${String(r.reason)}`);
+        failures.push(`${jobs[i]?.face} — gate error: ${String(r.reason)}`);
       } else if (r.value !== "") {
-        failures.push(`${dirs[i]}\n${r.value}`);
+        failures.push(`${jobs[i]?.face}\n${r.value}`);
       }
     }
     expect(failures, failures.join("\n\n")).toEqual([]);
@@ -218,7 +237,11 @@ describe.skipIf(DELEGATED)("THE TYPECHECK GATE — every package, every run", ()
     // tsc --noEmit per discovered tsconfig and REFUSE the ship on
     // red (an exit-1 that never fires is a check that says ok).
     expect(script).toMatch(/find .*tsconfig\.json.*-printf '%h\\n'/s);
-    expect(script).toMatch(/\$TSC.*--noEmit.*-p tsconfig\.json/s);
+    // DUAL-FACE (the DSH layout law): the worker judges LEAVES, never
+    // the vacuous solution-only root — a `-p tsconfig.json` literal
+    // here would sail seven green overs over red programs.
+    expect(script).toMatch(/tsconfig\.host\.json.*faces=.*tsconfig\.host\.json tsconfig\.client\.json/s);
+    expect(script).toMatch(/\$TSC.*--noEmit.*-p "\$face"/s);
     expect(script).toMatch(/TCFAIL=1/s);
     expect(script).toMatch(/TCFAIL.*-ne 0[\s\S]*?exit 1/s);
   });

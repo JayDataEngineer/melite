@@ -236,18 +236,29 @@ if ! find "$REPO/packages" -name tsconfig.json -not -path '*/node_modules/*' -pr
   exit 1
 fi
 xargs -r -P 8 -I '{}' bash -c '
-  tsdir="$1"; log="$2/$(printf "%s" "$tsdir" | tr "/" "_").log"
-  if (cd "$tsdir" && node "$3" --noEmit -p tsconfig.json >"$log" 2>&1); then
-    : > "$log.ok"
-  fi
+  tsdir="$1"; stem="$2/$(printf "%s" "$tsdir" | tr "/" "_")"
+  # DUAL-FACE (the DSH layout law): a solution-only root compiles
+  # nothing — a dual-face package is judged through its leaves.
+  faces="tsconfig.json"
+  if [ -f "$tsdir/tsconfig.host.json" ]; then faces="tsconfig.host.json tsconfig.client.json"; fi
+  pass=1
+  for face in $faces; do
+    if ! (cd "$tsdir" && node "$3" --noEmit -p "$face" >"$stem.$face.log" 2>&1); then pass=0; fi
+  done
+  if [ "$pass" -eq 1 ]; then : > "$stem.log.ok"; fi
 ' _ '{}' "$TCDIR" "$TSC" < "$TCDIR/list"
 TCFAIL=0
 TCCOUNT=0
 while IFS= read -r tsdir; do
   TCCOUNT=$((TCCOUNT + 1))
-  if [ ! -f "$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_').log.ok" ]; then
+  stem="$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_')"
+  if [ ! -f "$stem.log.ok" ]; then
     bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — typecheck failed:"
-    head -8 "$TCDIR/$(printf '%s' "$tsdir" | tr '/' '_').log" | sed 's/^/        /'
+    for log in "$stem".tsconfig.*.log; do
+      [ -s "$log" ] || continue
+      echo "        --- $(basename "$log"):"
+      head -8 "$log" | sed 's/^/        /'
+    done
     TCFAIL=1
   fi
 done < "$TCDIR/list"
@@ -435,11 +446,16 @@ if [ "$DO_BUILD" -eq 1 ]; then
   # old POSTCOUNT=0 arm was unreachable for exactly that reason;
   # verifier 30f43307 finding 2, 2026-10-12).
   while IFS= read -r tsdir; do
-    if ! (cd "$tsdir" && node "$TSC" --noEmit -p tsconfig.json >"$POSTDIR/post.log" 2>&1); then
-      bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") — red against the JUST-BUILT libs:"
-      head -8 "$POSTDIR/post.log" | sed 's/^/        /'
-      POSTFAIL=1
-    fi
+    # DUAL-FACE (the DSH layout law): the post-emit net judges leaves too.
+    faces="tsconfig.json"
+    if [ -f "$tsdir/tsconfig.host.json" ]; then faces="tsconfig.host.json tsconfig.client.json"; fi
+    for face in $faces; do
+      if ! (cd "$tsdir" && node "$TSC" --noEmit -p "$face" >"$POSTDIR/post.log" 2>&1); then
+        bad "$(printf '%s' "$tsdir" | sed "s|$REPO/||") [$face] — red against the JUST-BUILT libs:"
+        head -8 "$POSTDIR/post.log" | sed 's/^/        /'
+        POSTFAIL=1
+      fi
+    done
   done < "$POSTDIR/list"
   rm -rf "$POSTDIR"
   if [ "$POSTFAIL" -ne 0 ]; then

@@ -26,6 +26,7 @@ import {
   isEstateRefusal,
   estateRemote, unwrapRemote, type RunsNamespace,
 } from './estate-remote.ts'
+import { rejectionVoice } from './rejection-voice.ts'
 
 /** Every start verb's outcome: the minted run, or the refusal text
  *  (the estate's own voice — never thrown past the gesture). */
@@ -163,7 +164,7 @@ async function startRun(
     if (typeof runId === 'string' && runId !== '') return { runId }
     return { refused: 'run refused: no run_id in the answer' }
   } catch (e) {
-    return { refused: e instanceof Error ? e.message : 'run request failed' }
+    return { refused: rejectionVoice(e) }
   }
 }
 

@@ -26,13 +26,4 @@ export declare function renderGLBViews(g: GraphBuilder, glbPath: OutputHandle, k
 /** Row guard: an inherent amount must be a positive finite number
  *  (zero or negative is nonsense, never a silently clamped render). */
 export declare function positive(name: string, v: unknown): number;
-/** Row guard: a ratio/width must be a non-negative finite number. */
-export declare function nonNegative(name: string, v: unknown): number;
-/** The strict transparent law (skin schema's pinned lax-wire
- *  contract): bool verbatim; "true"/"1"/"yes" and "false"/"0"/"no"
- *  coerce; garbage refuses LOUD, never a silent default. */
-export declare function strictTransparent(v: unknown): boolean;
-/** Row guard: a wire x,y,z string (fit position/rotation) — three
- *  comma parts, each a number, carried VERBATIM into the graph. */
-export declare function vecShape(name: string, v: unknown): string;
 //# sourceMappingURL=poser-kit.d.ts.map

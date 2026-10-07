@@ -699,10 +699,15 @@ export class ComfyUIService extends Service {
                 const stated = typeof e?.strength === 'number' ? e.strength
                     : typeof e?.weight === 'number' ? e.weight : undefined;
                 // steps applied (2026-09-18): a distill adapter's step count
-                // rides the entry when stated — the row's catalog default
-                // seeds it, the sampler honors it when the caller pins
-                // nothing. Unstated stays unstated (a non-distill lora has
-                // no count to claim).
+                // rides the entry — the row's catalog default seeds it, an
+                // explicit claim overrides it, the sampler honors it when
+                // the caller pins no steps of their own. THE STEP-CLAIMING
+                // DISTINCTION (007 L2): ONLY a row that declares steps may
+                // claim or inherit them — a functional (step-less) row
+                // resolves step-LESS even when the entry states a count
+                // (a stated count on such a row is refused nowhere — it is
+                // ignored, never married — so the face can hide the field
+                // for rows that declare none).
                 const steps = typeof e?.steps === 'number' && Number.isFinite(e.steps) ? e.steps : undefined;
                 if (typeof e?.name === 'string' && e.name !== '') {
                     const strength = stated ?? 1.0;
@@ -713,7 +718,18 @@ export class ComfyUIService extends Service {
                 if (row === undefined) {
                     throw new ComposeRefusal('unknown-lora', `card '${cardId}' names lora id '${id}' with no '${modelId}' flavor row (registered: ${cat.rows.map((r) => r.id).join(', ') || 'none'}) — pick from the served catalog, never hand-spell`);
                 }
-                const resolved = row.steps === undefined ? steps : (steps ?? row.steps);
+                const resolved = row.steps === undefined ? undefined : (steps ?? row.steps);
+                // THE ROW DOMAIN (007 L4): steps_min/steps_max are SERVICE
+                // law, not leaf-only — a recipe (or hand payload) may state
+                // any count, but a count outside the row's declared domain
+                // refuses LOUD here, naming the domain (the leaf's range
+                // gate is the face's courtesy; this is the door's).
+                if (resolved !== undefined && (row.steps_min !== undefined || row.steps_max !== undefined)) {
+                    const lo = row.steps_min, hi = row.steps_max;
+                    if ((lo !== undefined && resolved < lo) || (hi !== undefined && resolved > hi)) {
+                        throw new ComposeRefusal('lora-steps-range', `card '${cardId}' lora '${id}' steps = ${resolved} is outside the row's declared domain [${lo ?? '…'}, ${hi ?? '…'}] (row default ${row.steps}) — pick a count inside the domain; the call knob stays free, this is the row's own dial`);
+                    }
+                }
                 const strength = stated ?? row.default_strength ?? 1.0;
                 return resolved === undefined ? { name: row.filename, strength } : { name: row.filename, strength, steps: resolved };
             });
@@ -743,6 +759,12 @@ export class ComfyUIService extends Service {
             const steps = statedSteps ?? row.steps;
             if (steps === undefined) {
                 throw new ComposeRefusal('refine-steps', `refine_lora '${refineId}' declares no step count and refine_steps is unset — the closing pass needs a count (pin refine_steps or pick a row that declares one)`);
+            }
+            // THE ROW DOMAIN (007 L4, the refine half): a stated
+            // refine_steps outside the row's declared domain refuses LOUD
+            // with the domain named — same law as the bag above.
+            if ((row.steps_min !== undefined && steps < row.steps_min) || (row.steps_max !== undefined && steps > row.steps_max)) {
+                throw new ComposeRefusal('refine-steps-range', `card '${cardId}' refine_lora '${refineId}' steps = ${steps} is outside the row's declared domain [${row.steps_min ?? '…'}, ${row.steps_max ?? '…'}] (row default ${row.steps}) — pick a count inside the domain`);
             }
             merged.refine = { name: row.filename, strength: statedStrength ?? row.default_strength ?? 1.0, steps };
         }

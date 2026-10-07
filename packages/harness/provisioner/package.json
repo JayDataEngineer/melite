@@ -4,8 +4,30 @@
   "private": true,
   "description": "Vanilla-DSH provisioner for the inference.cpp media stack: one bundle mounts the estate row (in-process seats, no second process), the tool surface, the card view/deck, media previews, and the runs gallery \u2014 and the infer-provision bin renders ready-to-boot profiles (inference / headless / estate / melite-test) into any DSH_HOME.",
   "type": "module",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "lib/index.js",
+    "lib/**/*.js",
+    "lib/**/*.d.ts",
+    "bin/infer-provision.mjs",
+    "cordis.patch.yml"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
   "bin": {
     "infer-provision": "./bin/infer-provision.mjs"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.0",
+    "typescript": "^5.9.3"
   },
   "dependencies": {
     "@deepseek-ai/dsh-llm-pi-ai": "0.2.0-rc.2",

@@ -1049,15 +1049,24 @@ function renderH3Window(
       }).out(0)
     }
   } else {
-    // t4 families: chunked chain rides lora, switch picks SLA-direct
-    // vs ModelAttentionBackend. The pin autofills the builder adds
-    // (lora_ui, the SeedVR2 tile/offload inputs) are stripped by the
-    // finalize pass — the python's _T4_AUTOFILL_STRIP mirror.
-    const loraModel = g.node('LTX_lora_loader', {
-      model: chunked, mode: 'minimax', stack_data: loraStack,
-    }).out()
+    // t4 families: the SLA/attention switch rides ABOVE the LoRA
+    // loader (the t4r mirror — L1: the old order stacked the loader
+    // under the chunked branch only, so sla_enabled=true (the
+    // default) picked the bare SLA model and every bagged LoRA
+    // silently did nothing while the steps marriage still fired).
+    // The switch picks the attention strategy — SLA-direct vs the
+    // backend-pinned chunked chain — and ONE loader applies the bag
+    // over the pick; the fix-up + shift ride the loaded model on
+    // both arms, so no arm bypasses the loader. The backend node
+    // stays on the dense branch (pre-switch): it configures that
+    // branch's attention implementation, and routing the
+    // SLA-patched model through it would risk clobbering the sparse
+    // kernels — the switch selects the strategy, the loader samples
+    // whichever won. The pin autofills the builder adds (lora_ui,
+    // the SeedVR2 tile/offload inputs) are stripped by the finalize
+    // pass — the python's _T4_AUTOFILL_STRIP mirror.
     const mab = g.node('ModelAttentionBackend', {
-      model: loraModel,
+      model: chunked,
       // schema-defaulted knob (the vocabulary door guarantees the
       // field — 'comfy kitchen attention' when the caller stays
       // silent; no compose-side fallback arm to keep alive)
@@ -1072,7 +1081,10 @@ function renderH3Window(
       // the fallback arms were unreachable lies.
       switch: p.sla_enabled as boolean, on_true: sla, on_false: mab,
     }).out()
-    const adaln = g.node('H3AdaLNLoRAFix', { model: picked, mode: 'port' }).out()
+    const loraModel = g.node('LTX_lora_loader', {
+      model: picked, mode: 'minimax', stack_data: loraStack,
+    }).out()
+    const adaln = g.node('H3AdaLNLoRAFix', { model: loraModel, mode: 'port' }).out()
     sigmaModel = g.node('MiniMaxH3SigmaShift', {
       model: adaln, shift_video: shiftVideo, shift_audio: p.shift_audio as number,
     }).out()
@@ -1473,12 +1485,23 @@ export const film: ComfyActionSpec<Record<string, unknown>, H3Facts> = {
       )
     }
     // LORA STEPS APPLIED (2026-09-18): the single-window shape
-    // honors the distill bag's steps the same way (no knob layer
-    // here — the entry's steps IS the user's word).
+    // honors the distill bag's steps — ONE STEPS LAW for both
+    // window paths (007 L3, the film path's verbatim): the marriage
+    // fires only when the caller pinned no steps of their own. The
+    // doc face reads the schema's __steps_pinned stamp (a walked
+    // default is not a pin); the call face reads the single call's
+    // knobs (the film path's own `knobs.steps === undefined` arm).
+    // An explicit count is the user's word — the distill default
+    // never overwrites it.
     if (Array.isArray(p.loras)) {
       const rows = p.loras as Array<Record<string, unknown>>
       const applied = rows.map((r) => r.steps).filter((v): v is number => typeof v === 'number' && Number.isFinite(v))
-      if (applied.length > 0) p.steps = Math.max(...applied)
+      const singleKnobs = docCalls !== null && (docCalls as unknown[]).length === 1
+        ? (((docCalls as Array<Record<string, unknown>>)[0]!.knobs ?? {}) as Record<string, unknown>)
+        : {}
+      if (applied.length > 0 && p.__steps_pinned !== true && singleKnobs.steps === undefined) {
+        p.steps = Math.max(...applied)
+      }
     }
     return renderH3Window(p, g, facts).savePassthrough!
   },

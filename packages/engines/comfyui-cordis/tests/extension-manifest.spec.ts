@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import { IMPACT_PACKS } from "@melite/comfyui-card-kit/impact";
 import { loadCardDefs } from "../src/cardDefs.ts";
 import {
+  EXT_KEYS,
   findNodesYaml,
   loadExtensionsYaml,
   mergeManifest,
@@ -37,7 +38,7 @@ const pins = {
       "numpy",
       "dill",
       "matplotlib",
-      "git+https://github.com/facebookresearch/sam2",
+      "git+https://github.com/facebookresearch/sam2@2b90b9f5ceec907a1c18123530e92e794ad901a4",
     ],
     nodeTypes: [
       "BboxDetectorSEGS",
@@ -242,5 +243,42 @@ describe("THE PIN LAW (the extensions law, 2026-10-15)", () => {
         `${name}: the manifest pins ${ref.slice(0, 8)} but .gitmodules vendors ${vendored.slice(0, 8)}`,
       );
     }
+  });
+
+  it("every git+https pip entry carries an @<sha> pin (R8 — the pip leg lands no .git either)", () => {
+    // The manifest header's pin law is about the pack url; the pip
+    // leg lands no .git the same way, so urlInstalled can never
+    // verify an unpinned pip git requirement. Every git+https entry
+    // in every yaml pip list names its commit.
+    const offenders: string[] = [];
+    for (const { row, path } of declarations) {
+      for (const entry of row.pip ?? []) {
+        if (!entry.startsWith("git+https://")) continue;
+        const at = entry.lastIndexOf("@");
+        const sha = at === -1 ? "" : entry.slice(at + 1);
+        if (!/^[0-9a-f]{40}$/.test(sha)) {
+          offenders.push(`${path} [${row.name}]: pip entry ${entry} carries no @<40-hex> pin`);
+        }
+      }
+    }
+    assert.deepEqual(offenders, []);
+  });
+
+  it("every manifest key is set by at least one row (R7 — no dead keys)", () => {
+    // A key no row sets is a dead field with dead branches behind
+    // it (ExtRow.registry: required, populated by zero rows,
+    // gating install's registry-branch). The allowed-key set stays
+    // exactly the keys rows actually carry.
+    const seen = new Set<string>();
+    for (const { row } of declarations) {
+      for (const [key, value] of Object.entries(row)) {
+        if (key === "_source") continue;
+        if (Array.isArray(value) ? value.length > 0 : value !== "" && value !== undefined) {
+          seen.add(key);
+        }
+      }
+    }
+    const dead = [...EXT_KEYS].filter((key) => !seen.has(key));
+    assert.deepEqual(dead, [], `manifest keys no row sets (dead fields): ${dead.join(", ")}`);
   });
 });

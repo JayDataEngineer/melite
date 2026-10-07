@@ -9,6 +9,6 @@ extensions:
   # ("divergent pins for melite-poser-nodes"), 0 entries served.
   - name: melite-poser-nodes
     url: https://github.com/JayDataEngineer/melite-poser-nodes
-    ref: bf268458600c702c71e2d80b7acda33229c08de0
+    ref: 0b8941ff47d1bff3b982f0bb94503e5eb40fce04
     required: true
     desc: The character-assembly engine room (the ANNY stopgap pack) — CompositeCharacter (body+hair+outfit), RayRenderGLBViews (8-view turnaround), RaySAMSegmentHairClothing (SAM vit_b part sprites).

@@ -35,6 +35,7 @@
  * this barrel's css faces, which node cannot execute.
  */
 export * from './spec.ts'
+export * from './rejection-voice.ts'
 export * from './layout.tsx'
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.tsx'
 export * from './mods.tsx'

@@ -105,20 +105,31 @@ describe('runRescueCall (names only, the one wire)', () => {
     expect(spy).toHaveBeenCalledWith('install_extension', { nodes: ['SomePack'] })
   })
 
-  it('a model rescue posts provision_model with the FAMILY id (never a URL)', async () => {
-    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { state: 'active', restart_required: false } })
+  it('a model rescue posts acquire_weight with the FAMILY id (never a URL)', async () => {
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'downloaded: 2', data: { operation_id: 'op-1', state: 'active', bytes: 2, total: 2 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.safetensors' }, 'h3-timeline')).resolves.toEqual({ detail: 'downloaded: 2', restartRequired: false })
-    expect(spy).toHaveBeenCalledWith('provision_model', { model: 'h3-timeline' })
+    expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'h3-timeline', file: 'x.safetensors' })
   })
 
   it('uses an explicit model target over the stage fallback', async () => {
-    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed' })
+    const spy = vi.fn().mockResolvedValue({ ok: true, detail: 'installed', data: { operation_id: 'op-2', state: 'active', bytes: 5, total: 5 } })
     vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'model', file: 'x.bin', target: 'mask' }, 'family')).resolves.toEqual({ detail: 'installed', restartRequired: false })
-    expect(spy).toHaveBeenCalledWith('provision_model', { model: 'mask' })
+    expect(spy).toHaveBeenCalledWith('acquire_weight', { model: 'mask', file: 'x.bin' })
+  })
+
+  it('a model start that is still acquiring polls the SAME door by operation id', async () => {
+    const spy = vi.fn()
+      .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-poll', state: 'acquiring', bytes: 1, total: 4 } })
+      .mockResolvedValueOnce({ ok: true, detail: 'acquiring x', data: { operation_id: 'op-poll', state: 'active', bytes: 4, total: 4 } })
+    vi.doMock('@melite/card-base/client', () => ({ postManageAction: spy }))
+    const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'acquiring x', restartRequired: false })
+    expect(spy).toHaveBeenNthCalledWith(1, 'acquire_weight', { model: 'fam', file: 'x.safetensors' })
+    expect(spy).toHaveBeenNthCalledWith(2, 'acquire_weight', { operation_id: 'op-poll' })
   })
 
   it('reads restart_required from manage action data', async () => {
@@ -147,11 +158,13 @@ describe('runRescueCall (names only, the one wire)', () => {
 
   it('a reply with no detail line still answers honest defaults (both kinds)', async () => {
     vi.doMock('@melite/card-base/client', () => ({
-      postManageAction: vi.fn().mockResolvedValue({ ok: true }),
+      postManageAction: vi.fn()
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: true, data: { operation_id: 'op-d', state: 'active', bytes: 7, total: 7 } }),
     }))
     const { runRescueCall: call } = await import('../src/client/run-rescue-core.ts')
     await expect(call({ kind: 'extension', pack: 'P' }, '')).resolves.toEqual({ detail: 'P installed', restartRequired: false })
-    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam provisioned', restartRequired: false })
+    await expect(call({ kind: 'model', file: 'x.safetensors' }, 'fam')).resolves.toEqual({ detail: 'fam acquired (7/7 bytes)', restartRequired: false })
   })
 
   it('a detail-less refusal still names itself', async () => {

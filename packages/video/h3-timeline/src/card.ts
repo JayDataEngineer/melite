@@ -224,12 +224,14 @@ export function registerCard(ctx: Context, comfy: ComfyUIService): void {
       // (calls, audio_clips, keyframes, refs, document), the lora
       // bag, the per-window fences, the derive keys (variant,
       // quant, recipe, refine — refine is injected by the door
-      // AFTER this walk) and the context prefix class (ctx_* — the
-      // compat law's own list at schema.ts names it; motion_* is
-      // gone: no reader, no producer, no draft carries it).
+      // AFTER this walk), the schema's __steps_pinned stamp (007
+      // L3 — the walk's own explicit-steps fact, read by the film
+      // build's single-window marriage) and the context prefix class
+      // (ctx_* — the compat law's own list at schema.ts names it;
+      // motion_* is gone: no reader, no producer, no draft carries it).
       p = gatedResolve('h3-timeline', schemaFn, [
         'calls', 'audio_clips', 'keyframes', 'fps', 'audio_stem', 'document', 'loras',
-        'refs', 'variant', 'quant', 'recipe', 'refine', 'model', 'ctx_*',
+        'refs', 'variant', 'quant', 'recipe', 'refine', 'model', '__steps_pinned', 'ctx_*',
       ], gateInput)
       // THE SINGLE-CALL LIFT runs FIRST (the guard below reads the
       // lifted anchor): a one-call doc's row IS the window — its

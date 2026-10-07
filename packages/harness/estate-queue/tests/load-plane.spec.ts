@@ -325,8 +325,8 @@ describe("loadCard", () => {
     // presence rides every hint (present for fam-a, absent for
     // ghost-fam — the LLM sees the machine truth at load time)
     assert.deepEqual(b["model_hints"], [
-      { id: "fam-a", label: "A", description: "first", present: true },
-      { id: "ghost-fam", label: "G", description: "", present: false },
+      { description: "first", present: true },
+      { description: "", present: false },
     ]);
     // THE PACK HINTS (stroke 18): the card's declared extension
     // packs serve presence-marked — this fixture's DEF carries no
@@ -353,7 +353,7 @@ describe("loadCard", () => {
       },
     };
     const b = loadCard(REPO, cardsLocal as never, modelsLocal as never, "image-gen");
-    assert.deepEqual(b["model_hints"], [{ id: "local-fam", label: "Local", description: "", present: true }]);
+    assert.deepEqual(b["model_hints"], [{ description: "", present: true }]);
   });
 
   it("pack_hints carry the declared packs with the gate's presence marks", () => {

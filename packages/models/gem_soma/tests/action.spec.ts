@@ -67,6 +67,13 @@ describe("the soma rig action — byte-stability (the compatibility law)", () =>
     );
   });
 
+  it("the fbx arm holds the golden (the Unity import door)", () => {
+    const graph = compose({ ...PARAMS, file_format: "fbx" });
+    assertGraphGolden(golden("soma-rig-fbx"), graph, "the fbx arm");
+    const exportNode = graph["KimodoExportFBX.0"]!;
+    assert.equal(exportNode.inputs.file_format, "fbx", "fbx out — the node converts through headless Blender");
+  });
+
   it("the weightless door parses anything (absent ≡ {} — nothing can drift)", () => {
     assert.deepEqual(parseSomaRigFacts({}), {});
     assert.deepEqual(parseSomaRigFacts({ unet: "whatever" }), {}, "unknown keys ride unvalidated");

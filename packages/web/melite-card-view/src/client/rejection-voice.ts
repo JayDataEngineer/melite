@@ -1,12 +1,10 @@
-/** The voice for a caught rejection, lossless by the estate's
- * failureText law (cards-resource-open.spec): an Error speaks its
- * message; any other thrown value (the transport fakes speak plain
- * strings) surfaces verbatim, never a fixed fallback that masks the
- * thrower's words. One voice for every catch face in this package —
- * the silent-fallback audit's dead-fallback family folds here. */
-export function rejectionVoice(e: unknown): string {
-  return e instanceof Error ? e.message : String(e)
-}
+/** Re-export shim (R4 unmask): rejectionVoice lives at its home
+ *  door now — `@melite/card-base/client` voices every catch face in
+ *  the estate through one lossless function — and this module keeps
+ *  the package's thirty-seven call sites untouched. refusalVoice
+ *  stays card-view-local: it voices refused HTTP responses, a
+ *  card-view transport concern card-base never touches. */
+export { rejectionVoice } from '@melite/card-base/client'
 
 /** The voice for a refused HTTP response, the same lossless law: a
  * JSON body's error field speaks itself; any other body names the

@@ -11,6 +11,7 @@ import { createHash } from "node:crypto";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import {cardPackages, emitModifierKinds, emitParamsSchema, getModel, modelsService, theService} from "@melite/comfyui-cordis";
+import { semanticModelEntries } from "@melite/comfyui-cordis/semanticModelKnob";
 import type { ModelsService } from "@melite/comfyui-cordis";
 import { laneContractsFor, type LaneContractDecl } from "@melite/contracts/laneRelations";
 import type { CardRegistryService } from "./cardsRegistry.ts";
@@ -124,9 +125,23 @@ export function toolRowFor(
 ): Record<string, unknown> {
   const base = rows.get(id);
   if (base === undefined) throw new Error(`disclose: no tool row for card '${id}'`);
+  // The model knob serves the same style entries as the base row.
+  // An unresolvable boarded id keeps the bare boarded enum.
+  let semantic: ReturnType<typeof semanticModelEntries> | undefined;
+  try {
+    const decls = [];
+    for (const fam of def.boarded) decls.push(getModel(fam));
+    const entries = semanticModelEntries(decls);
+    if (entries.length > 0) semantic = entries;
+  } catch {
+    // A missing DECL keeps the bare fallback.
+    // The compose door refuses it loud with its own voice.
+    semantic = undefined;
+  }
   const paramsSchema = emitParamsSchema(
     ((def as { schemaCarrier?: unknown }).schemaCarrier ?? def.schema) as Parameters<typeof emitParamsSchema>[0],
     def.boarded,
+    semantic,
   );
   // THE MODS PROJECTION (stroke 79): one emitter (emitModifierKinds
   // — the same SSOT the /v1/tools manifest row serves), so the load
@@ -395,7 +410,9 @@ export function loadCard(
         present = false;
       }
     }
-    hints.push({ id: d.id, label: d.label, description: d.description, present });
+    // The served hint carries presence only.
+    // Labels live in the semantic knob now.
+    hints.push({ description: d.description, present });
   }
   // THE PACK HINTS (the no-silent-drop law's extension half,
   // stroke 18): the card's declared extension packs (flat requires +

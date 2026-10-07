@@ -137,10 +137,10 @@ const visualExec = {
 }
 
 /** A route the host cannot resolve: no session header and no options
- *  provider/model — the shape assertImageCapableRoute refuses on
- *  (the re-audit, 2026-10-16: the mesh arm is its only caller, so its
- *  unresolvable-route throw was unreachable from any mesh spec — every
- *  one of them passes the full route header). */
+ *  provider/model — the shape the mesh arm's strict gate refuses on
+ *  (the re-audit, 2026-10-16: the capability probe voices it before
+ *  any byte is committed — every other spec passes the full route
+ *  header). */
 const unroutableExec = {
   signal: AbortSignal.timeout(2000),
   agent: { options: {} },

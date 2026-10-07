@@ -35,6 +35,7 @@
  * this barrel's css faces, which node cannot execute.
  */
 export * from './spec.js';
+export * from './rejection-voice.js';
 export * from './layout.js';
 export { WirePickerModal, type WirePickerModalProps } from './wirePicker.js';
 export * from './mods.js';

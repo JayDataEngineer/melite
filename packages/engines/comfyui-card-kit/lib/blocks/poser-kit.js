@@ -43,38 +43,6 @@ export function positive(name, v) {
     }
     return v;
 }
-/** Row guard: a ratio/width must be a non-negative finite number. */
-export function nonNegative(name, v) {
-    if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) {
-        throw new Error(`${name} = ${show(v)}: negative is nonsense (never silently clamped)`);
-    }
-    return v;
-}
-/** The strict transparent law (skin schema's pinned lax-wire
- *  contract): bool verbatim; "true"/"1"/"yes" and "false"/"0"/"no"
- *  coerce; garbage refuses LOUD, never a silent default. */
-export function strictTransparent(v) {
-    if (typeof v === 'boolean')
-        return v;
-    if (typeof v === 'string') {
-        const s = v.trim().toLowerCase();
-        if (s === 'true' || s === '1' || s === 'yes')
-            return true;
-        if (s === 'false' || s === '0' || s === 'no')
-            return false;
-    }
-    throw new Error(`transparent = ${show(v)}: true | false`);
-}
-/** Row guard: a wire x,y,z string (fit position/rotation) — three
- *  comma parts, each a number, carried VERBATIM into the graph. */
-export function vecShape(name, v) {
-    const raw = typeof v === 'string' ? v : '';
-    const parts = raw.split(',');
-    if (parts.length !== 3 || parts.some((p) => p.trim() === '' || !Number.isFinite(Number(p.trim())))) {
-        throw new Error(`${name} = ${show(raw)}: want x,y,z`);
-    }
-    return raw;
-}
 function show(v) {
     const s = JSON.stringify(v);
     return s === undefined ? String(v) : s;

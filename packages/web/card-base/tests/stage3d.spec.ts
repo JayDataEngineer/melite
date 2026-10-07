@@ -22,13 +22,13 @@ test('THE CONTEXT-FAILURE CONTRACT: the sink voices three\'s own message', () =>
   expect(seen).toEqual(['Error creating WebGL context.'])
 })
 
-test('THE CONTEXT-FAILURE CONTRACT: a context that dies non-Error voices the fallback (never empty)', () => {
+test('THE CONTEXT-FAILURE CONTRACT: a context that dies non-Error voices the throw (never empty)', () => {
   vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
     throw 'context-gone'
   })
   const seen: string[] = []
   expect(mountStage3D(document.createElement('canvas'), { onContextFailure: (m) => { seen.push(m) } })).toBeNull()
-  expect(seen).toEqual(['WebGL unavailable'])
+  expect(seen).toEqual(['context-gone'])
 })
 
 test('THE LABEL SPRITE: context-free — the sprite seats with the canvas aspect even when 2d is absent', () => {

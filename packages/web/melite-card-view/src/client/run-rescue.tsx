@@ -1,22 +1,61 @@
 /**
  * run-rescue.tsx — the run-gate rescue's face (roadmap item 4): the
- * banner that renders under a failed run's error WHEN the miss is
- * rescueable — a missing extension pack or a missing model file —
- * offering ONE confirm that routes through the manage seat and
- * re-offers the run. THE LINKS-IN-CODE LAW: names only, the DECL
- * owns every URL server-side (run-rescue-core.ts's header).
+ * rescue that renders where a failed run's error lands WHEN the miss
+ * is rescueable — a missing extension pack or a missing model file.
+ * THE LINKS-IN-CODE LAW: names only, the DECL owns every URL
+ * server-side (run-rescue-core.ts's header).
  *
- * Mounts where the failure carry already lands (cards-tab-body's
- * runError faces); inert — renders null — for every non-rescueable
- * error. The user's run press stays the only run starter: the
- * banner offers the INSTALL, and the re-run rides the caller's own
- * onRun (never an automatic re-fire).
+ * TWO FACES: an extension miss keeps the inline banner (one confirm
+ * through install_extension); a model miss opens the WEIGHT POPUP —
+ * the F9 run-press acquisition seat — with a Download button and a
+ * live bytes/total tracker. The Download press rides acquire_weight
+ * (ONE door with the agent's comfy_manage seat: one door, two
+ * callers); the tracker polls the SAME action with the operation id.
+ * The re-run rides the caller's own onRun (never an automatic
+ * re-fire).
  */
 import { createElement as h, useState } from 'react'
+import { Modal } from '@deepseek-ai/dsh-client-ui-primitives'
 import { postManageAction } from '@melite/card-base/client'
 import css from './card.module.css'
-import { cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult } from './run-rescue-core.ts'
+import { ACQUIRE_TERMINAL, acquireWeightPoll, acquireWeightStart, cardOfStages, familyOfStages, parseRescue, runRescueCall, type RescueResult, type WeightAcquireState } from './run-rescue-core.ts'
 import { rejectionVoice } from './rejection-voice.ts'
+
+function delayMs(ms: number): Promise<void> {
+  return new Promise((resolve) => { setTimeout(resolve, ms) })
+}
+
+function progressPercent(bytes: number, total: number): number {
+  if (!(total > 0) || !(bytes >= 0)) return 0
+  return Math.min(100, Math.round((bytes / total) * 100))
+}
+
+/** THE TRACKER FACES (the popup's download ledger): the live
+ *  bytes/total line plus the meter fill, rendered both mid-flight
+ *  and on the done face — the terminal count stays visible, never
+ *  unmounting at completion. Null when no fetch has started. */
+function trackerFaces(acquire: WeightAcquireState | null): Array<ReturnType<typeof h>> {
+  if (acquire === null) return []
+  const pct = progressPercent(acquire.bytes, acquire.total)
+  return [
+    h('p', { 'data-testid': 'weight-progress', className: css.rescueNote },
+      String(acquire.bytes) + '/' + String(acquire.total) + ' bytes (' + String(pct) + '%)',
+    ),
+    h('div', {
+      role: 'progressbar',
+      'aria-valuemin': 0,
+      'aria-valuemax': acquire.total,
+      'aria-valuenow': acquire.bytes,
+      'data-testid': 'weight-meter',
+      style: { height: '8px', borderRadius: '4px', background: 'rgba(127,127,127,.25)', overflow: 'hidden' },
+    },
+      h('span', {
+        'data-testid': 'weight-meter-fill',
+        style: { display: 'block', height: '100%', width: String(pct) + '%', background: 'currentColor' },
+      }),
+    ),
+  ]
+}
 
 export function RunRescue({ error, stages, onRun }: {
   error: string
@@ -31,6 +70,8 @@ export function RunRescue({ error, stages, onRun }: {
   const [restarting, setRestarting] = useState(false)
   const [restarted, setRestarted] = useState(false)
   const [note, setNote] = useState<string | null>(null)
+  const [acquire, setAcquire] = useState<WeightAcquireState | null>(null)
+  const [dismissed, setDismissed] = useState(false)
   if (rescue === null) return null
   // THE PROVISION TARGET (the mask SAM2 law): the model family
   // first (the run shot a family); the stage's card id second
@@ -46,57 +87,153 @@ export function RunRescue({ error, stages, onRun }: {
   const what = rescue.kind === 'extension'
     ? 'extension pack "' + rescue.pack + '"'
     : 'model file "' + rescue.file + '"' + (target !== '' ? ' (' + targetKind + target + ')' : '')
-  if (done !== null) {
-    if (done.restartRequired) {
-      if (restarted) {
-        return h('div', { className: css.rescue },
-          h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active. Reload the page or engine, then press Run.'),
-        )
-      }
+
+  const restartFace = (detail: string): ReturnType<typeof h> => {
+    if (restarted) {
       return h('div', { className: css.rescue },
-        h('p', { className: css.rescueNote }, done.detail + ' — restart required before activation.'),
-        h('button', {
-          className: css.rescueBtn,
-          type: 'button',
-          disabled: restarting,
-          onClick: () => {
-            setRestarting(true)
-            setNote(null)
-            postManageAction('restart', {}).then((reply) => {
-              if (!reply.ok) throw new Error(reply.detail ?? 'restart refused')
-              setRestarting(false)
-              setRestarted(true)
-            }).catch((e: unknown) => {
-              setRestarting(false)
-              setNote(rejectionVoice(e))
-            })
-          },
-        }, restarting ? 'Restarting…' : 'Restart to activate'),
-        restarting ? h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active.') : null,
-        note !== null ? h('p', { className: css.rescueErr }, note) : null,
+        h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active. Reload the page or engine, then press Run.'),
       )
     }
     return h('div', { className: css.rescue },
-      h('p', { className: css.rescueNote }, done.detail + ' — run again when ready.'),
+      h('p', { className: css.rescueNote }, detail + ' — restart required before activation.'),
+      h('button', {
+        className: css.rescueBtn,
+        type: 'button',
+        disabled: restarting,
+        onClick: () => {
+          setRestarting(true)
+          setNote(null)
+          postManageAction('restart', {}).then((reply) => {
+            if (!reply.ok) throw new Error(reply.detail ?? 'restart refused')
+            setRestarting(false)
+            setRestarted(true)
+          }).catch((e: unknown) => {
+            setRestarting(false)
+            setNote(rejectionVoice(e))
+          })
+        },
+      }, restarting ? 'Restarting…' : 'Restart to activate'),
+      restarting ? h('p', { className: css.rescueNote }, 'Restarting… waiting for the engine to become active.') : null,
+      note !== null ? h('p', { className: css.rescueErr }, note) : null,
+    )
+  }
+
+  const doneFace = (result: RescueResult): ReturnType<typeof h> => {
+    if (result.restartRequired) return restartFace(result.detail)
+    return h('div', { className: css.rescue },
+      h('p', { className: css.rescueNote }, result.detail + ' — run again when ready.'),
       h('button', { className: css.rescueRun, type: 'button', onClick: onRun }, 'Run again'),
     )
   }
-  return h('div', { className: css.rescue },
-    h('p', { className: css.rescueNote },
-      'Missing ' + what + ' — install through the manage seat?'),
-    h('button', {
-      className: css.rescueBtn,
-      type: 'button',
-      disabled: busy || (rescue.kind === 'model' && target === ''),
-      title: rescue.kind === 'model' && target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'install via /v1/manage (the declaration owns the URL)',
-      onClick: () => {
-        setBusy(true)
-        setNote(null)
-        runRescueCall(rescue, target)
-          .then((result) => { setBusy(false); setDone(result) })
-          .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
-      },
-    }, busy ? 'installing…' : 'Install & continue'),
-    note !== null ? h('p', { className: css.rescueErr }, note) : null,
+
+  // THE EXTENSION BANNER (unchanged): one confirm through
+  // install_extension, then the caller's own re-run.
+  if (rescue.kind === 'extension') {
+    if (done !== null) return doneFace(done)
+    return h('div', { className: css.rescue },
+      h('p', { className: css.rescueNote },
+        'Missing ' + what + ' — install through the manage seat?'),
+      h('button', {
+        className: css.rescueBtn,
+        type: 'button',
+        disabled: busy,
+        title: 'install via /v1/manage (the declaration owns the URL)',
+        onClick: () => {
+          setBusy(true)
+          setNote(null)
+          runRescueCall(rescue, target)
+            .then((result) => { setBusy(false); setDone(result) })
+            .catch((e: unknown) => { setBusy(false); setNote(rejectionVoice(e)) })
+        },
+      }, busy ? 'installing…' : 'Install & continue'),
+      note !== null ? h('p', { className: css.rescueErr }, note) : null,
+    )
+  }
+
+  // THE WEIGHT POPUP (F9 run-press acquisition): the run failed on a
+  // missing weight → a popup with a Download button + a live
+  // bytes/total tracker. The press starts acquire_weight (ONE door
+  // with the agent seat); the tracker polls the SAME door.
+  if (done !== null) {
+    if (dismissed) return null
+    return h(Modal, {
+      open: true,
+      onClose: () => { setDismissed(true) },
+      title: 'Weight ready',
+      closeLabel: 'Close weight popup',
+    },
+      h('div', { 'data-testid': 'weight-popup', className: css.rescue },
+        trackerFaces(acquire),
+        doneFace(done),
+      ),
+    )
+  }
+
+  const download = (): void => {
+    setBusy(true)
+    setNote(null)
+    void (async () => {
+      try {
+        const first = await acquireWeightStart(target, rescue.file)
+        setAcquire(first)
+        let current = first
+        for (let attempt = 0; !ACQUIRE_TERMINAL.has(current.state) && attempt < 150; attempt += 1) {
+          await delayMs(400)
+          current = await acquireWeightPoll(current.operationId)
+          setAcquire({ ...current })
+        }
+        setBusy(false)
+        if (current.state === 'failed' || current.state === 'blocked') {
+          setNote(current.detail ?? 'weight acquisition ' + current.state)
+          return
+        }
+        setDone({
+          detail: current.detail ?? target + ' acquired (' + String(current.bytes) + '/' + String(current.total) + ' bytes)',
+          restartRequired: current.state === 'restart_required' || current.state === 'installed',
+        })
+      } catch (e: unknown) {
+        setBusy(false)
+        setNote(rejectionVoice(e))
+      }
+    })()
+  }
+
+  const downloading = acquire !== null && !ACQUIRE_TERMINAL.has(acquire.state)
+
+  // A dismissed popup falls back to the inline offer (the run error
+  // still carries the miss — the popup is re-openable, never lost).
+  if (dismissed) {
+    return h('div', { className: css.rescue },
+      h('p', { className: css.rescueNote }, 'Missing ' + what + ' — download through the manage seat?'),
+      h('button', {
+        className: css.rescueBtn,
+        type: 'button',
+        disabled: target === '',
+        title: target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'download via /v1/manage (the declaration owns the URL)',
+        onClick: () => { setDismissed(false) },
+      }, 'Download weight'),
+    )
+  }
+
+  return h(Modal, {
+    open: true,
+    onClose: () => { if (!busy) setDismissed(true) },
+    title: 'Missing weight',
+    closeLabel: 'Close weight popup',
+  },
+    h('div', { 'data-testid': 'weight-popup', className: css.rescue },
+      h('p', { className: css.rescueNote }, 'Missing ' + what + ' — download through the manage seat?'),
+      h('button', {
+        className: css.rescueBtn,
+        type: 'button',
+        'data-testid': 'weight-download',
+        disabled: busy || target === '',
+        title: target === '' ? 'no stage names the owning family or card — provision via the agent door' : 'download via /v1/manage (the declaration owns the URL)',
+        onClick: download,
+      }, busy ? (acquire === null ? 'starting…' : 'downloading…') : 'Download'),
+      ...trackerFaces(acquire),
+      downloading ? h('p', { className: css.rescueNote }, 'Downloading… live bytes from the estate (polling acquire_weight).') : null,
+      note !== null ? h('p', { className: css.rescueErr }, note) : null,
+    ),
   )
 }

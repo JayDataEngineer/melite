@@ -158,7 +158,7 @@ describe('melite_load render — the loaded line', () => {
         bundle: {
           kind: 'card', name: 'c',
           skills: [{ id: 's1' }],
-          model_hints: [{ id: 'music-gen', label: 'MusicGen' }],
+          model_hints: [{ description: 'MusicGen checkpoint', present: false }],
           signature: { params_schema: { properties: { prompt: {}, seed: {} }, required: ['prompt'] } },
           digest: 'abc123',
           agents: [{ path: 'AGENT.md', text: 'craft doc' }],
@@ -337,7 +337,7 @@ describe('melite_load render — the loaded line', () => {
         name: 'c', inference_type: 'card',
         bundle: {
           kind: 'card', name: 'c',
-          model_hints: [{ id: 'm1' }],
+          model_hints: [{ description: 'm1 checkpoint', present: false }],
           signature: {
             model: 'fam-x',
             params_schema: { properties: { prompt: {}, seed: {} }, required: ['prompt', 7] },
