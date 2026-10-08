@@ -77,14 +77,17 @@ returns for every fresh browser context even on a configured host —
 so the spec itself dismisses it via tour.ts's `dismissOnboarding`.)
 
 - **THE SEAT BOOTS THE TRACKED SEED ONLY** (2026-10-12, the
-  moss-404 lesson): the runtime dev profile
-  (`dsh-harness-home/melite-test`) arms the G2 hot door through
-  `cordis.patch.yml` — its patch watcher can mount→dispose→remount
-  the row mid-run, and the every-card wall boards a card the estate
-  then un-serves under it (form-spec 404s land as page errors; the
-  defs refresh blanks neighbor axes). A wall seat asserts STABLE
-  serving: it boots the committed seed-only profile. Operator pins
-  ride `settings.yaml` (copied separately), never the profile.
+  moss-404 lesson): the seed profile is the wall's one composition —
+  a runtime lane whose patch watcher can mount→dispose→remount rows
+  mid-run boards cards the estate then un-serves under it (form-spec
+  404s land as page errors; the defs refresh blanks neighbor axes).
+  A wall seat asserts STABLE serving: it boots the committed
+  seed-only profile. Operator pins ride `settings.yaml` (copied
+  separately), never the profile. (Single-setup law 2026-10-18: the
+  runtime lane boots from `~/.dsh/profiles/melite-test` — the
+  provisioner's render — and the seed ⊇ base wall pins this seed's
+  roster to a superset of that base, so the wall can never green a
+  composition weaker than the operator's lane.)
 
 ## The every-card wall (cards-catalog.spec.ts, 2026-10-12)
 

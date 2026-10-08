@@ -83,8 +83,7 @@
     "@melite/motion-motion": "link:../../../../motion/motion",
     "@melite/video-h3-timeline": "link:../../../../video/h3-timeline",
     "@melite/viewer": "link:../../../viewer",
-    "@melite/viewer-base": "link:../../../viewer-base",
-    "dsh-glb-viewer": "link:../../../../../../../dsh-glb-viewer"
+    "@melite/viewer-base": "link:../../../viewer-base"
   },
   "dsh": {
     "profile": {
@@ -100,8 +99,7 @@
         "@melite/video-h3-timeline",
         "@melite-plugin/dsh-card-view",
         "@melite-plugin/dsh-card-deck",
-        "@melite-plugin/dsh-gallery",
-        "dsh-glb-viewer"
+        "@melite-plugin/dsh-gallery"
       ]
     }
   }

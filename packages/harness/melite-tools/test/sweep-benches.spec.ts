@@ -65,14 +65,18 @@ const bootRegistry = async (): Promise<CardRegistryService> => {
   return registry
 }
 
-test('sweep every persisted bench doc against the current admission laws', async () => {
-  const dir = 'data/runtime/dsh-harness-home/storages/drafts/docs'
-  if (!existsSync(dir)) { console.log('no host bench state on this clone — sweep skipped'); return }
+test('sweep every tracked bench doc against the current admission laws', async () => {
+  // (single-setup law 2026-10-18: this swept the deleted fossil
+  // home's storages and so retired itself to a permanent skip —
+  // the corpus is now the TRACKED fixture tree, real-shaped bench
+  // docs the tree carries, and the sweep runs on every clone)
+  const dir = 'tests/walls/ts/fixtures'
   const files = readdirSync(dir).filter((f) => f.startsWith('bench-') && f.endsWith('.json'))
   const crimes = sweepDir(dir, await bootRegistry())
   console.log(`swept ${files.length} bench docs — crimes: ${crimes.length}`)
   console.log(crimes.length ? crimes.join('\n') : 'clean')
-  expect(crimes, `persisted bench docs hold current-law crimes:\n${crimes.join('\n')}`).toEqual([])
+  expect(files.length, 'the tracked bench corpus is empty — the sweep went vacuous').toBeGreaterThan(0)
+  expect(crimes, `tracked bench docs hold current-law crimes:\n${crimes.join('\n')}`).toEqual([])
 }, 30000)
 
 test('the sweep WALL bites: a poisoned doc is named, not printed', async () => {

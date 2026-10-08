@@ -245,4 +245,17 @@ if grep -q "did not activate" "$LOG" 2>/dev/null; then
   grep -nE "did not activate|failed to import" "$LOG" >&2
   exit 1
 fi
+# THE SERVE-CLASS REFUSALS (the render-vs-boot audit, 2026-10-18):
+# both signatures below are boot deaths the host can still SERVE
+# behind — `client bundle not found` (a row the loader cannot
+# satisfy) and `startup failed` (dsh's own exit-1 verdict on
+# required plugins that never activated). A host carrying either
+# never owns the lane.
+for SIG in "client bundle not found" "startup failed"; do
+  if grep -q "$SIG" "$LOG" 2>/dev/null; then
+    echo "[e2e-studio-lane] host log carries '$SIG' (a serve-class boot death):" >&2
+    grep -n "$SIG" "$LOG" >&2
+    exit 1
+  fi
+done
 exit $PLAYWRIGHT_EXIT

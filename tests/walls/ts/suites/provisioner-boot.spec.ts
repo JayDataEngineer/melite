@@ -1,0 +1,250 @@
+// provisioner-boot.spec.ts — the profile COMPOSITION boots (the
+// "no test caught it" autopsy, 2026-10-18: the operator's :3088
+// lane booted with four plugins dead on `missed the module table`
+// while the entire battery was green — every wall judged rendered
+// FILES, and the browser e2e lane booted its own seed, a different
+// composition that happened to carry the missing bundle. A render
+// contract cannot see a boot; only a boot can.)
+//
+// The two arms here close the render-vs-boot gap the audits named:
+//
+// - B1 (melite-test only): render into a THROWAWAY home, boot the
+//   real web serve on --port 0 (OS-picked — no collision with the
+//   live 3080/3088 lanes by construction), wait for the tokenized
+//   boot URL, fetch the page, and judge the SERVED graph — the
+//   __DSH_BOOT__ entries the browser actually loads — plus the
+//   boot log for every known activation-failure signature. A
+//   roster-gap lane serves HTTP 200 with a CLEAN host log (proven
+//   live in dev_docs/audits/testing/2026-10-18-render-vs-boot.md
+//   §2b); the served graph is the only witness that cannot lie.
+//
+// - B0 (headless/estate): `--dump-config` exits 0 and its stderr
+//   EQUALS the pinned benign warning set — bundle-resolution and
+//   patch drift on the non-web mounts, deterministic and keyless.
+//
+// Skip laws (the suite's own class): a broken pnpm store skips the
+// render (PNPM_OK, below); a missing or under-floor dsh skips the
+// boot (the provisioner's own pin, 0.2.0-rc.1 — a bare PATH dsh
+// below the floor is the banned class; the skip proves the
+// external tool, never the product).
+//
+// Run: npx vitest run tests/walls/ts/suites/provisioner-boot.spec.ts
+import { test } from "vitest";
+import assert from "node:assert/strict";
+import { spawn, spawnSync, execFileSync } from "node:child_process";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir, homedir } from "node:os";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE: string = dirname(fileURLToPath(import.meta.url));
+const REPO: string = join(HERE, "..", "..", "..", "..");
+const BIN: string = join(REPO, "packages", "harness", "provisioner", "bin", "infer-provision.mjs");
+
+// ---- preflight: pnpm (same law as provisioner-render.spec.ts) ----
+function pnpmBin(): string {
+  const candidates = [
+    process.env["PNPM_BIN"],
+    join(process.env["HOME"] ?? "", ".local/share/mise/installs/node/24.21.0/bin/pnpm"),
+  ].filter((c): c is string => typeof c === "string" && c !== "");
+  for (const c of candidates) if (existsSync(c)) return c;
+  return "pnpm";
+}
+function pnpmHealthy(): boolean {
+  try {
+    const dir = mkdtempSync(join(tmpdir(), "pnpm-health-"));
+    writeFileSync(join(dir, "package.json"), "{}");
+    writeFileSync(join(dir, "pnpm-workspace.yaml"), 'packages:\n  - "."');
+    execFileSync(pnpmBin(), ["install"], { cwd: dir, timeout: 90_000, stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+}
+const PNPM_OK = pnpmHealthy();
+
+// ---- preflight: dsh on PATH at or above the provisioner's pin ----
+// (the floor gate the e2e lane runs, e2e-studio-lane.sh:62-83: the
+// mise 0.1.5-rc.2 burn — an under-floor registry refuses our codec
+// shape and every symptom lands far from the cause. A version the
+// regex cannot read fails the preflight loud, never boots.)
+function dshFloorOk(): boolean {
+  const res = spawnSync("dsh", ["--version"], { timeout: 15_000, encoding: "utf8" });
+  if (res.status !== 0) return false;
+  const m = /(\d+)\.(\d+)\.(\d+)(?:-rc\.(\d+))?/.exec((res.stdout ?? "").split("\n")[0] ?? "");
+  if (m === null) return false;
+  const rc = m[4] !== undefined ? Number(m[4]) : 10 ** 6;
+  const cur: [number, number, number, number] = [Number(m[1]), Number(m[2]), Number(m[3]), rc];
+  const floor: [number, number, number, number] = [0, 2, 0, 1];
+  return !(cur < floor);
+}
+const DSH_OK = dshFloorOk();
+const boot = test.skipIf(!PNPM_OK || !DSH_OK);
+const dump = test.skipIf(!PNPM_OK || !DSH_OK);
+
+/** Render one profile through the bin's own door into a fresh home. */
+function render(home: string, profile: string): void {
+  execFileSync(process.execPath, [BIN, "profile", profile, "--dsh-home", home], {
+    timeout: 120_000,
+    stdio: "pipe",
+  });
+}
+
+/** The boot-failure signatures (render-vs-boot audit §1 — each line
+ *  a distinct class the dump/serve planes can emit). None is ever
+ *  benign on a lane this repo ships. */
+const FORBIDDEN: readonly string[] = [
+  "skipping profile bundle",
+  "cannot resolve",
+  "patch: entry",
+  "did not activate",
+  "failed to import",
+  "Cannot find module",
+  "missed the module table",
+  "client bundle not found",
+  "failed to compose",
+  "startup failed",
+];
+
+// THE SERVE-AND-FETCH PROBE (B1). The closure judged here is the
+// served graph's own: every entry's `external` names another entry
+// — the incident's exact shape (three plugins externalized
+// three-client/client; the row was absent; the lane served 200).
+boot("the melite-test profile serves a web boot whose client graph is closed (the boot probe)", { timeout: 120_000 }, async () => {
+  const home: string = mkdtempSync(join(tmpdir(), "provisioner-boot-"));
+  const logPath: string = join(home, "boot.log");
+  let child: ReturnType<typeof spawn> | undefined;
+  try {
+    render(home, "melite-test");
+    child = spawn("dsh", [
+      "--profile", "melite-test", "--host", "127.0.0.1", "--port", "0", "--no-open",
+    ], {
+      env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+    const log: string[] = [];
+    child.stdout?.on("data", (d: Buffer) => log.push(d.toString()));
+    child.stderr?.on("data", (d: Buffer) => log.push(d.toString()));
+
+    // wait for the tokenized boot URL (the lane's own readiness
+    // signal — never a sleep; 90s bounds the wait)
+    const deadline: number = Date.now() + 90_000;
+    let url = "";
+    for (;;) {
+      const hit = /dsh web: (http:\/\/127\.0\.0\.1:\d+\/\?token=[A-Za-z0-9_-]+)/.exec(log.join(""));
+      if (hit !== null) { url = hit[1]!; break; }
+      if (child.exitCode !== null) {
+        assert.fail(`the serve died before boot (exit ${child.exitCode}):\n${log.join("").slice(-2_000)}`);
+      }
+      if (Date.now() > deadline) {
+        assert.fail(`no boot URL within 90s:\n${log.join("").slice(-2_000)}`);
+      }
+      await new Promise((r) => setTimeout(r, 250));
+    }
+    await new Promise((r) => setTimeout(r, 1_500)); // let the graph finish composing
+
+    // fetch the page through the token door (303 → cookie → /)
+    const r1 = await fetch(url, { redirect: "manual" });
+    const cookies: string = (r1.headers.getSetCookie?.() ?? [])
+      .map((c) => c.split(";")[0]).join("; ");
+    const page = await fetch(new URL("/", url), { headers: { cookie: cookies } });
+    assert.equal(page.status, 200, "the tokened page must serve");
+    const html: string = await page.text();
+
+    // the served graph is the only witness: parse __DSH_BOOT__
+    const m = /__DSH_BOOT__"\] = (\{.*?\})(?:<\/script>|;)/s.exec(html);
+    if (m === null) assert.fail("the served page carries no __DSH_BOOT__ graph");
+    const graph = JSON.parse(m[1]!) as {
+      entries: Array<{ id?: unknown; external?: unknown }>;
+    };
+    const entries = graph.entries ?? [];
+    const ids: Set<string> = new Set(entries.map((e) => (typeof e.id === "string" ? e.id : "")).filter(Boolean));
+    const dangling: string[] = [];
+    for (const e of entries) {
+      if (!Array.isArray(e.external)) continue;
+      for (const raw of e.external) {
+        const name = String(raw).split("/").slice(0, -1).join("/");
+        if (name === "" || name.startsWith("@deepseek-ai/")) continue;
+        if (!ids.has(name)) dangling.push(`${String(e.id)} externalizes ${String(raw)} — no served row names ${name}`);
+      }
+    }
+    assert.deepEqual(dangling, [], "every served client external resolves to a served row (the incident's exact shape)");
+
+    // the boot log carries no known failure signature
+    const full: string = log.join("");
+    const hits: string[] = FORBIDDEN.filter((f) => full.includes(f));
+    assert.deepEqual(hits, [], `the boot log carries failure signatures: ${hits.join(" | ")}\n${full.slice(-1_500)}`);
+  } finally {
+    if (child !== undefined && child.exitCode === null) {
+      try { process.kill(-child.pid!, "SIGKILL"); } catch { /* already gone */ }
+      // reap before removing the home: rmSync racing a dying
+      // child's open fds throws EBUSY/ENOTEMPTY — the one flake
+      // this arm showed in four battery runs (kill returns before
+      // the OS releases the log/session files the home holds)
+      await new Promise<void>((resolve) => {
+        const t = setTimeout(() => resolve(undefined), 5_000);
+        child!.once("exit", () => { clearTimeout(t); resolve(undefined); });
+      });
+    }
+    // a bounded retry: even reaped, the OS can hold fds a beat
+    for (let attempt = 0; ; attempt++) {
+      try { rmSync(home, { recursive: true, force: true }); break; } catch (err) {
+        if (attempt >= 4 || !["EBUSY", "ENOTEMPTY", "EPERM"].includes((err as NodeJS.ErrnoException).code ?? "")) throw err;
+        await new Promise((r) => setTimeout(r, 250));
+      }
+    }
+  }
+});
+
+// THE DUMP PINS (B0): exit 0 and stderr EQUALS the benign set. The
+// three `patch: entry not found` warnings are the renderer's own
+// disables naming rows only WEB bundles contribute (the headless
+// and estate mounts disable infer-card-view / ray-card-deck /
+// infer-gallery by id; the rows land when card-view/deck/gallery
+// mount, which server profiles never do). Pinning the exact set
+// makes ANY change — a fourth warning, a renamed row, a silent
+// renderer — fail here instead of on an operator's boot.
+const BENIGN: readonly string[] = [
+  'patch: entry "infer-card-view" not found',
+  'patch: entry "ray-card-deck" not found',
+  'patch: entry "infer-gallery" not found',
+];
+for (const profile of ["headless", "estate"] as const) {
+  dump(`the ${profile} profile resolves its full composition at dump (exit 0, the pinned benign stderr)`, () => {
+    const home: string = mkdtempSync(join(tmpdir(), "provisioner-dump-"));
+    try {
+      render(home, profile);
+      const res = spawnSync("dsh", ["--profile", profile, "--dump-config"], {
+        env: { ...process.env, DSH_HOME: home, MELITE_STATE_ROOT: join(home, "runs") },
+        timeout: 60_000,
+        encoding: "utf8",
+      });
+      assert.equal(res.status, 0, `dump exited ${res.status}:\n${res.stderr ?? ""}`);
+      const lines: string[] = (res.stderr ?? "").split("\n").filter((l) => l.trim() !== "");
+      const unexpected: string[] = lines.filter((l) => !BENIGN.some((b) => l.includes(b)));
+      assert.deepEqual(unexpected, [],
+        `the ${profile} dump carries warnings beyond the pinned benign set:\n${unexpected.join("\n")}`);
+      for (const b of BENIGN) {
+        assert.ok(lines.some((l) => l.includes(b)),
+          `the ${profile} dump lost the pinned warning "${b}" — the renderer's disable set drifted`);
+      }
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
+  });
+}
+
+// THE SINGLE-SETUP GUARD (operator law 2026-10-18: ONE home, ONE
+// composition per lane — "no second way of making a dev setup").
+// ~/.dsh-dev/profiles/melite-test was a stale Oct-5 estate-provision
+// deploy (no three-client, no card-base) one `apply launch` away
+// from re-breaking :3088 with every wall green. The deployed copy
+// is quarantined; this arm fails if ANY future apply resurrects it.
+// (Plain `test`, not skip-gated: absence everywhere is the pass —
+// CI clones hold neither home.)
+test("no second home carries a melite-test composition (the single-setup guard)", () => {
+  const stale: string = join(homedir(), ".dsh-dev", "profiles", "melite-test");
+  assert.ok(!existsSync(stale),
+    `${stale} exists — a second melite-test composition outside the ONE home (~/.dsh) violates the single-setup law (operator 2026-10-18); quarantine it and re-ship the lane through infer-provision`);
+});

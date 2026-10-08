@@ -228,44 +228,82 @@ for (const profile of ["melite-test", "headless", "estate"]) {
 // CLIENT-EXTERNAL CLOSURE (the :3088 boot refusal, 2026-10-18 — the
 // operator's "the testing must [REDACTED 2026-11-05] hard": the battery was green
 // while the lane died at boot with `require("@melite/three-client/
-// client") missed the module table`). Every `dsh.client.external` a
-// mounted bundle declares must resolve to a MOUNTED bundle row —
-// card-base/card-view/gallery externalize three-client/client, and
-// nothing mounted the row that materializes it. The arm renders
-// each profile through the bin's own door, follows the rendered
-// link: deps to the packages' OWN manifests, and judges every
-// external against the RENDERED roster (in-box @deepseek-ai/*
-// resolve from the install, never the profile). A client external
-// landing without its row shows here, never on the operator's
-// screen. (The coverage arm above owns the uninstalled-bundle case
-// — an external whose package is not even a dep is skipped here.)
+// client") missed the module table`). The module table is fed by
+// ROWS, and a row materializes when a mounted bundle's OWN
+// cordis.patch.yml inserts it (the rendered profile's patch is
+// empty by design — "rows live in the bundle"; the provisioner
+// bundle's patch mounts @melite/3d-img-to-mesh on every lane the
+// same way, the composition-seams audit's S4, so iterating the
+// ROSTER's bundles — not the roster's names — covers every row
+// source). Every row-named package's `dsh.client.external` must
+// resolve to another row: three-client out of the roster means its
+// patch never applies, its row never lands, and card-base /
+// card-view / gallery dangle — the exact incident. (The arm asserts
+// a non-empty row set first: its first cut parsed the empty profile
+// patch, judged nothing, and stayed green on BOTH sides — the
+// negative control caught the vacuous wall, and this assertion is
+// the lesson wired in.)
 for (const profile of ["melite-test", "headless", "estate"]) {
-  gate(`the ${profile} profile mounts a row for every client external its bundles declare (the closure cure)`, () => {
+  gate(`the ${profile} profile mounts a row for every client external its mounted bundles declare (the closure cure)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
     const pkg = JSON.parse(readFileSync(join(home, "profiles", profile, "package.json"), "utf8")) as {
       dependencies?: Record<string, string>;
       dsh?: { profile?: { bundles?: string[] } };
     };
-    const bundles = pkg.dsh?.profile?.bundles ?? [];
-    const missing: string[] = [];
+    const deps = pkg.dependencies ?? {};
+    const bundles = (pkg.dsh?.profile?.bundles ?? []).filter((b) => !b.startsWith("@deepseek-ai/"));
+    const rows: string[] = [];
     for (const b of bundles) {
-      if (b.startsWith("@deepseek-ai/")) continue;
-      const spec = String(pkg.dependencies?.[b] ?? "");
+      const spec = String(deps[b] ?? "");
       if (!spec.startsWith("link:")) continue;
-      let manifest: { dsh?: { client?: { external?: unknown } } };
+      let patch: unknown;
+      try {
+        patch = parseYaml(readFileSync(join(spec.slice("link:".length), "cordis.patch.yml"), "utf8"));
+      } catch {
+        continue;
+      }
+      if (!Array.isArray(patch)) continue;
+      for (const entry of patch) {
+        if (typeof entry !== "object" || entry === null || !Array.isArray((entry as { insert?: unknown }).insert)) continue;
+        for (const row of (entry as { insert: Array<{ name?: unknown }> }).insert) {
+          if (typeof row?.name === "string" && row.name !== "") rows.push(row.name);
+        }
+      }
+    }
+    assert.ok(rows.length > 0,
+      `the ${profile} row set parsed empty — the closure model drifted from the renderer's composition (vacuous walls are the incident's shape)`);
+    // PLATFORM LAW (this arm's first real catch, 2026-10-18): the
+    // provisioner's patch mounts @melite/3d-img-to-mesh on every
+    // lane, and its external (@melite/card-base/client) only rides
+    // the web base — a dangling external on headless/estate. But
+    // the package's dsh.client declares platform: web, and web
+    // client bytes compose only in a web mount (the loader's own
+    // law): the external is inert on server profiles, whose
+    // composition drift the B0 dump pin in provisioner-boot.spec.ts
+    // owns instead. Judge web-platform externals only where a web
+    // tier actually mounts.
+    const web = (pkg.dsh?.profile?.bundles ?? []).includes("@deepseek-ai/dsh-web-app");
+    const missing: string[] = [];
+    for (const name of rows) {
+      if (name.startsWith("@deepseek-ai/")) continue;
+      const spec = String(deps[name] ?? "");
+      if (!spec.startsWith("link:")) continue;
+      let manifest: { dsh?: { client?: { external?: unknown; platform?: unknown } } };
       try {
         manifest = JSON.parse(readFileSync(join(spec.slice("link:".length), "package.json"), "utf8"));
       } catch {
         continue;
       }
-      const externals = manifest.dsh?.client?.external;
+      const client = manifest.dsh?.client;
+      if (!web && client?.platform === "web") continue;
+      const externals = client?.external;
       if (!Array.isArray(externals)) continue;
       for (const e of externals) {
-        const name = String(e).split("/").slice(0, -1).join("/");
-        if (name === "" || name.startsWith("@deepseek-ai/")) continue;
-        if (!bundles.includes(name)) {
-          missing.push(`${b} externalizes ${String(e)} — ${name} is not a mounted bundle`);
+        const pkgName = String(e).split("/").slice(0, -1).join("/");
+        if (pkgName === "" || pkgName.startsWith("@deepseek-ai/")) continue;
+        if (!rows.includes(pkgName)) {
+          missing.push(`${name} externalizes ${String(e)} — no mounted row names ${pkgName}`);
         }
       }
     }
