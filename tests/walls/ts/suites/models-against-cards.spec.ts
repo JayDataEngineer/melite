@@ -595,7 +595,9 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // the bytes audit: 61 -> 62 (seedvr2_ema's fp8 3B — the pack's
     // DEFAULT_DIT, declarable or the door cannot provision the
     // engine's own default pick)
-    const PROVISION_ROW_COUNT = 62;
+    // 62 -> 63 (2026-10-18, audit 009/W2: h3's DMAD 4-step distill
+    // lora joins the catalog — the paper row, sha pinned)
+    const PROVISION_ROW_COUNT = 63;
     const declarers: string[] = [];
     let judged = 0;
     for (const id of registryIds()) {

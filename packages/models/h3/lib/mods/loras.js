@@ -17,6 +17,24 @@ export const H3_LORA_ROWS = [
     // allows 0–2 — 1.5 is the designed point, not a typo). ──
     { id: 'h3_larryvrh_v4_ema', filename: 'h3/minimax_h3_turbo_v4_step600_ema.safetensors', source_url: 'https://huggingface.co/larryvrh/MiniMax-H3-Turbo-Lora/resolve/main/minimax_h3_turbo_v4_step600_ema.safetensors', label: 'Larryvrh Turbo v4-600 EMA', category: 'distill', default_strength: 1, steps: 6, steps_min: 4, steps_max: 8 },
     { id: 'h3_pk_parasyte', filename: 'h3/H3-PK-Parasyte-Turbo.safetensors', source_url: 'https://huggingface.co/Plaguekind/H3-Lora/resolve/main/H3-PK-Parasyte-Turbo.safetensors', label: 'PK Parasyte Turbo', category: 'distill', default_strength: 1.5, steps: 8, steps_min: 6, steps_max: 8 },
+    // ── THE PAPER ROW (2026-10-18, audit 009/W2): DMAD — Distribution
+    // Matching as Adversarial Distillation (Yu et al., ByteDance +
+    // Texas A&M, arXiv:2610.02188). Rank-128 over the attn/ff modules
+    // of all 50 transformer blocks + 2 token refiners; turns the
+    // 50-step teacher into a 4-step generator at 1344x768 with native
+    // stereo audio. The paper's EMA checkpoint (`lora_critic`,
+    // iteration 800 of the main run) in ComfyUI's key layout, 2.0 GB;
+    // the higher-bench `full_critic` twin stays unboarded until the
+    // velocity arena rules (one row, one paper). LICENCE: the MiniMax
+    // H3 community licence — the base weights' own class; the V1
+    // region exclusion precedent applies. STRENGTH 1: distillation
+    // adapters are designed at full strength (the lightx2v convention
+    // above). The paper's no-CFG + shift 12/2 spelling matches what
+    // the composed arms already pin (no cfg knob exists on this
+    // card). The adaln guard rides the arena's first stacked load: a
+    // dense LoRA silently drops 51 adaln_proj keys on a pruned base —
+    // watch the load log (roadmap, H3 velocity rows). ──
+    { id: 'h3_dmad_4step', filename: 'h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors', source_url: 'https://huggingface.co/ZhengmingYu/DMAD/resolve/main/minimax_h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors', label: 'DMAD 4-Step (ByteDance/TAMU)', category: 'distill', default_strength: 1, steps: 4 },
     // ── THE REFINER (the second-pass instrument — see the refiner
     // design in the ledger): solo it is retired-tier (arena 935),
     // but 3 steps @ 0.7 over a non-accelerated draft "closes" the

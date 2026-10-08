@@ -111,6 +111,11 @@ describe("THE MODELS-STORE LAW — real artifacts, no unnamed bytes", () => {
     // fails loud (a DECL lost its artifact silently), and the floor
     // shrinks only when the downloads land (receipts in the ledger).
     const OWED_FLOOR = [
+      // The DMAD distill row (2026-10-18, audit 009/W2): declared +
+      // pinned; the 2.0 GB pull rides the velocity arena's first
+      // stacked load (roadmap, H3 velocity rows) — the floor entry
+      // leaves the same day the download lands.
+      "packages/models/h3/src/index.ts: loras/h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
       "packages/models/qwen-img-21/src/index.ts: text_encoders/qwen3vl_8b_bf16.safetensors",
       "packages/models/qwen-img-21/src/index.ts: text_encoders/qwen3vl_8b_int8_convrot.safetensors",
       "packages/models/qwen-img-21/src/index.ts: vae/qwen_image_2.1_vae_bf16.safetensors",

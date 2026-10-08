@@ -79,6 +79,14 @@ export declare const H3_LORA_ROWS: readonly [{
     readonly steps_min: 6;
     readonly steps_max: 8;
 }, {
+    readonly id: "h3_dmad_4step";
+    readonly filename: "h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors";
+    readonly source_url: "https://huggingface.co/ZhengmingYu/DMAD/resolve/main/minimax_h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors";
+    readonly label: "DMAD 4-Step (ByteDance/TAMU)";
+    readonly category: "distill";
+    readonly default_strength: 1;
+    readonly steps: 4;
+}, {
     readonly id: "h3_taomate_3step";
     readonly filename: "h3/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors";
     readonly source_url: "https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors";

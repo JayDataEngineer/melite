@@ -429,6 +429,13 @@ export const DECL: ModelDecl = {
       "size_bytes": 2115774558
     },
     {
+      "name": "dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "url": "https://huggingface.co/ZhengmingYu/DMAD/resolve/main/minimax_h3/dmad_minimax_h3_4step_lora_critic_comfyui.safetensors",
+      "folder": "loras/h3",
+      "sha256": "a4f54d9eb4eed9102be1adea8376e8e933cc2805f4017b95c14586290395b3a7",
+      "size_bytes": 1956195960
+    },
+    {
       "name": "minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "url": "https://huggingface.co/Kijai/MiniMax-H3_comfy/resolve/main/loras/minimax_h3_taomate_3step_lora_avg_rank_19_bf16.safetensors",
       "folder": "loras/h3",
