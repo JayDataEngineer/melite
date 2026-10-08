@@ -37,10 +37,6 @@ export declare function isImageUrl(value: string): boolean;
  *  square with the inline GLB thumb (the mini GlbStagePreview), the
  *  same square grammar as images: never a bespoke mesh picker. */
 export declare function isMeshUrl(value: string): boolean;
-/** THE ONE read path for every slot-shaped attach — the shared
- *  @melite/formats reader, served under this package's lower-case
- *  spelling for square.tsx's existing consumers. */
-export { readAsDataURL as readAsDataUrl } from './chrome.js';
 export interface InputSquareVerbs {
     /** a) THE PICKER — the slot IS the wire: opens the menu of the
      *  other stages' latest outputs (+ upload + clear); receives the

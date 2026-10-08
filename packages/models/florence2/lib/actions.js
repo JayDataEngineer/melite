@@ -1,12 +1,4 @@
-import { taggerSaveText, TAGGER_CAPTION_TASKS } from "@melite/comfyui-card-kit";
-/** The weightless door: the family declares no lane_inputs, so
- * there is nothing to parse and nothing that can drift. The raw
- * view rides unvalidated by contract (absent ≡ {}).
- *  @param _raw the resolved lane_inputs (empty for this family)
- *  @returns the vacuous facts shape */
-export function parseTagFacts(_raw) {
-    return {};
-}
+import { taggerSaveText, TAGGER_CAPTION_TASKS, parseWeightlessFacts, assertTagInput } from "@melite/comfyui-card-kit";
 /** The image prompt-inversion action: the Florence-2 captioner —
  * LoadImage (or the wired spell), the fp16 model loader, Florence2Run
  * on the stated vision task, SaveText under <run>/tags. */
@@ -25,12 +17,9 @@ export const tag = {
         { name: "checkpoint", type: "string" },
         { name: "caption_task", type: "enum", options: TAGGER_CAPTION_TASKS },
     ],
-    facts: parseTagFacts,
+    facts: parseWeightlessFacts,
     build({ p, g, runId }) {
-        const img = typeof p.input_image === "string" ? p.input_image : "";
-        if (!img.trim()) {
-            throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
-        }
+        const img = assertTagInput(p);
         const src = img.startsWith("$") ? img : g.node("LoadImage", { image: img }).out();
         const fl2 = g.node("DownloadAndLoadFlorence2Model", {
             model: p.checkpoint,

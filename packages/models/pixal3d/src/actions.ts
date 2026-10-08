@@ -11,7 +11,7 @@ import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
 import type { GraphBuilder, OutputHandle } from "@melite/comfyui-card-kit/graph";
 import { requireText, type LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
 import { MESH_PIXAL_FOVS } from "@melite/comfyui-card-kit";
-import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from "@melite/comfyui-card-kit";
+import { MESH_RESOLUTIONS, MESH_BG_MODES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, MESH_BAKE_SIZES, isSpell, type TensorRef } from "@melite/comfyui-card-kit";
 import { SAMPLER_OPTIONS, SCHEDULER_OPTIONS } from "@melite/comfyui-card-kit/vocab";
 
 /** The closed facts shape the mesh segment reads (the lift chain's
@@ -50,9 +50,6 @@ export function parseMeshFacts(raw: LaneInputsFacts): MeshFacts {
  *  spell IS the tensor and rides node inputs verbatim. ROW-4
  *  refuses producer links in Load* file slots, so a spelled image
  *  NEVER builds a loader; file paths keep the disk handoff. */
-type TensorRef = OutputHandle | string
-const isSpell = (s: string): boolean => s.startsWith('$')
-
 /** The lift arms' admission slice for THIS family (moved verbatim
  * from the kit's admitMeshLift — the required image and closed
  * sets refuse HERE, never in the schema): the source image,
@@ -63,14 +60,6 @@ function admitMeshLift(p: Record<string, unknown>): void {
     throw new Error(
       `required param 'input_image' (Source image) missing on the img-to-mesh card — the 3D lift is image-conditioned (no text prompt rides this lane)`)
   }
-  const MESH_RESOLUTIONS: readonly string[] = ['1024', '1536']
-  const MESH_BG_MODES: readonly string[] = ['auto', 'on', 'off']
-  const MESH_PIXAL_FOVS: readonly string[] = ['auto', '35', '49.13', '60', '75', '90']
-  const MESH_BAKE_SIZES: ReadonlyArray<readonly [string, readonly string[]]> = [
-    ['atlas_size', ['2048', '4096']],
-    ['ao_size', ['512', '1024']],
-    ['normal_size', ['1024', '2048']],
-  ]
   if (!MESH_RESOLUTIONS.includes(String(p.resolution))) {
     throw new Error(
       `resolution ${JSON.stringify(p.resolution)} is not one of ${MESH_RESOLUTIONS.join('|')} — the variant table is closed`)

@@ -480,4 +480,3 @@ export function useTimelineGeometry(args: TimelineGeometryArgs) {
 }
 
 export type TimelineGeometry = ReturnType<typeof useTimelineGeometry>;
-

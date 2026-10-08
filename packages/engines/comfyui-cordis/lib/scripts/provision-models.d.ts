@@ -21,11 +21,11 @@ export interface LocalModelListRow {
  * repeated runs byte-match.
  *
  * @param listPath absolute path of the manager-local model-list.json
- * @param rows the declared provision rows (family + ProvisionRow)
+ * @param rows the declared provision rows (family + CATALOG.ProvisionRow)
  */
 export declare function writeManagerLocalModelList(listPath: string, rows: ReadonlyArray<{
     family: string;
-    row: Pick<ProvisionRow, "name" | "folder" | "url">;
+    row: Pick<CATALOG.ProvisionRow, "name" | "folder" | "url">;
 }>): void;
 /**
  * Pins Manager's security_level to 'weak' — the tier whose install
@@ -43,13 +43,6 @@ export declare function writeManagerLocalModelList(listPath: string, rows: Reado
  */
 export declare function ensureManagerSecurityWeak(configPath: string): boolean;
 export declare function sha256Of(path: string): string;
-export interface ProvisionRow {
-    name: string;
-    folder: string;
-    url: string;
-    sha256: string;
-    size_bytes?: number;
-}
 export declare function catalogProvisions(): Promise<Array<{
     family: string;
     row: CATALOG.ProvisionRow;

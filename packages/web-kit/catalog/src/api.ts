@@ -252,4 +252,3 @@ export async function apiJson<T = unknown>(input: FetchUrl, init?: RequestInit):
   }
   return res.json() as Promise<T>
 }
-

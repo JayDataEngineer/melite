@@ -326,4 +326,3 @@ export function parseEnhanceJson(text: string): { positive: string; negative: st
   }
   throw new Error('enhance: the model reply was not the recipe JSON — head: ' + text.slice(0, 160))
 }
-

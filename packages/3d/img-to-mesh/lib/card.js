@@ -76,6 +76,11 @@ export const identity = {
     genre: '3d',
     icon: 'box',
 };
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared action, keyed by the row's family
+// address — the id-switch dispatch died with them. A family-less
+// row (the declared fallback) rides the legacy lane arms below —
+// never a silent second copy.
 export const ACTION_BINDINGS = {
     [pixal3dDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(pixal3dDecl, 'mesh'), p, model, g, runId),
     [trellis2NativeDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(trellis2NativeDecl, 'mesh'), p, model, g, runId),

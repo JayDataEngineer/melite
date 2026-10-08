@@ -32,6 +32,7 @@
  * is a programming error. The generator ends when `signal` aborts.
  */
 import type { ResourceProtocolMap } from '@deepseek-ai/dsh-client-ui-slots'
+import { cardsRunAddress } from '@melite/card-base/client'
 import { RemoteError } from '@deepseek-ai/dsh-typert-protocol'
 import type { RemoteResult } from '@deepseek-ai/dsh-typert-protocol'
 import { RemoteStreamCarrierError, type ClientRemote, type RemoteStreamItem } from '@deepseek-ai/dsh-api-gateway/client'
@@ -232,10 +233,7 @@ export function benchSessionOfAddress(address: string): string {
   return benchSessionOf(address.slice(CARDS_BENCH_ADDRESS.length + 1))
 }
 
-/** The run address (the wand's target, plan §5). */
-export function cardsRunAddress(runId: string): string {
-  return 'dsh-resource://cards/run/' + encodeURIComponent(runId)
-}
+export { cardsRunAddress } // the ONE mint: card-base cards-address.ts (DRY sweep C3, 2026-10-18)
 
 /** The draft-stage address — the conversation card's studio target
  *  (the old embed's law; both segments encode, either may carry the

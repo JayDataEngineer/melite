@@ -7,8 +7,8 @@ import {
   MESH_SQUARE_ACCEPT,
   type InputSquareVerbs,
   isImageUrl,
-  readAsDataUrl,
 } from './square.tsx'
+import { readAsDataURL } from './chrome.ts'
 import { uploadInputFile } from './wire.ts'
 import { type SpecField } from './spec.ts'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -67,7 +67,7 @@ export function useSquareProvider(onEdit: (name: string, v: unknown) => void, wi
   const onFile = useCallback(async (f: SpecField, file: File): Promise<void> => {
     if (wire.onFile !== undefined) { wire.onFile(file); return }
     try {
-      const dataUrl = await readAsDataUrl(file)
+      const dataUrl = await readAsDataURL(file)
       // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
       // .glb name, so mirroring it would hide the square's real value
       // (the estate path the door is about to answer). Images keep

@@ -9,6 +9,7 @@
 // per-card outputs/requires_by_family, the
 // row roster and extension_node_types.
 
+import type { GraphBuilder } from './graph.ts'
 import { readFileSync } from 'node:fs'
 
 /** The registry reads derivation renders through — injected, never
@@ -27,6 +28,11 @@ export interface FactsReads {
  *  lane's rig fields...) — the card that owns the lane knows its
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>
+
+/** An action binding's build signature (DRY sweep C8, 2026-10-18 —
+ * was byte-identical in five card files): params doc, resolved model
+ * facts, the graph builder, the run id. */
+export type ActionBinding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
 
 /** The lane facts' ONE typed string reader (the attainment audit's
  *  F7, 2026-10-12): lane_inputs is Record<string, unknown> by

@@ -1,3 +1,19 @@
+// modifierSubcards — modifiers as dependent mini-cards.
+//
+// THE STORAGE IS THE WIRE (2026-08-07, recon revision): params.loras[] /
+// params.controlnets[] are already the wire shape (executeGeneration spreads
+// stage.params into POST /v1/flows/start), already round-trip through
+// run hydration, already agent-writable. A parallel stage.modifiers field
+// would be a second source of truth (rule 4). So this module is a VIEW +
+// interaction layer over the param-bag entries: types (migrated from the
+// deleted ModifiersModal), subcard derivation, reorder, and add-entry
+// templates that honor the catalog's schema defaults.
+//
+// Apply order = array order — structural, not conventional: stackControlNets in the @melite/comfyui-card-kit render-kit chains controlnet nodes in array order.
+// stackLoras in the same render-kit chains LoraLoader nodes in array order.
+// Drag-reorder rewrites the array; the composed ComfyUI graph follows (rule-2).
+// Families, GPU, and the wire NEVER change.
+import { assertNever } from "@deepseek-ai/dsh-util-values";
 // Fallback for find()/Map.get misses — keeps lookup sites typed instead of
 // widening to `{}` via `?? {}`.
 export const NO_CN_SCHEMA = { type: "", label: "" };
@@ -216,7 +232,10 @@ export function newGenericEntry(kind, stackLength, optionValue) {
     }
     return entry;
 }
-/** The type-correct zero for a modifier field with no declared default. */
+/** The type-correct zero for a modifier field with no declared default.
+ * The return union names the zeros every member yields; a 7th field
+ * kind fails loud at compile through assertNever instead of returning
+ * undefined through an `unknown` mask. */
 function defaultForType(type) {
     switch (type) {
         case "integer":
@@ -225,6 +244,7 @@ function defaultForType(type) {
         case "select": return "";
         case "image": return "";
         case "string": return "";
+        default: return assertNever(type, "modifierSubcards.defaultForType");
     }
 }
 // ── Capability accessors (typed reads over the loose spec, rule 3) ────────

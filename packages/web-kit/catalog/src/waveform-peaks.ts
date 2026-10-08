@@ -195,5 +195,3 @@ export async function decodeAudioPeaks(url: string): Promise<DecodedAudioPeaks |
     if (ctx) ctx.close()
   }
 }
-
-

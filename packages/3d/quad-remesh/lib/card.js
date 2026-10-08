@@ -41,6 +41,10 @@ export const identity = {
         'The output is untextured — the remesh rebuilds the surface and drops textures/UVs, so texture after',
     ],
 };
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
 export const ACTION_BINDINGS = {
     [autoremesherDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(autoremesherDecl, 'remesh'), p, model, g, runId),
 };

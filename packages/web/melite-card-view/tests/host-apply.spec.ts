@@ -1,11 +1,11 @@
-// host-apply.spec.ts — the package's HOST half (src/index.ts) and its
-// invariant companion (src/invariant.ts): the bundle-row mount boots
-// configless and logs its one line; the invariant companion asserts
-// nothing and throws nothing. Fakes-not-mocks: a recording logger,
-// deep-equal on the recorded call.
+// host-apply.spec.ts — the package's HOST half (src/index.ts): the
+// bundle-row mount boots configless and logs its one line. The empty
+// invariant companion was deleted 2026-10-18 (the conformance sweep's
+// F20: an installer asserting nothing is invalid — the omission reason
+// lives in README.md). Fakes-not-mocks: a recording logger, deep-equal
+// on the recorded call.
 import { describe, expect, test } from "vitest";
 import { apply, inject, name } from "../src/index.ts";
-import { apply as applyInvariant } from "../src/invariant.ts";
 
 describe("host half — the bundle-row mount", () => {
   test("identity: name + empty inject (configless boot)", () => {
@@ -23,8 +23,3 @@ describe("host half — the bundle-row mount", () => {
   });
 });
 
-describe("invariant companion — nothing to check at runtime", () => {
-  test("apply returns undefined and throws nothing", () => {
-    expect(applyInvariant()).toBeUndefined();
-  });
-});

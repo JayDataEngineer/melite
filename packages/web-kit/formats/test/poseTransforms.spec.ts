@@ -8,7 +8,6 @@ import {
   KP,
   NUM_KEYPOINTS,
   applyAdjustments,
-  blobToDataUrl,
   fetchPosePresets,
   flatTo3D,
   renderCustomPose,
@@ -190,34 +189,4 @@ describe("poser fetch helpers", () => {
     await assert.rejects(renderCustomPose(basePose()), /Pose render failed: 422 bad skeleton/);
   });
 
-  it("blobToDataUrl delegates to the shared FileReader path", async () => {
-    let captured: Blob | null = null;
-    (globalThis as Record<string, unknown>).FileReader = class {
-      onload: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      result: string | null = null;
-      error: Error | null = null;
-      readAsDataURL(file: Blob): void {
-        captured = file;
-        this.result = "data:ok";
-        this.onload?.();
-      }
-    };
-    const blob = new Blob(["x"]);
-    assert.equal(await blobToDataUrl(blob), "data:ok");
-    assert.equal(captured, blob);
-  });
-
-  it("blobToDataUrl rejects when reading fails", async () => {
-    (globalThis as Record<string, unknown>).FileReader = class {
-      onload: (() => void) | null = null;
-      onerror: (() => void) | null = null;
-      result: string | null = null;
-      error: Error | null = new Error("denied");
-      readAsDataURL(_file: Blob): void {
-        this.onerror?.();
-      }
-    };
-    await assert.rejects(blobToDataUrl(new Blob(["x"])), /denied/);
-  });
 });

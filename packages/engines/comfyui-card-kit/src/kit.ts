@@ -14,10 +14,9 @@
 //   per-card param wiring from the contract.
 //
 // A card file is then: contract-derived decl (id/skeleton/boarded/
-// requires/schema (import
-// stroke 2026-09-08: one contract, TS owns the knob vocabulary on
-// Schemastery direct); decls are pinned by the cli admission gate,
+// requires/schema (Schemastery direct); decls are pinned by the cli admission gate,
 // so decls NEVER move here) + admission
+// stroke 2026-09-08: one contract, TS owns the knob vocabulary on
 // guards (the card's loud voice) + one recipe call. h3-timeline and
 // img-to-mesh keep their bespoke multi-family bodies in-card and ride
 // the kit for arms/strips/shared chains.
@@ -58,6 +57,7 @@ export {
   laneScheduler,
 } from './lanes-image.ts'
 export type { TensorRef } from './lanes-image.ts'
+export type { ActionBinding } from './facts.ts'
 export { qvoiceUse, type QVoiceUse } from './lanes-audio.ts'
 export {
   ANNY_STRIP,
@@ -81,6 +81,10 @@ export {
   TAGGER_CAPTION_LENGTHS,
   TAGGER_EXTRA_OPTIONS,
   taggerSaveText,
+  parseWeightlessFacts,
+  assertTagInput,
+  type WeightlessFacts,
+  type WeightlessParams,
 } from './lanes-image-tools.ts'
 // the audio render blocks (the atom-vocabulary stroke 3: family
 // actions port the audiocore segments on the SAME calibrated pins

@@ -342,5 +342,8 @@ export function useTimelineViewport(args: TimelineViewportArgs) {
  onScrollbarThumbMouseDown, onScrollbarTrackMouseDown, zoomBy, resetZoom };
 }
 
-export type TimelineViewport = ReturnType<typeof useTimelineViewport>;
-
+// ViserViewport, not TimelineViewport (DRY sweep J17, 2026-10-18):
+// @melite/contracts already owns a canvas viewport named
+// TimelineViewport ({scrollX,pixelsPerSecond,...}); this hook's
+// return alias needs its own name — same group, two viewports.
+export type ViserViewport = ReturnType<typeof useTimelineViewport>;

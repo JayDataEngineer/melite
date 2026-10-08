@@ -315,18 +315,7 @@ export const family: Plugin = {
   },
 };
 
-/**
- * A VARIANT'S OWN ROUTE ADDRESS (2026-10-10, the card audit's M5):
- * a card that boards a route used to retype the address string, so
- * a rename here left the card boarding an address that resolves to
- * nothing — and the failure is at RUN, not at compile. The DECL owns
- * its routes; this reads them. Returns '' when the variant declares
- * no route (a recipe row, say), so a caller can filter honestly
- * rather than board an empty address.
- */
-export function variantRoute(decl: { variants?: ReadonlyArray<{ id: string; route?: string }> }, variantId: string): string {
-  const row = (decl.variants ?? []).find((v) => v.id === variantId)
-  return typeof row?.route === 'string' ? row.route : ''
-}
-
 export { speak, exportAction, parseTtsFacts, laneTopologyOf, LANE_TOPOLOGY, type TtsFacts, type TtsParams, type TtsLaneTopology } from "./actions.ts";
+// variantRoute re-exported from the base family (DRY sweep C1, 2026-10-18):
+// byte-identical twins served two spellings; the base owns it.
+export { variantRoute } from "@melite/models-qwen3-tts";

@@ -13,6 +13,7 @@
 // stackLoras in the same render-kit chains LoraLoader nodes in array order.
 // Drag-reorder rewrites the array; the composed ComfyUI graph follows (rule-2).
 // Families, GPU, and the wire NEVER change.
+import { assertNever } from "@deepseek-ai/dsh-util-values"
 import type { LoRAEntry } from "./loraTypes.ts"
 import type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec } from "./wireTypes.ts"
 export type { ModifierFieldSpec, ModifierKindSpec, ModifierOptionSpec }
@@ -386,8 +387,11 @@ export function newGenericEntry(
  return entry
 }
 
-/** The type-correct zero for a modifier field with no declared default. */
-function defaultForType(type: ModifierFieldType): unknown {
+/** The type-correct zero for a modifier field with no declared default.
+ * The return union names the zeros every member yields; a 7th field
+ * kind fails loud at compile through assertNever instead of returning
+ * undefined through an `unknown` mask. */
+function defaultForType(type: ModifierFieldType): number | boolean | string {
  switch (type) {
  case "integer":
  case "float": return 0
@@ -395,6 +399,7 @@ function defaultForType(type: ModifierFieldType): unknown {
  case "select": return ""
  case "image": return ""
  case "string": return ""
+ default: return assertNever(type, "modifierSubcards.defaultForType")
  }
 }
 

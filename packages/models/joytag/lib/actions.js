@@ -1,12 +1,4 @@
-import { taggerSaveText } from "@melite/comfyui-card-kit";
-/** The weightless door: the family declares no lane_inputs, so
- * there is nothing to parse and nothing that can drift. The raw
- * view rides unvalidated by contract (absent ≡ {}).
- *  @param _raw the resolved lane_inputs (empty for this family)
- *  @returns the vacuous facts shape */
-export function parseTagFacts(_raw) {
-    return {};
-}
+import { taggerSaveText, parseWeightlessFacts, assertTagInput } from "@melite/comfyui-card-kit";
 /** The image prompt-inversion action: the JoyTag booru tagger —
  * LoadImage (or the wired spell), CXH_JoyTag with the add/remove
  * tag lists, SaveText under <run>/tags. */
@@ -25,12 +17,9 @@ export const tag = {
         { name: "add_tag", type: "string" },
         { name: "remove_tag", type: "string" },
     ],
-    facts: parseTagFacts,
+    facts: parseWeightlessFacts,
     build({ p, g, runId }) {
-        const img = typeof p.input_image === "string" ? p.input_image : "";
-        if (!img.trim()) {
-            throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
-        }
+        const img = assertTagInput(p);
         const src = img.startsWith("$") ? img : g.node("LoadImage", { image: img }).out();
         const tags = g.node("CXH_JoyTag", {
             image: src,

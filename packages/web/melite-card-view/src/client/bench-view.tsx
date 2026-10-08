@@ -478,4 +478,3 @@ export function BenchView({ bench, sessionKey, onRun, onRunStage, onStopStage, o
     }) : null,
   )
 }
-

@@ -22,5 +22,5 @@ export declare function useTimelineViewport(args: TimelineViewportArgs): {
     zoomBy: (factor: number) => void;
     resetZoom: () => void;
 };
-export type TimelineViewport = ReturnType<typeof useTimelineViewport>;
+export type ViserViewport = ReturnType<typeof useTimelineViewport>;
 //# sourceMappingURL=timeline-viewport.d.ts.map

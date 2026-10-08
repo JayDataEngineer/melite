@@ -413,4 +413,3 @@ export function useTimelineBackground(args: TimelineBackgroundArgs) {
  ]);
  return { backgroundRevision };
 }
-

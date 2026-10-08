@@ -897,4 +897,3 @@ function _packRotmats(flat: Float32Array): number[][][] {
 // ── SOMA-77 skeleton bones (for overlay rendering) ────────────────────────
 // Joint name → parent-joint index, matching vendor/kimodo/kimodo/skeleton/soma_skeleton.py
 // SOMASkeleton77 bone order. Used by PoseViewer3D to draw bone lines.
-

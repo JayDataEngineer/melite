@@ -39,4 +39,3 @@ export function phaseRefusal(phase: string, detail: string): CardArmError {
     "card_compose",
   );
 }
-

@@ -1,7 +1,7 @@
 import { Service } from "@deepseek-ai/cordis";
 import type { Context } from "@deepseek-ai/cordis";
 /** One card summary (the routing layer — no bodies). */
-export interface CardSummary {
+export interface DiscoveredCard {
     readonly id: string;
     readonly label: string;
     readonly description: string;
@@ -30,7 +30,7 @@ export interface SearchableCard {
  *  case-folded) ALL match (id + label + description + tags); the
  *  tags param (comma list) ALL match def.tags. Empty q + tags =
  *  all. */
-export declare function searchCards(defs: ReadonlyMap<string, SearchableCard>, q: string, tags: string): CardSummary[];
+export declare function searchCards(defs: ReadonlyMap<string, SearchableCard>, q: string, tags: string): DiscoveredCard[];
 /** Search the flow rows (PURE over the merged rows). */
 export declare function searchFlows(rows: ReadonlyArray<FlowSummary>, q: string): FlowSummary[];
 /** The flow rows: REGISTRY (the compile truth) merged with the
@@ -76,7 +76,7 @@ export declare class DiscloseDirectoryService extends Service {
      *  requested planes only. */
     discover(lookup: string, q: string, tags: string): {
         flows?: FlowSummary[];
-        cards?: CardSummary[];
+        cards?: DiscoveredCard[];
     };
 }
 /** The disclose row: mounts after the card-registry provider (its

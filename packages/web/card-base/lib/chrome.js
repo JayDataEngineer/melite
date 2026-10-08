@@ -28,6 +28,12 @@ export { readAsDataURL } from '@melite/formats/readFile';
  *  CardsTab and input-square already consumed it. One definition
  *  estate-wide (the drag is a shared contract, not a studio rule). */
 export const ASSET_DRAG_MIME = "application/tech-noir-asset";
+/** The capability drag's MIME — a fully-resolved card rides the
+ *  payload. Lives beside ASSET_DRAG_MIME: one home for the drag
+ *  contract's MIME pair (DRY sweep C4+J10, 2026-10-18 — the literal
+ *  previously rode both formats/capabilityCards.ts and card-view's
+ *  dnd-payloads.ts). */
+export const CAPABILITY_DRAG_MIME = "application/tech-noir-capability";
 export function parseAssetDrop(raw) {
     if (raw === '')
         return {};

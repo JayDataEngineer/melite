@@ -129,7 +129,7 @@ export const SOURCE_PLANE_ALIAS: Record<string, string> = {
   '@melite/estate-media': path.join(import.meta.dirname, 'packages/estate/media/src/index.ts'),
   '@melite/estate-runs/remote': path.join(import.meta.dirname, 'packages/estate/runs/lib/typert.remote-client.js'),
   '@melite/estate-runs': path.join(import.meta.dirname, 'packages/estate/runs/src/index.ts'),
-  '@infer-media/dsh-gallery': path.join(import.meta.dirname, 'packages/web/infer-gallery/src/index.ts'),
+  '@melite/infer-gallery': path.join(import.meta.dirname, 'packages/web/infer-gallery/src/index.ts'),
 }
 
 /** Resolve a repository-relative path from the root, for config-local alias groups. */

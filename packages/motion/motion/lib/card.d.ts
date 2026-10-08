@@ -1,7 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
+import { type ActionBinding as Binding } from '@melite/comfyui-card-kit';
 import type { ComfyUIService } from '@melite/comfyui-cordis/service';
 export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     prompt: z<string, string, "plain">;
@@ -33,7 +32,6 @@ export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     preview_glb: z<string, string, "plain">;
 }>>, "plain">;
 export declare const BOARDED: string[];
-export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void;
 export declare const ACTION_BINDINGS: Record<string, Binding>;
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

@@ -1,3 +1,4 @@
+import type { GraphBuilder } from './graph.js';
 /** The registry reads derivation renders through — injected, never
  *  imported (this module is evaluation-cycle-clean: models.ts runs
  *  its top-level boot, so any static edge back into it deadlocks
@@ -13,6 +14,10 @@ export interface FactsReads {
  *  lane's rig fields...) — the card that owns the lane knows its
  *  fields; the row carries whatever the model row declared. */
 export type LaneInputsFacts = Record<string, unknown>;
+/** An action binding's build signature (DRY sweep C8, 2026-10-18 —
+ * was byte-identical in five card files): params doc, resolved model
+ * facts, the graph builder, the run id. */
+export type ActionBinding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void;
 /** The lane facts' ONE typed string reader (the attainment audit's
  *  F7, 2026-10-12): lane_inputs is Record<string, unknown> by
  *  declaration, and the region law at lanes-image.ts reads

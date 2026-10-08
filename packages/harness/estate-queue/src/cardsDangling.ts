@@ -16,7 +16,7 @@
 // One law, one spelling: refs may carry EITHER estate prefix
 // (/v1/assets/runs/ or /melite-media/runs/ — both are first-class
 // run sources; the h3 card's own docs teach the assets spelling).
-import { statSync } from "node:fs";
+import { isFile } from "./skillFs.ts"
 import { join, relative, resolve, sep } from "node:path";
 import { resolveRepoRoot } from "@melite/comfyui-cordis";
 import { rootsManifest, searchedVoice } from "./rootsManifest.ts";
@@ -91,13 +91,7 @@ export function resolveArtifactFile(ref: string, outRoot: string): string {
   if (relToRoot === ".." || relToRoot.startsWith(".." + sep)) {
     throw new Error("artifact ref escapes the output root: " + JSON.stringify(raw));
   }
-  let isFile = false;
-  try {
-    isFile = statSync(absCand).isFile();
-  } catch {
-    isFile = false;
-  }
-  if (!isFile) {
+  if (!isFile(absCand)) {
     // The run id rides the ref's own first segment for every
     // prefix-URL and runs-relative shape; an absolute path carries
     // no run, so "?" names that absence.

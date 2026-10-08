@@ -44,12 +44,10 @@
 // demand the autorig pack).
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as pixal3dDecl } from '@melite/models-pixal3d'
 import { DECL as trellis2NativeDecl } from '@melite/models-trellis2-native'
 import { DECL as transferRigDecl } from '@melite/models-transfer_rig'
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { SAMPLERS, SCHEDULERS, vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
 import { gatedResolve } from '@melite/comfyui-cordis'
@@ -133,7 +131,6 @@ export const identity = {
 // address — the id-switch dispatch died with them. A family-less
 // row (the declared fallback) rides the legacy lane arms below —
 // never a silent second copy.
-export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
 export const ACTION_BINDINGS: Record<string, Binding> = {
   [pixal3dDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(pixal3dDecl, 'mesh'), p, model, g, runId),
   [trellis2NativeDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(trellis2NativeDecl, 'mesh'), p, model, g, runId),

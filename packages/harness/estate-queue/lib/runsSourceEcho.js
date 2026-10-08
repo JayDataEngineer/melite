@@ -1,3 +1,4 @@
+import { isFile } from "./skillFs.js";
 import { segmentConfined, servableLeaf } from "@melite/contracts/mediaKinds";
 // runsSourceEcho.ts — THE SOURCE-ECHO LAW (operator 2026-09-23):
 // every generation run carries history pointing at the files that
@@ -182,14 +183,6 @@ export function parseMediaRef(ref) {
 function isDir(p) {
     try {
         return statSync(p).isDirectory();
-    }
-    catch {
-        return false;
-    }
-}
-function isFile(p) {
-    try {
-        return statSync(p).isFile();
     }
     catch {
         return false;

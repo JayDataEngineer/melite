@@ -23,6 +23,9 @@ for (const [id, def] of [...defs].sort(([a], [b]) => a < b ? -1 : 1)) {
     const dict = (typeof carrier === "function" && "dict" in carrier
         ? carrier.dict
         : undefined) ?? {};
+    // A dict entry is a loose param-schema node: {type, list?, meta?}
+    // with no declared contract (the defs walk is structural), so the
+    // narrow reads below carry their own guards.
     const knobs = Object.entries(dict).map(([name, s]) => {
         // role rides the outer meta (nullable unions merge inner meta —
         // the params-emit.ts mirror, abridged: file slots are never

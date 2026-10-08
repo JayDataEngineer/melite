@@ -102,4 +102,3 @@ export function useTimelineInteractionState(args: TimelineInteractionStateArgs) 
 
 export type TimelineEditingDraft = NonNullable<ReturnType<typeof useTimelineInteractionState>["editingPrompt"]>;
 export type TimelineInteractionSnapshot = ReturnType<typeof useTimelineInteractionState>;
-

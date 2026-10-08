@@ -24,10 +24,8 @@
 // preview.figure claim, rendered by the base form's mesh stage.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, finalizeAnny, instantiateAction } from '@melite/comfyui-card-kit'
+import { declaredAction, finalizeAnny, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as annyDecl } from '@melite/models-anny'
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { ANNY_MORPH_LABELS, ANNY_MORPH_RANGE, ANNY_MORPH_DEFAULT } from '@melite/comfyui-card-kit/morphs'
 import { bag } from '@melite/contracts/extraKeys'
@@ -82,7 +80,6 @@ export const identity = {
 // boarded family's declared compose action, keyed by the row's
 // family address. A family-less row (the declared fallback) rides
 // the legacy lane arm below — never a silent second copy.
-export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
 export const ACTION_BINDINGS: Record<string, Binding> = {
   [annyDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(annyDecl, 'compose'), p, model, g, runId),
 }

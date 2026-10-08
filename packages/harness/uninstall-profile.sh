@@ -11,4 +11,3 @@ if [ -d "$DST_DIR" ]; then
 else
   echo "nothing to remove ($DST_DIR not found)"
 fi
-

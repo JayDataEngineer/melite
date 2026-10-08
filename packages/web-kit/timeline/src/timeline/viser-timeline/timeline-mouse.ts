@@ -753,4 +753,3 @@ export function useTimelineMouseHandlers(args: TimelineMouseArgs) {
  return { handleMouseDown, handleMouseMove, handleMouseUp, handleContextMenu,
  handleDoubleClick };
 }
-

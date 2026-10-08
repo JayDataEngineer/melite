@@ -50,13 +50,10 @@ export function cardsBenchAddress(sessionId: string | undefined): string {
   return 'dsh-resource://cards/bench/' + benchSessionOf(sessionId)
 }
 
-/** The run tab's address (same contract; live runs open in the cards
- *  tab's run view — the wand restores through the bench address
- *  instead, so this twin stays for address-compat, pinned by the
- *  wall + the codec test). */
-export function cardsRunAddress(runId: string): string {
-  return 'dsh-resource://cards/run/' + encodeURIComponent(runId)
-}
+// The run tab's address rides the ONE mint (card-base
+// cards-address.ts; DRY sweep C3, 2026-10-18 - this twin conceded
+// itself). Re-served for the spec's import shape.
+export { cardsRunAddress } from '@melite/card-base/client'
 
 export interface BenchLoadDeps {
   /** The tab action every tab body receives (useTabInfo().tab.actions). */

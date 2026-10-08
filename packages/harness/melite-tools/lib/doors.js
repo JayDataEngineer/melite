@@ -344,6 +344,9 @@ export function apply(c, config = {}) {
                     res.end(body);
                 };
                 readBody(req).then(async (buf) => {
+                    // JSON.parse yields any; the assertion names the expected
+                    // envelope and the typeof guards below validate each field
+                    // (the any never escapes the guarded reads).
                     let body;
                     try {
                         body = JSON.parse(buf.toString('utf8'));

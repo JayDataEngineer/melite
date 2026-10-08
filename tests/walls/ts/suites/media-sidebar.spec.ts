@@ -139,6 +139,14 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
   // module id 'overlay.module.css@<hash>' (2026-10-18, the client
   // consolidation), so the mint probe carries the bundler's spelling.
   const BUILD_MINTED = /overlay\.module\.css|^css\.|^overlay_module_css_default\./
+  // Facts the C3 consolidation (DRY sweep 2026-10-18) re-homed to their
+  // ONE mint in card-base: the gallery client still SERVES them (the
+  // bundler inlines the row), so the bundle-side assert stays, but
+  // src-presence is judged at the mint's own home file — the probe reds
+  // if that home ever loses the fact.
+  const SRC_MINTED_ELSEWHERE = new Map<string, string>([
+    ['dsh-resource://cards/run/', join(ROOT, 'packages', 'web', 'card-base', 'src', 'cards-address.ts')],
+  ])
   const probes: Array<[string, string]> = [
     ['media tab id', 'infer-media:media'],
     ['media tab kind', 'kind: "media"'],
@@ -163,10 +171,15 @@ test('served-lib byte proofs: the built client carries the ported machinery', ()
   for (const [name, needle] of probes) {
     assert.ok(normalize(codeBundle).includes(needle),
       `built lib/**/*.js lost (in CODE, not comments): ${name} (${needle}) — did the build run after the edit?`)
-    if (!BUILD_MINTED.test(needle)) {
-      assert.ok(srcCode.includes(needle),
-        `probe ${name} (${needle}) is gone from CURRENT src but still rides the stale bundle — a face the source no longer ships`)
+    if (BUILD_MINTED.test(needle)) continue
+    const mintHome = SRC_MINTED_ELSEWHERE.get(needle)
+    if (mintHome !== undefined) {
+      assert.ok(normalize(stripComments(readFileSync(mintHome, 'utf8'))).includes(needle),
+        `probe ${name} (${needle}): the ONE mint home ${mintHome} lost the fact — cure C3 reverted?`)
+      continue
     }
+    assert.ok(srcCode.includes(needle),
+      `probe ${name} (${needle}) is gone from CURRENT src but still rides the stale bundle — a face the source no longer ships`)
   }
   // (c) THE DERIVED ROUTE PROBES: every route/address literal the
   // src declares must reach the bytes, judged by its FULL DELIMITED

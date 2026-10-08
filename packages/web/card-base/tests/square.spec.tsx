@@ -9,7 +9,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { createElement as h, useState } from 'react'
 import { afterEach, expect, test, vi } from 'vitest'
 
-import { ASSET_DRAG_MIME, InputSquare, isImageUrl, isMeshUrl, readAsDataUrl } from '../src/square.tsx'
+import { ASSET_DRAG_MIME, InputSquare, isImageUrl, isMeshUrl } from '../src/square.tsx'
+import { readAsDataURL } from '../src/chrome.ts'
 
 afterEach(() => { cleanup(); vi.restoreAllMocks() })
 
@@ -39,7 +40,7 @@ test('THE THUMBNAIL RULE: data/blob/http(s)/root-relative images pass, everythin
   ]) expect(isImageUrl(bad)).toBe(false)
 })
 
-test('readAsDataUrl: THE ONE read path resolves the mirror', async () => {
+test('readAsDataURL: THE ONE read path resolves the mirror', async () => {
   const RealReader = globalThis.FileReader
   globalThis.FileReader = class {
     onload: (() => void) | null = null
@@ -52,13 +53,13 @@ test('readAsDataUrl: THE ONE read path resolves the mirror', async () => {
     }
   } as unknown as typeof RealReader
   try {
-    await expect(readAsDataUrl(new File(['x'], 'a.png'))).resolves.toBe('data:image/png;base64,AAA')
+    await expect(readAsDataURL(new File(['x'], 'a.png'))).resolves.toBe('data:image/png;base64,AAA')
   } finally {
     globalThis.FileReader = RealReader
   }
 })
 
-test('readAsDataUrl: a reader error rejects with the reader error, or the fallback when errorless', async () => {
+test('readAsDataURL: a reader error rejects with the reader error, or the fallback when errorless', async () => {
   const RealReader = globalThis.FileReader
   const failing = (error: Error | null) => class {
     onload: (() => void) | null = null
@@ -70,10 +71,10 @@ test('readAsDataUrl: a reader error rejects with the reader error, or the fallba
     }
   } as unknown as typeof RealReader
   globalThis.FileReader = failing(new Error('disk gone'))
-  await expect(readAsDataUrl(new File(['x'], 'a.png'))).rejects.toThrow(/disk gone/)
+  await expect(readAsDataURL(new File(['x'], 'a.png'))).rejects.toThrow(/disk gone/)
   globalThis.FileReader = failing(null)
   try {
-    await expect(readAsDataUrl(new File(['x'], 'a.png'))).rejects.toThrow(/read failed/)
+    await expect(readAsDataURL(new File(['x'], 'a.png'))).rejects.toThrow(/read failed/)
   } finally {
     globalThis.FileReader = RealReader
   }

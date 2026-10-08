@@ -1,7 +1,6 @@
 import type { Context } from '@deepseek-ai/cordis';
 import z from '@deepseek-ai/schemastery';
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph';
+import { type ActionBinding as Binding } from '@melite/comfyui-card-kit';
 import type { ComfyUIService } from '@melite/comfyui-cordis/service';
 export declare const schema: z<Schemastery.ObjectS<NoInfer<{
     text: z<string, string, "plain">;
@@ -37,7 +36,6 @@ export declare const BOARDED: string[];
  * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
  * a route id keys nothing, the derived-row law); an unbound family
  * refuses loud at the dispatch. */
-type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void;
 export declare const ACTION_BINDINGS: Record<string, {
     save: Binding;
     speak: Binding;
@@ -53,5 +51,4 @@ export declare const identity: {
     principles: string[];
 };
 export declare function registerCard(ctx: Context, comfy: ComfyUIService): void;
-export {};
 //# sourceMappingURL=card.d.ts.map

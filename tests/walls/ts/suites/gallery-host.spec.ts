@@ -51,7 +51,7 @@ class FakeWebServer extends Service {
 test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUILD-18)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  const galleryMod = await import('@melite/infer-gallery') as unknown as Plugin & { default?: Plugin }
   // the module carries no default export — its namespace IS the
   // object plugin (name/inject/apply ride the namespace itself).
   const gallery: Plugin = galleryMod.default ?? galleryMod
@@ -152,7 +152,7 @@ test('the gallery host answers in-tree over seats; missing seats are LOUD (REBUI
 test('cross-host posture: the pinned owning DSH serves every lane (config.gatewayUrl)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  const galleryMod = await import('@melite/infer-gallery') as unknown as Plugin & { default?: Plugin }
   // the module carries no default export — its namespace IS the
   // object plugin (name/inject/apply ride the namespace itself).
   const gallery: Plugin = galleryMod.default ?? galleryMod
@@ -186,7 +186,7 @@ test('cross-host posture: the pinned owning DSH serves every lane (config.gatewa
 test('the artifact grammar accepts subdir names and refuses traversal (the live-probe 400)', async () => {
   const ctx = new Context()
   new FakeWebServer(ctx)
-  const galleryMod = await import('@infer-media/dsh-gallery') as unknown as Plugin & { default?: Plugin }
+  const galleryMod = await import('@melite/infer-gallery') as unknown as Plugin & { default?: Plugin }
   // the module carries no default export — its namespace IS the
   // object plugin (name/inject/apply ride the namespace itself).
   const gallery: Plugin = galleryMod.default ?? galleryMod

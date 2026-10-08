@@ -609,4 +609,3 @@ export function CardsTab(props: CardsTabProps): ReturnType<typeof h> {
         failedLine,
         h(RunView, { run: value, sessionKey: benchKey, onBack: openResource !== undefined ? onBack : undefined, onRestored: onBack, onStop }))
 }
-

@@ -2,7 +2,8 @@
  * operator's DRY audit law: one seam, one small file, one wall). */
 import { createElement as h, Fragment, useCallback, useEffect, useRef, useState } from 'react';
 import { Menu, Modal } from '@deepseek-ai/dsh-client-ui-primitives';
-import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, isImageUrl, readAsDataUrl, } from "./square.js";
+import { DEFAULT_SQUARE_ACCEPT, MESH_SQUARE_ACCEPT, isImageUrl, } from "./square.js";
+import { readAsDataURL } from "./chrome.js";
 import { uploadInputFile } from "./wire.js";
 import { rejectionVoice } from "./rejection-voice.js";
 import css from './card.module.css';
@@ -59,7 +60,7 @@ export function useSquareProvider(onEdit, wire) {
             return;
         }
         try {
-            const dataUrl = await readAsDataUrl(file);
+            const dataUrl = await readAsDataURL(file);
             // THE MESH EXCEPTION: a freshly read GLB is a data: URL with no
             // .glb name, so mirroring it would hide the square's real value
             // (the estate path the door is about to answer). Images keep

@@ -155,6 +155,7 @@ declare module "@deepseek-ai/cordis" {
     /**
      * A bench write landed. Emitted after every successful bench verb
      * (and after the drafts-patch door's bench-shaped write).
+     * @mode emit
      * @param session - the bench session whose doc changed.
      */
     "bench.changed": (session: string) => void;

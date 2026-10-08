@@ -45,6 +45,10 @@ export const identity = {
     genre: '3d',
     icon: 'person',
 };
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
 export const ACTION_BINDINGS = {
     [annyDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(annyDecl, 'compose'), p, model, g, runId),
 };

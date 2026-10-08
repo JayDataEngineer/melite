@@ -1,7 +1,7 @@
 import type { TimelineTheme } from "./styles.js";
 import type { TimelineMessage } from "./messages.js";
 import type { TimelineEditingDraft, TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
-import type { TimelineViewport } from "./timeline-viewport.js";
+import type { ViserViewport } from "./timeline-viewport.js";
 export declare const SCROLLBAR_HEIGHT = 10;
 export declare const SCROLLBAR_TOTAL_HEIGHT: number;
 export interface TimelineEditingOverlayProps {
@@ -19,11 +19,11 @@ export interface TimelineScrollbarProps {
     zoomLevel: number;
     panOffset: number;
     darkMode: boolean;
-    scrollbarTrackRef: TimelineViewport["scrollbarTrackRef"];
-    onScrollbarTrackMouseDown: TimelineViewport["onScrollbarTrackMouseDown"];
-    onScrollbarThumbMouseDown: TimelineViewport["onScrollbarThumbMouseDown"];
-    zoomBy: TimelineViewport["zoomBy"];
-    resetZoom: TimelineViewport["resetZoom"];
+    scrollbarTrackRef: ViserViewport["scrollbarTrackRef"];
+    onScrollbarTrackMouseDown: ViserViewport["onScrollbarTrackMouseDown"];
+    onScrollbarThumbMouseDown: ViserViewport["onScrollbarThumbMouseDown"];
+    zoomBy: ViserViewport["zoomBy"];
+    resetZoom: ViserViewport["resetZoom"];
 }
 export declare function TimelineScrollbar(props: TimelineScrollbarProps): import("react").JSX.Element;
 //# sourceMappingURL=timeline-overlays.d.ts.map

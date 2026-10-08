@@ -8,31 +8,13 @@
 // same doc (proven in tests/action.spec.ts). Creation order IS
 // node-id order (the recipe law).
 import type { ComfyActionSpec } from "@melite/comfyui-card-kit";
-import { taggerSaveText, TAGGER_CAPTION_TASKS } from "@melite/comfyui-card-kit";
-import type { LaneInputsFacts } from "@melite/comfyui-card-kit/facts";
+import { taggerSaveText, TAGGER_CAPTION_TASKS, parseWeightlessFacts, assertTagInput, type WeightlessFacts, type WeightlessParams } from "@melite/comfyui-card-kit";
 
-/** The closed facts shape the tag segment reads: nothing — the arm
- * is weightless (every wire value comes from params). */
-export type TagFacts = Record<string, never>;
-
-/** The gated params doc the tag segment reads (the card's schema
- * walk validated types and bounds — a same-process typed boundary;
- * the arm reads its own subset of the card's union surface). */
-export type TagParams = Record<string, unknown>;
-
-/** The weightless door: the family declares no lane_inputs, so
- * there is nothing to parse and nothing that can drift. The raw
- * view rides unvalidated by contract (absent ≡ {}).
- *  @param _raw the resolved lane_inputs (empty for this family)
- *  @returns the vacuous facts shape */
-export function parseTagFacts(_raw: LaneInputsFacts): TagFacts {
-  return {};
-}
 
 /** The image prompt-inversion action: the Florence-2 captioner —
  * LoadImage (or the wired spell), the fp16 model loader, Florence2Run
  * on the stated vision task, SaveText under <run>/tags. */
-export const tag: ComfyActionSpec<TagParams, TagFacts> = {
+export const tag: ComfyActionSpec<WeightlessParams, WeightlessFacts> = {
   id: "tag",
   inputs: [],
   outputs: [{ name: "text", kind: "TEXT" }],
@@ -47,12 +29,9 @@ export const tag: ComfyActionSpec<TagParams, TagFacts> = {
     { name: "checkpoint", type: "string" },
     { name: "caption_task", type: "enum", options: TAGGER_CAPTION_TASKS },
   ],
-  facts: parseTagFacts,
+  facts: parseWeightlessFacts,
   build({ p, g, runId }) {
-    const img = typeof p.input_image === "string" ? p.input_image : "";
-    if (!img.trim()) {
-      throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
-    }
+    const img = assertTagInput(p);
     const src = img.startsWith("$") ? img : g.node("LoadImage", { image: img }).out();
     const fl2 = g.node("DownloadAndLoadFlorence2Model", {
       model: p.checkpoint,

@@ -24,8 +24,11 @@ export function onRunChange(fn) {
         try {
             fn(runId);
         }
-        catch {
-            /* a listener's fault never breaks the write */
+        catch (fault) {
+            /* the listener-fault law: name the error, swallow the why —
+             * a subscriber's fault never breaks the write and never
+             * starves the listeners after it (measured 2026-10-12) */
+            console.error("runs.changed listener fault:", fault);
         }
     });
 }

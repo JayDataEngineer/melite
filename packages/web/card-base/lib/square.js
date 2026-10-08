@@ -67,10 +67,6 @@ export function isMeshUrl(value) {
     // handling. The vocabulary in @melite/contracts answers for all.
     return isModelUrl(value);
 }
-/** THE ONE read path for every slot-shaped attach — the shared
- *  @melite/formats reader, served under this package's lower-case
- *  spelling for square.tsx's existing consumers. */
-export { readAsDataURL as readAsDataUrl } from "./chrome.js";
 export const DEFAULT_SQUARE_ACCEPT = 'image/png,image/jpeg,image/webp';
 export const MESH_SQUARE_ACCEPT = '.glb,.gltf';
 export function InputSquare(props) {

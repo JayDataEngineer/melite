@@ -354,4 +354,3 @@ describe("apiJson", () => {
     await pastDeadline(() => assert.rejects(apiJson(externalUrl("/v1/j")), /body read failed: gone/));
   });
 });
-

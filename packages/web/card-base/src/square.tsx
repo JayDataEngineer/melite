@@ -76,11 +76,6 @@ export function isMeshUrl(value: string): boolean {
   return isModelUrl(value)
 }
 
-/** THE ONE read path for every slot-shaped attach — the shared
- *  @melite/formats reader, served under this package's lower-case
- *  spelling for square.tsx's existing consumers. */
-export { readAsDataURL as readAsDataUrl } from './chrome.ts'
-
 export interface InputSquareVerbs {
   /** a) THE PICKER — the slot IS the wire: opens the menu of the
    *  other stages' latest outputs (+ upload + clear); receives the

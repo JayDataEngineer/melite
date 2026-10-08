@@ -1,4 +1,5 @@
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
+import { assertNever } from "@deepseek-ai/dsh-util-values";
 // runsStart.ts — the start arm's pure chain, re-homed VERBATIM from
 // the dead flowsRun door (REBUILD-6): the flow_inline structural
 // compile (frozen texts over the admission verdicts in
@@ -251,6 +252,11 @@ export function envelopeRefusal(kind, doc, detail) {
         case "malformed-draft":
             return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
                 JSON.stringify(detail?.draftId ?? ""), "draft_malformed", "draft_id", "[A-Za-z0-9_-]{1,96}", (detail?.draftId ?? "").slice(0, 60));
+        default:
+            // Closed union: a new refusal kind fails loud at compile, not
+            // silently undefined at the door. assertNever from
+            // @deepseek-ai/dsh-util-values (maintained helper, not a handroll).
+            return assertNever(kind, "runsStart.envelopeRefusal");
     }
 }
 /** The unknown-draft refusal (door-verbatim; the probe rides the

@@ -3,7 +3,9 @@
   "private": true,
   "license": "SSPL-1.0",
   "type": "module",
-  "dependencies": {},
+  "dependencies": {
+    "@deepseek-ai/dsh-util-values": "0.2.0-rc.1"
+  },
   "exports": {
     ".": {
       "types": "./lib/index.d.ts",

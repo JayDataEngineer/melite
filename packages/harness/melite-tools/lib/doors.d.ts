@@ -1,30 +1,3 @@
-/**
- * @melite/harness-tools/doors — the HOST ROUTE plane of the melite
- * tool package (split 2026-09-10: "Fix the gap, I need this to
- * function like a server that accepts jobs and lumps them in the
- * queue").
- *
- * WHY THE SPLIT: cordis injects are ALL required — the runtime has no
- * optional-service marker (Inject.resolve normalizes every declared
- * name to a hard wait). The estate/sdk compositions boot with NO
- * webServer service, so a plugin that injects webServer can never
- * activate there — which left the TOOL plane (profile-agnostic, the
- * run doors melite_flow / run_status) hostage to a web-only service.
- * The two planes now live as two loader entries from one package:
- *
- *   infer-tools        src/index.ts   inject ['tools']          — every
- *                      profile, headless included.
- *   infer-tools-doors  src/doors.ts   inject ['webServer','llm',
- *                      'tools'] — web profiles only (the editor ✦
- *                      buttons' same-origin doors); the estate patch
- *                      disables the row.
- *
- * The code is the door block of index.ts verbatim (2026-09-05 restore
- * + 2026-09-06 route law): /melite-tools/catalog serves the LIVE tool
- * schema + llm route list; /melite-tools/enhance is the ✦ Enhance
- * door (one-shot + agent-sweep forms). One execution core,
- * llm-complete.ts, shared with everything else.
- */
 import type { LlmStreamSeam } from './llm-complete.js';
 import { mcpFormDoc } from '@melite/engine-mcp/formDoc';
 /** The tool-row shape, DERIVED from the contract's own signature

@@ -1,12 +1,4 @@
-import { taggerSaveText, TAGGER_CAPTION_LENGTHS, TAGGER_CAPTION_TYPES, TAGGER_EXTRA_OPTIONS } from "@melite/comfyui-card-kit";
-/** The weightless door: the family declares no lane_inputs, so
- * there is nothing to parse and nothing that can drift. The raw
- * view rides unvalidated by contract (absent ≡ {}).
- *  @param _raw the resolved lane_inputs (empty for this family)
- *  @returns the vacuous facts shape */
-export function parseTagFacts(_raw) {
-    return {};
-}
+import { taggerSaveText, TAGGER_CAPTION_LENGTHS, TAGGER_CAPTION_TYPES, TAGGER_EXTRA_OPTIONS, parseWeightlessFacts, assertTagInput } from "@melite/comfyui-card-kit";
 /** The image prompt-inversion action: the JoyCaption VLM — LoadImage
  * (or the wired spell), the model loader, JJC_JoyCaption on the
  * caption template, SaveText under <run>/tags. */
@@ -28,12 +20,9 @@ export const tag = {
         { name: "caption_length", type: "enum", options: TAGGER_CAPTION_LENGTHS },
         { name: "extra_option", type: "enum", options: TAGGER_EXTRA_OPTIONS },
     ],
-    facts: parseTagFacts,
+    facts: parseWeightlessFacts,
     build({ p, g, runId }) {
-        const img = typeof p.input_image === "string" ? p.input_image : "";
-        if (!img.trim()) {
-            throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
-        }
+        const img = assertTagInput(p);
         const src = img.startsWith("$") ? img : g.node("LoadImage", { image: img }).out();
         const predictor = g.node("JJC_DownloadAndLoadJoyCaptionModel", {
             model: p.checkpoint,

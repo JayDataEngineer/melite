@@ -43,10 +43,10 @@ export interface LocalModelListRow {
  * repeated runs byte-match.
  *
  * @param listPath absolute path of the manager-local model-list.json
- * @param rows the declared provision rows (family + ProvisionRow)
+ * @param rows the declared provision rows (family + CATALOG.ProvisionRow)
  */
 export function writeManagerLocalModelList(listPath: string,
-    rows: ReadonlyArray<{ family: string; row: Pick<ProvisionRow, "name" | "folder" | "url"> }>): void {
+    rows: ReadonlyArray<{ family: string; row: Pick<CATALOG.ProvisionRow, "name" | "folder" | "url"> }>): void {
   const list: LocalModelListRow[] = rows
     .map(({ family, row }) => ({
       name: family + "/" + row.name,
@@ -136,14 +136,6 @@ export function sha256Of(path: string): string {
     closeSync(fd);
   }
   return h.digest("hex");
-}
-
-export interface ProvisionRow {
-  name: string;
-  folder: string;
-  url: string;
-  sha256: string;
-  size_bytes?: number;
 }
 
 export async function catalogProvisions(): Promise<Array<{ family: string; row: CATALOG.ProvisionRow }>> {
@@ -261,7 +253,7 @@ export async function fetchVerified(_workspace: string,
 }
 
 // ── snapshot dirs via the HF resolve channel ──
-// A single-file ProvisionRow cannot name a whole HF dir.
+// A single-file CATALOG.ProvisionRow cannot name a whole HF dir.
 // Snapshot rows pin one instead (repo + revision + patterns).
 // Manager's install_model queue moves single files only, so these
 // rows ride the estate's own fetch: plain HTTPS against the HF

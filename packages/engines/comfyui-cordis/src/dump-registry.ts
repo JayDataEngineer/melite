@@ -17,6 +17,10 @@
 //   "knobs": [{name, type, array, role}]}}}
 import { loadCardDefs } from './cardDefs.ts'
 
+/** A card-def param-schema node as the dumper reads it: structural,
+ * undeclared upstream — every field read below is guarded. */
+type LooseParamNode = { type?: string; value?: unknown; list?: LooseParamNode[]; meta?: Record<string, unknown> }
+
 const defs = await loadCardDefs()
 const cards: Record<string, unknown> = {}
 for (const [id, def] of [...defs].sort(([a], [b]) => a < b ? -1 : 1)) {
@@ -24,13 +28,16 @@ for (const [id, def] of [...defs].sort(([a], [b]) => a < b ? -1 : 1)) {
   const dict = (typeof carrier === "function" && "dict" in carrier
     ? carrier.dict
     : undefined) ?? {}
-  const knobs = Object.entries(dict).map(([name, s]: [string, any]) => {
+  // A dict entry is a loose param-schema node: {type, list?, meta?}
+  // with no declared contract (the defs walk is structural), so the
+  // narrow reads below carry their own guards.
+  const knobs = Object.entries(dict).map(([name, s]: [string, LooseParamNode | undefined]) => {
     // role rides the outer meta (nullable unions merge inner meta —
     // the params-emit.ts mirror, abridged: file slots are never
     // nullable, but the merge keeps the dumper honest).
     let inner = null
     if (s?.type === 'union' && Array.isArray(s.list)) {
-      const nonNull = s.list.filter((b: any) => !(b.type === 'const' && b.value === null))
+      const nonNull = s.list.filter((b: LooseParamNode) => !(b.type === 'const' && b.value === null))
       if (nonNull.length === 1 && s.list.length === 2) inner = nonNull[0]
     }
     const m = s?.meta ?? {}

@@ -2,7 +2,7 @@ import { laneBlank, judgeLaneRelations } from '@melite/contracts/laneRelations';
 import z from '@deepseek-ai/schemastery';
 import { declaredAction, qvoiceUse, instantiateAction } from '@melite/comfyui-card-kit';
 import { DECL as qwen3TtsDecl, PRESET_SPEAKERS, variantRoute, laneTopologyOf as ttsLaneTopologyOf } from '@melite/models-qwen3-tts';
-import { DECL as qwen3TtsVoicedesignDecl, variantRoute as voicedesignVariantRoute, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign';
+import { DECL as qwen3TtsVoicedesignDecl, laneTopologyOf as voicedesignLaneTopologyOf } from '@melite/models-qwen3-tts-voicedesign';
 import { vocabulary } from '@melite/comfyui-card-kit/vocab';
 import { bag } from '@melite/contracts/extraKeys';
 import { gatedResolve, QVOICE_RIDERS, QVOICE_SAVE_RIDERS } from '@melite/comfyui-cordis';
@@ -76,6 +76,12 @@ const schemaFn = schema;
 // retyped id breaks the card at RUNTIME — not-boarded — with every wall
 // green; image-gen has been doing it this way all along)
 export const BOARDED = [qwen3TtsVoicedesignDecl.id, qwen3TtsDecl.id];
+/** THE ACTION BINDINGS (the atom vocabulary, stroke 3): the owning
+ * family's declared speak + export actions — the card owns only
+ * dispatch; the segment factories live in the family packages.
+ * Keyed by OWNING FAMILY (`model.family ?? model.id` at dispatch —
+ * a route id keys nothing, the derived-row law); an unbound family
+ * refuses loud at the dispatch. */
 export const ACTION_BINDINGS = {
     [qwen3TtsDecl.id]: {
         save: (p, model, g, runId) => { instantiateAction(declaredAction(qwen3TtsDecl, 'export'), p, model, g, runId); },
@@ -103,7 +109,7 @@ const laneTopology = (model) => (model.family === qwen3TtsVoicedesignDecl.id ? v
 // rename left the card boarding an address that resolves to nothing)
 export const VARIANT_ADDRESSES = [
     variantRoute(qwen3TtsDecl, 'base'),
-    voicedesignVariantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
+    variantRoute(qwen3TtsVoicedesignDecl, 'voicedesign'),
 ].filter((r) => r !== '');
 /** The identity rung (label/description — the authored prose the
  *  emitted tool row carries; the ring's spelling, stated once). */

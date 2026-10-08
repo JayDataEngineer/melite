@@ -124,4 +124,3 @@ test('the estate lane renders the sidebar with Media + cards (the operator censu
 
   await page.screenshot({ path: '/tmp/estate-lane-sidebar.png', fullPage: false })
 })
-

@@ -1,5 +1,6 @@
 import { GraphBuilder, OutputHandle } from './graph.js';
 import type { NodeRef, PromptGraph, StripTable } from './graph.js';
+import type { LaneInputsFacts } from './facts.js';
 /** The per-export TUNE (stroke 95 — every knob a mask source owns
  *  rides its bag entry; the card threads each export's own tune as
  *  the trip's fourth arm). Absent arms ride the lane-flat values
@@ -30,6 +31,29 @@ export declare const TAGGER_CAPTION_TASKS: string[];
 export declare const TAGGER_CAPTION_TYPES: string[];
 export declare const TAGGER_CAPTION_LENGTHS: string[];
 export declare const TAGGER_EXTRA_OPTIONS: string[];
+/** The closed facts shape a weightless arm reads: nothing — the arm
+ * is weightless (every wire value comes from params; the DRY sweep
+ * C2 cure, 2026-10-18, deduped from four byte-identical family
+ * doors). */
+export type WeightlessFacts = Record<string, never>;
+/** The gated params doc a weightless arm reads (the card's schema
+ * walk validated types and bounds — a same-process typed boundary;
+ * the arm reads its own subset of the card's union surface). */
+export type WeightlessParams = Record<string, unknown>;
+/** The weightless door: a family that declares no lane_inputs has
+ * nothing to parse and nothing that can drift. The raw view rides
+ * unvalidated by contract (absent ≡ {}).
+ *  @param _raw the resolved lane_inputs (empty for the family)
+ *  @returns the vacuous facts shape */
+export declare function parseWeightlessFacts(_raw: LaneInputsFacts): WeightlessFacts;
+/** The tagger card's input_image guard, verbatim from the four arms
+ * (folded by the C2 cure): required, string, non-blank — the tagger
+ * inverts an image, so nothing to tag is a refusal.
+ *  @param p the arm's params doc
+ *  @returns the validated input reference (a wired spell or a path) */
+export declare function assertTagInput(p: {
+    input_image?: unknown;
+}): string;
 /** The SaveText tail (every arm's consensus — moved verbatim from
  *  the tagger card). */
 export declare function taggerSaveText(g: GraphBuilder, text: OutputHandle, prefix: string): NodeRef;

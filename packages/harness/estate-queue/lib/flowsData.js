@@ -17,19 +17,11 @@
 // rides this registry), no fallbacks, no hardcodes.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
+import { isFile } from "./skillFs.js";
 import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
-import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.js";
 import { validateBakeParams } from "./bakeParams.js";
-function isFile(p) {
-    try {
-        return statSync(p).isFile();
-    }
-    catch {
-        return false;
-    }
-}
 // ── shared builders ─────────────────────────────────────────────
 export function initial(key) {
     return { initial: key };

@@ -192,6 +192,11 @@ export async function uploadFile(client, path) {
     }
     return { name: out["name"] };
 }
+// One accepted cross-tier twin (DRY sweep C5, 2026-10-18): the
+// engine plane cannot import estate-queue's skillFs (tier direction
+// engines <- estate holds; an engine package deps no harness row).
+// Three bytes of truth, one direction: the estate's shared copy
+// serves the estate; this one serves the engine's upload walk.
 export function isFile(path) {
     try {
         return statSync(path).isFile();

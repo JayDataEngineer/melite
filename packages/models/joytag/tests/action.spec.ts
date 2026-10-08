@@ -16,7 +16,8 @@ import { assertGraphGolden } from "../../../../tests/helpers/graph-golden.ts";
 import type { ModelFacts } from "@melite/comfyui-card-kit/facts";
 import { join } from "node:path";
 import { DECL } from "../src/index.ts";
-import { tag, parseTagFacts } from "../src/actions.ts";
+import { tag } from "../src/actions.ts";
+import { parseWeightlessFacts } from "@melite/comfyui-card-kit";
 
 // The REAL resolved shape the service hands compose: a weightless
 // family row (lane_inputs ≡ {} — the loader's absent-≡-{} law).
@@ -89,7 +90,7 @@ describe("the tag action — byte-stability (the compatibility law)", () => {
   });
 
   it("the weightless door parses anything (absent ≡ {} — nothing can drift)", () => {
-    assert.deepEqual(parseTagFacts({}), {});
-    assert.deepEqual(parseTagFacts({ unet: "whatever" }), {}, "unknown keys ride unvalidated");
+    assert.deepEqual(parseWeightlessFacts({}), {});
+    assert.deepEqual(parseWeightlessFacts({ unet: "whatever" }), {}, "unknown keys ride unvalidated");
   });
 });

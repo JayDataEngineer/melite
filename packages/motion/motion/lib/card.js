@@ -30,6 +30,10 @@ export const schema = z.object({
 const schemaFn = schema;
 // THE FAMILY ID COMES FROM ITS DECL (the closure gate's RULE 5)
 export const BOARDED = [kimodoDecl.id];
+// THE FAMILY BINDINGS (the atom vocabulary, stroke 3): every
+// boarded family's declared compose action, keyed by the row's
+// family address. A family-less row (the declared fallback) rides
+// the legacy lane arm below — never a silent second copy.
 export const ACTION_BINDINGS = {
     [kimodoDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(kimodoDecl, 'compose'), p, model, g, runId),
 };

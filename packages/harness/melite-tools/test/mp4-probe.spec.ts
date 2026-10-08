@@ -795,4 +795,3 @@ describe('the stbl-without-stsd arm (walker bounds, second seat)', () => {
     assert.deepEqual(row.streams, [{ codec: 'unknown', codec_type: 'audio' }])
   })
 })
-

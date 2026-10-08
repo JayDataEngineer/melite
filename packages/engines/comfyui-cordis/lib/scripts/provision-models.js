@@ -25,7 +25,7 @@ export const MELITE_MODEL_BASE = "melite";
  * repeated runs byte-match.
  *
  * @param listPath absolute path of the manager-local model-list.json
- * @param rows the declared provision rows (family + ProvisionRow)
+ * @param rows the declared provision rows (family + CATALOG.ProvisionRow)
  */
 export function writeManagerLocalModelList(listPath, rows) {
     const list = rows
@@ -228,7 +228,7 @@ export async function fetchVerified(_workspace, storeRoot, label, url, name, sub
     return "bad";
 }
 // ── snapshot dirs via the HF resolve channel ──
-// A single-file ProvisionRow cannot name a whole HF dir.
+// A single-file CATALOG.ProvisionRow cannot name a whole HF dir.
 // Snapshot rows pin one instead (repo + revision + patterns).
 // Manager's install_model queue moves single files only, so these
 // rows ride the estate's own fetch: plain HTTPS against the HF

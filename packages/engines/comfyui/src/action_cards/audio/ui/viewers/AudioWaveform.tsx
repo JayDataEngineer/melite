@@ -1,3 +1,4 @@
+import type WaveSurfer from "wavesurfer.js"
 import { useEffect, useRef } from "react"
 import styles from "./AudioWaveform.module.css"
 
@@ -10,7 +11,7 @@ interface AudioWaveformProps {
 
 export function AudioWaveform({ audioUrl, height = 60, color = "#3b82f6", className }: AudioWaveformProps) {
   const containerRef = useRef<HTMLDivElement>(null)
-  const wavesurferRef = useRef<any>(null)
+  const wavesurferRef = useRef<WaveSurfer | null>(null)
 
   useEffect(() => {
     if (!containerRef.current || !audioUrl) return

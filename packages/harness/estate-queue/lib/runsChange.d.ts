@@ -13,6 +13,7 @@ declare module "@deepseek-ai/cordis" {
          * A run row moved — a claim (queued→running), a settle
          * (terminal), an artifacts harvest, or a stop press (→stopping).
          * Emitted after the write landed.
+         * @mode emit
          * @param runId - the run whose row moved.
          */
         "runs.changed": (runId: string) => void;

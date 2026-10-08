@@ -27,6 +27,7 @@ declare module "@deepseek-ai/cordis" {
      * A run row moved — a claim (queued→running), a settle
      * (terminal), an artifacts harvest, or a stop press (→stopping).
      * Emitted after the write landed.
+     * @mode emit
      * @param runId - the run whose row moved.
      */
     "runs.changed": (runId: string) => void;
@@ -62,8 +63,11 @@ export function onRunChange(fn: RunChangeListener): () => void {
   return runsChangeSeam.on((runId: string): void => {
     try {
       fn(runId);
-    } catch {
-      /* a listener's fault never breaks the write */
+    } catch (fault) {
+      /* the listener-fault law: name the error, swallow the why —
+       * a subscriber's fault never breaks the write and never
+       * starves the listeners after it (measured 2026-10-12) */
+      console.error("runs.changed listener fault:", fault);
     }
   });
 }

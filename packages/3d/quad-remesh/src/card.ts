@@ -21,10 +21,8 @@
 // card owns its defaults; the node receives those values directly.
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
-import { declaredAction, instantiateAction } from '@melite/comfyui-card-kit'
+import { declaredAction, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import { DECL as autoremesherDecl } from '@melite/models-autoremesher'
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
 import { bag } from '@melite/contracts/extraKeys'
 import { gatedResolve } from '@melite/comfyui-cordis'
 
@@ -74,7 +72,6 @@ export const identity = {
 // boarded family's declared compose action, keyed by the row's
 // family address. A family-less row (the declared fallback) rides
 // the legacy lane arm below — never a silent second copy.
-export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
 export const ACTION_BINDINGS: Record<string, Binding> = {
   [autoremesherDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(autoremesherDecl, 'remesh'), p, model, g, runId),
 }

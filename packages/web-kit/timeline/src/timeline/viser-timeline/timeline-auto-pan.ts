@@ -5,7 +5,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { KEYFRAME_RADIUS, TRACK_LABEL_WIDTH } from "./constants.ts";
 import { getZoomEnvelopeEndFrame } from "./timeline-scales.ts";
 import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.ts";
-import type { TimelineViewport } from "./timeline-viewport.ts";
+import type { ViserViewport } from "./timeline-viewport.ts";
 
  // Auto-pan (aka "autoscroll") while resizing the RIGHT edge of a prompt, so the user can keep dragging.
  export const AUTO_PAN_EDGE_PX = 60;
@@ -14,7 +14,7 @@ export  type AutoPanMode = "resizeRightEdge" | "intersection";
 
 export interface TimelineAutoPanArgs {
  interaction: TimelineInteractionSnapshot;
- viewport: TimelineViewport;
+ viewport: ViserViewport;
 }
 
 export function useTimelineAutoPan(args: TimelineAutoPanArgs) {
@@ -306,4 +306,3 @@ export function useTimelineAutoPan(args: TimelineAutoPanArgs) {
 }
 
 export type TimelineAutoPan = ReturnType<typeof useTimelineAutoPan>;
-

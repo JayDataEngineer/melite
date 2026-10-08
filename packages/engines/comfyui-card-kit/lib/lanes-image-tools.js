@@ -126,11 +126,26 @@ export const TAGGER_EXTRA_OPTIONS = [
     'You MUST include information about the subjective aesthetic quality of the image from low to very high.',
     'Your response will be used by a text-to-image model, so avoid useless meta phrases like “This image shows…”, "You are looking at...", etc.',
 ];
-// ── NO tagger checkpoint vocabs live here (the weights law,
-// 2026-09-22): the closed sets are the families' own variant rows
-// (wd14/florence2 DECLs — resolver_defaults stamp the pick), the
-// schema declares no weights knob. A vocabulary() here would be a
-// second picker around the variant rail — do not re-add one.
+/** The weightless door: a family that declares no lane_inputs has
+ * nothing to parse and nothing that can drift. The raw view rides
+ * unvalidated by contract (absent ≡ {}).
+ *  @param _raw the resolved lane_inputs (empty for the family)
+ *  @returns the vacuous facts shape */
+export function parseWeightlessFacts(_raw) {
+    return {};
+}
+/** The tagger card's input_image guard, verbatim from the four arms
+ * (folded by the C2 cure): required, string, non-blank — the tagger
+ * inverts an image, so nothing to tag is a refusal.
+ *  @param p the arm's params doc
+ *  @returns the validated input reference (a wired spell or a path) */
+export function assertTagInput(p) {
+    const img = typeof p.input_image === "string" ? p.input_image : "";
+    if (!img.trim()) {
+        throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
+    }
+    return img;
+}
 /** The SaveText tail (every arm's consensus — moved verbatim from
  *  the tagger card). */
 export function taggerSaveText(g, text, prefix) {

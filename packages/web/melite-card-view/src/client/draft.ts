@@ -38,13 +38,6 @@ export interface DraftDoc {
   bench?: { rev: number; log: unknown[] }
 }
 
-/** Per-stage status from the run-status door. */
-export interface RunStageStatus {
-  id: string
-  status: string
-  url?: string
-}
-
 /** GET /v1/flows/status/<run_id> (the fields the card surface reads). */
 export interface RunStatusDoc {
   run_id: string
@@ -69,7 +62,7 @@ export type FlowEventFrame =
       error?: string
     }
 
-import { toRunMediaUrl } from '@melite-plugin/melite-run-wire'
+import { toRunMediaUrl, type RunStageStatus } from '@melite-plugin/melite-run-wire'
 import { estateRemote, unwrapRemote, parseNumericInput, isCasConflict, type DraftsNamespace } from '@melite/card-base/client'
 import { isTerminalStatus, statusOrPendingOf, type CardStatus } from '@melite/contracts/stageView'
 import { rejectionVoice } from './rejection-voice.ts'
@@ -81,6 +74,7 @@ import { rejectionVoice } from './rejection-voice.ts'
  *  named export for this module's consumers — the definition lives
  *  in ONE package (the operator's DRY law). */
 export { toRunMediaUrl as mediaUrl }
+export type { RunStageStatus }
 
 /** The draft doc; throws the door's own named refusal on failure. */
 export async function fetchDraft(draftId: string): Promise<DraftDoc> {

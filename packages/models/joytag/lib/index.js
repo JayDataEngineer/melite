@@ -84,5 +84,8 @@ export const family = {
         ctx.effect(() => ctx.models.registerFamily(DECL));
     },
 };
-export { tag, parseTagFacts } from "./actions.js";
+// The weightless door rides the kit spellings (DRY sweep C2, 2026-10-18);
+// the old Tag* aliases are re-served for the family's consumers.
+export { tag } from "./actions.js";
+export { parseWeightlessFacts as parseTagFacts } from "@melite/comfyui-card-kit";
 //# sourceMappingURL=index.js.map

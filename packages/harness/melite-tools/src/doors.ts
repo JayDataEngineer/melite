@@ -25,6 +25,7 @@
  * door (one-shot + agent-sweep forms). One execution core,
  * llm-complete.ts, shared with everything else.
  */
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import type { LlmStreamSeam } from './llm-complete.ts'
 import { segmentConfined } from '@melite/contracts/mediaKinds'
 import { harnessEnhance, resolveHarnessRoutes, routeName } from './llm-complete.ts'
@@ -470,15 +471,18 @@ export function apply(c: CtxView, config: Config = {}): void {
     c.effect(() => c.webServer.register({
       kind: 'exact',
       path: '/v1/uploads',
-      handler: (req: any, res: any) => {
+      handler: (req: IncomingMessage, res: ServerResponse) => {
         const fail = (code: number, err: string): void => {
           const body = JSON.stringify({ error: err })
           res.writeHead(code, { 'content-type': 'application/json' })
           res.end(body)
         }
         readBody(req).then(async (buf) => {
-          let body: any
-          try { body = JSON.parse(buf.toString('utf8')) } catch { return fail(400, 'body must be JSON') }
+          // JSON.parse yields any; the assertion names the expected
+          // envelope and the typeof guards below validate each field
+          // (the any never escapes the guarded reads).
+          let body: Record<string, unknown>
+          try { body = JSON.parse(buf.toString('utf8')) as Record<string, unknown> } catch { return fail(400, 'body must be JSON') }
           const filename = typeof body?.filename === 'string' ? body.filename : ''
           const data = typeof body?.data === 'string' ? body.data : ''
           if (filename === '' || data === '') return fail(400, 'uploads: filename + data are required')
@@ -513,7 +517,7 @@ export function apply(c: CtxView, config: Config = {}): void {
     c.effect(() => c.webServer.register({
       kind: 'prefix',
       path: '/v1/assets/inputs',
-      handler: (req: any, res: any) => {
+      handler: (req: IncomingMessage, res: ServerResponse) => {
         const fail = (code: number, err: string): void => {
           const body = JSON.stringify({ error: err })
           res.writeHead(code, { 'content-type': 'application/json' })
@@ -568,7 +572,7 @@ export function apply(c: CtxView, config: Config = {}): void {
     c.effect(() => c.webServer.register({
       kind: 'exact',
       path: '/v1/uploads/lora',
-      handler: (req: any, res: any) => {
+      handler: (req: IncomingMessage, res: ServerResponse) => {
         const fail = (code: number, err: string): void => {
           const body = JSON.stringify({ error: err })
           res.writeHead(code, { 'content-type': 'application/json' })

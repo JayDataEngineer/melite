@@ -5,9 +5,7 @@
 import type { Context } from '@deepseek-ai/cordis'
 import z from '@deepseek-ai/schemastery'
 import { DECL as kimodoDecl } from '@melite/models-kimodo'
-import { declaredAction, finalizeMotion, instantiateAction } from '@melite/comfyui-card-kit'
-import type { ModelFacts } from '@melite/comfyui-card-kit/facts'
-import type { GraphBuilder } from '@melite/comfyui-card-kit/graph'
+import { declaredAction, finalizeMotion, instantiateAction, type ActionBinding as Binding } from '@melite/comfyui-card-kit'
 import type { ComfyUIService } from '@melite/comfyui-cordis/service'
 import { vocabulary } from '@melite/comfyui-card-kit/vocab'
 import { bag } from '@melite/contracts/extraKeys'
@@ -46,7 +44,6 @@ export const BOARDED: string[] = [kimodoDecl.id]
 // boarded family's declared compose action, keyed by the row's
 // family address. A family-less row (the declared fallback) rides
 // the legacy lane arm below — never a silent second copy.
-export type Binding = (p: Record<string, unknown>, model: ModelFacts, g: GraphBuilder, runId: string) => void
 export const ACTION_BINDINGS: Record<string, Binding> = {
   [kimodoDecl.id]: (p, model, g, runId) => void instantiateAction(declaredAction(kimodoDecl, 'compose'), p, model, g, runId),
 }

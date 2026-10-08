@@ -5,13 +5,16 @@
   "types": "./src/timeline/index.ts",
   "exports": {
     "./ui/timeline": {
-      "types": "./lib/timeline/index.d.ts"
+      "types": "./lib/timeline/index.d.ts",
+      "default": "./lib/timeline/index.js"
     },
     "./ui/store": {
-      "types": "./lib/store/index.d.ts"
+      "types": "./lib/store/index.d.ts",
+      "default": "./lib/store/index.js"
     },
     "./ui/playback": {
-      "types": "./lib/playback/index.d.ts"
+      "types": "./lib/playback/index.d.ts",
+      "default": "./lib/playback/index.js"
     },
     "./client": {
       "types": "./lib/client/index.d.ts",

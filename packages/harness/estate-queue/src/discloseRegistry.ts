@@ -28,7 +28,7 @@ import { getRegistryFlow, registryFlowNames } from "./flowsData.ts";
 // ── the pures (verbatim) ──────────────────────────────────────
 
 /** One card summary (the routing layer — no bodies). */
-export interface CardSummary {
+export interface DiscoveredCard {
   readonly id: string;
   readonly label: string;
   readonly description: string;
@@ -60,10 +60,10 @@ export function searchCards(
   defs: ReadonlyMap<string, SearchableCard>,
   q: string,
   tags: string,
-): CardSummary[] {
+): DiscoveredCard[] {
   const toks: readonly string[] = q.toLowerCase().split(/\s+/).filter((t): boolean => t !== "");
   const want: readonly string[] = tags.toLowerCase().split(",").map((t): string => t.trim()).filter((t): boolean => t !== "");
-  const out: CardSummary[] = [];
+  const out: DiscoveredCard[] = [];
   for (const [id, def] of defs) {
     const dtags: readonly string[] = def.tags ?? [];
     const low: readonly string[] = dtags.map((x): string => x.toLowerCase());
@@ -190,13 +190,13 @@ export class DiscloseDirectoryService extends Service {
     lookup: string,
     q: string,
     tags: string,
-  ): { flows?: FlowSummary[]; cards?: CardSummary[] } {
+  ): { flows?: FlowSummary[]; cards?: DiscoveredCard[] } {
     if (lookup !== "all" && lookup !== "cards" && lookup !== "flows") {
       throw new Error(
         "unknown lookup '" + lookup + "' (all | cards | flows)",
       );
     }
-    const body: { flows?: FlowSummary[]; cards?: CardSummary[] } = {};
+    const body: { flows?: FlowSummary[]; cards?: DiscoveredCard[] } = {};
     if (lookup === "all" || lookup === "flows") {
       body.flows = searchFlows(flowSummaryRows(resolveRepoRoot()), q);
     }

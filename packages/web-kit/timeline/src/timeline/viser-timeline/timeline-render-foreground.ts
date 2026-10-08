@@ -514,4 +514,3 @@ export function useTimelineForeground(args: TimelineForegroundArgs) {
  darkMode, // Force redraw on theme change
  ]);
 }
-

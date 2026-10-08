@@ -14,7 +14,6 @@
  * have smaller X values than left-side ones).
  */
 import { apiFetch } from "@melite/catalog";
-import { readAsDataURL } from "./readFile.js";
 // ── COCO-18 keypoint indices ─────────────────────────────────────────────
 export const KP = {
     NOSE: 0, NECK: 1,
@@ -164,15 +163,6 @@ export async function renderCustomPose(keypoints, opts = {}) {
         throw new Error(`Pose render failed: ${res.status} ${txt}`);
     }
     return res.blob();
-}
-/**
- * Convert a Blob to a base64 data URL — for saving to the asset store
- * (which expects data URLs, not object URLs, for persistence).
- * Delegates to the shared readAsDataURL (@melite/ui SlotSquare — the
- * ONE read path every slot-shaped attach uses).
- */
-export function blobToDataUrl(blob) {
-    return readAsDataURL(blob);
 }
 // ── 2D → approximate 3D projection ──────────────────────────────────────────
 /** SOMA coordinate space constants. */

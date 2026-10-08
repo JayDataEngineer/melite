@@ -1,6 +1,6 @@
 import { GraphBuilder, OutputHandle, stripAutofill } from './graph.ts'
 import type { NodeInputs, NodeRef, PromptGraph, StripTable } from './graph.ts'
-import type { ModelFacts } from './facts.ts'
+import type { ModelFacts, LaneInputsFacts } from './facts.ts'
 import { mintSeed } from './graph-helpers.ts'
 import { impactDetector } from './impact.ts'
 
@@ -155,6 +155,39 @@ export const TAGGER_EXTRA_OPTIONS = [
 // (wd14/florence2 DECLs — resolver_defaults stamp the pick), the
 // schema declares no weights knob. A vocabulary() here would be a
 // second picker around the variant rail — do not re-add one.
+
+/** The closed facts shape a weightless arm reads: nothing — the arm
+ * is weightless (every wire value comes from params; the DRY sweep
+ * C2 cure, 2026-10-18, deduped from four byte-identical family
+ * doors). */
+export type WeightlessFacts = Record<string, never>;
+
+/** The gated params doc a weightless arm reads (the card's schema
+ * walk validated types and bounds — a same-process typed boundary;
+ * the arm reads its own subset of the card's union surface). */
+export type WeightlessParams = Record<string, unknown>;
+
+/** The weightless door: a family that declares no lane_inputs has
+ * nothing to parse and nothing that can drift. The raw view rides
+ * unvalidated by contract (absent ≡ {}).
+ *  @param _raw the resolved lane_inputs (empty for the family)
+ *  @returns the vacuous facts shape */
+export function parseWeightlessFacts(_raw: LaneInputsFacts): WeightlessFacts {
+  return {};
+}
+
+/** The tagger card's input_image guard, verbatim from the four arms
+ * (folded by the C2 cure): required, string, non-blank — the tagger
+ * inverts an image, so nothing to tag is a refusal.
+ *  @param p the arm's params doc
+ *  @returns the validated input reference (a wired spell or a path) */
+export function assertTagInput(p: { input_image?: unknown }): string {
+  const img = typeof p.input_image === "string" ? p.input_image : "";
+  if (!img.trim()) {
+    throw new Error("required param 'input_image' missing or blank on the tagger card (the tagger inverts an image; nothing to tag is a refusal)");
+  }
+  return img;
+}
 
 /** The SaveText tail (every arm's consensus — moved verbatim from
  *  the tagger card). */

@@ -98,4 +98,3 @@ function probesOf(d: CardDefinition): number {
   for (const f of declaredFields(d).values()) n += probesFor(f).length;
   return n;
 }
-

@@ -21,7 +21,7 @@ export { calculateTimelineCoordinates, DEFAULT_KEYFRAME_COLOR, getIntervalSegmen
 export { useTimelineInteractionState };
 export type { TimelineEditingDraft, TimelineInteractionSnapshot, TimelineInteractionStateArgs } from "./timeline-interaction-state.ts";
 export { useTimelineViewport };
-export type { TimelineViewport, TimelineViewportArgs } from "./timeline-viewport.ts";
+export type { TimelineViewportArgs, ViserViewport } from "./timeline-viewport.ts";
 export { useTimelineAutoPan };
 export { AUTO_PAN_EDGE_PX, AUTO_PAN_MAX_PX_PER_SEC } from "./timeline-auto-pan.ts";
 export type { AutoPanMode, TimelineAutoPan, TimelineAutoPanArgs } from "./timeline-auto-pan.ts";

@@ -1,11 +1,11 @@
 import type { TimelineInteractionSnapshot } from "./timeline-interaction-state.js";
-import type { TimelineViewport } from "./timeline-viewport.js";
+import type { ViserViewport } from "./timeline-viewport.js";
 export declare const AUTO_PAN_EDGE_PX = 60;
 export declare const AUTO_PAN_MAX_PX_PER_SEC = 900;
 export type AutoPanMode = "resizeRightEdge" | "intersection";
 export interface TimelineAutoPanArgs {
     interaction: TimelineInteractionSnapshot;
-    viewport: TimelineViewport;
+    viewport: ViserViewport;
 }
 export declare function useTimelineAutoPan(args: TimelineAutoPanArgs): {
     stopAutoPan: () => void;

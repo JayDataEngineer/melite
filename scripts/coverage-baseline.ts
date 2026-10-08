@@ -567,6 +567,7 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web-kit/timeline/src/timeline/viser-timeline/viewerContext.ts': { statements: 66.66, branches: 100, functions: 0, lines: 66.66 },
   '**/packages/web/card-base/src/atoms.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/axes.tsx': { statements: 100, branches: 100, functions: 100, lines: 100 },
+  '**/packages/web/card-base/src/cards-address.ts': { statements: 100, branches: 100, functions: 100, lines: 100 }, // C3 mint 2026-10-18; exercised via the client barrel (flow-cards-run, bench-load)
   '**/packages/web/card-base/src/chrome.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/card-base/src/client/index.ts': { statements: 100, branches: 100, functions: 50, lines: 100 },
   '**/packages/web/card-base/src/estate-remote.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
@@ -641,7 +642,6 @@ export const COVERAGE_BASELINE: Record<string, {
   '**/packages/web/melite-card-view/src/client/types.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/client/zoomPromotion.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-card-view/src/index.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
-  '**/packages/web/melite-card-view/src/invariant.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-estate/src/bundle-gate.ts': { statements: 100, branches: 100, functions: 100, lines: 100 },
   '**/packages/web/melite-estate/src/index.ts': { statements: 100, branches: 98.33, functions: 100, lines: 100 },
   '**/packages/web/melite-estate/src/provisioning.ts': { statements: 99.39, branches: 100, functions: 97.67, lines: 99.28 },

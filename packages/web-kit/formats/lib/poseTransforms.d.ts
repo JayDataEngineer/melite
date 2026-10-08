@@ -52,13 +52,6 @@ export declare function renderCustomPose(keypoints: Keypoints, opts?: {
     height?: number;
 }): Promise<Blob>;
 /**
- * Convert a Blob to a base64 data URL — for saving to the asset store
- * (which expects data URLs, not object URLs, for persistence).
- * Delegates to the shared readAsDataURL (@melite/ui SlotSquare — the
- * ONE read path every slot-shaped attach uses).
- */
-export declare function blobToDataUrl(blob: Blob): Promise<string>;
-/**
  * Convert 2D flat COCO-18 keypoints to approximate 3D positions.
  *
  * The 2D keypoints are flattened [x, y, confidence, ...] in image-pixel space

@@ -86,4 +86,3 @@ describe("the 2.1 lanes — bare-doc arms (every ?? fallback walked)", () => {
     assert.equal(enc!.inputs.negative_prompt, "");
   });
 });
-

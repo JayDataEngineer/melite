@@ -14,10 +14,9 @@
 //   per-card param wiring from the contract.
 //
 // A card file is then: contract-derived decl (id/skeleton/boarded/
-// requires/schema (import
-// stroke 2026-09-08: one contract, TS owns the knob vocabulary on
-// Schemastery direct); decls are pinned by the cli admission gate,
+// requires/schema (Schemastery direct); decls are pinned by the cli admission gate,
 // so decls NEVER move here) + admission
+// stroke 2026-09-08: one contract, TS owns the knob vocabulary on
 // guards (the card's loud voice) + one recipe call. h3-timeline and
 // img-to-mesh keep their bespoke multi-family bodies in-card and ride
 // the kit for arms/strips/shared chains.
@@ -36,7 +35,7 @@ export { IMPACT_DETECTOR_IDS, IMPACT_DETECTORS, IMPACT_DETECTOR_PROVISIONS, IMPA
 export { IMAGE_EDIT_STRIP, finalizeImageEdit, refuseImageEditFiring, editRefs, orderedInputImages, editImageCap, regionSegs, detailerSave, isSpell, laneSampler, laneScheduler, } from "./lanes-image.js";
 export { qvoiceUse } from "./lanes-audio.js";
 export { ANNY_STRIP, finalizeAnny, MOTION_STRIP, finalizeMotion, MESH_RESOLUTIONS, MESH_BG_MODES, MESH_PIXAL_FOVS, MESH_BAKE_SIZES, MESH_ATLAS_SIZES, MESH_AO_SIZES, MESH_NORMAL_SIZES, } from "./lanes-3d.js";
-export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, taggerSaveText, } from "./lanes-image-tools.js";
+export { TAGGER_STRIP, finalizeTagger, finalizeMask, TAGGER_CAPTION_TASKS, TAGGER_CAPTION_TYPES, TAGGER_CAPTION_LENGTHS, TAGGER_EXTRA_OPTIONS, taggerSaveText, parseWeightlessFacts, assertTagInput, } from "./lanes-image-tools.js";
 // the audio render blocks (the atom-vocabulary stroke 3: family
 // actions port the audiocore segments on the SAME calibrated pins
 // and loaders — one owner, the lanes stay as byte-oracles).

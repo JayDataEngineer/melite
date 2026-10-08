@@ -17,19 +17,11 @@
 // rides this registry), no fallbacks, no hardcodes.
 //
 // Erasable-syntax TS only (node --experimental-strip-types).
+import { isFile } from "./skillFs.ts"
 import { CARD_PLANE_ENGINE, LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from "@melite/contracts/benchStage";
-import { statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { mediaVocab } from "./mediaKinds.ts";
 import { validateBakeParams } from "./bakeParams.ts";
-
-function isFile(p: string): boolean {
-  try {
-    return statSync(p).isFile();
-  } catch {
-    return false;
-  }
-}
 
 /** One initial edge: {"initial": key} (the operator-supplied wire). */
 export interface RegistryInitialEdge {

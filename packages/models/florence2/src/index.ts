@@ -180,4 +180,7 @@ export const family: Plugin = {
   },
 };
 
-export { tag, parseTagFacts, type TagFacts, type TagParams } from "./actions.ts";
+// The weightless door rides the kit spellings (DRY sweep C2, 2026-10-18);
+// the old Tag* aliases are re-served for the family's consumers.
+export { tag } from "./actions.ts";
+export { parseWeightlessFacts as parseTagFacts, type WeightlessFacts as TagFacts, type WeightlessParams as TagParams } from "@melite/comfyui-card-kit";
