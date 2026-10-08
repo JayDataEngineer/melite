@@ -117,13 +117,14 @@ declare module "@deepseek-ai/cordis" {
  *  re-exported from index.ts). The seam is fiber-scoped — `ctx.effect`
  *  detaches it when the fiber is disposed.
  *
- *  ONE SEAM AT A TIME, MEASURED (the verification, 2026-10-12): the
- *  seam is module state, so the LAST install wins, and disposing an
- *  OLDER Context nulls the newer, still-live seam. The estate is
- *  single-tenant here (one root Context, one plugin apply), and the
- *  failure mode is loud — `onBenchChange` then refuses rather than
- *  subscribing to nothing — but a tree that mounts two draft plugins
- *  must install once.
+ *  ONE SEAM AT A TIME (measured 2026-10-12; the ownership stamp
+ *  2026-10-18): the seam is module state, so the LAST install wins.
+ *  Dispose carries the installer's stamp — an OLDER fiber's unwind
+ *  clears only its own install and a displaced seam detaches nothing,
+ *  so the live seam survives the older fiber's unwind. The estate is
+ *  single-tenant here (one root Context, one plugin apply); the
+ *  failure mode stays loud — `onBenchChange` with no seam installed
+ *  refuses rather than subscribing to nothing.
  * @param ctx - the Context whose bus carries `bench.changed`.
  * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
  */

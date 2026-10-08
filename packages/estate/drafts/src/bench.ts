@@ -2416,6 +2416,16 @@ export function setBenchChangeSeam(seam: BenchChangeSeam | null): void {
   benchChangeSeam = seam;
 }
 
+/** Detach the seam ONLY if `seam` is still the installed one — the
+ *  ownership stamp that keeps dispose honest: a fiber that installed
+ *  EARLIER (a newer install displaced it) detaches nothing, so the
+ *  live seam survives the older fiber's unwind.
+ * @param seam - the seam instance the caller installed.
+ */
+export function clearBenchChangeSeam(seam: BenchChangeSeam): void {
+  if (benchChangeSeam === seam) benchChangeSeam = null;
+}
+
 /** Subscribe to bench writes; returns the unsubscribe.
  *
  *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`

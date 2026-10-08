@@ -11,6 +11,7 @@
 // declared next to their throws (remote.ts / bench.ts).
 import type { Context, Plugin } from "@deepseek-ai/cordis";
 import { BenchRemoteService, DraftsRemoteService } from "./remote.js";
+import { DraftsDomainSeatService } from "./store.js";
 
 export { BenchRemoteService, DraftsRemoteService, installBenchChangeSeam } from "./remote.js";
 export {
@@ -35,6 +36,9 @@ export type {
 export const name = "estate-drafts";
 
 export function apply(ctx: Context): void {
+  // the domain seat mounts FIRST — the remote services' writers open
+  // the drafts domain through it (openDraftsDomain probes this seat)
+  new DraftsDomainSeatService(ctx);
   new DraftsRemoteService(ctx);
   new BenchRemoteService(ctx);
 }

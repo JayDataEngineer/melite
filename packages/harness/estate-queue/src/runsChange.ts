@@ -46,6 +46,16 @@ export function setRunsChangeSeam(seam: RunsChangeSeam | null): void {
   runsChangeSeam = seam;
 }
 
+/** Detach the seam ONLY if `seam` is still the installed one — the
+ *  ownership stamp that keeps dispose honest: a fiber that installed
+ *  EARLIER (a newer install displaced it) detaches nothing, so the
+ *  live seam survives the older fiber's unwind.
+ * @param seam - the seam instance the caller installed.
+ */
+export function clearRunsChangeSeam(seam: RunsChangeSeam): void {
+  if (runsChangeSeam === seam) runsChangeSeam = null;
+}
+
 /** Subscribe to run-row movement; returns the unsubscribe.
  *
  *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`
@@ -92,14 +102,17 @@ export function notifyRunChanged(runId: string): void {
 export function installRunsChangeSeam(ctx: Context): () => void {
   let detach: (() => void) | null = null;
   ctx.effect(() => {
-    setRunsChangeSeam({
+    const mine: RunsChangeSeam = {
       emit: (runId: string): void => { ctx.emit("runs.changed", runId); },
       on: (fn: (runId: string) => void): (() => void) => {
         const stop = ctx.on("runs.changed", fn);
         return () => { stop(); };
       },
-    });
-    detach = () => { setRunsChangeSeam(null); };
+    };
+    setRunsChangeSeam(mine);
+    // the ownership stamp: an older fiber's unwind clears only its own
+    // install — a displaced seam detaches nothing (clearRunsChangeSeam)
+    detach = () => { clearRunsChangeSeam(mine); };
     return detach;
   });
   return () => { detach?.(); };

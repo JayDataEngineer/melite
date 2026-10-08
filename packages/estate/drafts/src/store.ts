@@ -11,7 +11,7 @@
 // runs only while it serves the initial 0, then stamps the epoch —
 // a wiped unit never re-imports frozen ghosts. The legacy files stay
 // untouched on disk — evidence, never truth.
-import type { Context } from "@deepseek-ai/cordis";
+import { Service, type Context } from "@deepseek-ai/cordis";
 import type {
   Domain,
   DomainFacility,
@@ -82,46 +82,81 @@ async function importLegacyDrafts(
   await marker.set(Date.now());
 }
 
-let cached: WeakMap<
-  object,
-  { root: string; ready: Promise<Domain<DraftsDomainSpec>> }
-> = new WeakMap();
+/** The fiber-scoped seat owning the drafts domain handles (id
+ *  `meliteDraftsDomain` — the estate-seat prefix law, cf.
+ *  skillRegistry.ts:20-28): one instance per mounting fiber, so the
+ *  cached opens die with the fiber instead of living at module
+ *  scope. Fields are TS-`private`, never `#private` — cordis
+ *  `ctx.get` returns a proxy and private class fields die through
+ *  it ("Cannot read private member ... whose class did not declare
+ *  it"; the flows seat, flowsData.ts, is the measured precedent). */
+export class DraftsDomainSeatService extends Service {
+  static readonly inject = { optional: [] } as const;
 
-/** Open (or reuse) the drafts domain for this process's storage
- *  root. Throws LOUD when the host provides no storage facility —
- *  misconfiguration fails at the earliest resolvable point. */
+  /** Per-facility open handles, keyed by the facility object (one
+   *  slot per provider; GC-bounded, fiber-lifetime). */
+  private cached = new WeakMap<
+    object,
+    { root: string; ready: Promise<Domain<DraftsDomainSpec>> }
+  >();
+
+  constructor(ctx: Context) {
+    // the estate-seat id: dsh core may own the bare name
+    super(ctx, "meliteDraftsDomain");
+  }
+
+  /** Open (or reuse) the drafts domain for this process's storage
+   *  root. Throws LOUD when the host provides no storage facility —
+   *  misconfiguration fails at the earliest resolvable point.
+   *  @returns the ready domain handle (cached per facility). */
+  async open(): Promise<Domain<DraftsDomainSpec>> {
+    const root: string = resolveStorageRoot();
+    // OPTIONAL-dependency probe per the tutorial's documented pattern
+    // (cordis-tutorial/03-services.md: "skip inject and probe at the
+    // use site" — property reads demand inject on loader-mounted
+    // fibers; ctx.get returns the active provider or undefined).
+    const facility = this.ctx.get("storageDomain") as DomainFacility | undefined;
+    if (facility === undefined || facility === null) {
+      throw new Error(
+        "[estate-drafts] storage domain facility not mounted (ctx.storageDomain)",
+      );
+    }
+    const hit = this.cached.get(facility);
+    if (hit !== undefined && hit.root === root) return hit.ready;
+    // A foreign root never cross-writes another root's units.
+    if (hit !== undefined && hit.root !== root) {
+      throw new Error("[estate-drafts] storage serves the boot root only");
+    }
+    const ready: Promise<Domain<DraftsDomainSpec>> = (async () => {
+      const drafts = await facility.open(draftsDomainSpec);
+      await importLegacyDrafts(drafts);
+      return drafts;
+    })();
+    this.cached.set(facility, { root, ready });
+    try {
+      return await ready;
+    } catch (error: unknown) {
+      // Unconditional: one slot per facility exists at a time (a
+      // foreign root refuses above), so this rejection owns the slot.
+      this.cached.delete(facility);
+      throw error;
+    }
+  }
+}
+
+/** Open (or reuse) the drafts domain through the mounted seat. The
+ *  apply mounts `DraftsDomainSeatService` before the remote
+ *  services; tests mount it on their own Context.
+ *  @param ctx - the Context whose fiber carries the seat.
+ *  @returns the ready domain handle. */
 export async function openDraftsDomain(
   ctx: Context,
 ): Promise<Domain<DraftsDomainSpec>> {
-  const root: string = resolveStorageRoot();
-  // OPTIONAL-dependency probe per the tutorial's documented pattern
-  // (cordis-tutorial/03-services.md: "skip inject and probe at the
-  // use site" — property reads demand inject on loader-mounted
-  // fibers; ctx.get returns the active provider or undefined).
-  const facility = ctx.get("storageDomain") as DomainFacility | undefined;
-  if (facility === undefined || facility === null) {
+  const seat = ctx.get("meliteDraftsDomain") as DraftsDomainSeatService | undefined;
+  if (seat === undefined || seat === null) {
     throw new Error(
-      "[estate-drafts] storage domain facility not mounted (ctx.storageDomain)",
+      "[estate-drafts] drafts domain seat not mounted (new DraftsDomainSeatService(ctx))",
     );
   }
-  const hit = cached.get(facility);
-  if (hit !== undefined && hit.root === root) return hit.ready;
-  // A foreign root never cross-writes another root's units.
-  if (hit !== undefined && hit.root !== root) {
-    throw new Error("[estate-drafts] storage serves the boot root only");
-  }
-  const ready: Promise<Domain<DraftsDomainSpec>> = (async () => {
-    const drafts = await facility.open(draftsDomainSpec);
-    await importLegacyDrafts(drafts);
-    return drafts;
-  })();
-  cached.set(facility, { root, ready });
-  try {
-    return await ready;
-  } catch (error: unknown) {
-    // Unconditional: one slot per facility exists at a time (a
-    // foreign root refuses above), so this rejection owns the slot.
-    cached.delete(facility);
-    throw error;
-  }
+  return seat.open();
 }

@@ -19,6 +19,7 @@ import { Context } from "@deepseek-ai/cordis";
 import type { Domain } from "@deepseek-ai/dsh-storage-domain";
 import { openDraftsDomain } from "../src/store.ts";
 import type { DraftsDomainSpec } from "../src/spec.js";
+import { DraftsDomainSeatService } from "../src/store.ts";
 
 // TMP OWNERSHIP (stroke 13): every minted tree is disposed with its
 // test — see tests/global-sweep.ts for the tree-wide net.
@@ -117,6 +118,7 @@ function env(root: string): void {
 
 test("no storage facility mounted: the loud earliest refusal", async () => {
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   await assert.rejects(
     () => openDraftsDomain(ctx),
     /storage domain facility not mounted/,
@@ -141,6 +143,7 @@ test("the one-time legacy import: good rows land, corrupt and non-object rows sk
   );
   env(root);
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   // d_pre is ALREADY in the domain — the import never overwrites it
   // (its legacy file is skipped), and non-.json files never import.
@@ -178,6 +181,7 @@ test("same facility + same root reuses the open; a foreign root refuses", async 
   const root = legacyRoot({});
   env(root);
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   await openDraftsDomain(ctx);
   await openDraftsDomain(ctx);
@@ -194,6 +198,7 @@ test("a rejected open purges the cache: the retry re-attempts", async () => {
   const root = legacyRoot({});
   env(root);
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   facility.failFirstOpen = true;
   await assert.rejects(
@@ -210,6 +215,7 @@ test("a pre-stamped epoch skips the import entirely (a wiped unit never re-impor
   const root = legacyRoot({ "d_ghost.json": JSON.stringify({ intent: "frozen" }) });
   env(root);
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   // A previous boot stamped the epoch — the legacy tree is evidence,
   // never truth, so this open imports NOTHING.
@@ -223,6 +229,7 @@ test("a root with no legacy drafts dir imports nothing, cleanly", async () => {
   mkdirSync(join(root, "storage"), { recursive: true });
   env(root);
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   const facility = mountFacility(ctx);
   const drafts = (await openDraftsDomain(ctx)) as unknown as FakeDomain;
   assert.equal(drafts.puts.length, 0, "no dir, no rows");

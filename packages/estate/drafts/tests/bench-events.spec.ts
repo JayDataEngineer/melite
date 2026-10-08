@@ -51,6 +51,25 @@ describe("the bench change events (the push source)", () => {
     }
   });
 
+  test("an OLDER install's unwind clears only its own seam (the ownership stamp)", () => {
+    // THE STAMP LAW (the J3 defect, both seam twins): LAST install
+    // wins, and a displaced installer's detach is a NO-OP — the older
+    // fiber's unwind must never null the newer, still-live seam.
+    const older = new Context();
+    const newer = new Context();
+    const detachOlder = installBenchChangeSeam(older);
+    const detachNewer = installBenchChangeSeam(newer); // displaces the older seam
+    detachOlder(); // the older fiber unwinds FIRST — displaced, so a no-op
+    const seen: string[] = [];
+    const off = onBenchChange((session) => { seen.push(session); });
+    notifyBenchChange("live");
+    off();
+    expect(seen).toEqual(["live"]);
+    detachNewer();
+    expect(() => onBenchChange(() => {})).toThrow(/no bench change seam installed/);
+    installBenchChangeSeam(ctx); // restore the file's own seam
+  });
+
   test("the seam's disposer detaches it (a torn-down Context leaves no emitter)", () => {
     const own = new Context();
     const detach = installBenchChangeSeam(own);

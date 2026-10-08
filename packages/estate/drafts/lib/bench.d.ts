@@ -309,6 +309,13 @@ export interface BenchChangeSeam {
 /** Install the seam (the plugin does this with its Context; tests do
  *  it with their own). Pass null to detach. */
 export declare function setBenchChangeSeam(seam: BenchChangeSeam | null): void;
+/** Detach the seam ONLY if `seam` is still the installed one — the
+ *  ownership stamp that keeps dispose honest: a fiber that installed
+ *  EARLIER (a newer install displaced it) detaches nothing, so the
+ *  live seam survives the older fiber's unwind.
+ * @param seam - the seam instance the caller installed.
+ */
+export declare function clearBenchChangeSeam(seam: BenchChangeSeam): void;
 /** Subscribe to bench writes; returns the unsubscribe.
  *
  *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`

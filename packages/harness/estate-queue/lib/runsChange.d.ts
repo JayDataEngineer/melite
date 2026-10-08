@@ -26,6 +26,13 @@ declare module "@deepseek-ai/cordis" {
  *  is single-tenant here, and the failure mode is loud — onRunChange
  *  refuses rather than subscribing to nothing). */
 export declare function setRunsChangeSeam(seam: RunsChangeSeam | null): void;
+/** Detach the seam ONLY if `seam` is still the installed one — the
+ *  ownership stamp that keeps dispose honest: a fiber that installed
+ *  EARLIER (a newer install displaced it) detaches nothing, so the
+ *  live seam survives the older fiber's unwind.
+ * @param seam - the seam instance the caller installed.
+ */
+export declare function clearRunsChangeSeam(seam: RunsChangeSeam): void;
 /** Subscribe to run-row movement; returns the unsubscribe.
  *
  *  THE LISTENER FAULT LAW rides HERE, not in the bus: `ctx.emit`

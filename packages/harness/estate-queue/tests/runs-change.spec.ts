@@ -44,6 +44,26 @@ describe("the runs change events (the push source)", () => {
     }
   });
 
+  test("an OLDER install's unwind clears only its own seam (the ownership stamp)", () => {
+    // THE STAMP LAW: LAST install wins, and a displaced installer's
+    // detach is a NO-OP — the older fiber's unwind must never null
+    // the newer, still-live seam (the J3 defect, both seam twins).
+    const older = new Context();
+    const newer = new Context();
+    const detachOlder = installRunsChangeSeam(older);
+    const detachNewer = installRunsChangeSeam(newer); // displaces the older seam
+    detachOlder(); // the older fiber unwinds FIRST — displaced, so a no-op
+    // the newer seam is still live: subscribe and notify both answer
+    const seen: string[] = [];
+    const off = onRunChange((runId) => { seen.push(runId); });
+    notifyRunChanged("run-live");
+    off();
+    expect(seen).toEqual(["run-live"]);
+    detachNewer();
+    expect(() => onRunChange(() => {})).toThrow(/no runs change seam installed/);
+    installRunsChangeSeam(ctx); // restore the file's own seam
+  });
+
   test("the seam's disposer detaches it (a torn-down Context leaves no emitter)", () => {
     const own = new Context();
     const detach = installRunsChangeSeam(own);

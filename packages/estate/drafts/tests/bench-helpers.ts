@@ -60,6 +60,7 @@ export async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDo
   process.env["MELITE_STATE_ROOT"] = root;
   process.env["MELITE_STORAGE_ROOT"] = "";
   const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
   await ctx.plugin(Storage as never, undefined as never); // Storage takes no config; cordis Spread<GetPluginConfig> keeps the config arg positional
   await ctx.plugin(
     { name: jsonName, inject: jsonInject, apply: jsonApply, Config: JsonConfig } as never,
@@ -160,3 +161,4 @@ export function syncCodeOf(fn: () => unknown): string {
 }
 
 import { installBenchChangeSeam } from "../src/remote.ts";
+import { DraftsDomainSeatService } from "../src/store.ts";

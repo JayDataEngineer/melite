@@ -39,7 +39,7 @@ export { STAGE_PATCH_KEYS };
 import { unwrapItemArrays } from "@melite/comfyui-card-kit";
 import { openDraftsDomain } from "./store.js";
 import { DRAFT_ID_RE } from "./spec.js";
-import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, setBenchChangeSeam, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
+import { addStageBench, ensureBench, notifyBenchChange, notifyBenchDocWrite, onBenchChange, clearBenchChangeSeam, setBenchChangeSeam, getBench, groupBench, patchBench, clearBench, removeStageBench, reorderBench, rewireBench, undoBench, ungroupBench, } from "./bench.js";
 import { benchDraftIdOf } from "@melite/contracts/benchStage";
 /** Install the typed bench event seam on a Context: `bench.ts`
  *  (the pure domain module) emits and subscribes through it.
@@ -49,27 +49,31 @@ import { benchDraftIdOf } from "@melite/contracts/benchStage";
  *  re-exported from index.ts). The seam is fiber-scoped — `ctx.effect`
  *  detaches it when the fiber is disposed.
  *
- *  ONE SEAM AT A TIME, MEASURED (the verification, 2026-10-12): the
- *  seam is module state, so the LAST install wins, and disposing an
- *  OLDER Context nulls the newer, still-live seam. The estate is
- *  single-tenant here (one root Context, one plugin apply), and the
- *  failure mode is loud — `onBenchChange` then refuses rather than
- *  subscribing to nothing — but a tree that mounts two draft plugins
- *  must install once.
+ *  ONE SEAM AT A TIME (measured 2026-10-12; the ownership stamp
+ *  2026-10-18): the seam is module state, so the LAST install wins.
+ *  Dispose carries the installer's stamp — an OLDER fiber's unwind
+ *  clears only its own install and a displaced seam detaches nothing,
+ *  so the live seam survives the older fiber's unwind. The estate is
+ *  single-tenant here (one root Context, one plugin apply); the
+ *  failure mode stays loud — `onBenchChange` with no seam installed
+ *  refuses rather than subscribing to nothing.
  * @param ctx - the Context whose bus carries `bench.changed`.
  * @returns the effect disposer (the effect owns it; returned for direct callers that need an early detach).
  */
 export function installBenchChangeSeam(ctx) {
     let detach = null;
     ctx.effect(() => {
-        setBenchChangeSeam({
+        const mine = {
             emit: (session) => { ctx.emit("bench.changed", session); },
             on: (fn) => {
                 const stop = ctx.on("bench.changed", fn);
                 return () => { stop(); };
             },
-        });
-        detach = () => { setBenchChangeSeam(null); };
+        };
+        setBenchChangeSeam(mine);
+        // the ownership stamp: an older fiber's unwind clears only its own
+        // install — a displaced seam detaches nothing (clearBenchChangeSeam)
+        detach = () => { clearBenchChangeSeam(mine); };
         return detach;
     });
     return () => { detach?.(); };

@@ -119,6 +119,7 @@ describe("the estate bundle composes", () => {
       "melite-engine-agent",
       "melite-engine-craft",
       "melite-engine-mcp",
+      "meliteDraftsDomain",
       "meliteFlows",
       "meliteSkills",
       "provisioning",

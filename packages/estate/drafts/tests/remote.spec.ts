@@ -38,6 +38,7 @@ import {
 import type { BenchDoc } from "../src/remote.ts";
 import { installBenchChangeSeam } from "../src/remote.ts";
 import { RemoteError } from "@deepseek-ai/dsh-typert-protocol";
+import { DraftsDomainSeatService } from "../src/store.ts";
 
 const sig = new AbortController().signal;
 
@@ -85,8 +86,17 @@ async function bootCtx(): Promise<{ ctx: Context; domain: Domain<DraftsDomainSpe
   // The typed `bench.changed` seam (the hand-roll row 1.2): this file
   // boots its own Context rather than the shared helper, so it
   // installs the same seam the plugin installs.
+  new DraftsDomainSeatService(ctx);
   installBenchChangeSeam(ctx);
   return { ctx, domain: await openDraftsDomain(ctx) };
+}
+
+/** A fresh Context carrying the domain seat (remote services open
+ *  the drafts domain through it). */
+function seatCtx(): Context {
+  const ctx = new Context();
+  new DraftsDomainSeatService(ctx);
+  return ctx;
 }
 
 async function boot(): Promise<Domain<DraftsDomainSpec>> {
@@ -286,7 +296,7 @@ describe("drafts/list: the index row is first-seen display strings", () => {
   });
 
   test("a failed open wraps as draft/store-failed (bare ctx, no facility)", async () => {
-    const svc = new DraftsRemoteService(new Context());
+    const svc = new DraftsRemoteService(seatCtx());
     assert.equal(
       await codeOf(svc.list(sig)),
       "draft/store-failed|[estate-drafts] storage domain facility not mounted (ctx.storageDomain)",
@@ -316,7 +326,7 @@ describe("drafts/get: id law, not-found voice, resolved serve", () => {
   });
 
   test("a failed open wraps as draft/store-failed", async () => {
-    const svc = new DraftsRemoteService(new Context());
+    const svc = new DraftsRemoteService(seatCtx());
     assert.match(await codeOf(svc.get("bench-x", sig)), /^draft\/store-failed\|/);
   });
 
@@ -472,7 +482,7 @@ describe("drafts/patch admission: fixed keys, loud refusals", () => {
   });
 
   test("a failed open wraps as draft/store-failed", async () => {
-    const svc = new DraftsRemoteService(new Context());
+    const svc = new DraftsRemoteService(seatCtx());
     assert.match(await codeOf(svc.patch("bench-x", "s_0", { params: {} }, null, sig)), /^draft\/store-failed\|/);
   });
 
@@ -1117,7 +1127,7 @@ describe("bench/get + bench/ensure over the remote", () => {
   });
 
   test("get wraps a failed open as bench/store-failed", async () => {
-    assert.match(await codeOf(new BenchRemoteService(new Context()).get("x", sig)), /^bench\/store-failed\|/);
+    assert.match(await codeOf(new BenchRemoteService(seatCtx()).get("x", sig)), /^bench\/store-failed\|/);
   });
 
   test("get refuses an aborted signal at entry", async () => {
@@ -1135,7 +1145,7 @@ describe("bench/get + bench/ensure over the remote", () => {
 
   test("ensure wraps a failed open as bench/store-failed", async () => {
     assert.match(
-      await codeOf(new BenchRemoteService(new Context()).ensure({ session: "x" }, sig)),
+      await codeOf(new BenchRemoteService(seatCtx()).ensure({ session: "x" }, sig)),
       /^bench\/store-failed\|/,
     );
   });
@@ -1252,7 +1262,7 @@ describe("the bench verbs' rows over the remote", () => {
   });
 
   test("a failed open wraps as bench/store-failed (the shared open seam)", async () => {
-    const svc = new BenchRemoteService(new Context());
+    const svc = new BenchRemoteService(seatCtx());
     // patch crosses the private open() — its catch is the seam's voice
     assert.match(await codeOf(svc.patch("x", { stage: "s_0" }, sig)), /^bench\/store-failed\|/);
   });
@@ -1353,7 +1363,7 @@ describe("the bench @Remote adapters delegate with row fidelity", () => {
   });
 
   test("a bare-ctx adapter still wraps the open failure (store-failed, not a throw-through)", async () => {
-    const svc = new BenchRemoteService(new Context());
+    const svc = new BenchRemoteService(seatCtx());
     assert.match(await codeOf(svc.remoteExportGet("x", sig)), /^bench\/store-failed\|/);
     assert.match(await codeOf(svc.remoteExportEnsure({ session: "x" }, sig)), /^bench\/store-failed\|/);
     assert.match(await codeOf(svc.remoteExportPatch("x", {}, sig)), /^bench\/store-failed\|/);
@@ -1383,7 +1393,7 @@ describe("the bench @Remote adapters delegate with row fidelity", () => {
     const after = await svc.remoteExportGet("cl", sig);
     assert.deepEqual(after.stages, []);
     // the bare-ctx wrap
-    const bare = new BenchRemoteService(new Context());
+    const bare = new BenchRemoteService(seatCtx());
     assert.match(await codeOf(bare.remoteExportClear("x", {}, sig)), /^bench\/store-failed\|/);
   });
 });
