@@ -1,6 +1,6 @@
 // provisioner-render.spec.ts — the profile renderer renders
 // (2026-09-11: infer-provision.mjs renders the boot profiles
-// — inference / headless / estate / melite-test — and nothing
+// — melite-test / headless / estate — and nothing
 // exercised it. A template rename or a dropped web-row disable
 // would boot clean and surface only as a hung non-web mount or
 // a double-registered tools plane).
@@ -155,30 +155,9 @@ gate("headless renders with the web-surface rows disabled (no webServer in that 
   );
 });
 
-gate("inference renders the empty user layer (the bundle patch owns every row)", () => {
-  const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
-  render(home, "inference");
-  const dir: string = join(home, "profiles", "inference");
-  const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8")) as {
-    dsh?: { profile?: { bundles?: unknown } };
-  };
-  // E-M9: `length > 0` let the bundle roster shrink silently. The
-  // rendered roster is the BIN'S profile base, exact (and the set
-  // the base declares — a mount that dropped a bundle shows here).
-  const bundles = (pkg.dsh?.profile?.bundles ?? []) as string[];
-  assert.ok(Array.isArray(bundles) && bundles.length > 0, "the inference profile mounts bundles");
-  assert.deepEqual(bundles, binProfileBase("inference"),
-    "the rendered bundle roster IS the bin's profile base, exactly");
-  const patch: string = readFileSync(join(dir, "cordis.patch.yml"), "utf8");
-  // E-C5 (the wall audit, 2026-09-28): `includes("[]")` was a
-  // two-character substring — appending `- id: evil` (or anything
-  // else) after the marker passed. The web mount's user layer is
-  // EXACT BYTES now: the renderer's comment and the empty YAML
-  // list, nothing else — the bundle patch owns every row.
-  assert.equal(patch, "# rendered by infer-provision - rows live in the bundle\n[]\n",
-    `the web mount's user layer is the empty list, byte-exact (got:\n${patch})`);
-  assert.ok(!patch.includes("disabled: true"), "nothing is disabled in the web mount");
-});
+// (single-setup law 2026-10-18: the retired `inference` base carried
+// the melite-test list exactly — its gate was this file's duplicate
+// of the melite-test gate below, so it is gone with the base.)
 
 // E-M9 (the wall audit, 2026-09-28): the estate and melite-test
 // profiles had NO arm at all — the two mounts the operator actually
@@ -221,15 +200,15 @@ gate("the melite-test profile renders the WEB mount (the empty user layer, byte-
 
 // BUNDLE-COVERAGE (the :3088 boot refusal, 2026-10-18): every
 // non-in-box bundle a rendered profile mounts must ALSO be a direct
-// link: dep — @melite/card-base rode the inference/melite-test
-// bases with no installed package and `dsh --profile melite-test`
+// link: dep — @melite/card-base rode the melite-test base with no
+// installed package and `dsh --profile melite-test`
 // refused to boot ("cannot resolve profile bundle"). In-box
 // @deepseek-ai/* bundles resolve from the DSH install, never the
-// profile dir. The arm renders ALL FOUR profiles through the bin's
+// profile dir. The arm renders ALL THREE profiles through the bin's
 // own door and judges the RENDERED roster against the RENDERED
 // dependencies — a bundle landing in a base without its dep shows
 // here, never at boot.
-for (const profile of ["inference", "headless", "estate", "melite-test"]) {
+for (const profile of ["melite-test", "headless", "estate"]) {
   gate(`the ${profile} profile installs every non-in-box bundle it mounts (the coverage cure)`, () => {
     const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
     render(home, profile);
@@ -245,3 +224,75 @@ for (const profile of ["inference", "headless", "estate", "melite-test"]) {
       `every mounted non-in-box bundle is a direct link: dep (uncovered in ${profile}: ${uncovered.join(", ")})`);
   });
 }
+
+// CLIENT-EXTERNAL CLOSURE (the :3088 boot refusal, 2026-10-18 — the
+// operator's "the testing must [REDACTED 2026-11-05] hard": the battery was green
+// while the lane died at boot with `require("@melite/three-client/
+// client") missed the module table`). Every `dsh.client.external` a
+// mounted bundle declares must resolve to a MOUNTED bundle row —
+// card-base/card-view/gallery externalize three-client/client, and
+// nothing mounted the row that materializes it. The arm renders
+// each profile through the bin's own door, follows the rendered
+// link: deps to the packages' OWN manifests, and judges every
+// external against the RENDERED roster (in-box @deepseek-ai/*
+// resolve from the install, never the profile). A client external
+// landing without its row shows here, never on the operator's
+// screen. (The coverage arm above owns the uninstalled-bundle case
+// — an external whose package is not even a dep is skipped here.)
+for (const profile of ["melite-test", "headless", "estate"]) {
+  gate(`the ${profile} profile mounts a row for every client external its bundles declare (the closure cure)`, () => {
+    const home: string = mkdtempSync(join(tmpdir(), "provisioner-wall-"));
+    render(home, profile);
+    const pkg = JSON.parse(readFileSync(join(home, "profiles", profile, "package.json"), "utf8")) as {
+      dependencies?: Record<string, string>;
+      dsh?: { profile?: { bundles?: string[] } };
+    };
+    const bundles = pkg.dsh?.profile?.bundles ?? [];
+    const missing: string[] = [];
+    for (const b of bundles) {
+      if (b.startsWith("@deepseek-ai/")) continue;
+      const spec = String(pkg.dependencies?.[b] ?? "");
+      if (!spec.startsWith("link:")) continue;
+      let manifest: { dsh?: { client?: { external?: unknown } } };
+      try {
+        manifest = JSON.parse(readFileSync(join(spec.slice("link:".length), "package.json"), "utf8"));
+      } catch {
+        continue;
+      }
+      const externals = manifest.dsh?.client?.external;
+      if (!Array.isArray(externals)) continue;
+      for (const e of externals) {
+        const name = String(e).split("/").slice(0, -1).join("/");
+        if (name === "" || name.startsWith("@deepseek-ai/")) continue;
+        if (!bundles.includes(name)) {
+          missing.push(`${b} externalizes ${String(e)} — ${name} is not a mounted bundle`);
+        }
+      }
+    }
+    assert.deepEqual(missing, [],
+      `every declared client external resolves to a mounted row (missing in ${profile}: ${missing.join("; ")})`);
+  });
+}
+
+// SEED ⊇ BASE (the "no test caught it" autopsy, 2026-10-18): the
+// browser e2e lane (e2e-studio-lane.sh) boots its own committed
+// seed profile, NOT the provisioner's melite-test render — and the
+// seed already carried @melite/three-client while the base did not.
+// Green battery, green browser wall, dead operator lane: the wall
+// proved a composition the operator never runs. The invariant that
+// was missing: the seed's bundle roster is a SUPERSET of the
+// provisioner's web base — the browser wall must exercise EVERY
+// bundle the operator's lane mounts (it may carry more: estate
+// seats, motion/video cards, glb-viewer for the every-card walk).
+// A bundle added to the base without the seed fails HERE, never on
+// the operator's screen.
+test("the e2e browser seed carries every bundle the provisioner's web base mounts (seed ⊇ base)", () => {
+  const seed = JSON.parse(readFileSync(
+    join(REPO, "packages/web/melite-card-view/e2e/profile-seed/package.json"), "utf8",
+  )) as { dsh?: { profile?: { bundles?: string[] } } };
+  const seedBundles = seed.dsh?.profile?.bundles ?? [];
+  const base = binProfileBase("melite-test");
+  const absent = base.filter((b) => !seedBundles.includes(b));
+  assert.deepEqual(absent, [],
+    `the e2e seed covers the operator's lane (base bundles missing from the seed: ${absent.join(", ")})`);
+});

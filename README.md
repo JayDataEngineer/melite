@@ -94,7 +94,7 @@ pnpm install
 node packages/harness/provisioner/bin/infer-provision.mjs all
 ```
 
-The provisioner renders `inference`, `headless`, `estate`, and `melite-test`
+The provisioner renders `melite-test`, `headless`, and `estate`
 under `${DSH_HOME:-$HOME/.dsh}/profiles/`. It writes machine-local profile
 state; the source of truth remains this repository.
 
@@ -141,7 +141,7 @@ shell step is part of the product.
 Boot the studio:
 
 ```sh
-dsh --profile inference --port 3088
+dsh --profile melite-test --port 3088
 ```
 
 The port is a deployment choice. The test lane conventionally uses `3088`; do

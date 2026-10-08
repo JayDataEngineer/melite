@@ -90,6 +90,7 @@
     "profile": {
       "bundles": [
         "@deepseek-ai/dsh-base",
+        "@melite/harness-provisioner",
         "@melite-plugin/dsh-estate",
         "@melite/card-base",
         "@melite/three-client",

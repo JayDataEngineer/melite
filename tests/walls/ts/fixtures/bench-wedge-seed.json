@@ -1,0 +1,20 @@
+{
+  "record": {
+    "doc": {
+      "draft_id": "bench-wedge-seed",
+      "stages": [
+        {
+          "id": "stg_wedge_1",
+          "card": "image-gen",
+          "params": {
+            "model": "krea-2",
+            "prompt": "wedge repro seed — a live composed stage on disk at boot",
+            "seed": 7
+          }
+        }
+      ]
+    },
+    "rev": 0,
+    "log": []
+  }
+}

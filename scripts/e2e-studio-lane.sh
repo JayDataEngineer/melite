@@ -26,14 +26,14 @@ DSH_BIN="${DSH_BIN:-dsh}"
 CARD_VIEW_FILTER="${CARD_VIEW_FILTER:-@melite-plugin/dsh-card-view}"
 
 # THE TRACKED SEED IS THE SEAT'S ONLY SEED (2026-10-12, the moss-404
-# lesson): the runtime dev profile (dsh-harness-home/melite-test)
-# arms the G2 hot door through cordis.patch.yml — its patch watcher
-# can mount→dispose→remount that row MID-RUN, and the every-card wall
-# boards a card the estate then un-serves under it (form-spec 404s
-# land as page errors; the defs refresh blanks neighbor axes). A
-# wall seat asserts STABLE serving: it boots the committed, seed-only
-# profile — deterministic, fresh-checkout-true. Operator pins ride
-# settings.yaml (copied separately below), never the profile.
+# lesson): a live dev profile arms the G2 hot door through
+# cordis.patch.yml — its patch watcher can mount→dispose→remount that
+# row MID-RUN, and the every-card wall boards a card the estate then
+# un-serves under it (form-spec 404s land as page errors; the defs
+# refresh blanks neighbor axes). A wall seat asserts STABLE serving:
+# it boots the committed, seed-only profile — deterministic,
+# fresh-checkout-true. Operator pins ride settings.yaml (copied
+# separately below), never the profile.
 TRACKED_SEED="packages/web/melite-card-view/e2e/profile-seed"
 SEED_DIR="$TRACKED_SEED"
 
@@ -147,9 +147,11 @@ PYSEED
 fi
 # settings.yaml is the OPERATOR's per-machine provider plane —
 # untracked by law (secrets never cross homes). The lane is KEYLESS
-# (browser-plane walls, no LLM subject); copy when present, boot
-# without it otherwise.
-[ -f data/runtime/dsh-harness-home/settings.yaml ] && cp data/runtime/dsh-harness-home/settings.yaml "$HOME_DIR/" || true
+# (browser-plane walls, no LLM subject); copy the live home's file
+# when present, boot without it otherwise. (Single-setup law
+# 2026-10-18: the repo-local fossil home this copied from is gone —
+# the only source is the operator's live home.)
+[ -f "$HOME/.dsh/settings.yaml" ] && cp "$HOME/.dsh/settings.yaml" "$HOME_DIR/" || true
 
 # THE WORKSPACE PRE-STATE (seeded BEFORE boot — a host with no
 # workspace serves only the chooser hero). Schema-valid row naming

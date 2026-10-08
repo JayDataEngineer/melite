@@ -3,6 +3,7 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { tmpdir } from "node:os";
 import { repo, check, die, fail, info } from "./provision-shared.js";
 // ── agent harness home (server mount) ────────────────────────────
 let provisionerCached = null;
@@ -17,12 +18,17 @@ export function dshProvisioner() {
 }
 export const DSH_PROVISIONER_NAME = "@melite/harness-provisioner";
 let harnessHomeCached = null;
-/** The agent harness home (lazy + memoized — same import-safety law
- * as dshProvisioner).
- * @returns absolute path to data/runtime/dsh-harness-home */
+/** The drive's throwaway harness home (lazy + memoized — same import-safety law
+ * as dshProvisioner). Single-setup law 2026-10-18: this used to default
+ * to the repo-local `data/runtime/dsh-harness-home` fossil — a second
+ * home beside the operator's live ~/.dsh. The drive home is SCRATCH by
+ * design (cmdDsh refuses the GUI home — isolation is the mount's whole
+ * point), so the default is an OS-tmp throwaway, never a repo path and
+ * never the live home. MELITE_DSH_HOME still overrides for pinned runs.
+ * @returns absolute path to the throwaway drive home */
 export function dshHarnessHome() {
     if (harnessHomeCached === null) {
-        harnessHomeCached = join(repo(), "data", "runtime", "dsh-harness-home");
+        harnessHomeCached = join(tmpdir(), "melite-drive-home");
     }
     return harnessHomeCached;
 }

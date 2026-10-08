@@ -46,7 +46,9 @@ describe("the run-media path law — no stored path ever breaks", () => {
     // queue's own sweep is a data fact, not a code law — it is
     // counted and printed, never failed here.)
     const benchRoots = [
-      "data/runtime/dsh-harness-home/storages/drafts",
+      // (single-setup law 2026-10-18: the repo-local fossil home's
+      // drafts root sat here first — the home is gone, so the live
+      // runs tree is the only corpus)
       "data/runs/drafts",
     ].filter((r) => existsSync(r));
     const runRoots = ["data/runs/output", "data/runs/test-output"].filter((r) => existsSync(r));

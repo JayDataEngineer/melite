@@ -3,8 +3,8 @@
  * infer-provision — profile provisioner for vanilla DSH installs.
  *
  * The bundle patch (cordis.patch.yml) covers the ROWS; this bin covers
- * the PROFILES: renders ready-to-boot profile dirs (inference /
- * headless / estate / melite-test) and installs their link deps.
+ * the PROFILES: renders ready-to-boot profile dirs (melite-test /
+ * headless / estate) and installs their link deps.
  * Self-locating — every path derives from this file's own location
  * (the provisioner package and its siblings), so a family re-split
  * or repo move changes nothing.
@@ -20,7 +20,7 @@
  * profile's cordis.patch.yml user layer stays EMPTY by design — the
  * bundle owns the rows, so `dsh plugin add` and rendered profiles can
  * never drift apart). The template pins: our bundle + the dsh web base
- * for 'inference', the plain headless base for 'headless'.
+ * for 'melite-test', the plain headless base for 'headless'.
  */
 
 import { execSync } from 'node:child_process'
@@ -40,14 +40,18 @@ const flag = (name, dflt) => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : dflt
 }
 const DSH_HOME = flag('--dsh-home', process.env.DSH_HOME || join(process.env.HOME || '~', '.dsh'))
-const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'inference'
+const PROFILE = argv[1] && !argv[1].startsWith('--') ? argv[1] : 'melite-test'
 
 const log = (...a) => console.log(...a)
 const die = (msg) => { console.error('infer-provision: ' + msg); process.exit(1) }
 
 // ── profile rendering ───────────────────────────────────────────────────
 const PROFILE_BASES = {
-  // inference = the studio: web app base + the SELF-REGISTERING
+  // melite-test = THE studio/test lane, ONE name (single-setup law
+  // 2026-10-18: the retired `inference` base carried this EXACT list —
+  // two names for one mount, and the README + runbook pointed at
+  // different ones. `inference` is gone; this base is the only web
+  // mount): web app base + the SELF-REGISTERING
   // direct bundles (channel law 2026-09-09: every web plugin owns
   // its existence row in ITS OWN package — the provisioner stopped
   // inserting twin rows 2026-09-17; a row in BOTH files killed
@@ -59,9 +63,25 @@ const PROFILE_BASES = {
   // @melite/card-base/client for the browser graph — every card
   // client externalizes it, and without the row the loader's
   // require misses the module table at web boot.
-  inference: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
-    '@melite/harness-tools', '@melite/card-base', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
-    '@melite-plugin/dsh-gallery'],
+  // three-client rides the WEB base for the SAME law (the :3088 boot
+  // refusal, 2026-10-18): card-base, card-view, and gallery
+  // externalize @melite/three-client/client, and three-client's own
+  // patch is the ONLY row that materializes it ("bundling
+  // @melite/three-client in a profile applies this patch" — the
+  // package's own contract). Without the bundle, four plugins die
+  // at boot with `missed the module table` and the deck pends on
+  // remote.manage behind them.
+  // dsh-estate rides the web base too (the :3088 browser census,
+  // 2026-10-18): its ONE row mounts the estate's real composition
+  // as child plugins — drafts (bench/subscribe), models (the
+  // /v1/model-catalog discovery door), media, queue, runs, manage.
+  // Without it the studio lane BOOTS CLEAN but serves a husk: the
+  // bench spotlight stream and the catalog toast 500 in the browser
+  // console while the boot log stays silent — the same
+  // seed-has-it-base-does-not drift as three-client.
+  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
+    '@melite/harness-tools', '@melite-plugin/dsh-estate', '@melite/card-base', '@melite/three-client',
+    '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck', '@melite-plugin/dsh-gallery'],
   // headless = the agent server: one-shot task runner + the tools
   // plane (harness-tools self-registers its melite-tools row; the
   // renderer disables the web-plane doors row in this mount).
@@ -81,16 +101,6 @@ const PROFILE_BASES = {
   // tools row's HEADLESS interface by its self-registration id.
   estate: ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-sdk-app', '@melite/harness-provisioner',
     '@melite/harness-tools', '@melite-plugin/dsh-estate'],
-  // melite-test = THE TEST LANE, RE-COMPOSED (REBUILD-20, gateway
-  // kill 2026-09-10): the historical TEST bake (:3088, the
-  // melite-test profile mounting the estate API as a SECOND
-  // process on :33081) died with the gateway. Its replacement is
-  // the SAME row set as the studio — web app base + the estate
-  // rows in ONE process. Custom bakes serve from this name; the
-  // :33081 wire never existed here.
-  'melite-test': ['@deepseek-ai/dsh-base', '@deepseek-ai/dsh-web-app', '@melite/harness-provisioner',
-    '@melite/harness-tools', '@melite/card-base', '@melite-plugin/dsh-card-view', '@melite-plugin/dsh-card-deck',
-    '@melite-plugin/dsh-gallery'],
 }
 
 /** Maps every workspace package's name to its directory by reading
@@ -282,7 +292,7 @@ switch (cmd) {
     // command renders + installs every profile (the gateway health
     // check died with the gateway — there is no second process to
     // probe anymore).
-    for (const name of ['inference', 'headless', 'estate', 'melite-test']) {
+    for (const name of ['melite-test', 'headless', 'estate']) {
       installDeps(renderProfile(name))
     }
     log('boot with:')
@@ -291,15 +301,14 @@ switch (cmd) {
     log('  (this command installs the profiles; the sibling provisioner owns the')
     log('   launch — binary pin, version floor, home, and unit. The shapes below')
     log('   are what the door runs UNDER THE HOOD, never a hand-run shortcut:)')
-    log('  dsh --profile inference              # the studio GUI')
+    log('  dsh --profile melite-test            # the studio GUI + TEST lane (one process, no :33081)')
     log('  dsh --profile headless "<task>"      # one-shot agent with card tools')
     log('  dsh --profile estate                 # the SDK job server (estate row)')
-    log('  dsh --profile melite-test            # the TEST lane (one process, no :33081)')
     break
   }
   case 'profile': {
     installDeps(renderProfile(PROFILE))
-    log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'inference' ? '' : ' "<task>"'))
+    log('boot with: dsh --profile ' + PROFILE + (PROFILE === 'melite-test' ? '' : ' "<task>"'))
     break
   }
   // the `preset` arm died with installPreset (undefined since the

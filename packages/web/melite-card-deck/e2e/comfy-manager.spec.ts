@@ -36,7 +36,7 @@ test.skip(!DECK_URL, 'E2E_DECK_URL (token-authenticated deck URL) is not set —
 
 async function settleHost(page: Page): Promise<void> {
   await page.goto(DECK_URL, { waitUntil: 'domcontentloaded' })
-  // A FRESH deck home (dsh-harness-home carries no UI state) opens
+  // A FRESH deck home carries no UI state, so it opens
   // behind the first-run NOTICE dialog — its mask intercepts every
   // pointer until Continue. It renders DURING the settle, so dismiss
   // after the boot wait, not before.

@@ -24,7 +24,7 @@ own the Cordis composition. This README does not duplicate those rows.
 
 ```sh
 node packages/harness/provisioner/bin/infer-provision.mjs all
-node packages/harness/provisioner/bin/infer-provision.mjs profile inference
+node packages/harness/provisioner/bin/infer-provision.mjs profile melite-test
 node packages/harness/provisioner/bin/infer-provision.mjs profile headless --dsh-home /tmp/melite-dsh
 ```
 

@@ -60,15 +60,16 @@ beforeAll(async () => {
   const home = mkdtempSync(join(tmpdir(), "estate-bootdoc-home-"));
   const docs = join(home, "storages", "drafts", "docs");
   mkdirSync(docs, { recursive: true });
-  // THE SEED is a REAL bench doc, read from the tree's own runtime
-  // home: the wall was authored against a /tmp copy of a live
-  // session that vanished with that box's tmp — an undeclared
-  // environmental dependency. data/runtime/ carries the same
-  // artifact shape, committed; the doc's filename rides its own
-  // draft_id.
-  const seedId = "bench-session-246122bc-46b7-4c65-bd96-b45b2ed8cf68";
+  // THE SEED is a REAL-SHAPED bench doc, TRACKED beside the wall
+  // (tests/walls/ts/fixtures/bench-wedge-seed.json): the wall was
+  // authored against a /tmp copy of a live session, then against the
+  // repo-local runtime home — both undeclared environmental
+  // dependencies, and the home is gone (single-setup law 2026-10-18).
+  // A seed the tree does not carry is a seed that silently vanishes;
+  // the doc's filename rides its own draft_id.
+  const seedId = "bench-wedge-seed";
   const saved = readFileSync(
-    join(REPO, `data/runtime/dsh-harness-home/storages/drafts/docs/${seedId}.json`),
+    join(REPO, `tests/walls/ts/fixtures/bench-wedge-seed.json`),
     "utf8",
   );
   seedPath = join(docs, `${seedId}.json`);

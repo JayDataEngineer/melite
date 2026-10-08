@@ -11,14 +11,17 @@
 // tool/result frame.
 //
 // Live drive: needs the estate profile's provider credentials (the
-// runtime home's env — a spawned `dsh --profile estate`, no second
+// operator home's env — a spawned `dsh --profile estate`, no second
 // process, no :33081). Run:
 //   node packages/harness/melite-tools/test/estate-drive.mjs
 import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 
+// ONE home (single-setup law 2026-10-18): the estate profile renders
+// into the operator's live home — the retired repo-local fossil home
+// is gone. The env override survives for throwaway-home runs.
 const DSH_HOME = process.env.MELITE_DRIVE_DSH_HOME ??
-  '/home/user/Documents/programs/active/inference.cpp/data/runtime/dsh-harness-home'
+  join(process.env.HOME ?? '/home/user', '.dsh')
 // provider credentials: the operator's machine env file (the same
 // exports the GUI launcher uses). Parsed at spawn time, never copied
 // into this file. Without them the provider adapter never mounts and

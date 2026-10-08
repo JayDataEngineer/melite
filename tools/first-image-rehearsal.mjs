@@ -36,7 +36,7 @@ import { createHash } from 'node:crypto'
 import { join } from 'node:path'
 
 const DSH_HOME = process.env.MELITE_DRIVE_DSH_HOME ??
-  '/home/user/Documents/programs/active/inference.cpp/data/runtime/dsh-harness-home'
+  join(process.env.HOME ?? '/home/user', '.dsh')
 const ENGINE = (process.env.COMFYUI_URL ?? 'http://127.0.0.1:8188').replace(/\/+$/, '')
 // the engine's own tree (R0 asserts the tree stays cold; the store
 // below is the machine's shared weights root the estate provisions
