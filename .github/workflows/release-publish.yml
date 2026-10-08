@@ -127,6 +127,10 @@ jobs:
     needs: rehearse
     if: ${{ !cancelled() && needs.rehearse.result == 'success' }}
     runs-on: ubuntu-24.04
+    # The account-level publish limiter admits roughly one batch per
+    # window (~2h observed); the walk retries in-place, sleeping the
+    # window off — every pass skips versions already on the registry.
+    timeout-minutes: 350
     # Required reviewers and the allowed tags live on the environment; this
     # is the only job in the sequence that can write to the registry.
     environment: npm-publish
@@ -172,4 +176,12 @@ jobs:
           # permission-404). The runner IP and the fresh token start
           # outside whatever window throttled the local lane.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: node tools/publish-npm.mjs --from dist/npm
+        run: |
+          for i in 1 2 3 4 5 6 7 8; do
+            if node tools/publish-npm.mjs --from dist/npm; then
+              echo "publish walk complete on attempt $i"; exit 0
+            fi
+            echo "walk died on attempt $i — sleeping 25m off the account window"
+            sleep 1500
+          done
+          echo "publish walk did not complete in 8 attempts"; exit 1
