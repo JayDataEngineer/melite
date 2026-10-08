@@ -90,15 +90,23 @@ const childEnv = (extra = {}) => ({ ...process.env, PATH: CHILD_PATH, ...extra }
 
 for (const d of [STORE, STATE, DSH_HOME, SET]) mkdirSync(d, { recursive: true });
 const logPath = join(ROOT, "drive.log");
-const log = (line) => { console.log(line); appendFileSync(logPath, line + "\n"); };
+// SELF-TIMING (2026-10-18, the operator's "taking forever to
+// publish"): every log line carries drive-elapsed seconds and every
+// finished leg its own wall time — a stall names its phase in-log
+// (the silent legs are provision sync's torch stack and the weight
+// pull, never the publish loop) instead of reading as a hang.
+const tDrive0 = Date.now();
+const driveSecs = (t) => ((Date.now() - t) / 1000).toFixed(1) + "s";
+const log = (line) => { const stamped = `[+${driveSecs(tDrive0)}] ${line}`; console.log(stamped); appendFileSync(logPath, stamped + "\n"); };
 const readdirSafe = (p) => { try { return readdirSync(p); } catch { return []; } };
 const procs = [];
 const run = (argv, opts = {}, timeoutMs = 900000) => {
   // maxBuffer 64MB: pnpm's unicode dependency tree on a 98-package
   // closure dwarfs spawnSync's 1MB default (the ENOBUFS kill)
+  const tLeg = Date.now();
   const r = spawnSync(argv[0], argv.slice(1), { encoding: "utf8", timeout: timeoutMs, maxBuffer: 64 * 1024 * 1024, ...opts });
   appendFileSync(logPath, `\n$ ${argv.join(" ")}\n${r.stdout ?? ""}${r.stderr ?? ""}` +
-    (r.error ? `\n[spawn error: ${r.error.message}]` : "") + `\n[exit ${r.status}]\n`);
+    (r.error ? `\n[spawn error: ${r.error.message}]` : "") + `\n[exit ${r.status}, ${driveSecs(tLeg)}]\n`);
   return r;
 };
 const fail = (msg) => {

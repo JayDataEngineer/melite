@@ -91,7 +91,14 @@ if (missing.length > 0) {
 
 let published = 0
 let skipped = 0
+// SELF-TIMING (2026-10-18, the operator's "taking forever to
+// publish"): every package line carries its own wall seconds and
+// the done line the run total — the next stall names its package
+// and phase in-log instead of reading as a hang.
+const tPublish0 = Date.now()
+const secs = (t) => ((Date.now() - t) / 1000).toFixed(1) + 's'
 for (const file of order) {
+  const tPkg = Date.now()
   const inner = JSON.parse(run('bash', ['-c', `tar -xzOf ${join(from, file)} package/package.json`]))
   const spec = `${inner.name}@${inner.version}`
   let have = false
@@ -104,7 +111,7 @@ for (const file of order) {
   if (!noProbe) {
     try { run('npm', ['view', spec, 'version', '--prefer-online', ...registry]); have = true } catch { /* not on the registry yet */ }
   }
-  if (have) { console.log(`skip ${spec} — already published`); skipped++; continue }
+  if (have) { console.log(`skip ${spec} — already published (${secs(tPkg)})`); skipped++; continue }
   if (dryRun) { console.log(`dry-run ${spec} (${file})`); continue }
   // prerelease versions never touch the latest channel — npm refuses
   // a bare prerelease publish, and the release channel is 'next'
@@ -140,7 +147,7 @@ for (const file of order) {
     // Anything else rethrows.
     const msg = String(e.stderr ?? e.message)
     if (!msg.includes('Cannot publish over previously staged version') && !msg.includes('cannot publish over the previously published versions')) throw e
-    console.log(`✓ ${spec} (already on the registry)`)
+    console.log(`✓ ${spec} (already on the registry, ${secs(tPkg)})`)
     published++
     continue
   }
@@ -153,8 +160,8 @@ for (const file of order) {
   for (let i = 0; i < 10 && !readback; i++) {
     try { run('npm', ['view', spec, 'version', '--prefer-online', ...registry]); readback = true } catch { await new Promise((r) => setTimeout(r, 6000)) }
   }
-  if (!readback) console.log(`⚠ ${spec} published but not yet readable — verify after the run`)
-  else console.log(`✓ ${spec}`)
+  if (!readback) console.log(`⚠ ${spec} published but not yet readable — verify after the run (${secs(tPkg)})`)
+  else console.log(`✓ ${spec} (${secs(tPkg)})`)
   published++
 }
-console.log(`done: ${published} published, ${skipped} skipped, ${order.length} total`)
+console.log(`done: ${published} published, ${skipped} skipped, ${order.length} total (${secs(tPublish0)})`)
