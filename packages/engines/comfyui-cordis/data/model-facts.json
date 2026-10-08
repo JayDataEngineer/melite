@@ -198,6 +198,11 @@
       "ModelAttentionBackend",
       "ModelPreviewOverrideKJ"
     ],
+    "ComfyUI-MiniMaxH3Mod": [
+      "MiniMaxH3RefModApply",
+      "MiniMaxH3RefModsAxis",
+      "MiniMaxH3RefModsLoader"
+    ],
     "ComfyUI-MoGe": [
       "MoGeGeometryToFOV"
     ],

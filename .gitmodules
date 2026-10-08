@@ -37,3 +37,6 @@
 [submodule "vendor/comfyui_extensions/melite-utility-nodes"]
 	path = vendor/comfyui_extensions/melite-utility-nodes
 	url = https://github.com/JayDataEngineer/melite-utility-nodes.git
+[submodule "vendor/comfyui_extensions/ComfyUI-MiniMaxH3Mod"]
+	path = vendor/comfyui_extensions/ComfyUI-MiniMaxH3Mod
+	url = https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git

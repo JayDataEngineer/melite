@@ -12,6 +12,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_audios: z<string[], string[], "plain">;
+    ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
@@ -66,6 +67,7 @@ export declare const paramSchema: z<Schemastery.ObjectS<NoInfer<{
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_audios: z<string[], string[], "plain">;
+    ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
@@ -132,6 +134,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_audios: z<string[], string[], "plain">;
+    ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;
@@ -186,6 +189,7 @@ export declare const carrier: z<Schemastery.ObjectS<NoInfer<{
     ref_images: z<string[], string[], "plain">;
     ref_videos: z<string[], string[], "plain">;
     ref_audios: z<string[], string[], "plain">;
+    ref_mods: z<string[], string[], "plain">;
     duck_depth_db: z<number, number, "defined">;
     seed: z<number, number, "defined">;
     width: z<number, number, "defined">;

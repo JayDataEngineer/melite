@@ -138,6 +138,7 @@ export function registerCard(ctx, comfy) {
         requires: [
             'comfyui-h3-motion-context', 'Comfyui-PlagueKind-Nodes',
             'ComfyUI-KJNodes',
+            'ComfyUI-MiniMaxH3Mod',
             'ComfyUI-SeedVR2_VideoUpscaler',
             'melite-utility-nodes', 'melite-audio-nodes',
         ],

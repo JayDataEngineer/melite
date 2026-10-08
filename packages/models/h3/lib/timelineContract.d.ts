@@ -8,6 +8,7 @@ export declare const REF_CAPS: {
     readonly images: 8;
     readonly videos: 3;
     readonly audios: 3;
+    readonly refmods: 8;
 };
 export interface TimelineSpan {
     readonly start: number;

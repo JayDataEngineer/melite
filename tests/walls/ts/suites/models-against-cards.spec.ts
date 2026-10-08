@@ -310,7 +310,10 @@ describe("models against cards (the cross-validation, resurrected)", () => {
     // card's file_format knob (glb|fbx vocabulary, schema default
     // glb — a string field, so the numeric judge is unmoved and no
     // family starves)
-    assert.equal(walked, 470,
+    // 470 -> 471 (2026-10-18, audit 010/R1): h3's ref_mods seat —
+    // an ARRAY field, walked but never judged (the numeric judge
+    // owns numbers only); growth argued: one new card seat.
+    assert.equal(walked, 471,
       `the census walked the estate's fields (${String(walked)} — a re-zoned or re-typed field set MOVES this number; growth is argued here, loss means the census emptied an arm)`);
     assert.equal(judged, 7,
       `the census JUDGED the estate's numeric params fields (${String(judged)} of ${String(walked)} walked — re-typing them out of the judge MOVES this number down; a new judged knob moves it up and is argued here)`);

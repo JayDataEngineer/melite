@@ -67,3 +67,18 @@ extensions:
     MeliteUnload / MeliteConcatVideos — the film's window-save boundary
     and video join. The card already requires this pack; no manifest
     installed it (extension census, 2026-10-13).
+- name: ComfyUI-MiniMaxH3Mod
+  url: https://github.com/JayDataEngineer/ComfyUI-MiniMaxH3Mod.git
+  ref: b746d15fecb620237ea3b0f2cd2380a0acfe51d0
+  version: 0.2.6
+  required: true
+  desc: >-
+    RefMod pack (Luisacaotica, MIT — forked to JayDataEngineer as a PIN,
+    never a registry publication; the personal-use ruling, audit 010).
+    Graph-addressed classes: MiniMaxH3RefModsLoader / RefModsAxis /
+    RefModApply (the ref2va-adjacent mod chain); storage is
+    models/refmods/ via folder_paths. Pinned at v0.2.6 (b746d15fec,
+    "RefMod bundles and additive loaders") — upstream warns node
+    names still shift between versions; re-pin only with a composed
+    re-render. Pip: nothing beyond the ComfyUI base env
+    (torch/safetensors/numpy/Pillow are core-provided).

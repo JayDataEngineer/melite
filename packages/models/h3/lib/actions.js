@@ -981,6 +981,45 @@ function renderH3Window(p, g, facts) {
         latent = r2v.out(1);
         fpsInput = 24;
     }
+    // THE REFMOD SEAM (audit 010/R1, 2026-10-18): reusable reference
+    // mods — .safetensors packs extracted under the engine's
+    // models/refmods/ — appended to the conditioning's reference
+    // tokens through ALL DiT blocks (the pack rides the model's
+    // native ref2va path; it spends conditioning-side tokens, never a
+    // bundle-bus slot, so the refs-imply-r2v law does not fire on a
+    // mod and BOTH arms share this one seam — Apply accepts the core
+    // CONDITIONING either r2v arm emits and returns the same type).
+    // Paths in, stems out: the loader's combo enumerates
+    // models/refmods/ stems, so a path arrives as its basename minus
+    // .safetensors — anything the engine cannot resolve refuses HERE,
+    // loud, instead of dying server-side as a combo miss (the I2V
+    // census-alignment law).
+    const refModsAll = wireList(p.ref_mods);
+    if (refModsAll.length > 0) {
+        if (refModsAll.length > REF_CAPS.refmods) {
+            throw new Error(`[h3-timeline] ref_mods exceeds the loader's ${String(REF_CAPS.refmods)} slots (saw ${String(refModsAll.length)})`);
+        }
+        const modStem = (src) => {
+            const base = src.split('/').pop() ?? src;
+            if (!base.endsWith('.safetensors')) {
+                throw new Error(`[h3-timeline] ref_mods entries are .safetensors mods under models/refmods/ (saw '${src}')`);
+            }
+            return base.slice(0, -'.safetensors'.length);
+        };
+        const loaderInputs = { show_info: false };
+        for (let i = 0; i < REF_CAPS.refmods; i++) {
+            const src = refModsAll[i];
+            loaderInputs[`mod_${i + 1}`] = src === undefined ? '(none)' : modStem(src);
+            loaderInputs[`strength_${i + 1}`] = 1;
+            loaderInputs[`copies_${i + 1}`] = 1;
+        }
+        const mods = g.node('MiniMaxH3RefModsLoader', loaderInputs).out(0);
+        cond = g.node('MiniMaxH3RefModApply', {
+            conditioning: cond, mods, override: false, retention: 1,
+            curve_direction: 'constant', scramble_seed: -1,
+            curve_shape: 'linear', curve_value: 1,
+        }).out(0);
+    }
     // ── sampler stack ──────────────────────────────────────────────────
     // card knob first (seed), renderer alias second.
     const noise = g.node('RandomNoise', { noise_seed: (p.noise_seed ?? p.seed) }).out();

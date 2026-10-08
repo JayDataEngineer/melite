@@ -9,6 +9,10 @@ export const REF_CAPS = {
   images: 8,
   videos: 3,
   audios: 3,
+  // refmods (audit 010/R1, 2026-10-18): the RefMod pack's loader
+  // owns MAX_SLOTS = 8 — one slot per mod; strength/copies ride
+  // the loader row the compose fills.
+  refmods: 8,
 } as const
 
 export interface TimelineSpan {

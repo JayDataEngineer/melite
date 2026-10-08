@@ -83,7 +83,9 @@ describe('timeline geometry', () => {
 describe('reference contract', () => {
   it('owns the image bus and media caps', () => {
     assert.equal(IMAGE_BUS_SLOTS, 9)
-    assert.deepEqual(REF_CAPS, { images: 8, videos: 3, audios: 3 })
+    // refmods (audit 010/R1): the RefMod loader's own MAX_SLOTS —
+    // conditioning-side, no image-bus spend.
+    assert.deepEqual(REF_CAPS, { images: 8, videos: 3, audios: 3, refmods: 8 })
     assert.equal(imageReferenceCap(false), 8)
     assert.equal(imageReferenceCap(true), 7)
   })

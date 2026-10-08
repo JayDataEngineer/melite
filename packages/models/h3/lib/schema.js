@@ -63,6 +63,15 @@ export const paramSchema = z.object({
     ref_images: z.array(z.string().role('path')).description("Reference images").max(REF_CAPS.images).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.images, tooltip: "Loose references (identity, style, costume) → <Picture 3..9> via the bundle. 8 fills the bus; with a last frame set the cap is 7 (anchor + end + 7 = the 9-slot bus)." })),
     ref_videos: z.array(z.string().role('path')).description("Reference videos").max(REF_CAPS.videos).extra('extra', bag({ order: null, wtype: 'image_list', media: 'video', max_stack: REF_CAPS.videos, tooltip: "Motion guides → <Video 1-3>: camera moves, timing, choreography." })),
     ref_audios: z.array(z.string().role('path')).description("Reference audios").max(REF_CAPS.audios).extra('extra', bag({ order: null, wtype: 'image_list', media: 'audio', max_stack: REF_CAPS.audios, tooltip: "Sound references → <Audio 1-3>: timbre, cadence, musical tone." })),
+    // THE REFMOD SEAT (audit 010/R1, 2026-10-18): reusable reference
+    // mods — .safetensors packs extracted under the engine's
+    // models/refmods/ (identity, style, voice). The pack injects
+    // them as reference tokens through ALL DiT blocks on the
+    // conditioning side: no bundle-bus slot is spent, so a mod does
+    // NOT fire the refs-imply-r2v law (a mod-only film stays open).
+    // Generic list seat — the card view has no safetensors picker
+    // vocabulary yet; the picker polish rides R1's GPU-receipt leg.
+    ref_mods: z.array(z.string().role('path')).description("RefMods (reusable reference mods)").max(REF_CAPS.refmods).extra('extra', bag({ order: null, wtype: 'image_list', max_stack: REF_CAPS.refmods, tooltip: "Reusable reference mods → models/refmods/ (extracted identity/style/voice packs). Injected as reference tokens through all DiT blocks — strength 1 per mod; spends no bundle-bus slot, so it combines freely with the picture/video/audio references above. 8 max (the loader's slot count)." })),
     // (THE BED IS GONE — operator 2026-09-22: "We have Audio Bed
     // input. We don't use that, that is a bug that is there." Film
     // music rides the D-M-E lanes' MUSIC clips, pinned per window;

@@ -31,7 +31,7 @@
 //
 // Erasable-syntax TS only: no enums, no namespaces.
 
-import { readFileSync, readdirSync, realpathSync } from "node:fs";
+import { readFileSync, readdirSync, realpathSync, existsSync } from "node:fs";
 import { join, resolve, dirname, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -228,10 +228,21 @@ function contractVendorPacksIsolated(rows: ImportRow[]): ImportRow[] {
       const target = real(r.resolved);
       const rel = relative(join(REPO, "vendor", "comfyui_extensions", mine), target);
       if (rel === ".." || rel.startsWith(".." + sep)) {
+        // THE DEPLOY-TIME IDIOM (2026-10-18, the RefMod pack): a
+        // pack's web/ extensions import "../../scripts/app.js" —
+        // the ComfyUI ROOT once Manager copies web/ into
+        // web/extensions/<pack>/. At repo layout that resolves
+        // into the SHARED vendor/comfyui_extensions/ parent; the
+        // first path segment ("scripts", "web") names no pack that
+        // EXISTS on disk — the file lives only in a live engine.
+        // The law is cross-PACK isolation: flag only a target
+        // inside a DIFFERENT, REAL pack directory.
         const other = vendorPack(target);
+        if (other === null || other === mine) continue;
+        if (!existsSync(join(REPO, "vendor", "comfyui_extensions", other))) continue;
         out.push({ path: r.path, line: r.line,
           mod: "vendor packs isolated: relative import from pack " +
-            JSON.stringify(mine) + " into " + JSON.stringify(other ?? target) });
+            JSON.stringify(mine) + " into " + JSON.stringify(other) });
       }
     }
   }

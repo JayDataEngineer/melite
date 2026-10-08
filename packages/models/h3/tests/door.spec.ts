@@ -106,3 +106,63 @@ describe("the film build's single-window arms (no calls wrapper)", () => {
     expect(schedulers[0]![1].inputs.steps).toBe(8);
   });
 });
+
+describe("the refmod seat (audit 010/R1, 2026-10-18)", () => {
+  const BAG = [{ name: "distill-8.safetensors", strength: 0.6, steps: 8 }];
+
+  it("ref_mods compose the loader→apply chain, stems out, wired into the guider's conditioning", () => {
+    const g = new GraphBuilder();
+    instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG, ref_mods: ["refmods/vanellope_example.safetensors"],
+      },
+      WINDOW_MODEL, g, "run_refmod",
+    );
+    const entries = Object.entries(g.toJSON()) as Array<[string, { class_type: string, inputs: Record<string, unknown> }]>;
+    const loader = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModsLoader");
+    const apply = entries.find(([, n]) => n.class_type === "MiniMaxH3RefModApply");
+    const guider = entries.find(([, n]) => n.class_type === "BasicGuider");
+    expect(loader, "the loader composes").toBeDefined();
+    expect(apply, "the apply composes").toBeDefined();
+    expect(guider).toBeDefined();
+    // stems out: the combo eats models/refmods/ stems, '(none)' fills
+    expect(loader![1].inputs.mod_1).toBe("vanellope_example");
+    expect(loader![1].inputs.mod_2).toBe("(none)");
+    expect(loader![1].inputs.mod_8).toBe("(none)");
+    expect(loader![1].inputs.show_info).toBe(false);
+    expect(apply![1].inputs.retention).toBe(1);
+    expect(apply![1].inputs.curve_direction).toBe("constant");
+    // the wiring: loader.out(0) → apply.mods; apply.out(0) → the
+    // guider's conditioning — the seat is IN the sampled chain, not
+    // an orphan (the I2V marker law: orphans serialize, this runs)
+    expect(apply![1].inputs.mods).toEqual([loader![0], 0]);
+    expect(guider![1].inputs.conditioning).toEqual([apply![0], 0]);
+  });
+
+  it("a non-safetensors entry refuses loud, naming the entry", () => {
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG, ref_mods: ["vanellope.png"],
+      },
+      WINDOW_MODEL, g, "run_refmod_bad",
+    )).toThrow(/ref_mods entries are \.safetensors mods under models\/refmods\/ \(saw 'vanellope\.png'\)/);
+  });
+
+  it("more than the loader's 8 slots refuses loud, naming the cap", () => {
+    const g = new GraphBuilder();
+    expect(() => instantiateAction(
+      film,
+      {
+        variant: "t4_open", length: 124, prompt: "a slow push in", seed: 42,
+        loras: BAG,
+        ref_mods: Array.from({ length: 9 }, (_, i) => `mod_${String(i)}.safetensors`),
+      },
+      WINDOW_MODEL, g, "run_refmod_over",
+    )).toThrow(/ref_mods exceeds the loader's 8 slots \(saw 9\)/);
+  });
+});
