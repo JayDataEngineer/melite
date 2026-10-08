@@ -40,8 +40,9 @@ export interface RequiredBundle {
 }
 
 /**
- * The lane's core surface, derived from profile/package.json's
- * dsh.profile.bundles: the estate row itself is vacuous here (this
+ * The lane's core surface, derived from the provisioner's PROFILE
+ * base (packages/harness/provisioner/bin/infer-provision.mjs):
+ * the estate row itself is vacuous here (this
  * gate running proves its bundle composed), so the table names the
  * tool surface — @melite/harness-tools contributes the melite-tools
  * row (agent tools) and the melite-tools-doors row (the /v1 doors);

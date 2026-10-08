@@ -28,8 +28,9 @@ export const GUTTED_LANE_ENV = "MELITE_ALLOW_GUTTED_LANE";
 /** Service name carrying the degraded mark for machine readers. */
 export const LANE_HEALTH_SERVICE = "meliteLaneHealth";
 /**
- * The lane's core surface, derived from profile/package.json's
- * dsh.profile.bundles: the estate row itself is vacuous here (this
+ * The lane's core surface, derived from the provisioner's PROFILE
+ * base (packages/harness/provisioner/bin/infer-provision.mjs):
+ * the estate row itself is vacuous here (this
  * gate running proves its bundle composed), so the table names the
  * tool surface — @melite/harness-tools contributes the melite-tools
  * row (agent tools) and the melite-tools-doors row (the /v1 doors);
