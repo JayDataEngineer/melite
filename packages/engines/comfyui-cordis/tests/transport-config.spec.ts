@@ -4,14 +4,16 @@
 // INFERENCE_TEST_SANDBOX/MELITE_REPO_ROOT while it runs).
 import { afterEach, beforeEach, describe, it, onTestFinished } from "vitest";
 import assert from "node:assert/strict";
-import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { Context } from "@deepseek-ai/cordis";
 import {
   ComfyError, ComfyUIHostService, activeCount, comfyuiHostProvider,
-  endpointConfigPath, loadEndpointConfig, needComfyUI, parseComfyUIHostConfig,
-  resolveEngineBaseUrl, resolveRepoRoot
+  endpointConfigPath, loadEndpointConfig, needComfyUI, packageRoot,
+  packageRootFrom, parseComfyUIHostConfig, resolveEngineBaseUrl, resolveRepoRoot
 } from "../src/comfyui.ts";
 import { ComfyUIService } from "../src/service.ts";
 
@@ -100,12 +102,69 @@ describe("endpoint config (the SSOT read)", () => {
     process.env["COMFYUI_URL"] = "http://env:3///";
     assert.equal(resolveEngineBaseUrl(), "http://env:3");
   });
-  it("a fixture root without the file resolves {} (the wall seam)", () => {
+  it("a fixture repo root no longer isolates package data — the anchor split (2026-10-18)", () => {
+    // Population 2 (estate roots) still follows the env seam; the
+    // endpoint default (population 1, package-shipped data) follows
+    // the package, so a fixture root WITHOUT the file still finds
+    // the real one. Fixture isolation is the sandbox gate's or the
+    // env path's job — never the repo anchor's accident.
     process.env["MELITE_REPO_ROOT"] = tmpRoot();
-    assert.deepEqual(loadEndpointConfig(), {});
+    assert.deepEqual(Object.keys(loadEndpointConfig()).length > 0, true,
+      "package-anchored default finds the shipped endpoint under a fixture repo root");
     assert.equal(typeof resolveRepoRoot(), "string");
     delete process.env["MELITE_REPO_ROOT"];
     assert.ok(resolveRepoRoot().endsWith("inference.cpp"), "the default climbs four hops to the repo");
+  });
+  it("packageRoot anchors the shipped data on the source plane", () => {
+    assert.ok(packageRoot().endsWith("comfyui-cordis"), "two hops from src land on the package");
+    assert.ok(existsSync(join(packageRoot(), "data", "comfyui_endpoint.json")), "the endpoint default candidate exists");
+    assert.ok(existsSync(join(packageRoot(), "data", "model-facts.json")), "the facts file exists");
+    assert.equal(endpointConfigPath(), join(packageRoot(), "data", "comfyui_endpoint.json"));
+  });
+  it("THE CONSUMER RECEIPT: the built lib finds shipped data with no env pin (install shape, artifact plane)", () => {
+    // The four-copy consumer's contract: an install with NO
+    // MELITE_REPO_ROOT still resolves the shipped endpoint — the
+    // sweep stops being load-bearing. Runs the BUILT lib under
+    // plain node from a COPY shaped like an install (lib/ + data/ +
+    // package.json in a temp root): in the dev checkout both anchor
+    // spellings name the same file, so only the install shape makes
+    // the receipt bite — the old 4-up default would resolve to the
+    // temp root's nonexistent parent and miss.
+    const built = join(dirname(fileURLToPath(import.meta.url)), "..", "lib", "src", "comfyui-config.js");
+    assert.ok(existsSync(built), "built artifact present (run pnpm run build)");
+    const pkgDir = dirname(dirname(dirname(built))); // <pkg>/lib/src → <pkg>
+    const install = mkdtempSync(join(tmpdir(), "melite-install-"));
+    onTestFinished(() => rmSync(install, { recursive: true, force: true }));
+    cpSync(join(pkgDir, "lib"), join(install, "lib"), { recursive: true });
+    cpSync(join(pkgDir, "data"), join(install, "data"), { recursive: true });
+    cpSync(join(pkgDir, "package.json"), join(install, "package.json"));
+    const childEnv: Record<string, string | undefined> = { ...process.env };
+    for (const k of ENV_KEYS) delete childEnv[k];
+    const out = execFileSync("node", ["-e",
+      "import(process.argv[1]).then(m => process.stdout.write(m.endpointConfigPath()))",
+      join(install, "lib", "src", "comfyui-config.js")], { encoding: "utf8", env: childEnv });
+    assert.equal(out, join(install, "data", "comfyui_endpoint.json"),
+      "the installed copy anchored on its own package root");
+    assert.ok(existsSync(out), "the installed copy's candidate exists on disk");
+  });
+  it("packageRootFrom climbs past a foreign package.json and refuses a rootless tree loud", () => {
+    // The pure core, driven in-process from shaped start dirs (the
+    // live seat is packageRoot — same core, never two truths):
+    // (a) an intermediate package.json with a FOREIGN name is
+    //     climbed past to the real marker above it;
+    // (b) no matching marker anywhere -> the loud refusal, never a
+    //     silent wrong root.
+    const shapeA = mkdtempSync(join(tmpdir(), "melite-walk-a-"));
+    onTestFinished(() => rmSync(shapeA, { recursive: true, force: true }));
+    mkdirSync(join(shapeA, "lib", "src"), { recursive: true });
+    writeFileSync(join(shapeA, "lib", "package.json"), JSON.stringify({ name: "not-melite" }));
+    writeFileSync(join(shapeA, "package.json"), JSON.stringify({ name: "@melite/comfyui-cordis" }));
+    assert.equal(packageRootFrom(join(shapeA, "lib", "src")), shapeA,
+      "the walk climbs past the foreign name to the real marker");
+    const shapeB = mkdtempSync(join(tmpdir(), "melite-walk-b-"));
+    onTestFinished(() => rmSync(shapeB, { recursive: true, force: true }));
+    assert.throws(() => packageRootFrom(shapeB),
+      /no ancestor carries @melite\/comfyui-cordis's package\.json/);
   });
   it("activeCount starts empty; ComfyError names itself", () => {
     assert.equal(activeCount(), 0);

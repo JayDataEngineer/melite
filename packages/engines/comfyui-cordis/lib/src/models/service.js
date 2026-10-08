@@ -23,8 +23,8 @@
 // once per process and registers every frozen row through it.
 import { Context, Service, symbols } from "@deepseek-ai/cordis";
 import { checkModelPathPresent, findModelPresent, loadCatalogModels, resolveArtifactRows, } from "../catalog.js";
-import { resolveRepoRoot } from "../comfyui.js";
-import { loadEndpointConfig } from "../comfyui.js";
+import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.js";
+import { join } from "node:path";
 import { ModelError, EngineFacts, ModelDecl as ModelDeclSchema, VariantRow as VariantRowSchema, ParamRelationWords as ParamRelationWordsSchema, } from "./families/contract.js";
 import { validateWriteRowsAgainstActions } from "./validate.js";
 import Schema from "@deepseek-ai/schemastery";
@@ -953,7 +953,7 @@ async function validateBootContracts(svc) {
         // the top-level boot) — the boot reads the same contract
         // compose reads, never a second file spelling.
         const { loadFacts } = await import("@melite/comfyui-card-kit/facts");
-        factsModels = loadFacts(resolveRepoRoot() + "/packages/engines/comfyui-cordis/data/model-facts.json", {
+        factsModels = loadFacts(join(packageRoot(), "data", "model-facts.json"), {
             getModel: (id) => svc.getModel(id),
             registryIds: () => svc.registryIds(),
             registryModel: (id) => svc.registryModel(id),

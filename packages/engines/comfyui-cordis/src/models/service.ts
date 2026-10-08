@@ -32,8 +32,8 @@ import {
   loadCatalogModels,
   resolveArtifactRows,
 } from "../catalog.ts";
-import { resolveRepoRoot } from "../comfyui.ts";
-import { loadEndpointConfig } from "../comfyui.ts";
+import { loadEndpointConfig, packageRoot, resolveRepoRoot } from "../comfyui.ts";
+import { join } from "node:path";
 import type { EngineJson } from "../comfyui.ts";
 import {
   ModelError,
@@ -1106,7 +1106,7 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
     // the top-level boot) — the boot reads the same contract
     // compose reads, never a second file spelling.
     const { loadFacts } = await import("@melite/comfyui-card-kit/facts");
-    factsModels = loadFacts(resolveRepoRoot() + "/packages/engines/comfyui-cordis/data/model-facts.json", {
+    factsModels = loadFacts(join(packageRoot(), "data", "model-facts.json"), {
       getModel: (id: string) => svc.getModel(id),
       registryIds: () => svc.registryIds(),
       registryModel: (id: string) => svc.registryModel(id),

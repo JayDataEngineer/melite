@@ -87,6 +87,8 @@ export {
   NO_ENDPOINT_MESSAGE,
   endpointConfigPath,
   loadEndpointConfig,
+  packageRoot,
+  packageRootFrom,
   resolveEngineBaseUrl,
   resolveRepoRoot,
 } from "./comfyui-config.ts";

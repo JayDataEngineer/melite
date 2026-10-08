@@ -17,13 +17,48 @@ export const NO_ENDPOINT_MESSAGE: string =
   "and COMFYUI_URL is unset (no defaults — QUEUE LANE LAW)";
 
 /** Repo root: MELITE_REPO_ROOT override (the wall seam — default
- *  resolution is the source-file-relative root). */
+ *  resolution is the source-file-relative root). Serves ESTATE-root
+ *  reads (runtime trees, stores); package-owned data uses
+ *  {@link packageRoot} — design/repo-root-anchor-2026-10-18.md. */
 export function resolveRepoRoot(): string {
   const override: string = process.env["MELITE_REPO_ROOT"] ?? "";
   if (override !== "") return override;
   const here: string = dirname(fileURLToPath(import.meta.url));
   // src→comfyui→engines→packages→repo (4 hops).
   return resolve(here, "..", "..", "..", "..");
+}
+
+/** Walk up from {@link startDir} to the nearest ancestor whose
+ *  package.json names THIS package — the pure core of the package
+ *  anchor (test seats pass a shaped start dir; the live seat is
+ *  packageRoot). A fixed hop count cannot serve both planes
+ *  (src/ in the checkout sits one segment shallower than lib/src/
+ *  in an install, since lib mirrors src), but the package root
+ *  carries its package.json on every plane. */
+export function packageRootFrom(startDir: string): string {
+  let dir: string = startDir;
+  for (;;) {
+    const marker = join(dir, "package.json");
+    if (existsSync(marker)) {
+      const read = readFileSync(marker, "utf8");
+      const name = (JSON.parse(read) as { name?: unknown })["name"];
+      if (name === "@melite/comfyui-cordis") return dir;
+    }
+    const parent: string = dirname(dir);
+    if (parent === dir) {
+      throw new Error(
+        "packageRoot: no ancestor carries @melite/comfyui-cordis's package.json — the package tree is malformed",
+      );
+    }
+    dir = parent;
+  }
+}
+
+/** This package's root — the anchor for the data/ the published
+ *  files set ships (`data/**`). No env pin needed: an install
+ *  finds its own shipped data by construction. */
+export function packageRoot(): string {
+  return packageRootFrom(dirname(fileURLToPath(import.meta.url)));
 }
 
 /** The endpoint config dict — the single spelling of the law:
@@ -38,14 +73,11 @@ export function resolveRepoRoot(): string {
 export function endpointConfigPath(): string {
   const envPath: string = process.env["COMFYUI_ENDPOINT_CONFIG"] ?? "";
   if (envPath !== "") return envPath;
-  return join(
-    resolveRepoRoot(),
-    "packages",
-    "engines",
-    "comfyui-cordis",
-    "data",
-    "comfyui_endpoint.json",
-  );
+  // Package-anchored (not resolveRepoRoot): the endpoint default
+  // candidate is data the published package itself ships — an
+  // install with no MELITE_REPO_ROOT must still find it (the
+  // consumer receipt wall pins this).
+  return join(packageRoot(), "data", "comfyui_endpoint.json");
 }
 
 export function loadEndpointConfig(): Record<string, EngineJson> {
@@ -56,19 +88,13 @@ export function loadEndpointConfig(): Record<string, EngineJson> {
     envPath !== ""
       ? [envPath]
       : [
-          join(
-            resolveRepoRoot(),
-            "packages",
-            "engines",
-            // The PLUGIN's own data dir (deep-audit engine finding
-            // #1, fixed 2026-09-10): the stale `comfyui` segment
-            // pointed at a tree with no data/ — the shipped
-            // estate-truth file was silently skipped
-            // (`if (!existsSync(cand)) continue` → {}).
-            "comfyui-cordis",
-            "data",
-            "comfyui_endpoint.json",
-          ),
+          // Package-anchored (deep-audit engine finding #1's cure,
+          // 2026-09-10, re-anchored 2026-10-18): the PLUGIN's own
+          // data dir is what the published files set ships, so the
+          // default candidate follows packageRoot(), not the repo
+          // root — an install with no MELITE_REPO_ROOT still reads
+          // it, and the stale-segment silent skip stays dead.
+          join(packageRoot(), "data", "comfyui_endpoint.json"),
         ];
   for (const cand of cands) {
     if (!existsSync(cand)) continue;
