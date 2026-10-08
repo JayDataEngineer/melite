@@ -3,6 +3,17 @@ export interface QueueRefusal {
     readonly payload: Record<string, unknown>;
 }
 export declare function refusal(status: number, error: string, code: string, loc?: string, expected?: string, got?: string): QueueRefusal;
+/** The envelope refusal texts (door-verbatim, the ONE voice — both
+ *  the submit envelope validator below and the registry's envelope
+ *  walk delegate here; one copy, no drift). Kept as a table — one
+ *  voice each, like the admission gate's static tables. */
+export declare function envelopeRefusal(kind: "not-object" | "bad-test" | "missing-draft" | "malformed-draft", doc: unknown, detail?: {
+    testFlag?: unknown;
+    draftId?: string;
+}): QueueRefusal;
+/** The unknown-draft refusal (door-verbatim; the probe rides the
+ *  caller's drafts domain — the remote hops the ctx seat). */
+export declare function unknownDraftRefusal(draftId: string): QueueRefusal;
 /** Draft id rule (draftIdOk in @melite/estate-drafts, re-exported below): <=96 chars of [A-Za-z0-9_-]. */
 /** This core re-checks nothing: it BUILDS the refusal for a caller-computed verdict (the check is one regex, owned by the drafts package so envelope validation is whole). */
 /** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see validateSubmitEnvelope. */

@@ -23,11 +23,7 @@
  * asymmetry — proper audio editors show both the top and bottom of
  * each bucket so transients are visible.
  */
-/** A min/max peak pair for one bucket. */
-export interface MinMaxPeak {
-  min: number
-  max: number
-}
+import type { MinMaxPeak, WaveformLODCache } from '@melite/contracts'
 
 /** The three cached LODs, keyed by name. */
 export type LODName = 'low' | 'med' | 'high'
@@ -39,13 +35,6 @@ export const LOD_BUCKETS: Record<LODName, number> = {
 }
 
 export const LOD_ORDER: LODName[] = ['low', 'med', 'high']
-
-/** A cached set of min/max peaks at three resolutions. */
-export interface WaveformLODCache {
-  low: MinMaxPeak[]
-  med: MinMaxPeak[]
-  high: MinMaxPeak[]
-}
 
 /** Compute min/max peaks for a single channel of PCM data.
  *  Exported for unit testing. */

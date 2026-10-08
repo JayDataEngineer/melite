@@ -1,4 +1,4 @@
-import { segmentConfined } from '@melite/contracts/mediaKinds';
+import { contentTypeForArtifact, segmentConfined } from '@melite/contracts/mediaKinds';
 import { harnessEnhance, resolveHarnessRoutes, routeName } from "./llm-complete.js";
 import { agenticSweep } from "./enhance-agent.js";
 import { formSpecArm, formsArm, kindsDoorArm, modelCatalogArm, cardToolsArm, } from "./discovery.js";
@@ -424,11 +424,13 @@ export function apply(c, config = {}) {
                     if (real === undefined || !real.startsWith(realDir + path.sep))
                         return fail(404, 'no such input');
                     const bytes = await fs.readFile(file);
-                    // split always yields ≥1 element, so pop() is always a
-                    // string — no ?. decay, no ?? (2026-09-12).
-                    const ext = name.split('.').pop().toLowerCase();
-                    const type = ext === 'png' ? 'image/png' : ext === 'jpg' || ext === 'jpeg' ? 'image/jpeg' : ext === 'glb' ? 'model/gltf-binary' : ext === 'gltf' ? 'model/gltf+json' : 'image/webp';
-                    res.writeHead(200, { 'content-type': type, 'content-length': String(bytes.byteLength) });
+                    // the MIME answer is the LEAF's one spelling
+                    // (contentTypeForArtifact — mediaKinds.ts: the shared
+                    // table; this door owns no map of its own to drift). An
+                    // mp4 input preview answers video/mp4, never image/webp;
+                    // unknown extensions answer octet-stream (the table's
+                    // documented law, svg included).
+                    res.writeHead(200, { 'content-type': contentTypeForArtifact(name), 'content-length': String(bytes.byteLength) });
                     res.end(bytes);
                 })().catch((e) => fail(500, 'inputs: ' + (e instanceof Error ? e.message : /* v8 ignore next -- fs throws Errors only (2026-09-12) */ String(e))));
             },

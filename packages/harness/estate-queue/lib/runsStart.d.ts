@@ -1,5 +1,6 @@
 import type { EngineJson } from "@melite/comfyui-cordis";
 import type { QueueRefusal } from "./queue.js";
+export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
 import type { RunId } from "./queueCore.js";
 import type { RunRecord } from "./runsTypes.js";
 /** The door's refusal shape (status carries the HTTP class; the
@@ -37,16 +38,6 @@ export declare function compileFlowInline(inline: unknown, knownEngines?: readon
 export declare function selectSubmitDoor(body: Record<string, unknown>): {
     door: "flow" | "flow_inline" | "model";
 } | StartRefusal;
-/** The envelope refusal texts (door-verbatim, for the remote's
- *  envelope walk). Kept as a table — one voice each, like the
- *  admission gate's static tables. */
-export declare function envelopeRefusal(kind: "not-object" | "bad-test" | "missing-draft" | "malformed-draft", doc: unknown, detail?: {
-    testFlag?: unknown;
-    draftId?: string;
-}): StartRefusal;
-/** The unknown-draft refusal (door-verbatim; the probe rides the
- *  caller's drafts domain — the remote hops the ctx seat). */
-export declare function unknownDraftRefusal(draftId: string): StartRefusal;
 /** The registration tail (door-verbatim): mint the id, route the
  *  out root on the test flag, build the rich run row. The caller
  *  (the remote) enqueues it on the queue core + kicks the pump.

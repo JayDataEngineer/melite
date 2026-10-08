@@ -1358,7 +1358,9 @@ describe('input preview', () => {
       [TAG + 'a.png', 'image/png'],
       [TAG + 'b.jpg', 'image/jpeg'],
       [TAG + 'c.jpeg', 'image/jpeg'],
-      [TAG + 'd.bmp', 'image/webp'],
+      // bmp answers image/bmp — the shared MIME table's voice
+      // (the old inline ternary froze it to image/webp)
+      [TAG + 'd.bmp', 'image/bmp'],
       [TAG + 'e.glb', 'model/gltf-binary'],
       [TAG + 'f.gltf', 'model/gltf+json'],
     ]

@@ -1,5 +1,4 @@
 import { CARD_PLANE_ENGINE } from "@melite/contracts/benchStage";
-import { assertNever } from "@deepseek-ai/dsh-util-values";
 // runsStart.ts — the start arm's pure chain, re-homed VERBATIM from
 // the dead flowsRun door (REBUILD-6): the flow_inline structural
 // compile (frozen texts over the admission verdicts in
@@ -21,6 +20,11 @@ import { engineIdOk } from "@melite/engine-contract";
 import { FLOW_INLINE_TOP_VOICE, INLINE_TOP_KEYS, STAGE_KEYS, checkFlowInlineTop, checkFlowStage, } from "./runsGates.js";
 import { appendLedger, outRootFor, refusal, sidecarDoc, sidecarStageOf, variantOfBodies, writeJsonAtomic } from "./queue.js";
 import { rootsManifest } from "./rootsManifest.js";
+// the envelope-refusal SSOT lives in queueSubmit.ts (beside the
+// refusal constructor it wraps and validateSubmitEnvelope, which
+// delegates to it) — re-exported here so the registry's import
+// sites stay stable
+export { envelopeRefusal, unknownDraftRefusal } from "./queueSubmit.js";
 import { saveBenchSnapshotStages } from "@melite/contracts/benchSnapshot";
 import { collectSourceRefs, resolveSourceRefs } from "./runsSourceEcho.js";
 /** flow_inline structural compile — door-verbatim (structure via
@@ -231,42 +235,6 @@ export function selectSubmitDoor(body) {
         return refusal(400, "no flow selected: provide flow, flow_inline or model", "invalid_request");
     }
     return { door: doors[0] };
-}
-/** The envelope refusal texts (door-verbatim, for the remote's
- *  envelope walk). Kept as a table — one voice each, like the
- *  admission gate's static tables. */
-export function envelopeRefusal(kind, doc, detail) {
-    switch (kind) {
-        case "not-object":
-            return refusal(400, "request body must be a JSON object", "bad_envelope", "body", "object", Array.isArray(doc) ? "array" : typeof doc);
-        case "bad-test":
-            return refusal(400, "test flag must be a boolean (got " +
-                (typeof detail?.testFlag) +
-                " " +
-                JSON.stringify(detail?.testFlag) +
-                ")", "bad_envelope", "test", "boolean", (typeof detail?.testFlag));
-        case "missing-draft":
-            return refusal(400, "draft_id is required — every run is born from an " +
-                "action card (CARD BIRTH LAW); compose the card first: " +
-                "POST /v1/flows/drafts, then start with its draft_id", "draft_required", "draft_id", "doc-backed draft id", "absent");
-        case "malformed-draft":
-            return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
-                JSON.stringify(detail?.draftId ?? ""), "draft_malformed", "draft_id", "[A-Za-z0-9_-]{1,96}", (detail?.draftId ?? "").slice(0, 60));
-        default:
-            // Closed union: a new refusal kind fails loud at compile, not
-            // silently undefined at the door. assertNever from
-            // @deepseek-ai/dsh-util-values (maintained helper, not a handroll).
-            return assertNever(kind, "runsStart.envelopeRefusal");
-    }
-}
-/** The unknown-draft refusal (door-verbatim; the probe rides the
- *  caller's drafts domain — the remote hops the ctx seat). */
-export function unknownDraftRefusal(draftId) {
-    return refusal(400, "unknown draft_id " +
-        JSON.stringify(draftId) +
-        " — no card doc at drafts/" +
-        draftId +
-        ".json; compose the card first: POST /v1/flows/drafts", "draft_unknown", "draft_id", "existing card doc", draftId.slice(0, 60));
 }
 /** The registration tail (door-verbatim): mint the id, route the
  *  out root on the test flag, build the rich run row. The caller

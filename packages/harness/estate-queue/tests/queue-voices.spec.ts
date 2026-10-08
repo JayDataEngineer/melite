@@ -86,14 +86,18 @@ describe("validateSubmitEnvelope (the pre-registration chain, in order)", () => 
   const missing = (id: string): ((x: string) => boolean) => {
     return (x: string): boolean => x !== id;
   };
-  it("non-object bodies refuse bad_envelope/body with the typeof", () => {
-    for (const doc of [null, [], 7, "x", true]) {
+  it("non-object bodies refuse bad_envelope/body with the typeof (arrays say array — the one voice)", () => {
+    for (const doc of [null, 7, "x", true]) {
       const r = validateSubmitEnvelope(doc, () => true);
       assert.equal(r?.payload["code"], "bad_envelope");
       assert.equal(r?.payload["loc"], "body");
       assert.equal(r?.payload["expected"], "object");
       assert.equal(r?.payload["got"], typeof doc);
     }
+    // arrays voice "array", never a misleading "object" — the same
+    // table the registry's live envelope walk speaks
+    const r = validateSubmitEnvelope([], () => true);
+    assert.equal(r?.payload["got"], "array");
   });
   it("a non-boolean test flag refuses bad_envelope/test", () => {
     const r = validateSubmitEnvelope({ test: "yes", draft_id: "d", flow: "f" }, () => true);

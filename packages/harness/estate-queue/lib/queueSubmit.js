@@ -14,6 +14,43 @@ export function refusal(status, error, code, loc, expected, got) {
         payload["got"] = got;
     return { status, payload };
 }
+/** The envelope refusal texts (door-verbatim, the ONE voice — both
+ *  the submit envelope validator below and the registry's envelope
+ *  walk delegate here; one copy, no drift). Kept as a table — one
+ *  voice each, like the admission gate's static tables. */
+export function envelopeRefusal(kind, doc, detail) {
+    switch (kind) {
+        case "not-object":
+            return refusal(400, "request body must be a JSON object", "bad_envelope", "body", "object", Array.isArray(doc) ? "array" : typeof doc);
+        case "bad-test":
+            return refusal(400, "test flag must be a boolean (got " +
+                (typeof detail?.testFlag) +
+                " " +
+                JSON.stringify(detail?.testFlag) +
+                ")", "bad_envelope", "test", "boolean", (typeof detail?.testFlag));
+        case "missing-draft":
+            return refusal(400, "draft_id is required — every run is born from an " +
+                "action card (CARD BIRTH LAW); compose the card first: " +
+                "POST /v1/flows/drafts, then start with its draft_id", "draft_required", "draft_id", "doc-backed draft id", "absent");
+        case "malformed-draft":
+            return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
+                JSON.stringify(detail?.draftId ?? ""), "draft_malformed", "draft_id", "[A-Za-z0-9_-]{1,96}", (detail?.draftId ?? "").slice(0, 60));
+        default:
+            // Closed union: a new refusal kind fails loud at compile, not
+            // silently undefined at the door. assertNever from
+            // @deepseek-ai/dsh-util-values (maintained helper, not a handroll).
+            return assertNever(kind, "queueSubmit.envelopeRefusal");
+    }
+}
+/** The unknown-draft refusal (door-verbatim; the probe rides the
+ *  caller's drafts domain — the remote hops the ctx seat). */
+export function unknownDraftRefusal(draftId) {
+    return refusal(400, "unknown draft_id " +
+        JSON.stringify(draftId) +
+        " — no card doc at drafts/" +
+        draftId +
+        ".json; compose the card first: POST /v1/flows/drafts", "draft_unknown", "draft_id", "existing card doc", draftId.slice(0, 60));
+}
 /** Draft id rule (draftIdOk in @melite/estate-drafts, re-exported below): <=96 chars of [A-Za-z0-9_-]. */
 /** This core re-checks nothing: it BUILDS the refusal for a caller-computed verdict (the check is one regex, owned by the drafts package so envelope validation is whole). */
 /** Callers pass the raw draft_id; the malformed/unknown split needs the existence probe too — see validateSubmitEnvelope. */
@@ -30,6 +67,7 @@ export { draftIdOk } from "@melite/estate-drafts";
 // these re-exports keep the @melite/gateway-queue barrel stable.
 export { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.js";
 import { RETIRED_RUNNER_KNOBS, RETIRED_CARRY_KEYS, DOOR_KEYS, } from "./vocab.js";
+import { assertNever } from "@deepseek-ai/dsh-util-values";
 import { draftIdOk } from "@melite/estate-drafts";
 /** The strict-body gate (_strict_body 248-276). */
 export function strictBodyCheck(body) {
@@ -72,33 +110,22 @@ export const SUBMIT_DOORS = [
  *  envelope may proceed to graph resolution. */
 export function validateSubmitEnvelope(doc, draftExists) {
     if (typeof doc !== "object" || doc === null || Array.isArray(doc)) {
-        return refusal(400, "request body must be a JSON object", "bad_envelope", "body", "object", (typeof doc));
+        return envelopeRefusal("not-object", doc);
     }
     const body = doc;
     const testFlag = body["test"] ?? false;
     if (typeof testFlag !== "boolean") {
-        return refusal(400, "test flag must be a boolean (got " +
-            (typeof testFlag) +
-            " " +
-            JSON.stringify(testFlag) +
-            ")", "bad_envelope", "test", "boolean", (typeof testFlag));
+        return envelopeRefusal("bad-test", doc, { testFlag });
     }
     const draftId = body["draft_id"];
     if (typeof draftId !== "string" || draftId === "") {
-        return refusal(400, "draft_id is required — every run is born from an " +
-            "action card (CARD BIRTH LAW); compose the card first: " +
-            "POST /v1/flows/drafts, then start with its draft_id", "draft_required", "draft_id", "doc-backed draft id", "absent");
+        return envelopeRefusal("missing-draft", doc);
     }
     if (!draftIdOk(draftId)) {
-        return refusal(400, "draft_id malformed (96 char cap, [A-Za-z0-9_-] only): " +
-            JSON.stringify(draftId), "draft_malformed", "draft_id", "[A-Za-z0-9_-]{1,96}", draftId.slice(0, 60));
+        return envelopeRefusal("malformed-draft", doc, { draftId });
     }
     if (!draftExists(draftId)) {
-        return refusal(400, "unknown draft_id " +
-            JSON.stringify(draftId) +
-            " — no card doc at drafts/" +
-            draftId +
-            ".json; compose the card first: POST /v1/flows/drafts", "draft_unknown", "draft_id", "existing card doc", draftId.slice(0, 60));
+        return unknownDraftRefusal(draftId);
     }
     const strict = strictBodyCheck(body);
     if (strict !== null)

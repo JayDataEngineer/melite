@@ -2,6 +2,7 @@
 // (split from comfyui.ts 2026-09-18: pure move, zero logic changes).
 
 import { LEGACY_RUN_MEDIA_PREFIX, RUN_MEDIA_PREFIX } from '@melite/contracts/benchStage';
+import { contentTypeForArtifact } from '@melite/contracts/mediaKinds';
 import { randomBytes } from "node:crypto";
 import { readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -167,18 +168,13 @@ export async function uploadFile(
   path: string,
 ): Promise<Record<string, string>> {
   const data: Buffer = readFileSync(path);
-  const lower: string = path.toLowerCase();
-  let ctype: string = "application/octet-stream";
-  if (lower.endsWith(".png")) ctype = "image/png";
-  else if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) ctype = "image/jpeg";
-  else if (lower.endsWith(".webp")) ctype = "image/webp";
-  else if (lower.endsWith(".gif")) ctype = "image/gif";
-  else if (lower.endsWith(".mp4")) ctype = "video/mp4";
-  else if (lower.endsWith(".wav")) ctype = "audio/wav";
-  else if (lower.endsWith(".mp3")) ctype = "audio/mpeg";
-  else if (lower.endsWith(".flac")) ctype = "audio/flac";
-  else if (lower.endsWith(".glb")) ctype = "model/gltf-binary";
-  else if (lower.endsWith(".gltf")) ctype = "model/gltf+json";
+  // the content-type answer is the LEAF's one spelling
+  // (contentTypeForArtifact — the shared MIME table this package's
+  // own data-URL map mirrors; the former endsWith chain answered
+  // ogg/m4a/aac/bmp as octet-stream while the map beside it named
+  // their real types). Unknown extensions stay octet-stream (the
+  // table's documented law).
+  const ctype: string = contentTypeForArtifact(path);
   // THE CONTENT-ADDRESS LAW (2026-09-22 — the stale-take bug): the
   // staged name carries a hash of the BYTES, not the bare basename.
   // ComfyUI's upload endpoint skips the write when the name already
