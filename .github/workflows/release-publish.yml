@@ -164,4 +164,12 @@ jobs:
           path: dist/npm
 
       - name: Publish tarballs
+        env:
+          # The token lane mints NEW package names — trusted publishing
+          # can only cover names with an existing registry-side
+          # connection, and every first-publish name in this set has
+          # none (the OIDC walk refused the first one with a
+          # permission-404). The runner IP and the fresh token start
+          # outside whatever window throttled the local lane.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: node tools/publish-npm.mjs --from dist/npm
