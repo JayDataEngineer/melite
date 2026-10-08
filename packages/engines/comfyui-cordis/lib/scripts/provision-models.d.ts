@@ -1,5 +1,5 @@
 import { ComfyUiManagerProvider } from "@melite/estate-provisioning";
-import type * as CATALOG from "../src/models/families/contract.ts";
+import type * as CATALOG from "../src/models/families/contract.js";
 /** The Manager whitelist key this estate's declared rows match on:
  *  check_whitelist_for_model compares save_path+base+filename between
  *  the install payload and the model list, so both sides mint the

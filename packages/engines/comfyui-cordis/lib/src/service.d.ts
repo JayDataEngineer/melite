@@ -1,17 +1,17 @@
 import Schema from '@deepseek-ai/schemastery';
-import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.ts';
-export { ComposeRefusal } from './errors.ts';
+import { ComfyUIWiringService, type WiringInputSpec } from './wiringWall.js';
+export { ComposeRefusal } from './errors.js';
 import { Context, Service } from '@deepseek-ai/cordis';
 import { GraphBuilder } from '@melite/comfyui-card-kit/graph';
 import type { PromptGraph } from '@melite/comfyui-card-kit/graph';
 import type { FactsFile, ModelFacts } from '@melite/comfyui-card-kit/facts';
-import type { ProvisionRow } from './models/families/contract.ts';
-export { resolveControlNetEntry } from "./serviceMods.ts";
-import type { LoraRowDecl } from "./serviceMods.ts";
-import type { AbsorbedMod } from "./serviceMods.ts";
-import type { VerbRegistration } from "./serviceMods.ts";
-import type { FlavorRegistration } from "./serviceMods.ts";
-import type { PackContract } from "./serviceMods.ts";
+import type { ProvisionRow } from './models/families/contract.js';
+export { resolveControlNetEntry } from "./serviceMods.js";
+import type { LoraRowDecl } from "./serviceMods.js";
+import type { AbsorbedMod } from "./serviceMods.js";
+import type { VerbRegistration } from "./serviceMods.js";
+import type { FlavorRegistration } from "./serviceMods.js";
+import type { PackContract } from "./serviceMods.js";
 /**
  * The wire tool name derived from a card id (hyphens→underscores +
  * "_card"). ONE spelling of the law (M2′ stroke 2, 2026-09-09):
