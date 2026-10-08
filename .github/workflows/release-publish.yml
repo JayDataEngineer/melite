@@ -22,6 +22,11 @@ on:
         options:
           - mint
           - release-assets
+      attempts:
+        description: 'Re-arm budget: walks left before the sequence stops itself'
+        required: false
+        default: 8
+        type: number
 
 permissions:
   contents: read
@@ -139,13 +144,9 @@ jobs:
       cancel-in-progress: false
     permissions:
       contents: read
-      # TRUSTED PUBLISHING (OIDC): the run's own Actions identity
-      # authenticates to npm — no token in any secret. The registry-side
-      # connections (operator-configured) name this workflow, the
-      # npm-publish environment, and direct-publish allowance; npm's CLI
-      # performs the handshake automatically inside Actions with
-      # id-token: write and no NODE_AUTH_TOKEN in the environment.
-      id-token: write
+      # SELF-RE-ARM: an incomplete walk re-dispatches this workflow for
+      # the next account window; the attempts input is the runaway cap.
+      actions: write
     steps:
       # Checkout and install carry the release scripts only. There is no
       # build step: publication uploads the bytes the pack job produced.
@@ -185,3 +186,13 @@ jobs:
             sleep 1500
           done
           echo "publish walk did not complete in 8 attempts"; exit 1
+
+      - name: Re-arm the walk (the set is still incomplete)
+        if: ${{ failure() && inputs.attempts > 1 }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run release-publish.yml --ref "$GITHUB_REF_NAME" \
+            -f tag="${{ inputs.tag }}" -f dist="${{ inputs.dist }}" \
+            -f attempts=$(({{ inputs.attempts }} - 1))
+          echo "re-armed: $(({{ inputs.attempts }} - 1)) walks left"
