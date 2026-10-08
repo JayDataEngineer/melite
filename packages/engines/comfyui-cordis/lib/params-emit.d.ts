@@ -1,5 +1,5 @@
-import type { DeclaredModifierKind } from './service.js';
-import type { SemanticModelEntry } from './semanticModelKnob.js';
+import type { DeclaredModifierKind } from './service.ts';
+import type { SemanticModelEntry } from './semanticModelKnob.ts';
 /** The carrier dict shape (shared with the no-cheat door). */
 export type Schema = {
     type: string;

@@ -1,4 +1,4 @@
-import type { ActivePrompt } from "./comfyui-types.js";
+import type { ActivePrompt } from "./comfyui-types.ts";
 /** Delete-from-queue + interrupt — best-effort swallow, exactly . */
 export declare function interrupt(server: string, promptId: string): Promise<void>;
 /** The stop door's engine handle.

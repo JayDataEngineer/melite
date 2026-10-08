@@ -1,10 +1,13 @@
-import type { ModelRow } from "./families/contract.js";
-import type { CellRow, ModelDecl, VariantRow } from "./families/contract.js";
-export * from "./families/contract.js";
-export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
+import type { ModelRow } from "./families/contract.ts";
+import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
+export * from "./families/contract.ts";
+export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 /** The shared once-per-process boot entry: fires bootModels() on
  * first call, memoizes, never at import. A REJECTED boot clears
  * the memo — the next call re-boots (bootModels' own retry law).
+ * The memo rides the process-global boot cell (service.ts), so
+ * every copy of this package in one process shares one cascade
+ * truth (the single-instance design, 2026-10-18).
  *
  * @returns a promise that settles when the booted table is served. */
 export declare function cascadeInit(): Promise<void>;

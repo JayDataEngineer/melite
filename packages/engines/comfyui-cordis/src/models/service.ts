@@ -875,7 +875,57 @@ declare module "@deepseek-ai/cordis" {
 
 // ── process singleton (the compatibility facade models.ts rides) ──
 
-let booted: ModelsService | null = null;
+/** The process-global boot cell — the single-instance contract's
+ * storage. Module scope is per-ESM-copy, and a consumer install
+ * nests same-version copies of this package per-edge (the drive-2
+ * settle probe's four-copy evidence), so a module-scoped memo
+ * splits the booted table across seat stacks. The Symbol.for
+ * anchor holds one cell per PROCESS regardless of copy count;
+ * copies converge on the same in-flight promise and the same
+ * settled service (design:
+ * dev_docs/design/models-table-single-instance-2026-10-18.md). */
+interface ModelsBootCell {
+  booted: ModelsService | null;
+  inFlight: Promise<ModelsService> | null;
+  cascade: Promise<void> | null;
+  /** The copy that performed the boot — drift observability for
+   * the settle probes. Recorded, never a refusal: copies converge
+   * here by construction. */
+  bootedFrom: string | null;
+}
+
+const MODELS_BOOT_KEY = "@melite/comfyui-cordis:models-boot";
+
+function modelsBootCell(): ModelsBootCell {
+  const sym = Symbol.for(MODELS_BOOT_KEY);
+  const holder = globalThis as Record<symbol, ModelsBootCell | undefined>;
+  holder[sym] ??= { booted: null, inFlight: null, cascade: null, bootedFrom: null };
+  return holder[sym];
+}
+
+/** The facade's cascade memo, stored on the process-global boot
+ * cell so every copy of this package shares one cascadeInit truth
+ * (models.ts rides these; its own module scope is per-copy). */
+export function cascadeMemo(): Promise<void> | null {
+  return modelsBootCell().cascade;
+}
+
+/** @param promise the memoized cascade boot promise, or null to
+ * clear it (the retry law: a rejected boot clears the memo). */
+export function setCascadeMemo(promise: Promise<void> | null): void {
+  modelsBootCell().cascade = promise;
+}
+
+/** Test seam: drop the process-global boot cell entirely.
+ * Production code never calls this — the cell is one-per-process
+ * by design. Specs that pin a cold first caller (a refused boot's
+ * retry, the pre-boot refusal) reset it because vitest resets the
+ * per-file module registry but not globalThis, and the cell is
+ * the storage the registry reset no longer clears. */
+export function resetModelsBootForTests(): void {
+  const sym = Symbol.for(MODELS_BOOT_KEY);
+  delete (globalThis as Record<symbol, ModelsBootCell | undefined>)[sym];
+}
 
 /** THE MOD INTERLOCK (the correction stroke 2026-09-08): the
  *  flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
@@ -1134,9 +1184,10 @@ async function validateBootContracts(svc: ModelsService): Promise<void> {
 let bootInFlight: Promise<ModelsService> | null = null;
 
 export async function bootModels(): Promise<ModelsService> {
-  if (booted !== null) return booted;
-  if (bootInFlight !== null) return bootInFlight;
-  bootInFlight = (async (): Promise<ModelsService> => {
+  const cell = modelsBootCell();
+  if (cell.booted !== null) return cell.booted;
+  if (cell.inFlight !== null) return cell.inFlight;
+  cell.inFlight = (async (): Promise<ModelsService> => {
   const ctx = new Context();
   try {
     await ctx.plugin(modelsProvider);
@@ -1166,8 +1217,9 @@ export async function bootModels(): Promise<ModelsService> {
       );
     }
     await validateBootContracts(svc);
-    booted = svc;
-    return booted;
+    cell.booted = svc;
+    cell.bootedFrom = import.meta.url;
+    return cell.booted;
   /* v8 ignore start -- the transactional discharge: fires only
      when a family refuses or the contracts refuse (a corrupt
      registry). The walls + the boot test pin the healthy path;
@@ -1175,24 +1227,25 @@ export async function bootModels(): Promise<ModelsService> {
      the tree's own gates first (2026-09-12). */
   } catch (err) {
     await ctx.fiber.dispose();
-    booted = null;
+    cell.booted = null;
     throw err;
   }
   /* v8 ignore stop */
   })();
   try {
-    return await bootInFlight;
+    return await cell.inFlight;
   } finally {
-    bootInFlight = null;
+    cell.inFlight = null;
   }
 }
 
 /** The booted service (throws if bootModels has not settled). */
 export function modelsService(): ModelsService {
-  if (booted === null) {
+  const cell = modelsBootCell();
+  if (cell.booted === null) {
     throw new ModelError("models service not booted — await bootModels() first");
   }
-  return booted;
+  return cell.booted;
 }
 
 /** The boot-state probe (the form-spec census-arm split, 2026-10-13):
@@ -1203,7 +1256,7 @@ export function modelsService(): ModelsService {
  *
  * @returns whether the models table is booted. */
 export function modelsBooted(): boolean {
-  return booted !== null;
+  return modelsBootCell().booted !== null;
 }
 
 /** The cascade through the booted service (the wall's entry). */

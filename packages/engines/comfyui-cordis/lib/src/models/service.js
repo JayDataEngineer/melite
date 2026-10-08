@@ -765,8 +765,34 @@ export function needModels(models, where) {
     }
     return models;
 }
-// ── process singleton (the compatibility facade models.ts rides) ──
-let booted = null;
+const MODELS_BOOT_KEY = "@melite/comfyui-cordis:models-boot";
+function modelsBootCell() {
+    const sym = Symbol.for(MODELS_BOOT_KEY);
+    const holder = globalThis;
+    holder[sym] ??= { booted: null, inFlight: null, cascade: null, bootedFrom: null };
+    return holder[sym];
+}
+/** The facade's cascade memo, stored on the process-global boot
+ * cell so every copy of this package shares one cascadeInit truth
+ * (models.ts rides these; its own module scope is per-copy). */
+export function cascadeMemo() {
+    return modelsBootCell().cascade;
+}
+/** @param promise the memoized cascade boot promise, or null to
+ * clear it (the retry law: a rejected boot clears the memo). */
+export function setCascadeMemo(promise) {
+    modelsBootCell().cascade = promise;
+}
+/** Test seam: drop the process-global boot cell entirely.
+ * Production code never calls this — the cell is one-per-process
+ * by design. Specs that pin a cold first caller (a refused boot's
+ * retry, the pre-boot refusal) reset it because vitest resets the
+ * per-file module registry but not globalThis, and the cell is
+ * the storage the registry reset no longer clears. */
+export function resetModelsBootForTests() {
+    const sym = Symbol.for(MODELS_BOOT_KEY);
+    delete globalThis[sym];
+}
 /** THE MOD INTERLOCK (the correction stroke 2026-09-08): the
  *  flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
  *  component ACTIVATES ONLY AT A SATISFYING STATE. Pure over the
@@ -992,11 +1018,12 @@ async function validateBootContracts(svc) {
  *  boot-loud (above) before the singleton owns the table. */
 let bootInFlight = null;
 export async function bootModels() {
-    if (booted !== null)
-        return booted;
-    if (bootInFlight !== null)
-        return bootInFlight;
-    bootInFlight = (async () => {
+    const cell = modelsBootCell();
+    if (cell.booted !== null)
+        return cell.booted;
+    if (cell.inFlight !== null)
+        return cell.inFlight;
+    cell.inFlight = (async () => {
         const ctx = new Context();
         try {
             await ctx.plugin(modelsProvider);
@@ -1024,8 +1051,9 @@ export async function bootModels() {
                 throw new ModelError(`boot registered ${svc.familyCount()} families but ${families.length} plugins loaded — a family registered nothing (the transactional gate)`);
             }
             await validateBootContracts(svc);
-            booted = svc;
-            return booted;
+            cell.booted = svc;
+            cell.bootedFrom = import.meta.url;
+            return cell.booted;
             /* v8 ignore start -- the transactional discharge: fires only
                when a family refuses or the contracts refuse (a corrupt
                registry). The walls + the boot test pin the healthy path;
@@ -1034,24 +1062,25 @@ export async function bootModels() {
         }
         catch (err) {
             await ctx.fiber.dispose();
-            booted = null;
+            cell.booted = null;
             throw err;
         }
         /* v8 ignore stop */
     })();
     try {
-        return await bootInFlight;
+        return await cell.inFlight;
     }
     finally {
-        bootInFlight = null;
+        cell.inFlight = null;
     }
 }
 /** The booted service (throws if bootModels has not settled). */
 export function modelsService() {
-    if (booted === null) {
+    const cell = modelsBootCell();
+    if (cell.booted === null) {
         throw new ModelError("models service not booted — await bootModels() first");
     }
-    return booted;
+    return cell.booted;
 }
 /** The boot-state probe (the form-spec census-arm split, 2026-10-13):
  * true once bootModels has settled in this process. Callers that
@@ -1061,7 +1090,7 @@ export function modelsService() {
  *
  * @returns whether the models table is booted. */
 export function modelsBooted() {
-    return booted !== null;
+    return modelsBootCell().booted !== null;
 }
 /** The cascade through the booted service (the wall's entry). */
 export function resolveCascade(base, intercept, head) {

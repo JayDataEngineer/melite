@@ -23,22 +23,29 @@ var __rewriteRelativeImportExtension = (this && this.__rewriteRelativeImportExte
 import { CARD_PLANE_ENGINE } from '@melite/contracts/benchStage';
 import { Context } from '@deepseek-ai/cordis';
 import { ComfyUIService } from "./service.js";
-// COMPOSITION LIST (M2′ stroke 1, 2026-09-09, P48.1 — completed by
-// the card sweep, 2026-09-09): card PACKAGES compose explicitly —
-// the receipt is references/deepseek-harness packages/shell/tool-bash
-// (a tool is its own package; DSH composes packages, never discovers
-// nested plugins by glob). Every card lives in its own package
-// (packages/<domain>/<id>); the readdir glob is DELETED and
-// the table in loadCardDefs is the only composition.
-let cache = null;
-let bootedService = null;
+const CARD_DEFS_KEY = '@melite/comfyui-cordis:card-defs';
+function cardDefsCell() {
+    const sym = Symbol.for(CARD_DEFS_KEY);
+    const holder = globalThis;
+    holder[sym] ??= { cache: null, service: null };
+    return holder[sym];
+}
+/** Test seam: drop the process-global card-defs cell. Production
+ *  code never calls this — the cache is boot-static per process.
+ *  Specs that pin a cold first caller reset it because vitest
+ *  resets the per-file module registry but not globalThis. */
+export const resetCardDefsForTests = () => {
+    const sym = Symbol.for(CARD_DEFS_KEY);
+    delete globalThis[sym];
+};
 /** The booted ComfyUIService (the card set + mods + verbs ride
  *  it). Throws if loadCardDefs has not settled. */
 export const theService = () => {
-    if (bootedService === null) {
+    const service = cardDefsCell().service;
+    if (service === null) {
         throw new Error('card defs not booted — await loadCardDefs() first');
     }
-    return bootedService;
+    return service;
 };
 /** Boot the card set once and return id → CardDefinition.
  * Deterministic across calls in one process. */
@@ -217,8 +224,9 @@ export const assertCardIdentity = (id, def) => {
     }
 };
 export const loadCardDefs = async () => {
-    if (cache !== null)
-        return cache;
+    const cell = cardDefsCell();
+    if (cell.cache !== null)
+        return cell.cache;
     const ctx = new Context();
     const service = new ComfyUIService(ctx);
     await composeCards(ctx);
@@ -229,13 +237,13 @@ export const loadCardDefs = async () => {
     //  DELETED with the ring, 2026-09-18). A card
     //  with no identity refuses LOUD here (the m1 wall: no card
     //  without it) — never a silent fallback, never generated prose.
-    bootedService = service;
-    cache = new Map(service.cardIds().map((id) => {
+    cell.service = service;
+    cell.cache = new Map(service.cardIds().map((id) => {
         const def = service.getCardDef(id);
         assertCardIdentity(id, def);
         return [id, def];
     }));
-    return cache;
+    return cell.cache;
 };
 /** The module cache, SYNC, for seats that must not fork the truth
  *  (the G2 receipt, 2026-10-11): null before the first loadCardDefs()
@@ -244,7 +252,7 @@ export const loadCardDefs = async () => {
  *  catalog) serves; the estate registry reads it so a live-mounted
  *  hot card validates at POST /v1/flows/validate the moment it
  *  serves — one cache, not a boot snapshot and its fork. */
-export const cardDefsNow = () => cache;
+export const cardDefsNow = () => cardDefsCell().cache;
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
  *  card registered after boot (the hot root's drop-ins) never
@@ -256,12 +264,13 @@ export const cardDefsNow = () => cache;
  *  ALREADY booted can refresh. */
 export const refreshCardDefs = () => {
     const service = theService();
-    cache = new Map(service.cardIds().map((id) => {
+    const cell = cardDefsCell();
+    cell.cache = new Map(service.cardIds().map((id) => {
         const def = service.getCardDef(id);
         assertCardIdentity(id, def);
         return [id, def];
     }));
-    return cache;
+    return cell.cache;
 };
 /** Every family's declaration provision rows (DECL provisions for
  *  every model id, then card-owned provisions), keyed by family —

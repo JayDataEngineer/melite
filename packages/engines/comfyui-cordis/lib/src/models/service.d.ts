@@ -1,7 +1,7 @@
 import { Context, Service } from "@deepseek-ai/cordis";
 import type { Plugin } from "@deepseek-ai/cordis";
-import { type CatalogArtifactRow, type CatalogModel } from "../catalog.js";
-import { ModelRow, type CellRow, type ModelDecl, type VariantRow } from "./families/contract.js";
+import { type CatalogArtifactRow, type CatalogModel } from "../catalog.ts";
+import { ModelRow, type CellRow, type ModelDecl, type VariantRow } from "./families/contract.ts";
 export declare const MODELS_SERVICE = "models";
 export declare class ModelsService extends Service {
     private readonly table;
@@ -134,6 +134,20 @@ declare module "@deepseek-ai/cordis" {
         models: ModelsService;
     }
 }
+/** The facade's cascade memo, stored on the process-global boot
+ * cell so every copy of this package shares one cascadeInit truth
+ * (models.ts rides these; its own module scope is per-copy). */
+export declare function cascadeMemo(): Promise<void> | null;
+/** @param promise the memoized cascade boot promise, or null to
+ * clear it (the retry law: a rejected boot clears the memo). */
+export declare function setCascadeMemo(promise: Promise<void> | null): void;
+/** Test seam: drop the process-global boot cell entirely.
+ * Production code never calls this — the cell is one-per-process
+ * by design. Specs that pin a cold first caller (a refused boot's
+ * retry, the pre-boot refusal) reset it because vitest resets the
+ * per-file module registry but not globalThis, and the cell is
+ * the storage the registry reset no longer clears. */
+export declare function resetModelsBootForTests(): void;
 /** THE MOD INTERLOCK (the correction stroke 2026-09-08): the
  *  flavor↔DECL.mods satisfaction gate — the paper's §3.2.2 law, a
  *  component ACTIVATES ONLY AT A SATISFYING STATE. Pure over the

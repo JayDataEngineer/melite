@@ -282,6 +282,10 @@ describe("theService (the boot gate)", () => {
     // cold module graph, and nothing after this one needs one.
     vi.resetModules();
     const fresh = await import("../src/cardDefs.ts");
+    // the process-global cell outlives the module-registry reset
+    // (this file's own cascadeInit above primed it); the seam
+    // reproduces the fresh-process state the refusal names.
+    fresh.resetCardDefsForTests();
     assert.throws(
       () => fresh.theService(),
       /card defs not booted — await loadCardDefs\(\) first/,

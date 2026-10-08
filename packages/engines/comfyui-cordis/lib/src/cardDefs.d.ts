@@ -1,7 +1,12 @@
 import { Context } from '@deepseek-ai/cordis';
-import { ComfyUIService } from './service.js';
-import type { CardDefinition } from './service.js';
-import type { ProvisionRow } from './models/families/contract.js';
+import { ComfyUIService } from './service.ts';
+import type { CardDefinition } from './service.ts';
+import type { ProvisionRow } from './models/families/contract.ts';
+/** Test seam: drop the process-global card-defs cell. Production
+ *  code never calls this — the cache is boot-static per process.
+ *  Specs that pin a cold first caller reset it because vitest
+ *  resets the per-file module registry but not globalThis. */
+export declare const resetCardDefsForTests: () => void;
 /** The booted ComfyUIService (the card set + mods + verbs ride
  *  it). Throws if loadCardDefs has not settled. */
 export declare const theService: () => ComfyUIService;

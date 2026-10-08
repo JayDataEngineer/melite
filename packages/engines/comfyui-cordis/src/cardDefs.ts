@@ -28,16 +28,44 @@ import type { ProvisionRow } from './models/families/contract.ts'
 // (packages/<domain>/<id>); the readdir glob is DELETED and
 // the table in loadCardDefs is the only composition.
 
-let cache: Map<string, CardDefinition> | null = null
-let bootedService: ComfyUIService | null = null
+// The card-def cache is boot-static (a card lands by dropping its
+// file; no runtime mutation), so a process-global cache is sound —
+// and it MUST be process-global, not module-scoped: a consumer
+// install nests same-version copies of this package per-edge, and
+// per-copy caches split the served card set across seat stacks
+// (the single-instance design, 2026-10-18 — same class as the
+// models boot cell in models/service.ts).
+interface CardDefsCell {
+  cache: Map<string, CardDefinition> | null;
+  service: ComfyUIService | null;
+}
+
+const CARD_DEFS_KEY = '@melite/comfyui-cordis:card-defs';
+
+function cardDefsCell(): CardDefsCell {
+  const sym = Symbol.for(CARD_DEFS_KEY);
+  const holder = globalThis as Record<symbol, CardDefsCell | undefined>;
+  holder[sym] ??= { cache: null, service: null };
+  return holder[sym];
+}
+
+/** Test seam: drop the process-global card-defs cell. Production
+ *  code never calls this — the cache is boot-static per process.
+ *  Specs that pin a cold first caller reset it because vitest
+ *  resets the per-file module registry but not globalThis. */
+export const resetCardDefsForTests = (): void => {
+  const sym = Symbol.for(CARD_DEFS_KEY);
+  delete (globalThis as Record<symbol, CardDefsCell | undefined>)[sym];
+};
 
 /** The booted ComfyUIService (the card set + mods + verbs ride
  *  it). Throws if loadCardDefs has not settled. */
 export const theService = (): ComfyUIService => {
-  if (bootedService === null) {
+  const service = cardDefsCell().service;
+  if (service === null) {
     throw new Error('card defs not booted — await loadCardDefs() first')
   }
-  return bootedService
+  return service
 }
 
 /** Boot the card set once and return id → CardDefinition.
@@ -231,7 +259,8 @@ export const assertCardIdentity = (id: string, def: CardDefinition): void => {
 }
 
 export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
-  if (cache !== null) return cache
+  const cell = cardDefsCell();
+  if (cell.cache !== null) return cell.cache;
   const ctx = new Context()
   const service = new ComfyUIService(ctx)
   await composeCards(ctx)
@@ -242,13 +271,13 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
   //  DELETED with the ring, 2026-09-18). A card
   //  with no identity refuses LOUD here (the m1 wall: no card
   //  without it) — never a silent fallback, never generated prose.
-  bootedService = service
-  cache = new Map(service.cardIds().map((id) => {
+  cell.service = service
+  cell.cache = new Map(service.cardIds().map((id) => {
     const def = service.getCardDef(id)!
     assertCardIdentity(id, def)
     return [id, def]
   }))
-  return cache
+  return cell.cache
 }
 
 /** The module cache, SYNC, for seats that must not fork the truth
@@ -258,7 +287,7 @@ export const loadCardDefs = async (): Promise<Map<string, CardDefinition>> => {
  *  catalog) serves; the estate registry reads it so a live-mounted
  *  hot card validates at POST /v1/flows/validate the moment it
  *  serves — one cache, not a boot snapshot and its fork. */
-export const cardDefsNow = (): Map<string, CardDefinition> | null => cache;
+export const cardDefsNow = (): Map<string, CardDefinition> | null => cardDefsCell().cache;
 
 /** Refresh the served defs map from the LIVE singleton (#39, the
  *  hotload prototype): loadCardDefs' cache is a boot snapshot, so a
@@ -271,12 +300,13 @@ export const cardDefsNow = (): Map<string, CardDefinition> | null => cache;
  *  ALREADY booted can refresh. */
 export const refreshCardDefs = (): Map<string, CardDefinition> => {
   const service = theService()
-  cache = new Map(service.cardIds().map((id) => {
+  const cell = cardDefsCell();
+  cell.cache = new Map(service.cardIds().map((id) => {
     const def = service.getCardDef(id)!
     assertCardIdentity(id, def)
     return [id, def]
   }))
-  return cache
+  return cell.cache
 }
 
 /** Every family's declaration provision rows (DECL provisions for

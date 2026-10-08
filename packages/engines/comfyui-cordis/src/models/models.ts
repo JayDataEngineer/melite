@@ -23,28 +23,30 @@
 
 import type { ModelRow } from "./families/contract.ts";
 import type { CellRow, ModelDecl, VariantRow } from "./families/contract.ts";
-import { bootModels, modelsService, resolveCascade } from "./service.ts";
+import { bootModels, cascadeMemo, modelsService, resolveCascade, setCascadeMemo } from "./service.ts";
 import { buildCatalog } from "./catalogEmission.ts";
 
 export * from "./families/contract.ts";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.ts";
 
-let cascadePromise: Promise<void> | null = null;
-
 /** The shared once-per-process boot entry: fires bootModels() on
  * first call, memoizes, never at import. A REJECTED boot clears
  * the memo — the next call re-boots (bootModels' own retry law).
+ * The memo rides the process-global boot cell (service.ts), so
+ * every copy of this package in one process shares one cascade
+ * truth (the single-instance design, 2026-10-18).
  *
  * @returns a promise that settles when the booted table is served. */
 export function cascadeInit(): Promise<void> {
-  cascadePromise ??= bootModels().then(
+  const memoed = cascadeMemo() ?? bootModels().then(
     (): void => undefined,
     (err: unknown): Promise<void> => {
-      cascadePromise = null;
+      setCascadeMemo(null);
       throw err;
     },
   );
-  return cascadePromise;
+  setCascadeMemo(memoed);
+  return memoed;
 }
 
 export function getModel(id: string): ModelDecl {

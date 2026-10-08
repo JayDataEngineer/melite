@@ -20,22 +20,25 @@
 // estate's cardsRegistry awaits the SAME boot (cardsRegistry.ts,
 // the composition seat). The lane seat (modelsFamiliesProvider)
 // is a SEPARATE table in the estate's context — see service.ts.
-import { bootModels, modelsService } from "./service.js";
+import { bootModels, cascadeMemo, modelsService, setCascadeMemo } from "./service.js";
 import { buildCatalog } from "./catalogEmission.js";
 export * from "./families/contract.js";
 export { assertAddressesServe, assertFactsCallers, assertModInterlock, bootModels, modelsBooted, modelsService, resolveCascade, MODELS_SERVICE, ModelsService, modelsProvider, needModels } from "./service.js";
-let cascadePromise = null;
 /** The shared once-per-process boot entry: fires bootModels() on
  * first call, memoizes, never at import. A REJECTED boot clears
  * the memo — the next call re-boots (bootModels' own retry law).
+ * The memo rides the process-global boot cell (service.ts), so
+ * every copy of this package in one process shares one cascade
+ * truth (the single-instance design, 2026-10-18).
  *
  * @returns a promise that settles when the booted table is served. */
 export function cascadeInit() {
-    cascadePromise ??= bootModels().then(() => undefined, (err) => {
-        cascadePromise = null;
+    const memoed = cascadeMemo() ?? bootModels().then(() => undefined, (err) => {
+        setCascadeMemo(null);
         throw err;
     });
-    return cascadePromise;
+    setCascadeMemo(memoed);
+    return memoed;
 }
 export function getModel(id) {
     return modelsService().getModel(id);

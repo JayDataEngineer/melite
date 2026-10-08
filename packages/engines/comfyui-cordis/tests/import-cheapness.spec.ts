@@ -8,6 +8,7 @@
 // and the sync readers throw the named refusal before any boot.
 import { describe, it, vi } from "vitest";
 import assert from "node:assert/strict";
+import { resetModelsBootForTests } from "../src/models/service.ts";
 
 // The rejecting-boot probe's own state rides vi.hoisted so the mock
 // factory (hoisted above every import in the module graph) can reach it.
@@ -42,6 +43,11 @@ describe("THE IMPORT CHEAPNESS WALL (li-m)", () => {
     // cascadeInit's bootModels call is otherwise never reached. A
     // refusing boot is driven here through a mocked service module.
     boot.calls = 0;
+    // the cascade memo rides the process-global boot cell, which
+    // the previous test's cascadeInit primed and which survives
+    // resetModules; drop it so this fresh registry starts cold (the
+    // state a real first caller in a fresh process sees).
+    resetModelsBootForTests();
     vi.resetModules();
     vi.doMock("../src/models/service.ts", async (importOriginal) => {
       const actual = await importOriginal<typeof import("../src/models/service.ts")>();
